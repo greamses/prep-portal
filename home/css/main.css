@@ -612,17 +612,19 @@
   .hero-actions {
     width: 100%;
     flex-direction: column;
+    align-items: center;
   }
 
   .hero-btn {
-    width: 100%;
+    width: min(100%, 320px);
+    max-width: 320px;
     /* inherit the already‑fluid min‑height & font‑size – no overrides */
   }
 
-  /* Make dashboard window smaller on very small screens */
+  /* Make dashboard window smaller on very small screens, but not too tiny */
   .dashboard-window {
-    max-width: 85vw;
-    transform: rotate(-2deg) scale(0.75);
+    max-width: 90vw;
+    transform: rotate(-2deg) scale(0.85);
   }
 
   .window-body {
