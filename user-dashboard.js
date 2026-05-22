@@ -23,6 +23,9 @@ const fields = {
 let unsubUser = null;
 const isDashboardPage = window.location.pathname.includes("dashboard");
 
+let calendarCurrentDate = new Date();
+let calendarSelectedDate = new Date();
+
 // ══════════════════════════════════════════════════════
 //  UTILITY HELPERS
 // ══════════════════════════════════════════════════════
@@ -77,25 +80,28 @@ const I = {
   settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   child: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`,
   alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  chevronLeft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevronRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
 };
 
 // ══════════════════════════════════════════════════════
 //  HEADER + TOOLBAR
 // ══════════════════════════════════════════════════════
 const ROLE_LABELS = {
-  student: "Student Workspace",
-  teacher: "Teacher Portal",
-  parent: "Parent Dashboard",
-  admin: "Admin Console",
+  student: "Student Math Workspace",
+  teacher: "Teacher Math Portal",
+  parent: "Parent Math Dashboard",
+  admin: "Math Admin Console",
 };
 
 const ROLE_SUBTITLES = {
   student:
-    "Your workspace is ready. Keep your practice focused and consistent.",
-  teacher: "Monitor your students, assign tasks, and track class performance.",
-  parent: "Stay close to your child's learning journey and progress.",
+    "Your math workspace is ready. Keep your practice focused and consistent.",
+  teacher:
+    "Monitor your students, assign tasks, and track class math performance.",
+  parent: "Stay close to your child's math learning journey and progress.",
   admin:
-    "Platform management: users, classes, subscriptions, and system health.",
+    "Platform management: users, math classes, subscriptions, and system health.",
 };
 
 function updateHeader(user, data = {}) {
@@ -118,9 +124,9 @@ function buildToolbar(role, isPremium) {
   const byRole = {
     student: `
       ${!isPremium ? `<button class="dashboard-command cmd-yellow" type="button" data-action="upgrade">${I.star}<span>Go Premium</span></button>` : ""}
-      <a class="dashboard-command" href="/exam-archive/national/exams/index.html">${I.papers}<span>Past Papers</span></a>
-      <a class="dashboard-command" href="/prep-math/activity/equivalent-fractions/index.html">${I.activity}<span>Activities</span></a>
-      <a class="dashboard-command" href="/writing/index.html">${I.writing}<span>Writing Lab</span></a>`,
+      <a class="dashboard-command" href="/exam-archive/national/exams/index.html">${I.papers}<span>Math Past Papers</span></a>
+      <a class="dashboard-command" href="/prep-math/activity/equivalent-fractions/index.html">${I.activity}<span>Math Activities</span></a>
+      <a class="dashboard-command" href="/math-lab/index.html">${I.writing}<span>Math Lab</span></a>`,
     teacher: `
       <button class="dashboard-command cmd-blue" type="button" data-action="new-assignment">${I.plus}<span>New Assignment</span></button>
       <button class="dashboard-command cmd-green" type="button" data-action="view-classes">${I.users}<span>My Classes</span></button>
@@ -171,7 +177,7 @@ function assignmentItemHTML(t, showProgress = true) {
       <div class="db-assign-top">
         <div>
           <div class="db-assign-title">${t.title}</div>
-          <div class="db-assign-meta">${t.subject || "General"} &bull; Due ${fmtDate(t.dueDate)}</div>
+          <div class="db-assign-meta">${t.subject || "General Math"} &bull; Due ${fmtDate(t.dueDate)}</div>
         </div>
         <span class="db-pill ${s.cls}">${s.label}</span>
       </div>
@@ -201,13 +207,145 @@ function perfBarHTML(label, score, color = "var(--blue)") {
 }
 
 // ══════════════════════════════════════════════════════
+//  DYNAMIC COMPACT CALENDAR COMPONENT
+// ══════════════════════════════════════════════════════
+function renderCalendar(container, events = []) {
+  const currentYear = calendarCurrentDate.getFullYear();
+  const currentMonth = calendarCurrentDate.getMonth();
+
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+  const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const eventsByDate = {};
+  events.forEach((e) => {
+    const dStr = new Date(e.date).toISOString().split("T")[0];
+    if (!eventsByDate[dStr]) eventsByDate[dStr] = [];
+    eventsByDate[dStr].push(e);
+  });
+
+  let daysHTML = "";
+
+  for (let x = firstDayIndex; x > 0; x--) {
+    daysHTML += `<div class="db-calendar-day day-filler">${prevLastDay - x + 1}</div>`;
+  }
+
+  for (let i = 1; i <= lastDay; i++) {
+    const dayDate = new Date(currentYear, currentMonth, i);
+    const dayDateStr = dayDate.toISOString().split("T")[0];
+    const isSelected =
+      dayDate.toDateString() === calendarSelectedDate.toDateString();
+    const isToday = dayDate.toDateString() === new Date().toDateString();
+    const dayEvents = eventsByDate[dayDateStr] || [];
+
+    const selectedCls = isSelected ? "is-selected" : "";
+    const todayCls = isToday ? "is-today" : "";
+    const hasEventCls = dayEvents.length > 0 ? "has-events" : "";
+
+    daysHTML += `
+      <button class="db-calendar-day day-active ${selectedCls} ${todayCls} ${hasEventCls}" 
+              data-date="${dayDateStr}" type="button">
+        <span class="day-number">${i}</span>
+      </button>`;
+  }
+
+  container.innerHTML = `
+    <div class="db-calendar-component">
+      <div class="db-calendar-header">
+        <h3 class="db-calendar-month-year">${months[currentMonth]} ${currentYear}</h3>
+        <div class="db-calendar-navs">
+          <button class="db-calendar-nav-btn" data-dir="prev" type="button">${I.chevronLeft}</button>
+          <button class="db-calendar-nav-btn" data-dir="next" type="button">${I.chevronRight}</button>
+        </div>
+      </div>
+      <div class="db-calendar-weekdays">
+        <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+      </div>
+      <div class="db-calendar-grid">
+        ${daysHTML}
+      </div>
+      <div class="db-calendar-agenda" id="calendar-agenda-view"></div>
+    </div>`;
+
+  container.querySelectorAll(".db-calendar-nav-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dir = btn.dataset.dir;
+      calendarCurrentDate.setMonth(
+        calendarCurrentDate.getMonth() + (dir === "next" ? 1 : -1),
+      );
+      renderCalendar(container, events);
+    });
+  });
+
+  container.querySelectorAll(".day-active").forEach((dayBtn) => {
+    dayBtn.addEventListener("click", () => {
+      container
+        .querySelectorAll(".day-active")
+        .forEach((d) => d.classList.remove("is-selected"));
+      dayBtn.classList.add("is-selected");
+      calendarSelectedDate = new Date(dayBtn.dataset.date);
+      updateAgenda(container, events);
+    });
+  });
+
+  updateAgenda(container, events);
+}
+
+function updateAgenda(container, events) {
+  const agendaContainer = container.querySelector("#calendar-agenda-view");
+  if (!agendaContainer) return;
+
+  const selectedStr = calendarSelectedDate.toISOString().split("T")[0];
+  const dayEvents = events.filter(
+    (e) => new Date(e.date).toISOString().split("T")[0] === selectedStr,
+  );
+
+  if (dayEvents.length === 0) {
+    agendaContainer.innerHTML = `
+      <div class="db-empty" style="min-height:50px; padding:0.5rem; border:none; background:transparent;">
+        No live sessions scheduled.
+      </div>`;
+    return;
+  }
+
+  agendaContainer.innerHTML = dayEvents
+    .map(
+      (e) => `
+    <div class="db-agenda-card">
+      <div class="db-agenda-time-pill">${e.time || "00:00"}</div>
+      <div class="db-agenda-info">
+        <h4 class="db-agenda-title">${e.title}</h4>
+        <p class="db-agenda-instructor">${e.topic || "Math Focus"}</p>
+      </div>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+// ══════════════════════════════════════════════════════
 //  STUDENT PANELS
 // ══════════════════════════════════════════════════════
 function buildStudentPanels(user, data) {
   const progress = pct(data.weeklyProgress, 72);
   const accuracy = pct(data.accuracy, 84);
   const streak = Math.max(0, Number(data.streakDays) || 3);
-  const focus = data.currentFocus || "Mathematics";
+  const focus = data.currentFocus || "Arithmetic Practice";
   const tasks = data.assignedTasks || MOCK.studentTasks;
   const results = data.recentResults || MOCK.studentResults;
   const subjPerf = data.subjectPerf || MOCK.subjectPerf;
@@ -236,7 +374,7 @@ function buildStudentPanels(user, data) {
 
       <div class="db-meter">
         <div class="db-meter-top">
-          <span>Question Accuracy</span>
+          <span>Formula & Step Accuracy</span>
           <strong>${accuracy}%</strong>
         </div>
         <div class="db-meter-track">
@@ -246,7 +384,7 @@ function buildStudentPanels(user, data) {
 
       <div class="db-meter">
         <div class="db-meter-top">
-          <span>Questions Answered</span>
+          <span>Problems Solved</span>
           <strong>${qCount.toLocaleString()}</strong>
         </div>
         <div class="db-meter-track">
@@ -260,12 +398,24 @@ function buildStudentPanels(user, data) {
       </div>
     </div>
 
+    <!-- ── Panel: Class Schedule Calendar ── -->
+    <div class="db-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Live Schedule</p>
+          <h2 class="db-panel-title">Class Calendar</h2>
+        </div>
+        <span class="db-pill pill-blue">Labs</span>
+      </div>
+      <div id="student-calendar-container"></div>
+    </div>
+
     <!-- ── Panel: Assignments ── -->
     <div class="db-panel">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">From Your Teacher</p>
-          <h2 class="db-panel-title">Assignments</h2>
+          <h2 class="db-panel-title">Active Tasks</h2>
         </div>
         <a href="/assignments/index.html" class="db-icon-btn" title="View all assignments">${I.arrow}</a>
       </div>
@@ -283,7 +433,7 @@ function buildStudentPanels(user, data) {
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Performance</p>
-          <h2 class="db-panel-title">Recent Results</h2>
+          <h2 class="db-panel-title">Recent Tests</h2>
         </div>
       </div>
       <div class="db-assign-list">
@@ -303,7 +453,7 @@ function buildStudentPanels(user, data) {
               </div>`,
                 )
                 .join("")
-            : `<div class="db-empty">No results yet.<br>Complete an activity to see scores here.</div>`
+            : `<div class="db-empty">No results yet.<br>Complete a challenge to see scores here.</div>`
         }
       </div>
     </div>
@@ -313,7 +463,7 @@ function buildStudentPanels(user, data) {
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Quick Start</p>
-          <h2 class="db-panel-title">Jump In</h2>
+          <h2 class="db-panel-title">Enter Math Labs</h2>
         </div>
       </div>
       <div class="db-action-grid">
@@ -321,10 +471,10 @@ function buildStudentPanels(user, data) {
           ${I.papers}<span>Past Papers</span>
         </a>
         <a href="/prep-math/activity/equivalent-fractions/index.html" class="db-action act-blue">
-          ${I.activity}<span>Activities</span>
+          ${I.activity}<span>Interactive Labs</span>
         </a>
-        <a href="/writing/index.html" class="db-action act-green">
-          ${I.writing}<span>Writing Lab</span>
+        <a href="/math-lab/index.html" class="db-action act-green">
+          ${I.writing}<span>Scratchpad</span>
         </a>
         <a href="/algebra/index.html" class="db-action">
           ${I.book}<span>Algebra Lab</span>
@@ -340,6 +490,13 @@ function buildStudentPanels(user, data) {
       </div>
     </div>`;
 
+  const calendarContainer = document.getElementById(
+    "student-calendar-container",
+  );
+  if (calendarContainer) {
+    renderCalendar(calendarContainer, MOCK.scheduleEvents);
+  }
+
   layout
     .querySelector("[data-action='upgrade']")
     ?.addEventListener("click", doUpgrade);
@@ -351,7 +508,7 @@ function buildStudentPanels(user, data) {
 function buildTeacherPanels(user, data) {
   const students = data.students || MOCK.teacherStudents;
   const assignments = data.assignments || MOCK.teacherAssignments;
-  const className = data.activeClass || "My Class";
+  const className = data.activeClass || "My Math Class";
   const activeCount = students.filter((s) => s.status === "active").length;
   const avgAcc = students.length
     ? Math.round(
@@ -376,32 +533,32 @@ function buildTeacherPanels(user, data) {
 
     <!-- ── Stat: Students ── -->
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--blue);color:#fff">${I.users}</div>
+      <div class="db-stat-icon">${I.users}</div>
       <div class="db-stat-value">${students.length}</div>
-      <div class="db-stat-label">Students Enrolled</div>
+      <div class="db-stat-label">Math Students</div>
       <div class="db-stat-trend trend-up">${I.trendUp} ${activeCount} active today</div>
     </div>
 
     <!-- ── Stat: Assignments ── -->
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--green);color:#fff">${I.check}</div>
+      <div class="db-stat-icon">${I.check}</div>
       <div class="db-stat-value">${assignments.length}</div>
-      <div class="db-stat-label">Active Assignments</div>
-      <div class="db-stat-trend">${completionRate}% avg completion</div>
+      <div class="db-stat-label">Active Math Tasks</div>
+      <div class="db-stat-trend">${completionRate}% completion</div>
     </div>
 
     <!-- ── Stat: Class Accuracy ── -->
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--yellow)">${I.chart}</div>
+      <div class="db-stat-icon">${I.chart}</div>
       <div class="db-stat-value">${avgAcc}%</div>
-      <div class="db-stat-label">Class Avg Accuracy</div>
+      <div class="db-stat-label">Formula Accuracy</div>
       <div class="db-stat-trend ${avgAcc >= 70 ? "trend-up" : "trend-down"}">
         ${avgAcc >= 70 ? I.trendUp + " Above target" : I.alert + " Below target"}
       </div>
     </div>
 
     <!-- ── Panel: Student Roster ── -->
-    <div class="db-panel span-2">
+    <div class="db-panel">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Class Roster</p>
@@ -429,7 +586,6 @@ function buildTeacherPanels(user, data) {
               <div class="db-roster-meta">
                 <span class="db-dot ${dotCls}" title="${s.status}"></span>
                 <span class="db-pill ${pillColor(acc)}">${acc}%</span>
-                ${s.streak ? `<span class="db-pill pill-yellow">${s.streak}d</span>` : ""}
               </div>
             </li>`;
           })
@@ -437,12 +593,23 @@ function buildTeacherPanels(user, data) {
       </ul>
     </div>
 
+    <!-- ── Panel: Calendar & Agenda (Teacher View) ── -->
+    <div class="db-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Planning</p>
+          <h2 class="db-panel-title">My Class Calendar</h2>
+        </div>
+      </div>
+      <div id="teacher-calendar-container"></div>
+    </div>
+
     <!-- ── Panel: Assignments ── -->
     <div class="db-panel">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Task Manager</p>
-          <h2 class="db-panel-title">Assignments</h2>
+          <h2 class="db-panel-title">Math Assignments</h2>
         </div>
         <button class="db-icon-btn ib-blue" type="button" data-action="new-assignment" title="Create assignment">${I.plus}</button>
       </div>
@@ -459,7 +626,7 @@ function buildTeacherPanels(user, data) {
                   <div class="db-assign-top">
                     <div>
                       <div class="db-assign-title">${a.title}</div>
-                      <div class="db-assign-meta">${a.subject || "General"} &bull; Due ${fmtDate(a.dueDate)}</div>
+                      <div class="db-assign-meta">${a.subject || "General Math"} &bull; Due ${fmtDate(a.dueDate)}</div>
                     </div>
                     <span class="db-pill pill-blue">${a.completedCount || 0}/${a.totalCount || 0}</span>
                   </div>
@@ -477,12 +644,12 @@ function buildTeacherPanels(user, data) {
       </div>
     </div>
 
-    <!-- ── Panel: Needs Attention (full width) ── -->
+    <!-- ── Panel: Needs Attention ── -->
     <div class="db-panel span-full">
       <div class="db-panel-head">
         <div>
-          <p class="db-kicker" style="color:var(--red)">Intervention Alert</p>
-          <h2 class="db-panel-title">Students Needing Attention</h2>
+          <p class="db-kicker" style="color:var(--red)">Concept Intervention Alert</p>
+          <h2 class="db-panel-title">Students Struggling with Topics</h2>
         </div>
         <span class="db-pill pill-red">${needsHelp.length} flagged</span>
       </div>
@@ -494,7 +661,7 @@ function buildTeacherPanels(user, data) {
                 const acc = pct(s.accuracy);
                 const reason = !s.activeThisWeek
                   ? "Inactive this week"
-                  : "Low accuracy";
+                  : "Struggling with assignments";
                 return perfBarHTML(
                   `${s.name} (${reason})`,
                   acc,
@@ -507,9 +674,16 @@ function buildTeacherPanels(user, data) {
               })
               .join("")}
            </div>`
-          : `<div class="db-empty">All students are on track. Keep it up.</div>`
+          : `<div class="db-empty">All students are current on math benchmarks. Keep it up.</div>`
       }
     </div>`;
+
+  const calendarContainer = document.getElementById(
+    "teacher-calendar-container",
+  );
+  if (calendarContainer) {
+    renderCalendar(calendarContainer, MOCK.scheduleEvents);
+  }
 
   layout
     .querySelector("[data-action='new-assignment']")
@@ -578,7 +752,7 @@ function buildParentPanels(user, data) {
 
       <div class="db-meter">
         <div class="db-meter-top">
-          <span>Question Accuracy</span>
+          <span>Formula & Logic Accuracy</span>
           <strong>${acc}%</strong>
         </div>
         <div class="db-meter-track">
@@ -601,90 +775,102 @@ function buildParentPanels(user, data) {
         <div class="db-meter">
           <div class="db-meter-top" style="flex-direction:column;align-items:flex-start;gap:0.15rem">
             <span style="font-size:0.65rem">Class</span>
-            <strong style="font-family:var(--font-display);font-size:0.9rem">${child.activeClass || "Not assigned"}</strong>
+            <strong style="font-family:var(--font-display);font-size:0.88rem">${child.activeClass || "Not assigned"}</strong>
           </div>
         </div>
         <div class="db-meter">
           <div class="db-meter-top" style="flex-direction:column;align-items:flex-start;gap:0.15rem">
-            <span style="font-size:0.65rem">Teacher</span>
-            <strong style="font-family:var(--font-display);font-size:0.9rem">${child.teacher || "—"}</strong>
+            <span style="font-size:0.65rem">Math Instructor</span>
+            <strong style="font-family:var(--font-display);font-size:0.88rem">${child.teacher || "—"}</strong>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── Right column ── -->
-    <div style="display:grid;gap:${`clamp(1rem, 2vw, 1.4rem)`};align-content:start">
-
-      <!-- Activity Feed -->
-      <div class="db-panel">
-        <div class="db-panel-head">
-          <div>
-            <p class="db-kicker">Latest Activity</p>
-            <h2 class="db-panel-title">What ${child.name} Did</h2>
-          </div>
+    <!-- ── Calendar & Live Class Tracker ── -->
+    <div class="db-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Upcoming Classes</p>
+          <h2 class="db-panel-title">Lessons & Schedules</h2>
         </div>
-        <div class="db-feed">
-          ${
-            feed.length
-              ? feed
-                  .map((a) => {
-                    const TYPE_MAP = {
-                      quiz: { icon: I.papers, bg: "var(--blue)", c: "#fff" },
-                      activity: {
-                        icon: I.activity,
-                        bg: "var(--green)",
-                        c: "#fff",
-                      },
-                      writing: {
-                        icon: I.writing,
-                        bg: "var(--yellow)",
-                        c: "var(--ink)",
-                      },
-                    };
-                    const m = TYPE_MAP[a.type] || {
-                      icon: I.book,
-                      bg: "#e7e7e7",
+      </div>
+      <div id="parent-calendar-container"></div>
+    </div>
+
+    <!-- ── Activity Feed ── -->
+    <div class="db-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Latest Math Activity</p>
+          <h2 class="db-panel-title">What ${child.name} Practiced</h2>
+        </div>
+      </div>
+      <div class="db-feed">
+        ${
+          feed.length
+            ? feed
+                .map((a) => {
+                  const TYPE_MAP = {
+                    quiz: { icon: I.papers, bg: "#eaeaea", c: "var(--ink)" },
+                    activity: {
+                      icon: I.activity,
+                      bg: "#eaeaea",
                       c: "var(--ink)",
-                    };
-                    return `
-                  <div class="db-feed-item">
-                    <div class="db-feed-icon" style="background:${m.bg};color:${m.c}">${m.icon}</div>
-                    <div>
-                      <div class="db-feed-title">${a.title}</div>
-                      <div class="db-feed-sub">
-                        ${a.subject ? a.subject + " &bull; " : ""}${fmtDate(a.date)}
-                        ${a.score !== undefined ? ` &bull; Score: ${pct(a.score)}%` : ""}
-                      </div>
+                    },
+                    writing: {
+                      icon: I.writing,
+                      bg: "#eaeaea",
+                      c: "var(--ink)",
+                    },
+                  };
+                  const m = TYPE_MAP[a.type] || {
+                    icon: I.book,
+                    bg: "#eaeaea",
+                    c: "var(--ink)",
+                  };
+                  return `
+                <div class="db-feed-item">
+                  <div class="db-feed-icon" style="background:${m.bg};color:${m.c}">${m.icon}</div>
+                  <div>
+                    <div class="db-feed-title">${a.title}</div>
+                    <div class="db-feed-sub">
+                      ${a.subject ? a.subject + " &bull; " : ""}${fmtDate(a.date)}
+                      ${a.score !== undefined ? ` &bull; Accuracy: ${pct(a.score)}%` : ""}
                     </div>
-                  </div>`;
-                  })
-                  .join("")
-              : `<div class="db-empty">No recent activity recorded yet.</div>`
-          }
+                  </div>
+                </div>`;
+                })
+                .join("")
+            : `<div class="db-empty">No recent math practice recorded yet.</div>`
+        }
+      </div>
+    </div>
+
+    <!-- ── Assignments ── -->
+    <div class="db-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Homework & Quizzes</p>
+          <h2 class="db-panel-title">Assigned Tasks</h2>
         </div>
       </div>
-
-      <!-- Assignments -->
-      <div class="db-panel">
-        <div class="db-panel-head">
-          <div>
-            <p class="db-kicker">Schoolwork</p>
-            <h2 class="db-panel-title">Assignments</h2>
-          </div>
-        </div>
-        <div class="db-assign-list">
-          ${
-            tasks.length
-              ? tasks.map((t) => assignmentItemHTML(t)).join("")
-              : `<div class="db-empty">No active assignments for ${child.name} right now.</div>`
-          }
-        </div>
+      <div class="db-assign-list">
+        ${
+          tasks.length
+            ? tasks.map((t) => assignmentItemHTML(t)).join("")
+            : `<div class="db-empty">No pending assignments for ${child.name} right now.</div>`
+        }
       </div>
-
     </div>`;
 
-  // Child tab switching
+  const calendarContainer = document.getElementById(
+    "parent-calendar-container",
+  );
+  if (calendarContainer) {
+    renderCalendar(calendarContainer, MOCK.scheduleEvents);
+  }
+
   layout.querySelectorAll(".db-child-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       activeChildIdx = Number(btn.dataset.childIdx);
@@ -714,39 +900,39 @@ function buildAdminPanels(user, data) {
 
     <!-- ── 4 Stat Cards ── -->
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--blue);color:#fff">${I.users}</div>
+      <div class="db-stat-icon">${I.users}</div>
       <div class="db-stat-value">${totalUsers.toLocaleString()}</div>
       <div class="db-stat-label">Total Users</div>
       <div class="db-stat-trend trend-up">${I.trendUp} +${data.newSignupsToday || 0} today</div>
     </div>
 
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--green);color:#fff">${I.trendUp}</div>
+      <div class="db-stat-icon">${I.trendUp}</div>
       <div class="db-stat-value">${activeToday.toLocaleString()}</div>
-      <div class="db-stat-label">Active Today</div>
-      <div class="db-stat-trend">${totalUsers ? Math.round((activeToday / totalUsers) * 100) : 0}% of users</div>
+      <div class="db-stat-label">Solving Math Today</div>
+      <div class="db-stat-trend">${totalUsers ? Math.round((activeToday / totalUsers) * 100) : 0}% active</div>
     </div>
 
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--yellow)">${I.star}</div>
+      <div class="db-stat-icon">${I.star}</div>
       <div class="db-stat-value">${premiumCount.toLocaleString()}</div>
-      <div class="db-stat-label">Premium Users</div>
+      <div class="db-stat-label">Premium Plans</div>
       <div class="db-stat-trend">${totalUsers ? Math.round((premiumCount / totalUsers) * 100) : 0}% conversion</div>
     </div>
 
     <div class="db-stat">
-      <div class="db-stat-icon" style="background:var(--ink);color:var(--paper)">${I.book}</div>
+      <div class="db-stat-icon">${I.book}</div>
       <div class="db-stat-value">${totalClasses.toLocaleString()}</div>
       <div class="db-stat-label">Active Classes</div>
       <div class="db-stat-trend">${data.unassignedClasses || 0} unassigned</div>
     </div>
 
     <!-- ── Panel: Recent Signups ── -->
-    <div class="db-panel span-2">
+    <div class="db-panel">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">User Management</p>
-          <h2 class="db-panel-title">Recent Signups</h2>
+          <h2 class="db-panel-title">Recent Registrations</h2>
         </div>
         <a href="/admin/users/index.html" class="db-icon-btn" title="View all users">${I.arrow}</a>
       </div>
@@ -776,11 +962,11 @@ function buildAdminPanels(user, data) {
     </div>
 
     <!-- ── Panel: Class Management ── -->
-    <div class="db-panel span-2">
+    <div class="db-panel">
       <div class="db-panel-head">
         <div>
-          <p class="db-kicker">Class Management</p>
-          <h2 class="db-panel-title">Classes</h2>
+          <p class="db-kicker">Class Hub</p>
+          <h2 class="db-panel-title">Math Classrooms</h2>
         </div>
         <button class="db-icon-btn ib-blue" type="button" data-action="new-class" title="Create class">${I.plus}</button>
       </div>
@@ -793,10 +979,10 @@ function buildAdminPanels(user, data) {
               <div>
                 <div class="db-assign-title">${c.name}</div>
                 <div class="db-assign-meta">
-                  Teacher: ${c.teacher || "Unassigned"} &bull; ${c.studentCount || 0} students
+                  Instructor: ${c.teacher || "Unassigned"} &bull; ${c.studentCount || 0} students
                 </div>
               </div>
-              <span class="db-pill ${c.teacher ? "pill-green" : "pill-grey"}">${c.teacher ? "Active" : "No Teacher"}</span>
+              <span class="db-pill ${c.teacher ? "pill-green" : "pill-grey"}">${c.teacher ? "Active" : "No Instructor"}</span>
             </div>
           </div>`,
           )
@@ -809,7 +995,7 @@ function buildAdminPanels(user, data) {
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Platform Health</p>
-          <h2 class="db-panel-title">User Role Distribution</h2>
+          <h2 class="db-panel-title">User Base Breakdown</h2>
         </div>
       </div>
       <div class="db-perf-list">
@@ -823,34 +1009,77 @@ function buildAdminPanels(user, data) {
 }
 
 // ══════════════════════════════════════════════════════
-//  MOCK DATA (fallbacks until Firestore is populated)
+//  MOCK DATA
 // ══════════════════════════════════════════════════════
 const MOCK = {
+  scheduleEvents: [
+    {
+      date: new Date(new Date().setDate(new Date().getDate() + 1))
+        .toISOString()
+        .split("T")[0],
+      time: "10:00 AM",
+      title: "Algebra I Live Class",
+      topic: "Solving Quadratic Expressions",
+      class: "JS 3 Math",
+      link: "#",
+    },
+    {
+      date: new Date(new Date().setDate(new Date().getDate() + 3))
+        .toISOString()
+        .split("T")[0],
+      time: "02:00 PM",
+      title: "Interactive Geometry Lab",
+      topic: "Pythagorean Theorem Discovery",
+      class: "JS 3 Math",
+      link: "#",
+    },
+    {
+      date: new Date(new Date().setDate(new Date().getDate() - 1))
+        .toISOString()
+        .split("T")[0],
+      time: "11:30 AM",
+      title: "Mental Math Sprint",
+      topic: "Fast Fractions Multiplication",
+      class: "JS 3 Math",
+      link: "#",
+    },
+    {
+      date: new Date(new Date().setDate(new Date().getDate() + 5))
+        .toISOString()
+        .split("T")[0],
+      time: "04:00 PM",
+      title: "Math Problem Solving Lab",
+      topic: "Word Problems & Fractions",
+      class: "JS 3 Math",
+      link: "#",
+    },
+  ],
+
   studentTasks: [
     {
-      title: "Algebra: Equations Practice",
-      subject: "Mathematics",
+      title: "Algebra: Quadratic Equations",
+      subject: "Algebra",
       dueDate: "2026-05-28",
       status: "in-progress",
       progress: 45,
     },
     {
-      title: "English Comprehension Set B",
-      subject: "English",
+      title: "Geometry: Pythagorean Theorem Practice",
+      subject: "Geometry",
       dueDate: "2026-05-26",
       status: "pending",
       progress: 0,
     },
     {
-      title: "Basic Science Chapter 4 Quiz",
-      subject: "Science",
+      title: "Arithmetic: Equivalent Fractions Quiz",
+      subject: "Arithmetic",
       dueDate: "2026-05-25",
       status: "overdue",
       progress: 20,
     },
     {
-      title: "Nigerian History Essay Review",
-      subject: "Social Std",
+      title: "Data Handling: Bar Chart Analysis",
+      subject: "Data & Stats",
       dueDate: "2026-05-30",
       status: "pending",
       progress: 0,
@@ -859,42 +1088,42 @@ const MOCK = {
 
   studentResults: [
     {
-      title: "Fractions and Decimals",
-      subject: "Mathematics",
+      title: "Fractions and Decimals Review",
+      subject: "Arithmetic",
       date: "2026-05-21",
       score: 85,
     },
     {
-      title: "Vocabulary Exercise C",
-      subject: "English",
+      title: "Order of Operations (BODMAS)",
+      subject: "Arithmetic",
       date: "2026-05-20",
       score: 72,
     },
     {
-      title: "Forces and Motion Quiz",
-      subject: "Science",
+      title: "Angles and Triangles Challenge",
+      subject: "Geometry",
       date: "2026-05-18",
       score: 91,
     },
     {
-      title: "Nigerian History — Chapter 3",
-      subject: "Social Studies",
+      title: "Introduction to Polynomials",
+      subject: "Algebra",
       date: "2026-05-16",
       score: 63,
     },
   ],
 
   subjectPerf: [
-    { subject: "Mathematics", score: 84 },
-    { subject: "English", score: 72 },
-    { subject: "Science", score: 91 },
-    { subject: "Social Std", score: 63 },
+    { subject: "Arithmetic & Numbers", score: 84 },
+    { subject: "Algebraic Systems", score: 72 },
+    { subject: "Geometry & Shapes", score: 91 },
+    { subject: "Data & Statistics", score: 63 },
   ],
 
   teacherStudents: [
     {
       name: "Alice Obi",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "2h ago",
       accuracy: 91,
       streak: 7,
@@ -903,7 +1132,7 @@ const MOCK = {
     },
     {
       name: "Bayo Adeyemi",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "Yesterday",
       accuracy: 78,
       streak: 3,
@@ -912,7 +1141,7 @@ const MOCK = {
     },
     {
       name: "Chisom Eze",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "5h ago",
       accuracy: 85,
       streak: 12,
@@ -921,7 +1150,7 @@ const MOCK = {
     },
     {
       name: "David Nwosu",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "3 days ago",
       accuracy: 42,
       streak: 0,
@@ -930,7 +1159,7 @@ const MOCK = {
     },
     {
       name: "Emeka Okonkwo",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "Today",
       accuracy: 67,
       streak: 2,
@@ -939,7 +1168,7 @@ const MOCK = {
     },
     {
       name: "Fatima Bello",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "4 days ago",
       accuracy: 55,
       streak: 0,
@@ -948,7 +1177,7 @@ const MOCK = {
     },
     {
       name: "Grace Afolabi",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "1h ago",
       accuracy: 88,
       streak: 9,
@@ -957,7 +1186,7 @@ const MOCK = {
     },
     {
       name: "Hassan Ibrahim",
-      class: "Grade 9A",
+      class: "JS 3 Math",
       lastActive: "Today",
       accuracy: 73,
       streak: 5,
@@ -968,22 +1197,22 @@ const MOCK = {
 
   teacherAssignments: [
     {
-      title: "Algebra: Equations Practice",
-      subject: "Mathematics",
+      title: "Linear Equations Practice Set",
+      subject: "Algebra",
       dueDate: "2026-05-28",
       completedCount: 18,
       totalCount: 32,
     },
     {
-      title: "Reading Comprehension Set B",
-      subject: "English",
+      title: "Ratios & Proportions Workbook",
+      subject: "Arithmetic",
       dueDate: "2026-05-26",
       completedCount: 25,
       totalCount: 32,
     },
     {
-      title: "Basic Science Chapter Quiz",
-      subject: "Science",
+      title: "Probability Trees and Events Quiz",
+      subject: "Data & Stats",
       dueDate: "2026-05-30",
       completedCount: 5,
       totalCount: 32,
@@ -996,53 +1225,53 @@ const MOCK = {
       streakDays: 5,
       accuracy: 82,
       weeklyProgress: 60,
-      activeClass: "Grade 7B",
+      activeClass: "Grade 7 Math",
       teacher: "Ms. Kemi Adio",
       subjectPerformance: [
-        { subject: "Mathematics", score: 82 },
-        { subject: "English", score: 74 },
-        { subject: "Science", score: 89 },
+        { subject: "Arithmetic & Numbers", score: 82 },
+        { subject: "Basic Algebra", score: 74 },
+        { subject: "Introductory Geometry", score: 89 },
       ],
       recentActivity: [
         {
           type: "quiz",
-          title: "Fractions Quiz",
-          subject: "Mathematics",
+          title: "Simplifying Fractions Quiz",
+          subject: "Arithmetic",
           date: "2026-05-21",
           score: 85,
         },
         {
           type: "activity",
-          title: "Reading Exercise",
-          subject: "English",
+          title: "Multiplication Tables Speedrun",
+          subject: "Arithmetic",
           date: "2026-05-20",
           score: 72,
         },
         {
           type: "quiz",
-          title: "Science MCQ Set 3",
-          subject: "Science",
+          title: "Identifying Triangles Practice",
+          subject: "Geometry",
           date: "2026-05-18",
           score: 91,
         },
         {
           type: "writing",
-          title: "Creative Writing Task",
-          subject: "English",
+          title: "Plotting Coordinates Exploration",
+          subject: "Geometry",
           date: "2026-05-16",
         },
       ],
       pendingAssignments: [
         {
-          title: "Algebra Practice Set",
-          subject: "Mathematics",
+          title: "Intro to Algebraic Expressions",
+          subject: "Algebra",
           dueDate: "2026-05-28",
           status: "in-progress",
           progress: 45,
         },
         {
-          title: "English Comprehension",
-          subject: "English",
+          title: "Decimal Place Value Practice",
+          subject: "Arithmetic",
           dueDate: "2026-05-26",
           status: "pending",
           progress: 0,
@@ -1092,18 +1321,26 @@ const MOCK = {
 
   adminClasses: [
     {
-      name: "Grade 9 Mathematics",
+      name: "Grade 9 Algebra & Equations",
       teacher: "Mr Tunde Lawal",
       studentCount: 32,
     },
-    { name: "Grade 8 English", teacher: "Ms Kemi Adio", studentCount: 28 },
-    { name: "Grade 10 Science", teacher: null, studentCount: 0 },
     {
-      name: "JSS 3 Social Studies",
+      name: "Grade 8 Geometry & Proofs",
+      teacher: "Ms Kemi Adio",
+      studentCount: 28,
+    },
+    { name: "Grade 10 Calculus & Functions", teacher: null, studentCount: 0 },
+    {
+      name: "JSS 3 Trigonometry & Measurement",
       teacher: "Mr Emeka Chukwu",
       studentCount: 24,
     },
-    { name: "Grade 7 Mathematics", teacher: "Ms Ify Nzelu", studentCount: 30 },
+    {
+      name: "Grade 7 Integers & Arithmetic",
+      teacher: "Ms Ify Nzelu",
+      studentCount: 30,
+    },
   ],
 
   roleDist: [
@@ -1115,20 +1352,17 @@ const MOCK = {
 };
 
 // ══════════════════════════════════════════════════════
-//  MODAL STUBS  (expand to full implementations)
+//  MODAL STUBS
 // ══════════════════════════════════════════════════════
 function showAssignmentModal() {
-  // TODO: wire to your assignment creation UI / Firestore write
-  alert("Assignment creator — implement your modal here.");
+  alert("Math assignment creator — implement your modal here.");
 }
 
 function showClassModal() {
-  // TODO: wire to your class creation UI / Firestore write
-  alert("Class creator — implement your modal here.");
+  alert("Math class creator — implement your modal here.");
 }
 
 function showLinkChildModal() {
-  // TODO: let parents enter a student code or email
   alert("Link child — enter a student account code or email.");
 }
 
@@ -1167,7 +1401,6 @@ function handleUser(user) {
     return;
   }
 
-  // Optimistic header render while Firestore loads
   updateHeader(user, {});
   buildToolbar("student", false);
 
