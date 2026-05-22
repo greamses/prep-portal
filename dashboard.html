@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prep Portal 2026 | User Dashboard</title>
+    <title>Prep Portal 2026 | Dashboard</title>
 
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.json" />
@@ -29,17 +29,25 @@
 
     <nav class="site-nav" data-nav="main"></nav>
 
-    <main class="user-dashboard" id="dashboard" aria-labelledby="dashboard-title">
-      <section class="dashboard-shell">
+    <main
+      class="user-dashboard"
+      id="dashboard"
+      aria-labelledby="dashboard-title"
+    >
+      <div class="dashboard-shell">
+        <!-- ── Header ── -->
         <div class="dashboard-header">
           <div>
-            <p class="dashboard-kicker">My Workspace</p>
-            <h1 id="dashboard-title">Welcome back, <span data-dashboard-name>student</span>.</h1>
+            <p class="dashboard-kicker" id="dashboard-role-kicker">
+              My Workspace
+            </p>
+            <h1 id="dashboard-title">
+              Welcome back, <span data-dashboard-name>there</span>.
+            </h1>
             <p class="dashboard-subtitle" data-dashboard-subtitle>
-              Pick up your next practice set, review weak areas, and keep your streak moving.
+              Loading your workspace...
             </p>
           </div>
-
           <div class="dashboard-account">
             <div class="dashboard-avatar" data-dashboard-avatar>U</div>
             <div>
@@ -49,133 +57,20 @@
           </div>
         </div>
 
-        <div class="dashboard-toolbar" aria-label="Dashboard account actions">
-          <button class="dashboard-command dashboard-subscribe" type="button" data-dashboard-upgrade>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m12 2 3 7 7 .6-5.3 4.6 1.6 6.8L12 17.4 5.7 21l1.6-6.8L2 9.6 9 9z"></path>
-            </svg>
-            <span>Subscribe</span>
-          </button>
-          <button class="dashboard-command dashboard-logout" type="button" data-dashboard-logout>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <path d="M16 17l5-5-5-5"></path>
-              <path d="M21 12H9"></path>
-            </svg>
-            <span>Logout</span>
-          </button>
+        <!-- ── Toolbar (injected by JS per role) ── -->
+        <div
+          class="dashboard-toolbar"
+          id="dashboard-toolbar"
+          aria-label="Dashboard actions"
+        ></div>
+
+        <!-- ── Role panels (injected by JS) ── -->
+        <div class="dashboard-layout" id="dashboard-layout" data-role="loading">
+          <div class="db-placeholder">
+            <div class="db-spinner"></div>
+          </div>
         </div>
-
-        <div class="dashboard-layout">
-          <section class="dashboard-panel dashboard-progress" aria-label="Study progress">
-            <div class="dashboard-panel-head">
-              <div>
-                <p class="dashboard-kicker">Current Focus</p>
-                <h2 data-dashboard-focus>Mathematics Practice</h2>
-              </div>
-              <span class="dashboard-pill" data-dashboard-streak>3 day streak</span>
-            </div>
-
-            <div class="dashboard-ring" style="--progress: 72">
-              <div>
-                <strong data-dashboard-progress>72%</strong>
-                <span>weekly goal</span>
-              </div>
-            </div>
-
-            <div class="dashboard-meter">
-              <div class="dashboard-meter-top">
-                <span>Question accuracy</span>
-                <strong data-dashboard-accuracy>84%</strong>
-              </div>
-              <div class="dashboard-meter-track">
-                <span data-dashboard-accuracy-bar></span>
-              </div>
-            </div>
-          </section>
-
-          <section class="dashboard-panel dashboard-today" aria-label="Today's tasks">
-            <div class="dashboard-panel-head">
-              <div>
-                <p class="dashboard-kicker">Today</p>
-                <h2>Study Plan</h2>
-              </div>
-              <a href="/exam-archive/national/exams/index.html" class="dashboard-icon-link" aria-label="Open exam archive">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12h14"></path>
-                  <path d="m12 5 7 7-7 7"></path>
-                </svg>
-              </a>
-            </div>
-
-            <ul class="dashboard-task-list">
-              <li>
-                <span class="dashboard-task-icon task-blue">1</span>
-                <div>
-                  <strong>Complete 20 past-paper questions</strong>
-                  <small>National exams archive</small>
-                </div>
-              </li>
-              <li>
-                <span class="dashboard-task-icon task-green">2</span>
-                <div>
-                  <strong>Revise one weak topic</strong>
-                  <small>Use PrepBot after marking</small>
-                </div>
-              </li>
-              <li>
-                <span class="dashboard-task-icon task-yellow">3</span>
-                <div>
-                  <strong>Play one skills activity</strong>
-                  <small>Fractions, angles, or surface area</small>
-                </div>
-              </li>
-            </ul>
-          </section>
-
-          <section class="dashboard-panel dashboard-actions" aria-label="Quick actions">
-            <div class="dashboard-panel-head">
-              <div>
-                <p class="dashboard-kicker">Quick Start</p>
-                <h2>Jump In</h2>
-              </div>
-            </div>
-
-            <div class="dashboard-action-grid">
-              <a href="/exam-archive/national/exams/index.html" class="dashboard-action action-yellow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <path d="M14 2v6h6"></path>
-                  <path d="M9 15h6"></path>
-                </svg>
-                <span>Past Papers</span>
-              </a>
-              <a href="/prep-math/activity/equivalent-fractions/index.html" class="dashboard-action action-blue">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 7h16"></path>
-                  <path d="M4 17h16"></path>
-                  <path d="M8 3v18"></path>
-                  <path d="M16 3v18"></path>
-                </svg>
-                <span>Activities</span>
-              </a>
-              <a href="/writing/index.html" class="dashboard-action action-green">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                </svg>
-                <span>Writing</span>
-              </a>
-              <button class="dashboard-action action-red" type="button" data-dashboard-upgrade>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m12 2 3 7 7 .6-5.3 4.6 1.6 6.8L12 17.4 5.7 21l1.6-6.8L2 9.6 9 9z"></path>
-                </svg>
-                <span>Subscribe</span>
-              </button>
-            </div>
-          </section>
-        </div>
-      </section>
+      </div>
     </main>
 
     <div class="log-in"></div>

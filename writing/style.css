@@ -1,28 +1,9 @@
 /* ── FONTS ── */
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Caveat:wght@600;700&family=DM+Serif+Display&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Caveat:wght@600;700&family=DM+Serif+Display&display=swap");
 
 /* ════════════════════════════════════════════════════
    TOKENS
 ════════════════════════════════════════════════════ */
-:root {
-  --bg: #ffffff;
-  --app-bg: #f0ece3;
-  --ink: #0a0a0a;
-  --yellow: #ffe500;
-  --blue: #0055ff;
-  --red: #ff2200;
-  --green: #00a550;
-  --amber: #e67e00;
-  --muted: #666;
-  --off: #f7f4ee;
-  --paper: #fffef8;
-  --ruled: #e8e3d8;
-  --border: 2.5px solid #0a0a0a;
-  --shadow-sm: 4px 4px 0 #0a0a0a;
-  --shadow-md: 6px 6px 0 #0a0a0a;
-  --shadow-lg: 10px 10px 0 #0a0a0a;
-  --shadow-xl: 14px 14px 0 #0a0a0a;
-}
 
 /* ════════════════════════════════════════════════════
    RESET
@@ -49,13 +30,25 @@ body {
    BODY
 ════════════════════════════════════════════════════ */
 body {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 14px;
   background: var(--app-bg);
   background-image:
-    radial-gradient(circle at 5% 90%, rgba(255, 229, 0, .18) 0%, transparent 38%),
-    radial-gradient(circle at 95% 5%, rgba(0, 85, 255, .1) 0%, transparent 38%),
-    radial-gradient(circle at 50% 50%, rgba(255, 34, 0, .04) 0%, transparent 60%);
+    radial-gradient(
+      circle at 5% 90%,
+      rgba(255, 229, 0, 0.18) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 95% 5%,
+      rgba(0, 85, 255, 0.1) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 34, 0, 0.04) 0%,
+      transparent 60%
+    );
   min-height: 100vh;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -71,7 +64,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
-  
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -82,7 +75,7 @@ body {
   from {
     opacity: 0;
   }
-  
+
   to {
     opacity: 1;
   }
@@ -93,7 +86,7 @@ body {
     opacity: 0;
     transform: translateX(-16px);
   }
-  
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -102,14 +95,14 @@ body {
 
 @keyframes popIn {
   0% {
-    transform: scale(.85);
+    transform: scale(0.85);
     opacity: 0;
   }
-  
+
   65% {
     transform: scale(1.06);
   }
-  
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -121,10 +114,10 @@ body {
     transform: rotate(-4deg) scale(3.5);
     opacity: 0;
   }
-  
+
   to {
     transform: rotate(-4deg) scale(1);
-    opacity: .92;
+    opacity: 0.92;
   }
 }
 
@@ -132,11 +125,11 @@ body {
   0% {
     transform: scale(1);
   }
-  
+
   50% {
     transform: scale(1.4);
   }
-  
+
   100% {
     transform: scale(1);
   }
@@ -147,7 +140,7 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
-  
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -155,12 +148,11 @@ body {
 }
 
 @keyframes inkBounce {
-
   0%,
   100% {
     transform: translateY(0) scale(1);
   }
-  
+
   40% {
     transform: translateY(-22px) scale(1.2);
   }
@@ -168,19 +160,19 @@ body {
 
 @keyframes ellipsis {
   0% {
-    content: '';
+    content: "";
   }
-  
+
   25% {
-    content: '.';
+    content: ".";
   }
-  
+
   50% {
-    content: '..';
+    content: "..";
   }
-  
+
   75% {
-    content: '...';
+    content: "...";
   }
 }
 
@@ -195,7 +187,7 @@ body {
     opacity: 0;
     transform: translateX(-14px);
   }
-  
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -203,25 +195,24 @@ body {
 }
 
 @keyframes titlePip {
-
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
-  
+
   50% {
-    opacity: .45;
-    transform: scale(.75);
+    opacity: 0.45;
+    transform: scale(0.75);
   }
 }
 
 @keyframes modalIn {
   from {
     opacity: 0;
-    transform: scale(.94) translateY(12px);
+    transform: scale(0.94) translateY(12px);
   }
-  
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -233,7 +224,7 @@ body {
     opacity: 0;
     transform: translateY(32px);
   }
-  
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -253,13 +244,13 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   position: relative;
-  animation: appRise .55s cubic-bezier(.16, 1, .3, 1) both;
+  animation: appRise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
   box-shadow: var(--shadow-xl);
 }
 
 /* Thick yellow top accent bar */
 .app::before {
-  content: '';
+  content: "";
   display: block;
   height: 6px;
   background: var(--yellow);
@@ -280,11 +271,11 @@ body {
 }
 
 .title {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: clamp(13px, 2vw, 17px);
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   color: var(--bg);
   display: flex;
   align-items: center;
@@ -296,7 +287,7 @@ body {
 
 /* Yellow underline accent on title text */
 .title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: clamp(20px, 4vw, 40px);
@@ -313,7 +304,7 @@ body {
 }
 
 /* Header right slot — for any header actions */
-.header>*:last-child:not(.title) {
+.header > *:last-child:not(.title) {
   display: flex;
   align-items: center;
   padding: 0 clamp(16px, 3vw, 32px);
@@ -355,11 +346,11 @@ body {
 ════════════════════════════════════════════════════ */
 .sec-label,
 .type-row-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .22em;
+  letter-spacing: 0.22em;
   color: var(--muted);
   margin-bottom: 14px;
   display: flex;
@@ -369,7 +360,7 @@ body {
 
 .sec-label::before,
 .type-row-label::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 24px;
   height: 2.5px;
@@ -383,7 +374,7 @@ body {
 .type-row,
 .type-section {
   margin-bottom: 28px;
-  animation: fadeUp .5s cubic-bezier(.16, 1, .3, 1) .1s both;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .chip-row,
@@ -401,17 +392,20 @@ body {
   justify-content: center;
   gap: 7px;
   padding: 11px 20px;
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   border: 2.5px solid var(--ink);
   background: var(--bg);
   color: var(--ink);
   cursor: pointer;
   overflow: hidden;
-  transition: color .15s, transform .08s, box-shadow .08s;
+  transition:
+    color 0.15s,
+    transform 0.08s,
+    box-shadow 0.08s;
   box-shadow: 4px 4px 0 var(--ink);
   z-index: 0;
   -webkit-tap-highlight-color: transparent;
@@ -425,12 +419,12 @@ body {
 /* Flood-fill from bottom on hover */
 .chip::after,
 .type-btn::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: var(--ink);
   transform: translateY(102%);
-  transition: transform .22s cubic-bezier(.16, 1, .3, 1);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
 }
 
@@ -476,7 +470,7 @@ body {
 
 .chip:disabled,
 .type-btn:disabled {
-  opacity: .35;
+  opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -496,9 +490,11 @@ body {
   padding: 0;
   margin-bottom: 40px;
   box-shadow: var(--shadow-lg);
-  animation: fadeUp .5s cubic-bezier(.16, 1, .3, 1) .2s both;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
   overflow: hidden;
-  transition: box-shadow .2s, transform .2s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .topic-box:hover {
@@ -518,11 +514,11 @@ body {
 }
 
 .topic-label {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   color: var(--ink);
   display: flex;
   align-items: center;
@@ -534,14 +530,14 @@ body {
 }
 
 #topic-type-badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 9px;
   font-weight: 600;
   background: var(--ink);
   color: var(--yellow);
   padding: 3px 10px;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
 }
 
 .topic-refresh {
@@ -556,7 +552,9 @@ body {
   font-size: 13px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .15s, transform .1s;
+  transition:
+    background 0.15s,
+    transform 0.1s;
 }
 
 .topic-refresh:hover {
@@ -565,7 +563,7 @@ body {
 }
 
 .topic-refresh:disabled {
-  opacity: .35;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -579,12 +577,12 @@ body {
 }
 
 .topic-text {
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-weight: 700;
   font-size: clamp(18px, 3.5vw, 24px);
   line-height: 1.5;
   color: var(--ink);
-  animation: topicIn .35s cubic-bezier(.16, 1, .3, 1);
+  animation: topicIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Loading spinner inside topic */
@@ -592,7 +590,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: var(--muted);
   font-style: italic;
@@ -604,16 +602,16 @@ body {
   border: 2.5px solid #ddd;
   border-top-color: var(--ink);
   border-radius: 50%;
-  animation: spin .6s linear infinite;
+  animation: spin 0.6s linear infinite;
   flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════════════════
    EDITOR HEADING — big display label
 ════════════════════════════════════════════════════ */
-#editor-section>.sec-label {
+#editor-section > .sec-label {
   font-size: 10px;
-  letter-spacing: .24em;
+  letter-spacing: 0.24em;
   margin-bottom: 20px;
 }
 
@@ -627,7 +625,7 @@ textarea {
   padding: 28px 32px 56px;
   border: var(--border);
   /* THE KEY: handwriting font so it feels like actual writing */
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: clamp(18px, 2.8vw, 22px);
   font-weight: 600;
   line-height: 2.2;
@@ -636,19 +634,30 @@ textarea {
   background: var(--paper);
   color: var(--ink);
   box-shadow: var(--shadow-lg);
-  transition: border-color .15s, box-shadow .15s, transform .15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
   /* Ruled lines synced to the 2.2 line-height */
   background-image:
-    linear-gradient(to right, transparent 60px, rgba(255, 34, 0, .15) 60px, rgba(255, 34, 0, .15) 62px, transparent 62px),
-    repeating-linear-gradient(transparent,
+    linear-gradient(
+      to right,
+      transparent 60px,
+      rgba(255, 34, 0, 0.15) 60px,
+      rgba(255, 34, 0, 0.15) 62px,
+      transparent 62px
+    ),
+    repeating-linear-gradient(
+      transparent,
       transparent calc(2.2em - 1px),
       var(--ruled) calc(2.2em - 1px),
-      var(--ruled) calc(2.2em));
+      var(--ruled) calc(2.2em)
+    );
   background-attachment: local;
 }
 
 textarea::placeholder {
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-style: italic;
   font-weight: 600;
   color: #c8c0b0;
@@ -656,7 +665,9 @@ textarea::placeholder {
 
 textarea:focus {
   border-color: var(--blue);
-  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(0, 85, 255, .12);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 3px rgba(0, 85, 255, 0.12);
   transform: translate(-1px, -1px);
 }
 
@@ -664,7 +675,7 @@ textarea:focus {
    WORD COUNT
 ════════════════════════════════════════════════════ */
 .word-count {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: clamp(28px, 5vw, 40px);
   color: var(--ink);
@@ -672,13 +683,13 @@ textarea:focus {
   align-items: baseline;
   gap: 6px;
   line-height: 1;
-  transition: color .3s;
+  transition: color 0.3s;
 }
 
 .word-count .wc-label {
   font-size: clamp(10px, 1.5vw, 13px);
   font-weight: 600;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   color: var(--muted);
   text-transform: uppercase;
 }
@@ -689,11 +700,13 @@ textarea:focus {
 
 #word-count {
   display: inline-block;
-  transition: color .3s, transform .15s;
+  transition:
+    color 0.3s,
+    transform 0.15s;
 }
 
 #word-count.pop {
-  animation: countPop .22s cubic-bezier(.16, 1, .3, 1);
+  animation: countPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ════════════════════════════════════════════════════
@@ -715,11 +728,11 @@ textarea:focus {
 ════════════════════════════════════════════════════ */
 .btn {
   padding: 14px 28px;
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   cursor: pointer;
   border: 2.5px solid var(--ink);
   display: inline-flex;
@@ -727,7 +740,10 @@ textarea:focus {
   gap: 9px;
   white-space: nowrap;
   box-shadow: var(--shadow-sm);
-  transition: transform .08s, box-shadow .08s, background .1s;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s,
+    background 0.1s;
   position: relative;
   overflow: hidden;
 }
@@ -737,12 +753,12 @@ textarea:focus {
 }
 
 .btn::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, .06);
+  background: rgba(0, 0, 0, 0.06);
   transform: translateX(-102%);
-  transition: transform .22s cubic-bezier(.16, 1, .3, 1);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn:hover {
@@ -760,7 +776,7 @@ textarea:focus {
 }
 
 .btn:disabled {
-  opacity: .35;
+  opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -775,13 +791,13 @@ textarea:focus {
 }
 
 .btn-primary::before {
-  background: rgba(0, 0, 0, .08);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .btn-outline {
   background: var(--ink);
   color: var(--bg);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
 }
 
 .btn-outline:hover {
@@ -795,7 +811,7 @@ textarea:focus {
 .loading-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(10, 10, 10, .97);
+  background: rgba(10, 10, 10, 0.97);
   display: none;
   flex-direction: column;
   align-items: center;
@@ -820,7 +836,7 @@ textarea:focus {
 
 .spinner::before,
 .spinner::after {
-  content: '';
+  content: "";
   display: block;
   width: 16px;
   height: 16px;
@@ -835,35 +851,35 @@ textarea:focus {
 
 .spinner::after {
   background: var(--red);
-  animation-delay: .22s;
+  animation-delay: 0.22s;
 }
 
-.spinner>* {
+.spinner > * {
   display: none;
 }
 
 .loading-text {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: clamp(22px, 5vw, 40px);
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   color: var(--bg);
   text-align: center;
 }
 
 .loading-text::after {
-  content: '';
+  content: "";
   animation: ellipsis 1.6s steps(4, end) infinite;
   color: var(--yellow);
 }
 
-.loading-overlay>p {
-  font-family: 'JetBrains Mono', monospace;
+.loading-overlay > p {
+  font-family: "JetBrains Mono", monospace;
   font-size: 11px;
-  letter-spacing: .16em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .35);
+  color: rgba(255, 255, 255, 0.35);
   margin-top: 16px;
 }
 
@@ -873,7 +889,7 @@ textarea:focus {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 10, .88);
+  background: rgba(10, 10, 10, 0.88);
   display: none;
   justify-content: center;
   align-items: center;
@@ -884,7 +900,7 @@ textarea:focus {
 
 .modal-overlay.active {
   display: flex;
-  animation: modalIn .3s cubic-bezier(.16, 1, .3, 1);
+  animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-content {
@@ -899,12 +915,13 @@ textarea:focus {
 
 /* Yellow top bar on modal */
 .modal-content::before {
-  content: '';
+  content: "";
   display: block;
   height: 5px;
   background: var(--yellow);
   border-bottom: var(--border);
-  margin: calc(-1 * clamp(24px, 5vw, 40px)) calc(-1 * clamp(24px, 5vw, 40px)) clamp(20px, 4vw, 32px);
+  margin: calc(-1 * clamp(24px, 5vw, 40px)) calc(-1 * clamp(24px, 5vw, 40px))
+    clamp(20px, 4vw, 32px);
 }
 
 .modal-close {
@@ -922,7 +939,7 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .15s;
+  transition: background 0.15s;
 }
 
 .modal-close:hover {
@@ -951,11 +968,11 @@ textarea:focus {
 
 .results-section.active {
   display: block;
-  animation: fadeUp .4s cubic-bezier(.16, 1, .3, 1);
+  animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ── Results header strip ── */
-#results-section>.sec-label {
+#results-section > .sec-label {
   padding-bottom: 16px;
   border-bottom: var(--border);
   margin-bottom: 28px;
@@ -971,11 +988,11 @@ details.rubric-wrap {
 }
 
 details.rubric-wrap summary {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   padding: 16px 22px;
   cursor: pointer;
   background: var(--ink);
@@ -985,7 +1002,7 @@ details.rubric-wrap summary {
   gap: 12px;
   list-style: none;
   user-select: none;
-  transition: background .15s;
+  transition: background 0.15s;
 }
 
 details.rubric-wrap summary:hover {
@@ -1002,13 +1019,13 @@ details.rubric-wrap summary i {
 }
 
 details.rubric-wrap summary::before {
-  content: '\f054';
-  font-family: 'Font Awesome 6 Free';
+  content: "\f054";
+  font-family: "Font Awesome 6 Free";
   font-weight: 900;
   font-size: 9px;
-  color: rgba(255, 255, 255, .45);
+  color: rgba(255, 255, 255, 0.45);
   margin-left: auto;
-  transition: transform .22s;
+  transition: transform 0.22s;
   order: 99;
 }
 
@@ -1027,7 +1044,7 @@ details.rubric-wrap[open] summary::before {
   gap: 4px 18px;
   padding: 16px 22px 18px;
   border-bottom: 1.5px solid #f0f0f0;
-  animation: slideIn .4s cubic-bezier(.16, 1, .3, 1) both;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .rubric-row:last-child {
@@ -1035,29 +1052,29 @@ details.rubric-wrap[open] summary::before {
 }
 
 .rubric-row:nth-child(1) {
-  animation-delay: .05s;
+  animation-delay: 0.05s;
 }
 
 .rubric-row:nth-child(2) {
-  animation-delay: .10s;
+  animation-delay: 0.1s;
 }
 
 .rubric-row:nth-child(3) {
-  animation-delay: .15s;
+  animation-delay: 0.15s;
 }
 
 .rubric-row:nth-child(4) {
-  animation-delay: .20s;
+  animation-delay: 0.2s;
 }
 
 .rubric-cat {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 11px;
 }
 
 .rubric-score {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: 15px;
   white-space: nowrap;
@@ -1066,7 +1083,7 @@ details.rubric-wrap[open] summary::before {
 
 .rubric-fb {
   grid-column: 1 / -1;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: var(--muted);
   line-height: 1.7;
@@ -1084,7 +1101,7 @@ details.rubric-wrap[open] summary::before {
 .rubric-bar-fill {
   height: 100%;
   width: 0;
-  transition: width 1.1s cubic-bezier(.16, 1, .3, 1);
+  transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ── Legend ── */
@@ -1102,23 +1119,23 @@ details.rubric-wrap[open] summary::before {
 }
 
 .legend-title {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   color: var(--yellow);
   width: 100%;
   margin-bottom: 6px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: rgba(255, 255, 255, .72);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 /* ════════════════════════════════════════════════════
@@ -1133,16 +1150,18 @@ details.rubric-wrap[open] summary::before {
 }
 
 .annotated-paper {
-  font-family: 'DM Serif Display', serif;
+  font-family: "DM Serif Display", serif;
   font-size: clamp(15px, 3vw, 18px);
   line-height: 3.4;
   padding: 3em clamp(28px, 7vw, 72px) clamp(32px, 5vw, 56px);
   border: none;
   background: var(--paper);
-  background-image: repeating-linear-gradient(transparent,
-      transparent calc(3.4em - 1px),
-      var(--ruled) calc(3.4em - 1px),
-      var(--ruled) calc(3.4em));
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(3.4em - 1px),
+    var(--ruled) calc(3.4em - 1px),
+    var(--ruled) calc(3.4em)
+  );
   background-size: 100% 3.4em;
   position: relative;
   overflow-wrap: break-word;
@@ -1152,13 +1171,13 @@ details.rubric-wrap[open] summary::before {
 
 /* Red margin line */
 .annotated-paper::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 56px;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 34, 0, .25);
+  background: rgba(255, 34, 0, 0.25);
   pointer-events: none;
 }
 
@@ -1169,18 +1188,18 @@ details.rubric-wrap[open] summary::before {
   position: absolute;
   top: clamp(14px, 3vw, 28px);
   right: clamp(14px, 3vw, 28px);
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: clamp(24px, 5vw, 48px);
   padding: clamp(10px, 2vw, 16px) clamp(16px, 3.5vw, 32px);
-  border: clamp(4px, .8vw, 6px) solid var(--green);
+  border: clamp(4px, 0.8vw, 6px) solid var(--green);
   color: var(--green);
   transform: rotate(-4deg);
-  opacity: .92;
+  opacity: 0.92;
   pointer-events: none;
   z-index: 5;
-  animation: stampDrop .65s cubic-bezier(.34, 1.56, .64, 1) both;
-  letter-spacing: .04em;
+  animation: stampDrop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  letter-spacing: 0.04em;
 }
 
 .score-stamp.fail {
@@ -1215,14 +1234,14 @@ details.rubric-wrap[open] summary::before {
 }
 
 .pop-title {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .12em;
-  color: rgba(255, 255, 255, .4);
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.4);
   padding-bottom: 7px;
-  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 2px;
   display: flex;
   align-items: center;
@@ -1230,16 +1249,18 @@ details.rubric-wrap[open] summary::before {
 }
 
 .pop-opt {
-  background: rgba(255, 255, 255, .06);
-  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 9px 12px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: var(--bg);
   cursor: pointer;
   text-align: left;
   line-height: 1.5;
-  transition: background .1s, color .1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .pop-opt:hover {
@@ -1262,7 +1283,7 @@ details.rubric-wrap[open] summary::before {
   bottom: calc(100% + 6px);
   right: -6px;
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 16px;
   font-weight: 700;
   transform: rotate(-8deg);
@@ -1272,11 +1293,11 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-del {
-  color: rgba(0, 0, 0, .4);
+  color: rgba(0, 0, 0, 0.4);
 }
 
 .doodle-del::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -2px;
   right: -2px;
@@ -1288,13 +1309,13 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-del::after {
-  content: 'ℓ';
+  content: "ℓ";
   position: absolute;
   right: -14px;
   top: 50%;
   transform: translateY(-55%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 1.3em;
   font-style: italic;
   pointer-events: none;
@@ -1314,7 +1335,7 @@ details.rubric-wrap[open] summary::before {
   left: 50%;
   transform: translateX(-50%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 1.05em;
   font-weight: 700;
   white-space: pre-wrap;
@@ -1326,22 +1347,24 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-ins::after {
-  content: '∧';
+  content: "∧";
   position: absolute;
   top: 100%;
   margin-top: -4px;
   left: 50%;
   transform: translateX(-50%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
-  font-size: .95em;
-  line-height: .8;
+  font-family: "Caveat", cursive;
+  font-size: 0.95em;
+  line-height: 0.8;
   pointer-events: none;
 }
 
 .doodle-cap {
   border-bottom: 2px solid var(--red);
-  box-shadow: 0 4px 0 var(--red), 0 7px 0 var(--red);
+  box-shadow:
+    0 4px 0 var(--red),
+    0 7px 0 var(--red);
   padding-bottom: 2px;
 }
 
@@ -1350,12 +1373,12 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-lc::before {
-  content: '/';
+  content: "/";
   position: absolute;
   left: -1px;
-  top: -.15em;
+  top: -0.15em;
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 1.5em;
   font-weight: 700;
   line-height: 1;
@@ -1363,11 +1386,11 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-trans {
-  color: rgba(0, 0, 0, .75);
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .doodle-trans::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   right: 0;
@@ -1384,11 +1407,11 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-para::before {
-  content: '¶';
+  content: "¶";
   color: var(--red);
   font-size: 1.1em;
   margin: 0 6px 0 14px;
-  font-family: 'Times New Roman', serif;
+  font-family: "Times New Roman", serif;
   vertical-align: baseline;
 }
 
@@ -1405,14 +1428,14 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-sp::before {
-  content: 'sp';
+  content: "sp";
   position: absolute;
   bottom: calc(100% + 3px);
   left: 50%;
   transform: translateX(-50%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
-  font-size: .85em;
+  font-family: "Caveat", cursive;
+  font-size: 0.85em;
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
@@ -1420,17 +1443,17 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-run {
-  color: rgba(0, 0, 0, .8);
+  color: rgba(0, 0, 0, 0.8);
 }
 
 .doodle-run::before {
-  content: 'run-on';
+  content: "run-on";
   position: absolute;
   bottom: calc(100% + 3px);
   right: -4px;
   color: var(--red);
-  font-family: 'Caveat', cursive;
-  font-size: .82em;
+  font-family: "Caveat", cursive;
+  font-size: 0.82em;
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
@@ -1438,9 +1461,9 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-run::after {
-  content: ' //';
+  content: " //";
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 1.1em;
   font-weight: 700;
   pointer-events: none;
@@ -1453,14 +1476,14 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-frag::before {
-  content: 'frag';
+  content: "frag";
   position: absolute;
   bottom: calc(100% + 3px);
   left: 50%;
   transform: translateX(-50%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
-  font-size: .85em;
+  font-family: "Caveat", cursive;
+  font-size: 0.85em;
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
@@ -1474,13 +1497,13 @@ details.rubric-wrap[open] summary::before {
 }
 
 .doodle-punct::before {
-  content: '?';
+  content: "?";
   position: absolute;
   bottom: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
   color: var(--red);
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 1em;
   font-weight: 700;
   pointer-events: none;
@@ -1495,11 +1518,11 @@ details.rubric-wrap[open] summary::before {
   font-weight: 600;
   cursor: pointer;
   border-radius: 2px;
-  transition: background .15s;
+  transition: background 0.15s;
 }
 
 .sub-word:hover {
-  background: rgba(0, 85, 255, .1);
+  background: rgba(0, 85, 255, 0.1);
 }
 
 /* ════════════════════════════════════════════════════
@@ -1523,7 +1546,7 @@ details.rubric-wrap[open] summary::before {
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: box-shadow .18s;
+  transition: box-shadow 0.18s;
 }
 
 .acc-panel:hover {
@@ -1536,16 +1559,16 @@ details.rubric-wrap[open] summary::before {
   color: var(--bg);
   border: none;
   padding: 14px 20px;
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background .15s;
+  transition: background 0.15s;
   gap: 12px;
 }
 
@@ -1559,7 +1582,7 @@ details.rubric-wrap[open] summary::before {
 }
 
 .acc-count {
-  opacity: .5;
+  opacity: 0.5;
   font-weight: 400;
 }
 
@@ -1567,7 +1590,7 @@ details.rubric-wrap[open] summary::before {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  transition: transform .22s cubic-bezier(.16, 1, .3, 1);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: visible;
 }
 
@@ -1585,16 +1608,16 @@ details.rubric-wrap[open] summary::before {
 
 .acc-body {
   padding: 18px 20px;
-  animation: fadeUp .2s cubic-bezier(.16, 1, .3, 1) both;
+  animation: fadeUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Topic accordion */
 .acc-topic-label {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   color: #aaa;
   margin: 0 0 8px 0;
 }
@@ -1614,7 +1637,7 @@ details.rubric-wrap[open] summary::before {
 }
 
 .acc-topic-text {
-  font-family: 'Caveat', cursive;
+  font-family: "Caveat", cursive;
   font-size: 17px;
   font-weight: 700;
   line-height: 1.55;
@@ -1640,7 +1663,7 @@ details.rubric-wrap[open] summary::before {
   gap: 14px;
   padding: 12px 0;
   border-bottom: 1.5px dashed #f0f0f0;
-  animation: slideLeft .4s cubic-bezier(.16, 1, .3, 1) both;
+  animation: slideLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .suggestion-item:last-child {
@@ -1657,7 +1680,7 @@ details.rubric-wrap[open] summary::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-size: 9px;
   font-weight: 700;
 }
@@ -1691,35 +1714,35 @@ details.rubric-wrap[open] summary::before {
 
 .study-tip-card {
   background: var(--ink);
-  border: 2px solid rgba(255, 255, 255, .08);
+  border: 2px solid rgba(255, 255, 255, 0.08);
   padding: 16px;
-  animation: fadeUp .5s cubic-bezier(.16, 1, .3, 1) both;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .study-tip-title {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-weight: 700;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   color: var(--yellow);
   margin-bottom: 7px;
 }
 
 .study-tip-text {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   line-height: 1.75;
-  color: rgba(255, 255, 255, .65);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* Color key accordion */
 .ck-section-title {
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   color: #999;
   margin: 0 0 9px 0;
 }
@@ -1741,7 +1764,7 @@ details.rubric-wrap[open] summary::before {
 }
 
 .ck-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 9.5px;
   font-weight: 700;
   min-width: 36px;
@@ -1755,7 +1778,7 @@ details.rubric-wrap[open] summary::before {
 }
 
 .ck-loss {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 9.5px;
   font-weight: 700;
 }
@@ -1779,7 +1802,7 @@ details.rubric-wrap[open] summary::before {
   width: 20px;
   height: 13px;
   border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, .1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
 }
 
@@ -1793,7 +1816,7 @@ details.rubric-wrap[open] summary::before {
   padding-top: 10px;
 }
 
-.ck-other>div {
+.ck-other > div {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1837,7 +1860,7 @@ details.rubric-wrap[open] summary::before {
 .rubric-bar-fill {
   height: 100%;
   width: 0;
-  transition: width 1.1s cubic-bezier(.16, 1, .3, 1);
+  transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ════════════════════════════════════════════════════
@@ -1857,27 +1880,30 @@ details.rubric-wrap[open] summary::before {
 }
 
 .para-nav-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: .16em;
-  color: rgba(255, 255, 255, .45);
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.45);
   margin-right: 10px;
   flex-shrink: 0;
 }
 
 .para-nav-btn {
-  border: 1.5px solid rgba(255, 255, 255, .3);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   background: transparent;
   color: var(--bg);
   padding: 6px 14px;
   font-size: 8px;
   font-weight: 700;
-  font-family: 'Unbounded', sans-serif;
+  font-family: "Unbounded", sans-serif;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: background .12s, color .12s, border-color .12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
   white-space: nowrap;
 }
 
@@ -1888,7 +1914,7 @@ details.rubric-wrap[open] summary::before {
 }
 
 .para-nav-btn:disabled {
-  opacity: .3;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -1910,16 +1936,16 @@ details.rubric-wrap[open] summary::before {
   .app {
     box-shadow: 8px 8px 0 var(--ink);
   }
-  
+
   textarea {
     font-size: clamp(16px, 5vw, 20px);
     padding: 20px 20px 40px;
   }
-  
+
   .word-count {
     font-size: clamp(24px, 7vw, 36px);
   }
-  
+
   .topic-section,
   .type-section,
   #editor-section,
@@ -1937,65 +1963,66 @@ details.rubric-wrap[open] summary::before {
     grid-template-columns: 1fr;
     min-height: 60px;
   }
-  
+
   .title {
     border-right: none;
     border-bottom: var(--border);
     padding: 16px 20px;
     font-size: 12px;
   }
-  
+
   .title::after {
     left: 20px;
   }
-  
+
   .type-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .topic-box {
     box-shadow: var(--shadow-md);
   }
-  
+
   .topic-text {
     font-size: clamp(16px, 5vw, 20px);
   }
-  
+
   textarea {
     min-height: 50vh;
     font-size: 18px;
-    background-image:
-      repeating-linear-gradient(transparent,
-        transparent calc(2.2em - 1px),
-        var(--ruled) calc(2.2em - 1px),
-        var(--ruled) calc(2.2em));
+    background-image: repeating-linear-gradient(
+      transparent,
+      transparent calc(2.2em - 1px),
+      var(--ruled) calc(2.2em - 1px),
+      var(--ruled) calc(2.2em)
+    );
   }
-  
+
   .footer-controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .footer-controls .btn {
     justify-content: center;
   }
-  
+
   .modal-content {
     padding: 20px;
   }
-  
+
   .modal-content::before {
     margin: -20px -20px 20px;
   }
-  
+
   .acc-header {
     padding: 12px 16px;
   }
-  
+
   .acc-body {
     padding: 14px 16px;
   }
-  
+
   .score-stamp {
     font-size: clamp(18px, 6vw, 30px);
   }
@@ -2004,18 +2031,11 @@ details.rubric-wrap[open] summary::before {
 /* =============================================
    PREP PORTAL CONSISTENCY OVERRIDES
    ============================================= */
-:root {
-  --border: 2.5px solid var(--ink);
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --shadow-md: 5px 5px 0 var(--ink);
-  --shadow-lg: 6px 6px 0 var(--ink);
-  --shadow-xl: 8px 8px 0 var(--ink);
-}
 
 body {
   background: var(--app-bg);
   background-image: none;
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
   padding-top: calc(var(--nav-height, 62px) + 28px);
 }
 
@@ -2086,7 +2106,9 @@ textarea {
 
 textarea:focus {
   transform: none;
-  box-shadow: var(--shadow-md), 0 0 0 3px rgba(0, 85, 255, .14);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 3px rgba(0, 85, 255, 0.14);
 }
 
 .footer-controls {
