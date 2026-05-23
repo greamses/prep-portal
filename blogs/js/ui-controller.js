@@ -1,6 +1,6 @@
 // ui-controller.js - 100% reusable across all subjects
-import { CONFIG } from './path-config.js';
-import { auth } from './config.js';
+import { CONFIG } from '/blogs/js/path-config.js'; // Changed to absolute path to resolve 404
+import { auth } from '/firebase-init.js'; // Standardized to use central init file
 
 import { onAuthStateChanged } from 'firebase/auth';
 import {
