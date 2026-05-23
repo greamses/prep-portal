@@ -25,7 +25,12 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Initialize the provider and configure it to always prompt for account selection
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
 console.log("Firebase initialized:", app.name);
 
