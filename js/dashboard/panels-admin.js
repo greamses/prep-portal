@@ -49,7 +49,7 @@ export function buildAdminPanels(user, data, layout) {
           <p class="db-kicker">User Management</p>
           <h2 class="db-panel-title">Recent Registrations</h2>
         </div>
-        <a href="/admin/users/index.html" class="db-icon-btn" title="View all users">${I.arrow}</a>
+        <a href="/js/dashboard/index.html" class="db-icon-btn" title="View all users">${I.arrow}</a>
       </div>
       <ul class="db-roster">
         ${signups

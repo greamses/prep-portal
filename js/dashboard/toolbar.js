@@ -41,7 +41,7 @@ export function buildToolbar(container, role, isPremium) {
       <a class="dashboard-command" href="/reports/index.html">${I.chart}<span>Full Report</span></a>`,
     admin: `
       <button class="dashboard-command cmd-blue" type="button" data-action="new-class">${I.plus}<span>New Class</span></button>
-      <a class="dashboard-command" href="/admin/users/index.html">${I.users}<span>Manage Users</span></a>
+      <a class="dashboard-command" href="/js/dashboard/index.html">${I.users}<span>Manage Users</span></a>
       <a class="dashboard-command" href="/admin/settings/index.html">${I.settings}<span>Settings</span></a>`,
   };
 
