@@ -13,10 +13,15 @@ import {
   doc,
   setDoc,
   getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { auth, googleProvider, db } from "../../firebase-init.js";
 
 const DASHBOARD_PATH = "/dashboard.html";
+const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 function goToDashboard() {
   window.location.href = DASHBOARD_PATH;
@@ -414,8 +419,8 @@ function initializeAuthModal(authContainer) {
       const email = e.target.querySelector('input[type="email"]').value;
       const password = e.target.querySelector('input[type="password"]').value;
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // We don't overwrite role on login
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        await ensureUserDoc(result.user);
         closeModal();
         goToDashboard();
       } catch (err) {
@@ -472,8 +477,8 @@ function initializeAuthModal(authContainer) {
         const userData = {
           name: name,
           email: email,
-          role: selectedRole,
-          isPremium: false,
+          role: email === ADMIN_EMAIL ? "admin" : selectedRole,
+          isPremium: email === ADMIN_EMAIL,
           createdAt: new Date().toISOString(),
           ...extraData,
         };
@@ -491,17 +496,40 @@ function initializeAuthModal(authContainer) {
   // Helper to ensure a doc exists (useful for Google signups)
   async function ensureUserDoc(user) {
     const userRef = doc(db, "users", user.uid);
-    const snap = await getDoc(userRef);
+    let snap = await getDoc(userRef);
 
-    if (!snap.exists()) {
-      await setDoc(userRef, {
-        name: user.displayName || "New User",
-        email: user.email,
-        role: "student", // Default for Google Signups unless you add role selection there too
-        isPremium: false,
-        createdAt: new Date().toISOString(),
-      });
+    if (snap.exists()) {
+      // Ensure designated admin email is always promoted if currently a student/teacher
+      if (user.email === ADMIN_EMAIL && snap.data().role !== "admin") {
+        await setDoc(
+          userRef,
+          { role: "admin", isPremium: true },
+          { merge: true },
+        );
+      }
+      return;
     }
+
+    // If UID doesn't exist, check if a document with this email already exists
+    // (Handles cases where a user switches login methods but accounts weren't linked in Auth)
+    const q = query(collection(db, "users"), where("email", "==", user.email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // Move existing data to the new UID to keep it consistent
+      const existingData = querySnapshot.docs[0].data();
+      await setDoc(userRef, existingData, { merge: true });
+      return;
+    }
+
+    // Truly new user
+    await setDoc(userRef, {
+      name: user.displayName || "New User",
+      email: user.email,
+      role: user.email === ADMIN_EMAIL ? "admin" : "student",
+      isPremium: user.email === ADMIN_EMAIL,
+      createdAt: new Date().toISOString(),
+    });
   }
 }
 
