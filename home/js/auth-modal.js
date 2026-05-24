@@ -18,9 +18,9 @@ import {
   where,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import { renderStudentFields } from "../../js/auth/StudentForm.js";
-import { renderParentFields } from "../../js/auth/ParentForm.js";
-import { renderTeacherFields } from "../../js/auth/TeacherForm.js";
+import { renderStudentFields } from "/home/js/auth/StudentForm.js";
+import { renderParentFields } from "/home/js/auth/ParentForm.js";
+import { renderTeacherFields } from "/home/js/auth/TeacherForm.js";
 import { auth, googleProvider, db } from "../../firebase-init.js";
 
 const DASHBOARD_PATH = "/dashboard.html";
