@@ -6,6 +6,7 @@ import {
   collection,
   query,
   where,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 import { setText, firstName, initial } from "./utils.js";
@@ -74,7 +75,23 @@ function handleUser(user) {
     doc(db, "users", user.uid),
     (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      const role = data.role || "student";
+
+      // If role is missing, assign 'student' by default and persist to Firestore
+      if (!data.role) {
+        setDoc(
+          doc(db, "users", user.uid),
+          {
+            role: "student",
+            email: user.email,
+            name: user.displayName || user.email.split("@")[0],
+            createdAt: data.createdAt || new Date().toISOString(),
+          },
+          { merge: true },
+        );
+        return;
+      }
+
+      const role = data.role;
 
       updateHeader(user, data);
       buildToolbar(toolbar, role, Boolean(data.isPremium));
