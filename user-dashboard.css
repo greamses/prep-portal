@@ -24,7 +24,7 @@
   justify-content: space-between;
   gap: 2rem;
   margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border);
   padding-bottom: 1.25rem;
 }
 
@@ -32,18 +32,18 @@
   margin: 0 0 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-weight: var(--weight-black);
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--blue);
+  color: var(--accent-secondary);
 }
 
 .dashboard-header h1 {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(2rem, 4.5vw, 3rem);
-  line-height: 1;
-  letter-spacing: -0.01em;
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-normal);
   color: var(--ink);
 }
 
@@ -53,7 +53,7 @@
   font-family: var(--font-mono);
   font-size: clamp(0.85rem, 1.4vw, 0.95rem);
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 /* ── Minimal Account Badge ── */
@@ -62,10 +62,10 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.85rem;
-  background: #fff;
-  border: 2px solid var(--ink);
+  background: var(--bg);
+  border: var(--border);
   border-radius: 8px;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-avatar {
@@ -73,19 +73,19 @@
   height: 38px;
   display: grid;
   place-items: center;
-  background: var(--yellow);
+  background: var(--accent-primary);
   border-radius: 6px;
   font-family: var(--font-display);
   font-size: 1.1rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .dashboard-account span {
   display: block;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  font-weight: 900;
-  color: var(--muted);
+  font-weight: var(--weight-black);
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -112,19 +112,19 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0 1rem;
-  background: #fff;
-  border: 2px solid var(--ink);
+  background: var(--bg);
+  border: var(--border);
   border-radius: 8px;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--ink);
   text-decoration: none;
   cursor: pointer;
   transition:
-    transform 0.1s ease,
-    box-shadow 0.1s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
   white-space: nowrap;
 }
 
@@ -144,19 +144,19 @@
 }
 
 .cmd-yellow {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 .cmd-blue {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
 }
 .cmd-green {
-  background: var(--green);
-  color: #fff;
+  background: var(--accent-success);
+  color: var(--text-on-accent);
 }
 .cmd-red {
-  background: var(--red);
-  color: #fff;
+  background: var(--accent-danger);
+  color: var(--text-on-accent);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -176,15 +176,15 @@
    PANELS
 ══════════════════════════════════════════════════════ */
 .db-panel {
-  display: inline-block; /* Essential for CSS Columns masonry */
+  display: inline-block;
   width: 100%;
   break-inside: avoid;
   margin-bottom: 1.5rem;
-  background: #fff;
-  border: 2px solid var(--ink);
-  border-radius: 12px;
+  background: var(--bg);
+  border: var(--border);
+  border-radius: var(--radius-sm);
   padding: 1.25rem;
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
 }
 
@@ -200,11 +200,10 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.1rem, 1.8vw, 1.35rem);
-  line-height: 1.1;
+  line-height: var(--leading-tight);
   color: var(--ink);
 }
 
-/* Span helpers fallback for items that prefer full-screen widths (like headers/tabs) */
 .span-full {
   column-span: all;
   width: 100%;
@@ -223,29 +222,29 @@
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   white-space: nowrap;
   text-transform: uppercase;
 }
 
 .pill-yellow {
-  background: var(--yellow);
+  background: var(--accent-primary);
   color: var(--ink);
 }
 .pill-blue {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
 }
 .pill-green {
-  background: var(--green);
-  color: #fff;
+  background: var(--accent-success);
+  color: var(--text-on-accent);
 }
 .pill-red {
-  background: var(--red);
-  color: #fff;
+  background: var(--accent-danger);
+  color: var(--text-on-accent);
 }
 .pill-grey {
-  background: #f0f0f0;
+  background: var(--surface-secondary);
   color: var(--ink);
 }
 
@@ -257,16 +256,16 @@
   flex-shrink: 0;
 }
 .dot-green {
-  background: var(--green);
+  background: var(--accent-success);
 }
 .dot-yellow {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 .dot-red {
-  background: var(--red);
+  background: var(--accent-danger);
 }
 .dot-grey {
-  background: #bbb;
+  background: var(--text-tertiary);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -278,16 +277,16 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  background: var(--yellow);
-  border: 2px solid var(--ink);
+  background: var(--accent-primary);
+  border: var(--border);
   border-radius: 8px;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
-    transform 0.1s ease,
-    box-shadow 0.1s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .db-icon-btn:hover {
@@ -299,8 +298,8 @@
   height: 15px;
 }
 .db-icon-btn.ib-blue {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -312,10 +311,10 @@
   break-inside: avoid;
   margin-bottom: 1.5rem;
   padding: 1.25rem;
-  background: #fff;
-  border: 2px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 5px 5px 0 var(--ink);
+  background: var(--bg);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
 }
 
@@ -326,7 +325,7 @@
   place-items: center;
   border-radius: 6px;
   margin-bottom: 0.6rem;
-  background: #f0f0f0;
+  background: var(--surface-secondary);
 }
 
 .db-stat-icon svg {
@@ -337,16 +336,16 @@
 .db-stat-value {
   font-family: var(--font-display);
   font-size: clamp(1.8rem, 3.5vw, 2.4rem);
-  font-weight: 900;
-  line-height: 1;
+  font-weight: var(--weight-black);
+  line-height: var(--leading-none);
 }
 
 .db-stat-label {
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text-secondary);
   margin-top: 0.15rem;
 }
 
@@ -356,9 +355,9 @@
   gap: 0.25rem;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   margin-top: 0.4rem;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 .db-stat-trend svg {
@@ -376,10 +375,13 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 2px solid var(--ink);
+  border: var(--border);
   background:
-    radial-gradient(circle at center, #fff 0 54%, transparent 55%),
-    conic-gradient(var(--green) calc(var(--ring-progress, 0) * 1%), #eeeeee 0);
+    radial-gradient(circle at center, var(--bg) 0 54%, transparent 55%),
+    conic-gradient(
+      var(--accent-success) calc(var(--ring-progress, 0) * 1%),
+      var(--surface-secondary) 0
+    );
 }
 
 .db-ring-inner {
@@ -393,21 +395,21 @@
 .db-ring-value {
   font-family: var(--font-display);
   font-size: 1.4rem;
-  font-weight: 900;
-  line-height: 1;
+  font-weight: var(--weight-black);
+  line-height: var(--leading-none);
 }
 
 .db-ring-label {
   font-family: var(--font-mono);
   font-size: 0.6rem;
-  font-weight: 800;
-  color: var(--muted);
+  font-weight: var(--weight-black);
+  color: var(--text-secondary);
   text-align: center;
   margin-top: 0.25rem;
 }
 
 .db-meter {
-  background: #fcfcfc;
+  background: var(--surface-primary);
   border-radius: 8px;
   padding: 0.75rem;
   margin-top: 0.75rem;
@@ -419,13 +421,13 @@
   align-items: center;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   margin-bottom: 0.45rem;
 }
 
 .db-meter-track {
   height: 8px;
-  background: #eaeaea;
+  background: var(--surface-secondary);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -437,20 +439,20 @@
 }
 
 .fill-blue {
-  background: var(--blue);
+  background: var(--accent-secondary);
 }
 .fill-green {
-  background: var(--green);
+  background: var(--accent-success);
 }
 .fill-yellow {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 .fill-red {
-  background: var(--red);
+  background: var(--accent-danger);
 }
 
 /* ══════════════════════════════════════════════════════
-   CLEAN INNER LISTS (Borders Removed)
+   CLEAN INNER LISTS
 ══════════════════════════════════════════════════════ */
 .db-roster,
 .db-assign-list,
@@ -469,7 +471,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.6rem;
-  background: #fcfcfc;
+  background: var(--surface-primary);
   border-radius: 8px;
 }
 
@@ -481,26 +483,26 @@
   border-radius: 6px;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 900;
-  background: var(--yellow);
+  font-weight: var(--weight-black);
+  background: var(--accent-primary);
 }
 
 .db-roster-name {
   font-family: var(--font-display);
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .db-roster-sub {
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 /* Assignments */
 .db-assign-item {
   padding: 0.75rem;
-  background: #fcfcfc;
+  background: var(--surface-primary);
   border-radius: 8px;
 }
 
@@ -514,14 +516,14 @@
 .db-assign-title {
   font-family: var(--font-display);
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   line-height: 1.2;
 }
 
 .db-assign-meta {
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--muted);
+  color: var(--text-secondary);
   margin-top: 0.15rem;
 }
 
@@ -535,14 +537,14 @@
 .db-assign-track {
   flex: 1;
   height: 6px;
-  background: #eaeaea;
+  background: var(--surface-secondary);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .db-assign-fill {
   height: 100%;
-  background: var(--blue);
+  background: var(--accent-secondary);
   border-radius: 999px;
   transition: width 0.6s ease;
 }
@@ -550,11 +552,11 @@
 .db-assign-pct {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 /* ══════════════════════════════════════════════════════
-   COMPACT & FITTING CALENDAR (Borders Removed)
+   COMPACT & FITTING CALENDAR
 ══════════════════════════════════════════════════════ */
 .db-calendar-component {
   display: flex;
@@ -566,7 +568,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f7f7f7;
+  background: var(--surface-secondary);
   padding: 0.4rem 0.6rem;
   border-radius: 8px;
 }
@@ -575,7 +577,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .db-calendar-navs {
@@ -610,8 +612,8 @@
   text-align: center;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  font-weight: 900;
-  color: var(--muted);
+  font-weight: var(--weight-black);
+  color: var(--text-secondary);
 }
 
 .db-calendar-grid {
@@ -629,7 +631,7 @@
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-black);
   background: transparent;
   cursor: pointer;
   position: relative;
@@ -637,22 +639,22 @@
 }
 
 .db-calendar-day.day-filler {
-  color: #d1d1d1;
+  color: var(--text-tertiary);
   pointer-events: none;
 }
 
 .db-calendar-day.day-active:hover {
-  background: #f0f0f0;
+  background: var(--surface-secondary);
 }
 
 .db-calendar-day.is-selected {
-  background: var(--yellow) !important;
+  background: var(--accent-primary) !important;
   color: var(--ink);
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .db-calendar-day.is-today {
-  box-shadow: inset 0 0 0 1.5px var(--blue);
+  box-shadow: inset 0 0 0 1.5px var(--accent-secondary);
 }
 
 .db-calendar-day.has-events::after {
@@ -661,7 +663,7 @@
   bottom: 3px;
   width: 4px;
   height: 4px;
-  background: var(--blue);
+  background: var(--accent-secondary);
   border-radius: 50%;
 }
 
@@ -674,7 +676,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  border-top: 1.5px dashed rgba(0, 0, 0, 0.1);
+  border-top: 1.5px dashed var(--border-subtle);
   padding-top: 0.75rem;
 }
 
@@ -683,18 +685,18 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem;
-  background: #fcfcfc;
+  background: var(--surface-primary);
   border-radius: 8px;
 }
 
 .db-agenda-time-pill {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
   border-radius: 4px;
   padding: 0.15rem 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   white-space: nowrap;
 }
 
@@ -706,18 +708,18 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .db-agenda-instructor {
   margin: 0.1rem 0 0;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 /* ══════════════════════════════════════════════════════
-   ACTIVITY FEED (parent)
+   ACTIVITY FEED
 ══════════════════════════════════════════════════════ */
 .db-feed-item {
   display: grid;
@@ -725,7 +727,7 @@
   gap: 0.75rem;
   align-items: center;
   padding: 0.6rem;
-  background: #fcfcfc;
+  background: var(--surface-primary);
   border-radius: 8px;
 }
 
@@ -735,7 +737,7 @@
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: #f0f0f0;
+  background: var(--surface-secondary);
 }
 
 .db-feed-icon svg {
@@ -758,22 +760,22 @@
   gap: 0.5rem;
   min-height: 40px;
   padding: 0 0.85rem;
-  background: #fff;
-  border: 2px solid var(--ink);
+  background: var(--bg);
+  border: var(--border);
   border-radius: 8px;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   cursor: pointer;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
-    transform 0.1s ease,
-    box-shadow 0.1s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .db-child-tab:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 .db-child-tab.is-active {
@@ -808,19 +810,19 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem;
-  border: 2px solid var(--ink);
+  border: var(--border);
   border-radius: 10px;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   font-family: var(--font-display);
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   text-decoration: none;
   color: var(--ink);
   cursor: pointer;
-  background: #fff;
+  background: var(--bg);
   transition:
-    transform 0.1s ease,
-    box-shadow 0.1s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .db-action:hover {
@@ -834,19 +836,19 @@
 }
 
 .db-action.act-yellow {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 .db-action.act-blue {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
 }
 .db-action.act-green {
-  background: var(--green);
-  color: #fff;
+  background: var(--accent-success);
+  color: var(--text-on-accent);
 }
 .cmd-red {
-  background: var(--red);
-  color: #fff;
+  background: var(--accent-danger);
+  color: var(--text-on-accent);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -867,26 +869,26 @@
 .db-perf-label {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
 }
 
 .db-perf-track {
   height: 14px;
-  background: #eaeaea;
+  background: var(--surface-secondary);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .db-perf-fill {
   height: 100%;
-  background: var(--blue);
+  background: var(--accent-secondary);
   transition: width 0.7s ease;
 }
 
 .db-perf-val {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   text-align: right;
 }
 
@@ -895,7 +897,7 @@
 ══════════════════════════════════════════════════════ */
 .db-divider {
   height: 1.5px;
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--border-subtle);
   margin: 1rem 0;
 }
 
@@ -904,12 +906,12 @@
   place-items: center;
   min-height: 90px;
   padding: 1rem;
-  background: #fafafa;
-  border: 1.5px dashed rgba(0, 0, 0, 0.12);
+  background: var(--surface-primary);
+  border: 1.5px dashed var(--border-subtle);
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--text-secondary);
   text-align: center;
 }
 

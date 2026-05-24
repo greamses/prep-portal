@@ -1,3 +1,5 @@
+@import url("/utils/components/theme.css");
+
 .pm-overlay {
   position: fixed;
   inset: 0;
@@ -10,7 +12,7 @@
   padding: 20px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--duration-slow) var(--ease-default);
 }
 
 .pm-overlay.active {
@@ -21,10 +23,10 @@
 .pm-modal {
   width: 100%;
   max-width: 420px;
-  background: #fff;
-  border: 3px solid #1a1a1a;
-  border-radius: 8px; /* Rounded corners for the modal */
-  box-shadow: 8px 8px 0 #1a1a1a; /* Adjusted shadow to match radius */
+  background: var(--bg);
+  border: var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
   transform: translateY(20px);
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -37,26 +39,26 @@
   display: flex;
   justify-content: space-between;
   padding: 20px;
-  border-top-left-radius: 5px; /* Match modal's top corners */
+  border-top-left-radius: 5px;
   border-top-right-radius: 5px;
-  border-bottom: 3px solid #1a1a1a;
-  background: #ffe500;
+  border-bottom: var(--border);
+  background: var(--accent-primary);
 }
 
 .pm-eyebrow {
   display: block;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #1a1a1a;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-black);
+  letter-spacing: var(--tracking-wide);
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
 .pm-title {
-  font-family: "Unbounded", sans-serif;
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   margin: 0;
 }
 
@@ -65,7 +67,7 @@
   border: none;
   font-size: 32px;
   cursor: pointer;
-  line-height: 1;
+  line-height: var(--leading-none);
 }
 
 .pm-body {
@@ -75,13 +77,13 @@
 .pm-plan-card {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 2px dashed #ddd;
-  border-radius: 5px; /* Rounded corners for the plan card */
+  border-bottom: 2px dashed var(--border-subtle);
+  border-radius: 5px;
 }
 
 .pm-plan-info h3 {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: var(--weight-black);
   margin-bottom: 8px;
 }
 
@@ -94,8 +96,8 @@
 
 .pm-price strong {
   font-size: 32px;
-  font-weight: 900;
-  color: #0055ff;
+  font-weight: var(--weight-black);
+  color: var(--accent-secondary);
 }
 
 .pm-features {
@@ -109,30 +111,31 @@
 .pm-main-btn {
   width: 100%;
   padding: 18px;
-  background: #ffe500;
-  border: 3px solid #1a1a1a;
-  box-shadow: 6px 6px 0 #1a1a1a;
-  font-family: "Unbounded", sans-serif;
-  font-weight: 900;
+  background: var(--accent-primary);
+  border: var(--border);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border-radius: 5px; /* Rounded corners for the button */
-  transition: all 0.1s;
+  border-radius: 5px;
+  transition: all var(--duration-fast) var(--ease-default);
   margin-bottom: 16px;
   text-transform: uppercase;
+  color: var(--ink);
 }
 
 .pm-main-btn:active {
   transform: translate(3px, 3px);
-  box-shadow: 3px 3px 0 #1a1a1a;
+  box-shadow: var(--shadow-sm);
 }
 
 .pm-main-btn svg {
-  transition: transform 0.2s;
+  transition: transform var(--duration-smooth) var(--ease-default);
 }
 .pm-main-btn:hover svg {
   transform: translateX(4px);
@@ -146,23 +149,23 @@
 }
 
 .user-plan-badge {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
-  font-weight: 800;
-  color: #888;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-black);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   margin-top: -2px;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .user-plan-badge.premium {
-  color: #0055ff;
+  color: var(--accent-secondary);
 }
 
 .pm-footer-text {
   text-align: center;
-  font-size: 11px;
-  color: #666;
+  font-size: var(--text-body-xs);
+  color: var(--text-secondary);
   margin: 0;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
 }

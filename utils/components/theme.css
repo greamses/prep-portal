@@ -32,16 +32,16 @@
   --bg: #ffffff;
   --app-bg: #f0ece3;
   --ink: #0a0a0a;
-  --yellow: #ffe500;
-  --blue: #0055ff;
-  --red: #ff2200;
-  --green: #00a550;
-  --amber: #e67e00;
-  --muted: #555555;
-  --light-muted: #888888;
-  --off: #f7f4ee;
-  --paper: #fffef8;
-  --text-light: #ffffff;
+  --accent-primary: #ffe500;
+  --accent-secondary: #0055ff;
+  --accent-danger: #ff2200;
+  --accent-success: #00a550;
+  --accent-warning: #e67e00;
+  --text-secondary: #555555;
+  --text-tertiary: #888888;
+  --surface-secondary: #f7f4ee;
+  --surface-primary: #fffef8;
+  --text-on-accent: #ffffff;
 
   /* ── Border ─────────────────────────────── */
   --border-color: #0a0a0a;
@@ -59,21 +59,21 @@
   --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
 
   /* ── Subject Badge BGs (light) ──────────── */
-  --badge-math-bg: var(--yellow);
-  --badge-chemistry-bg: #e8b3ff;
-  --badge-biology-bg: #b3f0b3;
-  --badge-physics-bg: #b3d9ff;
-  --badge-basicscience-bg: #ffd6b3;
-  --badge-basictech-bg: #b3f0e8;
-  --badge-cls-primary-bg: #c8f5c8;
-  --badge-cls-jss-bg: #c8deff;
-  --badge-cls-ss-bg: #fff3b3;
+  --badge-subject-1-bg: var(--accent-primary);
+  --badge-subject-2-bg: #e8b3ff;
+  --badge-subject-3-bg: #b3f0b3;
+  --badge-subject-4-bg: #b3d9ff;
+  --badge-subject-5-bg: #ffd6b3;
+  --badge-subject-6-bg: #b3f0e8;
+  --badge-class-1-bg: #c8f5c8;
+  --badge-class-2-bg: #c8deff;
+  --badge-class-3-bg: #fff3b3;
 
   /* ── Subject Practice Card BGs (light) ─── */
-  --bg-math-card: #fffde7;
-  --bg-physics-card: #e3f2fd;
-  --bg-chemistry-card: #f3e5f5;
-  --bg-biology-card: #e8f5e9;
+  --card-subject-1-bg: #fffde7;
+  --card-subject-2-bg: #e3f2fd;
+  --card-subject-3-bg: #f3e5f5;
+  --card-subject-4-bg: #e8f5e9;
 
   /* ── Exam Tip ────────────────────────────── */
   --exam-tip-bg: #fffde7;
@@ -118,16 +118,16 @@
   --bg: #0a0a0a;
   --app-bg: #111111;
   --ink: #f0f0f0;
-  --yellow: #ffea2e;
-  --blue: #4d8fff;
-  --red: #ff4444;
-  --green: #10b981;
-  --amber: #f59e0b;
-  --muted: #999999;
-  --light-muted: #666666;
-  --off: #1a1a1a;
-  --paper: #0f0f0f;
-  --text-light: #0a0a0a;
+  --accent-primary: #ffea2e;
+  --accent-secondary: #4d8fff;
+  --accent-danger: #ff4444;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --text-secondary: #999999;
+  --text-tertiary: #666666;
+  --surface-secondary: #1a1a1a;
+  --surface-primary: #0f0f0f;
+  --text-on-accent: #0a0a0a;
 
   /* ── Border ─────────────────────────────── */
   --border-color: #f0f0f0;
@@ -142,22 +142,22 @@
   --shadow-cta: 6px 6px 0 rgba(255, 234, 46, 0.35);
   --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
 
-  /* ── Subject Badge BGs (dark — richer/deeper) */
-  --badge-math-bg: var(--yellow);
-  --badge-chemistry-bg: #5a1875;
-  --badge-biology-bg: #1a4d1a;
-  --badge-physics-bg: #1a3560;
-  --badge-basicscience-bg: #5c2a00;
-  --badge-basictech-bg: #0d3d35;
-  --badge-cls-primary-bg: #1a4d1a;
-  --badge-cls-jss-bg: #1a3560;
-  --badge-cls-ss-bg: #4d3a00;
+  /* ── Subject Badge BGs (dark) ───────────── */
+  --badge-subject-1-bg: var(--accent-primary);
+  --badge-subject-2-bg: #5a1875;
+  --badge-subject-3-bg: #1a4d1a;
+  --badge-subject-4-bg: #1a3560;
+  --badge-subject-5-bg: #5c2a00;
+  --badge-subject-6-bg: #0d3d35;
+  --badge-class-1-bg: #1a4d1a;
+  --badge-class-2-bg: #1a3560;
+  --badge-class-3-bg: #4d3a00;
 
   /* ── Subject Practice Card BGs (dark) ──── */
-  --bg-math-card: #252200;
-  --bg-physics-card: #0a1929;
-  --bg-chemistry-card: #1a0a20;
-  --bg-biology-card: #0a1f0a;
+  --card-subject-1-bg: #252200;
+  --card-subject-2-bg: #0a1929;
+  --card-subject-3-bg: #1a0a20;
+  --card-subject-4-bg: #0a1f0a;
 
   /* ── Exam Tip ────────────────────────────── */
   --exam-tip-bg: #252200;
@@ -172,16 +172,16 @@
     --bg: #0a0a0a;
     --app-bg: #111111;
     --ink: #f0f0f0;
-    --yellow: #ffea2e;
-    --blue: #4d8fff;
-    --red: #ff4444;
-    --green: #10b981;
-    --amber: #f59e0b;
-    --muted: #999999;
-    --light-muted: #666666;
-    --off: #1a1a1a;
-    --paper: #0f0f0f;
-    --text-light: #0a0a0a;
+    --accent-primary: #ffea2e;
+    --accent-secondary: #4d8fff;
+    --accent-danger: #ff4444;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --text-secondary: #999999;
+    --text-tertiary: #666666;
+    --surface-secondary: #1a1a1a;
+    --surface-primary: #0f0f0f;
+    --text-on-accent: #0a0a0a;
     --border-color: #f0f0f0;
     --border: var(--border-width) var(--border-style) var(--border-color);
     --border-subtle: 1px solid rgba(240, 240, 240, 0.15);
@@ -191,19 +191,19 @@
     --shadow-xl: 9px 9px 0 var(--ink);
     --shadow-cta: 6px 6px 0 rgba(255, 234, 46, 0.35);
     --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
-    --badge-math-bg: var(--yellow);
-    --badge-chemistry-bg: #5a1875;
-    --badge-biology-bg: #1a4d1a;
-    --badge-physics-bg: #1a3560;
-    --badge-basicscience-bg: #5c2a00;
-    --badge-basictech-bg: #0d3d35;
-    --badge-cls-primary-bg: #1a4d1a;
-    --badge-cls-jss-bg: #1a3560;
-    --badge-cls-ss-bg: #4d3a00;
-    --bg-math-card: #252200;
-    --bg-physics-card: #0a1929;
-    --bg-chemistry-card: #1a0a20;
-    --bg-biology-card: #0a1f0a;
+    --badge-subject-1-bg: var(--accent-primary);
+    --badge-subject-2-bg: #5a1875;
+    --badge-subject-3-bg: #1a4d1a;
+    --badge-subject-4-bg: #1a3560;
+    --badge-subject-5-bg: #5c2a00;
+    --badge-subject-6-bg: #0d3d35;
+    --badge-class-1-bg: #1a4d1a;
+    --badge-class-2-bg: #1a3560;
+    --badge-class-3-bg: #4d3a00;
+    --card-subject-1-bg: #252200;
+    --card-subject-2-bg: #0a1929;
+    --card-subject-3-bg: #1a0a20;
+    --card-subject-4-bg: #0a1f0a;
     --exam-tip-bg: #252200;
     --card-hover: #f0f0f0;
   }
@@ -227,7 +227,7 @@
   --font-mono:
     "JetBrains Mono", "JetBrains Mono Fallback", "Courier New", "Consolas",
     "Monaco", monospace;
-  --font-serif: var(--font-display); /* Uses same as display font */
+  --font-serif: var(--font-display);
 
   /* ── Font Weights ───────────────────────── */
   --weight-regular: 400;
@@ -257,48 +257,33 @@
   --leading-ultra-loose: 1.9;
 
   /* ── Fluid Type Scale (Mobile-first clamp values) ── */
-  /* Display / Hero */
-  --text-hero: clamp(3.25rem, 8vw + 1rem, 6.75rem); /* 52px → 108px */
-  --text-hero-bg: clamp(5rem, 15vw + 1rem, 13.75rem); /* 80px → 220px */
-
-  /* Headings */
-  --text-h1: clamp(3.25rem, 8vw + 1rem, 6.75rem); /* 52px → 108px */
-  --text-h2: clamp(1.625rem, 4vw + 0.5rem, 3.25rem); /* 26px → 52px */
-  --text-h2-section: clamp(
-    1.125rem,
-    2.5vw + 0.25rem,
-    1.625rem
-  ); /* 18px → 26px */
-  --text-h2-subject: clamp(1.9rem, 4vw, 3rem); /* 30.4px → 48px */
-  --text-h3: clamp(0.875rem, 1.5vw + 0.25rem, 1.125rem); /* 14px → 18px */
-  --text-h3-card: clamp(0.938rem, 1.8vw + 0.25rem, 1.188rem); /* 15px → 19px */
-
-  /* Body Text */
-  --text-body: clamp(0.688rem, 1.2vw + 0.25rem, 0.844rem); /* 11px → 13.5px */
-  --text-body-sm: 0.688rem; /* 11px */
-  --text-body-xs: 0.656rem; /* 10.5px */
-  --text-body-xxs: 0.594rem; /* 9.5px */
-
-  /* Mono / Code */
-  --text-mono-xs: 0.531rem; /* 8.5px */
-  --text-mono-sm: 0.594rem; /* 9.5px */
-  --text-mono-base: 0.625rem; /* 10px */
-  --text-mono-md: 0.688rem; /* 11px */
-  --text-mono-lg: 0.719rem; /* 11.5px */
-  --text-mono-xl: 0.813rem; /* 13px */
-
-  /* Special */
-  --text-brand-top: 1.375rem; /* 22px */
-  --text-brand-bottom: 0.5rem; /* 8px */
-  --text-ticker: 0.594rem; /* 9.5px */
-  --text-stat: clamp(1.25rem, 2.5vw + 0.25rem, 1.875rem); /* 20px → 30px */
-  --text-badge: 0.65rem; /* 10.4px */
-  --text-cta: 0.625rem; /* 10px */
-  --text-arrow: 1.25rem; /* 20px */
-
-  /* Mobile-specific adjustments */
-  --text-brand-top-mobile: 0.938rem; /* 15px */
-  --text-brand-bottom-mobile: 0.531rem; /* 8.5px */
+  --text-hero: clamp(3.25rem, 8vw + 1rem, 6.75rem);
+  --text-hero-bg: clamp(5rem, 15vw + 1rem, 13.75rem);
+  --text-h1: clamp(3.25rem, 8vw + 1rem, 6.75rem);
+  --text-h2: clamp(1.625rem, 4vw + 0.5rem, 3.25rem);
+  --text-h2-section: clamp(1.125rem, 2.5vw + 0.25rem, 1.625rem);
+  --text-h2-subject: clamp(1.9rem, 4vw, 3rem);
+  --text-h3: clamp(0.875rem, 1.5vw + 0.25rem, 1.125rem);
+  --text-h3-card: clamp(0.938rem, 1.8vw + 0.25rem, 1.188rem);
+  --text-body: clamp(0.688rem, 1.2vw + 0.25rem, 0.844rem);
+  --text-body-sm: 0.688rem;
+  --text-body-xs: 0.656rem;
+  --text-body-xxs: 0.594rem;
+  --text-mono-xs: 0.531rem;
+  --text-mono-sm: 0.594rem;
+  --text-mono-base: 0.625rem;
+  --text-mono-md: 0.688rem;
+  --text-mono-lg: 0.719rem;
+  --text-mono-xl: 0.813rem;
+  --text-brand-top: 1.375rem;
+  --text-brand-bottom: 0.5rem;
+  --text-ticker: 0.594rem;
+  --text-stat: clamp(1.25rem, 2.5vw + 0.25rem, 1.875rem);
+  --text-badge: 0.65rem;
+  --text-cta: 0.625rem;
+  --text-arrow: 1.25rem;
+  --text-brand-top-mobile: 0.938rem;
+  --text-brand-bottom-mobile: 0.531rem;
 }
 
 /* ============================================
@@ -306,12 +291,9 @@
    ============================================ */
 @media screen and (max-width: 768px) {
   :root {
-    /* Slightly reduce display sizes on mobile */
-    --text-hero: clamp(2.5rem, 10vw, 4rem); /* 40px → 64px */
-    --text-h1: clamp(2rem, 8vw, 3.5rem); /* 32px → 56px */
-    --text-h2: clamp(1.375rem, 5vw, 2rem); /* 22px → 32px */
-
-    /* Adjust line heights for mobile readability */
+    --text-hero: clamp(2.5rem, 10vw, 4rem);
+    --text-h1: clamp(2rem, 8vw, 3.5rem);
+    --text-h2: clamp(1.375rem, 5vw, 2rem);
     --leading-tight: 1.1;
     --leading-snug: 1.35;
   }
@@ -319,10 +301,9 @@
 
 @media screen and (max-width: 480px) {
   :root {
-    /* Further reduce for small screens */
-    --text-hero: clamp(2rem, 12vw, 3rem); /* 32px → 48px */
-    --text-h1: clamp(1.75rem, 10vw, 2.5rem); /* 28px → 40px */
-    --text-body: clamp(0.75rem, 3vw, 0.875rem); /* 12px → 14px */
+    --text-hero: clamp(2rem, 12vw, 3rem);
+    --text-h1: clamp(1.75rem, 10vw, 2.5rem);
+    --text-body: clamp(0.75rem, 3vw, 0.875rem);
   }
 }
 
@@ -330,31 +311,25 @@
    SPACING & LAYOUT
    ============================================ */
 :root {
-  --nav-height: 3.875rem; /* 62px */
-  --ticker-height: 2.125rem; /* 34px */
-
-  --card-min-height: 13.75rem; /* 220px */
-  --subject-card-min-height: 10rem; /* 160px */
-
+  --nav-height: 3.875rem;
+  --ticker-height: 2.125rem;
+  --card-min-height: 13.75rem;
+  --subject-card-min-height: 10rem;
   --grid-gap-sm: 0;
-  --grid-gap-md: 1rem; /* 16px */
-  --grid-gap-lg: 2rem; /* 32px */
-
-  --grid-cols-category: repeat(auto-fit, minmax(20rem, 1fr)); /* 320px */
-  --grid-cols-subject: repeat(auto-fill, minmax(17.5rem, 1fr)); /* 280px */
-  --grid-cols-drill: repeat(auto-fill, minmax(18.75rem, 1fr)); /* 300px */
+  --grid-gap-md: 1rem;
+  --grid-gap-lg: 2rem;
+  --grid-cols-category: repeat(auto-fit, minmax(20rem, 1fr));
+  --grid-cols-subject: repeat(auto-fill, minmax(17.5rem, 1fr));
+  --grid-cols-drill: repeat(auto-fill, minmax(18.75rem, 1fr));
   --grid-cols-info: repeat(3, 1fr);
   --grid-cols-footer: 2fr 1fr 1fr 1fr;
-
-  --hero-gap: clamp(1.5rem, 6vw, 5rem); /* 24px → 80px */
-  --hero-max-width: 27.5rem; /* 440px */
-
-  --container-max-sm: 23.75rem; /* 380px */
-  --container-max-md: 31.25rem; /* 500px */
-  --container-max-lg: 40rem; /* 640px */
-
-  --section-padding-y: clamp(3.5rem, 10vw, 6.875rem); /* 56px → 110px */
-  --section-padding-bottom: clamp(3rem, 8vw, 5rem); /* 48px → 80px */
+  --hero-gap: clamp(1.5rem, 6vw, 5rem);
+  --hero-max-width: 27.5rem;
+  --container-max-sm: 23.75rem;
+  --container-max-md: 31.25rem;
+  --container-max-lg: 40rem;
+  --section-padding-y: clamp(3.5rem, 10vw, 6.875rem);
+  --section-padding-bottom: clamp(3rem, 8vw, 5rem);
 }
 
 /* ============================================
@@ -370,7 +345,6 @@
   --duration-slow: 0.3s;
   --duration-bounce: 0.5s;
   --duration-char: 0.65s;
-
   --ease-default: ease;
   --ease-in-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.16, 1, 0.3, 1);
@@ -389,7 +363,7 @@
 }
 
 html {
-  font-size: 100%; /* Respect browser default, then use rem */
+  font-size: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -411,7 +385,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ── Typography Defaults ──────────────────── */
 h1,
 h2,
 h3,
@@ -465,21 +438,16 @@ small {
   font-size: var(--text-body-sm);
 }
 
-/* ── Selection Style ──────────────────────── */
 ::selection {
-  background-color: var(--yellow);
+  background-color: var(--accent-primary);
   color: var(--bg);
 }
 
-/* [Note: Duplicate Webkit Scrollbar block removed from here to consolidate styles at the bottom] */
-
-/* ── Focus Styles for Accessibility ───────── */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
-/* ── Reduced Motion ───────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -495,7 +463,6 @@ small {
    UTILITY CLASSES
    ============================================ */
 
-/* ── Font Family Utilities ────────────────── */
 .font-display {
   font-family: var(--font-display);
 }
@@ -506,7 +473,6 @@ small {
   font-family: var(--font-serif);
 }
 
-/* ── Font Weight Utilities ────────────────── */
 .weight-regular {
   font-weight: var(--weight-regular);
 }
@@ -520,7 +486,6 @@ small {
   font-weight: var(--weight-black);
 }
 
-/* ── Text Size Utilities ──────────────────── */
 .text-hero {
   font-size: var(--text-hero);
 }
@@ -564,7 +529,6 @@ small {
   font-size: var(--text-mono-xl);
 }
 
-/* ── Line Height Utilities ────────────────── */
 .leading-none {
   line-height: var(--leading-none);
 }
@@ -584,7 +548,6 @@ small {
   line-height: var(--leading-loose);
 }
 
-/* ── Letter Spacing Utilities ─────────────── */
 .tracking-tight {
   letter-spacing: var(--tracking-tight);
 }
@@ -604,7 +567,6 @@ small {
   letter-spacing: var(--tracking-ultra);
 }
 
-/* ── Text Alignment ───────────────────────── */
 .text-left {
   text-align: left;
 }
@@ -615,7 +577,6 @@ small {
   text-align: right;
 }
 
-/* ── Text Transform ───────────────────────── */
 .uppercase {
   text-transform: uppercase;
 }
@@ -626,7 +587,6 @@ small {
   text-transform: capitalize;
 }
 
-/* ── Text Decoration ──────────────────────── */
 .underline {
   text-decoration: underline;
 }
@@ -634,7 +594,6 @@ small {
   text-decoration: none;
 }
 
-/* ── Theme Toggle ─────────────────────────── */
 .theme-toggle {
   background: none;
   border: none;
@@ -656,7 +615,6 @@ small {
   transform: scale(0.95);
 }
 
-/* ── Visually Hidden (for accessibility) ──── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -697,55 +655,46 @@ small {
 }
 
 /* =========================================
-   SCROLLBAR STYLING — NO ARROWS, THEME MATCHING
+   SCROLLBAR STYLING
 ========================================= */
 
-/* ── WebKit / Blink (Chrome, Edge, Safari, Opera) ────────── */
-
-/* Remove arrow buttons */
 ::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;
 }
 
-/* Increase width/height slightly to accommodate the transparent padding borders */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
 }
 
-/* Track (background) */
 ::-webkit-scrollbar-track {
-  background-color: var(--off);
-  background-clip: padding-box; /* Keeps track background inside the border boundaries */
-  border: 3px solid transparent; /* Shrinks the track visually so it stays inside the curved corner */
+  background-color: var(--surface-secondary);
+  background-clip: padding-box;
+  border: 3px solid transparent;
   border-radius: var(--radius-sm);
 }
 
-/* Thumb (draggable handle) */
 ::-webkit-scrollbar-thumb {
-  background-color: var(--muted);
-  background-clip: padding-box; /* Ensures thumb color stays inside its transparent border */
-  border: 3px solid transparent; /* Acts as padding around the thumb */
+  background-color: var(--text-secondary);
+  background-clip: padding-box;
+  border: 3px solid transparent;
   border-radius: var(--radius-sm);
 }
 
-/* Thumb hover */
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--ink);
 }
 
-/* Corner between vertical & horizontal scrollbars */
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-/* ── Firefox Fallback ──────────────────────── */
 @supports not selector(::-webkit-scrollbar) {
   :root,
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--muted) var(--off);
+    scrollbar-color: var(--text-secondary) var(--surface-secondary);
   }
 }
