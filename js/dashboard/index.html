@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users | Prep Portal Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/admin/users/users.css" />
+  </head>
+  <body>
+    <div id="loader"></div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="admin-users-page">
+      <header class="admin-header">
+        <div class="header-text">
+          <h1>User Management</h1>
+          <p>Monitor registrations and manage permissions.</p>
+        </div>
+        <div class="admin-stats" id="admin-user-stats">
+          <!-- Stats injected by JS -->
+        </div>
+      </header>
+
+      <section class="user-controls">
+        <div class="search-wrap">
+          <input
+            type="text"
+            id="user-search"
+            placeholder="Search by name or email..."
+          />
+        </div>
+        <div class="filter-wrap">
+          <select id="role-filter">
+            <option value="all">All Roles</option>
+            <option value="student">Students</option>
+            <option value="teacher">Teachers</option>
+            <option value="parent">Parents</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="users-list-container">
+        <div class="users-table-header">
+          <div class="col-user">User Details</div>
+          <div class="col-role">Role</div>
+          <div class="col-status">Subscription</div>
+          <div class="col-joined">Date Joined</div>
+          <div class="col-actions">Control</div>
+        </div>
+        <div id="users-list" class="users-list">
+          <div class="db-placeholder"><div class="db-spinner"></div></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/admin/users/users.js"></script>
+  </body>
+</html>
