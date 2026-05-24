@@ -404,8 +404,8 @@ function renderList(users) {
   listEl.innerHTML = users
     .map(
       (u) => `
-    <div class="user-row brutal-row" data-id="${u.id}" style="grid-template-columns: 50px 2.5fr 160px 140px 140px 120px;">
-      <div class="cell-checkbox" onclick="event.stopPropagation()">
+    <div class="user-row brutal-row" data-id="${u.id}" style="grid-template-columns: 50px 2.5fr 180px 140px 140px 120px;">
+      <div class="cell-checkbox">
         <input type="checkbox" class="brutal-checkbox user-select-chk" data-id="${u.id}" ${selectedUsers.has(u.id) ? "checked" : ""}>
       </div>
       <div class="user-cell-info inspect-trigger">
@@ -415,7 +415,7 @@ function renderList(users) {
           <span>${u.email}</span>
         </div>
       </div>
-      <div onclick="event.stopPropagation()">
+      <div>
         ${makeBrutalDropdownHTML({
           id: u.id,
           className: "row-role-dropdown",
@@ -423,13 +423,13 @@ function renderList(users) {
           selectedValue: u.role || "student",
         })}
       </div>
-      <div onclick="event.stopPropagation()">
+      <div>
         <button class="plan-toggle ${u.isPremium ? "is-premium" : ""}" data-id="${u.id}">
             ${u.isPremium ? "Premium" : "Free Plan"}
         </button>
       </div>
       <div class="user-joined inspect-trigger">${fmtDate(u.createdAt)}</div>
-      <div class="actions-group" onclick="event.stopPropagation()">
+      <div class="actions-group">
         <button class="action-btn btn-inspect" data-id="${u.id}" title="Inspect Profile">${SVGS.inspect}</button>
         <button class="action-btn btn-delete text-danger" data-id="${u.id}" title="Delete User">${SVGS.trash}</button>
       </div>
@@ -560,7 +560,9 @@ function renderBulkBar() {
     </div>
   `;
 
-  const bulkRoleEl = document.getElementById("bulk-role-select");
+  const bulkRoleEl = bulkActionBar.querySelector(
+    '[data-id="bulk-role-select"]',
+  );
   if (bulkRoleEl) {
     bulkRoleEl.addEventListener("change", async (e) => {
       const roleValue = e.detail.value;
