@@ -103,7 +103,8 @@ const statsEl = document.getElementById("admin-user-stats");
 const searchInput = document.getElementById("user-search");
 const nativeRoleFilter = document.getElementById("role-filter");
 
-let bulkActionBar, paginationEl;
+// Module scope variables declared here to avoid ReferenceErrors
+let planFilter, sortFilter, selectAllCheckbox, bulkActionBar, paginationEl;
 
 // Filter State Variables
 let filterRole = "all";
@@ -210,7 +211,6 @@ function makeBrutalDropdownHTML({
 }
 
 function initDropdownGlobalHandlers() {
-  // Toggle, open, and close drop actions on click
   document.addEventListener("click", (e) => {
     const isTrigger = e.target.closest(".brutal-dropdown-trigger");
     const activeDropdown = e.target.closest(".brutal-dropdown");
@@ -226,7 +226,6 @@ function initDropdownGlobalHandlers() {
     }
   });
 
-  // Handle selection event dispatching
   document.addEventListener("click", (e) => {
     const item = e.target.closest(".brutal-dropdown-item");
     if (item) {
@@ -243,7 +242,6 @@ function initDropdownGlobalHandlers() {
       triggerSpan.textContent = item.textContent.trim();
       dropdown.classList.remove("open");
 
-      // Dispatch customized change event standard on element
       const customEvent = new CustomEvent("change", { detail: { value: val } });
       dropdown.dispatchEvent(customEvent);
     }
@@ -252,12 +250,11 @@ function initDropdownGlobalHandlers() {
 
 function injectExtendedControls() {
   if (nativeRoleFilter) {
-    nativeRoleFilter.style.display = "none"; // Hide default select
+    nativeRoleFilter.style.display = "none";
   }
 
   const filterWrap = nativeRoleFilter?.parentElement;
   if (filterWrap) {
-    // Clear wrapper contents except label/elements we need to reconstruct
     filterWrap.innerHTML = "";
 
     // 1. Render Custom Role Filter
@@ -466,7 +463,6 @@ function attachListEvents() {
     };
   });
 
-  // Custom role selection callback
   listEl.querySelectorAll(".row-role-dropdown").forEach((el) => {
     el.addEventListener("change", async (e) => {
       const userId = el.dataset.id;
@@ -564,7 +560,6 @@ function renderBulkBar() {
     </div>
   `;
 
-  // Capture selections on bulk-role change event
   const bulkRoleEl = document.getElementById("bulk-role-select");
   if (bulkRoleEl) {
     bulkRoleEl.addEventListener("change", async (e) => {
