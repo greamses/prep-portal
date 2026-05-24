@@ -36,28 +36,25 @@ html {
   border: var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .filter-search-row {
-  margin-bottom: 0.875rem;
+  margin-bottom: 0;
+  flex: 1;
+  max-width: 440px;
+  min-width: 250px;
 }
 
 .filter-dropdowns-row {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.875rem;
-}
-
-@media (max-width: 520px) {
-  .filter-dropdowns-row {
-    grid-template-columns: 1fr 1fr;
-    row-gap: 0.5rem;
-  }
-
-  .filter-label-cell {
-    grid-column: 1 / -1;
-  }
 }
 
 .filter-label {
@@ -74,7 +71,7 @@ html {
 .custom-dropdown {
   position: relative;
   display: inline-block;
-  min-width: 170px;
+  min-width: 140px;
 }
 
 .dropdown-btn {
