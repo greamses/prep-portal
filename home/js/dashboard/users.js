@@ -12,12 +12,66 @@ import { I } from "/home/js/dashboard/icons.js";
 import "/utils/components/nav-builder.js";
 import { ROUTES, API_ENDPOINTS } from "/home/js/routing.js";
 
+// Custom High-Contrast Neobrutalist SVGs
+const SVGS = {
+  sync: `
+    <svg class="icon-svg icon-sync" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+    </svg>
+  `,
+  inspect: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  `,
+  trash: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      <line x1="10" y1="11" x2="10" y2="17"></line>
+      <line x1="14" y1="11" x2="14" y2="17"></line>
+    </svg>
+  `,
+  arrowLeft: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+  `,
+  arrowRight: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+      <polyline points="12 5 19 12 12 19"></polyline>
+    </svg>
+  `,
+  close: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  `,
+  check: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  `,
+  alert: `
+    <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  `,
+};
+
 const listEl = document.getElementById("users-list");
 const statsEl = document.getElementById("admin-user-stats");
 const searchInput = document.getElementById("user-search");
 const roleFilter = document.getElementById("role-filter");
 
-// New UI Control Elements (make sure to include these in your HTML or let them generate dynamically)
 let planFilter, sortFilter, selectAllCheckbox, bulkActionBar, paginationEl;
 
 let allUsers = [];
@@ -31,7 +85,6 @@ auth.onAuthStateChanged((user) => {
     window.location.replace(ROUTES.HOME);
     return;
   }
-  // Standard Admin Check
   if (user.email !== "eemadanyel@gmail.com") {
     window.location.replace(ROUTES.DASHBOARD);
     return;
@@ -71,7 +124,6 @@ function init() {
   const q = query(collection(db, "users"));
   onSnapshot(q, (snapshot) => {
     allUsers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-    // Prevent selected states from breaking if a user document is deleted externally
     const currentIds = new Set(allUsers.map((u) => u.id));
     selectedUsers = new Set(
       [...selectedUsers].filter((id) => currentIds.has(id)),
@@ -97,12 +149,9 @@ function init() {
   });
 }
 
-// Injects advanced controls dynamically to keep HTML modifications minimal
 function injectExtendedControls() {
-  // Add Plan & Sort filters next to Role Filter
   const filterWrap = roleFilter.parentElement;
   if (filterWrap) {
-    // Plan Filter
     planFilter = document.createElement("select");
     planFilter.id = "plan-filter";
     planFilter.className = "filter-select";
@@ -113,7 +162,6 @@ function injectExtendedControls() {
     `;
     filterWrap.appendChild(planFilter);
 
-    // Sort Filter
     sortFilter = document.createElement("select");
     sortFilter.id = "sort-filter";
     sortFilter.className = "filter-select";
@@ -126,7 +174,6 @@ function injectExtendedControls() {
     filterWrap.appendChild(sortFilter);
   }
 
-  // Inject Table Header Checkbox once
   const tableHeader = document.querySelector(".users-table-header");
   if (tableHeader && !document.getElementById("select-all-users")) {
     const checkHeader = document.createElement("div");
@@ -136,8 +183,6 @@ function injectExtendedControls() {
       <input type="checkbox" id="select-all-users" class="brutal-checkbox">
     `;
     tableHeader.insertBefore(checkHeader, tableHeader.firstChild);
-
-    // Adjust header columns structure dynamically for the checkbox
     tableHeader.style.gridTemplateColumns =
       "50px 2.5fr 140px 140px 140px 120px";
 
@@ -145,13 +190,11 @@ function injectExtendedControls() {
     selectAllCheckbox.addEventListener("change", handleSelectAll);
   }
 
-  // Create Bulk Action Bar
   bulkActionBar = document.createElement("div");
   bulkActionBar.id = "bulk-action-bar";
   bulkActionBar.className = "bulk-bar hidden";
   document.body.appendChild(bulkActionBar);
 
-  // Create Pagination container below list container
   const listContainer = document.querySelector(".users-list-container");
   if (listContainer) {
     paginationEl = document.createElement("div");
@@ -166,7 +209,6 @@ function updateUI() {
   const plan = planFilter.value;
   const sort = sortFilter.value;
 
-  // Filter List
   let filtered = allUsers.filter((u) => {
     const matchesSearch =
       (u.name || "").toLowerCase().includes(term) ||
@@ -179,7 +221,6 @@ function updateUI() {
     return matchesSearch && matchesRole && matchesPlan;
   });
 
-  // Sort List
   filtered.sort((a, b) => {
     if (sort === "newest")
       return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
@@ -193,7 +234,6 @@ function updateUI() {
   renderStats(allUsers);
   renderBulkBar();
 
-  // Paginate
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -214,7 +254,7 @@ function renderStats(users) {
     <div class="stat-chip"><strong>${counts.teachers}</strong><span>Teachers</span></div>
     <div class="stat-chip"><strong>${counts.premium}</strong><span>Premium</span></div>
     <button id="sync-trigger-btn" class="sync-action-btn" title="Sync Users Database">
-      ${I.sync || "🔄"} Sync Db
+      ${SVGS.sync} <span>Sync Db</span>
     </button>
   `;
 
@@ -257,8 +297,8 @@ function renderList(users) {
       </div>
       <div class="user-joined inspect-trigger">${fmtDate(u.createdAt)}</div>
       <div class="actions-group" onclick="event.stopPropagation()">
-        <button class="action-btn btn-inspect" data-id="${u.id}" title="Inspect Profile">👀</button>
-        <button class="action-btn btn-delete text-danger" data-id="${u.id}" title="Delete User">${I.logout || "🗑️"}</button>
+        <button class="action-btn btn-inspect" data-id="${u.id}" title="Inspect Profile">${SVGS.inspect}</button>
+        <button class="action-btn btn-delete text-danger" data-id="${u.id}" title="Delete User">${SVGS.trash}</button>
       </div>
     </div>
   `,
@@ -269,7 +309,6 @@ function renderList(users) {
 }
 
 function attachListEvents() {
-  // Checkbox interactions
   listEl.querySelectorAll(".user-select-chk").forEach((el) => {
     el.onchange = (e) => {
       const id = e.target.dataset.id;
@@ -283,7 +322,6 @@ function attachListEvents() {
     };
   });
 
-  // Row inspection
   listEl.querySelectorAll(".inspect-trigger, .btn-inspect").forEach((el) => {
     el.onclick = (e) => {
       const row = e.target.closest(".user-row");
@@ -292,7 +330,6 @@ function attachListEvents() {
     };
   });
 
-  // Database field modifications
   listEl.querySelectorAll(".role-select").forEach((el) => {
     el.onchange = async (e) => {
       try {
@@ -364,7 +401,6 @@ function updateSelectAllHeaderState() {
   selectAllCheckbox.checked = allChecked;
 }
 
-// Bulk Actions Logic
 function renderBulkBar() {
   if (selectedUsers.size === 0) {
     bulkActionBar.classList.add("hidden");
@@ -391,7 +427,6 @@ function renderBulkBar() {
     </div>
   `;
 
-  // Handle Bulk Change Role
   document.getElementById("bulk-role-select").onchange = async (e) => {
     const roleValue = e.target.value;
     if (
@@ -411,7 +446,6 @@ function renderBulkBar() {
     }
   };
 
-  // Handle Bulk Plan Toggle
   document.getElementById("bulk-premium-btn").onclick = async () => {
     if (
       confirm(`Modify subscription status for ${selectedUsers.size} users?`)
@@ -433,7 +467,6 @@ function renderBulkBar() {
     }
   };
 
-  // Handle Bulk Delete
   document.getElementById("bulk-delete-btn").onclick = async () => {
     if (
       confirm(
@@ -457,14 +490,12 @@ function renderBulkBar() {
     }
   };
 
-  // Clear selections
   document.getElementById("bulk-clear-btn").onclick = () => {
     selectedUsers.clear();
     updateUI();
   };
 }
 
-// Pagination Rendering
 function renderPagination(totalPages) {
   if (!paginationEl) return;
   if (totalPages <= 1) {
@@ -473,9 +504,13 @@ function renderPagination(totalPages) {
   }
 
   let paginationButtons = `
-    <button class="pag-btn" ${currentPage === 1 ? "disabled" : ""} id="prev-page">⬅ Prev</button>
+    <button class="pag-btn" ${currentPage === 1 ? "disabled" : ""} id="prev-page">
+      ${SVGS.arrowLeft} <span>Prev</span>
+    </button>
     <span class="pag-indicator">Page <strong>${currentPage}</strong> of ${totalPages}</span>
-    <button class="pag-btn" ${currentPage === totalPages ? "disabled" : ""} id="next-page">Next ➡</button>
+    <button class="pag-btn" ${currentPage === totalPages ? "disabled" : ""} id="next-page">
+      <span>Next</span> ${SVGS.arrowRight}
+    </button>
   `;
 
   paginationEl.innerHTML = paginationButtons;
@@ -495,9 +530,7 @@ function renderPagination(totalPages) {
   };
 }
 
-// User Inspector Modal Window
 function openInspectorModal(user) {
-  // Ensure existing dialog is removed
   const existingModal = document.getElementById("user-inspector-modal");
   if (existingModal) existingModal.remove();
 
@@ -508,7 +541,7 @@ function openInspectorModal(user) {
     <div class="brutal-modal-card">
       <div class="modal-header">
         <h2>Inspect User Record</h2>
-        <button class="modal-close-btn" id="close-inspector-btn">×</button>
+        <button class="modal-close-btn" id="close-inspector-btn">${SVGS.close}</button>
       </div>
       <div class="modal-body">
         <div class="modal-profile-header">
@@ -551,7 +584,7 @@ function openInspectorModal(user) {
   `;
 
   document.body.appendChild(modal);
-  document.body.style.overflow = "hidden"; // Lock page background scrolling
+  document.body.style.overflow = "hidden";
 
   const closeModal = () => {
     modal.remove();
@@ -570,14 +603,13 @@ function openInspectorModal(user) {
   };
 }
 
-// Toast Notification Engine
 function showToast(message, type = "success") {
   const container =
     document.getElementById("toast-container") || createToastContainer();
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
-    <span class="toast-symbol">${type === "success" ? "✓" : "⚠"}</span>
+    <span class="toast-symbol">${type === "success" ? SVGS.check : SVGS.alert}</span>
     <span class="toast-msg">${message}</span>
   `;
   container.appendChild(toast);
