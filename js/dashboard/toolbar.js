@@ -1,14 +1,31 @@
 import { I } from "./icons.js";
+import { auth } from "../../firebase-init.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { SUBSCRIPTION_PLANS } from "../../payment-manager.js";
 import {
   showAssignmentModal,
   showClassModal,
   showLinkChildModal,
 } from "./dashboard-modals.js";
-import { doLogout, doUpgrade } from "../auth-actions.js";
 
-export function buildToolbar(toolbarElement, role, isPremium) {
+function doLogout() {
+  signOut(auth)
+    .then(() => {
+      window.location.href = "/";
+    })
+    .catch(console.error);
+}
+
+function doUpgrade() {
+  if (!auth.currentUser) {
+    window.openAuthModal?.("login");
+    return;
+  }
+  window.PaymentPortal?.open(SUBSCRIPTION_PLANS.PREMIUM);
+}
+
+export function buildToolbar(container, role, isPremium) {
   const logoutBtn = `<button class="dashboard-command cmd-red" type="button" data-action="logout">${I.logout}<span>Logout</span></button>`;
-
   const byRole = {
     student: `
       ${!isPremium ? `<button class="dashboard-command cmd-yellow" type="button" data-action="upgrade">${I.star}<span>Go Premium</span></button>` : ""}
@@ -28,21 +45,21 @@ export function buildToolbar(toolbarElement, role, isPremium) {
       <a class="dashboard-command" href="/admin/settings/index.html">${I.settings}<span>Settings</span></a>`,
   };
 
-  toolbarElement.innerHTML = (byRole[role] || "") + logoutBtn;
+  container.innerHTML = (byRole[role] || "") + logoutBtn;
 
-  toolbarElement
+  container
     .querySelector("[data-action='logout']")
     ?.addEventListener("click", doLogout);
-  toolbarElement
+  container
     .querySelector("[data-action='upgrade']")
     ?.addEventListener("click", doUpgrade);
-  toolbarElement
+  container
     .querySelector("[data-action='new-assignment']")
     ?.addEventListener("click", showAssignmentModal);
-  toolbarElement
+  container
     .querySelector("[data-action='new-class']")
     ?.addEventListener("click", showClassModal);
-  toolbarElement
+  container
     .querySelector("[data-action='link-child']")
     ?.addEventListener("click", showLinkChildModal);
 }

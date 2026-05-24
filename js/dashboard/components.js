@@ -1,4 +1,4 @@
-import { pct, pillColor, fmtDate } from "./utils.js";
+import { pct, fmtDate } from "./utils.js";
 
 export function assignmentItemHTML(t, showProgress = true) {
   const STATUS = {
