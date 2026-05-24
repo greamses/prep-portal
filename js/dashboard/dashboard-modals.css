@@ -1,0 +1,137 @@
+#db-modal-container {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s;
+}
+
+#db-modal-container.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.db-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.db-modal {
+  position: relative;
+  z-index: 2;
+  width: 95%;
+  max-width: 460px;
+  background: var(--surface-primary, #fff);
+  border: 2.5px solid var(--ink, #1a1a1a);
+  border-radius: 16px;
+  box-shadow: 8px 8px 0 var(--ink, #1a1a1a);
+  padding: 2rem;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#db-modal-container.active .db-modal {
+  transform: translateY(0);
+}
+
+.db-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.db-modal-header h3 {
+  font-family: var(--font-display, inherit);
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.db-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  padding: 0;
+  line-height: 1;
+}
+
+.db-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.db-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.db-modal-field label {
+  font-family: var(--font-display, inherit);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.db-modal-field input {
+  height: 48px;
+  padding: 0 1rem;
+  border: 2px solid var(--ink, #1a1a1a);
+  border-radius: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9rem;
+  background: var(--bg, #fff);
+}
+
+.db-modal-submit {
+  height: 52px;
+  background: var(--accent-primary, #ffe500);
+  border: 2.5px solid var(--ink, #1a1a1a);
+  border-radius: 12px;
+  font-family: var(--font-display, inherit);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink, #1a1a1a);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+  margin-top: 0.5rem;
+}
+
+.db-modal-submit:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink, #1a1a1a);
+}
+
+.db-modal-submit:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--ink, #1a1a1a);
+}
+
+.db-modal-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.db-modal-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+  margin: -0.5rem 0 0;
+}

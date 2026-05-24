@@ -16,7 +16,7 @@ function doLogout() {
     .catch(console.error);
 }
 
-function doUpgrade() {
+export function doUpgrade() {
   if (!auth.currentUser) {
     window.openAuthModal?.("login");
     return;
