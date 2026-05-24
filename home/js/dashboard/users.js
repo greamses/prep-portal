@@ -65,14 +65,50 @@ const SVGS = {
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
     </svg>
   `,
+  chevronDown: `
+    <svg class="icon-svg chevron-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  `,
 };
+
+// Available Dropdown Options Constants
+const ROLE_OPTIONS = [
+  { value: "student", label: "Student" },
+  { value: "teacher", label: "Teacher" },
+  { value: "parent", label: "Parent" },
+  { value: "admin", label: "Admin" },
+];
+
+const FILTER_ROLE_OPTIONS = [
+  { value: "all", label: "All Roles" },
+  ...ROLE_OPTIONS,
+];
+
+const FILTER_PLAN_OPTIONS = [
+  { value: "all", label: "All Plans" },
+  { value: "premium", label: "Premium" },
+  { value: "free", label: "Free" },
+];
+
+const FILTER_SORT_OPTIONS = [
+  { value: "newest", label: "Newest Joined" },
+  { value: "oldest", label: "Oldest Joined" },
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+];
 
 const listEl = document.getElementById("users-list");
 const statsEl = document.getElementById("admin-user-stats");
 const searchInput = document.getElementById("user-search");
-const roleFilter = document.getElementById("role-filter");
+const nativeRoleFilter = document.getElementById("role-filter");
 
-let planFilter, sortFilter, selectAllCheckbox, bulkActionBar, paginationEl;
+let bulkActionBar, paginationEl;
+
+// Filter State Variables
+let filterRole = "all";
+let filterPlan = "all";
+let filterSort = "newest";
 
 let allUsers = [];
 let selectedUsers = new Set();
@@ -118,6 +154,7 @@ async function triggerSync() {
 }
 
 function init() {
+  initDropdownGlobalHandlers();
   injectExtendedControls();
   triggerSync();
 
@@ -136,42 +173,142 @@ function init() {
     currentPage = 1;
     updateUI();
   });
-  roleFilter.addEventListener("change", () => {
-    currentPage = 1;
-    updateUI();
+}
+
+// 2. Custom Dropdown Engine
+function makeBrutalDropdownHTML({
+  id,
+  className,
+  options,
+  selectedValue,
+  defaultLabel = "Select...",
+}) {
+  const selectedOption = options.find((o) => o.value === selectedValue);
+  const triggerLabel = selectedOption ? selectedOption.label : defaultLabel;
+
+  const optionsHTML = options
+    .map(
+      (o) => `
+      <div class="brutal-dropdown-item ${o.value === selectedValue ? "active" : ""}" data-value="${o.value}">
+        ${o.label}
+      </div>
+    `,
+    )
+    .join("");
+
+  return `
+    <div class="brutal-dropdown ${className || ""}" data-id="${id || ""}">
+      <button class="brutal-dropdown-trigger" type="button">
+        <span>${triggerLabel}</span>
+        ${SVGS.chevronDown}
+      </button>
+      <div class="brutal-dropdown-menu">
+        ${optionsHTML}
+      </div>
+    </div>
+  `;
+}
+
+function initDropdownGlobalHandlers() {
+  // Toggle, open, and close drop actions on click
+  document.addEventListener("click", (e) => {
+    const isTrigger = e.target.closest(".brutal-dropdown-trigger");
+    const activeDropdown = e.target.closest(".brutal-dropdown");
+
+    document.querySelectorAll(".brutal-dropdown.open").forEach((drop) => {
+      if (drop !== activeDropdown) {
+        drop.classList.remove("open");
+      }
+    });
+
+    if (isTrigger && activeDropdown) {
+      activeDropdown.classList.toggle("open");
+    }
   });
-  planFilter.addEventListener("change", () => {
-    currentPage = 1;
-    updateUI();
-  });
-  sortFilter.addEventListener("change", () => {
-    updateUI();
+
+  // Handle selection event dispatching
+  document.addEventListener("click", (e) => {
+    const item = e.target.closest(".brutal-dropdown-item");
+    if (item) {
+      const dropdown = item.closest(".brutal-dropdown");
+      const val = item.dataset.value;
+      const triggerSpan = dropdown.querySelector(
+        ".brutal-dropdown-trigger span",
+      );
+
+      dropdown
+        .querySelectorAll(".brutal-dropdown-item")
+        .forEach((i) => i.classList.remove("active"));
+      item.classList.add("active");
+      triggerSpan.textContent = item.textContent.trim();
+      dropdown.classList.remove("open");
+
+      // Dispatch customized change event standard on element
+      const customEvent = new CustomEvent("change", { detail: { value: val } });
+      dropdown.dispatchEvent(customEvent);
+    }
   });
 }
 
 function injectExtendedControls() {
-  const filterWrap = roleFilter.parentElement;
-  if (filterWrap) {
-    planFilter = document.createElement("select");
-    planFilter.id = "plan-filter";
-    planFilter.className = "filter-select";
-    planFilter.innerHTML = `
-      <option value="all">All Plans</option>
-      <option value="premium">Premium Only</option>
-      <option value="free">Free Only</option>
-    `;
-    filterWrap.appendChild(planFilter);
+  if (nativeRoleFilter) {
+    nativeRoleFilter.style.display = "none"; // Hide default select
+  }
 
-    sortFilter = document.createElement("select");
-    sortFilter.id = "sort-filter";
-    sortFilter.className = "filter-select";
-    sortFilter.innerHTML = `
-      <option value="newest">Newest Joined</option>
-      <option value="oldest">Oldest Joined</option>
-      <option value="name-asc">Name (A-Z)</option>
-      <option value="name-desc">Name (Z-A)</option>
-    `;
-    filterWrap.appendChild(sortFilter);
+  const filterWrap = nativeRoleFilter?.parentElement;
+  if (filterWrap) {
+    // Clear wrapper contents except label/elements we need to reconstruct
+    filterWrap.innerHTML = "";
+
+    // 1. Render Custom Role Filter
+    const roleDropWrapper = document.createElement("div");
+    roleDropWrapper.innerHTML = makeBrutalDropdownHTML({
+      id: "role-filter-drop",
+      className: "filter-dropdown",
+      options: FILTER_ROLE_OPTIONS,
+      selectedValue: filterRole,
+    });
+    const roleDropEl = roleDropWrapper.firstElementChild;
+    filterWrap.appendChild(roleDropEl);
+
+    roleDropEl.addEventListener("change", (e) => {
+      filterRole = e.detail.value;
+      currentPage = 1;
+      updateUI();
+    });
+
+    // 2. Render Custom Plan Filter
+    const planDropWrapper = document.createElement("div");
+    planDropWrapper.innerHTML = makeBrutalDropdownHTML({
+      id: "plan-filter-drop",
+      className: "filter-dropdown",
+      options: FILTER_PLAN_OPTIONS,
+      selectedValue: filterPlan,
+    });
+    const planDropEl = planDropWrapper.firstElementChild;
+    filterWrap.appendChild(planDropEl);
+
+    planDropEl.addEventListener("change", (e) => {
+      filterPlan = e.detail.value;
+      currentPage = 1;
+      updateUI();
+    });
+
+    // 3. Render Custom Sort Filter
+    const sortDropWrapper = document.createElement("div");
+    sortDropWrapper.innerHTML = makeBrutalDropdownHTML({
+      id: "sort-filter-drop",
+      className: "filter-dropdown",
+      options: FILTER_SORT_OPTIONS,
+      selectedValue: filterSort,
+    });
+    const sortDropEl = sortDropWrapper.firstElementChild;
+    filterWrap.appendChild(sortDropEl);
+
+    sortDropEl.addEventListener("change", (e) => {
+      filterSort = e.detail.value;
+      updateUI();
+    });
   }
 
   const tableHeader = document.querySelector(".users-table-header");
@@ -184,7 +321,7 @@ function injectExtendedControls() {
     `;
     tableHeader.insertBefore(checkHeader, tableHeader.firstChild);
     tableHeader.style.gridTemplateColumns =
-      "50px 2.5fr 140px 140px 140px 120px";
+      "50px 2.5fr 160px 140px 140px 120px";
 
     selectAllCheckbox = document.getElementById("select-all-users");
     selectAllCheckbox.addEventListener("change", handleSelectAll);
@@ -205,29 +342,28 @@ function injectExtendedControls() {
 
 function updateUI() {
   const term = searchInput.value.toLowerCase();
-  const role = roleFilter.value;
-  const plan = planFilter.value;
-  const sort = sortFilter.value;
 
   let filtered = allUsers.filter((u) => {
     const matchesSearch =
       (u.name || "").toLowerCase().includes(term) ||
       (u.email || "").toLowerCase().includes(term);
-    const matchesRole = role === "all" || u.role === role;
+    const matchesRole = filterRole === "all" || u.role === filterRole;
     const matchesPlan =
-      plan === "all" ||
-      (plan === "premium" && u.isPremium) ||
-      (plan === "free" && !u.isPremium);
+      filterPlan === "all" ||
+      (filterPlan === "premium" && u.isPremium) ||
+      (filterPlan === "free" && !u.isPremium);
     return matchesSearch && matchesRole && matchesPlan;
   });
 
   filtered.sort((a, b) => {
-    if (sort === "newest")
+    if (filterSort === "newest")
       return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-    if (sort === "oldest")
+    if (filterSort === "oldest")
       return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
-    if (sort === "name-asc") return (a.name || "").localeCompare(b.name || "");
-    if (sort === "name-desc") return (b.name || "").localeCompare(a.name || "");
+    if (filterSort === "name-asc")
+      return (a.name || "").localeCompare(b.name || "");
+    if (filterSort === "name-desc")
+      return (b.name || "").localeCompare(a.name || "");
     return 0;
   });
 
@@ -271,7 +407,7 @@ function renderList(users) {
   listEl.innerHTML = users
     .map(
       (u) => `
-    <div class="user-row brutal-row" data-id="${u.id}" style="grid-template-columns: 50px 2.5fr 140px 140px 140px 120px;">
+    <div class="user-row brutal-row" data-id="${u.id}" style="grid-template-columns: 50px 2.5fr 160px 140px 140px 120px;">
       <div class="cell-checkbox" onclick="event.stopPropagation()">
         <input type="checkbox" class="brutal-checkbox user-select-chk" data-id="${u.id}" ${selectedUsers.has(u.id) ? "checked" : ""}>
       </div>
@@ -283,12 +419,12 @@ function renderList(users) {
         </div>
       </div>
       <div onclick="event.stopPropagation()">
-        <select class="role-select" data-id="${u.id}">
-            <option value="student" ${u.role === "student" ? "selected" : ""}>Student</option>
-            <option value="teacher" ${u.role === "teacher" ? "selected" : ""}>Teacher</option>
-            <option value="parent" ${u.role === "parent" ? "selected" : ""}>Parent</option>
-            <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
-        </select>
+        ${makeBrutalDropdownHTML({
+          id: u.id,
+          className: "row-role-dropdown",
+          options: ROLE_OPTIONS,
+          selectedValue: u.role || "student",
+        })}
       </div>
       <div onclick="event.stopPropagation()">
         <button class="plan-toggle ${u.isPremium ? "is-premium" : ""}" data-id="${u.id}">
@@ -330,17 +466,18 @@ function attachListEvents() {
     };
   });
 
-  listEl.querySelectorAll(".role-select").forEach((el) => {
-    el.onchange = async (e) => {
+  // Custom role selection callback
+  listEl.querySelectorAll(".row-role-dropdown").forEach((el) => {
+    el.addEventListener("change", async (e) => {
+      const userId = el.dataset.id;
+      const newRole = e.detail.value;
       try {
-        await updateDoc(doc(db, "users", e.target.dataset.id), {
-          role: e.target.value,
-        });
+        await updateDoc(doc(db, "users", userId), { role: newRole });
         showToast("User role updated successfully", "success");
       } catch (err) {
         showToast("Error updating role", "error");
       }
-    };
+    });
   });
 
   listEl.querySelectorAll(".plan-toggle").forEach((el) => {
@@ -413,13 +550,13 @@ function renderBulkBar() {
     <div class="bulk-content">
       <span class="bulk-count"><strong>${selectedUsers.size}</strong> users selected</span>
       <div class="bulk-controls">
-        <select id="bulk-role-select" class="bulk-select">
-          <option value="" disabled selected>Change Role...</option>
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
-          <option value="parent">Parent</option>
-          <option value="admin">Admin</option>
-        </select>
+        ${makeBrutalDropdownHTML({
+          id: "bulk-role-select",
+          className: "bulk-dropdown",
+          options: ROLE_OPTIONS,
+          selectedValue: "",
+          defaultLabel: "Change Role...",
+        })}
         <button id="bulk-premium-btn" class="bulk-btn">Toggle Premium</button>
         <button id="bulk-delete-btn" class="bulk-btn bulk-btn-danger">Delete Selected</button>
         <button id="bulk-clear-btn" class="bulk-btn-close">Cancel Selection</button>
@@ -427,24 +564,28 @@ function renderBulkBar() {
     </div>
   `;
 
-  document.getElementById("bulk-role-select").onchange = async (e) => {
-    const roleValue = e.target.value;
-    if (
-      confirm(`Change selected ${selectedUsers.size} users to ${roleValue}?`)
-    ) {
-      const batchPromises = Array.from(selectedUsers).map((id) =>
-        updateDoc(doc(db, "users", id), { role: roleValue }),
-      );
-      try {
-        await Promise.all(batchPromises);
-        showToast(`Updated roles for ${selectedUsers.size} users`, "success");
-        selectedUsers.clear();
-        updateUI();
-      } catch (err) {
-        showToast("Error updating bulk roles", "error");
+  // Capture selections on bulk-role change event
+  const bulkRoleEl = document.getElementById("bulk-role-select");
+  if (bulkRoleEl) {
+    bulkRoleEl.addEventListener("change", async (e) => {
+      const roleValue = e.detail.value;
+      if (
+        confirm(`Change selected ${selectedUsers.size} users to ${roleValue}?`)
+      ) {
+        const batchPromises = Array.from(selectedUsers).map((id) =>
+          updateDoc(doc(db, "users", id), { role: roleValue }),
+        );
+        try {
+          await Promise.all(batchPromises);
+          showToast(`Updated roles for ${selectedUsers.size} users`, "success");
+          selectedUsers.clear();
+          updateUI();
+        } catch (err) {
+          showToast("Error updating bulk roles", "error");
+        }
       }
-    }
-  };
+    });
+  }
 
   document.getElementById("bulk-premium-btn").onclick = async () => {
     if (
@@ -458,7 +599,7 @@ function renderBulkBar() {
       });
       try {
         await Promise.all(batchPromises);
-        showToast(`Subscription status updated`, "success");
+        showToast("Subscription status updated", "success");
         selectedUsers.clear();
         updateUI();
       } catch (err) {

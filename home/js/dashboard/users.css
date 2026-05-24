@@ -507,6 +507,192 @@ body {
   font-size: 0.85rem;
 }
 
+/* Brutalist Dropdown Root */
+.brutal-dropdown {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  min-width: 140px;
+  box-sizing: border-box;
+}
+
+/* Dropdown Base Trigger */
+.brutal-dropdown-trigger {
+  width: 100%;
+  height: 56px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 0 1.25rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--bg);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  transition:
+    transform 0.05s,
+    box-shadow 0.05s,
+    background-color 0.1s;
+}
+
+.brutal-dropdown-trigger:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+/* Open State Trigger Shift */
+.brutal-dropdown.open .brutal-dropdown-trigger {
+  background: var(--surface-secondary);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.brutal-dropdown.open .chevron-svg {
+  transform: rotate(180deg);
+}
+
+.chevron-svg {
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Dropdown Options Popover Menu */
+.brutal-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 6px 6px 0 var(--ink);
+  z-index: 150;
+  max-height: 250px;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+
+.brutal-dropdown.open .brutal-dropdown-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Dropdown Options Items */
+.brutal-dropdown-item {
+  padding: 0.75rem 1.25rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 3px solid var(--ink);
+  transition:
+    background-color 0.05s,
+    color 0.05s;
+  background-color: var(--bg);
+}
+
+.brutal-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.brutal-dropdown-item:hover {
+  background: var(--accent-primary, #ffd600);
+  color: var(--ink);
+}
+
+.brutal-dropdown-item.active {
+  background: var(--surface-secondary);
+  color: var(--text-main);
+}
+
+/* Layout Variations: Filters */
+.filter-dropdown {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Layout Variations: Row Level Selector Override */
+.user-row .brutal-dropdown {
+  min-width: 140px;
+}
+
+.user-row .brutal-dropdown-trigger {
+  height: 42px;
+  border-radius: 8px;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.user-row .brutal-dropdown-trigger:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.user-row .brutal-dropdown.open .brutal-dropdown-trigger {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.user-row .brutal-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.user-row .brutal-dropdown-item {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-bottom-width: 2px;
+}
+
+/* Layout Variations: Bulk Drawer Select Override */
+.bulk-controls .brutal-dropdown {
+  min-width: 160px;
+}
+
+.bulk-controls .brutal-dropdown-trigger {
+  height: 40px;
+  border-radius: 8px;
+  padding: 0 0.85rem;
+  font-size: 0.75rem;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.bulk-controls .brutal-dropdown-trigger:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.bulk-controls .brutal-dropdown.open .brutal-dropdown-trigger {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.bulk-controls .brutal-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 var(--ink);
+  bottom: calc(100% + 8px); /* Open upward to prevent viewport cutoff */
+  top: auto;
+}
+
+.bulk-controls .brutal-dropdown-item {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.75rem;
+  border-bottom-width: 2px;
+}
+
 /* Custom Modal Drawer Overlay */
 .brutal-modal-overlay {
   position: fixed;
