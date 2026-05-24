@@ -1,13 +1,13 @@
 import { I } from "./icons.js";
 import { auth } from "../../../firebase-init.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { SUBSCRIPTION_PLANS } from "../../../payment-manager.js";
-import { ROUTES } from "/js/routing.js";
+import { auth } from "/firebase-init.js";
+import { SUBSCRIPTION_PLANS } from "/payment-manager.js";
+import { ROUTES } from "/home/js/routing.js";
 import {
   showAssignmentModal,
   showClassModal,
   showLinkChildModal,
-} from "./dashboard-modals.js";
+} from "/home/js/dashboard/dashboard-modals.js";
 
 function doLogout() {
   signOut(auth)

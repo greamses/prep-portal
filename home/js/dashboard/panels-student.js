@@ -1,10 +1,18 @@
-import { I } from "./icons.js";
-import { pct, scoreColor, pillColor, fmtDate } from "./utils.js";
-import { assignmentItemHTML, perfBarHTML } from "./components.js";
-import { MOCK } from "./mock-data.js";
-import { renderCalendar } from "./calendar.js";
-import { doUpgrade } from "./toolbar.js";
-import { ROUTES } from "/js/routing.js";
+import { I } from "/home/js/dashboard/icons.js";
+import {
+  pct,
+  scoreColor,
+  pillColor,
+  fmtDate,
+} from "/home/js/dashboard/utils.js";
+import {
+  assignmentItemHTML,
+  perfBarHTML,
+} from "/home/js/dashboard/components.js";
+import { MOCK } from "/home/js/dashboard/mock-data.js";
+import { renderCalendar } from "/home/js/dashboard/calendar.js";
+import { doUpgrade } from "/home/js/dashboard/toolbar.js";
+import { ROUTES } from "/home/js/routing.js";
 
 export function buildStudentPanels(user, data, layout) {
   const progress = pct(data.weeklyProgress, 72);

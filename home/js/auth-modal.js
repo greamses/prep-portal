@@ -18,11 +18,11 @@ import {
   where,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import { renderStudentFields } from "/home/js/auth/StudentForm.js";
-import { renderParentFields } from "/home/js/auth/ParentForm.js";
-import { renderTeacherFields } from "/home/js/auth/TeacherForm.js";
-import { auth, googleProvider, db } from "../../firebase-init.js";
-import { ROUTES } from "/js/routing.js";
+import { renderStudentFields } from "/home/js/dashboard/StudentForm.js";
+import { renderParentFields } from "/home/js/dashboard/ParentForm.js";
+import { renderTeacherFields } from "/home/js/dashboard/TeacherForm.js";
+import { auth, googleProvider, db } from "/firebase-init.js";
+import { ROUTES } from "/home/js/routing.js";
 
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 

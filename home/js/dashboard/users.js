@@ -1,4 +1,4 @@
-import { auth, db } from "../../../firebase-init.js";
+import { auth, db } from "/firebase-init.js";
 import {
   collection,
   query,
@@ -7,11 +7,10 @@ import {
   updateDoc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import { initial, fmtDate, avatarColor } from "./utils.js";
-import { I } from "./icons.js";
-import "../../../utils/components/nav-builder.js";
-import { ROUTES, API_ENDPOINTS } from "/js/routing.js";
-
+import { initial, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
+import { I } from "/home/js/dashboard/icons.js";
+import "/utils/components/nav-builder.js";
+import { ROUTES, API_ENDPOINTS } from "/home/js/routing.js";
 const listEl = document.getElementById("users-list");
 const statsEl = document.getElementById("admin-user-stats");
 const searchInput = document.getElementById("user-search");

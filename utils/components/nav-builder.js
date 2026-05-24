@@ -1,6 +1,6 @@
-import NAV_CONFIG from "./nav-config.js";
-import "../../home/js/auth-modal.js";
-import { auth, db } from "../../firebase-init.js";
+import NAV_CONFIG from "/utils/components/nav-config.js";
+import "/home/js/auth-modal.js";
+import { auth, db } from "/firebase-init.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import {
   doc,

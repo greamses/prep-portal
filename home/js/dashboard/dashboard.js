@@ -9,14 +9,14 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-import { setText, firstName, initial } from "./utils.js";
-import { ROLE_LABELS, ROLE_SUBTITLES } from "./constants.js";
-import { ROUTES } from "/js/routing.js";
-import { buildToolbar } from "./toolbar.js";
-import { buildStudentPanels } from "./panels-student.js";
-import { buildTeacherPanels } from "./panels-teacher.js";
-import { buildParentPanels } from "./panels-parent.js";
-import { buildAdminPanels } from "./panels-admin.js";
+import { setText, firstName, initial } from "/home/js/dashboard/utils.js";
+import { ROLE_LABELS, ROLE_SUBTITLES } from "/home/js/dashboard/constants.js";
+import { ROUTES } from "/home/js/routing.js";
+import { buildToolbar } from "/home/js/dashboard/toolbar.js";
+import { buildStudentPanels } from "/home/js/dashboard/panels-student.js";
+import { buildTeacherPanels } from "/home/js/dashboard/panels-teacher.js";
+import { buildParentPanels } from "/home/js/dashboard/panels-parent.js";
+import { buildAdminPanels } from "/home/js/dashboard/panels-admin.js";
 
 const layout = document.getElementById("dashboard-layout");
 const toolbar = document.getElementById("dashboard-toolbar");

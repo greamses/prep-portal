@@ -1,9 +1,17 @@
-import { I } from "./icons.js";
-import { initial, fmtDate, avatarColor, pct } from "./utils.js";
-import { assignmentItemHTML, perfBarHTML } from "./components.js";
-import { MOCK } from "./mock-data.js";
-import { showClassModal } from "./dashboard-modals.js";
-import { ROUTES } from "/js/routing.js";
+import { I } from "/home/js/dashboard/icons.js";
+import {
+  initial,
+  fmtDate,
+  avatarColor,
+  pct,
+} from "/home/js/dashboard/utils.js";
+import {
+  assignmentItemHTML,
+  perfBarHTML,
+} from "/home/js/dashboard/components.js";
+import { MOCK } from "/home/js/dashboard/mock-data.js";
+import { showClassModal } from "/home/js/dashboard/dashboard-modals.js";
+import { ROUTES } from "/home/js/routing.js";
 
 export function buildAdminPanels(user, data, layout) {
   const totalUsers = Number(data.totalUsers) || 0;
