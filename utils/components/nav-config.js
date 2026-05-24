@@ -21,35 +21,35 @@ const NAV_CONFIG = [
     image: `
     <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg">
       <pattern id="grid-exams" width="20" height="20" patternUnits="userSpaceOnUse">
-        <circle cx="2" cy="2" r="1.5" fill="var(--light-muted)" opacity="0.3"/>
+        <circle cx="2" cy="2" r="1.5" fill="var(--text-tertiary)" opacity="0.3"/>
       </pattern>
       <rect width="600" height="320" fill="url(#grid-exams)"/>
       
       <!-- Exam Paper Shadow -->
       <rect x="200" y="38" width="220" height="260" rx="8" fill="var(--ink)"/>
       <!-- Exam Paper Main -->
-      <rect x="190" y="30" width="220" height="260" rx="8" fill="var(--paper)" stroke="var(--ink)" stroke-width="4"/>
+      <rect x="190" y="30" width="220" height="260" rx="8" fill="var(--surface-primary)" stroke="var(--ink)" stroke-width="4"/>
       
       <!-- Lines -->
-      <line x1="220" y1="80" x2="380" y2="80" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>
-      <line x1="220" y1="120" x2="350" y2="120" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>
-      <line x1="220" y1="160" x2="360" y2="160" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>
-      <line x1="220" y1="200" x2="300" y2="200" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="220" y1="80" x2="380" y2="80" stroke="var(--text-secondary)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="220" y1="120" x2="350" y2="120" stroke="var(--text-secondary)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="220" y1="160" x2="360" y2="160" stroke="var(--text-secondary)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="220" y1="200" x2="300" y2="200" stroke="var(--text-secondary)" stroke-width="4" stroke-linecap="round"/>
 
       <!-- Checkmarks -->
-      <path d="M350 110 l 15 15 l 30 -35" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M360 150 l 15 15 l 30 -35" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M350 110 l 15 15 l 30 -35" fill="none" stroke="var(--accent-success)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M360 150 l 15 15 l 30 -35" fill="none" stroke="var(--accent-success)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 
       <!-- Big A+ Grade -->
-      <text x="320" y="260" font-family="sans-serif" font-weight="900" font-size="64" fill="var(--red)" transform="rotate(-15, 320, 260)">A+</text>
+      <text x="320" y="260" font-family="sans-serif" font-weight="900" font-size="64" fill="var(--accent-danger)" transform="rotate(-15, 320, 260)">A+</text>
 
       <!-- Floating Pencil -->
       <g transform="translate(100, 150) rotate(45)">
         <rect x="0" y="10" width="120" height="20" fill="var(--ink)"/>
-        <rect x="-5" y="5" width="120" height="20" fill="var(--yellow)" stroke="var(--ink)" stroke-width="4"/>
-        <polygon points="115,5 115,25 145,15" fill="var(--paper)" stroke="var(--ink)" stroke-width="4"/>
+        <rect x="-5" y="5" width="120" height="20" fill="var(--accent-primary)" stroke="var(--ink)" stroke-width="4"/>
+        <polygon points="115,5 115,25 145,15" fill="var(--surface-primary)" stroke="var(--ink)" stroke-width="4"/>
         <polygon points="135,11.6 135,18.3 145,15" fill="var(--ink)"/>
-        <rect x="-25" y="5" width="20" height="20" fill="var(--red)" stroke="var(--ink)" stroke-width="4"/>
+        <rect x="-25" y="5" width="20" height="20" fill="var(--accent-danger)" stroke="var(--ink)" stroke-width="4"/>
       </g>
     </svg>`,
 
@@ -157,35 +157,35 @@ const NAV_CONFIG = [
     image: `
     <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg">
       <pattern id="dot-blogs" width="16" height="16" patternUnits="userSpaceOnUse">
-        <circle cx="2" cy="2" r="2" fill="var(--light-muted)" opacity="0.2"/>
+        <circle cx="2" cy="2" r="2" fill="var(--text-tertiary)" opacity="0.2"/>
       </pattern>
       <rect width="600" height="320" fill="url(#dot-blogs)"/>
 
       <!-- Browser Window Shadow -->
       <rect x="90" y="50" width="440" height="240" rx="12" fill="var(--ink)"/>
       <!-- Browser Window Main -->
-      <rect x="80" y="40" width="440" height="240" rx="12" fill="var(--paper)" stroke="var(--ink)" stroke-width="5"/>
+      <rect x="80" y="40" width="440" height="240" rx="12" fill="var(--surface-primary)" stroke="var(--ink)" stroke-width="5"/>
 
       <!-- Top Bar -->
       <path d="M 80 80 L 520 80" stroke="var(--ink)" stroke-width="5"/>
-      <circle cx="110" cy="60" r="6" fill="var(--red)" stroke="var(--ink)" stroke-width="2"/>
-      <circle cx="130" cy="60" r="6" fill="var(--yellow)" stroke="var(--ink)" stroke-width="2"/>
-      <circle cx="150" cy="60" r="6" fill="var(--green)" stroke="var(--ink)" stroke-width="2"/>
+      <circle cx="110" cy="60" r="6" fill="var(--accent-danger)" stroke="var(--ink)" stroke-width="2"/>
+      <circle cx="130" cy="60" r="6" fill="var(--accent-primary)" stroke="var(--ink)" stroke-width="2"/>
+      <circle cx="150" cy="60" r="6" fill="var(--accent-success)" stroke="var(--ink)" stroke-width="2"/>
 
       <!-- Content Blocking -->
       <!-- Image Box -->
-      <rect x="110" y="100" width="140" height="100" rx="8" fill="var(--blue)" stroke="var(--ink)" stroke-width="4"/>
+      <rect x="110" y="100" width="140" height="100" rx="8" fill="var(--accent-secondary)" stroke="var(--ink)" stroke-width="4"/>
       <!-- Text Lines -->
       <rect x="270" y="100" width="220" height="14" rx="7" fill="var(--ink)"/>
-      <rect x="270" y="130" width="180" height="10" rx="5" fill="var(--muted)"/>
-      <rect x="270" y="150" width="200" height="10" rx="5" fill="var(--muted)"/>
-      <rect x="270" y="170" width="160" height="10" rx="5" fill="var(--muted)"/>
-      <rect x="270" y="190" width="190" height="10" rx="5" fill="var(--muted)"/>
+      <rect x="270" y="130" width="180" height="10" rx="5" fill="var(--text-secondary)"/>
+      <rect x="270" y="150" width="200" height="10" rx="5" fill="var(--text-secondary)"/>
+      <rect x="270" y="170" width="160" height="10" rx="5" fill="var(--text-secondary)"/>
+      <rect x="270" y="190" width="190" height="10" rx="5" fill="var(--text-secondary)"/>
 
       <!-- Comment Segment -->
-      <rect x="110" y="220" width="380" height="40" rx="8" fill="var(--off)" stroke="var(--ink)" stroke-width="3"/>
-      <circle cx="135" cy="240" r="12" fill="var(--amber)"/>
-      <rect x="160" y="235" width="200" height="10" rx="5" fill="var(--muted)"/>
+      <rect x="110" y="220" width="380" height="40" rx="8" fill="var(--surface-secondary)" stroke="var(--ink)" stroke-width="3"/>
+      <circle cx="135" cy="240" r="12" fill="var(--accent-warning)"/>
+      <rect x="160" y="235" width="200" height="10" rx="5" fill="var(--text-secondary)"/>
     </svg>`,
 
     description: "Learn with stories",
@@ -248,149 +248,6 @@ const NAV_CONFIG = [
           },
         ],
       },
-
-      // {
-      //   text: "English",
-
-      //   icon: `
-      //   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      //     <path d="M4 7V4h16v3"/>
-      //     <path d="M9 20h6"/>
-      //     <path d="M12 4v16"/>
-      //   </svg>`,
-
-      //   description: "Master the language",
-
-      //   children: [
-      //     {
-      //       text: "Grammar Police",
-      //       href: "#grammar",
-      //       description: "Rules made simple",
-      //     },
-      //     {
-      //       text: "Vocabulary Builders",
-      //       href: "#vocabulary",
-      //       description: "Expand your words",
-      //     },
-      //     {
-      //       text: "Writing Tips",
-      //       href: "#writing",
-      //       description: "Craft better essays",
-      //     },
-      //     {
-      //       text: "Reading Comprehension",
-      //       href: "#reading",
-      //       description: "Understand every text",
-      //     },
-      //   ],
-      // },
-
-      // {
-      //   text: "History",
-
-      //   icon: `
-      //   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      //     <circle cx="12" cy="12" r="10"/>
-      //     <polyline points="12 6 12 12 16 14"/>
-      //   </svg>`,
-
-      //   description: "Travel through time",
-
-      //   children: [
-      //     {
-      //       text: "Ancient Civilizations",
-      //       href: "#ancient",
-      //       description: "Discover old worlds",
-      //     },
-      //     {
-      //       text: "Modern History",
-      //       href: "#modern-history",
-      //       description: "Recent world events",
-      //     },
-      //     {
-      //       text: "African History",
-      //       href: "#african-history",
-      //       description: "Our rich heritage",
-      //     },
-      //     {
-      //       text: "World Wars",
-      //       href: "#world-wars",
-      //       description: "Global conflicts explained",
-      //     },
-      //   ],
-      // },
-
-      // {
-      //   text: "Technology",
-
-      //   icon: `
-      //   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      //     <rect x="2" y="3" width="20" height="14" rx="2"/>
-      //     <line x1="8" y1="21" x2="16" y2="21"/>
-      //     <line x1="12" y1="17" x2="12" y2="21"/>
-      //   </svg>`,
-
-      //   description: "Future is now",
-
-      //   children: [
-      //     {
-      //       text: "Coding Basics",
-      //       href: "#coding",
-      //       description: "Learn to program",
-      //     },
-      //     {
-      //       text: "AI & Robotics",
-      //       href: "#ai-robotics",
-      //       description: "Smart machines explained",
-      //     },
-      //     {
-      //       text: "Gadget Reviews",
-      //       href: "#gadgets",
-      //       description: "Latest tech reviews",
-      //     },
-      //     {
-      //       text: "Internet Safety",
-      //       href: "#internet-safety",
-      //       description: "Stay safe online",
-      //     },
-      //   ],
-      // },
-
-      // {
-      //   text: "Arts & Culture",
-
-      //   icon: `
-      //   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      //     <circle cx="12" cy="12" r="10"/>
-      //     <circle cx="12" cy="12" r="6"/>
-      //     <circle cx="12" cy="12" r="2"/>
-      //   </svg>`,
-
-      //   description: "Express your creativity",
-
-      //   children: [
-      //     {
-      //       text: "Drawing Tutorials",
-      //       href: "#drawing",
-      //       description: "Learn to draw",
-      //     },
-      //     {
-      //       text: "Music & Rhythm",
-      //       href: "#music",
-      //       description: "Feel the beat",
-      //     },
-      //     {
-      //       text: "Cultural Festivals",
-      //       href: "#festivals",
-      //       description: "Celebrate diversity worldwide",
-      //     },
-      //     {
-      //       text: "Famous Artists",
-      //       href: "#artists",
-      //       description: "Meet creative masters",
-      //     },
-      //   ],
-      // },
     ],
   },
 
@@ -414,23 +271,23 @@ const NAV_CONFIG = [
         <!-- Shadow -->
         <rect x="10" y="10" width="300" height="160" rx="80" fill="var(--ink)"/>
         <!-- Main -->
-        <rect x="0" y="0" width="300" height="160" rx="80" fill="var(--paper)" stroke="var(--ink)" stroke-width="6"/>
+        <rect x="0" y="0" width="300" height="160" rx="80" fill="var(--surface-primary)" stroke="var(--ink)" stroke-width="6"/>
         
         <!-- D-Pad -->
         <path d="M 60 60 L 80 60 L 80 40 L 100 40 L 100 60 L 120 60 L 120 80 L 100 80 L 100 100 L 80 100 L 80 80 L 60 80 Z" fill="var(--ink)"/>
         
         <!-- Action Buttons -->
-        <circle cx="220" cy="100" r="15" fill="var(--green)" stroke="var(--ink)" stroke-width="4"/>
-        <circle cx="250" cy="60" r="15" fill="var(--red)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="220" cy="100" r="15" fill="var(--accent-success)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="250" cy="60" r="15" fill="var(--accent-danger)" stroke="var(--ink)" stroke-width="4"/>
         
         <!-- Analog Sticks -->
-        <circle cx="130" cy="110" r="20" fill="var(--blue)" stroke="var(--ink)" stroke-width="4"/>
-        <circle cx="180" cy="110" r="20" fill="var(--yellow)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="130" cy="110" r="20" fill="var(--accent-secondary)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="180" cy="110" r="20" fill="var(--accent-primary)" stroke="var(--ink)" stroke-width="4"/>
       </g>
       
       <!-- Accent marks for motion -->
-      <path d="M 50 50 L 70 30 M 80 60 L 100 40" stroke="var(--amber)" stroke-width="5" stroke-linecap="round"/>
-      <path d="M 520 250 L 500 270 M 490 240 L 470 260" stroke="var(--blue)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 50 50 L 70 30 M 80 60 L 100 40" stroke="var(--accent-warning)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 520 250 L 500 270 M 490 240 L 470 260" stroke="var(--accent-secondary)" stroke-width="5" stroke-linecap="round"/>
     </svg>`,
 
     description: "Play, learn, grow",

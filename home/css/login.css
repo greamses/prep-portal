@@ -19,8 +19,8 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
+    opacity var(--duration-slow) var(--ease-default),
+    visibility var(--duration-slow) var(--ease-default);
 }
 
 .log-in.active {
@@ -51,12 +51,12 @@
   width: 100%;
   max-width: 420px;
   padding: clamp(1.8rem, 5vw, 2.4rem) clamp(1.6rem, 5vw, 2.2rem);
-  background: var(--paper);
+  background: var(--surface-primary);
   border: 2.5px solid var(--ink);
   border-radius: 20px;
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   transform: translateY(32px) scale(0.97);
-  transition: transform 0.3s ease;
+  transition: transform var(--duration-slow) var(--ease-default);
   max-height: 92vh;
   overflow-y: auto;
 }
@@ -84,9 +84,9 @@
   align-items: center;
   justify-content: center;
   border: none;
-  background: #fff;
+  background: var(--bg);
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-default);
 }
 
 .auth-close:hover {
@@ -108,7 +108,7 @@
   gap: 0.75rem;
   text-decoration: none;
   color: var(--ink);
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform var(--duration-smooth) var(--ease-bounce);
 }
 
 .auth-badge img {
@@ -117,7 +117,7 @@
   object-fit: contain;
   border-radius: 12px;
   border: 2px solid var(--ink);
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 
 .auth-title {
@@ -127,7 +127,7 @@
 }
 
 .brand-top {
-  font-weight: 900;
+  font-weight: var(--weight-black);
   font-size: 1.2rem;
   font-family: var(--font-display);
   letter-spacing: -0.5px;
@@ -135,8 +135,8 @@
 
 .brand-bottom {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--muted);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
 
 /* =========================================
@@ -147,7 +147,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #eceae0;
+  background: var(--surface-secondary);
   border-bottom: 2.5px solid var(--ink);
   padding: 4px;
   margin-block: 1rem;
@@ -159,13 +159,13 @@
   background: transparent;
   font-family: var(--font-display);
   font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--muted);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .auth-tab.active {
-  background: var(--yellow);
+  background: var(--accent-primary);
   color: var(--ink);
 }
 
@@ -195,7 +195,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.3rem, 4vw, 1.55rem);
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--ink);
   line-height: 1.05;
   letter-spacing: -0.04em;
@@ -205,7 +205,7 @@
   margin-top: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -215,7 +215,7 @@
 
 .auth-sep {
   height: 1px;
-  background: #e0ded6;
+  background: var(--border-subtle);
   margin: 0.1rem 0;
 }
 
@@ -233,7 +233,7 @@
 .auth-field label {
   font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--ink);
   letter-spacing: 0.01em;
 }
@@ -245,7 +245,7 @@
   padding: 0 1rem;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg);
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--ink);
@@ -253,9 +253,9 @@
   box-sizing: border-box;
   appearance: none;
   transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .auth-field select {
@@ -273,14 +273,14 @@
 }
 
 .auth-field input::placeholder {
-  color: #bbb;
+  color: var(--text-tertiary);
 }
 
 .auth-field input:focus,
 .auth-field select:focus {
   transform: translate(-2px, -2px);
-  border-color: var(--blue);
-  box-shadow: 2px 2px 0 var(--blue);
+  border-color: var(--accent-secondary);
+  box-shadow: 2px 2px 0 var(--accent-secondary);
 }
 
 .auth-row {
@@ -315,15 +315,15 @@
   padding: 0.7rem;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg);
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.15s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default);
 }
 
 .role-card:hover {
@@ -332,7 +332,7 @@
 }
 
 .role-card.active {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 
 .role-icon,
@@ -341,7 +341,7 @@
   align-items: center;
   justify-content: center;
   border: 2px solid var(--ink);
-  background: var(--paper);
+  background: var(--surface-primary);
 }
 
 .role-icon {
@@ -372,7 +372,7 @@
 
 .role-info small {
   margin-top: 0.25rem;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.68rem;
   line-height: 1.2;
 }
@@ -384,8 +384,8 @@
   opacity: 0;
   transform: scale(0.8);
   transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+    opacity var(--duration-fast) var(--ease-default),
+    transform var(--duration-fast) var(--ease-default);
 }
 
 .role-check svg {
@@ -405,7 +405,7 @@
   padding: 0.85rem;
   border: 2px dashed var(--ink);
   border-radius: 12px;
-  background: var(--off);
+  background: var(--surface-secondary);
 }
 
 /* =========================================
@@ -425,7 +425,7 @@
   gap: 0.45rem;
   font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--ink);
   cursor: pointer;
 }
@@ -435,7 +435,7 @@
   height: 16px;
   border: 2.5px solid var(--ink);
   border-radius: 4px;
-  accent-color: var(--yellow);
+  accent-color: var(--accent-primary);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -443,8 +443,8 @@
 .auth-options a {
   font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--blue);
+  font-weight: var(--weight-bold);
+  color: var(--accent-secondary);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -461,20 +461,20 @@
   justify-content: center;
   gap: 0.6rem;
   margin-top: 0.2rem;
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--ink);
   letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .auth-submit:hover {
@@ -484,7 +484,7 @@
 
 .auth-submit:active {
   transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .auth-submit svg {
@@ -503,8 +503,8 @@
   gap: 0.6rem;
   font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #bbb;
+  font-weight: var(--weight-bold);
+  color: var(--text-tertiary);
 }
 
 .auth-or::before,
@@ -512,7 +512,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: #e0ded6;
+  background: var(--border-subtle);
 }
 
 /* =========================================
@@ -526,19 +526,19 @@
   align-items: center;
   justify-content: center;
   gap: 0.7rem;
-  background: #fff;
+  background: var(--bg);
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--ink);
   cursor: pointer;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .google-btn:hover {
@@ -548,7 +548,7 @@
 
 .google-btn:active {
   transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .google-btn svg {
@@ -565,7 +565,7 @@
   .auth-modal {
     padding: 1.4rem 1.2rem;
     border-radius: 16px;
-    box-shadow: 4px 4px 0 var(--ink);
+    box-shadow: var(--shadow-md);
   }
 
   .auth-modal.signup-mode {

@@ -14,12 +14,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--paper);
+  background: var(--bg);
   padding: 0 1.5rem;
   height: 80px;
   border-bottom: 3px solid var(--ink);
   font-family: var(--font-mono);
-  transition: all 0.2s ease;
+  transition: all var(--duration-smooth) var(--ease-default);
   box-sizing: border-box;
 }
 
@@ -42,7 +42,7 @@ body {
   gap: 0.75rem;
   text-decoration: none;
   color: var(--ink);
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform var(--duration-smooth) var(--ease-bounce);
 }
 
 .nav-logo img {
@@ -51,7 +51,7 @@ body {
   object-fit: contain;
   border-radius: 12px;
   border: 2px solid var(--ink);
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 
 .nav-logo-text {
@@ -61,7 +61,7 @@ body {
 }
 
 .brand-top {
-  font-weight: 900;
+  font-weight: var(--weight-black);
   font-size: 1.2rem;
   font-family: var(--font-display);
   letter-spacing: -0.5px;
@@ -69,8 +69,8 @@ body {
 
 .brand-bottom {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--muted);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
 
 /* =============================================
@@ -100,36 +100,36 @@ body {
   gap: 0.5rem;
   color: var(--ink);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-size: 0.95rem;
   padding: 0.6rem 1rem;
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all var(--duration-smooth) var(--ease-bounce);
   white-space: nowrap;
 }
 
 /* Hover effect (visual only – panel opens on click) */
 .site-nav .nav-links > li:hover .nav-main-label {
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2px solid var(--ink);
   transform: translateY(-2px);
 }
 
-/* 🔥 OPEN STATE (panel visible) – same as hover but persistent */
+/* OPEN STATE (panel visible) – same as hover but persistent */
 .site-nav .nav-links > li.open > .nav-main-label {
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0px var(--ink);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 /* Active page state (different from open) */
 .site-nav .nav-links > li.active > .nav-main-label {
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0px var(--ink);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
@@ -150,7 +150,6 @@ body {
 
 /* =============================================
    MEGA PANEL (FLOATING BRUTALIST BOX)
-   🔥 FIXED: Visible on click (not hover), no disappearing
    ============================================= */
 .mega-panel {
   position: fixed;
@@ -160,14 +159,14 @@ body {
   width: 100%;
   max-width: 100vw;
   max-height: calc(100vh - 150px);
-  background: var(--paper);
+  background: var(--bg);
   border: 3px solid var(--ink);
   border-radius: 0 0 16px 16px;
   padding: 2rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all var(--duration-normal) var(--ease-bounce);
   z-index: 9998;
   overflow-y: auto;
   overflow-x: auto;
@@ -228,8 +227,8 @@ body {
   background: var(--bg);
   border-radius: 12px;
   padding: 0.75rem;
-  border: 2px solid transparent; /* Added to keep dimensions stable */
-  transition: transform 0.2s ease;
+  border: 2px solid transparent;
+  transition: transform var(--duration-smooth) var(--ease-default);
   min-width: 200px;
   box-sizing: border-box;
 }
@@ -240,19 +239,19 @@ body {
 
 /* Colorful Theme Accents per block */
 .nav-block.theme-yellow .nav-header .nav-icon {
-  background: var(--yellow);
+  background: var(--accent-primary);
 }
 .nav-block.theme-blue .nav-header .nav-icon {
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
 }
 .nav-block.theme-green .nav-header .nav-icon {
-  background: var(--green);
-  color: #fff;
+  background: var(--accent-success);
+  color: var(--text-on-accent);
 }
 .nav-block.theme-red .nav-header .nav-icon {
-  background: var(--red);
-  color: #fff;
+  background: var(--accent-danger);
+  color: var(--text-on-accent);
 }
 
 /* GROUP HEADER */
@@ -260,7 +259,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-black);
   font-family: var(--font-display);
   font-size: 0.9rem;
   color: var(--ink);
@@ -288,7 +287,7 @@ body {
   border-bottom: 2px dotted transparent;
   background: transparent;
   color: var(--ink);
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all var(--duration-smooth) var(--ease-bounce);
   border-radius: 0;
   white-space: nowrap;
 }
@@ -300,14 +299,14 @@ body {
 }
 
 .nav-leaf-title {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-size: 0.85rem;
 }
 
 .nav-leaf small {
   font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--muted);
+  font-weight: var(--weight-regular);
+  color: var(--text-secondary);
   margin-top: 3px;
   line-height: 1;
 }
@@ -318,12 +317,12 @@ body {
   color: var(--ink);
   width: 20px;
   height: 20px;
-  transition: all 0.2s ease;
+  transition: all var(--duration-smooth) var(--ease-default);
   flex-shrink: 0;
 }
 
 .nav-leaf:hover {
-  background: var(--paper);
+  background: var(--bg);
   border-color: var(--ink);
   transform: translateX(4px);
 }
@@ -356,7 +355,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: var(--yellow);
+  background: var(--accent-primary);
   overflow: hidden;
   align-self: stretch;
 }
@@ -369,7 +368,7 @@ body {
 }
 
 /* =============================================
-   USER MENU & RIGHT SIDE (UPDATED WITH DROPDOWN)
+   USER MENU & RIGHT SIDE
    ============================================= */
 .nav-right-wrap {
   display: flex;
@@ -379,7 +378,7 @@ body {
 }
 
 .user-menu {
-  position: relative; /* Context for absolute dropdown placement */
+  position: relative;
   display: flex;
   align-items: center;
 }
@@ -392,7 +391,7 @@ body {
   padding: 0.4rem 0.6rem;
   border-radius: 10px;
   border: 2px solid transparent;
-  transition: all 0.2s ease;
+  transition: all var(--duration-smooth) var(--ease-default);
   user-select: none;
 }
 
@@ -405,18 +404,18 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
   border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-black);
   font-family: var(--font-display);
   transition:
-    transform 0.2s,
-    background-color 0.2s;
+    transform var(--duration-smooth),
+    background-color var(--duration-smooth);
   flex-shrink: 0;
 }
 
@@ -424,7 +423,7 @@ body {
 .user-menu.open .user-avatar,
 .user-profile:hover .user-avatar {
   transform: scale(1.1) rotate(5deg);
-  background: var(--yellow);
+  background: var(--accent-primary);
   color: var(--ink);
 }
 
@@ -435,7 +434,7 @@ body {
 }
 
 .user-name {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-size: 0.9rem;
   font-family: var(--font-display);
   color: var(--ink);
@@ -444,19 +443,19 @@ body {
 
 .user-plan-badge {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-black);
   font-family: var(--font-mono);
   padding: 1px 6px;
   border: 1.5px solid var(--ink);
   border-radius: 6px;
   background: var(--bg);
-  color: var(--muted);
+  color: var(--text-secondary);
   width: max-content;
   text-transform: uppercase;
 }
 
 .user-plan-badge.premium {
-  background: var(--yellow);
+  background: var(--accent-primary);
   color: var(--ink);
 }
 
@@ -471,13 +470,13 @@ body {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  background: var(--paper);
+  background: var(--bg);
   border: 3px solid var(--ink);
   border-radius: 12px;
-  box-shadow: 4px 4px 0px var(--ink);
+  box-shadow: var(--shadow-md);
   min-width: 180px;
   padding: 0.5rem;
-  display: none; /* Controlled dynamically by .open */
+  display: none;
   flex-direction: column;
   gap: 0.25rem;
   z-index: 10000;
@@ -496,7 +495,7 @@ body {
   padding: 0.6rem 1rem;
   color: var(--ink);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-size: 0.85rem;
   text-decoration: none;
   background: transparent;
@@ -506,11 +505,11 @@ body {
   text-align: left;
   width: 100%;
   box-sizing: border-box;
-  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all var(--duration-fast) var(--ease-bounce);
 }
 
 .user-dropdown .dropdown-item:hover {
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2px solid var(--ink);
   transform: translateY(-2px);
 }
@@ -521,8 +520,8 @@ body {
 
 /* Red-themed Logout button inside the dropdown */
 .user-dropdown .logout-btn:hover {
-  background: var(--red);
-  color: #fff;
+  background: var(--accent-danger);
+  color: var(--text-on-accent);
 }
 
 /* Dashed divider matching global theme design rules */
@@ -547,13 +546,13 @@ body {
 .nav-toggle {
   display: none;
   flex-direction: column;
-  background: var(--yellow);
+  background: var(--accent-primary);
   border: 2px solid var(--ink);
   border-radius: 8px;
   padding: 8px;
   gap: 5px;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform var(--duration-fast) var(--ease-default);
   flex-shrink: 0;
 }
 
@@ -580,7 +579,7 @@ body {
 }
 
 /* =============================================
-   🔥 INTERMEDIATE SCREENS (769px – 1100px)
+   INTERMEDIATE SCREENS (769px – 1100px)
    ============================================= */
 @media (max-width: 1100px) and (min-width: 769px) {
   .mega-panel {
@@ -697,7 +696,7 @@ body {
     width: 100%;
     justify-content: space-between;
     padding: 1rem;
-    background: var(--paper);
+    background: var(--bg);
     border: 2px solid var(--ink);
     border-radius: 10px;
     box-sizing: border-box;
@@ -706,11 +705,11 @@ body {
   .nav-main-label::after {
     content: "+";
     font-size: 1.2rem;
-    font-weight: 900;
+    font-weight: var(--weight-black);
   }
 
   .site-nav .nav-links > li.open .nav-main-label {
-    background: var(--yellow);
+    background: var(--accent-primary);
   }
 
   .site-nav .nav-links > li.open .nav-main-label::after {

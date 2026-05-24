@@ -4,7 +4,7 @@
    BASE & RESET
 ══════════════════════════════════════════════════════ */
 .user-dashboard {
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
   padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 3vw, 2rem);
   min-height: 100vh;
@@ -780,7 +780,7 @@
 
 .db-child-tab.is-active {
   background: var(--ink);
-  color: var(--paper);
+  color: var(--bg);
   box-shadow: none;
   transform: none;
 }
