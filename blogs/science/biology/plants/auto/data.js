@@ -1,326 +1,683 @@
 // ─── SUBJECT-SPECIFIC MODELS ─────────────────────────────────
 export const SUBJECT_MODELS = {
   groq: [
-    { label: 'Llama 3.3 70B', provider: 'groq', model: 'llama-3.3-70b-versatile' },
-    { label: 'Llama 3.1 8B', provider: 'groq', model: 'llama-3.1-8b-instant' },
-    { label: 'Mixtral 8x7B', provider: 'groq', model: 'mixtral-8x7b-32768' },
-    { label: 'Gemma 2 9B', provider: 'groq', model: 'gemma2-9b-it' },
+    {
+      label: "Llama 3.3 70B",
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    },
+    { label: "Llama 3.1 8B", provider: "groq", model: "llama-3.1-8b-instant" },
+    { label: "Mixtral 8x7B", provider: "groq", model: "mixtral-8x7b-32768" },
+    { label: "Gemma 2 9B", provider: "groq", model: "gemma2-9b-it" },
   ],
   gemini: [
-  {
-    label: 'Gemini 3.1 Flash-Lite',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent'
-  },
-  {
-    label: 'Gemini 3.1 Pro',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent'
-  },
-  {
-    label: 'Gemini 3 Flash',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent'
-  },
-  {
-    label: 'Gemini 2.5 Flash-Lite',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent'
-  },
-  {
-    label: 'Gemini 2.5 Flash',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent'
-  },
-  {
-    label: 'Gemini 2.5 Pro',
-    provider: 'gemini',
-    url: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent'
-  }, ]
+    {
+      label: "Gemini 3.1 Flash-Lite",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent",
+    },
+    {
+      label: "Gemini 3.1 Pro",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
+    },
+    {
+      label: "Gemini 3 Flash",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+    },
+    {
+      label: "Gemini 2.5 Flash-Lite",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent",
+    },
+    {
+      label: "Gemini 2.5 Flash",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
+    },
+    {
+      label: "Gemini 2.5 Pro",
+      provider: "gemini",
+      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent",
+    },
+  ],
 };
 
 // ─── SUBJECT CONFIGURATION ───────────────────────────────────
 export const SUBJECT_CONFIG = {
-  name: 'Animal Facts',
-  collectionName: 'animalfacts-posts', // Firestore collection name
-  source: 'auto-animalfacts-v1', // Source identifier
-  apiKeyField: 'geminiKey', // Field name in user doc for Gemini API keys
-  groqKeyField: 'groqKey', // Field name in user doc for Groq API keys
+  name: "Plant Facts",
+  collectionName: "plantfacts-posts", // Firestore collection name
+  source: "auto-plantfacts-v1", // Source identifier
+  apiKeyField: "geminiKey", // Field name in user doc for Gemini API keys
+  groqKeyField: "groqKey", // Field name in user doc for Groq API keys
 };
 
-// ─── ANIMAL FACTS TOPICS (P1–P6 - UNIQUE & FASCINATING ANIMALS) ──────────
+// ─── PLANT FACTS TOPICS (P1–P6 - AMAZING BOTANICAL WONDERS) ──────────
 export const SUBJECT_TOPICS = [
-  // ==================== PRIMARY 1 (Age 5-6) - Weird & Wonderful Creatures ====================
-  { text: 'Pangolin: The only mammal covered in scales like a moving pineapple', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Aardvark: Nighttime digger with a long sticky tongue like a living vacuum', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Slow loris: The world\'s only venomous primate with eyes like dinner plates', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Axolotl: Smiling salamander that never grows up and can regrow its legs', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Naked mole rat: Wrinkly, nearly hairless, and feels no pain from spicy food', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Fossa: Madagascar\'s top predator that looks like a cat-dog-weasel mix', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Okapi: Giraffe\'s secret cousin with zebra-striped legs hiding in the forest', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Dumbo octopus: Deep-sea ear-flapping octopus that looks like a cartoon', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Markhor: Screw-horned goat that climbs cliffs like a superhero', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  { text: 'Saiga antelope: Nose like a vacuum hose, lives in frozen deserts', subject: 'animalfacts', classLevel: 'primary-1', complexity: 'simple' },
-  
+  // ==================== PRIMARY 1 (Age 5-6) - Weird & Wonderful Plants ====================
+  {
+    text: "Venus flytrap: The plant that snaps shut like a bear trap to catch flies",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Sunflower: The giant flower that turns its head to follow the sun all day",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Cactus: The spiky plant that stores water like a camel in the desert",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Giant water lily: A leaf so strong a small child can sit on it without sinking",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Dandelion: The flower that turns into a fluffy white ball of flying seeds",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Bamboo: The fastest-growing plant that can grow taller than a house in weeks",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Mimosa pudica (Touch-me-not): The shy plant that folds its leaves when you tickle it",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Coconut palm: The tree that gives us a fruit with water inside and a hard shell boat",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Pumpkin: The fruit that grows into a giant orange ball bigger than a car",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+  {
+    text: "Pineapple: The spiky fruit that takes two whole years to grow just one",
+    subject: "plantfacts",
+    classLevel: "primary-1",
+    complexity: "simple",
+  },
+
   // ==================== PRIMARY 2 (Age 6-7) - Superpowers & Strange Abilities ====================
-  { text: 'Tardigrade (Water Bear): Microscopic creature that survives space, boiling, and freezing', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Mantis shrimp: Punch like a bullet, sees 16 colors (humans see 3!)', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Glass frog: See-through belly where you can watch its heart beat', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Hairy frog: Breaks its own toe bones to push out claws like Wolverine', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Star-nosed mole: Nose with 22 pink tentacles that feel faster than eyes', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Lyrebird: Can copy chainsaws, camera shutters, and car alarms perfectly', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Cuttlefish: Ocean chameleon with W-shaped pupils and hypnotic color waves', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Shoebill stork: Bird that stands completely still then clatters its beak like machine gun', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Blobfish: Looks like a sad old man but that\'s just its deep-sea travel face', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Yeti crab: Fuzzy white claws that farm bacteria for food in deep-sea vents', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Leaf sheep: Sea slug that looks like a cartoon sheep and photosynthesizes like a plant', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  { text: 'Red-lipped batfish: Fish with bright red lipstick that walks on the ocean floor', subject: 'animalfacts', classLevel: 'primary-2', complexity: 'simple' },
-  
+  {
+    text: "Rafflesia arnoldii: The world's biggest flower that smells like rotten meat",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Pitcher plant: The tricky plant that turns its leaf into a deep slippery pit of doom",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Corpse flower (Titan arum): The skyscraper flower that blooms once every 7 years and stinks like dead elephants",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Sundew: The plant with glittering sticky tentacles that sparkle like morning dew but trap insects like flypaper",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Mangrove: The tree that grows in saltwater and stands on stilts like a giant spider",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Baobab tree: The upside-down tree that stores water in its belly like a giant bottle",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Sensitive plant telegraph: How a touched leaf sends electrical signals faster than you can blink",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Bladderwort: The underwater plant with trapdoors faster than a speeding bullet",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Dragon's blood tree: The mushroom-shaped tree that bleeds red sap like a dragon's wound",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Welwitschia mirabilis: The plant that lives 2,000 years with only two leaves that never stop growing",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Ghost plant (Monotropa): The white plant that doesn't need sunlight and steals food from fungi",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+  {
+    text: "Strangler fig: The tree that starts life in the air, then grows down and swallows other trees",
+    subject: "plantfacts",
+    classLevel: "primary-2",
+    complexity: "simple",
+  },
+
   // ==================== PRIMARY 3 (Age 7-8) - Extreme Survival & Defense ====================
-  { text: 'Ironclad beetle: So tough you can drive a car over it and it survives', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Bombardier beetle: Shoots boiling hot chemical spray from its rear cannon', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Honey badger: Fearless animal that fights lions and eats cobras like snacks', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Mimic octopus: Pretends to be 15 different animals including snakes and fish', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Gecko: Sticky feet that let it walk upside down and even in space', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Fainting goat: Muscles freeze and tips over when scared like a toy', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Japanese spider crab: Legs longer than a car, hides in underwater caves', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Goblin shark: Living fossil with jaw that shoots out to grab prey', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Sun bear: Has a golden chest mark like a sunrise, longest tongue for honey', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Kakapo: World\'s only flightless parrot that smells like flowers', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Satanic leaf-tailed gecko: Looks exactly like a dead leaf, even has bite marks', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  { text: 'Thorny devil lizard: Collects water through its skin like living straw', subject: 'animalfacts', classLevel: 'primary-3', complexity: 'simple' },
-  
-  // ==================== PRIMARY 4 (Age 8-9) - Weird Animal Families & Life Cycles ====================
-  { text: 'Platypus: Mammal that lays eggs, has venomous spurs, and glows under UV light', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Echidna: Spiny anteater with a four-headed penis and can sense electricity', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Sea pig: Pink, balloon-like sea cucumber that walks on tube feet in the deep sea', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Pink fairy armadillo: Tiny pink-shelled digger that swims through sand', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Dumbo octopus life: From floating egg to ear-flapping adult in the deep sea', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Caecilian: Legless amphibian that feeds babies its own skin', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Venezuelan poodle moth: Fuzzy white moth that looks like a Pokémon', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Blue dragon sea slug: Floats upside down, steals stinging cells from its prey', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Peacock spider: Tiny spider that dances like a disco ball to attract mates', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Honduran white bat: Builds tents from leaves, looks like cotton ball with nose', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Magnificent frigatebird: Inflates red throat pouch like a balloon to attract mates', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  { text: 'Superb bird-of-paradise: Turns into a smiling face with neon blue eyes during dance', subject: 'animalfacts', classLevel: 'primary-4', complexity: 'standard' },
-  
-  // ==================== PRIMARY 5 (Age 9-10) - Extreme Animal Adaptations ====================
-  { text: 'Wood frog: Freezes solid all winter, heart stops, then thaws and hops away', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Alpine ibex: Climbs nearly vertical dam walls licking salt', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Regenerating animals: Axolotl regrows limbs, starfish regrows whole body from one arm', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Electric eel: Generates 600 volts, can curl up to double its power', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Bar-headed goose: Flies over Mount Everest using special oxygen-carrying blood', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Pistol shrimp: Snaps claw so fast it creates a bubble hotter than the sun', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Common poorwill: The only bird that hibernates for months like a bear', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Sea cucumber: Ejects sticky, toxic intestines to escape predators, grows new ones', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Horned lizard: Shoots blood from its eyes to scare away coyotes', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Archerfish: Shoots water jets like a pistol to knock insects off branches', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Sperm whale: Clicks so loud it could vibrate a human to death', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  { text: 'Tardigrade cryptobiosis: Enters death-like state for decades, comes back to life', subject: 'animalfacts', classLevel: 'primary-5', complexity: 'standard' },
-  
-  // ==================== PRIMARY 6 (Age 10-11) - Animal Intelligence & Social Mysteries ====================
-  { text: 'Octopus intelligence: Solves puzzles, opens jars, recognizes human faces', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Raven cognition: Outsmarts chimpanzees, plans for the future, holds grudges', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Honeybee waggle dance: Tells sisters exactly where flowers are using dance moves', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Elephant infrasound: Talks with rumbles too low for humans to hear, miles away', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Orca culture: Different pods speak different languages and eat different foods', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Ant supercolonies: Millions of ants working as one super-organism', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Cleaner wrasse: Fish that runs a cleaning station, remembers each client', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Portia jumping spider: Plans routes, learns from watching other spiders hunt', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Meerkat sentinels: Takes turns being lookout, uses different alarms for different predators', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Dolphin signature whistles: Has its own name that others call to get its attention', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'New Caledonian crow: Makes hooks from twigs, drops nuts on roads for cars to crack', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
-  { text: 'Humpback whale bubble nets: Team hunts by blowing curtains of bubbles to trap fish', subject: 'animalfacts', classLevel: 'primary-6', complexity: 'standard' },
+  {
+    text: "Cacti survival: How cacti turn their stems into water tanks and spines into shade umbrellas",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Stinging nettle: The plant with tiny hypodermic needles that inject a painful chemical cocktail",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Arctic willow: The tiny tree that grows sideways to survive freezing winds at the top of the world",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Resurrection plant: The tumbleweed that dries up completely for years, then turns green with one drop of water",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Acacia tree defense: The tree that calls ant armies to fight giraffes and sends chemical warnings to neighbours",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Lava plants: The first plants that grow on black volcanic rock after a volcano erupts",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Mountain avens: The flower that follows the sun like a satellite dish to stay warm in the Arctic",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Giant sequoia fire armor: The tree with bark thicker than a mattress that needs fire to release its seeds",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Lotus effect: The sacred flower that stays perfectly clean — water and mud just slide right off",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Edelweiss: The woolly star flower that grows on cliff edges and wears a fur coat against UV rays",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Saguaro cactus: The giant cactus that grows arms only after 75 years of waiting",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+  {
+    text: "Stone plant (Lithops): The plant that looks exactly like a pebble so nothing eats it",
+    subject: "plantfacts",
+    classLevel: "primary-3",
+    complexity: "simple",
+  },
+
+  // ==================== PRIMARY 4 (Age 8-9) - Weird Plant Families & Life Cycles ====================
+  {
+    text: "Orchid trickery: Flowers that look and smell like female bees to trick male bees into pollinating them",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Coco de mer: The palm tree with the world's biggest seed — heavier than a baby elephant",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Mushroom (fungi): Not a plant but nature's recycler — the underground network bigger than cities",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Bristlecone pine: The oldest living thing on Earth — trees that were alive before the pyramids were built",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Carnivorous plant traps: How pitcher plants, sundews, and bladderworts each invented their own way to hunt",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Dodder vine (Cuscuta): The vampire plant that sniffs out its victim and sucks the life out of it",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: 'Walking palm: The tree that grows new roots and slowly "walks" across the forest floor',
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Bee orchid: The flower that wears a bee costume so convincing that real bees try to mate with it",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Banyan tree: One tree that becomes a whole forest — with roots growing down from every branch",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Wolffia (Watermeal): The world's smallest flower — you need a magnifying glass to see one bloom",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Helicopter seeds: How maple, ash, and dipterocarp trees invented spinning wings to fly their babies away",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+  {
+    text: "Sausage tree: The tree that grows giant hanging fruits that look like salami and weigh more than a poodle",
+    subject: "plantfacts",
+    classLevel: "primary-4",
+    complexity: "standard",
+  },
+
+  // ==================== PRIMARY 5 (Age 9-10) - Extreme Plant Adaptations ====================
+  {
+    text: "Succulent water storage: How aloe, agave, and living stones hoard water like desert camels",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Redwood trees: The skyscrapers of nature that drink fog through their leaves and share roots with family",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Carnivorous plant digestion: How pitcher plants turn into living stomachs filled with digestive soup",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Mistletoe: The holiday plant that's actually a tree vampire stealing water and nutrients from branches",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Eucalyptus fire strategy: The tree that oils its own leaves to start fires and kill its competition",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Air plants (Tillandsia): The plants that live on nothing but air — no soil, no roots, just floating on breezes",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Corpse flower heating trick: Blooms that heat themselves up to 36°C to spread their stink further",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Bamboo mass flowering: How entire bamboo forests bloom once every 120 years, then die together",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Ant plants (Myrmecophytes): The plants that grow hollow homes and cook meals for ant bodyguards",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Snow plant: The bright red plant that pushes through snow using its own internal heater",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Mangrove salt filters: How these trees drink seawater by filtering salt through special root membranes",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+  {
+    text: "Tumbleweed migration: Plants that break off at the roots and roll for miles, scattering 250,000 seeds",
+    subject: "plantfacts",
+    classLevel: "primary-5",
+    complexity: "standard",
+  },
+
+  // ==================== PRIMARY 6 (Age 10-11) - Plant Intelligence & Communication ====================
+  {
+    text: "Wood Wide Web: How trees talk to each other through underground fungal internet",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Plant memory: How Venus flytraps count to 5 before snapping shut and remember which hairs were touched",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Acacia tree warning system: Trees that smell their neighbours being eaten and pump poison into their leaves",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Root intelligence: How plant roots choose the best path through soil, avoiding rocks and finding water",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Plant timekeeping: The internal clocks that tell sunflowers when to face east and flowers when to bloom",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Mother tree nurturing: How the oldest trees feed seedlings sugar through their roots and recognize their own offspring",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Dodder vine decision making: The parasitic plant that sniffs out tomato vs. wheat and chooses the best victim",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Mimosa learning: How the sensitive plant remembers that dripping water is safe and stops folding its leaves",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Plant electrical signalling: How wounded plants send electrical impulses faster than your nerve signals",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Killer plant cooperation: How some pitcher plants work with ants — the ants hunt large prey for the plant",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Bean plant risk assessment: How pea plants gamble — growing more roots when nutrients are steady, more shoots when risky",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
+  {
+    text: "Flower sonar: How some flowers use their petals like satellite dishes to reflect bat sonar and attract pollinators",
+    subject: "plantfacts",
+    classLevel: "primary-6",
+    complexity: "standard",
+  },
 ];
 
 // ─── SUBJECT LABELS & STYLES ───────────────────────────────
 export const SUBJECT_LABELS = {
-  animalfacts: 'Animal Facts',
-  zoology: 'Zoology',
-  'wildlife': 'Wildlife'
+  plantfacts: "Plant Facts",
+  botany: "Botany",
+  horticulture: "Horticulture",
 };
 
 export const SUBJECT_STYLES = {
-  animalfacts: 'sci-animalfacts',
-  zoology: 'sci-zoology',
-  wildlife: 'sci-wildlife'
+  plantfacts: "sci-plantfacts",
+  botany: "sci-botany",
+  horticulture: "sci-horticulture",
 };
 
 export const CLASS_LABELS = {
   primary: (n) => `P${n}`,
   jss: (n) => `JSS ${n}`,
-  ss: (n) => `SS ${n}`
+  ss: (n) => `SS ${n}`,
 };
 
 export const CLASS_STYLES = {
-  primary: 'cls-primary',
-  jss: 'cls-jss',
-  ss: 'cls-ss'
+  primary: "cls-primary",
+  jss: "cls-jss",
+  ss: "cls-ss",
 };
 
 // ─── HOOK STYLES FOR ROTATION ──────────────────────────────
-const HOOK_STYLES = ['question', 'descriptive', 'story', 'wildKratts'];
+const HOOK_STYLES = ["question", "descriptive", "story", "wildKratts"];
 
 // ─── EXTRACTED HOOK CONTENT BY LEVEL AND STYLE ─────────────
 const HOOK_CONTENT = {
   primary: {
     question: `**HOOK TYPE: QUESTION**
 
-Open your lesson with a question that makes a little kid stop what they're doing and listen.
+Open your lesson with a question that makes a child stop and wonder about the plant world.
 
 **Use one of these patterns:**
 
 **The "Did You Know" Question:**
-"Did you know there's an animal that looks like a walking pineapple? ... (pause) ... Meet the pangolin!"
+"Did you know there's a flower that smells like rotting meat? ... (pause) ... It's not a trick — it's the rafflesia, the biggest flower in the world!"
 
 **The "Have You Ever" Question:**
-"Have you ever seen an animal that can freeze solid and come back to life? ... (pause) ... It's not magic — it's the wood frog!"
+"Have you ever seen a plant move when you touch it? ... (pause) ... There's a shy plant called mimosa pudica that folds its leaves when tickled!"
 
 **The "What If" Question:**
-"What if I told you there's an animal with a punch faster than a bullet? ... (pause) ... The mantis shrimp has the strongest punch in the world!"
+"What if I told you there's a tree that can walk across the forest? ... (pause) ... The walking palm grows new roots and slowly moves to find sunlight!"
 
 **The "Can You Imagine" Question:**
-"Can you imagine an animal that never grows up? It stays a baby its whole life! ... (pause) ... That's the axolotl!"
+"Can you imagine a plant that eats bugs faster than you can blink? ... (pause) ... The bladderwort has trapdoors that snap shut in less than a millisecond!"
 
 **The "I Bet You Can't" Question:**
-"I bet you can't name an animal that has a see-through belly. ... (pause) ... The glass frog — you can watch its heart beat!"
+"I bet you can't name the oldest living thing on Earth. ... (pause) ... It's a bristlecone pine tree that was alive before the pyramids were built!"
 
-**Adapt for your specific animal:** Replace the example with your animal. Keep the energy high and the pause clear.`,
-    
+**Adapt for your specific plant:** Replace the example with your plant. Keep the energy high and the pause clear.`,
+
     descriptive: `**HOOK TYPE: DESCRIPTIVE**
 
-Paint a picture with your words. Tell the child to close their eyes and SEE the animal.
+Paint a picture with your words. Tell the child to close their eyes and SEE the plant.
 
 **Use one of these patterns:**
 
 **Sight Hook:**
-"Close your eyes. Picture an animal covered in scales — not like a fish, but like a pinecone. It walks on two legs and has a long, sticky tongue. When it's scared, it rolls into a perfect ball. That's the pangolin."
+"Close your eyes. Picture a flower as wide as a car tire. Its petals are deep red with white spots, and from its center rises a spike taller than your teacher. But here's the surprise — it smells like rotten meat! This is the corpse flower."
 
 **Sound Hook:**
-"Close your eyes and listen. Click-click-click. That's a dolphin talking. But dolphins don't just make sounds — they have names! Each dolphin has its own special whistle that others use to call it."
+"Close your eyes and listen. Rustle-rustle. That's a strangler fig growing. It starts as a tiny seed dropped on a branch, then sends roots down like living ropes, wrapping around the tree until it becomes a tree itself."
 
 **Touch Hook:**
-"Imagine touching an animal that feels like a hairy potato with a snout like a vacuum cleaner. It has a long sticky tongue that shoots out to catch ants. That's the aardvark!"
+"Imagine touching a plant that feels like soft velvet. But wait — tiny hairs on this plant are actually hollow needles filled with stinging chemicals. Touch it, and your hand tingles for hours. This is the stinging nettle."
 
 **Action Hook:**
-"Picture an animal doing a dance. It's tiny — smaller than your fingernail. It waves its colorful tail like a flag and shakes its legs. This spider has a dance better than any you've ever seen!"
+"Picture a plant that moves so fast you can't see it. Inside a Venus flytrap, an ant brushes against a tiny hair. One second. Two seconds. On the third touch — SNAP! The trap closes like a green bear trap."
 
-**Adapt for your specific animal:** Replace the example with your animal. Keep it to 3-4 sentences. Use ONE sense at a time.`,
-    
+**Adapt for your specific plant:** Replace the example with your plant. Keep it to 3-4 sentences. Use ONE sense at a time.`,
+
     story: `**HOOK TYPE: STORY**
 
-Tell a short story with an animal character, a small problem, and a fascinating solution.
+Tell a short story with a plant character, a small problem, and a fascinating solution.
 
 **Use one of these patterns:**
 
-**The Pangolin's Roll:**
-"Pango the pangolin was scared. A leopard was nearby. 'What do I do?' Pango whispered. So he did what pangolins do best — he rolled into a tight ball. His scales clicked together like armor. The leopard pushed and pawed, but Pango was safe inside his scaly suit. 'My scales saved me!' Pango cheered."
+**The Venus Flytrap's Snack:**
+"Vinnie the Venus flytrap was hungry. His leaves were open wide, showing sweet nectar to passing bugs. 'Come closer,' he whispered. A fly landed and brushed a trigger hair. Vinnie counted quietly: 'One...' The fly walked again. 'Two...' A third touch — SNAP! 'Gotcha!' Vinnie cheered. 'Now I have lunch!'"
 
-**The Axolotl's Lost Leg:**
-"Axie the axolotl was swimming when — SNAP — a bigger salamander bit her leg. 'Ouch!' Axie cried. She swam away, sad. But then something amazing happened. A tiny bump appeared where her leg had been. Then a little foot. Then a whole new leg! 'I grew it back!' Axie shouted."
+**The Mimosa's Lesson:**
+"Mimi the mimosa was scared. Every time a raindrop hit her leaves, she folded up tight. But after lots of rain, Mimi learned — raindrops don't hurt. She stayed open through the next shower. 'I remember now,' Mimi whispered. 'Rain is safe. Wind is safe. But grasshoppers — still scary!'"
 
-**The Tardigrade's Space Adventure:**
-"Tardi was so small you needed a microscope to see her. One day, scientists put Tardi in a spaceship and sent her to space! No air? Tardi didn't care. Freezing cold? Tardi was fine. Boiling hot? No problem. Tardi curled up, went to sleep, and woke up perfectly fine back on Earth."
+**The Sunflower's Dance:**
+"Sunny the sunflower loved the morning. As the sun peeked over the hills, Sunny turned her head to face it. All day long, she danced — slowly, slowly — following the sun across the sky. At night, she reset to the east, waiting for dawn. 'I never miss a sunrise,' Sunny said proudly."
 
-**Adapt for your specific animal:** Create a character. Give them a simple problem. Let the animal's unique ability solve it. Keep it to 4-5 sentences.`,
-    
-    wildKratts: `**HOOK TYPE: WILD KRATTS**
+**Adapt for your specific plant:** Create a character. Give them a simple problem. Let the plant's unique ability solve it. Keep it to 4-5 sentences.`,
 
-Channel the energy of the Wild Kratts — excitement, discovery, and creature powers!
+    wildKratts: `**HOOK TYPE: WILD KRATTS (PLANT EXPLORER STYLE)**
+
+Channel the energy of a plant explorer — excitement, discovery, and botanical superpowers!
 
 **Use one of these patterns:**
 
-**The Creature Power Challenge:**
-"Kratt brothers style — what if YOU could have the powers of this animal? Chris and Martin would say: 'ACTIVATE PANGOLIN POWER!' You'd roll into an armor ball that no predator could crack. Cool, right? Let's find out how pangolins do it."
+**The Plant Power Challenge:**
+"Explorer style — what if YOU could have the powers of this plant? Imagine saying: 'ACTIVATE PITCHER PLANT POWER!' Your hands would turn into deep slippery pits that trap your lunch for you. Cool, right? Let's find out how pitcher plants do it."
 
 **The "Wow Fact" Opening:**
-"WILD KRATTS WOW FACT: There's an animal that can survive in space. Space! No oxygen, freezing cold, boiling heat — doesn't matter. It just curls up and waits. It's called the tardigrade, and today we're going creature exploring!"
+"PLANT EXPLORER WOW FACT: There's a plant that can count! It literally counts to five before it snaps shut on its prey. It's called a Venus flytrap, and today we're going botanical exploring!"
 
 **The Habitat Sneak:**
-"Jump in the Tortuga — we're going on a creature adventure! Today we're diving into the deep sea to find an animal with ears that look like Dumbo's. It flaps them to swim. The dumbo octopus is waiting — let's go!"
+"Grab your magnifying glass — we're going on a plant adventure! Today we're diving into the tropical rainforest to find a flower bigger than a car tire. It blooms once every seven years and stinks like rotting meat. The corpse flower is waiting — let's go!"
 
 **The Superpower Comparison:**
-"Every animal has a superpower. The mantis shrimp? It sees 16 colors (we only see 3). It punches so fast it boils water. If you had MANTIS SHRIMP POWER, you'd never lose an arm-wrestling match. Ever. Let's learn how."
+"Every plant has a superpower. The resurrection plant? It can dry up completely for 100 years, then turn green again with one drop of water. If you had RESURRECTION POWER, you'd never stay dead. Ever. Let's learn how."
 
-**Adapt for your specific animal:** Use Wild Kratts energy. Mention "creature powers" or "creature adventure." Keep it excited and punchy.`
+**Adapt for your specific plant:** Use plant explorer energy. Mention "plant powers" or "botanical adventure." Keep it excited and punchy.`,
   },
-  
+
   jss: {
-    // Similar structure but for JSS level...
-    wildKratts: `**HOOK TYPE: WILD KRATTS (JSS Level)**
+    wildKratts: `**HOOK TYPE: PLANT EXPLORER (JSS Level)**
 
-Channel Wild Kratts but with more scientific depth — still fun, but ready for deeper biology.
+Channel plant discovery energy but with more scientific depth — still fun, but ready for deeper botany.
 
 **Pattern:**
-"Chris and Martin would lose their minds over this animal. The bombardier beetle doesn't just spray — it aims. It mixes chemicals in its abdomen that reach 100°C and shoots them out a rotating cannon. The Kratt brothers would say: 'BOMBARDIER BEETLE POWER — ACTIVATE!' And you'd have your own built-in boiling spray gun. That's not a cartoon — that's real biochemistry. Let me show you how this beetle makes its own explosions."`
+"Any plant explorer would lose their mind over this species. The dodder vine doesn't just grow — it sniffs. It detects the chemical scent of its victim and grows toward it, choosing tomato over wheat every time. Imagine: 'DODDER POWER — ACTIVATE!' And you'd have your own built-in chemical detection system to find exactly what you need. That's not magic — that's real plant behavior. Let me show you how this vampire plant chooses its prey."`,
   },
-  
-  ss: {
-    // SS level might not use Wild Kratts as much, but could for fun engagement
-    wildKratts: `**HOOK TYPE: WILD KRATTS (SS Level - Engagement Hook)**
 
-Use the Wild Kratts frame as a fun entry point before diving into rigorous biology.
+  ss: {
+    wildKratts: `**HOOK TYPE: PLANT EXPLORER (SS Level - Engagement Hook)**
+
+Use the plant explorer frame as a fun entry point before diving into rigorous biology.
 
 **Pattern:**
-"You might have watched Wild Kratts as a kid. Remember the creature power suits? Turns out the Kratt brothers weren't making things up. The pistol shrimp really DOES create a bubble hotter than the sun. That's not an exaggeration — it's thermodynamics. Today we'll go from 'cool animal fact' to the actual physics and biology behind it. Even Martin would be impressed."`
-  }
+"You might think plants are boring. They just sit there, right? Wrong. Plants count, remember, communicate, and make decisions. The Venus flytrap does arithmetic. Acacia trees warn each other of danger through chemical signals. Today we'll go from 'cool plant fact' to the actual molecular biology and electrophysiology behind it. Plants have been underestimated for too long."`,
+  },
 };
 
 // ─── TONE GUIDES ────────────────────────────────────
 function getToneGuide(levelType) {
   const toneGuides = {
-    primary: `You are an enthusiastic animal explorer (like a Wild Kratts guide) talking to kids ages 5-11.
+    primary: `You are an enthusiastic plant explorer (like a botanical adventurer) talking to kids ages 5-11.
 
 **Key rules:**
-- Be amazed by the animals — your excitement is contagious
+- Be amazed by the plants — your excitement is contagious
 - Use short, punchy sentences
 - Say "WOW!" "Check this out!" "You won't believe this!"
-- Compare animal abilities to things kids know (superheroes, video games, sports)
+- Compare plant abilities to things kids know (superheroes, video games, sports)
 - Ask "Can you imagine..." and "What if YOU could..."
-- End with a challenge: "Now go tell someone about this amazing animal!"`,
-    
-    jss: `You are a wildlife educator for ages 11-14. Keep the wonder but add more science.
+- End with a challenge: "Now go tell someone about this amazing plant!"`,
+
+    jss: `You are a botany educator for ages 11-14. Keep the wonder but add more science.
 
 **Key rules:**
 - Start with the "wow" factor, then explain the "how"
 - Use analogies that teens get (video games, social media, sports)
-- Connect animal abilities to biology concepts
-- Call out common myths about the animal
+- Connect plant abilities to biology concepts
+- Call out common myths about the plant
 - End with a "deeper dive" question for curious students`,
-    
-    ss: `You are a zoology teacher for ages 14-18. Rigorous but still fascinating.
+
+    ss: `You are a botany teacher for ages 14-18. Rigorous but still fascinating.
 
 **Key rules:**
-- Respect that they love animals but need exam-level knowledge
+- Respect that they love plants but need exam-level knowledge
 - Explain evolutionary WHY behind each adaptation
 - Use proper taxonomic and anatomical terminology
-- Connect animal facts to broader biological principles
-- Include exam-style application questions`
+- Connect plant facts to broader biological principles
+- Include exam-style application questions`,
   };
-  
+
   return toneGuides[levelType];
 }
 
-// ─── SUBJECT-SPECIFIC PROMPT BUILDER (modified for animal facts) ───
+// ─── SUBJECT-SPECIFIC PROMPT BUILDER (modified for plant facts) ───
 export function buildSubjectPrompt(topic, topicIndex = 0) {
   const { text, subject, classLevel } = topic;
-  const levelType = classLevel.startsWith('primary') ? 'primary' : classLevel.startsWith('jss') ? 'jss' : 'ss';
-  const classNum = classLevel.split('-')[1];
-  
-  return `You are a master wildlife educator creating an exciting lesson on: "${text}"
+  const levelType = classLevel.startsWith("primary")
+    ? "primary"
+    : classLevel.startsWith("jss")
+      ? "jss"
+      : "ss";
+  const classNum = classLevel.split("-")[1];
+
+  return `You are a master botanical educator creating an exciting lesson on: "${text}"
 
 ## YOUR TEACHING STYLE:
-You teach like the Wild Kratts — full of wonder, excitement, and "creature power" energy. Every lesson makes kids say "WHOA!" and want to learn more about animals.
+You teach like a plant explorer — full of wonder, excitement, and "plant power" energy. Every lesson makes kids say "WHOA!" and want to learn more about the botanical world.
 
 ## LESSON STRUCTURE:
 
-**1. The Hook (2-3 sentences)** — Grab attention with a Wild Kratts-style wow fact or question.
+**1. The Hook (2-3 sentences)** — Grab attention with a plant explorer-style wow fact or question.
 
-**2. Meet the Animal (4-5 sentences)** — Describe what this animal looks like, where it lives, and why it's unique.
+**2. Meet the Plant (4-5 sentences)** — Describe what this plant looks like, where it grows, and why it's unique.
 
-**3. The Amazing Ability (8-10 sentences)** — Explain the animal's superpower. Break down HOW it works in simple terms. Use comparisons kids understand.
+**3. The Amazing Ability (8-10 sentences)** — Explain the plant's superpower. Break down HOW it works in simple terms. Use comparisons kids understand.
 
-**4. Creature Power Breakdown (3-4 sentences)** — If a human had this power, what could they do? Make it fun and imaginative.
+**4. Plant Power Breakdown (3-4 sentences)** — If a human had this plant's power, what could they do? Make it fun and imaginative.
 
 **5. Quick Quiz (2-3 questions)** — Fun recall questions to check understanding.
 
@@ -328,7 +685,7 @@ You teach like the Wild Kratts — full of wonder, excitement, and "creature pow
 - Be EXCITED! Use exclamation points, "wow," "amazing," "incredible"
 - Short sentences for primary, longer for upper levels
 - Compare to things kids know (superheroes, sports, video games)
-- Never be boring — this is the coolest animal facts ever!
+- Never be boring — this is the coolest plant facts ever!
 
 ## CRITICAL FORMATTING:
 - Use only HTML tags (<h3>, <p>, <ul>, <li>)
@@ -343,7 +700,7 @@ export function generateAllPrompts() {
   return SUBJECT_TOPICS.map((topic, index) => ({
     ...topic,
     prompt: buildSubjectPrompt(topic, index),
-    hookStyle: HOOK_STYLES[index % HOOK_STYLES.length]
+    hookStyle: HOOK_STYLES[index % HOOK_STYLES.length],
   }));
 }
 
