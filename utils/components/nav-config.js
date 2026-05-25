@@ -203,27 +203,24 @@ const NAV_CONFIG = [
 
         description: "Science made fun",
 
+        /* Inside your NAV_CONFIG under Blogs -> Science */
         children: [
           {
             text: "Animal Biology Articles",
-            href: "/blogs/science/biology/animal/blog/blog.html",
+            href: "/blogs/index.html?s=animal", // Dynamically routes to animal settings
             description: "Discover amazing creatures",
           },
           {
             text: "Plant Science Articles",
-            href: "/blogs/science/biology/plants/blog/blog.html",
+            href: "/blogs/index.html?s=plants", // Dynamically routes to plants settings
             description: "Explore green wonders",
           },
           {
             text: "Human Body Facts",
-            href: "#human-body",
+            href: "/blogs/index.html?s=human-body", // Dynamically loads if dynamic path config is added
             description: "Know your body",
           },
-          {
-            text: "Space & Astronomy",
-            href: "#space",
-            description: "Journey through stars",
-          },
+          // ...
         ],
       },
 

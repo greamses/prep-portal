@@ -1,4 +1,4 @@
-// blog.js - Central dynamic blog viewer engine
+// blog.js - Dynamic viewer that adapts to any subject data
 import { auth, db } from "/firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import {
@@ -16,8 +16,11 @@ import {
   arrayRemove,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
+// Add this at the top of blog.js after the imports
 // ─── ASSET LOADING WITH PATH DETECTION ─────────────────────
+
 function getBasePath() {
+  // Detect if we're in a subdirectory
   const scripts = document.getElementsByTagName("script");
   for (const script of scripts) {
     if (script.src && script.src.includes("blog.js")) {
@@ -48,10 +51,12 @@ function ensureLessonNoteStyles() {
     link.href = path;
     link.onerror = () => console.warn(`Failed to load: ${path}`);
     link.onload = () => {
+      console.log(`Loaded: ${path}`);
       document.head.appendChild(link);
       return true;
     };
     document.head.appendChild(link);
+    // Check if it loaded successfully
     if (link.sheet) return true;
   }
   return false;
@@ -59,36 +64,77 @@ function ensureLessonNoteStyles() {
 
 function ensureThemeStyles() {
   if (document.querySelector('link[href*="theme.css"]')) return;
+
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = `/utils/theme/theme.css`;
+  link.href = `/utils/theme/theme.css`; // Switched to root-relative for reliability
   link.onerror = () => console.warn("Failed to load theme.css");
   document.head.appendChild(link);
 }
 
 function ensureThemeScript() {
   if (document.querySelector('script[src*="theme.js"]')) return;
+
   const script = document.createElement("script");
-  script.src = `/utils/theme/theme.js`;
+  script.src = `/utils/theme/theme.js`; // Switched to root-relative for reliability
   script.async = true;
   script.defer = true;
+  script.onload = () => console.log("theme.js loaded");
   script.onerror = () => console.warn("Failed to load theme.js");
   document.head.appendChild(script);
 }
 
 function ensureLessonAssets() {
+  console.log(" Loading lesson assets from base path:", BASE_PATH);
   ensureLessonNoteStyles();
   ensureThemeStyles();
   ensureThemeScript();
 }
 
-// ─── RUNTIME CONFIGURATION (LOADED DYNAMICALLY) ─────────────
-let COLLECTION_NAME;
-let SUBJECT_NAME;
-let SUBJECT_LABELS;
-let SUBJECT_STYLES;
-let CLASS_LABELS;
-let CLASS_STYLES;
+// Call this once when page loads
+document.addEventListener("DOMContentLoaded", () => {
+  ensureLessonAssets();
+});
+
+import * as subjectData from "../auto/data.js";
+
+// ─── SUBJECT CONFIGURATION ─────────────────────────────────
+const COLLECTION_NAME =
+  subjectData.SUBJECT_CONFIG?.collectionName || "science-posts";
+const SUBJECT_NAME = subjectData.SUBJECT_CONFIG?.name || "Science";
+const SUBJECT_LABELS = subjectData.SUBJECT_LABELS || {};
+const SUBJECT_STYLES = subjectData.SUBJECT_STYLES || {};
+const CLASS_LABELS = subjectData.CLASS_LABELS || {
+  primary: (n) => `P${n}`,
+  jss: (n) => `JSS ${n}`,
+  ss: (n) => `SS ${n}`,
+};
+const CLASS_STYLES = subjectData.CLASS_STYLES || {
+  primary: "cls-primary",
+  jss: "cls-jss",
+  ss: "cls-ss",
+};
+
+// Update page title dynamically
+document.title = `${SUBJECT_NAME} | Prep Portal 2026`;
+const heroTitle = document.querySelector(".hero-title");
+if (heroTitle) heroTitle.innerHTML = `${SUBJECT_NAME}.`;
+
+const heroTagline = document.querySelector(".hero-tagline");
+if (heroTagline && subjectData.SUBJECT_CONFIG?.description) {
+  heroTagline.textContent = subjectData.SUBJECT_CONFIG.description;
+}
+
+// Update ticker items
+const tickerTrack = document.querySelector(".ticker-track");
+if (tickerTrack && subjectData.SUBJECT_CONFIG?.tickerItems) {
+  tickerTrack.innerHTML = subjectData.SUBJECT_CONFIG.tickerItems
+    .map(
+      (item) =>
+        `<span class="ticker-item">${item}</span><span class="ticker-item">✧</span>`,
+    )
+    .join("");
+}
 
 let allPosts = [];
 let currentSubject = "all";
@@ -99,144 +145,20 @@ let activePost = null;
 let groqApiKeyPublic = null;
 let geminiApiKeyPublic = null;
 
-// DOM Element references mapped globally
-let scienceGrid,
-  singlePostView,
-  singlePostContent,
-  closePostBtn,
-  searchInput,
-  scrollTopBtn,
-  toastEl,
-  embedOverlay,
-  embedFrame,
-  embedFrameWrap,
-  embedTitle,
-  embedOpenLink,
-  embedCloseBtn,
-  embedSpinner;
-
-function assignDomElements() {
-  scienceGrid = document.getElementById("scienceGrid");
-  singlePostView = document.getElementById("singlePostView");
-  singlePostContent = document.getElementById("singlePostContent");
-  closePostBtn = document.getElementById("closePostBtn");
-  searchInput = document.getElementById("searchInput");
-  scrollTopBtn = document.getElementById("scrollTop");
-  toastEl = document.getElementById("toast");
-  embedOverlay = document.getElementById("embedOverlay");
-  embedFrame = document.getElementById("embedFrame");
-  embedFrameWrap = document.getElementById("embedFrameWrap");
-  embedTitle = document.getElementById("embedTitle");
-  embedOpenLink = document.getElementById("embedOpenLink");
-  embedCloseBtn = document.getElementById("embedCloseBtn");
-  embedSpinner = document.getElementById("embedSpinner");
-}
-
-// Map parameters to their specific configuration module paths
-const CONFIG_PATH_MAP = {
-  plants: "/blogs/science/biology/plants/auto/data.js",
-  animal: "/blogs/science/biology/animal/auto/data.js",
-};
-
-async function initBlog() {
-  assignDomElements();
-  ensureLessonAssets();
-
-  // Extract key parameter from active browser URI
-  const params = new URLSearchParams(window.location.search);
-  const subjectKey = params.get("s") || params.get("subject") || "plants";
-
-  // Determine configuration location
-  const configPath =
-    CONFIG_PATH_MAP[subjectKey] ||
-    `/blogs/science/biology/${subjectKey}/auto/data.js`;
-
-  let subjectData = {};
-  try {
-    subjectData = await import(configPath);
-  } catch (err) {
-    console.error(
-      `Unable to dynamically import subject configuration at: ${configPath}`,
-      err,
-    );
-  }
-
-  // Bind parameters globally
-  COLLECTION_NAME =
-    subjectData.SUBJECT_CONFIG?.collectionName || "science-posts";
-  SUBJECT_NAME = subjectData.SUBJECT_CONFIG?.name || "Science";
-  SUBJECT_LABELS = subjectData.SUBJECT_LABELS || {};
-  SUBJECT_STYLES = subjectData.SUBJECT_STYLES || {};
-  CLASS_LABELS = subjectData.CLASS_LABELS || {
-    primary: (n) => `P${n}`,
-    jss: (n) => `JSS ${n}`,
-    ss: (n) => `SS ${n}`,
-  };
-  CLASS_STYLES = subjectData.CLASS_STYLES || {
-    primary: "cls-primary",
-    jss: "cls-jss",
-    ss: "cls-ss",
-  };
-
-  // Modify titles & heroes
-  document.title = `${SUBJECT_NAME} | Prep Portal 2026`;
-  const heroTitle = document.querySelector(".hero-title");
-  if (heroTitle) heroTitle.innerHTML = `${SUBJECT_NAME}.`;
-
-  const heroTagline = document.querySelector(".hero-tagline");
-  if (heroTagline && subjectData.SUBJECT_CONFIG?.description) {
-    heroTagline.textContent = subjectData.SUBJECT_CONFIG.description;
-  }
-
-  const tickerTrack = document.querySelector(".ticker-track");
-  if (tickerTrack && subjectData.SUBJECT_CONFIG?.tickerItems) {
-    tickerTrack.innerHTML = subjectData.SUBJECT_CONFIG.tickerItems
-      .map(
-        (item) =>
-          `<span class="ticker-item">${item}</span><span class="ticker-item">✧</span>`,
-      )
-      .join("");
-  }
-
-  // Populate Dropdowns
-  const subjectMenu = document.getElementById("subjectDropdownMenu");
-  const classMenu = document.getElementById("classDropdownMenu");
-  if (subjectMenu) subjectMenu.innerHTML = buildSubjectDropdownItems();
-  if (classMenu) classMenu.innerHTML = buildClassDropdownItems();
-
-  wireDropdown(
-    "subjectDropdown",
-    "subjectDropdownBtn",
-    "subjectFilterText",
-    (f) => {
-      currentSubject = f;
-      renderPosts();
-    },
-  );
-  wireDropdown("classDropdown", "classDropdownBtn", "classFilterText", (f) => {
-    currentClass = f;
-    renderPosts();
-  });
-
-  // Attach search bar listener
-  let st;
-  searchInput.addEventListener("input", (e) => {
-    clearTimeout(st);
-    st = setTimeout(() => {
-      currentSearch = e.target.value;
-      renderPosts();
-    }, 280);
-  });
-
-  // Connect close modal events
-  closePostBtn.addEventListener("click", closePostView);
-
-  // Begin fetching data
-  await loadPosts();
-  setInterval(silentUpdatePosts, 60000);
-}
-
-document.addEventListener("DOMContentLoaded", initBlog);
+const scienceGrid = document.getElementById("scienceGrid");
+const singlePostView = document.getElementById("singlePostView");
+const singlePostContent = document.getElementById("singlePostContent");
+const closePostBtn = document.getElementById("closePostBtn");
+const searchInput = document.getElementById("searchInput");
+const scrollTopBtn = document.getElementById("scrollTop");
+const toastEl = document.getElementById("toast");
+const embedOverlay = document.getElementById("embedOverlay");
+const embedFrame = document.getElementById("embedFrame");
+const embedFrameWrap = document.getElementById("embedFrameWrap");
+const embedTitle = document.getElementById("embedTitle");
+const embedOpenLink = document.getElementById("embedOpenLink");
+const embedCloseBtn = document.getElementById("embedCloseBtn");
+const embedSpinner = document.getElementById("embedSpinner");
 
 onAuthStateChanged(auth, async (u) => {
   currentUser = u;
@@ -253,32 +175,57 @@ onAuthStateChanged(auth, async (u) => {
 });
 
 // ─── MARKDOWN → HTML ──────────────────────────────────────
+// Applied when rendering stored posts so that older markdown-formatted
+// content displays correctly, even if it was saved before the publisher
+// started converting at source.
 function markdownToHtml(text) {
   if (!text) return text;
+
+  // If 6+ block-level HTML tags already present, treat as proper HTML
   const tagCount = (
     text.match(/<(h[1-6]|p|ul|ol|li|blockquote|table|pre|div)\b/gi) || []
   ).length;
   if (tagCount >= 6) return text;
 
   let html = text;
+
+  // Strip leftover code fences
   html = html.replace(/```[\w]*\n?/g, "").replace(/```/g, "");
+
+  // Headings
   html = html.replace(/^######\s+(.+)$/gm, "<h6>$1</h6>");
   html = html.replace(/^#####\s+(.+)$/gm, "<h5>$1</h5>");
   html = html.replace(/^####\s+(.+)$/gm, "<h4>$1</h4>");
   html = html.replace(/^###\s+(.+)$/gm, "<h3>$1</h3>");
   html = html.replace(/^##\s+(.+)$/gm, "<h2>$1</h2>");
   html = html.replace(/^#\s+(.+)$/gm, "<h1>$1</h1>");
+
+  // Horizontal rules
   html = html.replace(/^[-*_]{3,}\s*$/gm, "<hr>");
+
+  // Bold + italic combined
   html = html.replace(/\*\*\*(.+?)\*\*\*/gs, "<strong><em>$1</em></strong>");
   html = html.replace(/___(.+?)___/gs, "<strong><em>$1</em></strong>");
+
+  // Bold
   html = html.replace(/\*\*(.+?)\*\*/gs, "<strong>$1</strong>");
   html = html.replace(/__(.+?)__/gs, "<strong>$1</strong>");
+
+  // Italic
   html = html.replace(/\*(.+?)\*/gs, "<em>$1</em>");
   html = html.replace(/_(.+?)_/gs, "<em>$1</em>");
+
+  // Inline code
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // Blockquotes
   html = html.replace(/^>\s+(.+)$/gm, "<blockquote>$1</blockquote>");
+
+  // Unordered list items → group into <ul>
   html = html.replace(/^[-*+]\s+(.+)$/gm, "<li>$1</li>");
   html = html.replace(/(<li>[^]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
+
+  // Ordered list items → group into <ol>
   html = html.replace(/^\d+\.\s+(.+)$/gm, "<oli>$1</oli>");
   html = html.replace(
     /(<oli>[^]*?<\/oli>\n?)+/g,
@@ -289,6 +236,7 @@ function markdownToHtml(text) {
   );
   html = html.replace(/<oli>/g, "<li>").replace(/<\/oli>/g, "</li>");
 
+  // Paragraphs — wrap bare text blocks
   const BLOCK = /^<(h[1-6]|p|ul|ol|blockquote|hr|table|pre|div|figure)/i;
   html = html
     .split(/\n{2,}/)
@@ -355,6 +303,7 @@ const calcReadTime = (c) => {
   );
 };
 
+// Dynamic badge helpers using imported data
 const getSubjectLabel = (subject) => SUBJECT_LABELS[subject] || subject;
 const getSubjectStyle = (subject) => SUBJECT_STYLES[subject] || "sci-default";
 const getClassLabel = (classLevel) => {
@@ -378,6 +327,7 @@ const getClassStyle = (classLevel) => {
   return CLASS_STYLES.ss;
 };
 
+// ─── VIDEO THUMBNAIL ──────────────────────────────────────
 function getYouTubeThumbnail(url) {
   if (!url) return null;
   const m = url.match(
@@ -415,6 +365,7 @@ function getEmbedUrl(url, type) {
   return url;
 }
 
+// ─── SVG ICONS ────────────────────────────────────────────
 const I = {
   calendar: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="16" height="18" rx="2"></rect><line x1="8" y1="2" x2="8" y2="6"></line><line x1="16" y1="2" x2="16" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
   clock: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
@@ -544,6 +495,12 @@ function buildClassDropdownItems() {
   return html;
 }
 
+// Inject dynamic dropdown content
+const subjectMenu = document.getElementById("subjectDropdownMenu");
+const classMenu = document.getElementById("classDropdownMenu");
+if (subjectMenu) subjectMenu.innerHTML = buildSubjectDropdownItems();
+if (classMenu) classMenu.innerHTML = buildClassDropdownItems();
+
 function wireDropdown(dropdownId, btnId, textId, onSelect) {
   const dropdown = document.getElementById(dropdownId);
   const btn = document.getElementById(btnId);
@@ -575,6 +532,20 @@ function wireDropdown(dropdownId, btnId, textId, onSelect) {
   });
 }
 
+wireDropdown(
+  "subjectDropdown",
+  "subjectDropdownBtn",
+  "subjectFilterText",
+  (f) => {
+    currentSubject = f;
+    renderPosts();
+  },
+);
+wireDropdown("classDropdown", "classDropdownBtn", "classFilterText", (f) => {
+  currentClass = f;
+  renderPosts();
+});
+
 // ─── SINGLE POST VIEW ─────────────────────────────────────
 async function incViews(id) {
   try {
@@ -602,6 +573,7 @@ function showSinglePost(post) {
     ? getDomain(post.practiceLink)
     : null;
 
+  // Convert any markdown-formatted content to HTML before rendering
   const postBody = markdownToHtml(
     post.content || "<p>Content not available.</p>",
   );
@@ -610,9 +582,9 @@ function showSinglePost(post) {
   history.pushState(
     { postId: post.id },
     post.title,
-    `${window.location.pathname}${window.location.search}#${post.id}`,
+    `${window.location.pathname}#${post.id}`,
   );
-  document.title = `${post.title} | ${SUBJECT_NAME}`;
+  document.title = `${post.title} | ${SUBJECT_NAME} `;
 
   singlePostContent.innerHTML = `
     <h1 class="post-title">${escHtml(post.title)}</h1>
@@ -803,6 +775,11 @@ function closeEmbedModal() {
   embedFrame.src = "";
 }
 
+embedCloseBtn.addEventListener("click", closeEmbedModal);
+embedOverlay.addEventListener("click", (e) => {
+  if (e.target === embedOverlay) closeEmbedModal();
+});
+
 // ─── LIKE, SHARE, COMMENTS ────────────────────────────────
 async function toggleLike(post) {
   if (!currentUser) {
@@ -834,21 +811,21 @@ async function toggleLike(post) {
 }
 
 function sharePost(post) {
-  const url = `${location.origin}${location.pathname}${location.search}#${post.id}`;
+  const url = `${location.origin}${location.pathname}#${post.id}`;
   if (navigator.share)
     navigator.share({ title: post.title, url }).catch(() => {});
   else copyToClipboard(url);
 }
 
 function copyPostLink() {
-  const url = `${location.origin}${location.pathname}${location.search}#${activePost?.id || ""}`;
+  const url = `${location.origin}${location.pathname}#${activePost?.id || ""}`;
   copyToClipboard(url);
 }
 
 function copyToClipboard(text) {
-  if (navigator.clipboard) {
+  if (navigator.clipboard)
     navigator.clipboard.writeText(text).then(() => showToast("Link copied!"));
-  } else {
+  else {
     const t = document.createElement("textarea");
     t.value = text;
     document.body.appendChild(t);
@@ -1219,6 +1196,38 @@ async function openPostFromHash() {
   } catch (_) {}
 }
 
+// ─── EVENT LISTENERS ──────────────────────────────────────
+let st;
+searchInput.addEventListener("input", (e) => {
+  clearTimeout(st);
+  st = setTimeout(() => {
+    currentSearch = e.target.value;
+    renderPosts();
+  }, 280);
+});
+
+closePostBtn.addEventListener("click", closePostView);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && singlePostView.classList.contains("active"))
+    closePostView();
+});
+window.addEventListener("scroll", () =>
+  scrollTopBtn.classList.toggle("show", window.scrollY > 300),
+);
+scrollTopBtn.addEventListener("click", () =>
+  window.scrollTo({ top: 0, behavior: "smooth" }),
+);
+
+const navToggle = document.getElementById("nav-toggle");
+const navLinks = document.getElementById("navLinks");
+if (navToggle && navLinks)
+  navToggle.addEventListener("click", () => {
+    navToggle.classList.toggle("open");
+    navLinks.classList.toggle("open");
+  });
+
+loadPosts();
+
 // ─── SILENT BACKGROUND REFRESH ────────────────────────────
 async function silentUpdatePosts() {
   const snap = await getDocs(
@@ -1277,18 +1286,4 @@ async function silentUpdatePosts() {
   }
 }
 
-// Global window event listeners
-window.addEventListener("scroll", () =>
-  scrollTopBtn.classList.toggle("show", window.scrollY > 300),
-);
-scrollTopBtn.addEventListener("click", () =>
-  window.scrollTo({ top: 0, behavior: "smooth" }),
-);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && singlePostView.classList.contains("active"))
-    closePostView();
-});
-embedCloseBtn.addEventListener("click", closeEmbedModal);
-embedOverlay.addEventListener("click", (e) => {
-  if (e.target === embedOverlay) closeEmbedModal();
-});
+setInterval(silentUpdatePosts, 60000);

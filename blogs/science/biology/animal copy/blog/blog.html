@@ -37,22 +37,9 @@
       <div id="loader-wrapper">
         <div class="logo-cluster"></div>
       </div>
-      <!-- Changed to support dynamic subject naming during loading -->
-      <div class="loader-word"><span id="loaderSubject">Science</span></div>
+      <div class="loader-word"><span>Animals</span></div>
       <div class="loader-bar"></div>
     </div>
-
-    <script>
-      // Immediately run loader customization to prevent text-flash mismatch
-      (function () {
-        const params = new URLSearchParams(window.location.search);
-        const sub = params.get("s") || params.get("subject") || "science";
-        const formatted =
-          sub.charAt(0).toUpperCase() + sub.slice(1).toLowerCase();
-        const loaderLabel = document.getElementById("loaderSubject");
-        if (loaderLabel) loaderLabel.textContent = formatted;
-      })();
-    </script>
 
     <nav class="site-nav" data-nav="main"></nav>
 
@@ -61,7 +48,7 @@
         <h1 class="hero-title"></h1>
       </div>
       <div class="hero-right">
-        <p class="hero-tagline"></p>
+        <p class="hero-tagline">Scientific facts at a glance.</p>
       </div>
     </div>
 
@@ -103,7 +90,19 @@
               </svg>
             </button>
             <div class="dropdown-menu" id="subjectDropdownMenu">
-              <!-- Dynamically populated -->
+              <div class="dropdown-item active" data-filter="all">
+                All Subjects
+              </div>
+              <div class="dropdown-item" data-filter="math">Mathematics</div>
+              <div class="dropdown-item" data-filter="physics">Physics</div>
+              <div class="dropdown-item" data-filter="chemistry">Chemistry</div>
+              <div class="dropdown-item" data-filter="biology">Biology</div>
+              <div class="dropdown-item" data-filter="basic-science">
+                Basic Science
+              </div>
+              <div class="dropdown-item" data-filter="basic-tech">
+                Basic Tech
+              </div>
             </div>
           </div>
 
@@ -121,7 +120,21 @@
               </svg>
             </button>
             <div class="dropdown-menu" id="classDropdownMenu">
-              <!-- Dynamically populated -->
+              <div class="dropdown-item active" data-filter="all">
+                All Classes
+              </div>
+              <div class="dropdown-item" data-filter="primary-1">P1</div>
+              <div class="dropdown-item" data-filter="primary-2">P2</div>
+              <div class="dropdown-item" data-filter="primary-3">P3</div>
+              <div class="dropdown-item" data-filter="primary-4">P4</div>
+              <div class="dropdown-item" data-filter="primary-5">P5</div>
+              <div class="dropdown-item" data-filter="primary-6">P6</div>
+              <div class="dropdown-item" data-filter="jss-1">JSS 1</div>
+              <div class="dropdown-item" data-filter="jss-2">JSS 2</div>
+              <div class="dropdown-item" data-filter="jss-3">JSS 3</div>
+              <div class="dropdown-item" data-filter="ss-1">SS 1</div>
+              <div class="dropdown-item" data-filter="ss-2">SS 2</div>
+              <div class="dropdown-item" data-filter="ss-3">SS 3</div>
             </div>
           </div>
         </div>
@@ -130,7 +143,7 @@
       <div id="scienceGrid" class="science-grid">
         <div class="loading-spinner">
           <div class="spinner-ring"></div>
-          Loading posts...
+          Loading science posts...
         </div>
       </div>
     </div>
@@ -220,6 +233,6 @@
 
     <script src="/utils/components/loader.js"></script>
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script src="/blogs/js/blog.js" type="module"></script>
+    <script src="./blog.js" type="module"></script>
   </body>
 </html>

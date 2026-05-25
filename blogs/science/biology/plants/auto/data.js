@@ -1,48 +1,6 @@
-// ─── SUBJECT-SPECIFIC MODELS ─────────────────────────────────
-export const SUBJECT_MODELS = {
-  groq: [
-    {
-      label: "Llama 3.3 70B",
-      provider: "groq",
-      model: "llama-3.3-70b-versatile",
-    },
-    { label: "Llama 3.1 8B", provider: "groq", model: "llama-3.1-8b-instant" },
-    { label: "Mixtral 8x7B", provider: "groq", model: "mixtral-8x7b-32768" },
-    { label: "Gemma 2 9B", provider: "groq", model: "gemma2-9b-it" },
-  ],
-  gemini: [
-    {
-      label: "Gemini 3.1 Flash-Lite",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent",
-    },
-    {
-      label: "Gemini 3.1 Pro",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
-    },
-    {
-      label: "Gemini 3 Flash",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
-    },
-    {
-      label: "Gemini 2.5 Flash-Lite",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent",
-    },
-    {
-      label: "Gemini 2.5 Flash",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
-    },
-    {
-      label: "Gemini 2.5 Pro",
-      provider: "gemini",
-      url: "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent",
-    },
-  ],
-};
+// Import shared models from central location
+import { SHARED_MODELS } from "/blogs/js/models.js";
+export const SUBJECT_MODELS = SHARED_MODELS;
 
 // ─── SUBJECT CONFIGURATION ───────────────────────────────────
 export const SUBJECT_CONFIG = {
