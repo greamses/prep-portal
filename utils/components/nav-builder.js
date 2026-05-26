@@ -1,13 +1,26 @@
 import NAV_CONFIG from "/utils/components/nav-config.js";
 import "/home/js/auth-modal.js";
 import { auth, db } from "/firebase-init.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { signOut, updateProfile } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import {
   doc,
   onSnapshot,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
 
 const LOGO_PATH = "/logo/logo-light.svg";
+const SVG_PERSON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>`;
+const SVG_CAMERA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const SVG_HOME = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+const SVG_STAR = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const SVG_LOGOUT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>`;
+const SVG_LOGIN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`;
 
 import { planEmblem, SVG_ROSE } from "/utils/components/plan-emblems.js";
 
@@ -257,6 +270,35 @@ function buildMegaMenu() {
 }
 
 /* =============================================
+   PHOTO UPLOAD HELPERS
+============================================= */
+function setAvatarPhoto(photoURL) {
+  const img = `<img src="${photoURL}" alt="Profile photo" class="user-avatar-photo">`;
+  const triggerAvatar = document.getElementById("user-avatar");
+  if (triggerAvatar) triggerAvatar.innerHTML = img;
+  const avatarLg = document.getElementById("dropdown-avatar-lg");
+  if (avatarLg) avatarLg.innerHTML = img;
+}
+
+async function handlePhotoUpload(file, user) {
+  const avatarLg = document.getElementById("dropdown-avatar-lg");
+  if (avatarLg) avatarLg.style.opacity = "0.4";
+  try {
+    const storage = getStorage();
+    const sRef = storageRef(storage, `profilePhotos/${user.uid}`);
+    await uploadBytes(sRef, file);
+    const photoURL = await getDownloadURL(sRef);
+    await updateProfile(user, { photoURL });
+    await updateDoc(doc(db, "users", user.uid), { photoURL });
+    setAvatarPhoto(photoURL);
+  } catch (err) {
+    console.error("Photo upload failed:", err);
+  } finally {
+    if (avatarLg) avatarLg.style.opacity = "1";
+  }
+}
+
+/* =============================================
    USER MENU (WITH DROPDOWN)
 ============================================= */
 function buildUserMenu() {
@@ -264,13 +306,14 @@ function buildUserMenu() {
   menuDiv.className = "user-menu";
   menuDiv.id = "user-menu";
 
+  // ── Nav trigger ──────────────────────────────────────────
   const profileDiv = document.createElement("div");
   profileDiv.className = "user-profile";
 
   const avatar = document.createElement("div");
   avatar.className = "user-avatar";
   avatar.id = "user-avatar";
-  avatar.textContent = "U";
+  avatar.innerHTML = SVG_PERSON;
 
   const details = document.createElement("div");
   details.className = "user-details";
@@ -287,66 +330,128 @@ function buildUserMenu() {
 
   details.appendChild(nameSpan);
   details.appendChild(planBadge);
-
   profileDiv.appendChild(avatar);
   profileDiv.appendChild(details);
-
   menuDiv.appendChild(profileDiv);
 
-  /* =============================================
-     USER DROPDOWN
-  ============================================= */
+  // ── Dropdown card ─────────────────────────────────────────
   const dropdown = document.createElement("div");
-  dropdown.className = "neo-dropdown";
+  dropdown.className = "neo-dropdown profile-dropdown";
 
-  // 1. Dashboard
+  // Profile header
+  const header = document.createElement("div");
+  header.className = "profile-dropdown-header";
+
+  const avatarWrap = document.createElement("div");
+  avatarWrap.className = "profile-avatar-wrap";
+
+  const avatarLg = document.createElement("div");
+  avatarLg.className = "profile-avatar-lg";
+  avatarLg.id = "dropdown-avatar-lg";
+  avatarLg.innerHTML = SVG_PERSON;
+
+  const cameraOverlay = document.createElement("div");
+  cameraOverlay.className = "profile-avatar-camera auth-only";
+  cameraOverlay.innerHTML = SVG_CAMERA;
+  cameraOverlay.title = "Change profile photo";
+
+  const photoInput = document.createElement("input");
+  photoInput.type = "file";
+  photoInput.accept = "image/*";
+  photoInput.style.display = "none";
+  photoInput.id = "profile-photo-input";
+
+  avatarWrap.appendChild(avatarLg);
+  avatarWrap.appendChild(cameraOverlay);
+  avatarWrap.appendChild(photoInput);
+
+  const profileInfo = document.createElement("div");
+  profileInfo.className = "profile-dropdown-info";
+
+  const ddName = document.createElement("span");
+  ddName.className = "profile-dropdown-name";
+  ddName.id = "dropdown-user-name";
+  ddName.textContent = "Guest";
+
+  const ddEmail = document.createElement("span");
+  ddEmail.className = "profile-dropdown-email";
+  ddEmail.id = "dropdown-user-email";
+
+  const ddPlan = document.createElement("span");
+  ddPlan.className = "user-plan-badge";
+  ddPlan.id = "dropdown-plan-badge";
+
+  profileInfo.appendChild(ddName);
+  profileInfo.appendChild(ddEmail);
+  profileInfo.appendChild(ddPlan);
+  header.appendChild(avatarWrap);
+  header.appendChild(profileInfo);
+  dropdown.appendChild(header);
+
+  // Menu items
+  const items = document.createElement("div");
+  items.className = "profile-dropdown-items";
+
   const dashboardLink = document.createElement("a");
   dashboardLink.href = "/dashboard.html";
   dashboardLink.className = "neo-dropdown-item auth-only";
-  dashboardLink.textContent = "Dashboard";
-  dropdown.appendChild(dashboardLink);
+  dashboardLink.innerHTML = `${SVG_HOME}<span>Dashboard</span>`;
+  items.appendChild(dashboardLink);
 
-  // 2. Subscription
   const subscriptionLink = document.createElement("a");
   subscriptionLink.href = "/subscription.html";
   subscriptionLink.className = "neo-dropdown-item auth-only";
-  subscriptionLink.textContent = "Subscription";
-  dropdown.appendChild(subscriptionLink);
+  subscriptionLink.innerHTML = `${SVG_STAR}<span>Subscription</span>`;
+  items.appendChild(subscriptionLink);
 
-  // 3. Login / Sign In (for guests)
   const loginBtn = document.createElement("button");
   loginBtn.type = "button";
   loginBtn.className = "neo-dropdown-item guest-only";
-  loginBtn.textContent = "Sign In";
+  loginBtn.innerHTML = `${SVG_LOGIN_ICON}<span>Sign In</span>`;
   loginBtn.addEventListener("click", (e) => {
     e.preventDefault();
+    menuDiv.classList.remove("open");
     window.openAuthModal?.("login");
   });
-  dropdown.appendChild(loginBtn);
+  items.appendChild(loginBtn);
 
-  // Divider line before Logout
-  const divider = document.createElement("div");
-  divider.className = "neo-dropdown-divider auth-only";
-  dropdown.appendChild(divider);
+  dropdown.appendChild(items);
 
-  // 4. Logout (with Firebase handler)
+  // Footer (sign out)
+  const footer = document.createElement("div");
+  footer.className = "profile-dropdown-footer auth-only";
+
   const logoutBtn = document.createElement("button");
-  logoutBtn.className = "neo-dropdown-item neo-dropdown-item--danger auth-only";
-  logoutBtn.textContent = "Logout";
+  logoutBtn.className = "neo-dropdown-item neo-dropdown-item--danger";
   logoutBtn.type = "button";
+  logoutBtn.innerHTML = `${SVG_LOGOUT}<span>Sign Out</span>`;
   logoutBtn.addEventListener("click", async (e) => {
     e.preventDefault();
+    menuDiv.classList.remove("open");
     try {
       await signOut(auth);
     } catch (error) {
       console.error("Sign-out error:", error);
     }
   });
-  dropdown.appendChild(logoutBtn);
+  footer.appendChild(logoutBtn);
+  dropdown.appendChild(footer);
 
   menuDiv.appendChild(dropdown);
 
-  // Handle clicking the profile card to toggle dropdown
+  // Photo upload click
+  avatarWrap.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (auth.currentUser) photoInput.click();
+  });
+
+  photoInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && auth.currentUser) handlePhotoUpload(file, auth.currentUser);
+    e.target.value = "";
+  });
+
+  // Toggle dropdown on trigger click
   profileDiv.addEventListener("click", (e) => {
     e.stopPropagation();
     menuDiv.classList.toggle("open");
@@ -462,24 +567,31 @@ function updateAuthUI(user) {
   const planBadge = document.getElementById("user-plan-badge");
   const userMenu = document.getElementById("user-menu");
 
-  // Cleanup previous listener
   if (subListener) {
     subListener();
     subListener = null;
   }
 
   if (user) {
-    // Show logged-in items in dropdown
     if (userMenu) userMenu.classList.remove("is-guest");
 
-    const initial = (user.displayName || user.email || "U")
-      .charAt(0)
-      .toUpperCase();
-    if (avatar) avatar.textContent = initial;
-    if (nameSpan)
-      nameSpan.textContent = user.displayName || user.email.split("@")[0];
+    const displayName = user.displayName || user.email.split("@")[0];
+    if (nameSpan) nameSpan.textContent = displayName;
 
-    // Real-time Subscription Listener
+    const photoURL = user.photoURL;
+    if (photoURL) {
+      setAvatarPhoto(photoURL);
+    } else {
+      if (avatar) avatar.innerHTML = SVG_PERSON;
+      const avatarLg = document.getElementById("dropdown-avatar-lg");
+      if (avatarLg) avatarLg.innerHTML = SVG_PERSON;
+    }
+
+    const ddName = document.getElementById("dropdown-user-name");
+    if (ddName) ddName.textContent = displayName;
+    const ddEmail = document.getElementById("dropdown-user-email");
+    if (ddEmail) ddEmail.textContent = user.email;
+
     subListener = onSnapshot(doc(db, "users", user.uid), (snap) => {
       const d = snap.exists() ? snap.data() : {};
       const isPremium = Boolean(d.isPremium);
@@ -487,17 +599,34 @@ function updateAuthUI(user) {
       planBadge.innerHTML = planEmblem(isPremium, planName);
       const tier = !isPremium ? "plan-free" : (planName.toLowerCase().includes("monthly") ? "plan-premium" : "plan-pro");
       planBadge.className = "user-plan-badge " + tier;
+
+      const ddPlan = document.getElementById("dropdown-plan-badge");
+      if (ddPlan) {
+        ddPlan.innerHTML = planEmblem(isPremium, planName);
+        ddPlan.className = "user-plan-badge " + tier;
+      }
+
+      if (d.photoURL && d.photoURL !== user.photoURL) {
+        setAvatarPhoto(d.photoURL);
+      }
     });
   } else {
-    // Show guest-friendly items in dropdown
     if (userMenu) userMenu.classList.add("is-guest");
 
-    if (avatar) avatar.textContent = "U";
+    if (avatar) avatar.innerHTML = SVG_PERSON;
+    const avatarLg = document.getElementById("dropdown-avatar-lg");
+    if (avatarLg) avatarLg.innerHTML = SVG_PERSON;
     if (nameSpan) nameSpan.textContent = "Guest";
+    const ddName = document.getElementById("dropdown-user-name");
+    if (ddName) ddName.textContent = "Guest";
+    const ddEmail = document.getElementById("dropdown-user-email");
+    if (ddEmail) ddEmail.textContent = "";
     if (planBadge) {
       planBadge.innerHTML = SVG_ROSE;
       planBadge.className = "user-plan-badge plan-free";
     }
+    const ddPlan = document.getElementById("dropdown-plan-badge");
+    if (ddPlan) { ddPlan.innerHTML = ""; ddPlan.className = "user-plan-badge"; }
   }
 }
 

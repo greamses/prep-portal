@@ -7,7 +7,7 @@ import {
   updateDoc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import { initial, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
+import { PERSON_SVG, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
 import { I } from "/home/js/dashboard/icons.js";
 import "/utils/components/nav-builder.js";
 import { ROUTES, API_ENDPOINTS } from "/home/js/routing.js";
@@ -539,7 +539,7 @@ function renderList(users) {
         <input type="checkbox" class="brutal-checkbox user-select-chk" data-id="${u.id}" ${selectedUsers.has(u.id) ? "checked" : ""}>
       </div>
       <div class="user-cell-info inspect-trigger">
-        <div class="user-avatar" style="${avatarColor(u.role)}">${initial(u.name)}</div>
+        <div class="user-avatar" style="${avatarColor(u.role)}">${PERSON_SVG}</div>
         <div class="user-meta-main">
           <strong class="user-name-text">${u.name || "User"}</strong>
           <span class="user-email-text">${u.email}</span>
@@ -871,7 +871,7 @@ function openInspectorModal(user) {
       </div>
       <div class="modal-body">
         <div class="modal-profile-header">
-          <div class="user-avatar large-avatar" style="${avatarColor(user.role)}">${initial(user.name)}</div>
+          <div class="user-avatar large-avatar" style="${avatarColor(user.role)}">${PERSON_SVG}</div>
           <div class="modal-profile-info">
             <h3>${user.name || "Unknown User"}</h3>
             <p>${user.email}</p>

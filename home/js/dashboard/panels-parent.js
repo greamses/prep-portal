@@ -1,5 +1,5 @@
 import { I } from "./icons.js";
-import { initial, pct, scoreColor, fmtDate } from "./utils.js";
+import { PERSON_SVG, pct, scoreColor, fmtDate } from "./utils.js";
 import { assignmentItemHTML, perfBarHTML } from "./components.js";
 import { MOCK } from "./mock-data.js";
 import { renderCalendar } from "./calendar.js";
@@ -34,7 +34,7 @@ export function buildParentPanels(user, data, layout) {
           .map(
             (c, i) => `
           <button class="db-child-tab${i === activeChildIdx ? " is-active" : ""}" type="button" data-child-idx="${i}">
-            <span class="db-child-tab-avatar">${initial(c.name)}</span>
+            <span class="db-child-tab-avatar">${PERSON_SVG}</span>
             ${c.name}
             <span class="db-pill ${c.streakDays ? "pill-yellow" : "pill-grey"}">${c.streakDays || 0}d</span>
           </button>`,

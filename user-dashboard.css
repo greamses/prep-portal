@@ -80,6 +80,22 @@
   font-weight: var(--weight-black);
 }
 
+.dashboard-avatar {
+  overflow: hidden;
+  color: var(--ink);
+}
+
+.dashboard-avatar svg {
+  width: 58%;
+  height: 58%;
+}
+
+.dashboard-avatar img.user-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .dashboard-account span:not([data-dashboard-plan]) {
   display: block;
   font-family: var(--font-mono);
@@ -511,6 +527,11 @@
   background: var(--accent-primary);
 }
 
+.db-roster-avatar svg {
+  width: 58%;
+  height: 58%;
+}
+
 .db-roster-name {
   font-family: var(--font-display);
   font-size: 0.88rem;
@@ -816,6 +837,11 @@
   place-items: center;
   border: 1.5px solid currentColor;
   border-radius: 4px;
+}
+
+.db-child-tab-avatar svg {
+  width: 58%;
+  height: 58%;
 }
 
 /* ══════════════════════════════════════════════════════

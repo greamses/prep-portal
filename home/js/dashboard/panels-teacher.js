@@ -1,5 +1,5 @@
 import { I } from "./icons.js";
-import { initial, pillColor, fmtDate, pct } from "./utils.js";
+import { PERSON_SVG, pillColor, fmtDate, pct } from "./utils.js";
 import { perfBarHTML } from "./components.js";
 import { MOCK } from "./mock-data.js";
 import { renderCalendar } from "./calendar.js";
@@ -73,7 +73,7 @@ export function buildTeacherPanels(user, data, layout) {
             const acc = pct(s.accuracy);
             return `
             <li class="db-roster-item">
-              <div class="db-roster-avatar">${initial(s.name)}</div>
+              <div class="db-roster-avatar">${PERSON_SVG}</div>
               <div>
                 <div class="db-roster-name">${s.name}</div>
                 <div class="db-roster-sub">${s.class || className} &bull; Last active: ${s.lastActive || "never"}</div>

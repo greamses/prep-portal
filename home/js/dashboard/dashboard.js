@@ -9,7 +9,7 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-import { setText, firstName, initial } from "/home/js/dashboard/utils.js";
+import { setText, firstName, PERSON_SVG } from "/home/js/dashboard/utils.js";
 import { ROLE_LABELS, ROLE_SUBTITLES } from "/home/js/dashboard/constants.js";
 import { ROUTES } from "/home/js/routing.js";
 import { buildToolbar } from "/home/js/dashboard/toolbar.js";
@@ -40,7 +40,7 @@ function updateHeader(user, data = {}) {
   const role = data.role || "student";
   const name = firstName(user);
   setText(fields.name, name);
-  setText(fields.avatar, initial(name));
+  if (fields.avatar) fields.avatar.innerHTML = PERSON_SVG;
   if (fields.plan) {
     const isPremium = Boolean(data.isPremium);
     const planName = data.planName || "";

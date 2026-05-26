@@ -1,6 +1,6 @@
 import { I } from "/home/js/dashboard/icons.js";
 import {
-  initial,
+  PERSON_SVG,
   fmtDate,
   avatarColor,
   pct,
@@ -80,7 +80,7 @@ export function buildAdminPanels(user, data, layout) {
             };
             return `
             <li class="db-roster-item">
-              <div class="db-roster-avatar" style="${avatarColor(u.role)}">${initial(u.name)}</div>
+              <div class="db-roster-avatar" style="${avatarColor(u.role)}">${PERSON_SVG}</div>
               <div>
                 <div class="db-roster-name">${u.name}</div>
                 <div class="db-roster-sub">${u.email} &bull; Joined ${fmtDate(u.joinedAt)}</div>

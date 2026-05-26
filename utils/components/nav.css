@@ -414,10 +414,23 @@ body {
   font-size: 1.1rem;
   font-weight: var(--weight-black);
   font-family: var(--font-display);
+  overflow: hidden;
   transition:
     transform var(--duration-smooth),
     background-color var(--duration-smooth);
   flex-shrink: 0;
+}
+
+.user-avatar img.user-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.user-avatar svg {
+  width: 58%;
+  height: 58%;
 }
 
 /* Active open avatar rotation state */
