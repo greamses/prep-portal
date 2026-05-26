@@ -398,10 +398,15 @@ function buildUserMenu() {
   dashboardLink.innerHTML = `${SVG_HOME}<span>Dashboard</span>`;
   items.appendChild(dashboardLink);
 
-  const subscriptionLink = document.createElement("a");
-  subscriptionLink.href = "/subscription.html";
+  const subscriptionLink = document.createElement("button");
+  subscriptionLink.type = "button";
   subscriptionLink.className = "neo-dropdown-item auth-only";
   subscriptionLink.innerHTML = `${SVG_STAR}<span>Subscription</span>`;
+  subscriptionLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    menuDiv.classList.remove("open");
+    window.PaymentPortal?.open("premium");
+  });
   items.appendChild(subscriptionLink);
 
   const loginBtn = document.createElement("button");
