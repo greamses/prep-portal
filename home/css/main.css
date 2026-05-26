@@ -626,3 +626,328 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================
+   PRICING SECTION
+========================================= */
+.pricing-section {
+  padding: clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 2rem);
+  background: var(--bg);
+  border-top: var(--border);
+}
+
+.pricing-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.pricing-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-black);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.pricing-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  color: var(--ink);
+  margin: 0 0 1.75rem;
+  line-height: 1.1;
+}
+
+/* ── Toggle ─────────────────────────────── */
+.pricing-toggle {
+  display: inline-flex;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2.5rem;
+}
+
+.pricing-toggle-btn {
+  padding: 0.5rem 1.2rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  font-weight: var(--weight-bold);
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricing-toggle-btn + .pricing-toggle-btn {
+  border-left: var(--border);
+}
+
+.pricing-toggle-btn--active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.pricing-toggle-pill {
+  background: var(--accent-primary);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: var(--weight-black);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ── Cards grid ─────────────────────────── */
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ── Single card ────────────────────────── */
+.pricing-card {
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.75rem;
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pricing-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pricing-card--popular {
+  border-color: var(--accent-secondary);
+  box-shadow: 4px 4px 0 var(--accent-secondary);
+}
+
+.pricing-card--popular:hover {
+  box-shadow: 6px 6px 0 var(--accent-secondary);
+}
+
+.pricing-card--enterprise {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 4px 4px 0 var(--accent-primary);
+}
+
+.pricing-card--enterprise:hover {
+  box-shadow: 6px 6px 0 var(--accent-primary);
+}
+
+/* ── Badge ──────────────────────────────── */
+.pricing-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-black);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  margin-bottom: 0.875rem;
+  width: fit-content;
+  line-height: 1.6;
+}
+
+.pricing-badge--ghost    { visibility: hidden; }
+.pricing-badge--popular  { background: var(--accent-secondary); color: #fff; }
+.pricing-badge--enterprise { background: var(--accent-primary); color: var(--ink); }
+
+/* ── Plan name + sub ────────────────────── */
+.pricing-plan-name {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 1.25rem;
+  margin: 0 0 0.3rem;
+  color: inherit;
+}
+
+.pricing-plan-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem;
+}
+
+.pricing-card--enterprise .pricing-plan-sub {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Price ──────────────────────────────── */
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.pricing-currency {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  padding-bottom: 3px;
+}
+
+.pricing-card--enterprise .pricing-currency {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.pricing-amount {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.pricing-card--enterprise .pricing-amount {
+  color: var(--bg);
+}
+
+.pricing-saving {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-black);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--accent-primary);
+  color: var(--ink);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.pricing-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px dashed var(--border-subtle, rgba(0,0,0,0.12));
+}
+
+.pricing-card--enterprise .pricing-note {
+  color: rgba(255, 255, 255, 0.45);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Features ───────────────────────────── */
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pricing-features li {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: inherit;
+  padding-left: 1.25rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+.pricing-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent-secondary);
+  font-weight: var(--weight-black);
+}
+
+.pricing-card--enterprise .pricing-features li::before {
+  color: var(--accent-primary);
+}
+
+/* ── CTA button ─────────────────────────── */
+.pricing-cta {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-top: auto;
+}
+
+.pricing-card--popular .pricing-cta {
+  background: var(--accent-secondary);
+  color: #fff;
+  border-color: var(--accent-secondary);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.pricing-card--enterprise .pricing-cta {
+  background: var(--accent-primary);
+  color: var(--ink);
+  border-color: var(--accent-primary);
+  box-shadow: 3px 3px 0 var(--bg);
+}
+
+.pricing-cta svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.pricing-cta:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pricing-card--popular .pricing-cta:hover    { box-shadow: 5px 5px 0 var(--ink); }
+.pricing-card--enterprise .pricing-cta:hover { box-shadow: 5px 5px 0 var(--bg); }
+.pricing-cta:hover svg { transform: translateX(4px); }
+.pricing-cta:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 840px) {
+  .pricing-cards {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .pricing-toggle-btn {
+    padding: 0.45rem 0.875rem;
+    font-size: var(--text-mono-xs);
+  }
+}
+

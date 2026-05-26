@@ -22,7 +22,8 @@ import { ROUTES } from "/home/js/routing.js";
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 function goToDashboard() {
-  window.location.href = ROUTES.DASHBOARD;
+  // Intentionally empty — users stay on the page they logged in from.
+  // Auth state propagates to all components via Firebase onAuthStateChanged.
 }
 
 export function injectAuthModal() {

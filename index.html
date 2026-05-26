@@ -289,12 +289,128 @@
       </div>
     </section>
 
+    <!-- ═══ PRICING SECTION ═══ -->
+    <section class="pricing-section" id="pricing">
+      <div class="pricing-wrap">
+        <p class="pricing-eyebrow">Simple Pricing</p>
+        <h2 class="pricing-title">Plans for every learner.</h2>
+
+        <div class="pricing-toggle" id="pricingToggle">
+          <button type="button" class="pricing-toggle-btn pricing-toggle-btn--active" data-billing="monthly">Monthly</button>
+          <button type="button" class="pricing-toggle-btn" data-billing="yearly">
+            Yearly
+            <span class="pricing-toggle-pill">Up to 10% off</span>
+          </button>
+        </div>
+
+        <div class="pricing-cards">
+          <!-- STARTER -->
+          <div class="pricing-card">
+            <span class="pricing-badge pricing-badge--ghost"></span>
+            <h3 class="pricing-plan-name">Starter</h3>
+            <p class="pricing-plan-sub">Perfect for individual learners</p>
+            <div class="pricing-price">
+              <span class="pricing-currency">₦</span>
+              <span class="pricing-amount" data-monthly="10,000" data-yearly="10,000">10,000</span>
+              <span class="pricing-saving" data-yearly-text="" style="display:none"></span>
+            </div>
+            <p class="pricing-note" data-monthly-note="per month" data-yearly-note="billed ₦120,000/year">per month</p>
+            <ul class="pricing-features">
+              <li>All Math games &amp; activities</li>
+              <li>Visual learning tools</li>
+              <li>Progress tracking</li>
+              <li>5 AI PrepBot queries/day</li>
+            </ul>
+            <button type="button" class="pricing-cta" data-plan-open="starter">
+              Get Starter
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+
+          <!-- PREMIUM -->
+          <div class="pricing-card pricing-card--popular">
+            <span class="pricing-badge pricing-badge--popular">Most Popular</span>
+            <h3 class="pricing-plan-name">Premium</h3>
+            <p class="pricing-plan-sub">For serious students</p>
+            <div class="pricing-price">
+              <span class="pricing-currency">₦</span>
+              <span class="pricing-amount" data-monthly="30,000" data-yearly="28,500">30,000</span>
+              <span class="pricing-saving" data-yearly-text="5% off" style="display:none">5% off</span>
+            </div>
+            <p class="pricing-note" data-monthly-note="per month" data-yearly-note="billed ₦342,000/year">per month</p>
+            <ul class="pricing-features">
+              <li>Everything in Starter</li>
+              <li>1,000+ practice questions</li>
+              <li>Unlimited AI PrepBot</li>
+              <li>Personalised study track</li>
+              <li>All past papers (50+)</li>
+            </ul>
+            <button type="button" class="pricing-cta" data-plan-open="premium">
+              Get Premium
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+
+          <!-- SCHOOLS -->
+          <div class="pricing-card pricing-card--enterprise">
+            <span class="pricing-badge pricing-badge--enterprise">Enterprise</span>
+            <h3 class="pricing-plan-name">Schools</h3>
+            <p class="pricing-plan-sub">For institutions &amp; tutors</p>
+            <div class="pricing-price">
+              <span class="pricing-currency">₦</span>
+              <span class="pricing-amount" data-monthly="150,000" data-yearly="135,000">150,000</span>
+              <span class="pricing-saving" data-yearly-text="10% off" style="display:none">10% off</span>
+            </div>
+            <p class="pricing-note" data-monthly-note="per month" data-yearly-note="billed ₦1,620,000/year">per month</p>
+            <ul class="pricing-features">
+              <li>Everything in Premium</li>
+              <li>Up to 50 student accounts</li>
+              <li>Teacher dashboard</li>
+              <li>School analytics &amp; reports</li>
+              <li>Priority support</li>
+            </ul>
+            <button type="button" class="pricing-cta" data-plan-open="schools">
+              Get Schools
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="log-in"></div>
 
     <div id="prepbot"></div>
     <script src="/utils/components/loader.js"></script>
     <script src="/utils/components/nav-builder.js" type="module"></script>
     <script src="/home/js/auth-modal.js" type="module"></script>
+    <script src="/payment-manager.js" type="module"></script>
+    <script>
+      // Billing toggle for the static pricing section
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggle = document.getElementById("pricingToggle");
+        if (!toggle) return;
+        toggle.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-billing]");
+          if (!btn) return;
+          const billing = btn.dataset.billing;
+          toggle.querySelectorAll("[data-billing]").forEach((b) =>
+            b.classList.toggle("pricing-toggle-btn--active", b.dataset.billing === billing)
+          );
+          document.querySelectorAll(".pricing-card").forEach((card) => {
+            const amountEl = card.querySelector(".pricing-amount");
+            const noteEl   = card.querySelector(".pricing-note");
+            const savingEl = card.querySelector(".pricing-saving");
+            if (amountEl) amountEl.textContent = amountEl.dataset[billing] || amountEl.textContent;
+            if (noteEl)   noteEl.textContent   = noteEl.dataset[billing + "Note"] || noteEl.textContent;
+            if (savingEl) {
+              const text = savingEl.dataset.yearlyText;
+              savingEl.style.display = (billing === "yearly" && text) ? "" : "none";
+            }
+          });
+        });
+      });
+    </script>
     <script>
       if ("serviceWorker" in navigator) {
         // Listen for the new service worker taking control of the page

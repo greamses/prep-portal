@@ -333,6 +333,14 @@ export const SUBSCRIPTION_PLANS = {
     },
 
     _setupInterceptors() {
+      // Any element with data-plan-open="starter|premium|schools" opens the modal
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-plan-open]");
+        if (!btn) return;
+        e.preventDefault();
+        this.open(btn.dataset.planOpen || "premium");
+      });
+
       document.addEventListener("click", async (e) => {
         const link = e.target.closest("a");
         if (!link) return;
