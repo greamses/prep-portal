@@ -180,7 +180,6 @@ function _openModal() {
   _showPhase('write');
   
   TheoryAnalyser.init({
-    geminiKey: state.GEMINI_KEY,
     subject: state.st.subject,
     level: levelForAI,
     topics: getSelectedTopicLabels(),

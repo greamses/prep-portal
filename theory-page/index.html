@@ -8,15 +8,21 @@
     <link rel="icon" type="image/svg+xml" href="../logo/logo-icon.svg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="../main.css" />
-    <link
-      rel="stylesheet"
-      href="../utils/theory-analyser/theory-analyser.css"
-    />
-    <script type="text/javascript" charset="utf-8"></script>
+    <link rel="stylesheet" href="/utils/theory-analyser/theory-analyser.css" />
 
-    <script type="module" src="../utils/loader/loader.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/loader/loader.js"></script>
   </head>
 
   <body>
@@ -32,7 +38,7 @@
     </div>
 
     <!-- NAVIGATION -->
-    <nav class="site-nav"></nav>
+    <nav class="site-nav" data-nav="main"></nav>
 
     <!-- TICKER -->
     <div class="ticker">
@@ -361,12 +367,9 @@
 
     <div id="prepbot"></div>
 
-    <script
-      type="module"
-      src="../utils/theory-analyser/theory-analyser.js"
-    ></script>
-    <script type="module" src="../utils/prepbot/prepbot.js"></script>
+    <script src="/utils/theory-analyser/theory-analyser.js"></script>
+    <script type="module" src="/utils/prepbot/prepbot.js"></script>
     <script type="module" src="./main.js"></script>
-    <script type="module" src="./nav/nav.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
   </body>
 </html>

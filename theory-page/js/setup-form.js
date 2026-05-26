@@ -57,24 +57,7 @@ function cleanMathForDisplay(text) {
 
 /* ── Helper to ensure Gemini key is ready ── */
 async function ensureGeminiKey() {
-  // Check if we already have the key in state
-  if (state.GEMINI_KEY && state.KEY_VERIFIED) {
-    console.log('Gemini key already ready');
-    return true;
-  }
-  
-  // Wait for key to become available (up to 5 seconds)
-  console.log('Waiting for Gemini key to be ready...');
-  for (let i = 0; i < 50; i++) {
-    if (state.GEMINI_KEY && state.KEY_VERIFIED) {
-      console.log('Gemini key is now ready');
-      return true;
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  
-  console.error('Gemini key not ready after waiting');
-  return false;
+  return state.KEY_VERIFIED;
 }
 
 /* ── Exported helpers ── */
@@ -107,11 +90,7 @@ export function checkReady() {
   document.getElementById('begin-btn').disabled = !ok;
   
   const s = document.getElementById('setup-status');
-  if (!state.KEY_VERIFIED) {
-    s.textContent = 'Paste and verify your Gemini API key to continue';
-    s.className = 'setup-status';
-  }
-  else if (!state.st.name) {
+  if (!state.st.name) {
     s.textContent = 'Enter your name to continue';
     s.className = 'setup-status';
   }
@@ -402,12 +381,7 @@ async function _autoGenOne(idx) {
     if (text) existing.push(text.slice(0, 80));
   });
   
-  // Log key state for debugging
-  console.log('Auto-gen using Gemini key:', !!state.GEMINI_KEY, 'Verified:', state.KEY_VERIFIED);
-  
-  // Initialize TheoryAnalyser with current config
   TheoryAnalyser.init({
-    geminiKey: state.GEMINI_KEY,
     subject: state.st.subject,
     level: state.st.cls + (state.st.track ? ` (${state.st.track})` : ''),
     topics: getSelectedTopicLabels(),
@@ -565,11 +539,7 @@ export function initSetupForm() {
     btn.disabled = true;
     btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> Generating all questions…`;
     
-    // Log key state for debugging
-    console.log('Auto-gen all using Gemini key:', !!state.GEMINI_KEY, 'Verified:', state.KEY_VERIFIED);
-    
     TheoryAnalyser.init({
-      geminiKey: state.GEMINI_KEY,
       subject: state.st.subject,
       level: state.st.cls + (state.st.track ? ` (${state.st.track})` : ''),
       topics: getSelectedTopicLabels(),

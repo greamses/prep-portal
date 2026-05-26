@@ -73,7 +73,14 @@ module.exports = function (db) {
         console.warn("[/api/ai/chat] Groq error, falling back to Claude");
       }
 
-      // ② Fall back to app-level Claude
+      // ② Fall back to app-level Claude (skip gracefully if key not configured)
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.json({
+          provider: "unavailable",
+          text: "PrepBot is currently unavailable. Add a Groq API key in Account Settings to enable it.",
+        });
+      }
+
       const response = await anthropic.messages.create({
         model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
         max_tokens: max_tokens || 2000,
