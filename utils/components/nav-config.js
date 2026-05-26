@@ -376,6 +376,11 @@ const NAV_CONFIG = [
             description: "Grade essays with red pen feedback",
           },
           {
+            text: "Theory Practice",
+            href: "/theory-page/index.html",
+            description: "AI-marked theory & essay questions",
+          },
+          {
             text: "AI Flashcards",
             href: "#flashcards",
             description: "Remember everything fast",
