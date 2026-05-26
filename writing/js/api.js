@@ -3,40 +3,52 @@
 ═══════════════════════════════════════════════════════ */
 
 import {
-  GEMINI_MODELS, GROQ_MODELS, QUOTA_CODES, getGeminiKey, getGroqKey,
+  GEMINI_MODELS, GROQ_MODELS, QUOTA_CODES,
   geminiModelIdx, setGeminiModelIdx,
   currentWritingType, setCurrentWritingType,
   currentTopic, setCurrentTopic,
   safe
 } from './config.js';
+import { auth } from '/firebase-init.js';
 
-// ── Model Fallback POST ─────────────────────────────────
+// ── Get Firebase ID token for backend auth ──────────────
+async function getIdToken() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Please sign in to use the Writing Assistant.');
+  return user.getIdToken();
+}
+
+// ── Model Fallback POST (via backend proxy) ─────────────
 async function geminiPost(body) {
   for (let i = geminiModelIdx; i < GEMINI_MODELS.length; i++) {
     const model = GEMINI_MODELS[i];
     let res;
     try {
-      res = await fetch(`${model.url}?key=${getGeminiKey()}`, {
+      const idToken = await getIdToken();
+      res = await fetch('/api/ai/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ body, modelUrl: model.url }),
       });
     } catch (networkErr) {
       console.warn(`[Gemini] Network error on ${model.label}:`, networkErr);
       continue;
     }
-    
+
     if (QUOTA_CODES.has(res.status)) {
       console.warn(`[Gemini] ${model.label} quota/overload (${res.status}) — trying next model`);
       setGeminiModelIdx(i + 1);
       continue;
     }
-    
+
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
       throw new Error(`API Error ${res.status} (${model.label}): ${errText}`);
     }
-    
+
     if (geminiModelIdx !== i) {
       console.info(`[Gemini] Now using: ${model.label}`);
       setGeminiModelIdx(i);
@@ -44,18 +56,17 @@ async function geminiPost(body) {
     const data = await res.json();
     return { res, data, label: model.label };
   }
-  
+
   setGeminiModelIdx(0);
   throw new Error('API Error: All Gemini models are currently over quota. Please try again later.');
 }
 
 async function groqPost({ system, prompt, json = false, temperature = 0.2, maxTokens = 8192 }) {
-  const key = getGroqKey();
   let lastError = null;
 
   for (const model of GROQ_MODELS) {
     try {
-      const body = {
+      const reqBody = {
         model: model.model,
         messages: [
           ...(system ? [{ role: 'system', content: system }] : []),
@@ -64,16 +75,16 @@ async function groqPost({ system, prompt, json = false, temperature = 0.2, maxTo
         temperature,
         max_tokens: maxTokens,
       };
+      if (json) reqBody.response_format = { type: 'json_object' };
 
-      if (json) body.response_format = { type: 'json_object' };
-
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const idToken = await getIdToken();
+      const res = await fetch('/api/ai/groq', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`
+          'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ body: reqBody }),
       });
 
       if (QUOTA_CODES.has(res.status)) {

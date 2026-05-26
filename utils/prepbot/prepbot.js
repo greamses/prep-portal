@@ -1,11 +1,6 @@
 import chatbotcss from "./prepbotcss.js";
 
-// REPLACE the Firebase imports at the top of prepbot.js with:
-import { auth, db } from "/firebase-init.js";
-import {
-  doc,
-  getDoc,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { auth } from "/firebase-init.js";
 
 (function () {
   /* ── 1. STYLE INJECTION ── */
@@ -17,99 +12,18 @@ import {
   })();
 
   /* ── 2. CONFIG ── */
-  const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
   const BOT_NAME = "PrepBot";
-  let GROQ_KEY = "";
-  let keyLoadAttempted = false;
-  let firebaseReady = false;
+  const API_CHAT_URL = "/api/ai/chat";
+  let botReady = false;
 
-  /* ── 2b. KEY RESOLUTION — use shared Firebase instances ── */
-  let authInstance = null;
-  let dbInstance = null;
-  let _cachedKey = null; // <-- ADD THIS MISSING VARIABLE
-
-  // Wait for Firebase to be ready
-  async function waitForFirebase() {
-    if (auth && db) {
-      authInstance = auth;
-      dbInstance = db;
-      console.log("PrepBot: Firebase ready");
-      return true;
-    }
-
-    // Wait for Firebase to initialize (up to 5 seconds)
-    return new Promise((resolve) => {
-      let attempts = 0;
-      const checkInterval = setInterval(() => {
-        attempts++;
-        if (auth && db) {
-          authInstance = auth;
-          dbInstance = db;
-          clearInterval(checkInterval);
-          console.log("PrepBot: Firebase ready after check");
-          resolve(true);
-        } else if (attempts >= 50) {
-          // 5 seconds max
-          clearInterval(checkInterval);
-          console.warn("PrepBot: Firebase not available after 5 seconds");
-          resolve(false);
-        }
-      }, 100);
-    });
+  /* ── 2b. READY CHECK ── */
+  function isKeySet() {
+    return botReady;
   }
 
-  /* ── IMPROVED FIRESTORE KEY LOADER ── */
-  async function tryLoadFromFirestore() {
-    try {
-      // Wait for Firebase to be ready
-      await waitForFirebase();
-
-      if (!authInstance || !dbInstance) {
-        console.log("Firebase not available");
-        return null;
-      }
-
-      const user = authInstance.currentUser;
-      if (!user) {
-        console.log("No user logged in");
-        return null;
-      }
-
-      console.log("Loading Groq key for user:", user.uid);
-
-      // Try users/{uid} document first
-      const userSnap = await getDoc(doc(dbInstance, "users", user.uid));
-      if (userSnap.exists()) {
-        const groqKey = userSnap.data().groqKey;
-        if (groqKey && groqKey.trim()) {
-          console.log("Found Groq key in users document");
-          return groqKey;
-        }
-      }
-
-      // Try users/{uid}/settings/keys subcollection
-      const settingsSnap = await getDoc(
-        doc(dbInstance, "users", user.uid, "settings", "keys"),
-      );
-      if (settingsSnap.exists()) {
-        const groqKey = settingsSnap.data().groqKey;
-        if (groqKey && groqKey.trim()) {
-          console.log("Found Groq key in settings document");
-          return groqKey;
-        }
-      }
-
-      console.log("No Groq key found for user");
-    } catch (e) {
-      console.warn("Firestore key load error:", e.message);
-    }
-    return null;
-  }
-
-  /* ── 2c. KEY READY HANDLER ── */
-  function onKeyReady(key) {
-    GROQ_KEY = key;
-    keyLoadAttempted = true;
+  /* ── 2c. READY HANDLER ── */
+  function onKeyReady() {
+    botReady = true;
 
     const messagesEl = document.getElementById("chat-messages");
     if (messagesEl) {
@@ -129,120 +43,47 @@ import {
     startNudgeInterval();
   }
 
-  /* ── 2d. KEY CHECK ── */
-  function isKeySet() {
-    return !!GROQ_KEY && GROQ_KEY.trim().length > 0;
-  }
-
-  /* ── 2e. SHOW ERROR MESSAGE (NO INPUT) ── */
+  /* ── 2d. SHOW SIGN-IN PROMPT ── */
   function showNoKeyMessage() {
     const messagesEl = document.getElementById("chat-messages");
     if (!messagesEl) return;
 
     messagesEl.innerHTML = `
       <div class="chat-intro-card" style="display:flex;flex-direction:column;gap:14px">
-        <div class="intro-label"> API KEY NOT FOUND</div>
+        <div class="intro-label">SIGN IN REQUIRED</div>
         <p style="margin:0;font-size:13px;line-height:1.6">
-          PrepBot needs a <strong>Groq API key</strong> to work.<br><br>
-          Please add your Groq API key in the 
-          <a href="../auth/account.html" style="color:var(--blue,#0b57d0);text-decoration:underline;font-weight:bold;">
-            API Keys Settings
-          </a> page first.
-        </p>
-        <p style="margin:8px 0 0;font-size:12px;color:var(--muted,#666);">
-          Get your free key at 
-          <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--blue,#0b57d0);">
-            console.groq.com/keys
-          </a>
+          Please <strong>sign in</strong> to use PrepBot.<br><br>
+          Once signed in, PrepBot is powered by AI — no extra API key needed.
         </p>
         <button id="retry-key-check" type="button"
           style="margin-top:8px;padding:8px 16px;border:2px solid var(--ink,#1f1f1f);background:var(--yellow,#ffe500);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:4px;">
-          Retry Loading Key
+          I've Signed In — Retry
         </button>
       </div>`;
 
-    const retryBtn = document.getElementById("retry-key-check");
-    if (retryBtn) {
-      retryBtn.addEventListener("click", async () => {
-        retryBtn.textContent = "Checking...";
-        retryBtn.disabled = true;
-        keyLoadAttempted = false; // Reset so we can try again
-        await initializePrepBot();
-        retryBtn.textContent = "Retry Loading Key";
-        retryBtn.disabled = false;
-      });
-    }
+    document.getElementById("retry-key-check")?.addEventListener("click", () => {
+      initializePrepBot();
+    });
   }
 
   /* ── 3. INITIALIZE PREPBOT ── */
   async function initializePrepBot() {
-    if (keyLoadAttempted && GROQ_KEY) {
-      console.log("PrepBot: Already initialized with key");
-      return;
-    }
+    if (botReady) return;
 
-    // First, ensure Firebase is ready
-    await waitForFirebase();
-
-    // Listen for keysReady event from API keys module
-    window.addEventListener("prepportal:keysReady", (e) => {
-      if (e.detail?.groq && !GROQ_KEY) {
-        console.log("PrepBot: Received keys from event");
-        _cachedKey = e.detail.groq;
-        onKeyReady(_cachedKey);
-      }
+    // Give Firebase Auth a moment to restore the session
+    await new Promise((resolve) => {
+      if (auth.currentUser) return resolve();
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+      // Timeout after 5 s so the UI doesn't hang
+      setTimeout(resolve, 5000);
     });
 
-    // ① Check if keys are already available from window
-    if (window.PrepPortalKeys?.groq) {
-      console.log("PrepBot: using key from window.PrepPortalKeys");
-      onKeyReady(window.PrepPortalKeys.groq);
-      return;
-    }
-
-    // ② Try Firestore directly with current user
-    if (authInstance && authInstance.currentUser) {
-      const firestoreKey = await tryLoadFromFirestore();
-      if (firestoreKey) {
-        console.log("PrepBot: got key from Firestore directly");
-        onKeyReady(firestoreKey);
-        return;
-      }
-    }
-
-    // ③ Wait for keysReady event (user might be logging in)
-    if (!keyLoadAttempted) {
-      keyLoadAttempted = true;
-      console.log("PrepBot: Waiting for keysReady event...");
-
-      // Wait up to 10 seconds for the event
-      await new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          console.log("PrepBot: Timeout waiting for keys");
-          resolve();
-        }, 10000);
-
-        const handler = (e) => {
-          if (e.detail?.groq) {
-            clearTimeout(timeout);
-            window.removeEventListener("prepportal:keysReady", handler);
-            resolve();
-          }
-        };
-        window.addEventListener("prepportal:keysReady", handler);
-      });
-
-      // Check again after waiting
-      if (window.PrepPortalKeys?.groq && !GROQ_KEY) {
-        console.log("PrepBot: got key after waiting");
-        onKeyReady(window.PrepPortalKeys.groq);
-        return;
-      }
-    }
-
-    // ④ No key found - show setup message
-    if (!GROQ_KEY) {
-      console.warn("PrepBot: no key found, showing setup message");
+    if (auth.currentUser) {
+      onKeyReady();
+    } else {
       showNoKeyMessage();
     }
   }
@@ -788,85 +629,36 @@ STRICT RULES:
 [SUGGESTIONS: "short follow-up prompt 1", "short follow-up prompt 2"]
 The two suggestions must be short (2-5 words), relevant to what you just explained, and phrased as things the student would naturally ask next. Do not number them. Do not add anything after this line.`;
 
-    // CORS PROXIES - try each until one works
-    const corsProxies = [
-      "https://corsproxy.io/?",
-      "https://api.allorigins.win/raw?url=",
-      "https://cors-anywhere.herokuapp.com/",
-    ];
-
-    let res = null;
     let data = null;
-    let success = false;
 
     try {
-      // Try each proxy
-      for (const proxy of corsProxies) {
-        try {
-          console.log(`Trying proxy: ${proxy}`);
-          const targetUrl = encodeURIComponent(GROQ_URL);
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("Please sign in to use PrepBot.");
 
-          res = await fetch(proxy + targetUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${GROQ_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "llama-3.1-8b-instant",
-              messages: [
-                { role: "system", content: systemPrompt },
-                ...history,
-                { role: "user", content: text },
-              ],
-              temperature: 0.3,
-              max_tokens: 2000,
-            }),
-          });
+      const res = await fetch(API_CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          system: systemPrompt,
+          messages: [...history, { role: "user", content: text }],
+          temperature: 0.3,
+          max_tokens: 2000,
+        }),
+      });
 
-          if (res.ok) {
-            data = await res.json();
-            success = true;
-            break;
-          }
-        } catch (proxyErr) {
-          console.warn(`Proxy ${proxy} failed:`, proxyErr.message);
-          continue;
-        }
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server error ${res.status}`);
       }
 
-      // If all proxies fail, try direct connection
-      if (!success) {
-        console.log("All proxies failed, trying direct connection...");
-        res = await fetch(GROQ_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${GROQ_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
-            messages: [
-              { role: "system", content: systemPrompt },
-              ...history,
-              { role: "user", content: text },
-            ],
-            temperature: 0.3,
-            max_tokens: 2000,
-          }),
-        });
-        data = await res.json();
-      }
+      data = await res.json();
 
       hideTyping();
 
-      if (!data || !data.choices || !data.choices[0]) {
-        throw new Error("Invalid response from API");
-      }
-
-      let reply =
-        data.choices[0]?.message?.content ||
-        "Connection error. Please try again.";
+      let reply = data.text || "Connection error. Please try again.";
 
       const { cleanReply, chips } = parseSuggestions(reply);
 
@@ -883,16 +675,10 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
       hideTyping();
       console.error("PrepBot API Error:", err);
 
-      let errorMessage = "Connection error. ";
-      if (
-        err.message.includes("Failed to fetch") ||
-        err.message.includes("NetworkError")
-      ) {
-        errorMessage +=
-          "CORS restriction detected. Try using a CORS unblocker extension.";
-      } else {
-        errorMessage += "Please check your connection and try again.";
-      }
+      const errorMessage =
+        err.message.includes("sign in")
+          ? err.message
+          : "Connection error. Please check your connection and try again.";
 
       await appendMessage("bot", errorMessage);
       renderSuggestionChips(["Try Again", "Check Settings"]);

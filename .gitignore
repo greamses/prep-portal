@@ -1,2 +1,11 @@
 # Ignore Firestore security rules
 **/firestore.rules
+
+# Server secrets — NEVER commit these
+server/.env
+server/serviceAccountKey.json
+home/js/dashboard/serviceAccountKey.json
+
+# Node modules
+node_modules/
+server/node_modules/
