@@ -196,26 +196,26 @@ function makeBrutalDropdownHTML({
   const optionsHTML = options
     .map(
       (o) =>
-        `<div class="brutal-dropdown-item ${o.value === selectedValue ? "active" : ""}" data-value="${o.value}">${o.label}</div>`,
+        `<div class="pp-select-item ${o.value === selectedValue ? "active" : ""}" data-value="${o.value}">${o.label}</div>`,
     )
     .join("");
 
   return `
-    <div class="brutal-dropdown ${className || ""}" id="${id || ""}" data-id="${id || ""}">
-      <button class="brutal-dropdown-trigger" type="button">
+    <div class="pp-select ${className || ""}" id="${id || ""}" data-id="${id || ""}">
+      <button class="pp-select-trigger" type="button">
         <span>${triggerLabel}</span>
         ${SVGS.chevronDown}
       </button>
-      <div class="brutal-dropdown-menu">${optionsHTML}</div>
+      <div class="pp-select-menu">${optionsHTML}</div>
     </div>`;
 }
 
 function initDropdownGlobalHandlers() {
   document.addEventListener("click", (e) => {
-    const isTrigger = e.target.closest(".brutal-dropdown-trigger");
-    const activeDropdown = e.target.closest(".brutal-dropdown");
+    const isTrigger = e.target.closest(".pp-select-trigger");
+    const activeDropdown = e.target.closest(".pp-select");
 
-    document.querySelectorAll(".brutal-dropdown.open").forEach((drop) => {
+    document.querySelectorAll(".pp-select.open").forEach((drop) => {
       if (drop !== activeDropdown) drop.classList.remove("open");
     });
 
@@ -223,15 +223,15 @@ function initDropdownGlobalHandlers() {
   });
 
   document.addEventListener("click", (e) => {
-    const item = e.target.closest(".brutal-dropdown-item");
+    const item = e.target.closest(".pp-select-item");
     if (!item) return;
 
-    const dropdown = item.closest(".brutal-dropdown");
+    const dropdown = item.closest(".pp-select");
     const val = item.dataset.value;
-    const triggerSpan = dropdown.querySelector(".brutal-dropdown-trigger span");
+    const triggerSpan = dropdown.querySelector(".pp-select-trigger span");
 
     dropdown
-      .querySelectorAll(".brutal-dropdown-item")
+      .querySelectorAll(".pp-select-item")
       .forEach((i) => i.classList.remove("active"));
     item.classList.add("active");
     triggerSpan.textContent = item.textContent.trim();
@@ -266,7 +266,7 @@ function injectExtendedControls() {
     const dropConfigs = [
       {
         id: "role-filter-drop",
-        className: "filter-dropdown",
+        className: "pp-select--filter",
         options: FILTER_ROLE_OPTIONS,
         selected: filterRole,
         onChange: (v) => {
@@ -276,7 +276,7 @@ function injectExtendedControls() {
       },
       {
         id: "plan-filter-drop",
-        className: "filter-dropdown",
+        className: "pp-select--filter",
         options: FILTER_PLAN_OPTIONS,
         selected: filterPlan,
         onChange: (v) => {
@@ -286,7 +286,7 @@ function injectExtendedControls() {
       },
       {
         id: "sort-filter-drop",
-        className: "filter-dropdown",
+        className: "pp-select--filter",
         options: FILTER_SORT_OPTIONS,
         selected: filterSort,
         onChange: (v) => {
@@ -509,9 +509,9 @@ function resetDropdown(id, value, options, stateFn) {
   const drop = document.getElementById(id);
   if (!drop) return;
   const label = options.find((o) => o.value === value)?.label || value;
-  const span = drop.querySelector(".brutal-dropdown-trigger span");
+  const span = drop.querySelector(".pp-select-trigger span");
   if (span) span.textContent = label;
-  drop.querySelectorAll(".brutal-dropdown-item").forEach((item) => {
+  drop.querySelectorAll(".pp-select-item").forEach((item) => {
     item.classList.toggle("active", item.dataset.value === value);
   });
   stateFn();
@@ -548,7 +548,7 @@ function renderList(users) {
       <div>
         ${makeBrutalDropdownHTML({
           id: u.id,
-          className: "row-role-dropdown",
+          className: "pp-select--sm",
           options: ROLE_OPTIONS,
           selectedValue: u.role || "student",
         })}
@@ -595,7 +595,7 @@ function attachListEvents() {
   });
 
   // Role dropdown
-  listEl.querySelectorAll(".row-role-dropdown").forEach((el) => {
+  listEl.querySelectorAll(".pp-select--sm").forEach((el) => {
     el.addEventListener("change", async (e) => {
       const userId = el.dataset.id;
       const newRole = e.detail.value;
@@ -697,7 +697,7 @@ function renderBulkBar() {
       <div class="bulk-controls">
         ${makeBrutalDropdownHTML({
           id: "bulk-role-select",
-          className: "bulk-dropdown",
+          className: "pp-select--up",
           options: ROLE_OPTIONS,
           selectedValue: "",
           defaultLabel: "Change Role...",

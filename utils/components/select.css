@@ -1,0 +1,178 @@
+/* ============================================================
+   PP-SELECT — Unified custom dropdown/select component
+   Single source of truth for all custom dropdowns in the app.
+   Import via: @import url("/utils/components/select.css");
+   ============================================================ */
+
+/* ── Container ──────────────────────────────────────────── */
+.pp-select {
+  position: relative;
+  width: 100%;
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ── Trigger button ─────────────────────────────────────── */
+.pp-select-trigger {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-mono-md);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  white-space: nowrap;
+  outline: none;
+  transition:
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default);
+}
+
+.pp-select.has-value .pp-select-trigger {
+  color: var(--ink);
+}
+
+.pp-select-trigger:hover,
+.pp-select.open .pp-select-trigger {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-md);
+  background: var(--surface-secondary);
+}
+
+/* ── Chevron ────────────────────────────────────────────── */
+.pp-select-chevron,
+.pp-select .chevron-svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--ink);
+  transition: transform var(--duration-smooth) var(--ease-default);
+}
+
+.pp-select.open .pp-select-chevron,
+.pp-select.open .chevron-svg {
+  transform: rotate(180deg);
+}
+
+/* ── Menu panel ─────────────────────────────────────────── */
+.pp-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 300;
+  max-height: 260px;
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  padding: 0.4rem;
+  gap: 0.15rem;
+  box-sizing: border-box;
+}
+
+.pp-select-menu::-webkit-scrollbar { width: 4px; }
+.pp-select-menu::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border-radius: 4px;
+}
+
+.pp-select.open .pp-select-menu {
+  display: flex;
+}
+
+/* ── Items ──────────────────────────────────────────────── */
+.pp-select-item {
+  padding: 0.45rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: calc(var(--radius-sm) - 2px);
+  transition:
+    background var(--duration-instant),
+    color var(--duration-instant),
+    transform var(--duration-instant);
+}
+
+.pp-select-item:hover {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
+  transform: translateX(2px);
+}
+
+.pp-select-item.active {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
+}
+
+/* ── Validation error state ──────────────────────────────── */
+.pp-select.error .pp-select-trigger {
+  border-color: var(--accent-danger);
+  box-shadow: 2px 2px 0 var(--accent-danger);
+}
+
+/* ── Size variants ──────────────────────────────────────── */
+
+/* Large — signup / form fields */
+.pp-select--lg .pp-select-trigger {
+  padding: 0.75rem 1rem;
+  font-size: var(--text-mono-lg);
+  min-height: 48px;
+}
+
+.pp-select--lg .pp-select-item {
+  padding: 0.6rem 1rem;
+  font-size: var(--text-mono-lg);
+}
+
+/* Small — inline table-row selects */
+.pp-select--sm {
+  min-width: 120px;
+}
+
+.pp-select--sm .pp-select-trigger {
+  padding: 0.35rem 0.6rem;
+  font-size: var(--text-mono-xs);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.pp-select--sm .pp-select-item {
+  padding: 0.3rem 0.55rem;
+  font-size: var(--text-mono-xs);
+}
+
+/* Filter bar — uppercase with wider padding */
+.pp-select--filter .pp-select-trigger {
+  padding: 0.65rem 1rem;
+  font-size: var(--text-mono-md);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.pp-select--filter .pp-select-item {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Upward — menu opens above trigger (bulk controls) */
+.pp-select--up .pp-select-menu {
+  bottom: calc(100% + 4px);
+  top: auto;
+}

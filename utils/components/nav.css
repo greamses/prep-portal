@@ -398,7 +398,6 @@ body {
 
 .user-profile:hover {
   background: var(--bg);
-  border-color: var(--ink);
 }
 
 .user-avatar {

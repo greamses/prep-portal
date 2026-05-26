@@ -186,47 +186,46 @@ function initializeAuthModal(authContainer) {
   const roleButtons = authContainer.querySelectorAll(".role-toggle-btn");
 
   // ============================================
-  // CUSTOM SELECT CONTROLLER
+  // PP-SELECT CONTROLLER
   // ============================================
 
-  // Close custom dropdown lists on clicking outside
+  // Close open selects on clicking outside
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".custom-select")) {
-      document.querySelectorAll(".custom-select.active").forEach((dropdown) => {
-        dropdown.classList.remove("active");
+    if (!e.target.closest(".pp-select")) {
+      document.querySelectorAll(".pp-select.open").forEach((dropdown) => {
+        dropdown.classList.remove("open");
       });
     }
   });
 
-  // Handle actions within custom select elements
+  // Handle actions within pp-select elements
   authContainer.addEventListener("click", (e) => {
-    const trigger = e.target.closest(".custom-select-trigger");
+    const trigger = e.target.closest(".pp-select-trigger");
     if (trigger) {
       e.preventDefault();
-      const selectParent = trigger.closest(".custom-select");
+      const selectParent = trigger.closest(".pp-select");
 
       // Close any other open selectors
-      authContainer.querySelectorAll(".custom-select").forEach((el) => {
-        if (el !== selectParent) el.classList.remove("active");
+      authContainer.querySelectorAll(".pp-select").forEach((el) => {
+        if (el !== selectParent) el.classList.remove("open");
       });
 
-      selectParent.classList.toggle("active");
+      selectParent.classList.toggle("open");
       return;
     }
 
-    const option = e.target.closest(".custom-select-option");
+    const option = e.target.closest(".pp-select-item");
     if (option) {
-      const selectParent = option.closest(".custom-select");
+      const selectParent = option.closest(".pp-select");
       const hiddenInput = selectParent.querySelector("input[type='hidden']");
       const value = option.dataset.value;
       const text = option.textContent;
 
       hiddenInput.value = value;
-      selectParent.querySelector(".custom-select-trigger span").textContent =
-        text;
+      selectParent.querySelector(".pp-select-trigger span").textContent = text;
 
       selectParent.classList.add("has-value");
-      selectParent.classList.remove("active");
+      selectParent.classList.remove("open");
 
       // Dispatch changes for reactive listeners
       hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -263,23 +262,21 @@ function initializeAuthModal(authContainer) {
     const roleInputs = roleContainer.querySelectorAll("input");
 
     for (const input of roleInputs) {
-      // Check hidden inputs for our custom-select objects
+      // Check hidden inputs for our pp-select objects
       if (
         input.type === "hidden" &&
         input.hasAttribute("required") &&
         !input.value
       ) {
-        const customSelect = input.closest(".custom-select");
-        customSelect.classList.add("validation-error");
+        const customSelect = input.closest(".pp-select");
+        customSelect.classList.add("error");
 
-        const trigger = customSelect.querySelector(".custom-select-trigger");
+        const trigger = customSelect.querySelector(".pp-select-trigger");
         trigger.focus();
 
         // Highlight active selector outline briefly on error
-        trigger.style.borderColor = "#ef4444";
         setTimeout(() => {
-          trigger.style.borderColor = "";
-          customSelect.classList.remove("validation-error");
+          customSelect.classList.remove("error");
         }, 2500);
         return false;
       }
