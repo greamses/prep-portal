@@ -14,21 +14,72 @@ import { auth } from "/firebase-init.js";
   /* ── 2. CONFIG ── */
   const BOT_NAME = "PrepBot";
   const API_CHAT_URL = "/api/ai/chat";
+  const API_YOUTUBE_URL = "/api/ai/youtube";
   let botReady = false;
 
-  /* ── 2b. READY CHECK ── */
+  /* ── 3. QUIZ DATA BRIDGE ─────────────────────────────────────────
+   * Normalises quiz data from two sources:
+   *   A) window.__prepbotQuizData  (modern pages — exam/quiz runners)
+   *   B) window.Quiz.getState()   (legacy question.html / quiz-engine)
+   * Returns a unified object or null.
+   * ────────────────────────────────────────────────────────────── */
+  const LETTERS = ["A", "B", "C", "D", "E"];
+
+  function getQuizData() {
+    if (window.__prepbotQuizData && window.__prepbotQuizData.length > 0) {
+      return {
+        questions: window.__prepbotQuizData,
+        currentIndex: window.__prepbotCurrentQuestionIndex || 0,
+        userAnswers: [],
+        submitted: false,
+        goTo: window.__prepbotJumpToQuestion || null,
+        source: "modern",
+      };
+    }
+
+    if (window.Quiz && typeof window.Quiz.getState === "function") {
+      const s = window.Quiz.getState();
+      if (s && s.allQuestions && s.allQuestions.length > 0) {
+        const questions = s.allQuestions.map((q) => ({
+          question: q.question,
+          options: q.options || [],
+          correctIndex: q._answer
+            ? LETTERS.indexOf(q._answer.toUpperCase())
+            : -1,
+          _answer: q._answer || null,
+          type: q.type,
+          explanation: Array.isArray(q.explanation)
+            ? q.explanation.join("\n")
+            : q.explanation || "",
+          solutions: "",
+          hint: "",
+        }));
+        return {
+          questions,
+          currentIndex: s.currentIndex || 0,
+          userAnswers: s.userAnswers || [],
+          submitted: s.submitted || false,
+          goTo: window.Quiz.goTo ? (i) => window.Quiz.goTo(i) : null,
+          source: "legacy",
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /* ── 4. READY HANDLERS ── */
   function isKeySet() {
     return botReady;
   }
 
-  /* ── 2c. READY HANDLER ── */
   function onKeyReady() {
     botReady = true;
 
     const messagesEl = document.getElementById("chat-messages");
     if (messagesEl) {
       messagesEl.innerHTML =
-        '<div class="chat-intro-card"><div class="intro-label"> SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
+        '<div class="chat-intro-card"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
     }
 
     const inp = document.getElementById("chat-input");
@@ -38,16 +89,28 @@ import { auth } from "/firebase-init.js";
     if (sndBtn) sndBtn.disabled = false;
     if (micB) micB.disabled = false;
 
-    addQuizNavigationPill();
-    updateQuizNavigationPill();
+    const qd = getQuizData();
+    if (qd && qd.source === "legacy") {
+      renderActionPills();
+      // Patch Quiz.goTo once so navigation always refreshes action pills
+      if (window.Quiz?.goTo && !window.Quiz._prepbotPatched) {
+        const orig = window.Quiz.goTo;
+        window.Quiz.goTo = function (i) {
+          orig(i);
+          window.dispatchEvent(new CustomEvent("prepbot:quizUpdated"));
+        };
+        window.Quiz._prepbotPatched = true;
+      }
+    } else {
+      addQuizNavigationPill();
+      updateQuizNavigationPill();
+    }
     startNudgeInterval();
   }
 
-  /* ── 2d. SHOW SIGN-IN PROMPT ── */
   function showNoKeyMessage() {
     const messagesEl = document.getElementById("chat-messages");
     if (!messagesEl) return;
-
     messagesEl.innerHTML = `
       <div class="chat-intro-card" style="display:flex;flex-direction:column;gap:14px">
         <div class="intro-label">SIGN IN REQUIRED</div>
@@ -60,24 +123,21 @@ import { auth } from "/firebase-init.js";
           I've Signed In — Retry
         </button>
       </div>`;
-
     document.getElementById("retry-key-check")?.addEventListener("click", () => {
       initializePrepBot();
     });
   }
 
-  /* ── 3. INITIALIZE PREPBOT ── */
+  /* ── 5. INIT ── */
   async function initializePrepBot() {
     if (botReady) return;
 
-    // Give Firebase Auth a moment to restore the session
     await new Promise((resolve) => {
       if (auth.currentUser) return resolve();
       const unsubscribe = auth.onAuthStateChanged((user) => {
         unsubscribe();
         resolve(user);
       });
-      // Timeout after 5 s so the UI doesn't hang
       setTimeout(resolve, 5000);
     });
 
@@ -88,113 +148,78 @@ import { auth } from "/firebase-init.js";
     }
   }
 
-  /* ── SITE MAP — for non-quiz page nudges ── */
+  /* ── 6. SITE MAP — non-quiz nudges ── */
   const SITE_MAP = [
     {
       match: (p) => p === "/" || p === "/index.html",
       title: "Home",
-      section: "Prep Portal",
       nudges: [
         "Select an exam category to begin your preparation.",
         "Browse available quiz sets or visit the Math Hub.",
         "Not sure where to start? I can guide you to the right section.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>`,
     },
     {
       match: (p) => p.includes("waec"),
       title: "WAEC",
-      section: "WAEC Prep",
       nudges: [
         "WAEC questions follow predictable patterns. I can walk you through any topic.",
         "Working on WAEC prep? Ask me to explain a concept or break down past questions.",
         "Need a summary of key WAEC topics for this subject? Just ask.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="0"/><path d="M3 9h18M9 21V9"/></svg>`,
     },
     {
       match: (p) => p.includes("jamb") || p.includes("utme"),
       title: "JAMB / UTME",
-      section: "JAMB Prep",
       nudges: [
         "JAMB questions test speed and accuracy. Want a quick drill on any topic?",
         "Preparing for UTME? I can help you revise core concepts fast.",
         "Ask me to generate practice questions or explain any JAMB topic.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>`,
     },
     {
       match: (p) => p.includes("igcse"),
       title: "IGCSE",
-      section: "IGCSE Prep",
       nudges: [
         "IGCSE marking relies on key terms. I can help you use the right language.",
         "Revising for IGCSE? Ask me to explain any concept with worked examples.",
-        "Want a breakdown of what examiners look for in this topic?",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
     },
     {
       match: (p) =>
-        p.includes("cambridge") ||
-        p.includes("a-level") ||
-        p.includes("alevel"),
+        p.includes("cambridge") || p.includes("a-level") || p.includes("alevel"),
       title: "Cambridge A-Level",
-      section: "Cambridge Prep",
       nudges: [
         "Cambridge A-Level demands deep understanding. I can unpack any concept.",
         "Ask me for a structured revision plan or topic explanation.",
         "Need model answers or mark scheme guidance? I can help.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.74V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v13.26"/><path d="M2 20h20"/><path d="M8 8h8M8 12h5"/></svg>`,
     },
     {
       match: (p) => p.includes("common-entrance") || p.includes("entrance"),
       title: "Common Entrance",
-      section: "Common Entrance Prep",
       nudges: [
         "Common Entrance needs solid basics. Ask me to explain any topic simply.",
         "Working through Common Entrance prep? I can guide you step by step.",
-        "Ask me a question from any subject and I will break it down clearly.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
     },
     {
       match: (p) =>
-        p.includes("scholastic") || p.includes("sat") || p.includes("gre"),
-      title: "Scholastic",
-      section: "Scholastic Exams",
-      nudges: [
-        "Scholastic exams reward strategy. Want tips on approaching question types?",
-        "Ask me to drill vocabulary, math reasoning, or reading comprehension.",
-        "Need timed practice guidance? I can set up a mini drill session.",
-      ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
-    },
-    {
-      match: (p) =>
-        p.includes("math-hub") ||
-        p.includes("maths") ||
-        p.includes("mathematics"),
+        p.includes("math-hub") || p.includes("maths") || p.includes("mathematics"),
       title: "Math Hub",
-      section: "Math Hub",
       nudges: [
         "The Math Hub has tools, games, and videos. Want a guided tour?",
         "Stuck on a concept? Ask me and I will give a worked example.",
-        "Need an interactive explanation of any math topic? I am ready.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4v16h16"/><path d="M8 16l4-8 4 8"/><path d="M10 13h4"/></svg>`,
     },
     {
       match: (p) => p.includes("theory") || p.includes("essay"),
       title: "Theory Practice",
-      section: "Theory / Essay",
       nudges: [
         "Theory questions reward structure. Ask me to review your approach.",
         "Want model answer structure for any theory question? Just ask.",
         "I can mark a draft answer or suggest how to improve your response.",
       ],
-      icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
     },
   ];
 
@@ -206,46 +231,42 @@ import { auth } from "/firebase-init.js";
   let lastBotReply = "";
   let lastUserMessage = "";
 
-  /* ── 4. DOM & QUIZ SCRAPER ── */
+  /* ── 7. PAGE CONTEXT ── */
   function getPageContext() {
-    const quizData = window.__prepbotQuizData || null;
-    const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
+    const qd = getQuizData();
 
-    if (quizData && quizData[currentIdx]) {
-      const q = quizData[currentIdx];
+    if (qd && qd.questions.length > 0) {
+      const q = qd.questions[qd.currentIndex];
       const opts = (q.options || [])
-        .map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`)
+        .map((o, i) => `${LETTERS[i] || i + 1}. ${o}`)
         .join("\n");
 
       let solutionsText = "";
       if (q.solutions) {
-        if (Array.isArray(q.solutions)) {
-          solutionsText = q.solutions
-            .map((step, i) => `Step ${i + 1}: ${step}`)
-            .join("\n");
-        } else if (typeof q.solutions === "string") {
-          solutionsText = q.solutions;
-        }
+        solutionsText = Array.isArray(q.solutions)
+          ? q.solutions.map((s, i) => `Step ${i + 1}: ${s}`).join("\n")
+          : q.solutions;
       }
 
       let explanationText = q.explanation || "";
       if (Array.isArray(explanationText)) {
         explanationText = explanationText
-          .map((step, i) => `Step ${i + 1}: ${step}`)
+          .map((s, i) => `Step ${i + 1}: ${s}`)
           .join("\n");
       }
 
       return {
         mode: "quiz",
-        qNum: currentIdx + 1,
-        totalQs: quizData.length,
-        title: `Question ${currentIdx + 1}`,
+        qNum: qd.currentIndex + 1,
+        totalQs: qd.questions.length,
+        title: `Question ${qd.currentIndex + 1}`,
         content: `Active Quiz Question: ${q.question}\nOptions:\n${opts}`,
         explanation: explanationText,
         questionText: q.question,
         hint: q.hint || "",
         solutions: solutionsText,
         correctIndex: q.correctIndex,
+        correctAnswer: q._answer || null,
         options: q.options,
         fullData: q,
       };
@@ -257,9 +278,7 @@ import { auth } from "/firebase-init.js";
       const el = document.querySelector(sel);
       if (el) {
         const clone = el.cloneNode(true);
-        clone
-          .querySelectorAll("#prepbot, script, style")
-          .forEach((n) => n.remove());
+        clone.querySelectorAll("#prepbot, script, style").forEach((n) => n.remove());
         scrapedText = clone.innerText.replace(/\s+/g, " ").trim();
         break;
       }
@@ -275,62 +294,35 @@ import { auth } from "/firebase-init.js";
       hint: "",
       solutions: "",
       correctIndex: -1,
+      correctAnswer: null,
       options: [],
       fullData: null,
     };
   }
 
-  /* ── PAGE META READER ── */
   function getPageMeta() {
     return {
       title: document.title || "",
       h1: document.querySelector("h1")?.innerText?.trim() || "",
-      description:
-        document.querySelector('meta[name="description"]')?.content || "",
-      ogDescription:
-        document.querySelector('meta[property="og:description"]')?.content ||
-        "",
-      keywords: document.querySelector('meta[name="keywords"]')?.content || "",
+      description: document.querySelector('meta[name="description"]')?.content || "",
       path: window.location.pathname.toLowerCase(),
     };
   }
 
-  /* ── SITE MAP LOOKUP ── */
-  function getSiteMapEntry(path) {
-    return SITE_MAP.find((entry) => entry.match(path)) || null;
-  }
-
-  /* ── NON-QUIZ NUDGE GENERATOR ── */
   function getNonQuizNudge() {
     const meta = getPageMeta();
-    const entry = getSiteMapEntry(meta.path);
-
+    const entry = SITE_MAP.find((e) => e.match(meta.path));
     if (entry) {
-      const nudge =
-        entry.nudges[Math.floor(Math.random() * entry.nudges.length)];
+      const nudge = entry.nudges[Math.floor(Math.random() * entry.nudges.length)];
       return { text: nudge, prompt: nudge };
     }
-
     const topic =
-      meta.h1 ||
-      meta.title.split("|")[0].split("-")[0].trim() ||
-      "this section";
-    const desc = meta.description || meta.ogDescription;
-
-    const fallbackNudges = [
-      desc
-        ? `${desc.substring(0, 90).trimEnd()}. Ask me anything about this.`
-        : `On ${topic} — I can explain, summarise, or quiz you on any part of this page.`,
-      `Need help understanding ${topic}? I am reading this page with you.`,
-      `Ask me a question about ${topic} and I will break it down clearly.`,
-    ];
-
-    const text =
-      fallbackNudges[Math.floor(Math.random() * fallbackNudges.length)];
+      meta.h1 || meta.title.split("|")[0].split("-")[0].trim() || "this section";
+    const text = `Need help understanding ${topic}? I am reading this page with you.`;
     return { text, prompt: `Help me understand this page: ${topic}` };
   }
 
-  /* ── 5. INJECT HTML ── */
+  /* ── 8. INJECT HTML ── */
   const mount = document.getElementById("prepbot");
   if (!mount) return;
 
@@ -357,12 +349,18 @@ import { auth } from "/firebase-init.js";
         </div>
       </div>
 
+      <div class="chat-context-banner" id="chat-context-banner">
+        <span class="chat-context-label">Current Question</span>
+        <span id="chat-context-text"></span>
+        <button class="chat-context-clear" id="chat-context-clear" title="Clear context">×</button>
+      </div>
+
       <div class="quiz-nav-bar" id="quiz-nav-bar" style="display:none">
-        <button class="quiz-nav-btn" id="quiz-nav-prev" title="Previous Question">← Prev</button>
+        <button class="quiz-nav-btn" id="quiz-nav-prev">← Prev</button>
         <div class="quiz-nav-info">
           <span id="quiz-nav-current">1</span> / <span id="quiz-nav-total">0</span>
         </div>
-        <button class="quiz-nav-btn" id="quiz-nav-next" title="Next Question">Next →</button>
+        <button class="quiz-nav-btn" id="quiz-nav-next">Next →</button>
       </div>
 
       <div class="qbubbles-bar" id="qbubbles-bar" style="display:none">
@@ -373,7 +371,7 @@ import { auth } from "/firebase-init.js";
       <div class="chat-messages" id="chat-messages">
         <div class="chat-intro-card">
           <div class="intro-label">LOADING</div>
-          <p>Checking for API key...</p>
+          <p>Checking sign-in status…</p>
         </div>
       </div>
       <div class="chat-suggestions" id="chat-suggestions"></div>
@@ -394,7 +392,7 @@ import { auth } from "/firebase-init.js";
     </div>
   `;
 
-  /* ── 6. REFS & STATE ── */
+  /* ── 9. REFS & STATE ── */
   const win = document.getElementById("chat-window"),
     fabWrap = document.getElementById("chat-fab-wrap"),
     input = document.getElementById("chat-input"),
@@ -424,11 +422,11 @@ import { auth } from "/firebase-init.js";
     questionStartTime = null,
     userProficiency = "beginner";
 
-  /* ── 7. VOICE ENGINE ── */
+  /* ── 10. VOICE ── */
   if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
+    recognition.lang = "en-NG";
     recognition.onstart = () => micBtn.classList.add("mic-active");
     recognition.onend = () => micBtn.classList.remove("mic-active");
     recognition.onresult = (e) => {
@@ -449,38 +447,27 @@ import { auth } from "/firebase-init.js";
     synth.speak(utter);
   }
 
-  /* ── 8. GET SOLUTION STEPS ── */
+  /* ── 11. SOLUTION STEPS ── */
   function getSolutionSteps(questionData) {
     if (!questionData) return [];
     let steps = [];
-    if (questionData.solutions) {
-      if (Array.isArray(questionData.solutions)) steps = questionData.solutions;
-      else if (typeof questionData.solutions === "string")
-        steps = questionData.solutions.split("\n").filter((s) => s.trim());
-    }
-    if (steps.length === 0 && questionData.explanation) {
-      if (Array.isArray(questionData.explanation))
-        steps = questionData.explanation;
-      else if (typeof questionData.explanation === "string")
-        steps = questionData.explanation.split("\n").filter((s) => s.trim());
-    }
-    if (steps.length === 0 && questionData.solutionSteps) {
-      if (Array.isArray(questionData.solutionSteps))
-        steps = questionData.solutionSteps;
-      else if (typeof questionData.solutionSteps === "string")
-        steps = questionData.solutionSteps.split("\n").filter((s) => s.trim());
+    for (const key of ["solutions", "explanation", "solutionSteps"]) {
+      if (!questionData[key]) continue;
+      steps = Array.isArray(questionData[key])
+        ? questionData[key]
+        : questionData[key].split("\n").filter((s) => s.trim());
+      if (steps.length > 0) break;
     }
     return steps.filter((s) => s.length > 0);
   }
 
-  /* ── 9. PROGRESSIVE HINT GENERATION ── */
+  /* ── 12. PROGRESSIVE HINT ── */
   function generateProgressiveHint() {
-    const quizData = window.__prepbotQuizData;
-    const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-    if (!quizData || !quizData[currentIdx]) return null;
+    const qd = getQuizData();
+    if (!qd || !qd.questions.length) return null;
 
-    const currentQuestion = quizData[currentIdx];
-    const questionId = `${currentIdx}_${currentQuestion.question.substring(0, 50)}`;
+    const q = qd.questions[qd.currentIndex];
+    const questionId = `${qd.currentIndex}_${q.question.substring(0, 50)}`;
 
     if (lastQuestionId !== questionId) {
       lastQuestionId = questionId;
@@ -492,12 +479,11 @@ import { auth } from "/firebase-init.js";
     const timeSpent = questionStartTime
       ? Math.floor((Date.now() - questionStartTime) / 1000)
       : 0;
-    const steps = getSolutionSteps(currentQuestion);
+    let steps = getSolutionSteps(q);
 
-    let availableSteps = steps;
-    if (availableSteps.length === 0) {
-      availableSteps = [
-        `Read the question carefully: ${currentQuestion.question.substring(0, 100)}`,
+    if (steps.length === 0) {
+      steps = [
+        `Read the question carefully: ${q.question.substring(0, 100)}`,
         "Identify what is being asked",
         "Review the given information",
         "Consider which formula or concept applies",
@@ -506,85 +492,265 @@ import { auth } from "/firebase-init.js";
       ];
     }
 
-    let stepIndex = Math.min(nudgeStepCounter, availableSteps.length - 1);
+    let stepIndex = Math.min(nudgeStepCounter, steps.length - 1);
     let suggestionText = "";
     let promptForAI = "";
 
     if (timeSpent < 15) {
-      suggestionText = `Try starting with: "${availableSteps[0]?.substring(0, 60)}..."`;
-      promptForAI = `Give me a beginner-friendly hint for: ${currentQuestion.question}`;
+      suggestionText = `Try starting with: "${steps[0]?.substring(0, 60)}..."`;
+      promptForAI = `Give me a beginner-friendly hint for: ${q.question}`;
     } else if (timeSpent < 30) {
-      stepIndex = Math.min(1, availableSteps.length - 1);
-      suggestionText = `Next step: ${availableSteps[stepIndex]?.substring(0, 80)}`;
-      promptForAI = `What is the next step after considering the basics for: ${currentQuestion.question}`;
+      stepIndex = Math.min(1, steps.length - 1);
+      suggestionText = `Next step: ${steps[stepIndex]?.substring(0, 80)}`;
+      promptForAI = `What is the next step after considering the basics for: ${q.question}`;
     } else if (timeSpent < 45) {
-      stepIndex = Math.min(2, availableSteps.length - 1);
-      suggestionText = `Focus on: ${availableSteps[stepIndex]?.substring(0, 80)}`;
-      promptForAI = `Explain this step in detail: ${availableSteps[stepIndex]}`;
+      stepIndex = Math.min(2, steps.length - 1);
+      suggestionText = `Focus on: ${steps[stepIndex]?.substring(0, 80)}`;
+      promptForAI = `Explain this step in detail: ${steps[stepIndex]}`;
     } else if (timeSpent < 60) {
-      stepIndex = Math.min(3, availableSteps.length - 1);
-      suggestionText = `Let us work through: ${availableSteps[stepIndex]?.substring(0, 80)}`;
-      promptForAI = `Provide a detailed walkthrough of: ${availableSteps[stepIndex]}`;
+      stepIndex = Math.min(3, steps.length - 1);
+      suggestionText = `Let us work through: ${steps[stepIndex]?.substring(0, 80)}`;
+      promptForAI = `Provide a detailed walkthrough of: ${steps[stepIndex]}`;
     } else {
-      suggestionText = `Let me guide you through the complete solution. ${availableSteps[0]?.substring(0, 60)}...`;
-      promptForAI = `Provide a complete step-by-step solution with explanations for: ${currentQuestion.question}`;
+      suggestionText = `Let me guide you through the complete solution. ${steps[0]?.substring(0, 60)}...`;
+      promptForAI = `Provide a complete step-by-step solution with explanations for: ${q.question}`;
     }
 
-    nudgeStepCounter = Math.min(
-      nudgeStepCounter + 1,
-      availableSteps.length - 1,
-    );
+    nudgeStepCounter = Math.min(nudgeStepCounter + 1, steps.length - 1);
     return { suggestionText, promptForAI, stepIndex };
   }
 
-  /* ── 10. ADD QUIZ NAVIGATION PILL ── */
+  /* ── 13. ACTION PILLS — rendered for legacy Quiz.getState() pages ── */
+  function renderActionPills() {
+    const qd = getQuizData();
+    if (!qd || qd.source !== "legacy") return;
+
+    messages.querySelectorAll(".prepbot-action-bar").forEach((el) => el.remove());
+
+    const state = window.Quiz.getState();
+    if (!state || !state.allQuestions.length) return;
+
+    const idx = state.currentIndex;
+
+    // Primary pill: Ask about this question
+    const bar1 = document.createElement("div");
+    bar1.className = "prepbot-action-bar";
+    const thisQBtn = document.createElement("button");
+    thisQBtn.className = "prepbot-pill prepbot-pill--primary";
+    thisQBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="5"/><path d="M6 5v4M6 3h.01"/></svg> Q${idx + 1} — Ask about this question`;
+    thisQBtn.addEventListener("click", () => injectCurrentQuestion());
+    bar1.appendChild(thisQBtn);
+    messages.insertBefore(bar1, messages.firstChild);
+
+    // Q-nav pills
+    const bar2 = document.createElement("div");
+    bar2.className = "prepbot-action-bar prepbot-action-bar--qnav";
+    const label = document.createElement("span");
+    label.className = "prepbot-nav-label";
+    label.textContent = "Go to:";
+    bar2.appendChild(label);
+
+    const scroll = document.createElement("div");
+    scroll.className = "prepbot-qpills-scroll";
+
+    state.allQuestions.forEach((question, i) => {
+      const pill = document.createElement("button");
+      pill.className = "prepbot-qpill";
+      pill.textContent = i + 1;
+      pill.title = question.question.length > 70
+        ? question.question.slice(0, 70) + "..."
+        : question.question;
+
+      const chosen = state.userAnswers[i];
+      if (i === idx) {
+        pill.classList.add("qpill--current");
+      } else if (chosen !== undefined && chosen !== "") {
+        if (state.submitted && question.type === "objective") {
+          const correctLetter = question._answer?.toUpperCase();
+          pill.classList.add(chosen.toUpperCase() === correctLetter ? "qpill--correct" : "qpill--wrong");
+        } else if (!state.submitted) {
+          pill.classList.add("qpill--answered");
+        }
+      }
+
+      pill.addEventListener("click", () => {
+        if (qd.goTo) qd.goTo(i);
+        renderActionPills();
+        messages.scrollTop = 0;
+      });
+      scroll.appendChild(pill);
+    });
+    bar2.appendChild(scroll);
+    messages.insertBefore(bar2, bar1.nextSibling);
+  }
+
+  /* ── 14. INJECT CURRENT QUESTION ── */
+  function injectCurrentQuestion() {
+    const ctx = getPageContext();
+    if (ctx.mode !== "quiz") return;
+
+    // Update context banner
+    const banner = document.getElementById("chat-context-banner");
+    const bannerText = document.getElementById("chat-context-text");
+    if (banner && bannerText) {
+      bannerText.textContent = ctx.questionText.length > 120
+        ? ctx.questionText.slice(0, 120) + "..."
+        : ctx.questionText;
+      banner.classList.add("active");
+    }
+
+    messages.innerHTML = "";
+
+    const qd = getQuizData();
+    if (qd?.source === "legacy") renderActionPills();
+
+    // Show question card as user message
+    const LETTERS_DISPLAY = ["A", "B", "C", "D", "E"];
+    let questionBlock = `Q${ctx.qNum}: ${ctx.questionText}`;
+    if (ctx.options && ctx.options.length) {
+      questionBlock += "\n\n" + ctx.options
+        .map((opt, i) => `${LETTERS_DISPLAY[i] || i + 1}) ${opt}`)
+        .join("\n");
+    }
+    if (ctx.correctAnswer) {
+      questionBlock += `\n\nCorrect answer: ${ctx.correctAnswer}`;
+    }
+
+    const qCard = document.createElement("div");
+    qCard.className = "msg user";
+    qCard.innerHTML = `<div class="msg-meta">You</div><div class="msg-bubble" style="font-size:.8rem;line-height:1.65">${questionBlock.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
+    messages.appendChild(qCard);
+    messages.scrollTop = messages.scrollHeight;
+
+    // Build AI prompt including explanation context
+    const aiPrompt = [
+      `Explain Q${ctx.qNum} step by step: ${ctx.questionText}`,
+      ctx.options?.length ? "Options: " + ctx.options.map((o, i) => `${LETTERS_DISPLAY[i]}) ${o}`).join(", ") : "",
+      ctx.correctAnswer ? `The correct answer is ${ctx.correctAnswer}.` : "",
+      ctx.explanation ? `Explanation context: ${ctx.explanation}` : "",
+    ].filter(Boolean).join(" ");
+
+    sendMessage(aiPrompt, true);
+  }
+
+  /* ── 15. YOUTUBE VIDEO PLAYER ── */
+  async function searchAndPlayVideo() {
+    const ctx = getPageContext();
+    if (ctx.mode !== "quiz") return;
+
+    showTyping();
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Please sign in to search videos.");
+
+      let cleanQuery = ctx.questionText
+        .replace(/WAEC|JAMB|NECO|exam|question|practice test/gi, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80);
+
+      const params = new URLSearchParams({
+        part: "snippet",
+        type: "video",
+        maxResults: "5",
+        q: cleanQuery + " lesson tutorial",
+      });
+
+      const res = await fetch(`${API_YOUTUBE_URL}?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      hideTyping();
+
+      if (!res.ok) throw new Error("Video search failed.");
+
+      const data = await res.json();
+      const item = data.items?.[0];
+
+      if (!item?.id?.videoId) {
+        appendMessage("bot", "No video found for this topic. Try asking me to explain it directly.");
+        return;
+      }
+
+      const videoId = item.id.videoId;
+      const title = item.snippet.title;
+      const channel = item.snippet.channelTitle;
+
+      const safe = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      const playerWrap = document.createElement("div");
+      playerWrap.className = "msg bot";
+      playerWrap.innerHTML = `
+        <div class="chat-video-player">
+          <div class="chat-video-header">
+            <div class="chat-video-info">
+              <div class="chat-video-title">${safe(title)}</div>
+              <div class="chat-video-channel">${safe(channel)}</div>
+            </div>
+            <button class="chat-video-close" title="Close video">✕</button>
+          </div>
+          <div class="chat-video-container">
+            <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1"
+              title="YouTube video player" frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        </div>`;
+
+      playerWrap.querySelector(".chat-video-close").addEventListener("click", () => playerWrap.remove());
+      messages.appendChild(playerWrap);
+      messages.scrollTop = messages.scrollHeight;
+    } catch (err) {
+      hideTyping();
+      appendMessage("bot", `Could not load video: ${err.message}`);
+    }
+  }
+
+  function addVideoChip() {
+    if (!suggBox) return;
+    if (suggBox.querySelector(".video-play-chip")) return;
+    const btn = document.createElement("button");
+    btn.className = "suggestion-chip video-play-chip";
+    btn.innerHTML = "▶ Watch Video Lesson";
+    btn.addEventListener("click", () => searchAndPlayVideo());
+    suggBox.appendChild(btn);
+  }
+
+  /* ── 16. QUIZ NAV PILL (modern source) ── */
   function addQuizNavigationPill() {
-    const messagesContainer = document.getElementById("chat-messages");
-    if (!messagesContainer) return;
+    const qd = getQuizData();
+    if (!qd || qd.source !== "modern" || qd.questions.length === 0) return;
     if (document.getElementById("quiz-nav-pill")) return;
-
-    const quizData = window.__prepbotQuizData;
-    if (!quizData || quizData.length === 0) return;
-
-    const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-    const total = quizData.length;
 
     const pill = document.createElement("button");
     pill.id = "quiz-nav-pill";
     pill.className = "quiz-nav-pill";
-    pill.innerHTML = `Question ${currentIdx + 1} of ${total}`;
-
+    pill.innerHTML = `Question ${qd.currentIndex + 1} of ${qd.questions.length}`;
     pill.onclick = () => {
-      const qbBarEl = document.getElementById("qbubbles-bar");
-      if (qbBarEl) {
-        qbBarEl.style.display =
-          qbBarEl.style.display === "none" ? "block" : "none";
-        if (qbBarEl.style.display === "block" && window.__prepbotQuizData)
-          buildQuizNav();
+      const bar = document.getElementById("qbubbles-bar");
+      if (bar) {
+        bar.style.display = bar.style.display === "none" ? "block" : "none";
+        if (bar.style.display === "block") buildQuizNav();
       }
     };
-
-    messagesContainer.insertBefore(pill, messagesContainer.firstChild);
+    messages.insertBefore(pill, messages.firstChild);
   }
 
   function updateQuizNavigationPill() {
     const pill = document.getElementById("quiz-nav-pill");
     if (!pill) return;
-
-    const quizData = window.__prepbotQuizData;
-    if (!quizData || quizData.length === 0) {
+    const qd = getQuizData();
+    if (!qd || qd.source !== "modern" || qd.questions.length === 0) {
       pill.style.display = "none";
       return;
     }
-
     pill.style.display = "inline-flex";
-    const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-    const total = quizData.length;
-    pill.innerHTML = `Question ${currentIdx + 1} of ${total}`;
+    pill.innerHTML = `Question ${qd.currentIndex + 1} of ${qd.questions.length}`;
   }
 
-  /* ── 11. SEND MESSAGE ── */
-  async function sendMessage(text) {
+  /* ── 17. SEND MESSAGE ── */
+  async function sendMessage(text, skipUserBubble = false) {
     if (!isKeySet()) {
       initializePrepBot();
       return;
@@ -599,37 +765,31 @@ import { auth } from "/firebase-init.js";
     sendBtn.classList.add("loading");
     suggBox.innerHTML = "";
 
-    await appendMessage("user", text);
+    if (!skipUserBubble) await appendMessage("user", text);
     showTyping();
 
     const ctx = getPageContext();
 
     let stepByStepContext = "";
-    if (ctx.solutions)
-      stepByStepContext = `\n\nCOMPLETE STEP-BY-STEP SOLUTION:\n${ctx.solutions}\n\n`;
-    if (ctx.explanation)
-      stepByStepContext += `DETAILED EXPLANATION:\n${ctx.explanation}\n\n`;
+    if (ctx.solutions) stepByStepContext = `\n\nCOMPLETE STEP-BY-STEP SOLUTION:\n${ctx.solutions}\n\n`;
+    if (ctx.explanation) stepByStepContext += `DETAILED EXPLANATION:\n${ctx.explanation}\n\n`;
 
-    const systemPrompt = `You are ${BOT_NAME}, an expert study assistant specializing in step-by-step teaching.
+    const systemPrompt = `You are ${BOT_NAME}, a friendly expert Nigerian secondary school exam tutor. You help with WAEC, JAMB, IGCSE, and Common Entrance exams. Be concise, clear, and encouraging. Explain step by step.
 
 CONTEXT: ${ctx.content}
 ${stepByStepContext}
 
-STRICT RULES:
-1. Use LaTeX ONLY for scientific equations/formulas: \\(...\\) for inline, \\[...\\] for blocks.
+RULES:
+1. Use LaTeX ONLY for scientific equations: \\(...\\) for inline, \\[...\\] for blocks.
 2. Do NOT use LaTeX for normal words.
 3. Be encouraging and provide DETAILED STEP-BY-STEP explanations.
-4. Break down the solution into clear, sequential steps with numbers.
+4. Break down solutions into clear, numbered steps.
 5. Explain the reasoning behind each step.
-6. Use simple, clear language appropriate for a ${userProficiency} level learner.
-7. Provide examples when helpful.
-8. Keep responses concise but informative.
-9. Do not use emojis.
-10. At the very end of EVERY response, on a new line, append exactly this format:
+6. Use simple language appropriate for a ${userProficiency} level learner.
+7. Do not use emojis.
+8. At the very end of EVERY response, on a new line, append exactly:
 [SUGGESTIONS: "short follow-up prompt 1", "short follow-up prompt 2"]
-The two suggestions must be short (2-5 words), relevant to what you just explained, and phrased as things the student would naturally ask next. Do not number them. Do not add anything after this line.`;
-
-    let data = null;
+The two suggestions must be short (2-5 words), relevant, phrased as natural student follow-ups. Nothing after this line.`;
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
@@ -654,32 +814,29 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
         throw new Error(errJson.error || `Server error ${res.status}`);
       }
 
-      data = await res.json();
-
+      const data = await res.json();
       hideTyping();
 
-      let reply = data.text || "Connection error. Please try again.";
-
-      const { cleanReply, chips } = parseSuggestions(reply);
+      const { cleanReply, chips } = parseSuggestions(data.text || "Connection error. Please try again.");
 
       lastBotReply = cleanReply;
       history.push(
         { role: "user", content: text },
-        { role: "assistant", content: cleanReply },
+        { role: "assistant", content: cleanReply }
       );
       if (history.length > 10) history = history.slice(-10);
       await appendMessage("bot", cleanReply);
 
       renderSuggestionChips(chips);
+
+      // Add video chip when in quiz context
+      if (ctx.mode === "quiz") addVideoChip();
     } catch (err) {
       hideTyping();
       console.error("PrepBot API Error:", err);
-
-      const errorMessage =
-        err.message.includes("sign in")
-          ? err.message
-          : "Connection error. Please check your connection and try again.";
-
+      const errorMessage = err.message.includes("sign in")
+        ? err.message
+        : "Connection error. Please check your connection and try again.";
       await appendMessage("bot", errorMessage);
       renderSuggestionChips(["Try Again", "Check Settings"]);
     } finally {
@@ -688,27 +845,16 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     }
   }
 
-  /* ── 12. AI-GENERATED SUGGESTION CHIPS ── */
+  /* ── 18. SUGGESTION CHIPS ── */
   function parseSuggestions(raw) {
     const pattern = /\[SUGGESTIONS:\s*([^\]]+)\]\s*$/is;
     const match = raw.match(pattern);
-
     let chips = FALLBACK_CHIPS.slice(0, 2);
-
     if (match) {
-      const extracted = [];
-      const quoted = match[1].matchAll(/"([^"]+)"/g);
-      for (const m of quoted) {
-        const label = m[1].trim();
-        if (label) extracted.push(label);
-      }
+      const extracted = [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1].trim()).filter(Boolean);
       if (extracted.length >= 1) chips = extracted.slice(0, 3);
     }
-
-    const cleanReply = raw
-      .replace(/\n?\[SUGGESTIONS:[^\]]*\]\s*$/is, "")
-      .trimEnd();
-
+    const cleanReply = raw.replace(/\n?\[SUGGESTIONS:[^\]]*\]\s*$/is, "").trimEnd();
     return { cleanReply, chips };
   }
 
@@ -724,17 +870,14 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     });
   }
 
-  /* ── 13. UI RENDERERS WITH MATHJAX SUPPORT ── */
+  /* ── 19. MESSAGE RENDERER ── */
   async function appendMessage(role, text) {
     const wrap = document.createElement("div");
     wrap.className = `msg ${role}`;
 
-    let content = text
+    const content = text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(
-        /Step (\d+):/gi,
-        '<strong class="step-highlight">Step $1:</strong>',
-      )
+      .replace(/Step (\d+):/gi, '<strong class="step-highlight">Step $1:</strong>')
       .replace(/^\d+\./gm, "<strong>$&</strong>")
       .replace(/\\\((.*?)\\\)/g, '<span class="math-inline">\\($1\\)</span>')
       .replace(/\\\[(.*?)\\\]/g, '<div class="math-block">\\[$1\\]</div>')
@@ -757,29 +900,18 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     messages.scrollTop = messages.scrollHeight;
 
     if (window.MathJax) {
-      try {
-        await MathJax.typesetPromise([wrap]);
-      } catch (err) {
-        console.log("MathJax error:", err);
-      }
+      try { await MathJax.typesetPromise([wrap]); } catch (_) {}
     }
-
     return Promise.resolve();
   }
 
-  /* ── FORMAT TEXT FOR POPUP ── */
   function formatForPopup(text) {
-    const escaped = text
+    return text
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    return escaped
+      .replace(/>/g, "&gt;")
       .replace(/\\\((.+?)\\\)/g, "\\($1\\)")
       .replace(/\\\[(.+?)\\\]/g, "\\[$1\\]");
-  }
-
-  function hasMath(text) {
-    return /\\\(|\\\[/.test(text);
   }
 
   function showTyping() {
@@ -795,9 +927,9 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     document.getElementById("typing")?.remove();
   }
 
+  /* ── 20. TOGGLE CHAT ── */
   function toggleChat(force) {
-    const isOpen =
-      force !== undefined ? force : !win.classList.contains("open");
+    const isOpen = force !== undefined ? force : !win.classList.contains("open");
     win.classList.toggle("open", isOpen);
     if (isOpen) {
       fabWrap.classList.add("fab-hidden");
@@ -806,31 +938,31 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
         initializePrepBot();
         return;
       }
-      updateQuizNavBar();
-      addQuizNavigationPill();
-      updateQuizNavigationPill();
+      const qd = getQuizData();
+      if (qd?.source === "legacy") {
+        // Action pills already in messages
+      } else {
+        updateQuizNavBar();
+        addQuizNavigationPill();
+        updateQuizNavigationPill();
+      }
       if (input) input.disabled = false;
       if (sendBtn) sendBtn.disabled = false;
       if (micBtn && recognition) micBtn.disabled = false;
       setTimeout(() => input.focus(), 300);
     } else {
-      if (
-        !document
-          .getElementById("chat-fab-restore")
-          .classList.contains("fab-restore-visible")
-      ) {
+      if (!document.getElementById("chat-fab-restore").classList.contains("fab-restore-visible")) {
         fabWrap.classList.remove("fab-hidden");
       }
     }
   }
 
   function updateQuizNavBar() {
-    const quizData = window.__prepbotQuizData;
-    if (quizData && quizData.length > 0) {
+    const qd = getQuizData();
+    if (qd && qd.source === "modern" && qd.questions.length > 0) {
       quizNavBar.style.display = "flex";
-      const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-      if (quizNavCurrent) quizNavCurrent.innerText = currentIdx + 1;
-      if (quizNavTotal) quizNavTotal.innerText = quizData.length;
+      if (quizNavCurrent) quizNavCurrent.innerText = qd.currentIndex + 1;
+      if (quizNavTotal) quizNavTotal.innerText = qd.questions.length;
       updateQuizNavigationPill();
     } else {
       quizNavBar.style.display = "none";
@@ -840,15 +972,16 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
   }
 
   function buildQuizNav() {
-    const data = window.__prepbotQuizData;
-    if (!data) return;
+    const qd = getQuizData();
+    if (!qd) return;
     qbGrid.innerHTML = "";
-    data.forEach((_, i) => {
+    qd.questions.forEach((_, i) => {
       const b = document.createElement("button");
       b.className = "qbubble";
       b.textContent = i + 1;
       b.onclick = () => {
-        if (window.__prepbotJumpToQuestion) window.__prepbotJumpToQuestion(i);
+        if (qd.goTo) qd.goTo(i);
+        if (qd.source === "legacy") renderActionPills();
         sendMessage(`Explain question ${i + 1} step by step`);
         qbBar.style.display = "none";
       };
@@ -857,35 +990,22 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     qbBar.style.display = "block";
   }
 
-  /* ── 14. POPUP SUGGESTION — MathJax-first, site-aware ── */
+  /* ── 21. POPUP SUGGESTION ── */
   async function showPopupSuggestion() {
     if (!isKeySet()) return;
-    if (
-      win.classList.contains("open") ||
-      isBusy ||
-      fabWrap.classList.contains("fab-hidden")
-    )
-      return;
+    if (win.classList.contains("open") || isBusy || fabWrap.classList.contains("fab-hidden")) return;
 
     const ctx = getPageContext();
 
     if (ctx.mode === "quiz") {
       const hint = generateProgressiveHint();
       if (!hint) return;
-
       currentNudgeDisplayText = hint.suggestionText;
       currentNudgePrompt = hint.promptForAI;
-
       popupText.innerHTML = formatForPopup(hint.suggestionText);
-
-      if (hasMath(hint.suggestionText) && window.MathJax) {
-        try {
-          await MathJax.typesetPromise([popup]);
-        } catch (err) {
-          console.log("MathJax popup error:", err);
-        }
+      if (/\\\(|\\\[/.test(hint.suggestionText) && window.MathJax) {
+        try { await MathJax.typesetPromise([popup]); } catch (_) {}
       }
-
       popup.classList.add("visible");
     } else {
       const nudge = getNonQuizNudge();
@@ -896,47 +1016,31 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     }
 
     if (currentPopupTimeout) clearTimeout(currentPopupTimeout);
-
     currentPopupTimeout = setTimeout(() => {
       popup.classList.remove("visible");
       currentPopupTimeout = null;
     }, 10000);
   }
 
-  /* ── 15. NUDGE INTERVAL — 40 to 50 seconds ── */
+  /* ── 22. NUDGE INTERVAL ── */
   function startNudgeInterval() {
     if (nudgeInterval) clearInterval(nudgeInterval);
-
     function scheduleNext() {
-      const delay = Math.floor(Math.random() * (50000 - 40000 + 1) + 40000);
+      const delay = Math.floor(Math.random() * 10001 + 40000);
       nudgeInterval = setTimeout(() => {
         showPopupSuggestion();
         scheduleNext();
       }, delay);
     }
-
     scheduleNext();
   }
 
   function stopNudgeInterval() {
-    if (nudgeInterval) {
-      clearTimeout(nudgeInterval);
-      nudgeInterval = null;
-    }
-    if (currentPopupTimeout) {
-      clearTimeout(currentPopupTimeout);
-      currentPopupTimeout = null;
-    }
+    if (nudgeInterval) { clearTimeout(nudgeInterval); nudgeInterval = null; }
+    if (currentPopupTimeout) { clearTimeout(currentPopupTimeout); currentPopupTimeout = null; }
   }
 
-  /* ── 16. ENABLE INPUTS WHEN KEY IS LOADED ── */
-  function enableChatInputs() {
-    if (input) input.disabled = false;
-    if (sendBtn) sendBtn.disabled = false;
-    if (micBtn && recognition) micBtn.disabled = false;
-  }
-
-  /* ── 17. EVENT LISTENERS ── */
+  /* ── 23. EVENT LISTENERS ── */
   document.getElementById("chat-fab").onclick = () => toggleChat();
   document.getElementById("chat-close").onclick = () => toggleChat(false);
   document.getElementById("chat-clear-btn").onclick = () =>
@@ -948,103 +1052,93 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     messages.innerHTML =
       '<div class="chat-intro-card"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
     document.getElementById("chat-clear-bar").classList.remove("visible");
-    addQuizNavigationPill();
-    updateQuizNavigationPill();
+    const qd = getQuizData();
+    if (qd?.source === "legacy") {
+      renderActionPills();
+    } else {
+      addQuizNavigationPill();
+      updateQuizNavigationPill();
+    }
+    document.getElementById("chat-context-banner")?.classList.remove("active");
   };
+
+  document.getElementById("chat-context-clear")?.addEventListener("click", () => {
+    document.getElementById("chat-context-banner")?.classList.remove("active");
+  });
+
   sendBtn.onclick = () => sendMessage();
   micBtn.onclick = () => {
     if (recognition && isKeySet()) recognition.start();
   };
   input.onkeydown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
   if (quizNavPrev) {
     quizNavPrev.onclick = () => {
-      const quizData = window.__prepbotQuizData;
-      if (quizData && window.__prepbotJumpToQuestion) {
-        const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-        if (currentIdx > 0) {
-          window.__prepbotJumpToQuestion(currentIdx - 1);
-          if (quizNavCurrent) quizNavCurrent.innerText = currentIdx;
-          sendMessage(`Explain question ${currentIdx} step by step`);
-        }
+      const qd = getQuizData();
+      if (qd && qd.goTo && qd.currentIndex > 0) {
+        qd.goTo(qd.currentIndex - 1);
+        if (quizNavCurrent) quizNavCurrent.innerText = qd.currentIndex;
+        sendMessage(`Explain question ${qd.currentIndex} step by step`);
       }
     };
   }
 
   if (quizNavNext) {
     quizNavNext.onclick = () => {
-      const quizData = window.__prepbotQuizData;
-      if (quizData && window.__prepbotJumpToQuestion) {
-        const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-        if (currentIdx < quizData.length - 1) {
-          window.__prepbotJumpToQuestion(currentIdx + 1);
-          if (quizNavCurrent) quizNavCurrent.innerText = currentIdx + 2;
-          sendMessage(`Explain question ${currentIdx + 2} step by step`);
-        }
+      const qd = getQuizData();
+      if (qd && qd.goTo && qd.currentIndex < qd.questions.length - 1) {
+        qd.goTo(qd.currentIndex + 1);
+        if (quizNavCurrent) quizNavCurrent.innerText = qd.currentIndex + 2;
+        sendMessage(`Explain question ${qd.currentIndex + 2} step by step`);
       }
     };
   }
 
+  document.getElementById("qbubbles-close").onclick = () => (qbBar.style.display = "none");
+
   popup.onclick = async (e) => {
     if (e.target.classList.contains("prepbot-popup-close")) return;
-    if (currentPopupTimeout) {
-      clearTimeout(currentPopupTimeout);
-      currentPopupTimeout = null;
-    }
+    if (currentPopupTimeout) { clearTimeout(currentPopupTimeout); currentPopupTimeout = null; }
     toggleChat(true);
-    setTimeout(() => {
-      if (currentNudgePrompt) sendMessage(currentNudgePrompt);
-    }, 300);
+    setTimeout(() => { if (currentNudgePrompt) sendMessage(currentNudgePrompt); }, 300);
   };
 
   document.getElementById("prepbot-popup-close").onclick = (e) => {
     e.stopPropagation();
     popup.classList.remove("visible");
-    if (currentPopupTimeout) {
-      clearTimeout(currentPopupTimeout);
-      currentPopupTimeout = null;
-    }
+    if (currentPopupTimeout) { clearTimeout(currentPopupTimeout); currentPopupTimeout = null; }
   };
-
-  document.getElementById("qbubbles-close").onclick = () =>
-    (qbBar.style.display = "none");
 
   document.getElementById("chat-fab-dismiss").onclick = (e) => {
     e.stopPropagation();
     fabWrap.classList.add("fab-hidden");
-    document
-      .getElementById("chat-fab-restore")
-      .classList.add("fab-restore-visible");
+    document.getElementById("chat-fab-restore").classList.add("fab-restore-visible");
     stopNudgeInterval();
   };
 
   document.getElementById("chat-fab-restore").onclick = () => {
     fabWrap.classList.remove("fab-hidden");
-    document
-      .getElementById("chat-fab-restore")
-      .classList.remove("fab-restore-visible");
+    document.getElementById("chat-fab-restore").classList.remove("fab-restore-visible");
     if (!nudgeInterval && isKeySet()) startNudgeInterval();
   };
-  /* ── 18. INIT ── */
-  // Start initialization after a short delay to ensure DOM is ready
-  setTimeout(() => {
-    initializePrepBot();
-  }, 500);
 
+  /* ── 24. QUIZ UPDATE EVENT ── */
   window.addEventListener("prepbot:quizUpdated", () => {
-    if (qbBar.style.display === "block") buildQuizNav();
-    updateQuizNavBar();
-    addQuizNavigationPill();
-    updateQuizNavigationPill();
-    const currentIdx = window.__prepbotCurrentQuestionIndex || 0;
-    const quizData = window.__prepbotQuizData;
-    if (quizData && quizData[currentIdx]) {
-      const questionId = `${currentIdx}_${quizData[currentIdx].question.substring(0, 50)}`;
+    const qd = getQuizData();
+    if (qd?.source === "legacy") {
+      renderActionPills();
+    } else {
+      if (qbBar.style.display === "block") buildQuizNav();
+      updateQuizNavBar();
+      addQuizNavigationPill();
+      updateQuizNavigationPill();
+    }
+    const newQd = getQuizData();
+    if (newQd && newQd.questions.length > 0) {
+      const q = newQd.questions[newQd.currentIndex];
+      const questionId = `${newQd.currentIndex}_${q.question.substring(0, 50)}`;
       if (lastQuestionId !== questionId) {
         lastQuestionId = questionId;
         nudgeStepCounter = 0;
@@ -1054,19 +1148,27 @@ The two suggestions must be short (2-5 words), relevant to what you just explain
     }
   });
 
+  /* ── 25. BOOT ── */
+  setTimeout(() => initializePrepBot(), 500);
+
   setTimeout(() => {
-    updateQuizNavBar();
-    addQuizNavigationPill();
-    updateQuizNavigationPill();
+    const qd = getQuizData();
+    if (qd?.source === "modern") {
+      updateQuizNavBar();
+      addQuizNavigationPill();
+      updateQuizNavigationPill();
+    }
   }, 100);
 
   window.__prepbotRefreshContext = () => {
-    updateQuizNavBar();
-    addQuizNavigationPill();
-    updateQuizNavigationPill();
-    if (qbBar.style.display === "block" && window.__prepbotQuizData)
-      buildQuizNav();
+    const qd = getQuizData();
+    if (qd?.source === "legacy") {
+      renderActionPills();
+    } else {
+      updateQuizNavBar();
+      addQuizNavigationPill();
+      updateQuizNavigationPill();
+      if (qbBar.style.display === "block" && qd) buildQuizNav();
+    }
   };
-
-  console.log(`${BOT_NAME} ready — Auto-detects Groq key from Firestore`);
 })();

@@ -218,7 +218,6 @@ document.head.appendChild(videoStyles);
 // Bootstrap application
 document.addEventListener('DOMContentLoaded', () => {
   Quiz.init();
-  PrepBot.init();
 });
 
 window.addEventListener('prepportal:keysReady', () => {

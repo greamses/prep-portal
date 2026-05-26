@@ -919,6 +919,236 @@ const chatbotcss = `
     font-weight: 600;
 }
 
+/* ── CONTEXT BANNER ── */
+.chat-context-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--blue);
+    color: var(--bg);
+    border-bottom: var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.chat-context-banner.active { display: flex; }
+
+.chat-context-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.58rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#chat-context-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.9;
+}
+
+.chat-context-clear {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 14px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+}
+
+.chat-context-clear:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* ── ACTION PILLS (legacy Quiz.getState pages) ── */
+.prepbot-action-bar {
+    padding: 10px 16px 0;
+    display: flex;
+    flex-shrink: 0;
+}
+
+.prepbot-action-bar--qnav {
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    padding-bottom: 10px;
+    border-bottom: var(--border);
+}
+
+.prepbot-nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.prepbot-qpills-scroll {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    flex: 1;
+    padding-bottom: 4px;
+}
+
+.prepbot-qpills-scroll::-webkit-scrollbar { height: 3px; }
+.prepbot-qpills-scroll::-webkit-scrollbar-thumb { background: var(--ink); }
+
+.prepbot-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 7px 14px;
+    border: var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+
+.prepbot-pill--primary {
+    background: var(--blue);
+    color: var(--bg);
+    box-shadow: 3px 3px 0 var(--ink);
+}
+
+.prepbot-pill--primary:hover {
+    background: var(--ink);
+    color: var(--blue);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--blue);
+}
+
+.prepbot-qpill {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border: var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--ruled);
+    flex-shrink: 0;
+}
+
+.prepbot-qpill:hover { background: var(--blue); color: var(--bg); }
+
+.prepbot-qpill.qpill--current {
+    background: var(--ink);
+    color: var(--yellow);
+    border-color: var(--ink);
+}
+
+.prepbot-qpill.qpill--answered { background: var(--off); color: var(--muted); }
+.prepbot-qpill.qpill--correct { background: var(--green); color: var(--bg); border-color: var(--green); }
+.prepbot-qpill.qpill--wrong { background: var(--red); color: var(--bg); border-color: var(--red); }
+
+/* ── INLINE VIDEO PLAYER ── */
+.chat-video-player {
+    border: var(--border);
+    background: var(--bg);
+    box-shadow: 4px 4px 0 var(--ink);
+    overflow: hidden;
+    width: 100%;
+}
+
+.chat-video-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--ink);
+    color: var(--bg);
+    gap: 10px;
+}
+
+.chat-video-info { flex: 1; overflow: hidden; }
+
+.chat-video-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--bg);
+}
+
+.chat-video-channel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+}
+
+.chat-video-close {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.chat-video-close:hover { background: var(--red); border-color: var(--red); color: #fff; }
+
+.chat-video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+}
+
+.chat-video-container iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+}
+
+.video-play-chip {
+    background: var(--red) !important;
+    color: var(--bg) !important;
+    border-color: var(--red) !important;
+}
+
+.video-play-chip:hover {
+    background: var(--ink) !important;
+    color: var(--bg) !important;
+    border-color: var(--ink) !important;
+}
+
 /* ── MOBILE ── */
 @media (max-width: 480px) {
     #chat-window {

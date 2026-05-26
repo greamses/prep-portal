@@ -14,14 +14,15 @@
     _midx = 0;
   
   const MODELS = [
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', // v1 → v1beta
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', // v1 → v1beta
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent', // v1 → v1beta
-];
-  
-  const QUOTA = new Set([429, 503, 529]);
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+  ];
+
+  // Statuses that mean "this model is unavailable — try the next one"
+  const SKIP = new Set([404, 429, 503, 529]);
   
   /* ─── Key resolver — checks multiple sources ─── */
   function _getKey() {
@@ -86,7 +87,7 @@
             body: JSON.stringify({ body, modelUrl: MODELS[i] }),
           });
         } catch (e) { lastErr = e; continue; }
-        if (QUOTA.has(res.status)) { _midx = i + 1; continue; }
+        if (SKIP.has(res.status)) { _midx = i + 1; continue; }
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
           if (res.status === 403) throw new Error(d.error || 'No Gemini key found. Add one in Account Settings.');
@@ -133,7 +134,7 @@
         continue;
       }
 
-      if (QUOTA.has(res.status)) {
+      if (SKIP.has(res.status)) {
         console.warn(`[TA] Model ${i + 1} over quota (${res.status}), trying next...`);
         _midx = i + 1;
         continue;
