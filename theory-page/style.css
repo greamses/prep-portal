@@ -509,6 +509,7 @@ body {
 .csel {
   position: relative;
   user-select: none;
+  max-width: 340px;
 }
 
 .csel-btn {
@@ -646,14 +647,14 @@ body {
 }
 
 .csel-item:hover {
-  background: var(--accent-primary, #ffe500);
-  color: var(--ink);
+  background: var(--blue);
+  color: var(--bg);
   transform: translateX(3px);
 }
 
 .csel-item.selected {
-  background: var(--accent-primary, #ffe500);
-  color: var(--ink);
+  background: var(--blue);
+  color: var(--bg);
 }
 
 /* ════════════════════════════════════════════════════
