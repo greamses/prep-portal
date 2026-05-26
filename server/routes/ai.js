@@ -1,10 +1,10 @@
 /**
- * AI proxy routes — all external AI API keys live here, never in the browser.
+ * AI proxy routes — all AI keys are app-level env vars, never in the browser.
  *
- * POST /api/ai/chat    — PrepBot (tries user's Groq key first, falls back to Claude)
- * POST /api/ai/claude  — Direct Claude access (app key, no user key needed)
- * POST /api/ai/gemini  — Proxy Gemini using the user's stored key
- * POST /api/ai/groq    — Proxy Groq using the user's stored key
+ * POST /api/ai/chat    — PrepBot (tries Groq first, falls back to Claude)
+ * POST /api/ai/claude  — Direct Claude access
+ * POST /api/ai/gemini  — Proxy Gemini using app key
+ * POST /api/ai/groq    — Proxy Groq using app key
  */
 
 const express = require("express");
@@ -14,24 +14,13 @@ const { authenticate } = require("../middleware/auth");
 const GEMINI_BASE_WHITELIST = "https://generativelanguage.googleapis.com/";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-module.exports = function (db) {
+module.exports = function () {
   const router = express.Router();
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  // ── Fetch user's AI keys from Firestore (server-side only) ───
-  async function getUserKeys(uid) {
-    try {
-      const snap = await db.collection("users").doc(uid).get();
-      const d = snap.data() || {};
-      return { groq: d.groqKey || null, gemini: d.geminiKey || null };
-    } catch {
-      return { groq: null, gemini: null };
-    }
-  }
-
   // ── POST /api/ai/chat — PrepBot ──────────────────────────────
-  // Tries the user's Groq key first; falls back to app-level Claude.
+  // Tries app-level Groq first; falls back to Claude.
   router.post("/chat", authenticate, async (req, res) => {
     try {
       const {
@@ -42,15 +31,13 @@ module.exports = function (db) {
         max_tokens = 2000,
       } = req.body;
 
-      const keys = await getUserKeys(req.user.uid);
-
-      // ① Try Groq with user's key
-      if (keys.groq) {
+      // ① Try Groq
+      if (process.env.GROQ_API_KEY) {
         const groqRes = await fetch(GROQ_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${keys.groq}`,
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           },
           body: JSON.stringify({
             model,
@@ -69,15 +56,14 @@ module.exports = function (db) {
             text: data.choices?.[0]?.message?.content || "",
           });
         }
-        // Groq returned an error — fall through to Claude
         console.warn("[/api/ai/chat] Groq error, falling back to Claude");
       }
 
-      // ② Fall back to app-level Claude (skip gracefully if key not configured)
+      // ② Fall back to Claude
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.json({
           provider: "unavailable",
-          text: "PrepBot is currently unavailable. Add a Groq API key in Account Settings to enable it.",
+          text: "PrepBot is currently unavailable.",
         });
       }
 
@@ -101,13 +87,7 @@ module.exports = function (db) {
   // ── POST /api/ai/claude — direct Claude access ───────────────
   router.post("/claude", authenticate, async (req, res) => {
     try {
-      const {
-        messages,
-        system,
-        model,
-        max_tokens = 4096,
-        temperature = 0.7,
-      } = req.body;
+      const { messages, system, model, max_tokens = 4096 } = req.body;
 
       const response = await anthropic.messages.create({
         model: model || process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
@@ -127,7 +107,7 @@ module.exports = function (db) {
     }
   });
 
-  // ── POST /api/ai/gemini — proxy Gemini with user's key ───────
+  // ── POST /api/ai/gemini — proxy Gemini with app key ──────────
   router.post("/gemini", authenticate, async (req, res) => {
     try {
       const { body, modelUrl } = req.body;
@@ -136,14 +116,11 @@ module.exports = function (db) {
         return res.status(400).json({ error: "Invalid Gemini model URL." });
       }
 
-      const keys = await getUserKeys(req.user.uid);
-      if (!keys.gemini) {
-        return res.status(403).json({
-          error: "No Gemini key configured. Add one in Account Settings.",
-        });
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(503).json({ error: "Gemini is not configured on this server." });
       }
 
-      const upstream = await fetch(`${modelUrl}?key=${keys.gemini}`, {
+      const upstream = await fetch(`${modelUrl}?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -157,23 +134,20 @@ module.exports = function (db) {
     }
   });
 
-  // ── POST /api/ai/groq — proxy Groq with user's key ──────────
+  // ── POST /api/ai/groq — proxy Groq with app key ──────────────
   router.post("/groq", authenticate, async (req, res) => {
     try {
       const { body } = req.body;
 
-      const keys = await getUserKeys(req.user.uid);
-      if (!keys.groq) {
-        return res.status(403).json({
-          error: "No Groq key configured. Add one in Account Settings.",
-        });
+      if (!process.env.GROQ_API_KEY) {
+        return res.status(503).json({ error: "Groq is not configured on this server." });
       }
 
       const upstream = await fetch(GROQ_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${keys.groq}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify(body),
       });

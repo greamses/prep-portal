@@ -14,8 +14,8 @@
  * Endpoints:
  *   POST /api/ai/chat    — PrepBot (Groq first → Claude fallback)
  *   POST /api/ai/claude  — Direct Claude access
- *   POST /api/ai/gemini  — Gemini proxy (user's key, fetched server-side)
- *   POST /api/ai/groq    — Groq proxy   (user's key, fetched server-side)
+ *   POST /api/ai/gemini  — Gemini proxy (app key)
+ *   POST /api/ai/groq    — Groq proxy   (app key)
  *   POST /api/admin/sync-users
  *   GET  /api/admin/users
  */
@@ -60,7 +60,7 @@ app.use(
 app.use(express.json({ limit: "4mb" }));
 
 // ── Routes ────────────────────────────────────────────────────────
-app.use("/api/ai", require("./routes/ai")(db));
+app.use("/api/ai", require("./routes/ai")());
 app.use("/api/admin", require("./routes/admin")(db, auth));
 
 // Health check
