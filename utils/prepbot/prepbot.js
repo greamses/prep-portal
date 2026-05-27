@@ -13,8 +13,9 @@ import { auth } from "/firebase-init.js";
 
   /* ── 2. CONFIG ── */
   const BOT_NAME = "PrepBot";
-  const API_CHAT_URL = "/api/ai/chat";
-  const API_YOUTUBE_URL = "/api/ai/youtube";
+  const API_BASE = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+  const API_CHAT_URL = API_BASE + "/api/ai/chat";
+  const API_YOUTUBE_URL = API_BASE + "/api/ai/youtube";
   let botReady = false;
 
   /* ── 3. QUIZ DATA BRIDGE ─────────────────────────────────────────

@@ -15,10 +15,14 @@ const GEMINI_BASE_WHITELIST = "https://generativelanguage.googleapis.com/";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const GEMINI_CHAT_MODELS = [
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent",
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent",
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent",
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
 ];
 
 module.exports = function () {
