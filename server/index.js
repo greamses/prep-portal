@@ -71,6 +71,10 @@ app.get("/health", (_, res) => res.json({ status: "ok" }));
 
 // ── Start ─────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`[Prep Portal] Server running on http://localhost:${PORT}`)
-);
+if (require.main === module) {
+  app.listen(PORT, () =>
+    console.log(`[Prep Portal] Server running on http://localhost:${PORT}`)
+  );
+}
+
+module.exports = app;
