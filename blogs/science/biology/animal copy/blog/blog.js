@@ -1,6 +1,6 @@
 // blog.js - Dynamic viewer that adapts to any subject data
 import { auth, db } from "/firebase-init.js";
-import { onAuthStateChanged } from "/node_modules/firebase/firebase-auth.js";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   query,
@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-} from "/node_modules/firebase/firebase-firestore.js";
+} from "firebase/firestore";
 
 // Add this at the top of blog.js after the imports
 // ─── ASSET LOADING WITH PATH DETECTION ─────────────────────

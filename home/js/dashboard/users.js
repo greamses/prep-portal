@@ -6,7 +6,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-} from "/node_modules/firebase/firebase-firestore.js";
+} from "firebase/firestore";
 import { PERSON_SVG, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
 import { I } from "/home/js/dashboard/icons.js";
 import "/utils/components/nav-builder.js";

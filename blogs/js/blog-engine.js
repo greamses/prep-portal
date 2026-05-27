@@ -1,6 +1,6 @@
 // blog-engine.js - Centralized logic for all blog subjects
 import { auth, db } from "/firebase-init.js";
-import { onAuthStateChanged } from "/node_modules/firebase/firebase-auth.js";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   query,
@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-} from "/node_modules/firebase/firebase-firestore.js";
+} from "firebase/firestore";
 
 export function initBlogEngine(subjectData) {
   // ─── ASSET LOADING ────────────────────────────────────────

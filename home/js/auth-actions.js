@@ -1,5 +1,5 @@
 import { auth } from "/firebase-init.js";
-import { signOut } from "/node_modules/firebase/firebase-auth.js";
+import { signOut } from "firebase/auth";
 import { SUBSCRIPTION_PLANS } from "/payment-manager.js";
 
 export function doLogout() {

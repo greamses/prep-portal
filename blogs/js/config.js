@@ -3,7 +3,7 @@ import { auth, db } from "/firebase-init.js";
 import {
   setPersistence,
   browserLocalPersistence,
-} from "/node_modules/firebase/firebase-auth.js";
+} from "firebase/auth";
 
 export { auth, db };
 setPersistence(auth, browserLocalPersistence);

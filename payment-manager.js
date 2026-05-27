@@ -20,7 +20,7 @@ import {
   doc,
   getDoc,
   setDoc,
-} from "/node_modules/firebase/firebase-firestore.js";
+} from "firebase/firestore";
 
 // ─── PLAN DEFINITIONS ──────────────────────────────────────
 export const PLANS = {
