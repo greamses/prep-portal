@@ -451,7 +451,7 @@ export function initMathJax() {
   };
   
   const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js';
+  script.src = '/node_modules/mathjax/tex-chtml.js';
   script.async = true;
   script.onload = () => {
     console.log('MathJax script loaded');

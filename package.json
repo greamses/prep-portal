@@ -16,6 +16,8 @@
   },
   "homepage": "https://github.com/greamses/prep-portal#readme",
   "dependencies": {
-    "firebase": "^12.13.0"
+    "firebase": "^12.13.0",
+    "mathjax": "^4.1.2",
+    "three": "^0.184.0"
   }
 }

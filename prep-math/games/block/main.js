@@ -1,4 +1,6 @@
-// Ensure Three.js is loaded (handled in HTML via CDN)
+import * as THREE from '/node_modules/three/build/three.module.js';
+import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
+
 const canvas2D = document.getElementById('game-board');
 const canvas3DContainer = document.getElementById('game-board-3d');
 const arrangementsCanvas = document.getElementById('arrangements-canvas');
@@ -212,7 +214,7 @@ function initThreeJS() {
   renderer.setSize(canvas3DContainer.clientWidth, canvas3DContainer.clientHeight);
   canvas3DContainer.appendChild(renderer.domElement);
   
-  orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+  orbitControls = new OrbitControls(camera, renderer.domElement);
   orbitControls.target.set(cols / 2, rows / 2, depth / 2);
   orbitControls.enableDamping = true;
   orbitControls.dampingFactor = 0.05;
