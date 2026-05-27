@@ -1,7 +1,7 @@
 // robot-teacher.js v3.2.2 – Ask button toggles question mode (stays highlighted)
 import { GROQ_DEFAULT_MODEL } from '../../../utils/ai-models.js';
 import { auth, db } from '../../../firebase-init.js';
-import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+import { doc, getDoc, setDoc } from '/node_modules/firebase/firebase-firestore.js';
 
 (function(global) {
   'use strict';

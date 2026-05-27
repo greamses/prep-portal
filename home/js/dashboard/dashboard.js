@@ -1,5 +1,5 @@
 import { auth, db } from "/firebase-init.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { signOut } from "/node_modules/firebase/firebase-auth.js";
 import {
   doc,
   onSnapshot,
@@ -7,7 +7,7 @@ import {
   query,
   where,
   setDoc,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-firestore.js";
 
 import { setText, firstName, PERSON_SVG } from "/home/js/dashboard/utils.js";
 import { ROLE_LABELS, ROLE_SUBTITLES } from "/home/js/dashboard/constants.js";

@@ -4,7 +4,7 @@ import { auth, db } from "../../firebase-init.js";
 import {
   doc,
   getDoc,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-firestore.js";
 
 function showStatus(type, msg, duration = 3000) {
   const bar = document.getElementById("status-bar");

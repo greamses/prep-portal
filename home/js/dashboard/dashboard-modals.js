@@ -3,7 +3,7 @@ import {
   collection,
   addDoc,
   serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-firestore.js";
 
 /* =============================================
    STYLE LOADER

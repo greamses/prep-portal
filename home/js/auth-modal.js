@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+} from "/node_modules/firebase/firebase-auth.js";
 import {
   doc,
   setDoc,
@@ -12,7 +12,7 @@ import {
   query,
   where,
   getDocs,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-firestore.js";
 import { renderStudentFields } from "/home/js/dashboard/StudentForm.js";
 import { renderParentFields } from "/home/js/dashboard/ParentForm.js";
 import { renderTeacherFields } from "/home/js/dashboard/TeacherForm.js";

@@ -3,12 +3,12 @@ import {
   initializeApp,
   getApps,
   getApp,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+} from "/node_modules/firebase/firebase-app.js";
 import {
   getAuth,
   GoogleAuthProvider,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-auth.js";
+import { getFirestore } from "/node_modules/firebase/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2N3uI_XfSIVsto2Ku1g_qSezmD3qFmbk",

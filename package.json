@@ -1,0 +1,21 @@
+{
+  "name": "prep-portal",
+  "version": "1.0.0",
+  "description": "Prep Portal — frontend dependencies",
+  "private": true,
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greamses/prep-portal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/greamses/prep-portal/issues"
+  },
+  "homepage": "https://github.com/greamses/prep-portal#readme",
+  "dependencies": {
+    "firebase": "^12.13.0"
+  }
+}

@@ -1,6 +1,6 @@
 // blog.js - Central dynamic blog viewer engine
 import { auth, db } from "/firebase-init.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { onAuthStateChanged } from "/node_modules/firebase/firebase-auth.js";
 import {
   collection,
   query,
@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "/node_modules/firebase/firebase-firestore.js";
 
 // ─── ASSET LOADING WITH PATH DETECTION ─────────────────────
 function getBasePath() {
