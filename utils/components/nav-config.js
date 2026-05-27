@@ -376,6 +376,11 @@ const NAV_CONFIG = [
             description: "Grade essays with red pen feedback",
           },
           {
+            text: "Grammar Police",
+            href: "/writing/activity/grammar-police/index.html",
+            description: "Interactive grammar & punctuation workbook",
+          },
+          {
             text: "Theory Practice",
             href: "/theory-page/index.html",
             description: "AI-marked theory & essay questions",
