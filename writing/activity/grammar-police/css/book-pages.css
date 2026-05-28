@@ -1,0 +1,611 @@
+/* ═══════════════════════════════════════════════════════════
+   GRAMMAR POLICE — Base Pages, Cover, TOC, Passage, Inline Select, Check
+   ═══════════════════════════════════════════════════════════ */
+
+.page {
+  overflow: hidden;
+}
+
+.pc {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #fdfcf7;
+  color: #0a0a0a;
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  position: relative;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.06), inset 0 -1px 4px rgba(0,0,0,0.04);
+}
+
+/* Paper grain overlay */
+.pc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 100;
+}
+
+/* Page edge curl hint at bottom-right (right pages only) */
+.page:nth-child(even) .pc::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(225deg, rgba(0,0,0,0.06) 50%, transparent 50%);
+  pointer-events: none;
+  z-index: 101;
+}
+
+/* Shared page inner padding */
+.pc--cover,
+.pc--toc,
+.pc--ref,
+.pc--passage,
+.pc--back-cover,
+.pc--explanation,
+.pc--practice,
+.pc--divider {
+  padding: clamp(1.25rem, 3%, 2rem);
+}
+
+/* ─── COVER PAGE ─────────────────────────────────────────── */
+.pc--cover {
+  background: #0a0230;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pc-cover-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pc-cover-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.pc-cover-badge {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: rgba(0,85,255,0.3);
+  border: 2px solid rgba(255,229,0,0.4);
+  box-shadow: 0 0 24px rgba(255,229,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-cover-title {
+  font-family: "Unbounded", "Arial Black", sans-serif;
+  font-size: clamp(1.5rem, 4.5%, 2.6rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #ffe500;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.pc-cover-pp-sub {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,229,0,0.6);
+  margin-top: -0.3rem;
+}
+
+.pc-cover-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+
+.pc-cover-divider {
+  width: 36px; height: 2px;
+  background: rgba(255,229,0,0.5);
+  border-radius: 1px;
+}
+
+.pc-cover-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.pc-cover-chips li {
+  font-size: 0.6rem;
+  font-family: "Unbounded", sans-serif;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  background: var(--accent-primary);
+  color: var(--ink);
+  border: 1.5px solid rgba(255,229,0,0.8);
+  border-radius: 20px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+
+.pc-cover-hint {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+  margin-top: 0.25rem;
+}
+
+.pc-cover-footer {
+  position: relative;
+  z-index: 1;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.1em;
+}
+
+/* ─── SHARED PAGE HEADER ─────────────────────────────────── */
+.pc-header {
+  font-family: "Unbounded", "Arial Black", sans-serif;
+  font-size: clamp(0.75rem, 1.8%, 0.9rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #0a0a0a;
+  margin-bottom: 1rem;
+}
+
+/* ─── TOC PAGE ───────────────────────────────────────────── */
+.pc--toc { display: flex; flex-direction: column; }
+
+.pc-toc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  flex: 1;
+}
+
+.pc-toc-section-header {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem 0.2rem;
+  margin-top: 0.3rem;
+}
+
+.pc-toc-section-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #0055ff;
+  border-bottom: 1.5px solid rgba(0,85,255,0.2);
+  padding-bottom: 0.15rem;
+  flex: 1;
+}
+
+.pc-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pc-toc-item:hover {
+  background: rgba(0,85,255,0.06);
+  border-color: rgba(0,85,255,0.25);
+}
+.pc-toc-item:active { background: rgba(0,85,255,0.12); }
+
+.pc-toc-num {
+  font-family: "Unbounded", sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0055ff;
+  min-width: 2em;
+  flex-shrink: 0;
+}
+
+.pc-toc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-toc-title {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.65rem, 1.5%, 0.78rem);
+  font-weight: 700;
+  color: #0a0a0a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-toc-focus {
+  font-size: 0.62rem;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-toc-arrow {
+  font-size: 1rem;
+  color: #0055ff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.pc-toc-item:hover .pc-toc-arrow { opacity: 1; }
+
+.pc-toc-tip {
+  font-size: 0.65rem;
+  color: #999;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* ─── WORD REFERENCE PAGE ────────────────────────────────── */
+.pc--ref { display: flex; flex-direction: column; }
+
+.pc-ref-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  overflow: hidden;
+}
+
+.pc-ref-group-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #999;
+  margin-bottom: 0.35rem;
+}
+
+.pc-ref-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; }
+
+.pc-ref-item { display: flex; align-items: baseline; gap: 0.5rem; }
+
+.pc-ref-word {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #0055ff;
+  min-width: 5em;
+  flex-shrink: 0;
+}
+
+.pc-ref-meaning {
+  font-size: 0.72rem;
+  color: #555;
+}
+
+.pc-ref-foot {
+  font-size: 0.66rem;
+  color: #bbb;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  text-align: center;
+}
+
+/* ─── PASSAGE PAGES ──────────────────────────────────────── */
+.pc--passage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pc-passage-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #0a0a0a;
+}
+
+.pc-passage-num {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+}
+
+.pc-passage-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+}
+
+.pc-passage-title {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.7rem, 1.8%, 0.85rem);
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.pc-focus-badge {
+  display: inline-block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  background: rgba(0,85,255,0.08);
+  border: 1px solid rgba(0,85,255,0.22);
+  border-radius: 4px;
+  color: #0055ff;
+  align-self: flex-start;
+}
+
+.pc-passage-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.book-para {
+  font-size: clamp(0.7rem, 1.5%, 0.82rem);
+  line-height: 2.15;
+  color: #0a0a0a;
+}
+
+/* ─── INLINE BLANK SELECT (grammar practice) ─────────────── */
+/* Override pp-select to work inline within paragraph text    */
+.gp-blank.pp-select {
+  display: inline-flex;
+  width: auto;
+  min-width: 5rem;
+  vertical-align: middle;
+  position: relative;
+  top: -2px;
+  margin: 0 0.1rem;
+}
+
+/* State: correct answer */
+.gp-blank--correct .pp-select-trigger {
+  color: #1a7f37 !important;
+  background: rgba(26,127,55,0.1) !important;
+  border-color: #1a7f37 !important;
+  box-shadow: 2px 2px 0 #1a7f37 !important;
+}
+
+/* State: wrong answer — animate and red colour */
+.gp-blank--wrong .pp-select-trigger {
+  color: #cc2200 !important;
+  background: rgba(204,34,0,0.08) !important;
+  border-color: #cc2200 !important;
+  box-shadow: 2px 2px 0 #cc2200 !important;
+  animation: gp-shake 0.32s ease;
+}
+
+/* State: unfilled when checked */
+.gp-blank--unfilled .pp-select-trigger {
+  border-color: #e67e00 !important;
+  background: rgba(230,126,0,0.1) !important;
+  animation: gp-pulse 0.38s ease;
+}
+
+@keyframes gp-shake {
+  0%, 100% { translate: 0 0; }
+  25%  { translate: -3px 0; }
+  75%  { translate: 3px 0; }
+}
+
+@keyframes gp-pulse {
+  0%, 100% { scale: 1; }
+  50%  { scale: 1.05; }
+}
+
+/* ─── CHECK SECTION (right passage page) ─────────────────── */
+.pc-check-section {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1.5px solid rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pc-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pc-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pc-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #0055ff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.pc-progress-text {
+  font-size: 0.65rem;
+  color: #999;
+  white-space: nowrap;
+}
+
+.pc-check-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #0a0a0a;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.pc-btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 #0a0a0a; }
+
+.pc-btn--check {
+  background: #ffe500;
+  color: #0a0a0a;
+  flex: 1;
+  justify-content: center;
+}
+.pc-btn--check:hover { background: #f0d800; }
+
+.pc-btn--ghost {
+  background: transparent;
+  color: #0a0a0a;
+}
+.pc-btn--ghost:hover { background: rgba(0,0,0,0.05); }
+
+.pc-score { min-height: 1.4em; }
+
+.pc-score-pill {
+  display: inline-block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  border: 1.5px solid currentColor;
+}
+
+.pc-score-pill--perfect { color: #1a7f37; background: rgba(26,127,55,0.1); }
+.pc-score-pill--good    { color: #0055ff; background: rgba(0,85,255,0.08); }
+.pc-score-pill--low     { color: #cc2200; background: rgba(204,34,0,0.08); }
+
+/* ─── BACK COVER ─────────────────────────────────────────── */
+.pc--back-cover {
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-back-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.pc-back-msg {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.85rem, 2%, 1rem);
+  font-weight: 700;
+  color: #ffe500;
+  line-height: 1.4;
+}
+
+.pc-back-site {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.1em;
+}
+
+/* ─── HOW IT WORKS page ──────────────────────────────────── */
+.pc-howto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  flex: 1;
+}
+
+.pc-howto-step {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.pc-howto-num {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  background: #0055ff;
+  color: #fff;
+  border-radius: 50%;
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.pc-howto-step strong {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.72rem;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.pc-howto-step p {
+  font-size: 0.68rem;
+  color: #555;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ─── TOC badge ──────────────────────────────────────────── */
+.pc-toc-badge {
+  font-size: 0.58rem;
+  padding: 0.1rem 0.4rem;
+  background: var(--accent-primary);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  color: var(--ink);
+  font-family: "Unbounded", sans-serif;
+  font-weight: 700;
+  margin-top: 0.1rem;
+  display: inline-block;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #gpBook {
+    width:  calc(100vw - 80px);
+    height: calc(100vh - 100px);
+  }
+}

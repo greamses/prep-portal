@@ -97,14 +97,10 @@
 }
 
 .mag-hero-image::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.05) 55%
-  );
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.05) 55%);
   pointer-events: none;
 }
 
@@ -177,12 +173,8 @@
   flex-grow: 1;
 }
 
-.mag-hero-quote::before {
-  content: "\201C";
-}
-.mag-hero-quote::after {
-  content: "\201D";
-}
+.mag-hero-quote::before { content: '\201C'; }
+.mag-hero-quote::after  { content: '\201D'; }
 
 .mag-hero-byline {
   border-top: var(--border);
@@ -222,9 +214,7 @@
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .mag-card:hover {
@@ -267,11 +257,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #fff;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.72),
-    rgba(0, 0, 0, 0.35)
-  );
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.35));
 }
 
 .mag-card-body {
@@ -340,7 +326,7 @@
 }
 
 .mag-pullquote::before {
-  content: "\201C";
+  content: '\201C';
   position: absolute;
   top: -1.5rem;
   left: 0.5rem;

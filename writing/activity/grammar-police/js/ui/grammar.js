@@ -20,22 +20,23 @@ function openInlineMenu(wrapper, options, passageIdx) {
   _activeWrapper = wrapper;
   wrapper.classList.add("open");
 
-  const trigger = wrapper.querySelector(".gp-inline-trigger");
+  const trigger = wrapper.querySelector(".pp-select-trigger");
   const rect = trigger.getBoundingClientRect();
 
   const menu = document.createElement("div");
-  menu.className = "gp-inline-menu";
+  menu.className = "pp-select-menu";
 
+  const minW = Math.max(rect.width, 100);
   const spaceBelow = window.innerHeight - rect.bottom;
   if (spaceBelow < 150 && rect.top > spaceBelow) {
-    menu.style.cssText = `position:fixed;left:${rect.left}px;bottom:${window.innerHeight - rect.top + 3}px;min-width:${Math.max(rect.width, 88)}px;z-index:99999;`;
+    menu.style.cssText = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;bottom:${window.innerHeight - rect.top + 3}px;min-width:${minW}px;z-index:99999;`;
   } else {
-    menu.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.bottom + 3}px;min-width:${Math.max(rect.width, 88)}px;z-index:99999;`;
+    menu.style.cssText = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;top:${rect.bottom + 3}px;min-width:${minW}px;z-index:99999;`;
   }
 
   options.forEach((opt) => {
     const item = document.createElement("div");
-    item.className = "gp-inline-item";
+    item.className = "pp-select-item";
     const current = (wrapper.dataset.value || "").toLowerCase();
     if (current && current === opt.toLowerCase()) item.classList.add("active");
     item.textContent = opt;
@@ -43,7 +44,7 @@ function openInlineMenu(wrapper, options, passageIdx) {
     item.addEventListener("click", (e) => {
       e.stopPropagation();
       wrapper.dataset.value = opt.toLowerCase();
-      trigger.querySelector(".gp-inline-val").textContent = opt;
+      trigger.querySelector(".pp-select-val").textContent = opt;
       wrapper.classList.add("has-value");
       closeInlineMenu();
       updateProgress(passageIdx);
@@ -67,16 +68,16 @@ export function buildBlank(seg, passageIdx) {
   const options = [...group.options].sort(() => Math.random() - 0.5);
 
   const wrapper = document.createElement("span");
-  wrapper.className = "gp-inline-select";
+  wrapper.className = "pp-select pp-select--sm gp-blank";
   wrapper.dataset.correct = correct;
   wrapper.dataset.passage = passageIdx;
   wrapper.dataset.value = "";
 
   const trigger = document.createElement("button");
-  trigger.className = "gp-inline-trigger";
+  trigger.className = "pp-select-trigger";
   trigger.type = "button";
   trigger.setAttribute("aria-label", `Choose: ${group.label}`);
-  trigger.innerHTML = `<span class="gp-inline-val">pick…</span><svg class="gp-inline-chev" viewBox="0 0 10 6" width="8" height="8" fill="none" aria-hidden="true"><polyline points="1,1 5,5.5 9,1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  trigger.innerHTML = `<span class="pp-select-val">pick…</span><svg class="pp-select-chevron chevron-svg" viewBox="0 0 10 6" width="10" height="10" fill="none" aria-hidden="true"><polyline points="1,1 5,5.5 9,1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
   trigger.addEventListener("mousedown", (e) => e.stopPropagation());
   trigger.addEventListener("touchstart", (e) => e.stopPropagation(), {
@@ -94,7 +95,7 @@ export function buildBlank(seg, passageIdx) {
 // ── Progress tracking ────────────────────────────────────────
 export function updateProgress(passageIdx) {
   const blanks = document.querySelectorAll(
-    `.gp-inline-select[data-passage="${passageIdx}"]`,
+    `.gp-blank[data-passage="${passageIdx}"]`,
   );
   const filled = [...blanks].filter((b) => b.dataset.value).length;
   const total = blanks.length;
@@ -109,7 +110,7 @@ export function updateProgress(passageIdx) {
 // ── Check ────────────────────────────────────────────────────
 export function checkPassage(passageIdx) {
   const blanks = document.querySelectorAll(
-    `.gp-inline-select[data-passage="${passageIdx}"]`,
+    `.gp-blank[data-passage="${passageIdx}"]`,
   );
   let correct = 0,
     answered = 0;
@@ -148,10 +149,10 @@ export function checkPassage(passageIdx) {
 // ── Reset ────────────────────────────────────────────────────
 export function resetPassage(passageIdx) {
   document
-    .querySelectorAll(`.gp-inline-select[data-passage="${passageIdx}"]`)
+    .querySelectorAll(`.gp-blank[data-passage="${passageIdx}"]`)
     .forEach((sel) => {
       sel.dataset.value = "";
-      const val = sel.querySelector(".gp-inline-val");
+      const val = sel.querySelector(".pp-select-val");
       if (val) val.textContent = "pick…";
       sel.classList.remove(
         "has-value",

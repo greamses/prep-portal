@@ -685,48 +685,25 @@
       <div class="network-header">
         <p class="section-eyebrow">Our community</p>
         <h2 class="section-headline">Real people.<br />Real results.</h2>
-        <p class="network-sub">
-          Tutors, students, and families connected across the world.
-        </p>
+        <p class="network-sub">Tutors, students, and families connected across Nigeria.</p>
       </div>
 
       <div class="network-legend">
-        <span class="nl-item"
-          ><span class="nl-dot nl-dot--tutor"></span>Tutors</span
-        >
-        <span class="nl-item"
-          ><span class="nl-dot nl-dot--student"></span>Students</span
-        >
-        <span class="nl-item"
-          ><span class="nl-dot nl-dot--parent"></span>Parents</span
-        >
+        <span class="nl-item"><span class="nl-dot nl-dot--tutor"></span>Tutors</span>
+        <span class="nl-item"><span class="nl-dot nl-dot--student"></span>Students</span>
+        <span class="nl-item"><span class="nl-dot nl-dot--parent"></span>Parents</span>
       </div>
 
       <div class="network-edge-legend">
-        <span class="nel-item"
-          ><span class="nel-line nel-line--study"></span>Studying</span
-        >
-        <span class="nel-item"
-          ><span class="nel-line nel-line--family"></span>Family</span
-        >
-        <span class="nel-item"
-          ><span class="nel-line nel-line--peer"></span>Study group</span
-        >
-        <span class="nel-item"
-          ><span class="nel-line nel-line--colleague"></span>Colleagues</span
-        >
+        <span class="nel-item"><span class="nel-line nel-line--study"></span>Studying</span>
+        <span class="nel-item"><span class="nel-line nel-line--family"></span>Family</span>
+        <span class="nel-item"><span class="nel-line nel-line--peer"></span>Study group</span>
+        <span class="nel-item"><span class="nel-line nel-line--colleague"></span>Colleagues</span>
       </div>
 
-      <div
-        id="community-network"
-        class="network-canvas"
-        aria-label="Prep Portal community network"
-      ></div>
+      <div id="community-network" class="network-canvas" aria-label="Prep Portal community network"></div>
 
-      <p class="network-hint">
-        Click a node to zoom &nbsp;·&nbsp; Click canvas to reset &nbsp;·&nbsp;
-        Scroll to zoom
-      </p>
+      <p class="network-hint">Click a node to zoom &nbsp;·&nbsp; Click canvas to reset &nbsp;·&nbsp; Scroll to zoom</p>
     </section>
 
     <!-- Tooltip lives outside the section so it can escape overflow:hidden -->
@@ -1206,16 +1183,65 @@
     <script type="module">
       import { initTestimonialFlipbook } from "/home/js/testimonial-flipbook.js";
 
-      initTestimonialFlipbook({ containerId: "review-book-viewer" });
+      initTestimonialFlipbook({
+        containerId: "review-book-viewer",
+        data: [
+          {
+            type: "cover",
+            title: "SUCCESS JOURNAL",
+            sub: "Real stories from classrooms and homes across Nigeria.",
+            footer: "PREP PORTAL • EST. 2026",
+          },
+          {
+            type: "testimonial",
+            subject: "MATHEMATICS",
+            stars: 5,
+            quote:
+              "My son went from a D7 in his mocks to an A1 in WAEC Mathematics! The personal updates from our tutor kept us completely in the loop. Worth every single Kobo.",
+            author: "Chidi K.",
+            role: "Parent • Surulere, Lagos",
+          },
+          {
+            type: "testimonial",
+            subject: "CAMBRIDGE IGCSE",
+            stars: 5,
+            quote:
+              "I was struggling with Chemistry and Physics definitions. Prep Portal's video libraries simplified things in minutes. Scored 3 A*s and 2 As in my finals!",
+            author: "Amina Y.",
+            role: "Student • Gwarinpa, Abuja",
+          },
+          {
+            type: "testimonial",
+            subject: "JAMB CBT",
+            stars: 5,
+            quote:
+              "I scored 342 in my JAMB! The Practice Question Bank interface is exactly like the actual UTME CBT format. Highly recommended for complete preparation.",
+            author: "Tunde O.",
+            role: "Student • Port Harcourt",
+          },
+          {
+            type: "testimonial",
+            subject: "CONVINCING VALUE",
+            stars: 5,
+            quote:
+              "Handling exam prep for multiple children is incredibly stressful. The multi-child discount made professional matching budget-friendly. All averages rose by 15%!",
+            author: "Mrs. Okon",
+            role: "Parent • Ikeja, Lagos",
+          },
+          {
+            type: "back",
+            title: "YOUR CHILD'S GRADE IS NEXT.",
+            sub: "Join thousands of successful Nigerian families. Book your dedicated preparation plan today.",
+            cta: "START FREE REVISION",
+          },
+        ],
+      });
     </script>
 
     <!-- Community network -->
     <script type="module">
-      import { initSocialNetwork } from "/home/js/social-network.js";
-      initSocialNetwork({
-        containerId: "community-network",
-        tooltipId: "network-tooltip",
-      });
+      import { initSocialNetwork } from '/home/js/social-network.js';
+      initSocialNetwork({ containerId: 'community-network', tooltipId: 'network-tooltip' });
     </script>
   </body>
 </html>

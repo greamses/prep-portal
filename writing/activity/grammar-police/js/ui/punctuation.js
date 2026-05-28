@@ -75,12 +75,12 @@ export function buildToken(char) {
 
   el.addEventListener("dragstart", (e) => {
     e.stopPropagation();
+    deselectToken();
     state.drag.char = char;
     state.drag.sourceSlot = null;
     e.dataTransfer.setData("text/plain", char);
     e.dataTransfer.effectAllowed = "copy";
     el.classList.add("pp-token--dragging");
-    deselectToken();
   });
   el.addEventListener("dragend", () =>
     el.classList.remove("pp-token--dragging"),
@@ -103,9 +103,9 @@ export function buildToken(char) {
     (e) => {
       e.stopPropagation();
       e.preventDefault();
+      deselectToken();
       state.drag.char = char;
       state.drag.sourceSlot = null;
-      deselectToken();
       createGhost(char, e.touches[0]);
     },
     { passive: false },
