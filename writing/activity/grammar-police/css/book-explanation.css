@@ -1,0 +1,403 @@
+/* ═══════════════════════════════════════════════════════════
+   GRAMMAR POLICE — Explanation Pages
+   ═══════════════════════════════════════════════════════════ */
+
+.pc--explanation {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #fffef8;
+}
+
+.pc-exp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 2px solid #0a0a0a;
+  margin-bottom: 0.7rem;
+}
+
+.pc-exp-case {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #0055ff;
+}
+
+.pc-exp-focus {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #555;
+}
+
+.pc-exp-header--right {
+  justify-content: space-between;
+}
+
+.pc-exp-subtitle {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.pc-exp-badge {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  background: #ffe500;
+  border: 1.5px solid #0a0a0a;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.pc-exp-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow: hidden;
+  font-size: 0.72rem;
+}
+
+.pc-exp-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #0055ff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ─── Explanation text elements ──────────────────────────── */
+.exp-eyebrow {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #0055ff;
+}
+
+.exp-heading {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.75rem, 2%, 0.9rem);
+  font-weight: 900;
+  color: #0a0a0a;
+  line-height: 1.2;
+  margin: 0 0 0.2rem;
+}
+
+.exp-intro {
+  font-size: 0.7rem;
+  color: #444;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ─── Word definition blocks ─────────────────────────────── */
+.exp-word-block {
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5rem;
+  row-gap: 0.12rem;
+}
+
+.exp-word-block--blue {
+  background: rgba(0, 85, 255, 0.06);
+  border-left-color: #0055ff;
+}
+.exp-word-block--yellow {
+  background: rgba(230, 126, 0, 0.07);
+  border-left-color: #e67e00;
+}
+.exp-word-block--green {
+  background: rgba(0, 165, 80, 0.07);
+  border-left-color: #00a550;
+}
+
+.exp-word {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #0a0a0a;
+}
+
+.exp-word--punct {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.exp-word-block--blue .exp-word { color: #0055ff; }
+.exp-word-block--yellow .exp-word { color: #c45f00; }
+.exp-word-block--green .exp-word { color: #00893f; }
+
+.exp-eq {
+  font-size: 0.65rem;
+  color: #666;
+}
+
+.exp-rule {
+  font-size: 0.65rem;
+  color: #333;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.exp-eg {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.63rem;
+  color: #555;
+  margin: 0;
+  font-style: italic;
+  width: 100%;
+}
+
+/* ─── Detective's Trick box ──────────────────────────────── */
+.exp-trick-box {
+  background: #0a0230;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.exp-trick-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #ffe500;
+}
+
+.exp-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+
+.exp-step {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+  padding-left: 0.3rem;
+  border-left: 2px solid rgba(255, 229, 0, 0.35);
+}
+
+.exp-yes {
+  color: #ffe500;
+  font-weight: 700;
+}
+
+.exp-trick-desc {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ─── Concept cards ──────────────────────────────────────── */
+.exp-concept-cards {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.exp-cc {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.45rem 0.3rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.62rem;
+  border: 1.5px solid transparent;
+}
+
+.exp-cc strong {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.exp-cc span { color: #666; }
+
+.exp-cc--blue {
+  background: rgba(0, 85, 255, 0.07);
+  border-color: rgba(0, 85, 255, 0.2);
+}
+.exp-cc--blue strong { color: #0055ff; }
+.exp-cc--yellow {
+  background: rgba(230, 126, 0, 0.07);
+  border-color: rgba(230, 126, 0, 0.2);
+}
+.exp-cc--yellow strong { color: #c45f00; }
+.exp-cc--green {
+  background: rgba(0, 165, 80, 0.07);
+  border-color: rgba(0, 165, 80, 0.2);
+}
+.exp-cc--green strong { color: #00893f; }
+
+/* ─── Quick Test ─────────────────────────────────────────── */
+.exp-quicktest {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.exp-qt-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #0055ff;
+  margin: 0 0 0.1rem;
+}
+
+.exp-qt-row {
+  font-size: 0.62rem;
+  color: #333;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.exp-qt-q {
+  color: #555;
+  font-style: italic;
+}
+
+/* ─── Full-form test rows ────────────────────────────────── */
+.exp-test-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.exp-test-row {
+  font-size: 0.62rem;
+  line-height: 1.4;
+  padding: 0.3rem 0.5rem;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.exp-test-row--pass {
+  background: rgba(0, 165, 80, 0.08);
+  border-left: 2px solid #00a550;
+}
+.exp-test-row--fail {
+  background: rgba(204, 34, 0, 0.07);
+  border-left: 2px solid #cc2200;
+}
+
+/* ─── Secret box ─────────────────────────────────────────── */
+.exp-secret-box {
+  background: #ffe500;
+  border: 1.5px solid #0a0a0a;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.exp-secret-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #0a0a0a;
+  margin: 0 0 0.25rem;
+}
+
+.exp-secret-body {
+  font-size: 0.65rem;
+  color: #1a1a1a;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ─── Pairs grid ─────────────────────────────────────────── */
+.exp-pairs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.exp-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 5px;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.65rem;
+}
+
+.exp-pair-a {
+  font-family: "Unbounded", sans-serif;
+  font-weight: 900;
+  color: #0055ff;
+}
+.exp-pair-sep { color: #999; }
+.exp-pair-b { color: #444; }
+
+.exp-rule-summary {
+  font-size: 0.65rem;
+  color: #444;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid #0055ff;
+  background: rgba(0, 85, 255, 0.04);
+  border-radius: 0 5px 5px 0;
+}
+
+/* ─── Reminder box ───────────────────────────────────────── */
+.exp-reminder {
+  background: rgba(0, 85, 255, 0.06);
+  border: 1.5px solid rgba(0, 85, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.exp-reminder p {
+  font-size: 0.65rem;
+  color: #333;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.exp-reminder strong { color: #0055ff; }

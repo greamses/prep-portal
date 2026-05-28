@@ -1,0 +1,152 @@
+/* ═══════════════════════════════════════════════════════════
+   GRAMMAR POLICE — Chapter Divider Pages
+   ═══════════════════════════════════════════════════════════ */
+
+.pc--divider {
+  background: #0a0230;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  text-align: center;
+  color: #fff;
+}
+
+.pc--divider-left {
+  background: #0a0a0a;
+}
+
+.pc-div-stamp {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.7rem, 2%, 0.9rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+}
+
+.pc-div-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pc-div-check p {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1a7f37;
+  margin: 0;
+}
+
+.pc-div-recap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  max-width: 240px;
+  width: 100%;
+}
+
+.pc-div-recap-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+}
+
+.pc-div-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.pc-div-tags span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pc-div-turn {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0;
+}
+
+.pc-div-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-div-chapter-title {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(1.1rem, 3.5%, 1.6rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: #ffe500;
+  margin: 0;
+}
+
+.pc-div-chapter-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+.pc-div-chapter-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.pc-div-chapter-list li {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding-left: 0.75rem;
+  position: relative;
+}
+
+.pc-div-chapter-list li::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+  color: #ffe500;
+}
+
+.pc-div-method {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid rgba(255, 229, 0, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 229, 0, 0.05);
+}

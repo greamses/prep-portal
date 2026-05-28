@@ -28,6 +28,7 @@ export function deselectToken() {
 
 export function clearSlot(slot) {
   delete slot.dataset.placed;
+  delete slot.dataset.lastTap;
   slot.textContent = "";
   slot.classList.remove(
     "pp-slot--filled",
@@ -162,6 +163,23 @@ export function findNearestSlot(sentence, clientX) {
   return nearest;
 }
 
+export function findNearestSlotInContainer(container, clientX, clientY) {
+  const slots = container.querySelectorAll(".pp-slot");
+  let nearest = null,
+    nearestDist = Infinity;
+  slots.forEach((slot) => {
+    const rect = slot.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dist = Math.sqrt((clientX - cx) ** 2 + (clientY - cy) ** 2);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = slot;
+    }
+  });
+  return nearest;
+}
+
 export function buildSentenceRow(item, itemIdx, exerIdx) {
   const tokens = tokenizeSentence(item);
   const requiredCount = tokens.filter(
@@ -206,8 +224,20 @@ export function buildSentenceRow(item, itemIdx, exerIdx) {
       slot.addEventListener("click", (e) => {
         e.stopPropagation();
         if (slot.dataset.placed) {
-          clearSlot(slot);
-        } else if (state.drag.char) {
+          // Double-tap to remove
+          const now = Date.now();
+          const lastTap = parseInt(slot.dataset.lastTap || 0);
+          if (now - lastTap < 400) {
+            clearSlot(slot);
+          } else {
+            slot.dataset.lastTap = now;
+            // Brief flash to confirm first tap registered
+            slot.classList.add("pp-slot--tap1");
+            setTimeout(() => slot.classList.remove("pp-slot--tap1"), 350);
+          }
+          return;
+        }
+        if (state.drag.char) {
           tryPlaceInSlot(slot, state.drag.char, wrap);
           deselectToken();
         }
@@ -247,44 +277,6 @@ export function buildSentenceRow(item, itemIdx, exerIdx) {
     }
   });
 
-  wrap.addEventListener("dragover", (e) => {
-    if (!state.drag.char) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = state.drag.sourceSlot ? "move" : "copy";
-    wrap.classList.add("pp-sentence--drag-active");
-    const nearest = findNearestSlot(wrap, e.clientX);
-    wrap
-      .querySelectorAll(".pp-slot--hover")
-      .forEach((s) => s.classList.remove("pp-slot--hover"));
-    if (nearest) nearest.classList.add("pp-slot--hover");
-  });
-
-  wrap.addEventListener("dragleave", (e) => {
-    if (e.relatedTarget && wrap.contains(e.relatedTarget)) return;
-    wrap.classList.remove("pp-sentence--drag-active");
-    wrap
-      .querySelectorAll(".pp-slot--hover")
-      .forEach((s) => s.classList.remove("pp-slot--hover"));
-  });
-
-  wrap.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    wrap.classList.remove("pp-sentence--drag-active");
-    wrap
-      .querySelectorAll(".pp-slot--hover")
-      .forEach((s) => s.classList.remove("pp-slot--hover"));
-    const char = state.drag.char || e.dataTransfer.getData("text/plain");
-    const nearest = findNearestSlot(wrap, e.clientX);
-    if (!char || !nearest) return;
-    if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest)
-      clearSlot(state.drag.sourceSlot);
-    tryPlaceInSlot(nearest, char, wrap);
-    state.drag.char = null;
-    state.drag.sourceSlot = null;
-  });
-
   row.appendChild(wrap);
 
   if (commaCount > 0) {
@@ -301,6 +293,49 @@ export function buildSentences(items, start, end, exerIdx, container) {
   for (let i = start; i < end && i < items.length; i++) {
     container.appendChild(buildSentenceRow(items[i], i, exerIdx));
   }
+
+  // Container-level drop zone: catches drops anywhere on the items area
+  // and magnets to the nearest slot (2D distance)
+  container.addEventListener("dragover", (e) => {
+    if (!state.drag.char) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = state.drag.sourceSlot ? "move" : "copy";
+
+    const nearest = findNearestSlotInContainer(container, e.clientX, e.clientY);
+    container.querySelectorAll(".pp-slot--hover").forEach((s) =>
+      s.classList.remove("pp-slot--hover"),
+    );
+    if (nearest) nearest.classList.add("pp-slot--hover");
+  });
+
+  container.addEventListener("dragleave", (e) => {
+    if (e.relatedTarget && container.contains(e.relatedTarget)) return;
+    container.querySelectorAll(".pp-slot--hover").forEach((s) =>
+      s.classList.remove("pp-slot--hover"),
+    );
+  });
+
+  container.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    container.querySelectorAll(".pp-slot--hover").forEach((s) =>
+      s.classList.remove("pp-slot--hover"),
+    );
+
+    const char = state.drag.char || e.dataTransfer.getData("text/plain");
+    if (!char) return;
+    const nearest = findNearestSlotInContainer(container, e.clientX, e.clientY);
+    if (!nearest) return;
+    const sentence = nearest.closest(".pp-sentence");
+    if (!sentence) return;
+
+    if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest)
+      clearSlot(state.drag.sourceSlot);
+    tryPlaceInSlot(nearest, char, sentence);
+    state.drag.char = null;
+    state.drag.sourceSlot = null;
+  });
 }
 
 export function createGhost(char, touch) {
@@ -384,7 +419,6 @@ export function resetExercise(exerIdx) {
     .querySelectorAll(`.pp-sentence[data-exer-idx="${exerIdx}"]`)
     .forEach((s) => {
       s.closest(".pp-item")?.querySelector(".pp-correct-answer")?.remove();
-      s.classList.remove("pp-sentence--drag-active");
     });
   const scoreEl = document.getElementById(`ppScore-${exerIdx}`);
   if (scoreEl) scoreEl.innerHTML = "";
@@ -405,23 +439,17 @@ document.addEventListener(
       e.touches[0].clientY,
     );
     state.drag.ghost.style.visibility = "";
-    const sentence = under?.closest(".pp-sentence");
 
-    document.querySelectorAll(".pp-sentence--drag-active").forEach((s) => {
-      if (s !== sentence) {
-        s.classList.remove("pp-sentence--drag-active");
-        s.querySelectorAll(".pp-slot--hover").forEach((sl) =>
-          sl.classList.remove("pp-slot--hover"),
-        );
-      }
-    });
-
-    if (sentence) {
-      sentence.classList.add("pp-sentence--drag-active");
-      const nearest = findNearestSlot(sentence, e.touches[0].clientX);
-      sentence
-        .querySelectorAll(".pp-slot--hover")
-        .forEach((s) => s.classList.remove("pp-slot--hover"));
+    const container = under?.closest(".pp-items");
+    document.querySelectorAll(".pp-slot--hover").forEach((s) =>
+      s.classList.remove("pp-slot--hover"),
+    );
+    if (container) {
+      const nearest = findNearestSlotInContainer(
+        container,
+        e.touches[0].clientX,
+        e.touches[0].clientY,
+      );
       if (nearest) nearest.classList.add("pp-slot--hover");
     }
   },
@@ -437,20 +465,24 @@ document.addEventListener("touchend", (e) => {
   state.drag.ghost.remove();
   state.drag.ghost = null;
 
-  const sentence = under?.closest(".pp-sentence");
-  document.querySelectorAll(".pp-sentence--drag-active").forEach((s) => {
-    s.classList.remove("pp-sentence--drag-active");
-    s.querySelectorAll(".pp-slot--hover").forEach((sl) =>
-      sl.classList.remove("pp-slot--hover"),
-    );
-  });
+  document.querySelectorAll(".pp-slot--hover").forEach((s) =>
+    s.classList.remove("pp-slot--hover"),
+  );
 
-  if (sentence && state.drag.char) {
-    const nearest = findNearestSlot(sentence, touch.clientX);
+  const container = under?.closest(".pp-items");
+  if (container && state.drag.char) {
+    const nearest = findNearestSlotInContainer(
+      container,
+      touch.clientX,
+      touch.clientY,
+    );
     if (nearest) {
-      if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest)
-        clearSlot(state.drag.sourceSlot);
-      tryPlaceInSlot(nearest, state.drag.char, sentence);
+      const sentence = nearest.closest(".pp-sentence");
+      if (sentence) {
+        if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest)
+          clearSlot(state.drag.sourceSlot);
+        tryPlaceInSlot(nearest, state.drag.char, sentence);
+      }
     }
   }
   state.drag.char = null;

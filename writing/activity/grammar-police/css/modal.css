@@ -1,0 +1,161 @@
+/* ═══════════════════════════════════════════════════════════
+   GRAMMAR POLICE — Full-Screen Book Modal
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── FULL-SCREEN MODAL ──────────────────────────────────── */
+.gp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(8, 8, 8, 0.93);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0 0.5rem;
+}
+.gp-modal[hidden] {
+  display: none;
+}
+
+.gp-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 1;
+}
+.gp-modal-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ─── BOOK STAGE ─────────────────────────────────────────── */
+.gp-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  padding: 0 0.5rem;
+}
+
+#gpBookClip {
+  width: 100%;
+  height: 100%;
+  max-width: 1100px;
+  max-height: 700px;
+  aspect-ratio: 1100 / 700;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#gpBook {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  transform-origin: left top;
+}
+
+@media (max-width: 768px) {
+  #gpBookClip {
+    max-width: 550px;
+    aspect-ratio: 550 / 700;
+    overflow: hidden !important;
+  }
+
+  #gpBook {
+    width: 200% !important;
+    height: 100% !important;
+  }
+}
+
+/* ─── MOBILE: pan-and-flip single-page view ──────────────── */
+@media (max-width: 768px) {
+  .gp-stage {
+    position: relative;
+    overflow: hidden;
+    gap: 0;
+    padding: 0;
+  }
+
+  .gp-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+  }
+
+  .gp-nav-btn--prev {
+    left: 6px;
+  }
+  .gp-nav-btn--next {
+    right: 6px;
+  }
+}
+
+#gpBook.gp-book--jumping {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gp-nav-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gp-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.gp-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.gp-modal-footer {
+  padding-bottom: 6px;
+}
+.gp-page-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #gpBook {
+    width: calc(100vw - 80px);
+    height: calc(100vh - 100px);
+  }
+
+  .gp-nav-btn {
+    width: 36px;
+    height: 36px;
+  }
+}

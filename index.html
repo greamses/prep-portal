@@ -5,17 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prep Portal 2026</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 98L10 75V25L50 2L90 25V75L50 98Z' fill='%230a0a0a' fill-opacity='0.1' /%3E%3Cpath d='M50 50L10 27V73L50 96V50Z' fill='%230055ff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27V73L50 96V50Z' fill='%23003db3' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27L50 4L10 27L50 50Z' fill='%23ffffff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 35L65 43V58L50 66L35 58V43L50 35Z' fill='%23ffe500' stroke='%230a0a0a' stroke-width='2' /%3E%3Ccircle cx='50' cy='50.5' r='4' fill='%230a0a0a' /%3E%3C/svg%3E" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 98L10 75V25L50 2L90 25V75L50 98Z' fill='%230a0a0a' fill-opacity='0.1' /%3E%3Cpath d='M50 50L10 27V73L50 96V50Z' fill='%230055ff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27V73L50 96V50Z' fill='%23003db3' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27L50 4L10 27L50 50Z' fill='%23ffffff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 35L65 43V58L50 66L35 58V43L50 35Z' fill='%23ffe500' stroke='%230a0a0a' stroke-width='2' /%3E%3Ccircle cx='50' cy='50.5' r='4' fill='%230a0a0a' /%3E%3C/svg%3E"
+    />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <meta name="theme-color" content="#0055ff" />
 
-    <meta name="description" content="Prep Portal 2026: The ultimate exam preparation hub featuring 50+ practice papers, 1000+ questions across 30+ subjects." />
-    <meta name="keywords" content="exam preparation, past papers, WAEC, NECO, JAMB, Cambridge, theory drills, practice questions, revision kits" />
+    <meta
+      name="description"
+      content="Prep Portal 2026: The ultimate exam preparation hub featuring 50+ practice papers, 1000+ questions across 30+ subjects."
+    />
+    <meta
+      name="keywords"
+      content="exam preparation, past papers, WAEC, NECO, JAMB, Cambridge, theory drills, practice questions, revision kits"
+    />
     <meta name="author" content="Prep Portal" />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Prep Portal | 2026 Exam Archives & Theory Drills" />
-    <meta property="og:description" content="Your curated vault of past papers, worked solutions, and prep kits for WAEC, Cambridge, SAT, and more." />
+    <meta
+      property="og:title"
+      content="Prep Portal | 2026 Exam Archives & Theory Drills"
+    />
+    <meta
+      property="og:description"
+      content="Your curated vault of past papers, worked solutions, and prep kits for WAEC, Cambridge, SAT, and more."
+    />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Prep Portal | 2026 Exam Success Hub" />
@@ -27,6 +43,16 @@
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/select.css" />
     <link rel="stylesheet" href="/home/css/login.css" />
+
+    <!-- DearFlip CSS Dependencies (Using public CDN. If hosting locally, replace with local resource paths) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/css/dflip.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/css/themify-icons.min.css"
+      rel="stylesheet"
+    />
 
     <script type="importmap">
       {
@@ -58,10 +84,22 @@
           <h1 class="hero-title">Professional Tutors.</h1>
           <p class="hero-description">Personalized support for students.</p>
           <div class="hero-actions">
-            <a href="#book" class="hero-btn hero-btn-primary" data-auth-open="login">
+            <a
+              href="#book"
+              class="hero-btn hero-btn-primary"
+              data-auth-open="login"
+            >
               <span>Register</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12H19"></path><path d="M12 5L19 12L12 19"></path>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12H19"></path>
+                <path d="M12 5L19 12L12 19"></path>
               </svg>
             </a>
           </div>
@@ -70,50 +108,111 @@
         <div class="hero-visual">
           <div class="dashboard-window">
             <div class="window-top">
-              <div class="window-dots"><span></span><span></span><span></span></div>
+              <div class="window-dots">
+                <span></span><span></span><span></span>
+              </div>
               <div class="window-label">Student Dashboard</div>
             </div>
             <div class="window-body">
               <div class="dashboard-sidebar">
                 <div class="sidebar-logo">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                     <path d="M6.5 2H20V20H6.5A2.5 2.5 0 0 1 4 17.5Z"></path>
                   </svg>
                 </div>
-                <div class="sidebar-lines"><span></span><span></span><span></span><span></span></div>
+                <div class="sidebar-lines">
+                  <span></span><span></span><span></span><span></span>
+                </div>
               </div>
               <div class="dashboard-main">
                 <div class="dashboard-card dashboard-card-lg">
                   <div class="card-heading">Mathematics</div>
                   <div class="progress-wrap">
-                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <div class="progress-bar">
+                      <div class="progress-fill"></div>
+                    </div>
                     <span>82%</span>
                   </div>
-                  <div class="mini-bars"><span></span><span></span><span></span><span></span><span></span></div>
+                  <div class="mini-bars">
+                    <span></span><span></span><span></span><span></span
+                    ><span></span>
+                  </div>
                 </div>
                 <div class="dashboard-grid">
                   <div class="dashboard-card">
                     <div class="icon-box icon-yellow">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-6"></path></svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M12 20V10"></path>
+                        <path d="M18 20V4"></path>
+                        <path d="M6 20v-6"></path>
+                      </svg>
                     </div>
                     <strong>Weekly Tests</strong>
                   </div>
                   <div class="dashboard-card">
                     <div class="icon-box icon-blue">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11L12 14L22 4"></path><path d="M21 12V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H16"></path></svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M9 11L12 14L22 4"></path>
+                        <path
+                          d="M21 12V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H16"
+                        ></path>
+                      </svg>
                     </div>
                     <strong>Assignments</strong>
                   </div>
                   <div class="dashboard-card">
                     <div class="icon-box icon-green">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                      </svg>
                     </div>
                     <strong>Video Lessons</strong>
                   </div>
                   <div class="dashboard-card">
                     <div class="icon-box icon-red">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21H16"></path><path d="M12 17V21"></path><path d="M7 4H17"></path><path d="M17 4V10A5 5 0 0 1 7 10V4"></path></svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M8 21H16"></path>
+                        <path d="M12 17V21"></path>
+                        <path d="M7 4H17"></path>
+                        <path d="M17 4V10A5 5 0 0 1 7 10V4"></path>
+                      </svg>
                     </div>
                     <strong>Exam Prep</strong>
                   </div>
@@ -128,7 +227,16 @@
               <div class="note-line"></div>
               <div class="note-line short"></div>
               <div class="note-success">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17L4 12"></path></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 6L9 17L4 12"></path>
+                </svg>
                 <span>Improved Performance</span>
               </div>
             </div>
@@ -143,7 +251,9 @@
         <div class="progress-visual">
           <div class="dashboard-window pw-window">
             <div class="window-top">
-              <div class="window-dots"><span></span><span></span><span></span></div>
+              <div class="window-dots">
+                <span></span><span></span><span></span>
+              </div>
               <div class="window-label">Progress Report &mdash; May 2026</div>
             </div>
             <div class="window-body pw-body">
@@ -151,52 +261,109 @@
                 <div class="pw-row">
                   <span class="pw-label">Mathematics</span>
                   <div class="pw-bar-wrap">
-                    <div class="pw-bar"><div class="pw-fill pw-fill--blue" style="width:82%"></div></div>
+                    <div class="pw-bar">
+                      <div
+                        class="pw-fill pw-fill--blue"
+                        style="width: 82%"
+                      ></div>
+                    </div>
                     <span class="pw-pct">82%</span>
                   </div>
                 </div>
                 <div class="pw-row">
                   <span class="pw-label">English</span>
                   <div class="pw-bar-wrap">
-                    <div class="pw-bar"><div class="pw-fill pw-fill--yellow" style="width:76%"></div></div>
+                    <div class="pw-bar">
+                      <div
+                        class="pw-fill pw-fill--yellow"
+                        style="width: 76%"
+                      ></div>
+                    </div>
                     <span class="pw-pct">76%</span>
                   </div>
                 </div>
                 <div class="pw-row">
                   <span class="pw-label">Biology</span>
                   <div class="pw-bar-wrap">
-                    <div class="pw-bar"><div class="pw-fill pw-fill--green" style="width:91%"></div></div>
+                    <div class="pw-bar">
+                      <div
+                        class="pw-fill pw-fill--green"
+                        style="width: 91%"
+                      ></div>
+                    </div>
                     <span class="pw-pct">91%</span>
                   </div>
                 </div>
                 <div class="pw-row">
                   <span class="pw-label">Chemistry</span>
                   <div class="pw-bar-wrap">
-                    <div class="pw-bar"><div class="pw-fill pw-fill--blue" style="width:65%"></div></div>
+                    <div class="pw-bar">
+                      <div
+                        class="pw-fill pw-fill--blue"
+                        style="width: 65%"
+                      ></div>
+                    </div>
                     <span class="pw-pct">65%</span>
                   </div>
                 </div>
                 <div class="pw-row">
                   <span class="pw-label">Physics</span>
                   <div class="pw-bar-wrap">
-                    <div class="pw-bar"><div class="pw-fill pw-fill--purple" style="width:78%"></div></div>
+                    <div class="pw-bar">
+                      <div
+                        class="pw-fill pw-fill--purple"
+                        style="width: 78%"
+                      ></div>
+                    </div>
                     <span class="pw-pct">78%</span>
                   </div>
                 </div>
               </div>
               <div class="pw-chart">
-                <svg viewBox="0 0 220 64" fill="none" preserveAspectRatio="none">
+                <svg
+                  viewBox="0 0 220 64"
+                  fill="none"
+                  preserveAspectRatio="none"
+                >
                   <defs>
                     <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#0055ff" stop-opacity="0.22"/>
-                      <stop offset="100%" stop-color="#0055ff" stop-opacity="0"/>
+                      <stop
+                        offset="0%"
+                        stop-color="#0055ff"
+                        stop-opacity="0.22"
+                      />
+                      <stop
+                        offset="100%"
+                        stop-color="#0055ff"
+                        stop-opacity="0"
+                      />
                     </linearGradient>
                   </defs>
-                  <path d="M0,56 C30,50 55,46 80,36 C105,26 130,30 155,18 C170,10 195,8 220,4" stroke="#0055ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                  <path d="M0,56 C30,50 55,46 80,36 C105,26 130,30 155,18 C170,10 195,8 220,4 L220,64 L0,64 Z" fill="url(#trendGrad)"/>
+                  <path
+                    d="M0,56 C30,50 55,46 80,36 C105,26 130,30 155,18 C170,10 195,8 220,4"
+                    stroke="#0055ff"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M0,56 C30,50 55,46 80,36 C105,26 130,30 155,18 C170,10 195,8 220,4 L220,64 L0,64 Z"
+                    fill="url(#trendGrad)"
+                  />
                 </svg>
                 <span class="pw-trend-label">
-                  <svg viewBox="0 0 12 12" fill="none" stroke="#00a550" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="2 10 6 2 10 10"/></svg>
+                  <svg
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="#00a550"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="12"
+                    height="12"
+                  >
+                    <polyline points="2 10 6 2 10 10" />
+                  </svg>
                   Overall performance up +14% this month
                 </span>
               </div>
@@ -206,29 +373,90 @@
 
         <div class="progress-copy">
           <p class="section-eyebrow">Progress Tracking</p>
-          <h2 class="section-headline">See every grade improve in real&nbsp;time.</h2>
-          <p class="section-body">PrepPortal tracks performance across every subject &mdash; giving parents and students a clear picture of exactly where to focus next.</p>
+          <h2 class="section-headline">
+            See every grade improve in real&nbsp;time.
+          </h2>
+          <p class="section-body">
+            PrepPortal tracks performance across every subject &mdash; giving
+            parents and students a clear picture of exactly where to focus next.
+          </p>
           <ul class="check-list">
             <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="16"
+                height="16"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               Subject-by-subject progress charts
             </li>
             <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="16"
+                height="16"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               Weekly performance summaries
             </li>
             <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="16"
+                height="16"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               Instant parent notifications
             </li>
             <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="16"
+                height="16"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               AI-powered revision suggestions
             </li>
           </ul>
           <a href="/subscribe.html" class="section-cta">
             <span>Start tracking</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="14"
+              height="14"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
           </a>
         </div>
       </div>
@@ -239,121 +467,214 @@
       <div class="videos-header">
         <p class="section-eyebrow">Learning Library</p>
         <h2 class="section-headline">Watch. Learn. Succeed.</h2>
-        <p class="section-sub">Expert-taught video lessons for WAEC, JAMB, NECO &amp; Cambridge. New videos added weekly.</p>
+        <p class="section-sub">
+          Expert-taught video lessons for WAEC, JAMB, NECO &amp; Cambridge. New
+          videos added weekly.
+        </p>
       </div>
       <div class="videos-grid">
-
         <div class="video-card">
           <div class="video-thumb vc--blue" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 42 Q24 6 42 42"/><line x1="10" y1="32" x2="38" y2="32"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 42 Q24 6 42 42" />
+              <line x1="10" y1="32" x2="38" y2="32" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">14:22</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--blue">Mathematics</span>
             <h3 class="vc-title">Quadratic Equations &mdash; WAEC Made Easy</h3>
-            <p class="vc-desc">Master factorisation, completing the square, and the quadratic formula in one session.</p>
+            <p class="vc-desc">
+              Master factorisation, completing the square, and the quadratic
+              formula in one session.
+            </p>
           </div>
         </div>
 
         <div class="video-card">
           <div class="video-thumb vc--amber" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 40V8a2 2 0 0 1 2-2h18L36 14v26a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z"/>
-              <polyline points="28 6 28 14 36 14"/>
-              <line x1="14" y1="22" x2="30" y2="22"/>
-              <line x1="14" y1="28" x2="30" y2="28"/>
-              <line x1="14" y1="34" x2="22" y2="34"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M8 40V8a2 2 0 0 1 2-2h18L36 14v26a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z"
+              />
+              <polyline points="28 6 28 14 36 14" />
+              <line x1="14" y1="22" x2="30" y2="22" />
+              <line x1="14" y1="28" x2="30" y2="28" />
+              <line x1="14" y1="34" x2="22" y2="34" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">11:45</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--amber">English</span>
             <h3 class="vc-title">Essay Writing: Score Full Marks Every Time</h3>
-            <p class="vc-desc">Structure, tone, vocabulary and common examiner mistakes — all in under 12 minutes.</p>
+            <p class="vc-desc">
+              Structure, tone, vocabulary and common examiner mistakes — all in
+              under 12 minutes.
+            </p>
           </div>
         </div>
 
         <div class="video-card">
           <div class="video-thumb vc--green" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 40A12 12 0 0 1 16 18C27 16 30 14 34 6c2 4 4 8 4 14 0 11-9 20-20 20z"/>
-              <path d="M4 42c0-5 3-9 8-10 4-1 7-3 9-5"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M18 40A12 12 0 0 1 16 18C27 16 30 14 34 6c2 4 4 8 4 14 0 11-9 20-20 20z"
+              />
+              <path d="M4 42c0-5 3-9 8-10 4-1 7-3 9-5" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">18:03</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--green">Biology</span>
-            <h3 class="vc-title">Cell Division: Mitosis &amp; Meiosis Explained</h3>
-            <p class="vc-desc">Step-by-step breakdown of cell division stages with diagrams for WAEC and JAMB.</p>
+            <h3 class="vc-title">
+              Cell Division: Mitosis &amp; Meiosis Explained
+            </h3>
+            <p class="vc-desc">
+              Step-by-step breakdown of cell division stages with diagrams for
+              WAEC and JAMB.
+            </p>
           </div>
         </div>
 
         <div class="video-card">
           <div class="video-thumb vc--purple" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 10v12.5"/><path d="M32 10v4"/><path d="M13 10h6"/><path d="M22 20a10 10 0 1 1-12 0"/>
-              <line x1="9" y1="32" x2="33" y2="32"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M16 10v12.5" />
+              <path d="M32 10v4" />
+              <path d="M13 10h6" />
+              <path d="M22 20a10 10 0 1 1-12 0" />
+              <line x1="9" y1="32" x2="33" y2="32" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">22:17</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--purple">Chemistry</span>
             <h3 class="vc-title">Organic Chemistry: Naming Compounds</h3>
-            <p class="vc-desc">IUPAC nomenclature and functional groups decoded for WAEC and Cambridge students.</p>
+            <p class="vc-desc">
+              IUPAC nomenclature and functional groups decoded for WAEC and
+              Cambridge students.
+            </p>
           </div>
         </div>
 
         <div class="video-card">
           <div class="video-thumb vc--teal" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="24" cy="24" r="4"/>
-              <path d="M35 13c4 4 1 14-8 23s-19 12-23 8 1-14 8-23 19-12 23-8z"/>
-              <path d="M31 31c4-4 1-14-8-23S4 -4 0 0s1 14 8 23 19 12 23 8z"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="24" cy="24" r="4" />
+              <path
+                d="M35 13c4 4 1 14-8 23s-19 12-23 8 1-14 8-23 19-12 23-8z"
+              />
+              <path d="M31 31c4-4 1-14-8-23S4 -4 0 0s1 14 8 23 19 12 23 8z" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">13:09</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--teal">Physics</span>
-            <h3 class="vc-title">Newton&rsquo;s Laws of Motion &mdash; Simplified</h3>
-            <p class="vc-desc">Intuitive explanations, worked examples and past-question walkthroughs.</p>
+            <h3 class="vc-title">
+              Newton&rsquo;s Laws of Motion &mdash; Simplified
+            </h3>
+            <p class="vc-desc">
+              Intuitive explanations, worked examples and past-question
+              walkthroughs.
+            </p>
           </div>
         </div>
 
         <div class="video-card">
           <div class="video-thumb vc--red" data-video-id="">
-            <svg class="vc-icon" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 6h32v6l-6 6 6 6v6H8v-6l6-6-6-6V6z"/>
-              <line x1="8" y1="24" x2="40" y2="24"/>
+            <svg
+              class="vc-icon"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="rgba(255,255,255,0.9)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M8 6h32v6l-6 6 6 6v6H8v-6l6-6-6-6V6z" />
+              <line x1="8" y1="24" x2="40" y2="24" />
             </svg>
             <button class="vc-play" aria-label="Play video">
-              <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
             </button>
             <span class="vc-duration">16:40</span>
           </div>
           <div class="vc-meta">
             <span class="vc-badge vc-badge--red">History</span>
             <h3 class="vc-title">Colonial Period: A Complete Overview</h3>
-            <p class="vc-desc">Timelines, key figures, and exam-ready answers for Nigerian history papers.</p>
+            <p class="vc-desc">
+              Timelines, key figures, and exam-ready answers for Nigerian
+              history papers.
+            </p>
           </div>
         </div>
-
       </div>
     </section>
 
@@ -361,21 +682,30 @@
     <section class="subjects-section">
       <div class="subjects-header">
         <p class="section-eyebrow">What we teach</p>
-        <h2 class="section-headline">Every subject.<br>Every level.</h2>
+        <h2 class="section-headline">Every subject.<br />Every level.</h2>
       </div>
       <div class="subjects-row">
-
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#dbeafe;--sc-ink:#0055ff">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="7" y="5" width="26" height="30" rx="3"/>
-              <rect x="11" y="9" width="18" height="8" rx="1.5"/>
-              <circle cx="13" cy="24" r="2" fill="var(--sc-ink)"/>
-              <circle cx="20" cy="24" r="2" fill="var(--sc-ink)"/>
-              <circle cx="27" cy="24" r="2" fill="var(--sc-ink)"/>
-              <circle cx="13" cy="31" r="2" fill="var(--sc-ink)"/>
-              <circle cx="20" cy="31" r="2" fill="var(--sc-ink)"/>
-              <circle cx="27" cy="31" r="2" fill="var(--sc-ink)"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #dbeafe; --sc-ink: #0055ff"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="7" y="5" width="26" height="30" rx="3" />
+              <rect x="11" y="9" width="18" height="8" rx="1.5" />
+              <circle cx="13" cy="24" r="2" fill="var(--sc-ink)" />
+              <circle cx="20" cy="24" r="2" fill="var(--sc-ink)" />
+              <circle cx="27" cy="24" r="2" fill="var(--sc-ink)" />
+              <circle cx="13" cy="31" r="2" fill="var(--sc-ink)" />
+              <circle cx="20" cy="31" r="2" fill="var(--sc-ink)" />
+              <circle cx="27" cy="31" r="2" fill="var(--sc-ink)" />
             </svg>
           </div>
           <span class="subject-name">Mathematics</span>
@@ -383,24 +713,48 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#fef9c3;--sc-ink:#92400e">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 33.5A2.5 2.5 0 0 1 6.5 31H22"/>
-              <path d="M6.5 4H22V32H6.5A2.5 2.5 0 0 1 4 29.5Z"/>
-              <path d="M36 4H22V32H34a2 2 0 0 0 2-2V4z"/>
-              <line x1="9" y1="13" x2="19" y2="13"/>
-              <line x1="9" y1="18" x2="19" y2="18"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #fef9c3; --sc-ink: #92400e"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 33.5A2.5 2.5 0 0 1 6.5 31H22" />
+              <path d="M6.5 4H22V32H6.5A2.5 2.5 0 0 1 4 29.5Z" />
+              <path d="M36 4H22V32H34a2 2 0 0 0 2-2V4z" />
+              <line x1="9" y1="13" x2="19" y2="13" />
+              <line x1="9" y1="18" x2="19" y2="18" />
             </svg>
           </div>
           <span class="subject-name">English</span>
-          <span class="subject-exams">WAEC &middot; JAMB &middot; Cambridge</span>
+          <span class="subject-exams"
+            >WAEC &middot; JAMB &middot; Cambridge</span
+          >
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#dcfce7;--sc-ink:#15803d">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 36A13 13 0 0 1 17.5 12C28 10 31 9 34 4c2 4 4 8 4 14 0 10-8 18-18 18z"/>
-              <path d="M4 38c0-5 3-9 8-10 4-1 7-3 9-5"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #dcfce7; --sc-ink: #15803d"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M20 36A13 13 0 0 1 17.5 12C28 10 31 9 34 4c2 4 4 8 4 14 0 10-8 18-18 18z"
+              />
+              <path d="M4 38c0-5 3-9 8-10 4-1 7-3 9-5" />
             </svg>
           </div>
           <span class="subject-name">Biology</span>
@@ -408,11 +762,23 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#fce7f3;--sc-ink:#9d174d">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 4v11.5"/><path d="M25 4v6"/><path d="M12 4h10"/>
-              <path d="M22 15.5a11 11 0 1 1-4 0"/>
-              <line x1="8" y1="27" x2="32" y2="27"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #fce7f3; --sc-ink: #9d174d"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 4v11.5" />
+              <path d="M25 4v6" />
+              <path d="M12 4h10" />
+              <path d="M22 15.5a11 11 0 1 1-4 0" />
+              <line x1="8" y1="27" x2="32" y2="27" />
             </svg>
           </div>
           <span class="subject-name">Chemistry</span>
@@ -420,11 +786,21 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#ede9fe;--sc-ink:#6d28d9">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="20" cy="20" r="3" fill="var(--sc-ink)"/>
-              <path d="M32 8c3 3 0 11-7 18s-15 10-18 7 0-11 7-18 15-10 18-7z"/>
-              <path d="M26 26c3-3 0-11-7-18S4 -2 1 1s0 11 7 18 15 10 18 7z"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #ede9fe; --sc-ink: #6d28d9"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="20" cy="20" r="3" fill="var(--sc-ink)" />
+              <path d="M32 8c3 3 0 11-7 18s-15 10-18 7 0-11 7-18 15-10 18-7z" />
+              <path d="M26 26c3-3 0-11-7-18S4 -2 1 1s0 11 7 18 15 10 18 7z" />
             </svg>
           </div>
           <span class="subject-name">Physics</span>
@@ -432,11 +808,26 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#ffedd5;--sc-ink:#c2410c">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 36h24"/><path d="M8 4h24"/>
-              <path d="M28 36V29.8a3 3 0 0 0-.9-2.1L20 20l-7.1 7.7A3 3 0 0 0 12 29.8V36"/>
-              <path d="M12 4v6.2a3 3 0 0 0 .9 2.1L20 20l7.1-7.7A3 3 0 0 0 28 10.2V4"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #ffedd5; --sc-ink: #c2410c"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M8 36h24" />
+              <path d="M8 4h24" />
+              <path
+                d="M28 36V29.8a3 3 0 0 0-.9-2.1L20 20l-7.1 7.7A3 3 0 0 0 12 29.8V36"
+              />
+              <path
+                d="M12 4v6.2a3 3 0 0 0 .9 2.1L20 20l7.1-7.7A3 3 0 0 0 28 10.2V4"
+              />
             </svg>
           </div>
           <span class="subject-name">History</span>
@@ -444,11 +835,23 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#ccfbf1;--sc-ink:#0f766e">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="20" cy="20" r="16"/>
-              <line x1="4" y1="20" x2="36" y2="20"/>
-              <path d="M20 4a25 25 0 0 1 6 16 25 25 0 0 1-6 16 25 25 0 0 1-6-16 25 25 0 0 1 6-16z"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #ccfbf1; --sc-ink: #0f766e"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="20" cy="20" r="16" />
+              <line x1="4" y1="20" x2="36" y2="20" />
+              <path
+                d="M20 4a25 25 0 0 1 6 16 25 25 0 0 1-6 16 25 25 0 0 1-6-16 25 25 0 0 1 6-16z"
+              />
             </svg>
           </div>
           <span class="subject-name">Geography</span>
@@ -456,19 +859,46 @@
         </div>
 
         <div class="subject-bubble">
-          <div class="subject-circle" style="--sc-bg:#f1f5f9;--sc-ink:#334155">
-            <svg viewBox="0 0 40 40" fill="none" stroke="var(--sc-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="20" y1="36" x2="20" y2="18"/>
-              <line x1="32" y1="36" x2="32" y2="8"/>
-              <line x1="8" y1="36" x2="8" y2="28"/>
-              <line x1="3" y1="36" x2="37" y2="36"/>
-              <polyline points="8 16 20 8 32 4" stroke-dasharray="2 2"/>
+          <div
+            class="subject-circle"
+            style="--sc-bg: #f1f5f9; --sc-ink: #334155"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="var(--sc-ink)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="20" y1="36" x2="20" y2="18" />
+              <line x1="32" y1="36" x2="32" y2="8" />
+              <line x1="8" y1="36" x2="8" y2="28" />
+              <line x1="3" y1="36" x2="37" y2="36" />
+              <polyline points="8 16 20 8 32 4" stroke-dasharray="2 2" />
             </svg>
           </div>
           <span class="subject-name">Economics</span>
-          <span class="subject-exams">WAEC &middot; JAMB &middot; Cambridge</span>
+          <span class="subject-exams"
+            >WAEC &middot; JAMB &middot; Cambridge</span
+          >
         </div>
+      </div>
+    </section>
 
+    <!-- ═══ 3D DEARFLIP TESTIMONIALS (TWO COLUMN SPREAD) ═══ -->
+    <section class="testimonials-section">
+      <div class="testimonials-header">
+        <p class="section-eyebrow">Success Stories</p>
+        <h2 class="section-headline">Flipped to Success.</h2>
+        <p class="section-sub">
+          Interact directly with our 3D logbook on the left, or read the
+          synchronized high-contrast companion cards on the right.
+        </p>
+      </div>
+
+      <div class="testimonial-book-wrapper">
+        <div id="review-book-viewer"></div>
       </div>
     </section>
 
@@ -477,71 +907,183 @@
       <div class="faq-inner">
         <div class="faq-header">
           <p class="section-eyebrow">Questions &amp; Answers</p>
-          <h2 class="section-headline">Frequently<br>asked.</h2>
-          <p class="section-body faq-sub">Can&rsquo;t find your answer? <a href="mailto:hello@prepportal.com.ng">Email us</a>.</p>
+          <h2 class="section-headline">Frequently<br />asked.</h2>
+          <p class="section-body faq-sub">
+            Can&rsquo;t find your answer?
+            <a href="mailto:hello@prepportal.com.ng">Email us</a>.
+          </p>
         </div>
         <div class="faq-list">
-
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>What exam boards and subjects do you cover?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>We support <strong>WAEC, NECO, JAMB,</strong> and <strong>Cambridge/IGCSE</strong> across Mathematics, English Language, Biology, Chemistry, Physics, History, Geography, Economics, and more. New subjects are added each term.</p>
+              <p>
+                We support <strong>WAEC, NECO, JAMB,</strong> and
+                <strong>Cambridge/IGCSE</strong> across Mathematics, English
+                Language, Biology, Chemistry, Physics, History, Geography,
+                Economics, and more. New subjects are added each term.
+              </p>
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>How do I book a one-to-one tutor?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>Go to <a href="/subscribe.html"><strong>Book a Tutor</strong></a>, choose a subject package (from Mathematics only at ₦8,000/hr up to All Subjects at ₦15,000/hr), select the number of sessions and children, and pay securely through Paystack. We&rsquo;ll match you with a qualified tutor within 24 hours.</p>
+              <p>
+                Go to <a href="/subscribe.html"><strong>Book a Tutor</strong></a
+                >, choose a subject package (from Mathematics only at ₦8,000/hr
+                up to All Subjects at ₦15,000/hr), select the number of sessions
+                and children, and pay securely through Paystack. We&rsquo;ll
+                match you with a qualified tutor within 24 hours.
+              </p>
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>Is there a free tier?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>Yes. A free account gives you access to sample materials, limited AI PrepBot queries, and preview lessons. Upgrade to <strong>Pro</strong> (₦10,000/mo) for full platform access, or <strong>Premium</strong> (₦30,000/mo) for 1,000+ practice questions and unlimited AI.</p>
+              <p>
+                Yes. A free account gives you access to sample materials,
+                limited AI PrepBot queries, and preview lessons. Upgrade to
+                <strong>Pro</strong> (₦10,000/mo) for full platform access, or
+                <strong>Premium</strong> (₦30,000/mo) for 1,000+ practice
+                questions and unlimited AI.
+              </p>
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>How does the multi-child discount work?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>The first child pays the full package rate. Every additional child on the same booking receives a <strong>5% discount</strong> on the base hourly rate. Use the children counter on the tutoring page to see the exact total before paying.</p>
+              <p>
+                The first child pays the full package rate. Every additional
+                child on the same booking receives a
+                <strong>5% discount</strong> on the base hourly rate. Use the
+                children counter on the tutoring page to see the exact total
+                before paying.
+              </p>
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>Can I cancel my subscription anytime?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>Absolutely. Cancel from your dashboard at any time with no penalty. Your access continues until the end of the current billing period &mdash; no prorated refunds but no hidden fees either.</p>
+              <p>
+                Absolutely. Cancel from your dashboard at any time with no
+                penalty. Your access continues until the end of the current
+                billing period &mdash; no prorated refunds but no hidden fees
+                either.
+              </p>
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               <span>Are the learning videos downloadable?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg
+                class="faq-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div class="faq-a">
-              <p>Videos are streamed on-demand on any device. Offline downloads are available on <strong>Premium</strong> and <strong>Enterprise</strong> plans. All videos are also available via our YouTube channel for free previews.</p>
+              <p>
+                Videos are streamed on-demand on any device. Offline downloads
+                are available on <strong>Premium</strong> and
+                <strong>Enterprise</strong> plans. All videos are also available
+                via our YouTube channel for free previews.
+              </p>
             </div>
           </div>
-
         </div>
       </div>
     </section>
@@ -551,10 +1093,25 @@
       <div class="plans-cta-wrap">
         <p class="plans-cta-eyebrow">Subscriptions &amp; Tutoring</p>
         <h2 class="plans-cta-title">Platform access or personal tutoring.</h2>
-        <p class="plans-cta-sub">Pro starts at &#8358;10,000/mo &middot; Session packs from &#8358;24,000</p>
+        <p class="plans-cta-sub">
+          Pro starts at &#8358;10,000/mo &middot; Session packs from
+          &#8358;24,000
+        </p>
         <a href="/subscribe.html" class="plans-cta-btn">
           See all plans
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            width="14"
+            height="14"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
         </a>
       </div>
     </section>
@@ -563,12 +1120,19 @@
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <svg class="footer-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-            <path d="M50 50L10 27V73L50 96V50Z" fill="#0055ff"/>
-            <path d="M50 50L90 27V73L50 96V50Z" fill="#003db3"/>
-            <path d="M50 50L90 27L50 4L10 27L50 50Z" fill="#ffffff"/>
-            <path d="M50 35L65 43V58L50 66L35 58V43L50 35Z" fill="#ffe500"/>
-            <circle cx="50" cy="50.5" r="4" fill="#0a0a0a"/>
+          <svg
+            class="footer-logo"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            width="36"
+            height="36"
+          >
+            <path d="M50 50L10 27V73L50 96V50Z" fill="#0055ff" />
+            <path d="M50 50L90 27V73L50 96V50Z" fill="#003db3" />
+            <path d="M50 50L90 27L50 4L10 27L50 50Z" fill="#ffffff" />
+            <path d="M50 35L65 43V58L50 66L35 58V43L50 35Z" fill="#ffe500" />
+            <circle cx="50" cy="50.5" r="4" fill="#0a0a0a" />
           </svg>
           <div>
             <strong class="footer-brand-name">Prep Portal</strong>
@@ -590,33 +1154,107 @@
         <div class="footer-social-col">
           <strong class="footer-nav-heading">Follow us</strong>
           <div class="footer-social">
-            <!-- Update hrefs with your actual social handles -->
-            <a href="https://instagram.com/prepportal" class="footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                <circle cx="12" cy="12" r="4"/>
-                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+            <a
+              href="https://instagram.com/prepportal"
+              class="footer-social-btn"
+              aria-label="Instagram"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
               </svg>
             </a>
-            <a href="https://twitter.com/prepportal" class="footer-social-btn" aria-label="Twitter / X" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            <a
+              href="https://twitter.com/prepportal"
+              class="footer-social-btn"
+              aria-label="Twitter / X"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                />
               </svg>
             </a>
-            <a href="https://youtube.com/@prepportalng" class="footer-social-btn" aria-label="YouTube" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.57A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
-                <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/>
+            <a
+              href="https://youtube.com/@prepportalng"
+              class="footer-social-btn"
+              aria-label="YouTube"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.57A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"
+                />
+                <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" />
               </svg>
             </a>
-            <a href="https://tiktok.com/@prepportal" class="footer-social-btn" aria-label="TikTok" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.77 1.52V7.24a4.85 4.85 0 0 1-1-.55z"/>
+            <a
+              href="https://tiktok.com/@prepportal"
+              class="footer-social-btn"
+              aria-label="TikTok"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.77 1.52V7.24a4.85 4.85 0 0 1-1-.55z"
+                />
               </svg>
             </a>
-            <a href="https://facebook.com/prepportal" class="footer-social-btn" aria-label="Facebook" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+            <a
+              href="https://facebook.com/prepportal"
+              class="footer-social-btn"
+              aria-label="Facebook"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="18"
+                height="18"
+              >
+                <path
+                  d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                />
               </svg>
             </a>
           </div>
@@ -626,7 +1264,12 @@
 
       <div class="footer-bottom">
         <p>&copy; 2026 Prep Portal. All rights reserved.</p>
-        <p>Prices in Nigerian Naira (&#8358;). &nbsp;&middot;&nbsp; Nigeria &nbsp;&middot;&nbsp; <a href="/privacy.html">Privacy</a> &nbsp;&middot;&nbsp; <a href="/terms.html">Terms</a></p>
+        <p>
+          Prices in Nigerian Naira (&#8358;). &nbsp;&middot;&nbsp; Nigeria
+          &nbsp;&middot;&nbsp;
+          <a href="/privacy.html">Privacy</a> &nbsp;&middot;&nbsp;
+          <a href="/terms.html">Terms</a>
+        </p>
       </div>
     </footer>
 
@@ -637,6 +1280,14 @@
     <script src="/utils/components/nav-builder.js" type="module"></script>
     <script src="/home/js/auth-modal.js" type="module"></script>
     <script src="/payment-manager.js" type="module"></script>
+
+    <!-- jQuery (Required by DearFlip) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- jsPDF runtime -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- DearFlip JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/js/dflip.min.js"></script>
+
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -647,11 +1298,11 @@
 
     <script>
       // FAQ accordion
-      document.querySelectorAll(".faq-q").forEach(function(btn) {
-        btn.addEventListener("click", function() {
+      document.querySelectorAll(".faq-q").forEach(function (btn) {
+        btn.addEventListener("click", function () {
           var item = btn.closest(".faq-item");
           var isOpen = item.classList.contains("faq-item--open");
-          document.querySelectorAll(".faq-item").forEach(function(i) {
+          document.querySelectorAll(".faq-item").forEach(function (i) {
             i.classList.remove("faq-item--open");
             i.querySelector(".faq-q").setAttribute("aria-expanded", "false");
           });
@@ -663,20 +1314,82 @@
       });
 
       // Video click-to-load YouTube embed
-      document.querySelectorAll(".video-thumb[data-video-id]").forEach(function(thumb) {
-        thumb.addEventListener("click", function() {
-          var id = thumb.dataset.videoId;
-          if (!id) return;
-          var iframe = document.createElement("iframe");
-          iframe.src = "https://www.youtube.com/embed/" + id + "?autoplay=1";
-          iframe.setAttribute("frameborder", "0");
-          iframe.setAttribute("allowfullscreen", "");
-          iframe.setAttribute("allow", "autoplay; encrypted-media");
-          thumb.innerHTML = "";
-          thumb.appendChild(iframe);
-          thumb.classList.add("video-thumb--playing");
+      document
+        .querySelectorAll(".video-thumb[data-video-id]")
+        .forEach(function (thumb) {
+          thumb.addEventListener("click", function () {
+            var id = thumb.dataset.videoId;
+            if (!id) return;
+            var iframe = document.createElement("iframe");
+            iframe.src = "https://www.youtube.com/embed/" + id + "?autoplay=1";
+            iframe.setAttribute("frameborder", "0");
+            iframe.setAttribute("allowfullscreen", "");
+            iframe.setAttribute("allow", "autoplay; encrypted-media");
+            thumb.innerHTML = "";
+            thumb.appendChild(iframe);
+            thumb.classList.add("video-thumb--playing");
+          });
         });
+    </script>
+
+    <!-- Testimonial flipbook -->
+    <script type="module">
+      import { initTestimonialFlipbook } from '/home/js/testimonial-flipbook.js';
+
+      initTestimonialFlipbook({
+        containerId: 'review-book-viewer',
+        data: [
+        {
+          type: "cover",
+          title: "SUCCESS JOURNAL",
+          sub: "Real stories from classrooms and homes across Nigeria.",
+          footer: "PREP PORTAL • EST. 2026",
+        },
+        {
+          type: "testimonial",
+          subject: "MATHEMATICS",
+          stars: 5,
+          quote:
+            "My son went from a D7 in his mocks to an A1 in WAEC Mathematics! The personal updates from our tutor kept us completely in the loop. Worth every single Kobo.",
+          author: "Chidi K.",
+          role: "Parent • Surulere, Lagos",
+        },
+        {
+          type: "testimonial",
+          subject: "CAMBRIDGE IGCSE",
+          stars: 5,
+          quote:
+            "I was struggling with Chemistry and Physics definitions. Prep Portal's video libraries simplified things in minutes. Scored 3 A*s and 2 As in my finals!",
+          author: "Amina Y.",
+          role: "Student • Gwarinpa, Abuja",
+        },
+        {
+          type: "testimonial",
+          subject: "JAMB CBT",
+          stars: 5,
+          quote:
+            "I scored 342 in my JAMB! The Practice Question Bank interface is exactly like the actual UTME CBT format. Highly recommended for complete preparation.",
+          author: "Tunde O.",
+          role: "Student • Port Harcourt",
+        },
+        {
+          type: "testimonial",
+          subject: "CONVINCING VALUE",
+          stars: 5,
+          quote:
+            "Handling exam prep for multiple children is incredibly stressful. The multi-child discount made professional matching budget-friendly. All averages rose by 15%!",
+          author: "Mrs. Okon",
+          role: "Parent • Ikeja, Lagos",
+        },
+        {
+          type: "back",
+          title: "YOUR CHILD'S GRADE IS NEXT.",
+          sub: "Join thousands of successful Nigerian families. Book your dedicated preparation plan today.",
+          cta: "START FREE REVISION",
+        },
+      ],
       });
     </script>
+
   </body>
 </html>

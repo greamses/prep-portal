@@ -1,0 +1,268 @@
+/* ═══════════════════════════════════════════════════════════
+   GRAMMAR POLICE — Practice Pages (Punctuation Patrol)
+   ═══════════════════════════════════════════════════════════ */
+
+.pc--practice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pc-practice-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 2px solid #0a0a0a;
+}
+
+.pc-practice-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+}
+
+.pc-practice-title {
+  font-family: "Unbounded", sans-serif;
+  font-size: clamp(0.68rem, 1.8%, 0.82rem);
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+/* ─── SENTENCE ITEMS ─────────────────────────────────────── */
+.pp-items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  overflow: hidden;
+}
+
+.pp-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.4rem;
+  font-size: clamp(0.68rem, 1.5%, 0.8rem);
+  line-height: 2;
+}
+
+.pp-item-num {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #0055ff;
+  flex-shrink: 0;
+  min-width: 1.6em;
+  text-align: right;
+}
+
+.pp-sentence {
+  flex: 1;
+  line-height: 2.1;
+}
+
+.pp-word {
+  display: inline;
+}
+
+/* ─── INVISIBLE SLOTS (no markers) ──────────────────────── */
+.pp-slot {
+  display: inline-block;
+  width: 0;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  position: relative;
+  overflow: visible;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 900;
+  font-size: 1em;
+  cursor: default;
+  user-select: none;
+}
+
+/* Hover state: show a subtle snap target when nearest slot is highlighted */
+.pp-slot--hover:not(.pp-slot--filled) {
+  width: 0.6em;
+  background: rgba(0, 85, 255, 0.12);
+  border-radius: 3px;
+  outline: 2px dashed #0055ff;
+  outline-offset: 1px;
+}
+
+/* ─── FILLED SLOT ────────────────────────────────────────── */
+.pp-slot--filled {
+  width: 0.85em;
+  height: auto;
+  overflow: visible;
+  color: #0055ff;
+  background: rgba(0, 85, 255, 0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  vertical-align: text-bottom;
+  padding: 0 1px;
+  transition:
+    background 0.1s,
+    outline 0.1s;
+}
+
+.pp-slot--filled:hover {
+  background: rgba(0, 85, 255, 0.18);
+}
+
+/* First tap registered — brief ring to signal "tap again to remove" */
+.pp-slot--tap1 {
+  outline: 2px solid #0055ff;
+  outline-offset: 1px;
+}
+
+/* ─── CHECK STATES ───────────────────────────────────────── */
+.pp-slot--correct {
+  color: #1a7f37 !important;
+  background: rgba(26, 127, 55, 0.12) !important;
+  cursor: default !important;
+}
+
+.pp-slot--wrong {
+  color: #cc2200 !important;
+  background: rgba(204, 34, 0, 0.1) !important;
+  animation: pp-shake 0.32s ease;
+}
+
+@keyframes pp-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* ─── COMMA COUNT HINT ───────────────────────────────────── */
+.pp-needs {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #aaa;
+  flex-shrink: 0;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ─── CORRECT ANSWER REVEAL ──────────────────────────────── */
+.pp-correct-answer {
+  flex-basis: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: #1a7f37;
+  padding: 0.12rem 0.4rem 0.12rem 0.5rem;
+  background: rgba(26, 127, 55, 0.07);
+  border-left: 2px solid #1a7f37;
+  border-radius: 0 3px 3px 0;
+  margin-left: 2em;
+}
+
+.pp-ca-label {
+  font-family: "Unbounded", sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #1a7f37;
+  flex-shrink: 0;
+}
+
+/* ─── POOL STRIP ─────────────────────────────────────────── */
+.pp-pool-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: #0a0230;
+  border-radius: 8px;
+  border: 2px solid #0a0a0a;
+  box-shadow: 2px 2px 0 #0a0a0a;
+  flex-shrink: 0;
+}
+
+.pp-pool-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pp-pool-tokens {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ─── DRAGGABLE TOKENS ───────────────────────────────────── */
+.pp-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2em;
+  height: 2.2em;
+  background: #ffe500;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: grab;
+  box-shadow: 2px 2px 0 #0a0a0a;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.pp-token:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.pp-token:active,
+.pp-token--dragging {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #0a0a0a;
+}
+
+.pp-token--selected {
+  box-shadow:
+    0 0 0 3px #0055ff,
+    2px 2px 0 #0a0a0a;
+  transform: translate(-1px, -1px);
+}
+
+/* ─── DRAG GHOST (touch) ─────────────────────────────────── */
+.pp-drag-ghost {
+  position: fixed;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4em;
+  height: 2.4em;
+  background: #ffe500;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 7px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.05rem;
+  font-weight: 900;
+  pointer-events: none;
+  transform: rotate(5deg) scale(1.2);
+  box-shadow: 4px 6px 14px rgba(0, 0, 0, 0.4);
+}
