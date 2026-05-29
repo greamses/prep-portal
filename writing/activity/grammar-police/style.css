@@ -3,6 +3,7 @@
    css/modal.css          — full-screen modal, stage, nav buttons
    css/book-pages.css     — base page, inside covers, cover, TOC, passage, inline select, check section, back cover
    css/book-explanation.css — explanation pages
-   css/book-divider.css   — chapter divider pages
    css/book-practice.css  — punctuation patrol practice pages
+   css/mcgraw.css         — McGraw-Hill editorial layer (banners, furniture,
+                            mascot, dotted contents, AI checker, video) — loads last
 */

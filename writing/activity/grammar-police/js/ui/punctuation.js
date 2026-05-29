@@ -1,5 +1,4 @@
 import { state } from "../utils/state.js";
-import { PP_EXERCISES } from "../data/punctuationData.js";
 
 export function updatePPProgress(exerIdx) {
   const allSlots = document.querySelectorAll(
@@ -388,7 +387,7 @@ export function checkExercise(exerIdx) {
 
     if (!sentenceOk) {
       const itemIdx = parseInt(sentence.dataset.itemIdx);
-      const item = PP_EXERCISES[exerIdx].items[itemIdx];
+      const item = state.exercises[exerIdx].items[itemIdx];
       let ansText = "";
       item.forEach((seg) => {
         ansText += typeof seg === "string" ? seg : seg.correct;

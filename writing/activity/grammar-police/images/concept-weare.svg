@@ -1,8 +1,0 @@
-<svg viewBox="0 0 44 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" height="32" aria-hidden="true">
-  <circle cx="10" cy="20" r="5" fill="#0055ff" opacity=".8"/>
-  <circle cx="22" cy="18" r="5" fill="#0055ff" opacity=".65"/>
-  <circle cx="34" cy="20" r="5" fill="#0055ff" opacity=".5"/>
-  <rect x="8" y="2" width="28" height="11" rx="4" fill="#ffe500" opacity=".9"/>
-  <path d="M18 13l4 4 4-4" fill="#ffe500" opacity=".9"/>
-  <text x="22" y="10" text-anchor="middle" font-size="5" font-family="monospace" fill="#0a0a0a" font-weight="bold">we are!</text>
-</svg>

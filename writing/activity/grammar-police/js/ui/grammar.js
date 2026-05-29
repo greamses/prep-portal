@@ -1,4 +1,4 @@
-import { WORD_GROUPS } from "../data/grammarData.js";
+import { state } from "../utils/state.js";
 
 // ── Floating menu state ──────────────────────────────────────
 let _activeMenu = null;
@@ -63,7 +63,7 @@ function openInlineMenu(wrapper, options, passageIdx) {
 
 // ── Blank builder ────────────────────────────────────────────
 export function buildBlank(seg, passageIdx) {
-  const group = WORD_GROUPS[seg.group];
+  const group = state.wordGroups[seg.group];
   const correct = seg.correct.toLowerCase();
   const options = [...group.options].sort(() => Math.random() - 0.5);
 

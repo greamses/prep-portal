@@ -1,38 +1,53 @@
 import { state } from "./utils/state.js";
 import { initAudio } from "./utils/audio.js";
-import { buildBookPages, initPageFlip } from "./ui/pages.js";
+import { loadBook } from "./services/book-service.js";
+import { buildBookPages, initPageFlip, stopVideo } from "./ui/pages.js";
 import { checkPassage, resetPassage } from "./ui/grammar.js";
 import { checkExercise, resetExercise, deselectToken } from "./ui/punctuation.js";
-import { PASSAGES } from "./data/grammarData.js";
-import { PP_EXERCISES } from "./data/punctuationData.js";
+import { initChecker } from "./ui/checker.js";
+
+// ── Load content from the API (falls back to the offline mirror) ──────────
+async function ensureBook() {
+  if (state.book) return;
+  const { book } = await loadBook();
+  state.book = book;
+  state.wordGroups = book.wordGroups || {};
+  state.passages = book.units.filter((u) => u.kind === "grammar").map((u) => u.passage);
+  state.exercises = book.units.filter((u) => u.kind === "punctuation").map((u) => u.exercise);
+}
 
 // ── Modal ─────────────────────────────────────────────────────
-function openModal() {
+async function openModal() {
   const modal = document.getElementById("gpModal");
   modal.hidden = false;
   document.body.style.overflow = "hidden";
   initAudio();
-  if (!state.bookBuilt) {
-    buildBookPages();
+
+  if (state.bookBuilt) return;
+
+  await ensureBook();
+  buildBookPages();
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        initPageFlip(syncUI);
-        wireBookEvents();
-        syncUI();
-      });
+      initPageFlip(syncUI);
+      wireBookEvents();
+      initChecker();
+      syncUI();
     });
-  }
+  });
 }
 
 function closeModal() {
   document.getElementById("gpModal").hidden = true;
   document.body.style.overflow = "";
   deselectToken();
+  stopVideo(document.getElementById("gpBook"));
   if (state.drag.ghost) { state.drag.ghost.remove(); state.drag.ghost = null; }
 }
 
 function syncUI() {
-  const cur   = state.pageFlip.getCurrentPageIndex();
+  if (!state.pageFlip) return;
+  const cur = state.pageFlip.getCurrentPageIndex();
   const total = state.pageFlip.getPageCount();
   document.getElementById("gpPageNum").textContent = `${cur + 1} / ${total}`;
   document.getElementById("gpPrev").disabled = cur === 0;
@@ -41,6 +56,7 @@ function syncUI() {
 
 // ── Navigation ────────────────────────────────────────────────
 function jumpToPage(targetPage) {
+  if (targetPage == null) return;
   const book = document.getElementById("gpBook");
   book.classList.add("gp-book--jumping");
   setTimeout(() => {
@@ -55,23 +71,21 @@ function wireBookEvents() {
   document.getElementById("gpPrev").addEventListener("click", () => state.pageFlip.flipPrev());
   document.getElementById("gpNext").addEventListener("click", () => state.pageFlip.flipNext());
 
-  document.getElementById("pcTocList").addEventListener("click", (e) => {
-    const gpItem = e.target.closest("[data-goto-explanation]");
-    if (gpItem) {
-      const idx  = parseInt(gpItem.dataset.gotoExplanation, 10);
-      const page = state.EXPLANATION_START_PAGE[idx];
-      if (page !== undefined) jumpToPage(page);
+  const book = document.getElementById("gpBook");
+
+  // Table-of-contents jumps
+  book.addEventListener("click", (e) => {
+    const unit = e.target.closest("[data-goto-unit]");
+    if (unit) {
+      jumpToPage(state.UNIT_START_PAGE[parseInt(unit.dataset.gotoUnit, 10)]);
       return;
     }
-    const ppItem = e.target.closest("[data-goto-pp-explanation]");
-    if (ppItem) {
-      const idx  = parseInt(ppItem.dataset.gotoPpExplanation, 10);
-      const page = state.PP_EXPL_START[idx];
-      if (page !== undefined) jumpToPage(page);
+    if (e.target.closest("[data-goto-checker]")) {
+      jumpToPage(state.CHECKER_PAGE);
+      return;
     }
-  });
 
-  document.getElementById("gpBook").addEventListener("click", (e) => {
+    // Practice check / reset
     const gpCheck = e.target.closest("[data-gp-check]");
     const gpReset = e.target.closest("[data-gp-reset]");
     const ppCheck = e.target.closest("[data-pp-check]");
@@ -84,15 +98,20 @@ function wireBookEvents() {
 
   document.addEventListener("keydown", (e) => {
     if (document.getElementById("gpModal").hidden) return;
-    if (e.key === "Escape")     closeModal();
-    if (e.key === "ArrowLeft")  state.pageFlip.flipPrev();
+    const tag = document.activeElement?.tagName;
+    if (tag === "TEXTAREA" || tag === "INPUT") {
+      if (e.key === "Escape") document.activeElement.blur();
+      return;
+    }
+    if (e.key === "Escape") closeModal();
+    if (e.key === "ArrowLeft") state.pageFlip.flipPrev();
     if (e.key === "ArrowRight") state.pageFlip.flipNext();
   });
 }
 
 // ── Boot ──────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("gpOpen").addEventListener("click",  openModal);
+  document.getElementById("gpOpen").addEventListener("click", openModal);
   document.getElementById("gpClose").addEventListener("click", closeModal);
   document.getElementById("gpModal").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
@@ -102,12 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (!state.pageFlip) return;
-      const book = document.getElementById("gpBook");
-      state.pageFlip.updateState({
-        width:  Math.floor(book.offsetWidth / 2),
-        height: book.offsetHeight,
-      });
+      // "stretch" mode re-measures itself; just nudge it to re-render so the
+      // spread/single-page switch happens cleanly on rotate/resize.
+      state.pageFlip?.update?.();
     }, 250);
   });
 });
