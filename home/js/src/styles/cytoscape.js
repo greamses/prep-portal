@@ -37,11 +37,16 @@ export function buildStyle() {
       style: {
         "border-width": 1.5,
         opacity: 1,
+        "z-index": 100,
+      },
+    },
+    {
+      selector: "node.sn-hi.av-visible",
+      style: {
         "background-image": "data(avatar)",
         "background-width": "100%",
         "background-height": "100%",
         "background-clip": "node",
-        "z-index": 100,
       },
     },
     { selector: "node.sn-dim", style: { opacity: 0.07 } },

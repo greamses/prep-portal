@@ -61,6 +61,11 @@ export async function initSocialNetwork({
     maxZoom: 3.5,
   });
 
+  cy.on("zoom", () => {
+    if (cy.zoom() >= 3.5) cy.nodes().addClass("av-visible");
+    else cy.nodes().removeClass("av-visible");
+  });
+
   const svgEl = container.querySelector(".world-map-bg");
   if (svgEl) {
     const syncViewport = () => {
