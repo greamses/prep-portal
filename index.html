@@ -39,22 +39,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+    <!-- Editorial magazine fonts (Vogue-style Didot + classic serif body) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=EB+Garamond:ital,wght@0,400..600;1,400..500&display=swap"
+      rel="stylesheet"
+    />
+
     <link rel="stylesheet" href="/home/css/main.css" />
     <link rel="stylesheet" href="/home/css/social-network.css" />
     <link rel="stylesheet" href="/home/css/magazine.css" />
+    <link rel="stylesheet" href="/home/css/flipbook.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/select.css" />
     <link rel="stylesheet" href="/home/css/login.css" />
-
-    <!-- DearFlip CSS Dependencies (Using public CDN. If hosting locally, replace with local resource paths) -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/css/dflip.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/css/themify-icons.min.css"
-      rel="stylesheet"
-    />
 
     <script type="importmap">
       {
@@ -747,24 +744,24 @@
           <div class="mag-eyebrow">
             <span class="mag-issue">Vol. I &mdash; 2026</span>
             <span class="mag-dot"></span>
-            <span class="mag-category">Success Stories</span>
+            <span class="mag-category">The Portal Edition</span>
           </div>
-          <h2 class="mag-title">The Grade<br />Report.</h2>
+          <h2 class="mag-title">Who We<br />Are.</h2>
           <div class="mag-rule"></div>
           <p class="mag-standfirst">
-            Real students. Real results. Read how Nigerian families are
-            transforming exam outcomes with Prep Portal.
+            A dynamic digital issue on the people, the mission and the tools
+            behind Nigeria&rsquo;s most personal exam-prep platform.
           </p>
         </div>
       </div>
 
-      <!-- Digital Edition flipbook -->
+      <!-- Digital Edition flipbook (StPageFlip) -->
       <div class="mag-edition-wrapper">
         <div class="mag-edition-header">
           <span class="mag-edition-label">Digital Edition</span>
-          <h3 class="mag-edition-title">Flip through the Success Journal</h3>
+          <h3 class="mag-edition-title">Flip through our story</h3>
         </div>
-        <div id="review-book-viewer" class="mag-flipbook"></div>
+        <div id="magazine-flipbook" class="mag-flipbook"></div>
       </div>
     </section>
 
@@ -1153,10 +1150,8 @@
     <!-- Cytoscape.js (community network) -->
     <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
 
-    <!-- jQuery (Required by DearFlip) -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- DearFlip JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@dearhive/dearflip-jquery-flipbook@1.7.3/dflip/js/dflip.min.js"></script>
+    <!-- StPageFlip (page-flip) — drives the digital magazine -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 
     <script>
       if ("serviceWorker" in navigator) {
@@ -1202,63 +1197,11 @@
         });
     </script>
 
-    <!-- Testimonial flipbook -->
+    <!-- Digital magazine flipbook (StPageFlip) -->
     <script type="module">
-      import { initTestimonialFlipbook } from "/home/js/testimonial-flipbook.js";
+      import { initFlipbook } from "/home/js/flipbook.js";
 
-      initTestimonialFlipbook({
-        containerId: "review-book-viewer",
-        data: [
-          {
-            type: "cover",
-            title: "SUCCESS JOURNAL",
-            sub: "Real stories from classrooms and homes across Nigeria.",
-            footer: "PREP PORTAL • EST. 2026",
-          },
-          {
-            type: "testimonial",
-            subject: "MATHEMATICS",
-            stars: 5,
-            quote:
-              "My son went from a D7 in his mocks to an A1 in WAEC Mathematics! The personal updates from our tutor kept us completely in the loop. Worth every single Kobo.",
-            author: "Chidi K.",
-            role: "Parent • Surulere, Lagos",
-          },
-          {
-            type: "testimonial",
-            subject: "CAMBRIDGE IGCSE",
-            stars: 5,
-            quote:
-              "I was struggling with Chemistry and Physics definitions. Prep Portal's video libraries simplified things in minutes. Scored 3 A*s and 2 As in my finals!",
-            author: "Amina Y.",
-            role: "Student • Gwarinpa, Abuja",
-          },
-          {
-            type: "testimonial",
-            subject: "JAMB CBT",
-            stars: 5,
-            quote:
-              "I scored 342 in my JAMB! The Practice Question Bank interface is exactly like the actual UTME CBT format. Highly recommended for complete preparation.",
-            author: "Tunde O.",
-            role: "Student • Port Harcourt",
-          },
-          {
-            type: "testimonial",
-            subject: "CONVINCING VALUE",
-            stars: 5,
-            quote:
-              "Handling exam prep for multiple children is incredibly stressful. The multi-child discount made professional matching budget-friendly. All averages rose by 15%!",
-            author: "Mrs. Okon",
-            role: "Parent • Ikeja, Lagos",
-          },
-          {
-            type: "back",
-            title: "YOUR CHILD'S GRADE IS NEXT.",
-            sub: "Join thousands of successful Nigerian families. Book your dedicated preparation plan today.",
-            cta: "START FREE REVISION",
-          },
-        ],
-      });
+      initFlipbook({ containerId: "magazine-flipbook" });
     </script>
 
     <!-- Community network -->

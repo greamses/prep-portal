@@ -69,6 +69,7 @@ app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/tts",   require("./routes/tts")());
 app.use("/api/admin",   require("./routes/admin")(db, auth));
 app.use("/api/magazine", require("./routes/magazine")(db));
+app.use("/api/youtube",  require("./routes/youtube")());
 
 // Health check
 app.get("/health", (_, res) => res.json({ status: "ok" }));
