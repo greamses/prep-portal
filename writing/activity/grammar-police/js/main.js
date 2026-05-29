@@ -1,10 +1,13 @@
 import { state } from "./utils/state.js";
 import { initAudio } from "./utils/audio.js";
 import { loadBook } from "./services/book-service.js";
-import { buildBookPages, initPageFlip, stopVideo } from "./ui/pages.js";
+import { buildBookPages, initPageFlip, stopAllVideos } from "./ui/pages.js";
 import { checkPassage, resetPassage } from "./ui/grammar.js";
 import { checkExercise, resetExercise, deselectToken } from "./ui/punctuation.js";
 import { initChecker } from "./ui/checker.js";
+import { frontCoverInner } from "./ui/cover.js";
+
+let eventsWired = false;
 
 // ── Load content from the API (falls back to the offline mirror) ──────────
 async function ensureBook() {
@@ -16,32 +19,33 @@ async function ensureBook() {
   state.exercises = book.units.filter((u) => u.kind === "punctuation").map((u) => u.exercise);
 }
 
+// (Re)build the book + flip engine. Idempotent — destroys any prior instance.
+function mountBook() {
+  if (state.pageFlip) { try { state.pageFlip.destroy(); } catch {} state.pageFlip = null; }
+  state.bookBuilt = false;
+  buildBookPages();
+  initPageFlip(syncUI);
+  if (!eventsWired) { wireBookEvents(); eventsWired = true; }
+  initChecker();
+  syncUI();
+}
+
 // ── Modal ─────────────────────────────────────────────────────
 async function openModal() {
   const modal = document.getElementById("gpModal");
   modal.hidden = false;
   document.body.style.overflow = "hidden";
   initAudio();
-
   if (state.bookBuilt) return;
-
   await ensureBook();
-  buildBookPages();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      initPageFlip(syncUI);
-      wireBookEvents();
-      initChecker();
-      syncUI();
-    });
-  });
+  requestAnimationFrame(() => requestAnimationFrame(mountBook));
 }
 
 function closeModal() {
   document.getElementById("gpModal").hidden = true;
   document.body.style.overflow = "";
   deselectToken();
-  stopVideo(document.getElementById("gpBook"));
+  stopAllVideos(document.getElementById("gpBook"));
   if (state.drag.ghost) { state.drag.ghost.remove(); state.drag.ghost = null; }
 }
 
@@ -66,26 +70,16 @@ function jumpToPage(targetPage) {
   }, 220);
 }
 
-// ── Event Wiring ──────────────────────────────────────────────
+// ── Event Wiring (delegated on persistent elements; runs once) ─────────────
 function wireBookEvents() {
   document.getElementById("gpPrev").addEventListener("click", () => state.pageFlip.flipPrev());
   document.getElementById("gpNext").addEventListener("click", () => state.pageFlip.flipNext());
 
   const book = document.getElementById("gpBook");
-
-  // Table-of-contents jumps
   book.addEventListener("click", (e) => {
     const unit = e.target.closest("[data-goto-unit]");
-    if (unit) {
-      jumpToPage(state.UNIT_START_PAGE[parseInt(unit.dataset.gotoUnit, 10)]);
-      return;
-    }
-    if (e.target.closest("[data-goto-checker]")) {
-      jumpToPage(state.CHECKER_PAGE);
-      return;
-    }
-
-    // Practice check / reset
+    if (unit) { jumpToPage(state.UNIT_START_PAGE[parseInt(unit.dataset.gotoUnit, 10)]); return; }
+    if (e.target.closest("[data-goto-checker]")) { jumpToPage(state.CHECKER_PAGE); return; }
     const gpCheck = e.target.closest("[data-gp-check]");
     const gpReset = e.target.closest("[data-gp-reset]");
     const ppCheck = e.target.closest("[data-pp-check]");
@@ -99,10 +93,7 @@ function wireBookEvents() {
   document.addEventListener("keydown", (e) => {
     if (document.getElementById("gpModal").hidden) return;
     const tag = document.activeElement?.tagName;
-    if (tag === "TEXTAREA" || tag === "INPUT") {
-      if (e.key === "Escape") document.activeElement.blur();
-      return;
-    }
+    if (tag === "TEXTAREA" || tag === "INPUT") { if (e.key === "Escape") document.activeElement.blur(); return; }
     if (e.key === "Escape") closeModal();
     if (e.key === "ArrowLeft") state.pageFlip.flipPrev();
     if (e.key === "ArrowRight") state.pageFlip.flipNext();
@@ -111,19 +102,26 @@ function wireBookEvents() {
 
 // ── Boot ──────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  // Render the SAME cover component on the shelf (scaled by container-query CSS).
+  const shelfCover = document.getElementById("shelfCoverMount");
+  if (shelfCover) shelfCover.innerHTML = `<div class="pc gp-cover">${frontCoverInner()}</div>`;
+
   document.getElementById("gpOpen").addEventListener("click", openModal);
   document.getElementById("gpClose").addEventListener("click", closeModal);
   document.getElementById("gpModal").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
 
-  let resizeTimer;
+  // Pages are sized to the viewport, so a real resize rebuilds the book to keep
+  // it ~96% of the new viewport height (debounced; skipped while hidden).
+  let resizeTimer, lastW = window.innerWidth, lastH = window.innerHeight;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      // "stretch" mode re-measures itself; just nudge it to re-render so the
-      // spread/single-page switch happens cleanly on rotate/resize.
-      state.pageFlip?.update?.();
-    }, 250);
+      if (!state.bookBuilt || document.getElementById("gpModal").hidden) return;
+      if (Math.abs(window.innerWidth - lastW) < 60 && Math.abs(window.innerHeight - lastH) < 60) return;
+      lastW = window.innerWidth; lastH = window.innerHeight;
+      mountBook();
+    }, 300);
   });
 });

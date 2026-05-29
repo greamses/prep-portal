@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="./css/book-practice.css" />
     <!-- McGraw-Hill / Glencoe editorial layer — loaded last so it wins -->
     <link rel="stylesheet" href="./css/mcgraw.css" />
+    <link rel="stylesheet" href="./css/mcgraw-v3.css" />
+    <link rel="stylesheet" href="./css/cover.css" />
 
     <style>
       body {
@@ -66,71 +68,34 @@
         </header>
 
         <div class="shelf-row" role="list">
-          <!-- Grammar Police book -->
+          <!-- Grammar Police book — cover mirrors the real book cover -->
           <button
             class="shelf-book"
             id="gpOpen"
             role="listitem"
             aria-label="Open Grammar Police and Punctuation Patrol book"
           >
-            <div class="shelf-book-cover">
-              <div class="cover-pattern" aria-hidden="true"></div>
-              <div class="cover-front">
-                <svg
-                  class="cover-badge"
-                  viewBox="0 0 64 64"
-                  fill="none"
-                  width="44"
-                  height="44"
-                >
-                  <path
-                    d="M32 4L6 17V38C6 51 17 62 32 64C47 62 58 51 58 38V17L32 4Z"
-                    fill="rgba(255,229,0,0.2)"
-                    stroke="#ffe500"
-                    stroke-width="2.5"
-                  />
-                  <path
-                    d="M22 33L29 40L42 26"
-                    stroke="#ffe500"
-                    stroke-width="3.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <p class="cover-title">Grammar<br />Police</p>
-                <p class="cover-pp">+ Punctuation</p>
-              </div>
-            </div>
-            <div class="shelf-book-spine" aria-hidden="true">
-              <span class="spine-text">Grammar Police</span>
-            </div>
             <p class="shelf-book-label">Grammar &amp; Punctuation</p>
+            <!-- Same cover component as the book, just sized down (filled by main.js) -->
+            <div class="shelf-book-cover" id="shelfCoverMount"></div>
           </button>
 
           <!-- Empty slot 1 -->
-          <div
-            class="shelf-book shelf-book--empty"
-            role="listitem"
-            aria-label="Coming soon"
-          >
+          <div class="shelf-book shelf-book--empty" role="listitem" aria-label="Coming soon">
+            <p class="shelf-book-label">Coming Soon</p>
             <div class="shelf-book-cover shelf-book-cover--empty">
               <span class="empty-soon">Soon</span>
             </div>
             <div class="shelf-book-spine" aria-hidden="true"></div>
-            <p class="shelf-book-label">Coming Soon</p>
           </div>
 
           <!-- Empty slot 2 -->
-          <div
-            class="shelf-book shelf-book--empty"
-            role="listitem"
-            aria-label="Coming soon"
-          >
+          <div class="shelf-book shelf-book--empty" role="listitem" aria-label="Coming soon">
+            <p class="shelf-book-label">Coming Soon</p>
             <div class="shelf-book-cover shelf-book-cover--empty">
               <span class="empty-soon">Soon</span>
             </div>
             <div class="shelf-book-spine" aria-hidden="true"></div>
-            <p class="shelf-book-label">Coming Soon</p>
           </div>
         </div>
 

@@ -29,7 +29,7 @@ function renderResult(box, data) {
   if (!errors.length) {
     box.innerHTML = `
       <div class="gp-checker__clean">
-        <p class="gp-checker__summary">✨ ${esc(data.summary || "Looks clean — no mistakes spotted. Great work!")}</p>
+        <p class="gp-checker__summary">${esc(data.summary || "Looks clean — no mistakes spotted. Great work!")}</p>
         ${provider}
       </div>`;
     return;

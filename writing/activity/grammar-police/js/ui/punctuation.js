@@ -1,5 +1,11 @@
 import { state } from "../utils/state.js";
 
+// Tracks a touch from start so we can tell a TAP (no movement → select / place /
+// double-tap delete) from a DRAG (movement → ghost). Lets mobile taps work even
+// though StPageFlip pointer handling is off.
+let touchStart = null;
+const TAP_SLOP = 8;
+
 export function updatePPProgress(exerIdx) {
   const allSlots = document.querySelectorAll(
     `.pp-slot[data-exer-idx="${exerIdx}"]`,
@@ -101,11 +107,22 @@ export function buildToken(char) {
     "touchstart",
     (e) => {
       e.stopPropagation();
-      e.preventDefault();
       deselectToken();
       state.drag.char = char;
       state.drag.sourceSlot = null;
-      createGhost(char, e.touches[0]);
+      state.drag.selected = el;
+      el.classList.add("pp-token--selected");
+      const t = e.touches[0];
+      touchStart = { x: t.clientX, y: t.clientY, moved: false, kind: "token" };
+    },
+    { passive: true },
+  );
+  el.addEventListener(
+    "touchend",
+    (e) => {
+      // Tap = select (done on touchstart). Suppress the synthetic click so it
+      // is not handled twice; drags are finished by the global touchend.
+      if (touchStart && !touchStart.moved) e.preventDefault();
     },
     { passive: false },
   );
@@ -216,9 +233,6 @@ export function buildSentenceRow(item, itemIdx, exerIdx) {
       if (token.correct) slot.dataset.correct = token.correct;
 
       slot.addEventListener("mousedown", (e) => e.stopPropagation());
-      slot.addEventListener("touchstart", (e) => e.stopPropagation(), {
-        passive: true,
-      });
 
       slot.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -259,19 +273,9 @@ export function buildSentenceRow(item, itemIdx, exerIdx) {
         state.drag.sourceSlot = null;
       });
 
-      slot.addEventListener(
-        "touchstart",
-        (e) => {
-          if (!slot.dataset.placed) return;
-          e.stopPropagation();
-          e.preventDefault();
-          state.drag.char = slot.dataset.placed;
-          state.drag.sourceSlot = slot;
-          createGhost(slot.dataset.placed, e.touches[0]);
-        },
-        { passive: false },
-      );
-
+      // Empty slots are 0-width snap targets — not tappable themselves. Touch
+      // taps are handled at the container level (place / delete by nearest
+      // slot to the tap point); see buildSentences().
       wrap.appendChild(slot);
     }
   });
@@ -292,6 +296,43 @@ export function buildSentences(items, start, end, exerIdx, container) {
   for (let i = start; i < end && i < items.length; i++) {
     container.appendChild(buildSentenceRow(items[i], i, exerIdx));
   }
+
+  // ── Touch: tap anywhere in the items area places the selected mark at the
+  //    nearest slot, or removes the mark you tap. A press-and-drag instead
+  //    moves a placed mark out (handled by the global touchmove/touchend). ──
+  container.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    const slot = e.target.closest?.(".pp-slot");
+    const onFilled = slot && slot.dataset.placed;
+    touchStart = { x: t.clientX, y: t.clientY, moved: false, kind: onFilled ? "itemsFilled" : "items" };
+    if (onFilled) { state.drag.char = slot.dataset.placed; state.drag.sourceSlot = slot; }
+  }, { passive: true });
+
+  container.addEventListener("touchend", (e) => {
+    if (!touchStart || touchStart.moved) return; // a drag — global handles it
+    const t = e.changedTouches[0];
+
+    if (touchStart.kind === "itemsFilled") {
+      // tapped a placed mark → remove it
+      e.preventDefault();
+      const tapped = document.elementFromPoint(t.clientX, t.clientY)?.closest?.(".pp-slot");
+      const target = tapped?.dataset.placed ? tapped : findNearestSlotInContainer(container, t.clientX, t.clientY);
+      if (target?.dataset.placed) clearSlot(target);
+      state.drag.char = null;
+      state.drag.sourceSlot = null;
+      return;
+    }
+    if (state.drag.char) {
+      // a token is selected → place it at the nearest slot to the tap
+      const nearest = findNearestSlotInContainer(container, t.clientX, t.clientY);
+      const sentence = nearest?.closest(".pp-sentence");
+      if (nearest && sentence) {
+        e.preventDefault();
+        tryPlaceInSlot(nearest, state.drag.char, sentence);
+        deselectToken();
+      }
+    }
+  }, { passive: false });
 
   // Container-level drop zone: catches drops anywhere on the items area
   // and magnets to the nearest slot (2D distance)
@@ -424,31 +465,34 @@ export function resetExercise(exerIdx) {
   deselectToken();
 }
 
-// Touch global listeners
+// ── Touch global listeners (lazy ghost: only a real drag creates one) ───────
 document.addEventListener(
   "touchmove",
   (e) => {
+    if (!touchStart) return;
+    const t = e.touches[0];
+
+    if (!touchStart.moved) {
+      if (Math.abs(t.clientX - touchStart.x) < TAP_SLOP &&
+          Math.abs(t.clientY - touchStart.y) < TAP_SLOP) return;
+      touchStart.moved = true;
+      // Only tokens and placed marks can be dragged; elsewhere allow scroll.
+      if (touchStart.kind !== "token" && touchStart.kind !== "itemsFilled") return;
+      if (state.drag.char && !state.drag.ghost) createGhost(state.drag.char, t);
+    }
+
     if (!state.drag.ghost) return;
     e.preventDefault();
-    moveGhost(e.touches[0]);
+    moveGhost(t);
 
     state.drag.ghost.style.visibility = "hidden";
-    const under = document.elementFromPoint(
-      e.touches[0].clientX,
-      e.touches[0].clientY,
-    );
+    const under = document.elementFromPoint(t.clientX, t.clientY);
     state.drag.ghost.style.visibility = "";
 
     const container = under?.closest(".pp-items");
-    document.querySelectorAll(".pp-slot--hover").forEach((s) =>
-      s.classList.remove("pp-slot--hover"),
-    );
+    document.querySelectorAll(".pp-slot--hover").forEach((s) => s.classList.remove("pp-slot--hover"));
     if (container) {
-      const nearest = findNearestSlotInContainer(
-        container,
-        e.touches[0].clientX,
-        e.touches[0].clientY,
-      );
+      const nearest = findNearestSlotInContainer(container, t.clientX, t.clientY);
       if (nearest) nearest.classList.add("pp-slot--hover");
     }
   },
@@ -456,34 +500,25 @@ document.addEventListener(
 );
 
 document.addEventListener("touchend", (e) => {
-  if (!state.drag.ghost) return;
-  const touch = e.changedTouches[0];
+  if (state.drag.ghost) {
+    const touch = e.changedTouches[0];
+    state.drag.ghost.style.visibility = "hidden";
+    const under = document.elementFromPoint(touch.clientX, touch.clientY);
+    state.drag.ghost.remove();
+    state.drag.ghost = null;
+    document.querySelectorAll(".pp-slot--hover").forEach((s) => s.classList.remove("pp-slot--hover"));
 
-  state.drag.ghost.style.visibility = "hidden";
-  const under = document.elementFromPoint(touch.clientX, touch.clientY);
-  state.drag.ghost.remove();
-  state.drag.ghost = null;
-
-  document.querySelectorAll(".pp-slot--hover").forEach((s) =>
-    s.classList.remove("pp-slot--hover"),
-  );
-
-  const container = under?.closest(".pp-items");
-  if (container && state.drag.char) {
-    const nearest = findNearestSlotInContainer(
-      container,
-      touch.clientX,
-      touch.clientY,
-    );
-    if (nearest) {
-      const sentence = nearest.closest(".pp-sentence");
+    const container = under?.closest(".pp-items");
+    if (container && state.drag.char) {
+      const nearest = findNearestSlotInContainer(container, touch.clientX, touch.clientY);
+      const sentence = nearest?.closest(".pp-sentence");
       if (sentence) {
-        if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest)
-          clearSlot(state.drag.sourceSlot);
+        if (state.drag.sourceSlot && state.drag.sourceSlot !== nearest) clearSlot(state.drag.sourceSlot);
         tryPlaceInSlot(nearest, state.drag.char, sentence);
       }
     }
+    state.drag.char = null;
+    state.drag.sourceSlot = null;
   }
-  state.drag.char = null;
-  state.drag.sourceSlot = null;
+  touchStart = null;
 });

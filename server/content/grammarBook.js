@@ -53,6 +53,13 @@ const UNITS = [
   // ───────────────────────────── UNIT 1 ─────────────────────────────
   {
     id: "u-theyre",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">Because these three words sound exactly alike, your ear cannot help you — only the <strong>job</strong> of the word can. Always ask what the word is doing before you choose.</p>
+      <p class="exp-eg"><strong>they're</strong> = they are: "They're late." (They are late.)</p>
+      <p class="exp-eg"><strong>their</strong> = ownership: "Their teacher is kind." (belongs to them)</p>
+      <p class="exp-eg"><strong>there</strong> = a place, or "there is/are": "Put it there." · "There are two dogs."</p>
+      <p class="exp-intro">If you can replace the word with <em>they are</em>, it must be <strong>they're</strong>. If something belongs to a group, it is <strong>their</strong>. Everything else is usually <strong>there</strong>.</p>`,
     kind: "grammar",
     number: 1,
     color: "blue",
@@ -180,6 +187,13 @@ const UNITS = [
   // ───────────────────────────── UNIT 2 ─────────────────────────────
   {
     id: "u-were",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">Two of these are easy to test. <strong>we're</strong> always means <em>we are</em>, and <strong>were</strong> is just the past tense of <em>are</em>. Only <strong>where</strong> is about a place.</p>
+      <p class="exp-eg"><strong>we're</strong>: "We're winning!" (We are winning.)</p>
+      <p class="exp-eg"><strong>were</strong>: "They were here yesterday." (past tense)</p>
+      <p class="exp-eg"><strong>where</strong>: "Where is my book?" (asks about a place)</p>
+      <p class="exp-intro">The apostrophe in <strong>we're</strong> does the work of the missing <em>a</em> in "are". No apostrophe means no hidden "are".</p>`,
     kind: "grammar",
     number: 2,
     color: "green",
@@ -307,6 +321,13 @@ const UNITS = [
   // ───────────────────────────── UNIT 3 ─────────────────────────────
   {
     id: "u-mixed",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">The apostrophe is your best clue. It always stands for letters removed when two words join. If you cannot stretch the word back into two words, it takes no apostrophe.</p>
+      <p class="exp-eg"><strong>it's</strong> = it is / it has &middot; <strong>its</strong> = belonging to it</p>
+      <p class="exp-eg"><strong>you're</strong> = you are &middot; <strong>your</strong> = belonging to you</p>
+      <p class="exp-eg"><strong>they're</strong> = they are &middot; <strong>their</strong> = belonging to them</p>
+      <p class="exp-intro">Read it with the two full words. "Its raining" becomes "It is raining" — that works, so it must be <strong>it's</strong>.</p>`,
     kind: "grammar",
     number: 3,
     color: "purple",
@@ -450,6 +471,13 @@ const UNITS = [
   // ───────────────────────────── UNIT 4 (NEW) ─────────────────────────────
   {
     id: "u-totwo",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro"><strong>two</strong> is only ever the number 2. <strong>too</strong> means <em>also</em> or <em>more than enough</em>. <strong>to</strong> does every other job — direction, and the start of a verb.</p>
+      <p class="exp-eg"><strong>two</strong>: "I have two pens." (the number)</p>
+      <p class="exp-eg"><strong>too</strong>: "It is too hot." · "I want some too." (very / also)</p>
+      <p class="exp-eg"><strong>to</strong>: "Walk to school." · "I like to read." (direction / verb)</p>
+      <p class="exp-intro"><strong>too</strong> has an extra <em>o</em> — think of it as having "too many" o's, just like it often means "too much".</p>`,
     kind: "grammar",
     number: 4,
     color: "orange",
@@ -581,6 +609,12 @@ const UNITS = [
   // ───────────────────────────── UNIT 5 (NEW) ─────────────────────────────
   {
     id: "u-thanthen",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro"><strong>than</strong> always compares two things. <strong>then</strong> is about time or order — what happens next. They are never interchangeable.</p>
+      <p class="exp-eg"><strong>than</strong>: "Taller than me." · "Better than ever." (comparing)</p>
+      <p class="exp-eg"><strong>then</strong>: "We ate, then we slept." · "Back then…" (time / next)</p>
+      <p class="exp-intro">Memory aid: th<strong>a</strong>n and comp<strong>a</strong>re share an <em>a</em>; th<strong>e</strong>n, wh<strong>e</strong>n and tim<strong>e</strong> share an <em>e</em>.</p>`,
     kind: "grammar",
     number: 5,
     color: "teal",
@@ -693,6 +727,12 @@ const UNITS = [
   // ───────────────────────── PUNCTUATION UNIT 1 ─────────────────────────
   {
     id: "u-endmarks",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">Every sentence must end with a mark. A statement <em>tells</em> and ends with a full stop. A question <em>asks</em> and ends with a question mark.</p>
+      <p class="exp-eg">Statement: "The bus is late." ( . )</p>
+      <p class="exp-eg">Question: "Is the bus late?" ( ? )</p>
+      <p class="exp-intro">Read your sentence aloud. If your voice rises at the end, as if you expect an answer, it is a question. If your voice falls and stops, it is a statement.</p>`,
     kind: "punctuation",
     number: 6,
     color: "blue",
@@ -775,6 +815,12 @@ const UNITS = [
   // ───────────────────────── PUNCTUATION UNIT 2 ─────────────────────────
   {
     id: "u-commas",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">A comma tells the reader to pause. Two everyday jobs: separating items in a list, and marking off an opening phrase before the main idea.</p>
+      <p class="exp-eg">List: "We bought rice, beans, and yam."</p>
+      <p class="exp-eg">Opening phrase: "After the rain, we played outside."</p>
+      <p class="exp-intro">A comma can change meaning completely. "Let's eat, Grandma" invites Grandma to eat; "Let's eat Grandma" is something else entirely!</p>`,
     kind: "punctuation",
     number: 7,
     color: "green",
@@ -854,6 +900,12 @@ const UNITS = [
   // ───────────────────────── PUNCTUATION UNIT 3 ─────────────────────────
   {
     id: "u-mixedpunct",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">Real writing mixes all three marks. Place the inside commas first to break the sentence into clear parts, then decide the ending mark last.</p>
+      <p class="exp-eg">"After lunch, we washed, dried, and stacked the plates."</p>
+      <p class="exp-eg">"Where did you put the keys, Tunde?"</p>
+      <p class="exp-intro">Work from the inside out: commas organise the middle of a sentence, while the full stop or question mark closes it.</p>`,
     kind: "punctuation",
     number: 8,
     color: "purple",
@@ -940,6 +992,12 @@ const UNITS = [
   // ───────────────────────── PUNCTUATION UNIT 4 (NEW) ─────────────────────────
   {
     id: "u-apostrophe",
+    teach: `
+      <h3 class="exp-heading">Dig a little deeper</h3>
+      <p class="exp-intro">The apostrophe has two jobs: it joins words into a contraction, and it shows that something belongs to someone. It never makes a word plural.</p>
+      <p class="exp-eg">Contraction: "do not" becomes "don't".</p>
+      <p class="exp-eg">Belonging: "the bag of Ada" becomes "Ada's bag".</p>
+      <p class="exp-intro">Watch out: "three mangoes" needs <em>no</em> apostrophe — it is just a plural, nothing is missing and nothing is owned.</p>`,
     kind: "punctuation",
     number: 9,
     color: "orange",

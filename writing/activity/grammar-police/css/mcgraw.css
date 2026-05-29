@@ -23,7 +23,9 @@
 .pc.gp-opener,
 .pc.gp-realworld,
 .pc.gp-checker,
-.pc.gp-video { padding: clamp(1.05rem, 3%, 1.5rem); }
+.pc.gp-lesson,
+.pc.pc--practice,
+.pc.gp-video { padding: clamp(0.9rem, 2.4%, 1.4rem); }
 
 /* Per-unit accent tokens */
 .gp-c-blue   { --gp-c: #0055ff; --gp-c-soft: rgba(0, 85, 255, 0.09); }
@@ -331,85 +333,6 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   COVER — Glencoe illustrated
-═══════════════════════════════════════════════════════════════════════════ */
-.gp-cover {
-  padding: clamp(1.1rem, 4%, 1.8rem) !important;
-  background: linear-gradient(165deg, #43c463 0%, #1f9c46 55%, #0f7a36 100%);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  isolation: isolate;
-}
-/* tone-on-tone concentric rings */
-.gp-cover__rings {
-  position: absolute;
-  top: -28%;
-  left: -18%;
-  width: 130%;
-  height: 90%;
-  z-index: -2;
-  background: repeating-radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.08) 0 14px, transparent 14px 30px);
-  opacity: 0.8;
-}
-/* blue→lime swoosh disc behind the title */
-.gp-cover__swoosh {
-  position: absolute;
-  top: 8%;
-  right: -25%;
-  width: 75%;
-  aspect-ratio: 1;
-  z-index: -1;
-  border-radius: 50%;
-  background: conic-gradient(from 200deg, #2a7dff, #16a04e 140deg, #2a7dff 320deg);
-  filter: blur(2px);
-  opacity: 0.55;
-}
-.gp-cover__masthead { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.1rem; }
-.gp-cover__edition { font-family: var(--gp-body); font-size: 0.56rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); }
-.gp-cover__brand { font-family: var(--gp-sans); font-size: 0.74rem; font-weight: 900; color: #fff; }
-.gp-cover__brand i { font-style: normal; color: #ffe500; }
-.gp-cover__titlewrap { display: flex; align-items: flex-start; justify-content: center; gap: 0.4rem; margin-top: 0.8rem; }
-.gp-cover__title { --g3-fill: #ffe500; --g3-edge: #0a3d00; font-size: clamp(2rem, 9.5vw, 3rem); text-align: center; text-transform: uppercase; margin: 0; }
-.gp-cover__grade {
-  font-family: var(--gp-sans); font-size: 0.6rem; font-weight: 900; color: #0f7a36;
-  background: #fff; border-radius: 6px; padding: 0.15rem 0.35rem; margin-top: 0.3rem;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
-}
-.gp-cover__sub { font-family: var(--gp-body); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; text-align: center; color: rgba(255, 255, 255, 0.92); margin: 0.25rem 0 0; }
-.gp-cover__scene {
-  position: relative;
-  flex: 1;
-  margin: 0.9rem 0;
-  border-radius: 14px;
-  overflow: visible;
-  min-height: 0;
-}
-.gp-cover__photo { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 26px -10px rgba(0, 0, 0, 0.55); }
-.gp-cover__photo img { width: 100%; height: 100%; object-fit: cover; }
-.gp-cover__photo-overlay {
-  position: absolute; inset: 0; border-radius: 14px;
-  background: linear-gradient(160deg, rgba(31, 156, 70, 0.25), rgba(10, 40, 10, 0.5));
-  mix-blend-mode: multiply;
-}
-.gp-cover__char {
-  position: absolute;
-  left: -2%;
-  bottom: 0;
-  width: 38%;
-  z-index: 3;
-}
-.gp-cover__footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.gp-cover__chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; }
-.gp-cover__chips li {
-  font-family: var(--gp-sans); font-size: 0.54rem; font-weight: 800; color: #0f5a2c;
-  background: #ffe500; padding: 0.2rem 0.5rem; border-radius: 20px;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
-}
-.gp-cover__vol { font-family: var(--gp-sans); font-size: 0.7rem; font-weight: 900; color: #fff; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3); }
-.gp-cover__hint { position: absolute; left: 0; right: 0; bottom: 0.4rem; text-align: center; font-family: var(--gp-body); font-size: 0.58rem; color: rgba(255, 255, 255, 0.55); }
-
-/* ════════════════════════════════════════════════════════════════════════
    CONTENTS (dotted leaders)
 ═══════════════════════════════════════════════════════════════════════════ */
 .gp-contents { display: flex; flex-direction: column; gap: 0.35rem; overflow: auto; }
@@ -522,21 +445,10 @@
 .gp-video__figure iframe { width: 100%; height: 100%; border: 0; display: block; }
 .gp-video__text { font-family: var(--gp-body); font-size: 0.7rem; line-height: 1.5; color: #555; margin: 0; }
 
-/* ════════════════════════════════════════════════════════════════════════
-   BACK COVER
-═══════════════════════════════════════════════════════════════════════════ */
-.gp-back { background: linear-gradient(165deg, #0f7a36, #0a0a0a) !important; display: flex; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; }
-.gp-back__rings { position: absolute; inset: 0; z-index: -1; background: repeating-radial-gradient(circle at 50% 20%, rgba(255,255,255,0.05) 0 12px, transparent 12px 26px); }
-.gp-back__inner { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; text-align: center; }
-.gp-back__char { width: 84px; }
-.gp-back__msg { --g3-fill: #ffe500; font-size: 1.15rem; line-height: 1.3; margin: 0; }
-.gp-back__cta { font-family: var(--gp-sans); font-size: 0.66rem; font-weight: 800; color: #0a0a0a; background: #ffe500; text-decoration: none; padding: 0.55rem 1rem; border-radius: 6px; box-shadow: 2px 2px 0 rgba(255, 255, 255, 0.25); }
-.gp-back__site { font-family: var(--gp-body); font-size: 0.62rem; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.08em; margin: 0; }
 
 /* ── Folder-tab restyle for lesson / practice headers ──────────────────── */
 .pc-exp-header, .pc-passage-header, .pc-practice-header { border-bottom-color: var(--gp-c, #0a0a0a) !important; }
 
 @media (max-width: 768px) {
   .gp-banner__title { font-size: 1.2rem; }
-  .gp-cover__char { width: 52%; }
 }

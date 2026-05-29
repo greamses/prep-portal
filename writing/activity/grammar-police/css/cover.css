@@ -1,0 +1,126 @@
+/* ===========================================================================
+   COVER COMPONENT styling - all sizes in container-query units (cqw/cqh) so
+   the SAME markup scales: full-size in the flipbook, thumbnail on the shelf.
+   Pairs with js/ui/cover.js. Loaded after mcgraw*.css.
+=========================================================================== */
+
+.pc.gp-cover,
+.pc.gp-back {
+  padding: 0 !important;
+  position: relative;
+  overflow: hidden;
+  background: #0a1230;
+  container-type: size;
+  container-name: cv;
+  isolation: isolate;
+}
+
+/* ── Full-bleed cartoon art ───────────────────────────────────────────── */
+.gp-cover__art { position: absolute; inset: 0; z-index: 0; }
+.gp-cover__scene-svg { width: 100%; height: 100%; display: block; }
+.gp-cover__photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gp-cover__art--dim { filter: saturate(0.65) brightness(0.6); }
+
+/* gradient + blend overlay so text reads on any art */
+.gp-cover__overlay {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(8,12,38,0.45) 0%, rgba(8,12,38,0) 26%, rgba(8,12,38,0) 50%, rgba(6,8,26,0.88) 100%),
+    radial-gradient(120% 60% at 50% 116%, rgba(0,40,120,0.6), transparent 60%);
+  mix-blend-mode: multiply;
+}
+.gp-cover__overlay--back { background: linear-gradient(180deg, rgba(6,8,26,0.7), rgba(6,8,26,0.92)); }
+
+/* the cartoon character breaking out near the foot */
+.gp-cover__char {
+  position: absolute; z-index: 2; left: 50%; bottom: 16cqh;
+  width: 40cqw; transform: translateX(-50%);
+  filter: drop-shadow(0.8cqw 1.2cqw 1cqw rgba(0,0,0,0.45));
+}
+
+/* ── Spiral binding ───────────────────────────────────────────────────── */
+.gp-spiral { position: absolute; top: 0; bottom: 0; left: 0; width: 11cqw; z-index: 6; pointer-events: none; }
+.gp-spiral::before {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 52%;
+  background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,0.32));
+}
+.gp-spiral span {
+  position: absolute; top: -1cqh; bottom: -1cqh; left: 7%; width: 80%;
+  background: repeating-linear-gradient(155deg,
+    rgba(0,0,0,0) 0 1.5cqw,
+    #5f636b 1.5cqw 2cqw,
+    #eef1f5 2cqw 2.7cqw,
+    #9aa0a8 2.7cqw 3.2cqw,
+    rgba(0,0,0,0) 3.2cqw 4.9cqw);
+  filter: drop-shadow(0.5cqw 0.25cqw 0.35cqw rgba(0,0,0,0.5));
+}
+.gp-spiral--right { left: auto; right: 0; transform: scaleX(-1); }
+
+/* ── Content layer ────────────────────────────────────────────────────── */
+.gp-cover__content,
+.gp-back__content {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6cqh 8cqw 5cqh 13cqw;
+  text-align: center;
+}
+.gp-cover__edition {
+  font-family: var(--gp-body, monospace); font-weight: 700;
+  font-size: 2.6cqw; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(255,255,255,0.92); text-shadow: 0 0.3cqw 1cqw rgba(0,0,0,0.5);
+}
+
+/* title sits over a halftone pattern backdrop */
+.gp-cover__titlebox { position: relative; margin-top: 4cqh; padding: 2cqh 1cqw; }
+.gp-cover__halftone {
+  position: absolute; inset: -2cqh -2cqw; z-index: -1;
+  background-image: radial-gradient(rgba(255,255,255,0.35) 22%, transparent 24%);
+  background-size: 3.2cqw 3.2cqw;
+  opacity: 0.4;
+  -webkit-mask: radial-gradient(75% 75% at 50% 45%, #000 55%, transparent 100%);
+  mask: radial-gradient(75% 75% at 50% 45%, #000 55%, transparent 100%);
+}
+.gp-cover__title {
+  --g3-fill: #ffe500; --g3-edge: #0a2e07;
+  font-size: 13.2cqw; line-height: 0.92; text-transform: uppercase; margin: 0;
+  overflow-wrap: break-word;
+}
+.gp-cover__sub {
+  display: block; margin-top: 2.5cqh;
+  font-family: var(--gp-body, monospace); font-weight: 700;
+  font-size: 2.8cqw; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #fff; text-shadow: 0 0.3cqw 0.8cqw rgba(0,0,0,0.6);
+}
+
+/* logo + name BELOW */
+.gp-cover__brandrow {
+  margin-top: auto;
+  display: flex; align-items: center; justify-content: center; gap: 2.4cqw;
+}
+.gp-cover__logo { width: 9cqw; height: 9cqw; filter: drop-shadow(0 0.4cqw 0.8cqw rgba(0,0,0,0.5)); }
+.gp-cover__brand {
+  font-family: var(--gp-sans, sans-serif); font-weight: 900;
+  font-size: 4.4cqw; color: #fff; letter-spacing: -0.01em;
+  text-shadow: 0 0.3cqw 1cqw rgba(0,0,0,0.55);
+}
+.gp-cover__vol {
+  position: absolute; z-index: 5; right: 5cqw; bottom: 4cqh;
+  font-family: var(--gp-sans, sans-serif); font-weight: 900; font-size: 3.4cqw;
+  color: #ffe500; text-shadow: 0 0.3cqw 0.8cqw rgba(0,0,0,0.6);
+}
+
+/* ── Back cover ───────────────────────────────────────────────────────── */
+.gp-back__content { justify-content: center; gap: 4cqh; }
+.gp-back__msg {
+  --g3-fill: #ffe500; --g3-edge: #0a2e07;
+  font-size: 9cqw; line-height: 1.15; margin: 0; text-align: center;
+}
+.gp-back__cta {
+  font-family: var(--gp-sans, sans-serif); font-weight: 800; font-size: 3.2cqw;
+  color: #0a0a0a; background: #ffe500; text-decoration: none;
+  padding: 2cqh 4cqw; border-radius: 2cqw; box-shadow: 0.5cqw 0.5cqw 0 rgba(255,255,255,0.25);
+}
+.gp-back__content .gp-cover__brandrow { margin-top: 0; }
+
+/* Shelf thumbnail: the same component inside the small cover box */
+.shelf-book-cover .pc.gp-cover { width: 100%; height: 100%; border-radius: inherit; }

@@ -1,0 +1,259 @@
+/* ===========================================================================
+   v3 IMPROVEMENTS — two-column lessons, tiny corner asides, per-topic video,
+   multicolour highlighter dropdown, smaller type. Loaded LAST so it wins.
+=========================================================================== */
+
+/* ── No border radius anywhere in the activity (sharp textbook edges) ──── */
+.gp-landing, .gp-landing *,
+.gp-modal, .gp-modal *,
+.pp-select-menu, .pp-select-menu *,
+.pp-drag-ghost { border-radius: 0 !important; }
+
+/* ── Smaller, denser type across the book ─────────────────────────────── */
+.book-para { font-size: 0.62rem !important; line-height: 1.85 !important; }
+.exp-heading { font-size: 0.82rem !important; }
+.exp-intro, .exp-eg, .exp-eq, .exp-step, .exp-qt-row, .exp-trick-desc,
+.exp-secret-body, .exp-rule-summary, .exp-test-row, .exp-reminder p { font-size: 0.6rem !important; line-height: 1.45 !important; }
+.exp-word { font-size: 0.8rem !important; }
+.exp-word--punct { font-size: 1rem !important; }
+
+/* ── LESSON: two real columns, content flowed to fill before next page ── */
+.pc.gp-lesson { display: flex; flex-direction: column; }
+.gp-lesson__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem; margin-bottom: 0.6rem; flex-shrink: 0;
+}
+.gp-lesson__tab {
+  font-family: var(--gp-sans); font-size: 0.56rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em; color: #fff;
+  padding: 0.26rem 0.6rem; border-radius: 6px;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.25), transparent 60%);
+}
+.gp-lesson__focus { font-family: var(--gp-body); font-size: 0.58rem; font-weight: 700; color: var(--gp-c); }
+.gp-cols { flex: 1; min-height: 0; display: flex; gap: 1.1rem; }
+.gp-col { flex: 1 1 0; min-width: 0; height: 100%; overflow: hidden; }
+.gp-col:first-child { border-right: 1.5px dotted #d9d2c2; padding-right: 1.1rem; }
+.gp-col > * { margin-bottom: 0.6rem !important; }
+.gp-col > *:last-child { margin-bottom: 0 !important; }
+
+/* ── TINY CORNER ASIDES (boxed callouts) ──────────────────────────────── */
+.gp-mini {
+  border: 1.5px solid var(--gp-c, #0055ff);
+  border-radius: 8px;
+  background: var(--gp-c-soft, rgba(0,85,255,0.08));
+  padding: 0.4rem 0.5rem;
+  break-inside: avoid;
+}
+.gp-mini__title {
+  display: flex; align-items: center;
+  font-family: var(--gp-sans); font-size: 0.55rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem;
+}
+.gp-mini__title .gp-ico { width: 0.95em; height: 0.95em; }
+.gp-mini__body, .gp-mini__body p, .gp-mini__body li, .gp-mini__body dd {
+  font-family: var(--gp-body); font-size: 0.56rem; line-height: 1.4; color: #444; margin: 0;
+}
+.gp-mini__body ol { margin: 0; padding-left: 0.9rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.gp-mini__body dl { display: flex; flex-direction: column; gap: 0.2rem; }
+.gp-mini__body dt { font-family: var(--gp-sans); font-size: 0.58rem; font-weight: 700; color: var(--gp-ink); }
+.gp-mini--idea  { --gp-c: #d11f06; --gp-c-soft: rgba(209,31,6,0.07); }
+.gp-mini--idea .gp-mini__title  { color: #d11f06; }
+.gp-mini--vocab { --gp-c: #128a4b; --gp-c-soft: rgba(18,138,75,0.08); }
+.gp-mini--vocab .gp-mini__title { color: #128a4b; }
+.gp-mini--tip   { --gp-c: #e0760a; --gp-c-soft: rgba(224,118,10,0.09); }
+.gp-mini--tip .gp-mini__title   { color: #c25f00; }
+.gp-mini--hot   { --gp-c: #7c3aed; --gp-c-soft: rgba(124,58,237,0.08); }
+.gp-mini--hot .gp-mini__title   { color: #7c3aed; }
+
+/* ── OPENER: banner + video + two corner minis ────────────────────────── */
+.pc.gp-opener { display: flex; flex-direction: column; gap: 0.7rem; }
+.gp-opener__corners { margin-top: auto; display: flex; gap: 0.6rem; align-items: stretch; }
+.gp-opener__corners .gp-mini { flex: 1; }
+
+/* ── PER-TOPIC LEARNING VIDEO CARD ────────────────────────────────────── */
+.gp-tvid {
+  border: 1.5px solid rgba(0,0,0,0.12); border-radius: 10px;
+  background: #fffdf7; padding: 0.6rem 0.7rem;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.08);
+}
+.gp-tvid__label { display: flex; align-items: center; font-family: var(--gp-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--gp-c, #0055ff); margin-bottom: 0.4rem; }
+.gp-tvid__label .gp-ico { width: 1em; height: 1em; }
+.gp-tvid__stage {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  border-radius: 8px; overflow: hidden; background: #14130f;
+  display: flex; align-items: center; justify-content: center;
+}
+.gp-tvid__btn {
+  appearance: none; border: 0; cursor: pointer;
+  font-family: var(--gp-sans); font-size: 0.66rem; font-weight: 800;
+  color: #14130f; background: #ffe500; padding: 0.5rem 0.9rem; border-radius: 8px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+}
+.gp-tvid__btn:hover { transform: translateY(-1px); }
+.gp-tvid__hint { font-family: var(--gp-body); font-size: 0.54rem; color: #999; margin: 0.35rem 0 0; }
+.gp-tvid__loading { color: #fff; font-family: var(--gp-body); font-size: 0.62rem; display: flex; align-items: center; gap: 0.5rem; }
+.gp-tvid__spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: gp-spin 0.8s linear infinite; }
+@keyframes gp-spin { to { transform: rotate(360deg); } }
+.gp-tvid__poster { position: absolute; inset: 0; cursor: pointer; }
+.gp-tvid__poster img { width: 100%; height: 100%; object-fit: cover; }
+.gp-tvid__poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.65), transparent 55%); }
+.gp-tvid__play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.92); display: grid; place-items: center; z-index: 2; }
+.gp-tvid__play svg { width: 20px; height: 20px; margin-left: 3px; fill: #14130f; }
+.gp-tvid__cap { position: absolute; left: 0.5rem; right: 0.5rem; bottom: 0.4rem; z-index: 2; font-family: var(--gp-body); font-size: 0.56rem; color: #fff; }
+.gp-vid-frame { width: 100%; height: 100%; border: 0; }
+.gp-tvid__searchlink { color: #ffe500; font-family: var(--gp-body); font-size: 0.62rem; font-weight: 700; text-decoration: none; padding: 0.5rem; text-align: center; }
+.gp-tvid__err { color: #fff; font-family: var(--gp-body); font-size: 0.6rem; }
+
+/* ── REAL-WORLD block (flows inside a lesson column) ──────────────────── */
+.gp-rw {
+  position: relative; margin: 0.3rem 0 0;
+  border: 1.5px solid rgba(0,0,0,0.12); border-radius: 9px;
+  background: #fff; box-shadow: 2px 2px 0 rgba(0,0,0,0.08);
+  padding: 0.9rem 0.5rem 0.55rem; break-inside: avoid;
+}
+.gp-rw__tab {
+  position: absolute; top: -0.6rem; left: 0.5rem;
+  display: inline-flex; align-items: center;
+  font-family: var(--gp-sans); font-size: 0.5rem; font-weight: 800; text-transform: uppercase;
+  color: #fff; background: linear-gradient(180deg, #2bbd6e, #0f8243);
+  padding: 0.22rem 0.55rem; border-radius: 6px 6px 0 0; box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+}
+.gp-rw__tab .gp-ico { width: 0.9em; height: 0.9em; }
+.gp-rw__photo { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 16/9; }
+.gp-rw__photo img { width: 100%; height: 100%; object-fit: cover; }
+.gp-rw__photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7)), linear-gradient(120deg, var(--gp-c), transparent 60%); mix-blend-mode: multiply; }
+.gp-rw__cap { position: absolute; left: 0.4rem; right: 0.4rem; bottom: 0.3rem; z-index: 2; font-family: var(--gp-sans); font-size: 0.62rem; font-weight: 900; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,0.6); }
+.gp-rw__body { font-family: var(--gp-body); font-size: 0.56rem; line-height: 1.45; color: #444; margin-top: 0.45rem; }
+
+/* ── PRACTICE flow ────────────────────────────────────────────────────── */
+.pc.pc--practice { display: flex; flex-direction: column; }
+.pc--practice .pc-practice-header { flex-shrink: 0; }
+.gp-flow { flex: 1; min-height: 0; overflow: hidden; }
+.gp-flow .pp-items { margin: 0; }
+
+/* ── MULTICOLOUR HIGHLIGHTER DROPDOWN (render.css .ln-h1 em style) ─────── */
+.gp-blank.gp-hl { min-width: 0 !important; }
+.gp-blank.gp-hl .pp-select-trigger {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: var(--hl, #ffe500) !important;
+  color: #14130f !important;
+  padding: 0.05em 0.4em !important;
+  border-radius: 0.35em !important;
+  font-family: var(--gp-body) !important;
+  font-weight: 700 !important;
+  font-size: 0.62rem !important;
+  gap: 0.25em !important;
+}
+.gp-blank.gp-hl .pp-select-trigger:hover { filter: brightness(0.96); transform: none !important; }
+.gp-blank.gp-hl .pp-select-chevron { color: rgba(0,0,0,0.5); }
+.gp-hl--blue   { --hl: #8ecbff; }
+.gp-hl--green  { --hl: #a8e6a1; }
+.gp-hl--purple { --hl: #d3b6ff; }
+.gp-hl--pink   { --hl: #ffb3d1; }
+.gp-hl--orange { --hl: #ffcf8e; }
+.gp-hl--teal   { --hl: #93e3df; }
+
+/* small, colourful menu (override select.css full-width) */
+.pp-select-menu { width: max-content !important; max-width: 240px !important; right: auto !important; min-width: 84px !important; padding: 0.3rem !important; }
+.pp-select-menu .pp-select-item { font-size: 0.66rem !important; padding: 0.32rem 0.6rem !important; border-radius: 6px; }
+.pp-select-menu .pp-select-item:nth-child(3n+1):hover,
+.pp-select-menu .pp-select-item:nth-child(3n+1).active { background: #2a7dff; color: #fff; }
+.pp-select-menu .pp-select-item:nth-child(3n+2):hover,
+.pp-select-menu .pp-select-item:nth-child(3n+2).active { background: #18a558; color: #fff; }
+.pp-select-menu .pp-select-item:nth-child(3n+3):hover,
+.pp-select-menu .pp-select-item:nth-child(3n+3).active { background: #e0760a; color: #fff; }
+
+/* correct / wrong state over the highlighter */
+.gp-blank--correct.gp-hl .pp-select-trigger { background: #1a7f37 !important; color: #fff !important; }
+.gp-blank--wrong.gp-hl .pp-select-trigger { background: #cc2200 !important; color: #fff !important; }
+.gp-blank--unfilled.gp-hl .pp-select-trigger { outline: 2px dashed #e67e00; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ENTRY PAGE + SHELF — book name ABOVE, cover mirrors the real book cover
+══════════════════════════════════════════════════════════════════════════ */
+.gp-landing { background: radial-gradient(circle at 50% 0%, #f4faf4, var(--surface-primary) 60%); }
+.shelf-header { margin-bottom: 2.5rem; }
+.shelf-eyebrow { color: #128a4b; font-weight: 700; }
+.shelf-title { letter-spacing: -0.03em; }
+
+/* label now sits ABOVE the book */
+.shelf-book { gap: 0; }
+.shelf-book .shelf-book-label {
+  order: -1;
+  margin: 0 0 0.6rem;
+  font-family: "Unbounded", var(--font-display), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.shelf-book--empty .shelf-book-label { color: var(--text-tertiary); font-weight: 700; }
+
+/* The Grammar Police book uses the real cover component (cover.css), rendered
+   into #shelfCoverMount by main.js — no bespoke shelf-cover styles needed. */
+
+/* Empty slots: align dashed cover under the label */
+.shelf-book--empty .shelf-book-cover--empty { margin-top: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LESSON two-column content + aside row (deterministic, tall pages)
+══════════════════════════════════════════════════════════════════════════ */
+.gp-lesson__head + .gp-cols2 { margin-top: 0; }
+.gp-cols2 {
+  flex: 1; min-height: 0; overflow: hidden;
+  column-count: 2; column-gap: 1.1rem;
+  column-fill: auto; /* fill column 1 top-to-bottom, then column 2 */
+  column-rule: 1.5px dotted #d9d2c2;
+}
+.gp-cols2 > * { break-inside: avoid; margin-bottom: 0.55rem !important; }
+.gp-cols2 > *:first-child { margin-top: 0 !important; }
+
+.gp-aside-row { display: flex; gap: 0.55rem; margin-top: 0.6rem; flex-shrink: 0; align-items: stretch; }
+.gp-aside-row .gp-mini { flex: 1; display: flex; flex-direction: column; }
+
+/* Real-World mini (has a photo) */
+.gp-mini--rw { --gp-c: #128a4b; --gp-c-soft: rgba(18,138,75,0.07); }
+.gp-mini--rw .gp-mini__title { color: #128a4b; }
+.gp-mini--rw .gp-rw__photo {
+  position: relative; border-radius: 6px; overflow: hidden;
+  aspect-ratio: 16/9; margin: 0.2rem 0 0.3rem;
+}
+.gp-mini--rw .gp-rw__photo img { width: 100%; height: 100%; object-fit: cover; }
+.gp-mini--rw .gp-rw__photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7)); }
+.gp-mini--rw .gp-rw__cap { position: absolute; left: 0.35rem; right: 0.35rem; bottom: 0.25rem; z-index: 2; font-family: var(--gp-sans); font-size: 0.55rem; font-weight: 900; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v5 — practice in two columns, content-width buttons/pool, H.O.T. note
+══════════════════════════════════════════════════════════════════════════ */
+/* Practice pages flow in two columns, top-to-down */
+.pc.pc--passage, .pc.pc--practice { display: flex; flex-direction: column; }
+.pc--passage .pc-passage-body,
+.pc--practice .pp-items {
+  flex: 1; min-height: 0;
+  display: block;          /* override book CSS flex so CSS columns work */
+  column-count: 2; column-gap: 1.1rem; column-fill: balance;
+  column-rule: 1.5px dotted #d9d2c2;
+}
+.pc-passage-body > .book-para,
+.pp-items > .pp-item { break-inside: avoid; }
+.pp-items > .pp-item { margin-bottom: 0.5rem; }
+
+/* Buttons + drag pool: as wide as their content (so they sit in the layout) */
+.pc-btn { width: auto !important; flex: 0 0 auto; }
+.pc-check-actions { justify-content: flex-start; flex-wrap: wrap; }
+.pp-pool-strip { width: fit-content; max-width: 100%; flex-shrink: 0; }
+.pc-check-section { flex-shrink: 0; }
+
+/* H.O.T. Problems — absolute note pinned bottom-right of the lesson page */
+.pc.gp-lesson--right { position: relative; }
+.gp-hotnote {
+  position: absolute; right: 3.5%; bottom: 3.5%; z-index: 5;
+  width: 42%; max-width: 15rem;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1.5px dashed rgba(124, 58, 237, 0.5);
+  padding: 0.45rem 0.6rem;
+}
+.gp-hotnote__title { font-family: var(--gp-sans); font-size: 0.56rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; color: #7c3aed; margin: 0 0 0.25rem; }
+.gp-hotnote ol { margin: 0; padding-left: 0.95rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.gp-hotnote li { font-family: var(--gp-body); font-size: 0.55rem; line-height: 1.4; color: #4a3a6b; }

@@ -1,109 +1,95 @@
-// ════════════════════════════════════════════════════════════════════════
-// PAGE BUILDER — editorial, McGraw-Hill / Glencoe–style flipbook.
-// Consumes the unified book model (state.book, loaded from /api/grammar/book)
-// and renders, per unit: a colour-banded chapter opener (Main Idea + Key
-// Vocabulary + guide mascot), a Real-World Link photo card with a Study Tip,
-// the two-page lesson, the two-page practice (with an H.O.T. Problems box),
-// plus a closing AI "Check My Writing" tool and a feature video.
-// All grammar/punctuation INTERACTIONS are unchanged — they are wired by
-// grammar.js / punctuation.js exactly as before.
-// ════════════════════════════════════════════════════════════════════════
+// ============================================================================
+// PAGE BUILDER - McGraw-Hill / Glencoe editorial flipbook.
+//
+// Sizing: StPageFlip "stretch" + usePortrait shows a two-page spread on wide
+// screens and a single page on small screens, capped to ~96% of the viewport
+// height (set in initPageFlip). Lesson content uses CSS two-column layout in
+// tall pages so a page holds plenty before the spread turns.
+//
+// Each unit (topic) carries a Gemini-powered "Watch a lesson video" card; a
+// page-flip stops any playing video, and clicks inside a video never flip.
+// ============================================================================
 
 import { state } from "../utils/state.js";
 import { playFlipSound } from "../utils/audio.js";
 import { renderParas, updateProgress } from "./grammar.js";
 import { buildSentences, buildToken, updatePPProgress } from "./punctuation.js";
-import { initMascot, heroCharacter, spotIcon, mascotName } from "./mascot.js";
-import { photo, fetchFeaturedVideo } from "../data/assets.js";
+import { photo } from "../data/assets.js";
+import { wireTopicVideo, stopAllVideos } from "./video.js";
+import { frontCoverInner, backCoverInner } from "./cover.js";
 
-// ── Helpers ───────────────────────────────────────────────────
+let PAGE = { w: 600, h: 860 };
+function computePageSize() {
+  const h = Math.round(window.innerHeight * 0.96);
+  PAGE = { w: Math.round(h * 0.7), h };
+  return PAGE;
+}
+
+// ── DOM helpers ──────────────────────────────────────────────────────────────
 function makePage(extraClass = "", density = null) {
   const div = document.createElement("div");
   div.className = `page${extraClass ? " " + extraClass : ""}`;
   if (density) div.dataset.density = density;
   return div;
 }
+function htmlPage(markup, density = null) {
+  const p = makePage("", density);
+  p.innerHTML = markup;
+  return p;
+}
+const sideTab = (label, color = "blue") => `<span class="gp-tab gp-tab--${color}">${label}</span>`;
 
-function html(el, markup) {
-  el.innerHTML = markup;
-  return el;
+// ── Tiny corner asides ───────────────────────────────────────────────────────
+const asideMini = (kind, title, bodyHTML, icon) => `
+  <aside class="gp-mini gp-mini--${kind}">
+    <p class="gp-mini__title">${title}</p>
+    <div class="gp-mini__body">${bodyHTML}</div>
+  </aside>`;
+const mainIdeaMini = (t) => asideMini("idea", "Main Idea", `<p>${t}</p>`, "idea");
+const studyTipMini = (t) => asideMini("tip", "Study Tip", `<p>${t}</p>`, "pencil");
+const vocabMini = (items = []) =>
+  asideMini("vocab", "Key Vocabulary", `<dl class="gp-vocab">${items.map((v) => `<div><dt>${v.term}</dt><dd>${v.def}</dd></div>`).join("")}</dl>`, "books");
+const hotMini = (items = []) =>
+  asideMini("hot", "H.O.T. Problems", `<ol>${items.map((q) => `<li>${q}</li>`).join("")}</ol>`, "rocket");
+// H.O.T. as an absolute note pinned bottom-right of the page (not in the flow).
+const hotNote = (items = []) =>
+  !items.length ? "" : `
+  <aside class="gp-hotnote">
+    <p class="gp-hotnote__title">H.O.T. Problems</p>
+    <ol>${items.map((q) => `<li>${q}</li>`).join("")}</ol>
+  </aside>`;
+const realWorldMini = (unit) => {
+  const rw = unit.realWorld || {};
+  return `
+    <aside class="gp-mini gp-mini--rw">
+      <p class="gp-mini__title">Real-World Link</p>
+      <div class="gp-rw__photo">${photo(rw.image, rw.title || "", { w: 420, seed: unit.id })}<span class="gp-rw__cap">${rw.title || ""}</span></div>
+      <div class="gp-mini__body"><p>${rw.text || ""}</p></div>
+    </aside>`;
+};
+
+// ── Per-topic learning video card ────────────────────────────────────────────
+function videoCard(unit) {
+  const topic = `${unit.title} (${unit.focus})`.replace(/"/g, "&quot;");
+  return `
+    <div class="gp-tvid" data-gp-topic-video data-topic="${topic}">
+      <p class="gp-tvid__label">Learning Video</p>
+      <div class="gp-tvid__stage">
+        <button type="button" class="gp-tvid__btn" data-gp-vid-play>Watch a lesson video</button>
+      </div>
+      <p class="gp-tvid__hint">Found for you with AI - tap to load.</p>
+    </div>`;
 }
 
-const sideTab = (label, color = "blue") =>
-  `<span class="gp-tab gp-tab--${color}">${label}</span>`;
-
-const mainIdea = (text) => `
-  <aside class="gp-side gp-side--idea">
-    <p class="gp-side__title">${spotIcon("idea")} Main <em>Idea</em></p>
-    <p class="gp-side__text">${text}</p>
-  </aside>`;
-
-const vocabBox = (items = []) => `
-  <aside class="gp-side gp-side--vocab">
-    <p class="gp-side__title">${spotIcon("books")} Key Vocabulary</p>
-    <dl class="gp-vocab">
-      ${items.map((v) => `<div><dt>${v.term}</dt><dd>${v.def}</dd></div>`).join("")}
-    </dl>
-  </aside>`;
-
-const studyTip = (text) => `
-  <aside class="gp-side gp-side--tip">
-    <p class="gp-side__title gp-side__title--torn">${spotIcon("pencil")} Study Tip</p>
-    <p class="gp-side__text">${text}</p>
-  </aside>`;
-
-const hotBox = (items = []) => `
-  <aside class="gp-hot">
-    <p class="gp-hot__title">${spotIcon("rocket")} H.O.T. Problems <span>Higher-Order Thinking</span></p>
-    <ol class="gp-hot__list">${items.map((q) => `<li>${q}</li>`).join("")}</ol>
-    <p class="gp-hot__note">Try these in your notebook.</p>
-  </aside>`;
-
-// ── Front cover — Glencoe / McGraw-Hill illustrated style ─────
+// ── Front cover (reusable component, see cover.js) ───────────────────────────
 function makeCoverPage(book) {
-  const m = book.meta;
-  const g = book.units.filter((u) => u.kind === "grammar").length;
-  const p = book.units.filter((u) => u.kind === "punctuation").length;
-  const page = makePage("", "hard");
-  return html(
-    page,
-    `<div class="pc gp-cover">
-      <div class="gp-cover__rings" aria-hidden="true"></div>
-      <div class="gp-cover__swoosh" aria-hidden="true"></div>
-      <header class="gp-cover__masthead">
-        <span class="gp-cover__edition">Student Edition</span>
-        <span class="gp-cover__brand">Prep&nbsp;Portal&nbsp;<i>English</i></span>
-      </header>
-
-      <div class="gp-cover__titlewrap">
-        <h1 class="gp-cover__title gp-3d">${m.title}</h1>
-        <span class="gp-cover__grade">5–9</span>
-      </div>
-      <p class="gp-cover__sub">${m.subtitle}</p>
-
-      <div class="gp-cover__scene">
-        <div class="gp-cover__photo">${photo(book.media.cover, "", { w: 1000, seed: "gp-cover" })}</div>
-        <div class="gp-cover__photo-overlay"></div>
-        ${heroCharacter("detective", { tag: "", cls: "gp-cover__char" })}
-      </div>
-
-      <footer class="gp-cover__footer">
-        <ul class="gp-cover__chips">
-          <li>${g} Grammar</li><li>${p} Punctuation</li><li>AI Checker</li>
-        </ul>
-        <span class="gp-cover__vol">Vol. 1</span>
-      </footer>
-      <span class="gp-cover__hint">Open to begin &rarr;</span>
-    </div>`
-  );
+  return htmlPage(`<div class="pc gp-cover">${frontCoverInner(book)}</div>`, "hard");
 }
 
-// ── Contents (dotted-leader TOC with page numbers) ────────────
+// ── Contents ─────────────────────────────────────────────────────────────────
 function makeContentsPage(book) {
-  const grammar = [];
-  const punct = [];
+  const grammar = [], punct = [];
   book.units.forEach((u, i) => (u.kind === "grammar" ? grammar : punct).push([u, i]));
-
   const row = ([u, i]) => `
     <li class="gp-toc__item" data-goto-unit="${i}">
       <span class="gp-toc__num">${String(u.number).padStart(2, "0")}</span>
@@ -111,295 +97,171 @@ function makeContentsPage(book) {
       <span class="gp-toc__dots"></span>
       <span class="gp-toc__page">${(state.UNIT_START_PAGE[i] ?? 0) + 1}</span>
     </li>`;
-
-  const section = (label, rows) => `
-    <p class="gp-toc__section">${label}</p>
-    <ul class="gp-toc__list">${rows.map(row).join("")}</ul>`;
-
-  const page = makePage();
-  return html(
-    page,
+  const section = (label, rows) => `<p class="gp-toc__section">${label}</p><ul class="gp-toc__list">${rows.map(row).join("")}</ul>`;
+  return htmlPage(
     `<div class="pc gp-contents">
       ${sideTab("Contents", "blue")}
-      <header class="gp-contents__head">
-        <span class="gp-kicker">Field Manual</span>
-        <h2>Table of Contents</h2>
-      </header>
+      <header class="gp-contents__head"><span class="gp-kicker">Field Manual</span><h2>Table of Contents</h2></header>
       ${section("Grammar Police", grammar)}
       ${section("Punctuation Patrol", punct)}
-      <li class="gp-toc__item gp-toc__item--special" data-goto-checker>
-        <span class="gp-toc__num">★</span>
-        <span class="gp-toc__title">Check My Writing — AI tool</span>
-        <span class="gp-toc__dots"></span>
-        <span class="gp-toc__page">${(state.CHECKER_PAGE ?? 0) + 1}</span>
-      </li>
+      <ul class="gp-toc__list"><li class="gp-toc__item gp-toc__item--special" data-goto-checker>
+        <span class="gp-toc__num">AI</span><span class="gp-toc__title">Check My Writing - AI tool</span>
+        <span class="gp-toc__dots"></span><span class="gp-toc__page">${(state.CHECKER_PAGE ?? 0) + 1}</span>
+      </li></ul>
       <p class="gp-contents__tip">Tap any title to jump straight there.</p>
     </div>`
   );
 }
 
-// ── How this book works ───────────────────────────────────────
+// ── How this book works ──────────────────────────────────────────────────────
 function makeHowToPage() {
   const steps = [
-    ["Read the lesson", "Each unit opens with the Main Idea, Key Vocabulary and a friendly explanation from your guide."],
+    ["Read & watch", "Each unit opens with the Main Idea, Key Vocabulary and a Learning Video found for you by AI."],
     ["Use the trick", "Try the Detective's Trick to decide which word or mark fits before you practise."],
-    ["Do the activity", "Grammar: tap a blank and choose. Punctuation: drag a mark from the strip into the sentence."],
+    ["Do the activity", "Grammar: tap a blank and choose. Punctuation: drag a mark into the sentence."],
     ["Check & learn", "Press Check for an instant score, review the Study Tip, then beat your best."],
   ];
-  const page = makePage();
-  return html(
-    page,
+  return htmlPage(
     `<div class="pc gp-howto-page">
       ${sideTab("Start Here", "green")}
-      <header class="gp-howto-page__head">
-        <span class="gp-kicker">Before you begin</span>
-        <h2>How this book works</h2>
-      </header>
+      <header class="gp-howto-page__head"><span class="gp-kicker">Before you begin</span><h2>How this book works</h2></header>
       <ol class="gp-howto">
-        ${steps.map(([t, d], i) => `
-          <li class="gp-howto__step">
-            <span class="gp-howto__num">${i + 1}</span>
-            <div><strong>${t}</strong><p>${d}</p></div>
-          </li>`).join("")}
+        ${steps.map(([t, d], i) => `<li class="gp-howto__step"><span class="gp-howto__num">${i + 1}</span><div><strong>${t}</strong><p>${d}</p></div></li>`).join("")}
       </ol>
-      <aside class="gp-howto-note">
-        ${spotIcon("magnifier", "gp-howto-note__ico")}
-        <p>New! Finish with the <strong>Check&nbsp;My&nbsp;Writing</strong> AI tool — paste your own work and ${mascotName()} marks it instantly.</p>
-      </aside>
+      <aside class="gp-howto-note"><p>Finish with the <strong>Check&nbsp;My&nbsp;Writing</strong> AI tool - paste your own work and the checker marks it instantly.</p></aside>
     </div>`
   );
 }
 
-// ── Chapter opener (banner + Main Idea + Key Vocab + mascot) ───
+// ── Chapter opener (banner + video + tiny corner asides) ─────────────────────
 function makeOpenerPage(unit) {
-  const page = makePage();
-  return html(
-    page,
+  return htmlPage(
     `<div class="pc gp-opener gp-c-${unit.color}">
       ${sideTab(`Unit ${unit.number}`, unit.color)}
       <header class="gp-banner gp-banner--${unit.color}">
         <span class="gp-banner__tech" aria-hidden="true"></span>
-        <span class="gp-banner__chapter">Unit ${unit.number} · ${unit.kind === "grammar" ? "Grammar Police" : "Punctuation Patrol"}</span>
+        <span class="gp-banner__chapter">Unit ${unit.number} &middot; ${unit.kind === "grammar" ? "Grammar Police" : "Punctuation Patrol"}</span>
         <h2 class="gp-banner__title gp-3d gp-3d--${unit.color}">${unit.title}</h2>
         <span class="gp-banner__focus">${unit.focus}</span>
       </header>
-      <div class="gp-cream gp-opener__body">
-        ${mainIdea(unit.mainIdea)}
-        ${vocabBox(unit.keyVocab)}
-      </div>
+      ${videoCard(unit)}
+      <div class="gp-opener__corners">${mainIdeaMini(unit.mainIdea)}${vocabMini(unit.keyVocab)}</div>
     </div>`
   );
 }
 
-// ── Real-World Link folder card + Study Tip ───────────────────
-function makeRealWorldPage(unit) {
-  const rw = unit.realWorld || {};
-  const page = makePage();
-  return html(
-    page,
-    `<div class="pc gp-realworld gp-c-${unit.color}">
-      <header class="gp-realworld__head">
-        <span class="gp-realworld__ico">${spotIcon("target")}</span>
-        <div><span class="gp-kicker">Unit ${unit.number}</span><h3>Real-World <em>Link</em></h3></div>
-      </header>
-      <figure class="gp-realcard">
-        <span class="gp-realcard__tab">${spotIcon("target")} Real-World Link</span>
-        <div class="gp-realcard__photo">
-          ${photo(rw.image, rw.title || "", { w: 800, seed: unit.id })}
-          <span class="gp-realcard__caption">${rw.title || "Why it matters"}</span>
-        </div>
-        <figcaption class="gp-realcard__body"><p>${rw.text || ""}</p></figcaption>
-      </figure>
-      ${studyTip(unit.studyTip)}
+// ── Lesson pages: left = explanation (2 CSS columns), right = trick/test +
+//    Study Tip / Real-World / H.O.T. corner asides ───────────────────────────
+function makeLessonLeft(unit) {
+  return htmlPage(
+    `<div class="pc gp-lesson gp-c-${unit.color}">
+      <div class="gp-lesson__head"><span class="gp-lesson__tab gp-tab--${unit.color}">Lesson ${unit.number}</span><span class="gp-lesson__focus">${unit.focus}</span></div>
+      <div class="gp-cols2">${unit.lesson.leftHTML}${unit.teach || ""}</div>
+    </div>`
+  );
+}
+function makeLessonRight(unit) {
+  // Study Tip + Real-World flow inside the two columns; H.O.T. is an absolute
+  // note pinned to the bottom-right of the page.
+  return htmlPage(
+    `<div class="pc gp-lesson gp-lesson--right gp-c-${unit.color}">
+      <div class="gp-lesson__head"><span class="gp-lesson__focus">${unit.title}</span><span class="gp-lesson__tab gp-tab--${unit.color}">Trick &amp; Test</span></div>
+      <div class="gp-cols2">${unit.lesson.rightHTML}${studyTipMini(unit.studyTip)}${realWorldMini(unit)}</div>
+      ${hotNote(unit.hot || [])}
     </div>`
   );
 }
 
-// ── Lesson pages (reuse the rich exp- explanation HTML) ───────
-function makeLessonLeftPage(unit) {
-  const page = makePage();
-  return html(
-    page,
-    `<div class="pc pc--explanation gp-lesson">
-      <div class="pc-exp-header">
-        <span class="pc-exp-case">Lesson · Unit ${unit.number}</span>
-        <span class="pc-exp-focus">${unit.focus}</span>
-      </div>
-      <div class="pc-exp-body">${unit.lesson.leftHTML}</div>
-    </div>`
-  );
-}
-
-function makeLessonRightPage(unit) {
-  const page = makePage();
-  return html(
-    page,
-    `<div class="pc pc--explanation gp-lesson">
-      <div class="pc-exp-header pc-exp-header--right">
-        <span class="pc-exp-subtitle">${unit.title}</span>
-        <span class="pc-exp-badge">Lesson</span>
-      </div>
-      <div class="pc-exp-body">${unit.lesson.rightHTML}</div>
-      <div class="pc-exp-cta">
-        <i data-lucide="chevron-right" style="width:14px;height:14px;display:block;flex-shrink:0"></i>
-        Flip to practise &rarr;
-      </div>
-    </div>`
-  );
-}
-
-// ── Grammar practice (choose-the-word) ────────────────────────
-function makeGrammarPracticeLeft(unit, passageIdx) {
+// ── Practice (grammar: choose word; punctuation: drag mark) ──────────────────
+function makeGrammarPractice(unit, idx, side) {
   const passage = unit.passage;
   const page = makePage();
-  page.dataset.passage = passageIdx;
-
+  page.dataset.passage = idx;
+  const half = Math.ceil(passage.paragraphs.length / 2);
+  const slice = side === "left" ? passage.paragraphs.slice(0, half) : passage.paragraphs.slice(half);
   const pc = document.createElement("div");
-  pc.className = "pc pc--passage";
-  pc.innerHTML = `
-    <div class="pc-passage-header">
-      <span class="pc-passage-label">Practice · Passage ${passageIdx + 1}</span>
-      <strong class="pc-passage-title">${passage.title}</strong>
-      <span class="pc-focus-badge">${passage.focus}</span>
-    </div>`;
-
+  pc.className = `pc pc--passage gp-c-${unit.color}`;
+  if (side === "left") {
+    pc.innerHTML = `<div class="pc-passage-header"><span class="pc-passage-label">Passage ${idx + 1}</span><strong class="pc-passage-title">${passage.title}</strong><span class="pc-focus-badge">${passage.focus}</span></div>`;
+  }
   const body = document.createElement("div");
   body.className = "pc-passage-body";
-  renderParas(passage.paragraphs.slice(0, 2), passageIdx, body);
+  renderParas(slice, idx, body);
   pc.appendChild(body);
+  if (side === "right") {
+    pc.appendChild(checkSection({ check: `data-gp-check="${idx}"`, reset: `data-gp-reset="${idx}"`, progId: `prog-${idx}`, progText: `prog-text-${idx}`, scoreId: `score-${idx}`, unit: "filled" }));
+  }
   page.appendChild(pc);
   return page;
 }
-
-function makeGrammarPracticeRight(unit, passageIdx) {
-  const passage = unit.passage;
-  const page = makePage();
-  page.dataset.passage = passageIdx;
-
-  const pc = document.createElement("div");
-  pc.className = "pc pc--passage pc--passage-right";
-
-  const body = document.createElement("div");
-  body.className = "pc-passage-body";
-  renderParas(passage.paragraphs.slice(2), passageIdx, body);
-  pc.appendChild(body);
-
-  pc.appendChild(checkSection({ check: `data-gp-check="${passageIdx}"`, reset: `data-gp-reset="${passageIdx}"`, progId: `prog-${passageIdx}`, progText: `prog-text-${passageIdx}`, scoreId: `score-${passageIdx}`, unit: "filled" }));
-  appendHot(pc, unit);
-  page.appendChild(pc);
-  return page;
-}
-
-// ── Punctuation practice (drag-the-mark) ──────────────────────
-function makePunctPracticeLeft(unit, exerIdx) {
+function makePunctPractice(unit, idx, side) {
   const ex = unit.exercise;
-  const half = Math.ceil(ex.items.length / 2);
   const page = makePage();
-
+  const half = Math.ceil(ex.items.length / 2);
+  const start = side === "left" ? 0 : half;
+  const end = side === "left" ? half : ex.items.length;
   const pc = document.createElement("div");
-  pc.className = "pc pc--practice";
-  pc.innerHTML = `
-    <div class="pc-practice-header">
-      <span class="pc-practice-label">Practice · Exercise ${exerIdx + 1}</span>
-      <strong class="pc-practice-title">${ex.title}</strong>
-      <span class="pc-focus-badge">${ex.focus}</span>
-    </div>`;
-
+  pc.className = `pc pc--practice gp-c-${unit.color}`;
+  if (side === "left") {
+    pc.innerHTML = `<div class="pc-practice-header"><span class="pc-practice-label">Exercise ${idx + 1}</span><strong class="pc-practice-title">${ex.title}</strong><span class="pc-focus-badge">${ex.focus}</span></div>`;
+  }
   const items = document.createElement("div");
   items.className = "pp-items";
-  buildSentences(ex.items, 0, half, exerIdx, items);
-  pc.appendChild(items);
-  page.appendChild(pc);
-  return page;
-}
-
-function makePunctPracticeRight(unit, exerIdx) {
-  const ex = unit.exercise;
-  const half = Math.ceil(ex.items.length / 2);
-  const page = makePage();
-
-  const pc = document.createElement("div");
-  pc.className = "pc pc--practice";
-
-  const items = document.createElement("div");
-  items.className = "pp-items";
-  buildSentences(ex.items, half, ex.items.length, exerIdx, items);
+  buildSentences(ex.items, start, end, idx, items);
   pc.appendChild(items);
 
+  // Drag pool on EVERY page that shows sentences (so marks are always to hand).
   const pool = document.createElement("div");
   pool.className = "pp-pool-strip";
   pool.innerHTML = `<span class="pp-pool-label">Drag:</span><span class="pp-pool-tokens"></span>`;
-  ex.pool.forEach((char) => pool.querySelector(".pp-pool-tokens").appendChild(buildToken(char)));
+  ex.pool.forEach((c) => pool.querySelector(".pp-pool-tokens").appendChild(buildToken(c)));
   pc.appendChild(pool);
 
-  pc.appendChild(checkSection({ check: `data-pp-check="${exerIdx}"`, reset: `data-pp-reset="${exerIdx}"`, progId: `ppProg-${exerIdx}`, progText: `ppProgText-${exerIdx}`, scoreId: `ppScore-${exerIdx}`, unit: "placed" }));
-  appendHot(pc, unit);
+  if (side === "right") {
+    pc.appendChild(checkSection({ check: `data-pp-check="${idx}"`, reset: `data-pp-reset="${idx}"`, progId: `ppProg-${idx}`, progText: `ppProgText-${idx}`, scoreId: `ppScore-${idx}`, unit: "placed" }));
+  }
   page.appendChild(pc);
   return page;
 }
 
 function checkSection({ check, reset, progId, progText, scoreId, unit }) {
-  const el = document.createElement("div");
-  el.className = "pc-check-section";
-  el.innerHTML = `
-    <div class="pc-progress">
-      <div class="pc-progress-track"><div class="pc-progress-fill" id="${progId}"></div></div>
-      <span class="pc-progress-text" id="${progText}">0 / 0 ${unit}</span>
-    </div>
+  const d = document.createElement("div");
+  d.className = "pc-check-section";
+  d.innerHTML = `
+    <div class="pc-progress"><div class="pc-progress-track"><div class="pc-progress-fill" id="${progId}"></div></div><span class="pc-progress-text" id="${progText}">0 / 0 ${unit}</span></div>
     <div class="pc-check-actions">
       <button class="pc-btn pc-btn--ghost" ${reset}>Reset</button>
-      <button class="pc-btn pc-btn--check" ${check}>
-        <i data-lucide="check" style="width:13px;height:13px;display:block;flex-shrink:0"></i>
-        Check
-      </button>
+      <button class="pc-btn pc-btn--check" ${check}><i data-lucide="check" style="width:13px;height:13px;display:block;flex-shrink:0"></i>Check</button>
     </div>
     <div class="pc-score" id="${scoreId}"></div>`;
-  return el;
+  return d;
 }
 
-function appendHot(pc, unit) {
-  if (!unit.hot?.length) return;
-  const wrap = document.createElement("div");
-  wrap.innerHTML = hotBox(unit.hot);
-  pc.appendChild(wrap.firstElementChild);
-}
-
-// ── Section divider (Grammar → Punctuation) ───────────────────
 function makeDividerPage() {
-  const page = makePage();
-  return html(
-    page,
+  return htmlPage(
     `<div class="pc gp-divider">
       <div class="gp-divider__rings" aria-hidden="true"></div>
       <span class="gp-divider__kicker">Section Two</span>
       <h2 class="gp-divider__title gp-3d gp-3d--teal">Punctuation<br>Patrol</h2>
-      ${heroCharacter("police", { tag: "", cls: "gp-divider__char" })}
-      <p class="gp-divider__sub">Now drag the marks into place — full stops, question marks, commas and apostrophes.</p>
+      <p class="gp-divider__sub">Now drag the marks into place - full stops, question marks, commas and apostrophes.</p>
     </div>`
   );
 }
 
-// ── AI "Check My Writing" tool (wired by checker.js) ──────────
 function makeCheckerPage(book) {
-  const page = makePage();
-  return html(
-    page,
+  return htmlPage(
     `<div class="pc gp-checker" data-gp-checker>
       ${sideTab("AI Tool", "purple")}
       <header class="gp-banner gp-banner--purple">
         <span class="gp-banner__tech" aria-hidden="true"></span>
-        <span class="gp-banner__chapter">${spotIcon("magnifier")} Field Tool</span>
+        <span class="gp-banner__chapter">Field Tool</span>
         <h2 class="gp-banner__title gp-3d gp-3d--purple">Check My Writing</h2>
         <span class="gp-banner__focus">powered by AI</span>
       </header>
-      <p class="gp-checker__intro">Paste a sentence or two of your own writing. ${book.mascot?.name || "Your guide"} will spot confusable words, punctuation and capital-letter slips — and explain each fix.</p>
-      <textarea class="gp-checker__input" id="gpCheckerInput" maxlength="4000"
-        placeholder="e.g. me and my freind went too the shop, their was alot of people."></textarea>
+      <p class="gp-checker__intro">Paste a sentence or two of your own writing. The checker will spot confusable words, punctuation and capital-letter slips - and explain each fix.</p>
+      <textarea class="gp-checker__input" id="gpCheckerInput" maxlength="4000" placeholder="e.g. me and my freind went too the shop, their was alot of people."></textarea>
       <div class="gp-checker__actions">
-        <button class="pc-btn pc-btn--check" id="gpCheckerRun">
-          <i data-lucide="wand-sparkles" style="width:14px;height:14px;display:block;flex-shrink:0"></i>
-          Check my writing
-        </button>
+        <button class="pc-btn pc-btn--check" id="gpCheckerRun"><i data-lucide="wand-sparkles" style="width:14px;height:14px;display:block;flex-shrink:0"></i>Check my writing</button>
         <button class="pc-btn pc-btn--ghost" id="gpCheckerClear">Clear</button>
       </div>
       <div class="gp-checker__result" id="gpCheckerResult" aria-live="polite"></div>
@@ -407,174 +269,85 @@ function makeCheckerPage(book) {
   );
 }
 
-// ── Closing feature video ─────────────────────────────────────
-function makeVideoPage(book) {
-  const v = book.media?.video || {};
-  const page = makePage();
-  return html(
-    page,
-    `<div class="pc gp-video">
-      <header class="gp-video__head">
-        <span class="gp-kicker">Feature</span>
-        <h3>Why grammar matters</h3>
-      </header>
-      <figure class="gp-video__figure" data-gp-video>
-        <button type="button" class="gp-video__poster" data-yt="${v.id || ""}"
-          aria-label="Play video">
-          <span class="gp-video__play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="gp-video__cap">${v.title || "Watch"}</span>
-        </button>
-        <div class="gp-video__frame"></div>
-      </figure>
-      <p class="gp-video__text">Three minutes on how small grammar wins add up to a sharper, clearer writer — in exams and beyond.</p>
-    </div>`
-  );
-}
-
-// ── Back cover ────────────────────────────────────────────────
 function makeBackCoverPage() {
-  const page = makePage("", "hard");
-  return html(
-    page,
-    `<div class="pc gp-back" data-density="hard">
-      <div class="gp-back__rings" aria-hidden="true"></div>
-      <div class="gp-back__inner">
-        ${heroCharacter("detective", { tag: "", cls: "gp-back__char" })}
-        <p class="gp-back__msg gp-3d gp-3d--green">Keep practising.<br>Words matter.</p>
-        <a class="gp-back__cta" href="/writing/">Try the Writing Assistant &rarr;</a>
-        <p class="gp-back__site">Prep Portal · prepportal.com</p>
-      </div>
-    </div>`
-  );
+  return htmlPage(`<div class="pc gp-back" data-density="hard">${backCoverInner(state.book)}</div>`, "hard");
 }
 
-// ── Media + video wiring (called after build) ─────────────────
-function wireVideo(root, fallback) {
-  const fig = root.querySelector("[data-gp-video]");
-  if (!fig) return;
-  const poster = fig.querySelector(".gp-video__poster");
-  const frame = fig.querySelector(".gp-video__frame");
-
-  fetchFeaturedVideo(fallback).then((v) => {
-    poster.dataset.yt = v.id;
-    poster.style.backgroundImage = `url('${v.thumbnail}')`;
-    const cap = poster.querySelector(".gp-video__cap");
-    if (cap && v.title) cap.textContent = v.title;
-  });
-
-  poster.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const id = poster.dataset.yt;
-    if (!id) return;
-    const iframe = document.createElement("iframe");
-    iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
-    iframe.title = "Feature video";
-    iframe.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture";
-    iframe.setAttribute("allowfullscreen", "");
-    frame.appendChild(iframe);
-    poster.style.display = "none";
-  });
-}
-
-export function stopVideo(root) {
-  const frame = root?.querySelector(".gp-video__frame");
-  const poster = root?.querySelector(".gp-video__poster");
-  if (frame) frame.innerHTML = "";
-  if (poster) poster.style.display = "";
-}
-
-// ── Book assembly ─────────────────────────────────────────────
+// ── Book assembly ────────────────────────────────────────────────────────────
 export function buildBookPages() {
   const book = state.book;
   const bookEl = document.getElementById("gpBook");
   bookEl.innerHTML = "";
-
-  initMascot(book.mascot);
-
-  // Reset jump tables
+  computePageSize();
   state.UNIT_START_PAGE = [];
 
   const pages = [];
-  pages.push(makeCoverPage(book));     // 0
-  const contentsIdx = pages.length;    // 1 (filled after indices are known)
+  pages.push(makeCoverPage(book));
+  const contentsIdx = pages.length;
   pages.push(null);
-  pages.push(makeHowToPage());         // 2
+  pages.push(makeHowToPage());
 
-  let passageIdx = 0;
-  let exerIdx = 0;
-  let dividerDone = false;
-
+  let passageIdx = 0, exerIdx = 0, dividerDone = false;
   book.units.forEach((unit, ui) => {
-    if (unit.kind === "punctuation" && !dividerDone) {
-      pages.push(makeDividerPage());
-      dividerDone = true;
-    }
+    if (unit.kind === "punctuation" && !dividerDone) { pages.push(makeDividerPage()); dividerDone = true; }
     state.UNIT_START_PAGE[ui] = pages.length;
     pages.push(makeOpenerPage(unit));
-    pages.push(makeRealWorldPage(unit));
-    pages.push(makeLessonLeftPage(unit));
-    pages.push(makeLessonRightPage(unit));
-
+    pages.push(makeLessonLeft(unit));
+    pages.push(makeLessonRight(unit));
     if (unit.kind === "grammar") {
-      pages.push(makeGrammarPracticeLeft(unit, passageIdx));
-      pages.push(makeGrammarPracticeRight(unit, passageIdx));
+      pages.push(makeGrammarPractice(unit, passageIdx, "left"));
+      pages.push(makeGrammarPractice(unit, passageIdx, "right"));
       passageIdx++;
     } else {
-      pages.push(makePunctPracticeLeft(unit, exerIdx));
-      pages.push(makePunctPracticeRight(unit, exerIdx));
+      pages.push(makePunctPractice(unit, exerIdx, "left"));
+      pages.push(makePunctPractice(unit, exerIdx, "right"));
       exerIdx++;
     }
   });
 
   state.CHECKER_PAGE = pages.length;
   pages.push(makeCheckerPage(book));
-  pages.push(makeVideoPage(book));
   pages.push(makeBackCoverPage());
-
-  // Now that every index is known, build the contents page in place.
   pages[contentsIdx] = makeContentsPage(book);
 
-  pages.forEach((p) => bookEl.appendChild(p));
+  pages.filter(Boolean).forEach((p) => bookEl.appendChild(p));
 
-  // Initial progress meters
   for (let i = 0; i < passageIdx; i++) updateProgress(i);
   for (let i = 0; i < exerIdx; i++) updatePPProgress(i);
 
-  // Wire the feature video.
-  wireVideo(bookEl, book.media?.video);
-
+  bookEl.querySelectorAll("[data-gp-topic-video]").forEach(wireTopicVideo);
   if (window.lucide) lucide.createIcons();
   state.bookBuilt = true;
 }
 
 export function initPageFlip(onFlip) {
   const book = document.getElementById("gpBook");
-
-  // Responsive like the homepage magazine (home/js/flipbook.js): "stretch"
-  // + usePortrait lets StPageFlip render a TWO-page spread on wide screens and
-  // automatically fold to a SINGLE page on small screens — no manual hacks.
-  // swipeDistance is kept high so dragging punctuation marks / picking blanks
-  // never accidentally turns the page; navigation is via the arrow buttons.
+  const maxH = Math.round(window.innerHeight * 0.96);
+  const maxW = Math.round(maxH * 0.74);
   state.pageFlip = new St.PageFlip(book, {
-    width: 470,
-    height: 650,
+    width: PAGE.w,
+    height: PAGE.h,
     size: "stretch",
-    minWidth: 300,
-    maxWidth: 560,
-    minHeight: 420,
-    maxHeight: 780,
+    minWidth: 280,
+    maxWidth: maxW,
+    minHeight: 360,
+    maxHeight: maxH,
     drawShadow: true,
-    flippingTime: 800,
+    flippingTime: 700,
     maxShadowOpacity: 0.5,
     showCover: true,
     usePortrait: true,
     mobileScrollSupport: false,
     clickEventForward: false,
-    useMouseEvents: true,
-    swipeDistance: 9999,
+    // No pointer-driven flipping: StPageFlip's own mouse/touch handlers swallow
+    // taps on mobile (video, slot delete, textarea focus). Turning them off lets
+    // native taps/clicks/focus through; flipping is via the arrow buttons.
+    useMouseEvents: false,
   });
-
   state.pageFlip.loadFromHTML(book.querySelectorAll(".page"));
-  state.pageFlip.on("flip", () => { playFlipSound(); onFlip(); });
+  state.pageFlip.on("flip", () => { playFlipSound(); stopAllVideos(book); onFlip(); });
+  state.pageFlip.on("changeState", (e) => { if (e.data === "flipping") stopAllVideos(book); });
   state.pageFlip.on("changeOrientation", onFlip);
 }
+
+export { stopAllVideos, computePageSize };

@@ -26,12 +26,16 @@ function openInlineMenu(wrapper, options, passageIdx) {
   const menu = document.createElement("div");
   menu.className = "pp-select-menu";
 
-  const minW = Math.max(rect.width, 100);
+  // Small drop anchored to the trigger. We MUST set right:auto + an explicit
+  // width, otherwise select.css's `.pp-select-menu{right:0}` stretches the
+  // fixed-positioned menu all the way to the viewport edge.
+  const minW = Math.max(rect.width, 84);
+  const common = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;right:auto;width:max-content;min-width:${minW}px;max-width:240px;z-index:99999;`;
   const spaceBelow = window.innerHeight - rect.bottom;
   if (spaceBelow < 150 && rect.top > spaceBelow) {
-    menu.style.cssText = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;bottom:${window.innerHeight - rect.top + 3}px;min-width:${minW}px;z-index:99999;`;
+    menu.style.cssText = common + `bottom:${window.innerHeight - rect.top + 3}px;`;
   } else {
-    menu.style.cssText = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;top:${rect.bottom + 3}px;min-width:${minW}px;z-index:99999;`;
+    menu.style.cssText = common + `top:${rect.bottom + 3}px;`;
   }
 
   options.forEach((opt) => {
@@ -67,8 +71,10 @@ export function buildBlank(seg, passageIdx) {
   const correct = seg.correct.toLowerCase();
   const options = [...group.options].sort(() => Math.random() - 0.5);
 
+  // Kid-friendly multicolour highlighter — colour keyed to the word group.
+  const COLOR = { theyre: "blue", were: "green", youre: "purple", its: "pink", totwo: "orange", thanthen: "teal" };
   const wrapper = document.createElement("span");
-  wrapper.className = "pp-select pp-select--sm gp-blank";
+  wrapper.className = `pp-select pp-select--sm gp-blank gp-hl gp-hl--${COLOR[seg.group] || "blue"}`;
   wrapper.dataset.correct = correct;
   wrapper.dataset.passage = passageIdx;
   wrapper.dataset.value = "";
