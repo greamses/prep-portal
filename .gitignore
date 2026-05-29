@@ -2,3 +2,7 @@ node_modules/
 .env
 *.local
 .DS_Store
+
+# Secrets / service-account keys — never commit
+serviceAccountKey.json
+googleCloudKey.json
