@@ -31,6 +31,28 @@
       }
     </style>
 
+    <!-- One-time self-heal: retire any stale service worker + its caches so
+         visitors always load fresh app code (the SW caused stale-code bugs and
+         is no longer registered by any page). Reloads once after clearing. -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          if (!regs.length) return;
+          Promise.all(regs.map(function (r) { return r.unregister(); }))
+            .then(function () { return window.caches ? caches.keys() : []; })
+            .then(function (keys) {
+              return Promise.all((keys || []).map(function (k) { return caches.delete(k); }));
+            })
+            .then(function () {
+              if (!sessionStorage.getItem("gpSwCleared")) {
+                sessionStorage.setItem("gpSwCleared", "1");
+                location.reload();
+              }
+            });
+        });
+      }
+    </script>
+
     <!-- StPageFlip — modern page-flip library, no jQuery needed -->
     <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
     <!-- Lucide icons -->
@@ -82,7 +104,11 @@
           </button>
 
           <!-- Empty slot 1 -->
-          <div class="shelf-book shelf-book--empty" role="listitem" aria-label="Coming soon">
+          <div
+            class="shelf-book shelf-book--empty"
+            role="listitem"
+            aria-label="Coming soon"
+          >
             <p class="shelf-book-label">Coming Soon</p>
             <div class="shelf-book-cover shelf-book-cover--empty">
               <span class="empty-soon">Soon</span>
@@ -90,7 +116,11 @@
           </div>
 
           <!-- Empty slot 2 -->
-          <div class="shelf-book shelf-book--empty" role="listitem" aria-label="Coming soon">
+          <div
+            class="shelf-book shelf-book--empty"
+            role="listitem"
+            aria-label="Coming soon"
+          >
             <p class="shelf-book-label">Coming Soon</p>
             <div class="shelf-book-cover shelf-book-cover--empty">
               <span class="empty-soon">Soon</span>
