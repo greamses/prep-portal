@@ -40,7 +40,20 @@ export const IMG = {
   ],
 
   who:   pic("photo-1522071820081-009f0129c71c", "pp-who", "The team at work", 1200),
+  story: pic("photo-1531545514256-b1400bc00f31", "pp-story", "Students collaborating", 1200),
   essay: pic("photo-1509062522246-3755977927d7", "pp-essay", "A bright classroom", 1600),
+
+  mission: pic("photo-1488190211105-8b0e65b80b4e", "pp-mission", "Planning the work", 1200),
+  day:     pic("photo-1524178232363-1fb2b075b655", "pp-day", "A tutoring session", 1600),
+  quote:   pic("photo-1497633762265-9d179a990aa6", "pp-quote", "Notes and ideas", 1600),
+
+  // What We Do — one lead photo per feature spread
+  features: [
+    pic("photo-1546410531-bb4caa6b424d", "pp-f1", "Practising on a laptop", 1200),
+    pic("photo-1524178232363-1fb2b075b655", "pp-f2", "One-to-one tutoring", 1200),
+    pic("photo-1513258496099-48168024aec0", "pp-f3", "A library of past papers", 1200),
+    pic("photo-1531545514256-b1400bc00f31", "pp-f4", "A community of learners", 1200),
+  ],
 
   // What We Do — editorial photo grid
   what: [
@@ -57,7 +70,34 @@ export const IMG = {
     pic("photo-1522202176988-66273c2fd55f", "pp-g3", "Friends studying together"),
     pic("photo-1456513080510-7bf3a84b82f8", "pp-g4", "Reading a book"),
   ],
+
+  // Second gallery spread
+  gallery2: [
+    pic("photo-1434030216411-0b793f4b4173", "pp-h1", "Writing in a notebook"),
+    pic("photo-1427504494785-3a9ca7044f45", "pp-h2", "Inside a lecture hall"),
+    pic("photo-1500648767791-00dcc994a43e", "pp-h3", "A confident student"),
+    pic("photo-1509062522246-3755977927d7", "pp-h4", "A bright classroom"),
+  ],
 };
+
+// ── Editorial copy data (kept here so words live beside the imagery) ──────────
+// Headline stats for the "By the Numbers" page.
+export const STATS = [
+  { num: "50k+", label: "Learners guided across Nigeria" },
+  { num: "1,200", label: "Matched tutors and mentors" },
+  { num: "98%",  label: "Of parents would recommend us" },
+  { num: "4",    label: "Exam tracks: JAMB, WAEC, NECO, IGCSE" },
+];
+
+// Cities for the "Our Reach" page.
+export const REACH = [
+  { city: "Lagos",        note: "Where it began" },
+  { city: "Abuja",        note: "Capital cohort" },
+  { city: "Port Harcourt",note: "Garden City scholars" },
+  { city: "Kano",         note: "Northern network" },
+  { city: "Ibadan",       note: "Ancient city, modern prep" },
+  { city: "Enugu",        note: "Coal City crew" },
+];
 
 // ── Voices (testimonials) with portrait photos ──────────────────────────────
 export const VOICES = [

@@ -859,7 +859,10 @@ body.fb-modal-open { overflow: hidden; }
   padding: clamp(1rem, 3vw, 2.5rem);
   animation: fb-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.fb-modal .fb-stage { max-width: min(1180px, 116vh); }
+/* Wide enough to hold a two-page spread on desktop (a page is ~0.72 of its
+   height, so a spread is ~1.44×). On narrow/tall viewports the 94vw cap wins
+   and StPageFlip drops to a single portrait page. */
+.fb-modal .fb-stage { max-width: min(94vw, 152vh); }
 
 .fb-modal__close {
   position: absolute;

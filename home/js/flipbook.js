@@ -5,7 +5,7 @@
 // watermark. All imagery lives in ./flipbook-assets.js for easy updating.
 // ============================================================================
 
-import { IMG, VOICES, VIDEO } from "/home/js/flipbook-assets.js";
+import { IMG, VOICES, VIDEO, STATS, REACH } from "/home/js/flipbook-assets.js";
 
 // Same convention as utils/prepbot: hit localhost:5000 from Live Server
 // (:5500), otherwise same-origin /api on Vercel.
@@ -29,6 +29,80 @@ const watermark = () => `<div class="fb-watermark">${LOGO_SVG}</div>`;
 const folio = (n, cap) =>
   `<div class="fb-folio"><span class="fb-folio__num">${n}</span><span class="fb-folio__cap">${cap}</span></div>`;
 
+// A right-hand page (the recto of a spread) carries the data-right flag so its
+// folio sits on the outer edge. With showCover, page 1 is the cover (alone on
+// the right) and spreads then run (left,right): folios 3,5,7… are right pages.
+const RIGHT = new Set([3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]);
+
+// Generic page shell: watermark + padded inner. `n` drives the data-right side.
+function shell(inner, { n, cls = "", wm = true } = {}) {
+  const right = RIGHT.has(n) ? " data-right" : "";
+  return `
+  <div class="fb-page ${cls}"${right}>
+    ${wm ? watermark() : ""}
+    <div class="fb-page__inner">${inner}</div>
+  </div>`;
+}
+
+// ── Reusable editorial layouts ──────────────────────────────────────────────
+function sectionOpener({ n, cap, section, title, image, paras }) {
+  const cols = paras
+    .map((p, i) => `<p class="fb-body${i === 0 ? " fb-dropcap" : ""}">${p}</p>`)
+    .join("");
+  return shell(
+    `<span class="fb-kicker">${section}</span>
+     <h2 class="fb-h1">${title}</h2>
+     ${figure(image, "fb-article__img")}
+     <div class="fb-cols">${cols}</div>
+     ${folio(pad(n), cap)}`,
+    { n }
+  );
+}
+
+function featurePage({ n, cap, kicker, title, image, paras }) {
+  const body = paras.map((p) => `<p class="fb-body">${p}</p>`).join("");
+  return shell(
+    `<span class="fb-kicker">${kicker}</span>
+     <h2 class="fb-h1 fb-h1--sm">${title}</h2>
+     ${figure(image, "fb-article__img")}
+     ${body}
+     ${folio(pad(n), cap)}`,
+    { n }
+  );
+}
+
+function deckPage({ n, cap, kicker, title, images, items }) {
+  const grid = images ? `<div class="fb-grid4">${images.map((o) => figure(o)).join("")}</div>` : "";
+  const deck = items
+    .map(([t, d]) => `<div class="fb-deck__item"><h3 class="fb-deck__title">${t}</h3><p class="fb-deck__text">${d}</p></div>`)
+    .join("");
+  return shell(
+    `<span class="fb-kicker">${kicker}</span>
+     <h2 class="fb-h1 fb-h1--sm">${title}</h2>
+     ${grid}
+     <div class="fb-deck">${deck}</div>
+     ${folio(pad(n), cap)}`,
+    { n }
+  );
+}
+
+function essayFull({ n, cap, kicker, quoteHTML, image }) {
+  const right = RIGHT.has(n) ? " data-right" : "";
+  return `
+  <div class="fb-page fb-essay"${right}>
+    <div class="fb-essay__img">${img(image)}</div>
+    <div class="fb-page__inner">
+      <div class="fb-essay__cap">
+        <p class="fb-essay__kicker">${kicker}</p>
+        <p class="fb-essay__quote">${quoteHTML}</p>
+      </div>
+      ${folio(pad(n), cap)}
+    </div>
+  </div>`;
+}
+
+const pad = (n) => String(n).padStart(2, "0");
+
 // ── Pages ───────────────────────────────────────────────────────────────────
 function coverPage() {
   return `
@@ -47,12 +121,13 @@ function coverPage() {
 
 function contentsPage() {
   const items = [
-    ["04", "Who We Are"],
-    ["05", "In the Field"],
-    ["06", "What We Do"],
-    ["07", "The Film"],
-    ["08", "Voices"],
-    ["09", "Gallery"],
+    ["05", "Who We Are"],
+    ["07", "In the Field"],
+    ["09", "By the Numbers"],
+    ["11", "What We Do"],
+    ["16", "The Film"],
+    ["18", "Voices"],
+    ["22", "Gallery"],
   ]
     .map(([n, c]) => `<li><span class="fb-toc__num">${n}</span><span class="fb-toc__cap">${c}</span></li>`)
     .join("");
@@ -111,21 +186,7 @@ function whoPage() {
           Human first, always.
         </p>
       </div>
-      ${folio("04", "Who We Are")}
-    </div>
-  </div>`;
-}
-
-function essayPage() {
-  return `
-  <div class="fb-page fb-essay" data-right>
-    <div class="fb-essay__img">${img(IMG.essay)}</div>
-    <div class="fb-page__inner">
-      <div class="fb-essay__cap">
-        <p class="fb-essay__kicker">In the Field</p>
-        <p class="fb-essay__quote">Learning that <em>travels</em> — from the classroom to the kitchen table.</p>
-      </div>
-      ${folio("05", "Photo Essay")}
+      ${folio("05", "Who We Are")}
     </div>
   </div>`;
 }
@@ -140,21 +201,21 @@ function whatPage() {
     .map(([t, d]) => `<div class="fb-deck__item"><h3 class="fb-deck__title">${t}</h3><p class="fb-deck__text">${d}</p></div>`)
     .join("");
   return `
-  <div class="fb-page">
+  <div class="fb-page" data-right>
     ${watermark()}
     <div class="fb-page__inner">
       <span class="fb-kicker">Section 02</span>
       <h2 class="fb-h1 fb-h1--sm">What we <em>do</em>.</h2>
       <div class="fb-grid4">${IMG.what.map((o) => figure(o)).join("")}</div>
       <div class="fb-deck">${deck}</div>
-      ${folio("06", "What We Do")}
+      ${folio("11", "What We Do")}
     </div>
   </div>`;
 }
 
 function videoPage() {
   return `
-  <div class="fb-page" data-right>
+  <div class="fb-page">
     ${watermark()}
     <div class="fb-page__inner">
       <span class="fb-kicker">Feature Film</span>
@@ -174,7 +235,7 @@ function videoPage() {
         Three minutes inside Prep Portal — the tutors, the students and the small
         daily wins that add up to a different result.
       </p>
-      ${folio("07", "The Film")}
+      ${folio("16", "The Film")}
     </div>
   </div>`;
 }
@@ -204,14 +265,14 @@ function voicesPage() {
         <div class="fb-carousel__track">${slides}</div>
         <div class="fb-dots">${dots}</div>
       </div>
-      ${folio("08", "Voices")}
+      ${folio("18", "Voices")}
     </div>
   </div>`;
 }
 
 function galleryPage() {
   return `
-  <div class="fb-page" data-right>
+  <div class="fb-page">
     ${watermark()}
     <div class="fb-page__inner">
       <span class="fb-kicker">Closing</span>
@@ -221,7 +282,7 @@ function galleryPage() {
         One platform, one promise: every child deserves a tutor who believes in
         them — and the tools to prove it. This is what we do, every day.
       </p>
-      ${folio("09", "Gallery")}
+      ${folio("22", "Gallery")}
     </div>
   </div>`;
 }
@@ -338,7 +399,7 @@ function teaserHTML() {
       <span class="fb-teaser__cta">Read the issue</span>
     </button>
     <div class="fb-teaser__meta">
-      <span>10 Pages</span><i></i><span>Digital Edition</span><i></i><span>Featuring Video</span>
+      <span>25 Pages</span><i></i><span>Digital Edition</span><i></i><span>Featuring Video</span>
     </div>
   </div>`;
 }
@@ -359,7 +420,7 @@ function modalHTML() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             Prev
           </button>
-          <span class="fb-counter"><b data-cur>1</b> <span>/</span> <span data-total>10</span></span>
+          <span class="fb-counter"><b data-cur>1</b> <span>/</span> <span data-total>25</span></span>
           <button type="button" class="fb-nav-btn" data-next>
             Next
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -371,6 +432,143 @@ function modalHTML() {
   </div>`;
 }
 
+// ── The 25-page issue, in reading order ─────────────────────────────────────
+function PAGES() {
+  return [
+    coverPage(),                                                       // 01 cover
+    contentsPage(),                                                    // 02
+    editorPage(),                                                      // 03
+    deckPage({                                                        // 04 masthead
+      n: 4, cap: "Masthead", kicker: "Masthead", title: "The people behind the page.",
+      items: [
+        ["Editorial", "Written by the Prep Portal learning team, Lagos."],
+        ["Photography", "Our students, tutors and classrooms across Nigeria."],
+        ["Design &amp; Build", "The Prep Portal product studio."],
+        ["Published", "Prep Portal &middot; Vol. I &middot; 2026"],
+      ],
+    }),
+    whoPage(),                                                        // 05
+    featurePage({                                                     // 06 our story
+      n: 6, cap: "Our Story", kicker: "Section 01 &mdash; Our Story",
+      title: "How we <em>began</em>.", image: IMG.story,
+      paras: [
+        "Prep Portal started with a simple frustration: brilliant Nigerian students were being held back not by ability, but by access &mdash; to good tutors, to honest feedback, to past questions that mirrored the real thing.",
+        "So we built the platform we wished we&rsquo;d had: human tutoring at scale, exam-accurate practice, and parents kept in the loop every step of the way.",
+      ],
+    }),
+    essayFull({                                                       // 07 in the field
+      n: 7, cap: "Photo Essay", kicker: "In the Field",
+      quoteHTML: "Learning that <em>travels</em> &mdash; from the classroom to the kitchen table.",
+      image: IMG.essay,
+    }),
+    featurePage({                                                     // 08 mission
+      n: 8, cap: "Mission", kicker: "Our Mission",
+      title: "One <em>promise</em>.", image: IMG.mission,
+      paras: [
+        "Every child deserves a tutor who believes in them &mdash; and the tools to prove that belief on exam day.",
+        "We measure ourselves by one number that matters: the grade a student walks away with, and the confidence they carry into it.",
+      ],
+    }),
+    deckPage({                                                       // 09 by the numbers
+      n: 9, cap: "By the Numbers", kicker: "By the Numbers",
+      title: "The work, <em>measured</em>.",
+      items: STATS.map((s) => [s.num, s.label]),
+    }),
+    deckPage({                                                       // 10 values
+      n: 10, cap: "What We Believe", kicker: "Our Values",
+      title: "What we <em>believe</em>.",
+      items: [
+        ["Human first", "Technology amplifies great teaching &mdash; it never replaces it."],
+        ["Proof, not promises", "Every claim we make is one a student can feel in their results."],
+        ["Access for all", "World-class prep should not depend on a postcode or a price tag."],
+        ["Honest feedback", "Kind, specific and on time &mdash; for students and parents alike."],
+      ],
+    }),
+    whatPage(),                                                       // 11
+    featurePage({                                                     // 12 smart practice
+      n: 12, cap: "Smart Practice", kicker: "What We Do &mdash; 01",
+      title: "Smart <em>practice</em>.", image: IMG.features[0],
+      paras: [
+        "A CBT-accurate question bank across JAMB, WAEC, NECO and IGCSE &mdash; with instant, explained feedback on every answer.",
+        "Adaptive sets focus each session on exactly what a student hasn&rsquo;t mastered yet, so practice time is never wasted.",
+      ],
+    }),
+    featurePage({                                                     // 13 tutoring
+      n: 13, cap: "Matched Tutoring", kicker: "What We Do &mdash; 02",
+      title: "Matched <em>tutoring</em>.", image: IMG.features[1],
+      paras: [
+        "Each learner is paired with a tutor chosen for their subject, style and schedule &mdash; not assigned at random.",
+        "Parents get updates they actually read: short, clear notes on progress, effort and the next milestone.",
+      ],
+    }),
+    featurePage({                                                     // 14 archive
+      n: 14, cap: "Exam Archive", kicker: "What We Do &mdash; 03",
+      title: "The <em>archive</em>.", image: IMG.features[2],
+      paras: [
+        "Years of past papers &mdash; national and international &mdash; solved, searchable and organised by topic.",
+        "When a student meets a hard question, the worked solution and a matching practice set are one tap away.",
+      ],
+    }),
+    featurePage({                                                     // 15 community
+      n: 15, cap: "Community", kicker: "What We Do &mdash; 04",
+      title: "The <em>community</em>.", image: IMG.features[3],
+      paras: [
+        "A nationwide network of learners and mentors who push each other forward, swap notes and celebrate wins.",
+        "Nobody revises alone. Study groups, challenges and mentors turn a lonely grind into a shared climb.",
+      ],
+    }),
+    videoPage(),                                                      // 16
+    essayFull({                                                       // 17 a day in the life
+      n: 17, cap: "Photo Essay", kicker: "A Day in the Life",
+      quoteHTML: "The small daily <em>wins</em> that add up to a different result.",
+      image: IMG.day,
+    }),
+    voicesPage(),                                                     // 18
+    essayFull({                                                       // 19 pull quote
+      n: 19, cap: "In Their Words", kicker: "In Their Words",
+      quoteHTML: "&ldquo;He went from a <em>D7</em> to an A1 &mdash; and finally believes he&rsquo;s good at this.&rdquo;",
+      image: IMG.quote,
+    }),
+    deckPage({                                                       // 20 results
+      n: 20, cap: "Results", kicker: "The Results",
+      title: "What changes.",
+      items: [
+        ["Grades", "The average matched student climbs two grade bands before their exam."],
+        ["Confidence", "Mock-to-final anxiety drops once the CBT practice feels routine."],
+        ["Consistency", "Weekly tutor check-ins keep momentum through the long term."],
+        ["Trust", "Parents see the plan, the progress and the proof &mdash; in one place."],
+      ],
+    }),
+    deckPage({                                                       // 21 our reach
+      n: 21, cap: "Our Reach", kicker: "Across Nigeria",
+      title: "Where we <em>are</em>.",
+      items: REACH.map((r) => [r.city, r.note]),
+    }),
+    galleryPage(),                                                    // 22
+    shell(                                                            // 23 gallery 2
+      `<span class="fb-kicker">Gallery</span>
+       <h2 class="fb-h1 fb-h1--sm">In <em>frame</em>.</h2>
+       <div class="fb-grid4">${IMG.gallery2.map((o) => figure(o)).join("")}</div>
+       <p class="fb-body">
+         Faces from the work &mdash; the late-night revisions, the breakthroughs and
+         the quiet focus that grades are really made of.
+       </p>
+       ${folio("23", "Gallery")}`,
+      { n: 23 }
+    ),
+    deckPage({                                                       // 24 join us
+      n: 24, cap: "Join Us", kicker: "Get Started",
+      title: "Start in <em>minutes</em>.",
+      items: [
+        ["1 &middot; Create a free account", "Tell us the exam, the subjects and the timeline."],
+        ["2 &middot; Get matched", "We pair your child with the right tutor and a starting plan."],
+        ["3 &middot; Practise &amp; track", "Daily CBT practice with progress you can both follow."],
+      ],
+    }),
+    backPage(),                                                       // 25 back cover
+  ];
+}
+
 // Build the StPageFlip book inside the (already visible) modal — runs once.
 function buildBook(modal) {
   const PageFlip = window.St && window.St.PageFlip;
@@ -380,19 +578,23 @@ function buildBook(modal) {
     return null;
   }
 
-  bookEl.innerHTML = [
-    coverPage(), contentsPage(), editorPage(), whoPage(), essayPage(),
-    whatPage(), videoPage(), voicesPage(), galleryPage(), backPage(),
-  ].join("");
+  bookEl.innerHTML = PAGES().join("");
+
+  // Size the spread from the viewport (like grammar-police): a single page is
+  // ~0.72 of its height, so a spread needs ~1.44×. usePortrait lets the library
+  // drop to one page when the viewport can't fit two side by side (mobile).
+  // Leave room under the spread for the controls + hint row.
+  const maxH = Math.round(Math.min(window.innerHeight * 0.82, 880));
+  const maxW = Math.round(maxH * 0.72);
 
   const pageFlip = new PageFlip(bookEl, {
     width: 460,
     height: 640,
     size: "stretch",
     minWidth: 300,
-    maxWidth: 600,
-    minHeight: 400,
-    maxHeight: 900,
+    maxWidth: maxW,
+    minHeight: 380,
+    maxHeight: maxH,
     drawShadow: true,
     flippingTime: 850,
     maxShadowOpacity: 0.35,
