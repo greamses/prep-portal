@@ -12,7 +12,10 @@
 }
 
 /* ── Puzzle page shell ──────────────────────────────────────────────────── */
-.pc.gp-puzzle { display: flex; flex-direction: column; gap: 0.55rem; }
+.pc.gp-puzzle {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  padding: clamp(1.25rem, 3%, 2rem); /* match the other content pages */
+}
 .gp-puzzle__head { flex-shrink: 0; }
 .gp-puzzle__head .gp-kicker {
   font-family: var(--gp-sans); font-size: 0.55rem; font-weight: 800;
@@ -28,30 +31,30 @@
   color: #555; margin: 0;
 }
 
-/* ── Crossword ──────────────────────────────────────────────────────────── */
-.cw-wrap { display: flex; gap: 1rem; flex: 1; min-height: 0; align-items: flex-start; }
+/* ── Crossword (grid on top, clues below) ───────────────────────────────── */
+.cw-wrap { display: flex; flex-direction: column; gap: 0.6rem; flex: 1; min-height: 0; }
 .cw-grid {
-  display: grid; gap: 2px; width: 50%; max-width: 15rem;
-  background: #0a0a0a; padding: 2px; flex-shrink: 0;
+  display: grid; gap: 2px; width: 100%; max-width: 26rem; margin: 0 auto;
+  background: #0a0a0a; padding: 2px;
 }
 .cw-cell { position: relative; background: #fff; aspect-ratio: 1; }
 .cw-cell--block { background: #0a0a0a; }
 .cw-num {
-  position: absolute; top: 1px; left: 2px; z-index: 1;
-  font-family: var(--gp-sans); font-size: 0.42rem; font-weight: 700; color: #444;
+  position: absolute; top: 0; left: 1px; z-index: 1; line-height: 1;
+  font-family: var(--gp-sans); font-size: 0.4rem; font-weight: 700; color: #444;
 }
 .cw-input {
   width: 100%; height: 100%; border: 0; background: transparent;
   text-align: center; text-transform: uppercase;
   font-family: "Unbounded", var(--gp-sans), sans-serif; font-weight: 800;
-  font-size: 0.85rem; color: #0a0a0a; padding: 0;
+  font-size: 0.72rem; color: #0a0a0a; padding: 0;
 }
 .cw-input:focus { outline: 2px solid #0055ff; outline-offset: -2px; }
 .cw-input--correct { background: #c8f0d2; color: #0a7d2c; }
 .cw-input--wrong { background: #ffd4cc; color: #c0271a; }
 
-.cw-clues { flex: 1; min-width: 0; }
-.cw-cluecol { margin-bottom: 0.5rem; }
+.cw-clues { display: flex; gap: 1rem; align-items: flex-start; }
+.cw-cluecol { flex: 1; min-width: 0; }
 .cw-cluecol h3 {
   font-family: var(--gp-sans); font-size: 0.62rem; font-weight: 900;
   text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.2rem; color: #0a0a0a;
@@ -60,15 +63,32 @@
 .cw-cluecol li { font-family: var(--gp-body); font-size: 0.56rem; line-height: 1.35; color: #444; }
 .cw-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 
-/* ── Rebus ──────────────────────────────────────────────────────────────── */
-.rb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
-.rb-card {
-  border: 1.5px solid rgba(0, 0, 0, 0.14);
-  background: #fffdf7; padding: 0.6rem 0.5rem;
+/* ── Rebus carousel (one riddle at a time) ──────────────────────────────── */
+.rb-carousel { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; }
+.rb-viewport { width: 100%; overflow: hidden; }
+.rb-track { display: flex; transition: transform 0.35s ease; }
+.rb-slide {
+  flex: 0 0 100%; min-width: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.45rem; text-align: center;
+  gap: 0.7rem; padding: 0.5rem 2.4rem; text-align: center;
 }
-.rb-emoji { font-size: 1.7rem; line-height: 1.1; }
+.rb-emoji { font-size: 2.8rem; line-height: 1.1; }
+.rb-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #0a0a0a; background: #fff; cursor: pointer;
+  font-family: var(--gp-sans); font-size: 1.2rem; font-weight: 800; line-height: 1; color: #0a0a0a;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+.rb-nav--prev { left: 0; }
+.rb-nav--next { right: 0; }
+.rb-nav:hover { background: #ffe500; }
+.rb-dots { display: flex; gap: 0.4rem; justify-content: center; padding-top: 0.5rem; flex-shrink: 0; }
+.rb-dot {
+  width: 0.5rem; height: 0.5rem; padding: 0; cursor: pointer;
+  border: 1.5px solid #7c3aed; background: transparent;
+}
+.rb-dot.is-active { background: #7c3aed; }
 .rb-reveal {
   appearance: none; cursor: pointer; border: 1.5px solid #0a0a0a;
   font-family: var(--gp-sans); font-size: 0.56rem; font-weight: 800;
