@@ -30,7 +30,16 @@ const {
   CLAUDE_DEFAULT_MODEL,
 } = require("../ai-models");
 
+// ── Book registry ──────────────────────────────────────────────────────────
+// The renderer is content-driven, so the SAME engine serves any number of books.
+// Register each book module here under a URL-safe id; the default keeps the old
+// /book response unchanged. Add a book: drop a module in ../content and add a line.
 const BOOK = require("../content/grammarBook");
+const BOOKS = {
+  "grammar-police": BOOK,
+  // "maths-magic": require("../content/mathsMagic"),
+};
+const DEFAULT_BOOK = "grammar-police";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -244,10 +253,14 @@ module.exports = function () {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   // â”€â”€ GET /api/grammar/book â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  router.get("/book", (_req, res) => {
+  router.get("/book", (req, res) => {
+    // ?book=<id> selects which book; omitting it returns the default (unchanged).
+    const id = (req.query.book || DEFAULT_BOOK).toString();
+    const book = BOOKS[id];
+    if (!book) return res.status(404).json({ error: `Unknown book "${id}".` });
     // Content is static per deploy; let the browser cache it for an hour.
     res.set("Cache-Control", "public, max-age=3600");
-    res.json(BOOK);
+    res.json(book);
   });
 
   // ── GET /api/grammar/video?topic=… — public learning-video search ──────────

@@ -11,10 +11,14 @@ import FALLBACK_BOOK from "../data/book.fallback.js";
 const API_BASE =
   window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
+// Which book to load. Defaults to grammar-police; set window.GP_BOOK_ID in the
+// page (before main.js runs) to reuse the engine for a different book.
+const BOOK_ID = window.GP_BOOK_ID || "grammar-police";
+
 // ── Book content ────────────────────────────────────────────────────────────
 export async function loadBook() {
   try {
-    const res = await fetch(`${API_BASE}/api/grammar/book`);
+    const res = await fetch(`${API_BASE}/api/grammar/book?book=${encodeURIComponent(BOOK_ID)}`);
     if (!res.ok) throw new Error(`book ${res.status}`);
     const book = await res.json();
     if (!book?.units?.length) throw new Error("empty book");

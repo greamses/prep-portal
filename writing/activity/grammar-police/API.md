@@ -228,3 +228,76 @@ Key behaviours:
    ```
 3. The API serves the new content immediately on the next deploy; the browser
    picks it up via `GET /api/grammar/book` (no front-end rebuild needed).
+
+---
+
+## 5. Create ANOTHER book (reuse the engine)
+
+The renderer is fully content-driven — it reads a `Book` object and draws pages.
+So a brand-new book needs **no renderer changes**: author content, register it,
+and point a page at it. The API is multi-book aware:
+
+```
+GET /api/grammar/book?book=<id>     # ?book omitted → the default grammar-police
+```
+
+### Step 1 — Author the content
+
+Create `server/content/<yourBook>.js` exporting a `Book` object (same schema as
+§2). Example `server/content/mathsMagic.js`:
+
+```js
+module.exports = {
+  meta: { title: "Maths Magic", subtitle: "Number Patrol", edition: "Prep Portal Maths", version: 1 },
+  media: { cover: "photo-…", hero: "photo-…", video: { id: "…", title: "…" } },
+  wordGroups: {},                 // grammar dropdowns; {} if the book has none
+  units: [ /* same unit shape as §2 */ ],
+};
+```
+
+### Step 2 — Register it on the server
+
+In `server/routes/grammar.js`, add one line to the `BOOKS` registry:
+
+```js
+const BOOKS = {
+  "grammar-police": BOOK,
+  "maths-magic": require("../content/mathsMagic"),   // ← add this
+};
+```
+
+Now `GET /api/grammar/book?book=maths-magic` serves it. `/video` and `/check`
+are book-agnostic and work as-is (note: `/video`'s channel list is tuned for
+English — adjust `VIDEO_CHANNELS` if your book is another subject).
+
+### Step 3 — Give it a page (reuse the front end)
+
+The whole front end (`js/`, `css/`) is generic. Two ways to surface the new book:
+
+**A. New instance page (recommended).** Create `writing/activity/maths-magic/`
+with an `index.html` that is a copy of the grammar-police one, but set the book
+id **before** `main.js` loads:
+
+```html
+<script>window.GP_BOOK_ID = "maths-magic";</script>
+<script type="module" src="/writing/activity/grammar-police/js/main.js"></script>
+```
+
+Point the stylesheet/script `src`s at the shared `grammar-police/js` and
+`grammar-police/css` (or copy them). `book-service.js` reads `window.GP_BOOK_ID`
+and requests `/api/grammar/book?book=maths-magic`; everything else just works.
+
+**B. Same page, switchable.** Set `window.GP_BOOK_ID` from a query param, e.g.
+`?book=maths-magic`, in the existing page before `main.js` runs.
+
+### Step 4 — Offline mirror (optional)
+
+`book.fallback.js` mirrors only the default book (used when the API is
+unreachable). For a second book either skip the offline fallback or generalise
+`scripts/gen-book-fallback.js` to emit one mirror per registered book.
+
+### What you DON'T touch
+
+Covers (`cover.js`), page building/pagination (`pages.js`), grammar/punctuation
+interactions, the crossword/rebus puzzles, the checker, and all CSS are shared
+and content-agnostic — they render whatever `Book` object the API returns.
