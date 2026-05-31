@@ -494,6 +494,15 @@ body {
   display: none;
 }
 
+/* Admin-only nav entries — hidden until the designated admin signs in */
+.site-nav .nav-links > li.admin-only {
+  display: none;
+}
+
+.site-nav.is-admin .nav-links > li.admin-only {
+  display: flex;
+}
+
 /* =============================================
    MOBILE TOGGLE (HAMBURGER)
    ============================================= */

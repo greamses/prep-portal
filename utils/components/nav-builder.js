@@ -24,6 +24,9 @@ const SVG_LOGIN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 
 
 import { planEmblem, SVG_ROSE } from "/utils/components/plan-emblems.js";
 
+// The single designated admin — controls visibility of `adminOnly` nav items.
+const ADMIN_EMAIL = "eemadanyel@gmail.com";
+
 /* =============================================
    ICON RENDERER
 ============================================= */
@@ -193,6 +196,10 @@ function buildMegaMenu() {
   NAV_CONFIG.forEach((item) => {
     const li = document.createElement("li");
     const hasChildren = item.children && item.children.length > 0;
+
+    // Admin-only entries are hidden until the designated admin signs in
+    // (revealed by the `is-admin` class toggled in updateAuthUI).
+    if (item.adminOnly) li.classList.add("admin-only");
 
     /* =========================
        MAIN LABEL (DIV for dropdowns, A for single links)
@@ -576,6 +583,12 @@ function updateAuthUI(user) {
     subListener();
     subListener = null;
   }
+
+  // Reveal/hide admin-only nav entries based on the signed-in account.
+  const isAdmin = Boolean(user && user.email === ADMIN_EMAIL);
+  document
+    .querySelectorAll('.site-nav[data-nav="main"]')
+    .forEach((nav) => nav.classList.toggle("is-admin", isAdmin));
 
   if (user) {
     if (userMenu) userMenu.classList.remove("is-guest");

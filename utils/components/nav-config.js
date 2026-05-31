@@ -394,6 +394,26 @@ const NAV_CONFIG = [
       },
     ],
   },
+
+  /* =========================
+      EDITORIALS  (admin-only)
+      A single, direct link — hidden from the nav unless the
+      designated admin is signed in. See `adminOnly` handling in
+      nav-builder.js and the `.admin-only` rules in nav.css.
+  ========================= */
+  {
+    text: "Editorials",
+    href: "/editorials/index.html",
+    adminOnly: true,
+
+    icon: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"/>
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+    </svg>`,
+
+    description: "The digital magazine edition",
+  },
 ];
 
 export default NAV_CONFIG;

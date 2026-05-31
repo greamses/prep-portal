@@ -80,6 +80,196 @@ export const IMG = {
   ],
 };
 
+// ── The flagship magazine edition (homepage) ─────────────────────────────────
+// The homepage "Who We Are & What We Do" issue. `kind: "magazine"` selects the
+// editorial page set; the yearbooks below use `kind: "yearbook"` instead.
+export const DEFAULT_EDITION = {
+  kind: "magazine",
+  id: "portal-2026",
+  volume: "Vol. I",
+  year: "2026",
+  yearShort: "2026",
+  sub: "Who We Are &amp; What We Do",
+  editionName: "The Portal Edition",
+  blurb: "The flagship issue — who we are, what we do and who we do it for.",
+  meta: ["25 Pages", "Digital Edition", "Featuring Video"],
+  cover: IMG.cover,
+  back: IMG.back,
+};
+
+// ── Yearbooks ────────────────────────────────────────────────────────────────
+// A real school yearbook: a cover, the Head's foreword, then the graduating
+// SETS — each shown by its nice name (never the class name) with a portrait
+// grid of every graduand. The three sets are the leavers of Nursery 3, Grade 6
+// and SS 3, styled as Early Years, Primary and Senior School.
+
+// Name pools used to generate the (placeholder) graduand rosters. Swap the
+// generated `students` arrays for real names + photos when available.
+const FIRST_GIRL = [
+  "Amina", "Ngozi", "Funke", "Chioma", "Aisha", "Zainab", "Bisi", "Adaeze",
+  "Halima", "Yetunde", "Nneka", "Folake", "Temiloluwa", "Ifeoma", "Sade",
+  "Maryam", "Blessing", "Chiamaka", "Damilola", "Hauwa", "Oluwaseun", "Ronke",
+  "Ezinne", "Fatima",
+];
+const FIRST_BOY = [
+  "Chidi", "Tunde", "Emeka", "Ifeanyi", "Babatunde", "Sani", "Musa", "Kunle",
+  "Obinna", "Yusuf", "Segun", "Uchechukwu", "Adewale", "Femi", "Nnamdi",
+  "Kelechi", "Tobiloba", "Dayo", "Ibrahim", "Chinedu", "Olumide", "Abdul",
+  "Ekene", "Gbenga",
+];
+const SURNAMES = [
+  "Okafor", "Adeyemi", "Bello", "Okonkwo", "Eze", "Abubakar", "Balogun",
+  "Nwosu", "Ogunleye", "Ibrahim", "Olawale", "Mohammed", "Chukwu", "Adebayo",
+  "Okeke", "Lawal", "Obi", "Danjuma", "Afolabi", "Uzochukwu", "Aliyu",
+  "Onyeka", "Bamidele", "Nwachukwu",
+];
+
+// Deterministic so every (year, set) gets a distinct but stable roster.
+function makeStudent(i, seed) {
+  const girl = (seed + i) % 2 === 0;
+  const firsts = girl ? FIRST_GIRL : FIRST_BOY;
+  const first = firsts[(seed * 7 + i * 5) % firsts.length];
+  const last = SURNAMES[(seed * 3 + i * 11) % SURNAMES.length];
+  const num = (seed * 17 + i * 23) % 100;
+  const folder = girl ? "women" : "men";
+  const name = `${first} ${last}`;
+  return {
+    name,
+    portrait: {
+      src: `https://randomuser.me/api/portraits/${folder}/${num}.jpg`,
+      fallback: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        name
+      )}&size=256&background=ece7dc&color=1b1a17&bold=true&length=2`,
+      alt: name,
+    },
+  };
+}
+const roster = (seed, count) =>
+  Array.from({ length: count }, (_, i) => makeStudent(i, seed));
+
+// The three graduating sets — shared identities, fresh faces each year.
+function setsFor(seed) {
+  return [
+    {
+      stage: "Early Years",
+      name: "The Sunbeams",
+      note: "Our littlest graduands — first big steps and the brightest of smiles.",
+      photo: pic("photo-1456513080510-7bf3a84b82f8", "yb-sun", "Early years class", 1200),
+      students: roster(seed + 1, 18),
+    },
+    {
+      stage: "Primary",
+      name: "The Trailblazers",
+      note: "Six years of curiosity, courage and quiet, daily discovery.",
+      photo: pic("photo-1427504494785-3a9ca7044f45", "yb-trail", "Primary class", 1200),
+      students: roster(seed + 2, 12),
+    },
+    {
+      stage: "Senior School",
+      name: "The Luminaries",
+      note: "Ready, at last, to carry their light beyond our gates.",
+      photo: pic("photo-1523240795612-9a054b0db644", "yb-lum", "Senior class", 1200),
+      students: roster(seed + 3, 12),
+    },
+  ];
+}
+
+export const YEARBOOKS = [
+  {
+    kind: "yearbook",
+    id: "yearbook-2023-24",
+    volume: "Vol. I",
+    year: "2023 / 24",
+    yearShort: "2023–24",
+    classOf: "2024",
+    sub: "The Yearbook · Class of 2024",
+    editionName: "Yearbook 2023/24",
+    blurb: "Our founding graduands — the very first to walk the stage.",
+    meta: ["The Sunbeams", "The Trailblazers", "The Luminaries"],
+    themeClass: "yb-theme-coral",
+    decor: "doodle",
+    motif: "stars",
+    cardStyle: "side",
+    headName: "Mrs. Adaeze Okafor",
+    foreword: [
+      "To our very first graduating sets: you were brave enough to begin with us when we were still finding our feet, and you taught us as much as we ever taught you. Watching you cross this stage is the proudest moment of our young story.",
+      "Carry the Sunbeams&rsquo; wonder, the Trailblazers&rsquo; daring and the Luminaries&rsquo; light wherever you go next. You will always be the class that started it all &mdash; and our doors will always be open to you.",
+    ],
+    signoff: "You were the first to believe in us. Go now and let the world see what we already know.",
+    highlights: [
+      ["Founders&rsquo; Day", "The morning we opened our gates &mdash; ribbon, rain and a hundred nervous, hopeful faces."],
+      ["First Speech &amp; Prize", "Our inaugural prize-giving, where the Luminaries set a standard the school still measures itself against."],
+      ["The Garden Project", "The Sunbeams planted a flame tree by the hall. It is taller than them now, and still growing."],
+    ],
+    highlightSet: "what",
+    cover: pic("photo-1503676260728-1c00da094a0b", "yb1", "Graduation morning", 1500),
+    back: pic("photo-1497486751825-1233686d5d80", "yb1b", "A quiet desk", 1500),
+    cohorts: setsFor(2024),
+  },
+  {
+    kind: "yearbook",
+    id: "yearbook-2024-25",
+    volume: "Vol. II",
+    year: "2024 / 25",
+    yearShort: "2024–25",
+    classOf: "2025",
+    sub: "The Yearbook · Class of 2025",
+    editionName: "Yearbook 2024/25",
+    blurb: "The year our sets grew, stretched and truly found their stride.",
+    meta: ["The Sunbeams", "The Trailblazers", "The Luminaries"],
+    themeClass: "yb-theme-citrus",
+    decor: "paint",
+    motif: "waves",
+    cardStyle: "beneath",
+    headName: "Dr. Ibrahim Bello",
+    foreword: [
+      "This was the year we found our stride. The Sunbeams filled the corridors with song, the Trailblazers carried home their first national trophies, and the Luminaries proved that ambition and kindness can walk hand in hand.",
+      "As you leave us, remember that every result on these pages began with a single, ordinary act of effort, repeated. Keep repeating it. We cannot wait to read the next chapter you write &mdash; and to welcome you home to tell it.",
+    ],
+    signoff: "You grew into yourselves this year. Now go and grow into the world.",
+    highlights: [
+      ["National Finals", "The Trailblazers&rsquo; quiz team brought home silver &mdash; and the loudest assembly we have ever held."],
+      ["The Arts Festival", "A week of music, masks and murals that turned the whole school into a stage."],
+      ["Mentor Mornings", "Senior Luminaries began coaching the juniors &mdash; a tradition that has quietly become our heartbeat."],
+    ],
+    highlightSet: "gallery",
+    cover: pic("photo-1509062522246-3755977927d7", "yb2", "A bright classroom", 1500),
+    back: pic("photo-1456513080510-7bf3a84b82f8", "yb2b", "Reading by the window", 1500),
+    cohorts: setsFor(2025),
+  },
+  {
+    kind: "yearbook",
+    id: "yearbook-2025-26",
+    volume: "Vol. III",
+    year: "2025 / 26",
+    yearShort: "2025–26",
+    classOf: "2026",
+    sub: "The Yearbook · Class of 2026",
+    editionName: "Yearbook 2025/26",
+    blurb: "A confident, far-reaching set ready for whatever comes next.",
+    meta: ["The Sunbeams", "The Trailblazers", "The Luminaries"],
+    themeClass: "yb-theme-violet",
+    decor: "doodle",
+    motif: "loops",
+    cardStyle: "side",
+    headName: "Mr. Tunde Adeyemi",
+    foreword: [
+      "What a horizon you have brought into view. This set has reached further than any before it &mdash; new subjects, new cities, new dreams &mdash; without ever losing the warmth that makes this place home.",
+      "Sunbeams, Trailblazers, Luminaries: you leave us braver than you found us. Go and meet the future on your own terms. And whenever you need a place that still believes in you, you know exactly where we are.",
+    ],
+    signoff: "The horizon is yours. Walk towards it boldly, and look back kindly.",
+    highlights: [
+      ["The Innovation Fair", "Robotics, recycled art and a solar oven that genuinely cooked &mdash; the Trailblazers do not do things by halves."],
+      ["Outreach Week", "The Luminaries tutored across three communities, proving leadership is something you give away."],
+      ["Sports Day", "A photo finish, a record broken, and a Sunbeam who finished last to the biggest cheer of all."],
+    ],
+    highlightSet: "gallery2",
+    cover: pic("photo-1513475382585-d06e58bcb0e0", "yb3", "A quiet study corner", 1500),
+    back: pic("photo-1522202176988-66273c2fd55f", "yb3b", "Friends studying together", 1500),
+    cohorts: setsFor(2026),
+  },
+];
+
 // ── Editorial copy data (kept here so words live beside the imagery) ──────────
 // Headline stats for the "By the Numbers" page.
 export const STATS = [
@@ -91,12 +281,12 @@ export const STATS = [
 
 // Cities for the "Our Reach" page.
 export const REACH = [
-  { city: "Lagos",        note: "Where it began" },
-  { city: "Abuja",        note: "Capital cohort" },
-  { city: "Port Harcourt",note: "Garden City scholars" },
-  { city: "Kano",         note: "Northern network" },
-  { city: "Ibadan",       note: "Ancient city, modern prep" },
-  { city: "Enugu",        note: "Coal City crew" },
+  { city: "Lagos",        note: "Where it all began &mdash; our largest community of learners and tutors." },
+  { city: "Abuja",        note: "A fast-growing capital cohort sitting JAMB, WAEC and IGCSE alike." },
+  { city: "Port Harcourt",note: "Garden City scholars proving the model works far beyond Lagos." },
+  { city: "Kano",         note: "A thriving northern network, tutoring in the subjects that matter most." },
+  { city: "Ibadan",       note: "An ancient city of learning meets thoroughly modern preparation." },
+  { city: "Enugu",        note: "A close-knit Coal City crew turning quiet effort into loud results." },
 ];
 
 // ── Voices (testimonials) with portrait photos ──────────────────────────────

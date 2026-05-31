@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editorials — Prep Portal</title>
+    <meta
+      name="description"
+      content="The Prep Portal digital magazine edition — flip through our story."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Editorial magazine fonts (Vogue-style Didot + classic serif body) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=EB+Garamond:ital,wght@0,400..600;1,400..500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/home/css/main.css" />
+    <link rel="stylesheet" href="/home/css/magazine.css" />
+    <link rel="stylesheet" href="/home/css/flipbook.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/home/css/login.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <!-- StPageFlip (page-flip) — drives the digital magazine -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+  </head>
+
+  <body>
+    <!-- NAVIGATION -->
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <!-- ═══ EDITORIALS ═══ -->
+    <main class="magazine-section">
+      <!-- Masthead -->
+      <div class="mag-masthead">
+        <div class="mag-masthead-inner">
+          <div class="mag-eyebrow">
+            <span class="mag-issue">Vol. I &mdash; 2026</span>
+            <span class="mag-dot"></span>
+            <span class="mag-category">The Portal Edition</span>
+          </div>
+          <h2 class="mag-title">Editorials.</h2>
+          <div class="mag-rule"></div>
+          <p class="mag-standfirst">
+            A dynamic digital issue on the people, the mission and the tools
+            behind Nigeria&rsquo;s most personal exam-prep platform.
+          </p>
+        </div>
+      </div>
+
+      <!-- Digital Edition flipbook (StPageFlip) -->
+      <div class="mag-edition-wrapper">
+        <div class="mag-edition-header">
+          <span class="mag-edition-label">Digital Edition</span>
+          <h3 class="mag-edition-title">Flip through our story</h3>
+        </div>
+        <div id="magazine-flipbook" class="mag-flipbook"></div>
+      </div>
+
+      <!-- Yearbook archive (one full flippable edition per year) -->
+      <div class="mag-edition-wrapper">
+        <div class="mag-edition-header">
+          <span class="mag-edition-label">The Yearbooks</span>
+          <h3 class="mag-edition-title">Browse the archive</h3>
+        </div>
+        <div id="yearbook-shelf" class="mag-flipbook"></div>
+      </div>
+    </main>
+
+    <!-- ═══ ADMIN GUARD ═══
+         Editorials is an admin-only area. Non-admins are sent home before
+         any content is shown. The nav link is likewise hidden for everyone
+         except the designated admin (see nav-builder.js / nav-config.js). -->
+    <script type="module">
+      import { auth } from "/firebase-init.js";
+
+      const ADMIN_EMAIL = "eemadanyel@gmail.com";
+
+      auth.onAuthStateChanged((user) => {
+        if (!user || user.email !== ADMIN_EMAIL) {
+          window.location.replace("/");
+        }
+      });
+    </script>
+
+    <!-- Digital magazine flipbook (StPageFlip) -->
+    <script type="module">
+      import { initFlipbook, initYearbookShelf } from "/home/js/flipbook.js";
+
+      initFlipbook({ containerId: "magazine-flipbook" });
+      initYearbookShelf({ containerId: "yearbook-shelf" });
+    </script>
+
+    <!-- Navigation builder -->
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+  </body>
+</html>
