@@ -506,6 +506,10 @@
   grid-template-columns: 1fr 1fr;
   gap: 5cqw;
 }
+/* Yearbook highlights: first item holds column 1, the rest stack in column 2 */
+.fb-deck--aside > .fb-deck__item:first-child {
+  grid-row: 1 / span 2;
+}
 .fb-deck__item { }
 .fb-deck__title {
   font-family: var(--fb-display);
@@ -858,7 +862,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.5;
+  opacity: 1;
 }
 .yb-cover__inner {
   position: relative;
@@ -869,6 +873,14 @@
   justify-content: center;
   text-align: center;
   gap: 1.4cqh;
+  /* Scrim travels with the text (z-index 1, above the full-opacity image) so the
+     photo stays vivid at the edges while the centred title stays legible. */
+  background: radial-gradient(
+    115% 80% at 50% 50%,
+    rgba(16, 15, 12, 0.66),
+    rgba(16, 15, 12, 0.28) 60%,
+    rgba(16, 15, 12, 0) 80%
+  );
 }
 .yb-cover__school {
   font-family: var(--font-mono);
@@ -919,7 +931,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.42;
+  opacity: 1;
 }
 .yb-divider__inner {
   position: relative;
@@ -927,9 +939,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 12cqh;
   text-align: center;
-  gap: 1.6cqh;
+  gap: 1.4cqh;
+  /* Title sits high; scrim is heaviest at the top so it stays legible, leaving
+     the lower half of the photo open for the pinned sticky note. */
+  background: linear-gradient(
+    to bottom,
+    rgba(16, 15, 12, 0.74) 0%,
+    rgba(16, 15, 12, 0.32) 42%,
+    rgba(16, 15, 12, 0) 68%
+  );
 }
 .yb-divider__stage {
   font-family: var(--font-mono);
@@ -1085,46 +1106,42 @@
   display: block;
 }
 
-/* Book-2 grid — 2 rows so the taller cards don't crop faces */
+/* Book-2 grid — 2 rows so the taller cards don't crop faces; a wider gap keeps
+   the card shadows from spilling onto neighbouring cards */
 .yb-grid--beneath {
   grid-template-rows: repeat(2, 1fr);
+  gap: 3cqh 4.5cqw;
 }
 
-/* Book-2 card — photo on top, irregular jagged edge all round, name beneath,
-   triple shadow, accents alternating pink / lemon card-to-card */
+/* Book-2 card — photo on top, torn-paper edge (clip-path set per-card inline),
+   name beneath, short triple shadow, accents alternating pink / lemon */
 .yb-card--beneath {
-  display: flex;
-  flex-direction: column;
+  display: block;
   height: 100%;
   border: none;
-  background: var(--fb-paper);
+  background: transparent;
   box-shadow: none;
+  overflow: visible;
   --c1: var(--yb-accent);
   --c2: var(--yb-accent-2);
-  -webkit-clip-path: polygon(
-    0% 7%, 6% 2%, 13% 6%, 21% 1%, 29% 7%, 38% 3%, 47% 7%, 55% 2%, 64% 6%,
-    72% 1%, 81% 6%, 89% 2%, 96% 6%, 100% 8%, 95% 16%, 99% 25%, 94% 34%,
-    99% 44%, 95% 54%, 100% 63%, 94% 73%, 99% 83%, 95% 92%, 97% 99%, 89% 94%,
-    81% 99%, 72% 94%, 63% 99%, 54% 93%, 45% 99%, 36% 94%, 27% 99%, 18% 94%,
-    9% 99%, 2% 94%, 0% 92%, 5% 83%, 1% 73%, 6% 63%, 1% 53%, 5% 43%, 1% 34%,
-    6% 24%, 1% 15%, 4% 8%
-  );
-  clip-path: polygon(
-    0% 7%, 6% 2%, 13% 6%, 21% 1%, 29% 7%, 38% 3%, 47% 7%, 55% 2%, 64% 6%,
-    72% 1%, 81% 6%, 89% 2%, 96% 6%, 100% 8%, 95% 16%, 99% 25%, 94% 34%,
-    99% 44%, 95% 54%, 100% 63%, 94% 73%, 99% 83%, 95% 92%, 97% 99%, 89% 94%,
-    81% 99%, 72% 94%, 63% 99%, 54% 93%, 45% 99%, 36% 94%, 27% 99%, 18% 94%,
-    9% 99%, 2% 94%, 0% 92%, 5% 83%, 1% 73%, 6% 63%, 1% 53%, 5% 43%, 1% 34%,
-    6% 24%, 1% 15%, 4% 8%
-  );
+  /* Triple shadow lives on the OUTER figure (no clip-path here) so the torn
+     clip on the inner body doesn't cut the drop-shadows away. Kept short so it
+     doesn't reach the neighbouring cards. */
   filter:
-    drop-shadow(3px 3px 0 var(--c1))
-    drop-shadow(6px 6px 0 var(--c2))
-    drop-shadow(9px 9px 0 rgba(20, 19, 15, 0.85));
+    drop-shadow(2px 2px 0 var(--c1))
+    drop-shadow(4px 4px 0 var(--c2))
+    drop-shadow(6px 6px 0 rgba(20, 19, 15, 0.82));
 }
 .yb-card--beneath:nth-child(even) {
   --c1: var(--yb-accent-2);
   --c2: var(--yb-accent);
+}
+.yb-card--beneath .yb-card__body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--fb-paper);
+  /* clip-path (torn-paper polygon) is set inline per card in flipbook.js */
 }
 .yb-card--beneath .yb-card__photo {
   flex: 1;
@@ -1150,11 +1167,71 @@
   color: var(--c1);
 }
 
+/* Sticky note — the class's journey summary, pinned to its split/divider page */
+.yb-note {
+  margin: 0;
+  padding: 2.4cqh 2.8cqw 2cqh;
+  color: #14130f;
+  font-family: var(--yb-hand, "Shantell Sans", cursive);
+  box-shadow: 0.5cqw 0.9cqh 0 rgba(20, 19, 15, 0.22);
+}
+.yb-note__msg {
+  margin: 0;
+  font-size: 3cqw;
+  line-height: 1.16;
+}
+.yb-note__by {
+  margin: 0.6cqh 0 0;
+  text-align: right;
+  font-size: 2.4cqw;
+  opacity: 0.7;
+}
+.yb-note--c1 { background: #fff39a; }
+.yb-note--c2 { background: #ffc2d6; }
+.yb-note--c3 { background: #bfe3ff; }
+.yb-note--c4 { background: #c8f0c0; }
+.yb-note--c5 { background: #ffd7a3; }
+
+/* The pinned sticky note sits low on the divider, taped on at a slight angle */
+.yb-divider__sticky {
+  position: absolute;
+  left: 50%;
+  bottom: 6cqh;
+  z-index: 2;
+  width: 58cqw;
+  transform: translateX(-50%) rotate(-3deg);
+}
+.yb-divider__sticky .yb-note__msg {
+  font-size: 2.7cqw;
+  line-height: 1.22;
+}
+.yb-divider__sticky::before {
+  content: "";
+  position: absolute;
+  top: -1.5cqh;
+  left: 50%;
+  width: 24%;
+  height: 3cqh;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
 /* Per-year colour themes (set on the book element). --yb-accent-2 enables the
-   alternating two-colour books (e.g. the pink + lemon citrus book). */
-.fb-book--yearbook { --yb-accent: #ff5d5d; --yb-accent-2: var(--yb-accent); }
+   alternating two-colour books (e.g. the pink + baby-blue citrus book). */
+.fb-book--yearbook {
+  --yb-accent: #ff5d5d;
+  --yb-accent-2: var(--yb-accent);
+  /* Yearbooks use a characterful type system (scoped here so the homepage
+     magazine keeps its Bodoni/Garamond look). Fraunces brings warmth + wonk;
+     Shantell Sans is the marker hand on the sticky notes. */
+  --fb-display: "Fraunces", "Bodoni Moda", Georgia, serif;
+  --fb-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --yb-hand: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-optical-sizing: auto;
+}
 .yb-theme-coral { --yb-accent: #ff5d5d; }
-.yb-theme-citrus { --yb-accent: #ff5d9e; --yb-accent-2: #ffd23e; }
+.yb-theme-citrus { --yb-accent: #ff5d9e; --yb-accent-2: #8ecdf2; }
 .yb-theme-violet { --yb-accent: #7c5cff; }
 
 /* Per-book background decor (doodles or paint print), tinted by the accent */

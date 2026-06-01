@@ -479,7 +479,9 @@ function ybContents(ed, n) {
   );
 }
 
-function ybDivider(c, ed, n) {
+// Set divider ("split page"). A sticky note is pinned on, holding the class's
+// own one-paragraph summary of their journey.
+function ybDivider(c, ed, n, ci = 0) {
   return `
   <div class="fb-page yb-divider">
     <div class="yb-divider__img">${img(c.photo)}</div>
@@ -487,25 +489,54 @@ function ybDivider(c, ed, n) {
     <div class="fb-page__inner yb-divider__inner">
       <span class="yb-divider__stage">${c.stage}</span>
       <h2 class="yb-divider__name">${c.name}</h2>
-      <p class="yb-divider__note">${c.note}</p>
       <p class="yb-divider__class">Class of ${ed.classOf}</p>
     </div>
+    <figure class="yb-note yb-note--c${(ci % 5) + 1} yb-divider__sticky">
+      <p class="yb-note__msg">${c.summary}</p>
+      <figcaption class="yb-note__by">— ${c.name}</figcaption>
+    </figure>
   </div>`;
 }
 
 // One graduand card. Two per-book styles:
 //   • "side"    — details on the left, photo on the right
 //   • "beneath" — photo on top (jagged edge), name beneath, long shadow
-function ybCard(s, c, ed) {
+// Irregular torn-paper clip-path — varied spacing & depth around the perimeter,
+// seeded so each card tears differently (no repeating sawtooth).
+function tearPath(seed) {
+  let k = seed * 13.7 + 1;
+  const step = () => 3.5 + rnd(k++) * 6.5; // 3.5–10% spacing (irregular)
+  const depth = () => rnd(k++) * 4.2; // 0–4.2% inset
+  const cl = (v) => Math.max(0, Math.min(100, v));
+  const pts = [];
+  const push = (x, y) => pts.push(`${cl(x).toFixed(1)}% ${cl(y).toFixed(1)}%`);
+  let x = 0, y = 0;
+  push(0, depth());
+  while (x < 100) { x = Math.min(100, x + step()); push(x, depth()); }     // top →
+  while (y < 100) { y = Math.min(100, y + step()); push(100 - depth(), y); } // right ↓
+  x = 100;
+  while (x > 0) { x = Math.max(0, x - step()); push(x, 100 - depth()); }    // bottom ←
+  y = 100;
+  while (y > 0) { y = Math.max(0, y - step()); push(depth(), y); }          // left ↑
+  return `polygon(${pts.join(", ")})`;
+}
+
+function ybCard(s, c, ed, seed = 0) {
   const photo = `<div class="yb-card__photo">${img(s.portrait)}</div>`;
   if (ed.cardStyle === "beneath") {
+    // Outer figure carries the (unclipped) triple shadow; inner body carries the
+    // torn-paper clip-path. They must be separate elements — clip-path applies
+    // after filter, so a shared element would clip the drop-shadows away.
+    const tear = tearPath(seed);
     return `
       <figure class="yb-card yb-card--beneath">
-        ${photo}
-        <figcaption class="yb-card__detail">
-          <span class="yb-card__name">${s.name}</span>
-          <span class="yb-card__tag">${c.name}</span>
-        </figcaption>
+        <div class="yb-card__body" style="clip-path:${tear};-webkit-clip-path:${tear}">
+          ${photo}
+          <figcaption class="yb-card__detail">
+            <span class="yb-card__name">${s.name}</span>
+            <span class="yb-card__tag">${c.name}</span>
+          </figcaption>
+        </div>
       </figure>`;
   }
   return `
@@ -522,7 +553,7 @@ function ybCard(s, c, ed) {
 // Card grid — 2 columns × 3 rows. Big sets paginate; every page of a book
 // carries that book's own decor (doodles or paint print).
 function ybGrid(c, ed, n, part = 0, total = 1) {
-  const cards = c.students.map((s) => ybCard(s, c, ed)).join("");
+  const cards = c.students.map((s, i) => ybCard(s, c, ed, n * 31 + i + 1)).join("");
   const partLabel =
     total > 1 ? `<span class="yb-grid__part">Part ${part + 1} of ${total}</span>` : "";
   const gridCls = ed.cardStyle === "beneath" ? "yb-grid yb-grid--beneath" : "yb-grid";
@@ -551,7 +582,7 @@ function ybHighlights(ed, n) {
     `<span class="fb-kicker">The Year in Review</span>
      <h2 class="fb-h1 fb-h1--sm">Moments we&rsquo;ll <em>keep</em>.</h2>
      ${grid}
-     <div class="fb-deck">${deck}</div>
+     <div class="fb-deck fb-deck--aside">${deck}</div>
      ${folio(pad(n), "Highlights")}`,
     { n, cls: "yb-page", wm: false, deco: ybDecor(ed, n) }
   );
@@ -601,8 +632,8 @@ function YEARBOOK_PAGES(ed) {
   // Beneath-style cards use a 2-row grid (4/page) so faces aren't cut by the
   // jagged edge; side cards use 3 rows (6/page).
   const per = ed.cardStyle === "beneath" ? 4 : 6;
-  ed.cohorts.forEach((c) => {
-    push(ybDivider(c, ed, ++n));      // set divider
+  ed.cohorts.forEach((c, ci) => {
+    push(ybDivider(c, ed, ++n, ci));  // split page + journey sticky note
     const parts = chunkArr(c.students, per);
     parts.forEach((students, i) => {
       push(ybGrid({ ...c, students }, ed, ++n, i, parts.length));

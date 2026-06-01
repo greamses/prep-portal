@@ -154,6 +154,8 @@ function setsFor(seed) {
       stage: "Early Years",
       name: "The Sunbeams",
       note: "Our littlest graduands — first big steps and the brightest of smiles.",
+      summary:
+        "We came in shy and tiny, and somewhere between nap time, story corner and a hundred new friends, we grew brave. This was our very first big adventure — thank you for holding our little hands all the way.",
       photo: pic("photo-1456513080510-7bf3a84b82f8", "yb-sun", "Early years class", 1200),
       students: roster(seed + 1, 18),
     },
@@ -161,6 +163,8 @@ function setsFor(seed) {
       stage: "Primary",
       name: "The Trailblazers",
       note: "Six years of curiosity, courage and quiet, daily discovery.",
+      summary:
+        "Six years flew by in a blur of spelling tests, science fairs and best friends made for life. We arrived as little kids and we&rsquo;re leaving as a team that knows it can do hard things. Onward, together!",
       photo: pic("photo-1427504494785-3a9ca7044f45", "yb-trail", "Primary class", 1200),
       students: roster(seed + 2, 12),
     },
@@ -168,6 +172,8 @@ function setsFor(seed) {
       stage: "Senior School",
       name: "The Luminaries",
       note: "Ready, at last, to carry their light beyond our gates.",
+      summary:
+        "From nervous juniors to the seniors who led the way, we studied late, laughed harder, and slowly figured out who we wanted to be. We&rsquo;re ready now — and we&rsquo;ll carry this place with us wherever we go.",
       photo: pic("photo-1523240795612-9a054b0db644", "yb-lum", "Senior class", 1200),
       students: roster(seed + 3, 12),
     },
@@ -229,8 +235,8 @@ export const YEARBOOKS = [
     signoff: "You grew into yourselves this year. Now go and grow into the world.",
     highlights: [
       ["National Finals", "The Trailblazers&rsquo; quiz team brought home silver &mdash; and the loudest assembly we have ever held."],
-      ["The Arts Festival", "A week of music, masks and murals that turned the whole school into a stage."],
       ["Mentor Mornings", "Senior Luminaries began coaching the juniors &mdash; a tradition that has quietly become our heartbeat."],
+      ["The Arts Festival", "A week of music, masks and murals that turned the whole school into a stage."],
     ],
     highlightSet: "gallery",
     cover: pic("photo-1509062522246-3755977927d7", "yb2", "A bright classroom", 1500),
