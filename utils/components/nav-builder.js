@@ -1,4 +1,14 @@
 import NAV_CONFIG from "/utils/components/nav-config.js";
+import {
+  NAV_ICONS,
+  iconBlob,
+  paintLayer,
+  paintBlob,
+  planEmblem,
+  SVG_ROSE,
+  SVG_PERSON,
+  SVG_CAMERA,
+} from "/utils/components/nav-icons.js";
 import "/home/js/auth-modal.js";
 import { auth, db } from "/firebase-init.js";
 import { signOut, updateProfile } from "firebase/auth";
@@ -15,36 +25,140 @@ import {
 } from "firebase/storage";
 
 const LOGO_PATH = "/logo/logo-light.svg";
-const SVG_PERSON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>`;
-const SVG_CAMERA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
-const SVG_HOME = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
-const SVG_STAR = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
-const SVG_LOGOUT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>`;
-const SVG_LOGIN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`;
-
-import { planEmblem, SVG_ROSE } from "/utils/components/plan-emblems.js";
 
 // The single designated admin — controls visibility of `adminOnly` nav items.
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 /* =============================================
-   ICON RENDERER
+   GSAP (loaded from CDN, progressive enhancement)
+   ---------------------------------------------
+   Pulled from a full URL so the ~15 pages that include this nav don't need
+   GSAP in their import map. If the load fails (offline/blocked) or the user
+   prefers reduced motion, the nav still works — CSS owns the entrance instead.
+   The `gsap-anim` class on the bar tells nav.css to step aside for GSAP.
 ============================================= */
-function renderIcon(icon) {
-  if (!icon) return null;
+let gsap = null;
+const prefersReducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)",
+).matches;
+const isDesktop = () => window.matchMedia("(min-width: 769px)").matches;
 
-  if (icon.trim().startsWith("<svg")) {
-    const wrapper = document.createElement("span");
-    wrapper.className = "nav-icon";
-    wrapper.innerHTML = icon;
-    return wrapper;
+if (!prefersReducedMotion) {
+  import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm")
+    .then((m) => {
+      gsap = m.gsap || m.default || null;
+      if (gsap) {
+        document
+          .querySelectorAll('.site-nav[data-nav="main"]')
+          .forEach((nav) => nav.classList.add("gsap-anim"));
+      }
+    })
+    .catch(() => {
+      gsap = null;
+    });
+}
+
+// Rotating accent palette applied to each top-level section (mirrors the
+// `theme-*` tokens in nav.css that drive the sticker tiles + soft tints).
+const SECTION_THEMES = ["theme-yellow", "theme-blue", "theme-green", "theme-red"];
+
+/* Staggered entrance for a freshly-opened mega panel (desktop only). */
+function playOpenAnimation(li) {
+  if (!gsap || prefersReducedMotion || !isDesktop()) return;
+
+  const panel = li.querySelector(".mega-panel");
+  if (!panel) return;
+
+  const branches = panel.querySelectorAll(".mega-branch");
+  const image = panel.querySelector(".mega-image");
+  const paint = panel.querySelector(".mega-panel__paint");
+  gsap.killTweensOf([...branches, image, paint].filter(Boolean));
+
+  const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+  // Paint drifts/scales in — opacity is left to CSS so it stays a faint wash.
+  if (paint) {
+    tl.fromTo(
+      paint,
+      { scale: 0.9, rotate: -3 },
+      {
+        scale: 1,
+        rotate: 0,
+        duration: 0.6,
+        ease: "power2.out",
+        transformOrigin: "50% 50%",
+        clearProps: "transform",
+      },
+      0,
+    );
   }
 
-  const img = document.createElement("img");
-  img.src = icon;
-  img.alt = "";
-  img.className = "nav-icon";
-  return img;
+  tl.fromTo(
+    branches,
+    { y: 16, autoAlpha: 0 },
+    {
+      y: 0,
+      autoAlpha: 1,
+      duration: 0.34,
+      stagger: 0.08,
+      ease: "back.out(1.5)",
+      clearProps: "transform,opacity,visibility",
+    },
+    0.04,
+  ).fromTo(
+    panel.querySelectorAll(".nav-leaf"),
+    { x: -8, autoAlpha: 0 },
+    {
+      x: 0,
+      autoAlpha: 1,
+      duration: 0.24,
+      stagger: 0.025,
+      ease: "power3.out",
+      clearProps: "transform,opacity,visibility",
+    },
+    "-=0.18",
+  );
+
+  if (image) {
+    tl.fromTo(
+      image,
+      { scale: 0.92, autoAlpha: 0 },
+      {
+        scale: 1,
+        autoAlpha: 1,
+        duration: 0.42,
+        ease: "back.out(1.4)",
+        clearProps: "transform,opacity,visibility",
+      },
+      "<",
+    );
+  }
+}
+
+/* =============================================
+   ICON RENDERER
+   ---------------------------------------------
+   A sticker tile = an organic blob (filled with the accent) behind the glyph.
+   Each blob gets its own seed so neighbouring tiles never share a silhouette.
+============================================= */
+let blobSeed = 0;
+function renderIcon(icon, seed) {
+  if (!icon) return null;
+
+  const s = seed ?? ++blobSeed;
+  const glyph = icon.trim().startsWith("<svg")
+    ? icon
+    : `<img src="${icon}" alt="">`;
+
+  const wrapper = document.createElement("span");
+  wrapper.className = "nav-icon";
+  wrapper.innerHTML = `${iconBlob(s)}<span class="nav-icon__glyph">${glyph}</span>`;
+  return wrapper;
+}
+
+/* Plan emblem wrapped on the shared blob tile (markup form, for innerHTML). */
+function wrapEmblem(emblem) {
+  return `<span class="nav-icon">${iconBlob(7)}<span class="nav-icon__glyph">${emblem}</span></span>`;
 }
 
 /* =============================================
@@ -68,85 +182,104 @@ function matchPath(currentPath, href) {
 }
 
 /* =============================================
-   RECURSIVE TREE RENDERER
+   LEAF (a clickable sublink)
 ============================================= */
-function buildTree(items, level = 1) {
-  const container = document.createElement("div");
-  container.className = `nav-level nav-level-${level}`;
+function buildLeaf(item) {
+  const link = document.createElement("a");
+  link.href = item.href || "#";
+  link.className = "nav-leaf";
+  link.setAttribute("data-nav-href", item.href || "#");
 
-  items.forEach((item, index) => {
-    const block = document.createElement("div");
-    block.className = "nav-block";
+  const textWrap = document.createElement("div");
+  textWrap.className = "nav-leaf-text";
 
-    // Distribute playful theme colors based on index
-    const colorClasses = [
-      "theme-yellow",
-      "theme-blue",
-      "theme-green",
-      "theme-red",
-    ];
-    block.classList.add(colorClasses[index % colorClasses.length]);
+  const text = document.createElement("span");
+  text.className = "nav-leaf-title";
+  text.textContent = item.text;
+  textWrap.appendChild(text);
 
-    /* =========================
-       HEADER (NON-CLICKABLE GROUP)
-    ========================= */
-    if (item.children && item.children.length > 0) {
-      const header = document.createElement("div");
-      header.className = "nav-header";
+  if (item.description) {
+    const desc = document.createElement("small");
+    desc.textContent = item.description;
+    textWrap.appendChild(desc);
+  }
+  link.appendChild(textWrap);
 
-      const icon = renderIcon(item.icon);
-      if (icon) header.appendChild(icon);
+  const arrow = document.createElement("span");
+  arrow.className = "nav-leaf-arrow";
+  arrow.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+  link.appendChild(arrow);
 
-      const title = document.createElement("span");
-      title.textContent = item.text;
-      header.appendChild(title);
+  return link;
+}
 
-      block.appendChild(header);
-      block.appendChild(buildTree(item.children, level + 1));
+/* =============================================
+   BRANCHES (columns of sub-groups → sublinks)
+   ---------------------------------------------
+   Each second-level group becomes its own column: a header (sticker icon +
+   title + sublink count) over the list of sublinks, all visible at once. The
+   columns flow in a responsive grid. Hovering a column (desktop) drives the
+   right-hand preview stage.
+============================================= */
+function buildBranches(groups, hooks = {}) {
+  const wrap = document.createElement("div");
+  wrap.className = "mega-branches";
+
+  groups.forEach((group, i) => {
+    const hasKids = group.children && group.children.length > 0;
+
+    const branch = document.createElement("div");
+    branch.className = "mega-branch";
+    branch.classList.add(SECTION_THEMES[i % SECTION_THEMES.length]);
+
+    // ── Column header (a link if it's a direct group, else a static label) ──
+    const head = document.createElement(hasKids ? "div" : "a");
+    head.className = "mega-branch__head";
+    if (!hasKids) {
+      head.href = group.href || "#";
+      head.setAttribute("data-nav-href", group.href || "#");
     }
 
-    /* =========================
-       LEAF NODE (CLICKABLE ITEMS)
-    ========================= */
-    if (!item.children || item.children.length === 0) {
-      const link = document.createElement("a");
-      link.href = item.href || "#";
-      link.className = "nav-leaf";
-      link.setAttribute("data-nav-href", item.href || "#");
+    const icon = renderIcon(group.icon);
+    if (icon) head.appendChild(icon);
 
-      const icon = renderIcon(item.icon);
-      if (icon) {
-        link.appendChild(icon);
-      }
+    const txt = document.createElement("span");
+    txt.className = "mega-branch__text";
+    txt.innerHTML =
+      `<span class="mega-branch__title">${group.text}</span>` +
+      (group.description
+        ? `<span class="mega-branch__desc">${group.description}</span>`
+        : "");
+    head.appendChild(txt);
 
-      const textWrap = document.createElement("div");
-      textWrap.className = "nav-leaf-text";
+    if (hasKids) {
+      const count = document.createElement("span");
+      count.className = "mega-branch__count";
+      count.textContent = group.children.length;
+      head.appendChild(count);
+    }
+    branch.appendChild(head);
 
-      const text = document.createElement("span");
-      text.className = "nav-leaf-title";
-      text.textContent = item.text;
-      textWrap.appendChild(text);
-
-      if (item.description) {
-        const desc = document.createElement("small");
-        desc.textContent = item.description;
-        textWrap.appendChild(desc);
-      }
-
-      link.appendChild(textWrap);
-
-      const arrow = document.createElement("span");
-      arrow.className = "nav-leaf-arrow";
-      arrow.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-      link.appendChild(arrow);
-
-      block.appendChild(link);
+    // ── Sublinks (always visible within the column) ───────
+    if (hasKids) {
+      const body = document.createElement("div");
+      body.className = "mega-branch__body";
+      group.children.forEach((leaf) => body.appendChild(buildLeaf(leaf)));
+      branch.appendChild(body);
     }
 
-    container.appendChild(block);
+    // Hovering the column drives the right-hand preview (desktop only).
+    branch.addEventListener("mouseenter", () => {
+      if (isDesktop()) hooks.onPreview?.(group, i);
+    });
+
+    wrap.appendChild(branch);
   });
 
-  return container;
+  // Leaving the columns crossfades the stage back to the section scene.
+  wrap.addEventListener("mouseleave", () => hooks.onPreviewEnd?.());
+
+  return wrap;
 }
 
 /* =============================================
@@ -161,7 +294,7 @@ function setActiveNav(siteNav) {
 
   allLinks.forEach((link) => {
     link.classList.remove("active");
-    link.closest(".nav-block")?.classList.remove("active");
+    link.closest(".mega-branch")?.classList.remove("active");
     link.closest(".nav-links > li")?.classList.remove("active");
 
     const href = link.getAttribute("data-nav-href");
@@ -182,8 +315,8 @@ function setActiveNav(siteNav) {
   if (!bestMatch) return;
 
   bestMatch.classList.add("active");
-  bestMatch.closest(".nav-block")?.classList.add("active");
   bestMatch.closest(".nav-links > li")?.classList.add("active");
+  bestMatch.closest(".mega-branch")?.classList.add("active");
 }
 
 /* =============================================
@@ -193,9 +326,12 @@ function buildMegaMenu() {
   const ul = document.createElement("ul");
   ul.className = "nav-links";
 
-  NAV_CONFIG.forEach((item) => {
+  NAV_CONFIG.forEach((item, index) => {
     const li = document.createElement("li");
     const hasChildren = item.children && item.children.length > 0;
+
+    // Give each section its own accent (sticker tile + soft tints).
+    li.classList.add(SECTION_THEMES[index % SECTION_THEMES.length]);
 
     // Admin-only entries are hidden until the designated admin signs in
     // (revealed by the `is-admin` class toggled in updateAuthUI).
@@ -229,6 +365,8 @@ function buildMegaMenu() {
         );
         if (!isOpen) {
           li.classList.add("open");
+          li.querySelector(".mega-image")?.classList.remove("is-previewing");
+          playOpenAnimation(li);
         }
       });
     }
@@ -242,29 +380,68 @@ function buildMegaMenu() {
       const panel = document.createElement("div");
       panel.className = "mega-panel";
 
+      // Faint paint-print wash, tinted by the section accent (seeded per section).
+      panel.insertAdjacentHTML("afterbegin", paintLayer(index * 5 + 2));
+
       const inner = document.createElement("div");
       inner.className = "mega-panel-content";
 
       const tree = document.createElement("div");
       tree.className = "mega-tree";
-      tree.appendChild(buildTree(item.children, 1));
-      inner.appendChild(tree);
 
+      // Small editorial intro above the branches.
+      const intro = document.createElement("div");
+      intro.className = "mega-panel__intro";
+      intro.innerHTML =
+        `<span class="mega-panel__eyebrow">${item.text}</span>` +
+        (item.description
+          ? `<span class="mega-panel__tag">${item.description}</span>`
+          : "");
+      tree.appendChild(intro);
+
+      // ── Right-hand preview stage: a blob "paint" background showing the
+      //    section scene by default, crossfading to a hovered branch's icon ──
+      let stage = null;
+      let preview = null;
       if (item.image) {
-        const imageWrap = document.createElement("div");
-        imageWrap.className = "mega-image";
+        stage = document.createElement("div");
+        stage.className = "mega-image";
+        stage.insertAdjacentHTML("afterbegin", paintBlob(index * 5 + 6));
 
+        const scene = document.createElement("div");
+        scene.className = "mega-image__scene";
         if (item.image.trim().startsWith("<svg")) {
-          imageWrap.innerHTML = item.image;
+          scene.innerHTML = item.image;
         } else {
           const img = document.createElement("img");
           img.src = item.image;
           img.alt = item.text;
-          imageWrap.appendChild(img);
+          scene.appendChild(img);
         }
+        stage.appendChild(scene);
 
-        inner.appendChild(imageWrap);
+        preview = document.createElement("div");
+        preview.className = "mega-image__preview";
+        stage.appendChild(preview);
       }
+
+      const showPreview = (group, i) => {
+        if (!stage || !preview || !isDesktop() || !group.icon) return;
+        preview.className =
+          "mega-image__preview " + SECTION_THEMES[i % SECTION_THEMES.length];
+        preview.innerHTML = `<span class="mega-image__glyph">${group.icon}</span>`;
+        stage.classList.add("is-previewing");
+      };
+      const endPreview = () => stage?.classList.remove("is-previewing");
+
+      tree.appendChild(
+        buildBranches(item.children, {
+          onPreview: showPreview,
+          onPreviewEnd: endPreview,
+        }),
+      );
+      inner.appendChild(tree);
+      if (stage) inner.appendChild(stage);
 
       panel.appendChild(inner);
       li.appendChild(panel);
@@ -313,6 +490,15 @@ function buildUserMenu() {
   menuDiv.className = "user-menu";
   menuDiv.id = "user-menu";
 
+  // Builds a menu row's contents: a blob icon (same as the nav) + a label.
+  const fillItem = (el, iconKey, label) => {
+    const ic = renderIcon(NAV_ICONS[iconKey]);
+    if (ic) el.appendChild(ic);
+    const span = document.createElement("span");
+    span.textContent = label;
+    el.appendChild(span);
+  };
+
   // ── Nav trigger ──────────────────────────────────────────
   const profileDiv = document.createElement("div");
   profileDiv.className = "user-profile";
@@ -333,7 +519,7 @@ function buildUserMenu() {
   const planBadge = document.createElement("span");
   planBadge.className = "user-plan-badge plan-free";
   planBadge.id = "user-plan-badge";
-  planBadge.innerHTML = SVG_ROSE;
+  planBadge.innerHTML = wrapEmblem(SVG_ROSE);
 
   details.appendChild(nameSpan);
   details.appendChild(planBadge);
@@ -401,14 +587,14 @@ function buildUserMenu() {
 
   const dashboardLink = document.createElement("a");
   dashboardLink.href = "/dashboard.html";
-  dashboardLink.className = "neo-dropdown-item auth-only";
-  dashboardLink.innerHTML = `${SVG_HOME}<span>Dashboard</span>`;
+  dashboardLink.className = "neo-dropdown-item nd-blue auth-only";
+  fillItem(dashboardLink, "home", "Dashboard");
   items.appendChild(dashboardLink);
 
   const subscriptionLink = document.createElement("button");
   subscriptionLink.type = "button";
-  subscriptionLink.className = "neo-dropdown-item auth-only";
-  subscriptionLink.innerHTML = `${SVG_STAR}<span>Subscription</span>`;
+  subscriptionLink.className = "neo-dropdown-item nd-gold auth-only";
+  fillItem(subscriptionLink, "star", "Subscription");
   subscriptionLink.addEventListener("click", (e) => {
     e.preventDefault();
     menuDiv.classList.remove("open");
@@ -418,8 +604,8 @@ function buildUserMenu() {
 
   const loginBtn = document.createElement("button");
   loginBtn.type = "button";
-  loginBtn.className = "neo-dropdown-item guest-only";
-  loginBtn.innerHTML = `${SVG_LOGIN_ICON}<span>Sign In</span>`;
+  loginBtn.className = "neo-dropdown-item nd-green guest-only";
+  fillItem(loginBtn, "signin", "Sign In");
   loginBtn.addEventListener("click", (e) => {
     e.preventDefault();
     menuDiv.classList.remove("open");
@@ -436,7 +622,7 @@ function buildUserMenu() {
   const logoutBtn = document.createElement("button");
   logoutBtn.className = "neo-dropdown-item neo-dropdown-item--danger";
   logoutBtn.type = "button";
-  logoutBtn.innerHTML = `${SVG_LOGOUT}<span>Sign Out</span>`;
+  fillItem(logoutBtn, "signout", "Sign Out");
   logoutBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     menuDiv.classList.remove("open");
@@ -512,6 +698,9 @@ function buildNav(siteNav) {
 
   rightWrap.appendChild(toggle);
   siteNav.appendChild(rightWrap);
+
+  // If GSAP already loaded, let it own the entrance on this instance too.
+  if (gsap) siteNav.classList.add("gsap-anim");
 
   // Set active state specifically on this navigation instance
   setActiveNav(siteNav);
@@ -614,13 +803,13 @@ function updateAuthUI(user) {
       const d = snap.exists() ? snap.data() : {};
       const isPremium = Boolean(d.isPremium);
       const planName = d.planName || "";
-      planBadge.innerHTML = planEmblem(isPremium, planName);
+      planBadge.innerHTML = wrapEmblem(planEmblem(isPremium, planName));
       const tier = !isPremium ? "plan-free" : (planName.toLowerCase().includes("monthly") ? "plan-premium" : "plan-pro");
       planBadge.className = "user-plan-badge " + tier;
 
       const ddPlan = document.getElementById("dropdown-plan-badge");
       if (ddPlan) {
-        ddPlan.innerHTML = planEmblem(isPremium, planName);
+        ddPlan.innerHTML = wrapEmblem(planEmblem(isPremium, planName));
         ddPlan.className = "user-plan-badge " + tier;
       }
 
@@ -640,7 +829,7 @@ function updateAuthUI(user) {
     const ddEmail = document.getElementById("dropdown-user-email");
     if (ddEmail) ddEmail.textContent = "";
     if (planBadge) {
-      planBadge.innerHTML = SVG_ROSE;
+      planBadge.innerHTML = wrapEmblem(SVG_ROSE);
       planBadge.className = "user-plan-badge plan-free";
     }
     const ddPlan = document.getElementById("dropdown-plan-badge");

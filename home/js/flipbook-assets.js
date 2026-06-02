@@ -12,6 +12,12 @@ const P = (seed, w = 900, h = 1200) =>
 
 const pic = (id, seed, alt, w) => ({ src: U(id, w), fallback: P(seed), alt });
 
+// Hotlinked Pexels photo (with a picsum fallback). Kept as remote links so the
+// repo stays lean; swap the id for your own URL or a local path later.
+const PX = (id, w = 600, h = 800) =>
+  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}&h=${h}&fit=crop`;
+const px = (id, seed, alt) => ({ src: PX(id), fallback: P(seed), alt });
+
 // ── Featured video (resolved at runtime from /api/youtube/featured; this is
 //    only the fallback shown if the API is unconfigured/unreachable) ──────────
 export const VIDEO = {
@@ -91,10 +97,66 @@ export const DEFAULT_EDITION = {
   yearShort: "2026",
   sub: "Who We Are &amp; What We Do",
   editionName: "The Portal Edition",
-  blurb: "The flagship issue — who we are, what we do and who we do it for.",
+  blurb:
+    "The flagship issue — who we are, what we do and who we do it for. Our mission, the team behind the platform, real student voices and the film.",
   meta: ["25 Pages", "Digital Edition", "Featuring Video"],
-  cover: IMG.cover,
+  note: "Start<br>here!",
+  noteBy: "the whole story",
+  pad: "#fff39a",
+  cover: px(8617834, "pp-cover", "Teacher and students, back to school"),
   back: IMG.back,
+};
+
+// ── The Results Edition ──────────────────────────────────────────────────────
+// Social proof issue: before/after grades, the numbers, parent & student voices.
+export const RESULTS_EDITION = {
+  kind: "results",
+  id: "results-2026",
+  volume: "Vol. II",
+  year: "2026",
+  yearShort: "2026",
+  sub: "Real Wins &amp; Results",
+  editionName: "The Results Edition",
+  blurb:
+    "The proof, in their own words — before-and-after grades, the numbers behind the work, and the parents and students living the turnaround.",
+  meta: ["Student wins", "By the numbers", "Parent voices"],
+  note: "Straight<br>A1s!",
+  noteBy: "real student wins",
+  pad: "#ffc9de",
+  coverCaption:
+    "The grades, the numbers and the families behind Nigeria&rsquo;s most personal exam-prep platform.",
+  backTitle: "Your child&rsquo;s<br /><em>win</em> is next.",
+  backText:
+    "Thousands of Nigerian families have already turned exam stress into real results. The next success story on these pages could be yours.",
+  cta: "Start Free Revision",
+  cover: px(7972741, "rs-cover", "Graduates celebrating"),
+  back: px(20240506, "rs-back", "A proud graduate"),
+};
+
+// ── The Playbook ─────────────────────────────────────────────────────────────
+// Practical how-to-pass guide: revision plan, exam-day checklist, study method.
+export const PLAYBOOK_EDITION = {
+  kind: "playbook",
+  id: "playbook-2026",
+  volume: "Vol. III",
+  year: "2026",
+  yearShort: "2026",
+  sub: "How to Pass &mdash; The Playbook",
+  editionName: "The Playbook",
+  blurb:
+    "Everything we wish every student knew: a week-by-week revision plan, the exam-day checklist, the mistakes that cost marks, and how to actually study.",
+  meta: ["Revision plan", "Exam-day checklist", "Study hacks"],
+  note: "Steal our<br>checklist",
+  noteBy: "exam-day tips",
+  pad: "#bfe3ff",
+  coverCaption:
+    "A practical, no-nonsense guide to walking into the exam hall ready &mdash; from the team that does this every day.",
+  backTitle: "Ready to <em>pass</em>?",
+  backText:
+    "Put the playbook to work with CBT-accurate practice and a tutor in your corner. It costs nothing to begin — and the next grade starts the moment you do.",
+  cta: "Start Free Revision",
+  cover: px(6958541, "pb-cover", "Open textbook and study notes"),
+  back: px(6549594, "pb-back", "Studying with a textbook"),
 };
 
 // ── Yearbooks ────────────────────────────────────────────────────────────────

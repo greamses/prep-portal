@@ -2,7 +2,12 @@
 @import url("/utils/components/dropdown.css");
 
 /* =============================================
-   MEGA NAVIGATION – NEO-BRUTALIST & KID FRIENDLY
+   MEGA NAVIGATION — SOFT / STICKER / KID-FRIENDLY
+   ---------------------------------------------
+   Pairs with the soft muted theme tokens. Each section carries an accent
+   exposed as --tile (and inherited by its sticker icon + soft tints). Custom
+   properties inherit from the *nearest* themed ancestor, so a blue block
+   inside the yellow "Exams" column still tints blue — no specificity wars.
    ============================================= */
 
 /* ----- GLOBAL NAV BAR (STICKY FIXED) ----- */
@@ -17,15 +22,23 @@
   justify-content: space-between;
   background: var(--bg);
   padding: 0 1.5rem;
-  height: 80px;
-  border-bottom: 3px solid var(--ink);
+  height: 76px;
+  border-bottom: var(--border-subtle);
   font-family: var(--font-mono);
-  transition: all var(--duration-smooth) var(--ease-default);
+  transition:
+    box-shadow var(--duration-smooth) var(--ease-default),
+    background-color var(--duration-smooth) var(--ease-default);
   box-sizing: border-box;
 }
 
+/* Lift the bar off the page with a soft shadow once you scroll */
+.site-nav.scrolled {
+  box-shadow: var(--shadow-md);
+  border-bottom-color: transparent;
+}
+
 body {
-  padding-top: 80px;
+  padding-top: 76px;
 }
 
 /* =============================================
@@ -46,19 +59,23 @@ body {
   transition: transform var(--duration-smooth) var(--ease-bounce);
 }
 
+.nav-logo:hover {
+  transform: rotate(-3deg) scale(1.02);
+}
+
 .nav-logo img {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
-  border-radius: 12px;
-  border: 2px solid var(--ink);
+  border-radius: 14px;
   background: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-logo-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 .brand-top {
@@ -75,12 +92,34 @@ body {
 }
 
 /* =============================================
+   PER-SECTION ACCENT TOKENS
+   --tile     → sticker tile / accent colour
+   --tile-ink → glyph colour that reads on that tile
+   ============================================= */
+.theme-yellow {
+  --tile: var(--accent-primary);
+  --tile-ink: var(--ink);
+}
+.theme-blue {
+  --tile: var(--accent-secondary);
+  --tile-ink: #fff;
+}
+.theme-green {
+  --tile: var(--accent-success);
+  --tile-ink: #fff;
+}
+.theme-red {
+  --tile: var(--accent-danger);
+  --tile-ink: #fff;
+}
+
+/* =============================================
    MAIN LINKS BASE
    ============================================= */
 .site-nav .nav-links {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.4rem;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -94,7 +133,7 @@ body {
   height: 100%;
 }
 
-/* MAIN LABEL */
+/* MAIN LABEL — soft pill */
 .nav-main-label {
   display: flex;
   align-items: center;
@@ -102,79 +141,113 @@ body {
   color: var(--ink);
   font-family: var(--font-display);
   font-weight: var(--weight-bold);
-  font-size: 0.95rem;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  border: 2px solid transparent;
+  font-size: 0.88rem;
+  letter-spacing: var(--tracking-tight);
+  padding: 0.45rem 0.9rem 0.45rem 0.5rem;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all var(--duration-smooth) var(--ease-bounce);
   white-space: nowrap;
+  background: transparent;
+  transition:
+    background-color var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default),
+    transform var(--duration-smooth) var(--ease-bounce);
 }
 
-/* Hover effect (visual only – panel opens on click) */
-.site-nav .nav-links > li:hover .nav-main-label {
-  background: var(--accent-primary);
-  border: 2px solid var(--ink);
-  transform: translateY(-2px);
-}
-
-/* OPEN STATE (panel visible) – same as hover but persistent */
-.site-nav .nav-links > li.open > .nav-main-label {
-  background: var(--accent-primary);
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-/* Active page state (different from open) */
+/* Hover / open / active — soft tint + soft shadow + tiny lift */
+.site-nav .nav-links > li:hover > .nav-main-label,
+.site-nav .nav-links > li.open > .nav-main-label,
 .site-nav .nav-links > li.active > .nav-main-label {
-  background: var(--accent-primary);
-  border: 2px solid var(--ink);
+  background: color-mix(in srgb, var(--tile) 16%, var(--surface-primary));
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
-}
-
-.nav-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.nav-icon svg {
-  width: 100%;
-  height: 100%;
-  stroke: currentColor;
 }
 
 /* =============================================
-   MEGA PANEL (FLOATING BRUTALIST BOX)
+   STICKER ICON TILE
+   ============================================= */
+.nav-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-size, 38px);
+  height: var(--icon-size, 38px);
+  flex-shrink: 0;
+  transition: transform var(--duration-smooth) var(--ease-bounce);
+}
+
+/* Soft "sticker" blob behind the icon — a pale tint of the section accent with
+   a clean accent outline (no shadow) so the multicolour glyph reads on top. */
+.nav-icon__blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  color: color-mix(in srgb, var(--tile) 24%, var(--surface-primary));
+  fill: currentColor;
+  stroke: var(--tile);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.nav-icon__glyph {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 62%;
+  height: 62%;
+}
+.nav-icon__glyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.nav-icon__glyph img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Playful wobble when its section / column is hovered */
+.site-nav .nav-links > li:hover > .nav-main-label .nav-icon,
+.site-nav .nav-links > li.open > .nav-main-label .nav-icon,
+.mega-branch:hover .nav-icon {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+/* =============================================
+   MEGA PANEL (FLOATING SOFT CARD)
    ============================================= */
 .mega-panel {
   position: fixed;
-  top: 80px;
+  top: 76px;
   left: 50%;
-  transform: translateX(-50%) translateY(15px);
+  transform: translateX(-50%) translateY(14px);
   width: 100%;
-  max-width: 100vw;
+  max-width: min(1100px, 96vw);
   max-height: calc(100vh - 150px);
-  background: var(--bg);
-  border: 3px solid var(--ink);
-  border-radius: 0 0 16px 16px;
-  padding: 2rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 24px;
+  padding: 1.75rem;
+  margin-top: 0.6rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: all var(--duration-normal) var(--ease-bounce);
+  box-shadow: var(--shadow-xl);
+  transition:
+    opacity var(--duration-normal) var(--ease-default),
+    transform var(--duration-normal) var(--ease-bounce),
+    visibility var(--duration-normal) var(--ease-default);
   z-index: 9998;
   overflow-y: auto;
-  overflow-x: auto;
   box-sizing: border-box;
 }
 
-/* Panel visible only when parent li is open */
 .nav-links > li.open .mega-panel {
   opacity: 1;
   visibility: visible;
@@ -182,100 +255,146 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Faint paint-print wash behind the panel content (tinted by section accent) */
+.mega-panel__paint {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  color: var(--tile);
+  opacity: 0.08;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.mega-panel__paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .mega-panel__paint {
+  opacity: 0.16;
+}
+
 .mega-panel-content {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 2rem;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: fit-content;
+  gap: 1.75rem;
+  justify-content: space-between;
+  align-items: stretch;
   box-sizing: border-box;
 }
 
 /* =============================================
-   RECURSIVE TREE SYSTEM
+   LEFT COLUMN — intro + branch accordion
    ============================================= */
 .mega-tree {
   flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.85rem;
   min-width: 0;
 }
 
-/* LEVEL 1 (Main Columns) */
-.nav-level-1 {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  width: 100%;
-  justify-content: center;
-  min-width: 0;
-}
-
-/* LEVEL 2 (Sub Groups) */
-.nav-level-2 {
+/* ── Editorial intro ─────────────────────────── */
+.mega-panel__intro {
   display: flex;
   flex-direction: column;
-  min-width: 180px;
-  flex: 1;
-  gap: 0.5rem;
+  gap: 2px;
+  padding: 0 0.25rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--tile) 28%, transparent);
+}
+.mega-panel__eyebrow {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 0.92rem;
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink);
+}
+.mega-panel__tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
-/* BLOCK WRAPPER */
-.nav-block {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  border-radius: 12px;
-  padding: 0.75rem;
-  border: 2px solid transparent;
-  transition: transform var(--duration-smooth) var(--ease-default);
-  min-width: 200px;
-  box-sizing: border-box;
+/* ── Branch columns ──────────────────────────────
+   Each sub-group is its own column (header + sublinks), flowing in a
+   responsive grid so the panel spreads horizontally instead of stacking. */
+.mega-branches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+  gap: 0.4rem 1.25rem;
+  align-items: start;
 }
 
-.nav-block:hover {
-  transform: translateY(-3px);
+.mega-branch {
+  border-radius: 16px;
+  padding: 0.3rem;
+  transition: background-color var(--duration-smooth) var(--ease-default);
+}
+.mega-branch:hover {
+  background: color-mix(in srgb, var(--tile) 9%, transparent);
 }
 
-/* Colorful Theme Accents per block */
-.nav-block.theme-yellow .nav-header .nav-icon {
-  background: var(--accent-primary);
-}
-.nav-block.theme-blue .nav-header .nav-icon {
-  background: var(--accent-secondary);
-  color: var(--text-on-accent);
-}
-.nav-block.theme-green .nav-header .nav-icon {
-  background: var(--accent-success);
-  color: var(--text-on-accent);
-}
-.nav-block.theme-red .nav-header .nav-icon {
-  background: var(--accent-danger);
-  color: var(--text-on-accent);
-}
-
-/* GROUP HEADER */
-.nav-header {
+.mega-branch__head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: var(--weight-black);
-  font-family: var(--font-display);
-  font-size: 0.9rem;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem 0.6rem;
+  margin-bottom: 0.35rem;
+  text-decoration: none;
   color: var(--ink);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px dashed var(--ink);
+  font-family: inherit;
+  border-bottom: 1px solid color-mix(in srgb, var(--tile) 32%, transparent);
+}
+
+.mega-branch__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.mega-branch__title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 0.82rem;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+}
+.mega-branch__desc {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.nav-header .nav-icon {
-  border: 2px solid var(--ink);
-  border-radius: 6px;
-  padding: 4px;
-  width: 28px;
-  height: 28px;
+.mega-branch__count {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--tile);
+  color: var(--tile-ink);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+}
+
+/* Sublinks list inside each column */
+.mega-branch__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 /* LEAF LINKS (Clickable Items) */
@@ -283,14 +402,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   text-decoration: none;
-  padding: 0.3rem;
-  border-bottom: 2px dotted transparent;
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
   background: transparent;
   color: var(--ink);
-  transition: all var(--duration-smooth) var(--ease-bounce);
-  border-radius: 0;
   white-space: nowrap;
+  transition:
+    background-color var(--duration-smooth) var(--ease-default),
+    transform var(--duration-smooth) var(--ease-bounce);
 }
 
 .nav-leaf-text {
@@ -301,71 +422,133 @@ body {
 
 .nav-leaf-title {
   font-weight: var(--weight-bold);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-tight);
 }
 
 .nav-leaf small {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: var(--weight-regular);
   color: var(--text-secondary);
-  margin-top: 3px;
-  line-height: 1;
+  margin-top: 2px;
+  line-height: 1.15;
+  white-space: normal;
 }
 
 .nav-leaf-arrow {
+  display: grid;
+  place-items: center;
   opacity: 0;
-  transform: translateX(-10px);
-  color: var(--ink);
-  width: 20px;
-  height: 20px;
-  transition: all var(--duration-smooth) var(--ease-default);
+  transform: translateX(-8px);
+  color: var(--tile);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tile) 18%, var(--surface-primary));
   flex-shrink: 0;
+  transition:
+    opacity var(--duration-smooth) var(--ease-default),
+    transform var(--duration-smooth) var(--ease-bounce);
+}
+
+.nav-leaf-arrow svg {
+  width: 15px;
+  height: 15px;
 }
 
 .nav-leaf:hover {
-  background: var(--bg);
-  border-color: var(--ink);
+  background: color-mix(in srgb, var(--tile) 14%, var(--surface-primary));
   transform: translateX(4px);
 }
 
-.nav-leaf:hover .nav-leaf-arrow {
+.nav-leaf:hover .nav-leaf-arrow,
+.nav-leaf.active .nav-leaf-arrow {
   opacity: 1;
   transform: translateX(0);
 }
 
 /* Active leaf */
 .nav-leaf.active {
-  border-color: var(--ink);
-  border-bottom-style: dashed;
-}
-
-.nav-leaf.active .nav-leaf-arrow {
-  opacity: 1;
-  transform: translateX(0);
+  background: color-mix(in srgb, var(--tile) 20%, var(--surface-primary));
 }
 
 /* =============================================
-   MEGA IMAGE
+   MEGA IMAGE (per-section illustration)
    ============================================= */
+/* A preview stage — no rectangle, just a soft blob "paint" background that
+   shows the section scene by default and crossfades to a hovered branch's
+   icon. Definite height, centered vertically on the right. */
 .mega-image {
-  width: 250px;
-  height: 100%;
-  max-height: 500px;
+  position: relative;
+  width: 290px;
+  height: 280px;
   flex-shrink: 0;
+  align-self: center;
+  display: grid;
+  place-items: center;
+}
+
+/* Organic blob paint background (section accent) */
+.mega-image__blob {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--tile);
+  fill: currentColor;
+  opacity: 0.18;
+  z-index: 0;
+}
+[data-theme="dark"] .mega-image__blob {
+  opacity: 0.26;
+}
+
+/* Scene + hovered-branch preview stack in one cell and crossfade */
+.mega-image__scene,
+.mega-image__preview {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: var(--accent-primary);
-  overflow: hidden;
-  align-self: stretch;
+  transition:
+    opacity var(--duration-normal) var(--ease-in-out),
+    transform var(--duration-normal) var(--ease-in-out);
 }
-
-.mega-image img,
-.mega-image svg {
+.mega-image__scene img,
+.mega-image__scene svg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+
+.mega-image__preview {
+  opacity: 0;
+  transform: scale(0.88);
+}
+.mega-image.is-previewing .mega-image__scene {
+  opacity: 0;
+  transform: scale(0.96);
+}
+.mega-image.is-previewing .mega-image__preview {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* The blown-up branch glyph shown on hover */
+.mega-image__glyph {
+  width: 54%;
+  height: 54%;
+}
+.mega-image__glyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
 }
 
 /* =============================================
@@ -374,7 +557,7 @@ body {
 .nav-right-wrap {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
@@ -387,26 +570,24 @@ body {
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   cursor: pointer;
-  padding: 0.4rem 0.6rem;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  transition: all var(--duration-smooth) var(--ease-default);
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  transition: background-color var(--duration-smooth) var(--ease-default);
   user-select: none;
 }
 
 .user-profile:hover {
-  background: var(--bg);
+  background: var(--surface-secondary);
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 48% 52% 56% 44% / 52% 46% 54% 48%; /* organic blob */
   background: var(--accent-secondary);
-  color: var(--text-on-accent);
-  border: 2px solid var(--ink);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,8 +596,9 @@ body {
   font-family: var(--font-display);
   overflow: hidden;
   transition:
-    transform var(--duration-smooth),
-    background-color var(--duration-smooth);
+    transform var(--duration-smooth) var(--ease-bounce),
+    background-color var(--duration-smooth),
+    border-radius var(--duration-smooth) var(--ease-bounce);
   flex-shrink: 0;
 }
 
@@ -424,7 +606,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: inherit;
 }
 
 .user-avatar svg {
@@ -432,12 +614,13 @@ body {
   height: 58%;
 }
 
-/* Active open avatar rotation state */
+/* Active / hover avatar wiggle */
 .user-menu.open .user-avatar,
 .user-profile:hover .user-avatar {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.08) rotate(-5deg);
   background: var(--accent-primary);
   color: var(--ink);
+  border-radius: 56% 44% 47% 53% / 44% 54% 46% 56%;
 }
 
 .user-details {
@@ -463,16 +646,15 @@ body {
   line-height: 1;
 }
 
-.user-plan-badge svg {
-  width: 20px;
-  height: 20px;
-  display: block;
+/* Emblem rides the shared blob tile; --tile per tier drives its colour. */
+.user-plan-badge .nav-icon {
+  --icon-size: 30px;
 }
 
-.user-plan-badge.plan-free { color: #be185d; }
-.user-plan-badge.plan-pro { color: #d97706; }
-.user-plan-badge.plan-premium { color: var(--accent-secondary, #1d4ed8); }
-.user-plan-badge.premium { color: #d97706; }
+.user-plan-badge.plan-free { --tile: var(--accent-success); }
+.user-plan-badge.plan-pro { --tile: var(--accent-secondary); }
+.user-plan-badge.plan-premium,
+.user-plan-badge.premium { --tile: var(--accent-warning); }
 
 @media (min-width: 1024px) {
   .user-name {
@@ -510,25 +692,26 @@ body {
   display: none;
   flex-direction: column;
   background: var(--accent-primary);
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  padding: 8px;
+  border: none;
+  border-radius: 12px;
+  padding: 9px;
   gap: 5px;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-default);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-bounce);
   flex-shrink: 0;
 }
 
 .nav-toggle:active {
-  transform: translate(2px, 2px);
+  transform: scale(0.94);
 }
 
 .nav-toggle span {
-  width: 24px;
+  width: 22px;
   height: 3px;
   background: var(--ink);
-  border-radius: 2px;
-  transition: 0.3s;
+  border-radius: 999px;
+  transition: 0.3s var(--ease-bounce);
 }
 
 .nav-toggle.open span:nth-child(1) {
@@ -549,8 +732,8 @@ body {
     width: 96vw;
     max-width: 96vw;
     left: 2vw;
-    transform: translateY(15px);
-    padding: 1.5rem;
+    transform: translateY(14px);
+    padding: 1.4rem;
   }
 
   .nav-links > li.open .mega-panel {
@@ -558,30 +741,17 @@ body {
   }
 
   .mega-panel-content {
-    gap: 1.5rem;
-  }
-
-  .nav-level-1 {
-    gap: 1rem;
-  }
-
-  .nav-block {
-    min-width: 160px;
-    padding: 0.6rem;
-  }
-
-  .nav-level-2 {
-    min-width: 150px;
+    gap: 1.4rem;
   }
 
   .mega-image {
-    width: 200px;
-    max-height: 350px;
+    width: 230px;
+    height: 250px;
   }
 }
 
 /* =============================================
-   TABLET (max-width 900px) - Hide image
+   TABLET (max-width 900px) — hide illustration
    ============================================= */
 @media (max-width: 900px) {
   .mega-image {
@@ -592,22 +762,12 @@ body {
     width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
     left: 10px;
-    transform: translateY(15px);
-    padding: 1.5rem;
+    transform: translateY(14px);
+    padding: 1.4rem;
   }
 
   .nav-links > li.open .mega-panel {
     transform: translateY(0);
-  }
-
-  .nav-level-1 {
-    gap: 1rem;
-    justify-content: flex-start;
-  }
-
-  .nav-block {
-    min-width: 150px;
-    padding: 0.6rem;
   }
 }
 
@@ -623,7 +783,6 @@ body {
     display: flex;
   }
 
-  /* Show avatar icon between logo and hamburger — hide text details */
   .user-menu {
     display: flex;
   }
@@ -634,17 +793,17 @@ body {
 
   .site-nav .nav-links {
     position: fixed;
-    top: 80px;
+    top: 76px;
     left: 0;
     width: 100%;
     flex-direction: column;
-    align-items: flex-start;
-    background: var(--bg);
-    border-top: 3px solid var(--ink);
-    border-bottom: 3px solid var(--ink);
-    padding: 1rem;
+    align-items: stretch;
     gap: 0.5rem;
-    max-height: calc(100vh - 80px);
+    background: var(--bg);
+    border-top: var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+    padding: 1rem;
+    max-height: calc(100vh - 76px);
     overflow-y: auto;
     display: none;
     box-sizing: border-box;
@@ -658,48 +817,55 @@ body {
     width: 100%;
     height: auto;
     flex-direction: column;
+    align-items: stretch;
   }
 
   .nav-main-label {
     width: 100%;
-    justify-content: space-between;
-    padding: 1rem;
-    background: var(--bg);
-    border: 2px solid var(--ink);
-    border-radius: 10px;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    padding: 0.75rem;
+    border-radius: 14px;
+    background: var(--surface-secondary);
     box-sizing: border-box;
   }
 
   .nav-main-label::after {
     content: "+";
+    margin-left: auto;
     font-size: 1.2rem;
     font-weight: var(--weight-black);
+    color: var(--tile);
   }
 
-  .site-nav .nav-links > li.open .nav-main-label {
-    background: var(--accent-primary);
+  .site-nav .nav-links > li.open > .nav-main-label {
+    background: color-mix(in srgb, var(--tile) 18%, var(--surface-secondary));
   }
 
-  .site-nav .nav-links > li.open .nav-main-label::after {
-    content: "−";
+  .site-nav .nav-links > li.open > .nav-main-label::after {
+    content: "\2212";
   }
 
-  /* Reset Mega Panel for Mobile Accordion */
+  /* Mega panel → accordion (relative so the paint wash stays inside it) */
   .mega-panel {
-    position: static;
+    position: relative;
     width: 100%;
     max-width: none;
     max-height: 0;
     transform: none;
     border: none;
+    border-radius: 0;
+    box-shadow: none;
     padding: 0;
+    margin: 0;
     background: transparent;
     overflow: hidden;
     opacity: 0;
     visibility: hidden;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.25s ease,
-                padding 0.3s ease;
+    transition:
+      max-height 0.4s var(--ease-in-out),
+      opacity 0.25s ease,
+      padding 0.3s ease;
   }
 
   .nav-links > li.open .mega-panel {
@@ -707,38 +873,24 @@ body {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    padding: 1rem 0 0.5rem 0;
+    padding: 0.75rem 0 0.5rem;
   }
 
   .mega-panel-content {
     flex-direction: column;
-    gap: 1.5rem;
-    min-height: 0;
-  }
-
-  .mega-tree {
-    flex-direction: column;
-    justify-content: flex-start;
-  }
-
-  .nav-level-1 {
-    flex-direction: column;
     gap: 1rem;
-    justify-content: flex-start;
   }
 
-  .nav-level-2 {
-    min-width: auto;
-  }
-
-  .nav-block {
-    border-width: 2px;
-    min-width: auto;
+  .mega-branch {
+    background: color-mix(in srgb, var(--tile) 9%, var(--surface-secondary));
   }
 }
 
 /* =============================================
-   NAV ANIMATION KEYFRAMES
+   ENTRANCE ANIMATION (CSS fallback)
+   ---------------------------------------------
+   Runs only when GSAP did NOT take over (no `.gsap-anim` on the bar). When
+   GSAP loads it owns the choreography and these keyframes stay out of its way.
    ============================================= */
 @keyframes navBlockIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -750,22 +902,28 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Stagger nav-blocks when mega panel opens */
-.nav-links > li.open .mega-panel .nav-block {
-  animation: navBlockIn 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch {
+  animation: navBlockIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
-.nav-links > li.open .mega-panel .nav-level-1 > .nav-block:nth-child(1) { animation-delay: 0.06s; }
-.nav-links > li.open .mega-panel .nav-level-1 > .nav-block:nth-child(2) { animation-delay: 0.12s; }
-.nav-links > li.open .mega-panel .nav-level-1 > .nav-block:nth-child(3) { animation-delay: 0.18s; }
-.nav-links > li.open .mega-panel .nav-level-1 > .nav-block:nth-child(4) { animation-delay: 0.24s; }
-.nav-links > li.open .mega-panel .nav-level-1 > .nav-block:nth-child(5) { animation-delay: 0.30s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch:nth-child(1) { animation-delay: 0.05s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch:nth-child(2) { animation-delay: 0.11s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch:nth-child(3) { animation-delay: 0.17s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch:nth-child(4) { animation-delay: 0.23s; }
 
-/* Stagger nav-leaf items within each block */
-.nav-links > li.open .mega-panel .nav-block .nav-leaf {
-  animation: navLeafIn 0.2s ease both;
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch .nav-leaf {
+  animation: navLeafIn 0.22s ease both;
 }
-.nav-links > li.open .mega-panel .nav-block .nav-leaf:nth-child(1) { animation-delay: 0.12s; }
-.nav-links > li.open .mega-panel .nav-block .nav-leaf:nth-child(2) { animation-delay: 0.17s; }
-.nav-links > li.open .mega-panel .nav-block .nav-leaf:nth-child(3) { animation-delay: 0.22s; }
-.nav-links > li.open .mega-panel .nav-block .nav-leaf:nth-child(4) { animation-delay: 0.27s; }
-.nav-links > li.open .mega-panel .nav-block .nav-leaf:nth-child(5) { animation-delay: 0.32s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch .nav-leaf:nth-child(1) { animation-delay: 0.12s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch .nav-leaf:nth-child(2) { animation-delay: 0.17s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch .nav-leaf:nth-child(3) { animation-delay: 0.22s; }
+.site-nav:not(.gsap-anim) .nav-links > li.open .mega-panel .mega-branch .nav-leaf:nth-child(4) { animation-delay: 0.27s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-icon,
+  .nav-logo,
+  .nav-leaf,
+  .nav-main-label,
+  .user-avatar {
+    transition: none;
+  }
+}

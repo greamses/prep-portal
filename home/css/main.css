@@ -6,62 +6,114 @@
 .hero {
   position: relative;
   overflow: hidden;
-  min-height: fit-content;
-  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 1.5rem);
+  min-height: min(86vh, 760px);
+  padding: clamp(3rem, 9vw, 6rem) clamp(1rem, 4vw, 2rem);
   background: var(--bg);
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-/* Grid Background */
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--border-subtle) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-  background-size: clamp(20px, 4vw, 34px) clamp(20px, 4vw, 34px);
-  pointer-events: none;
-}
-
-/* Soft Blob */
+.hero::before,
 .hero::after {
-  content: "";
-  position: absolute;
-  width: clamp(250px, 60vw, 650px);
-  height: clamp(250px, 60vw, 650px);
-  top: -30%;
-  right: -30%;
-  pointer-events: none;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.12) 0%,
-    transparent 70%
-  );
-}
-
-.hero-container {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: clamp(1.5rem, 5vw, 3rem);
-  align-items: center;
-  position: relative;
-  z-index: 2;
+  content: none;
 }
 
 /* =========================================
-   HERO CONTENT
+   HERO CONTENT (centred)
 ========================================= */
-.hero-content {
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: clamp(1rem, 3vw, 1.6rem);
 }
+
+/* Eyebrow — a sticky note: paper-yellow, taped on, marker-hand text */
+.hero-eyebrow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: #fff39a;
+  border: 0;
+  border-radius: 2px;
+  padding: 0.6rem 1.1rem 0.65rem;
+  transform: rotate(-3deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transition: transform var(--duration-smooth) var(--ease-bounce);
+}
+/* A strip of tape across the top */
+.hero-eyebrow::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.hero-eyebrow:hover {
+  transform: rotate(-1deg) translateY(-2px);
+}
+.hero-eyebrow svg {
+  width: 15px;
+  height: 15px;
+  color: #14130f;
+  opacity: 0.85;
+}
+
+/* Detail stickers — playful tilted stat chips */
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  padding-top: clamp(0.3rem, 1.5vw, 0.7rem);
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--tile) 50%, transparent);
+  box-shadow: var(--shadow-sm);
+  padding: 0.4rem 0.7rem;
+  border-radius: 13px;
+  transition: transform var(--duration-smooth) var(--ease-bounce);
+}
+.hero-stat strong {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: var(--tile);
+}
+.hero-stat:nth-child(odd) { transform: rotate(-2.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(2.5deg); }
+.hero-stat:hover { transform: rotate(0deg) translateY(-2px); }
 
 @keyframes pulse-dot {
   0%,
@@ -75,18 +127,45 @@
 
 .hero-title {
   margin: 0;
-  max-width: 620px;
+  max-width: 15ch;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 8vw, 4.3rem);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.6rem, 8.5vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
   font-weight: var(--weight-black);
   color: var(--ink);
 }
 
+/* Highlighted word — soft pastel marker behind it */
+.hero-title em {
+  font-style: normal;
+  background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-primary));
+  border-radius: 0.16em;
+  padding: 0 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Typewriter caret */
+.hero-caret {
+  display: inline-block;
+  width: 0.06em;
+  min-width: 3px;
+  height: 0.92em;
+  margin-left: 0.06em;
+  vertical-align: -0.1em;
+  border-radius: 2px;
+  background: var(--ink);
+  animation: hero-caret 1s steps(1) infinite;
+}
+@keyframes hero-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
 .hero-description {
   margin: 0;
-  max-width: 520px;
+  max-width: 46ch;
   font-family: var(--font-mono);
   font-size: clamp(0.9rem, 1.8vw, 1.02rem);
   line-height: 1.7;
@@ -99,6 +178,7 @@
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: clamp(0.6rem, 2vw, 1rem);
   padding-top: clamp(0.2rem, 1vw, 0.4rem);
 }
@@ -109,12 +189,17 @@
   justify-content: center;
   gap: 0.5em;
   box-sizing: border-box;
-  min-height: clamp(48px, 10vw, 62px);
-  padding: 0 clamp(0.9rem, 2.5vw, 1.25rem);
-  border-radius: clamp(12px, 2vw, 18px);
+  min-height: clamp(46px, 9vw, 58px);
+  padding: 0 clamp(1.1rem, 3vw, 1.6rem);
+  border-radius: 999px;
   text-decoration: none;
   font-family: var(--font-display);
-  font-size: clamp(0.95rem, 2.5vw, 1.12rem);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  font-size: clamp(0.92rem, 2.2vw, 1.05rem);
+  transition:
+    transform var(--duration-smooth) var(--ease-bounce),
+    box-shadow var(--duration-smooth) var(--ease-default);
 }
 
 .hero-btn svg {
@@ -124,30 +209,60 @@
 
 .hero-btn-primary {
   background: var(--accent-primary);
-  border: 3px solid var(--ink);
+  border: 0;
   color: var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 .hero-btn-primary:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .hero-btn-primary:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-btn-secondary {
   background: var(--surface-primary);
-  border: 3px solid var(--ink);
+  border: var(--border-subtle);
   color: var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-btn-secondary:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .hero-btn-secondary:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* =========================================
+   PAINT BACKGROUND
+========================================= */
+.hero-paint {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.42;
+}
+.hero-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .hero-paint {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-caret { display: none; }
 }
 
 /* =========================================
@@ -198,18 +313,18 @@
   width: 100%;
   max-width: clamp(280px, 85vw, 640px);
   background: var(--surface-primary);
-  border: clamp(2px, 0.5vw, 4px) solid var(--ink);
-  border-radius: clamp(20px, 4vw, 30px);
+  border: var(--border-subtle);
+  border-radius: clamp(20px, 4vw, 28px);
   overflow: hidden;
-  box-shadow: clamp(4px, 1.5vw, 10px) clamp(4px, 1.5vw, 10px) 0 var(--ink);
-  transform: rotate(-2deg);
+  box-shadow: var(--shadow-xl);
+  transform: none;
 }
 
 /* Window Top */
 .window-top {
   height: clamp(56px, 8vw, 72px);
   padding: 0 clamp(1rem, 3vw, 1.4rem);
-  border-bottom: clamp(2px, 0.5vw, 4px) solid var(--ink);
+  border-bottom: var(--border-subtle);
   background: var(--accent-primary);
   display: flex;
   align-items: center;
@@ -225,7 +340,7 @@
   width: clamp(10px, 2vw, 14px);
   height: clamp(10px, 2vw, 14px);
   border-radius: 50%;
-  border: 2px solid var(--ink);
+  border: 0;
 }
 
 .window-dots span:nth-child(1) {
@@ -585,7 +700,7 @@
     min-height: 0;
   }
   .dashboard-window {
-    transform: rotate(-2deg);
+    transform: none;
   }
   .floating-note,
   .floating-score {
@@ -611,7 +726,7 @@
 
   .dashboard-window {
     max-width: 90vw;
-    transform: rotate(-2deg) scale(0.85);
+    transform: none;
   }
 
   .window-body {
@@ -1066,8 +1181,8 @@
 .progress-section {
   padding: clamp(4rem, 9vw, 6.5rem) var(--padding-md);
   background: var(--surface-secondary);
-  border-top: var(--border);
-  border-bottom: var(--border);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
 }
 
 .progress-inner {
@@ -1079,10 +1194,45 @@
   align-items: center;
 }
 
-/* Progress window override — slightly wider, no transform offset */
+.progress-visual {
+  position: relative;
+}
+
+/* Progress window override — full width, upright, soft shadow */
 .pw-window {
   max-width: 100%;
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: var(--shadow-xl);
+  transform: none;
+}
+
+/* Pinned sticky-note callout on the dashboard card */
+.pw-note {
+  position: absolute;
+  top: -18px;
+  right: -6px;
+  z-index: 3;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #14130f;
+  background: #bfe3ff;
+  border-radius: 2px;
+  padding: 0.55rem 0.9rem 0.6rem;
+  transform: rotate(4deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    4px 7px 11px -4px rgba(20, 19, 15, 0.3);
+}
+.pw-note::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(4deg);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 
 .pw-body {
@@ -1146,7 +1296,7 @@
   background: var(--accent-success);
 }
 .pw-fill--purple {
-  background: #7c3aed;
+  background: #9d86f0;
 }
 
 .pw-pct {
@@ -1185,10 +1335,10 @@
 .section-eyebrow {
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
-  font-weight: var(--weight-black);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--accent-secondary);
   margin: 0 0 0.75rem;
 }
 
@@ -1239,43 +1389,50 @@
 
 .check-list li svg {
   flex-shrink: 0;
-  stroke: var(--accent-secondary);
+  width: 26px;
+  height: 26px;
+  padding: 6px;
+  border-radius: 9px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--accent-success) 18%, var(--surface-primary));
+  color: var(--accent-success);
+  stroke: var(--accent-success);
 }
 
 .section-cta {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
+  padding: 0.9rem 1.6rem;
   font-family: var(--font-display);
-  font-weight: var(--weight-black);
+  font-weight: var(--weight-bold);
   font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: var(--ink);
-  color: var(--bg);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  color: var(--ink);
+  border: 0;
+  border-radius: 999px;
   box-shadow: var(--shadow-md);
   text-decoration: none;
   transition:
-    transform 0.15s,
-    box-shadow 0.15s;
+    transform var(--duration-smooth) var(--ease-bounce),
+    box-shadow var(--duration-smooth);
 }
 
 .section-cta svg {
-  transition: transform 0.15s;
+  transition: transform var(--duration-smooth);
 }
 .section-cta:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 .section-cta:hover svg {
   transform: translateX(4px);
 }
 .section-cta:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 @media (max-width: 860px) {
@@ -1287,6 +1444,530 @@
   }
   .progress-copy {
     order: 1;
+  }
+}
+
+/* =========================================
+   STUDENT PHOTOCARDS — real photos torn from
+   a scrapbook, layered like a fanned deck.
+========================================= */
+.reveal-section {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(4rem, 9vw, 6.5rem) var(--padding-md);
+  background: var(--surface-secondary);
+  border-top: var(--border-subtle);
+  border-bottom: var(--border-subtle);
+}
+
+.reveal-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.cards-header {
+  max-width: 600px;
+  margin: 0 auto clamp(2.5rem, 5vw, 3.75rem);
+  text-align: center;
+}
+
+.section-headline em {
+  font-style: normal;
+  background: color-mix(in srgb, var(--accent-primary) 55%, var(--surface-secondary));
+  border-radius: 0.14em;
+  padding: 0 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* ── The deck stage: cards are absolutely fanned across it ── */
+.cards-stage {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  height: clamp(360px, 42vw, 480px);
+}
+
+/* One torn photocard. Position + fan angle come from inline custom props;
+   GSAP re-applies the same transform so it can deal them in on scroll. */
+.photocard {
+  position: absolute;
+  left: var(--cx, 50%);
+  top: var(--cy, 50%);
+  z-index: var(--z, 1);
+  width: clamp(122px, 15.5vw, 178px);
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+  /* drop-shadow (not box-shadow) so the shadow follows the ragged tear */
+  filter: drop-shadow(3px 7px 9px rgba(var(--shadow-color), 0.26));
+}
+
+/* White scrapbook paper holding the photo; its edges are torn by the SVG
+   displacement filter (the photo edge tears with it). Caption stays outside
+   this element so the text isn't displaced. */
+.photocard__rip {
+  position: relative;
+  background: #fdfbf4;
+  padding: 7% 7% 19%;
+  border-radius: 4px;
+  filter: url(#torn-card);
+}
+.photocard:nth-child(even) .photocard__rip {
+  filter: url(#torn-card-b);
+}
+
+.photocard__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--surface-tertiary, #e9e2d4);
+}
+
+/* Hand-written yearbook caption on the white paper margin */
+.photocard__cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4%;
+  text-align: center;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.82rem;
+  line-height: 1.05;
+  font-weight: 600;
+  color: #1c1a16;
+  pointer-events: none;
+}
+.photocard__cap span {
+  display: block;
+  margin-top: 0.15em;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: color-mix(in srgb, #1c1a16 62%, transparent);
+}
+
+/* Sticky-note success quote — peels in when the card is brought forward.
+   Sibling of the torn paper, so the text stays crisp; a plain :hover drives
+   it for both GSAP and reduced-motion users. */
+.photocard__note {
+  position: absolute;
+  z-index: 2;
+  top: -16%;
+  right: -26%;
+  width: 80%;
+  padding: 0.55rem 0.6rem 0.6rem;
+  background: var(--pad, #fff39a);
+  color: #1c1a16;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.64rem;
+  line-height: 1.28;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 2px;
+  opacity: 0;
+  transform: rotate(6deg) scale(0.55);
+  transform-origin: bottom left;
+  pointer-events: none;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.12),
+    3px 6px 11px -3px rgba(20, 19, 15, 0.34);
+  transition:
+    opacity 0.22s ease,
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.photocard__note::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 42px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-4deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.16);
+}
+.photocard__note::after {
+  content: "\201D";
+  position: absolute;
+  top: 0.05em;
+  left: 0.25em;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: rgba(20, 19, 15, 0.18);
+}
+.photocard:hover .photocard__note {
+  opacity: 1;
+  transform: rotate(6deg) scale(1);
+}
+
+/* Right-half cards: peel the note out to the left so it never runs off-stage */
+.photocard:nth-child(n + 4) .photocard__note {
+  right: auto;
+  left: -26%;
+  transform-origin: bottom right;
+  transform: rotate(-6deg) scale(0.55);
+}
+.photocard:nth-child(n + 4):hover .photocard__note {
+  transform: rotate(-6deg) scale(1);
+}
+
+/* Reduced-motion / no-JS hover fallback (GSAP drives the hover otherwise,
+   leaving an inline transform that a plain CSS :hover can't override). */
+@media (prefers-reduced-motion: reduce) {
+  .photocard {
+    transition: transform 0.25s ease;
+  }
+  .photocard:hover {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(1.18);
+    z-index: 20;
+  }
+}
+
+@media (max-width: 720px) {
+  .cards-stage {
+    height: clamp(420px, 96vw, 560px);
+  }
+  .photocard {
+    width: clamp(132px, 40vw, 190px);
+  }
+}
+
+/* =========================================
+   THE READING ROOM — three flipbook issues
+   in alternating cover/text rows over paint.
+========================================= */
+.books-section {
+  position: relative;
+  padding: clamp(3.5rem, 8vw, 6rem) var(--padding-md) clamp(4rem, 9vw, 6.5rem);
+}
+
+.books-paint {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.3;
+}
+.books-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .books-paint {
+  opacity: 0.4;
+}
+
+.books-header {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto clamp(2.5rem, 5vw, 4rem);
+  text-align: center;
+}
+
+.bookshelf {
+  position: relative;
+  z-index: 1;
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3rem, 7vw, 5.5rem);
+}
+
+/* ── A row: cover beside text; even rows swap sides ── */
+.book-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: center;
+}
+.book-row--flip .book-row__cover {
+  order: 2;
+}
+.book-row--flip .book-row__text {
+  order: 1;
+  text-align: right;
+}
+
+/* ── Standing book cover + its sticky note ── */
+.book-stack {
+  position: relative;
+  isolation: isolate; /* keep the paint blob's negative z within the stack */
+  width: min(290px, 80%);
+  margin: 0 auto;
+}
+
+/* Soft paint splash peeking out behind each book, tinted to its accent */
+.book-blob {
+  position: absolute;
+  z-index: -1;
+  inset: -13% -17%;
+  background: var(--pad, #fff39a);
+  border-radius: 62% 38% 55% 45% / 56% 47% 53% 44%;
+  opacity: 0.5;
+  filter: blur(3px);
+  transform: rotate(-7deg);
+}
+.book-row--flip .book-blob {
+  transform: rotate(7deg);
+  border-radius: 40% 60% 48% 52% / 50% 55% 45% 50%;
+}
+
+/* The cover is cream paper; the photo is pasted on and torn at the foot,
+   revealing the cream band where the title sits. */
+.book-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 5px 10px 10px 5px;
+  background: #f7efdc;
+  transform: rotate(-1.6deg);
+  box-shadow: var(--shadow-xl);
+  transition:
+    transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.32s ease;
+}
+.book-row--flip .book-cover {
+  transform: rotate(1.6deg);
+  border-radius: 10px 5px 5px 10px;
+}
+
+/* The photo sits flat and crisp behind everything — never filtered. */
+.book-cover__photo {
+  position: absolute;
+  inset: 0;
+}
+.book-cover__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Faint spine shading down the binding edge */
+.book-cover__spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  z-index: 2;
+  background: linear-gradient(
+    to right,
+    rgba(20, 19, 15, 0.3),
+    rgba(20, 19, 15, 0.04) 60%,
+    transparent
+  );
+}
+.book-row--flip .book-cover__spine {
+  left: auto;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+/* Title band: a strip of cream paper torn open along its top to reveal the
+   photo above it. The displacement filter ragges ONLY this paper (its edge),
+   so the image stays sharp; the text rides on top, never displaced. */
+.book-cover__band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  padding: 0 0.95rem 0.55rem;
+  text-align: left;
+  color: #1c1a16;
+}
+.book-cover__torn {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -4%;
+  top: -13px;
+  z-index: 0;
+  background: #f7efdc;
+  filter: url(#torn-cover);
+}
+.book-cover__issue,
+.book-cover__name {
+  position: relative;
+  z-index: 1;
+}
+.book-cover__issue {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #1c1a16 58%, transparent);
+}
+.book-cover__name {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold, 700);
+  font-size: 1rem;
+  line-height: 1.04;
+}
+.book-cover:hover,
+.book-cover:focus-visible {
+  transform: rotate(0deg) translateY(-7px) scale(1.025);
+  box-shadow:
+    0 22px 38px -12px rgba(var(--shadow-color), 0.45),
+    var(--shadow-lg);
+  outline: none;
+}
+
+/* Always-on sticky note pinned to the cover corner */
+.book-note {
+  position: absolute;
+  z-index: 3;
+  top: -22px;
+  right: -20px;
+  width: clamp(96px, 38%, 128px);
+  padding: 0.7rem 0.65rem 0.6rem;
+  background: var(--pad, #fff39a);
+  color: #1c1a16;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  text-align: center;
+  border-radius: 2px;
+  transform: rotate(5deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.12),
+    3px 6px 11px -3px rgba(20, 19, 15, 0.34);
+}
+.book-row--flip .book-note {
+  right: auto;
+  left: -20px;
+  transform: rotate(-5deg);
+}
+.book-note::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 40px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-4deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.16);
+}
+.book-note__msg {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.book-note__by {
+  margin-top: 0.3em;
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: color-mix(in srgb, #1c1a16 60%, transparent);
+}
+
+/* ── Text column ── */
+.book-row__kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: var(--weight-black, 800);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-primary-ink, var(--ink));
+}
+.book-row__title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold, 700);
+  font-size: clamp(1.5rem, 3.4vw, 2.2rem);
+  line-height: 1.04;
+  margin: 0.4rem 0 0.65rem;
+}
+.book-row__rule {
+  display: block;
+  width: 46px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--ink);
+  opacity: 0.75;
+  margin-bottom: 1rem;
+}
+.book-row--flip .book-row__rule {
+  margin-left: auto;
+}
+.book-row__blurb {
+  font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+  line-height: 1.62;
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  max-width: 44ch;
+}
+.book-row--flip .book-row__blurb {
+  margin-left: auto;
+}
+.book-row__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.35rem;
+  padding: 0.7rem 1.3rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold, 700);
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.book-row__cta svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 0.2s ease;
+}
+.book-row__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.book-row__cta:hover svg {
+  transform: translateX(3px);
+}
+
+@media (max-width: 760px) {
+  .book-row,
+  .book-row--flip {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    text-align: center;
+  }
+  .book-row__cover,
+  .book-row--flip .book-row__cover {
+    order: 1;
+  }
+  .book-row__text,
+  .book-row--flip .book-row__text {
+    order: 2;
+    text-align: center;
+  }
+  .book-row__rule,
+  .book-row--flip .book-row__rule {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .book-row__blurb,
+  .book-row--flip .book-row__blurb {
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 

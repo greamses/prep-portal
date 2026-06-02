@@ -28,58 +28,63 @@
 /* LIGHT THEME (default) */
 :root,
 [data-theme="light"] {
-  /* ── Core Palette ───────────────────────── */
-  --bg: #ffffff;
+  /* ── Core Palette ─────────────────────────
+     Warm, muted "paper" neutrals + soft kid-friendly pastels, drawn from the
+     editorial flipbook tear/paint world (cream paper, warm ink, sticky-note
+     colours). Names stay generic + semantic so components don't change. */
+  --bg: #faf7f1;
   --app-bg: #f0ece3;
-  --ink: #0a0a0a;
-  --accent-primary: #ffe500;
-  --accent-secondary: #0055ff;
-  --accent-danger: #ff2200;
-  --accent-success: #00a550;
-  --accent-warning: #e67e00;
-  --text-secondary: #555555;
-  --text-tertiary: #888888;
-  --surface-secondary: #f7f4ee;
-  --surface-primary: #fffef8;
-  --text-on-accent: #ffffff;
+  --ink: #2a2723;
+  --accent-primary: #f4c95d;
+  --accent-secondary: #6fb7e8;
+  --accent-danger: #f07a7a;
+  --accent-success: #7cc47c;
+  --accent-warning: #f0a868;
+  --text-secondary: #6b655c;
+  --text-tertiary: #9a948a;
+  --surface-secondary: #f4f0e8;
+  --surface-primary: #fffdf8;
+  --text-on-accent: #2a2723;
 
   /* ── Border ─────────────────────────────── */
-  --border-color: #0a0a0a;
-  --border-width: 2.5px;
+  --border-color: #2a2723;
+  --border-width: 2px;
   --border-style: solid;
   --border: var(--border-width) var(--border-style) var(--border-color);
-  --border-subtle: 1px solid rgba(10, 10, 10, 0.15);
+  --border-subtle: 1px solid rgba(42, 39, 35, 0.12);
 
-  /* ── Shadows ────────────────────────────── */
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --shadow-md: 5px 5px 0 var(--ink);
-  --shadow-lg: 6px 6px 0 var(--ink);
-  --shadow-xl: 9px 9px 0 var(--ink);
-  --shadow-cta: 6px 6px 0 rgba(255, 229, 0, 0.35);
-  --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
+  /* ── Shadows (soft, blurred, warm) ────────
+     Generic --shadow-color RGB triplet drives every elevation level. */
+  --shadow-color: 42, 39, 35;
+  --shadow-sm: 0 2px 5px rgba(var(--shadow-color), 0.1);
+  --shadow-md: 0 4px 11px rgba(var(--shadow-color), 0.12);
+  --shadow-lg: 0 9px 22px rgba(var(--shadow-color), 0.14);
+  --shadow-xl: 0 18px 40px rgba(var(--shadow-color), 0.16);
+  --shadow-cta: 0 8px 20px rgba(244, 201, 93, 0.4);
+  --shadow-cta-hover: 0 12px 26px rgba(244, 201, 93, 0.5);
 
-  /* ── Subject Badge BGs (light) ──────────── */
-  --badge-subject-1-bg: var(--accent-primary);
-  --badge-subject-2-bg: #e8b3ff;
-  --badge-subject-3-bg: #b3f0b3;
-  --badge-subject-4-bg: #b3d9ff;
-  --badge-subject-5-bg: #ffd6b3;
-  --badge-subject-6-bg: #b3f0e8;
-  --badge-class-1-bg: #c8f5c8;
-  --badge-class-2-bg: #c8deff;
-  --badge-class-3-bg: #fff3b3;
+  /* ── Subject Badge BGs (light, sticky-note pastels) ── */
+  --badge-subject-1-bg: #fff3a8;
+  --badge-subject-2-bg: #e8c8ff;
+  --badge-subject-3-bg: #c8f0c0;
+  --badge-subject-4-bg: #bfe3ff;
+  --badge-subject-5-bg: #ffd7a3;
+  --badge-subject-6-bg: #b8ece2;
+  --badge-class-1-bg: #c8f0c0;
+  --badge-class-2-bg: #bfe3ff;
+  --badge-class-3-bg: #fff3a8;
 
-  /* ── Subject Practice Card BGs (light) ─── */
-  --card-subject-1-bg: #fffde7;
-  --card-subject-2-bg: #e3f2fd;
-  --card-subject-3-bg: #f3e5f5;
-  --card-subject-4-bg: #e8f5e9;
+  /* ── Subject Practice Card BGs (light, soft cream tints) ─── */
+  --card-subject-1-bg: #fdf6e3;
+  --card-subject-2-bg: #eaf4fb;
+  --card-subject-3-bg: #f4ecfb;
+  --card-subject-4-bg: #ecf6ec;
 
   /* ── Exam Tip ────────────────────────────── */
-  --exam-tip-bg: #fffde7;
+  --exam-tip-bg: #fdf6e3;
 
   /* ── Card hover ──────────────────────────── */
-  --card-hover: #0a0a0a;
+  --card-hover: #2a2723;
 
   /* ── Transitions ────────────────────────── */
   --transition-fast: 0.12s;
@@ -114,98 +119,100 @@
 
 /* ── DARK THEME ─────────────────────────────────────────── */
 [data-theme="dark"] {
-  /* ── Core Palette ───────────────────────── */
-  --bg: #0a0a0a;
-  --app-bg: #111111;
-  --ink: #f0f0f0;
-  --accent-primary: #ffea2e;
-  --accent-secondary: #4d8fff;
-  --accent-danger: #ff4444;
-  --accent-success: #10b981;
-  --accent-warning: #f59e0b;
-  --text-secondary: #999999;
-  --text-tertiary: #666666;
-  --surface-secondary: #1a1a1a;
-  --surface-primary: #0f0f0f;
-  --text-on-accent: #0a0a0a;
+  /* ── Core Palette (warm muted dark, mirrors flipbook night paper) ── */
+  --bg: #1a1814;
+  --app-bg: #14130f;
+  --ink: #efece3;
+  --accent-primary: #f0cf6e;
+  --accent-secondary: #7cc0ec;
+  --accent-danger: #f08a8a;
+  --accent-success: #8ace8a;
+  --accent-warning: #f0b074;
+  --text-secondary: #a39d92;
+  --text-tertiary: #736d63;
+  --surface-secondary: #26231d;
+  --surface-primary: #1f1c17;
+  --text-on-accent: #14130f;
 
   /* ── Border ─────────────────────────────── */
-  --border-color: #f0f0f0;
+  --border-color: #efece3;
   --border: var(--border-width) var(--border-style) var(--border-color);
-  --border-subtle: 1px solid rgba(240, 240, 240, 0.15);
+  --border-subtle: 1px solid rgba(239, 236, 227, 0.14);
 
-  /* ── Shadows ────────────────────────────── */
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --shadow-md: 5px 5px 0 var(--ink);
-  --shadow-lg: 6px 6px 0 var(--ink);
-  --shadow-xl: 9px 9px 0 var(--ink);
-  --shadow-cta: 6px 6px 0 rgba(255, 234, 46, 0.35);
-  --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
+  /* ── Shadows (soft, blurred) ────────────── */
+  --shadow-color: 0, 0, 0;
+  --shadow-sm: 0 2px 5px rgba(var(--shadow-color), 0.4);
+  --shadow-md: 0 4px 11px rgba(var(--shadow-color), 0.45);
+  --shadow-lg: 0 9px 22px rgba(var(--shadow-color), 0.5);
+  --shadow-xl: 0 18px 40px rgba(var(--shadow-color), 0.55);
+  --shadow-cta: 0 8px 20px rgba(240, 207, 110, 0.28);
+  --shadow-cta-hover: 0 12px 26px rgba(240, 207, 110, 0.36);
 
-  /* ── Subject Badge BGs (dark) ───────────── */
-  --badge-subject-1-bg: var(--accent-primary);
-  --badge-subject-2-bg: #5a1875;
-  --badge-subject-3-bg: #1a4d1a;
-  --badge-subject-4-bg: #1a3560;
-  --badge-subject-5-bg: #5c2a00;
-  --badge-subject-6-bg: #0d3d35;
-  --badge-class-1-bg: #1a4d1a;
-  --badge-class-2-bg: #1a3560;
-  --badge-class-3-bg: #4d3a00;
+  /* ── Subject Badge BGs (dark, muted pastels) ── */
+  --badge-subject-1-bg: #4d4520;
+  --badge-subject-2-bg: #3a2a4d;
+  --badge-subject-3-bg: #2a4528;
+  --badge-subject-4-bg: #24405a;
+  --badge-subject-5-bg: #503820;
+  --badge-subject-6-bg: #1f4540;
+  --badge-class-1-bg: #2a4528;
+  --badge-class-2-bg: #24405a;
+  --badge-class-3-bg: #4d4520;
 
   /* ── Subject Practice Card BGs (dark) ──── */
-  --card-subject-1-bg: #252200;
-  --card-subject-2-bg: #0a1929;
-  --card-subject-3-bg: #1a0a20;
-  --card-subject-4-bg: #0a1f0a;
+  --card-subject-1-bg: #252114;
+  --card-subject-2-bg: #16202a;
+  --card-subject-3-bg: #221a2a;
+  --card-subject-4-bg: #182218;
 
   /* ── Exam Tip ────────────────────────────── */
-  --exam-tip-bg: #252200;
+  --exam-tip-bg: #252114;
 
   /* ── Card hover ──────────────────────────── */
-  --card-hover: #f0f0f0;
+  --card-hover: #efece3;
 }
 
 /* ── SYSTEM DARK PREFERENCE (when no data-theme set) ────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0a0a;
-    --app-bg: #111111;
-    --ink: #f0f0f0;
-    --accent-primary: #ffea2e;
-    --accent-secondary: #4d8fff;
-    --accent-danger: #ff4444;
-    --accent-success: #10b981;
-    --accent-warning: #f59e0b;
-    --text-secondary: #999999;
-    --text-tertiary: #666666;
-    --surface-secondary: #1a1a1a;
-    --surface-primary: #0f0f0f;
-    --text-on-accent: #0a0a0a;
-    --border-color: #f0f0f0;
+    --bg: #1a1814;
+    --app-bg: #14130f;
+    --ink: #efece3;
+    --accent-primary: #f0cf6e;
+    --accent-secondary: #7cc0ec;
+    --accent-danger: #f08a8a;
+    --accent-success: #8ace8a;
+    --accent-warning: #f0b074;
+    --text-secondary: #a39d92;
+    --text-tertiary: #736d63;
+    --surface-secondary: #26231d;
+    --surface-primary: #1f1c17;
+    --text-on-accent: #14130f;
+    --border-color: #efece3;
     --border: var(--border-width) var(--border-style) var(--border-color);
-    --border-subtle: 1px solid rgba(240, 240, 240, 0.15);
-    --shadow-sm: 3px 3px 0 var(--ink);
-    --shadow-md: 5px 5px 0 var(--ink);
-    --shadow-lg: 6px 6px 0 var(--ink);
-    --shadow-xl: 9px 9px 0 var(--ink);
-    --shadow-cta: 6px 6px 0 rgba(255, 234, 46, 0.35);
-    --shadow-cta-hover: 8px 8px 0 rgba(255, 255, 255, 0.15);
-    --badge-subject-1-bg: var(--accent-primary);
-    --badge-subject-2-bg: #5a1875;
-    --badge-subject-3-bg: #1a4d1a;
-    --badge-subject-4-bg: #1a3560;
-    --badge-subject-5-bg: #5c2a00;
-    --badge-subject-6-bg: #0d3d35;
-    --badge-class-1-bg: #1a4d1a;
-    --badge-class-2-bg: #1a3560;
-    --badge-class-3-bg: #4d3a00;
-    --card-subject-1-bg: #252200;
-    --card-subject-2-bg: #0a1929;
-    --card-subject-3-bg: #1a0a20;
-    --card-subject-4-bg: #0a1f0a;
-    --exam-tip-bg: #252200;
-    --card-hover: #f0f0f0;
+    --border-subtle: 1px solid rgba(239, 236, 227, 0.14);
+    --shadow-color: 0, 0, 0;
+    --shadow-sm: 0 2px 5px rgba(var(--shadow-color), 0.4);
+    --shadow-md: 0 4px 11px rgba(var(--shadow-color), 0.45);
+    --shadow-lg: 0 9px 22px rgba(var(--shadow-color), 0.5);
+    --shadow-xl: 0 18px 40px rgba(var(--shadow-color), 0.55);
+    --shadow-cta: 0 8px 20px rgba(240, 207, 110, 0.28);
+    --shadow-cta-hover: 0 12px 26px rgba(240, 207, 110, 0.36);
+    --badge-subject-1-bg: #4d4520;
+    --badge-subject-2-bg: #3a2a4d;
+    --badge-subject-3-bg: #2a4528;
+    --badge-subject-4-bg: #24405a;
+    --badge-subject-5-bg: #503820;
+    --badge-subject-6-bg: #1f4540;
+    --badge-class-1-bg: #2a4528;
+    --badge-class-2-bg: #24405a;
+    --badge-class-3-bg: #4d4520;
+    --card-subject-1-bg: #252114;
+    --card-subject-2-bg: #16202a;
+    --card-subject-3-bg: #221a2a;
+    --card-subject-4-bg: #182218;
+    --exam-tip-bg: #252114;
+    --card-hover: #efece3;
   }
 }
 
@@ -440,7 +447,7 @@ small {
 
 ::selection {
   background-color: var(--accent-primary);
-  color: var(--bg);
+  color: var(--ink);
 }
 
 :focus-visible {

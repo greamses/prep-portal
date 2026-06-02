@@ -14,6 +14,7 @@ import {
   DEFAULT_EDITION,
   YEARBOOKS,
 } from "/home/js/flipbook-assets.js";
+import { heroPaint } from "/utils/components/nav-icons.js";
 
 // Same convention as utils/prepbot: hit localhost:5000 from Live Server
 // (:5500), otherwise same-origin /api on Vercel.
@@ -927,6 +928,165 @@ function PAGES(ed) {
   ];
 }
 
+// ── Generic cover / back for the companion issues (data-driven from `ed`) ─────
+function genericCover(ed) {
+  return `
+  <div class="fb-page fb-cover" data-density="hard">
+    <div class="fb-page__inner">
+      <div class="fb-cover__issue"><span>${ed.volume}</span><span>${ed.year}</span></div>
+      <h1 class="fb-cover__title">Prep&nbsp;Portal</h1>
+      <p class="fb-cover__sub">${ed.sub}</p>
+      <div class="fb-cover__figure">
+        ${img(ed.cover)}
+        <p class="fb-cover__caption">${ed.coverCaption}</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function genericBack(ed) {
+  return `
+  <div class="fb-page fb-back" data-density="hard">
+    <div class="fb-back__bg">${img(ed.back)}</div>
+    <div class="fb-page__inner">
+      <p class="fb-back__mast">Prep Portal &middot; ${ed.yearShort}</p>
+      <h2 class="fb-back__title">${ed.backTitle}</h2>
+      <p class="fb-back__text">${ed.backText}</p>
+      <a class="fb-cta" href="/subscribe.html">${ed.cta}</a>
+      <p class="fb-back__url">prepportal.com.ng</p>
+    </div>
+  </div>`;
+}
+
+// ── The Results Edition — real wins, the numbers, voices ──────────────────────
+function RESULTS_PAGES(ed) {
+  return [
+    genericCover(ed),
+    sectionOpener({
+      n: 2, cap: "The Results", section: "The Results Edition",
+      title: "Real <em>wins</em>.", image: IMG.who,
+      paras: [
+        "Numbers are easy to print and easy to doubt. So this issue does something simpler: it hands the microphone to the students and parents who lived the change, and lets the grades speak for themselves.",
+        "Every story on these pages is real &mdash; a child who was stuck, a tutor who refused to give up, and a results slip that finally matched the effort behind it. No averages hiding the individuals.",
+        "Read them the way we do: not as marketing, but as the whole point. This is what the late nights, the practice sets and the weekly check-ins are quietly building towards, one learner at a time.",
+      ],
+    }),
+    deckPage({
+      n: 3, cap: "By the Numbers", kicker: "By the Numbers",
+      title: "The work, <em>measured</em>.",
+      items: STATS.map((s) => [s.num, s.label]),
+    }),
+    featurePage({
+      n: 4, cap: "Transformation", kicker: "From D7 to A1",
+      title: "A real <em>turnaround</em>.", image: IMG.day,
+      lede: "Six months, one subject, an entire grade band crossed.",
+      paras: [
+        "When he started, WAEC Mathematics felt like a wall. Every past question confirmed the same fear, and the lessons he&rsquo;d sat through had never quite landed where it counted &mdash; in the exam itself.",
+        "A matched tutor changed the order of things: diagnose the gaps first, then drill them with CBT-accurate practice until the patterns became familiar. Weekly notes kept his parents in the loop, and kept him honest.",
+        "By the finals nothing on the paper surprised him. A D7 became an A1 &mdash; but the real win was quieter: a student who now believes, for the first time, that he is actually good at this.",
+      ],
+    }),
+    essayFull({
+      n: 5, cap: "In Their Words", kicker: "In Their Words",
+      quoteHTML:
+        "&ldquo;He went from a <em>D7</em> to an A1 &mdash; and finally believes he&rsquo;s good at this.&rdquo;",
+      image: IMG.quote,
+    }),
+    voicesPage(),
+    deckPage({
+      n: 7, cap: "What Changes", kicker: "The Difference",
+      title: "What <em>changes</em>.",
+      items: [
+        ["Grades", "The average matched student climbs two grade bands before their exam &mdash; the difference between scraping by and standing out."],
+        ["Confidence", "Mock-to-final anxiety drops sharply once the CBT practice feels routine. Students walk in expecting the paper instead of fearing it."],
+        ["Consistency", "Weekly tutor check-ins keep momentum through the long, hard middle of the term, when good intentions usually quietly fade away."],
+        ["Trust", "Parents see the plan, the progress and the proof in one place &mdash; and finally stop wondering whether the money is doing anything."],
+      ],
+    }),
+    shell(
+      `<span class="fb-kicker">Gallery</span>
+       <h2 class="fb-h1 fb-h1--sm">The faces behind the <em>marks</em>.</h2>
+       <div class="fb-grid4">${IMG.gallery.map((o) => figure(o)).join("")}</div>
+       <p class="fb-body">
+         Behind every result on these pages is a real learner somewhere in
+         Nigeria &mdash; at a kitchen table, in a quiet corner, on a phone after
+         school. Different journeys, one shared climb, and a grade that finally
+         tells the truth about the work that went in.
+       </p>
+       ${folio("08", "Gallery")}`,
+      { n: 8 }
+    ),
+    genericBack(ed),
+  ];
+}
+
+// ── The Playbook — how to pass, step by step ──────────────────────────────────
+function PLAYBOOK_PAGES(ed) {
+  return [
+    genericCover(ed),
+    sectionOpener({
+      n: 2, cap: "The Playbook", section: "The Playbook",
+      title: "How to <em>pass</em>.", image: IMG.story,
+      paras: [
+        "There is no secret. There is a method &mdash; and most students are simply never shown it. This issue is that method, written plainly: what to do, when to do it, and the mistakes to stop making today.",
+        "It is the same playbook our tutors use behind the scenes, stripped of jargon and handed straight to you. Nothing here is clever for its own sake; every page exists because it moves a real grade on a real exam day.",
+        "Read it once now and again a month before your papers. Follow even half of it and you will walk into the hall calmer, faster and far better prepared than the version of you that started this page.",
+      ],
+    }),
+    deckPage({
+      n: 3, cap: "Plan", kicker: "Step 01 &mdash; Plan",
+      title: "Build your <em>timetable</em>.",
+      items: [
+        ["12 weeks out", "Map every topic against the syllabus and rank it: shaky, okay, solid. Your plan starts with the shaky ones &mdash; not the topics you already enjoy."],
+        ["6 weeks out", "Switch from learning to proving. Two timed practice sets a week, with every wrong answer logged and revisited until it stops catching you out."],
+        ["2 weeks out", "Full mock papers under real conditions &mdash; same timing, no phone, no notes. Treat each one as a dress rehearsal, not a test of how you feel."],
+        ["The night before", "Stop cramming. Pack your bag, lay out your documents, sleep. A rested brain recalls more than a frightened one ever will at 8am."],
+      ],
+    }),
+    featurePage({
+      n: 4, cap: "Exam Day", kicker: "Step 02 &mdash; The Hall",
+      title: "Exam-day <em>checklist</em>.", image: IMG.essay,
+      lede: "Walk in ready, not rushed.",
+      paras: [
+        "Arrive early with everything you need laid out the night before &mdash; admission slip, ID, pens, calculator, water. Rushing burns the calm focus you spent months building, before you&rsquo;ve answered a single question.",
+        "Read the whole paper first. Mark the questions you can answer in your sleep and start there: easy marks banked early settle the nerves and buy you time for the hard ones later.",
+        "Budget your time by the marks, not by the question order. Watch the clock, leave anything that stalls you, and come back. A blank answer scores nothing; a rushed last page costs the marks you already earned.",
+      ],
+    }),
+    deckPage({
+      n: 5, cap: "Pitfalls", kicker: "Step 03 &mdash; Pitfalls",
+      title: "Top <em>mistakes</em>.",
+      items: [
+        ["Studying passively", "Re-reading notes feels productive and isn&rsquo;t. If you are not answering questions, you are not revising &mdash; you are just visiting the material."],
+        ["Ignoring the mark scheme", "Examiners reward specific words and steps. Practise the way they mark, and the easy method marks stop slipping through your fingers."],
+        ["Cramming your favourite topic", "Your weakest area needs the most time, not the one you like. Comfort revision is the most expensive way to feel busy."],
+        ["Skipping past questions", "The real papers repeat themselves. Students who drill past questions recognise half the exam on sight &mdash; and answer it without flinching."],
+      ],
+    }),
+    featurePage({
+      n: 6, cap: "Technique", kicker: "Step 04 &mdash; Technique",
+      title: "How to <em>study</em>.", image: IMG.mission,
+      lede: "Active, spaced and tested &mdash; in that order.",
+      paras: [
+        "Active recall beats everything. Close the book and try to reproduce the idea from memory; the struggle to retrieve it is the moment the learning actually sticks. Then check, correct, and try again.",
+        "Space it out. Ten focused minutes on a topic across five days will always beat fifty minutes crammed into one. Let yourself nearly forget &mdash; then pull it back. That is how short-term turns into long-term.",
+        "Teach it back. If you can explain a topic clearly to someone else, or to an empty room, you own it. If you stumble, you have just found exactly what to revise next &mdash; no guessing required.",
+      ],
+    }),
+    deckPage({
+      n: 7, cap: "The Exams", kicker: "Know Your Paper",
+      title: "JAMB, WAEC, NECO &amp; <em>IGCSE</em>.",
+      items: [
+        ["JAMB / UTME", "CBT, fast and unforgiving on time. Speed and accuracy under the clock matter as much as knowledge &mdash; so practise on screen, against a timer, until it feels normal."],
+        ["WAEC", "Theory and objectives across a long paper. Structured answers with clear working earn the method marks that quietly push a C up to a B."],
+        ["NECO", "Close to WAEC in style, with its own phrasing. Familiar formats &mdash; but read every question twice, because the wording is exactly where marks are lost."],
+        ["Cambridge / IGCSE", "Command words rule everything: &lsquo;state&rsquo;, &lsquo;explain&rsquo; and &lsquo;evaluate&rsquo; each want a different answer. Learn them and you write precisely what earns the mark."],
+      ],
+    }),
+    genericBack(ed),
+  ];
+}
+
 // Build the StPageFlip book inside the (already visible) modal — runs once.
 function buildBook(modal, ed) {
   const PageFlip = window.St && window.St.PageFlip;
@@ -936,7 +1096,14 @@ function buildBook(modal, ed) {
     return null;
   }
 
-  const pages = ed.kind === "yearbook" ? YEARBOOK_PAGES(ed) : PAGES(ed);
+  const pages =
+    ed.kind === "yearbook"
+      ? YEARBOOK_PAGES(ed)
+      : ed.kind === "results"
+        ? RESULTS_PAGES(ed)
+        : ed.kind === "playbook"
+          ? PLAYBOOK_PAGES(ed)
+          : PAGES(ed);
   bookEl.classList.toggle("fb-book--yearbook", ed.kind === "yearbook");
   if (ed.themeClass) bookEl.classList.add(ed.themeClass);
   bookEl.innerHTML = pages.join("");
@@ -1068,4 +1235,139 @@ export function initYearbookShelf({ containerId, editions = YEARBOOKS }) {
     const open = attachModal(ed);
     card.querySelector("[data-open]")?.addEventListener("click", open);
   });
+}
+
+// ── The Reading Room (homepage): three issues in alternating cover/text rows ──
+const ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+
+// One feature row: a standing book cover (with its sticky note) beside a text
+// block. Even rows flip the sides. Both the cover and the CTA open the issue.
+function bookRow(ed, i) {
+  const flip = i % 2 ? " book-row--flip" : "";
+  return `
+  <article class="book-row${flip}">
+    <div class="book-row__cover">
+      <div class="book-stack">
+        <span class="book-blob" style="--pad:${ed.pad}" aria-hidden="true"></span>
+        <button type="button" class="book-cover" data-open data-edition="${ed.id}"
+                aria-label="Open ${ed.editionName}">
+          <span class="book-cover__photo">${img(ed.cover)}</span>
+          <span class="book-cover__spine" aria-hidden="true"></span>
+          <span class="book-cover__band">
+            <span class="book-cover__torn" aria-hidden="true"></span>
+            <span class="book-cover__issue">${ed.volume} &middot; ${ed.year}</span>
+            <span class="book-cover__name">${ed.editionName}</span>
+          </span>
+        </button>
+        <figure class="book-note" style="--pad:${ed.pad}">
+          <span class="book-note__msg">${ed.note}</span>
+          ${ed.noteBy ? `<figcaption class="book-note__by">${ed.noteBy}</figcaption>` : ""}
+        </figure>
+      </div>
+    </div>
+    <div class="book-row__text">
+      <span class="book-row__kicker">Issue ${pad(i + 1)}</span>
+      <h3 class="book-row__title">${ed.editionName}</h3>
+      <span class="book-row__rule"></span>
+      <p class="book-row__blurb">${ed.blurb}</p>
+      <button type="button" class="book-row__cta" data-open data-edition="${ed.id}">
+        Read the issue ${ARROW}
+      </button>
+    </div>
+  </article>`;
+}
+
+// GSAP entrance: each row's cover + text slide in from their own sides and the
+// sticky note pops in last. CSS already shows the resting layout (no-JS / reduced
+// motion), so this is pure enhancement.
+function initBookReveal(host) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm")
+    .then(({ gsap }) => {
+      host.querySelectorAll(".book-row").forEach((row) => {
+        const flip = row.classList.contains("book-row--flip");
+        const cover = row.querySelector(".book-stack");
+        const text = row.querySelector(".book-row__text");
+        const note = row.querySelector(".book-note");
+
+        gsap.set(cover, { x: flip ? 48 : -48, autoAlpha: 0 });
+        gsap.set(text, { x: flip ? -48 : 48, autoAlpha: 0 });
+        gsap.set(note, {
+          scale: 0.4,
+          rotation: 0,
+          autoAlpha: 0,
+          transformOrigin: flip ? "bottom right" : "bottom left",
+        });
+
+        let played = false;
+        const play = () => {
+          if (played) return;
+          played = true;
+          gsap
+            .timeline()
+            .to([cover, text], {
+              x: 0,
+              autoAlpha: 1,
+              duration: 0.6,
+              ease: "power3.out",
+              stagger: 0.08,
+            })
+            .to(
+              note,
+              {
+                scale: 1,
+                rotation: flip ? -5 : 5,
+                autoAlpha: 1,
+                duration: 0.45,
+                ease: "back.out(1.8)",
+              },
+              "-=0.2",
+            );
+        };
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              io.disconnect();
+              play();
+            });
+          },
+          { threshold: 0.3 },
+        );
+        io.observe(row);
+
+        // Backstop: never leave a row hidden if the observer doesn't fire.
+        setTimeout(() => {
+          io.disconnect();
+          play();
+        }, 4000);
+      });
+    })
+    .catch(() => {
+      /* CSS shows the resting layout already */
+    });
+}
+
+export function initBookshelf({ containerId, editions = [DEFAULT_EDITION] }) {
+  const host = document.getElementById(containerId);
+  if (!host) {
+    console.error(`[flipbook] container "#${containerId}" not found.`);
+    return;
+  }
+
+  host.innerHTML = editions.map((ed, i) => bookRow(ed, i)).join("");
+
+  editions.forEach((ed) => {
+    const open = attachModal(ed);
+    host
+      .querySelectorAll(`[data-edition="${ed.id}"][data-open]`)
+      .forEach((btn) => btn.addEventListener("click", open));
+  });
+
+  // Paint splash behind the section (reuses the hero amoebas).
+  const paint = document.querySelector(".books-paint");
+  if (paint) paint.innerHTML = heroPaint();
+
+  initBookReveal(host);
 }
