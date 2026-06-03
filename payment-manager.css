@@ -932,7 +932,7 @@
 
 /* ─── RESPONSIVE ───────────────────────────────────────────── */
 @media (max-width: 840px) {
-  .pm-sheet {
+  .pm-sheet:not(.pm-sheet--narrow) {
     padding: 2rem 1.5rem 1.5rem;
     box-shadow: 5px 5px 0 var(--ink);
   }
@@ -955,7 +955,7 @@
     padding: 0;
   }
 
-  .pm-sheet {
+  .pm-sheet:not(.pm-sheet--narrow) {
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     box-shadow: 0 -4px 0 var(--ink);
     max-height: 92dvh;
