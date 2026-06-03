@@ -18,6 +18,10 @@ if (faqPaint) faqPaint.innerHTML = heroPaint();
 const pathsPaint = document.querySelector(".paths-paint");
 if (pathsPaint) pathsPaint.innerHTML = heroPaint();
 
+// …and a soft wash behind the footer brand.
+const footerPaint = document.querySelector(".footer-paint");
+if (footerPaint) footerPaint.innerHTML = heroPaint();
+
 /* =========================================================================
    Typewriter — cycle tutor synonyms in the highlighted headline word.
 ========================================================================= */
