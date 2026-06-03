@@ -71,12 +71,6 @@ export const PLANS = {
   },
 };
 
-// Backward-compat alias used by toolbar.js
-export const SUBSCRIPTION_PLANS = {
-  GAMES:   PLANS.PRO,
-  PREMIUM: PLANS.PREMIUM,
-};
-
 // ─── PORTAL (IIFE — side-effect, sets window.PaymentPortal) ─
 (function () {
   const PK = "pk_live_f4ddce00cea983792c801c129d875e64086d68da";
@@ -118,75 +112,9 @@ export const SUBSCRIPTION_PLANS = {
   const LOCK_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 
   // ── view builders ─────────────────────────────────────────
-
-  function buildCards(highlightId) {
-    return Object.values(PLANS).map((plan) => {
-      const b = plan[billing];
-      const isPopular    = plan.badge === "Most Popular";
-      const isEnterprise = plan.badge === "Enterprise";
-      const isHighlit    = plan.id === highlightId;
-
-      const badgeHtml = plan.badge
-        ? `<span class="pm-badge ${isPopular ? "pm-badge--popular" : "pm-badge--enterprise"}">${plan.badge}</span>`
-        : `<span class="pm-badge pm-badge--ghost"></span>`;
-
-      // Yearly: show the annual total as the primary price so the user knows exactly what they'll be charged
-      const displayPrice = fmt(b.amount);
-      const billingNote  = billing === "yearly"
-        ? `₦${fmt(b.monthlyEq)}/mo · billed annually`
-        : "per month";
-      const savingBadge  = (billing === "yearly" && b.saving)
-        ? `<span class="pm-saving">${b.saving}</span>`
-        : "";
-
-      return `
-        <div class="pm-card${isPopular ? " pm-card--popular" : ""}${isEnterprise ? " pm-card--enterprise" : ""}${isHighlit ? " pm-card--highlight" : ""}" data-plan="${plan.id}">
-          ${badgeHtml}
-          <div class="pm-card-head">
-            <h3 class="pm-plan-name">${plan.name}</h3>
-            <p class="pm-plan-tagline">${plan.tagline}</p>
-          </div>
-          <div class="pm-price-block">
-            <div class="pm-price-row">
-              <span class="pm-currency">₦</span>
-              <span class="pm-amount">${displayPrice}</span>
-              ${savingBadge}
-            </div>
-            <p class="pm-billing-note">${billingNote}</p>
-          </div>
-          <ul class="pm-features">
-            ${plan.features.map((f) => `<li>${CHECK_SVG}${f}</li>`).join("")}
-          </ul>
-          <button class="pm-cta-btn" data-plan="${plan.id}">
-            <span>Get ${plan.name}</span>
-            ${ARROW_SVG}
-          </button>
-        </div>`;
-    }).join("");
-  }
-
-  function buildPlansView(highlightId) {
-    const activeBilling = billing;
-    return `
-      <div class="pm-intro">
-        <p class="pm-eyebrow">Choose your plan</p>
-        <h2 class="pm-headline">Unlock the full<br>Prep Portal.</h2>
-        <div class="pm-toggle" role="group" aria-label="Billing cycle">
-          <button class="pm-toggle-btn${activeBilling === "monthly" ? " pm-toggle-btn--active" : ""}" data-billing="monthly">Monthly</button>
-          <button class="pm-toggle-btn${activeBilling === "yearly" ? " pm-toggle-btn--active" : ""}" data-billing="yearly">
-            Yearly
-            <span class="pm-toggle-pill">Up to 10% off</span>
-          </button>
-        </div>
-      </div>
-      <div class="pm-cards" id="pm-cards">
-        ${buildCards(highlightId)}
-      </div>
-      <p class="pm-secure">
-        ${LOCK_SVG}
-        Secured by Paystack. Cancel anytime from your account dashboard.
-      </p>`;
-  }
+  // NOTE: the multi-plan "grid" view has been removed. Plan selection now
+  // lives entirely on /subscribe.html; this modal only ever shows the
+  // single-plan order summary (a narrow receipt) and the success screen.
 
   function buildCheckoutView(plan, email) {
     const pricing      = plan[billing];
@@ -281,8 +209,8 @@ export const SUBSCRIPTION_PLANS = {
   // ── modal shell ───────────────────────────────────────────
   function buildModalShell() {
     return `
-      <div id="pm-overlay" class="pm-overlay" role="dialog" aria-modal="true" aria-label="Choose a plan">
-        <div class="pm-sheet">
+      <div id="pm-overlay" class="pm-overlay" role="dialog" aria-modal="true" aria-label="Order summary">
+        <div class="pm-sheet pm-sheet--narrow">
           <button class="pm-close" id="pm-close" aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -293,8 +221,6 @@ export const SUBSCRIPTION_PLANS = {
 
   // ── portal object ─────────────────────────────────────────
   const Portal = {
-    _highlightId: null,
-
     init() {
       if (!document.getElementById("pm-styles")) {
         const link = document.createElement("link");
@@ -310,7 +236,6 @@ export const SUBSCRIPTION_PLANS = {
       document.body.appendChild(root);
 
       this._wireStatic();
-      this._showPlans();
       this._setupInterceptors();
     },
 
@@ -326,34 +251,6 @@ export const SUBSCRIPTION_PLANS = {
       });
     },
 
-    _showPlans(highlightId) {
-      const id = highlightId ?? this._highlightId;
-      document.getElementById("pm-body").innerHTML = buildPlansView(id);
-      document.querySelector(".pm-sheet")?.classList.remove("pm-sheet--narrow");
-
-      document.querySelectorAll(".pm-toggle-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          billing = btn.dataset.billing;
-          document.querySelectorAll(".pm-toggle-btn").forEach((b) =>
-            b.classList.toggle("pm-toggle-btn--active", b.dataset.billing === billing)
-          );
-          document.getElementById("pm-cards").innerHTML = buildCards(id);
-          this._wireCards();
-        });
-      });
-
-      this._wireCards();
-    },
-
-    _wireCards() {
-      document.querySelectorAll(".pm-cta-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const plan = Object.values(PLANS).find((p) => p.id === btn.dataset.plan);
-          if (plan) this._showCheckout(plan);
-        });
-      });
-    },
-
     _showCheckout(plan) {
       const user = auth.currentUser;
       if (!user) {
@@ -363,16 +260,11 @@ export const SUBSCRIPTION_PLANS = {
       }
 
       document.getElementById("pm-body").innerHTML = buildCheckoutView(plan, user.email);
-      document.querySelector(".pm-sheet")?.classList.add("pm-sheet--narrow");
 
-      const goBack = () => {
-        document.querySelector(".pm-sheet")?.classList.remove("pm-sheet--narrow");
-        this._showPlans();
-      };
-
-      document.getElementById("pm-back").onclick = goBack;
-      // "Change" billing link — goes back to plans so user can switch the toggle
-      document.getElementById("pm-change-billing").onclick = goBack;
+      // The plan grid is gone — "All plans" and "Change" simply close the
+      // receipt so the user is back on the subscribe page where the cards live.
+      document.getElementById("pm-back").onclick = () => this.close();
+      document.getElementById("pm-change-billing").onclick = () => this.close();
 
       document.getElementById("pm-pay-btn").onclick = () => this._charge(plan);
     },
@@ -438,7 +330,6 @@ export const SUBSCRIPTION_PLANS = {
 
     _showSuccess(plan) {
       document.getElementById("pm-body").innerHTML = buildSuccessView(plan);
-      document.querySelector(".pm-sheet")?.classList.add("pm-sheet--narrow");
 
       document.getElementById("pm-dashboard-btn").onclick = () => {
         this.close();
@@ -446,20 +337,14 @@ export const SUBSCRIPTION_PLANS = {
       };
     },
 
-    open(planOrId) {
-      const plan = (typeof planOrId === "string")
-        ? Object.values(PLANS).find((p) => p.id === planOrId)
-        : planOrId ?? PLANS.PREMIUM;
-
-      this._highlightId = plan?.id ?? null;
-      this._showPlans(this._highlightId);
-
-      document.getElementById("pm-overlay").classList.add("pm-overlay--active");
-      document.body.style.overflow = "hidden";
+    // The multi-plan grid modal is gone. Any "upgrade / choose a plan" entry
+    // point now sends the user to the dedicated subscribe page.
+    open() {
+      window.location.href = "/subscribe.html#plans";
     },
 
-    // Opens directly at the checkout step — used by the dedicated subscribe page
-    // so the user isn't shown a second copy of the plan cards they already see inline.
+    // Opens directly at the single-plan order summary (a narrow receipt).
+    // Used by the subscribe page once the user has picked a plan + billing cycle.
     checkout(planOrId, cycle) {
       if (cycle) billing = cycle;
       const plan = (typeof planOrId === "string")
@@ -467,7 +352,6 @@ export const SUBSCRIPTION_PLANS = {
         : planOrId ?? PLANS.PRO;
       if (!plan) return;
 
-      this._highlightId = plan.id;
       document.getElementById("pm-overlay").classList.add("pm-overlay--active");
       document.body.style.overflow = "hidden";
       this._showCheckout(plan);
@@ -476,22 +360,10 @@ export const SUBSCRIPTION_PLANS = {
     close() {
       document.getElementById("pm-overlay").classList.remove("pm-overlay--active");
       document.body.style.overflow = "";
-      this._highlightId = null;
-      // Reset to plans after animation completes
-      setTimeout(() => {
-        this._showPlans();
-        document.querySelector(".pm-sheet")?.classList.remove("pm-sheet--narrow");
-      }, 300);
     },
 
     _setupInterceptors() {
-      document.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-plan-open]");
-        if (!btn) return;
-        e.preventDefault();
-        this.open(btn.dataset.planOpen || "premium");
-      });
-
+      // Premium content gate: gate game/activity links behind a subscription.
       document.addEventListener("click", async (e) => {
         const link = e.target.closest("a");
         if (!link) return;
@@ -513,7 +385,7 @@ export const SUBSCRIPTION_PLANS = {
             window.location.href = href;
             return;
           }
-          this.open(PLANS.PRO);
+          window.location.href = "/subscribe.html#plans";
         } catch {
           showToast("Could not verify subscription status.", "error");
         }

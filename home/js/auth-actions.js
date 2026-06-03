@@ -1,6 +1,5 @@
 import { auth } from "/firebase-init.js";
 import { signOut } from "firebase/auth";
-import { SUBSCRIPTION_PLANS } from "/payment-manager.js";
 
 export function doLogout() {
   signOut(auth)
@@ -15,5 +14,5 @@ export function doUpgrade() {
     window.openAuthModal?.("login");
     return;
   }
-  window.PaymentPortal?.open(SUBSCRIPTION_PLANS.PREMIUM);
+  window.location.href = "/subscribe.html#plans";
 }

@@ -1,6 +1,5 @@
 import { I } from "./icons.js";
 import { auth } from "/firebase-init.js";
-import { SUBSCRIPTION_PLANS } from "/payment-manager.js";
 import { ROUTES } from "/home/js/routing.js";
 import {
   showAssignmentModal,
@@ -21,7 +20,7 @@ export function doUpgrade() {
     window.openAuthModal?.("login");
     return;
   }
-  window.PaymentPortal?.open(SUBSCRIPTION_PLANS.PREMIUM);
+  window.location.href = "/subscribe.html#plans";
 }
 
 export function buildToolbar(container, role, isPremium) {
