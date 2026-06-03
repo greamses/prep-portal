@@ -13,6 +13,12 @@
     <link rel="stylesheet" href="/payment-manager.css" />
     <link rel="stylesheet" href="/subscribe.css" />
 
+    <!-- Marker hand for sticky-note highlights -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>body { visibility: hidden; }</style>
 
     <script type="importmap">
@@ -36,26 +42,27 @@
 
     <nav class="site-nav" data-nav="main"></nav>
 
+    <div class="sp-paint" aria-hidden="true"></div>
+
     <!-- ═══ PAGE HEADER ═══ -->
     <header class="sp-header">
       <p class="sp-eyebrow">Subscriptions &amp; Tutoring</p>
-      <h1 class="sp-headline">Choose how you learn.</h1>
-      <p class="sp-sub">Platform access or personal tutoring &mdash; pick what fits your goals.</p>
-
-      <div class="sp-tabs" role="tablist" aria-label="Subscription type">
-        <button class="sp-tab sp-tab--active" role="tab" data-tab="plans" aria-selected="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Platform Plans
+      <div class="sp-kindtabs" role="tablist" aria-label="Subscription type">
+        <button type="button" class="sp-kindtab sp-kindtab--active" data-go="plans">
+          Platform plans
         </button>
-        <button class="sp-tab" role="tab" data-tab="tutor" aria-selected="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Book a Tutor
+        <button type="button" class="sp-kindtab" data-go="tutor">
+          Book a tutor
         </button>
       </div>
     </header>
 
-    <!-- ═══ TAB: PLATFORM PLANS ═══ -->
+    <!-- ═══ PLATFORM PLANS (shown first) ═══ -->
     <section class="sp-section" id="sp-plans" role="tabpanel">
+      <div class="sp-section-head">
+        <h2 class="sp-section-title">Platform plans</h2>
+        <p class="sp-section-note">Everything self-paced &mdash; cancel anytime from your dashboard.</p>
+      </div>
       <div class="sp-billing-toggle" id="spBillingToggle" role="group" aria-label="Billing cycle">
         <button class="sp-billing-btn sp-billing-btn--active" data-billing="monthly">Monthly</button>
         <button class="sp-billing-btn" data-billing="yearly">
@@ -71,7 +78,7 @@
       </p>
     </section>
 
-    <!-- ═══ TAB: BOOK A TUTOR ═══ -->
+    <!-- ═══ BOOK A TUTOR ═══ -->
     <section class="sp-section sp-section--hidden" id="sp-tutor" role="tabpanel">
       <div class="sp-tutor-intro">
         <h2 class="sp-tutor-intro-heading">One-to-one tutoring sessions</h2>

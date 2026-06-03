@@ -10,6 +10,14 @@ import { heroPaint } from "/utils/components/nav-icons.js";
 const host = document.querySelector(".hero-paint");
 if (host) host.innerHTML = heroPaint();
 
+// Same paint splash, softly, behind the FAQ cards.
+const faqPaint = document.querySelector(".faq-paint");
+if (faqPaint) faqPaint.innerHTML = heroPaint();
+
+// …and behind the "pick your path" subscriptions section.
+const pathsPaint = document.querySelector(".paths-paint");
+if (pathsPaint) pathsPaint.innerHTML = heroPaint();
+
 /* =========================================================================
    Typewriter — cycle tutor synonyms in the highlighted headline word.
 ========================================================================= */

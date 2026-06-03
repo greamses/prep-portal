@@ -1,6 +1,7 @@
 import { PLANS } from "/payment-manager.js";
 import { auth, db } from "/firebase-init.js";
 import { doc, setDoc } from "firebase/firestore";
+import { heroPaint } from "/utils/components/nav-icons.js";
 
 const PK = "pk_live_f4ddce00cea983792c801c129d875e64086d68da";
 
@@ -126,6 +127,7 @@ function buildPlanCards() {
     return `
       <div class="sp-card${isPopular ? " sp-card--popular" : ""}${isEnterprise ? " sp-card--enterprise" : ""}">
         ${badge}
+        <div class="sp-card__paper">
         <div class="sp-card-head">
           <h3 class="sp-card-name">${plan.name}</h3>
           <p class="sp-card-sub">${plan.tagline}</p>
@@ -144,6 +146,7 @@ function buildPlanCards() {
         <button class="sp-cta${isPopular ? " sp-cta--popular" : isEnterprise ? " sp-cta--enterprise" : ""}" data-checkout="${plan.id}">
           <span>Get ${plan.name}</span>${ARROW}
         </button>
+        </div>
       </div>`;
   }).join("");
 }
@@ -166,6 +169,7 @@ function buildTutorCards() {
     return `
       <div class="sp-card${isPopular ? " sp-card--popular" : isComplete ? " sp-card--enterprise" : ""}">
         ${badge}
+        <div class="sp-card__paper">
         <div class="sp-card-head">
           <h3 class="sp-card-name">${pkg.name}</h3>
           <p class="sp-card-sub">${pkg.tagline}</p>
@@ -184,6 +188,7 @@ function buildTutorCards() {
         <button class="sp-cta${isPopular ? " sp-cta--popular" : isComplete ? " sp-cta--enterprise" : ""}" data-tutor-checkout="${pkg.id}">
           <span>Book ${pkg.name}</span>${ARROW}
         </button>
+        </div>
       </div>`;
   }).join("");
 }
@@ -401,6 +406,9 @@ async function chargeTutor(pkg) {
 
 // ─── INIT ────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  const paint = document.querySelector(".sp-paint");
+  if (paint) paint.innerHTML = heroPaint();
+
   document.getElementById("spPlanGrid").innerHTML  = buildPlanCards();
   document.getElementById("spTutorGrid").innerHTML = buildTutorCards();
   wirePlanCards();
@@ -442,19 +450,24 @@ document.addEventListener("DOMContentLoaded", () => {
     wirePlanCards();
   });
 
-  // Tab switching
-  document.querySelectorAll(".sp-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const target = tab.dataset.tab;
-      document.querySelectorAll(".sp-tab").forEach((t) => {
-        t.classList.toggle("sp-tab--active", t.dataset.tab === target);
-        t.setAttribute("aria-selected", t.dataset.tab === target ? "true" : "false");
-      });
-      document.querySelectorAll(".sp-section").forEach((s) =>
-        s.classList.toggle("sp-section--hidden", s.id !== `sp-${target}`)
-      );
-    });
-  });
+  // Kind tabs switch between Platform Plans and Book a Tutor (plans show first).
+  const kindtabs = document.querySelectorAll(".sp-kindtab[data-go]");
+  const showKind = (which) => {
+    if (which !== "plans" && which !== "tutor") return;
+    document.querySelectorAll(".sp-section").forEach((s) =>
+      s.classList.toggle("sp-section--hidden", s.id !== `sp-${which}`)
+    );
+    kindtabs.forEach((t) =>
+      t.classList.toggle("sp-kindtab--active", t.dataset.go === which)
+    );
+  };
+  kindtabs.forEach((tab) =>
+    tab.addEventListener("click", () => showKind(tab.dataset.go))
+  );
+
+  // Deep link: /subscribe.html#plans or #tutor opens that kind directly.
+  const hash = location.hash.replace("#", "");
+  if (hash === "plans" || hash === "tutor") showKind(hash);
 });
 
 function wireTutorCards() {

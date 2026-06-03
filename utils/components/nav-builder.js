@@ -591,15 +591,10 @@ function buildUserMenu() {
   fillItem(dashboardLink, "home", "Dashboard");
   items.appendChild(dashboardLink);
 
-  const subscriptionLink = document.createElement("button");
-  subscriptionLink.type = "button";
+  const subscriptionLink = document.createElement("a");
+  subscriptionLink.href = "/subscribe.html";
   subscriptionLink.className = "neo-dropdown-item nd-gold auth-only";
   fillItem(subscriptionLink, "star", "Subscription");
-  subscriptionLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    menuDiv.classList.remove("open");
-    window.PaymentPortal?.open("premium");
-  });
   items.appendChild(subscriptionLink);
 
   const loginBtn = document.createElement("button");
