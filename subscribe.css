@@ -42,7 +42,7 @@ body {
 .sp-kindtabs {
   display: inline-flex;
   gap: 4px;
-  margin-top: 1rem;
+  margin-top: 0;
   padding: 4px;
   border-radius: 999px;
   border: var(--border-subtle);
