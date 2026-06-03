@@ -67,9 +67,6 @@ body {
   width: 46px;
   height: 46px;
   object-fit: contain;
-  border-radius: 14px;
-  background: var(--accent-primary);
-  box-shadow: var(--shadow-sm);
 }
 
 .nav-logo-text {
@@ -83,12 +80,13 @@ body {
   font-size: 1.2rem;
   font-family: var(--font-display);
   letter-spacing: -0.5px;
+  color: var(--ink);
 }
 
 .brand-bottom {
   font-size: 0.9rem;
   font-weight: var(--weight-semibold);
-  color: var(--text-secondary);
+  color: var(--accent-danger);
 }
 
 /* =============================================

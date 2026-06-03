@@ -65,11 +65,11 @@
     const loader = document.getElementById(loaderId);
     if (!loader) return;
 
-    // Inject Triple SVGs
+    // Inject Triple logos (references the generated mark so it always matches).
     const cluster = loader.querySelector(".logo-cluster");
     if (cluster) {
-      const svg = `<svg class="pulse-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 98L10 75V25L50 2L90 25V75L50 98Z" fill="#0a0a0a" fill-opacity="0.1" /><path d="M50 50L10 27V73L50 96V50Z" fill="#0055ff" stroke="#0a0a0a" stroke-width="2.5" /><path d="M50 50L90 27V73L50 96V50Z" fill="#003db3" stroke="#0a0a0a" stroke-width="2.5" /><path d="M50 50L90 27L50 4L10 27L50 50Z" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.5" /><path d="M50 35L65 43V58L50 66L35 58V43L50 35Z" fill="${accentColor}" stroke="#0a0a0a" stroke-width="2" /><circle cx="50" cy="50.5" r="4" fill="#0a0a0a" /></svg>`;
-      cluster.innerHTML = svg + svg + svg;
+      const img = `<img class="pulse-logo" src="/logo/logo-loading.svg" alt="" />`;
+      cluster.innerHTML = img + img + img;
     }
 
     // Stagger word entry
