@@ -278,11 +278,10 @@ function buildTutorCheckout(pkg, email) {
       : i === 0 ? "Child 1 (full rate)" : `Child ${i + 1} (5% off)`;
     return `
       <div class="pm-breakdown-row tp-child-row">
-        <span>${label}</span>
-        <span>
-          <span class="tp-child-sessions">${sessions} × &#8358;${fmt(rate)}/hr</span>
-          = <strong class="tp-child-amount">&#8358;${fmt(amount)}</strong>
+        <span class="tp-child-label">${label}
+          <span class="tp-child-sessions">${sessions} &times; &#8358;${fmt(rate)}/hr</span>
         </span>
+        <strong class="tp-child-amount">&#8358;${fmt(amount)}</strong>
       </div>`;
   }).join("");
 

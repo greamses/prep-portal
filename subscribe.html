@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prep Portal | Subscriptions &amp; Tutoring</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 98L10 75V25L50 2L90 25V75L50 98Z' fill='%230a0a0a' fill-opacity='0.1' /%3E%3Cpath d='M50 50L10 27V73L50 96V50Z' fill='%230055ff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27V73L50 96V50Z' fill='%23003db3' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27L50 4L10 27L50 50Z' fill='%23ffffff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 35L65 43V58L50 66L35 58V43L50 35Z' fill='%23ffe500' stroke='%230a0a0a' stroke-width='2' /%3E%3Ccircle cx='50' cy='50.5' r='4' fill='%230a0a0a' /%3E%3C/svg%3E" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 98L10 75V25L50 2L90 25V75L50 98Z' fill='%230a0a0a' fill-opacity='0.1' /%3E%3Cpath d='M50 50L10 27V73L50 96V50Z' fill='%230055ff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27V73L50 96V50Z' fill='%23003db3' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 50L90 27L50 4L10 27L50 50Z' fill='%23ffffff' stroke='%230a0a0a' stroke-width='2.5' /%3E%3Cpath d='M50 35L65 43V58L50 66L35 58V43L50 35Z' fill='%23ffe500' stroke='%230a0a0a' stroke-width='2' /%3E%3Ccircle cx='50' cy='50.5' r='4' fill='%230a0a0a' /%3E%3C/svg%3E"
+    />
     <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Choose a platform plan or book a personal tutor session. Pro from &#8358;10,000/mo. Tutor packs from &#8358;12,000." />
+    <meta
+      name="description"
+      content="Choose a platform plan or book a personal tutor session. Pro from &#8358;10,000/mo. Tutor packs from &#8358;12,000."
+    />
 
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/payment-manager.css" />
@@ -19,7 +26,11 @@
       rel="stylesheet"
     />
 
-    <style>body { visibility: hidden; }</style>
+    <style>
+      body {
+        visibility: hidden;
+      }
+    </style>
 
     <script type="importmap">
       {
@@ -47,7 +58,11 @@
     <!-- ═══ PAGE HEADER ═══ -->
     <header class="sp-header">
       <div class="sp-kindtabs" role="tablist" aria-label="Subscription type">
-        <button type="button" class="sp-kindtab sp-kindtab--active" data-go="plans">
+        <button
+          type="button"
+          class="sp-kindtab sp-kindtab--active"
+          data-go="plans"
+        >
           Platform plans
         </button>
         <button type="button" class="sp-kindtab" data-go="tutor">
@@ -58,8 +73,18 @@
 
     <!-- ═══ PLATFORM PLANS (shown first) ═══ -->
     <section class="sp-section" id="sp-plans" role="tabpanel">
-      <div class="sp-billing-toggle" id="spBillingToggle" role="group" aria-label="Billing cycle">
-        <button class="sp-billing-btn sp-billing-btn--active" data-billing="monthly">Monthly</button>
+      <div
+        class="sp-billing-toggle"
+        id="spBillingToggle"
+        role="group"
+        aria-label="Billing cycle"
+      >
+        <button
+          class="sp-billing-btn sp-billing-btn--active"
+          data-billing="monthly"
+        >
+          Monthly
+        </button>
         <button class="sp-billing-btn" data-billing="yearly">
           Yearly
           <span class="sp-billing-pill">Up to 10% off</span>
@@ -69,36 +94,69 @@
       <div class="sp-grid" id="spPlanGrid"></div>
 
       <p class="sp-footnote">
-        Prices in Nigerian Naira (&#8358;). Plans auto-renew. Cancel anytime from your dashboard.
+        Prices in Nigerian Naira (&#8358;). Plans auto-renew. Cancel anytime
+        from your dashboard.
       </p>
     </section>
 
     <!-- ═══ BOOK A TUTOR ═══ -->
-    <section class="sp-section sp-section--hidden" id="sp-tutor" role="tabpanel">
+    <section
+      class="sp-section sp-section--hidden"
+      id="sp-tutor"
+      role="tabpanel"
+    >
       <div class="sp-children-bar">
         <div class="sp-children-left">
           <span class="sp-children-label">Number of children</span>
           <span class="sp-children-hint" id="spChildHint"></span>
         </div>
         <div class="sp-counter" role="group" aria-label="Number of children">
-          <button class="sp-counter-btn" id="spChildMinus" aria-label="Remove child" disabled>&#8722;</button>
+          <button
+            class="sp-counter-btn"
+            id="spChildMinus"
+            aria-label="Remove child"
+            disabled
+          >
+            &#8722;
+          </button>
           <span class="sp-counter-val" id="spChildCount">1</span>
-          <button class="sp-counter-btn" id="spChildPlus" aria-label="Add child">&#43;</button>
+          <button
+            class="sp-counter-btn"
+            id="spChildPlus"
+            aria-label="Add child"
+          >
+            &#43;
+          </button>
         </div>
       </div>
 
       <div class="sp-grid sp-grid--packages" id="spTutorGrid"></div>
 
       <p class="sp-footnote">
-        Sessions are 1 hour each &middot; Valid 90 days from purchase &middot; 5% discount per extra child &middot; Flexible scheduling
+        Sessions are 1 hour each &middot; Valid 90 days from purchase &middot;
+        5% discount per extra child &middot; Flexible scheduling
       </p>
     </section>
 
     <!-- ═══ TUTOR CHECKOUT MODAL ═══ -->
-    <div id="tp-overlay" class="pm-overlay" role="dialog" aria-modal="true" aria-label="Tutor session checkout">
+    <div
+      id="tp-overlay"
+      class="pm-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tutor session checkout"
+    >
       <div class="pm-sheet pm-sheet--narrow">
         <button class="pm-close" id="tp-close" aria-label="Close">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
         <div id="tp-body"></div>
       </div>
