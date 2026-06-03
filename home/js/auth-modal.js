@@ -18,6 +18,8 @@ import { renderParentFields } from "/home/js/dashboard/ParentForm.js";
 import { renderTeacherFields } from "/home/js/dashboard/TeacherForm.js";
 import { auth, googleProvider, db } from "/firebase-init.js";
 import { ROUTES } from "/home/js/routing.js";
+import { AUTH_ICONS } from "/home/js/auth-icons.js";
+import { heroPaint } from "/utils/components/nav-icons.js";
 
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
@@ -37,14 +39,37 @@ export function injectAuthModal() {
     document.body.appendChild(mountPoint);
   }
 
+  const field = (opts) => {
+    const { label, type, id, placeholder, icon, password } = opts;
+    const eye = password
+      ? `<button type="button" class="auth-eye" data-eye-for="${id}" aria-label="Show password">${AUTH_ICONS.eye}</button>`
+      : "";
+    return `
+      <div class="auth-field">
+        <label for="${id}">${label}</label>
+        <div class="auth-input-wrap${password ? " auth-input-wrap--pw" : ""}">
+          <span class="auth-input-icon">${icon}</span>
+          <input type="${type}" id="${id}" placeholder="${placeholder}" required />
+          ${eye}
+        </div>
+      </div>`;
+  };
+
+  const roleBtn = (role, label, active) => `
+    <button type="button" class="role-toggle-btn${active ? " active" : ""}" data-role="${role}">
+      <span class="role-ico">${AUTH_ICONS[role]}</span>
+      <span class="role-lbl">${label}</span>
+    </button>`;
+
+  const googleBtn = (id, text) =>
+    `<button type="button" class="google-btn" id="${id}">${AUTH_ICONS.google}<span>${text}</span></button>`;
+
   mountPoint.innerHTML = `
   <div class="auth-overlay"></div>
   <div class="auth-modal">
-    <button class="auth-close" id="auth-close-btn" aria-label="Close">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 6L6 18"/><path d="M6 6L18 18"/>
-      </svg>
-    </button>
+    <div class="auth-paint" aria-hidden="true">${heroPaint()}</div>
+
+    <button class="auth-close" id="auth-close-btn" aria-label="Close">${AUTH_ICONS.close}</button>
 
     <div class="auth-scroll-body">
 
@@ -68,17 +93,9 @@ export function injectAuthModal() {
         <h3>Welcome back.</h3>
         <p>Continue your learning journey.</p>
       </div>
-      <div class="auth-sep"></div>
 
-      <div class="auth-field">
-        <label>Email Address</label>
-        <input type="email" id="login-email" placeholder="student@email.com" required />
-      </div>
-
-      <div class="auth-field">
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" required />
-      </div>
+      ${field({ label: "Email Address", type: "email", id: "login-email", placeholder: "student@email.com", icon: AUTH_ICONS.email })}
+      ${field({ label: "Password", type: "password", id: "login-password", placeholder: "••••••••", icon: AUTH_ICONS.lock, password: true })}
 
       <div class="auth-options">
         <label class="remember-box">
@@ -90,22 +107,12 @@ export function injectAuthModal() {
 
       <button type="submit" class="auth-submit">
         <span>Login to Dashboard</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12H19"/><path d="M12 5L19 12L12 19"/>
-        </svg>
+        ${AUTH_ICONS.arrow}
       </button>
 
       <div class="auth-or"><span>or</span></div>
 
-      <button type="button" class="google-btn" id="google-login">
-        <svg viewBox="0 0 48 48">
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
-          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-          <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.7 39.6 16.3 44 24 44z"/>
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.1-3.3 5.5-6 7l6.3 5.3C39.3 36.8 44 31 44 24c0-1.3-.1-2.3-.4-3.5z"/>
-        </svg>
-        <span>Continue with Google</span>
-      </button>
+      ${googleBtn("google-login", "Continue with Google")}
     </form>
 
     <!-- SIGNUP -->
@@ -114,59 +121,31 @@ export function injectAuthModal() {
         <h3>Create account.</h3>
         <p>Start preparing smarter today.</p>
       </div>
-      <div class="auth-sep"></div>
 
       <div class="auth-field">
-        <label class="auth-label-main" style="text-align:center">I am registering as a...</label>
+        <label class="auth-label-main">I am registering as a…</label>
         <div class="role-toggle-container">
-          <button type="button" class="role-toggle-btn active" data-role="student" title="Student">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12.5V16a6 6 0 0 0 12 0v-3.5"/></svg>
-          </button>
-          <button type="button" class="role-toggle-btn" data-role="parent" title="Parent">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </button>
-          <button type="button" class="role-toggle-btn" data-role="teacher" title="Teacher">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          </button>
+          ${roleBtn("student", "Student", true)}
+          ${roleBtn("parent", "Parent", false)}
+          ${roleBtn("teacher", "Teacher", false)}
         </div>
       </div>
 
       <!-- Dynamic Role Specific Fields -->
       <div id="role-fields-container" class="role-fields"></div>
 
-      <div class="auth-field">
-        <label>Full Name</label>
-        <input type="text" id="signup-name" placeholder="Emmanuel Daniel" required />
-      </div>
-
-      <div class="auth-field">
-        <label>Email Address</label>
-        <input type="email" id="signup-email" placeholder="student@email.com" required />
-      </div>
-
-      <div class="auth-field">
-        <label>Password</label>
-        <input type="password" id="signup-password" placeholder="Create a strong password" required />
-      </div>
+      ${field({ label: "Full Name", type: "text", id: "signup-name", placeholder: "Emmanuel Daniel", icon: AUTH_ICONS.user })}
+      ${field({ label: "Email Address", type: "email", id: "signup-email", placeholder: "student@email.com", icon: AUTH_ICONS.email })}
+      ${field({ label: "Password", type: "password", id: "signup-password", placeholder: "Create a strong password", icon: AUTH_ICONS.lock, password: true })}
 
       <button type="submit" class="auth-submit">
         <span>Create Account</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12H19"/><path d="M12 5L19 12L12 19"/>
-        </svg>
+        ${AUTH_ICONS.arrow}
       </button>
 
       <div class="auth-or"><span>or</span></div>
 
-      <button type="button" class="google-btn" id="google-signup">
-        <svg viewBox="0 0 48 48">
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
-          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-          <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.7 39.6 16.3 44 24 44z"/>
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.1-3.3 5.5-6 7l6.3 5.3C39.3 36.8 44 31 44 24c0-1.3-.1-2.3-.4-3.5z"/>
-        </svg>
-        <span>Sign up with Google</span>
-      </button>
+      ${googleBtn("google-signup", "Sign up with Google")}
     </form>
 
     </div>
@@ -369,6 +348,18 @@ function initializeAuthModal(authContainer) {
   overlay.addEventListener("click", closeModal);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
+  });
+
+  // Password show / hide toggles
+  authContainer.querySelectorAll(".auth-eye").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.eyeFor);
+      if (!input) return;
+      const reveal = input.type === "password";
+      input.type = reveal ? "text" : "password";
+      btn.innerHTML = reveal ? AUTH_ICONS.eyeOff : AUTH_ICONS.eye;
+      btn.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+    });
   });
 
   document.addEventListener("click", (e) => {
