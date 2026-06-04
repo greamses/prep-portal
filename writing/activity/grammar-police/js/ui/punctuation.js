@@ -296,7 +296,14 @@ export function buildSentences(items, start, end, exerIdx, container) {
   for (let i = start; i < end && i < items.length; i++) {
     container.appendChild(buildSentenceRow(items[i], i, exerIdx));
   }
+}
 
+// Wire a rendered `.pp-items` container as a drop zone (desktop drag-and-drop +
+// touch tap-to-place / tap-to-remove). This MUST run on the actual per-page
+// `.pp-items` element: pagination moves the sentence rows out of the build host
+// into per-page containers, so listeners left on the build host are orphaned and
+// drag-and-drop silently does nothing. See pages.js makePunctPracticePages.
+export function wireDropZone(container) {
   // ── Touch: tap anywhere in the items area places the selected mark at the
   //    nearest slot, or removes the mark you tap. A press-and-drag instead
   //    moves a placed mark out (handled by the global touchmove/touchend). ──
@@ -402,43 +409,22 @@ export function checkExercise(exerIdx) {
     totalCorrect = 0;
 
   sentences.forEach((sentence) => {
-    sentence.closest(".pp-item")?.querySelector(".pp-correct-answer")?.remove();
-
     const allSlots = [...sentence.querySelectorAll(".pp-slot")];
     const requiredSlots = allSlots.filter((s) => s.dataset.correct);
-    let sentenceOk = true;
 
+    // Only highlight the placed marks red/green — never reveal the answer.
     allSlots.forEach((slot) => {
       slot.classList.remove("pp-slot--correct", "pp-slot--wrong");
       if (!slot.dataset.placed) return;
       const correct =
         slot.dataset.correct && slot.dataset.placed === slot.dataset.correct;
       slot.classList.add(correct ? "pp-slot--correct" : "pp-slot--wrong");
-      if (!correct) sentenceOk = false;
-    });
-
-    requiredSlots.forEach((s) => {
-      if (!s.dataset.placed) sentenceOk = false;
     });
 
     totalRequired += requiredSlots.length;
     totalCorrect += requiredSlots.filter(
       (s) => s.dataset.placed === s.dataset.correct,
     ).length;
-
-    if (!sentenceOk) {
-      const itemIdx = parseInt(sentence.dataset.itemIdx);
-      const item = state.exercises[exerIdx].items[itemIdx];
-      let ansText = "";
-      item.forEach((seg) => {
-        ansText += typeof seg === "string" ? seg : seg.correct;
-      });
-
-      const ans = document.createElement("div");
-      ans.className = "pp-correct-answer";
-      ans.innerHTML = `<span class="pp-ca-label">Answer:</span> <em>${ansText}</em>`;
-      sentence.closest(".pp-item").appendChild(ans);
-    }
   });
 
   const pct = totalRequired

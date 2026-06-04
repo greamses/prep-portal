@@ -73,6 +73,15 @@ function syncUI() {
 }
 
 // ── Navigation ────────────────────────────────────────────────
+// Resolve a tagged page (data-page="…") to its live index among the rendered
+// pages, so a jump lands exactly regardless of how the page list was assembled.
+function pageIndexOf(marker) {
+  const book = document.getElementById("gpBook");
+  if (!book) return null;
+  const el = book.querySelector(`.page[data-page="${marker}"]`);
+  return el ? [...book.querySelectorAll(".page")].indexOf(el) : null;
+}
+
 function jumpToPage(targetPage) {
   if (targetPage == null || !state.pageFlip) return;
   const book = document.getElementById("gpBook");
@@ -92,8 +101,9 @@ function wireBookEvents() {
   const book = document.getElementById("gpBook");
   book.addEventListener("click", (e) => {
     const unit = e.target.closest("[data-goto-unit]");
-    if (unit) { jumpToPage(state.UNIT_START_PAGE[parseInt(unit.dataset.gotoUnit, 10)]); return; }
-    if (e.target.closest("[data-goto-checker]")) { jumpToPage(state.CHECKER_PAGE); return; }
+    if (unit) { jumpToPage(pageIndexOf(`unit-${parseInt(unit.dataset.gotoUnit, 10)}`)); return; }
+    if (e.target.closest("[data-goto-checker]")) { jumpToPage(pageIndexOf("checker")); return; }
+    if (e.target.closest("[data-goto-contents]")) { jumpToPage(pageIndexOf("contents")); return; }
     const gpCheck = e.target.closest("[data-gp-check]");
     const gpReset = e.target.closest("[data-gp-reset]");
     const ppCheck = e.target.closest("[data-pp-check]");
@@ -122,6 +132,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("gpOpen").addEventListener("click", openModal);
   document.getElementById("gpClose").addEventListener("click", closeModal);
+  // Persistent "Contents" control — jump back to the table of contents from any page.
+  document
+    .getElementById("gpContents")
+    ?.addEventListener("click", () => jumpToPage(pageIndexOf("contents")));
   document.getElementById("gpModal").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });

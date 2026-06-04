@@ -3,204 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prep Portal | Grammar Police</title>
-
+    <title>Grammar Police — moved to Editorials</title>
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
-    <meta name="theme-color" content="#000000" />
 
-    <link rel="stylesheet" href="/utils/components/nav.css" />
-    <link rel="stylesheet" href="/utils/components/select.css" />
-    <link rel="stylesheet" href="./css/shelf.css" />
-    <link rel="stylesheet" href="./css/modal.css" />
-    <link rel="stylesheet" href="./css/book-pages.css" />
-    <link rel="stylesheet" href="./css/book-explanation.css" />
-    <link rel="stylesheet" href="./css/book-practice.css" />
-    <!-- McGraw-Hill / Glencoe editorial layer — loaded last so it wins -->
-    <link rel="stylesheet" href="./css/mcgraw.css" />
-    <link rel="stylesheet" href="./css/mcgraw-v3.css" />
-    <link rel="stylesheet" href="./css/cover.css" />
-    <link rel="stylesheet" href="./css/puzzles.css" />
-
-    <style>
-      body {
-        visibility: hidden;
-      }
-    </style>
-
-    <!-- One-time self-heal: retire any stale service worker + its caches so
-         visitors always load fresh app code (the SW caused stale-code bugs and
-         is no longer registered by any page). Reloads once after clearing. -->
+    <!-- The Grammar Police workbook has moved to the admin-only Editorials
+         "reading room". This page only hosts the shared css/ and js/ that the
+         Editorials page loads; the book itself no longer lives here, so any
+         direct visit is forwarded on (Editorials then applies the admin gate). -->
+    <meta http-equiv="refresh" content="0; url=/editorials/index.html" />
     <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          if (!regs.length) return;
-          Promise.all(regs.map(function (r) { return r.unregister(); }))
-            .then(function () { return window.caches ? caches.keys() : []; })
-            .then(function (keys) {
-              return Promise.all((keys || []).map(function (k) { return caches.delete(k); }));
-            })
-            .then(function () {
-              if (!sessionStorage.getItem("gpSwCleared")) {
-                sessionStorage.setItem("gpSwCleared", "1");
-                location.reload();
-              }
-            });
-        });
-      }
-    </script>
-
-    <!-- StPageFlip — modern page-flip library, no jQuery needed -->
-    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-    <!-- Lucide icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
-          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
-          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
-          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
-        }
-      }
+      window.location.replace("/editorials/index.html");
     </script>
   </head>
-
   <body>
-    <div id="loader">
-      <div id="loader-wrapper"><div class="logo-cluster"></div></div>
-      <div class="loader-word"><span>Grammar</span></div>
-      <div class="loader-bar"></div>
-    </div>
-
-    <nav class="site-nav" data-nav="main"></nav>
-
-    <!-- ═══ LANDING PAGE ═══ -->
-    <div class="gp-landing">
-      <div class="shelf-scene">
-        <header class="shelf-header">
-          <p class="shelf-eyebrow">Prep Portal · English</p>
-          <h1 class="shelf-title">English<br />Workbooks</h1>
-          <p class="shelf-subtitle">
-            Interactive books — read, learn, and practise.
-          </p>
-        </header>
-
-        <div class="shelf-row" role="list">
-          <!-- Grammar Police book — cover mirrors the real book cover -->
-          <button
-            class="shelf-book"
-            id="gpOpen"
-            role="listitem"
-            aria-label="Open Grammar Police and Punctuation Patrol book"
-          >
-            <p class="shelf-book-label">Grammar &amp; Punctuation</p>
-            <!-- Same cover component as the book, just sized down (filled by main.js) -->
-            <div class="shelf-book-cover" id="shelfCoverMount"></div>
-          </button>
-
-          <!-- Empty slot 1 -->
-          <div
-            class="shelf-book shelf-book--empty"
-            role="listitem"
-            aria-label="Coming soon"
-          >
-            <p class="shelf-book-label">Coming Soon</p>
-            <div class="shelf-book-cover shelf-book-cover--empty">
-              <span class="empty-soon">Soon</span>
-            </div>
-          </div>
-
-          <!-- Empty slot 2 -->
-          <div
-            class="shelf-book shelf-book--empty"
-            role="listitem"
-            aria-label="Coming soon"
-          >
-            <p class="shelf-book-label">Coming Soon</p>
-            <div class="shelf-book-cover shelf-book-cover--empty">
-              <span class="empty-soon">Soon</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="shelf-plank" aria-hidden="true"></div>
-
-        <p class="shelf-hint">Click a book to open it</p>
-      </div>
-    </div>
-
-    <!-- ═══ FULL-SCREEN BOOK MODAL ═══ -->
-    <div
-      id="gpModal"
-      class="gp-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Grammar Police book"
-      hidden
-    >
-      <button class="gp-modal-close" id="gpClose" aria-label="Close book">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          width="20"
-          height="20"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-
-      <div class="gp-stage">
-        <button
-          class="gp-nav-btn gp-nav-btn--prev"
-          id="gpPrev"
-          aria-label="Previous page"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            width="22"
-            height="22"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
-        <!-- StPageFlip mounts here — populated by JS -->
-        <div id="gpBookClip">
-          <div id="gpBook"></div>
-        </div>
-
-        <button
-          class="gp-nav-btn gp-nav-btn--next"
-          id="gpNext"
-          aria-label="Next page"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            width="22"
-            height="22"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="gp-modal-footer">
-        <span class="gp-page-num" id="gpPageNum"></span>
-      </div>
-    </div>
-
-    <script src="/utils/components/loader.js"></script>
-    <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="js/main.js"></script>
+    <p>
+      The Grammar Police workbook has moved.
+      <a href="/editorials/index.html">Continue to Editorials</a>.
+    </p>
   </body>
 </html>

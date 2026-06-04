@@ -1237,112 +1237,71 @@ export function initYearbookShelf({ containerId, editions = YEARBOOKS }) {
   });
 }
 
-// ── The Reading Room (homepage): three issues in alternating cover/text rows ──
-const ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
-
-// One feature row: a standing book cover (with its sticky note) beside a text
-// block. Even rows flip the sides. Both the cover and the CTA open the issue.
-function bookRow(ed, i) {
-  const flip = i % 2 ? " book-row--flip" : "";
-  return `
-  <article class="book-row${flip}">
-    <div class="book-row__cover">
-      <div class="book-stack">
-        <span class="book-blob" style="--pad:${ed.pad}" aria-hidden="true"></span>
-        <button type="button" class="book-cover" data-open data-edition="${ed.id}"
-                aria-label="Open ${ed.editionName}">
-          <span class="book-cover__photo">${img(ed.cover)}</span>
-          <span class="book-cover__spine" aria-hidden="true"></span>
-          <span class="book-cover__band">
-            <span class="book-cover__torn" aria-hidden="true"></span>
-            <span class="book-cover__issue">${ed.volume} &middot; ${ed.year}</span>
-            <span class="book-cover__name">${ed.editionName}</span>
-          </span>
-        </button>
-        <figure class="book-note" style="--pad:${ed.pad}">
-          <span class="book-note__msg">${ed.note}</span>
-          ${ed.noteBy ? `<figcaption class="book-note__by">${ed.noteBy}</figcaption>` : ""}
-        </figure>
-      </div>
-    </div>
-    <div class="book-row__text">
-      <span class="book-row__kicker">Issue ${pad(i + 1)}</span>
-      <h3 class="book-row__title">${ed.editionName}</h3>
-      <span class="book-row__rule"></span>
-      <p class="book-row__blurb">${ed.blurb}</p>
-      <button type="button" class="book-row__cta" data-open data-edition="${ed.id}">
-        Read the issue ${ARROW}
-      </button>
-    </div>
-  </article>`;
+// ── The Reading Room: a shelf of standing book covers (home + editorials) ──
+// A short phrase summarising each book, shown on its sticker.
+function bookSummary(ed) {
+  if (ed.noteBy) return ed.noteBy;
+  if (ed.classOf) return `Class of ${ed.classOf}`;
+  return (ed.sub || ed.editionName).replace(/<[^>]+>/g, " ");
 }
 
-// GSAP entrance: each row's cover + text slide in from their own sides and the
-// sticky note pops in last. CSS already shows the resting layout (no-JS / reduced
-// motion), so this is pure enhancement.
+// One standing book on the shelf — its cover plus a sticky note that opens a
+// paragraph on hover; clicking the cover opens the reader.
+function bookCard(ed) {
+  return `
+  <div class="book-stack">
+    <button type="button" class="book-cover" data-open data-edition="${ed.id}"
+            aria-label="Open ${ed.editionName}">
+      <span class="book-cover__photo">${img(ed.cover)}</span>
+      <span class="book-cover__spine" aria-hidden="true"></span>
+    </button>
+    <div class="book-note">
+      <p class="book-blurb">${ed.blurb || bookSummary(ed)}</p>
+      <span class="book-sticker">${bookSummary(ed)}</span>
+    </div>
+  </div>`;
+}
+
+// GSAP entrance: the covers rise onto the shelf in a quick stagger. CSS already
+// shows the resting layout (no-JS / reduced motion), so this is pure enhancement.
 function initBookReveal(host) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm")
     .then(({ gsap }) => {
-      host.querySelectorAll(".book-row").forEach((row) => {
-        const flip = row.classList.contains("book-row--flip");
-        const cover = row.querySelector(".book-stack");
-        const text = row.querySelector(".book-row__text");
-        const note = row.querySelector(".book-note");
+      const books = host.querySelectorAll(".book-stack");
+      if (!books.length) return;
+      gsap.set(books, { y: 30, autoAlpha: 0 });
 
-        gsap.set(cover, { x: flip ? 48 : -48, autoAlpha: 0 });
-        gsap.set(text, { x: flip ? -48 : 48, autoAlpha: 0 });
-        gsap.set(note, {
-          scale: 0.4,
-          rotation: 0,
-          autoAlpha: 0,
-          transformOrigin: flip ? "bottom right" : "bottom left",
+      let played = false;
+      const play = () => {
+        if (played) return;
+        played = true;
+        gsap.to(books, {
+          y: 0,
+          autoAlpha: 1,
+          duration: 0.5,
+          ease: "power3.out",
+          stagger: 0.1,
         });
+      };
 
-        let played = false;
-        const play = () => {
-          if (played) return;
-          played = true;
-          gsap
-            .timeline()
-            .to([cover, text], {
-              x: 0,
-              autoAlpha: 1,
-              duration: 0.6,
-              ease: "power3.out",
-              stagger: 0.08,
-            })
-            .to(
-              note,
-              {
-                scale: 1,
-                rotation: flip ? -5 : 5,
-                autoAlpha: 1,
-                duration: 0.45,
-                ease: "back.out(1.8)",
-              },
-              "-=0.2",
-            );
-        };
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            io.disconnect();
+            play();
+          });
+        },
+        { threshold: 0.2 },
+      );
+      io.observe(host);
 
-        const io = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (!entry.isIntersecting) return;
-              io.disconnect();
-              play();
-            });
-          },
-          { threshold: 0.3 },
-        );
-        io.observe(row);
-
-        // Backstop: never leave a row hidden if the observer doesn't fire.
-        setTimeout(() => {
-          io.disconnect();
-          play();
-        }, 4000);
-      });
+      // Backstop: never leave the shelf hidden if the observer doesn't fire.
+      setTimeout(() => {
+        io.disconnect();
+        play();
+      }, 4000);
     })
     .catch(() => {
       /* CSS shows the resting layout already */
@@ -1356,7 +1315,9 @@ export function initBookshelf({ containerId, editions = [DEFAULT_EDITION] }) {
     return;
   }
 
-  host.innerHTML = editions.map((ed, i) => bookRow(ed, i)).join("");
+  host.innerHTML = `<div class="bookshelf__row">${editions
+    .map(bookCard)
+    .join("")}</div>`;
 
   editions.forEach((ed) => {
     const open = attachModal(ed);

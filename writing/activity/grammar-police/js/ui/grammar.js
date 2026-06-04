@@ -26,18 +26,6 @@ function openInlineMenu(wrapper, options, passageIdx) {
   const menu = document.createElement("div");
   menu.className = "pp-select-menu";
 
-  // Small drop anchored to the trigger. We MUST set right:auto + an explicit
-  // width, otherwise select.css's `.pp-select-menu{right:0}` stretches the
-  // fixed-positioned menu all the way to the viewport edge.
-  const minW = Math.max(rect.width, 84);
-  const common = `position:fixed;display:flex;flex-direction:column;left:${rect.left}px;right:auto;width:max-content;min-width:${minW}px;max-width:240px;z-index:99999;`;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < 150 && rect.top > spaceBelow) {
-    menu.style.cssText = common + `bottom:${window.innerHeight - rect.top + 3}px;`;
-  } else {
-    menu.style.cssText = common + `top:${rect.bottom + 3}px;`;
-  }
-
   options.forEach((opt) => {
     const item = document.createElement("div");
     item.className = "pp-select-item";
@@ -56,8 +44,36 @@ function openInlineMenu(wrapper, options, passageIdx) {
     menu.appendChild(item);
   });
 
+  // Fixed menu anchored to the trigger. We MUST set right:auto + an explicit
+  // width, otherwise select.css's `.pp-select-menu{right:0}` stretches it to the
+  // viewport edge. Append hidden first so we can measure it, then open below or
+  // (when there isn't room) flip above and clamp into the viewport — so a low
+  // blank's menu is never hidden behind the page foot / Check button.
+  const minW = Math.max(rect.width, 84);
+  const M = 6;
+  menu.style.cssText =
+    `position:fixed;display:flex;flex-direction:column;right:auto;` +
+    `width:max-content;min-width:${minW}px;max-width:240px;z-index:99999;` +
+    `visibility:hidden;left:${rect.left}px;top:0;`;
   _activeMenu = menu;
   document.body.appendChild(menu);
+
+  const mh = menu.offsetHeight;
+  const mw = menu.offsetWidth;
+  const spaceBelow = window.innerHeight - rect.bottom - M;
+  const spaceAbove = rect.top - M;
+
+  let top;
+  if (mh <= spaceBelow) top = rect.bottom + 3; // fits below
+  else if (mh <= spaceAbove) top = rect.top - mh - 3; // flip above
+  else top = spaceBelow >= spaceAbove ? window.innerHeight - mh - M : M;
+  top = Math.max(M, Math.min(top, window.innerHeight - mh - M));
+
+  const left = Math.max(M, Math.min(rect.left, window.innerWidth - mw - M));
+
+  menu.style.top = `${top}px`;
+  menu.style.left = `${left}px`;
+  menu.style.visibility = "";
 
   setTimeout(
     () => document.addEventListener("click", closeInlineMenu, { once: true }),
@@ -72,7 +88,7 @@ export function buildBlank(seg, passageIdx) {
   const options = [...group.options].sort(() => Math.random() - 0.5);
 
   // Kid-friendly multicolour highlighter — colour keyed to the word group.
-  const COLOR = { theyre: "blue", were: "green", youre: "purple", its: "pink", totwo: "orange", thanthen: "teal" };
+  const COLOR = { theyre: "blue", were: "green", youre: "purple", its: "pink", totwo: "orange", thanthen: "teal", inon: "orange" };
   const wrapper = document.createElement("span");
   wrapper.className = `pp-select pp-select--sm gp-blank gp-hl gp-hl--${COLOR[seg.group] || "blue"}`;
   wrapper.dataset.correct = correct;

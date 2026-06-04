@@ -43,7 +43,7 @@ export function buildParentPanels(user, data, layout) {
       </div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-feature">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Progress Overview</p>
@@ -75,7 +75,7 @@ export function buildParentPanels(user, data, layout) {
       </div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Upcoming Classes</p>

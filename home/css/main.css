@@ -1782,54 +1782,45 @@
   z-index: 1;
   max-width: 1040px;
   margin: 0 auto;
+}
+
+/* ── The shelf: a centred row of standing covers resting on a slim ledge ── */
+.bookshelf__row {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
   display: flex;
-  flex-direction: column;
-  gap: clamp(3rem, 7vw, 5.5rem);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(2px, 0.6vw, 6px);
+  padding: 0 clamp(1rem, 3vw, 2.5rem);
+}
+/* The ledge — one slim ink bar with a soft drop-shadow below, so the books
+   rest on it. No wood, no inset "sinking" shadow. */
+.bookshelf__row::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink);
+  opacity: 0.88;
+  box-shadow: 0 8px 16px -7px rgba(20, 19, 15, 0.4);
 }
 
-/* ── A row: cover beside text; even rows swap sides ── */
-.book-row {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  gap: clamp(1.5rem, 5vw, 4rem);
-  align-items: center;
-}
-.book-row--flip .book-row__cover {
-  order: 2;
-}
-.book-row--flip .book-row__text {
-  order: 1;
-  text-align: right;
-}
-
-/* ── Standing book cover + its sticky note ── */
+/* ── One standing book on the shelf ── */
 .book-stack {
   position: relative;
-  isolation: isolate; /* keep the paint blob's negative z within the stack */
-  width: min(290px, 80%);
-  margin: 0 auto;
+  width: clamp(132px, 20vw, 184px);
+  flex: 0 0 auto;
 }
 
-/* Soft paint splash peeking out behind each book, tinted to its accent.
-   It sits offset up/behind (not pooling under the base) so the book never
-   looks like it's sinking into it. */
-.book-blob {
-  position: absolute;
-  z-index: -1;
-  inset: -18% -15% 14% -15%;
-  background: var(--pad, #fff39a);
-  border-radius: 62% 38% 55% 45% / 56% 47% 53% 44%;
-  opacity: 0.5;
-  filter: blur(3px);
-  transform: rotate(-7deg);
-}
-.book-row--flip .book-blob {
-  transform: rotate(7deg);
-  border-radius: 40% 60% 48% 52% / 50% 55% 45% 50%;
-}
-
-/* The cover is cream paper; the photo is pasted on and torn at the foot,
-   revealing the cream band where the title sits. */
+/* A flat, full-bleed photo cover — same design for every book. Stands upright
+   (no tilt, no sinking), packed close to its neighbours like a real shelf. */
 .book-cover {
   position: relative;
   display: block;
@@ -1839,14 +1830,12 @@
   border: none;
   cursor: pointer;
   overflow: hidden;
-  border-radius: 5px 10px 10px 5px;
+  border-radius: 2px 5px 5px 2px;
   background: #f7efdc;
-  transform: rotate(-1.6deg);
-  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
-}
-.book-row--flip .book-cover {
-  transform: rotate(1.6deg);
-  border-radius: 10px 5px 5px 10px;
+  box-shadow: 1px 2px 6px -2px rgba(20, 19, 15, 0.25);
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.28s ease;
 }
 
 /* The photo sits flat and crisp behind everything — never filtered. */
@@ -1876,204 +1865,166 @@
     transparent
   );
 }
-.book-row--flip .book-cover__spine {
-  left: auto;
-  right: 0;
-  transform: scaleX(-1);
-}
-
-/* Title band: a strip of cream paper torn open along its top to reveal the
-   photo above it. The displacement filter ragges ONLY this paper (its edge),
-   so the image stays sharp; the text rides on top, never displaced. */
-.book-cover__band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 30%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 0.2rem;
-  padding: 0 0.95rem 0.55rem;
-  text-align: left;
-  color: #1c1a16;
-}
-.book-cover__torn {
-  position: absolute;
-  left: -4%;
-  right: -4%;
-  bottom: -4%;
-  top: -13px;
-  z-index: 0;
-  background: #f7efdc;
-  filter: url(#torn-cover);
-}
-.book-cover__issue,
-.book-cover__name {
-  position: relative;
-  z-index: 1;
-}
-.book-cover__issue {
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, #1c1a16 58%, transparent);
-}
-.book-cover__name {
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold, 700);
-  font-size: 1rem;
-  line-height: 1.04;
-}
-.book-cover:hover,
-.book-cover:focus-visible {
-  transform: rotate(0deg) translateY(-7px) scale(1.025);
-  outline: none;
-}
-
-/* Always-on sticky note pinned to the cover corner */
+/* Book detail = a sticky note (always shown) that opens a paragraph on hover. */
 .book-note {
   position: absolute;
   z-index: 3;
-  top: -22px;
-  right: -20px;
-  width: clamp(96px, 38%, 128px);
-  padding: 0.7rem 0.65rem 0.6rem;
-  background: var(--pad, #fff39a);
-  color: #1c1a16;
+  left: 8px;
+  bottom: 10px;
+  max-width: calc(100% - 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+/* Lift the hovered book (and its open paragraph) above its neighbours. */
+.book-stack:hover {
+  z-index: 5;
+}
+
+/* The sticky note itself — marker hand, paper, taped on. */
+.book-sticker {
+  position: relative;
   font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
-  text-align: center;
-  border-radius: 2px;
-  transform: rotate(5deg);
-  box-shadow:
-    0 1px 1px rgba(20, 19, 15, 0.12),
-    3px 6px 11px -3px rgba(20, 19, 15, 0.34);
-}
-.book-row--flip .book-note {
-  right: auto;
-  left: -20px;
-  transform: rotate(-5deg);
-}
-.book-note::before {
-  content: "";
-  position: absolute;
-  top: -7px;
-  left: 50%;
-  width: 40px;
-  height: 15px;
-  transform: translateX(-50%) rotate(-4deg);
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.16);
-}
-.book-note__msg {
-  display: block;
-  font-size: 0.86rem;
+  font-size: 0.62rem;
   font-weight: 600;
   line-height: 1.15;
+  color: #14130f;
+  background: #fff39a;
+  padding: 0.45rem 0.55rem 0.4rem;
+  border-radius: 2px;
+  transform: rotate(-4deg);
+  cursor: help;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.12),
+    3px 6px 11px -3px rgba(20, 19, 15, 0.32);
 }
-.book-note__by {
-  margin-top: 0.3em;
-  font-size: 0.58rem;
-  font-weight: 500;
-  color: color-mix(in srgb, #1c1a16 60%, transparent);
+/* A strip of tape across the top of the note. */
+.book-sticker::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 34px;
+  height: 13px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.16);
 }
 
-/* ── Text column ── */
-.book-row__kicker {
+/* The paragraph that opens above the note when the sticker is hovered. */
+.book-blurb {
+  margin: 0;
+  max-width: 100%;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  line-height: 1.5;
+  color: #1c1a16;
+  background: #fffdf2;
+  border-radius: 3px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 6px 16px -6px rgba(20, 19, 15, 0.45);
+  transition:
+    max-height 0.34s ease,
+    opacity 0.26s ease,
+    padding 0.34s ease,
+    margin 0.34s ease;
+}
+.book-note:hover .book-blurb,
+.book-note:focus-within .book-blurb {
+  max-height: 16em;
+  opacity: 1;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.book-cover:hover,
+.book-cover:focus-visible {
+  transform: translateY(-10px);
+  box-shadow: 3px 12px 18px -8px rgba(20, 19, 15, 0.35);
+  z-index: 2;
+  outline: none;
+}
+
+/* (The sticky notes, side text column and per-row CTA were removed when the
+   Reading Room became a simple shelf of covers — see flipbook.js bookCard.) */
+
+/* ── Editorials: a bookcase — shelves stacked vertically, no headings ── */
+.bookcase {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.25rem, 5vw, 3.75rem);
+}
+/* Inside the bookcase the ledges span the full width and align, so the shelves
+   read as one stacked unit (the home shelf keeps its content-width ledge). */
+.bookcase .bookshelf,
+.bookcase .shelf-scene {
+  width: 100%;
+}
+.bookcase .bookshelf__row {
+  width: auto;
+  max-width: 100%;
+}
+/* Make the workbook cover the same size as the issue/yearbook covers. */
+.bookcase .shelf-book-cover {
+  width: clamp(132px, 20vw, 184px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+/* Keep the workbook ledge the same width as the other shelves' ledges. */
+.bookcase .shelf-plank {
+  width: 100%;
+}
+/* A shelf within the bookcase: a naming pill above its row of books. */
+.bookcase__shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+/* The naming pill reuses the hero stat-chip design (number + type). */
+.shelf-pill {
+  align-self: center;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  font-weight: var(--weight-black, 800);
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--accent-primary-ink, var(--ink));
-}
-.book-row__title {
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold, 700);
-  font-size: clamp(1.5rem, 3.4vw, 2.2rem);
-  line-height: 1.04;
-  margin: 0.4rem 0 0.65rem;
-}
-.book-row__rule {
-  display: block;
-  width: 46px;
-  height: 4px;
-  border-radius: 4px;
-  background: var(--ink);
-  opacity: 0.75;
-  margin-bottom: 1rem;
-}
-.book-row--flip .book-row__rule {
-  margin-left: auto;
-}
-.book-row__blurb {
-  font-size: clamp(0.95rem, 1.4vw, 1.05rem);
-  line-height: 1.62;
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
-  max-width: 44ch;
-}
-.book-row--flip .book-row__blurb {
-  margin-left: auto;
-}
-.book-row__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1.35rem;
-  padding: 0.7rem 1.3rem;
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  background: var(--accent-primary);
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold, 700);
-  font-size: 0.92rem;
-  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--tile) 50%, transparent);
   box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  padding: 0.4rem 0.7rem;
+  border-radius: 13px;
+  transform: rotate(-2deg);
+  transition: transform var(--duration-smooth) var(--ease-bounce);
 }
-.book-row__cta svg {
-  width: 17px;
-  height: 17px;
-  transition: transform 0.2s ease;
+.shelf-pill strong {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: var(--tile);
 }
-.book-row__cta:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-.book-row__cta:hover svg {
-  transform: translateX(3px);
+.shelf-pill:hover {
+  transform: rotate(0deg) translateY(-2px);
 }
 
-@media (max-width: 760px) {
-  .book-row,
-  .book-row--flip {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    text-align: center;
+/* ── Responsive: shrink the covers so the shelf stays one clean row ── */
+@media (max-width: 600px) {
+  .book-stack {
+    width: clamp(108px, 30vw, 150px);
   }
-  .book-row__cover,
-  .book-row--flip .book-row__cover {
-    order: 1;
-  }
-  .book-row__text,
-  .book-row--flip .book-row__text {
-    order: 2;
-    text-align: center;
-  }
-  .book-row__rule,
-  .book-row--flip .book-row__rule {
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .book-row__blurb,
-  .book-row--flip .book-row__blurb {
-    margin-left: auto;
-    margin-right: auto;
+  .bookshelf__row {
+    gap: clamp(2px, 1vw, 5px);
   }
 }
 

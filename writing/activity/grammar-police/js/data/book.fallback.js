@@ -67,6 +67,13 @@ export default {
         "then"
       ],
       "label": "than / then"
+    },
+    "inon": {
+      "options": [
+        "in",
+        "on"
+      ],
+      "label": "in / on"
     }
   },
   "units": [
@@ -899,10 +906,109 @@ export default {
       }
     },
     {
+      "id": "u-inon",
+      "teach": "\n      <h3 class=\"exp-heading\">Dig a little deeper</h3>\n      <p class=\"exp-intro\">With vehicles, English uses <strong>in</strong> and <strong>on</strong> in a fixed way — it depends on the <strong>kind</strong> of vehicle, not exactly where you sit.</p>\n      <p class=\"exp-eg\"><strong>in</strong> = small vehicles you climb into and sit down: \"in a car\", \"in a taxi\".</p>\n      <p class=\"exp-eg\"><strong>on</strong> = large vehicles you can stand up and walk about in: \"on a bus\", \"on a train\", \"on a plane\".</p>\n      <p class=\"exp-intro\">Think of size. If you must bend down to get in (a car, a taxi), use <strong>in</strong>. If you could walk down an aisle (a bus, train, plane or ship), use <strong>on</strong>.</p>",
+      "kind": "grammar",
+      "number": 6,
+      "color": "orange",
+      "title": "In & On (Vehicles)",
+      "focus": "in · on",
+      "mascotPose": "teach",
+      "mainIdea": "Small vehicles you climb into take 'in'; large vehicles you can walk about in take 'on'.",
+      "keyVocab": [
+        {
+          "term": "preposition",
+          "def": "a small linking word that shows place or direction (in, on, at)"
+        },
+        {
+          "term": "vehicle",
+          "def": "something that carries people — a car, bus, train or plane"
+        }
+      ],
+      "realWorld": {
+        "title": "Why it matters",
+        "text": "“I came on a taxi” instantly sounds wrong to an examiner. Getting in/on right with everyday transport is a quick, easy mark to keep.",
+        "image": "photo-1513258496099-48168024aec0"
+      },
+      "studyTip": "Could you stand up and walk down an aisle? Then it is ON (bus, train, plane, ship). If you must duck and sit, it is IN (car, taxi).",
+      "hot": [
+        "Find the error: “We went on a car to the airport, then we got in the plane.”",
+        "Open ended: write one sentence using ‘in’ for a taxi and ‘on’ for a bus."
+      ],
+      "lesson": {
+        "leftHTML": "\n        <h2 class=\"exp-heading\">In or On a vehicle?</h2>\n        <p class=\"exp-intro\">The vehicle decides the word:</p>\n        <div class=\"exp-word-block exp-word-block--blue\">\n          <span class=\"exp-word\">in</span>\n          <span class=\"exp-eq\">= <strong>small / climb in</strong></span>\n          <p class=\"exp-eg\">\"<em>in</em> a car\" · \"<em>in</em> a taxi\" · \"<em>in</em> a lorry\"</p>\n        </div>\n        <div class=\"exp-word-block exp-word-block--green\">\n          <span class=\"exp-word\">on</span>\n          <span class=\"exp-eq\">= <strong>large / walk about</strong></span>\n          <p class=\"exp-eg\">\"<em>on</em> a bus\" · \"<em>on</em> a train\" · \"<em>on</em> a plane\" · \"<em>on</em> a ship\"</p>\n        </div>",
+        "rightHTML": "\n        <div class=\"exp-trick-box\">\n          <div class=\"exp-trick-header\">\n            <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" width=\"18\" height=\"18\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg>\n            The Detective's Trick\n          </div>\n          <ol class=\"exp-steps\">\n            <li class=\"exp-step\">Could I <strong>stand and walk</strong> inside it (bus, train, plane, ship)?<br><span class=\"exp-yes\">Yes →</span> use <strong>on</strong></li>\n            <li class=\"exp-step\">Must I <strong>duck down and sit</strong> (car, taxi)?<br><span class=\"exp-yes\">Yes →</span> use <strong>in</strong></li>\n          </ol>\n        </div>\n        <div class=\"exp-quicktest\">\n          <p class=\"exp-qt-label\">Quick Test</p>\n          <p class=\"exp-qt-row\"><span class=\"exp-qt-q\">\"We sat <u>____</u> a taxi.\"</span> → small, climb in → <strong>in</strong></p>\n          <p class=\"exp-qt-row\"><span class=\"exp-qt-q\">\"She is <u>____</u> the bus.\"</span> → large, walk about → <strong>on</strong></p>\n          <p class=\"exp-qt-row\"><span class=\"exp-qt-q\">\"They flew <u>____</u> a plane.\"</span> → large → <strong>on</strong></p>\n        </div>"
+      },
+      "passage": {
+        "id": "pass6",
+        "title": "The Journey to Lagos",
+        "focus": "in / on",
+        "groups": [
+          "inon"
+        ],
+        "paragraphs": [
+          [
+            "Early in the morning, Dad and Ada climbed ",
+            {
+              "correct": "in",
+              "group": "inon"
+            },
+            " the car and drove to the park. There, they got ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " a big bus to the city. Ada loved being ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " the bus because she could walk to the back and find a seat by the window."
+          ],
+          [
+            "At the station they jumped ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " a train. 'Hold the rail when you walk ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " the train,' said Dad. When they arrived, a friendly driver was waiting, so they hopped ",
+            {
+              "correct": "in",
+              "group": "inon"
+            },
+            " his taxi for the last short ride."
+          ],
+          [
+            "The next day they went to the airport and stepped ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " a plane for the very first time. Grandma had travelled ",
+            {
+              "correct": "in",
+              "group": "inon"
+            },
+            " a small car to meet them, but the children had come ",
+            {
+              "correct": "on",
+              "group": "inon"
+            },
+            " a ship across the water the week before."
+          ]
+        ]
+      }
+    },
+    {
       "id": "u-endmarks",
       "teach": "\n      <h3 class=\"exp-heading\">Dig a little deeper</h3>\n      <p class=\"exp-intro\">Every sentence must end with a mark. A statement <em>tells</em> and ends with a full stop. A question <em>asks</em> and ends with a question mark.</p>\n      <p class=\"exp-eg\">Statement: \"The bus is late.\" ( . )</p>\n      <p class=\"exp-eg\">Question: \"Is the bus late?\" ( ? )</p>\n      <p class=\"exp-intro\">Read your sentence aloud. If your voice rises at the end, as if you expect an answer, it is a question. If your voice falls and stops, it is a statement.</p>",
       "kind": "punctuation",
-      "number": 6,
+      "number": 7,
       "color": "blue",
       "title": "Questions & Statements",
       "focus": "? · .",
@@ -1020,7 +1126,7 @@ export default {
       "id": "u-commas",
       "teach": "\n      <h3 class=\"exp-heading\">Dig a little deeper</h3>\n      <p class=\"exp-intro\">A comma tells the reader to pause. Two everyday jobs: separating items in a list, and marking off an opening phrase before the main idea.</p>\n      <p class=\"exp-eg\">List: \"We bought rice, beans, and yam.\"</p>\n      <p class=\"exp-eg\">Opening phrase: \"After the rain, we played outside.\"</p>\n      <p class=\"exp-intro\">A comma can change meaning completely. \"Let's eat, Grandma\" invites Grandma to eat; \"Let's eat Grandma\" is something else entirely!</p>",
       "kind": "punctuation",
-      "number": 7,
+      "number": 8,
       "color": "green",
       "title": "Commas in Lists & Phrases",
       "focus": ",",
@@ -1159,7 +1265,7 @@ export default {
       "id": "u-mixedpunct",
       "teach": "\n      <h3 class=\"exp-heading\">Dig a little deeper</h3>\n      <p class=\"exp-intro\">Real writing mixes all three marks. Place the inside commas first to break the sentence into clear parts, then decide the ending mark last.</p>\n      <p class=\"exp-eg\">\"After lunch, we washed, dried, and stacked the plates.\"</p>\n      <p class=\"exp-eg\">\"Where did you put the keys, Tunde?\"</p>\n      <p class=\"exp-intro\">Work from the inside out: commas organise the middle of a sentence, while the full stop or question mark closes it.</p>",
       "kind": "punctuation",
-      "number": 8,
+      "number": 9,
       "color": "purple",
       "title": "Mixed Punctuation",
       "focus": "? · . · ,",
@@ -1310,7 +1416,7 @@ export default {
       "id": "u-apostrophe",
       "teach": "\n      <h3 class=\"exp-heading\">Dig a little deeper</h3>\n      <p class=\"exp-intro\">The apostrophe has two jobs: it joins words into a contraction, and it shows that something belongs to someone. It never makes a word plural.</p>\n      <p class=\"exp-eg\">Contraction: \"do not\" becomes \"don't\".</p>\n      <p class=\"exp-eg\">Belonging: \"the bag of Ada\" becomes \"Ada's bag\".</p>\n      <p class=\"exp-intro\">Watch out: \"three mangoes\" needs <em>no</em> apostrophe — it is just a plural, nothing is missing and nothing is owned.</p>",
       "kind": "punctuation",
-      "number": 9,
+      "number": 10,
       "color": "orange",
       "title": "Apostrophes",
       "focus": "’",

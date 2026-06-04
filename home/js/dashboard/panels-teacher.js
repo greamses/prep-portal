@@ -53,7 +53,7 @@ export function buildTeacherPanels(user, data, layout) {
       </div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-feature">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Class Roster</p>
@@ -88,7 +88,7 @@ export function buildTeacherPanels(user, data, layout) {
       </ul>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Planning</p>
@@ -98,7 +98,7 @@ export function buildTeacherPanels(user, data, layout) {
       <div id="teacher-calendar-container"></div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Task Manager</p>

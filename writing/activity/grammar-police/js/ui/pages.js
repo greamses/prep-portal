@@ -13,7 +13,7 @@
 import { state } from "../utils/state.js";
 import { playFlipSound } from "../utils/audio.js";
 import { renderParas, updateProgress } from "./grammar.js";
-import { buildSentences, buildToken, updatePPProgress } from "./punctuation.js";
+import { buildSentences, buildToken, updatePPProgress, wireDropZone } from "./punctuation.js";
 import { photo } from "../data/assets.js";
 import { wireTopicVideo, stopAllVideos } from "./video.js";
 import { frontCoverInner, backCoverInner, dividerInner } from "./cover.js";
@@ -333,6 +333,7 @@ function makePunctPracticePages(unit, idx) {
     pc.innerHTML = `<div class="pc-practice-header"><span class="pc-practice-label">Exercise ${idx + 1}</span><strong class="pc-practice-title">${ex.title}</strong><span class="pc-focus-badge">${ex.focus}</span></div>`;
     const items = document.createElement("div");
     items.className = "pp-items";
+    wireDropZone(items);                  // each rendered page is its own drop zone
     pc.appendChild(items);
     pc.appendChild(poolStrip());          // drag pool on every page
     page.appendChild(pc);
@@ -414,7 +415,9 @@ export function buildBookPages() {
       dividerDone = true;
     }
     state.UNIT_START_PAGE[ui] = pages.length;
-    makeOpenerPage(unit).forEach((p) => pages.push(p));
+    const openerPages = makeOpenerPage(unit);
+    if (openerPages[0]) openerPages[0].dataset.page = `unit-${ui}`;
+    openerPages.forEach((p) => pages.push(p));
     makeLessonPages(unit).forEach((p) => pages.push(p));
     if (unit.kind === "grammar") {
       makeGrammarPracticePages(unit, passageIdx).forEach((p) => pages.push(p));
@@ -426,11 +429,32 @@ export function buildBookPages() {
   });
 
   state.CHECKER_PAGE = pages.length;
-  pages.push(makeCheckerPage(book));
+  const checkerPage = makeCheckerPage(book);
+  checkerPage.dataset.page = "checker";
+  pages.push(checkerPage);
   pages.push(makeBackCoverPage());
   pages[contentsIdx] = makeContentsPage(book);
+  pages[contentsIdx].dataset.page = "contents";
 
   pages.filter(Boolean).forEach((p) => bookEl.appendChild(p));
+
+  // Sync the printed TOC page numbers to the ACTUAL rendered page positions, so
+  // the number shown is exactly where a TOC tap lands (see main.js jumps).
+  const allPages = [...bookEl.querySelectorAll(".page")];
+  const pageNumByMarker = (m) => {
+    const el = bookEl.querySelector(`.page[data-page="${m}"]`);
+    return el ? allPages.indexOf(el) + 1 : null;
+  };
+  bookEl.querySelectorAll(".gp-toc__item[data-goto-unit]").forEach((li) => {
+    const n = pageNumByMarker(`unit-${li.dataset.gotoUnit}`);
+    const span = li.querySelector(".gp-toc__page");
+    if (n && span) span.textContent = n;
+  });
+  const ckSpan = bookEl.querySelector(".gp-toc__item--special .gp-toc__page");
+  if (ckSpan) {
+    const n = pageNumByMarker("checker");
+    if (n) ckSpan.textContent = n;
+  }
 
   for (let i = 0; i < passageIdx; i++) updateProgress(i);
   for (let i = 0; i < exerIdx; i++) updatePPProgress(i);

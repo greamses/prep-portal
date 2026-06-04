@@ -27,7 +27,7 @@ export function buildStudentPanels(user, data, layout) {
 
   layout.dataset.role = "student";
   layout.innerHTML = `
-    <div class="db-panel">
+    <div class="db-panel bento-feature">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Current Focus</p>
@@ -69,7 +69,7 @@ export function buildStudentPanels(user, data, layout) {
       </div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Live Schedule</p>
@@ -80,7 +80,7 @@ export function buildStudentPanels(user, data, layout) {
       <div id="student-calendar-container"></div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">From Your Teacher</p>

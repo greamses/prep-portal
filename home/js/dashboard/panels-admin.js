@@ -61,7 +61,7 @@ export function buildAdminPanels(user, data, layout) {
       <div class="db-stat-trend">${data.unassignedClasses || 0} unassigned</div>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-wide bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">User Management</p>
@@ -94,7 +94,7 @@ export function buildAdminPanels(user, data, layout) {
       </ul>
     </div>
 
-    <div class="db-panel">
+    <div class="db-panel bento-wide bento-tall">
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Class Hub</p>

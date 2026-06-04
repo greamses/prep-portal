@@ -190,7 +190,6 @@ const NAV_CONFIG = [
         description: "Smart study helpers",
         children: [
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
-          { text: "Grammar Police", href: "/writing/activity/grammar-police/index.html", description: "Interactive grammar & punctuation workbook" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
           { text: "AI Flashcards", href: "#flashcards", description: "Remember everything fast" },
         ],

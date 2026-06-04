@@ -6,7 +6,7 @@
     <title>Editorials — Prep Portal</title>
     <meta
       name="description"
-      content="The Prep Portal digital magazine edition — flip through our story."
+      content="The Prep Portal admin library — digital issues, the yearbook archive and the English workbooks."
     />
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
@@ -14,13 +14,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Editorial magazine fonts (Vogue-style Didot + classic serif body) -->
+    <!-- Editorial magazine fonts — used INSIDE the flipbook/yearbook reader only -->
     <link
       href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=EB+Garamond:ital,wght@0,400..600;1,400..500&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Yearbook fonts (characterful display/body + a marker hand for notes) -->
+    <!-- Yearbook + sticky-note hand (flipbook interior + the home sticky note) -->
     <link
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..600&family=Shantell+Sans:ital,wght@0,400..700;1,400..600&display=swap"
       rel="stylesheet"
@@ -31,6 +30,18 @@
     <link rel="stylesheet" href="/home/css/flipbook.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/home/css/login.css" />
+
+    <!-- English Workbook (Grammar Police) — moved here from Activities -->
+    <link rel="stylesheet" href="/utils/components/select.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/shelf.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/modal.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/book-pages.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/book-explanation.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/book-practice.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/mcgraw.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/mcgraw-v3.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/cover.css" />
+    <link rel="stylesheet" href="/writing/activity/grammar-police/css/puzzles.css" />
 
     <script type="importmap">
       {
@@ -43,8 +54,10 @@
       }
     </script>
 
-    <!-- StPageFlip (page-flip) — drives the digital magazine -->
+    <!-- StPageFlip (page-flip) — drives the digital issues + the workbook -->
     <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+    <!-- Lucide icons — used inside the Grammar Police workbook pages -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   </head>
 
   <body>
@@ -69,43 +82,140 @@
       </defs>
     </svg>
 
-    <!-- ═══ EDITORIALS ═══ -->
-    <main class="magazine-section">
-      <!-- Masthead -->
-      <div class="mag-masthead">
-        <div class="mag-masthead-inner">
-          <div class="mag-eyebrow">
-            <span class="mag-issue">Vol. I &mdash; 2026</span>
-            <span class="mag-dot"></span>
-            <span class="mag-category">The Portal Edition</span>
+    <!-- ═══ THE BOOKCASE — a basic header + stacked, named shelves ═══ -->
+    <main class="books-section">
+      <div class="books-paint" aria-hidden="true"></div>
+
+      <header class="books-header">
+        <p class="section-eyebrow">Prep Portal</p>
+        <h1 class="section-headline">Editorials</h1>
+      </header>
+
+      <div class="bookcase">
+        <!-- Shelf 1 — the digital issues -->
+        <section class="bookcase__shelf">
+          <span class="shelf-pill theme-blue"><strong>3</strong> Issues</span>
+          <div id="editions-shelf" class="bookshelf"></div>
+        </section>
+
+        <!-- Shelf 2 — the yearbooks -->
+        <section class="bookcase__shelf">
+          <span class="shelf-pill theme-green"><strong>3</strong> Yearbooks</span>
+          <div id="yearbook-shelf" class="bookshelf"></div>
+        </section>
+
+        <!-- Shelf 3 — the English workbook (Grammar Police). Reuses the shelf +
+             book engine from /writing/activity/grammar-police; reader modal below. -->
+        <section class="bookcase__shelf">
+          <span class="shelf-pill theme-red"><strong>1</strong> Workbook</span>
+          <div class="shelf-scene" style="position: relative; z-index: 1">
+            <div class="shelf-row" role="list">
+              <button
+                class="shelf-book"
+                id="gpOpen"
+                role="listitem"
+                aria-label="Open Grammar Police and Punctuation Patrol book"
+              >
+                <!-- Flat cover, filled by main.js -->
+                <div class="shelf-book-cover" id="shelfCoverMount"></div>
+                <div class="book-note">
+                  <p class="book-blurb">
+                    An interactive grammar &amp; punctuation workbook — read each
+                    rule, then practise right there on the page.
+                  </p>
+                  <span class="book-sticker">Grammar &amp; punctuation</span>
+                </div>
+              </button>
+            </div>
+            <div class="shelf-plank" aria-hidden="true"></div>
           </div>
-          <h2 class="mag-title">Editorials.</h2>
-          <div class="mag-rule"></div>
-          <p class="mag-standfirst">
-            A dynamic digital issue on the people, the mission and the tools
-            behind Nigeria&rsquo;s most personal exam-prep platform.
-          </p>
-        </div>
-      </div>
-
-      <!-- Digital Edition flipbook (StPageFlip) -->
-      <div class="mag-edition-wrapper">
-        <div class="mag-edition-header">
-          <span class="mag-edition-label">Digital Edition</span>
-          <h3 class="mag-edition-title">Flip through our story</h3>
-        </div>
-        <div id="magazine-flipbook" class="mag-flipbook"></div>
-      </div>
-
-      <!-- Yearbook archive (one full flippable edition per year) -->
-      <div class="mag-edition-wrapper">
-        <div class="mag-edition-header">
-          <span class="mag-edition-label">The Yearbooks</span>
-          <h3 class="mag-edition-title">Browse the archive</h3>
-        </div>
-        <div id="yearbook-shelf" class="mag-flipbook"></div>
+        </section>
       </div>
     </main>
+
+    <!-- (No footer — the editorials page is just the bookcase.) -->
+
+    <!-- ═══ FULL-SCREEN BOOK MODAL (Grammar Police workbook) ═══ -->
+    <div
+      id="gpModal"
+      class="gp-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Grammar Police book"
+      hidden
+    >
+      <button class="gp-modal-close" id="gpClose" aria-label="Close book">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          width="20"
+          height="20"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+
+      <!-- Jump back to the Table of Contents from any page -->
+      <button class="gp-modal-contents" id="gpContents" aria-label="Table of contents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" aria-hidden="true">
+          <line x1="8" y1="6" x2="20" y2="6" />
+          <line x1="8" y1="12" x2="20" y2="12" />
+          <line x1="8" y1="18" x2="20" y2="18" />
+          <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
+          <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+        </svg>
+        Contents
+      </button>
+
+      <div class="gp-stage">
+        <button
+          class="gp-nav-btn gp-nav-btn--prev"
+          id="gpPrev"
+          aria-label="Previous page"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            width="22"
+            height="22"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        <!-- StPageFlip mounts here — populated by JS -->
+        <div id="gpBookClip">
+          <div id="gpBook"></div>
+        </div>
+
+        <button
+          class="gp-nav-btn gp-nav-btn--next"
+          id="gpNext"
+          aria-label="Next page"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            width="22"
+            height="22"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="gp-modal-footer">
+        <span class="gp-page-num" id="gpPageNum"></span>
+      </div>
+    </div>
 
     <!-- ═══ ADMIN GUARD ═══
          Editorials is an admin-only area. Non-admins are sent home before
@@ -123,13 +233,36 @@
       });
     </script>
 
-    <!-- Digital magazine flipbook (StPageFlip) -->
+    <!-- Reading-room shelves (same engine + look as the home page) + paint wash -->
     <script type="module">
-      import { initFlipbook, initYearbookShelf } from "/home/js/flipbook.js";
+      import { initBookshelf } from "/home/js/flipbook.js";
+      import {
+        DEFAULT_EDITION,
+        RESULTS_EDITION,
+        PLAYBOOK_EDITION,
+        YEARBOOKS,
+      } from "/home/js/flipbook-assets.js";
+      import { heroPaint } from "/utils/components/nav-icons.js";
 
-      initFlipbook({ containerId: "magazine-flipbook" });
-      initYearbookShelf({ containerId: "yearbook-shelf" });
+      // Soft paint wash behind the bookcase (like home).
+      document.querySelectorAll(".books-paint").forEach((el) => {
+        el.innerHTML = heroPaint();
+      });
+
+      // The published issues, as alternating cover/text feature rows.
+      initBookshelf({
+        containerId: "editions-shelf",
+        editions: [DEFAULT_EDITION, RESULTS_EDITION, PLAYBOOK_EDITION],
+      });
+
+      // The yearbook archive, in the same row layout.
+      initBookshelf({ containerId: "yearbook-shelf", editions: YEARBOOKS });
     </script>
+
+    <!-- English Workbook (Grammar Police) — shelf cover, flip engine & exercises.
+         Relative imports inside resolve from the module's own URL, so loading it
+         by absolute path keeps its js/ tree intact. -->
+    <script type="module" src="/writing/activity/grammar-police/js/main.js"></script>
 
     <!-- Navigation builder -->
     <script src="/utils/components/nav-builder.js" type="module"></script>

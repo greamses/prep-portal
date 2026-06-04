@@ -15,6 +15,53 @@
   margin: 0 auto;
 }
 
+/* ── Accent aliases ───────────────────────────────────────
+   The panels + mock data reference short accent names
+   (var(--blue) etc.) that the theme exposes only as
+   --accent-*. Map them here, scoped to the dashboard, so
+   bars/pills use the real warm theme accents in both modes. */
+.user-dashboard {
+  --blue: var(--accent-secondary);
+  --green: var(--accent-success);
+  --yellow: var(--accent-primary);
+  --red: var(--accent-danger);
+  --purple: #9d86f0;
+}
+
+/* ── Panel eyebrow — mirrors the home page .section-eyebrow,
+   sized down for the denser dashboard panels. */
+.db-kicker {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+}
+
+/* ── Roster / feed text ── */
+.db-roster-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.db-feed-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: var(--weight-black);
+  line-height: 1.2;
+}
+
+.db-feed-sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 0.1rem;
+}
+
 /* ══════════════════════════════════════════════════════
    HEADER
 ══════════════════════════════════════════════════════ */
@@ -62,9 +109,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.85rem;
-  background: var(--bg);
-  border: var(--border);
-  border-radius: 8px;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -74,7 +121,7 @@
   display: grid;
   place-items: center;
   background: var(--accent-primary);
-  border-radius: 6px;
+  border-radius: 10px;
   font-family: var(--font-display);
   font-size: 1.1rem;
   font-weight: var(--weight-black);
@@ -146,19 +193,19 @@
 }
 
 .dashboard-command {
-  min-height: 44px;
+  min-height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0 1rem;
-  background: var(--bg);
-  border: var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-md);
+  padding: 0 1.25rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
   font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: var(--weight-black);
+  font-weight: var(--weight-bold);
   color: var(--ink);
   text-decoration: none;
   cursor: pointer;
@@ -169,13 +216,13 @@
 }
 
 .dashboard-command:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--ink);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 .dashboard-command:active {
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--ink);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-command svg {
@@ -200,32 +247,66 @@
 }
 
 /* ══════════════════════════════════════════════════════
-   MASONRY GRID LAYOUT
+   BENTO GRID LAYOUT
+   4-col bento on desktop with dense flow; tiles opt into
+   wider / taller cells via the .bento-* span helpers below.
 ══════════════════════════════════════════════════════ */
 .dashboard-layout {
-  column-count: 3;
-  column-gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(150px, auto);
+  grid-auto-flow: row dense;
+  gap: clamp(0.85rem, 1.6vw, 1.5rem);
   width: 100%;
 }
 
 .dashboard-layout[data-role="loading"] {
-  column-count: 1;
+  display: block;
+}
+
+/* ── Bento span helpers ── */
+.bento-feature {
+  /* the focal hero tile (Spotlight) */
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.bento-wide {
+  grid-column: span 2;
+}
+.bento-tall {
+  grid-row: span 2;
+}
+.span-full {
+  grid-column: 1 / -1;
 }
 
 /* ══════════════════════════════════════════════════════
    PANELS
 ══════════════════════════════════════════════════════ */
 .db-panel {
-  display: inline-block;
-  width: 100%;
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   border: var(--border);
-  border-radius: var(--radius-sm);
-  padding: 1.25rem;
+  border-radius: clamp(14px, 2vw, 20px);
+  padding: clamp(1rem, 2vw, 1.4rem);
   box-shadow: var(--shadow-md);
   box-sizing: border-box;
+  transition:
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
+}
+
+.db-panel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.bento-feature {
+  box-shadow: var(--shadow-lg);
+}
+.bento-feature:hover {
+  box-shadow: var(--shadow-xl);
 }
 
 .db-panel-head {
@@ -244,11 +325,6 @@
   color: var(--ink);
 }
 
-.span-full {
-  column-span: all;
-  width: 100%;
-}
-
 /* ══════════════════════════════════════════════════════
    BADGES & PILLS
 ══════════════════════════════════════════════════════ */
@@ -256,13 +332,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  min-height: 24px;
-  padding: 0 0.55rem;
-  border: 1.5px solid var(--ink);
-  border-radius: 6px;
+  min-height: 22px;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: 999px;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: var(--weight-black);
+  letter-spacing: var(--tracking-wide);
   white-space: nowrap;
   text-transform: uppercase;
 }
@@ -319,7 +396,7 @@
   place-items: center;
   background: var(--accent-primary);
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
@@ -330,8 +407,8 @@
 }
 
 .db-icon-btn:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 .db-icon-btn svg {
   width: 15px;
@@ -342,20 +419,50 @@
   color: var(--text-on-accent);
 }
 
+/* ── Inline chip links (e.g. admin auto-content engines) ──
+   Soft pill chips that echo the home button language. */
+.brutal-btn-flat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
+}
+
+.brutal-btn-flat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
 /* ══════════════════════════════════════════════════════
    STAT CARDS
 ══════════════════════════════════════════════════════ */
 .db-stat {
-  display: inline-block;
-  width: 100%;
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
-  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1rem, 2vw, 1.4rem);
   background: var(--bg);
   border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
+  border-radius: clamp(14px, 2vw, 20px);
+  box-shadow: var(--shadow-sm);
   box-sizing: border-box;
+  transition:
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
+}
+
+.db-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .db-stat-icon {
@@ -363,7 +470,7 @@
   height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 10px;
   margin-bottom: 0.6rem;
   background: var(--surface-secondary);
 }
@@ -450,7 +557,7 @@
 
 .db-meter {
   background: var(--surface-primary);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 0.75rem;
   margin-top: 0.75rem;
 }
@@ -512,7 +619,7 @@
   gap: 0.75rem;
   padding: 0.5rem 0.6rem;
   background: var(--surface-primary);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .db-roster-avatar {
@@ -520,7 +627,7 @@
   height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 10px;
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: var(--weight-black);
@@ -548,7 +655,7 @@
 .db-assign-item {
   padding: 0.75rem;
   background: var(--surface-primary);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .db-assign-top {
@@ -615,7 +722,7 @@
   align-items: center;
   background: var(--surface-secondary);
   padding: 0.4rem 0.6rem;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .db-calendar-month-year {
@@ -673,7 +780,7 @@
   justify-content: center;
   align-items: center;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: var(--weight-black);
@@ -721,7 +828,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  border-top: 1.5px dashed var(--border-subtle);
+  border-top: 1.5px dashed rgba(var(--shadow-color), 0.18);
   padding-top: 0.75rem;
 }
 
@@ -731,7 +838,7 @@
   gap: 0.6rem;
   padding: 0.6rem;
   background: var(--surface-primary);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .db-agenda-time-pill {
@@ -773,7 +880,7 @@
   align-items: center;
   padding: 0.6rem;
   background: var(--surface-primary);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .db-feed-icon {
@@ -781,7 +888,7 @@
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--surface-secondary);
 }
 
@@ -807,7 +914,7 @@
   padding: 0 0.85rem;
   background: var(--bg);
   border: var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: var(--weight-black);
@@ -861,7 +968,7 @@
   gap: 0.75rem;
   padding: 0.85rem;
   border: var(--border);
-  border-radius: 10px;
+  border-radius: clamp(14px, 2vw, 18px);
   box-shadow: var(--shadow-md);
   font-family: var(--font-display);
   font-size: 0.88rem;
@@ -876,8 +983,8 @@
 }
 
 .db-action:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--ink);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 .db-action svg {
@@ -896,7 +1003,7 @@
   background: var(--accent-success);
   color: var(--text-on-accent);
 }
-.cmd-red {
+.db-action.act-red {
   background: var(--accent-danger);
   color: var(--text-on-accent);
 }
@@ -923,9 +1030,10 @@
 }
 
 .db-perf-track {
-  height: 14px;
+  height: 12px;
   background: var(--surface-secondary);
-  border-radius: 4px;
+  border: var(--border-subtle);
+  border-radius: 999px;
   overflow: hidden;
 }
 
@@ -946,8 +1054,9 @@
    DIVIDER & EMPTY STATE
 ══════════════════════════════════════════════════════ */
 .db-divider {
-  height: 1.5px;
-  background: var(--border-subtle);
+  height: 0;
+  border: 0;
+  border-top: var(--border-subtle);
   margin: 1rem 0;
 }
 
@@ -957,8 +1066,8 @@
   min-height: 90px;
   padding: 1rem;
   background: var(--surface-primary);
-  border: 1.5px dashed var(--border-subtle);
-  border-radius: 8px;
+  border: 1.5px dashed rgba(var(--shadow-color), 0.2);
+  border-radius: 12px;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-secondary);
@@ -970,7 +1079,18 @@
 ══════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .dashboard-layout {
-    column-count: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* On a 2-col grid the feature fills the full width but stays tall. */
+  .bento-feature {
+    grid-column: 1 / -1;
+    grid-row: span 2;
+  }
+
+  .bento-wide,
+  .span-full {
+    grid-column: 1 / -1;
   }
 }
 
@@ -981,8 +1101,18 @@
     gap: 1rem;
   }
 
+  /* Single column — every tile stacks, spans collapse. */
   .dashboard-layout {
-    column-count: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+
+  .bento-feature,
+  .bento-wide,
+  .bento-tall,
+  .span-full {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .dashboard-command {

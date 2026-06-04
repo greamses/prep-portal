@@ -205,39 +205,8 @@
         </p>
       </header>
 
-      <!-- Alternating cover/text rows, built + wired in flipbook.js -->
+      <!-- A simple shelf of standing covers, built + wired in flipbook.js -->
       <div id="bookshelf" class="bookshelf"></div>
-
-      <!-- Ragged torn edge where each cover photo tears to its title band -->
-      <svg class="books-defs" width="0" height="0" aria-hidden="true">
-        <defs>
-          <filter id="torn-cover" x="-6%" y="-8%" width="112%" height="124%">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.012 0.026"
-              numOctaves="3"
-              seed="9"
-              result="n"
-            />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="n"
-              scale="11"
-              xChannelSelector="R"
-              yChannelSelector="G"
-              result="d"
-            />
-            <feDropShadow
-              in="d"
-              dx="0"
-              dy="-2.5"
-              stdDeviation="2.2"
-              flood-color="#14130f"
-              flood-opacity="0.4"
-            />
-          </filter>
-        </defs>
-      </svg>
     </section>
 
     <!-- ═══ FAQ ═══ -->
