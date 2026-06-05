@@ -1,5 +1,6 @@
 // robot-teacher.js v3.2.2 – Ask button toggles question mode (stays highlighted)
 import { GROQ_DEFAULT_MODEL } from '../../../utils/ai-models.js';
+import { groqGenerate, groqText } from '/utils/ai-client.js';
 import { auth, db } from '../../../firebase-init.js';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -7,7 +8,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
   'use strict';
   if (global.RobotTeacher) return;
 
-  const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
   const MODEL = GROQ_DEFAULT_MODEL;
   
   const S = {
@@ -327,13 +327,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
     try {
       const stateSummary = getStateSummary();
       const prompt = `You are ROBO-TEACH, a friendly math teacher for JSS2 students. The user is exploring a polygon explorer app. Current polygon state: ${stateSummary}. The user asks: "${question}". Give a clear, short, and encouraging answer (2‑4 sentences). Use simple language. Mention the current polygon if relevant.`;
-      const res = await fetch(GROQ_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
-        body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.5, max_tokens: 200 })
+      const result = await groqGenerate({
+        key: S.apiKey,
+        body: { model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.5, max_tokens: 200 },
       });
-      const result = await res.json();
-      const reply = result.choices[0].message.content.trim();
+      const reply = groqText(result).trim();
       isFetching = false;
       await typeText(reply);
       showBubble();
@@ -360,13 +358,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
     try {
       const stateSummary = getStateSummary();
       const prompt = `You are ROBO-TEACH, an expert math teacher for JSS2. Create a mini‑lesson (4‑5 steps) teaching the user about: "${topic}". The lesson should be a JSON array of steps. Each step needs: target, action, expectedData (if needed), instruction, reminder, success. Use actions: reset_polygon, open_settings, close_settings, change_sides, toggle_feature (feature names: showProtractors, showLabels, showVertices, showCenter, showSideLabels, showDiagonals, showRadii, fill, grid), change_anim_mode (interior/exterior/none), change_animProgress, drag_vertex, speak_answer (with expectedAnswer), return_to_map. The FINAL two steps must be a speak_answer question followed by return_to_map. Current polygon: ${stateSummary}. Return ONLY valid JSON array. No markdown.`;
-      const res = await fetch(GROQ_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
-        body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.7, max_tokens: 1200 })
+      const result = await groqGenerate({
+        key: S.apiKey,
+        body: { model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.7, max_tokens: 1200 },
       });
-      const result = await res.json();
-      const content = result.choices[0].message.content;
+      const content = groqText(result);
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const newSteps = JSON.parse(jsonMatch[0]);
@@ -530,13 +526,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
     try {
       const stateSummary = getStateSummary();
       const prompt = `You are ROBO-TEACH. Step: "${step.instruction}" Action: "${step.action}". User said: "${transcript}". Current polygon: ${stateSummary}. Evaluate if they completed the step. Reply JSON: {"completed":true/false, "reason":"One sentence praise or gentle correction."}`;
-      const res = await fetch(GROQ_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
-        body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.3, max_tokens: 120 })
+      const result = await groqGenerate({
+        key: S.apiKey,
+        body: { model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.3, max_tokens: 120 },
       });
-      const result = await res.json();
-      const content = result.choices[0].message.content;
+      const content = groqText(result);
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { completed: false };
       isFetching = false;
@@ -824,15 +818,12 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
     try {
       const stateSummary = getStateSummary();
       const prompt = `Goal: "${step.instruction}". User performed: '${wrongAction}' (data: ${JSON.stringify(data)}). Current polygon: ${stateSummary}. Write ONE short sentence gently explaining what they did differently, and ONE sentence guiding them back to the correct action.`;
-      const res = await fetch(GROQ_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
-        body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.5, max_tokens: 100 })
+      const result = await groqGenerate({
+        key: S.apiKey,
+        body: { model: MODEL, messages: [{ role: 'system', content: prompt }], temperature: 0.5, max_tokens: 100 },
       });
-      if (!res.ok) throw new Error("API Error");
-      const result = await res.json();
       isFetching = false;
-      await typeText(result.choices[0].message.content.trim());
+      await typeText(groqText(result).trim());
       startReminderTimer();
     } catch (e) {
       isFetching = false;

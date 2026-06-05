@@ -1,0 +1,91 @@
+@import url("https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap");
+
+/* =========================================================================
+   PREP PORTAL — SHARED UI COMPONENTS
+   -------------------------------------------------------------------------
+   Single source of truth for small, reused bits of UI so the look stays in
+   sync everywhere (home page + injected widgets like PrepBot). Update here,
+   update everywhere.
+
+     .pp-pill    — the home "stat-chip" pill (mono label, tinted border).
+     .pp-sticky  — the home hero-eyebrow sticky note (paper, tape, tilt).
+
+   Both lean on the theme tokens in theme.css and degrade gracefully if a
+   token is missing.
+========================================================================= */
+
+/* ── PILL ───────────────────────────────────────────────────────────────
+   Tint the border by setting --tile (defaults to the blue accent). */
+.pp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #6b655c);
+  background: var(--surface-primary, #fffdf8);
+  border: 2px solid color-mix(in srgb, var(--tile, var(--accent-secondary, #6fb7e8)) 50%, transparent);
+  box-shadow: var(--shadow-sm, 0 2px 5px rgba(42, 39, 35, 0.1));
+  padding: 0.4rem 0.75rem;
+  border-radius: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
+    box-shadow 0.18s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.pp-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 11px rgba(42, 39, 35, 0.12));
+  color: var(--ink, #2a2723);
+}
+
+.pp-pill:active { transform: translateY(0); }
+
+/* ── STICKY NOTE ────────────────────────────────────────────────────────
+   Always real "paper": light pastel + dark ink, so it reads on any theme.
+   Colour with .pp-sticky--c0…c5, tilt with --pp-note-tilt, tape with
+   .pp-sticky--tape. */
+.pp-sticky {
+  position: relative;
+  display: inline-block;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.6rem 1.1rem 0.65rem;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+
+/* A strip of "tape" across the top */
+.pp-sticky--tape::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+
+/* Rotating paper colours (fixed light pastels — notes are paper, not chrome) */
+.pp-sticky--c0 { --pp-note-bg: #fff3a8; }
+.pp-sticky--c1 { --pp-note-bg: #e8c8ff; }
+.pp-sticky--c2 { --pp-note-bg: #c8f0c0; }
+.pp-sticky--c3 { --pp-note-bg: #bfe3ff; }
+.pp-sticky--c4 { --pp-note-bg: #ffd7a3; }
+.pp-sticky--c5 { --pp-note-bg: #b8ece2; }

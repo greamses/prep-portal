@@ -2,14 +2,9 @@
 // Handles YouTube API integration and Gemini topic planning for math resources
 
 import { state } from './script.js';
+import { geminiGenerate, geminiText } from '/utils/ai-client.js';
 
 const _videoCache = {};
-
-const _VIDEO_MODELS = [
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
-];
 
 // ============================================
 // MATH-SPECIFIC CHANNEL MAP
@@ -127,29 +122,19 @@ Return ONLY valid JSON:
   "manipulative": "<hands-on activity description>"
 }`;
   
-  for (const modelUrl of _VIDEO_MODELS) {
-    try {
-      const res = await fetch(`${modelUrl}?key=${encodeURIComponent(state.GEMINI_KEY)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.3, maxOutputTokens: 800 }
-        })
-      });
-      
-      if (res.status === 429 || res.status === 503 || !res.ok) continue;
-      
-      const raw = await res.json();
-      const text = raw.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-    } catch (e) {
-      console.warn('Model failed:', e);
-    }
+  try {
+    const data = await geminiGenerate({
+      key: state.GEMINI_KEY,
+      body: {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.3, maxOutputTokens: 800 }
+      },
+    });
+    const text = geminiText(data);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.warn('Video topic plan failed:', e);
   }
   return null;
 }

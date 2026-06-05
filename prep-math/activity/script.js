@@ -94,7 +94,7 @@ const settings = {
 // ─────────────────────────────────────────────────────────
 (function buildTicker() {
   const words = [
-    'Fraction Explorer', 'PrepBot · Maths', 'Visual Fractions',
+    'Fraction Explorer', 'Maths Practice', 'Visual Fractions',
     'Prep Portal 2026', 'Circles · Bars', 'Endless Practice',
   ];
   const track = document.getElementById('ticker-track');

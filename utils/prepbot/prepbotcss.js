@@ -1,31 +1,35 @@
 const chatbotcss = `
+@import url('/utils/components/components.css');
 /* ══════════════════════════════════════════════════════
    PREPBOT — inherits from theme.css; fallbacks ensure it
-   works standalone. Rounded-card style matching blog UI.
+   works standalone. Soft-UI: warm paper, pastel accents,
+   rounded corners, soft blurred shadows (no hard offsets).
    ══════════════════════════════════════════════════════ */
 
 /* ── LOCAL ALIASES (read from theme.css :root, with fallbacks) ── */
 #prepbot, #chat-fab-wrap, #chat-fab-restore, #chat-window, #prepbot-popup,
 #prepbot *, #chat-fab-wrap *, #chat-fab-restore *, #chat-window *, #prepbot-popup * {
-    --_bg:       var(--bg,              #ffffff);
-    --_ink:      var(--ink,             #0a0a0a);
-    --_surface:  var(--surface-secondary, #f7f4ee);
-    --_paper:    var(--surface-primary, #fffef8);
-    --_accent:   var(--accent-secondary, #0055ff);
-    --_danger:   var(--accent-danger,   #ff2200);
-    --_success:  var(--accent-success,  #00a550);
-    --_warning:  var(--accent-warning,  #e67e00);
-    --_primary:  var(--accent-primary,  #ffe500);
-    --_muted:    var(--text-secondary,  #555555);
-    --_faint:    var(--text-tertiary,   #888888);
-    --_border:   var(--border,          2.5px solid #0a0a0a);
-    --_border-s: var(--border-subtle,   1px solid rgba(10,10,10,0.12));
+    --_bg:       var(--bg,              #faf7f1);
+    --_ink:      var(--ink,             #2a2723);
+    --_surface:  var(--surface-secondary, #f4f0e8);
+    --_paper:    var(--surface-primary, #fffdf8);
+    --_accent:   var(--accent-secondary, #6fb7e8);
+    --_danger:   var(--accent-danger,   #f07a7a);
+    --_success:  var(--accent-success,  #7cc47c);
+    --_warning:  var(--accent-warning,  #f0a868);
+    --_primary:  var(--accent-primary,  #f4c95d);
+    --_on-accent: var(--text-on-accent, #2a2723);
+    --_muted:    var(--text-secondary,  #6b655c);
+    --_faint:    var(--text-tertiary,   #9a948a);
+    --_border:   var(--border,          2px solid #2a2723);
+    --_border-s: var(--border-subtle,   1px solid rgba(42,39,35,0.12));
     --_r:        var(--radius-sm,       12px);
+    --_r-lg:     18px;
     --_ease:     var(--ease-in-out,     cubic-bezier(0.16,1,0.3,1));
-    --_sh-sm:    var(--shadow-sm,       3px 3px 0 #0a0a0a);
-    --_sh-md:    var(--shadow-md,       5px 5px 0 #0a0a0a);
-    --_sh-lg:    var(--shadow-lg,       6px 6px 0 #0a0a0a);
-    --_sh-xl:    var(--shadow-xl,       9px 9px 0 #0a0a0a);
+    --_sh-sm:    var(--shadow-sm,       0 2px 5px rgba(42,39,35,0.10));
+    --_sh-md:    var(--shadow-md,       0 4px 11px rgba(42,39,35,0.12));
+    --_sh-lg:    var(--shadow-lg,       0 9px 22px rgba(42,39,35,0.14));
+    --_sh-xl:    var(--shadow-xl,       0 18px 40px rgba(42,39,35,0.16));
     --_f-display: var(--font-display,   'Unbounded', sans-serif);
     --_f-mono:    var(--font-mono,      'JetBrains Mono', monospace);
     box-sizing: border-box;
@@ -97,50 +101,50 @@ const chatbotcss = `
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    transition: right 0.3s var(--_ease), background 0.15s;
-    box-shadow: -3px 0 0 var(--_accent);
+    transition: right 0.3s var(--_ease), background 0.15s, box-shadow 0.2s ease;
+    box-shadow: var(--_sh-md);
 }
 
 #chat-fab-restore.fab-restore-visible { right: 0; }
-#chat-fab-restore:hover { background: var(--_accent); box-shadow: -3px 0 0 var(--_ink); }
+#chat-fab-restore:hover { background: var(--_accent); box-shadow: var(--_sh-lg); }
 
-/* ── FAB button (pill) ── */
+/* ── FAB — round sticker-logo launcher ── */
 #chat-fab {
     z-index: 10002;
-    background: var(--_ink);
-    border: var(--_border);
-    border-radius: 100px;
+    width: 60px;
+    height: 60px;
+    position: relative;
+    background: var(--_paper);
+    border: var(--_border-s);
+    border-radius: 50%;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 20px 12px 16px;
+    display: grid;
+    place-items: center;
     outline: none;
-    font-family: var(--_f-display);
-    font-weight: 700;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--_bg);
-    transition: background 0.2s ease, transform 0.2s var(--_ease), box-shadow 0.2s ease;
-    box-shadow: 4px 4px 0 var(--_accent);
+    transition: transform 0.2s var(--_ease), box-shadow 0.2s ease;
+    box-shadow: var(--_sh-lg);
 }
 
 #chat-fab:hover {
-    background: var(--_accent);
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 var(--_ink);
+    transform: translateY(-2px);
+    box-shadow: var(--_sh-xl);
 }
 
 #chat-fab:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--_ink);
+    transform: translateY(0);
+    box-shadow: var(--_sh-md);
 }
 
+#chat-fab .pb-logo { width: 42px; height: 42px; }
+
 #chat-fab .fab-dot {
-    width: 8px;
-    height: 8px;
-    background: #4cff91;
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 12px;
+    height: 12px;
+    background: var(--_success);
+    border: 2px solid var(--_paper);
     border-radius: 50%;
     flex-shrink: 0;
     animation: pb-pulse 2.4s ease-in-out infinite;
@@ -148,10 +152,35 @@ const chatbotcss = `
 
 @keyframes pb-pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.45; transform: scale(0.65); }
+    50%       { opacity: 0.45; transform: scale(0.7); }
 }
 
 #chat-fab .fab-label { display: none; }
+
+/* ── PrepBot logo — the multicolour bot mark (no blob behind it) ── */
+.pb-logo {
+    display: inline-grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.pb-logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Close (×) / delete glyphs inside the small control buttons */
+.chat-icon-btn svg,
+.prepbot-popup-close svg,
+.chat-context-clear svg,
+.qbubbles-close svg,
+#chat-fab-dismiss svg,
+.chat-video-close svg { width: 58%; height: 58%; display: block; }
+
+.chat-icon-btn--multi svg { width: 72%; height: 72%; }
+
+/* ── Inline multicolour glyph wrapper (mic / send / speaker / video) ── */
+.pb-glyph { display: inline-grid; place-items: center; line-height: 0; }
+.pb-glyph svg { width: 20px; height: 20px; display: block; overflow: visible; }
+.pb-glyph--chip svg { width: 15px; height: 15px; }
 
 /* ══════════════════════════════════════════════════════
    CHAT WINDOW
@@ -162,10 +191,11 @@ const chatbotcss = `
     right: 24px;
     width: 420px;
     height: 600px;
+    max-height: calc(100dvh - 104px);
     z-index: 10001;
     background: var(--_bg);
     border: var(--_border);
-    border-radius: var(--_r);
+    border-radius: var(--_r-lg);
     box-shadow: var(--_sh-xl);
     display: flex;
     flex-direction: column;
@@ -187,15 +217,15 @@ const chatbotcss = `
    HEADER
    ══════════════════════════════════════════════════════ */
 .chat-header {
-    background: var(--_ink);
-    color: var(--_bg);
+    background: var(--_paper);
+    color: var(--_ink);
     padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
-    border-bottom: var(--_border);
-    border-radius: var(--_r) var(--_r) 0 0;
+    border-bottom: var(--_border-s);
+    border-radius: var(--_r-lg) var(--_r-lg) 0 0;
 }
 
 .chat-header-left {
@@ -205,20 +235,12 @@ const chatbotcss = `
 }
 
 .chat-avatar {
-    width: 36px;
-    height: 36px;
-    background: var(--_ink);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
-    border: var(--_border);
-    overflow: hidden;
-    padding: 3px;
+    display: grid;
+    place-items: center;
 }
-
-.chat-avatar svg { display: block; stroke: var(--_bg); }
 
 .chat-header-info h4 {
     font-family: var(--_f-display);
@@ -227,7 +249,7 @@ const chatbotcss = `
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin: 0 0 2px;
-    color: var(--_bg);
+    color: var(--_ink);
 }
 
 .chat-header-info .chat-status {
@@ -236,7 +258,7 @@ const chatbotcss = `
     gap: 5px;
     font-size: 0.6rem;
     font-family: var(--_f-mono);
-    color: rgba(255,255,255,0.45);
+    color: var(--_muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -244,7 +266,7 @@ const chatbotcss = `
 .chat-status-dot {
     width: 6px;
     height: 6px;
-    background: #4cff91;
+    background: var(--_success);
     border-radius: 50%;
     animation: pb-pulse 2.4s ease-in-out infinite;
 }
@@ -259,22 +281,23 @@ const chatbotcss = `
     width: 30px;
     height: 30px;
     background: none;
-    border: 1px solid rgba(255,255,255,0.18);
+    border: var(--_border-s);
     border-radius: 8px;
     cursor: pointer;
-    color: rgba(255,255,255,0.5);
+    color: var(--_muted);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
     font-size: 18px;
     font-family: var(--_f-mono);
 }
 
 .chat-icon-btn:hover {
-    background: var(--_accent);
-    color: var(--_bg);
-    border-color: var(--_accent);
+    background: color-mix(in srgb, var(--_accent) 16%, var(--_paper));
+    color: var(--_ink);
+    border-color: color-mix(in srgb, var(--_accent) 45%, transparent);
+    box-shadow: var(--_sh-sm);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -286,7 +309,7 @@ const chatbotcss = `
     gap: 8px;
     padding: 8px 14px;
     background: var(--_accent);
-    color: var(--_bg);
+    color: var(--_on-accent);
     border-bottom: var(--_border);
     font-family: var(--_f-mono);
     font-size: 0.66rem;
@@ -315,9 +338,9 @@ const chatbotcss = `
 
 .chat-context-clear {
     background: none;
-    border: 1px solid rgba(255,255,255,0.35);
+    border: 1px solid color-mix(in srgb, var(--_on-accent) 35%, transparent);
     border-radius: 6px;
-    color: rgba(255,255,255,0.75);
+    color: color-mix(in srgb, var(--_on-accent) 75%, transparent);
     cursor: pointer;
     font-size: 13px;
     width: 20px;
@@ -330,7 +353,7 @@ const chatbotcss = `
     transition: all 0.15s;
 }
 
-.chat-context-clear:hover { background: rgba(255,255,255,0.2); color: #fff; }
+.chat-context-clear:hover { background: color-mix(in srgb, var(--_on-accent) 18%, transparent); color: var(--_on-accent); }
 
 /* ══════════════════════════════════════════════════════
    ACTION PILLS (legacy quiz pages)
@@ -390,14 +413,14 @@ const chatbotcss = `
 
 .prepbot-pill--primary {
     background: var(--_accent);
-    color: var(--_bg);
+    color: var(--_on-accent);
     box-shadow: var(--_sh-sm);
 }
 
 .prepbot-pill--primary:hover {
     background: var(--_ink);
     color: var(--_accent);
-    transform: translate(-1px,-1px);
+    transform: translateY(-1px);
     box-shadow: var(--_sh-md);
 }
 
@@ -420,11 +443,11 @@ const chatbotcss = `
     flex-shrink: 0;
 }
 
-.prepbot-qpill:hover { background: var(--_accent); color: var(--_bg); }
+.prepbot-qpill:hover { background: var(--_accent); color: var(--_on-accent); }
 .prepbot-qpill.qpill--current { background: var(--_ink); color: var(--_primary); border-color: var(--_ink); }
 .prepbot-qpill.qpill--answered { background: var(--_surface); color: var(--_muted); }
-.prepbot-qpill.qpill--correct { background: var(--_success); color: var(--_bg); border-color: var(--_success); }
-.prepbot-qpill.qpill--wrong { background: var(--_danger); color: var(--_bg); border-color: var(--_danger); }
+.prepbot-qpill.qpill--correct { background: var(--_success); color: var(--_on-accent); border-color: var(--_success); }
+.prepbot-qpill.qpill--wrong { background: var(--_danger); color: var(--_on-accent); border-color: var(--_danger); }
 
 /* ── Quiz nav bar ── */
 .quiz-nav-bar {
@@ -455,7 +478,7 @@ const chatbotcss = `
 
 .quiz-nav-btn:hover {
     background: var(--_accent);
-    transform: translate(-1px,-1px);
+    transform: translateY(-1px);
     box-shadow: var(--_sh-md);
 }
 
@@ -471,7 +494,7 @@ const chatbotcss = `
     align-items: center;
     gap: 8px;
     background: var(--_accent);
-    color: var(--_bg);
+    color: var(--_on-accent);
     padding: 8px 16px;
     font-family: var(--_f-display);
     font-size: 0.68rem;
@@ -490,7 +513,7 @@ const chatbotcss = `
 .quiz-nav-pill:hover {
     background: var(--_ink);
     color: var(--_accent);
-    transform: translate(-2px,-2px);
+    transform: translateY(-2px);
     box-shadow: var(--_sh-md);
 }
 
@@ -507,12 +530,30 @@ const chatbotcss = `
     flex-direction: column;
     gap: 12px;
     scroll-behavior: smooth;
-    background: var(--_surface);
+    background: transparent;
 }
 
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-track { background: transparent; }
 .chat-messages::-webkit-scrollbar-thumb { background: var(--_ink); border-radius: 99px; opacity: 0.3; }
+
+/* ── Paint/blob window background (mirrors the home hero paint) ── */
+.pb-paint {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0.3;
+    border-radius: var(--_r-lg);
+}
+
+.pb-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .pb-paint { opacity: 0.4; }
+
+/* Keep all real content above the paint layer (the clear-bar keeps its own
+   absolute positioning + z-index:10, so it's excluded). */
+#chat-window > *:not(.pb-paint):not(.chat-clear-bar) { position: relative; z-index: 1; }
 
 /* ── Intro card ── */
 .chat-intro-card {
@@ -582,32 +623,22 @@ const chatbotcss = `
     color: var(--_faint);
 }
 
-.msg-bubble {
-    padding: 10px 14px;
+/* ── Messages reuse the shared sticky-note component (.pp-sticky) ──
+   The component supplies the paper colour, layered shadow and tilt; here we
+   keep the body readable (mono) and give a gentle per-role tilt + corner. */
+.msg-bubble.pp-sticky {
     font-family: var(--_f-mono);
     font-size: 0.81rem;
     line-height: 1.65;
-    border: var(--_border);
-    border-radius: var(--_r);
+    padding: 11px 15px;
+    border-radius: 4px 12px 12px 12px;
 }
 
-.msg.user .msg-bubble {
-    background: var(--_ink);
-    color: var(--_bg);
-    border-bottom-right-radius: 4px;
-    box-shadow: var(--_sh-sm);
-}
+.msg.user .msg-bubble.pp-sticky { --pp-note-tilt: 1deg; border-radius: 12px 4px 12px 12px; }
+.msg.bot  .msg-bubble.pp-sticky { --pp-note-tilt: -1deg; }
 
-.msg.bot .msg-bubble {
-    background: var(--_bg);
-    color: var(--_ink);
-    border-left: 4px solid var(--_accent);
-    border-bottom-left-radius: 4px;
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.06);
-}
-
-.msg.bot .msg-bubble strong { color: var(--_accent); font-weight: 700; }
-.msg.bot .msg-bubble em     { color: var(--_ink); font-style: italic; }
+.msg-bubble strong { color: inherit; font-weight: 700; }
+.msg-bubble em     { color: inherit; font-style: italic; }
 
 /* Math styling */
 .math-inline {
@@ -686,7 +717,7 @@ const chatbotcss = `
     height: 28px;
 }
 
-.speaker-btn:hover { background: var(--_accent); color: var(--_bg); border-color: var(--_accent); }
+.speaker-btn:hover { background: var(--_accent); color: var(--_on-accent); border-color: var(--_accent); }
 
 .soundwave {
     display: inline-flex;
@@ -716,40 +747,22 @@ const chatbotcss = `
    ══════════════════════════════════════════════════════ */
 .chat-suggestions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: nowrap;
     overflow-x: auto;
     padding: 10px 14px;
-    border-top: var(--_border);
+    border-top: var(--_border-s);
     background: var(--_bg);
     flex-shrink: 0;
+    --tile: var(--_accent);
 }
 
 .chat-suggestions:empty { padding: 0; border: none; }
 
 .chat-suggestions::-webkit-scrollbar { height: 0; }
 
-.suggestion-chip {
-    font-family: var(--_f-mono);
-    font-size: 0.67rem;
-    font-weight: 600;
-    padding: 7px 14px;
-    border: var(--_border);
-    border-radius: 100px;
-    background: var(--_bg);
-    color: var(--_ink);
-    cursor: pointer;
-    transition: all 0.18s;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.suggestion-chip:hover {
-    background: var(--_accent);
-    color: var(--_bg);
-    border-color: var(--_accent);
-    transform: translateY(-1px);
-}
+/* Suggestion chips are the shared .pp-pill; just keep them from shrinking. */
+.suggestion-chip { flex-shrink: 0; }
 
 /* ══════════════════════════════════════════════════════
    INPUT ROW
@@ -762,7 +775,7 @@ const chatbotcss = `
     border-top: var(--_border);
     flex-shrink: 0;
     background: var(--_bg);
-    border-radius: 0 0 var(--_r) var(--_r);
+    border-radius: 0 0 var(--_r-lg) var(--_r-lg);
 }
 
 .chat-input-wrap {
@@ -803,28 +816,27 @@ const chatbotcss = `
 
 /* ── Mic ── */
 #chat-mic {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     background: transparent;
-    color: var(--_faint);
     border: none;
-    border-radius: 8px;
+    border-radius: 9px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: color 0.15s, background 0.15s;
+    transition: background 0.15s, transform 0.15s;
 }
 
-#chat-mic:hover { color: var(--_accent); background: rgba(0,85,255,0.07); }
+#chat-mic:hover { background: color-mix(in srgb, var(--_accent) 14%, transparent); }
 #chat-mic svg { transition: transform 0.2s var(--_ease); }
-#chat-mic.mic-active { color: var(--_danger); animation: pb-pulse-mic 1.5s infinite; }
+#chat-mic.mic-active { animation: pb-pulse-mic 1.5s infinite; }
 #chat-mic.mic-active svg { transform: scale(1.15); }
 
 @keyframes pb-pulse-mic {
     0%   { background: transparent; }
-    50%  { background: rgba(255,34,0,0.08); }
+    50%  { background: color-mix(in srgb, var(--_danger) 16%, transparent); }
     100% { background: transparent; }
 }
 
@@ -832,25 +844,26 @@ const chatbotcss = `
 #chat-send {
     width: 40px;
     height: 40px;
-    background: var(--_accent);
-    color: var(--_bg);
-    border: var(--_border);
+    background: color-mix(in srgb, var(--_primary) 24%, var(--_paper));
+    border: var(--_border-s);
     border-radius: var(--_r);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: background 0.18s, transform 0.15s var(--_ease);
+    transition: background 0.18s, transform 0.15s var(--_ease), box-shadow 0.15s;
+    box-shadow: var(--_sh-sm);
 }
 
 #chat-send:hover:not(:disabled) {
-    background: var(--_ink);
-    transform: translate(-1px,-1px);
+    background: color-mix(in srgb, var(--_primary) 38%, var(--_paper));
+    transform: translateY(-1px);
+    box-shadow: var(--_sh-md);
 }
 
-#chat-send:active { transform: translate(1px,1px); }
-#chat-send:disabled { background: var(--_faint); cursor: default; }
+#chat-send:active { transform: translateY(0); box-shadow: var(--_sh-sm); }
+#chat-send:disabled { opacity: 0.5; cursor: default; }
 #chat-send .send-icon,
 #chat-send .send-spinner { transition: opacity 0.15s; }
 #chat-send .send-spinner { display: none; }
@@ -862,8 +875,8 @@ const chatbotcss = `
 .send-spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255,255,255,0.25);
-    border-top-color: #fff;
+    border: 2px solid color-mix(in srgb, var(--_on-accent) 25%, transparent);
+    border-top-color: var(--_on-accent);
     border-radius: 50%;
     animation: pb-spin 0.7s linear infinite;
 }
@@ -942,7 +955,7 @@ const chatbotcss = `
 
 .qbubble:hover {
     background: var(--_accent);
-    color: var(--_bg);
+    color: var(--_on-accent);
     border-color: var(--_accent);
     transform: translateY(-1px);
 }
@@ -961,7 +974,7 @@ const chatbotcss = `
     justify-content: space-between;
     z-index: 10;
     border-top: var(--_border);
-    border-radius: 0 0 var(--_r) var(--_r);
+    border-radius: 0 0 var(--_r-lg) var(--_r-lg);
 }
 
 .chat-clear-bar.visible { display: flex; }
@@ -991,10 +1004,10 @@ const chatbotcss = `
     background: transparent;
 }
 
-#clear-confirm { background: var(--_accent); color: var(--_bg); border-color: var(--_accent); }
+#clear-confirm { background: var(--_accent); color: var(--_on-accent); border-color: var(--_accent); }
 #clear-confirm:hover { background: var(--_bg); color: var(--_accent); }
-#clear-cancel { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.28); }
-#clear-cancel:hover { color: #fff; border-color: #fff; }
+#clear-cancel { color: color-mix(in srgb, var(--_bg) 60%, transparent); border-color: color-mix(in srgb, var(--_bg) 28%, transparent); }
+#clear-cancel:hover { color: var(--_bg); border-color: var(--_bg); }
 
 /* ══════════════════════════════════════════════════════
    POPUP NUDGE
@@ -1013,7 +1026,7 @@ const chatbotcss = `
     font-family: var(--_f-mono);
     font-size: 0.74rem;
     line-height: 1.55;
-    box-shadow: 6px 6px 0 var(--_accent);
+    box-shadow: var(--_sh-lg);
     cursor: pointer;
     z-index: 10000;
     opacity: 0;
@@ -1055,7 +1068,7 @@ const chatbotcss = `
     top: 8px; right: 8px;
     background: none;
     border: none;
-    color: rgba(255,255,255,0.45);
+    color: color-mix(in srgb, var(--_bg) 50%, transparent);
     font-size: 1.1rem;
     line-height: 1;
     cursor: pointer;
@@ -1106,15 +1119,15 @@ const chatbotcss = `
 .chat-video-channel {
     font-family: var(--_f-mono);
     font-size: 0.58rem;
-    color: rgba(255,255,255,0.48);
+    color: color-mix(in srgb, var(--_bg) 50%, transparent);
     margin-top: 2px;
 }
 
 .chat-video-close {
     background: none;
-    border: 1px solid rgba(255,255,255,0.28);
+    border: 1px solid color-mix(in srgb, var(--_bg) 28%, transparent);
     border-radius: 6px;
-    color: rgba(255,255,255,0.6);
+    color: color-mix(in srgb, var(--_bg) 60%, transparent);
     cursor: pointer;
     width: 24px; height: 24px;
     display: flex;
@@ -1126,7 +1139,7 @@ const chatbotcss = `
     font-family: var(--_f-mono);
 }
 
-.chat-video-close:hover { background: var(--_danger); border-color: var(--_danger); color: #fff; }
+.chat-video-close:hover { background: var(--_danger); border-color: var(--_danger); color: var(--_on-accent); }
 
 .chat-video-container {
     position: relative;
@@ -1141,16 +1154,8 @@ const chatbotcss = `
     border: none;
 }
 
-.video-play-chip {
-    background: var(--_danger) !important;
-    color: var(--_bg) !important;
-    border-color: var(--_danger) !important;
-}
-
-.video-play-chip:hover {
-    background: var(--_ink) !important;
-    border-color: var(--_ink) !important;
-}
+/* The "watch video" chip is a danger-tinted pill. */
+.video-play-chip { --tile: var(--_danger); }
 
 /* ══════════════════════════════════════════════════════
    MOBILE — fix navbar overlap
@@ -1172,7 +1177,8 @@ const chatbotcss = `
         bottom: 18px;
     }
 
-    #chat-fab { padding: 10px 16px 10px 12px; }
+    #chat-fab { width: 54px; height: 54px; }
+    #chat-fab .pb-logo { width: 38px; height: 38px; }
 
     .suggestion-chip {
         font-size: 0.62rem;

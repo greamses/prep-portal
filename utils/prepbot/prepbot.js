@@ -1,6 +1,7 @@
 import chatbotcss from "./prepbotcss.js";
 
 import { auth } from "/firebase-init.js";
+import { heroPaint } from "/utils/components/nav-icons.js";
 
 (function () {
   /* ── 1. STYLE INJECTION ── */
@@ -120,7 +121,7 @@ import { auth } from "/firebase-init.js";
           Once signed in, PrepBot is powered by AI — no extra API key needed.
         </p>
         <button id="retry-key-check" type="button"
-          style="margin-top:8px;padding:8px 16px;border:2px solid var(--ink,#1f1f1f);background:var(--yellow,#ffe500);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:4px;">
+          style="margin-top:8px;padding:8px 16px;border:2px solid var(--ink);background:var(--accent-primary);color:var(--text-on-accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border-radius:10px;">
           I've Signed In — Retry
         </button>
       </div>`;
@@ -323,37 +324,70 @@ import { auth } from "/firebase-init.js";
     return { text, prompt: `Help me understand this page: ${topic}` };
   }
 
-  /* ── 8. INJECT HTML ── */
-  const mount = document.getElementById("prepbot");
-  if (!mount) return;
+  /* ── PREPBOT ICON SET ──────────────────────────────────────────────
+   * Multicolour "sticker" glyphs in the same language as the nav (see
+   * utils/components/nav-icons.js): chunky shapes in accent tokens + white
+   * highlights, no hard outlines, on a 24×24 grid. Re-tint per theme. */
+  const PB_ICONS = {
+    // PrepBot mark — a friendly chat-bubble face (the logo glyph)
+    bot: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="11.1" y="1.3" width="1.8" height="3.4" rx="0.9" fill="var(--accent-warning)"/><circle cx="12" cy="1.7" r="1.45" fill="var(--accent-primary)"/><path d="M4.5 4.2h15A2.5 2.5 0 0 1 22 6.7v7.1a2.5 2.5 0 0 1-2.5 2.5h-6.3l-3.7 3.2a0.8 0.8 0 0 1-1.33-0.6V16.3H4.5A2.5 2.5 0 0 1 2 13.8V6.7A2.5 2.5 0 0 1 4.5 4.2z" fill="var(--accent-secondary)"/><circle cx="9.2" cy="10" r="1.85" fill="#fff"/><circle cx="14.8" cy="10" r="1.85" fill="#fff"/><circle cx="9.5" cy="10.3" r="0.85" fill="var(--ink)"/><circle cx="15.1" cy="10.3" r="0.85" fill="var(--ink)"/><path d="M9 13.1q3 2.2 6 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    // Paper plane — two-tone
+    send: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.4 2.6 2.9 10.5a0.75 0.75 0 0 0 0.06 1.4l5.2 1.7 1.9 5.6a0.75 0.75 0 0 0 1.34 0.17l2.1-3.3 4.2 3.1a0.8 0.8 0 0 0 1.26-0.48L21.6 3.5a0.75 0.75 0 0 0-0.2-0.9z" fill="var(--accent-secondary)"/><path d="M21.4 2.6 8.2 13.6l1.9 5.6a0.75 0.75 0 0 0 1.34 0.17l2.1-3.3z" fill="var(--accent-primary)"/><circle cx="11.4" cy="15.6" r="0.85" fill="#fff" opacity="0.8"/></svg>`,
+    // Microphone
+    mic: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.8" y="2.4" width="6.4" height="11" rx="3.2" fill="var(--accent-secondary)"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0" fill="none" stroke="var(--accent-success)" stroke-width="1.9" stroke-linecap="round"/><rect x="11.1" y="17" width="1.8" height="2.8" rx="0.9" fill="var(--accent-warning)"/><rect x="8.4" y="19.4" width="7.2" height="1.9" rx="0.95" fill="var(--accent-warning)"/><circle cx="12" cy="5.6" r="1.2" fill="#fff" opacity="0.7"/></svg>`,
+    // Speaker with sound waves
+    speaker: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.4h2.7l3.8-3.2a0.8 0.8 0 0 1 1.32 0.6v10.4a0.8 0.8 0 0 1-1.32 0.6L6.7 14.6H4a1 1 0 0 1-1-1v-3.2a1 1 0 0 1 1-1z" fill="var(--accent-secondary)"/><path d="M15.3 9.1a4 4 0 0 1 0 5.8" fill="none" stroke="var(--accent-success)" stroke-width="1.8" stroke-linecap="round"/><path d="M17.6 6.6a7.4 7.4 0 0 1 0 10.8" fill="none" stroke="var(--accent-warning)" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    // Video / play
+    video: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5" width="19.2" height="14" rx="3.4" fill="var(--accent-secondary)"/><path d="M10 9.1 15.2 12 10 14.9z" fill="#fff"/><circle cx="5.8" cy="8.2" r="1" fill="var(--accent-primary)"/><circle cx="18.2" cy="15.8" r="1" fill="var(--accent-danger)"/></svg>`,
+    // Sparkle
+    sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l1.9 5.3 5.3 1.9-5.3 1.9L12 16.8l-1.9-5.3-5.3-1.9 5.3-1.9z" fill="var(--accent-primary)"/><circle cx="18.5" cy="5.5" r="1.4" fill="var(--accent-secondary)"/><circle cx="5.5" cy="17.5" r="1.1" fill="var(--accent-danger)"/></svg>`,
+    // Close — clean rounded cross (inherits the button's colour)
+    close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`,
+    // Delete — friendly multicolour bin
+    trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.4h6a1 1 0 0 1 1 1V6.4H8V5.4a1 1 0 0 1 1-1z" fill="var(--accent-danger)"/><rect x="4.5" y="6.2" width="15" height="2.3" rx="1.15" fill="var(--accent-danger)"/><path d="M6.4 8.5h11.2l-0.9 10.8a2 2 0 0 1-2 1.8H9.3a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.4" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/><rect x="13.1" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/></svg>`,
+  };
+
+  // PrepBot logo = the multicolour bot mark (no blob tile behind it).
+  const pbLogo = () => `<span class="pb-logo">${PB_ICONS.bot}</span>`;
+
+  /* ── 8. INJECT HTML ──
+   * Single source of truth: any page that loads this one script gets the
+   * bot. A <div id="prepbot"> mount is optional — we create one if absent. */
+  let mount = document.getElementById("prepbot");
+  if (!mount) {
+    mount = document.createElement("div");
+    mount.id = "prepbot";
+    document.body.appendChild(mount);
+  }
 
   mount.innerHTML = `
     <div id="chat-fab-wrap">
       <button id="chat-fab" title="Open AI Assistant">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        ${pbLogo(5)}
         <span class="fab-dot"></span>
       </button>
-      <button id="chat-fab-dismiss">×</button>
+      <button id="chat-fab-dismiss">${PB_ICONS.close}</button>
     </div>
-    <div id="prepbot-popup"><button class="prepbot-popup-close" id="prepbot-popup-close">×</button><p id="prepbot-popup-text"></p></div>
+    <div id="prepbot-popup"><button class="prepbot-popup-close" id="prepbot-popup-close">${PB_ICONS.close}</button><p id="prepbot-popup-text"></p></div>
     <button id="chat-fab-restore" title="Show AI"><span>AI</span></button>
 
     <div id="chat-window" role="dialog">
+      <div class="pb-paint" aria-hidden="true">${heroPaint()}</div>
       <div class="chat-header">
         <div class="chat-header-left">
-          <div class="chat-avatar"><img src="/logo/logo-light.svg" width="26" height="26" alt="PrepBot" style="display:block;"></div>
+          <div class="chat-avatar">${pbLogo(3)}</div>
           <div class="chat-header-info"><h4>${BOT_NAME}</h4><div class="chat-status"><span class="chat-status-dot"></span><span>AI & Voice Synced</span></div></div>
         </div>
         <div class="chat-header-actions">
-          <button class="chat-icon-btn" id="chat-clear-btn" title="Clear Chat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-          <button class="chat-icon-btn" id="chat-close">×</button>
+          <button class="chat-icon-btn chat-icon-btn--multi" id="chat-clear-btn" title="Clear Chat">${PB_ICONS.trash}</button>
+          <button class="chat-icon-btn" id="chat-close">${PB_ICONS.close}</button>
         </div>
       </div>
 
       <div class="chat-context-banner" id="chat-context-banner">
         <span class="chat-context-label">Current Question</span>
         <span id="chat-context-text"></span>
-        <button class="chat-context-clear" id="chat-context-clear" title="Clear context">×</button>
+        <button class="chat-context-clear" id="chat-context-clear" title="Clear context">${PB_ICONS.close}</button>
       </div>
 
       <div class="quiz-nav-bar" id="quiz-nav-bar" style="display:none">
@@ -365,7 +399,7 @@ import { auth } from "/firebase-init.js";
       </div>
 
       <div class="qbubbles-bar" id="qbubbles-bar" style="display:none">
-        <div class="qbubbles-header"><span class="qbubbles-title">Quiz Navigation</span><button class="qbubbles-close" id="qbubbles-close">×</button></div>
+        <div class="qbubbles-header"><span class="qbubbles-title">Quiz Navigation</span><button class="qbubbles-close" id="qbubbles-close">${PB_ICONS.close}</button></div>
         <div class="qbubbles-grid" id="qbubbles-grid"></div>
       </div>
 
@@ -379,10 +413,10 @@ import { auth } from "/firebase-init.js";
       <div class="chat-input-row">
         <div class="chat-input-wrap"><textarea id="chat-input" rows="1" placeholder="Type or click Mic..." disabled></textarea></div>
         <button id="chat-mic" title="Voice Input" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span class="pb-glyph">${PB_ICONS.mic}</span>
         </button>
         <button id="chat-send" disabled>
-          <svg class="send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span class="send-icon pb-glyph">${PB_ICONS.send}</span>
           <div class="send-spinner"></div>
         </button>
       </div>
@@ -421,7 +455,11 @@ import { auth } from "/firebase-init.js";
     nudgeStepCounter = 0,
     lastQuestionId = null,
     questionStartTime = null,
-    userProficiency = "beginner";
+    userProficiency = "beginner",
+    noteSeq = 0;
+
+  // Rotating sticky-note colour class (theme --badge-subject-1..6-bg)
+  const nextNoteClass = () => `pp-sticky--c${noteSeq++ % 6}`;
 
   /* ── 10. VOICE ── */
   if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -618,8 +656,8 @@ import { auth } from "/firebase-init.js";
     }
 
     const qCard = document.createElement("div");
-    qCard.className = "msg user";
-    qCard.innerHTML = `<div class="msg-meta">You</div><div class="msg-bubble" style="font-size:.8rem;line-height:1.65">${questionBlock.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
+    qCard.className = `msg user`;
+    qCard.innerHTML = `<div class="msg-meta">You</div><div class="msg-bubble pp-sticky ${nextNoteClass()}" style="font-size:.8rem;line-height:1.65">${questionBlock.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
     messages.appendChild(qCard);
     messages.scrollTop = messages.scrollHeight;
 
@@ -689,7 +727,7 @@ import { auth } from "/firebase-init.js";
               <div class="chat-video-title">${safe(title)}</div>
               <div class="chat-video-channel">${safe(channel)}</div>
             </div>
-            <button class="chat-video-close" title="Close video">✕</button>
+            <button class="chat-video-close" title="Close video">${PB_ICONS.close}</button>
           </div>
           <div class="chat-video-container">
             <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1"
@@ -712,8 +750,8 @@ import { auth } from "/firebase-init.js";
     if (!suggBox) return;
     if (suggBox.querySelector(".video-play-chip")) return;
     const btn = document.createElement("button");
-    btn.className = "suggestion-chip video-play-chip";
-    btn.innerHTML = "▶ Watch Video Lesson";
+    btn.className = "suggestion-chip video-play-chip pp-pill";
+    btn.innerHTML = `<span class="pb-glyph pb-glyph--chip">${PB_ICONS.video}</span> Watch Video Lesson`;
     btn.addEventListener("click", () => searchAndPlayVideo());
     suggBox.appendChild(btn);
   }
@@ -874,7 +912,7 @@ The two suggestions must be short (2-5 words), relevant, phrased as natural stud
     suggBox.innerHTML = "";
     chips.forEach((label) => {
       const b = document.createElement("button");
-      b.className = "suggestion-chip";
+      b.className = "suggestion-chip pp-pill";
       b.textContent = label;
       b.onclick = () => sendMessage(label);
       suggBox.appendChild(b);
@@ -894,14 +932,14 @@ The two suggestions must be short (2-5 words), relevant, phrased as natural stud
       .replace(/\\\[(.*?)\\\]/g, '<div class="math-block">\\[$1\\]</div>')
       .replace(/\n/g, "<br>");
 
-    wrap.innerHTML = `<div class="msg-meta">${role === "user" ? "You" : BOT_NAME}</div><div class="msg-bubble">${content}</div>`;
+    wrap.innerHTML = `<div class="msg-meta">${role === "user" ? "You" : BOT_NAME}</div><div class="msg-bubble pp-sticky ${nextNoteClass()}">${content}</div>`;
 
     if (role === "bot") {
       const footer = document.createElement("div");
       footer.className = "msg-footer";
       const sBtn = document.createElement("button");
-      sBtn.className = "speaker-btn";
-      sBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+      sBtn.className = "speaker-btn pb-glyph";
+      sBtn.innerHTML = PB_ICONS.speaker;
       sBtn.onclick = () => speak(text, sBtn);
       footer.appendChild(sBtn);
       wrap.querySelector(".msg-bubble").appendChild(footer);
@@ -929,7 +967,7 @@ The two suggestions must be short (2-5 words), relevant, phrased as natural stud
     const t = document.createElement("div");
     t.id = "typing";
     t.className = "msg bot";
-    t.innerHTML = `<div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    t.innerHTML = `<div class="msg-bubble pp-sticky pp-sticky--c2"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
     messages.appendChild(t);
     messages.scrollTop = messages.scrollHeight;
   }
@@ -1060,6 +1098,7 @@ The two suggestions must be short (2-5 words), relevant, phrased as natural stud
     document.getElementById("chat-clear-bar").classList.remove("visible");
   document.getElementById("clear-confirm").onclick = () => {
     history = [];
+    noteSeq = 0;
     messages.innerHTML =
       '<div class="chat-intro-card"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
     document.getElementById("chat-clear-bar").classList.remove("visible");

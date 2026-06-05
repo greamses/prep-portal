@@ -8,6 +8,7 @@
    TheoryAnalyser.reconfigure(partial)
 ═══════════════════════════════════════════════════════ */
 import { GEMINI_MODELS } from '/utils/ai-models.js';
+import { geminiGenerate } from '/utils/ai-client.js';
 
 (function(global) {
   'use strict';
@@ -60,102 +61,13 @@ import { GEMINI_MODELS } from '/utils/ai-models.js';
     return null;
   }
   
-  /* ─── Gemini post ─── */
+  /* ─── Gemini post — delegates to the shared AI client ───
+     _getKey() returns a real "AIza…" key (direct mode) or the string
+     'backend' (authenticated server proxy). geminiGenerate handles both. */
   async function _post(body) {
     const key = _getKey();
-
-    /* ── Backend proxy mode (keys supplied server-side) ── */
-    if (key === 'backend') {
-      let token;
-      try {
-        if (!global._getAuthToken) throw new Error('no getter');
-        token = await global._getAuthToken();
-      } catch {
-        throw new Error('Please sign in to use AI features.');
-      }
-      let lastErr = null;
-      for (let i = _midx; i < MODELS.length; i++) {
-        let res;
-        try {
-          res = await fetch('/api/ai/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ body, modelUrl: MODELS[i] }),
-          });
-        } catch (e) { lastErr = e; continue; }
-        if (SKIP.has(res.status)) { _midx = i + 1; continue; }
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          if (res.status === 403) throw new Error(d.error || 'No Gemini key found. Add one in Account Settings.');
-          throw new Error(d.error || `Gemini backend error ${res.status}`);
-        }
-        _midx = i;
-        return await res.json();
-      }
-      _midx = 0;
-      throw new Error(lastErr?.message || 'All Gemini models unavailable. Please try again later.');
-    }
-
-    /* ── Direct mode (real API key passed in) ── */
-    if (!key) {
-      throw new Error('No Gemini API key found. Add one in Account Settings.');
-    }
-
-    if (key.length < 20 || !key.match(/^AIza/)) {
-      console.warn('[TA] Key may be invalid — should start with "AIza"');
-    }
-
-    let lastError = null;
-
-    for (let i = _midx; i < MODELS.length; i++) {
-      let res;
-      try {
-        console.log(`[TA] Trying model ${i + 1}/${MODELS.length}: ${MODELS[i].split('/').pop()}`);
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        res = await fetch(`${MODELS[i]}?key=${encodeURIComponent(key)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-      } catch (e) {
-        console.warn(`[TA] Network error on model ${i + 1}:`, e.message);
-        lastError = e;
-        continue;
-      }
-
-      if (SKIP.has(res.status)) {
-        console.warn(`[TA] Model ${i + 1} over quota (${res.status}), trying next...`);
-        _midx = i + 1;
-        continue;
-      }
-
-      if (!res.ok) {
-        let errorText = '';
-        try { errorText = await res.text(); } catch (e) {}
-        if (res.status === 401 || res.status === 403) {
-          throw new Error(`Invalid Gemini API key (${res.status}). Please check your key.`);
-        }
-        throw new Error(`API ${res.status}: ${errorText.slice(0, 200)}`);
-      }
-
-      _midx = i;
-      const data = await res.json();
-      console.log(`[TA] Successfully used model ${i + 1}`);
-      return data;
-    }
-
-    _midx = 0;
-    if (lastError && lastError.name === 'AbortError') {
-      throw new Error('Request timed out after 30 seconds. Check your internet connection.');
-    }
-    throw new Error('All Gemini models are currently unavailable or over quota. Please try again later.');
+    if (!key) throw new Error('No Gemini API key found. Add one in Account Settings.');
+    return geminiGenerate({ body, key, models: MODELS });
   }
   
   function _esc(s) {
