@@ -1,7 +1,6 @@
 import NAV_CONFIG from "/utils/components/nav-config.js";
 import {
   NAV_ICONS,
-  iconBlob,
   paintLayer,
   paintBlob,
   planEmblem,
@@ -152,13 +151,13 @@ function renderIcon(icon, seed) {
 
   const wrapper = document.createElement("span");
   wrapper.className = "nav-icon";
-  wrapper.innerHTML = `${iconBlob(s)}<span class="nav-icon__glyph">${glyph}</span>`;
+  wrapper.innerHTML = `<span class="nav-icon__glyph">${glyph}</span>`;
   return wrapper;
 }
 
 /* Plan emblem wrapped on the shared blob tile (markup form, for innerHTML). */
 function wrapEmblem(emblem) {
-  return `<span class="nav-icon">${iconBlob(7)}<span class="nav-icon__glyph">${emblem}</span></span>`;
+  return `<span class="nav-icon"><span class="nav-icon__glyph">${emblem}</span></span>`;
 }
 
 /* =============================================

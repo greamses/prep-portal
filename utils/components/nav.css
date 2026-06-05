@@ -195,8 +195,8 @@ body {
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 62%;
-  height: 62%;
+  width: 86%;
+  height: 86%;
 }
 .nav-icon__glyph svg {
   width: 100%;

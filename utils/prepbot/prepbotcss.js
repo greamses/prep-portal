@@ -114,28 +114,27 @@ const chatbotcss = `
     width: 60px;
     height: 60px;
     position: relative;
-    background: var(--_paper);
-    border: var(--_border-s);
+    background: transparent;
+    border: none;
     border-radius: 50%;
     cursor: pointer;
     display: grid;
     place-items: center;
     outline: none;
-    transition: transform 0.2s var(--_ease), box-shadow 0.2s ease;
-    box-shadow: var(--_sh-lg);
+    transition: transform 0.2s var(--_ease), filter 0.2s ease;
+    filter: drop-shadow(0 4px 8px rgba(42, 39, 35, 0.28));
 }
 
 #chat-fab:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--_sh-xl);
+    transform: translateY(-2px) scale(1.05);
+    filter: drop-shadow(0 9px 16px rgba(42, 39, 35, 0.34));
 }
 
 #chat-fab:active {
-    transform: translateY(0);
-    box-shadow: var(--_sh-md);
+    transform: translateY(0) scale(1);
 }
 
-#chat-fab .pb-logo { width: 42px; height: 42px; }
+#chat-fab .pb-logo { width: 50px; height: 50px; }
 
 #chat-fab .fab-dot {
     position: absolute;
@@ -555,24 +554,10 @@ const chatbotcss = `
    absolute positioning + z-index:10, so it's excluded). */
 #chat-window > *:not(.pb-paint):not(.chat-clear-bar) { position: relative; z-index: 1; }
 
-/* ── Intro card ── */
-.chat-intro-card {
-    border: var(--_border);
-    border-radius: var(--_r);
-    background: var(--_bg);
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--_sh-sm);
-}
-
-.chat-intro-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 4px; height: 100%;
-    background: var(--_accent);
-    border-radius: var(--_r) 0 0 var(--_r);
+/* ── Intro / conversation-starter card = a sticky note (.pp-sticky) ── */
+.chat-intro-card.pp-sticky {
+    --pp-note-tilt: -1.5deg;
+    padding: 13px 16px 14px;
 }
 
 .chat-intro-card .intro-label {
@@ -581,19 +566,21 @@ const chatbotcss = `
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--_accent);
+    color: #14130f;
+    opacity: 0.62;
     margin-bottom: 6px;
 }
 
 .chat-intro-card p {
     font-family: var(--_f-mono);
     font-size: 0.78rem;
-    color: var(--_muted);
+    color: #14130f;
+    opacity: 0.85;
     line-height: 1.65;
     margin-bottom: 0;
 }
 
-.chat-intro-card strong { color: var(--_ink); }
+.chat-intro-card strong { color: #14130f; opacity: 1; }
 
 /* ══════════════════════════════════════════════════════
    MESSAGE BUBBLES

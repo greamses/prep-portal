@@ -81,7 +81,7 @@ import { heroPaint } from "/utils/components/nav-icons.js";
     const messagesEl = document.getElementById("chat-messages");
     if (messagesEl) {
       messagesEl.innerHTML =
-        '<div class="chat-intro-card"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
+        '<div class="chat-intro-card pp-sticky pp-sticky--tape pp-sticky--c0"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
     }
 
     const inp = document.getElementById("chat-input");
@@ -114,7 +114,7 @@ import { heroPaint } from "/utils/components/nav-icons.js";
     const messagesEl = document.getElementById("chat-messages");
     if (!messagesEl) return;
     messagesEl.innerHTML = `
-      <div class="chat-intro-card" style="display:flex;flex-direction:column;gap:14px">
+      <div class="chat-intro-card pp-sticky pp-sticky--c4" style="display:flex;flex-direction:column;gap:14px">
         <div class="intro-label">SIGN IN REQUIRED</div>
         <p style="margin:0;font-size:13px;line-height:1.6">
           Please <strong>sign in</strong> to use PrepBot.<br><br>
@@ -404,7 +404,7 @@ import { heroPaint } from "/utils/components/nav-icons.js";
       </div>
 
       <div class="chat-messages" id="chat-messages">
-        <div class="chat-intro-card">
+        <div class="chat-intro-card pp-sticky pp-sticky--tape pp-sticky--c3">
           <div class="intro-label">LOADING</div>
           <p>Checking sign-in status…</p>
         </div>
@@ -1100,7 +1100,7 @@ The two suggestions must be short (2-5 words), relevant, phrased as natural stud
     history = [];
     noteSeq = 0;
     messages.innerHTML =
-      '<div class="chat-intro-card"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
+      '<div class="chat-intro-card pp-sticky pp-sticky--tape pp-sticky--c0"><div class="intro-label">SYSTEM READY</div><p>I am reading the page with you. Ask about the current question, navigate to a number, or use the Mic to talk.</p></div>';
     document.getElementById("chat-clear-bar").classList.remove("visible");
     const qd = getQuizData();
     if (qd?.source === "legacy") {
