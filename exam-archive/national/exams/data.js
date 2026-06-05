@@ -1,9 +1,10 @@
 // Exam types configuration
+// Exam types — labelled by the exam name (the board id is kept internal so the
+// data folders + JAMB-specific logic keep working).
 const EXAM_TYPES = [
-  { id: 'WAEC', name: 'WAEC (WASSCE)', live: true },
-  { id: 'NECO', name: 'NECO (SSCE)', live: false },
-  { id: 'JAMB', name: 'JAMB (UTME)', live: true },
-  { id: 'Common-entrance', name: 'Common Entrance', live: false }
+  { id: 'WAEC', name: 'WASSCE', live: true },
+  { id: 'NECO', name: 'SSCE', live: false },
+  { id: 'JAMB', name: 'UTME', live: true }
 ];
 
 // Years configuration
@@ -165,7 +166,7 @@ function onStreamChange(streamVal, streamText) {
   state.subjects = [];
   doneSubject.classList.remove('show');
   renderSubjects();
-  subjectRow.style.display = 'block';
+  subjectRow.style.display = 'flex';
   updateReadyState();
 }
 
@@ -315,25 +316,6 @@ function setupDropdown() {
   });
 }
 
-function initTicker() {
-  const tickerTrack = document.getElementById('ticker-track');
-  const items = ['WAEC 2025 PREP', 'NECO READY', 'JAMB CBT', 'COMMON ENTRANCE', 'AI MARKED ESSAYS', 'PAST QUESTIONS'];
-  const repeated = [...items, ...items];
-  tickerTrack.innerHTML = repeated.map(i => `<span class="ticker-item">${i} ◆</span>`).join('');
-}
-
-function initLoader() {
-  setTimeout(() => {
-    const loader = document.getElementById('loader');
-    if (loader) {
-      loader.style.opacity = '0';
-      setTimeout(() => {
-        loader.style.display = 'none';
-      }, 500);
-    }
-  }, 1000);
-}
-
 // Generate button handler - REDIRECT to question page with exam type
 beginBtn.onclick = () => {
   // Validate all selections before redirect
@@ -342,25 +324,25 @@ beginBtn.onclick = () => {
     return;
   }
   
-  // Build URL parameters including exam type
+  // Build URL parameters including exam type + the timed-exam preference
+  const timerOn = document.getElementById('exam-timer-switch')?.checked ? 'on' : 'off';
   const params = new URLSearchParams({
     examType: state.examType,
     year: state.year,
     stream: state.stream,
     subjects: state.subjects.join(','),
-    types: state.types.join(',')
+    types: state.types.join(','),
+    timer: timerOn
   });
   
   window.location.href = `../question/question.html?${params.toString()}`;
 };
 
 function init() {
-  initLoader();
   buildExamGrid();
   buildYearGrid();
   setupDropdown();
   initTypeToggles();
-  initTicker();
   compulsoryToggle.addEventListener('change', handleCompulsoryToggle);
   handleCompulsoryToggle();
   

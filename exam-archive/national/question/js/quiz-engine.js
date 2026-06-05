@@ -119,10 +119,9 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     
     function getExamTypeName(examTypeId) {
         const names = {
-            'waec': 'WAEC (WASSCE)',
-            'neco': 'NECO (SSCE)',
-            'jamb': 'JAMB (UTME)',
-            'common-entrance': 'Common Entrance'
+            'waec': 'WASSCE',
+            'neco': 'SSCE',
+            'jamb': 'UTME'
         };
         return names[examTypeId] || (examTypeId ? examTypeId.toUpperCase() : 'EXAM');
     }
@@ -276,11 +275,10 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         
         const counterLabel = document.getElementById('q-counter-label');
         const progressFill = document.getElementById('progress-fill');
-        const numberBadge = document.getElementById('q-number-badge');
-        
-        if (counterLabel) counterLabel.textContent = `Q ${idx+1} of ${total}`;
+
+        // Single counter — lives on the sticky note (the old pill badge is gone).
+        if (counterLabel) counterLabel.textContent = `Q ${idx+1} / ${total} · ${q.subject} · ${q.type.toUpperCase()}`;
         if (progressFill) progressFill.style.width = `${((idx+1)/total)*100}%`;
-        if (numberBadge) numberBadge.textContent = `Q ${idx+1}  •  ${q.subject}  •  ${q.type.toUpperCase()}`;
         
         const qTextEl = document.getElementById('q-text');
         if (qTextEl) qTextEl.innerHTML = esc(q.question);

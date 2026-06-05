@@ -2,10 +2,13 @@
 <html lang="en" data-theme="light">
 
 <head>
-    <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Prep Portal</title>
+    <title>Prep Portal — Practice Paper</title>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="theme-color" content="#0055ff" />
     
     <link rel="stylesheet" href="./question.css">
     
@@ -42,7 +45,10 @@
 </head>
 
 <body>
-    
+
+    <!-- Organic paint blobs behind the page (same splash as the home hero) -->
+    <div class="page-paint" aria-hidden="true"></div>
+
     <!-- ── QUIZ SCREEN ──────────────────────────────────────── -->
     <div class="quiz-shell" id="quiz-screen">
         
@@ -54,27 +60,23 @@
             <div class="exam-meta" id="display-meta">—</div>
         </div>
         
-        <div class="progress-track">
-            <div class="progress-fill" id="progress-fill"></div>
-        </div>
-        
-        <div class="q-counter-row">
-            <span id="q-counter-label">Q — of —</span>
-            <div class="q-dots" id="q-dots"></div>
-        </div>
-        
         <div id="loading-state">
             <div class="loading-spinner"></div>
             <p>Loading questions&hellip;</p>
         </div>
-        
+
         <div class="question-card" id="question-card" style="display:none">
-            <span class="q-number-badge" id="q-number-badge">Q 1</span>
+            <span class="card-note card-note--counter" id="q-counter-label">Q — / —</span>
+            <span class="card-note card-note--timer" id="timer-display" aria-live="polite">--:--</span>
             <div class="q-text" id="q-text"></div>
             <div id="q-image-wrap"></div>
             <div id="q-options"></div>
         </div>
-        
+
+        <div class="q-dots-row">
+            <div class="q-dots" id="q-dots"></div>
+        </div>
+
         <div class="feedback-strip" id="feedback-strip">
             <span class="feedback-label" id="feedback-label"></span>
             <div id="feedback-expl"></div>
@@ -164,6 +166,14 @@
     <script type="module" src="../../../utils/prepbot/prepbot.js"></script>
     <script src="./js/video-player.js"></script>
     <script src="./js/main.js"></script>
+    <script src="./js/timer.js"></script>
+    <script src="./js/keyboard.js"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      const p = document.querySelector(".page-paint");
+      if (p) p.innerHTML = heroPaint();
+    </script>
 </body>
 
 </html>

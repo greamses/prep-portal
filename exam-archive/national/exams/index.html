@@ -2,15 +2,33 @@
 <html lang="en">
 
 <head>
-    <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <meta name="theme-color" content="#0055ff" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>PrepPortal National| Exams</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Marker hand for the sticky note (same as the home page) -->
+  <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/utils/components/nav.css">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="../../../main.css">
-  <script src="../../../../utils/loader/loader.js"></script>
+
+  <!-- Firebase modules — required by the shared nav (nav-builder.js / firebase-init.js) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+
+  <script src="/utils/components/loader.js"></script>
 </head>
 
 <body>
@@ -22,112 +40,123 @@
     <div class="loader-bar"></div>
   </div>
   
-  <nav class="site-nav"></nav>
+  <nav class="site-nav" data-nav="main"></nav>
   
-  <div class="ticker">
-    <div class="ticker-track" id="ticker-track"></div>
-  </div>
-  
-  <div class="pg-header">
-    <div class="ph-left">
-      <div class="pg-eyebrow">Practice Portal</div>
-      <div class="pg-title">EXAM<br><em>PREP</em></div>
-    </div>
-    <div class="ph-right">
-      <div class="ph-stats">
-        <div class="ph-stat"><strong>2023–25</strong><span>Live Exams</span></div>
-        <div class="ph-stat"><strong>SSCE/JAMB</strong><span>Standard</span></div>
-        <div class="ph-stat"><strong>AI</strong><span>Marking</span></div>
+  <main class="exam-builder">
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <header class="builder-header">
+      <p class="builder-note">
+        Pick a board, a year &amp; your subjects &mdash; we&rsquo;ll generate a
+        practice paper, marked by AI.
+      </p>
+      <div class="builder-stats">
+        <span class="hero-stat theme-blue"><strong>2023&ndash;25</strong> Live exams</span>
+        <span class="hero-stat theme-green"><strong>SSCE/JAMB</strong> Standard</span>
+        <span class="hero-stat theme-red"><strong>AI</strong> Marking</span>
       </div>
-    </div>
-  </div>
-  
-  <section class="setup-section">
-    <div class="setup-box">
-      <div class="setup-row">
-        <div class="setup-cell">
-          <div class="step-label">
-            <span class="step-num">1</span>
-            <span class="step-title">Exam Type</span>
-            <span class="step-done" id="done-exam">✓</span>
-          </div>
-          <div class="exam-grid" id="exam-chips"></div>
-          <div class="step-sub">Select your exam board</div>
+    </header>
+
+    <section class="builder-grid">
+      <!-- 1 · Exam Type -->
+      <div class="step-card theme-yellow">
+        <div class="step-label">
+          <span class="step-num">1</span>
+          <span class="step-title">Exam Type</span>
+          <span class="step-done" id="done-exam">✓</span>
         </div>
-        <div class="setup-cell">
-          <div class="step-label">
-            <span class="step-num">2</span>
-            <span class="step-title">Exam Year</span>
-            <span class="step-done" id="done-year">✓</span>
-          </div>
-          <div class="year-grid" id="year-chips"></div>
-          <div class="step-sub">active years (green pulse) are selectable</div>
-        </div>
+        <div class="exam-grid" id="exam-chips"></div>
+        <p class="step-sub">Select your exam board</p>
       </div>
-      
-      <div class="setup-row">
-        <div class="setup-cell">
-          <div class="step-label">
-            <span class="step-num">3</span>
-            <span class="step-title">Your Stream</span>
-            <span class="step-done" id="done-stream">✓</span>
-          </div>
-          <div class="csel" id="csel-stream">
-            <button class="csel-btn" id="streamBtn"><span id="stream-label">— select stream —</span></button>
-            <div class="csel-panel">
-              <div class="csel-item" data-val="science">Science</div>
-              <div class="csel-item" data-val="arts">Arts / Humanities</div>
-              <div class="csel-item" data-val="commercial">Commercial</div>
-            </div>
-          </div>
-          <div class="toggle-option">
-            <label class="toggle-label">
-              <input type="checkbox" id="compulsoryToggle" checked>
-              <span>English & Mathematics are compulsory (auto-included)</span>
-            </label>
+
+      <!-- 2 · Exam Year -->
+      <div class="step-card theme-blue">
+        <div class="step-label">
+          <span class="step-num">2</span>
+          <span class="step-title">Exam Year</span>
+          <span class="step-done" id="done-year">✓</span>
+        </div>
+        <div class="year-grid" id="year-chips"></div>
+        <p class="step-sub">Active years (green pulse) are selectable</p>
+      </div>
+
+      <!-- 3 · Your Stream -->
+      <div class="step-card theme-green">
+        <div class="step-label">
+          <span class="step-num">3</span>
+          <span class="step-title">Your Stream</span>
+          <span class="step-done" id="done-stream">✓</span>
+        </div>
+        <div class="csel" id="csel-stream">
+          <button class="csel-btn" id="streamBtn"><span id="stream-label">— select stream —</span></button>
+          <div class="csel-panel">
+            <div class="csel-item" data-val="science">Science</div>
+            <div class="csel-item" data-val="arts">Arts / Humanities</div>
+            <div class="csel-item" data-val="commercial">Commercial</div>
           </div>
         </div>
-        <div class="setup-cell">
-          <div class="step-label">
-            <span class="step-num">4</span>
-            <span class="step-title">Exam Format</span>
-            <span class="step-done" id="done-type">✓</span>
-          </div>
-          <div class="chips-container" id="type-chips">
-            <div class="custom-chip" data-type="objective">
-              <div class="chip-check-box"></div><span>Objective (MCQ)</span>
-            </div>
-            <div class="custom-chip" data-type="theory">
-              <div class="chip-check-box"></div><span>Theory (Essay)</span>
-            </div>
-          </div>
+        <div class="toggle-option">
+          <label class="toggle-label">
+            <input type="checkbox" id="compulsoryToggle" checked>
+            <span>English &amp; Mathematics are compulsory (auto-included)</span>
+          </label>
         </div>
       </div>
-      
-      <div class="setup-row full" id="subject-row" style="display: none;">
-        <div class="setup-cell">
-          <div class="step-label">
-            <span class="step-num">5</span>
-            <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
-            <span class="step-done" id="done-subject">✓</span>
-          </div>
-          <div class="chips-container" id="subject-chips"></div>
-          <div class="step-sub" id="compulsoryHint">English & Math are mandatory and always selected</div>
+
+      <!-- 4 · Exam Format -->
+      <div class="step-card theme-red">
+        <div class="step-label">
+          <span class="step-num">4</span>
+          <span class="step-title">Exam Format</span>
+          <span class="step-done" id="done-type">✓</span>
         </div>
+        <div class="chips-container" id="type-chips">
+          <div class="custom-chip" data-type="objective">
+            <div class="chip-check-box"></div><span>Objective (MCQ)</span>
+          </div>
+          <div class="custom-chip" data-type="theory">
+            <div class="chip-check-box"></div><span>Theory (Essay)</span>
+          </div>
+        </div>
+        <p class="step-sub">Theory hides automatically for JAMB</p>
       </div>
-      
-      <div class="setup-footer">
-        <span class="setup-status" id="setup-status">Awaiting selections...</span>
-        <button class="btn-yellow" id="begin-btn" disabled>Generate Practice Paper →</button>
+
+      <!-- 5 · Subjects (full width) -->
+      <div class="step-card theme-yellow" id="subject-row" style="display: none;">
+        <div class="step-label">
+          <span class="step-num">5</span>
+          <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
+          <span class="step-done" id="done-subject">✓</span>
+        </div>
+        <div class="chips-container" id="subject-chips"></div>
+        <p class="step-sub" id="compulsoryHint">English &amp; Math are mandatory and always selected</p>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <footer class="builder-footer">
+      <label class="exam-timer-toggle">
+        <input type="checkbox" id="exam-timer-switch">
+        <span class="exam-timer-toggle__track"><span class="exam-timer-toggle__thumb"></span></span>
+        <span>Timed exam (auto-submit)</span>
+      </label>
+      <span class="setup-status" id="setup-status">Awaiting selections...</span>
+      <button class="builder-cta" id="begin-btn" disabled>Generate practice paper →</button>
+    </footer>
+  </main>
   
   <div id="prepbot"></div>
   <script src="../../../utils/prepbot/prepbot.js" type="module"></script>
   
   <script src="./data.js"></script>
-  <script type="module" src="../../nav/nav.js"></script>
+  <script src="/utils/components/nav-builder.js" type="module"></script>
+
+  <!-- Organic paint blobs behind the page (same splash as the home hero) -->
+  <script type="module">
+    import { heroPaint } from "/utils/components/nav-icons.js";
+    document
+      .querySelectorAll(".builder-paint")
+      .forEach((el) => (el.innerHTML = heroPaint()));
+  </script>
 </body>
 
 </html>

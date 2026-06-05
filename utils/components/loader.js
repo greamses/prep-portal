@@ -1,6 +1,5 @@
 (function () {
   const loaderId = "loader";
-  const accentColor = "#ffe500";
 
   // 1. INJECT CSS IMMEDIATELY (Prevents Flash)
   const style = document.createElement("style");
@@ -12,51 +11,58 @@
         background: #0a0a0a !important;
         z-index: 999999 !important;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        font-family: 'Unbounded', sans-serif;
         visibility: visible;
         opacity: 1;
       }
 
-      #${loaderId}.done { 
-        opacity: 0; 
-        visibility: hidden; 
+      #${loaderId}.done {
+        opacity: 0;
+        visibility: hidden;
         transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
-        pointer-events: none; 
+        pointer-events: none;
       }
 
-      #loader-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
-      .logo-cluster { display: flex; gap: 12px; }
-      
-      .pulse-logo { width: 32px; height: auto; opacity: 0; animation: logoWave 1.6s infinite; }
-      .pulse-logo:nth-child(2) { animation-delay: 0.15s; }
-      .pulse-logo:nth-child(3) { animation-delay: 0.3s; }
+      /* One big logo, swirling like a portal — no words, no progress bar. */
+      #${loaderId} .loader-word,
+      #${loaderId} .loader-bar { display: none !important; }
 
-      @keyframes logoWave {
-        0%, 100% { transform: scale(0.92); opacity: 0.2; filter: grayscale(100%) brightness(0.4); }
-        50% { transform: scale(1.05); opacity: 1; filter: grayscale(0%) brightness(1.1); }
+      #${loaderId} #loader-wrapper { margin: 0; display: flex; }
+
+      /* Outer layer: a one-shot "swirl in" that hands off to the loop. */
+      #${loaderId} .logo-cluster {
+        display: flex;
+        animation: portalIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
       }
 
-      .loader-word { overflow: hidden; height: clamp(30px, 6vw, 60px); line-height: 1.1; }
-      .loader-word span {
-        display: block; font-weight: 900; font-size: clamp(28px, 6vw, 56px);
-        color: #ffffff; text-transform: uppercase; letter-spacing: -0.01em;
-        transform: translateY(110%); animation: loaderWordIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      /* Inner layer: the continuous portal swirl. */
+      #${loaderId} .portal-logo {
+        width: clamp(150px, 32vw, 260px);
+        height: auto;
+        transform-origin: 50% 50%;
+        animation: portalSwirl 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
       }
 
-      /* Highlight last word with your color */
-      .loader-word:last-of-type span { color: ${accentColor}; }
-
-      @keyframes loaderWordIn { to { transform: translateY(0); } }
-
-      .loader-bar {
-        width: 0px; height: 2px; background: ${accentColor};
-        margin-top: 20px; animation: lb 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+      @keyframes portalIn {
+        0%   { transform: scale(0.15) rotate(-160deg); opacity: 0; }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
       }
-      @keyframes lb { to { width: 140px; } }
+
+      /* Spin a full turn while gently breathing in and out, so it reads as a
+         portal pulling inward rather than a flat spinner. */
+      @keyframes portalSwirl {
+        0%   { transform: rotate(0deg)   scale(1); }
+        50%  { transform: rotate(180deg) scale(0.88); }
+        100% { transform: rotate(360deg) scale(1); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #${loaderId} .logo-cluster { animation: none; }
+        #${loaderId} .portal-logo {
+          animation: portalSwirl 6s linear infinite;
+        }
+      }
     `;
   document.head.appendChild(style);
 
@@ -65,18 +71,11 @@
     const loader = document.getElementById(loaderId);
     if (!loader) return;
 
-    // Inject Triple logos (references the generated mark so it always matches).
+    // A single large logo (references the generated mark so it always matches).
     const cluster = loader.querySelector(".logo-cluster");
     if (cluster) {
-      const img = `<img class="pulse-logo" src="/logo/logo-loading.svg" alt="" />`;
-      cluster.innerHTML = img + img + img;
+      cluster.innerHTML = `<img class="portal-logo" src="/logo/logo-loading.svg" alt="" />`;
     }
-
-    // Stagger word entry
-    const words = loader.querySelectorAll(".loader-word span");
-    words.forEach((span, i) => {
-      span.style.animationDelay = `${0.4 + i * 0.15}s`;
-    });
 
     // Hide when page is fully loaded
     window.addEventListener("load", () => {
