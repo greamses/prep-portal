@@ -69,44 +69,43 @@
         <p class="step-sub">Select your exam board</p>
       </div>
 
-      <!-- 2 · Exam Year -->
-      <div class="step-card theme-blue">
+      <!-- 2 · Class / Stream -->
+      <div class="step-card theme-yellow">
         <div class="step-label">
           <span class="step-num">2</span>
+          <span class="step-title">Class / Stream</span>
+          <span class="step-done" id="done-stream">✓</span>
+        </div>
+        <div class="chips-container" id="stream-chips"></div>
+        <p class="step-sub">Narrows the subject list to your class</p>
+      </div>
+
+      <!-- 3 · Subjects (populated from the question bank) -->
+      <div class="step-card theme-green" id="subject-row" style="display: none;">
+        <div class="step-label">
+          <span class="step-num">3</span>
+          <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
+          <span class="step-done" id="done-subject">✓</span>
+        </div>
+        <div class="chips-container" id="subject-chips"></div>
+        <p class="step-sub" id="compulsoryHint">English is compulsory and always included. Each chip shows how many questions are available.</p>
+      </div>
+
+      <!-- 4 · Exam Year -->
+      <div class="step-card theme-blue">
+        <div class="step-label">
+          <span class="step-num">4</span>
           <span class="step-title">Exam Year</span>
           <span class="step-done" id="done-year">✓</span>
         </div>
         <div class="year-grid" id="year-chips"></div>
-        <p class="step-sub">Active years (green pulse) are selectable</p>
+        <p class="step-sub">Years available for your subjects (with question counts)</p>
       </div>
 
-      <!-- 3 · Your Stream -->
-      <div class="step-card theme-green">
-        <div class="step-label">
-          <span class="step-num">3</span>
-          <span class="step-title">Your Stream</span>
-          <span class="step-done" id="done-stream">✓</span>
-        </div>
-        <div class="csel" id="csel-stream">
-          <button class="csel-btn" id="streamBtn"><span id="stream-label">— select stream —</span></button>
-          <div class="csel-panel">
-            <div class="csel-item" data-val="science">Science</div>
-            <div class="csel-item" data-val="arts">Arts / Humanities</div>
-            <div class="csel-item" data-val="commercial">Commercial</div>
-          </div>
-        </div>
-        <div class="toggle-option">
-          <label class="toggle-label">
-            <input type="checkbox" id="compulsoryToggle" checked>
-            <span>English &amp; Mathematics are compulsory (auto-included)</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- 4 · Exam Format -->
+      <!-- 5 · Exam Format -->
       <div class="step-card theme-red">
         <div class="step-label">
-          <span class="step-num">4</span>
+          <span class="step-num">5</span>
           <span class="step-title">Exam Format</span>
           <span class="step-done" id="done-type">✓</span>
         </div>
@@ -118,18 +117,7 @@
             <div class="chip-check-box"></div><span>Theory (Essay)</span>
           </div>
         </div>
-        <p class="step-sub">Theory hides automatically for JAMB</p>
-      </div>
-
-      <!-- 5 · Subjects (full width) -->
-      <div class="step-card theme-yellow" id="subject-row" style="display: none;">
-        <div class="step-label">
-          <span class="step-num">5</span>
-          <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
-          <span class="step-done" id="done-subject">✓</span>
-        </div>
-        <div class="chips-container" id="subject-chips"></div>
-        <p class="step-sub" id="compulsoryHint">English &amp; Math are mandatory and always selected</p>
+        <p class="step-sub">Past questions are objective</p>
       </div>
     </section>
 

@@ -1,0 +1,11 @@
+# Prep Portal — https://www.prepportal.com.ng
+# Allow all crawlers full access to public content (incl. JS/CSS needed to
+# render the pages). Only the signed-in app area and the API are kept out.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /api/
+Disallow: /utils/auth/
+
+Sitemap: https://www.prepportal.com.ng/sitemap.xml

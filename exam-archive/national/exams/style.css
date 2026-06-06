@@ -170,10 +170,10 @@ body {
 }
 
 .step-card:nth-child(1) { grid-column: span 2; }   /* Exam Type */
-.step-card:nth-child(2) { grid-column: span 4; }   /* Exam Year (wide) */
-.step-card:nth-child(3) { grid-column: span 4; }   /* Your Stream (wide) */
-.step-card:nth-child(4) { grid-column: span 2; }   /* Exam Format */
-.step-card:nth-child(5) { grid-column: 1 / -1; }   /* Subjects (full) */
+.step-card:nth-child(2) { grid-column: span 4; }   /* Class / Stream */
+.step-card:nth-child(3) { grid-column: 1 / -1; }   /* Subjects (full) */
+.step-card:nth-child(4) { grid-column: span 4; }   /* Exam Year */
+.step-card:nth-child(5) { grid-column: span 2; }   /* Exam Format */
 
 .step-card {
   display: flex;
@@ -328,6 +328,33 @@ body {
 .custom-chip.disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Question-count badge on subject / year chips */
+.chip-count {
+  margin-left: 0.15rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  color: inherit;
+}
+.custom-chip.checked .chip-count {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Inline status text inside the subject / year containers */
+.picker-hint,
+.picker-error {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  opacity: 0.65;
+  padding: 4px 2px;
+}
+.picker-error {
+  color: var(--red, #e5000a);
+  opacity: 0.9;
 }
 
 .chip-check-box {

@@ -8,6 +8,7 @@
  */
 
 const express = require("express");
+const admin = require("firebase-admin");
 const Anthropic = require("@anthropic-ai/sdk");
 const { authenticate } = require("../middleware/auth");
 const { GEMINI_MODELS, GROQ_DEFAULT_MODEL, CLAUDE_DEFAULT_MODEL } = require("../ai-models");
@@ -21,9 +22,370 @@ module.exports = function () {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  // ── Token-usage tracking (display-only) ──────
+  // Two tiers, stored per-user in Firestore (aiUsage/{uid}):
+  //   • 10k per rolling 5-hour window (resets 5h after the window started)
+  //   • 300k per calendar month (resets at the UTC month boundary)
+  // BYUK requests (the student's own key) are not counted here. Never blocks.
+  const USAGE_ALLOCATION = 10000;
+  const USAGE_WINDOW_MS = 5 * 60 * 60 * 1000;
+  const USAGE_MONTH_ALLOCATION = 300000;
+  const usageDoc = (uid) => admin.firestore().collection("aiUsage").doc(uid);
+  const winStart = (d) => d?.windowStart?.toMillis?.() ?? d?.windowStart ?? 0;
+  const monthKey = (ms) => { const dt = new Date(ms); return `${dt.getUTCFullYear()}-${dt.getUTCMonth()}`; };
+  const nextMonthMs = (ms) => { const dt = new Date(ms); return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1); };
+
+  function usageShape({ used, start, monthTokens, now }) {
+    return {
+      used,
+      allocation: USAGE_ALLOCATION,
+      resetAt: start + USAGE_WINDOW_MS,
+      monthUsed: monthTokens,
+      monthAllocation: USAGE_MONTH_ALLOCATION,
+      monthResetAt: nextMonthMs(now),
+    };
+  }
+
+  async function readUsage(uid) {
+    const now = Date.now();
+    const fresh = usageShape({ used: 0, start: now, monthTokens: 0, now });
+    if (!uid) return fresh;
+    try {
+      const snap = await usageDoc(uid).get();
+      if (snap.exists) {
+        const d = snap.data();
+        const start = winStart(d);
+        const within5h = now - start < USAGE_WINDOW_MS;
+        const sameMonth = d.monthKey === monthKey(now);
+        return usageShape({
+          used: within5h ? d.tokensUsed || 0 : 0,
+          start: within5h ? start : now,
+          monthTokens: sameMonth ? d.monthTokens || 0 : 0,
+          now,
+        });
+      }
+    } catch (_) {}
+    return fresh;
+  }
+
+  async function bumpUsage(uid, addTokens) {
+    if (!uid || !addTokens) return readUsage(uid);
+    const ref = usageDoc(uid);
+    try {
+      return await admin.firestore().runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const now = Date.now();
+        const mk = monthKey(now);
+        let start = now, used = 0, monthTokens = 0;
+        if (snap.exists) {
+          const d = snap.data();
+          const s = winStart(d);
+          if (now - s < USAGE_WINDOW_MS) { start = s; used = d.tokensUsed || 0; }
+          if (d.monthKey === mk) monthTokens = d.monthTokens || 0;
+        }
+        used += addTokens;
+        monthTokens += addTokens;
+        tx.set(ref, {
+          tokensUsed: used,
+          windowStart: admin.firestore.Timestamp.fromMillis(start),
+          monthTokens,
+          monthKey: mk,
+        });
+        return usageShape({ used, start, monthTokens, now });
+      });
+    } catch (_) {
+      return readUsage(uid);
+    }
+  }
+
+  // ── BYUK: bring-your-own-key, stored per user in Firestore ──────
+  // The student saves a key per provider; we keep it server-side (byukKeys/{uid})
+  // and use it only when they send a chat in "key mode". The raw key is never
+  // returned to the browser — the client only learns which providers are set.
+  const BYUK_PROVIDERS = ["gemini", "groq", "claude"];
+  const byukDoc = (uid) => admin.firestore().collection("byukKeys").doc(uid);
+
+  async function getByukKey(uid, provider) {
+    if (!uid || !BYUK_PROVIDERS.includes(provider)) return null;
+    try {
+      const snap = await byukDoc(uid).get();
+      return snap.exists ? snap.data()[provider] || null : null;
+    } catch (_) { return null; }
+  }
+
+  async function configuredProviders(uid) {
+    const out = { gemini: false, groq: false, claude: false };
+    if (!uid) return out;
+    try {
+      const snap = await byukDoc(uid).get();
+      if (snap.exists) {
+        const d = snap.data();
+        for (const p of BYUK_PROVIDERS) out[p] = !!d[p];
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  // Build/validate a Gemini generateContent URL from a model id (or pass-through).
+  function geminiUrlFor(model) {
+    if (!model) return GEMINI_CHAT_MODELS[0];
+    if (model.startsWith(GEMINI_BASE_WHITELIST) && model.endsWith(":generateContent")) return model;
+    return `${GEMINI_BASE_WHITELIST}v1beta/models/${model}:generateContent`;
+  }
+
+  // ── Guardrails: a server-side safety net for high-risk inputs ──────
+  // Tight patterns only (to avoid flagging real exam topics like "sexual
+  // reproduction"). On a match we return a safe reply without calling a model.
+  // The model's own system prompt handles softer scope/safety cases.
+  const GUARDRAILS = [
+    {
+      re: /\b(kill(ing)? myself|suicid|end my life|take my (own )?life|self[-\s]?harm(?:ing|ed|s)?|harm(?:ing)? myself|cut(ting)? myself)\b/i,
+      reply: "I'm really sorry you're feeling like this — you matter, and you don't have to face it alone. Please reach out to someone you trust, like a parent, teacher or school counsellor, as soon as you can. If you might be in danger right now, contact a local emergency line. I'm here whenever you'd like help with your studies.",
+    },
+    {
+      re: /\b((make|build|making|building)\s+(a\s+)?bomb|explosive device|how to (kill|murder|stab|shoot)\s+(a\s+|someone|people|him|her|them|the))\b/i,
+      reply: "I can't help with anything dangerous or that could hurt people. I'm here to help you learn and prepare for your exams — what subject can I help you with?",
+    },
+    {
+      re: /\b(porn|pornograph|nudes?|sexting|child\s*abuse|\brape\b)\b/i,
+      reply: "That isn't something I can help with. I'm your exam study tutor, so let's keep it to your schoolwork — what topic would you like to go over?",
+    },
+  ];
+  function guardrailCheck(messages) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.role === "user") {
+        const t = messages[i].content || "";
+        for (const g of GUARDRAILS) if (g.re.test(t)) return g.reply;
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // ── Streaming helpers (used by POST /chat when { stream:true }) ──────
+  // Groq speaks OpenAI-style SSE; we forward each delta.content as it lands.
+  async function streamGroqInto({ apiKey, model, system, messages, temperature, max_tokens, onDelta }) {
+    const r = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey || process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: system ? [{ role: "system", content: system }, ...messages] : messages,
+        temperature,
+        max_tokens,
+        stream: true,
+        stream_options: { include_usage: true },
+      }),
+    });
+    if (!r.ok || !r.body) throw new Error(`Groq HTTP ${r.status}`);
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "", usedTokens = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (payload === "[DONE]") return usedTokens;
+        try {
+          const j = JSON.parse(payload);
+          const delta = j.choices?.[0]?.delta?.content;
+          if (delta) onDelta(delta);
+          if (j.usage?.total_tokens) usedTokens = j.usage.total_tokens;
+        } catch (_) {}
+      }
+    }
+    return usedTokens;
+  }
+
+  // Claude via the SDK's streaming helper. Returns total tokens used.
+  async function streamClaudeInto({ apiKey, model, system, messages, max_tokens, onDelta, onAbort }) {
+    const client = apiKey ? new Anthropic({ apiKey }) : anthropic;
+    const stream = client.messages.stream({
+      model: model || process.env.CLAUDE_MODEL || CLAUDE_DEFAULT_MODEL,
+      max_tokens: max_tokens || 800,
+      ...(system ? { system } : {}),
+      messages,
+    });
+    if (onAbort) onAbort(() => stream.abort());
+    stream.on("text", (t) => { if (t) onDelta(t); });
+    const msg = await stream.finalMessage();
+    return (msg?.usage?.input_tokens || 0) + (msg?.usage?.output_tokens || 0);
+  }
+
+  // Gemini has no streaming here — fetch the whole answer, emit as one chunk.
+  async function geminiOnce({ system, messages, temperature, max_tokens, apiKey, modelUrl }) {
+    const geminiBody = {
+      ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+      contents: messages.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      generationConfig: { temperature, maxOutputTokens: max_tokens },
+    };
+    const key = apiKey || process.env.GEMINI_API_KEY;
+    const urls = modelUrl ? [modelUrl] : GEMINI_CHAT_MODELS;
+    for (const url of urls) {
+      try {
+        const gemRes = await fetch(`${url}?key=${key}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiBody),
+        });
+        if (!gemRes.ok) {
+          if ([404, 429, 503].includes(gemRes.status)) continue;
+          break;
+        }
+        const data = await gemRes.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return { text, tokens: data.usageMetadata?.totalTokenCount || 0 };
+      } catch (_) { continue; }
+    }
+    return { text: "", tokens: 0 };
+  }
+
+  // NDJSON stream: one JSON object per line — {type:"delta"|"done"|"error"|"unavailable"}.
+  // Provider fallback only happens before the first delta; once a provider has
+  // emitted text we're committed to it (a mid-stream failure surfaces as error).
+  async function handleStreamingChat(req, res) {
+    const {
+      messages = [], system, model = GROQ_DEFAULT_MODEL,
+      temperature = 0.3, max_tokens = 800,
+      byuk = false, provider,
+    } = req.body;
+
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (res.flushHeaders) res.flushHeaders();
+
+    let started = false;
+    let closed = false;
+    res.on("close", () => { closed = true; });
+
+    const write = (obj) => {
+      if (closed || res.writableEnded) return;
+      res.write(JSON.stringify(obj) + "\n");
+    };
+    const onDelta = (text) => {
+      if (!text) return;
+      started = true;
+      write({ type: "delta", text });
+    };
+    // Record tokens for this turn, report the running total, then close out.
+    const finish = async (prov, tokens) => {
+      const usage = await bumpUsage(req.user?.uid, tokens || 0);
+      write({ type: "usage", ...usage });
+      write({ type: "done", provider: prov });
+      res.end();
+    };
+
+    // ── Guardrail safety net: high-risk input → safe reply, no model call ──
+    const guard = guardrailCheck(messages);
+    if (guard) {
+      onDelta(guard);
+      write({ type: "usage", ...(await readUsage(req.user?.uid)) });
+      write({ type: "done", provider: "guardrail" });
+      return res.end();
+    }
+
+    // ── Key mode (BYUK): use the student's own key + chosen model. No fallback,
+    //    no allocation counting — it's their key and their pick. ──
+    if (byuk) {
+      const key = await getByukKey(req.user?.uid, provider);
+      if (!key) {
+        write({ type: "error", text: `No ${provider || "provider"} key saved. Add your key in Key Mode first.` });
+        return res.end();
+      }
+      try {
+        if (provider === "groq") {
+          await streamGroqInto({ apiKey: key, model, system, messages, temperature, max_tokens, onDelta });
+        } else if (provider === "claude") {
+          await streamClaudeInto({ apiKey: key, model, system, messages, max_tokens, onDelta, onAbort: (ab) => res.on("close", ab) });
+        } else if (provider === "gemini") {
+          const { text } = await geminiOnce({ system, messages, temperature, max_tokens, apiKey: key, modelUrl: geminiUrlFor(model) });
+          if (text) onDelta(text);
+        } else {
+          write({ type: "error", text: "Unknown provider for Key Mode." });
+          return res.end();
+        }
+        if (started) {
+          write({ type: "usage", byuk: true, provider });
+          write({ type: "done", provider });
+          return res.end();
+        }
+        write({ type: "error", text: "Your key returned no response. Check the key and selected model." });
+      } catch (e) {
+        console.warn("[/api/ai/chat byuk]", e.message);
+        write({ type: "error", text: started ? "Stream interrupted." : `Your ${provider} key failed: ${String(e.message).slice(0, 140)}` });
+      }
+      return res.end();
+    }
+
+    // ① Groq
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const tokens = await streamGroqInto({ model, system, messages, temperature, max_tokens, onDelta });
+        if (started) return await finish("groq", tokens);
+      } catch (e) {
+        if (started) { write({ type: "error", text: "Stream interrupted. Please try again." }); return res.end(); }
+        console.warn("[/api/ai/chat stream] Groq unavailable:", e.message);
+      }
+    }
+
+    // ② Claude
+    if (!started && process.env.ANTHROPIC_API_KEY) {
+      try {
+        const tokens = await streamClaudeInto({ system, messages, max_tokens, onDelta, onAbort: (ab) => res.on("close", ab) });
+        if (started) return await finish("claude", tokens);
+      } catch (e) {
+        if (started) { write({ type: "error", text: "Stream interrupted. Please try again." }); return res.end(); }
+        console.warn("[/api/ai/chat stream] Claude unavailable:", e.message);
+      }
+    }
+
+    // ③ Gemini (non-streaming, emitted as a single chunk)
+    if (!started && process.env.GEMINI_API_KEY) {
+      try {
+        const { text, tokens } = await geminiOnce({ system, messages, temperature, max_tokens });
+        if (text) { onDelta(text); return await finish("gemini", tokens); }
+      } catch (e) {
+        console.warn("[/api/ai/chat stream] Gemini unavailable:", e.message);
+      }
+    }
+
+    if (!started) {
+      write({ type: "unavailable", text: "PrepBot is temporarily unavailable. Please try again in a moment." });
+    }
+    res.end();
+  }
+
   // ── POST /api/ai/chat — PrepBot ──────────────────────────────
   // Fallback chain: Groq → Claude → Gemini (each skipped if key absent).
+  // Pass { stream:true } for an NDJSON token stream; otherwise a single JSON reply.
   router.post("/chat", authenticate, async (req, res) => {
+    if (req.body && req.body.stream) {
+      try {
+        return await handleStreamingChat(req, res);
+      } catch (err) {
+        console.error("[/api/ai/chat stream]", err.message);
+        if (!res.headersSent) return res.status(500).json({ error: err.message });
+        if (!res.writableEnded) {
+          try { res.write(JSON.stringify({ type: "error", text: "Server error." }) + "\n"); } catch (_) {}
+          res.end();
+        }
+        return;
+      }
+    }
     try {
       const {
         messages = [],
@@ -123,6 +485,53 @@ module.exports = function () {
       });
     } catch (err) {
       console.error("[/api/ai/chat]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── GET /api/ai/usage — current token usage (5h window + month) ──
+  router.get("/usage", authenticate, async (req, res) => {
+    res.json(await readUsage(req.user.uid));
+  });
+
+  // ── BYUK key management (raw keys never leave the server) ──────
+  // GET    /api/ai/byuk/keys  → which providers this student has configured
+  // POST   /api/ai/byuk/key   → { provider, key } save/replace a key
+  // DELETE /api/ai/byuk/key   → { provider } remove a key
+  router.get("/byuk/keys", authenticate, async (req, res) => {
+    res.json(await configuredProviders(req.user.uid));
+  });
+
+  router.post("/byuk/key", authenticate, async (req, res) => {
+    const { provider, key } = req.body || {};
+    if (!BYUK_PROVIDERS.includes(provider)) {
+      return res.status(400).json({ error: "Unknown provider." });
+    }
+    if (!key || typeof key !== "string" || key.trim().length < 8) {
+      return res.status(400).json({ error: "That key looks invalid." });
+    }
+    try {
+      await byukDoc(req.user.uid).set({ [provider]: key.trim() }, { merge: true });
+      res.json(await configuredProviders(req.user.uid));
+    } catch (err) {
+      console.error("[/api/ai/byuk/key]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.delete("/byuk/key", authenticate, async (req, res) => {
+    const { provider } = req.body || {};
+    if (!BYUK_PROVIDERS.includes(provider)) {
+      return res.status(400).json({ error: "Unknown provider." });
+    }
+    try {
+      await byukDoc(req.user.uid).set(
+        { [provider]: admin.firestore.FieldValue.delete() },
+        { merge: true }
+      );
+      res.json(await configuredProviders(req.user.uid));
+    } catch (err) {
+      console.error("[/api/ai/byuk/key delete]", err.message);
       res.status(500).json({ error: err.message });
     }
   });

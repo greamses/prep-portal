@@ -66,6 +66,7 @@ app.use(express.json({ limit: "4mb" }));
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use("/api/ai",    require("./routes/ai")());
+app.use("/api/questions", require("./routes/questions")());
 app.use("/api/tts",   require("./routes/tts")());
 app.use("/api/admin",   require("./routes/admin")(db, auth));
 app.use("/api/magazine", require("./routes/magazine")(db));

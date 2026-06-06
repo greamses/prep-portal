@@ -125,15 +125,105 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         };
         return names[examTypeId] || (examTypeId ? examTypeId.toUpperCase() : 'EXAM');
     }
-    
+
+    // ── Load questions from the Firestore-backed /api/questions endpoint ──
+    // (ALOC past questions). Maps the API shape onto the engine's question
+    // objects (objective items with a resolved `_answer` + `explanation`).
+    async function loadFromAloc() {
+        const examMap = {
+            waec: 'wassce', jamb: 'utme', neco: 'neco',
+            utme: 'utme', wassce: 'wassce', 'post-utme': 'post-utme', postutme: 'post-utme'
+        };
+        // Map the exam-picker's subject names → ALOC subject keys.
+        const subjMap = {
+            'english language': 'english', english: 'english',
+            mathematics: 'mathematics', maths: 'mathematics', math: 'mathematics',
+            'further mathematics': 'mathematics',
+            physics: 'physics', chemistry: 'chemistry', biology: 'biology',
+            economics: 'economics', commerce: 'commerce', government: 'government',
+            geography: 'geography', history: 'history',
+            'christian religious studies': 'crk', crk: 'crk',
+            'islamic religious studies': 'irk',
+            'literature in english': 'englishlit',
+            'financial accounting': 'accounting',
+            'agricultural science': 'agriculturalscience',
+            'civic education': 'civiledu', insurance: 'insurance',
+            'current affairs': 'currentaffairs'
+        };
+        const examType = examMap[(PAGE_CONFIG.examType || '').toLowerCase()] || (PAGE_CONFIG.examType || '').toLowerCase();
+        const subjects = PAGE_CONFIG.subjects.length ? PAGE_CONFIG.subjects : ['mathematics'];
+        const per = PAGE_CONFIG.limit || 20;
+        const out = [];
+
+        for (const sub of subjects) {
+            const subKey = subjMap[sub.toLowerCase().trim()] || sub.toLowerCase().trim().split(/\s+/)[0];
+            const params = new URLSearchParams({ subject: subKey, type: examType, limit: String(per), random: '1' });
+            // The endpoint prioritises the chosen year and tops up from other
+            // years if that year is sparse (so a paper is never near-empty).
+            if (PAGE_CONFIG.year) params.set('year', PAGE_CONFIG.year);
+            try {
+                const res = await fetch(`${API_BASE}/api/questions?${params}`);
+                if (!res.ok) { console.warn('ALOC fetch', sub, '→ HTTP', res.status); continue; }
+                const data = await res.json();
+                (data.questions || []).forEach(q => {
+                    const options = q.options || [];
+                    const ai = typeof q.answerIndex === 'number' ? q.answerIndex
+                        : (typeof q.correctIndex === 'number' ? q.correctIndex : -1);
+                    out.push({
+                        question: q.question,
+                        options,
+                        _answer: (ai >= 0 && options[ai] !== undefined) ? options[ai] : null,
+                        explanation: q.explanation || '',
+                        image: q.image || '',
+                        hint: '',
+                        type: 'objective',
+                        subject: sub,
+                        examType: PAGE_CONFIG.examType,
+                        examYear: q.examYear || PAGE_CONFIG.year || ''
+                    });
+                });
+            } catch (e) {
+                console.warn('ALOC load failed for', sub, e.message);
+            }
+        }
+        return out;
+    }
+
     async function loadAndRender() {
         const loadingEl = document.getElementById('loading-state');
         if (loadingEl) loadingEl.style.display = 'flex';
         
         allQuestions = [];
+
+        // ALOC / API source → fetch from Firestore-backed endpoint and skip the
+        // static per-folder script loading below.
+        if (PAGE_CONFIG.source === 'aloc' || PAGE_CONFIG.source === 'api') {
+            allQuestions = await loadFromAloc();
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (allQuestions.length === 0) {
+                const card = document.getElementById('question-card');
+                if (card) {
+                    card.style.display = 'flex';
+                    card.innerHTML = `<div style="padding:40px;text-align:center">
+                    <strong style="font-family:var(--font-display);font-size:15px">No Questions Found</strong>
+                    <p style="font-size:12px;opacity:.6;margin-top:8px">No ${(PAGE_CONFIG.examType||'').toUpperCase()} questions for this selection yet.</p>
+                 </div>`;
+                }
+                return;
+            }
+            console.log(`Loaded ${allQuestions.length} questions from ALOC (/api/questions)`);
+            buildDotMap();
+            renderQuestion(0);
+            const card = document.getElementById('question-card');
+            const nav = document.getElementById('nav-bar');
+            if (card) card.style.display = 'flex';
+            if (nav) nav.style.display = 'grid';
+            return;
+        }
+
         const loadedScripts = new Set(); // Track which scripts have been loaded
         const questionMap = new Map(); // Deduplicate by question content
-        
+
         for (const sub of PAGE_CONFIG.subjects) {
             const subKey = sub.toLowerCase().replace(/\s+/g, '');
             for (const type of PAGE_CONFIG.types) {
