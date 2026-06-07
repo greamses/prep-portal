@@ -561,6 +561,18 @@ body.cube-active .ticker {
   color: var(--accent-success);
 }
 
+/* Close button: pinned to the centre of the top bar, away from the
+   left-hand menu so it isn't tapped by mistake. */
+.cube-modal-top .modal-close {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.cube-modal-top .modal-close:hover {
+  transform: translate(-50%, -50%) translateY(-1px);
+}
+
 /* canvas fills the available space between top bar and keypad */
 #cube-canvas-wrap {
   position: relative;

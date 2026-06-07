@@ -150,40 +150,12 @@
       <div class="modal-paint hero-paint" aria-hidden="true"></div>
 
       <div class="cube-modal-top">
-        <button
-          class="icon-btn"
-          data-act="exit"
-          title="Exit (Esc)"
-          aria-label="Exit"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect
-              x="10.8"
-              y="4"
-              width="2.4"
-              height="16"
-              rx="1.2"
-              fill="var(--accent-danger)"
-              transform="rotate(45 12 12)"
-            />
-            <rect
-              x="10.8"
-              y="4"
-              width="2.4"
-              height="16"
-              rx="1.2"
-              fill="var(--accent-warning)"
-              transform="rotate(-45 12 12)"
-            />
-          </svg>
-        </button>
-        <span class="modal-title">Rubik's Cube</span>
-
+        <!-- Hamburger (menu) — far left, so reaching for the menu never hits exit -->
         <button
           class="icon-btn"
           data-act="states"
-          aria-label="Choose a cube state"
-          title="Cube states"
+          aria-label="Open the side menu"
+          title="Menu"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <rect
@@ -209,6 +181,37 @@
               height="6.4"
               rx="2.2"
               fill="var(--accent-primary)"
+            />
+          </svg>
+        </button>
+
+        <span class="modal-title">Rubik's Cube</span>
+
+        <!-- Close — centred, away from the menu so it isn't tapped by mistake -->
+        <button
+          class="icon-btn modal-close"
+          data-act="exit"
+          title="Exit (Esc)"
+          aria-label="Exit"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect
+              x="10.8"
+              y="4"
+              width="2.4"
+              height="16"
+              rx="1.2"
+              fill="var(--accent-danger)"
+              transform="rotate(45 12 12)"
+            />
+            <rect
+              x="10.8"
+              y="4"
+              width="2.4"
+              height="16"
+              rx="1.2"
+              fill="var(--accent-warning)"
+              transform="rotate(-45 12 12)"
             />
           </svg>
         </button>
@@ -330,10 +333,11 @@
             <circle cx="14.4" cy="13" r="1.2" fill="#fff" />
           </svg>
         </button>
-      </div>
 
-      <!-- On-screen controls (toggleable) — realistic 3D gamepad -->
-      <div class="cube-pad">
+        <!-- On-screen controls (toggleable) — realistic 3D gamepad.
+             Lives inside the canvas wrap so it shares the canvas stacking
+             context — that lets the side menu (z 10) sit ABOVE the pad. -->
+        <div class="cube-pad">
         <!-- LEFT: analog thumbstick — spins the whole cube -->
         <div class="pad-group pad-stick-group">
           <div
@@ -425,7 +429,10 @@
             </button>
           </div>
         </div>
+        </div>
+        <!-- /cube-pad -->
       </div>
+      <!-- /cube-canvas-wrap -->
     </div>
 
     <!-- Paint blobs behind the hero + inside the game modal -->
