@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <title>Prep Portal 2026 | Rubik's Cube</title>
+    <meta name="theme-color" content="#0055ff" />
+    <meta
+      name="description"
+      content="Solve a realistic 3D Rubik's Cube with your keyboard — rotate the whole cube with the arrows and twist faces relative to whatever face is in front."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,400;0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Primary theme: the home page stylesheet (imports theme tokens) -->
+    <link rel="stylesheet" href="/home/css/main.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/home/games/rubiks-cube/css/game.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Rubik's Cube</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <!-- ============ ENTRY / LANDING ============ -->
+    <main class="cube-landing">
+      <section class="hero cube-hero">
+        <!-- Paint splash blobs (same source as the home hero) -->
+        <div class="hero-paint" aria-hidden="true"></div>
+
+        <div class="hero-inner">
+          <span class="hero-eyebrow">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 8.7l5.9-.9z"
+              />
+            </svg>
+            Logic &amp; Spatial Reasoning
+          </span>
+
+          <h1 class="hero-title">Rubik's <em>Cube</em>.</h1>
+
+          <p class="hero-description">
+            A real-time 3D cube. Spin the whole thing with the arrow keys to
+            bring any face to the front, then twist with
+            <strong>U D L R F B</strong> — always relative to the face you're
+            looking at, just like solving it in your hands.
+          </p>
+
+          <div
+            class="hero-actions mode-switch"
+            role="group"
+            aria-label="Choose a mode"
+          >
+            <button
+              class="mode-switch-btn mode-switch-btn--active"
+              data-act="start"
+              data-mode="challenge"
+            >
+              Learn
+            </button>
+            <button
+              class="mode-switch-btn"
+              data-act="start"
+              data-mode="algo"
+            >
+              Practice
+            </button>
+          </div>
+
+          <p class="mode-blurb">
+            <b>Learn</b> — inspect the boxed scramble, then solve it step by
+            step (cross → last layer). <b>Practice</b> — drill popular
+            algorithms, easiest to hardest.
+          </p>
+
+          <div class="hero-stats">
+            <span class="hero-stat theme-green"
+              ><strong>3D</strong> real-time</span
+            >
+            <span class="hero-stat theme-blue"
+              ><strong>Keyboard</strong> control</span
+            >
+            <span class="hero-stat theme-red"><strong>6</strong> faces</span>
+            <span class="hero-stat theme-yellow"
+              ><strong>Mobile</strong> keypad</span
+            >
+          </div>
+
+          <!-- Sticky-note control legend -->
+          <div class="key-notes" aria-label="Controls">
+            <span class="key-note">
+              <b>U D L R F B</b><span>Twist the front-relative face</span>
+            </span>
+            <span class="key-note">
+              <b>M E S</b><span>Turn a middle slice</span>
+            </span>
+            <span class="key-note">
+              <b>Hold a face</b><span>180° turn · Shift = reverse</span>
+            </span>
+            <span class="key-note">
+              <b>← → ↑ ↓</b><span>Spin / roll the whole cube</span>
+            </span>
+            <span class="key-note">
+              <b>Space</b><span>Slide the box off — inspect 15s</span>
+            </span>
+            <span class="key-note">
+              <b>Turn a face</b><span>Starts the timer &amp; move count</span>
+            </span>
+            <span class="key-note">
+              <b>Enter</b><span>Reset — new boxed scramble</span>
+            </span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ FULLSCREEN GAME MODAL ============ -->
+    <div id="cube-modal" class="cube-modal" aria-hidden="true">
+      <!-- Paint blobs behind the cube (same source as the home hero) -->
+      <div class="modal-paint hero-paint" aria-hidden="true"></div>
+
+      <div class="cube-modal-top">
+        <button
+          class="icon-btn"
+          data-act="exit"
+          title="Exit (Esc)"
+          aria-label="Exit"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect
+              x="10.8"
+              y="4"
+              width="2.4"
+              height="16"
+              rx="1.2"
+              fill="var(--accent-danger)"
+              transform="rotate(45 12 12)"
+            />
+            <rect
+              x="10.8"
+              y="4"
+              width="2.4"
+              height="16"
+              rx="1.2"
+              fill="var(--accent-warning)"
+              transform="rotate(-45 12 12)"
+            />
+          </svg>
+        </button>
+        <span class="modal-title">Rubik's Cube</span>
+
+        <button
+          class="icon-btn"
+          data-act="states"
+          aria-label="Choose a cube state"
+          title="Cube states"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect
+              x="4"
+              y="13"
+              width="16"
+              height="6.4"
+              rx="2.2"
+              fill="var(--accent-success)"
+            />
+            <rect
+              x="4"
+              y="8.6"
+              width="16"
+              height="6.4"
+              rx="2.2"
+              fill="var(--accent-secondary)"
+            />
+            <rect
+              x="4"
+              y="4.2"
+              width="16"
+              height="6.4"
+              rx="2.2"
+              fill="var(--accent-primary)"
+            />
+          </svg>
+        </button>
+
+        <!-- Two sticky notes, torn together along a sawtooth seam -->
+        <div class="stat-notes" aria-label="Moves and time">
+          <span class="stat-note stat-note--moves">
+            <strong id="stat-moves">0</strong><small>moves</small>
+          </span>
+          <span class="stat-note stat-note--time">
+            <strong id="stat-time">0:00</strong><small>time</small>
+          </span>
+        </div>
+      </div>
+
+      <div id="cube-canvas-wrap">
+        <canvas id="cube-canvas"></canvas>
+
+        <!-- pressed move (notation) + status, shown above the cube -->
+        <div id="status-label" class="status-label"></div>
+        <div id="move-label" class="move-label" aria-hidden="true"></div>
+
+        <!-- Transparent Click Controller for 3D Scene carton -->
+        <div
+          id="carton"
+          class="carton"
+          role="button"
+          tabindex="0"
+          aria-label="Cube box — tap to slide off and inspect"
+        >
+          <div class="carton-hint-overlay">
+            <span>TAP OR PRESS SPACE TO UNBOX</span>
+          </div>
+        </div>
+
+        <!-- Left sidebar: cube states (challenge) OR algorithms (algo lab) -->
+        <aside class="mode-bar" aria-label="Sidebar">
+          <div class="mode-states">
+            <h3 class="mode-bar-title">Solve, step by step</h3>
+            <button class="state-card tc-0" data-state="cross" aria-pressed="false">
+              <span class="state-thumb"
+                ><img alt="White cross, other blocks hidden"
+              /></span>
+              <span class="state-name">Cross</span>
+            </button>
+            <button class="state-card tc-1" data-state="first" aria-pressed="false">
+              <span class="state-thumb"
+                ><img alt="First layer, other blocks hidden"
+              /></span>
+              <span class="state-name">First layer</span>
+            </button>
+            <button class="state-card tc-2" data-state="second" aria-pressed="false">
+              <span class="state-thumb"
+                ><img alt="First two layers, top layer hidden"
+              /></span>
+              <span class="state-name">Second layer</span>
+            </button>
+            <button class="state-card tc-3" data-state="oll" aria-pressed="false">
+              <span class="state-thumb"
+                ><img alt="Orient the last layer"
+              /></span>
+              <span class="state-name">OLL</span>
+            </button>
+            <button class="state-card tc-4" data-state="pll" aria-pressed="false">
+              <span class="state-thumb"
+                ><img alt="Permute the last layer"
+              /></span>
+              <span class="state-name">PLL</span>
+            </button>
+            <button class="state-card tc-5" data-state="full" aria-pressed="true">
+              <span class="state-thumb"><img alt="Full solved cube" /></span>
+              <span class="state-name">Full cube</span>
+            </button>
+          </div>
+          <div class="mode-algos">
+            <h3 class="mode-bar-title">Algorithms</h3>
+            <p class="algo-hint">Easiest → hardest. Tap one to watch it.</p>
+            <div id="algo-list"></div>
+          </div>
+        </aside>
+
+        <div id="win-banner" class="win-banner" hidden>
+          <span class="win-emoji">🎉</span>
+          <strong>Solved!</strong>
+          <span id="win-detail">Nicely done.</span>
+        </div>
+
+        <!-- Floating keypad toggle (transparent, overlaid on the cube) -->
+        <button
+          class="pad-fab"
+          data-act="pad-toggle"
+          aria-pressed="false"
+          aria-label="Show on-screen controls"
+          title="Show / hide controls"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7.5 7.5h9a4.7 4.7 0 0 1 4.6 3.8l.7 3.7A2.5 2.5 0 0 1 17 16.6L15.8 15H8.2L7 16.6A2.5 2.5 0 0 1 2.2 15l.7-3.7A4.7 4.7 0 0 1 7.5 7.5z"
+              fill="var(--accent-secondary)"
+            />
+            <rect
+              x="4.9"
+              y="10.7"
+              width="1.6"
+              height="4"
+              rx="0.8"
+              fill="#fff"
+            />
+            <rect
+              x="3.7"
+              y="11.9"
+              width="4"
+              height="1.6"
+              rx="0.8"
+              fill="#fff"
+            />
+            <circle cx="16.2" cy="11.6" r="1.2" fill="var(--accent-danger)" />
+            <circle cx="18.5" cy="13" r="1.2" fill="var(--accent-primary)" />
+            <circle cx="14.4" cy="13" r="1.2" fill="#fff" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- On-screen keypad (toggleable, transparent — icons only) -->
+      <div class="cube-pad">
+        <!-- whole-cube rotation d-pad -->
+        <div class="pad-group">
+          <div class="dpad">
+            <button class="pad-btn dpad-up" data-rot="up" aria-label="Roll up">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 6.4l6.4 8.6a1.3 1.3 0 0 1-1.1 2.1H6.7a1.3 1.3 0 0 1-1.1-2.1z"
+                  fill="var(--accent-secondary)"
+                />
+              </svg>
+            </button>
+            <button
+              class="pad-btn dpad-left"
+              data-rot="left"
+              aria-label="Spin left"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6.4 12l8.6-6.4a1.3 1.3 0 0 1 2.1 1.1v10.6a1.3 1.3 0 0 1-2.1 1.1z"
+                  fill="var(--accent-warning)"
+                />
+              </svg>
+            </button>
+            <button
+              class="pad-btn dpad-right"
+              data-rot="right"
+              aria-label="Spin right"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M17.6 12l-8.6 6.4a1.3 1.3 0 0 1-2.1-1.1V6.7a1.3 1.3 0 0 1 2.1-1.1z"
+                  fill="var(--accent-warning)"
+                />
+              </svg>
+            </button>
+            <button
+              class="pad-btn dpad-down"
+              data-rot="down"
+              aria-label="Roll down"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 17.6l-6.4-8.6a1.3 1.3 0 0 1 1.1-2.1h10.6a1.3 1.3 0 0 1 1.1 2.1z"
+                  fill="var(--accent-secondary)"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- actions: direction toggle + scramble / reset -->
+        <div class="pad-group pad-actions">
+          <div class="cube-seg" role="group" aria-label="Turn direction">
+            <button class="cube-seg-btn cube-seg-btn--active" data-dir="cw">
+              CW
+            </button>
+            <button class="cube-seg-btn" data-dir="ccw">CCW</button>
+          </div>
+          <div class="pad-icon-row">
+          <button
+            class="pad-btn pad-icon"
+            data-act="scramble"
+            aria-label="Scramble"
+            title="Scramble"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 7h4l10 10h3"
+                fill="none"
+                stroke="var(--accent-secondary)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M18 14l3 3-3 3"
+                fill="none"
+                stroke="var(--accent-secondary)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M3 17h4l3-3"
+                fill="none"
+                stroke="var(--accent-danger)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M14 10l3-3h4"
+                fill="none"
+                stroke="var(--accent-danger)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M18 4l3 3-3 3"
+                fill="none"
+                stroke="var(--accent-danger)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="pad-btn pad-icon"
+            data-act="reset"
+            aria-label="Reset"
+            title="Reset"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M18.8 12a6.8 6.8 0 1 1-2-4.9"
+                fill="none"
+                stroke="var(--accent-success)"
+                stroke-width="2.6"
+                stroke-linecap="round"
+              />
+              <path
+                d="M20.6 4.7l-.7 4.4-4.4-.7"
+                fill="none"
+                stroke="var(--accent-warning)"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          </div>
+        </div>
+
+        <!-- face turns (hold = 180) -->
+        <div class="pad-group" aria-label="Turn a face">
+          <div class="face-grid">
+            <button class="pad-btn face-btn" data-face="U">U</button>
+            <button class="pad-btn face-btn" data-face="D">D</button>
+            <button class="pad-btn face-btn" data-face="L">L</button>
+            <button class="pad-btn face-btn" data-face="R">R</button>
+            <button class="pad-btn face-btn" data-face="F">F</button>
+            <button class="pad-btn face-btn" data-face="B">B</button>
+          </div>
+        </div>
+
+        <!-- middle slices (hold = 180) -->
+        <div class="pad-group" aria-label="Turn a middle slice">
+          <div class="slice-row">
+            <button class="pad-btn slice-btn" data-slice="M">M</button>
+            <button class="pad-btn slice-btn" data-slice="E">E</button>
+            <button class="pad-btn slice-btn" data-slice="S">S</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paint blobs behind the hero + inside the game modal -->
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document
+        .querySelectorAll(".hero-paint")
+        .forEach((host) => (host.innerHTML = heroPaint()));
+    </script>
+
+    <script type="module" src="/home/games/rubiks-cube/js/game.js"></script>
+    <script src="/utils/components/loader.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+  </body>
+</html>
