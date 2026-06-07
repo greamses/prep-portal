@@ -1141,8 +1141,84 @@ let stickNY = 0; // normalised -1..1 (up +)
 let stepLatchDir = null;
 let stepRepeat = null;
 
+// The 24 valid cube orientations (the proper rotation symmetries), generated
+// by combining 90° turns about X and Y. Snapping to the *nearest* of these
+// always yields a clean unit quaternion — element-wise rounding of an
+// arbitrary free-spin matrix does not (it can go non-orthonormal → NaN).
+function quatKey(q) {
+  // q and -q are the same orientation; pick a stable sign from the first
+  // significantly non-zero component (keying off w alone is unstable when
+  // w ≈ 0, i.e. 180° rotations).
+  const a = [q.w, q.x, q.y, q.z];
+  let s = 1;
+  for (const v of a)
+    if (Math.abs(v) > 1e-4) {
+      s = v < 0 ? -1 : 1;
+      break;
+    }
+  return a.map((v) => Math.round(v * s * 1000)).join(",");
+}
+function buildCubeOrientations() {
+  const gens = [
+    new THREE.Quaternion().setFromAxisAngle(AXIS_X, Math.PI / 2),
+    new THREE.Quaternion().setFromAxisAngle(AXIS_Y, Math.PI / 2),
+  ];
+  const out = [new THREE.Quaternion()];
+  const seen = new Set([quatKey(out[0])]);
+  for (let i = 0; i < out.length; i++) {
+    for (const g of gens) {
+      const q = new THREE.Quaternion().multiplyQuaternions(g, out[i]);
+      const k = quatKey(q);
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push(q);
+      }
+    }
+  }
+  return out; // 24
+}
+const CUBE_ORIENTATIONS = buildCubeOrientations();
+
+function nearestOrientation(q) {
+  let best = CUBE_ORIENTATIONS[0];
+  let bestDot = -1;
+  for (const o of CUBE_ORIENTATIONS) {
+    const d = Math.abs(q.dot(o));
+    if (d > bestDot) {
+      bestDot = d;
+      best = o;
+    }
+  }
+  return best;
+}
+
+// overshoot ease → the cube springs slightly past the 90° and settles back
+const easeOutBack = (t) => {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+};
+
+let snapTweenId = null;
+// Animate the whole cube to the nearest valid 90° orientation (with a bounce).
 function snapCubeOrientation() {
-  cubeGroup.quaternion.copy(snapQuaternion(cubeGroup.quaternion));
+  if (snapTweenId) cancelAnimationFrame(snapTweenId);
+  const fromQ = cubeGroup.quaternion.clone();
+  const target = nearestOrientation(fromQ).clone();
+  if (fromQ.dot(target) < 0)
+    target.set(-target.x, -target.y, -target.z, -target.w); // shortest path
+  const start = performance.now();
+  const dur = 280;
+  (function step(now) {
+    const t = Math.min((now - start) / dur, 1);
+    cubeGroup.quaternion.copy(fromQ).slerp(target, easeOutBack(t));
+    if (t < 1) {
+      snapTweenId = requestAnimationFrame(step);
+    } else {
+      cubeGroup.quaternion.copy(target); // land exactly on the lattice
+      snapTweenId = null;
+    }
+  })(start);
 }
 
 function setRotMode(mode) {
@@ -1168,6 +1244,10 @@ function fireStep(dir) {
 
 function stickStart(e) {
   if (scrambling || cartonOn()) return; // locked while covered / shuffling
+  if (snapTweenId) {
+    cancelAnimationFrame(snapTweenId); // grabbing again interrupts the bounce
+    snapTweenId = null;
+  }
   stickPointer = e.pointerId;
   const r = analog.getBoundingClientRect();
   stickCx = r.left + r.width / 2;
