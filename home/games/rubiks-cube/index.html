@@ -332,161 +332,97 @@
         </button>
       </div>
 
-      <!-- On-screen keypad (toggleable, transparent — icons only) -->
+      <!-- On-screen controls (toggleable) — realistic 3D gamepad -->
       <div class="cube-pad">
-        <!-- whole-cube rotation d-pad -->
-        <div class="pad-group">
-          <div class="dpad">
-            <button class="pad-btn dpad-up" data-rot="up" aria-label="Roll up">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 6.4l6.4 8.6a1.3 1.3 0 0 1-1.1 2.1H6.7a1.3 1.3 0 0 1-1.1-2.1z"
-                  fill="var(--accent-secondary)"
-                />
-              </svg>
-            </button>
-            <button
-              class="pad-btn dpad-left"
-              data-rot="left"
-              aria-label="Spin left"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M6.4 12l8.6-6.4a1.3 1.3 0 0 1 2.1 1.1v10.6a1.3 1.3 0 0 1-2.1 1.1z"
-                  fill="var(--accent-warning)"
-                />
-              </svg>
-            </button>
-            <button
-              class="pad-btn dpad-right"
-              data-rot="right"
-              aria-label="Spin right"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M17.6 12l-8.6 6.4a1.3 1.3 0 0 1-2.1-1.1V6.7a1.3 1.3 0 0 1 2.1-1.1z"
-                  fill="var(--accent-warning)"
-                />
-              </svg>
-            </button>
-            <button
-              class="pad-btn dpad-down"
-              data-rot="down"
-              aria-label="Roll down"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 17.6l-6.4-8.6a1.3 1.3 0 0 1 1.1-2.1h10.6a1.3 1.3 0 0 1 1.1 2.1z"
-                  fill="var(--accent-secondary)"
-                />
-              </svg>
-            </button>
+        <!-- LEFT: analog thumbstick — spins the whole cube -->
+        <div class="pad-group pad-stick-group">
+          <div
+            class="analog"
+            id="analog"
+            role="button"
+            tabindex="0"
+            aria-label="Rotate the whole cube"
+          >
+            <div class="analog-dish" aria-hidden="true"></div>
+            <div class="analog-knob" id="analog-knob" aria-hidden="true">
+              <span class="analog-knob-cap"></span>
+            </div>
           </div>
+          <button
+            class="pill-btn rot-mode-btn"
+            data-act="rot-mode"
+            aria-pressed="false"
+            title="Switch between 90° steps and free spin"
+          >
+            <span class="rot-mode-label">STEP&nbsp;90°</span>
+          </button>
         </div>
 
-        <!-- actions: direction toggle + scramble / reset -->
+        <!-- CENTER: gamepad diamond — L← R→ U↑ D↓, F/B stacked in the middle -->
+        <div class="pad-group pad-face-group">
+          <div class="gamepad" aria-label="Turn a face">
+            <button class="key3d face-btn gp-u" data-face="U" style="--key: var(--cube-u)">U</button>
+            <button class="key3d face-btn gp-l" data-face="L" style="--key: var(--cube-l)">L</button>
+            <button class="key3d face-btn gp-r" data-face="R" style="--key: var(--cube-r)">R</button>
+            <button class="key3d face-btn gp-d" data-face="D" style="--key: var(--cube-d)">D</button>
+            <div class="gp-center">
+              <button class="key3d face-btn gp-front" data-face="F" style="--key: var(--cube-f)">F</button>
+              <button class="key3d face-btn gp-back" data-face="B" style="--key: var(--cube-b)">B</button>
+            </div>
+          </div>
+          <button
+            class="pill-btn fb-toggle"
+            data-act="fb-toggle"
+            aria-pressed="false"
+            title="Swap the centre face between Front and Back"
+          >
+            <span class="fb-toggle-label">Centre: F</span>
+          </button>
+        </div>
+
+        <!-- RIGHT: prime toggle, middle slices, scramble / reset -->
         <div class="pad-group pad-actions">
-          <div class="cube-seg" role="group" aria-label="Turn direction">
-            <button class="cube-seg-btn cube-seg-btn--active" data-dir="cw">
-              CW
-            </button>
-            <button class="cube-seg-btn" data-dir="ccw">CCW</button>
+          <button
+            class="key3d prime-btn"
+            data-act="prime"
+            aria-pressed="false"
+            title="Reverse direction (prime ’)"
+          >
+            <span class="prime-mark">’</span>
+          </button>
+
+          <div class="slice-row" aria-label="Turn a middle slice">
+            <button class="key3d slice-btn" data-slice="M">M</button>
+            <button class="key3d slice-btn" data-slice="E">E</button>
+            <button class="key3d slice-btn" data-slice="S">S</button>
           </div>
+
           <div class="pad-icon-row">
-          <button
-            class="pad-btn pad-icon"
-            data-act="scramble"
-            aria-label="Scramble"
-            title="Scramble"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M3 7h4l10 10h3"
-                fill="none"
-                stroke="var(--accent-secondary)"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M18 14l3 3-3 3"
-                fill="none"
-                stroke="var(--accent-secondary)"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M3 17h4l3-3"
-                fill="none"
-                stroke="var(--accent-danger)"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M14 10l3-3h4"
-                fill="none"
-                stroke="var(--accent-danger)"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M18 4l3 3-3 3"
-                fill="none"
-                stroke="var(--accent-danger)"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            class="pad-btn pad-icon"
-            data-act="reset"
-            aria-label="Reset"
-            title="Reset"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M18.8 12a6.8 6.8 0 1 1-2-4.9"
-                fill="none"
-                stroke="var(--accent-success)"
-                stroke-width="2.6"
-                stroke-linecap="round"
-              />
-              <path
-                d="M20.6 4.7l-.7 4.4-4.4-.7"
-                fill="none"
-                stroke="var(--accent-warning)"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          </div>
-        </div>
-
-        <!-- face turns (hold = 180) -->
-        <div class="pad-group" aria-label="Turn a face">
-          <div class="face-grid">
-            <button class="pad-btn face-btn" data-face="U">U</button>
-            <button class="pad-btn face-btn" data-face="D">D</button>
-            <button class="pad-btn face-btn" data-face="L">L</button>
-            <button class="pad-btn face-btn" data-face="R">R</button>
-            <button class="pad-btn face-btn" data-face="F">F</button>
-            <button class="pad-btn face-btn" data-face="B">B</button>
-          </div>
-        </div>
-
-        <!-- middle slices (hold = 180) -->
-        <div class="pad-group" aria-label="Turn a middle slice">
-          <div class="slice-row">
-            <button class="pad-btn slice-btn" data-slice="M">M</button>
-            <button class="pad-btn slice-btn" data-slice="E">E</button>
-            <button class="pad-btn slice-btn" data-slice="S">S</button>
+            <button
+              class="key3d key3d--icon"
+              data-act="scramble"
+              aria-label="Scramble"
+              title="Scramble"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 7h4l10 10h3" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M18 14l3 3-3 3" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M3 17h4l3-3" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M14 10l3-3h4" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M18 4l3 3-3 3" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <button
+              class="key3d key3d--icon"
+              data-act="reset"
+              aria-label="Reset"
+              title="Reset"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.8 12a6.8 6.8 0 1 1-2-4.9" fill="none" stroke="var(--accent-success)" stroke-width="2.6" stroke-linecap="round" />
+                <path d="M20.6 4.7l-.7 4.4-4.4-.7" fill="none" stroke="var(--accent-warning)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>

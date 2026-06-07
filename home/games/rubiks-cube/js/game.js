@@ -74,7 +74,6 @@ const movesEl = document.getElementById("stat-moves");
 const timeEl = document.getElementById("stat-time");
 const winBanner = document.getElementById("win-banner");
 const winDetail = document.getElementById("win-detail");
-const segBtns = document.querySelectorAll(".cube-seg-btn");
 const carton = document.getElementById("carton");
 
 /* ---------- renderer / scene ----------------------------------------- */
@@ -618,14 +617,27 @@ function reset() {
   newScramble();
 }
 
+// Single prime (') toggle: on = every keypad turn goes counter-clockwise.
+const primeBtn = document.querySelector('[data-act="prime"]');
 function setPrime(on) {
   prime = on;
-  segBtns.forEach((b) =>
-    b.classList.toggle(
-      "cube-seg-btn--active",
-      (b.dataset.dir === "ccw") === on
-    )
-  );
+  if (primeBtn) primeBtn.setAttribute("aria-pressed", String(on));
+}
+
+/* ---------- gamepad: F / B centre swap ------------------------------ */
+// The diamond stacks F and B in the middle cell; this flips which one is
+// face-up (and therefore the one that's tappable).
+const faceGroup = document.querySelector(".pad-face-group");
+const fbBtn = document.querySelector('[data-act="fb-toggle"]');
+let faceBack = false;
+function setFaceBack(on) {
+  faceBack = on;
+  if (faceGroup) faceGroup.classList.toggle("fb-back", on);
+  if (fbBtn) {
+    fbBtn.setAttribute("aria-pressed", String(on));
+    const lbl = fbBtn.querySelector(".fb-toggle-label");
+    if (lbl) lbl.textContent = "Centre: " + (on ? "B" : "F");
+  }
 }
 
 /* ---------- practice modes ------------------------------------------ */
@@ -1108,13 +1120,142 @@ window.addEventListener("blur", () => {
   }
 });
 
+/* ---------- analog thumbstick (whole-cube rotation) ----------------- */
+// One stick drives the whole-cube spin. Two modes, toggled by one button:
+//   step  — push toward a cardinal → a single quantized 90° rotation
+//            (auto-repeats while held); orientation stays lattice-aligned.
+//   free  — the cube orbits continuously following the knob; on release the
+//            orientation snaps to the nearest 90° so face turns stay valid.
+const analog = document.getElementById("analog");
+const knob = document.getElementById("analog-knob");
+const rotModeBtn = document.querySelector('[data-act="rot-mode"]');
+
+let rotMode = "step"; // "step" | "free"
+let stickPointer = null;
+let stickCx = 0;
+let stickCy = 0;
+let stickMax = 30;
+let stickEngaged = false;
+let stickNX = 0; // normalised -1..1 (right +)
+let stickNY = 0; // normalised -1..1 (up +)
+let stepLatchDir = null;
+let stepRepeat = null;
+
+function snapCubeOrientation() {
+  cubeGroup.quaternion.copy(snapQuaternion(cubeGroup.quaternion));
+}
+
+function setRotMode(mode) {
+  if (mode === "step" && rotMode === "free") snapCubeOrientation();
+  rotMode = mode;
+  if (rotModeBtn) {
+    rotModeBtn.setAttribute("aria-pressed", String(mode === "free"));
+    const lbl = rotModeBtn.querySelector(".rot-mode-label");
+    if (lbl) lbl.textContent = mode === "free" ? "FREE SPIN" : "STEP 90°";
+  }
+}
+
+function fireStep(dir) {
+  rotateCube(dir);
+  clearTimeout(stepRepeat);
+  stepRepeat = setTimeout(function rep() {
+    if (stepLatchDir === dir) {
+      rotateCube(dir);
+      stepRepeat = setTimeout(rep, 320);
+    }
+  }, 360);
+}
+
+function stickStart(e) {
+  if (scrambling || cartonOn()) return; // locked while covered / shuffling
+  stickPointer = e.pointerId;
+  const r = analog.getBoundingClientRect();
+  stickCx = r.left + r.width / 2;
+  stickCy = r.top + r.height / 2;
+  stickMax = r.width * 0.32;
+  stickEngaged = true;
+  analog.classList.add("dragging");
+  if (analog.setPointerCapture) analog.setPointerCapture(e.pointerId);
+  // free spin after inspection counts as the first move → start the timer
+  if (rotMode === "free" && gameMode === "challenge" && !inspecting)
+    ensureSolveStarted();
+  stickMove(e);
+}
+
+function stickMove(e) {
+  if (stickPointer !== e.pointerId) return;
+  const dx = e.clientX - stickCx;
+  const dy = e.clientY - stickCy;
+  const len = Math.hypot(dx, dy) || 1;
+  const cl = Math.min(len, stickMax);
+  const ux = dx / len;
+  const uy = dy / len;
+  knob.style.transform = `translate(${ux * cl}px, ${uy * cl}px)`;
+  const mag = cl / stickMax;
+  stickNX = ux * mag;
+  stickNY = -uy * mag; // screen-up → positive
+
+  if (rotMode === "step") {
+    if (mag > 0.55) {
+      const dir =
+        Math.abs(stickNX) > Math.abs(stickNY)
+          ? stickNX > 0
+            ? "right"
+            : "left"
+          : stickNY > 0
+            ? "up"
+            : "down";
+      if (dir !== stepLatchDir) {
+        stepLatchDir = dir;
+        fireStep(dir);
+      }
+    } else {
+      stepLatchDir = null;
+      clearTimeout(stepRepeat);
+      stepRepeat = null;
+    }
+  }
+}
+
+function stickEnd(e) {
+  if (stickPointer !== e.pointerId) return;
+  stickPointer = null;
+  stickEngaged = false;
+  stickNX = 0;
+  stickNY = 0;
+  stepLatchDir = null;
+  clearTimeout(stepRepeat);
+  stepRepeat = null;
+  analog.classList.remove("dragging");
+  knob.style.transform = "translate(0px, 0px)";
+  if (rotMode === "free") snapCubeOrientation();
+}
+
+if (analog) {
+  analog.addEventListener("pointerdown", stickStart);
+  analog.addEventListener("pointermove", stickMove);
+  ["pointerup", "pointercancel"].forEach((ev) =>
+    analog.addEventListener(ev, stickEnd),
+  );
+}
+if (rotModeBtn)
+  rotModeBtn.addEventListener("click", () =>
+    setRotMode(rotMode === "step" ? "free" : "step"),
+  );
+
 /* ---------- pointer + wheel ----------------------------------------- */
 // Swipe to spin the whole cube one quarter-turn toward the next face
-// (quantized, so face turns stay axis-aligned to the viewer); wheel zooms.
+// (quantized, so face turns stay axis-aligned to the viewer); wheel +
+// two-finger pinch zoom.
 const SWIPE = 42; // px threshold
 let downX = 0;
 let downY = 0;
 let swiping = false;
+
+// two-finger pinch-to-zoom tracking
+const touchPts = new Map();
+let pinching = false;
+let pinchDist = 0;
 
 // Once uncovered the box can be dragged anywhere BEHIND the cube (even off
 // screen) — never in front. We drag it in a screen-parallel plane fixed at
@@ -1136,6 +1277,16 @@ const boxDraggable = () =>
   cartonMesh && cartonMesh.visible && cartonMesh.parent === scene;
 
 canvas.addEventListener("pointerdown", (e) => {
+  touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  // second finger down → start a pinch-zoom (cancel any swipe / box drag)
+  if (touchPts.size === 2) {
+    pinching = true;
+    swiping = false;
+    draggingBox = false;
+    const p = [...touchPts.values()];
+    pinchDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    return;
+  }
   if (boxDraggable()) {
     setNDC(e);
     raycaster.setFromCamera(ndc, camera);
@@ -1155,6 +1306,18 @@ canvas.addEventListener("pointerdown", (e) => {
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointermove", (e) => {
+  if (touchPts.has(e.pointerId))
+    touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinching && touchPts.size >= 2) {
+    const p = [...touchPts.values()];
+    const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    if (pinchDist) {
+      camDist = clamp(camDist - (d - pinchDist) * 0.02, 6, 14);
+      placeCamera();
+    }
+    pinchDist = d;
+    return;
+  }
   if (!draggingBox) return;
   setNDC(e);
   raycaster.setFromCamera(ndc, camera);
@@ -1167,12 +1330,23 @@ canvas.addEventListener("pointermove", (e) => {
     cartonMesh.position.copy(pt);
   }
 });
+function endCanvasPointer(e) {
+  touchPts.delete(e.pointerId);
+  if (touchPts.size < 2) {
+    pinching = false;
+    pinchDist = 0;
+  }
+}
 canvas.addEventListener("pointerup", (e) => {
+  endCanvasPointer(e);
   if (draggingBox) {
     draggingBox = false;
     return;
   }
-  if (!swiping) return;
+  if (pinching || !swiping) {
+    swiping = false;
+    return;
+  }
   swiping = false;
   const dx = e.clientX - downX;
   const dy = e.clientY - downY;
@@ -1181,7 +1355,8 @@ canvas.addEventListener("pointerup", (e) => {
   if (Math.abs(dx) > Math.abs(dy)) rotateCube(dx > 0 ? "left" : "right");
   else rotateCube(dy > 0 ? "up" : "down");
 });
-canvas.addEventListener("pointercancel", () => {
+canvas.addEventListener("pointercancel", (e) => {
+  endCanvasPointer(e);
   swiping = false;
   draggingBox = false;
 });
@@ -1196,9 +1371,6 @@ canvas.addEventListener(
 );
 
 /* ---------- on-screen keypad + buttons ------------------------------ */
-document
-  .querySelectorAll("[data-rot]")
-  .forEach((b) => b.addEventListener("click", () => rotateCube(b.dataset.rot)));
 // Face + middle-slice buttons use press/release so a long-press = 180.
 function wirePress(b, notation, letter, layer) {
   b.addEventListener("pointerdown", (e) => {
@@ -1239,9 +1411,9 @@ document
   .forEach((b) => b.addEventListener("click", reset));
 // Tap the cover to slide it off (one-way → inspect).
 if (carton) carton.addEventListener("click", openCover);
-segBtns.forEach((b) =>
-  b.addEventListener("click", () => setPrime(b.dataset.dir === "ccw"))
-);
+// Single prime (') toggle + F/B centre swap.
+if (primeBtn) primeBtn.addEventListener("click", () => setPrime(!prime));
+if (fbBtn) fbBtn.addEventListener("click", () => setFaceBack(!faceBack));
 if (padFab) padFab.addEventListener("click", togglePad);
 document
   .querySelectorAll('[data-act="states"]')
@@ -1284,6 +1456,19 @@ function stopRender() {
 function loop() {
   if (!rendering) return;
   requestAnimationFrame(loop);
+  // Free-spin: orbit the whole cube each frame, following the thumbstick.
+  if (
+    rotMode === "free" &&
+    stickEngaged &&
+    !animating &&
+    !scrambling &&
+    !cartonOn() &&
+    (Math.abs(stickNX) > 0.04 || Math.abs(stickNY) > 0.04)
+  ) {
+    const sp = 0.05;
+    cubeGroup.rotateOnWorldAxis(AXIS_Y, -stickNX * sp);
+    cubeGroup.rotateOnWorldAxis(AXIS_X, stickNY * sp);
+  }
   renderer.render(scene, camera);
 }
 

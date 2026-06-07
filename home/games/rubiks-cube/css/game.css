@@ -393,38 +393,6 @@ body.cube-active .ticker {
   word-break: break-word;
 }
 
-/* ----- Direction switch (pill toggle — same as subscribe .sp-kindtabs) ----- */
-.cube-seg {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
-  border: var(--border-subtle);
-  background: color-mix(in srgb, var(--surface-secondary) 82%, transparent);
-  box-shadow: var(--shadow-sm);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
-  pointer-events: auto; /* keypad container is pointer-events:none */
-}
-.cube-seg-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: manipulation;
-  padding: 5px 14px;
-  border-radius: 999px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  transition: background 0.18s ease, color 0.18s ease;
-}
-.cube-seg-btn--active {
-  background: var(--ink);
-  color: var(--bg);
-}
-
 /* ----- LEFT SIDEBAR — cube state picker (three.js previews) ----- */
 .mode-bar {
   position: absolute;
@@ -813,11 +781,20 @@ body.cube-active .ticker {
 }
 
 /* ===================================================================
-   KEYPAD — transparent overlay across the bottom of the cube
-   (opacity 0 background so the cube shows through; buttons are
-   bg-less icons/letters with a halo for legibility)
+   GAMEPAD — realistic 3D controls across the bottom of the cube
+   The container stays transparent (cube shows between the groups);
+   only the chunky 3D buttons are opaque + catch input.
    =================================================================== */
 .cube-pad {
+  /* cube sticker colours drive the face keycaps */
+  --cube-u: #f7f4ec;
+  --cube-d: #f4c95d;
+  --cube-r: #f07a7a;
+  --cube-l: #f0a868;
+  --cube-f: #7cc47c;
+  --cube-b: #6fb7e8;
+  --k: clamp(40px, 11vw, 50px); /* keycap size */
+
   position: absolute;
   left: 0;
   right: 0;
@@ -825,11 +802,11 @@ body.cube-active .ticker {
   z-index: 6;
   display: none;
   align-items: flex-end;
-  justify-content: center;
-  gap: clamp(14px, 5vw, 46px);
-  padding: 14px clamp(12px, 4vw, 26px) calc(16px + env(safe-area-inset-bottom));
-  background: none; /* opacity 0 — the cube is visible behind it */
-  pointer-events: none; /* only the buttons catch input; swipes pass through */
+  justify-content: space-between;
+  gap: clamp(10px, 3.5vw, 40px);
+  padding: 14px clamp(12px, 4vw, 30px) calc(16px + env(safe-area-inset-bottom));
+  background: none; /* cube is visible between the control clusters */
+  pointer-events: none; /* only buttons catch input; swipes pass through */
 }
 
 .cube-modal.pad-open .cube-pad {
@@ -840,164 +817,292 @@ body.cube-active .ticker {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   pointer-events: none;
 }
 
-/* every keypad button: no background, glyph/letter only, halo for contrast */
-.pad-btn {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.15rem;
+/* ----- REALISTIC 3D KEYCAP ----- */
+.key3d {
+  --key: #cdd2db;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--k);
+  height: var(--k);
   border: 0;
-  background: none;
-  padding: 0;
-  color: var(--ink);
+  border-radius: calc(var(--k) * 0.3);
   cursor: pointer;
   pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  text-shadow:
-    0 0 3px rgba(255, 255, 255, 0.95),
-    0 0 6px rgba(255, 255, 255, 0.7);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: calc(var(--k) * 0.46);
+  line-height: 1;
+  color: #241f1b;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--key) 72%, #fff) 0%,
+    var(--key) 44%,
+    color-mix(in srgb, var(--key) 74%, #000) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -4px 7px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 6px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 10px 16px rgba(15, 16, 20, 0.42);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   transition:
-    transform 0.1s ease,
-    color 0.1s ease;
+    transform 0.07s ease,
+    box-shadow 0.07s ease;
+}
+/* glossy top sheen */
+.key3d::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 11%;
+  height: 38%;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+.key3d:active,
+.key3d.is-down {
+  transform: translateY(5px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -2px 5px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 1px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 3px 6px rgba(15, 16, 20, 0.4);
+}
+.key3d--icon {
+  --key: #d7dbe3;
+}
+.key3d--icon svg {
+  width: 56%;
+  height: 56%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
-.pad-btn:active {
-  transform: scale(0.88);
-}
-
-.pad-btn svg {
-  width: 27px;
-  height: 27px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-}
-
-/* d-pad */
-.dpad {
+/* ----- GAMEPAD DIAMOND (face turns) ----- */
+.gamepad {
   display: grid;
-  grid-template-columns: repeat(3, 34px);
-  grid-template-rows: repeat(3, 34px);
-  gap: 2px;
-}
-
-.dpad .pad-btn {
-  width: 34px;
-  height: 34px;
-  font-size: 0.95rem;
-  display: grid;
+  grid-template-columns: repeat(3, var(--k));
+  grid-template-rows: repeat(3, var(--k));
+  gap: calc(var(--k) * 0.16);
   place-items: center;
 }
+.gp-u { grid-area: 1 / 2; }
+.gp-l { grid-area: 2 / 1; }
+.gp-r { grid-area: 2 / 3; }
+.gp-d { grid-area: 3 / 2; }
+.gp-center {
+  grid-area: 2 / 2;
+  position: relative;
+  width: var(--k);
+  height: var(--k);
+  pointer-events: none;
+}
+.gp-center .key3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    transform 0.07s ease,
+    box-shadow 0.07s ease,
+    opacity 0.22s ease;
+}
+/* front shown by default; back hidden underneath */
+.gp-front { z-index: 2; opacity: 1; }
+.gp-back { z-index: 1; opacity: 0; pointer-events: none; }
+.pad-face-group.fb-back .gp-front { opacity: 0; pointer-events: none; }
+.pad-face-group.fb-back .gp-back { opacity: 1; pointer-events: auto; z-index: 3; }
 
-.dpad-up {
-  grid-area: 1 / 2;
-}
-.dpad-left {
-  grid-area: 2 / 1;
-}
-.dpad-right {
-  grid-area: 2 / 3;
-}
-.dpad-down {
-  grid-area: 3 / 2;
-}
-
-/* actions: prime / scramble / reset (icons only) */
-.pad-actions {
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-.pad-actions .pad-icon-row {
-  display: flex;
-  gap: 16px;
-}
-
-.pad-icon {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-}
-
-.pad-icon[aria-pressed="true"] {
-  color: var(--accent-secondary);
-}
-
-/* faces 3x2 + middle slices — bold letters */
-.face-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 38px);
-  grid-template-rows: repeat(2, 38px);
-  gap: 4px;
-}
-
+/* ----- SLICE ROW + PRIME ----- */
 .slice-row {
   display: flex;
-  gap: 8px;
+  gap: calc(var(--k) * 0.16);
 }
-
-.face-btn,
 .slice-btn {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  font-size: 1.25rem;
+  --key: #cbb8e6;
+}
+.prime-btn {
+  --key: #ffd27a;
+}
+.prime-mark {
+  font-size: calc(var(--k) * 0.7);
+  line-height: 0.7;
+  transform: translateY(-0.06em);
+}
+.prime-btn[aria-pressed="true"] {
+  --key: #ff8f3a;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.prime-btn[aria-pressed="true"]::before {
+  content: "ON";
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--accent-success);
+  border-radius: 6px;
+  padding: 1px 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.slice-btn {
-  color: var(--accent-warning);
+.pad-icon-row {
+  display: flex;
+  gap: 12px;
 }
 
-/* ----- RESPONSIVE ----- */
+/* ----- PILL BUTTONS (rotation-mode + F/B swap) ----- */
+.pill-btn {
+  pointer-events: auto;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: #20242c;
+  background: linear-gradient(180deg, #f3f5f9, #cfd5df);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 3px 0 #a9b1bd,
+    0 6px 10px rgba(15, 16, 20, 0.32);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  white-space: nowrap;
+}
+.pill-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 1px 0 #a9b1bd,
+    0 2px 5px rgba(15, 16, 20, 0.3);
+}
+.rot-mode-btn[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(180deg, #7db8ff, var(--accent-secondary));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 3px 0 color-mix(in srgb, var(--accent-secondary) 60%, #000),
+    0 6px 10px rgba(15, 16, 20, 0.34);
+}
+
+/* ----- ANALOG THUMBSTICK ----- */
+.analog {
+  position: relative;
+  width: clamp(86px, 24vw, 112px);
+  height: clamp(86px, 24vw, 112px);
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background:
+    radial-gradient(circle at 50% 32%, #434956 0%, #23272f 62%, #15181d 100%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -14px 26px rgba(0, 0, 0, 0.55) inset,
+    0 12px 22px rgba(0, 0, 0, 0.5);
+}
+/* recessed dish + cardinal ticks */
+.analog-dish {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2c313b, #181b21 78%);
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.6) inset;
+}
+.analog-dish::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+}
+.analog-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  margin: -23% 0 0 -23%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, #8a93a3 0%, #565e6c 45%, #2b313b 78%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.28) inset,
+    0 -8px 14px rgba(0, 0, 0, 0.55) inset,
+    0 8px 14px rgba(0, 0, 0, 0.55);
+  transition: transform 0.09s ease-out;
+  will-change: transform;
+}
+.analog-knob-cap {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #c3cad6, #6b7280 70%);
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.5) inset;
+}
+.analog.dragging .analog-knob {
+  transition: none;
+}
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+/* Mobile side menu: roomier sliding sheet, easy to scroll/tap */
+@media (max-width: 760px) {
+  .mode-bar {
+    width: min(86vw, 320px);
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    gap: 14px;
+  }
+  .cube-pad {
+    --k: clamp(38px, 13vw, 48px);
+  }
+}
+
 @media (max-width: 560px) {
   .cube-pad {
-    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 18px;
     padding-left: 8px;
     padding-right: 8px;
   }
-
-  .dpad {
-    grid-template-columns: repeat(3, 34px);
-    grid-template-rows: repeat(3, 34px);
-  }
-
-  .dpad .pad-btn {
-    width: 34px;
-    height: 34px;
-  }
-
+  /* stick + actions sit on the outer edges, gamepad centred above */
+  .pad-stick-group,
   .pad-actions {
-    gap: 12px;
+    margin: 0;
   }
-
-  .face-grid {
-    grid-template-columns: repeat(3, 34px);
-    grid-template-rows: repeat(2, 34px);
-  }
-
-  .face-btn,
-  .slice-btn {
-    width: 34px;
-    height: 34px;
-    font-size: 1.1rem;
+  .pad-face-group {
+    order: -1;
+    flex-basis: 100%;
   }
 
   .modal-title {
     display: none;
   }
-
-  /* keep the top bar tidy on phones */
   .icon-btn {
     width: 36px;
     height: 36px;
-  }
-  .mode-bar {
-    width: 170px;
   }
   .stat-note {
     height: 42px;
@@ -1015,8 +1120,16 @@ body.cube-active .ticker {
     padding: 0.6rem 1.2rem;
     font-size: 0.95rem;
   }
-  .cube-seg-btn {
-    padding: 6px 12px;
-    font-size: 0.7rem;
+}
+
+/* very short / landscape phones: shrink the stick so controls fit */
+@media (max-height: 460px) {
+  .analog {
+    width: 78px;
+    height: 78px;
+  }
+  .cube-pad {
+    --k: 38px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
