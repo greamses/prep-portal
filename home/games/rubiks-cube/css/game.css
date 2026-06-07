@@ -246,6 +246,35 @@ body.cube-active .ticker {
 .state-card.tc-5, .algo-card.tc-5 { background: #e3c9fb; }
 
 /* ----- Practice (algo) accordion ----- */
+/* module switcher — Basics · OLL · PLL · Patterns */
+.algo-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+.algo-mod-btn {
+  flex: 1 1 auto;
+  border: var(--border);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.algo-mod-btn:hover {
+  transform: translateY(-1px);
+}
+.algo-mod-btn[aria-pressed="true"] {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
 .algo-hint {
   margin: 0 2px 8px;
   font-size: 0.68rem;

@@ -15,6 +15,7 @@
 
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { ALGO_MODULES } from "./algs.js";
 
 // GSAP for playful side-menu motion (same CDN module the nav uses).
 let gsap = null;
@@ -65,6 +66,61 @@ const DIRS = [
   new THREE.Vector3(0, 0, 1),
   new THREE.Vector3(0, 0, -1),
 ];
+
+/* ---------- move algebra (faces · slices · wide turns · rotations) ----
+   Every twist = "rotate the cubies whose coordinate ALONG `dir` is in
+   `layers`, about `dir`". Outer face = layer 1, middle = 0, far side = -1.
+   Wide moves grab the outer face + the adjacent middle (two layers, same
+   direction); whole-cube rotations grab all three layers. This is what lets
+   real OLL/PLL algorithms (which use r, f, x, y, …) play back faithfully. */
+const TURN = {
+  U: { dir: VIEW.U, layers: [1] },
+  D: { dir: VIEW.D, layers: [1] },
+  L: { dir: VIEW.L, layers: [1] },
+  R: { dir: VIEW.R, layers: [1] },
+  F: { dir: VIEW.F, layers: [1] },
+  B: { dir: VIEW.B, layers: [1] },
+  // middle slices follow L / D / F respectively
+  M: { dir: VIEW.L, layers: [0] },
+  E: { dir: VIEW.D, layers: [0] },
+  S: { dir: VIEW.F, layers: [0] },
+  // wide (two-layer) turns — outer face + adjacent middle, same direction
+  u: { dir: VIEW.U, layers: [1, 0] },
+  d: { dir: VIEW.D, layers: [1, 0] },
+  l: { dir: VIEW.L, layers: [1, 0] },
+  r: { dir: VIEW.R, layers: [1, 0] },
+  f: { dir: VIEW.F, layers: [1, 0] },
+  b: { dir: VIEW.B, layers: [1, 0] },
+  // whole-cube rotations (x follows R, y follows U, z follows F)
+  x: { dir: VIEW.R, layers: [1, 0, -1] },
+  y: { dir: VIEW.U, layers: [1, 0, -1] },
+  z: { dir: VIEW.F, layers: [1, 0, -1] },
+};
+// "Rw" wide notation is an alias for lowercase "r", etc.
+for (const fc of ["U", "D", "L", "R", "F", "B"])
+  TURN[fc + "w"] = TURN[fc.toLowerCase()];
+
+// Tokenise an algorithm string into { base, turn, prime, double }.
+const MOVE_RE = /(Uw|Dw|Lw|Rw|Fw|Bw|[UDLRFBMESxyzudlrfb])(['2]?)/g;
+function parseMoves(str) {
+  const out = [];
+  MOVE_RE.lastIndex = 0;
+  let m;
+  while ((m = MOVE_RE.exec(str))) {
+    const turn = TURN[m[1]];
+    if (!turn) continue;
+    out.push({ base: m[1], turn, prime: m[2] === "'", double: m[2] === "2" });
+  }
+  return out;
+}
+
+// Reverse an algorithm: flip order, invert each move (X↔X', X2 stays X2).
+function invertMoves(str) {
+  return parseMoves(str)
+    .reverse()
+    .map((t) => t.base + (t.double ? "2" : t.prime ? "" : "'"))
+    .join(" ");
+}
 
 /* ---------- DOM ------------------------------------------------------ */
 const canvas = document.getElementById("cube-canvas");
@@ -241,19 +297,21 @@ function pump() {
 // Resolve which cubies sit on the viewer's `letter` face, given the
 // current whole-cube orientation, and twist them about that world axis.
 function runFaceTurn(move) {
-  const { letter, prime: pr, scramble: isScramble, dur, double } = move;
+  const { prime: pr, scramble: isScramble, dur, double } = move;
   const duration = (double ? 1.5 : 1) * (dur || TURN_MS);
   animating = true;
-  const dirWorld = VIEW[letter];
+  // A turn is described either by a viewer face `letter` (keyboard/keypad) or
+  // directly by `dir` + `layers` (algorithm playback: wide moves, rotations).
+  const dirWorld = move.dir || VIEW[move.letter];
+  const layers = move.layers || [move.layer ?? 1];
   const q = cubeGroup.quaternion;
 
   if (!isScramble && move.notation) showMove(move.notation);
 
-  const layer = move.layer ?? 1; // 1 = outer face, 0 = middle slice
   cubeGroup.updateMatrixWorld(true);
   const active = cubies.filter((c) => {
     const wp = c.position.clone().applyQuaternion(q);
-    return Math.round(wp.dot(dirWorld) / SP) === layer;
+    return layers.includes(Math.round(wp.dot(dirWorld) / SP));
   });
 
   // Clockwise (seen from outside the face) = negative rotation about +normal.
@@ -780,50 +838,17 @@ function toggleStates() {
   if (modal.classList.contains("states-open")) animateSideMenu();
 }
 
-/* ---------- Practice (Algo Lab): popular algorithms ----------------- */
-// Grouped into accordion categories, easiest → hardest.
-const ALGO_GROUPS = [
-  {
-    cat: "Basics",
-    items: [
-      { name: "Sexy Move", moves: "R U R' U'" },
-      { name: "Sledgehammer", moves: "R' F R F'" },
-      { name: "Right F2L pair", moves: "U R U' R'" },
-    ],
-  },
-  {
-    cat: "Orient last layer (OLL)",
-    items: [
-      { name: "OLL cross", moves: "F R U R' U' F'" },
-      { name: "Sune", moves: "R U R' U R U2 R'" },
-      { name: "Anti-Sune", moves: "R' U' R U' R' U2 R" },
-    ],
-  },
-  {
-    cat: "Permute last layer (PLL)",
-    items: [
-      { name: "T-Perm", moves: "R U R' U' R' F R2 U' R' U' R U R' F'" },
-      { name: "Y-Perm", moves: "F R U' R' U' R U R' F' R U R' U' R' F R F'" },
-    ],
-  },
-  {
-    cat: "Fun patterns",
-    items: [
-      { name: "Checkerboard", moves: "M2 E2 S2" },
-      { name: "Six spots", moves: "U D' R L' F B' U D'" },
-      { name: "Plus / minus", moves: "U2 R2 L2 U2 R2 L2" },
-      { name: "Cube in a cube", moves: "F L F U' R U F2 L2 U' L' B D' B' L2 U" },
-    ],
-  },
-];
+/* ---------- Practice (Algo Lab): Basics · OLL (57) · PLL (21) · Patterns
+   Algorithm data lives in algs.js (Node-verifiable); the sidebar shows a
+   module switcher, then accordion sub-groups of cases. ----------------- */
 
 // Apply a single move instantly to a fresh cube (group is at identity).
-function applyMoveInstant(arr, letter, layer, isPrime, double) {
-  const dir = VIEW[letter];
+function applyMoveInstant(arr, turn, isPrime, double) {
+  const { dir, layers } = turn;
   const angle = (isPrime ? 1 : -1) * (Math.PI / 2) * (double ? 2 : 1);
   const q = new THREE.Quaternion().setFromAxisAngle(dir, angle);
   arr.forEach((c) => {
-    if (Math.round(c.position.clone().dot(dir)) !== layer) return;
+    if (!layers.includes(Math.round(c.position.clone().dot(dir)))) return;
     c.position.applyQuaternion(q);
     c.position.set(
       Math.round(c.position.x),
@@ -836,26 +861,13 @@ function applyMoveInstant(arr, letter, layer, isPrime, double) {
 }
 
 function applyAlgoInstant(arr, moves) {
-  const tokens = moves.match(/[URFDLBMES](['2])?/g) || [];
-  for (const tok of tokens) {
-    const base = tok[0];
-    const mod = tok.slice(1);
-    const isSlice = SLICES[base] !== undefined;
-    applyMoveInstant(
-      arr,
-      isSlice ? SLICES[base] : base,
-      isSlice ? 0 : 1,
-      mod === "'",
-      mod === "2"
-    );
-  }
+  for (const t of parseMoves(moves)) applyMoveInstant(arr, t.turn, t.prime, t.double);
 }
 
-// Render a little cube preview for each algorithm (the move sequence applied).
-let algoThumbsBuilt = false;
-function buildAlgoThumbs() {
-  if (algoThumbsBuilt) return;
-  algoThumbsBuilt = true;
+// One reusable offscreen renderer for the little cube previews (lazy).
+let _thumbCtx = null;
+function thumbContext() {
+  if (_thumbCtx) return _thumbCtx;
   const r = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -871,30 +883,62 @@ function buildAlgoThumbs() {
   const dl = new THREE.DirectionalLight(0xffffff, 0.7);
   dl.position.set(5, 9, 6);
   sc.add(dl);
-  ALGO_GROUPS.forEach((g) =>
-    g.items.forEach((algo) => {
-      const group = new THREE.Group();
-      const arr = [];
-      populateCube(group, arr);
-      sc.add(group);
-      applyAlgoInstant(arr, algo.moves);
-      r.render(sc, cam);
-      algo.thumb = r.domElement.toDataURL("image/png");
-      sc.remove(group);
-    })
-  );
-  r.dispose();
+  _thumbCtx = { r, sc, cam };
+  return _thumbCtx;
+}
+
+// Render (and cache) one case preview. OLL/PLL show the *case* itself (the
+// inverse of the solving algorithm); Basics/Patterns show the moves applied.
+function renderThumb(algo, isSetup) {
+  if (algo.thumb) return algo.thumb;
+  const { r, sc, cam } = thumbContext();
+  const group = new THREE.Group();
+  const arr = [];
+  populateCube(group, arr);
+  sc.add(group);
+  applyAlgoInstant(arr, isSetup ? invertMoves(algo.moves) : algo.moves);
+  r.render(sc, cam);
+  algo.thumb = r.domElement.toDataURL("image/png");
+  sc.remove(group);
+  return algo.thumb;
 }
 
 let algoListBuilt = false;
+let activeModuleId = null;
 function buildAlgoList() {
   if (algoListBuilt) return;
   algoListBuilt = true;
-  buildAlgoThumbs();
+  const switcher = document.getElementById("algo-modules");
+  if (switcher) {
+    switcher.innerHTML = "";
+    ALGO_MODULES.forEach((mod) => {
+      const b = document.createElement("button");
+      b.className = "algo-mod-btn";
+      b.textContent = mod.label;
+      b.dataset.module = mod.id;
+      b.addEventListener("click", () => showModule(mod.id));
+      switcher.appendChild(b);
+    });
+  }
+  showModule(ALGO_MODULES[0].id);
+}
+
+// Render one module: its hint, then accordion sub-groups of case cards.
+// Thumbnails for the module are rendered (and cached) on first open.
+function showModule(id) {
+  activeModuleId = id;
+  const mod = ALGO_MODULES.find((m) => m.id === id);
   const host = document.getElementById("algo-list");
-  if (!host) return;
-  let rank = 1;
-  ALGO_GROUPS.forEach((grp, gi) => {
+  if (!mod || !host) return;
+  document
+    .querySelectorAll(".algo-mod-btn")
+    .forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.module === id)));
+  const hint = document.querySelector(".mode-algos .algo-hint");
+  if (hint) hint.textContent = mod.hint || "";
+
+  host.innerHTML = "";
+  let tint = 0;
+  mod.groups.forEach((grp, gi) => {
     const cat = document.createElement("div");
     cat.className = "algo-cat" + (gi === 0 ? " open" : "");
     const head = document.createElement("button");
@@ -906,19 +950,27 @@ function buildAlgoList() {
     head.addEventListener("click", () => toggleAccordion(cat, body));
     grp.items.forEach((algo) => {
       const card = document.createElement("button");
-      card.className = "algo-card tc-" + ((rank - 1) % 6);
+      card.className = "algo-card tc-" + (tint++ % 6);
       card.innerHTML =
-        `<span class="algo-rank">${rank++}</span>` +
-        `<img class="algo-thumb" alt="" src="${algo.thumb || ""}" />` +
+        `<img class="algo-thumb" alt="" src="${renderThumb(algo, mod.setup)}" />` +
         `<span class="algo-body"><span class="algo-name">${algo.name}</span>` +
         `<span class="algo-moves">${algo.moves}</span></span>`;
-      card.addEventListener("click", () => playAlgo(algo, card));
+      card.addEventListener("click", () => playAlgo(algo, card, mod.setup));
       body.appendChild(card);
     });
     cat.appendChild(head);
     cat.appendChild(body);
     host.appendChild(cat);
   });
+  if (gsap)
+    gsap.from(host.querySelectorAll(".algo-cat"), {
+      x: -24,
+      autoAlpha: 0,
+      stagger: 0.05,
+      duration: 0.4,
+      ease: "back.out(1.7)",
+      overwrite: true,
+    });
 }
 
 // Animate an accordion category open/close (GSAP height; instant fallback).
@@ -947,7 +999,23 @@ function toggleAccordion(cat, body) {
   }
 }
 
-function playAlgo(algo, card) {
+// Queue an algorithm as animated turns (supports wide moves / rotations).
+function enqueueAlgo(moves) {
+  for (const t of parseMoves(moves)) {
+    queue.push({
+      type: "face",
+      dir: t.turn.dir,
+      layers: t.turn.layers,
+      prime: t.prime,
+      double: t.double,
+      notation: t.base + (t.double ? "2" : t.prime ? "'" : ""),
+      dur: TURN_MS,
+    });
+  }
+  pump();
+}
+
+function playAlgo(algo, card, isSetup) {
   if (gameMode !== "algo" || animating || scrambling) return;
   queue.length = 0;
   releaseMove();
@@ -955,26 +1023,22 @@ function playAlgo(algo, card) {
   cubeGroup.quaternion.identity();
   moveCount = 0;
   movesEl.textContent = "0";
-  setStatus(algo.name + " — " + algo.moves);
   document
     .querySelectorAll(".algo-card")
     .forEach((c) => c.setAttribute("aria-pressed", String(c === card)));
 
-  const tokens = algo.moves.match(/[URFDLBMES](['2])?/g) || [];
-  setTimeout(() => {
-    for (const tok of tokens) {
-      const base = tok[0];
-      const mod = tok.slice(1);
-      const isSlice = SLICES[base] !== undefined;
-      enqueueTurn(
-        base,
-        isSlice ? SLICES[base] : base,
-        isSlice ? 0 : 1,
-        mod === "'",
-        mod === "2"
-      );
-    }
-  }, 260);
+  if (isSetup) {
+    // OLL/PLL: set the case up instantly (inverse of the alg), pause, solve.
+    applyAlgoInstant(cubies, invertMoves(algo.moves));
+    setStatus(algo.name + " — set up · solving…");
+    setTimeout(() => {
+      setStatus(algo.name + " — " + algo.moves);
+      enqueueAlgo(algo.moves);
+    }, 820);
+  } else {
+    setStatus(algo.name + " — " + algo.moves);
+    setTimeout(() => enqueueAlgo(algo.moves), 260);
+  }
 }
 
 /* ---------- modal open / close (fullscreen) ------------------------- */
