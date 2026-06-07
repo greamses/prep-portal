@@ -16,6 +16,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { ALGO_MODULES } from "./algs.js";
+import { createScanner } from "./scan.js";
 
 // GSAP for playful side-menu motion (same CDN module the nav uses).
 let gsap = null;
@@ -1062,21 +1063,82 @@ function togglePad() {
   setPad(!modal.classList.contains("pad-open"));
 }
 
+/* ---------- scanned-cube state -------------------------------------- */
+// Place the 26 cubies into a scanned state. `targets` come from
+// cube-state.reconstruct(): each is { home, pos, rot(3x3) }; `home` is the
+// piece's solved slot, so we match it to the cubie built for that slot.
+function applyCubieState(targets) {
+  const byHome = new Map(targets.map((t) => [t.home.join(","), t]));
+  const m = new THREE.Matrix4();
+  let idx = 0;
+  for (let x = -1; x <= 1; x++)
+    for (let y = -1; y <= 1; y++)
+      for (let z = -1; z <= 1; z++) {
+        if (x === 0 && y === 0 && z === 0) continue;
+        const c = cubies[idx++];
+        const t = byHome.get([x, y, z].join(","));
+        if (!t) continue;
+        c.position.set(t.pos[0] * SP, t.pos[1] * SP, t.pos[2] * SP);
+        const R = t.rot;
+        m.set(
+          R[0][0], R[0][1], R[0][2], 0,
+          R[1][0], R[1][1], R[1][2], 0,
+          R[2][0], R[2][1], R[2][2], 0,
+          0, 0, 0, 1
+        );
+        c.quaternion.setFromRotationMatrix(m);
+      }
+  cubeGroup.quaternion.identity();
+}
+
+// The webcam scanner (lazy): mirrors a physical cube onto the digital one.
+let scanner = null;
+function getScanner() {
+  if (scanner) return scanner;
+  scanner = createScanner({
+    onApply(targets) {
+      applyCubieState(targets);
+      modal.classList.remove("scanning");
+      resize(); // the canvas was hidden during scanning — re-fit it
+      setStatus("Scanned! It now matches your cube — turn it freely.");
+    },
+    onCancel() {
+      closeModal();
+    },
+  });
+  return scanner;
+}
+
 function openModal(mode) {
   if (modalOpen) return;
-  gameMode = mode === "algo" ? "algo" : "challenge";
+  gameMode = mode === "algo" ? "algo" : mode === "scan" ? "scan" : "challenge";
   modalOpen = true;
   modal.classList.add("open");
   modal.classList.toggle("algo", gameMode === "algo");
+  modal.classList.toggle("scan-mode", gameMode === "scan");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("cube-active");
-  setPad(window.matchMedia("(max-width: 760px)").matches);
+  setPad(gameMode !== "scan" && window.matchMedia("(max-width: 760px)").matches);
   // try true fullscreen for immersion; the overlay covers the viewport regardless
   if (modal.requestFullscreen) modal.requestFullscreen().catch(() => {});
   startRender();
   requestAnimationFrame(() => {
     resize();
-    if (gameMode === "algo") {
+    if (gameMode === "scan") {
+      cartonHide();
+      stopInspection();
+      rebuildSolved();
+      cubeGroup.quaternion.identity();
+      stopTimer();
+      started = false;
+      solved = true;
+      moveCount = 0;
+      movesEl.textContent = "0";
+      timeEl.textContent = "0:00";
+      modal.classList.add("scanning");
+      setStatus("");
+      getScanner().start();
+    } else if (gameMode === "algo") {
       // Algo Lab: no cover/shuffle — pick an algorithm to watch.
       cartonHide();
       stopInspection();
@@ -1102,7 +1164,8 @@ function openModal(mode) {
 function closeModal() {
   if (!modalOpen) return;
   modalOpen = false;
-  modal.classList.remove("open", "algo", "states-open");
+  if (scanner) scanner.stop(); // release the webcam
+  modal.classList.remove("open", "algo", "states-open", "scan-mode", "scanning");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("cube-active");
   stopTimer();
@@ -1110,6 +1173,7 @@ function closeModal() {
   stopRender();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
+
 
 /* ---------- keyboard ------------------------------------------------- */
 window.addEventListener("keydown", (e) => {

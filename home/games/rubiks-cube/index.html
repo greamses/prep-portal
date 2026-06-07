@@ -95,12 +95,20 @@
             >
               Practice
             </button>
+            <button
+              class="mode-switch-btn"
+              data-act="start"
+              data-mode="scan"
+            >
+              Camera
+            </button>
           </div>
 
           <p class="mode-blurb">
             <b>Learn</b> — inspect the boxed scramble, then solve it step by
             step (cross → last layer). <b>Practice</b> — drill every OLL &amp;
-            PLL case, plus core triggers and fun patterns.
+            PLL case, plus core triggers and fun patterns. <b>Camera</b> — scan
+            your real cube and mirror it here.
           </p>
 
           <div class="hero-stats">
@@ -300,6 +308,7 @@
           <span id="win-detail">Nicely done.</span>
         </div>
 
+
         <!-- Floating keypad toggle (transparent, overlaid on the cube) -->
         <button
           class="pad-fab"
@@ -434,6 +443,27 @@
         <!-- /cube-pad -->
       </div>
       <!-- /cube-canvas-wrap -->
+
+      <!-- ===== Camera scanner (OpenCV) — shown in scan mode ===== -->
+      <div class="scan-panel" id="scan-panel">
+        <div class="scan-stage">
+          <video id="scan-video" playsinline muted></video>
+          <canvas id="scan-overlay"></canvas>
+          <div class="scan-loading" id="scan-loading" hidden>Loading vision…</div>
+        </div>
+        <p class="scan-status" id="scan-status">
+          Tap “Start camera”, then hold each face up to the dotted grid.
+        </p>
+        <div class="scan-faces" id="scan-faces" aria-label="Captured faces"></div>
+        <div class="scan-actions">
+          <button class="pill-btn scan-btn" data-scan="start">Start camera</button>
+          <button class="pill-btn scan-btn" data-scan="capture" hidden>Capture face</button>
+          <button class="pill-btn scan-btn" data-scan="retake" hidden>Retake</button>
+          <button class="pill-btn scan-btn scan-btn--go" data-scan="apply" hidden>
+            Apply to cube
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Paint blobs behind the hero + inside the game modal -->
