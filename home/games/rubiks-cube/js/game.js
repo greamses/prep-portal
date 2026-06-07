@@ -1188,6 +1188,7 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
+  if (!e.key) return; // some events (IME, media keys) have no `key`
   const upper = e.key.length === 1 ? e.key.toUpperCase() : e.key;
 
   // Face / middle-slice turns. Shift = prime (reverse); hold = 180 (double).
@@ -1237,15 +1238,12 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keyup", (e) => {
+  if (!e.key) return;
   const upper = e.key.length === 1 ? e.key.toUpperCase() : e.key;
   if (VIEW[upper] || SLICES[upper]) releaseMove();
 });
 window.addEventListener("blur", () => {
   releaseMove();
-  if (spaceTimer) {
-    clearTimeout(spaceTimer);
-    spaceTimer = null;
-  }
 });
 
 /* ---------- analog thumbstick (whole-cube rotation) ----------------- */
