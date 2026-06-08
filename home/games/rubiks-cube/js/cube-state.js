@@ -117,6 +117,42 @@ export function outerPositions() {
 const solvedStickers = (home) =>
   home.map((c, i) => (c !== 0 ? { dir: [0, 0, 0].map((_, j) => (j === i ? c : 0)), face: dirFace([0, 0, 0].map((_, j) => (j === i ? c : 0))) } : null)).filter(Boolean);
 
+/* ---- facelet string (Kociemba/cubejs order: U R F D L B) -------------
+   Each face is read top→bottom, left→right as in the standard unfolded net.
+   `up`/`right` are the world directions of the reading's up and right axes;
+   cell (row,col) → cubie position = n + (1-row)*up + (col-1)*right, dir = n. */
+const FACE_READ = {
+  U: { n: DIR.U, up: DIR.B, right: DIR.R }, // looking down, back at top
+  R: { n: DIR.R, up: DIR.U, right: DIR.B },
+  F: { n: DIR.F, up: DIR.U, right: DIR.R },
+  D: { n: DIR.D, up: DIR.F, right: DIR.R }, // looking up, front at top
+  L: { n: DIR.L, up: DIR.U, right: DIR.F },
+  B: { n: DIR.B, up: DIR.U, right: DIR.L },
+};
+const add3 = (...vs) => [0, 1, 2].map((i) => vs.reduce((s, v) => s + v[i], 0));
+const scale = (v, k) => v.map((c) => c * k);
+
+// Build the 54-char facelet string from reconstruct-style targets.
+export function toFacelets(targets) {
+  // colour label at (position, outward-dir)
+  const at = new Map();
+  for (const t of targets)
+    for (const s of solvedStickers(t.home)) {
+      const wdir = applyM(t.rot, s.dir);
+      at.set(key(t.pos) + "|" + key(wdir), s.face);
+    }
+  let out = "";
+  for (const f of ["U", "R", "F", "D", "L", "B"]) {
+    const { n, up, right } = FACE_READ[f];
+    for (let row = 0; row < 3; row++)
+      for (let col = 0; col < 3; col++) {
+        const pos = add3(n, scale(up, 1 - row), scale(right, col - 1));
+        out += at.get(key(pos) + "|" + key(n)) || "?";
+      }
+  }
+  return out;
+}
+
 // Validate a finished scan. Returns { ok, error }.
 export function validate(grids) {
   const counts = {};

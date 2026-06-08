@@ -88,18 +88,10 @@
             >
               Learn
             </button>
-            <button
-              class="mode-switch-btn"
-              data-act="start"
-              data-mode="algo"
-            >
+            <button class="mode-switch-btn" data-act="start" data-mode="algo">
               Practice
             </button>
-            <button
-              class="mode-switch-btn"
-              data-act="start"
-              data-mode="scan"
-            >
+            <button class="mode-switch-btn" data-act="start" data-mode="scan">
               Camera
             </button>
           </div>
@@ -259,37 +251,61 @@
         <aside class="mode-bar" aria-label="Sidebar">
           <div class="mode-states">
             <h3 class="mode-bar-title">Solve, step by step</h3>
-            <button class="state-card tc-0" data-state="cross" aria-pressed="false">
+            <button
+              class="state-card tc-0"
+              data-state="cross"
+              aria-pressed="false"
+            >
               <span class="state-thumb"
                 ><img alt="White cross, other blocks hidden"
               /></span>
               <span class="state-name">Cross</span>
             </button>
-            <button class="state-card tc-1" data-state="first" aria-pressed="false">
+            <button
+              class="state-card tc-1"
+              data-state="first"
+              aria-pressed="false"
+            >
               <span class="state-thumb"
                 ><img alt="First layer, other blocks hidden"
               /></span>
               <span class="state-name">First layer</span>
             </button>
-            <button class="state-card tc-2" data-state="second" aria-pressed="false">
+            <button
+              class="state-card tc-2"
+              data-state="second"
+              aria-pressed="false"
+            >
               <span class="state-thumb"
                 ><img alt="First two layers, top layer hidden"
               /></span>
               <span class="state-name">Second layer</span>
             </button>
-            <button class="state-card tc-3" data-state="oll" aria-pressed="false">
+            <button
+              class="state-card tc-3"
+              data-state="oll"
+              aria-pressed="false"
+            >
               <span class="state-thumb"
                 ><img alt="Orient the last layer"
               /></span>
               <span class="state-name">OLL</span>
             </button>
-            <button class="state-card tc-4" data-state="pll" aria-pressed="false">
+            <button
+              class="state-card tc-4"
+              data-state="pll"
+              aria-pressed="false"
+            >
               <span class="state-thumb"
                 ><img alt="Permute the last layer"
               /></span>
               <span class="state-name">PLL</span>
             </button>
-            <button class="state-card tc-5" data-state="full" aria-pressed="true">
+            <button
+              class="state-card tc-5"
+              data-state="full"
+              aria-pressed="true"
+            >
               <span class="state-thumb"><img alt="Full solved cube" /></span>
               <span class="state-name">Full cube</span>
             </button>
@@ -307,7 +323,6 @@
           <strong>Solved!</strong>
           <span id="win-detail">Nicely done.</span>
         </div>
-
 
         <!-- Floating keypad toggle (transparent, overlaid on the cube) -->
         <button
@@ -348,97 +363,181 @@
              Lives inside the canvas wrap so it shares the canvas stacking
              context — that lets the side menu (z 10) sit ABOVE the pad. -->
         <div class="cube-pad">
-        <!-- LEFT: analog thumbstick — spins the whole cube -->
-        <div class="pad-group pad-stick-group">
-          <div
-            class="analog"
-            id="analog"
-            role="button"
-            tabindex="0"
-            aria-label="Rotate the whole cube"
-          >
-            <div class="analog-dish" aria-hidden="true"></div>
-            <div class="analog-knob" id="analog-knob" aria-hidden="true">
-              <span class="analog-knob-cap"></span>
-            </div>
-          </div>
-          <button
-            class="pill-btn rot-mode-btn"
-            data-act="rot-mode"
-            aria-pressed="false"
-            title="Switch between 90° steps and free spin"
-          >
-            <span class="rot-mode-label">STEP&nbsp;90°</span>
-          </button>
-        </div>
-
-        <!-- CENTER: gamepad diamond — L← R→ U↑ D↓, F/B stacked in the middle -->
-        <div class="pad-group pad-face-group">
-          <div class="gamepad" aria-label="Turn a face">
-            <button class="key3d face-btn gp-u" data-face="U" style="--key: var(--cube-u)">U</button>
-            <button class="key3d face-btn gp-l" data-face="L" style="--key: var(--cube-l)">L</button>
-            <button class="key3d face-btn gp-r" data-face="R" style="--key: var(--cube-r)">R</button>
-            <button class="key3d face-btn gp-d" data-face="D" style="--key: var(--cube-d)">D</button>
-            <div class="gp-center">
-              <button class="key3d face-btn gp-front" data-face="F" style="--key: var(--cube-f)">F</button>
-              <button class="key3d face-btn gp-back" data-face="B" style="--key: var(--cube-b)">B</button>
-            </div>
-          </div>
-          <button
-            class="pill-btn fb-toggle"
-            data-act="fb-toggle"
-            aria-pressed="false"
-            title="Swap the centre face between Front and Back"
-          >
-            <span class="fb-toggle-label">Centre: F</span>
-          </button>
-        </div>
-
-        <!-- RIGHT: prime toggle, middle slices, scramble / reset -->
-        <div class="pad-group pad-actions">
-          <button
-            class="key3d prime-btn"
-            data-act="prime"
-            aria-pressed="false"
-            title="Reverse direction (prime ’)"
-          >
-            <span class="prime-mark">’</span>
-          </button>
-
-          <div class="slice-row" aria-label="Turn a middle slice">
-            <button class="key3d slice-btn" data-slice="M">M</button>
-            <button class="key3d slice-btn" data-slice="E">E</button>
-            <button class="key3d slice-btn" data-slice="S">S</button>
-          </div>
-
-          <div class="pad-icon-row">
-            <button
-              class="key3d key3d--icon"
-              data-act="scramble"
-              aria-label="Scramble"
-              title="Scramble"
+          <!-- LEFT: analog thumbstick — spins the whole cube -->
+          <div class="pad-group pad-stick-group">
+            <div
+              class="analog"
+              id="analog"
+              role="button"
+              tabindex="0"
+              aria-label="Rotate the whole cube"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 7h4l10 10h3" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M18 14l3 3-3 3" fill="none" stroke="var(--accent-secondary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M3 17h4l3-3" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M14 10l3-3h4" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M18 4l3 3-3 3" fill="none" stroke="var(--accent-danger)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
+              <div class="analog-dish" aria-hidden="true"></div>
+              <div class="analog-knob" id="analog-knob" aria-hidden="true">
+                <span class="analog-knob-cap"></span>
+              </div>
+            </div>
             <button
-              class="key3d key3d--icon"
-              data-act="reset"
-              aria-label="Reset"
-              title="Reset"
+              class="pill-btn rot-mode-btn"
+              data-act="rot-mode"
+              aria-pressed="false"
+              title="Switch between 90° steps and free spin"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M18.8 12a6.8 6.8 0 1 1-2-4.9" fill="none" stroke="var(--accent-success)" stroke-width="2.6" stroke-linecap="round" />
-                <path d="M20.6 4.7l-.7 4.4-4.4-.7" fill="none" stroke="var(--accent-warning)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <span class="rot-mode-label">STEP&nbsp;90°</span>
             </button>
           </div>
-        </div>
+
+          <!-- CENTER: gamepad diamond — L← R→ U↑ D↓, F/B stacked in the middle -->
+          <div class="pad-group pad-face-group">
+            <div class="gamepad" aria-label="Turn a face">
+              <button
+                class="key3d face-btn gp-u"
+                data-face="U"
+                style="--key: var(--cube-u)"
+              >
+                U
+              </button>
+              <button
+                class="key3d face-btn gp-l"
+                data-face="L"
+                style="--key: var(--cube-l)"
+              >
+                L
+              </button>
+              <button
+                class="key3d face-btn gp-r"
+                data-face="R"
+                style="--key: var(--cube-r)"
+              >
+                R
+              </button>
+              <button
+                class="key3d face-btn gp-d"
+                data-face="D"
+                style="--key: var(--cube-d)"
+              >
+                D
+              </button>
+              <div class="gp-center">
+                <button
+                  class="key3d face-btn gp-front"
+                  data-face="F"
+                  style="--key: var(--cube-f)"
+                >
+                  F
+                </button>
+                <button
+                  class="key3d face-btn gp-back"
+                  data-face="B"
+                  style="--key: var(--cube-b)"
+                >
+                  B
+                </button>
+              </div>
+            </div>
+            <button
+              class="pill-btn fb-toggle"
+              data-act="fb-toggle"
+              aria-pressed="false"
+              title="Swap the centre face between Front and Back"
+            >
+              <span class="fb-toggle-label">Centre: F</span>
+            </button>
+          </div>
+
+          <!-- RIGHT: prime toggle, middle slices, scramble / reset -->
+          <div class="pad-group pad-actions">
+            <button
+              class="key3d prime-btn"
+              data-act="prime"
+              aria-pressed="false"
+              title="Reverse direction (prime ’)"
+            >
+              <span class="prime-mark">’</span>
+            </button>
+
+            <div class="slice-row" aria-label="Turn a middle slice">
+              <button class="key3d slice-btn" data-slice="M">M</button>
+              <button class="key3d slice-btn" data-slice="E">E</button>
+              <button class="key3d slice-btn" data-slice="S">S</button>
+            </div>
+
+            <div class="pad-icon-row">
+              <button
+                class="key3d key3d--icon"
+                data-act="scramble"
+                aria-label="Scramble"
+                title="Scramble"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 7h4l10 10h3"
+                    fill="none"
+                    stroke="var(--accent-secondary)"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M18 14l3 3-3 3"
+                    fill="none"
+                    stroke="var(--accent-secondary)"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M3 17h4l3-3"
+                    fill="none"
+                    stroke="var(--accent-danger)"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M14 10l3-3h4"
+                    fill="none"
+                    stroke="var(--accent-danger)"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M18 4l3 3-3 3"
+                    fill="none"
+                    stroke="var(--accent-danger)"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                class="key3d key3d--icon"
+                data-act="reset"
+                aria-label="Reset"
+                title="Reset"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M18.8 12a6.8 6.8 0 1 1-2-4.9"
+                    fill="none"
+                    stroke="var(--accent-success)"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M20.6 4.7l-.7 4.4-4.4-.7"
+                    fill="none"
+                    stroke="var(--accent-warning)"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
         <!-- /cube-pad -->
       </div>
@@ -449,17 +548,33 @@
         <div class="scan-stage">
           <video id="scan-video" playsinline muted></video>
           <canvas id="scan-overlay"></canvas>
-          <div class="scan-loading" id="scan-loading" hidden>Loading vision…</div>
+          <div class="scan-loading" id="scan-loading" hidden>
+            Loading vision…
+          </div>
         </div>
         <p class="scan-status" id="scan-status">
           Tap “Start camera”, then hold each face up to the dotted grid.
         </p>
-        <div class="scan-faces" id="scan-faces" aria-label="Captured faces"></div>
+        <div
+          class="scan-faces"
+          id="scan-faces"
+          aria-label="Captured faces"
+        ></div>
         <div class="scan-actions">
-          <button class="pill-btn scan-btn" data-scan="start">Start camera</button>
-          <button class="pill-btn scan-btn" data-scan="capture" hidden>Capture face</button>
-          <button class="pill-btn scan-btn" data-scan="retake" hidden>Retake</button>
-          <button class="pill-btn scan-btn scan-btn--go" data-scan="apply" hidden>
+          <button class="pill-btn scan-btn" data-scan="start">
+            Start camera
+          </button>
+          <button class="pill-btn scan-btn" data-scan="capture" hidden>
+            Capture face
+          </button>
+          <button class="pill-btn scan-btn" data-scan="retake" hidden>
+            Retake
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--go"
+            data-scan="apply"
+            hidden
+          >
             Apply to cube
           </button>
         </div>

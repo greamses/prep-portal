@@ -17,19 +17,102 @@ let cvReady = null;
 function loadOpenCV() {
   if (cvReady) return cvReady;
   cvReady = new Promise((resolve, reject) => {
-    if (window.cv && window.cv.Mat) return resolve(window.cv);
-    const s = document.createElement("script");
-    s.src = OPENCV_URL;
-    s.async = true;
-    s.onload = () => {
+    // If cv is already defined and fully loaded, resolve immediately.
+    if (window.cv && window.cv.Mat) {
+      if (typeof window.cv.then === "function") {
+        try {
+          delete window.cv.then;
+        } catch (e) {
+          window.cv.then = undefined;
+        }
+      }
+      return resolve(window.cv);
+    }
+
+    let s = document.querySelector(`script[src="${OPENCV_URL}"]`);
+
+    const handleLoad = () => {
       const cv = window.cv;
-      if (!cv) return reject(new Error("OpenCV missing"));
-      if (typeof cv.then === "function") cv.then(resolve);
-      else if (cv.Mat) resolve(cv);
-      else cv.onRuntimeInitialized = () => resolve(cv);
+      if (!cv) {
+        return reject(new Error("OpenCV missing"));
+      }
+
+      // Case 1: Modularized build (window.cv is a factory function)
+      if (typeof cv === "function") {
+        cv()
+          .then((instance) => {
+            if (instance && typeof instance.then === "function") {
+              try {
+                delete instance.then;
+              } catch (e) {
+                instance.then = undefined;
+              }
+            }
+            window.cv = instance;
+            resolve(instance);
+          })
+          .catch(reject);
+        return;
+      }
+
+      // Case 2: Already initialized non-modularized build
+      if (cv.Mat) {
+        if (typeof cv.then === "function") {
+          try {
+            delete cv.then;
+          } catch (e) {
+            cv.then = undefined;
+          }
+        }
+        resolve(cv);
+        return;
+      }
+
+      // Case 3: Thenable/Promise non-modularized build
+      if (typeof cv.then === "function") {
+        cv.then((instance) => {
+          const target = instance || cv;
+          if (target && typeof target.then === "function") {
+            try {
+              delete target.then;
+            } catch (e) {
+              target.then = undefined;
+            }
+          }
+          resolve(target);
+        }).catch(reject);
+        return;
+      }
+
+      // Case 4: Not yet initialized, assign Emscripten callback
+      cv.onRuntimeInitialized = () => {
+        if (typeof cv.then === "function") {
+          try {
+            delete cv.then;
+          } catch (e) {
+            cv.then = undefined;
+          }
+        }
+        resolve(cv);
+      };
     };
-    s.onerror = () => reject(new Error("Could not load OpenCV"));
-    document.head.appendChild(s);
+
+    if (window.cv) {
+      handleLoad();
+      return;
+    }
+
+    if (!s) {
+      s = document.createElement("script");
+      s.src = OPENCV_URL;
+      s.async = true;
+      document.head.appendChild(s);
+    }
+
+    s.addEventListener("load", handleLoad);
+    s.addEventListener("error", () =>
+      reject(new Error("Could not load OpenCV")),
+    );
   });
   return cvReady;
 }
@@ -39,37 +122,59 @@ function loadOpenCV() {
 const HUE = { D: 21, R: 0, L: 14, F: 60, B: 102 };
 function classify(h, s, v) {
   if (s < 70 && v > 110) return "U"; // washed-out cream → white
-  let best = "D", bd = 1e9;
+  let best = "D",
+    bd = 1e9;
   for (const f of Object.keys(HUE)) {
     const d = Math.min(Math.abs(h - HUE[f]), 179 - Math.abs(h - HUE[f]));
-    if (d < bd) { bd = d; best = f; }
+    if (d < bd) {
+      bd = d;
+      best = f;
+    }
   }
   return best;
 }
 // On-screen swatch colours for live feedback.
 const SWATCH = {
-  U: "#f7f4ec", D: "#f4c95d", R: "#f07a7a",
-  L: "#f0a868", F: "#7cc47c", B: "#6fb7e8",
+  U: "#f7f4ec",
+  D: "#f4c95d",
+  R: "#f07a7a",
+  L: "#f0a868",
+  F: "#7cc47c",
+  B: "#6fb7e8",
 };
 
 export function createScanner({ onApply, onCancel }) {
   const $ = (id) => document.getElementById(id);
-  const video = $("scan-video");
-  const overlay = $("scan-overlay");
-  const statusEl = $("scan-status");
-  const facesEl = $("scan-faces");
-  const loadingEl = $("scan-loading");
-  const btn = (a) => document.querySelector(`[data-scan="${a}"]`);
+
+  // Declared at scope level, populated dynamically on start() and startCamera()
+  let video = null;
+  let overlay = null;
+  let statusEl = null;
+  let facesEl = null;
+  let loadingEl = null;
 
   let stream = null;
   let raf = 0;
   let cv = null;
   let face = 0; // which HOLD we're capturing
   const grids = []; // captured face label arrays
+  let pending = null;
+
+  function initElements() {
+    video = $("scan-video");
+    overlay = $("scan-overlay");
+    statusEl = $("scan-status");
+    facesEl = $("scan-faces");
+    loadingEl = $("scan-loading");
+  }
+
+  const btn = (a) => document.querySelector(`[data-scan="${a}"]`);
 
   // grid geometry on the overlay (a centred square split 3×3)
   function gridRect() {
-    const w = overlay.width, h = overlay.height;
+    if (!overlay) return { x: 0, y: 0, side: 0, cell: 0 };
+    const w = overlay.width,
+      h = overlay.height;
     const side = Math.min(w, h) * 0.74;
     return { x: (w - side) / 2, y: (h - side) / 2, side, cell: side / 3 };
   }
@@ -79,37 +184,67 @@ export function createScanner({ onApply, onCancel }) {
     const cx = g.x + (col + 0.5) * g.cell;
     const cy = g.y + (row + 0.5) * g.cell;
     const p = Math.max(6, g.cell * 0.28);
-    const d = ctx.getImageData(cx - p / 2, cy - p / 2, p, p).data;
-    let r = 0, gr = 0, b = 0, n = 0;
-    for (let i = 0; i < d.length; i += 4) { r += d[i]; gr += d[i + 1]; b += d[i + 2]; n++; }
+    const sx = Math.round(cx - p / 2);
+    const sy = Math.round(cy - p / 2);
+    const sp = Math.round(p);
+    const d = ctx.getImageData(sx, sy, sp, sp).data;
+    let r = 0,
+      gr = 0,
+      b = 0,
+      n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      r += d[i];
+      gr += d[i + 1];
+      b += d[i + 2];
+      n++;
+    }
     return [r / n, gr / n, b / n];
   }
+
   const rgbToHsv = (r, g, b) => {
-    r /= 255; g /= 255; b /= 255;
-    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), df = mx - mn;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const mx = Math.max(r, g, b),
+      mn = Math.min(r, g, b),
+      df = mx - mn;
     let h = 0;
     if (df) {
       if (mx === r) h = ((g - b) / df) % 6;
       else if (mx === g) h = (b - r) / df + 2;
       else h = (r - g) / df + 4;
-      h *= 60; if (h < 0) h += 360;
+      h *= 60;
+      if (h < 0) h += 360;
     }
     return [h / 2, (mx ? df / mx : 0) * 255, mx * 255]; // OpenCV ranges
   };
 
-  function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+  function setStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
+  }
+
   function showButtons(state) {
-    btn("start").hidden = state !== "idle";
-    btn("capture").hidden = state !== "capturing";
-    btn("retake").hidden = !(state === "capturing" && face > 0) && state !== "review";
-    btn("apply").hidden = state !== "review";
+    const bStart = btn("start");
+    const bCapture = btn("capture");
+    const bRetake = btn("retake");
+    const bApply = btn("apply");
+
+    if (bStart) bStart.hidden = state !== "idle";
+    if (bCapture) bCapture.hidden = state !== "capturing";
+    if (bRetake)
+      bRetake.hidden =
+        !(state === "capturing" && face > 0) && state !== "review";
+    if (bApply) bApply.hidden = state !== "review";
   }
 
   // draw video + grid + live classification each frame
   function loop() {
     raf = requestAnimationFrame(loop);
-    if (!video.videoWidth) return;
+    if (!video || !video.videoWidth || !overlay) return;
+
     const ctx = overlay.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
     overlay.width = video.videoWidth;
     overlay.height = video.videoHeight;
     ctx.drawImage(video, 0, 0, overlay.width, overlay.height);
@@ -118,12 +253,14 @@ export function createScanner({ onApply, onCancel }) {
     ctx.strokeStyle = "rgba(255,255,255,0.92)";
     for (let i = 0; i <= 3; i++) {
       ctx.beginPath();
-      ctx.moveTo(g.x + i * g.cell, g.y); ctx.lineTo(g.x + i * g.cell, g.y + g.side);
-      ctx.moveTo(g.x, g.y + i * g.cell); ctx.lineTo(g.x + g.side, g.y + i * g.cell);
+      ctx.moveTo(g.x + i * g.cell, g.y);
+      ctx.lineTo(g.x + i * g.cell, g.y + g.side);
+      ctx.moveTo(g.x, g.y + i * g.cell);
+      ctx.lineTo(g.x + g.side, g.y + i * g.cell);
       ctx.stroke();
     }
     // live swatches
-    for (let row = 0; row < 3; row++)
+    for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const [r, gr, b] = sampleCell(ctx, g, row, col);
         const [h, s, v] = rgbToHsv(r, gr, b);
@@ -131,36 +268,56 @@ export function createScanner({ onApply, onCancel }) {
         ctx.fillStyle = SWATCH[lab];
         const rad = g.cell * 0.16;
         ctx.beginPath();
-        ctx.arc(g.x + (col + 0.5) * g.cell, g.y + (row + 0.5) * g.cell, rad, 0, 7);
+        ctx.arc(
+          g.x + (col + 0.5) * g.cell,
+          g.y + (row + 0.5) * g.cell,
+          rad,
+          0,
+          2 * Math.PI,
+        );
         ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(0,0,0,0.35)";
+        ctx.stroke();
       }
+    }
   }
 
   // read the 9 cells with OpenCV (RGB→HSV, per-cell mean) and classify
   function readFace() {
+    if (!video || !overlay || !cv) return [];
     const ctx = overlay.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return [];
+
     // redraw a CLEAN frame first — the live overlay has grid + swatches drawn
     // over each cell centre, which would otherwise corrupt the sample.
     ctx.drawImage(video, 0, 0, overlay.width, overlay.height);
     const g = gridRect();
     const src = cv.imread(overlay); // RGBA
+    const rgb = new cv.Mat();
     const hsv = new cv.Mat();
-    cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
-    cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
-    const out = [];
-    for (let row = 0; row < 3; row++)
-      for (let col = 0; col < 3; col++) {
-        const p = Math.round(g.cell * 0.34);
-        const x = Math.round(g.x + (col + 0.5) * g.cell - p / 2);
-        const y = Math.round(g.y + (row + 0.5) * g.cell - p / 2);
-        const roi = hsv.roi(new cv.Rect(x, y, p, p));
-        const m = cv.mean(roi);
-        out.push(classify(m[0], m[1], m[2]));
-        roi.delete();
+
+    try {
+      cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+      cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
+      const out = [];
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const p = Math.round(g.cell * 0.34);
+          const x = Math.round(g.x + (col + 0.5) * g.cell - p / 2);
+          const y = Math.round(g.y + (row + 0.5) * g.cell - p / 2);
+          const roi = hsv.roi(new cv.Rect(x, y, p, p));
+          const m = cv.mean(roi);
+          out.push(classify(m[0], m[1], m[2]));
+          roi.delete();
+        }
       }
-    src.delete(); hsv.delete();
-    return out;
+      return out;
+    } finally {
+      src.delete();
+      rgb.delete();
+      hsv.delete();
+    }
   }
 
   function renderFaceStrip() {
@@ -168,7 +325,8 @@ export function createScanner({ onApply, onCancel }) {
     facesEl.innerHTML = "";
     HOLDS.forEach((hold, i) => {
       const slot = document.createElement("div");
-      slot.className = "scan-face" + (i === face ? " active" : "") + (grids[i] ? " done" : "");
+      slot.className =
+        "scan-face" + (i === face ? " active" : "") + (grids[i] ? " done" : "");
       if (grids[i]) {
         slot.innerHTML = grids[i]
           .map((l) => `<span style="background:${SWATCH[l]}"></span>`)
@@ -189,21 +347,30 @@ export function createScanner({ onApply, onCancel }) {
     const labels = readFace();
     grids[face] = labels;
     face++;
-    if (face < HOLDS.length) { promptFace(); showButtons("capturing"); }
-    else finish();
+    if (face < HOLDS.length) {
+      promptFace();
+      showButtons("capturing");
+    } else finish();
   }
 
   function finish() {
     renderFaceStrip();
     const v = validate(grids);
-    if (!v.ok) { setStatus("⚠ " + v.error); showButtons("review"); return; }
+    if (!v.ok) {
+      setStatus("⚠ " + v.error);
+      showButtons("review");
+      return;
+    }
     const r = reconstruct(grids);
-    if (!r.ok) { setStatus("⚠ " + r.error); showButtons("review"); return; }
+    if (!r.ok) {
+      setStatus("⚠ " + r.error);
+      showButtons("review");
+      return;
+    }
     pending = r.targets;
     setStatus("Looks good! Tap “Apply to cube” to mirror your cube.");
     showButtons("review");
   }
-  let pending = null;
 
   function retake() {
     // drop the most recently captured face and re-shoot it
@@ -216,40 +383,72 @@ export function createScanner({ onApply, onCancel }) {
   }
 
   async function startCamera() {
+    initElements();
+    if (!video) {
+      setStatus("Camera elements could not be initialized.");
+      return;
+    }
+
     setStatus("Starting camera…");
     if (loadingEl) loadingEl.hidden = false;
     try {
       cv = await loadOpenCV();
     } catch (e) {
       setStatus("Couldn't load the vision library — check your connection.");
+      if (loadingEl) loadingEl.hidden = true;
       return;
     }
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
         audio: false,
       });
     } catch (e) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
       } catch (e2) {
         setStatus("Camera access was blocked. Allow the camera and try again.");
+        if (loadingEl) loadingEl.hidden = true;
         return;
       }
     }
     if (loadingEl) loadingEl.hidden = true;
+
+    // Set video attributes programmatically for iOS/mobile compatibility
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("muted", "true");
+    video.muted = true;
+
     video.srcObject = stream;
-    await video.play().catch(() => {});
+
+    // Invoke playback without awaiting to bypass strict browser autoplay locks
+    video.play().catch((err) => {
+      console.warn("Video playback deferred:", err);
+    });
+
     cancelAnimationFrame(raf);
     loop();
-    face = 0; grids.length = 0; pending = null;
+    face = 0;
+    grids.length = 0;
+    pending = null;
     promptFace();
     showButtons("capturing");
   }
 
   function stop() {
-    cancelAnimationFrame(raf); raf = 0;
-    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+    cancelAnimationFrame(raf);
+    raf = 0;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
     if (video) video.srcObject = null;
   }
 
@@ -257,16 +456,20 @@ export function createScanner({ onApply, onCancel }) {
     if (btn("start")) btn("start").onclick = startCamera;
     if (btn("capture")) btn("capture").onclick = capture;
     if (btn("retake")) btn("retake").onclick = retake;
-    if (btn("apply")) btn("apply").onclick = () => {
-      if (!pending) return;
-      stop();
-      onApply(pending);
-    };
+    if (btn("apply"))
+      btn("apply").onclick = () => {
+        if (!pending) return;
+        stop();
+        onApply(pending);
+      };
   }
 
   function start() {
+    initElements();
     bind();
-    face = 0; grids.length = 0; pending = null;
+    face = 0;
+    grids.length = 0;
+    pending = null;
     setStatus("Tap “Start camera”, then hold each face up to the dotted grid.");
     if (loadingEl) loadingEl.hidden = true;
     renderFaceStrip();
