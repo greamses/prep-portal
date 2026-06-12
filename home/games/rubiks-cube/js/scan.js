@@ -17,7 +17,6 @@ let cvReady = null;
 function loadOpenCV() {
   if (cvReady) return cvReady;
   cvReady = new Promise((resolve, reject) => {
-    // If cv is already defined and fully loaded, resolve immediately.
     if (window.cv && window.cv.Mat) {
       if (typeof window.cv.then === "function") {
         try {
@@ -33,13 +32,11 @@ function loadOpenCV() {
 
     const handleLoad = () => {
       const cv = window.cv;
-      if (!cv) {
-        return reject(new Error("OpenCV missing"));
-      }
+      if (!cv) return reject(new Error("OpenCV missing"));
 
-      // Case 1: Modularized build (window.cv is a factory function)
+      // Wrap Emscripten custom thenables in a native Promise to prevent .catch() missing errors
       if (typeof cv === "function") {
-        cv()
+        Promise.resolve(cv())
           .then((instance) => {
             if (instance && typeof instance.then === "function") {
               try {
@@ -55,7 +52,6 @@ function loadOpenCV() {
         return;
       }
 
-      // Case 2: Already initialized non-modularized build
       if (cv.Mat) {
         if (typeof cv.then === "function") {
           try {
@@ -68,23 +64,23 @@ function loadOpenCV() {
         return;
       }
 
-      // Case 3: Thenable/Promise non-modularized build
       if (typeof cv.then === "function") {
-        cv.then((instance) => {
-          const target = instance || cv;
-          if (target && typeof target.then === "function") {
-            try {
-              delete target.then;
-            } catch (e) {
-              target.then = undefined;
+        Promise.resolve(cv)
+          .then((instance) => {
+            const target = instance || cv;
+            if (target && typeof target.then === "function") {
+              try {
+                delete target.then;
+              } catch (e) {
+                target.then = undefined;
+              }
             }
-          }
-          resolve(target);
-        }).catch(reject);
+            resolve(target);
+          })
+          .catch(reject);
         return;
       }
 
-      // Case 4: Not yet initialized, assign Emscripten callback
       cv.onRuntimeInitialized = () => {
         if (typeof cv.then === "function") {
           try {
@@ -125,7 +121,8 @@ function classify(h, s, v) {
   let best = "D",
     bd = 1e9;
   for (const f of Object.keys(HUE)) {
-    const d = Math.min(Math.abs(h - HUE[f]), 179 - Math.abs(h - HUE[f]));
+    // 180 is used as distance cap because OpenCV's 8-bit hue maxes at 180 (0-179)
+    const d = Math.min(Math.abs(h - HUE[f]), 180 - Math.abs(h - HUE[f]));
     if (d < bd) {
       bd = d;
       best = f;
@@ -133,6 +130,7 @@ function classify(h, s, v) {
   }
   return best;
 }
+
 // On-screen swatch colours for live feedback.
 const SWATCH = {
   U: "#f7f4ec",
@@ -142,35 +140,60 @@ const SWATCH = {
   F: "#7cc47c",
   B: "#6fb7e8",
 };
+const FACE_NAMES = {
+  U: "White",
+  D: "Yellow",
+  R: "Red",
+  L: "Orange",
+  F: "Green",
+  B: "Blue",
+};
+const FACE_ORDER = ["U", "D", "R", "L", "F", "B"];
 
-export function createScanner({ onApply, onCancel }) {
+export function createScanner({
+  onApply,
+  onCancel,
+  onSolveReady,
+  onPlaySolve,
+  onStepSolve,
+}) {
   const $ = (id) => document.getElementById(id);
 
-  // Declared at scope level, populated dynamically on start() and startCamera()
   let video = null;
   let overlay = null;
   let statusEl = null;
+  let manualStatusEl = null;
   let facesEl = null;
+  let manualFacesEl = null;
+  let manualModalEl = null;
   let loadingEl = null;
+  let editorEl = null;
 
   let stream = null;
   let raf = 0;
   let cv = null;
-  let face = 0; // which HOLD we're capturing
-  const grids = []; // captured face label arrays
+  let face = 0;
+  let selectedFace = 0;
+  let selectedColor = "U";
+  const grids = [];
   let pending = null;
+  let solveMoves = null;
+  let solveIndex = 0;
 
   function initElements() {
     video = $("scan-video");
     overlay = $("scan-overlay");
     statusEl = $("scan-status");
+    manualStatusEl = $("scan-manual-status");
     facesEl = $("scan-faces");
+    manualFacesEl = $("scan-manual-faces");
+    manualModalEl = $("scan-manual-modal");
     loadingEl = $("scan-loading");
+    editorEl = $("scan-editor");
   }
 
   const btn = (a) => document.querySelector(`[data-scan="${a}"]`);
 
-  // grid geometry on the overlay (a centred square split 3×3)
   function gridRect() {
     if (!overlay) return { x: 0, y: 0, side: 0, cell: 0 };
     const w = overlay.width,
@@ -179,7 +202,6 @@ export function createScanner({ onApply, onCancel }) {
     return { x: (w - side) / 2, y: (h - side) / 2, side, cell: side / 3 };
   }
 
-  // average colour of a cell's central patch from the overlay canvas
   function sampleCell(ctx, g, row, col) {
     const cx = g.x + (col + 0.5) * g.cell;
     const cy = g.y + (row + 0.5) * g.cell;
@@ -210,34 +232,41 @@ export function createScanner({ onApply, onCancel }) {
       df = mx - mn;
     let h = 0;
     if (df) {
-      if (mx === r) h = ((g - b) / df) % 6;
+      // Prevents negative modulos causing logic failure in JS
+      if (mx === r) h = (g - b) / df + (g < b ? 6 : 0);
       else if (mx === g) h = (b - r) / df + 2;
       else h = (r - g) / df + 4;
       h *= 60;
-      if (h < 0) h += 360;
     }
-    return [h / 2, (mx ? df / mx : 0) * 255, mx * 255]; // OpenCV ranges
+    return [h / 2, (mx ? df / mx : 0) * 255, mx * 255];
   };
 
   function setStatus(msg) {
     if (statusEl) statusEl.textContent = msg;
+    if (manualStatusEl) manualStatusEl.textContent = msg;
   }
 
   function showButtons(state) {
     const bStart = btn("start");
+    const bManual = btn("manual");
     const bCapture = btn("capture");
     const bRetake = btn("retake");
     const bApply = btn("apply");
+    const bManualApply = btn("manual-apply");
+    const bPlay = btn("play");
+    const bStep = btn("step");
 
     if (bStart) bStart.hidden = state !== "idle";
-    if (bCapture) bCapture.hidden = state !== "capturing";
+    if (bManual) bManual.hidden = false;
+    if (bCapture) bCapture.hidden = state !== "capturing" || !stream;
     if (bRetake)
-      bRetake.hidden =
-        !(state === "capturing" && face > 0) && state !== "review";
-    if (bApply) bApply.hidden = state !== "review";
+      bRetake.hidden = !(stream && (grids[selectedFace] || face > 0));
+    if (bApply) bApply.hidden = state !== "review" || !pending;
+    if (bManualApply) bManualApply.hidden = state !== "review" || !pending;
+    if (bPlay) bPlay.hidden = state !== "solved";
+    if (bStep) bStep.hidden = state !== "solved";
   }
 
-  // draw video + grid + live classification each frame
   function loop() {
     raf = requestAnimationFrame(loop);
     if (!video || !video.videoWidth || !overlay) return;
@@ -259,7 +288,7 @@ export function createScanner({ onApply, onCancel }) {
       ctx.lineTo(g.x + g.side, g.y + i * g.cell);
       ctx.stroke();
     }
-    // live swatches
+
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const [r, gr, b] = sampleCell(ctx, g, row, col);
@@ -283,17 +312,14 @@ export function createScanner({ onApply, onCancel }) {
     }
   }
 
-  // read the 9 cells with OpenCV (RGB→HSV, per-cell mean) and classify
   function readFace() {
     if (!video || !overlay || !cv) return [];
     const ctx = overlay.getContext("2d", { willReadFrequently: true });
     if (!ctx) return [];
 
-    // redraw a CLEAN frame first — the live overlay has grid + swatches drawn
-    // over each cell centre, which would otherwise corrupt the sample.
     ctx.drawImage(video, 0, 0, overlay.width, overlay.height);
     const g = gridRect();
-    const src = cv.imread(overlay); // RGBA
+    const src = cv.imread(overlay);
     const rgb = new cv.Mat();
     const hsv = new cv.Mat();
 
@@ -304,8 +330,13 @@ export function createScanner({ onApply, onCancel }) {
       for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 3; col++) {
           const p = Math.round(g.cell * 0.34);
-          const x = Math.round(g.x + (col + 0.5) * g.cell - p / 2);
-          const y = Math.round(g.y + (row + 0.5) * g.cell - p / 2);
+          let x = Math.round(g.x + (col + 0.5) * g.cell - p / 2);
+          let y = Math.round(g.y + (row + 0.5) * g.cell - p / 2);
+
+          // Clamp to ensure coordinate stays within canvas
+          x = Math.max(0, Math.min(x, overlay.width - p));
+          y = Math.max(0, Math.min(y, overlay.height - p));
+
           const roi = hsv.roi(new cv.Rect(x, y, p, p));
           const m = cv.mean(roi);
           out.push(classify(m[0], m[1], m[2]));
@@ -320,41 +351,199 @@ export function createScanner({ onApply, onCancel }) {
     }
   }
 
-  function renderFaceStrip() {
-    if (!facesEl) return;
-    facesEl.innerHTML = "";
+  function renderFaceStripInto(container, { editable = false } = {}) {
+    if (!container) return;
+    container.innerHTML = "";
     HOLDS.forEach((hold, i) => {
-      const slot = document.createElement("div");
+      const isComplete = isFaceComplete(i);
+      const slot = document.createElement("button");
+      slot.type = "button";
       slot.className =
-        "scan-face" + (i === face ? " active" : "") + (grids[i] ? " done" : "");
+        "scan-face" +
+        (i === face ? " active" : "") +
+        (i === selectedFace ? " selected" : "") +
+        (isComplete ? " done" : grids[i] ? " partial" : "");
+      slot.setAttribute("aria-label", `Edit ${hold.center} face`);
       if (grids[i]) {
         slot.innerHTML = grids[i]
-          .map((l) => `<span style="background:${SWATCH[l]}"></span>`)
+          .map(
+            (l) =>
+              `<span style="background:${l ? SWATCH[l] : "transparent"}"></span>`,
+          )
           .join("");
       } else {
         slot.innerHTML = `<b>${hold.center}</b>`;
       }
-      facesEl.appendChild(slot);
+      slot.onclick = () => selectFace(i, { openManual: editable });
+      container.appendChild(slot);
     });
   }
 
+  function renderFaceStrip() {
+    renderFaceStripInto(facesEl, { editable: true });
+    renderFaceStripInto(manualFacesEl, { editable: true });
+    renderEditor();
+  }
+
   function promptFace() {
+    selectedFace = face;
     setStatus(`Face ${face + 1} of 6 — ${HOLDS[face].instr}`);
     renderFaceStrip();
   }
 
+  function ensureGrid(i) {
+    if (!grids[i]) grids[i] = Array(9).fill(null);
+    grids[i][4] = HOLDS[i].center;
+    return grids[i];
+  }
+
+  function isFaceComplete(i) {
+    return (
+      !!grids[i] && grids[i].every(Boolean) && grids[i][4] === HOLDS[i].center
+    );
+  }
+
+  function allFacesComplete() {
+    return HOLDS.every((_, i) => isFaceComplete(i));
+  }
+
+  function nextMissingFace() {
+    const missing = HOLDS.findIndex((_, i) => !isFaceComplete(i));
+    return missing === -1 ? HOLDS.length : missing;
+  }
+
+  function setManualOpen(open) {
+    if (!manualModalEl) return;
+    manualModalEl.hidden = !open;
+  }
+
+  function selectFace(i, { create = false, openManual = false } = {}) {
+    selectedFace = i;
+    if (create) ensureGrid(i);
+    if (i < HOLDS.length) face = i;
+    const prefix = grids[i] ? "Editing" : "Ready for";
+    setStatus(`${prefix} face ${i + 1} of 6 - ${HOLDS[i].instr}`);
+    if (openManual) setManualOpen(true);
+    renderFaceStrip();
+    showButtons(stream ? "capturing" : allFacesComplete() ? "review" : "idle");
+  }
+
+  function setSticker(cell, label) {
+    const grid = ensureGrid(selectedFace);
+    if (cell === 4) return;
+    grid[cell] = label;
+    pending = null;
+    renderFaceStrip();
+    finishIfComplete();
+  }
+
+  function finishIfComplete() {
+    if (allFacesComplete()) {
+      if (manualModalEl && !manualModalEl.hidden) {
+        setManualOpen(false);
+      }
+      finish();
+      return;
+    }
+
+    // Auto-advance logic for manual entries to reduce friction
+    if (isFaceComplete(selectedFace)) {
+      const next = nextMissingFace();
+      if (manualModalEl && !manualModalEl.hidden) {
+        selectFace(next, { create: true, openManual: true });
+      } else {
+        face = next;
+        promptFace();
+        showButtons(stream ? "capturing" : "idle");
+      }
+    }
+  }
+
+  function renderEditor() {
+    if (!editorEl) return;
+    const hold = HOLDS[selectedFace];
+    if (!hold) {
+      editorEl.hidden = true;
+      return;
+    }
+
+    const grid = grids[selectedFace];
+    editorEl.hidden = false;
+    editorEl.innerHTML = `
+      <div class="scan-editor-head">
+        <strong>${hold.center} face</strong>
+        <span>${hold.instr}</span>
+      </div>
+      <div class="scan-palette" aria-label="Sticker colour">
+        ${FACE_ORDER.map(
+          (l) => `
+            <button type="button" class="scan-swatch${l === selectedColor ? " selected" : ""}"
+              data-color="${l}" style="--swatch:${SWATCH[l]}" aria-label="${FACE_NAMES[l]}"></button>
+          `,
+        ).join("")}
+      </div>
+      <div class="scan-edit-grid" aria-label="Edit selected face">
+        ${(grid || Array(9).fill(null))
+          .map((l, i) => {
+            const label = i === 4 ? hold.center : l;
+            return `
+              <button type="button" class="scan-cell${i === 4 ? " locked" : ""}"
+                data-cell="${i}" style="--swatch:${label ? SWATCH[label] : "transparent"}"
+                aria-label="Sticker ${i + 1}${label ? ` ${FACE_NAMES[label]}` : ""}">
+                ${label ? "" : "+"}
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+
+    editorEl.querySelectorAll("[data-color]").forEach((b) => {
+      b.addEventListener("click", () => {
+        selectedColor = b.dataset.color;
+        renderEditor();
+      });
+    });
+    editorEl.querySelectorAll("[data-cell]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const cell = Number(b.dataset.cell);
+        if (cell !== 4) setSticker(cell, selectedColor);
+      });
+    });
+  }
+
   function capture() {
     const labels = readFace();
+    if (labels.length !== 9) {
+      setStatus(
+        "Could not read this face yet. Try again or enter it manually.",
+      );
+      return;
+    }
+
+    // Force set the intended center to prevent minor misclassification halting progression
+    labels[4] = HOLDS[face].center;
+
     grids[face] = labels;
-    face++;
+    selectedFace = face;
+    face = nextMissingFace();
+
     if (face < HOLDS.length) {
       promptFace();
       showButtons("capturing");
-    } else finish();
+    } else {
+      finish();
+    }
   }
 
   function finish() {
     renderFaceStrip();
+    if (!allFacesComplete()) {
+      face = nextMissingFace();
+      setStatus(`Add face ${face + 1} of 6 - ${HOLDS[face].instr}`);
+      showButtons(stream ? "capturing" : "idle");
+      return;
+    }
     const v = validate(grids);
     if (!v.ok) {
       setStatus("⚠ " + v.error);
@@ -373,13 +562,83 @@ export function createScanner({ onApply, onCancel }) {
   }
 
   function retake() {
-    // drop the most recently captured face and re-shoot it
     pending = null;
-    if (face > grids.length) face = grids.length;
-    if (face > 0) face--;
-    grids.length = face;
+    if (!grids[selectedFace] && face > 0) {
+      selectedFace = face - 1;
+    }
+    delete grids[selectedFace];
+    face = selectedFace;
     promptFace();
-    showButtons("capturing");
+    showButtons(stream ? "capturing" : "idle");
+  }
+
+  function clearSelectedFace() {
+    pending = null;
+    delete grids[selectedFace];
+    face = selectedFace;
+    setStatus(`Cleared face ${face + 1} of 6 - ${HOLDS[face].instr}`);
+    renderFaceStrip();
+    showButtons(stream ? "capturing" : "idle");
+  }
+
+  function manualEntry() {
+    pending = null;
+    if (isFaceComplete(selectedFace) && !allFacesComplete()) {
+      selectedFace = nextMissingFace();
+    }
+    selectFace(selectedFace, { create: true, openManual: true });
+  }
+
+  function clearSolveState() {
+    solveMoves = null;
+    solveIndex = 0;
+  }
+
+  function setSolveState(moves) {
+    solveMoves = moves || null;
+    solveIndex = 0;
+    if (solveMoves && solveMoves.length) {
+      setStatus(
+        "Scan complete. Play the solve or click Step to follow one move at a time.",
+      );
+      showButtons("solved");
+    } else {
+      clearSolveState();
+      showButtons("idle");
+    }
+  }
+
+  function playSolve() {
+    if (!solveMoves || !onPlaySolve) return;
+    onPlaySolve();
+  }
+
+  function stepSolve() {
+    if (!solveMoves || !onStepSolve) return;
+    if (solveIndex >= solveMoves.length) {
+      setStatus("Solve complete.");
+      return;
+    }
+    const move = solveMoves[solveIndex];
+    const advanced = onStepSolve(move);
+    if (advanced) {
+      solveIndex += 1;
+      if (solveIndex >= solveMoves.length) setStatus("Solve complete.");
+      else
+        setStatus(
+          `Step ${solveIndex} of ${solveMoves.length}. Click Step for the next move.`,
+        );
+    } else {
+      setStatus("Wait for the current move to finish.");
+    }
+  }
+
+  function applyPending() {
+    if (!pending) return;
+    const moves = onSolveReady ? onSolveReady(pending) : null;
+    stop();
+    onApply(pending, moves);
+    setSolveState(moves);
   }
 
   async function startCamera() {
@@ -421,22 +680,20 @@ export function createScanner({ onApply, onCancel }) {
     }
     if (loadingEl) loadingEl.hidden = true;
 
-    // Set video attributes programmatically for iOS/mobile compatibility
     video.setAttribute("playsinline", "true");
     video.setAttribute("muted", "true");
     video.muted = true;
-
     video.srcObject = stream;
 
-    // Invoke playback without awaiting to bypass strict browser autoplay locks
     video.play().catch((err) => {
       console.warn("Video playback deferred:", err);
     });
 
     cancelAnimationFrame(raf);
     loop();
-    face = 0;
-    grids.length = 0;
+    const targetFace = nextMissingFace();
+    face = targetFace < HOLDS.length ? targetFace : selectedFace;
+    selectedFace = face;
     pending = null;
     promptFace();
     showButtons("capturing");
@@ -450,26 +707,43 @@ export function createScanner({ onApply, onCancel }) {
       stream = null;
     }
     if (video) video.srcObject = null;
+    setManualOpen(false);
   }
 
   function bind() {
     if (btn("start")) btn("start").onclick = startCamera;
+    if (btn("manual")) btn("manual").onclick = manualEntry;
+    if (btn("manual-close")) {
+      btn("manual-close").onclick = () => {
+        setManualOpen(false);
+        if (allFacesComplete()) finish();
+      };
+    }
+    if (btn("manual-clear")) btn("manual-clear").onclick = clearSelectedFace;
     if (btn("capture")) btn("capture").onclick = capture;
     if (btn("retake")) btn("retake").onclick = retake;
-    if (btn("apply"))
-      btn("apply").onclick = () => {
-        if (!pending) return;
+    if (btn("apply")) btn("apply").onclick = applyPending;
+    if (btn("manual-apply")) btn("manual-apply").onclick = applyPending;
+    if (btn("play")) btn("play").onclick = playSolve;
+    if (btn("step")) btn("step").onclick = stepSolve;
+    if (btn("cancel")) {
+      btn("cancel").onclick = () => {
         stop();
-        onApply(pending);
+        if (onCancel) onCancel();
       };
+    }
   }
 
   function start() {
     initElements();
     bind();
     face = 0;
+    selectedFace = 0;
+    selectedColor = "U";
     grids.length = 0;
     pending = null;
+    clearSolveState();
+    setManualOpen(false);
     setStatus("Tap “Start camera”, then hold each face up to the dotted grid.");
     if (loadingEl) loadingEl.hidden = true;
     renderFaceStrip();

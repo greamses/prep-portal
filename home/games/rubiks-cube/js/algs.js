@@ -419,6 +419,119 @@ export const ALGO_MODULES = [
   },
 
   {
+    id: "roux",
+    label: "Roux",
+    hint: "Roux method — build two blocks, solve the corners (CMLL), finish with the M slice.",
+    setup: true,
+    groups: [
+      {
+        cat: "Block building",
+        items: [
+          { name: "Pair insert (right block)", moves: "R U R'" },
+          { name: "Wide pair insert", moves: "r U' r'" },
+          { name: "M-slice edge feed", moves: "M' U M" },
+        ],
+      },
+      {
+        cat: "CMLL — corners of the last layer",
+        items: [
+          { name: "CMLL Sune", moves: "R U R' U R U2 R'" },
+          { name: "CMLL Anti-Sune", moves: "R' U' R U' R' U2 R" },
+          { name: "CMLL H", moves: "R U2 R' U' R U R' U' R U' R'" },
+          { name: "CMLL Pi", moves: "R U2 R2 U' R2 U' R2 U2 R" },
+          { name: "CMLL U", moves: "R2 D R' U2 R D' R' U2 R'" },
+          { name: "CMLL T", moves: "r U R' U' r' F R F'" },
+          { name: "CMLL L", moves: "F' r U R' U' r' F R" },
+          { name: "Adjacent swap (J)", moves: "R U R' F' R U R' U' R' F R2 U' R' U'" },
+          { name: "Diagonal swap (Y)", moves: "F R U' R' U' R U R' F' R U R' U' R' F R F'" },
+        ],
+      },
+      {
+        cat: "LSE — last six edges",
+        items: [
+          { name: "LSE Ua (M-slice)", moves: "M2 U M U2 M' U M2" },
+          { name: "LSE Ub (M-slice)", moves: "M2 U' M U2 M' U' M2" },
+          { name: "LSE H (M-slice)", moves: "M2 U M2 U2 M2 U M2" },
+          { name: "Final centres", moves: "M' U2 M" },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "zz",
+    label: "ZZ",
+    hint: "ZZ method — orient all edges first (EOLine), then solve rotationless with L, R and U.",
+    setup: true,
+    groups: [
+      {
+        cat: "ZZF2L — L/R/U blocks",
+        items: [
+          { name: "Right pair insert", moves: "R U' R'" },
+          { name: "Left pair insert", moves: "L' U L" },
+          { name: "Right split pair", moves: "U R U' R'" },
+          { name: "Left split pair", moves: "U' L' U L" },
+        ],
+      },
+      {
+        cat: "OCLL — corners (edges already oriented)",
+        items: [
+          { name: "Sune", moves: "R U R' U R U2 R'" },
+          { name: "Anti-Sune", moves: "R' U' R U' R' U2 R" },
+          { name: "H", moves: "R U2 R' U' R U R' U' R U' R'" },
+          { name: "Pi", moves: "R U2 R2 U' R2 U' R2 U2 R" },
+          { name: "U", moves: "R2 D R' U2 R D' R' U2 R'" },
+          { name: "T", moves: "r U R' U' r' F R F'" },
+          { name: "L / Bowtie", moves: "F' r U R' U' r' F R" },
+        ],
+      },
+      {
+        cat: "EPLL — edges last",
+        items: [
+          { name: "Ua perm", moves: "M2 U M U2 M' U M2" },
+          { name: "Ub perm", moves: "M2 U' M U2 M' U' M2" },
+          { name: "H perm", moves: "M2 U M2 U2 M2 U M2" },
+          { name: "Z perm", moves: "M2 U M2 U M' U2 M2 U2 M'" },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "petrus",
+    label: "Petrus",
+    hint: "Petrus method — grow a 2×2×2 block to 2×2×3, fix the bad edges, then finish the last layer.",
+    setup: true,
+    groups: [
+      {
+        cat: "Block building",
+        items: [
+          { name: "Corner-edge join", moves: "R U R'" },
+          { name: "Block extend (right)", moves: "R U2 R'" },
+          { name: "Block extend (front)", moves: "F' U' F" },
+          { name: "Keyhole insert", moves: "R U' R'" },
+        ],
+      },
+      {
+        cat: "Edge orientation (fix bad edges)",
+        items: [
+          { name: "Flip two edges", moves: "F R U R' U' F'" },
+          { name: "Flip adjacent edges", moves: "F U R U' R' F'" },
+        ],
+      },
+      {
+        cat: "Finish — last layer",
+        items: [
+          { name: "Sune", moves: "R U R' U R U2 R'" },
+          { name: "Double Sune", moves: "R U R' U R U' R' U R U2 R'" },
+          { name: "Ua perm", moves: "M2 U M U2 M' U M2" },
+          { name: "H perm", moves: "M2 U M2 U2 M2 U M2" },
+        ],
+      },
+    ],
+  },
+
+  {
     id: "patterns",
     label: "Patterns",
     hint: "Fun symmetric patterns — applied to a solved cube.",

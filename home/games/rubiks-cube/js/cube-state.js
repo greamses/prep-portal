@@ -175,7 +175,12 @@ export function validate(grids) {
 export function reconstruct(grids) {
   const v = validate(grids);
   if (!v.ok) return v;
-  const observed = gridsToObserved(grids);
+  return observedToTargets(gridsToObserved(grids));
+}
+
+// Identify every cubie from an observed map (posKey -> { dirKey -> label }),
+// shared by the camera scan and the facelet-string path.
+function observedToTargets(observed) {
   const targets = [];
   const usedHome = new Set();
   for (const pos of outerPositions()) {
@@ -209,6 +214,27 @@ export function reconstruct(grids) {
   if (!isSolvable(targets))
     return { ok: false, error: "That state isn't solvable — a sticker was misread. Re-scan.", targets };
   return { ok: true, targets };
+}
+
+// Inverse of toFacelets: read a 54-char URFDLB facelet string back into the
+// observed map, using the same net geometry. Lets us turn any Kociemba state
+// (e.g. Cube.random().asString()) into reconstruct-style targets.
+export function faceletsToTargets(facelets) {
+  if (typeof facelets !== "string" || facelets.length !== 54)
+    return { ok: false, error: "A cube state needs 54 facelets." };
+  const observed = new Map();
+  let i = 0;
+  for (const f of ["U", "R", "F", "D", "L", "B"]) {
+    const { n, up, right } = FACE_READ[f];
+    for (let row = 0; row < 3; row++)
+      for (let col = 0; col < 3; col++) {
+        const pos = add3(n, scale(up, 1 - row), scale(right, col - 1));
+        const pk = key(pos);
+        if (!observed.has(pk)) observed.set(pk, {});
+        observed.get(pk)[key(n)] = facelets[i++];
+      }
+  }
+  return observedToTargets(observed);
 }
 
 // A scanned cube is solvable iff corner-twist sums to 0 (mod 3), edge-flip
