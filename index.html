@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#0055ff" />
 
     <meta
@@ -29,8 +29,65 @@
       content="Your curated vault of past papers, worked solutions, and prep kits for WAEC, Cambridge, SAT, and more."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:site_nam  e" content="Prep Portal" />
+    <meta property="og:locale" content="en_NG" />
+    <meta property="og:url" content="https://www.prepportal.com.ng/" />
+    <meta
+      property="og:image"
+      content="https://www.prepportal.com.ng/og-image.png"
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Prep Portal | 2026 Exam Success Hub" />
+    <meta
+      name="twitter:description"
+      content="Your curated vault of past papers, worked solutions, and prep kits for WAEC, NECO, JAMB, Cambridge, SAT, and more."
+    />
+    <meta
+      name="twitter:image"
+      content="https://www.prepportal.com.ng/og-image.png"
+    />
+    <meta
+      name="google-site-verification"
+      content="pW72Lgh_-caRDIsLFARU-SwzGsBCNg2OGV-qNReoD98"
+    />
+
+    <!-- Canonical URL — prevents duplicate-content splitting across the
+         several ways pages are linked (e.g. /exams/ vs the full path). -->
+    <link rel="canonical" href="https://www.prepportal.com.ng/" />
+
+    <!-- Structured data: tells Google who the site is + enables the
+         sitelinks search box. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "EducationalOrganization",
+            "@id": "https://www.prepportal.com.ng/#org",
+            "name": "Prep Portal",
+            "url": "https://www.prepportal.com.ng/",
+            "logo": "https://www.prepportal.com.ng/logo/logo-light.svg",
+            "description": "Exam preparation hub with past papers, worked solutions, theory drills and revision kits for WAEC, NECO, JAMB, Cambridge and SAT.",
+            "email": "hello@prepportal.com.ng",
+            "sameAs": [
+              "https://instagram.com/prepportal",
+              "https://twitter.com/prepportal",
+              "https://youtube.com/@prepportalng",
+              "https://tiktok.com/@prepportal",
+              "https://facebook.com/prepportal"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.prepportal.com.ng/#website",
+            "url": "https://www.prepportal.com.ng/",
+            "name": "Prep Portal",
+            "publisher": { "@id": "https://www.prepportal.com.ng/#org" },
+            "inLanguage": "en"
+          }
+        ]
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -223,178 +280,179 @@
         </div>
         <div class="faq-list">
           <div class="faq-col">
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>What exam boards and subjects do you cover?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                We support <strong>WAEC, NECO, JAMB,</strong> and
-                <strong>Cambridge/IGCSE</strong> across Mathematics, English
-                Language, Biology, Chemistry, Physics, History, Geography,
-                Economics, and more. New subjects are added each term.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>What exam boards and subjects do you cover?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  We support <strong>WAEC, NECO, JAMB,</strong> and
+                  <strong>Cambridge/IGCSE</strong> across Mathematics, English
+                  Language, Biology, Chemistry, Physics, History, Geography,
+                  Economics, and more. New subjects are added each term.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>How do I book a one-to-one tutor?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                Go to <a href="/subscribe.html"><strong>Book a Tutor</strong></a
-                >, choose a subject package (from Mathematics only at ₦8,000/hr
-                up to All Subjects at ₦15,000/hr), select the number of sessions
-                and children, and pay securely through Paystack. We&rsquo;ll
-                match you with a qualified tutor within 24 hours.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>How do I book a one-to-one tutor?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  Go to
+                  <a href="/subscribe.html"><strong>Book a Tutor</strong></a
+                  >, choose a subject package (from Mathematics only at
+                  ₦8,000/hr up to All Subjects at ₦15,000/hr), select the number
+                  of sessions and children, and pay securely through Paystack.
+                  We&rsquo;ll match you with a qualified tutor within 24 hours.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>Is there a free tier?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                Yes. A free account gives you access to sample materials,
-                limited AI PrepBot queries, and preview lessons. Upgrade to
-                <strong>Pro</strong> (₦10,000/mo) for full platform access, or
-                <strong>Premium</strong> (₦30,000/mo) for 1,000+ practice
-                questions and unlimited AI.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>Is there a free tier?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  Yes. A free account gives you access to sample materials,
+                  limited AI PrepBot queries, and preview lessons. Upgrade to
+                  <strong>Pro</strong> (₦10,000/mo) for full platform access, or
+                  <strong>Premium</strong> (₦30,000/mo) for 1,000+ practice
+                  questions and unlimited AI.
+                </p>
+              </div>
             </div>
-          </div>
           </div>
 
           <div class="faq-col">
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>How does the multi-child discount work?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                The first child pays the full package rate. Every additional
-                child on the same booking receives a
-                <strong>5% discount</strong> on the base hourly rate. Use the
-                children counter on the tutoring page to see the exact total
-                before paying.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>How does the multi-child discount work?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  The first child pays the full package rate. Every additional
+                  child on the same booking receives a
+                  <strong>5% discount</strong> on the base hourly rate. Use the
+                  children counter on the tutoring page to see the exact total
+                  before paying.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>Can I cancel my subscription anytime?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                Absolutely. Cancel from your dashboard at any time with no
-                penalty. Your access continues until the end of the current
-                billing period &mdash; no prorated refunds but no hidden fees
-                either.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>Can I cancel my subscription anytime?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  Absolutely. Cancel from your dashboard at any time with no
+                  penalty. Your access continues until the end of the current
+                  billing period &mdash; no prorated refunds but no hidden fees
+                  either.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" aria-expanded="false">
-              <span>Are the learning videos downloadable?</span>
-              <svg
-                class="faq-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <div class="faq-a">
-              <p>
-                Videos are streamed on-demand on any device. Offline downloads
-                are available on <strong>Premium</strong> and
-                <strong>Enterprise</strong> plans. All videos are also available
-                via our YouTube channel for free previews.
-              </p>
+            <div class="faq-item">
+              <button class="faq-q" aria-expanded="false">
+                <span>Are the learning videos downloadable?</span>
+                <svg
+                  class="faq-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="18"
+                  height="18"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <div class="faq-a">
+                <p>
+                  Videos are streamed on-demand on any device. Offline downloads
+                  are available on <strong>Premium</strong> and
+                  <strong>Enterprise</strong> plans. All videos are also
+                  available via our YouTube channel for free previews.
+                </p>
+              </div>
             </div>
-          </div>
           </div>
         </div>
       </div>
@@ -415,19 +473,73 @@
           <a class="path-card path-card--plans" href="/subscribe.html#plans">
             <span class="path-card__paper">
               <span class="path-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
-                  <rect x="2.5" y="4" width="19" height="12.5" rx="2.2" fill="var(--accent-secondary)"/>
-                  <rect x="4.6" y="6" width="14.8" height="8.5" rx="1" fill="#fff" opacity="0.92"/>
-                  <path d="M10.4 8.3l4.1 2.45-4.1 2.45z" fill="var(--accent-danger)"/>
-                  <rect x="10.9" y="16.5" width="2.2" height="2.4" fill="var(--accent-secondary)"/>
-                  <rect x="7.5" y="18.6" width="9" height="1.9" rx="0.95" fill="var(--accent-primary)"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="30"
+                  height="30"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="2.5"
+                    y="4"
+                    width="19"
+                    height="12.5"
+                    rx="2.2"
+                    fill="var(--accent-secondary)"
+                  />
+                  <rect
+                    x="4.6"
+                    y="6"
+                    width="14.8"
+                    height="8.5"
+                    rx="1"
+                    fill="#fff"
+                    opacity="0.92"
+                  />
+                  <path
+                    d="M10.4 8.3l4.1 2.45-4.1 2.45z"
+                    fill="var(--accent-danger)"
+                  />
+                  <rect
+                    x="10.9"
+                    y="16.5"
+                    width="2.2"
+                    height="2.4"
+                    fill="var(--accent-secondary)"
+                  />
+                  <rect
+                    x="7.5"
+                    y="18.6"
+                    width="9"
+                    height="1.9"
+                    rx="0.95"
+                    fill="var(--accent-primary)"
+                  />
                 </svg>
               </span>
               <span class="path-title">Learn on the platform</span>
-              <span class="path-text">Self-paced practice, AI PrepBot, the past-paper archive &amp; video lessons. Study anywhere, on any device.</span>
-              <span class="path-price">From &#8358;10,000<small>&nbsp;/mo</small></span>
-              <span class="path-go">See plans
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <span class="path-text"
+                >Self-paced practice, AI PrepBot, the past-paper archive &amp;
+                video lessons. Study anywhere, on any device.</span
+              >
+              <span class="path-price"
+                >From &#8358;10,000<small>&nbsp;/mo</small></span
+              >
+              <span class="path-go"
+                >See plans
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="15"
+                  height="15"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
               </span>
             </span>
             <span class="path-note path-note--plans">Start here</span>
@@ -436,18 +548,57 @@
           <a class="path-card path-card--tutor" href="/subscribe.html#tutor">
             <span class="path-card__paper">
               <span class="path-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
-                  <circle cx="8" cy="7.5" r="3.3" fill="var(--accent-warning)"/>
-                  <path d="M2.5 20.5v-1.5a5.5 5.5 0 0 1 11 0v1.5z" fill="var(--accent-warning)"/>
-                  <circle cx="17" cy="9.8" r="2.6" fill="var(--accent-secondary)"/>
-                  <path d="M12.7 20.5v-.9a4.3 4.3 0 0 1 8.6 0v.9z" fill="var(--accent-secondary)"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="30"
+                  height="30"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="8"
+                    cy="7.5"
+                    r="3.3"
+                    fill="var(--accent-warning)"
+                  />
+                  <path
+                    d="M2.5 20.5v-1.5a5.5 5.5 0 0 1 11 0v1.5z"
+                    fill="var(--accent-warning)"
+                  />
+                  <circle
+                    cx="17"
+                    cy="9.8"
+                    r="2.6"
+                    fill="var(--accent-secondary)"
+                  />
+                  <path
+                    d="M12.7 20.5v-.9a4.3 4.3 0 0 1 8.6 0v.9z"
+                    fill="var(--accent-secondary)"
+                  />
                 </svg>
               </span>
               <span class="path-title">Book a tutor</span>
-              <span class="path-text">One-to-one sessions with a matched tutor, by subject. Weekly progress notes parents actually read.</span>
-              <span class="path-price">From &#8358;8,000<small>&nbsp;/hr</small></span>
-              <span class="path-go">See packages
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <span class="path-text"
+                >One-to-one sessions with a matched tutor, by subject. Weekly
+                progress notes parents actually read.</span
+              >
+              <span class="path-price"
+                >From &#8358;8,000<small>&nbsp;/hr</small></span
+              >
+              <span class="path-go"
+                >See packages
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="15"
+                  height="15"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
               </span>
             </span>
             <span class="path-note path-note--tutor">1&#8209;to&#8209;1</span>
@@ -484,111 +635,101 @@
         </nav>
 
         <div class="footer-social">
-            <a
-              href="https://instagram.com/prepportal"
-              class="footer-social-btn"
-              aria-label="Instagram"
-              target="_blank"
-              rel="noopener"
+          <a
+            href="https://instagram.com/prepportal"
+            class="footer-social-btn"
+            aria-label="Instagram"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="18"
+              height="18"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
-              </svg>
-            </a>
-            <a
-              href="https://twitter.com/prepportal"
-              class="footer-social-btn"
-              aria-label="Twitter / X"
-              target="_blank"
-              rel="noopener"
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+            </svg>
+          </a>
+          <a
+            href="https://twitter.com/prepportal"
+            class="footer-social-btn"
+            aria-label="Twitter / X"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path
+                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+              />
+            </svg>
+          </a>
+          <a
+            href="https://youtube.com/@prepportalng"
+            class="footer-social-btn"
+            aria-label="YouTube"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="18"
+              height="18"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                width="18"
-                height="18"
-              >
-                <path
-                  d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-                />
-              </svg>
-            </a>
-            <a
-              href="https://youtube.com/@prepportalng"
-              class="footer-social-btn"
-              aria-label="YouTube"
-              target="_blank"
-              rel="noopener"
+              <path
+                d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.57A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"
+              />
+              <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" />
+            </svg>
+          </a>
+          <a
+            href="https://tiktok.com/@prepportal"
+            class="footer-social-btn"
+            aria-label="TikTok"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path
+                d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.77 1.52V7.24a4.85 4.85 0 0 1-1-.55z"
+              />
+            </svg>
+          </a>
+          <a
+            href="https://facebook.com/prepportal"
+            class="footer-social-btn"
+            aria-label="Facebook"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="18"
+              height="18"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <path
-                  d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.57A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"
-                />
-                <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" />
-              </svg>
-            </a>
-            <a
-              href="https://tiktok.com/@prepportal"
-              class="footer-social-btn"
-              aria-label="TikTok"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                width="18"
-                height="18"
-              >
-                <path
-                  d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.77 1.52V7.24a4.85 4.85 0 0 1-1-.55z"
-                />
-              </svg>
-            </a>
-            <a
-              href="https://facebook.com/prepportal"
-              class="footer-social-btn"
-              aria-label="Facebook"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                width="18"
-                height="18"
-              >
-                <path
-                  d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-                />
-              </svg>
-            </a>
-          </div>
-          <p class="footer-contact">hello@prepportal.com.ng</p>
+              <path
+                d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+              />
+            </svg>
+          </a>
+        </div>
+        <p class="footer-contact">hello@prepportal.com.ng</p>
       </div>
 
       <div class="footer-bottom">

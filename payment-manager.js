@@ -368,7 +368,7 @@ export const PLANS = {
         const link = e.target.closest("a");
         if (!link) return;
         const href = link.getAttribute("href") || "";
-        if (!href.includes("/prep-math/games/") && !href.includes("/prep-math/activity/")) return;
+        if (!href.includes("/home/games/") && !href.includes("/prep-math/activity/")) return;
 
         e.preventDefault();
 

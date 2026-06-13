@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Flappy Bird</title>
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h2>Addition Table</h2>
+            <div id="tableChoices">
+                <button class="tableChoice" data-table="2">Table of 2</button>
+                <button class="tableChoice" data-table="3">Table of 3</button>
+                <button class="tableChoice" data-table="4">Table of 4</button>
+                <button class="tableChoice" data-table="5">Table of 5</button>
+                <button class="tableChoice" data-table="6">Table of 6</button>
+                <button class="tableChoice" data-table="7">Table of 7</button>
+                <button class="tableChoice" data-table="8">Table of 8</button>
+                <button class="tableChoice" data-table="9">Table of 9</button>
+            </div>
+        </div>
+        
+        <!-- Game Elements -->
+        <div class="clouds">
+            <div class="cloud"></div>
+            <div class="cloud"></div>
+            <div class="cloud"></div>
+        </div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="score">Score: 0</div>
+        <div id="mathProblem"></div>
+        <div id="choices"></div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <div id="finalScore">Score: 0</div>
+            <button id="restartButton">Play Again</button>
+        </div>
+    </div>
+    <audio id="backgroundMusic" src="audio/Flappy.mp3" loop></audio>
+    
+    <script src="script.js"></script>
+</body>
+</html>

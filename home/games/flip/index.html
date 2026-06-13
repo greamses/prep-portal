@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prep Portal 2026 | Flip Card Game</title>
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./game.css">
+  <link rel="stylesheet" href="../../../main.css">
+  <link rel="stylesheet" href="../../../theory-page/style.css">
+  <script src="../../../utils/loader/loader.js"></script>
+</head>
+
+<body>
+  <div id="loader">
+    <div id="loader-wrapper">
+      <div class="logo-cluster"></div>
+    </div>
+    <div class="loader-word"><span>Flip Card Game</span></div>
+    <div class="loader-bar"></div>
+  </div>
+  
+  <nav class="site-nav"></nav>
+  
+  <!-- Ticker -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+  
+  <!-- Page Header -->
+  <header class="pg-header">
+    <div class="ph-left">
+      <p class="pg-eyebrow">Mathematics</p>
+      <h1 class="pg-title">FLIP CARD<br><em>GAME</em></h1>
+    </div>
+    <div class="ph-right">
+      <p>Memory matching game — flip two cards to find matching equivalent values. Keep the pair if they match!</p>
+      <div class="ph-stats">
+        <div class="ph-stat"><strong id="stat-moves">0</strong><span>Flips</span></div>
+        <div class="ph-stat"><strong id="stat-pairs">0</strong><span>Pairs</span></div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Settings Panel -->
+  <section class="settings-panel">
+    <div class="settings-body">
+      <p class="settings-desc">
+        Configure the flip card memory game. Choose grid size, conversion mode, visual style, and number of pairs.
+      </p>
+      
+      <div class="settings-grid">
+        <!-- Tiles (Grid Size) Dropdown -->
+        <div class="pp-dropdown" id="dd-tiles">
+          <span class="pp-dropdown-label">Grid</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-tiles')">
+            <span class="dd-selected">2×2 (2 pairs)</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="2">2×2 (2 pairs)</div>
+            <div class="pp-dropdown-item" data-value="4">4×4 (8 pairs)</div>
+          </div>
+        </div>
+        
+        <!-- Mode Dropdown -->
+        <div class="pp-dropdown" id="dd-mode">
+          <span class="pp-dropdown-label">Mode</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-mode')">
+            <span class="dd-selected">Decimal → Fraction</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="decimal-fraction">Decimal → Fraction</div>
+            <div class="pp-dropdown-item" data-value="fraction-percent">Fraction → Percent</div>
+            <div class="pp-dropdown-item" data-value="decimal-percent">Decimal → Percent</div>
+            <div class="pp-dropdown-item" data-value="fraction-degrees">Fraction → Degrees</div>
+            <div class="pp-dropdown-item" data-value="degrees-decimal">Degrees → Decimal</div>
+            <div class="pp-dropdown-item" data-value="mixed">Mixed Conversions</div>
+          </div>
+        </div>
+        
+        <!-- Type Dropdown -->
+        <div class="pp-dropdown" id="dd-type">
+          <span class="pp-dropdown-label">Type</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-type')">
+            <span class="dd-selected">Bars</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="bars">Bars</div>
+            <div class="pp-dropdown-item" data-value="circles">Circles</div>
+            <div class="pp-dropdown-item" data-value="none">None (Text Only)</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="settings-checkboxes">
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-values" checked />
+          <span class="checkbox-text">Show labels on back</span>
+        </label>
+      </div>
+      
+      <button class="btn-start" onclick="openGameModal()">
+        <svg viewBox="0 0 24 24">
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+        Start Game
+      </button>
+    </div>
+  </section>
+  
+  <!-- GAME MODAL -->
+  <div id="game-modal" class="gp-modal-overlay">
+    <div class="modal-header">
+      <button class="btn" title="Exit" onclick="closeGameModal()">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 6L6 18" />
+          <path d="M6 6l12 12" />
+        </svg>
+      </button>
+      <span class="modal-title" id="modal-title">Flip Card Matching</span>
+      <div class="modal-header-right">
+        <label class="checkbox-label modal-checkbox">
+          <input type="checkbox" id="show-values-modal" checked />
+          <span class="checkbox-text">Labels</span>
+        </label>
+        <span class="modal-streak" id="modal-flips">0 flips</span>
+      </div>
+    </div>
+    
+    <div id="polypad-wrap">
+      <div id="flip-grid" class="flip-grid"></div>
+    </div>
+    
+    <div class="gp-bottom-sheet">
+      <div class="gp-feedback-box" id="game-feedback">
+        Flip two cards to find matching values. Keep the pair if they match!
+      </div>
+      <div class="answer-row" style="justify-content: center; gap: 20px;">
+        <button class="btn-secondary" id="new-game-btn" onclick="newGame()">New Game</button>
+        <button class="btn-secondary" id="reset-btn" onclick="resetGame()">Reset</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="./game.js"></script>
+  <script type="module" src="../nav/nav.js"></script>
+</body>
+
+</html>

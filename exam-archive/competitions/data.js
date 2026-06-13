@@ -22,8 +22,8 @@ const siteData = {
     // Navigation
     navigation: [
         { text: "Competitions", href: "#competitions" },
-        { text: "Subjects", href: "../index.html#subjects" },
-        { text: "Theory Drill", href: "../index.html#theory" },
+        { text: "Subjects", href: "/index.html#subjects" },
+        { text: "Theory Drill", href: "/theory-page/index.html" },
         { text: "About", href: "#about" }
     ],
     ctaButton: { text: "Start Practicing", href: "#competitions" },
@@ -65,25 +65,25 @@ const siteData = {
             items: [
                 {
                     name: "National Olympiad",
-                    link: "./national/index.html",
-                    live: true,
-                    status: "Practice",
+                    link: "/exam-archive/national/exams/index.html?cat=competition",
+                    live: false,
+                    status: "Coming Soon",
                     description: "National level olympiad examinations across multiple subjects",
                     questions: 150,
                     duration: "180 mins"
                 },
                 {
                     name: "International",
-                    link: "./international/index.html",
-                    live: true,
-                    status: "Practice",
+                    link: "/exam-archive/national/exams/index.html?cat=international",
+                    live: false,
+                    status: "Coming Soon",
                     description: "International competition papers and global assessment standards",
                     questions: 200,
                     duration: "240 mins"
                 },
                 {
                     name: "Scholastic",
-                    link: "./scholastic/index.html",
+                    link: "./scholastic/upper-primary/index.html",
                     live: true,
                     status: "Practice",
                     description: "Scholastic aptitude and achievement competitions",
@@ -281,11 +281,10 @@ const siteData = {
             {
                 title: "Competitions",
                 links: [
-                    { text: "National Olympiad", href: "./national/index.html" },
-                    { text: "International", href: "./international/index.html" },
-                    { text: "Scholastic", href: "./scholastic/index.html" },
-                    { text: "Tulip Contest", href: "./tulip/index.html" },
-                    { text: "Prep-Math", href: "./prep-math/index.html" }
+                    { text: "Practice Builder", href: "/exam-archive/national/exams/index.html" },
+                    { text: "Scholastic", href: "./scholastic/upper-primary/index.html" },
+                    { text: "Tulip Contest", href: "#" },
+                    { text: "Prep-Math", href: "#" }
                 ]
             },
             {

@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prep Portal 2026 | Cross Math</title>
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="../../../main.css">
+  <link rel="stylesheet" href="../../../theory-page/style.css">
+  <script src="../../../utils/loader/loader.js"></script>
+</head>
+<body>
+    <div id="loader">
+    <div id="loader-wrapper">
+      <div class="logo-cluster"></div>
+    </div>
+    <div class="loader-word"><span>Crossmath</span></div>
+    <div class="loader-bar"></div>
+  </div>
+  
+  <nav class="site-nav"></nav>
+  <!-- Ticker -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span class="ticker-item">Cross Math Challenge</span>
+      <span class="ticker-item">Acyclic Generator</span>
+      <span class="ticker-item">Prep Portal 2026</span>
+      <span class="ticker-item">Logical Thinking</span>
+      <span class="ticker-item">Cross Math Challenge</span>
+      <span class="ticker-item">Acyclic Generator</span>
+      <span class="ticker-item">Prep Portal 2026</span>
+      <span class="ticker-item">Logical Thinking</span>
+    </div>
+  </div>
+  
+  <!-- Main Page Header -->
+  <header class="pg-header">
+    <div class="ph-left">
+      <p class="pg-eyebrow">Mathematics</p>
+      <h1 class="pg-title">CROSS MATH<br><em>CHALLENGE</em></h1>
+    </div>
+    <div class="ph-right">
+      <p>Configure your input style, then open the canvas to solve the acyclic math crossword.</p>
+      <div class="ph-stats">
+        <div class="ph-stat"><strong id="stat-wins">0</strong><span>Wins</span></div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Settings Panel -->
+  <section class="settings-panel">
+    <div class="settings-body">
+      <div class="settings-grid">
+        <!-- Input Cell Dropdown -->
+        <div class="pp-dropdown" id="dd-input">
+          <span class="pp-dropdown-label">Input Cell Style</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-input')">
+            <span class="dd-selected" id="lbl-input">Question Mark (?)</span>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg>
+          </div>
+          <div class="pp-dropdown-list" id="list-input">
+            <div class="pp-dropdown-item selected" data-value="?">Question Mark (?)</div>
+            <div class="pp-dropdown-item" data-value="letter">Letters (A, B, C...)</div>
+            <div class="pp-dropdown-item" data-value="emoji">Emojis (🍎, 🍌...)</div>
+            <div class="pp-dropdown-item" data-value="empty">Empty</div>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn-start" onclick="startGame()">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+        Start Game
+      </button>
+    </div>
+  </section>
+  
+  <!-- GAME MODAL (Toggleable) -->
+  <div id="game-modal" class="gp-modal-overlay">
+    <div class="modal-header">
+      <button class="btn-icon" title="Exit" onclick="closeGameModal()">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+        </svg>
+      </button>
+      <span class="modal-title difficulty">Cross Math</span>
+      
+      <div class="timer" id="timer">00:00</div>
+      
+      <button class="btn-icon" onclick="generateNewGame()" aria-label="Reload" title="New Puzzle">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.66-.67 3.16-1.76 4.24l1.42 1.42A7.962 7.962 0 0020 12c0-4.42-3.58-8-8-8zm-6.24 9.76A5.978 5.978 0 016 12c0-1.66.67-3.16 1.76-4.24L6.34 6.34A7.962 7.962 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-2.21 0-4.21-.9-5.66-2.34z" />
+        </svg>
+      </button>
+    </div>
+    
+    <div class="gp-feedback-box" id="game-feedback">
+      Select a box first!
+    </div>
+    
+    <div class="modal-body-centered">
+      
+      <!-- 9x9 Grid -->
+      <div class="game-container" id="grid"></div>
+      
+      <!-- Tiles -->
+      <div class="tiles-container" id="tiles"></div>
+      
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn-control" id="undoBtn" aria-label="Undo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6 0 1.66-.67 3.16-1.76 4.24l1.42 1.42A7.962 7.962 0 0020 13c0-4.42-3.58-8-8-8z" />
+            </svg>
+        </button>
+        <button class="btn-control" id="hintBtn" aria-label="Hint">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M9 21h6v-1H9v1zm3-19C7.48 2 4 5.48 4 10c0 2.38 1.19 4.47 3 5.74V18h10v-2.26c1.81-1.27 3-3.36 3-5.74 0-4.52-3.48-8-8-8z" />
+            </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
+  <script type="module" src="../nav/nav.js"></script>
+</body>
+</html>

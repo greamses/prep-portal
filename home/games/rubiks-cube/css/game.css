@@ -1,0 +1,2065 @@
+/* =====================================================================
+   RUBIK'S CUBE — soft-UI game styling
+   Inherits the home theme (home/css/main.css -> theme.css tokens).
+   ===================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* When the fullscreen cube is open, hide the nav + lock the page. */
+body.cube-active {
+  overflow: hidden;
+}
+
+body.cube-active .site-nav,
+body.cube-active .ticker {
+  display: none !important;
+}
+
+/* ----- LANDING -----
+   The hero (.hero, .hero-inner, .hero-eyebrow, .hero-title, .hero-stat,
+   .hero-paint, .hero-btn) is styled by home/css/main.css. We only add the
+   sticky-note control legend + a couple of local tweaks here. */
+.cube-hero {
+  min-height: min(94vh, 880px);
+}
+
+.cube-hero .hero-btn-primary svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Sticky-note control legend — same paper/tape look as .hero-eyebrow */
+.key-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.7rem, 2.5vw, 1.2rem);
+  max-width: 760px;
+  margin-top: clamp(0.6rem, 2vw, 1.2rem);
+}
+
+.key-note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 150px;
+  padding: 0.85rem 0.95rem 0.95rem;
+  color: #14130f;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transition: transform var(--duration-smooth, 0.25s) var(--ease-bounce, ease);
+}
+
+.key-note b {
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* tape strip across the top, like the hero sticky note */
+.key-note::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 46px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+
+/* alternating paper colours + playful tilt */
+.key-note:nth-child(6n + 1) {
+  background: #fff39a;
+  transform: rotate(-3deg);
+}
+.key-note:nth-child(6n + 2) {
+  background: #bfe3ff;
+  transform: rotate(2.5deg);
+}
+.key-note:nth-child(6n + 3) {
+  background: #c8f0c0;
+  transform: rotate(-1.5deg);
+}
+.key-note:nth-child(6n + 4) {
+  background: #ffd7a3;
+  transform: rotate(2deg);
+}
+.key-note:nth-child(6n + 5) {
+  background: #e8c8ff;
+  transform: rotate(-2.5deg);
+}
+.key-note:nth-child(6n + 6) {
+  background: #ffc9c9;
+  transform: rotate(1.5deg);
+}
+
+.key-note:hover {
+  transform: rotate(0deg) translateY(-3px);
+}
+
+/* ===================================================================
+   FULLSCREEN MODAL
+   =================================================================== */
+.cube-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  background: radial-gradient(
+    130% 120% at 50% -10%,
+    var(--surface-primary) 0%,
+    var(--app-bg) 100%
+  );
+}
+
+.cube-modal.open {
+  display: flex;
+}
+
+/* Paint blobs behind the cube (same look as the home hero) */
+.modal-paint {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.4;
+}
+.modal-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .modal-paint {
+  opacity: 0.5;
+}
+
+/* keep every control above the paint layer */
+.cube-modal-top,
+#cube-canvas-wrap,
+.cube-pad {
+  position: relative;
+  z-index: 1;
+}
+
+.cube-modal-top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px clamp(12px, 4vw, 26px);
+  border-bottom: var(--border-subtle);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* mode-specific sidebar content */
+.cube-modal.algo .mode-states {
+  display: none;
+}
+.cube-modal:not(.algo) .mode-algos {
+  display: none;
+}
+
+/* Learn / Practice — pill switch (no icons), like subscribe .sp-kindtabs */
+.mode-switch {
+  display: inline-flex;
+  flex-direction: row; /* override main.css mobile column on .hero-actions */
+  flex-wrap: nowrap;
+  width: fit-content;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: var(--border);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-md);
+}
+.mode-switch-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 0.7rem clamp(0.85rem, 4vw, 1.8rem);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.9rem, 2.2vw, 1.1rem);
+  color: var(--text-secondary);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+.mode-switch-btn:hover {
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+.mode-switch-btn--active {
+  background: var(--accent-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ----- ICON BUTTONS — picture on the button, word in a hover bubble ----- */
+.mode-switch-btn {
+  position: relative;
+}
+.mode-switch-btn svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.hover-word {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 5px 11px;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+button:hover > .hover-word,
+button:focus-visible > .hover-word {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* landing blurb under the two mode buttons */
+.mode-blurb {
+  max-width: 460px;
+  margin: 0.4rem auto 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.mode-blurb b {
+  color: var(--ink);
+}
+
+/* multicolour ticket paper (cards cycle through paper tints).
+   Higher specificity so it beats the ticket base background. */
+.state-card.tc-0,
+.algo-card.tc-0 {
+  background: #ffe7a6;
+}
+.state-card.tc-1,
+.algo-card.tc-1 {
+  background: #bce0fb;
+}
+.state-card.tc-2,
+.algo-card.tc-2 {
+  background: #ffc6c6;
+}
+.state-card.tc-3,
+.algo-card.tc-3 {
+  background: #c2ecbb;
+}
+.state-card.tc-4,
+.algo-card.tc-4 {
+  background: #ffd5a6;
+}
+.state-card.tc-5,
+.algo-card.tc-5 {
+  background: #e3c9fb;
+}
+
+/* ----- Practice (algo) accordion ----- */
+/* module switcher — Basics · OLL · PLL · Patterns */
+.algo-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+.algo-mod-btn {
+  flex: 1 1 auto;
+  border: var(--border);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+.algo-mod-btn:hover {
+  transform: translateY(-1px);
+}
+.algo-mod-btn[aria-pressed="true"] {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+.algo-hint {
+  margin: 0 2px 8px;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+.algo-cat {
+  margin-bottom: 8px;
+}
+.algo-cat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 11px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.algo-cat-chev {
+  transition: transform 0.18s ease;
+  color: var(--text-tertiary);
+}
+.algo-cat.open .algo-cat-chev {
+  transform: rotate(180deg);
+}
+/* height is animated by GSAP; closed bodies start at height 0 (set in JS) */
+.algo-cat-body {
+  overflow: hidden;
+  padding-top: 8px;
+}
+/* ----- TICKET-STUB CARDS (receipt paper: sawtooth top/bottom + perforated
+   sides), shared by the state cards and algo cards ----- */
+.algo-card,
+.state-card,
+.solve-step {
+  --tooth: 10px;
+  position: relative;
+  width: 100%;
+  border: 0;
+  background: var(--surface-primary);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+      bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg)
+      top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px)
+      no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+      bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg)
+      top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px)
+      no-repeat;
+  filter: drop-shadow(2px 4px 4px rgba(20, 19, 15, 0.22));
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+.algo-card:hover,
+.state-card:hover {
+  transform: translateY(-3px);
+  filter: drop-shadow(3px 6px 6px rgba(20, 19, 15, 0.28));
+}
+/* punched perforation dots down each side */
+.algo-card::before,
+.algo-card::after,
+.state-card::before,
+.state-card::after,
+.solve-step::before,
+.solve-step::after {
+  content: "";
+  position: absolute;
+  top: var(--tooth);
+  bottom: var(--tooth);
+  width: 6px;
+  background: radial-gradient(
+      circle 2.4px at center,
+      var(--bg) 0 2.4px,
+      #0000 2.7px
+    )
+    center / 6px 12px repeat-y;
+  pointer-events: none;
+}
+.algo-card::before,
+.state-card::before,
+.solve-step::before {
+  left: 4px;
+}
+.algo-card::after,
+.state-card::after,
+.solve-step::after {
+  right: 4px;
+}
+.algo-card[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--accent-secondary) 20%,
+    var(--surface-primary)
+  );
+  filter: drop-shadow(2px 4px 5px rgba(20, 19, 15, 0.3));
+}
+
+.algo-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  padding: 11px 16px;
+  margin-bottom: 9px;
+}
+/* rank as a tilted stamp */
+.algo-rank {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.66rem;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  transform: rotate(-9deg);
+}
+.algo-thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  background: radial-gradient(120% 120% at 50% 0%, #fffdf8, #e9e3d7);
+  object-fit: contain;
+}
+.algo-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.algo-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.76rem;
+  overflow-wrap: break-word;
+}
+.algo-moves {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--accent-secondary);
+  word-break: break-word;
+}
+
+/* ----- LEFT SIDEBAR — cube state picker (three.js previews) ----- */
+.mode-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 210px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface-primary) 90%, transparent);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  border-right: var(--border);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.26s var(--ease-bounce, ease);
+}
+
+.cube-modal.states-open .mode-bar {
+  transform: none;
+}
+
+.mode-bar-title {
+  margin: 2px 2px 4px;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+}
+
+/* state card: receipt ticket (shared rules above) with a vertical layout */
+.state-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px 16px 14px;
+  margin-bottom: 9px;
+}
+
+.state-thumb {
+  display: block;
+  border-radius: 9px;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 0%, #fffdf8 0%, #e9e3d7 100%);
+  aspect-ratio: 1;
+}
+
+.state-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.state-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.state-card[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--accent-success) 20%,
+    var(--surface-primary)
+  );
+  filter: drop-shadow(2px 4px 5px rgba(20, 19, 15, 0.3));
+}
+
+/* ----- MOVES / TIME — two sticky notes torn along a sawtooth seam ----- */
+.stat-notes {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  transform: rotate(-2deg);
+  filter: drop-shadow(3px 5px 7px rgba(20, 19, 15, 0.28));
+}
+
+.stat-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 16px;
+  color: #14130f;
+  line-height: 1;
+}
+
+.stat-note strong {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-note small {
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* left note (moves): zigzag on its right edge */
+.stat-note--moves {
+  background: #fff39a;
+  padding-right: 20px;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 9px) 16.66%,
+    100% 33.33%,
+    calc(100% - 9px) 50%,
+    100% 66.66%,
+    calc(100% - 9px) 83.33%,
+    100% 100%,
+    0 100%
+  );
+}
+
+/* right note (time): complementary zigzag on its left edge, tucked under */
+.stat-note--time {
+  background: #bfe3ff;
+  margin-left: -9px;
+  padding-left: 20px;
+  clip-path: polygon(
+    9px 0,
+    0 16.66%,
+    9px 33.33%,
+    0 50%,
+    9px 66.66%,
+    0 83.33%,
+    9px 100%,
+    100% 100%,
+    100% 0
+  );
+}
+
+/* Top-bar icons: no background, glyph only */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.icon-btn svg {
+  width: 27px;
+  height: 27px;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.28));
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+}
+
+.icon-btn[aria-pressed="true"] {
+  color: var(--accent-success);
+}
+
+/* Close button: pinned to the centre of the top bar, away from the
+   left-hand menu so it isn't tapped by mistake. */
+.cube-modal-top .modal-close {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.cube-modal-top .modal-close:hover {
+  transform: translate(-50%, -50%) translateY(-1px);
+}
+
+/* canvas fills the available space between top bar and keypad */
+#cube-canvas-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  touch-action: none;
+}
+
+#cube-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ----- WIN BANNER ----- */
+.win-banner {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-success);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 16px;
+  padding: 10px 18px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.86rem;
+  z-index: 5;
+  opacity: 0;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.win-banner[hidden] {
+  display: none;
+}
+
+.win-banner.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.win-banner strong {
+  font-family: var(--font-display);
+}
+
+.win-emoji {
+  font-size: 1.3rem;
+}
+
+/* ----- PRESSED-MOVE LABEL (notation above the cube) ----- */
+.move-label {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  z-index: 9;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  color: var(--ink);
+  text-shadow:
+    0 0 5px rgba(255, 255, 255, 0.95),
+    0 2px 5px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.move-label.show {
+  animation: move-pop 0.75s ease forwards;
+}
+
+@keyframes move-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px) scale(1);
+  }
+}
+
+/* ----- STATUS PILL (inspection countdown / prompts) ----- */
+.status-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.86rem;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-primary) 82%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: var(--border-subtle);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.status-label.show {
+  opacity: 1;
+}
+
+/* ===================================================================
+   3D CANVAS INTERACTIVE OVERLAY
+   =================================================================== */
+
+#cube-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 3;
+}
+
+.carton {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: pointer;
+  pointer-events: none; /* Let moves pass to the canvas when open */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 32px;
+}
+
+.carton.on {
+  pointer-events: auto; /* Catch taps to open the carton when closed */
+}
+
+.carton-hint-overlay {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  background: rgba(0, 112, 243, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.carton.on .carton-hint-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Adjustments for overlay UI elements */
+.mode-bar {
+  z-index: 10;
+}
+.status-label,
+.move-label,
+.win-banner,
+.pad-fab {
+  z-index: 9;
+}
+
+/* ----- FLOATING KEYPAD TOGGLE (top-right, transparent glyph) ----- */
+.pad-fab {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  z-index: 7;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    color 0.12s ease;
+}
+
+.pad-fab svg {
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.3));
+}
+
+.pad-fab:hover {
+  transform: translateY(-2px);
+}
+
+.pad-fab[aria-pressed="true"] {
+  color: var(--accent-secondary);
+}
+
+/* ===================================================================
+   GAMEPAD — realistic 3D controls across the bottom of the cube
+   The container stays transparent (cube shows between the groups);
+   only the chunky 3D buttons are opaque + catch input.
+   =================================================================== */
+.cube-pad {
+  /* cube sticker colours drive the face keycaps */
+  --cube-u: #f7f4ec;
+  --cube-d: #f4c95d;
+  --cube-r: #f07a7a;
+  --cube-l: #f0a868;
+  --cube-f: #7cc47c;
+  --cube-b: #6fb7e8;
+  --k: clamp(40px, 11vw, 50px); /* keycap size */
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: none;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(10px, 3.5vw, 40px);
+  padding: 14px clamp(12px, 4vw, 30px) calc(16px + env(safe-area-inset-bottom));
+  background: none; /* cube is visible between the control clusters */
+  pointer-events: none; /* only buttons catch input; swipes pass through */
+}
+
+.cube-modal.pad-open .cube-pad {
+  display: flex;
+}
+
+.pad-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* ----- REALISTIC 3D KEYCAP ----- */
+.key3d {
+  --key: #cdd2db;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--k);
+  height: var(--k);
+  border: 0;
+  border-radius: calc(var(--k) * 0.3);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: calc(var(--k) * 0.46);
+  line-height: 1;
+  color: #241f1b;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--key) 72%, #fff) 0%,
+    var(--key) 44%,
+    color-mix(in srgb, var(--key) 74%, #000) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -4px 7px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 6px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 10px 16px rgba(15, 16, 20, 0.42);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition:
+    transform 0.07s ease,
+    box-shadow 0.07s ease;
+}
+/* glossy top sheen */
+.key3d::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 11%;
+  height: 38%;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+.key3d:active,
+.key3d.is-down {
+  transform: translateY(5px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -2px 5px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 1px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 3px 6px rgba(15, 16, 20, 0.4);
+}
+.key3d--icon {
+  --key: #d7dbe3;
+}
+.key3d--icon svg {
+  width: 56%;
+  height: 56%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+/* ----- GAMEPAD DIAMOND (face turns) ----- */
+.gamepad {
+  display: grid;
+  grid-template-columns: repeat(3, var(--k));
+  grid-template-rows: repeat(3, var(--k));
+  gap: calc(var(--k) * 0.16);
+  place-items: center;
+}
+.gp-u {
+  grid-area: 1 / 2;
+}
+.gp-l {
+  grid-area: 2 / 1;
+}
+.gp-r {
+  grid-area: 2 / 3;
+}
+.gp-d {
+  grid-area: 3 / 2;
+}
+.gp-center {
+  grid-area: 2 / 2;
+  position: relative;
+  width: var(--k);
+  height: var(--k);
+  pointer-events: none;
+}
+.gp-center .key3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    transform 0.07s ease,
+    box-shadow 0.07s ease,
+    opacity 0.22s ease;
+}
+/* front shown by default; back hidden underneath */
+.gp-front {
+  z-index: 2;
+  opacity: 1;
+}
+.gp-back {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.pad-face-group.fb-back .gp-front {
+  opacity: 0;
+  pointer-events: none;
+}
+.pad-face-group.fb-back .gp-back {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 3;
+}
+
+/* ----- SLICE ROW + PRIME ----- */
+.slice-row {
+  display: flex;
+  gap: calc(var(--k) * 0.16);
+}
+.slice-btn {
+  --key: #cbb8e6;
+}
+.prime-btn {
+  --key: #ffd27a;
+}
+.prime-mark {
+  font-size: calc(var(--k) * 0.7);
+  line-height: 0.7;
+  transform: translateY(-0.06em);
+}
+.prime-btn[aria-pressed="true"] {
+  --key: #ff8f3a;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.prime-btn[aria-pressed="true"]::before {
+  content: "ON";
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--accent-success);
+  border-radius: 6px;
+  padding: 1px 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pad-icon-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* ----- PILL BUTTONS (rotation-mode + F/B swap) ----- */
+.pill-btn {
+  pointer-events: auto;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: #20242c;
+  background: linear-gradient(180deg, #f3f5f9, #cfd5df);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 3px 0 #a9b1bd,
+    0 6px 10px rgba(15, 16, 20, 0.32);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+  white-space: nowrap;
+}
+.pill-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 1px 0 #a9b1bd,
+    0 2px 5px rgba(15, 16, 20, 0.3);
+}
+.rot-mode-btn[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(180deg, #7db8ff, var(--accent-secondary));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 3px 0 color-mix(in srgb, var(--accent-secondary) 60%, #000),
+    0 6px 10px rgba(15, 16, 20, 0.34);
+}
+
+/* ----- ANALOG THUMBSTICK ----- */
+.analog {
+  position: relative;
+  width: clamp(86px, 24vw, 112px);
+  height: clamp(86px, 24vw, 112px);
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(
+    circle at 50% 32%,
+    #434956 0%,
+    #23272f 62%,
+    #15181d 100%
+  );
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -14px 26px rgba(0, 0, 0, 0.55) inset,
+    0 12px 22px rgba(0, 0, 0, 0.5);
+}
+/* recessed dish + cardinal ticks */
+.analog-dish {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2c313b, #181b21 78%);
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.6) inset;
+}
+.analog-dish::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+}
+.analog-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  margin: -23% 0 0 -23%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 32%,
+    #8a93a3 0%,
+    #565e6c 45%,
+    #2b313b 78%
+  );
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.28) inset,
+    0 -8px 14px rgba(0, 0, 0, 0.55) inset,
+    0 8px 14px rgba(0, 0, 0, 0.55);
+  transition: transform 0.09s ease-out;
+  will-change: transform;
+}
+.analog-knob-cap {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #c3cad6, #6b7280 70%);
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.5) inset;
+}
+.analog.dragging .analog-knob {
+  transition: none;
+}
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+/* Mobile side menu: roomier sliding sheet, easy to scroll/tap */
+@media (max-width: 760px) {
+  .mode-bar {
+    width: min(86vw, 320px);
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    gap: 14px;
+  }
+  .cube-pad {
+    --k: clamp(38px, 13vw, 48px);
+  }
+}
+
+@media (max-width: 560px) {
+  .cube-pad {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 18px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  /* stick + actions sit on the outer edges, gamepad centred above */
+  .pad-stick-group,
+  .pad-actions {
+    margin: 0;
+  }
+  .pad-face-group {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .modal-title {
+    display: none;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .stat-note {
+    height: 42px;
+    padding: 0 12px;
+  }
+  .stat-note strong {
+    font-size: 0.88rem;
+  }
+
+  /* toggles: keep them tappable + fitting on small screens */
+  .mode-switch {
+    max-width: 92vw;
+  }
+  .mode-switch-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* very short / landscape phones: shrink the stick so controls fit */
+@media (max-height: 460px) {
+  .analog {
+    width: 78px;
+    height: 78px;
+  }
+  .cube-pad {
+    --k: 38px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ===================================================================
+   Camera scanner (OpenCV) — shown in scan mode
+   =================================================================== */
+.scan-panel {
+  display: none;
+}
+.cube-modal.scan-mode.scanning #cube-canvas-wrap {
+  display: none;
+}
+.cube-modal.scan-mode.scanning .scan-panel {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 16px clamp(12px, 4vw, 26px) calc(18px + env(safe-area-inset-bottom));
+}
+
+.scan-stage {
+  position: relative;
+  width: min(92vw, 520px);
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow-lg);
+  border: var(--border);
+}
+#scan-video {
+  display: none;
+}
+#scan-overlay {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scan-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.scan-status {
+  margin: 0;
+  max-width: 540px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.scan-faces {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.scan-face {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  appearance: none;
+  border-radius: 9px;
+  border: var(--border);
+  background: var(--surface-secondary);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: stretch;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease;
+}
+.scan-face:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.scan-face > b {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
+}
+.scan-face > span {
+  display: block;
+}
+.scan-face.active {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+.scan-face.selected {
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 42%, transparent);
+}
+.scan-face.done {
+  border-color: var(--accent-success);
+}
+.scan-face.partial {
+  border-color: var(--accent-warning);
+}
+
+.scan-manual-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: color-mix(in srgb, var(--ink) 34%, transparent);
+}
+.scan-manual-modal[hidden] {
+  display: none;
+}
+.scan-manual-card {
+  width: min(94vw, 480px);
+  max-height: min(720px, 92vh);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: var(--border);
+  border-radius: 8px;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-lg);
+}
+.scan-manual-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+.scan-manual-close {
+  position: static;
+  color: var(--ink);
+  background: var(--surface-secondary);
+}
+
+.scan-editor {
+  width: min(92vw, 420px);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+.scan-editor-head {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+.scan-editor-head strong {
+  font-size: 0.95rem;
+}
+.scan-editor-head span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.scan-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.scan-swatch,
+.scan-cell {
+  border: var(--border);
+  background: var(--swatch);
+  cursor: pointer;
+}
+.scan-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+}
+.scan-swatch.selected {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.scan-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
+  gap: 6px;
+}
+.scan-cell {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.scan-cell:hover:not(.locked) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.scan-cell.locked {
+  cursor: default;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.12);
+}
+
+.scan-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.scan-btn {
+  font-size: 0.9rem;
+  padding: 10px 18px;
+}
+.scan-btn--go {
+  background: var(--accent-success);
+  color: var(--text-on-accent);
+}
+/* icon-only scan buttons (camera / manual / random cube) */
+.scan-btn--icon {
+  position: relative;
+  padding: 10px 14px;
+}
+.scan-btn--icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+/* the actions row sits low in a scroll panel — float the word above */
+.scan-btn--icon .hover-word {
+  top: auto;
+  bottom: calc(100% + 9px);
+  transform: translateX(-50%) translateY(4px);
+}
+.scan-btn--icon:hover > .hover-word,
+.scan-btn--icon:focus-visible > .hover-word {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Auto-Solve playback controls — two-row compact panel */
+.solve-controls[hidden],
+.solve-caption[hidden] {
+  display: none !important;
+}
+.solve-controls {
+  position: absolute;
+  bottom: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  /* draggable (from any non-button area) */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.solve-controls.dragging { cursor: grabbing; }
+.solve-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.solve-ctrl-stages {
+  justify-content: center;
+  gap: 6px;
+}
+.solve-ctrl-moves {
+  justify-content: center;
+  gap: 4px;
+}
+/* shared icon button */
+.solve-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.solve-ctrl-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.solve-ctrl-btn:hover { transform: translateY(-1px); background: var(--surface-primary); }
+
+/* play/pause — slightly bigger, accent tint when playing */
+.solve-ctrl-play {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-success);
+  color: var(--text-on-accent);
+}
+.solve-ctrl-play[aria-pressed="true"] .icon-play  { display: none; }
+.solve-ctrl-play[aria-pressed="true"] .icon-pause { display: block !important; }
+.solve-ctrl-play[aria-pressed="false"] .icon-play  { display: block; }
+.solve-ctrl-play[aria-pressed="false"] .icon-pause { display: none !important; }
+.solve-ctrl-play:hover { background: color-mix(in srgb, var(--accent-success) 80%, var(--ink)); }
+
+/* attempt toggle — highlighted when attempt mode is on */
+.solve-ctrl-attempt[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent-warning) 28%, var(--surface-secondary));
+  color: color-mix(in srgb, var(--accent-warning) 70%, var(--ink));
+}
+
+/* focus toggle — tinted when focus mode is on */
+.solve-ctrl-focus[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent-primary) 28%, var(--surface-secondary));
+  color: color-mix(in srgb, var(--accent-primary) 80%, var(--ink));
+}
+
+/* stage label between up/down arrows */
+.solve-ctrl-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.68rem;
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+}
+
+/* step card with "got it" state */
+.solve-step.got-it {
+  background: color-mix(in srgb, var(--accent-success) 30%, var(--surface-primary));
+  opacity: 1;
+  filter: drop-shadow(2px 4px 5px rgba(20, 19, 15, 0.3));
+}
+
+@media (max-width: 760px) {
+  .solve-controls { bottom: 5.8rem; }
+  .solve-ctrl-btn { width: 30px; height: 30px; }
+  .solve-ctrl-play { width: 36px; height: 36px; }
+  .solve-ctrl-btn svg { width: 16px; height: 16px; }
+}
+
+/* On-screen step caption — receipt-paper ticket floating over the cube.
+   Draggable so the learner can move it out of the way. */
+.solve-caption {
+  --tooth: 10px;
+  position: absolute;
+  left: 50%;
+  bottom: 7.4rem;
+  transform: translateX(-50%);
+  z-index: 12;
+
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: min(400px, 88vw);
+  min-width: 240px;
+  padding: 18px 22px 18px 20px;
+
+  /* paper colour set per-phase via inline style; warm yellow is the fallback */
+  background: #ffe7a6;
+  color: #14130f;
+
+  /* receipt sawtooth mask — teeth on top and bottom edges */
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+      bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg)
+      top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px)
+      no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+      bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg)
+      top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px)
+      no-repeat;
+  filter: drop-shadow(2px 6px 10px rgba(20, 19, 15, 0.32));
+
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: opacity 0.18s ease;
+}
+/* punched perforation dots down each side */
+.solve-caption::before,
+.solve-caption::after {
+  content: "";
+  position: absolute;
+  top: var(--tooth);
+  bottom: var(--tooth);
+  width: 6px;
+  background: radial-gradient(
+      circle 2.4px at center,
+      rgba(20, 19, 15, 0.2) 0 2.4px,
+      #0000 2.7px
+    )
+    center / 6px 12px repeat-y;
+  pointer-events: none;
+}
+.solve-caption::before { left: 4px; }
+.solve-caption::after  { right: 4px; }
+
+.solve-caption.dragging { cursor: grabbing; }
+/* fade away while the cube is turning so the move stays visible */
+.solve-caption.faded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* thumbnail inside the caption receipt */
+.cap-thumb {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  border-radius: 9px;
+  background: radial-gradient(120% 120% at 50% 0%, #fffdf8, #e9e3d7);
+  object-fit: contain;
+  display: block;
+}
+/* text body of the caption receipt */
+.cap-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cap-body em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(20, 19, 15, 0.58);
+}
+.cap-body strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.96rem;
+  line-height: 1.15;
+}
+.cap-body span {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: rgba(20, 19, 15, 0.78);
+}
+.cap-body code {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px dashed rgba(20, 19, 15, 0.3);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #14130f;
+  white-space: normal;
+}
+.cap-body .cap-why {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: rgba(20, 19, 15, 0.65);
+  line-height: 1.3;
+}
+/* the case being solved, e.g. "green–red pair" or "OLL 27 · Sune" */
+.cap-body .cap-case {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(20, 19, 15, 0.85);
+}
+/* the algorithm as tokens — the move about to play is highlighted */
+.cap-alg .tok {
+  display: inline-block;
+  padding: 1px 4px;
+  margin: 1px 1px;
+  border-radius: 5px;
+}
+.cap-alg .tok.cur {
+  background: #14130f;
+  color: #ffe7a6;
+}
+.cap-alg .tok.done {
+  opacity: 0.4;
+}
+.cap-alg .tok-gap {
+  opacity: 0.5;
+  padding: 0 2px;
+}
+@media (max-width: 760px) {
+  .solve-caption {
+    bottom: 6.6rem;
+    max-width: min(320px, 92vw);
+    min-width: 200px;
+    padding: 14px 18px 14px 16px;
+    gap: 10px;
+  }
+  .cap-thumb { width: 44px; height: 44px; }
+  .cap-body strong { font-size: 0.86rem; }
+  .cap-body span { font-size: 0.7rem; }
+  .cap-body code { font-size: 0.68rem; }
+}
+
+/* Optional: Dim the manual keypad while the solution is active so the user focuses on the solve */
+.cube-modal.has-solution .cube-pad {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ===== Auto-solve: method picker + explained step list (scan mode) ===== */
+/* Auto-solve menu: takes the place of the left side menu in scan mode, with
+   the same panel design (left-pinned, border-right, slides in from the left). */
+.solve-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 210px;
+  max-width: 80vw;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface-primary) 90%, transparent);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  border-right: var(--border);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.26s var(--ease-bounce, ease),
+    opacity 0.2s ease;
+}
+/* Shown when a solution is ready AND the side menu is open — the hamburger
+   toggles `states-open`, exactly like it does for the state/algorithm menu. */
+.cube-modal.scan-mode.has-solution.states-open .solve-panel {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+/* In scan mode the auto-solve menu replaces the state/algorithm side menu. */
+.cube-modal.scan-mode .mode-bar {
+  display: none;
+}
+
+.solve-methods {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.solve-method-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 13px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--surface-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.12s ease,
+    background 0.15s ease;
+}
+.solve-method-btn:hover {
+  transform: translateY(-1px);
+}
+.solve-method-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+.solve-method-sub {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.15;
+}
+.solve-method-btn[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--accent-success) 24%,
+    var(--surface-primary)
+  );
+  filter: drop-shadow(2px 3px 4px rgba(20, 19, 15, 0.25));
+}
+
+.solve-steps {
+  flex: 1 1 auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* receipt-ticket paper (shared rules above) with a thumbnail + body, like the
+   algorithm cards. Steps are now clickable buttons — `.done`/`.active` fade
+   and tint, `.got-it` celebrates a successful attempt. */
+.solve-steps li { list-style: none; }
+.solve-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  padding: 10px 16px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.2s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+.solve-step:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+.solve-step.done {
+  opacity: 0.4;
+}
+.solve-step.active {
+  opacity: 1;
+  background: color-mix(
+    in srgb,
+    var(--accent-success) 20%,
+    var(--surface-primary)
+  );
+  filter: drop-shadow(2px 4px 5px rgba(20, 19, 15, 0.3));
+}
+.solve-step-thumb {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 0%, #fffdf8 0%, #e9e3d7 100%);
+}
+.solve-step-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.solve-step-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.solve-step-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.solve-step-label {
+  flex: 1 1 auto;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.solve-step-count {
+  font-size: 0.66rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.solve-step-detail {
+  margin: 5px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+/* the algorithm to learn, called out on its own line */
+.solve-step-algo {
+  display: block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
+  border: 1px dashed color-mix(in srgb, var(--accent-success) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  white-space: normal;
+}
+/* why it works — the reasoning under the algorithm */
+.solve-step-why {
+  margin: 5px 0 0;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.solve-step-moves {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  word-spacing: 0.1em;
+  color: var(--text-secondary);
+  white-space: normal;
+}
+/* Fast mode: no teaching text, just the move list. */
+.solve-panel.method-fast .solve-step-detail {
+  display: none;
+}
+
+/* Mobile: roomier left sliding sheet, matching the state/algorithm side menu. */
+@media (max-width: 760px) {
+  .solve-panel {
+    width: min(86vw, 320px);
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    gap: 14px;
+  }
+  .solve-methods {
+    gap: 6px;
+  }
+}

@@ -84,7 +84,9 @@
 
   function start() {
     stop();
-    remaining = Math.max(60, (getCount() || 20) * 60);
+    remaining = (window.__compTimeLimit > 0)
+      ? window.__compTimeLimit
+      : Math.max(60, (getCount() || 20) * 60);
     render();
     intervalId = setInterval(tick, 1000);
   }

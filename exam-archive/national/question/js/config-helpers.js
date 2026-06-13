@@ -8,13 +8,25 @@
 // ── CONFIG ─────────────────────────────────────────────────────
 const GEMINI_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
+// Backend base URL (same rule PrepBot uses: dev Live-Server → local API server).
+const API_BASE = window.location.port === '5500' ? 'http://127.0.0.1:5000' : '';
+
 const urlParams = new URLSearchParams(window.location.search);
 const PAGE_CONFIG = {
     examType:  urlParams.get('examType')?.toLowerCase() || 'waec',  // ← ADD THIS
     year:      urlParams.get('year'),
     subjects:  urlParams.get('subjects')?.split(',') || [],
     types:     urlParams.get('types')?.split(',')    || [],
-    stream:    urlParams.get('stream') || ''  // Also add stream while you're at it
+    stream:    urlParams.get('stream') || '',  // Also add stream while you're at it
+    // source=aloc → load from the Firestore-backed /api/questions endpoint
+    // instead of the static per-folder scripts. `n`/`limit` = questions per subject.
+    source:    (urlParams.get('source') || '').toLowerCase(),
+    limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
+    // competition-specific params
+    comp:      urlParams.get('comp')    || '',
+    div:       urlParams.get('div')     || '',
+    round:     urlParams.get('round')   || '',
+    section:   urlParams.get('section') || 'all'
 };
 
 // Debug log to confirm

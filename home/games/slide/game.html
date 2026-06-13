@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prep Portal 2026 | Slider Game</title>
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- External CSS (separate file) -->
+  <link rel="stylesheet" href="./game.css">
+  <link rel="stylesheet" href="../../../main.css">
+  <link rel="stylesheet" href="../../../theory-page/style.css">
+  <!-- External JS (separate file) -->
+  <script src="../../../utils/loader/loader.js"></script>
+</head>
+
+<body>
+  <div id="loader">
+    <div id="loader-wrapper">
+      <div class="logo-cluster"></div>
+    </div>
+    <div class="loader-word"><span>Slider Game</span></div>
+    <div class="loader-bar"></div>
+  </div>
+  
+  <nav class="site-nav"></nav>
+  
+  <!-- Ticker -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker-track">
+      <!-- Populated by external JS -->
+    </div>
+  </div>
+  
+  <!-- Page Header -->
+  <header class="pg-header">
+    <div class="ph-left">
+      <p class="pg-eyebrow">Mathematics</p>
+      <h1 class="pg-title">SLIDER<br><em>GAME</em></h1>
+    </div>
+    <div class="ph-right">
+      <p>Classic sliding puzzle — click tiles adjacent to the empty space to slide them. Arrange in order to win.</p>
+      <div class="ph-stats">
+        <div class="ph-stat"><strong id="stat-moves">0</strong><span>Moves</span></div>
+        <div class="ph-stat"><strong id="stat-solved">0</strong><span>Solved</span></div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Settings Panel -->
+  <section class="settings-panel">
+    <div class="settings-body">
+      <p class="settings-desc">
+        Configure the sliding puzzle. Choose grid size, display mode, visual style, and arrangement order.
+      </p>
+      
+      <div class="settings-grid">
+        <!-- Tiles Dropdown -->
+        <div class="pp-dropdown" id="dd-tiles">
+          <span class="pp-dropdown-label">Tiles</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-tiles')">
+            <span class="dd-selected">Four (3 tiles)</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="2">Four (3 tiles)</div>
+            <div class="pp-dropdown-item" data-value="3">Nine (8 tiles)</div>
+            <div class="pp-dropdown-item" data-value="4">Sixteen (15 tiles)</div>
+          </div>
+        </div>
+        
+        <!-- Mode Dropdown -->
+        <div class="pp-dropdown" id="dd-mode">
+          <span class="pp-dropdown-label">Mode</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-mode')">
+            <span class="dd-selected">Fraction</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="fraction">Fraction</div>
+            <div class="pp-dropdown-item" data-value="percent">Percent</div>
+            <div class="pp-dropdown-item" data-value="degrees">Degrees</div>
+            <div class="pp-dropdown-item" data-value="decimal">Decimal</div>
+            <div class="pp-dropdown-item" data-value="time">Time</div>
+            <div class="pp-dropdown-item" data-value="mixed">Mixed</div>
+          </div>
+        </div>
+        
+        <!-- Type Dropdown -->
+        <div class="pp-dropdown" id="dd-type">
+          <span class="pp-dropdown-label">Type</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-type')">
+            <span class="dd-selected">Bars</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="bars">Bars</div>
+            <div class="pp-dropdown-item" data-value="circles">Circles</div>
+            <div class="pp-dropdown-item" data-value="numbers">Numbers</div>
+          </div>
+        </div>
+        
+        <!-- Arrangement Dropdown -->
+        <div class="pp-dropdown" id="dd-arrange">
+          <span class="pp-dropdown-label">Arrange</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-arrange')">
+            <span class="dd-selected">Ascending</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="ascending">Ascending</div>
+            <div class="pp-dropdown-item" data-value="descending">Descending</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Fraction Type Dropdown -->
+      <div class="settings-grid" style="margin-top: 0;">
+        <div class="pp-dropdown" id="dd-fraction-type">
+          <span class="pp-dropdown-label">Fraction Type</span>
+          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-fraction-type')">
+            <span class="dd-selected">Mixed Fractions</span>
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="pp-dropdown-list">
+            <div class="pp-dropdown-item selected" data-value="mixed">Mixed Fractions</div>
+            <div class="pp-dropdown-item" data-value="like-denominators">Like Denominators</div>
+            <div class="pp-dropdown-item" data-value="like-numerators">Like Numerators</div>
+            <div class="pp-dropdown-item" data-value="unit-fractions">Unit Fractions</div>
+            <div class="pp-dropdown-item" data-value="incrementing-numerator">Incrementing Numerator</div>
+            <div class="pp-dropdown-item" data-value="incrementing-denominator">Incrementing Denominator</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional checkboxes -->
+      <div class="settings-checkboxes">
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-values" checked />
+          <span class="checkbox-text">Show numeric labels</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-split-lines" checked />
+          <span class="checkbox-text">Show split lines</span>
+        </label>
+      </div>
+      
+      <button class="btn-start" onclick="openGameModal()">
+        <svg viewBox="0 0 24 24">
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+        Start Game
+      </button>
+    </div>
+  </section>
+  
+  <!-- GAME MODAL (Toggleable) -->
+  <div id="game-modal" class="gp-modal-overlay">
+    <div class="modal-header">
+      <button class="btn" title="Exit" onclick="closeGameModal()">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 6L6 18" />
+          <path d="M6 6l12 12" />
+        </svg>
+      </button>
+      <span class="modal-title" id="modal-title">Sliding Puzzle</span>
+      <div class="modal-header-right">
+        <label class="checkbox-label modal-checkbox">
+          <input type="checkbox" id="show-values-modal" checked />
+          <span class="checkbox-text">Labels</span>
+        </label>
+        <span class="modal-streak" id="modal-moves">0 moves</span>
+      </div>
+    </div>
+    
+    <!-- Slider Canvas / Grid Area (inside modal) -->
+    <div id="polypad-wrap">
+      <div id="slider-grid" class="slider-grid">
+        <!-- Tiles will be generated here by external JS -->
+        <div class="slider-placeholder">
+          <span>Loading puzzle...</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Game Footer with controls -->
+    <div class="gp-bottom-sheet">
+      <div class="gp-feedback-box" id="game-feedback">
+        Click tiles adjacent to the empty space to slide.
+      </div>
+      <div class="answer-row" style="justify-content: center; gap: 20px;">
+        <button class="btn-secondary" id="shuffle-btn" onclick="shuffleTiles()">Shuffle</button>
+        <button class="btn-secondary" id="reset-btn" onclick="resetGame()">Reset</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- External JavaScript (separate file) -->
+  <script src="./game.js"></script>
+  <!-- Navigation module (external) -->
+  <script type="module" src="../nav/nav.js"></script>
+</body>
+
+</html>

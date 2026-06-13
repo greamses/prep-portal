@@ -5,18 +5,16 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
   <meta name="theme-color" content="#0055ff" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>PrepPortal National| Exams</title>
+  <title>PrepPortal | Exam Builder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Marker hand for the sticky note (same as the home page) -->
   <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/utils/components/nav.css">
   <link rel="stylesheet" href="./style.css">
 
-  <!-- Firebase modules — required by the shared nav (nav-builder.js / firebase-init.js) -->
   <script type="importmap">
     {
       "imports": {
@@ -39,78 +37,132 @@
     <div class="loader-word"><span>EXAM PORTAL</span></div>
     <div class="loader-bar"></div>
   </div>
-  
+
   <nav class="site-nav" data-nav="main"></nav>
-  
+
   <main class="exam-builder">
     <div class="builder-paint" aria-hidden="true"></div>
 
     <header class="builder-header">
-      <p class="builder-note">
-        Pick a board, a year &amp; your subjects &mdash; we&rsquo;ll generate a
-        practice paper, marked by AI.
+      <!-- Category selector -->
+      <div class="cat-tabs" id="cat-tabs">
+        <button class="cat-tab" data-tab="national">National Exams</button>
+        <button class="cat-tab" data-tab="competition">Competitions</button>
+        <button class="cat-tab" data-tab="international">International</button>
+      </div>
+
+      <p class="builder-note" id="builder-note">
+        Pick a board, a year &amp; your subjects &mdash; we&rsquo;ll generate a practice paper, marked by AI.
       </p>
-      <div class="builder-stats">
-        <span class="hero-stat theme-blue"><strong>2023&ndash;25</strong> Live exams</span>
-        <span class="hero-stat theme-green"><strong>SSCE/JAMB</strong> Standard</span>
-        <span class="hero-stat theme-red"><strong>AI</strong> Marking</span>
+      <div class="builder-stats" id="builder-stats">
+        <!-- filled by data.js based on active category -->
       </div>
     </header>
 
     <section class="builder-grid">
-      <!-- 1 · Exam Type -->
-      <div class="step-card theme-yellow">
+
+      <!-- ── STEP 1 ── -->
+      <div class="step-card step-card-1 theme-yellow">
         <div class="step-label">
           <span class="step-num">1</span>
-          <span class="step-title">Exam Type</span>
-          <span class="step-done" id="done-exam">✓</span>
+          <span class="step-title" data-cat="national">Exam Type</span>
+          <span class="step-title" data-cat="competition">Competition</span>
+          <span class="step-title" data-cat="international">Exam Board</span>
+          <span class="step-done" id="done-exam"  data-cat="national">✓</span>
+          <span class="step-done" id="done-comp"  data-cat="competition">✓</span>
+          <span class="step-done" id="done-board" data-cat="international">✓</span>
         </div>
-        <div class="exam-grid" id="exam-chips"></div>
-        <p class="step-sub">Select your exam board</p>
+        <div class="exam-grid" id="exam-chips"   data-cat="national"></div>
+        <div class="exam-grid" id="comp-chips"   data-cat="competition"></div>
+        <div class="exam-grid" id="board-chips"  data-cat="international"></div>
+        <p class="step-sub" data-cat="national">Select your exam board</p>
+        <p class="step-sub" data-cat="competition">Select the competition</p>
+        <p class="step-sub" data-cat="international">Select the examining body</p>
       </div>
 
-      <!-- 2 · Exam Year -->
-      <div class="step-card theme-blue">
+      <!-- ── STEP 2 ── -->
+      <div class="step-card step-card-2 theme-yellow">
         <div class="step-label">
           <span class="step-num">2</span>
-          <span class="step-title">Exam Year</span>
-          <span class="step-done" id="done-year">✓</span>
+          <span class="step-title" data-cat="national">Class / Stream</span>
+          <span class="step-title" data-cat="competition">Division</span>
+          <span class="step-title" data-cat="international">Level</span>
+          <span class="step-done" id="done-stream"    data-cat="national">✓</span>
+          <span class="step-done" id="done-division"  data-cat="competition">✓</span>
+          <span class="step-done" id="done-level"     data-cat="international">✓</span>
         </div>
-        <div class="year-grid" id="year-chips"></div>
-        <p class="step-sub">Active years (green pulse) are selectable</p>
+        <div class="chips-container" id="stream-chips"   data-cat="national"></div>
+        <div class="chips-container" id="division-chips" data-cat="competition"></div>
+        <div class="chips-container" id="level-chips"    data-cat="international"></div>
+        <p class="step-sub" data-cat="national">Narrows the subject list to your class</p>
+        <p class="step-sub" data-cat="competition">Your class level</p>
+        <p class="step-sub" data-cat="international">Your qualification level</p>
       </div>
 
-      <!-- 3 · Your Stream -->
-      <div class="step-card theme-green">
+      <!-- ── STEP 3a · National: Subjects (conditional) ── -->
+      <div class="step-card step-card-3 theme-green" id="subject-row">
         <div class="step-label">
           <span class="step-num">3</span>
-          <span class="step-title">Your Stream</span>
-          <span class="step-done" id="done-stream">✓</span>
+          <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
+          <span class="step-done" id="done-subject">✓</span>
         </div>
-        <div class="csel" id="csel-stream">
-          <button class="csel-btn" id="streamBtn"><span id="stream-label">— select stream —</span></button>
-          <div class="csel-panel">
-            <div class="csel-item" data-val="science">Science</div>
-            <div class="csel-item" data-val="arts">Arts / Humanities</div>
-            <div class="csel-item" data-val="commercial">Commercial</div>
-          </div>
-        </div>
-        <div class="toggle-option">
-          <label class="toggle-label">
-            <input type="checkbox" id="compulsoryToggle" checked>
-            <span>English &amp; Mathematics are compulsory (auto-included)</span>
-          </label>
-        </div>
+        <div class="chips-container" id="subject-chips"></div>
+        <p class="step-sub" id="compulsoryHint">English is compulsory and always included. Each chip shows how many questions are available.</p>
       </div>
 
-      <!-- 4 · Exam Format -->
-      <div class="step-card theme-red">
+      <!-- ── STEP 3b · Competition: Year (conditional) ── -->
+      <div class="step-card step-card-3 theme-green" id="year-row">
+        <div class="step-label">
+          <span class="step-num">3</span>
+          <span class="step-title">Year</span>
+          <span class="step-done" id="done-year-comp">✓</span>
+        </div>
+        <div class="year-grid" id="year-chips-comp"></div>
+        <p class="step-sub">Available years for this competition &amp; division</p>
+      </div>
+
+      <!-- ── STEP 3c · International: Subject (conditional) ── -->
+      <div class="step-card step-card-3 theme-green" id="subject-row-intl">
+        <div class="step-label">
+          <span class="step-num">3</span>
+          <span class="step-title">Subject</span>
+          <span class="step-done" id="done-subject-intl">✓</span>
+        </div>
+        <div class="chips-container" id="subject-chips-intl"></div>
+        <p class="step-sub">Available subjects for this board &amp; level</p>
+      </div>
+
+      <!-- ── STEP 4 ── -->
+      <div class="step-card step-card-4 theme-blue">
         <div class="step-label">
           <span class="step-num">4</span>
-          <span class="step-title">Exam Format</span>
-          <span class="step-done" id="done-type">✓</span>
+          <span class="step-title" data-cat="national">Exam Year</span>
+          <span class="step-title" data-cat="competition">Round</span>
+          <span class="step-title" data-cat="international">Year</span>
+          <span class="step-done" id="done-year"      data-cat="national">✓</span>
+          <span class="step-done" id="done-round"     data-cat="competition">✓</span>
+          <span class="step-done" id="done-year-intl" data-cat="international">✓</span>
         </div>
-        <div class="chips-container" id="type-chips">
+        <div class="year-grid"      id="year-chips"      data-cat="national"></div>
+        <div class="chips-container" id="round-chips"    data-cat="competition"></div>
+        <div class="year-grid"      id="year-chips-intl" data-cat="international"></div>
+        <p class="step-sub" data-cat="national">Years available for your subjects (with question counts)</p>
+        <p class="step-sub" data-cat="competition">Competition stage</p>
+        <p class="step-sub" data-cat="international">Exam year</p>
+      </div>
+
+      <!-- ── STEP 5 ── -->
+      <div class="step-card step-card-5 theme-red">
+        <div class="step-label">
+          <span class="step-num">5</span>
+          <span class="step-title" data-cat="national">Exam Format</span>
+          <span class="step-title" data-cat="competition">Section Focus</span>
+          <span class="step-title" data-cat="international">Paper</span>
+          <span class="step-done" id="done-type"    data-cat="national">✓</span>
+          <span class="step-done" id="done-section" data-cat="competition">✓</span>
+          <span class="step-done" id="done-paper"   data-cat="international">✓</span>
+        </div>
+        <div class="chips-container" id="type-chips" data-cat="national">
           <div class="custom-chip" data-type="objective">
             <div class="chip-check-box"></div><span>Objective (MCQ)</span>
           </div>
@@ -118,44 +170,35 @@
             <div class="chip-check-box"></div><span>Theory (Essay)</span>
           </div>
         </div>
-        <p class="step-sub">Theory hides automatically for JAMB</p>
+        <div class="chips-container" id="section-chips" data-cat="competition"></div>
+        <div class="chips-container" id="paper-chips"   data-cat="international"></div>
+        <p class="step-sub" data-cat="national">Past questions are objective</p>
+        <p class="step-sub" data-cat="competition">Filter by subject area (optional)</p>
+        <p class="step-sub" data-cat="international">Paper type</p>
       </div>
 
-      <!-- 5 · Subjects (full width) -->
-      <div class="step-card theme-yellow" id="subject-row" style="display: none;">
-        <div class="step-label">
-          <span class="step-num">5</span>
-          <span class="step-title">Subjects (<span id="subject-count">0</span>/9 max)</span>
-          <span class="step-done" id="done-subject">✓</span>
-        </div>
-        <div class="chips-container" id="subject-chips"></div>
-        <p class="step-sub" id="compulsoryHint">English &amp; Math are mandatory and always selected</p>
-      </div>
     </section>
 
     <footer class="builder-footer">
       <label class="exam-timer-toggle">
         <input type="checkbox" id="exam-timer-switch">
         <span class="exam-timer-toggle__track"><span class="exam-timer-toggle__thumb"></span></span>
-        <span>Timed exam (auto-submit)</span>
+        <span id="timer-label">Timed exam (auto-submit)</span>
       </label>
       <span class="setup-status" id="setup-status">Awaiting selections...</span>
       <button class="builder-cta" id="begin-btn" disabled>Generate practice paper →</button>
     </footer>
   </main>
-  
+
   <div id="prepbot"></div>
   <script type="module" src="/utils/prepbot/prepbot.js"></script>
-  
+
   <script src="./data.js"></script>
   <script src="/utils/components/nav-builder.js" type="module"></script>
 
-  <!-- Organic paint blobs behind the page (same splash as the home hero) -->
   <script type="module">
     import { heroPaint } from "/utils/components/nav-icons.js";
-    document
-      .querySelectorAll(".builder-paint")
-      .forEach((el) => (el.innerHTML = heroPaint()));
+    document.querySelectorAll(".builder-paint").forEach(el => (el.innerHTML = heroPaint()));
   </script>
 </body>
 

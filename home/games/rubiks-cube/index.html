@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <title>Prep Portal 2026 | Rubik's Cube</title>
+    <meta name="theme-color" content="#0055ff" />
+    <meta
+      name="description"
+      content="Solve a realistic 3D Rubik's Cube with your keyboard — rotate the whole cube with the arrows and twist faces relative to whatever face is in front."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,400;0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Primary theme: the home page stylesheet (imports theme tokens) -->
+    <link rel="stylesheet" href="/home/css/main.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/home/games/rubiks-cube/css/game.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Rubik's Cube</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <!-- ============ ENTRY / LANDING ============ -->
+    <main class="cube-landing">
+      <section class="hero cube-hero">
+        <!-- Paint splash blobs (same source as the home hero) -->
+        <div class="hero-paint" aria-hidden="true"></div>
+
+        <div class="hero-inner">
+          <span class="hero-eyebrow" data-icon="star">
+            Logic &amp; Spatial Reasoning
+          </span>
+
+          <h1 class="hero-title">Rubik's <em>Cube</em>.</h1>
+
+          <p class="hero-description">
+            A real-time 3D cube. Spin the whole thing with the arrow keys to
+            bring any face to the front, then twist with
+            <strong>U D L R F B</strong> — always relative to the face you're
+            looking at, just like solving it in your hands.
+          </p>
+
+          <div
+            class="hero-actions mode-switch"
+            role="group"
+            aria-label="Choose a mode"
+          >
+            <button
+              class="mode-switch-btn mode-switch-btn--active"
+              data-act="start"
+              data-mode="challenge"
+              data-icon="learn"
+              aria-label="Learn"
+            >
+              <span class="hover-word">Learn</span>
+            </button>
+            <button
+              class="mode-switch-btn"
+              data-act="start"
+              data-mode="algo"
+              data-icon="practice"
+              aria-label="Practice"
+            >
+              <span class="hover-word">Practice</span>
+            </button>
+            <button
+              class="mode-switch-btn"
+              data-act="start"
+              data-mode="scan"
+              data-icon="camera"
+              aria-label="Camera"
+            >
+              <span class="hover-word">Camera</span>
+            </button>
+          </div>
+
+          <p class="mode-blurb">
+            <b>Learn</b> — inspect the boxed scramble, then solve it step by
+            step (cross → last layer). <b>Practice</b> — drill every OLL &amp;
+            PLL case, plus core triggers and fun patterns. <b>Camera</b> — scan
+            your real cube and mirror it here.
+          </p>
+
+          <div class="hero-stats">
+            <span class="hero-stat theme-green"
+              ><strong>3D</strong> real-time</span
+            >
+            <span class="hero-stat theme-blue"
+              ><strong>Keyboard</strong> control</span
+            >
+            <span class="hero-stat theme-red"><strong>6</strong> faces</span>
+            <span class="hero-stat theme-yellow"
+              ><strong>Mobile</strong> keypad</span
+            >
+          </div>
+
+          <!-- Sticky-note control legend -->
+          <div class="key-notes" aria-label="Controls">
+            <span class="key-note">
+              <b>U D L R F B</b><span>Twist the front-relative face</span>
+            </span>
+            <span class="key-note">
+              <b>M E S</b><span>Turn a middle slice</span>
+            </span>
+            <span class="key-note">
+              <b>Hold a face</b><span>180° turn · Shift = reverse</span>
+            </span>
+            <span class="key-note">
+              <b>← → ↑ ↓</b><span>Spin / roll the whole cube</span>
+            </span>
+            <span class="key-note">
+              <b>Space</b><span>Slide the box off — inspect 15s</span>
+            </span>
+            <span class="key-note">
+              <b>Turn a face</b><span>Starts the timer &amp; move count</span>
+            </span>
+            <span class="key-note">
+              <b>Enter</b><span>Reset — new boxed scramble</span>
+            </span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ FULLSCREEN GAME MODAL ============ -->
+    <div id="cube-modal" class="cube-modal" aria-hidden="true">
+      <!-- Paint blobs behind the cube (same source as the home hero) -->
+      <div class="modal-paint hero-paint" aria-hidden="true"></div>
+
+      <div class="cube-modal-top">
+        <!-- Hamburger (menu) — far left, so reaching for the menu never hits exit -->
+        <button
+          class="icon-btn"
+          data-act="states"
+          data-icon="menu"
+          aria-label="Open the side menu"
+          title="Menu"
+        ></button>
+
+        <span class="modal-title">Rubik's Cube</span>
+
+        <!-- Close — centred, away from the menu so it isn't tapped by mistake -->
+        <button
+          class="icon-btn modal-close"
+          data-act="exit"
+          data-icon="close"
+          title="Exit (Esc)"
+          aria-label="Exit"
+        ></button>
+
+        <!-- Two sticky notes, torn together along a sawtooth seam -->
+        <div class="stat-notes" aria-label="Moves and time">
+          <span class="stat-note stat-note--moves">
+            <strong id="stat-moves">0</strong><small>moves</small>
+          </span>
+          <span class="stat-note stat-note--time">
+            <strong id="stat-time">0:00</strong><small>time</small>
+          </span>
+        </div>
+      </div>
+
+      <div id="cube-canvas-wrap">
+        <canvas id="cube-canvas"></canvas>
+
+        <!-- pressed move (notation) + status, shown above the cube -->
+        <div id="status-label" class="status-label"></div>
+        <div id="move-label" class="move-label" aria-hidden="true"></div>
+
+        <!-- pressed move (notation) + status, shown above the cube -->
+        <div id="status-label" class="status-label"></div>
+        <div id="move-label" class="move-label" aria-hidden="true"></div>
+
+        <!-- Auto-Solve Playback Controls (Hidden by default) -->
+        <div class="solve-controls" id="solve-controls" hidden>
+          <!-- Row 1: stage navigation (up/down) -->
+          <div class="solve-ctrl-row solve-ctrl-stages">
+            <button class="solve-ctrl-btn" data-act="prev-phase" data-icon="phase-up" title="Previous stage (↑)"></button>
+            <span class="solve-ctrl-label" id="phase-label">Stage</span>
+            <button class="solve-ctrl-btn" data-act="next-phase" data-icon="phase-down" title="Next stage (↓)"></button>
+          </div>
+
+          <!-- Row 2: move controls + attempt toggle -->
+          <div class="solve-ctrl-row solve-ctrl-moves">
+            <button class="solve-ctrl-btn" data-act="prev-solve" data-icon="move-prev" title="Previous move (←)"></button>
+
+            <!-- Play / Pause — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-play" data-act="play-solve" data-icon="play-pause" aria-pressed="false" title="Play / Pause"></button>
+
+            <button class="solve-ctrl-btn" data-act="next-solve" data-icon="move-next" title="Next move (→)"></button>
+
+            <!-- Watch / Attempt toggle — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-attempt" id="attempt-toggle" data-icon="watch-attempt" aria-pressed="false" title="Switch to Attempt mode"></button>
+
+            <!-- Focus toggle — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-focus" id="focus-toggle" data-icon="focus-toggle" aria-pressed="false" title="Focus mode: dim non-relevant pieces"></button>
+          </div>
+        </div>
+
+        <!-- Active step caption — read along while the solve plays -->
+        <div class="solve-caption" id="solve-caption" hidden></div>
+
+        <!-- Auto-solve: method picker + explained step list (scan mode) -->
+        <aside
+          class="solve-panel"
+          id="solve-panel"
+          aria-label="Auto-solve method and steps"
+        >
+          <h3 class="mode-bar-title">Auto-solve</h3>
+          <div
+            class="solve-methods"
+            id="solve-methods"
+            role="group"
+            aria-label="Choose a solving method"
+          >
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="beginner"
+              aria-pressed="true"
+            >
+              <span class="solve-method-name">Beginner</span>
+              <span class="solve-method-sub">Layer by layer</span>
+            </button>
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="f2l"
+              aria-pressed="false"
+            >
+              <span class="solve-method-name">F2L</span>
+              <span class="solve-method-sub">CFOP pairs</span>
+            </button>
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="roux"
+              aria-pressed="false"
+            >
+              <span class="solve-method-name">Roux</span>
+              <span class="solve-method-sub">Blocks + M slice</span>
+            </button>
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="zz"
+              aria-pressed="false"
+            >
+              <span class="solve-method-name">ZZ</span>
+              <span class="solve-method-sub">EOLine first</span>
+            </button>
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="petrus"
+              aria-pressed="false"
+            >
+              <span class="solve-method-name">Petrus</span>
+              <span class="solve-method-sub">Block building</span>
+            </button>
+            <button
+              class="solve-method-btn"
+              data-act="solve-method"
+              data-method="fast"
+              aria-pressed="false"
+            >
+              <span class="solve-method-name">Fast</span>
+              <span class="solve-method-sub">Fewest moves</span>
+            </button>
+          </div>
+          <ol class="solve-steps" id="solve-steps" aria-label="Solve steps"></ol>
+        </aside>
+
+        <!-- Transparent Click Controller for 3D Scene carton -->
+        <div
+          id="carton"
+          class="carton"
+          role="button"
+          tabindex="0"
+          aria-label="Cube box — tap to slide off and inspect"
+        >
+          <div class="carton-hint-overlay">
+            <span>TAP OR PRESS SPACE TO UNBOX</span>
+          </div>
+        </div>
+
+        <!-- Left sidebar: cube states (challenge) OR algorithms (algo lab) -->
+        <aside class="mode-bar" aria-label="Sidebar">
+          <div class="mode-states">
+            <h3 class="mode-bar-title">Solve, step by step</h3>
+            <button
+              class="state-card tc-0"
+              data-state="cross"
+              aria-pressed="false"
+            >
+              <span class="state-thumb"
+                ><img alt="White cross, other blocks hidden"
+              /></span>
+              <span class="state-name">Cross</span>
+            </button>
+            <button
+              class="state-card tc-1"
+              data-state="first"
+              aria-pressed="false"
+            >
+              <span class="state-thumb"
+                ><img alt="First layer, other blocks hidden"
+              /></span>
+              <span class="state-name">First layer</span>
+            </button>
+            <button
+              class="state-card tc-2"
+              data-state="second"
+              aria-pressed="false"
+            >
+              <span class="state-thumb"
+                ><img alt="First two layers, top layer hidden"
+              /></span>
+              <span class="state-name">Second layer</span>
+            </button>
+            <button
+              class="state-card tc-3"
+              data-state="oll"
+              aria-pressed="false"
+            >
+              <span class="state-thumb"
+                ><img alt="Orient the last layer"
+              /></span>
+              <span class="state-name">OLL</span>
+            </button>
+            <button
+              class="state-card tc-4"
+              data-state="pll"
+              aria-pressed="false"
+            >
+              <span class="state-thumb"
+                ><img alt="Permute the last layer"
+              /></span>
+              <span class="state-name">PLL</span>
+            </button>
+            <button
+              class="state-card tc-5"
+              data-state="full"
+              aria-pressed="true"
+            >
+              <span class="state-thumb"><img alt="Full solved cube" /></span>
+              <span class="state-name">Full cube</span>
+            </button>
+          </div>
+          <div class="mode-algos">
+            <h3 class="mode-bar-title">Algorithms</h3>
+            <div id="algo-modules" class="algo-modules"></div>
+            <p class="algo-hint"></p>
+            <div id="algo-list"></div>
+          </div>
+        </aside>
+
+        <div id="win-banner" class="win-banner" hidden>
+          <span class="win-emoji">🎉</span>
+          <strong>Solved!</strong>
+          <span id="win-detail">Nicely done.</span>
+        </div>
+
+        <!-- Floating keypad toggle (transparent, overlaid on the cube) -->
+        <button
+          class="pad-fab"
+          data-act="pad-toggle"
+          data-icon="pad-fab"
+          aria-pressed="false"
+          aria-label="Show on-screen controls"
+          title="Show / hide controls"
+        ></button>
+
+        <!-- On-screen controls (toggleable) — realistic 3D gamepad.
+             Lives inside the canvas wrap so it shares the canvas stacking
+             context — that lets the side menu (z 10) sit ABOVE the pad. -->
+        <div class="cube-pad">
+          <!-- LEFT: analog thumbstick — spins the whole cube -->
+          <div class="pad-group pad-stick-group">
+            <div
+              class="analog"
+              id="analog"
+              role="button"
+              tabindex="0"
+              aria-label="Rotate the whole cube"
+            >
+              <div class="analog-dish" aria-hidden="true"></div>
+              <div class="analog-knob" id="analog-knob" aria-hidden="true">
+                <span class="analog-knob-cap"></span>
+              </div>
+            </div>
+            <button
+              class="pill-btn rot-mode-btn"
+              data-act="rot-mode"
+              aria-pressed="false"
+              title="Switch between 90° steps and free spin"
+            >
+              <span class="rot-mode-label">STEP&nbsp;90°</span>
+            </button>
+          </div>
+
+          <!-- CENTER: gamepad diamond — L← R→ U↑ D↓, F/B stacked in the middle -->
+          <div class="pad-group pad-face-group">
+            <div class="gamepad" aria-label="Turn a face">
+              <button
+                class="key3d face-btn gp-u"
+                data-face="U"
+                style="--key: var(--cube-u)"
+              >
+                U
+              </button>
+              <button
+                class="key3d face-btn gp-l"
+                data-face="L"
+                style="--key: var(--cube-l)"
+              >
+                L
+              </button>
+              <button
+                class="key3d face-btn gp-r"
+                data-face="R"
+                style="--key: var(--cube-r)"
+              >
+                R
+              </button>
+              <button
+                class="key3d face-btn gp-d"
+                data-face="D"
+                style="--key: var(--cube-d)"
+              >
+                D
+              </button>
+              <div class="gp-center">
+                <button
+                  class="key3d face-btn gp-front"
+                  data-face="F"
+                  style="--key: var(--cube-f)"
+                >
+                  F
+                </button>
+                <button
+                  class="key3d face-btn gp-back"
+                  data-face="B"
+                  style="--key: var(--cube-b)"
+                >
+                  B
+                </button>
+              </div>
+            </div>
+            <button
+              class="pill-btn fb-toggle"
+              data-act="fb-toggle"
+              aria-pressed="false"
+              title="Swap the centre face between Front and Back"
+            >
+              <span class="fb-toggle-label">Centre: F</span>
+            </button>
+          </div>
+
+          <!-- RIGHT: prime toggle, middle slices, scramble / reset -->
+          <div class="pad-group pad-actions">
+            <button
+              class="key3d prime-btn"
+              data-act="prime"
+              aria-pressed="false"
+              title="Reverse direction (prime ')"
+            >
+              <span class="prime-mark">'</span>
+            </button>
+
+            <div class="slice-row" aria-label="Turn a middle slice">
+              <button class="key3d slice-btn" data-slice="M">M</button>
+              <button class="key3d slice-btn" data-slice="E">E</button>
+              <button class="key3d slice-btn" data-slice="S">S</button>
+            </div>
+
+            <div class="pad-icon-row">
+              <button
+                class="key3d key3d--icon"
+                data-act="scramble"
+                data-icon="scramble"
+                aria-label="Scramble"
+                title="Scramble"
+              ></button>
+              <button
+                class="key3d key3d--icon"
+                data-act="reset"
+                data-icon="reset"
+                aria-label="Reset"
+                title="Reset"
+              ></button>
+            </div>
+          </div>
+        </div>
+        <!-- /cube-pad -->
+      </div>
+      <!-- /cube-canvas-wrap -->
+
+      <!-- ===== Camera scanner (OpenCV) — shown in scan mode ===== -->
+      <div class="scan-panel" id="scan-panel">
+        <div class="scan-stage">
+          <video id="scan-video" playsinline muted></video>
+          <canvas id="scan-overlay"></canvas>
+          <div class="scan-loading" id="scan-loading" hidden>
+            Loading vision…
+          </div>
+        </div>
+        <p class="scan-status" id="scan-status">
+          Tap "Start camera", then hold each face up to the dotted grid.
+        </p>
+        <div
+          class="scan-faces"
+          id="scan-faces"
+          aria-label="Captured faces"
+        ></div>
+        <div class="scan-actions">
+          <button
+            class="pill-btn scan-btn scan-btn--icon"
+            data-scan="start"
+            data-icon="cam-start"
+            aria-label="Start camera"
+          >
+            <span class="hover-word">Start camera</span>
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--icon"
+            data-scan="manual"
+            data-icon="cam-manual"
+            aria-label="Manual entry"
+          >
+            <span class="hover-word">Manual entry</span>
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--icon"
+            data-scan="template"
+            data-icon="cam-template"
+            aria-label="No cube? Try a random one"
+          >
+            <span class="hover-word">No cube? Try a random one</span>
+          </button>
+          <button class="pill-btn scan-btn" data-scan="capture" hidden>
+            Capture face
+          </button>
+          <button class="pill-btn scan-btn" data-scan="retake" hidden>
+            Retake
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--go"
+            data-scan="apply"
+            hidden
+          >
+            Apply to cube
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--go"
+            data-scan="play"
+            hidden
+          >
+            Play solve
+          </button>
+          <button
+            class="pill-btn scan-btn scan-btn--go"
+            data-scan="step"
+            hidden
+          >
+            Step solve
+          </button>
+        </div>
+
+        <div class="scan-manual-modal" id="scan-manual-modal" hidden>
+          <div class="scan-manual-card" role="dialog" aria-modal="true">
+            <div class="scan-manual-top">
+              <strong>Manual colours</strong>
+              <button
+                class="icon-btn scan-manual-close"
+                data-scan="manual-close"
+                data-icon="manual-close"
+                aria-label="Close manual entry"
+                title="Close"
+              ></button>
+            </div>
+            <p class="scan-status" id="scan-manual-status"></p>
+            <div
+              class="scan-faces"
+              id="scan-manual-faces"
+              aria-label="Manual faces"
+            ></div>
+            <div class="scan-editor" id="scan-editor"></div>
+            <div class="scan-actions">
+              <button class="pill-btn scan-btn" data-scan="manual-clear">
+                Clear face
+              </button>
+              <button
+                class="pill-btn scan-btn scan-btn--go"
+                data-scan="manual-apply"
+                hidden
+              >
+                Apply to cube
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paint blobs behind the hero + inside the game modal -->
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document
+        .querySelectorAll(".hero-paint")
+        .forEach((host) => (host.innerHTML = heroPaint()));
+    </script>
+
+    <script type="module" src="/home/games/rubiks-cube/js/game.js"></script>
+    <script src="/utils/components/loader.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+  </body>
+</html>

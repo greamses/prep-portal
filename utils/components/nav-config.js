@@ -63,8 +63,9 @@ const NAV_CONFIG = [
         icon: I.international,
         description: "Global exam standards",
         children: [
-          { text: "IGCSE", href: "/exam-archive/international/exams/index.html", description: "British curriculum prep" },
-          { text: "SAT", href: "/exam-archive/international/exams/index.html", description: "American college prep" },
+          { text: "Cambridge", href: "/exam-archive/national/exams/index.html?cat=international", description: "Cambridge Mathematics" },
+          { text: "IGCSE", href: "/exam-archive/national/exams/index.html?cat=international", description: "British curriculum prep" },
+          { text: "SAT", href: "/exam-archive/national/exams/index.html?cat=international", description: "American college prep" },
         ],
       },
       {
@@ -72,7 +73,8 @@ const NAV_CONFIG = [
         icon: I.competitions,
         description: "Win top prizes",
         children: [
-          { text: "ANMC", href: "/exam-archive/competitions/exams/index.html", description: "National math contest" },
+          { text: "Scholastic", href: "/exam-archive/national/exams/index.html?cat=competition", description: "Scholastic Awards practice" },
+          { text: "ANMC", href: "/exam-archive/national/exams/index.html?cat=competition", description: "National math contest" },
         ],
       },
     ],
@@ -169,8 +171,9 @@ const NAV_CONFIG = [
         icon: I.games,
         description: "Math practice games",
         children: [
-          { text: "Free Throw", href: "/prep-math/games/free-throw/index.html", description: "Aim, shoot, and score" },
-          { text: "Snakes & Ladders", href: "/prep-math/games/snakes-ladders/index.html", description: "Roll, climb, and slide" },
+          { text: "Free Throw", href: "/home/games/free-throw/index.html", description: "Aim, shoot, and score" },
+          { text: "Snakes & Ladders", href: "/home/games/snakes-ladders/index.html", description: "Roll, climb, and slide" },
+          { text: "Rubik's Cube", href: "/home/games/rubiks-cube/index.html", description: "Twist, turn, and solve in 3D" },
         ],
       },
       {
