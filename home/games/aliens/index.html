@@ -1,236 +1,155 @@
-﻿<!doctype html>
-<html lang="en" data-theme="light">
+<!doctype html>
+<html lang="en" data-theme="dark">
   <head>
-    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prep Portal 2026 | Alien Angle</title>
-    <!-- Theme color for supported browsers. Firefox, Firefox for Android, and Opera do not support theme-color. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Alien Angle — Angular Targeting</title>
+    <meta
+      name="description"
+      content="Shoot hidden alien saucers using their angular position. Read the protractor, aim the cannon, fire."
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
 
-    <meta name="msapplication-TileColor" content="#000000" />
+    <link rel="stylesheet" href="../../../utils/components/theme.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;600;700;800;900&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./alien-angle.css" />
-    <link rel="stylesheet" href="../../../main.css" />
-    <link rel="stylesheet" href="../../../theory-page/style.css" />
-    <script src="../../../utils/loader/loader.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
 
   <body>
+    <!-- Loading screen: radar / targeting boot-up -->
     <div id="loader">
-      <div id="loader-wrapper">
-        <div class="logo-cluster"></div>
-      </div>
-      <div class="loader-word"><span>Alien Angle</span></div>
-      <div class="loader-bar"></div>
-    </div>
-
-    <nav class="site-nav"></nav>
-
-    <!-- Ticker -->
-    <div class="ticker" aria-hidden="true">
-      <div class="ticker-track" id="ticker-track"></div>
-    </div>
-
-    <!-- Page Header -->
-    <header class="pg-header">
-      <div class="ph-left">
-        <p class="pg-eyebrow">Mathematics · Geometry</p>
-        <h1 class="pg-title">ALIEN<br /><em>ANGLE</em></h1>
-      </div>
-      <div class="ph-right">
-        <p>
-          Estimate angles to shoot down alien invaders. Align your shot within
-          3° for a direct hit. Build precision through practice.
-        </p>
-        <div class="ph-stats">
-          <div class="ph-stat">
-            <strong id="stat-shots">0</strong><span>Shots</span>
-          </div>
-          <div class="ph-stat">
-            <strong id="stat-hits">0</strong><span>Hits</span>
-          </div>
-          <div class="ph-stat">
-            <strong id="stat-accuracy">0%</strong><span>Accuracy</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Settings Panel -->
-    <section class="settings-panel">
-      <div class="settings-body">
-        <p class="settings-desc">
-          Configure your targeting practice. Toggle the protractor overlay for
-          angle guidance.
-        </p>
-
-        <div class="settings-grid">
-          <!-- Difficulty Dropdown -->
-          <div class="pp-dropdown" id="dd-difficulty">
-            <span class="pp-dropdown-label">Difficulty</span>
-            <div
-              class="pp-dropdown-header"
-              onclick="toggleDropdown('dd-difficulty')"
-            >
-              <span class="dd-selected">Standard (±3°)</span>
-              <svg viewBox="0 0 24 24">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-            <div class="pp-dropdown-list">
-              <div class="pp-dropdown-item" data-value="easy">Easy (±5°)</div>
-              <div class="pp-dropdown-item selected" data-value="medium">
-                Standard (±3°)
-              </div>
-              <div class="pp-dropdown-item" data-value="hard">Hard (±1°)</div>
-            </div>
-          </div>
-
-          <!-- Speed Dropdown -->
-          <div class="pp-dropdown" id="dd-speed">
-            <span class="pp-dropdown-label">Rocket Speed</span>
-            <div
-              class="pp-dropdown-header"
-              onclick="toggleDropdown('dd-speed')"
-            >
-              <span class="dd-selected">Normal</span>
-              <svg viewBox="0 0 24 24">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-            <div class="pp-dropdown-list">
-              <div class="pp-dropdown-item" data-value="slow">Slow</div>
-              <div class="pp-dropdown-item selected" data-value="normal">
-                Normal
-              </div>
-              <div class="pp-dropdown-item" data-value="fast">Fast</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Additional checkboxes -->
-        <div class="settings-checkboxes">
-          <label class="checkbox-label">
-            <input type="checkbox" id="show-protractor" />
-            <span class="checkbox-text">Show protractor overlay</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="sound-enabled" checked />
-            <span class="checkbox-text">Enable sound effects</span>
-          </label>
-        </div>
-
-        <button class="btn-start" onclick="openGameModal()">
-          <svg viewBox="0 0 24 24">
-            <polygon points="5 3 19 12 5 21 5 3" />
+      <div class="loader-inner">
+        <div class="radar">
+          <svg class="radar-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="rgba(120,225,255,0.30)" stroke-width="1">
+              <circle cx="100" cy="100" r="92" />
+              <circle cx="100" cy="100" r="62" />
+              <circle cx="100" cy="100" r="32" />
+              <line x1="8" y1="100" x2="192" y2="100" />
+              <line x1="100" y1="8" x2="100" y2="192" />
+            </g>
+            <path d="M16 100 A84 84 0 0 1 184 100" fill="none" stroke="rgba(150,235,255,0.8)" stroke-width="2.5" />
+            <g stroke="rgba(150,235,255,0.7)" stroke-width="1.6">
+              <line x1="184" y1="100" x2="172" y2="100" />
+              <line x1="173" y1="58" x2="163" y2="63" />
+              <line x1="142" y1="27" x2="136" y2="36" />
+              <line x1="100" y1="16" x2="100" y2="28" />
+              <line x1="58" y1="27" x2="64" y2="36" />
+              <line x1="27" y1="58" x2="37" y2="63" />
+              <line x1="16" y1="100" x2="28" y2="100" />
+            </g>
+            <text x="100" y="12" fill="rgba(200,245,255,0.9)" font-size="11" font-family="JetBrains Mono, monospace" text-anchor="middle">90</text>
           </svg>
-          Launch Game
-        </button>
-      </div>
-    </section>
-
-    <!-- GAME MODAL -->
-    <div id="game-modal" class="gp-modal-overlay">
-      <div class="modal-header">
-        <button class="btn" title="Exit" onclick="closeGameModal()">
-          <svg viewBox="0 0 24 24">
-            <path d="M18 6L6 18" />
-            <path d="M6 6l12 12" />
-          </svg>
-        </button>
-        <span class="modal-title" id="modal-title"
-          >Alien Angle · Target Practice</span
-        >
-        <div class="modal-header-right">
-          <label class="checkbox-label modal-checkbox">
-            <input type="checkbox" id="show-protractor-modal" />
-            <span class="checkbox-text">Protractor</span>
-          </label>
-          <span class="modal-streak" id="modal-score">0/0</span>
+          <div class="radar-sweep"></div>
+          <span class="radar-blip" style="--bx: 64%; --by: 30%; --d: 0s"></span>
+          <span class="radar-blip" style="--bx: 30%; --by: 58%; --d: 0.7s"></span>
+          <span class="radar-blip" style="--bx: 72%; --by: 64%; --d: 1.3s"></span>
+          <div class="radar-core"></div>
         </div>
-      </div>
-
-      <!-- Canvas Container -->
-      <div id="polypad-wrap">
-        <div id="canvas-container">
-          <canvas id="gameCanvas" width="800" height="600"></canvas>
-        </div>
-      </div>
-
-      <!-- Game Footer with controls -->
-      <div class="gp-bottom-sheet">
-        <div class="gp-feedback-box" id="game-feedback">
-          Align the white arrow with the alien. Click shoot when ready.
-        </div>
-
-        <!-- Angle Slider -->
-        <div class="angle-control-panel">
-          <div class="angle-display">
-            <label class="angle-label" for="angle-slider">Angle:</label>
-            <span class="angle-value" id="angle-display">0°</span>
-          </div>
-          <input
-            type="range"
-            id="angle-slider"
-            min="0"
-            max="180"
-            value="0"
-            class="angle-slider"
-            title="Adjust target angle"
-          />
-        </div>
-
-        <!-- Stats Row -->
-        <div class="game-stats-row">
-          <div class="stat-box alien-stat">
-            <span class="stat-label">Alien</span>
-            <span class="stat-value" id="alien-angle">51°</span>
-          </div>
-          <div class="stat-box precision-stat">
-            <span class="stat-label">Precision</span>
-            <span class="stat-value" id="shot-precision">-</span>
-          </div>
-          <div class="stat-box progress-stat">
-            <span class="stat-label">Progress</span>
-            <span class="stat-value" id="shot-progress">0/0</span>
-          </div>
-        </div>
-
-        <div class="answer-row">
-          <button
-            class="btn-secondary"
-            id="new-alien-btn"
-            onclick="spawnNewAlien()"
-          >
-            New Alien
-          </button>
-          <button
-            class="btn-primary shoot-btn"
-            id="shoot-btn"
-            onclick="fireShot()"
-          >
-            <span>SHOOT</span>
-            <svg viewBox="0 0 24 24">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-          </button>
-          <button
-            class="btn-secondary"
-            id="reset-stats-btn"
-            onclick="resetStats()"
-          >
-            Reset
-          </button>
-        </div>
+        <h1 class="loader-title">ALIEN ANGLE</h1>
+        <p class="loader-sub">ANGULAR TARGETING SYSTEM</p>
+        <div class="loader-bar-bg"><div id="loader-bar" class="loader-bar-fill"></div></div>
+        <p id="loader-status" class="loader-status">CALIBRATING PROTRACTOR…</p>
       </div>
     </div>
 
-    <script src="./alien-angle.js"></script>
-    <script type="module" src="../nav/nav.js"></script>
+    <div id="app">
+      <canvas id="scene"></canvas>
+
+      <!-- top-left score cards -->
+      <header class="hud-top">
+        <div class="hud-card">
+          <span class="hud-label">SCORE</span><span id="score" class="hud-value">0</span>
+        </div>
+        <div class="hud-card">
+          <span class="hud-label">HITS</span><span id="shots" class="hud-value">0 / 0</span>
+        </div>
+        <div class="hud-card">
+          <span class="hud-label">ACC</span><span id="accuracy" class="hud-value">0%</span>
+        </div>
+      </header>
+
+      <!-- live aim readout (shown only with the protractor) -->
+      <div id="current-wrap" class="current-wrap">
+        <span class="current-label">YOUR AIM</span>
+        <span id="current-angle" class="current-value">90°</span>
+      </div>
+
+      <div id="message" class="message" aria-live="polite"></div>
+
+      <!-- fullscreen -->
+      <button id="fullscreen-btn" class="fs-btn" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+          <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+          <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+          <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+        </svg>
+      </button>
+
+      <!-- settings -->
+      <button id="gear-btn" class="gear-btn" aria-label="Settings">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </button>
+      <div id="settings-panel" class="settings-panel">
+        <div class="set-row">
+          <span class="set-title">Difficulty</span>
+          <div class="seg">
+            <button data-diff="easy" class="active">Easy</button>
+            <button data-diff="medium">Med</button>
+            <button data-diff="hard">Hard</button>
+          </div>
+        </div>
+        <label class="set-check">
+          <input type="checkbox" id="set-protractor" />
+          <span>Show protractor</span>
+        </label>
+        <label class="set-check">
+          <input type="checkbox" id="set-sound" checked />
+          <span>Sound effects</span>
+        </label>
+        <label class="set-check">
+          <input type="checkbox" id="set-music" checked />
+          <span>Music</span>
+        </label>
+      </div>
+
+      <!-- angle dial -->
+      <div id="stick" class="stick" aria-label="Angle dial">
+        <div class="stick-track"></div>
+        <div id="stick-knob" class="stick-knob"></div>
+      </div>
+
+      <!-- fire -->
+      <div class="right-controls">
+        <button id="shoot-btn" class="shoot-btn" aria-label="Fire"><span>FIRE</span></button>
+      </div>
+
+      <div class="hint" id="hint">
+        Spin the dial to the target angle · Tap FIRE
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
