@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -25,6 +25,8 @@
     />
     <meta property="og:type" content="website" />
 
+    <!-- Site design system — provides CSS vars + Unbounded/JetBrains Mono fonts -->
+    <link rel="stylesheet" href="../../../../utils/components/theme.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -43,6 +45,40 @@
   </head>
 
   <body>
+    <!-- Loading screen — shown immediately, hidden after first Three.js frame -->
+    <div id="loader">
+      <div class="loader-inner">
+        <div class="loader-ball-scene">
+          <div class="loader-ball-wrap">
+            <svg class="loader-ball-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="bg" cx="38%" cy="30%" r="60%">
+                  <stop offset="0%" stop-color="#ff9a3c"/>
+                  <stop offset="45%" stop-color="#e05818"/>
+                  <stop offset="100%" stop-color="#a03008"/>
+                </radialGradient>
+                <clipPath id="bc"><circle cx="40" cy="40" r="37"/></clipPath>
+              </defs>
+              <circle cx="40" cy="40" r="37" fill="url(#bg)"/>
+              <g clip-path="url(#bc)" stroke="#160800" stroke-width="2.8" fill="none" stroke-linecap="round">
+                <line x1="3" y1="40" x2="77" y2="40"/>
+                <path d="M40,3 C16,14 16,66 40,77"/>
+                <path d="M40,3 C64,14 64,66 40,77"/>
+              </g>
+              <ellipse cx="27" cy="25" rx="11" ry="7" fill="rgba(255,255,255,0.13)" transform="rotate(-25 27 25)"/>
+            </svg>
+          </div>
+          <div class="loader-ball-shadow"></div>
+        </div>
+        <h1 class="loader-title">FPV FREE THROW</h1>
+        <p class="loader-sub">REALISTIC BASKETBALL</p>
+        <div class="loader-bar-bg">
+          <div id="loader-bar" class="loader-bar-fill"></div>
+        </div>
+        <p id="loader-status" class="loader-status">LOADING...</p>
+      </div>
+    </div>
+
     <div id="app">
       <canvas id="scene"></canvas>
 

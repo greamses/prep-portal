@@ -12,7 +12,7 @@ const CONFIG = {
   BOARD_SIZE: { width: 4.4, height: 1.8, depth: 0.2 },
   SCREEN_SIZE: { width: 3.8, height: 1.3, depth: 0.03 },
   CANVAS_SIZE: { width: 1024, height: 300 },
-  DEFAULT_TIMER: 60,
+  DEFAULT_TIMER: 180,
   COLORS: {
     SCORE: '#00ff66',
     TIMER: '#ff3333',
@@ -477,7 +477,7 @@ const seconds = timerValue % 60;
 const timerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
   const timerColor = timerValue <= 10 ? '#ff0000' :
-                     timerValue <= 30 ? '#ff6600' : CONFIG.COLORS.TIMER;
+                     timerValue <= 60 ? '#ff6600' : CONFIG.COLORS.TIMER;
 
   drawDigitalText(
     ctx,

@@ -4,6 +4,7 @@
  */
 import * as THREE from "three";
 import { buildScene } from "./environment/index.js";
+import { GameOverScreen } from "./gameover.js";
 import { createBall } from "./ball.js";
 import { BallPhysics } from "./physics.js";
 import { setupControls } from "./controls.js";
@@ -58,7 +59,7 @@ const CONFIG = {
     readyOffset: new THREE.Vector3(0, -0.32, -0.55)
   },
   TIMER: {
-    duration: 60,
+    duration: 180,
     autoStart: true
   }
 };
@@ -66,7 +67,7 @@ const CONFIG = {
 /* ---------- State Management ---------- */
 class GameState {
   constructor() {
-    this.stats = { score: 0, made: 0, attempts: 0, streak: 0 };
+    this.stats = { score: 0, made: 0, attempts: 0, streak: 0, swishes: 0, bestStreak: 0 };
     this.canShoot = true;
     this.isPaused = false;
     this.gameActive = true;
@@ -78,7 +79,7 @@ class GameState {
   }
   
   reset() {
-    this.stats = { score: 0, made: 0, attempts: 0, streak: 0 };
+    this.stats = { score: 0, made: 0, attempts: 0, streak: 0, swishes: 0, bestStreak: 0 };
     this.canShoot = true;
     this.gameActive = true;
     this.lastShotTime = 0;
@@ -100,11 +101,14 @@ class GameState {
       this.stats.score += CONFIG.SCORING.swish;
       this.stats.made++;
       this.stats.streak++;
+      this.stats.swishes++;
+      if (this.stats.streak > this.stats.bestStreak) this.stats.bestStreak = this.stats.streak;
       return { points: CONFIG.SCORING.swish, message: 'SWISH! +3', className: 'swish' };
     } else if (type === 'score') {
       this.stats.score += CONFIG.SCORING.regular;
       this.stats.made++;
       this.stats.streak++;
+      if (this.stats.streak > this.stats.bestStreak) this.stats.bestStreak = this.stats.streak;
       return { points: CONFIG.SCORING.regular, message: '+2', className: 'score' };
     }
     return null;
@@ -134,7 +138,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(CONFIG.RENDER.pixelRatio);
 renderer.shadowMap.enabled = CONFIG.RENDER.shadows;
 if (CONFIG.RENDER.shadows) {
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 }
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = CONFIG.RENDER.toneMapping;
@@ -208,6 +212,16 @@ placeReadyBall();
 /* ---------- Controls ---------- */
 const controls = setupControls();
 
+/* ----- Keyboard state (desktop) ----- */
+const _keys = new Set();
+let _spaceHeld = false;
+{
+  const hintEl = document.getElementById('hint');
+  if (hintEl && !isMobile) {
+    hintEl.textContent = 'Move: WASD / Arrows  ·  Space to charge & shoot  ·  Mouse drag to aim';
+  }
+}
+
 let debugMode = false;
 window.toggleDebug = () => {
   debugMode = !debugMode;
@@ -220,13 +234,7 @@ const HUD = {
   shots: document.getElementById("shots"),
   streak: document.getElementById("streak"),
   message: document.getElementById("message"),
-  fps: document.getElementById("fps") || (() => {
-    const el = document.createElement('div');
-    el.id = 'fps';
-    el.style.cssText = 'position:fixed;top:10px;right:10px;color:#0f0;font-family:monospace;z-index:1000;font-size:12px';
-    document.body.appendChild(el);
-    return el;
-  })(),
+  fps: document.getElementById("fps"),
   timer: document.getElementById("timer")
 };
 
@@ -291,13 +299,22 @@ function updateCameraAndPlayer(dt) {
   if (stick.x !== 0 || stick.y !== 0) {
     PLAYER_POS.x += stick.x * MOVEMENT_SPEED * dt;
     PLAYER_POS.z += stick.y * MOVEMENT_SPEED * dt;
-    
+
     PLAYER_POS.z = Math.max(-7.5, Math.min(PLAYER_POS.z, 0));
     PLAYER_POS.x = Math.max(-7.0, Math.min(PLAYER_POS.x, 7.0));
-    
+
     recomputeBaseAim();
   }
-  
+
+  // Keyboard WASD / Arrow movement (desktop)
+  const kx = (_keys.has('KeyD') || _keys.has('ArrowRight') ? 1 : 0) - (_keys.has('KeyA') || _keys.has('ArrowLeft') ? 1 : 0);
+  const kz = (_keys.has('KeyS') || _keys.has('ArrowDown')  ? 1 : 0) - (_keys.has('KeyW') || _keys.has('ArrowUp')   ? 1 : 0);
+  if (kx !== 0 || kz !== 0) {
+    PLAYER_POS.x = Math.max(-7.0, Math.min(PLAYER_POS.x + kx * MOVEMENT_SPEED * dt, 7.0));
+    PLAYER_POS.z = Math.max(-7.5, Math.min(PLAYER_POS.z + kz * MOVEMENT_SPEED * dt, 0));
+    recomputeBaseAim();
+  }
+
   const pan = controls.consumePan();
   aimYaw -= pan.x * PAN_SENSITIVITY;
   aimPitch -= pan.y * PAN_SENSITIVITY;
@@ -418,10 +435,19 @@ physics.onRest = () => {
 };
 
 /* ---------- Game Flow ---------- */
+let _gameOverScreen = null;
+
 function endGame() {
+  if (_gameOverScreen) return; // already showing
   gameState.gameActive = false;
+  gameState.isPaused = true;
   stopTimer(scoreboard);
-  showMessage(`Final: ${gameState.stats.score}`, 'gameover', 5000);
+
+  _gameOverScreen = new GameOverScreen();
+  _gameOverScreen.show(gameState.stats, () => {
+    _gameOverScreen = null;
+    restartGame();
+  });
 }
 
 function placePlayerOnParabolaArc() {
@@ -438,6 +464,7 @@ function placePlayerOnParabolaArc() {
 
 function restartGame() {
   gameState.reset();
+  gameState.isPaused = false;
   placePlayerOnParabolaArc();
   resetTimer(scoreboard, CONFIG.TIMER.duration);
   startTimer(scoreboard, CONFIG.TIMER.duration);
@@ -494,6 +521,7 @@ let lastTime = 0;
 let accumulator = 0;
 let hudTimer = 0;
 let netUpdateCounter = 0;
+let _loaderHidden = false;
 const NET_UPDATE_RATE = 1/30;
 
 function animate(currentTime) {
@@ -547,6 +575,11 @@ function animate(currentTime) {
   }
   
   renderer.render(scene, camera);
+
+  if (!_loaderHidden) {
+    _loaderHidden = true;
+    _hideLoader();
+  }
 }
 
 /* ---------- Window Management ---------- */
@@ -576,9 +609,24 @@ window.addEventListener("beforeunload", () => {
 });
 
 window.addEventListener("keydown", (e) => {
+  _keys.add(e.code);
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!_spaceHeld && !e.repeat) {
+      _spaceHeld = true;
+      controls.startCharge();
+    }
+    return;
+  }
+
+  if (e.repeat) return;
   switch (e.key.toLowerCase()) {
     case 'r':
-      if (!gameState.gameActive || confirm('Restart game?')) restartGame();
+      if (!gameState.gameActive || confirm('Restart game?')) {
+        if (_gameOverScreen) { _gameOverScreen.destroy(); _gameOverScreen = null; }
+        restartGame();
+      }
       break;
     case 'p':
       gameState.isPaused = !gameState.isPaused;
@@ -590,8 +638,30 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+window.addEventListener("keyup", (e) => {
+  _keys.delete(e.code);
+  if (e.code === 'Space') {
+    _spaceHeld = false;
+    controls.releaseCharge();
+  }
+});
+
+/* ---------- Loader ---------- */
+function _hideLoader() {
+  const loader = document.getElementById('loader');
+  if (!loader) return;
+  const bar = document.getElementById('loader-bar');
+  const status = document.getElementById('loader-status');
+  if (bar) { bar.style.cssText = 'animation:none;width:100%;transition:width 0.2s ease'; }
+  if (status) { status.textContent = 'READY!'; status.style.color = 'rgba(110,231,183,0.8)'; }
+  setTimeout(() => {
+    loader.classList.add('fade-out');
+    loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+  }, 280);
+}
+
 /* ---------- Start ---------- */
-console.log(`FPV Free Throw - Relaxed Mode ${isMobile ? '(Mobile)' : '(Desktop)'}`);
+console.log(`FPV Free Throw - 3 Min Mode ${isMobile ? '(Mobile)' : '(Desktop)'}`);
 requestAnimationFrame(animate);
 updateHUD();
 showMessage('Starting...', 'ready', 2000);

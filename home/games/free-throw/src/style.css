@@ -2,6 +2,358 @@
    FPV Free Throw — UI styles (Digital-7 Enhanced)
    =========================================================== */
 
+/* ===== Loading Screen ===== */
+#loader {
+  position: fixed;
+  inset: 0;
+  background: var(--app-bg, #14130f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.65s ease;
+}
+
+#loader.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-ball-scene {
+  position: relative;
+  width: 90px;
+  height: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.loader-ball-wrap {
+  position: absolute;
+  top: 0;
+  animation: loaderBounce 0.72s ease-in-out infinite;
+}
+
+.loader-ball-svg {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 6px 0 rgba(224, 88, 24, 0.8));
+}
+
+.loader-ball-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62px;
+  height: 14px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%);
+  animation: loaderShadow 0.72s ease-in-out infinite;
+}
+
+@keyframes loaderBounce {
+  0%   { top: 55px; animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+  45%  { top: 0px;  animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  100% { top: 55px; }
+}
+
+@keyframes loaderShadow {
+  0%, 100% { transform: translateX(-50%) scaleX(1);    opacity: 0.55; }
+  45%       { transform: translateX(-50%) scaleX(0.42); opacity: 0.14; }
+}
+
+.loader-title {
+  font-family: var(--font-display, 'Unbounded', 'Orbitron', sans-serif);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: var(--ink, #efece3);
+  margin: 0 0 6px;
+}
+
+.loader-sub {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent-warning, #f0b074);
+  margin: 0 0 26px;
+}
+
+.loader-bar-bg {
+  width: 220px;
+  height: 3px;
+  background: var(--surface-secondary, #26231d);
+  border: 1px solid var(--border-subtle, rgba(239,236,227,0.14));
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.loader-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-primary, #f0cf6e);
+  animation: loaderBarFill 2.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes loaderBarFill {
+  0%   { width: 0%;  }
+  12%  { width: 18%; }
+  45%  { width: 55%; }
+  80%  { width: 80%; }
+  100% { width: 85%; }
+}
+
+.loader-status {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #736d63);
+  margin: 0;
+  transition: color 0.3s ease;
+}
+
+/* ====================================================== */
+
+/* ===== Game Over Screen — neo-brutalist dark mode ===== */
+#go-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 9, 7, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  /* padding absorbs notch + ensures panel doesn't touch edges on small screens */
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  z-index: 800;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#go-overlay.go-visible {
+  opacity: 1;
+}
+
+.go-panel {
+  background: var(--surface-primary, #1f1c17);
+  border: 2px solid var(--ink, #efece3);
+  box-shadow: 6px 6px 0 var(--ink, #efece3);
+  width: min(400px, 92vw);
+  /* vertical margin: auto centres panel when viewport has space */
+  margin-block: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative amoeboid paint background */
+.go-paint {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.go-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Content wrapper sits above the paint */
+.go-panel-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 26px 26px 22px;
+  width: 100%;
+}
+
+/* "TIME'S UP" eyebrow label */
+.go-eyebrow {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--accent-warning, #f0b074);
+  border: 1.5px solid var(--accent-warning, #f0b074);
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+
+/* Big score number */
+.go-score-num {
+  font-family: var(--font-display, 'Unbounded', sans-serif);
+  font-size: clamp(52px, 14vw, 72px);
+  font-weight: 900;
+  color: var(--ink, #efece3);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.go-score-lbl {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #736d63);
+  margin-bottom: 14px;
+}
+
+/* Chart container */
+.go-chart-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 14px;
+  border: 2px solid var(--surface-secondary, #26231d);
+}
+
+.go-canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  cursor: grab;
+  background: var(--surface-secondary, #26231d);
+}
+
+.go-canvas:active { cursor: grabbing; }
+
+/* Drag hint fades on first interaction (opacity set via JS) */
+.go-drag-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #736d63);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  white-space: nowrap;
+}
+
+/* Legend */
+.go-legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle, rgba(239,236,227,0.12));
+  margin-bottom: 14px;
+}
+
+.go-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Square dots — neo-brutalist, not circular */
+.go-dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+.go-lgnd-txt {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  color: var(--text-secondary, #a39d92);
+  letter-spacing: 0.02em;
+}
+
+/* Stat boxes */
+.go-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.go-stat-box {
+  background: var(--surface-secondary, #26231d);
+  border: 1.5px solid var(--border-subtle, rgba(239,236,227,0.12));
+  padding: 10px 6px 9px;
+  text-align: center;
+}
+
+.go-stat-v {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink, #efece3);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.go-stat-l {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #736d63);
+}
+
+/* CTA button — accent-primary fill, ink border, hard shadow, rounded */
+.go-btn {
+  width: 100%;
+  padding: 14px;
+  font-family: var(--font-display, 'Unbounded', sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-accent, #14130f);
+  background: var(--accent-primary, #f0cf6e);
+  border: 2px solid var(--ink, #efece3);
+  box-shadow: 4px 4px 0 var(--ink, #efece3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* Neo-brutalist lift on hover */
+.go-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink, #efece3);
+}
+
+.go-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink, #efece3);
+}
+
+@media (max-width: 380px) {
+  .go-score-num    { font-size: 48px; }
+  .go-panel-inner  { padding: 20px 16px 18px; }
+  .go-canvas       { height: 170px; }
+  .go-stat-v       { font-size: 17px; }
+}
+
 /* Import Digital-style font */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 

@@ -3,6 +3,9 @@
  */
 import * as THREE from "three";
 
+const _isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) ||
+                  window.innerWidth < 1024;
+
 export function createBall(radius = 0.121) {
   const mat = new THREE.MeshStandardMaterial({
     map: makeBallTexture(),
@@ -13,9 +16,9 @@ export function createBall(radius = 0.121) {
     metalness: 0.02,
     color: new THREE.Color(1, 1, 1),
   });
-  
-  // Higher segment count for a perfectly smooth sphere
-  const geo = new THREE.SphereGeometry(radius, 64, 64);
+
+  const segs = _isMobile ? 32 : 48;
+  const geo = new THREE.SphereGeometry(radius, segs, segs);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
@@ -23,24 +26,25 @@ export function createBall(radius = 0.121) {
 }
 
 function makeBallTexture() {
-  const W = 2048, H = 1024; // double resolution
+  const W = _isMobile ? 1024 : 2048;
+  const H = _isMobile ? 512  : 1024;
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
 
   // ---- Base colour: rich basketball orange with subtle tonal variation ----
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0.0, "#e56e1a");  // slightly lighter on top
+  grad.addColorStop(0.0, "#e56e1a");
   grad.addColorStop(0.3, "#da5a1a");
-  grad.addColorStop(0.5, "#cc4f12");  // richest orange at equator
+  grad.addColorStop(0.5, "#cc4f12");
   grad.addColorStop(0.7, "#da5a1a");
-  grad.addColorStop(1.0, "#c24810");  // darker at bottom
+  grad.addColorStop(1.0, "#c24810");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
   // ---- Leather grain / pebble texture ----
-  // Dark micro-dimples
-  for (let i = 0; i < 35000; i++) {
+  const pebbleCount = _isMobile ? 10000 : 35000;
+  for (let i = 0; i < pebbleCount; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
     const r = 0.8 + Math.random() * 2.2;
@@ -123,7 +127,8 @@ function makeBallTexture() {
   ctx.restore();
 
   // ---- Slight dirty/used marks ----
-  for (let i = 0; i < 400; i++) {
+  const dirtCount = _isMobile ? 100 : 400;
+  for (let i = 0; i < dirtCount; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
     const r = 3 + Math.random() * 12;
@@ -143,7 +148,8 @@ function makeBallTexture() {
 }
 
 function makeBumpTexture() {
-  const W = 1024, H = 512;
+  const W = _isMobile ? 512 : 1024;
+  const H = _isMobile ? 256 : 512;
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
@@ -153,7 +159,8 @@ function makeBumpTexture() {
   ctx.fillRect(0, 0, W, H);
 
   // Pebble grain — tiny specks brighter/darker than mid-grey
-  for (let i = 0; i < 25000; i++) {
+  const bumpPebbles = _isMobile ? 7000 : 25000;
+  for (let i = 0; i < bumpPebbles; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
     const r = 0.7 + Math.random() * 2.2;
@@ -196,7 +203,8 @@ function makeBumpTexture() {
 }
 
 function makeRoughnessTexture() {
-  const W = 512, H = 256;
+  const W = _isMobile ? 256 : 512;
+  const H = _isMobile ? 128 : 256;
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
@@ -206,7 +214,8 @@ function makeRoughnessTexture() {
   ctx.fillRect(0, 0, W, H);
 
   // Variation in roughness
-  for (let i = 0; i < 6000; i++) {
+  const roughSpots = _isMobile ? 1500 : 6000;
+  for (let i = 0; i < roughSpots; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
     const r = 1 + Math.random() * 3;

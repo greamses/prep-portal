@@ -131,6 +131,31 @@ export function setupControls() {
   canvas.addEventListener("pointercancel", endCanvasPointer);
   canvas.addEventListener("pointerout", endCanvasPointer);
 
+  /* ----- Mouse drag pan (desktop) ----- */
+  let _mouseDown = false;
+  let _lastMouseX = 0;
+  let _lastMouseY = 0;
+
+  canvas.addEventListener('mousedown', (e) => {
+    if (!state.enabled) return;
+    _mouseDown = true;
+    _lastMouseX = e.clientX;
+    _lastMouseY = e.clientY;
+  });
+
+  const _onMouseMove = (e) => {
+    if (!state.enabled || !_mouseDown) return;
+    state.pan.x += e.clientX - _lastMouseX;
+    state.pan.y += e.clientY - _lastMouseY;
+    _lastMouseX = e.clientX;
+    _lastMouseY = e.clientY;
+  };
+
+  const _onMouseUp = () => { _mouseDown = false; };
+
+  window.addEventListener('mousemove', _onMouseMove, { passive: true });
+  window.addEventListener('mouseup',   _onMouseUp);
+
   /* ----- Shoot button (charge + release) ----- */
   let chargeStart = 0;
   let chargeRAF = 0;
@@ -181,7 +206,8 @@ export function setupControls() {
     state,
     setOnShoot(fn) { state.onShoot = fn; },
     setEnabled(v)  { state.enabled = v; },
-    // Read and reset pan values every frame
+    startCharge()  { startCharge(null); },
+    releaseCharge(){ releaseCharge(); },
     consumePan() {
       const p = { x: state.pan.x, y: state.pan.y };
       state.pan.x = 0;
