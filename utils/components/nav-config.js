@@ -172,6 +172,7 @@ const NAV_CONFIG = [
         description: "Math practice games",
         children: [
           { text: "Free Throw", href: "/home/games/free-throw/index.html", description: "Aim, shoot, and score" },
+          { text: "Alien Angle", href: "/home/games/aliens/index.html", description: "Read the angle, aim the cannon, fire" },
           { text: "Snakes & Ladders", href: "/home/games/snakes-ladders/index.html", description: "Roll, climb, and slide" },
           { text: "Rubik's Cube", href: "/home/games/rubiks-cube/index.html", description: "Twist, turn, and solve in 3D" },
         ],
