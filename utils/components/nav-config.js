@@ -181,6 +181,7 @@ const NAV_CONFIG = [
         icon: I.shapes,
         description: "Hands-on math practice",
         children: [
+          { text: "Algebra Lab", href: "/prep-math/drag/index.html", description: "Drag-and-drop equation solving" },
           { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", description: "Visualize fraction equivalence" },
           { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html", description: "Explore angle rules and sums" },
           { text: "Surface Area", href: "/prep-math/activity/surface-area/index.html", description: "Calculate area on 3D shapes" },
