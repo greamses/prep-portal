@@ -16,7 +16,9 @@
    each module evaluates); we then drop the printed "carton" box over the
    solved cube so it's ready for the first scramble.
    ===================================================================== */
+import { injectIcons } from "./icons.js";
 import "./input.js";
 import { build3DPlaneCarton } from "./carton.js";
 
+injectIcons();
 build3DPlaneCarton();

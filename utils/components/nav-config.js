@@ -63,8 +63,9 @@ const NAV_CONFIG = [
         icon: I.international,
         description: "Global exam standards",
         children: [
-          { text: "IGCSE", href: "/exam-archive/international/exams/index.html", description: "British curriculum prep" },
-          { text: "SAT", href: "/exam-archive/international/exams/index.html", description: "American college prep" },
+          { text: "Cambridge", href: "/exam-archive/national/exams/index.html?cat=international", description: "Cambridge Mathematics" },
+          { text: "IGCSE", href: "/exam-archive/national/exams/index.html?cat=international", description: "British curriculum prep" },
+          { text: "SAT", href: "/exam-archive/national/exams/index.html?cat=international", description: "American college prep" },
         ],
       },
       {
@@ -72,7 +73,8 @@ const NAV_CONFIG = [
         icon: I.competitions,
         description: "Win top prizes",
         children: [
-          { text: "ANMC", href: "/exam-archive/competitions/exams/index.html", description: "National math contest" },
+          { text: "Scholastic", href: "/exam-archive/national/exams/index.html?cat=competition", description: "Scholastic Awards practice" },
+          { text: "ANMC", href: "/exam-archive/national/exams/index.html?cat=competition", description: "National math contest" },
         ],
       },
     ],

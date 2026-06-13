@@ -21,7 +21,12 @@ const PAGE_CONFIG = {
     // source=aloc → load from the Firestore-backed /api/questions endpoint
     // instead of the static per-folder scripts. `n`/`limit` = questions per subject.
     source:    (urlParams.get('source') || '').toLowerCase(),
-    limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20
+    limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
+    // competition-specific params
+    comp:      urlParams.get('comp')    || '',
+    div:       urlParams.get('div')     || '',
+    round:     urlParams.get('round')   || '',
+    section:   urlParams.get('section') || 'all'
 };
 
 // Debug log to confirm

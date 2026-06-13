@@ -58,12 +58,7 @@
         <div class="hero-paint" aria-hidden="true"></div>
 
         <div class="hero-inner">
-          <span class="hero-eyebrow">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path
-                d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 8.7l5.9-.9z"
-              />
-            </svg>
+          <span class="hero-eyebrow" data-icon="star">
             Logic &amp; Spatial Reasoning
           </span>
 
@@ -85,57 +80,27 @@
               class="mode-switch-btn mode-switch-btn--active"
               data-act="start"
               data-mode="challenge"
+              data-icon="learn"
               aria-label="Learn"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 4l9 4-9 4-9-4z" fill="var(--ink)" />
-                <path
-                  d="M6.5 10.8v3.4c0 1.6 2.5 2.9 5.5 2.9s5.5-1.3 5.5-2.9v-3.4L12 13.2z"
-                  fill="var(--accent-secondary)"
-                />
-                <rect
-                  x="19.6"
-                  y="8.6"
-                  width="1.6"
-                  height="6"
-                  rx="0.8"
-                  fill="var(--accent-warning)"
-                />
-              </svg>
               <span class="hover-word">Learn</span>
             </button>
             <button
               class="mode-switch-btn"
               data-act="start"
               data-mode="algo"
+              data-icon="practice"
               aria-label="Practice"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="8.5" fill="var(--accent-danger)" />
-                <circle cx="12" cy="12" r="5.4" fill="#fff" />
-                <circle cx="12" cy="12" r="2.4" fill="var(--accent-danger)" />
-              </svg>
               <span class="hover-word">Practice</span>
             </button>
             <button
               class="mode-switch-btn"
               data-act="start"
               data-mode="scan"
+              data-icon="camera"
               aria-label="Camera"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8.5 7l1.6-2.6h3.8L15.5 7z" fill="var(--accent-secondary)" />
-                <rect
-                  x="2.5"
-                  y="7"
-                  width="19"
-                  height="13"
-                  rx="3"
-                  fill="var(--accent-secondary)"
-                />
-                <circle cx="12" cy="13.4" r="4.1" fill="#fff" />
-                <circle cx="12" cy="13.4" r="2.3" fill="var(--accent-primary)" />
-              </svg>
               <span class="hover-word">Camera</span>
             </button>
           </div>
@@ -198,36 +163,10 @@
         <button
           class="icon-btn"
           data-act="states"
+          data-icon="menu"
           aria-label="Open the side menu"
           title="Menu"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect
-              x="4"
-              y="13"
-              width="16"
-              height="6.4"
-              rx="2.2"
-              fill="var(--accent-success)"
-            />
-            <rect
-              x="4"
-              y="8.6"
-              width="16"
-              height="6.4"
-              rx="2.2"
-              fill="var(--accent-secondary)"
-            />
-            <rect
-              x="4"
-              y="4.2"
-              width="16"
-              height="6.4"
-              rx="2.2"
-              fill="var(--accent-primary)"
-            />
-          </svg>
-        </button>
+        ></button>
 
         <span class="modal-title">Rubik's Cube</span>
 
@@ -235,30 +174,10 @@
         <button
           class="icon-btn modal-close"
           data-act="exit"
+          data-icon="close"
           title="Exit (Esc)"
           aria-label="Exit"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect
-              x="10.8"
-              y="4"
-              width="2.4"
-              height="16"
-              rx="1.2"
-              fill="var(--accent-danger)"
-              transform="rotate(45 12 12)"
-            />
-            <rect
-              x="10.8"
-              y="4"
-              width="2.4"
-              height="16"
-              rx="1.2"
-              fill="var(--accent-warning)"
-              transform="rotate(-45 12 12)"
-            />
-          </svg>
-        </button>
+        ></button>
 
         <!-- Two sticky notes, torn together along a sawtooth seam -->
         <div class="stat-notes" aria-label="Moves and time">
@@ -286,48 +205,25 @@
         <div class="solve-controls" id="solve-controls" hidden>
           <!-- Row 1: stage navigation (up/down) -->
           <div class="solve-ctrl-row solve-ctrl-stages">
-            <button class="solve-ctrl-btn" data-act="prev-phase" title="Previous stage (↑)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <button class="solve-ctrl-btn" data-act="prev-phase" data-icon="phase-up" title="Previous stage (↑)"></button>
             <span class="solve-ctrl-label" id="phase-label">Stage</span>
-            <button class="solve-ctrl-btn" data-act="next-phase" title="Next stage (↓)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <button class="solve-ctrl-btn" data-act="next-phase" data-icon="phase-down" title="Next stage (↓)"></button>
           </div>
 
           <!-- Row 2: move controls + attempt toggle -->
           <div class="solve-ctrl-row solve-ctrl-moves">
-            <button class="solve-ctrl-btn" data-act="prev-solve" title="Previous move (←)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <button class="solve-ctrl-btn" data-act="prev-solve" data-icon="move-prev" title="Previous move (←)"></button>
 
-            <!-- Play / Pause -->
-            <button class="solve-ctrl-btn solve-ctrl-play" data-act="play-solve" aria-pressed="false" title="Play / Pause">
-              <!-- play triangle, shown when paused -->
-              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>
-              <!-- pause bars, shown when playing -->
-              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><rect x="6" y="4" width="4" height="16" rx="1.5" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1.5" fill="currentColor"/></svg>
-            </button>
+            <!-- Play / Pause — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-play" data-act="play-solve" data-icon="play-pause" aria-pressed="false" title="Play / Pause"></button>
 
-            <button class="solve-ctrl-btn" data-act="next-solve" title="Next move (→)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <button class="solve-ctrl-btn" data-act="next-solve" data-icon="move-next" title="Next move (→)"></button>
 
-            <!-- Watch / Attempt toggle -->
-            <button class="solve-ctrl-btn solve-ctrl-attempt" id="attempt-toggle" aria-pressed="false" title="Switch to Attempt mode">
-              <!-- eye = watch mode (default) -->
-              <svg class="icon-watch" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
-              <!-- hand = attempt mode -->
-              <svg class="icon-attempt" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 9V5a2 2 0 0 0-4 0v4M10 8.5V4a2 2 0 0 0-4 0v9l-1.5-1.7a2 2 0 0 0-3 2.5L5 18a7 7 0 0 0 14 0v-7a2 2 0 0 0-4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <!-- Watch / Attempt toggle — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-attempt" id="attempt-toggle" data-icon="watch-attempt" aria-pressed="false" title="Switch to Attempt mode"></button>
 
-            <!-- Focus toggle: dim non-relevant pieces -->
-            <button class="solve-ctrl-btn solve-ctrl-focus" id="focus-toggle" aria-pressed="false" title="Focus mode: dim non-relevant pieces">
-              <!-- crosshair = focus off (normal view) -->
-              <svg class="icon-focus-off" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><line x1="12" y1="2" x2="12" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <!-- crosshair filled = focus on -->
-              <svg class="icon-focus-on" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><line x1="12" y1="2" x2="12" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
+            <!-- Focus toggle — both SVGs injected from icons.js -->
+            <button class="solve-ctrl-btn solve-ctrl-focus" id="focus-toggle" data-icon="focus-toggle" aria-pressed="false" title="Focus mode: dim non-relevant pieces"></button>
           </div>
         </div>
 
@@ -499,36 +395,11 @@
         <button
           class="pad-fab"
           data-act="pad-toggle"
+          data-icon="pad-fab"
           aria-pressed="false"
           aria-label="Show on-screen controls"
           title="Show / hide controls"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7.5 7.5h9a4.7 4.7 0 0 1 4.6 3.8l.7 3.7A2.5 2.5 0 0 1 17 16.6L15.8 15H8.2L7 16.6A2.5 2.5 0 0 1 2.2 15l.7-3.7A4.7 4.7 0 0 1 7.5 7.5z"
-              fill="var(--accent-secondary)"
-            />
-            <rect
-              x="4.9"
-              y="10.7"
-              width="1.6"
-              height="4"
-              rx="0.8"
-              fill="#fff"
-            />
-            <rect
-              x="3.7"
-              y="11.9"
-              width="4"
-              height="1.6"
-              rx="0.8"
-              fill="#fff"
-            />
-            <circle cx="16.2" cy="11.6" r="1.2" fill="var(--accent-danger)" />
-            <circle cx="18.5" cy="13" r="1.2" fill="var(--accent-primary)" />
-            <circle cx="14.4" cy="13" r="1.2" fill="#fff" />
-          </svg>
-        </button>
+        ></button>
 
         <!-- On-screen controls (toggleable) — realistic 3D gamepad.
              Lives inside the canvas wrap so it shares the canvas stacking
@@ -622,9 +493,9 @@
               class="key3d prime-btn"
               data-act="prime"
               aria-pressed="false"
-              title="Reverse direction (prime ’)"
+              title="Reverse direction (prime ')"
             >
-              <span class="prime-mark">’</span>
+              <span class="prime-mark">'</span>
             </button>
 
             <div class="slice-row" aria-label="Turn a middle slice">
@@ -637,76 +508,17 @@
               <button
                 class="key3d key3d--icon"
                 data-act="scramble"
+                data-icon="scramble"
                 aria-label="Scramble"
                 title="Scramble"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M3 7h4l10 10h3"
-                    fill="none"
-                    stroke="var(--accent-secondary)"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M18 14l3 3-3 3"
-                    fill="none"
-                    stroke="var(--accent-secondary)"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M3 17h4l3-3"
-                    fill="none"
-                    stroke="var(--accent-danger)"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M14 10l3-3h4"
-                    fill="none"
-                    stroke="var(--accent-danger)"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M18 4l3 3-3 3"
-                    fill="none"
-                    stroke="var(--accent-danger)"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
+              ></button>
               <button
                 class="key3d key3d--icon"
                 data-act="reset"
+                data-icon="reset"
                 aria-label="Reset"
                 title="Reset"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M18.8 12a6.8 6.8 0 1 1-2-4.9"
-                    fill="none"
-                    stroke="var(--accent-success)"
-                    stroke-width="2.6"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M20.6 4.7l-.7 4.4-4.4-.7"
-                    fill="none"
-                    stroke="var(--accent-warning)"
-                    stroke-width="2.6"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
+              ></button>
             </div>
           </div>
         </div>
@@ -724,7 +536,7 @@
           </div>
         </div>
         <p class="scan-status" id="scan-status">
-          Tap “Start camera”, then hold each face up to the dotted grid.
+          Tap "Start camera", then hold each face up to the dotted grid.
         </p>
         <div
           class="scan-faces"
@@ -735,55 +547,25 @@
           <button
             class="pill-btn scan-btn scan-btn--icon"
             data-scan="start"
+            data-icon="cam-start"
             aria-label="Start camera"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect
-                x="2.5"
-                y="6.5"
-                width="13"
-                height="11"
-                rx="2.5"
-                fill="var(--accent-success)"
-              />
-              <path d="M16.5 10l5-2.8v9.6l-5-2.8z" fill="var(--accent-success)" />
-            </svg>
             <span class="hover-word">Start camera</span>
           </button>
           <button
             class="pill-btn scan-btn scan-btn--icon"
             data-scan="manual"
+            data-icon="cam-manual"
             aria-label="Manual entry"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <g fill="var(--accent-secondary)">
-                <rect x="3" y="3" width="5" height="5" rx="1.2" />
-                <rect x="9.5" y="3" width="5" height="5" rx="1.2" />
-                <rect x="16" y="3" width="5" height="5" rx="1.2" />
-                <rect x="3" y="9.5" width="5" height="5" rx="1.2" />
-                <rect x="9.5" y="9.5" width="5" height="5" rx="1.2" />
-                <rect x="3" y="16" width="5" height="5" rx="1.2" />
-              </g>
-              <path
-                d="M13 20.4l6.6-6.6 2.2 2.2-6.6 6.6-2.6.4z"
-                fill="var(--accent-warning)"
-              />
-            </svg>
             <span class="hover-word">Manual entry</span>
           </button>
           <button
             class="pill-btn scan-btn scan-btn--icon"
             data-scan="template"
+            data-icon="cam-template"
             aria-label="No cube? Try a random one"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="4" fill="var(--accent-primary)" />
-              <circle cx="8.2" cy="8.2" r="1.7" fill="#fff" />
-              <circle cx="15.8" cy="8.2" r="1.7" fill="#fff" />
-              <circle cx="12" cy="12" r="1.7" fill="#fff" />
-              <circle cx="8.2" cy="15.8" r="1.7" fill="#fff" />
-              <circle cx="15.8" cy="15.8" r="1.7" fill="#fff" />
-            </svg>
             <span class="hover-word">No cube? Try a random one</span>
           </button>
           <button class="pill-btn scan-btn" data-scan="capture" hidden>
@@ -822,19 +604,10 @@
               <button
                 class="icon-btn scan-manual-close"
                 data-scan="manual-close"
+                data-icon="manual-close"
                 aria-label="Close manual entry"
                 title="Close"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M6 6l12 12M18 6L6 18"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.6"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
+              ></button>
             </div>
             <p class="scan-status" id="scan-manual-status"></p>
             <div

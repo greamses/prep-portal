@@ -1,4 +1,4 @@
-const chemistryObjective = [
+const examQuestions = [
   {
     question:
       "The molecule with the highest number of lone pair of electrons is",

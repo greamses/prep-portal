@@ -85,14 +85,25 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     
     // ── Bootstrap ────────────────────────────────────────────
     function init() {
-        const examTypeName = getExamTypeName(PAGE_CONFIG.examType);
-        const subText = `${examTypeName} • ${(PAGE_CONFIG.subjects || []).join(' & ') || 'Practice Paper'}`;
-        const metaText = `${PAGE_CONFIG.year || '—'} • ${(PAGE_CONFIG.types || []).join(' & ').toUpperCase()}`;
-        
+        let subText, metaText, printText;
+        if (PAGE_CONFIG.source === 'competition') {
+            const comp = (PAGE_CONFIG.comp  || '').replace(/-/g, ' ');
+            const div  = (PAGE_CONFIG.div   || '').replace(/-/g, ' ');
+            const yr   = PAGE_CONFIG.year   || '';
+            const rnd  = (PAGE_CONFIG.round || '').replace(/-/g, ' ');
+            subText   = `${comp || 'Competition'} Practice`;
+            metaText  = [div, yr, rnd].filter(Boolean).join(' · ');
+            printText = `Prep Portal · ${subText} · Results`;
+        } else {
+            const examTypeName = getExamTypeName(PAGE_CONFIG.examType);
+            subText   = `${examTypeName} • ${(PAGE_CONFIG.subjects || []).join(' & ') || 'Practice Paper'}`;
+            metaText  = `${PAGE_CONFIG.year || '—'} • ${(PAGE_CONFIG.types || []).join(' & ').toUpperCase()}`;
+            printText = `Prep Portal · ${examTypeName} ${PAGE_CONFIG.year || ''} · ${(PAGE_CONFIG.subjects || []).join(', ')} · Results`;
+        }
+
         document.getElementById('display-subject').textContent = subText;
         document.getElementById('display-meta').textContent = metaText;
-        document.getElementById('print-header').textContent =
-            `Prep Portal · ${examTypeName} ${PAGE_CONFIG.year || ''} · ${(PAGE_CONFIG.subjects || []).join(', ')} · Results`;
+        document.getElementById('print-header').textContent = printText;
         
         const quitLink = document.getElementById('quit-link');
         if (quitLink) {
@@ -189,10 +200,51 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         return out;
     }
 
+    async function loadFromCompetition() {
+        const comp  = PAGE_CONFIG.comp  || '';
+        const div   = PAGE_CONFIG.div   || '';
+        const year  = PAGE_CONFIG.year  || '';
+        const round = PAGE_CONFIG.round || '';
+        if (!comp || !div || !year || !round) return [];
+
+        window.__compQuiz = null;
+        const scriptPath = `../../competitions/${comp}/${div}/${year}/${round}/script.js`;
+        try {
+            await import(scriptPath);
+        } catch (e) {
+            console.warn('Competition script load failed:', scriptPath, e.message);
+            return [];
+        }
+
+        const data = window.__compQuiz;
+        if (!data?.questions?.length) return [];
+
+        if (data.timeLimit > 0) window.__compTimeLimit = data.timeLimit;
+
+        const imgBase = `../../competitions/${comp}/${div}/${year}/${round}/`;
+        return data.questions.map(q => {
+            const opts = q.options || [];
+            const ci   = typeof q.correctIndex === 'number' ? q.correctIndex
+                       : (typeof q.correct_index === 'number' ? q.correct_index : -1);
+            return {
+                question:    q.question || '',
+                options:     opts,
+                _answer:     ci >= 0 && opts[ci] !== undefined ? opts[ci] : null,
+                explanation: Array.isArray(q.explanation) ? q.explanation.join('\n') : (q.explanation || ''),
+                image:       q.image ? (q.image.startsWith('./') ? imgBase + q.image.slice(2) : q.image) : '',
+                hint:        q.hint || '',
+                type:        'objective',
+                subject:     comp,
+                examType:    comp,
+                examYear:    year
+            };
+        });
+    }
+
     async function loadAndRender() {
         const loadingEl = document.getElementById('loading-state');
         if (loadingEl) loadingEl.style.display = 'flex';
-        
+
         allQuestions = [];
 
         // ALOC / API source → fetch from Firestore-backed endpoint and skip the
@@ -218,6 +270,32 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             const nav = document.getElementById('nav-bar');
             if (card) card.style.display = 'flex';
             if (nav) nav.style.display = 'grid';
+            return;
+        }
+
+        // Competition source → dynamically import the round's script.js.
+        // The script calls setupQuiz() which stores data in window.__compQuiz.
+        if (PAGE_CONFIG.source === 'competition') {
+            allQuestions = await loadFromCompetition();
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (allQuestions.length === 0) {
+                const card = document.getElementById('question-card');
+                if (card) {
+                    card.style.display = 'flex';
+                    card.innerHTML = `<div style="padding:40px;text-align:center">
+                    <strong style="font-family:var(--font-display);font-size:15px">No Questions Found</strong>
+                    <p style="font-size:12px;opacity:.6;margin-top:8px">Could not load this competition round.</p>
+                </div>`;
+                }
+                return;
+            }
+            console.log(`Loaded ${allQuestions.length} questions from competition script`);
+            buildDotMap();
+            renderQuestion(0);
+            const card2 = document.getElementById('question-card');
+            const nav2  = document.getElementById('nav-bar');
+            if (card2) card2.style.display = 'flex';
+            if (nav2)  nav2.style.display  = 'grid';
             return;
         }
 
@@ -428,7 +506,27 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         if (!submitted && q.hint) {
             const h = document.createElement('div');
             h.className = 'hint-row';
-            h.innerHTML = `<span class="hint-lbl">Hint</span><span>${esc(q.hint)}</span>`;
+
+            const lbl = document.createElement('button');
+            lbl.type = 'button';
+            lbl.className = 'hint-lbl';
+            lbl.textContent = 'Hint';
+            lbl.setAttribute('aria-expanded', 'false');
+
+            const body = document.createElement('span');
+            body.className = 'hint-body';
+            body.innerHTML = esc(q.hint);
+            body.hidden = true;
+
+            lbl.addEventListener('click', () => {
+                const opening = body.hidden;
+                body.hidden = !opening;
+                lbl.setAttribute('aria-expanded', String(opening));
+                h.classList.toggle('hint-row--open', opening);
+            });
+
+            h.appendChild(lbl);
+            h.appendChild(body);
             optWrap.appendChild(h);
         }
     }

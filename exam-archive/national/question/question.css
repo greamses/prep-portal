@@ -356,16 +356,15 @@ body {
 /* ── HINT ROW ── */
 .hint-row {
   margin-top: 0.9rem;
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+.hint-row--open {
   padding: 0.7rem 0.95rem;
   background: color-mix(in srgb, var(--yellow) 14%, var(--paper));
   border: 2px dashed color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 12px;
-  display: flex;
-  gap: 0.7rem;
-  align-items: flex-start;
-  font-size: 0.78rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
 }
 
 .hint-lbl {
@@ -380,6 +379,17 @@ body {
   padding: 0.15rem 0.5rem;
   flex-shrink: 0;
   margin-top: 1px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.hint-lbl:hover { opacity: 0.75; }
+
+.hint-body {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  padding-top: 1px;
 }
 
 /* ── FEEDBACK STRIP ── */

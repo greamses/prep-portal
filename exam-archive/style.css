@@ -324,6 +324,11 @@ input[type=number] {
     box-shadow: 1px 1px 0 var(--ink);
 }
 
+.option-card.selected {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+}
+
 .option-content {
     display: flex;
     gap: 12px;
