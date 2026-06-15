@@ -13,6 +13,11 @@ const Quiz = (() => {
     let userAnswers = {};
     let submitted = false;
     let theoryMarks = {};
+    // Immediate-feedback mode (URL ?feedback=on): once a learner picks an option
+    // the answer is revealed and that question locks. `revealed[idx]` tracks which
+    // questions have been answered-and-shown so navigating back keeps the reveal.
+    let immediate = false;
+    let revealed = {};
     
     // ── Helper: Escape HTML ──────────────────────────────────────
     function esc(str) {
@@ -27,6 +32,19 @@ const Quiz = (() => {
         });
     }
     
+    // Like esc(), but keeps a whitelist of inline formatting tags the curated
+    // files use (<br>, <b>, <i>, <u>, <sub>, <sup>, <em>, <strong>). Everything
+    // else is escaped, so it's still XSS-safe. LaTeX "<" survives too: it's
+    // escaped to &lt;, which the browser decodes back to "<" in textContent —
+    // exactly what MathJax reads — so "$x < 7$" still renders correctly.
+    function escFmt(str) {
+        if (!str) return '';
+        return esc(str).replace(
+            /&lt;(\/?)(br|b|i|u|sub|sup|em|strong)\s*\/?&gt;/gi,
+            '<$1$2>'
+        );
+    }
+
     function typesetEl(el) {
         if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
             MathJax.typesetPromise([el]).catch(e => console.warn('MathJax error:', e));
@@ -85,6 +103,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     
     // ── Bootstrap ────────────────────────────────────────────
     function init() {
+        immediate = !!PAGE_CONFIG.immediate;
         let subText, metaText, printText;
         if (PAGE_CONFIG.source === 'competition') {
             const comp = (PAGE_CONFIG.comp  || '').replace(/-/g, ' ');
@@ -137,65 +156,182 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         return names[examTypeId] || (examTypeId ? examTypeId.toUpperCase() : 'EXAM');
     }
 
-    // ── Load questions from the Firestore-backed /api/questions endpoint ──
-    // (ALOC past questions). Maps the API shape onto the engine's question
-    // objects (objective items with a resolved `_answer` + `explanation`).
+    // ── Shared maps (board + subject normalisation) ──────────────────
+    const EXAM_MAP = {
+        waec: 'wassce', jamb: 'utme', neco: 'neco',
+        utme: 'utme', wassce: 'wassce', 'post-utme': 'post-utme', postutme: 'post-utme'
+    };
+    // Map the exam-picker's subject names → the shared subject keys used by
+    // both ALOC and the local question bank.
+    const SUBJ_MAP = {
+        'english language': 'english', english: 'english',
+        mathematics: 'mathematics', maths: 'mathematics', math: 'mathematics',
+        'further mathematics': 'mathematics',
+        physics: 'physics', chemistry: 'chemistry', biology: 'biology',
+        economics: 'economics', commerce: 'commerce', government: 'government',
+        geography: 'geography', history: 'history',
+        'christian religious studies': 'crk', crk: 'crk',
+        'islamic religious studies': 'irk',
+        'literature in english': 'englishlit',
+        'financial accounting': 'accounting',
+        'agricultural science': 'agriculturalscience',
+        'civic education': 'civiledu', insurance: 'insurance',
+        'current affairs': 'currentaffairs'
+    };
+    const toSubjKey = (s) => SUBJ_MAP[s.toLowerCase().trim()] || s.toLowerCase().trim().split(/\s+/)[0];
+
+    function shuffleArr(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    // ── Load a curated local file in an isolated scope ───────────────
+    // The bank's files are inconsistent: different top-level bindings, some
+    // ES-module style (`import …`, trailing `setupQuiz(…)`). We fetch the
+    // text, neutralise import/export, eval inside a fresh Function scope so
+    // their `const`s never collide across subjects, and return the named
+    // binding. A no-op `setupQuiz` swallows any self-registration call.
+    async function loadLocalRaw(path, varName) {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        let text = await res.text();
+        text = text.replace(/^\s*import\s.*$/gm, '')
+                   .replace(/^\s*export\s+default\s+/gm, '')
+                   .replace(/^\s*export\s+/gm, '');
+        const factory = new Function('setupQuiz',
+            `${text}\n;return (typeof ${varName} !== 'undefined') ? ${varName} : null;`);
+        return factory(function () {});
+    }
+
+    function normalizeLocalObjective(items, sub, year) {
+        return (items || []).map(q => {
+            const opts = q.options || [];
+            const ci = typeof q.correctIndex === 'number' ? q.correctIndex
+                     : (typeof q.correct_index === 'number' ? q.correct_index : -1);
+            return {
+                question: q.question || '',
+                options: opts,
+                _answer: ci >= 0 && opts[ci] !== undefined ? opts[ci] : null,
+                explanation: Array.isArray(q.explanation) ? q.explanation.join('\n') : (q.explanation || ''),
+                image: q.image || '',
+                hint: q.hint || '',
+                type: 'objective',
+                subject: sub,
+                examType: PAGE_CONFIG.examType,
+                examYear: year
+            };
+        }).filter(q => q.question);
+    }
+
+    function normalizeLocalTheory(raw, sub, year) {
+        // Theory files are objects keyed question1/question2/… or arrays.
+        const items = Array.isArray(raw) ? raw : Object.values(raw || {});
+        return items.map(q => {
+            const text = typeof q === 'string' ? q : (q && q.question) || '';
+            return {
+                question: text,
+                options: [],
+                _answer: null,
+                explanation: q && q.explanation
+                    ? (Array.isArray(q.explanation) ? q.explanation.join('\n') : q.explanation) : '',
+                image: (q && q.image) || '',
+                hint: (q && q.hint) || '',
+                type: 'theory',
+                subject: sub,
+                examType: PAGE_CONFIG.examType,
+                examYear: year
+            };
+        }).filter(q => q.question);
+    }
+
+    async function fetchAlocSubject(subKey, examType, year, per, sub) {
+        const params = new URLSearchParams({ subject: subKey, type: examType, limit: String(per), random: '1' });
+        // The endpoint prioritises the chosen year and tops up from other
+        // years if that year is sparse (so a paper is never near-empty).
+        if (year) params.set('year', year);
+        try {
+            const res = await fetch(`${API_BASE}/api/questions?${params}`);
+            if (!res.ok) { console.warn('ALOC fetch', sub, '→ HTTP', res.status); return []; }
+            const data = await res.json();
+            return (data.questions || []).map(q => {
+                const options = q.options || [];
+                const ai = typeof q.answerIndex === 'number' ? q.answerIndex
+                    : (typeof q.correctIndex === 'number' ? q.correctIndex : -1);
+                return {
+                    question: q.question,
+                    options,
+                    _answer: (ai >= 0 && options[ai] !== undefined) ? options[ai] : null,
+                    explanation: q.explanation || '',
+                    image: q.image || '',
+                    hint: '',
+                    type: 'objective',
+                    subject: sub,
+                    examType: PAGE_CONFIG.examType,
+                    examYear: q.examYear || year || ''
+                };
+            });
+        } catch (e) {
+            console.warn('ALOC load failed for', sub, e.message);
+            return [];
+        }
+    }
+
+    // ── Hybrid loader: our curated files for the years we host, ALOC for
+    //    every other year. Maps both sources onto the engine's question shape.
     async function loadFromAloc() {
-        const examMap = {
-            waec: 'wassce', jamb: 'utme', neco: 'neco',
-            utme: 'utme', wassce: 'wassce', 'post-utme': 'post-utme', postutme: 'post-utme'
-        };
-        // Map the exam-picker's subject names → ALOC subject keys.
-        const subjMap = {
-            'english language': 'english', english: 'english',
-            mathematics: 'mathematics', maths: 'mathematics', math: 'mathematics',
-            'further mathematics': 'mathematics',
-            physics: 'physics', chemistry: 'chemistry', biology: 'biology',
-            economics: 'economics', commerce: 'commerce', government: 'government',
-            geography: 'geography', history: 'history',
-            'christian religious studies': 'crk', crk: 'crk',
-            'islamic religious studies': 'irk',
-            'literature in english': 'englishlit',
-            'financial accounting': 'accounting',
-            'agricultural science': 'agriculturalscience',
-            'civic education': 'civiledu', insurance: 'insurance',
-            'current affairs': 'currentaffairs'
-        };
-        const examType = examMap[(PAGE_CONFIG.examType || '').toLowerCase()] || (PAGE_CONFIG.examType || '').toLowerCase();
+        const examType = EXAM_MAP[(PAGE_CONFIG.examType || '').toLowerCase()] || (PAGE_CONFIG.examType || '').toLowerCase();
+        const board    = (window.localBoardKey || (x => String(x || '').toLowerCase()))(PAGE_CONFIG.examType);
         const subjects = PAGE_CONFIG.subjects.length ? PAGE_CONFIG.subjects : ['mathematics'];
-        const per = PAGE_CONFIG.limit || 20;
+        const types    = PAGE_CONFIG.types && PAGE_CONFIG.types.length ? PAGE_CONFIG.types : ['objective'];
+        const per      = PAGE_CONFIG.limit || 20;
+        const wantYear = PAGE_CONFIG.year && PAGE_CONFIG.year !== 'all' ? String(PAGE_CONFIG.year) : null;
         const out = [];
 
         for (const sub of subjects) {
-            const subKey = subjMap[sub.toLowerCase().trim()] || sub.toLowerCase().trim().split(/\s+/)[0];
-            const params = new URLSearchParams({ subject: subKey, type: examType, limit: String(per), random: '1' });
-            // The endpoint prioritises the chosen year and tops up from other
-            // years if that year is sparse (so a paper is never near-empty).
-            if (PAGE_CONFIG.year) params.set('year', PAGE_CONFIG.year);
-            try {
-                const res = await fetch(`${API_BASE}/api/questions?${params}`);
-                if (!res.ok) { console.warn('ALOC fetch', sub, '→ HTTP', res.status); continue; }
-                const data = await res.json();
-                (data.questions || []).forEach(q => {
-                    const options = q.options || [];
-                    const ai = typeof q.answerIndex === 'number' ? q.answerIndex
-                        : (typeof q.correctIndex === 'number' ? q.correctIndex : -1);
-                    out.push({
-                        question: q.question,
-                        options,
-                        _answer: (ai >= 0 && options[ai] !== undefined) ? options[ai] : null,
-                        explanation: q.explanation || '',
-                        image: q.image || '',
-                        hint: '',
-                        type: 'objective',
-                        subject: sub,
-                        examType: PAGE_CONFIG.examType,
-                        examYear: q.examYear || PAGE_CONFIG.year || ''
-                    });
-                });
-            } catch (e) {
-                console.warn('ALOC load failed for', sub, e.message);
+            const subKey = toSubjKey(sub);
+            const localAll = (window.localEntries ? window.localEntries(board, subKey) : []);
+            let localPool = [];
+
+            for (const type of types) {
+                // Pick local files of this type: the requested year only, or
+                // every hosted year when "All Years" / no year is selected.
+                const localPicks = localAll.filter(e => e.type === type && (!wantYear || e.year === wantYear));
+                for (const lp of localPicks) {
+                    try {
+                        const raw = await loadLocalRaw(lp.entry.path, lp.entry.varName);
+                        localPool = localPool.concat(type === 'objective'
+                            ? normalizeLocalObjective(raw, sub, lp.year)
+                            : normalizeLocalTheory(raw, sub, lp.year));
+                    } catch (e) {
+                        console.warn('Local load failed for', lp.entry.path, e.message);
+                    }
+                }
             }
+
+            // We host the exact year picked → serve OUR full curated paper as-is,
+            // in its original order, untrimmed. This is the whole point of the
+            // local bank, so don't cap it to `per` or mix in ALOC.
+            const haveLocalForWantYear = wantYear && localAll.some(e => e.year === wantYear);
+            if (haveLocalForWantYear && localPool.length) {
+                out.push(...localPool);
+                continue;
+            }
+
+            // Otherwise (year we don't host, or "All Years") fall back to ALOC
+            // for breadth — objective only, since the API has no theory — and cap
+            // the merged pool to `per` questions per subject.
+            let pool = localPool;
+            if (types.includes('objective')) {
+                const aloc = await fetchAlocSubject(subKey, examType, wantYear, per, sub);
+                const seen = new Set(pool.map(q => (q.question || '').trim()));
+                pool = pool.concat(aloc.filter(q => !seen.has((q.question || '').trim())));
+            }
+
+            shuffleArr(pool);
+            out.push(...pool.slice(0, per));
         }
         return out;
     }
@@ -415,7 +551,8 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             const q = allQuestions[i];
             const chosen = userAnswers[i];
             const ans = q._answer;
-            if (submitted) {
+            const showResult = submitted || (immediate && revealed[i]);
+            if (showResult) {
                 if (q.type !== 'objective') {
                     if (theoryMarks[i]) d.classList.add('theory-marked');
                     else if (chosen) d.classList.add('answered');
@@ -428,6 +565,8 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
                 } else {
                     d.classList.add('wrong');
                 }
+                // Keep marking the active dot while still in-progress (immediate mode).
+                if (!submitted && i === currentIndex) d.classList.add('current');
             } else {
                 if (i === currentIndex) d.classList.add('current');
                 else if (chosen !== undefined) d.classList.add('answered');
@@ -449,7 +588,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         if (progressFill) progressFill.style.width = `${((idx+1)/total)*100}%`;
         
         const qTextEl = document.getElementById('q-text');
-        if (qTextEl) qTextEl.innerHTML = esc(q.question);
+        if (qTextEl) qTextEl.innerHTML = escFmt(q.question);
         
         const imgWrap = document.getElementById('q-image-wrap');
         if (imgWrap) {
@@ -487,23 +626,26 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         const grid = document.createElement('div');
         grid.className = 'options-grid';
         const letters = ['A', 'B', 'C', 'D', 'E'];
+        // Lock + reveal when the paper is submitted, or in immediate-feedback
+        // mode once this question has been answered.
+        const locked = submitted || (immediate && revealed[idx]);
         (q.options || []).forEach((opt, oi) => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
-            if (submitted) {
+            if (locked) {
                 btn.disabled = true;
                 if (q._answer !== null && opt === q._answer) btn.classList.add('correct-ans');
                 else if (userAnswers[idx] === opt) btn.classList.add('wrong-ans');
             } else if (userAnswers[idx] === opt) {
                 btn.classList.add('selected');
             }
-            btn.innerHTML = `<span class="opt-letter">${letters[oi] || oi+1}</span><span>${esc(opt)}</span>`;
+            btn.innerHTML = `<span class="opt-letter">${letters[oi] || oi+1}</span><span>${escFmt(opt)}</span>`;
             btn.addEventListener('click', () => selectOption(opt, btn, grid, idx));
             grid.appendChild(btn);
         });
         optWrap.appendChild(grid);
-        
-        if (!submitted && q.hint) {
+
+        if (!locked && q.hint) {
             const h = document.createElement('div');
             h.className = 'hint-row';
 
@@ -515,7 +657,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
 
             const body = document.createElement('span');
             body.className = 'hint-body';
-            body.innerHTML = esc(q.hint);
+            body.innerHTML = escFmt(q.hint);
             body.hidden = true;
 
             lbl.addEventListener('click', () => {
@@ -582,13 +724,16 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         strip.className = 'feedback-strip';
         if (expl) expl.innerHTML = '';
         if (acts) acts.innerHTML = '';
-        
-        if (!submitted) return;
-        
+
+        // Show feedback at submit, or instantly (immediate mode) once answered.
+        // Theory has no objective key, so it only gets feedback after submit/AI marking.
+        const reveal = submitted || (immediate && revealed[idx] && q.type === 'objective');
+        if (!reveal) return;
+
         function buildExpl(raw) {
             if (!raw) return '';
             const lines = Array.isArray(raw) ? raw : [raw];
-            return lines.map(l => `<p class="expl-line">${esc(l)}</p>`).join('');
+            return lines.map(l => `<p class="expl-line">${escFmt(l)}</p>`).join('');
         }
         
         if (q.type !== 'objective') {
@@ -612,7 +757,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             strip.classList.add('wrong');
             if (label) label.textContent = 'Not answered.';
             if (expl) expl.innerHTML = ans ?
-                `<p class="expl-line">Correct answer: <strong>${esc(ans)}</strong></p>` + buildExpl(q.explanation) :
+                `<p class="expl-line">Correct answer: <strong>${escFmt(ans)}</strong></p>` + buildExpl(q.explanation) :
                 '<p class="expl-line">No answer key for this question.</p>';
         } else if (ans === null) {
             strip.classList.add('neutral');
@@ -626,16 +771,24 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             strip.classList.add('wrong');
             if (label) label.textContent = `Wrong — you chose: ${chosen}`;
             if (expl) expl.innerHTML =
-                `<p class="expl-line">Correct answer: <strong>${esc(ans)}</strong></p>` +
+                `<p class="expl-line">Correct answer: <strong>${escFmt(ans)}</strong></p>` +
                 buildExpl(q.explanation);
         }
     }
     
     function selectOption(opt, btn, grid, idx) {
         if (submitted) return;
+        if (immediate && revealed[idx]) return;   // already answered & locked
         grid.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         userAnswers[idx] = opt;
+        if (immediate) {
+            // Lock the question and re-render so the correct/wrong styling and the
+            // feedback strip (with explanation) appear right away.
+            revealed[idx] = true;
+            renderQuestion(idx);
+            return;
+        }
         updateDots();
     }
     
@@ -773,7 +926,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             
             const qTxt = document.createElement('div');
             qTxt.className = 'review-q-text';
-            qTxt.innerHTML = esc(q.question);
+            qTxt.innerHTML = escFmt(q.question);
             body.appendChild(qTxt);
             
             if (q.image) {
@@ -801,7 +954,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
                 } else {
                     numEl.classList.add('rq-bad');
                     ansEl.classList.add('bad');
-                    ansEl.innerHTML = `You: <strong>${esc(chosen)}</strong>  |  Correct: <strong>${esc(ans)}</strong>`;
+                    ansEl.innerHTML = `You: <strong>${escFmt(chosen)}</strong>  |  Correct: <strong>${escFmt(ans)}</strong>`;
                 }
                 body.appendChild(ansEl);
                 
@@ -809,7 +962,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
                     const explEl = document.createElement('div');
                     explEl.className = 'review-expl';
                     const lines = Array.isArray(q.explanation) ? q.explanation : [q.explanation];
-                    explEl.innerHTML = lines.map(l => `<p class="expl-line">${esc(l)}</p>`).join('');
+                    explEl.innerHTML = lines.map(l => `<p class="expl-line">${escFmt(l)}</p>`).join('');
                     body.appendChild(explEl);
                 }
             } else {
@@ -858,6 +1011,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     function retake() {
         userAnswers = {};
         theoryMarks = {};
+        revealed = {};
         currentIndex = 0;
         submitted = false;
         

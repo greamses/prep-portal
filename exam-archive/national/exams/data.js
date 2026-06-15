@@ -15,6 +15,7 @@ const builderNote    = document.getElementById('builder-note');
 const builderStats   = document.getElementById('builder-stats');
 const timerLabel     = document.getElementById('timer-label');
 const timerSwitch    = document.getElementById('exam-timer-switch');
+const feedbackSwitch = document.getElementById('exam-feedback-switch');
 
 function setStatus(msg, ready) {
   setupStatusSpan.textContent = msg;
@@ -88,7 +89,7 @@ const EXAM_TYPES = [
   { id: 'NECO', name: 'SSCE',   queryType: 'wassce', live: false },
   { id: 'JAMB', name: 'UTME',   queryType: 'utme',   live: true }
 ];
-const COMPULSORY    = ['English Language'];
+const COMPULSORY    = [];  // no subject is forced — learners pick freely
 const MAX_SUBJECTS  = 9;
 const PER_SUBJECT   = 15;
 const CORE_SUBJECTS = ['english', 'mathematics'];
@@ -152,6 +153,46 @@ function buildExamGrid() {
   });
 }
 
+// Fold the locally-hosted question bank into the ALOC facets so years/subjects
+// we curate ourselves (e.g. WAEC 2020/2021) show up as pickable chips even when
+// ALOC has no questions for them. The loader then prefers our files for those
+// years and falls back to ALOC for the rest.
+function mergeLocalFacets(examId) {
+  if (!facets || typeof LOCAL_QUESTION_BANK === 'undefined') return;
+  const board = localBoardKey(examId);
+  const bank = LOCAL_QUESTION_BANK[board];
+  if (!bank) return;
+  facets.subjects = facets.subjects || [];
+  facets.yearsBySubject = facets.yearsBySubject || {};
+  const labels = window.LOCAL_SUBJECT_LABELS || {};
+
+  Object.keys(bank).forEach(subKey => {
+    const yearCounts = {};
+    let subjTotal = 0;
+    Object.keys(bank[subKey]).forEach(year => {
+      Object.keys(bank[subKey][year]).forEach(type => {
+        const c = bank[subKey][year][type].count || 0;
+        yearCounts[year] = (yearCounts[year] || 0) + c;
+        subjTotal += c;
+      });
+    });
+
+    let subj = facets.subjects.find(s => s.key === subKey);
+    if (!subj) { subj = { key: subKey, label: labels[subKey] || subKey, count: 0 }; facets.subjects.push(subj); }
+    subj.count += subjTotal;
+
+    const arr = facets.yearsBySubject[subKey] = facets.yearsBySubject[subKey] || [];
+    Object.keys(yearCounts).forEach(year => {
+      const existing = arr.find(y => y.year === year);
+      if (existing) existing.count += yearCounts[year];
+      else arr.push({ year, count: yearCounts[year] });
+    });
+    arr.sort((a, b) => b.year.localeCompare(a.year));
+  });
+
+  facets.subjects.sort((a, b) => a.label.localeCompare(b.label));
+}
+
 async function selectExam(exam, chip) {
   examContainer().querySelectorAll('.exam-chip').forEach(c => c.classList.remove('checked'));
   chip.classList.add('checked');
@@ -170,11 +211,18 @@ async function selectExam(exam, chip) {
     const res = await fetch(`${API_BASE}/api/questions/facets?type=${natState.queryType}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     facets = await res.json();
+    mergeLocalFacets(natState.examType);   // fold in the years/subjects we host ourselves
     countByKey = {}; keyByLabel = {};
     facets.subjects.forEach(s => { countByKey[s.key] = s.count; keyByLabel[s.label] = s.key; });
     maybeRenderSubjects();
   } catch (e) {
-    subjectChipsDiv().innerHTML = '<span class="picker-error">Could not load subjects. Is the server running?</span>';
+    // ALOC server unreachable — still offer the years/subjects we host locally.
+    facets = { subjects: [], yearsBySubject: {} };
+    mergeLocalFacets(natState.examType);
+    countByKey = {}; keyByLabel = {};
+    facets.subjects.forEach(s => { countByKey[s.key] = s.count; keyByLabel[s.label] = s.key; });
+    if (facets.subjects.length) maybeRenderSubjects();
+    else subjectChipsDiv().innerHTML = '<span class="picker-error">Could not load subjects. Is the server running?</span>';
   }
 }
 
@@ -721,7 +769,8 @@ function initInternational() {
 
 beginBtn.onclick = () => {
   if (beginBtn.disabled) return;
-  const timerOn = timerSwitch?.checked ? 'on' : 'off';
+  const timerOn    = timerSwitch?.checked ? 'on' : 'off';
+  const feedbackOn = feedbackSwitch?.checked ? 'on' : 'off';
 
   if (activeCat === 'national') {
     const params = new URLSearchParams({
@@ -729,6 +778,7 @@ beginBtn.onclick = () => {
       subjects: natState.subjects.join(','),
       types:    natState.types.join(','),
       timer:    timerOn,
+      feedback: feedbackOn,
       source:   'aloc',
       n:        String(PER_SUBJECT)
     });
@@ -739,14 +789,18 @@ beginBtn.onclick = () => {
 
   if (activeCat === 'competition') {
     const { competition, division, year, round, section } = compState;
-    const params = new URLSearchParams({ source: 'competition', comp: competition, div: division, year, round, section, timer: timerOn });
+    const params = new URLSearchParams({ source: 'competition', comp: competition, div: division, year, round, section, timer: timerOn, feedback: feedbackOn });
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
   }
 
   if (activeCat === 'international') {
     if (!intlState.paperUrl) return;
-    const url = intlState.paperUrl + (timerOn === 'on' ? '?timer=on' : '');
+    const extra = [];
+    if (timerOn === 'on')    extra.push('timer=on');
+    if (feedbackOn === 'on') extra.push('feedback=on');
+    const sep = intlState.paperUrl.includes('?') ? '&' : '?';
+    const url = intlState.paperUrl + (extra.length ? sep + extra.join('&') : '');
     window.location.href = url;
   }
 };

@@ -576,6 +576,11 @@ body {
 }
 
 /* Timed-exam toggle (soft switch in the footer) */
+.builder-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
 .exam-timer-toggle {
   display: inline-flex;
   align-items: center;

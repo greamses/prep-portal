@@ -107,7 +107,7 @@
           <span class="step-done" id="done-subject">✓</span>
         </div>
         <div class="chips-container" id="subject-chips"></div>
-        <p class="step-sub" id="compulsoryHint">English is compulsory and always included. Each chip shows how many questions are available.</p>
+        <p class="step-sub" id="compulsoryHint">Pick any subjects you like. Each chip shows how many questions are available.</p>
       </div>
 
       <!-- ── STEP 3b · Competition: Year (conditional) ── -->
@@ -180,11 +180,18 @@
     </section>
 
     <footer class="builder-footer">
-      <label class="exam-timer-toggle">
-        <input type="checkbox" id="exam-timer-switch">
-        <span class="exam-timer-toggle__track"><span class="exam-timer-toggle__thumb"></span></span>
-        <span id="timer-label">Timed exam (auto-submit)</span>
-      </label>
+      <div class="builder-toggles">
+        <label class="exam-timer-toggle">
+          <input type="checkbox" id="exam-timer-switch">
+          <span class="exam-timer-toggle__track"><span class="exam-timer-toggle__thumb"></span></span>
+          <span id="timer-label">Timed exam (auto-submit)</span>
+        </label>
+        <label class="exam-timer-toggle">
+          <input type="checkbox" id="exam-feedback-switch">
+          <span class="exam-timer-toggle__track"><span class="exam-timer-toggle__thumb"></span></span>
+          <span>Immediate feedback (show answer after each pick)</span>
+        </label>
+      </div>
       <span class="setup-status" id="setup-status">Awaiting selections...</span>
       <button class="builder-cta" id="begin-btn" disabled>Generate practice paper →</button>
     </footer>
@@ -193,6 +200,7 @@
   <div id="prepbot"></div>
   <script type="module" src="/utils/prepbot/prepbot.js"></script>
 
+  <script src="../question/js/local-bank.js"></script>
   <script src="./data.js"></script>
   <script src="/utils/components/nav-builder.js" type="module"></script>
 

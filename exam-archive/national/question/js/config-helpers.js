@@ -22,6 +22,9 @@ const PAGE_CONFIG = {
     // instead of the static per-folder scripts. `n`/`limit` = questions per subject.
     source:    (urlParams.get('source') || '').toLowerCase(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
+    // feedback=on → reveal the correct answer + explanation the instant a
+    // learner picks an option (the question then locks), instead of only at submit.
+    immediate: (urlParams.get('feedback') || '').toLowerCase() === 'on',
     // competition-specific params
     comp:      urlParams.get('comp')    || '',
     div:       urlParams.get('div')     || '',
