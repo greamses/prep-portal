@@ -1,17 +1,18 @@
+@import url("/utils/components/theme.css");
+
 :root {
-  --yellow: #ffe500;
-  --blue: #0055ff;
-  --ink: #0a0a0a;
-  --white: #ffffff;
-  --grey: #f0f0ee;
-  --light: #fafaf8;
-  --border: 2.5px solid var(--ink);
-  --shadow: 4px 4px 0 var(--ink);
+  /* ── Local aliases → soft-UI theme tokens ── */
+  --yellow: var(--accent-primary);
+  --blue: var(--accent-secondary);
+  --white: var(--surface-primary);
+  --grey: var(--surface-secondary);
+  --light: var(--bg);
+  --font-head: var(--font-display);
+  --transition: var(--transition-base);
+  /* ── Flat offset shadows for interactive elements ── */
   --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
   --shadow-lg: 6px 6px 0 var(--ink);
-  --font-head: 'Unbounded', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --transition: 0.18s ease;
 }
 
 *,
@@ -763,3 +764,140 @@ input[type="range"]::-moz-range-thumb {
   stroke-width: 2.5px !important;
   opacity: 0.95 !important;
 }
+
+/* =========================================
+   SOFT UI THEME LAYER (matches home / exam)
+   soft surfaces · subtle blob washes · pills
+========================================= */
+
+/* ── Slim soft top strip (the nav already carries branding) ── */
+header {
+  background: var(--surface-primary);
+  border-bottom: var(--border-subtle);
+}
+.logo {
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+.logo em { color: var(--accent-secondary); }
+
+/* Badge → soft accent pill */
+.badge {
+  background: color-mix(in srgb, var(--accent-secondary) 16%, var(--surface-primary));
+  color: var(--accent-secondary);
+  border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+  border-radius: 999px;
+  padding: 4px 12px;
+  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+}
+.header-label { color: var(--text-tertiary); }
+
+/* ── Canvas + panels: soft surfaces, subtle borders ── */
+.canvas-section { background: var(--app-bg); }
+.canvas-frame {
+  border: var(--border-subtle);
+  border-radius: clamp(14px, 2vw, 20px);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-md);
+}
+.stats-section,
+.info-section { border-color: var(--border-subtle) !important; }
+.stats-grid,
+.stat-card { border-color: var(--border-subtle) !important; }
+
+/* Subtle pastel blob wash behind the side panels */
+.stats-section { position: relative; }
+.stats-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 60% at 12% 28%, color-mix(in srgb, var(--accent-secondary) 9%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 80% 70% at 88% 72%, color-mix(in srgb, var(--accent-primary) 9%, transparent) 0%, transparent 100%);
+}
+.stats-section > * { position: relative; z-index: 1; }
+
+/* ── Info header → clean soft accent strip ── */
+.info-header {
+  background: color-mix(in srgb, var(--accent-primary) 22%, var(--surface-primary));
+  border-bottom: var(--border-subtle);
+  color: var(--ink);
+  border-radius: 0;
+}
+
+/* Dashed formula divider → subtle */
+.formula-row { border-bottom: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+
+/* ── Pills — stat tags ── */
+.stat-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.46rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--surface-primary));
+  border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+/* ── Polygon-name footer → soft card, not a dark bar ── */
+.polygon-name {
+  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-primary));
+  color: var(--accent-secondary);
+  border-top: var(--border-subtle);
+}
+
+/* ── Animation panel → clean soft rounded card ── */
+.anim-panel {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(8px);
+}
+.anim-mode-btn {
+  border: 1.5px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 999px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+}
+.anim-mode-btn.active {
+  background: var(--accent-secondary);
+  color: #fff;
+  border-color: var(--accent-secondary);
+}
+
+/* ── Zoom + FAB buttons → soft round chips ── */
+.zoom-btn,
+.fab {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+.fab { background: var(--accent-secondary); color: #fff; border: none; }
+
+/* ── Soft modal ── */
+.modal { border: var(--border-subtle); border-radius: 18px; box-shadow: var(--shadow-xl); }
+.modal-header {
+  background: var(--surface-primary);
+  color: var(--ink);
+  border-bottom: var(--border-subtle);
+}
+.modal-close { color: var(--text-secondary); }
+.ctrl-group { border: var(--border-subtle); border-radius: 14px; }
+.ctrl-group-label {
+  background: color-mix(in srgb, var(--accent-primary) 22%, var(--surface-primary));
+  border-bottom: var(--border-subtle);
+  color: var(--ink);
+}
+.ctrl-row { border-bottom: var(--border-subtle); }

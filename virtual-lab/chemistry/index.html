@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Chemistry Lab — Prep Portal</title>
+
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":              "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/":      "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+      "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+      "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- Loading screen (covers everything until the lab is ready) -->
+  <div id="loading-screen">
+    <div class="loader-flask" aria-hidden="true">
+      <svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <clipPath id="flaskClip">
+          <path d="M25 6h14v24l16 34a6 6 0 0 1-5.4 8.6H14.4A6 6 0 0 1 9 64l16-34z"/>
+        </clipPath>
+        <g clip-path="url(#flaskClip)">
+          <rect class="flask-liquid" x="4" y="44" width="56" height="40" fill="#6fb7e8"/>
+          <circle class="bubble b1" cx="26" cy="62" r="2.4" fill="rgba(255,255,255,0.6)"/>
+          <circle class="bubble b2" cx="36" cy="58" r="1.8" fill="rgba(255,255,255,0.5)"/>
+          <circle class="bubble b3" cx="31" cy="66" r="1.4" fill="rgba(255,255,255,0.45)"/>
+        </g>
+        <path class="flask-glass" d="M25 6h14v24l16 34a6 6 0 0 1-5.4 8.6H14.4A6 6 0 0 1 9 64l16-34z"
+              stroke="rgba(255,255,255,0.55)" stroke-width="2.4" stroke-linejoin="round"/>
+        <path d="M21 6h22" stroke="rgba(255,255,255,0.65)" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="loader-text">Preparing the lab<span class="loader-dots"></span></p>
+    <div class="loader-bar"><span></span></div>
+  </div>
+
+  <!-- Three.js renders here -->
+  <canvas id="lab-canvas"></canvas>
+
+  <!-- Crosshair -->
+  <div id="crosshair" aria-hidden="true"></div>
+
+  <!-- Interaction prompt -->
+  <div id="interact-hint" aria-hidden="true">
+    Press <kbd>E</kbd> to open
+  </div>
+
+  <!-- Enter overlay (desktop click-to-lock, mobile tap-to-start) -->
+  <div id="start-overlay">
+    <div class="start-card">
+      <svg class="start-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M22 8h20v26l14 22H8L22 34z" fill="#6fb7e8" opacity="0.85"/>
+        <path d="M8 56h48" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M22 34h20l4 6H18z" fill="#7cc47c" opacity="0.9"/>
+        <circle cx="27" cy="50" r="3" fill="#fff" opacity="0.6"/>
+        <circle cx="37" cy="52" r="2" fill="#fff" opacity="0.5"/>
+      </svg>
+
+      <h1>Chemistry Lab</h1>
+      <p class="start-sub">Secondary School · Stage 1</p>
+
+      <div class="start-controls" id="desktop-controls">
+        <span><kbd>W A S D</kbd> Walk</span>
+        <span><kbd>Mouse</kbd> Look</span>
+        <span><kbd>E</kbd> Interact</span>
+        <span><kbd>Scroll</kbd> Zoom / Flame</span>
+        <span><kbd>F</kbd> Focus</span>
+        <span><kbd>V</kbd> 1st / 3rd person</span>
+        <span><kbd>Esc</kbd> Exit</span>
+      </div>
+
+      <div class="start-controls" id="mobile-controls-hint">
+        <span>Stick — Walk</span>
+        <span>Drag — Look</span>
+        <span>Pinch — Zoom</span>
+        <span>E — Interact</span>
+      </div>
+
+      <button id="enter-btn" class="enter-btn">Enter Lab</button>
+
+      <p class="start-credit">
+        Hand model
+        <a href="https://sketchfab.com/3d-models/hand-793cce8e3ffa4aa393f6ad0143ddffd9"
+           target="_blank" rel="noopener nofollow">“Hand”</a>
+        by <a href="https://sketchfab.com/hotboom" target="_blank" rel="noopener nofollow">hotboom</a> ·
+        <a href="http://creativecommons.org/licenses/by/4.0/"
+           target="_blank" rel="noopener nofollow">CC BY 4.0</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Mobile virtual controls (shown on touch devices) -->
+  <div id="mobile-hud" aria-hidden="true">
+    <!-- Movement analog (look is by dragging the screen) -->
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-knob"></div>
+      </div>
+    </div>
+    <button id="btn-back" class="hud-btn btn-back" title="Back to Labs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 12H5m0 0 7 7m-7-7 7-7"/>
+      </svg>
+    </button>
+    <button id="btn-focus" class="hud-btn btn-focus" title="Focus">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="7"/>
+        <path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/>
+        <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+    <button id="btn-interact-mobile" class="hud-btn btn-interact-mobile">E</button>
+    <button id="btn-zoom" class="hud-btn btn-zoom" title="Zoom">1×</button>
+    <button id="btn-view" class="hud-btn btn-view" title="Toggle 1st / 3rd person">1st</button>
+    <!-- Flame trim — only visible while aiming at a burner -->
+    <div id="flame-controls">
+      <button id="btn-flame-up"   class="hud-btn btn-flame" title="Bigger flame">+</button>
+      <button id="btn-flame-down" class="hud-btn btn-flame" title="Smaller flame">−</button>
+    </div>
+  </div>
+
+  <!-- Desktop back link (shown after entering) -->
+  <a href="../index.html" id="desktop-back" class="desktop-back" title="Back to Labs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M19 12H5m0 0 7 7m-7-7 7-7"/>
+    </svg>
+    Labs
+  </a>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

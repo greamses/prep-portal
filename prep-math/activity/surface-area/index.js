@@ -24,8 +24,12 @@ function getColorArray(isMulti, count) {
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 // FIX 1: Set scene.background instead of alpha:true to eliminate depth-buffer
-// precision issues with premultiplied transparency compositing
-scene.background = new THREE.Color('#F4F4F0');
+// precision issues with premultiplied transparency compositing. Pull the
+// colour from the soft-UI theme token so the canvas matches the rest of the
+// site (and follows light/dark), falling back to the original cream.
+const appBg = getComputedStyle(document.documentElement)
+  .getPropertyValue('--app-bg').trim() || '#F4F4F0';
+scene.background = new THREE.Color(appBg);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 
@@ -112,11 +116,12 @@ function updateUITexts(progress) {
   }
 
   if (textContent.innerHTML !== activeText) {
-    gsap.to(textOverlay, { backgroundColor: activeBg, duration: 0.3 });
+    // Banner styling is owned by the soft-UI CSS (surface card + ink text);
+    // we only swap the copy. `activeBg` is kept for any future per-step accent.
+    void activeBg;
     gsap.to(textContent, {
       opacity: 0, duration: 0.15, onComplete: () => {
         textContent.innerHTML = activeText;
-        textContent.style.color = '#f0f0f0';
         gsap.to(textContent, { opacity: 1, duration: 0.25 });
       }
     });

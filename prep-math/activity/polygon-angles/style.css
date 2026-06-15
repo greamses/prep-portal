@@ -1,5 +1,17 @@
 @import url("/utils/components/theme.css");
 
+/* ── Local aliases → soft-UI theme tokens ── */
+:root {
+  --yellow: var(--accent-primary);
+  --blue: var(--accent-secondary);
+  --paper: var(--surface-primary);
+  --off: var(--surface-secondary);
+  --muted: var(--text-secondary);
+  --light-muted: var(--text-tertiary);
+  --text-light: var(--surface-primary);
+  --radius-xs: 6px;
+}
+
 /* ============================================
    POLYGON EXPLORER - UPDATED WITH THEME TOKENS
    ============================================ */
@@ -1062,4 +1074,155 @@ input[type="range"]::-moz-range-thumb {
 
 .hidden {
   display: none !important;
+}
+
+/* =========================================
+   SOFT UI THEME LAYER (matches home / exam)
+   soft surfaces · subtle blob washes · pills
+========================================= */
+
+/* ── Pastel blob wash behind the learning path (keeps the dot grid) ── */
+.path-section {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 20%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 35% at 85% 15%, color-mix(in srgb, var(--accent-primary) 14%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 38% at 80% 85%, color-mix(in srgb, var(--accent-success) 10%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 45% 45% at 5% 80%, color-mix(in srgb, var(--accent-warning) 10%, transparent) 0%, transparent 100%),
+    radial-gradient(color-mix(in srgb, var(--ink) 12%, transparent) 1.5px, transparent 1.5px);
+  background-size: auto, auto, auto, auto, 32px 32px;
+}
+[data-theme="dark"] .path-section {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 20%, color-mix(in srgb, var(--accent-secondary) 8%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 35% at 85% 15%, color-mix(in srgb, var(--accent-primary) 9%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 38% at 80% 85%, color-mix(in srgb, var(--accent-success) 7%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 45% 45% at 5% 80%, color-mix(in srgb, var(--accent-warning) 7%, transparent) 0%, transparent 100%),
+    radial-gradient(rgba(240, 240, 240, 0.08) 1.5px, transparent 1.5px);
+  background-size: auto, auto, auto, auto, 32px 32px;
+}
+
+/* ── Soft surfaces + subtle borders on the tool chrome ── */
+.canvas-section { background: var(--app-bg); }
+.canvas-frame {
+  border: var(--border-subtle);
+  border-radius: clamp(14px, 2vw, 20px);
+  box-shadow: var(--shadow-md);
+}
+.stats-section,
+.info-section,
+.stats-grid,
+.stat-card { border-color: var(--border-subtle) !important; }
+.path-nodes::before { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+
+/* Subtle blob tint behind the stats panel */
+.stats-section { position: relative; overflow: hidden; }
+.stats-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 55% at 15% 40%, color-mix(in srgb, var(--accent-secondary) 9%, transparent) 0%, transparent 100%),
+    radial-gradient(ellipse 80% 65% at 85% 70%, color-mix(in srgb, var(--accent-primary) 9%, transparent) 0%, transparent 100%);
+}
+.stats-section > * { position: relative; z-index: 1; }
+
+/* ── Module header → clean blue sticker card (no tape/hand-font hack) ── */
+.module-header {
+  position: relative;
+  background: var(--accent-secondary);
+  border: none;
+  box-shadow: var(--shadow-md);
+}
+.module-header h2 { font-family: var(--font-display); color: #fff; }
+.module-header p {
+  font-family: var(--font-mono);
+  color: color-mix(in srgb, #fff 82%, transparent);
+}
+
+/* ── Info header → soft accent strip ── */
+.info-header {
+  background: color-mix(in srgb, var(--accent-primary) 22%, var(--surface-primary));
+  border-bottom: var(--border-subtle);
+  color: var(--ink);
+}
+
+/* ── Polygon-name footer → soft card, not a dark bar ── */
+.polygon-name {
+  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-primary));
+  color: var(--accent-secondary);
+  border-top: var(--border-subtle);
+}
+
+/* ── Animation panel → clean soft rounded card ── */
+.anim-panel {
+  border: var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  background: var(--surface-primary);
+  backdrop-filter: blur(8px);
+}
+[data-theme="dark"] .anim-panel { background: var(--surface-secondary); }
+.anim-mode-btn {
+  border: 1.5px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 999px;
+}
+
+/* ── FAB + zoom buttons → soft round chips ── */
+.zoom-btn {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+.fab {
+  background: var(--accent-secondary);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Soft modal ── */
+.modal { border: var(--border-subtle); border-radius: 18px; box-shadow: var(--shadow-xl); }
+.modal-header {
+  background: var(--surface-primary);
+  color: var(--ink);
+  border-bottom: var(--border-subtle);
+  border-radius: 18px 18px 0 0;
+}
+.modal-close { color: var(--text-secondary); }
+.ctrl-group { border: var(--border-subtle); border-radius: 14px; }
+.ctrl-group-label {
+  background: color-mix(in srgb, var(--accent-primary) 22%, var(--surface-primary));
+  border-bottom: var(--border-subtle);
+  color: var(--ink);
+}
+.ctrl-row { border-bottom: var(--border-subtle); }
+
+/* ── Current tooltip + stat tags → pills ── */
+.current-tooltip {
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  box-shadow: var(--shadow-sm);
+}
+.current-tooltip::after { display: none; }
+
+.stat-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--surface-primary));
+  border: 1.5px solid color-mix(in srgb, var(--accent-secondary) 28%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  white-space: nowrap;
 }
