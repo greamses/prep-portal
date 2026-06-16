@@ -463,7 +463,10 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             explanation: formatSat(clean(q.explanation)),
             image: '', hint: '', type: 'objective',
             subject:     sec === 'math' ? 'Math' : sec === 'english' ? 'Reading & Writing' : 'SAT',
-            examType: 'sat', examYear: ''
+            examType: 'sat', examYear: '',
+            // Hand-authored animation script (see scripts/author-sat-steps.js).
+            // An array (even empty) tells the animator to skip the runtime AI call.
+            steps:       Array.isArray(it.steps) ? it.steps : undefined
         };
     }
 

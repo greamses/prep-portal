@@ -102,7 +102,9 @@ async function generate(q) {
 
 async function get(q) {
   if (!q) return [];
-  if (Array.isArray(q.steps) && q.steps.length >= 2) return cleanSteps(q.steps);
+  // Precomputed/authored steps short-circuit the AI entirely — even an empty
+  // array, which is a deliberate "this question has no clean step animation".
+  if (Array.isArray(q.steps)) return q.steps.length >= 2 ? cleanSteps(q.steps) : [];
 
   const key = CACHE_PREFIX + hash(plain(q.question) + '|' + plain(q._answer));
   try {

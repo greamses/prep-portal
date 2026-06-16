@@ -17,8 +17,9 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
    * PrepBot renders LaTeX on every page it loads on, but only a few pages ship
    * MathJax. Load it here (matching the site's MathJax 4 config) if absent, so
    * equations typeset everywhere. typesetPromise is awaited per-message. */
-  (function ensureMathJax() {
-    if (window.MathJax) return; // page already configured/loaded it
+  // Ensure a MathJax *config* exists without clobbering one a page already set.
+  function configMathJax() {
+    if (window.MathJax && (window.MathJax.tex || window.MathJax.startup)) return;
     window.MathJax = {
       tex: {
         inlineMath: [["$", "$"], ["\\(", "\\)"]],
@@ -28,19 +29,50 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
       options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre"] },
       startup: { typeset: false },
     };
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js";
-    s.async = true;
-    document.head.appendChild(s);
-  })();
+  }
 
-  // Typeset a node once MathJax is actually ready (it may still be loading).
+  /* Resolve once MathJax can actually typeset. The old guard ("if window.MathJax
+     exists, do nothing") broke on pages that declare a MathJax *config* but never
+     load the library — typesetPromise stayed undefined and math rendered raw.
+     Here we load the library if it's missing, or wait for an in-flight load. */
+  let _mjReady = null;
+  function ensureMathJaxReady() {
+    if (window.MathJax && window.MathJax.typesetPromise) return Promise.resolve(true);
+    if (_mjReady) return _mjReady;
+    configMathJax();
+    const scriptPresent = !!document.querySelector('script[src*="mathjax" i]');
+    _mjReady = new Promise((resolve) => {
+      const ready = () => resolve(!!(window.MathJax && window.MathJax.typesetPromise));
+      // A library is already loading (page's own or one we add) → ride its startup.
+      if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(ready).catch(ready);
+      }
+      if (window.MathJax && window.MathJax.typesetPromise) return ready();
+      if (scriptPresent) {
+        // Config + script present but not ready yet — poll briefly for it.
+        let n = 0;
+        const t = setInterval(() => {
+          if (window.MathJax && window.MathJax.typesetPromise) { clearInterval(t); resolve(true); }
+          else if (++n > 120) { clearInterval(t); resolve(false); }
+        }, 100);
+        return;
+      }
+      // No MathJax library anywhere → load the one we configured.
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js";
+      s.async = true;
+      s.onload = () => (window.MathJax.startup?.promise || Promise.resolve()).then(ready).catch(ready);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+    return _mjReady;
+  }
+
+  // Typeset a node, loading/awaiting MathJax first if needed.
   async function typesetMath(node) {
-    const MJ = window.MathJax;
-    if (!MJ) return;
     try {
-      if (MJ.startup?.promise) await MJ.startup.promise;
-      if (MJ.typesetPromise) await MJ.typesetPromise([node]);
+      const ok = await ensureMathJaxReady();
+      if (ok && window.MathJax.typesetPromise) await window.MathJax.typesetPromise([node]);
     } catch (_) {}
   }
 

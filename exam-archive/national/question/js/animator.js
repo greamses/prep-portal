@@ -155,20 +155,22 @@
         }
         .mathanim-x:hover { transform: translateY(-1px); box-shadow: var(--shadow-md, 0 4px 11px rgba(42,39,35,.12)); }
         .mathanim-body { padding: 1rem; overflow: auto; }
-        /* The morph stage: equation rows are absolutely stacked & centred so a
-           row being replaced and its replacement occupy the same space while
-           shared terms slide between them. */
+        /* The morph stage: a derivation. Each step is its own line, stacked
+           top-to-bottom; the next line appears below and its shared terms slide
+           down from the line above into place. */
         #mathanim-stage {
-            position: relative; min-height: 150px;
-            display: flex; align-items: center; justify-content: center;
+            min-height: 150px; max-height: 48vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            gap: .45rem; overflow-y: auto; scroll-behavior: smooth;
             border-radius: 14px; background: var(--surface-secondary, #f4f0e8);
-            padding: 1.2rem .8rem; font-size: clamp(1.1rem, 4.5vw, 1.7rem);
+            padding: 1.2rem .8rem; font-size: clamp(1.05rem, 4.2vw, 1.6rem);
         }
         #mathanim-stage.hidden { display: none; }
         .eqrow {
-            position: absolute; left: 0; right: 0; top: 0; bottom: 0;
-            display: flex; align-items: center; justify-content: center; will-change: opacity;
+            position: relative; display: flex; align-items: center; justify-content: center;
+            will-change: opacity; transition: opacity .45s ease;
         }
+        .eqrow.settled { opacity: .55; }
         .eqrow mjx-mi, .eqrow mjx-mn, .eqrow mjx-mo, .eqrow mjx-mtext { will-change: transform, opacity; }
         .mathanim-steps { display: none; flex-direction: column; gap: .55rem; font-size: 1.02rem; line-height: 1.55; }
         .mathanim-steps.show { display: flex; }
@@ -268,10 +270,11 @@
         return typeset(row).then(() => row);
     }
 
-    // FLIP morph: shared terms (same tag+glyph) slide from their old position to
-    // the new one; removed terms fade out, new terms fade/scale in.
-    function morphRows(a, b) {
-        const A = tokensOf(a), B = tokensOf(b);
+    // FLIP morph into a stacked derivation: `above` stays put as the previous
+    // line; `next` appears below it and each shared term (same tag+glyph) slides
+    // from its position in the line above down into place. New terms scale in.
+    function morphRows(above, next) {
+        const A = tokensOf(above), B = tokensOf(next);
         const ar = A.map(t => t.getBoundingClientRect());
         const br = B.map(t => t.getBoundingClientRect());
         const pool = new Map();
@@ -279,7 +282,7 @@
             const k = t.tagName + '|' + t.textContent;
             (pool.get(k) || pool.set(k, []).get(k)).push(i);
         });
-        b.style.opacity = '1';
+        next.style.opacity = '1';
         B.forEach((t, j) => {
             const k = t.tagName + '|' + t.textContent;
             const q = pool.get(k);
@@ -291,31 +294,29 @@
             } else {
                 t.style.transition = 'none';
                 t.style.opacity = '0';
-                t.style.transform = 'scale(.7)';
+                t.style.transform = 'translateY(-6px) scale(.85)';
                 t.dataset.role = 'in';
             }
         });
-        a.style.transition = 'opacity .35s ease';
         requestAnimationFrame(() => requestAnimationFrame(() => {
-            a.style.opacity = '0';
+            above.classList.add('settled');   // dim the previous line, keep it visible
             B.forEach((t) => {
                 if (t.dataset.role === 'move') {
                     t.style.transition = 'transform .65s cubic-bezier(.22,1,.3,1)';
                     t.style.transform = 'translate(0, 0)';
                 } else {
-                    t.style.transition = 'opacity .4s ease .3s, transform .4s ease .3s';
+                    t.style.transition = 'opacity .4s ease .25s, transform .4s ease .25s';
                     t.style.opacity = '1';
                     t.style.transform = 'none';
                 }
             });
         }));
-        setTimeout(() => { if (a.parentNode) a.remove(); }, 720);
     }
 
     function playMorph(scene) {
         stage.classList.remove('hidden');
         stepsEl.classList.remove('show');
-        hintEl.textContent = 'Watch each term move as the equation is solved.';
+        hintEl.textContent = 'Each line follows from the one above — watch the terms move.';
         stage.innerHTML = '';
         renderRow(scene.states[0]).then((first) => {
             first.style.opacity = '1';
@@ -325,6 +326,7 @@
                 renderRow(scene.states[i]).then((nxt) => {
                     morphRows(cur, nxt);
                     cur = nxt; i++;
+                    stage.scrollTop = stage.scrollHeight;   // keep the newest line in view
                     stepTimer = setTimeout(next, STEP_MS);
                 });
             };
