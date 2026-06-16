@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrepPortal | Animated Math (Hybrid Proof-of-Concept)</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
+
+  <link rel="stylesheet" href="/utils/components/theme.css">
+
+  <!-- MathJax (SVG output for crisp, scalable glyphs during animation) -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+      svg: { fontCache: 'global' },
+      startup: { typeset: false }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+  <!-- GSAP (your animation lib of choice) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    body { font-family: var(--font-display); background: var(--bg); color: var(--ink); margin: 0; }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: clamp(16px, 4vw, 40px); }
+    .back { font-family: var(--font-mono); font-size: .72rem; color: var(--text-secondary); text-decoration: none; }
+    .back:hover { color: var(--ink); }
+    h1 { font-size: clamp(1.4rem, 3vw, 2rem); margin: .6rem 0 .3rem; }
+    .sub { color: var(--text-secondary); font-family: var(--font-mono); font-size: .78rem; line-height: 1.5; margin-bottom: 1.3rem; max-width: 54ch; }
+
+    .controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+    .chip {
+      font-family: var(--font-mono); font-size: .75rem; font-weight: 600;
+      padding: .45rem .7rem; border: var(--border-subtle); border-radius: 999px;
+      background: var(--surface-primary); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-sm);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .chip.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
+    .eq-input {
+      font-family: var(--font-mono); font-size: .8rem; padding: .45rem .7rem;
+      border: var(--border-subtle); border-radius: 10px; background: var(--surface-primary); color: var(--ink); width: 150px;
+    }
+    .play {
+      margin-left: auto; display: inline-flex; align-items: center; gap: .45rem;
+      font-family: var(--font-mono); font-weight: 700; font-size: .8rem;
+      padding: .55rem 1.1rem; border: none; border-radius: 999px;
+      background: var(--accent-primary); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-md);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .play:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .play:active { transform: translateY(0); }
+
+    .stage {
+      display: grid; grid-template-columns: 1.3fr .9fr; gap: 1rem;
+      background: var(--surface-primary); border: var(--border-subtle);
+      border-radius: 20px; box-shadow: var(--shadow-lg); padding: 1rem;
+    }
+    #graph { width: 100%; height: 380px; display: block; background: var(--surface-secondary); border-radius: 14px; }
+    .steps {
+      display: flex; flex-direction: column; justify-content: center; gap: .55rem;
+      padding: .5rem .9rem; font-size: 1.15rem; min-height: 380px;
+    }
+    .step { opacity: 0; }
+    .step mjx-container { margin: 0 !important; }
+    .hint { font-family: var(--font-mono); font-size: .68rem; color: var(--text-tertiary); margin-top: .8rem; }
+
+    @media (max-width: 760px) {
+      .stage { grid-template-columns: 1fr; }
+      #graph { height: 300px; }
+      .steps { min-height: 0; }
+      .play { margin-left: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <a class="back" href="/prep-math/">← Prep Math</a>
+    <h1>Animated Math — Hybrid Engine</h1>
+    <p class="sub">
+      Proof-of-concept: the symbolic solution (MathJax) and the graph (canvas) animate
+      together from one GSAP timeline — the "manim-style" hybrid. This scene is a
+      parametric template for linear equations <em>ax + b = c</em>; pick a preset or type your own.
+    </p>
+
+    <div class="controls" id="presets">
+      <button class="chip active" data-eq="2x+3=11">2x + 3 = 11</button>
+      <button class="chip" data-eq="3x+4=19">3x + 4 = 19</button>
+      <button class="chip" data-eq="7x-9=12">7x − 9 = 12</button>
+      <button class="chip" data-eq="5x+2=-8">5x + 2 = −8</button>
+      <input class="eq-input" id="eq-input" type="text" placeholder="e.g. 4x-6=10" aria-label="Custom equation">
+      <button class="play" id="play-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2 1.5v9l8-4.5z"/></svg>
+        Play
+      </button>
+    </div>
+
+    <div class="stage">
+      <canvas id="graph"></canvas>
+      <div class="steps" id="steps"></div>
+    </div>
+
+    <p class="hint">Tip: the dot rides up the line y = ax + b until it meets y = c — the x at that point is the solution.</p>
+  </div>
+
+  <script src="./manim-lite.js"></script>
+</body>
+
+</html>

@@ -25,6 +25,8 @@ const PAGE_CONFIG = {
     // feedback=on → reveal the correct answer + explanation the instant a
     // learner picks an option (the question then locks), instead of only at submit.
     immediate: (urlParams.get('feedback') || '').toLowerCase() === 'on',
+    // SAT (source=sat): which section to pull and an optional difficulty filter.
+    difficulty: (urlParams.get('difficulty') || '').toLowerCase(),
     // competition-specific params
     comp:      urlParams.get('comp')    || '',
     div:       urlParams.get('div')     || '',

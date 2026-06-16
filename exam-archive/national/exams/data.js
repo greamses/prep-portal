@@ -577,6 +577,19 @@ function initCompetition() {
 //  INTERNATIONAL MODE
 // ════════════════════════════════════════════════════════════════════
 
+// SAT papers (length/difficulty presets). Each points at the shared question
+// engine with source=sat; the loader reads the self-hosted OpenSAT bank.
+function SAT_PAPERS(section) {
+  const base = `../question/question.html?source=sat&examType=sat&section=${section}`;
+  return [
+    { id: 'full44',   name: 'Full · 44 Q',   live: true, url: `${base}&n=44` },
+    { id: 'quick20',  name: 'Quick · 20 Q',  live: true, url: `${base}&n=20` },
+    { id: 'easy20',   name: 'Easy · 20 Q',   live: true, url: `${base}&difficulty=Easy&n=20` },
+    { id: 'medium20', name: 'Medium · 20 Q', live: true, url: `${base}&difficulty=Medium&n=20` },
+    { id: 'hard20',   name: 'Hard · 20 Q',   live: true, url: `${base}&difficulty=Hard&n=20` },
+  ];
+}
+
 const INTL_REGISTRY = {
   cambridge: {
     name: 'Cambridge', live: true,
@@ -594,7 +607,19 @@ const INTL_REGISTRY = {
     }
   },
   igcse: { name: 'IGCSE',     live: false, levels: {} },
-  sat:   { name: 'SAT / ACT', live: false, levels: {} },
+  sat: {
+    name: 'SAT', live: true,
+    levels: {
+      digital: {
+        name: 'Digital SAT', live: true,
+        subjects: {
+          math:    { name: 'Math',              live: true, years: { '2025': SAT_PAPERS('math') } },
+          english: { name: 'Reading & Writing', live: true, years: { '2025': SAT_PAPERS('english') } },
+          mixed:   { name: 'Full (Math + R&W)', live: true, years: { '2025': SAT_PAPERS('mixed') } }
+        }
+      }
+    }
+  },
   ib:    { name: 'IB',        live: false, levels: {} }
 };
 

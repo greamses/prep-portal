@@ -50,7 +50,102 @@ const Quiz = (() => {
             MathJax.typesetPromise([el]).catch(e => console.warn('MathJax error:', e));
         }
     }
-    
+
+    // ── SAT bank formatter ───────────────────────────────────────────────
+    // The OpenSAT bank mixes notations the page can't render as-is:
+    //   • markdown *…*  → used for BOTH math variables (*f*) and English
+    //     emphasis (*not*); routed to \(…\) or <em> accordingly.
+    //   • bare numbers / expressions / raw LaTeX (\frac…) with no delimiters.
+    //   • currency "$5" — which the page's MathJax would otherwise read as an
+    //     inline-math delimiter and garble the sentence.
+    // formatSat() wraps every mathematical run in \(…\) so MathJax renders it
+    // in one consistent typeface, leaves prose words alone, and protects any
+    // genuine LaTeX that's already delimited. <em> survives escFmt()'s
+    // whitelist; \(…\) is handed to MathJax by typesetEl().
+    function formatSat(str) {
+        if (!str) return '';
+        let s = String(str).trim();
+        if (!s || s === 'null') return '';
+        const S = String.fromCharCode(1);
+        const toL = (t) => t
+            .replace(/(\d),(?=\d)/g, '$1{,}')
+            .replace(/\^\s*\{([^}]*)\}/g, '^{$1}')
+            .replace(/\^\s*(-?[A-Za-z0-9.]+)/g, '^{$1}')
+            .replace(/_\s*\{([^}]*)\}/g, '_{$1}')
+            .replace(/_\s*([A-Za-z0-9]+)/g, '_{$1}')
+            .replace(/%/g, '\\%')
+            .replace(/×/g, '\\times ').replace(/÷/g, '\\div ').replace(/·/g, '\\cdot ')
+            .replace(/≤/g, '\\le ').replace(/≥/g, '\\ge ').replace(/≠/g, '\\ne ')
+            .replace(/±/g, '\\pm ').replace(/π/g, '\\pi ').replace(/√/g, '\\sqrt ')
+            .replace(/°/g, '^{\\circ}').replace(/²/g, '^{2}').replace(/³/g, '^{3}')
+            .replace(/\s+/g, ' ').trim();
+        // A $…$ body is real math (not prose between two currency $) when it has
+        // no multi-letter English word once LaTeX commands are stripped.
+        const mathy = (c) => {
+            if (!/[\\^_=<>(){}]|[A-Za-z]|\d/.test(c)) return false;
+            if (/[A-Za-z]{3,}/.test(c.replace(/\\[A-Za-z]+/g, ' '))) return false;
+            return true;
+        };
+        const parked = [];
+        const park = (m) => { parked.push(m); return S + (parked.length - 1) + S; };
+
+        // Park genuine LaTeX so the tokeniser never rewrites its internals.
+        s = s.replace(/\\begin\{[a-zA-Z*]+\}[\s\S]*?\\end\{[a-zA-Z*]+\}/g, (m) => park(m));
+        s = s.replace(/\$\$[\s\S]*?\$\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g, park);
+        s = s.replace(/\$([^$\n]+?)\$/g, (m, body) => mathy(body) ? park(m) : m);
+        s = s.replace(/\$\s?(\d[\d,]*(?:\.\d+)?)/g, (_, num) => park('\\(\\$' + toL(num) + '\\)'));
+        s = s.replace(/\*\*?(\S(?:[^*\n]*\S)?)\*\*?/g, (_, inner) => {
+            inner = inner.trim();
+            return mathy(inner) ? park('\\(' + toL(inner) + '\\)') : park('<em>' + inner + '</em>');
+        });
+
+        // Tokenise the rest and group maximal math runs.
+        const TOK = new RegExp(S + '\\d+' + S + '|\\\\[A-Za-z]+|\\d[\\d,]*(?:\\.\\d+)?|[A-Za-z]+|\\s+|[^\\sA-Za-z0-9]', 'g');
+        const MATHSYM = /^[-+*/=^_<>|()[\]{}%√π°²³±×÷·≤≥≠.,]$/;
+        const PARKED = new RegExp('^' + S + '\\d+' + S + '$');
+        const ART = /^[aAIO]$/;
+        const toks = s.match(TOK) || [];
+        const cls = toks.map((tok) => {
+            if (PARKED.test(tok)) return 'p';
+            if (/^\s+$/.test(tok)) return 'w';
+            if (/^\\[A-Za-z]+$/.test(tok)) return 'm';
+            if (/^\d[\d,]*(?:\.\d+)?$/.test(tok)) return 'm';
+            if (/^[A-Za-z]+$/.test(tok)) return (tok.length === 1 && !ART.test(tok)) ? 'm' : 't';
+            if (MATHSYM.test(tok)) return 'm';
+            return 't';
+        });
+        // A space/comma/period only stays in a run when math sits on both sides.
+        const joins = (i) => {
+            let l = i - 1; while (l >= 0 && cls[l] === 'w') l--;
+            let r = i + 1; while (r < cls.length && cls[r] === 'w') r++;
+            return l >= 0 && r < cls.length && cls[l] === 'm' && cls[r] === 'm';
+        };
+        let out = '', run = '';
+        const flush = () => {
+            if (!run) return;
+            // Peel boundary chars that can't sit at the edge of a math span.
+            const m = run.match(/^([\s*/=^_<>.,]*)([\s\S]*?)([\s+\-*/=^_<>.,]*)$/);
+            if (!m[2] || !/[0-9A-Za-z\\]/.test(m[2])) { out += run; run = ''; return; }
+            out += m[1] + '\\(' + toL(m[2]) + '\\)' + m[3];
+            run = '';
+        };
+        for (let i = 0; i < toks.length; i++) {
+            const t = toks[i], c = cls[i];
+            if (c === 'm') run += t;
+            else if (c === 'w') { if (run && joins(i)) run += t; else { flush(); out += t; } }
+            else if ((t === ',' || t === '.') && run && joins(i)) run += t;
+            else { flush(); out += t; }
+        }
+        flush();
+        // Restore parked LaTeX (iteratively — a parked $…$ may itself hold a
+        // placeholder, e.g. a bare environment wrapped in dollar signs).
+        const restore = new RegExp(S + '(\\d+)' + S, 'g');
+        let prev;
+        do { prev = out; out = out.replace(restore, (_, i) => parked[+i]); }
+        while (out !== prev && out.indexOf(S) !== -1);
+        return out;
+    }
+
     // ── Answer resolver ──────────────────────────────────────
     function resolveAnswer(q) {
         const opts = q.options || [];
@@ -113,6 +208,14 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             subText   = `${comp || 'Competition'} Practice`;
             metaText  = [div, yr, rnd].filter(Boolean).join(' · ');
             printText = `Prep Portal · ${subText} · Results`;
+        } else if (PAGE_CONFIG.source === 'sat') {
+            const secName = { math: 'Math', english: 'Reading & Writing', mixed: 'Full Test' }[PAGE_CONFIG.section] || 'Practice';
+            const diff = PAGE_CONFIG.difficulty && PAGE_CONFIG.difficulty !== 'all'
+                ? PAGE_CONFIG.difficulty.charAt(0).toUpperCase() + PAGE_CONFIG.difficulty.slice(1)
+                : 'All levels';
+            subText   = `SAT • ${secName}`;
+            metaText  = `${diff} • ${PAGE_CONFIG.limit} questions`;
+            printText = `Prep Portal · SAT ${secName} · Results`;
         } else {
             const examTypeName = getExamTypeName(PAGE_CONFIG.examType);
             subText   = `${examTypeName} • ${(PAGE_CONFIG.subjects || []).join(' & ') || 'Practice Paper'}`;
@@ -336,6 +439,60 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         return out;
     }
 
+    // ── SAT loader (source=sat) ──────────────────────────────────────────
+    // Reads the self-hosted OpenSAT bank (one JSON: { math:[], english:[], … }),
+    // filters by section + optional difficulty, and maps onto the engine shape.
+    function normalizeSat(it, sec) {
+        const q = it.question || {};
+        const choices = q.choices || {};
+        const order = ['A', 'B', 'C', 'D', 'E'];
+        // Run every learner-visible field through formatSat() so the bank's
+        // markdown italics and bare caret exponents render instead of showing
+        // raw asterisks / "^". _answer is taken from the SAME formatted option
+        // so the answer-key comparison still matches what the learner clicks.
+        const options = order.map(k => choices[k])
+            .filter(v => v !== undefined && v !== null && v !== 'null')
+            .map(formatSat);
+        const clean = (v) => (v && v !== 'null') ? String(v).trim() : '';
+        const para = formatSat(clean(q.paragraph)), stem = formatSat(clean(q.question));
+        const ansIdx = order.indexOf(String(q.correct_answer || '').trim().toUpperCase());
+        return {
+            question:    para ? para + '<br><br>' + stem : stem,
+            options,
+            _answer:     ansIdx >= 0 && options[ansIdx] !== undefined ? options[ansIdx] : null,
+            explanation: formatSat(clean(q.explanation)),
+            image: '', hint: '', type: 'objective',
+            subject:     sec === 'math' ? 'Math' : sec === 'english' ? 'Reading & Writing' : 'SAT',
+            examType: 'sat', examYear: ''
+        };
+    }
+
+    async function loadFromSat() {
+        const section = (PAGE_CONFIG.section || 'mixed').toLowerCase();
+        const per     = PAGE_CONFIG.limit || 20;
+        const diff    = (PAGE_CONFIG.difficulty || '').toLowerCase();
+        let bank;
+        try {
+            const res = await fetch('../../international/sat/opensat-bank.json');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            bank = await res.json();
+        } catch (e) { console.warn('SAT bank load failed:', e.message); return []; }
+
+        const pool = [];
+        const add = (arr, sec) => (arr || []).forEach(it => pool.push({ it, sec }));
+        if (section === 'math') add(bank.math, 'math');
+        else if (section === 'english') add(bank.english, 'english');
+        else { add(bank.math, 'math'); add(bank.english, 'english'); }   // mixed
+
+        let picked = (diff && diff !== 'all')
+            ? pool.filter(p => String(p.it.difficulty || '').toLowerCase() === diff)
+            : pool;
+
+        const norm = picked.map(p => normalizeSat(p.it, p.sec)).filter(q => q.question);
+        shuffleArr(norm);
+        return norm.slice(0, per);
+    }
+
     async function loadFromCompetition() {
         const comp  = PAGE_CONFIG.comp  || '';
         const div   = PAGE_CONFIG.div   || '';
@@ -400,6 +557,31 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
                 return;
             }
             console.log(`Loaded ${allQuestions.length} questions from ALOC (/api/questions)`);
+            buildDotMap();
+            renderQuestion(0);
+            const card = document.getElementById('question-card');
+            const nav = document.getElementById('nav-bar');
+            if (card) card.style.display = 'flex';
+            if (nav) nav.style.display = 'grid';
+            return;
+        }
+
+        // SAT source → load from the self-hosted OpenSAT bank.
+        if (PAGE_CONFIG.source === 'sat') {
+            allQuestions = await loadFromSat();
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (allQuestions.length === 0) {
+                const card = document.getElementById('question-card');
+                if (card) {
+                    card.style.display = 'flex';
+                    card.innerHTML = `<div style="padding:40px;text-align:center">
+                    <strong style="font-family:var(--font-display);font-size:15px">No Questions Found</strong>
+                    <p style="font-size:12px;opacity:.6;margin-top:8px">Couldn't load the SAT question bank for this selection.</p>
+                 </div>`;
+                }
+                return;
+            }
+            console.log(`Loaded ${allQuestions.length} SAT questions`);
             buildDotMap();
             renderQuestion(0);
             const card = document.getElementById('question-card');
@@ -774,6 +956,11 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
                 `<p class="expl-line">Correct answer: <strong>${escFmt(ans)}</strong></p>` +
                 buildExpl(q.explanation);
         }
+
+        // Offer an animated walkthrough for science questions (graph + steps
+        // for linear equations, otherwise the explanation revealed step by
+        // step). All the heavy lifting lives in animator.js.
+        if (acts && window.MathAnimator) window.MathAnimator.mountButton(acts, q);
     }
     
     function selectOption(opt, btn, grid, idx) {
