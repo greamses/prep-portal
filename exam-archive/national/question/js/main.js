@@ -225,5 +225,5 @@ window.addEventListener('prepportal:keysReady', () => {
 });
 
 window.Quiz = Quiz;
-window.PrepBot = PrepBot;
-window.VideoSearch = VideoSearch;
+if (typeof PrepBot !== 'undefined') window.PrepBot = PrepBot;
+if (typeof VideoSearch !== 'undefined') window.VideoSearch = VideoSearch;

@@ -10,6 +10,7 @@
   if (!disp) return;
 
   const enabled =
+    window.__timerEnabled === true ||
     (new URLSearchParams(location.search).get('timer') || '').toLowerCase() === 'on';
 
   // Timer off → hide the timer sticky note entirely.

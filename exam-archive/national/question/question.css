@@ -10,7 +10,6 @@
 /* ── TOKENS ─────────────────────────────────────────────────
    The quiz keeps its own local aliases, but they now point at the
    shared theme tokens so this page matches the soft-UI home page.
-   (This page is pinned to data-theme="light".)
    ───────────────────────────────────────────────────────── */
 :root {
   --ink: #0a0a0a;
@@ -31,6 +30,12 @@
   --font-display: 'Unbounded', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-hand: 'Caveat', cursive;
+}
+
+/* Dark mode — reassert ink so the :root block above doesn't win */
+[data-theme="dark"] {
+  --ink: #efece3;
+  --border: 2.5px solid var(--ink);
 }
 
 *,
@@ -244,14 +249,56 @@ body {
   margin-bottom: 1rem;
 }
 
+#q-image-wrap,
+.review-img-wrap {
+  max-width: 100%;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 12px;
+}
+
+#q-image-wrap:empty,
+.review-img-wrap:empty { display: none; }
+
+#q-hint-wrap:empty { display: none; }
+#q-hint-wrap { margin-bottom: .6rem; }
+
+.hint-btn {
+  display: inline-flex; align-items: center;
+  border: var(--border-subtle, 1px solid rgba(42,39,35,.14));
+  border-radius: 10px; padding: .28rem .65rem;
+  background: var(--surface-secondary, #f4f0e8);
+  font-family: var(--font-mono, monospace); font-size: .72rem; font-weight: 600;
+  color: var(--text-secondary, #6b655c); cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.hint-btn:hover { color: var(--ink, #2a2723); background: var(--surface-tertiary, #ddd8ce); }
+
+.hint-text {
+  margin-top: .5rem; padding: .6rem .85rem;
+  background: var(--surface-secondary, #f4f0e8);
+  border-left: 3px solid var(--accent-warning, #e6a817);
+  border-radius: 0 10px 10px 0;
+  font-size: .82rem; line-height: 1.5; color: var(--ink, #2a2723);
+}
+
 .q-image {
   max-width: 100%;
   max-height: 280px;
   object-fit: contain;
-  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: 12px;
-  margin-bottom: 1rem;
+  border-radius: 10px;
   display: block;
+  width: 100%;
+}
+
+#q-image-wrap svg,
+.review-img-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  border-radius: 10px;
 }
 
 /* ── OPTIONS ── */
@@ -374,7 +421,7 @@ body {
   letter-spacing: .1em;
   text-transform: uppercase;
   background: var(--yellow);
-  color: var(--ink);
+  color: var(--text-on-accent);
   border-radius: 999px;
   padding: 0.15rem 0.5rem;
   flex-shrink: 0;
@@ -576,7 +623,7 @@ body {
 .btn-yellow {
   background: var(--yellow);
   border-color: transparent;
-  color: var(--ink);
+  color: var(--text-on-accent);
 }
 
 .btn-ink {

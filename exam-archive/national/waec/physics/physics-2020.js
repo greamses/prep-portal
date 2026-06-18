@@ -16,6 +16,7 @@ const examQuestions = [
       "In an elastic collision, both momentum and kinetic energy are conserved.",
       "In inelastic collisions, some kinetic energy is converted to other forms (e.g., heat, sound).",
     ],
+    topic: "Linear Momentum and Collisions",
   },
   {
     question: "The quantity of motion of a body is its",
@@ -26,6 +27,7 @@ const examQuestions = [
     explanation: [
       "Momentum \\( = m \\times v \\), representing the 'quantity of motion'.",
     ],
+    topic: "Linear Momentum",
   },
   {
     question:
@@ -37,6 +39,7 @@ const examQuestions = [
     explanation: [
       "Boyle's law: \\( P \\propto \\frac{1}{V} \\) at constant temperature.",
     ],
+    topic: "Gas Laws",
   },
   {
     question: "An image formed on a screen is always?",
@@ -47,6 +50,7 @@ const examQuestions = [
     explanation: [
       "Real images are formed when light rays actually converge, and they are inverted relative to the object.",
     ],
+    topic: "Geometrical Optics (Reflection and Mirrors)",
   },
   {
     question:
@@ -63,6 +67,7 @@ const examQuestions = [
     explanation: [
       "\\( C \\propto \\frac{1}{d} \\) → smaller distance gives larger capacitance.",
     ],
+    topic: "Electrostatics (Capacitors)",
   },
 
   // Page 2 (Questions 6–10)
@@ -76,6 +81,7 @@ const examQuestions = [
     explanation: [
       "Claw hammer, wheelbarrow, and sugar tongs all use lever action. A single pulley is not a lever.",
     ],
+    topic: "Simple Machines",
   },
   {
     question:
@@ -92,6 +98,7 @@ const examQuestions = [
     explanation: [
       "In kinetic theory, mean free path \\( \\lambda = \\frac{1}{\\sqrt{2} n \\pi d^{2}} \\).",
     ],
+    topic: "Kinetic Theory of Gases",
   },
   {
     question:
@@ -103,6 +110,7 @@ const examQuestions = [
     explanation: [
       "Sound is a mechanical wave that needs a medium (solid, liquid, gas) to travel.",
     ],
+    topic: "Waves (Mechanical vs Electromagnetic)",
   },
   {
     question: "The depolarising agent in a Leclanche cell is?",
@@ -118,6 +126,7 @@ const examQuestions = [
     explanation: [
       "\\( \\text{MnO}_2 \\) oxidizes hydrogen to water, removing polarization.",
     ],
+    topic: "Current Electricity (Cells)",
   },
   {
     question:
@@ -129,6 +138,7 @@ const examQuestions = [
     explanation: [
       "Moderators like graphite, heavy water, or beryllium slow fast neutrons to thermal energies.",
     ],
+    topic: "Nuclear Physics",
   },
 
   // Page 3 (Questions 11–15)
@@ -147,15 +157,92 @@ const examQuestions = [
     explanation: [
       "Both soap and heat reduce the surface tension of oil, allowing it to be emulsified and washed away.",
     ],
+    topic: "Properties of Matter (Surface Tension)",
   },
   {
     question:
       "The diagram above illustrates a beam of parallel rays from a distant object O, incident on one side of the total reflecting prism. Which diagram does not represent the correct path of the beam when it emerges from the prism?",
-    image: "MZ5SwnRA1P0BESJWEEIWkROp7k2zoRW6ng2W9yjq.png",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="100%" height="100%">
+  <defs>
+    <marker id="ray-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#111" />
+    </marker>
+  </defs>
+  <style>
+    .prism { stroke: #000; stroke-width: 2; fill: none; stroke-linejoin: round; }
+    .ray { stroke: #111; stroke-width: 1.5; fill: none; }
+    .bracket { stroke: #000; stroke-width: 1.2; fill: none; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 15px; fill: #000; }
+    .title-label { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: bold; fill: #000; }
+  </style>
+  <g>
+    <polygon points="80,40 80,160 200,160" class="prism" />
+    <path d="M 20,75 L 80,75" class="ray" />
+    <path d="M 80,75 L 165,75" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 165,75 L 165,160" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 165,160 L 165,195" class="ray" />
+    <path d="M 20,115 L 80,115" class="ray" />
+    <path d="M 80,115 L 125,115" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 125,115 L 125,160" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 125,160 L 125,195" class="ray" />
+    <path d="M 25,75 H 20 V 115 H 25" class="bracket" />
+    <text x="12" y="100" class="label" text-anchor="middle">O</text>
+    <path d="M 125,190 V 195 H 165 V 190" class="bracket" />
+    <text x="145" y="210" class="label" text-anchor="middle">T</text>
+    <text x="140" y="235" class="title-label" text-anchor="middle">W</text>
+  </g>
+  <g>
+    <polygon points="380,40 380,160 440,100" class="prism" />
+    <path d="M 320,65 L 380,65" class="ray" />
+    <path d="M 380,65 L 405,65" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 405,65 L 405,135" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 405,135 L 380,135" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 380,135 L 320,135" class="ray" />
+    <path d="M 320,80 L 380,80" class="ray" />
+    <path d="M 380,80 L 420,80" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 420,80 L 420,120" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 420,120 L 380,120" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 380,120 L 320,120" class="ray" />
+    <path d="M 325,65 H 320 V 80 H 325" class="bracket" />
+    <text x="312" y="78" class="label" text-anchor="middle">O</text>
+    <path d="M 325,120 H 320 V 135 H 325" class="bracket" />
+    <text x="312" y="132" class="label" text-anchor="middle">I</text>
+    <text x="410" y="235" class="title-label" text-anchor="middle">X</text>
+  </g>
+  <g>
+    <polygon points="60,410 200,410 130,310" class="prism" />
+    <path d="M 20,320 L 85,374" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 85,374 L 120,410" class="ray" />
+    <path d="M 120,410 L 155,374" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 155,374 L 170,300" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 40,340 L 100,353" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 100,353 L 140,410" class="ray" />
+    <path d="M 140,410 L 180,339" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 180,339 L 195,265" class="ray" marker-end="url(#ray-arrow)" />
+    <text x="18" y="315" class="label" text-anchor="middle">O</text>
+    <text x="195" y="255" class="label" text-anchor="middle">I</text>
+    <text x="130" y="445" class="title-label" text-anchor="middle">Z</text>
+  </g>
+  <g>
+    <polygon points="360,410 500,410 430,310" class="prism" />
+    <path d="M 320,374 L 385,374" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 385,374 L 430,410" class="ray" />
+    <path d="M 430,410 L 475,374" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 475,374 L 540,320" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 340,345 L 400,353" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 400,353 L 450,410" class="ray" />
+    <path d="M 450,410 L 480,339" class="ray" marker-end="url(#ray-arrow)" />
+    <path d="M 480,339 L 545,285" class="ray" marker-end="url(#ray-arrow)" />
+    <text x="318" y="315" class="label" text-anchor="middle">O</text>
+    <text x="548" y="280" class="label" text-anchor="middle">I</text>
+    <text x="430" y="445" class="title-label" text-anchor="middle">Y</text>
+  </g>
+</svg>`,
     options: ["W", "X", "Y", "Z"],
     correctIndex: null,
     hint: "Examine each diagram for correct total internal reflection at the prism faces.",
     explanation: [],
+    topic: "Geometrical Optics (Total Internal Reflection)",
   },
   {
     question:
@@ -172,6 +259,7 @@ const examQuestions = [
     explanation: [
       "\\( \\frac{V_s}{V_p} = \\frac{N_s}{N_p} = \\frac{20}{50} = 0.4 \\), so voltage is stepped down.",
     ],
+    topic: "Electromagnetic Induction (Transformers)",
   },
   {
     question: "The earpiece of a telephone handset converts energy from",
@@ -187,15 +275,90 @@ const examQuestions = [
     explanation: [
       "In a telephone, the earpiece contains a loudspeaker that transforms electrical energy into acoustic energy.",
     ],
+    topic: "Sound (Transducers)",
   },
   {
     question:
       "Two identical cups containing the same volume of water at \\( 45^{\\circ} \\text{C} \\) and \\( 5^{\\circ} \\text{C} \\), are left in a room at \\( 25^{\\circ} \\text{C} \\). Which of the following graphs correctly illustrates the variation of temperature with time?",
-    image: "data:image/jpeg;base64,...", // truncated in original, keep as is
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" width="100%" height="100%">
+  <defs>
+    <marker id="axis-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#000" />
+    </marker>
+  </defs>
+  <style>
+    .axis { stroke: #000; stroke-width: 1.5; fill: none; }
+    .solid-curve { stroke: #111; stroke-width: 2; fill: none; }
+    .dashed-curve { stroke: #111; stroke-width: 1.8; stroke-dasharray: 4,4; fill: none; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; fill: #000; }
+    .sub-label { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: bold; fill: #000; }
+  </style>
+  <g transform="translate(10, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <path d="M 30,30 Q 70,85 140,90" class="dashed-curve" />
+    <path d="M 30,150 Q 70,95 140,90" class="solid-curve" />
+    <line x1="27" y1="30" x2="33" y2="30" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="90" x2="33" y2="90" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="150" x2="33" y2="150" stroke="#000" stroke-width="1.5" />
+    <text x="22" y="34" class="label" text-anchor="end">45</text>
+    <text x="22" y="94" class="label" text-anchor="end">25</text>
+    <text x="22" y="154" class="label" text-anchor="end">5</text>
+    <text x="25" y="15" class="label" text-anchor="middle">T/°C</text>
+    <text x="165" y="165" class="label">t/s</text>
+    <text x="95" y="195" class="sub-label" text-anchor="middle">A</text>
+  </g>
+  <g transform="translate(185, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="30" x2="140" y2="150" class="dashed-curve" />
+    <line x1="30" y1="150" x2="140" y2="30" class="solid-curve" />
+    <line x1="27" y1="30" x2="33" y2="30" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="90" x2="33" y2="90" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="150" x2="33" y2="150" stroke="#000" stroke-width="1.5" />
+    <text x="22" y="34" class="label" text-anchor="end">45</text>
+    <text x="22" y="94" class="label" text-anchor="end">25</text>
+    <text x="22" y="154" class="label" text-anchor="end">5</text>
+    <text x="25" y="15" class="label" text-anchor="middle">T/°C</text>
+    <text x="165" y="165" class="label">t/s</text>
+    <text x="95" y="195" class="sub-label" text-anchor="middle">B</text>
+  </g>
+  <g transform="translate(360, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <path d="M 30,30 Q 60,110 140,150" class="dashed-curve" />
+    <path d="M 30,150 Q 60,70 140,30" class="solid-curve" />
+    <line x1="27" y1="30" x2="33" y2="30" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="90" x2="33" y2="90" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="150" x2="33" y2="150" stroke="#000" stroke-width="1.5" />
+    <text x="22" y="34" class="label" text-anchor="end">45</text>
+    <text x="22" y="94" class="label" text-anchor="end">25</text>
+    <text x="22" y="154" class="label" text-anchor="end">5</text>
+    <text x="25" y="15" class="label" text-anchor="middle">T/°C</text>
+    <text x="165" y="165" class="label">t/s</text>
+    <text x="95" y="195" class="sub-label" text-anchor="middle">C</text>
+  </g>
+  <g transform="translate(535, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="30" x2="140" y2="30" class="dashed-curve" />
+    <line x1="30" y1="150" x2="140" y2="150" class="solid-curve" />
+    <line x1="27" y1="30" x2="33" y2="30" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="90" x2="33" y2="90" stroke="#000" stroke-width="1.5" />
+    <line x1="27" y1="150" x2="33" y2="150" stroke="#000" stroke-width="1.5" />
+    <text x="22" y="34" class="label" text-anchor="end">45</text>
+    <text x="22" y="94" class="label" text-anchor="end">25</text>
+    <text x="22" y="154" class="label" text-anchor="end">5</text>
+    <text x="25" y="15" class="label" text-anchor="middle">T/°C</text>
+    <text x="165" y="165" class="label">t/s</text>
+    <text x="95" y="195" class="sub-label" text-anchor="middle">D</text>
+  </g>
+</svg>`,
     options: ["A", "B", "C", "D"],
     correctIndex: null,
     hint: "Both approach room temperature exponentially; the hotter one cools, the cooler one warms.",
     explanation: [],
+    topic: "Heat (Thermal Equilibrium)",
   },
 
   // Page 4 (Questions 16–20)
@@ -217,6 +380,7 @@ const examQuestions = [
       "\\( \\sin\\theta_2 = \\frac{0.75}{1.36} \\approx 0.55147 \\)",
       "\\( \\theta_2 = \\arcsin(0.55147) \\approx 33.5^{\\circ} \\)",
     ],
+    topic: "Geometrical Optics (Refraction)",
   },
   {
     question:
@@ -233,6 +397,7 @@ const examQuestions = [
     explanation: [
       "\\( R = m(g + a) = 60 \\times (10 + 5) = 60 \\times 15 = 900\\,\\text{N} \\)",
     ],
+    topic: "Dynamics (Forces in Accelerating Frames)",
   },
   {
     question:
@@ -250,6 +415,7 @@ const examQuestions = [
       "\\( \\Delta T = \\frac{0.0001}{1.2 \\times 10^{-5}} = \\frac{0.0001}{0.000012} = 8.333\\,\\text{°C} \\)",
       "\\( T_2 = 20 + 8.333 = 28.3^{\\circ}\\text{C} \\)",
     ],
+    topic: "Heat (Thermal Expansion)",
   },
   {
     question:
@@ -267,6 +433,7 @@ const examQuestions = [
       "\\( R_{\\text{total}} = \\frac{5}{0.005} = 1000\\,\\Omega \\)",
       "\\( R_g = R_{\\text{total}} - 975 = 25\\,\\Omega \\)",
     ],
+    topic: "Current Electricity (Galvanometer)",
   },
   {
     question:
@@ -283,6 +450,7 @@ const examQuestions = [
     explanation: [
       "\\( \\alpha \\) (positive) and \\( \\beta \\) (negative) experience magnetic force; \\( \\gamma \\) (neutral) is unaffected.",
     ],
+    topic: "Nuclear Physics (Radioactivity)",
   },
 
   // Page 5 (Questions 21–25)
@@ -302,6 +470,7 @@ const examQuestions = [
       "\\( C = \\frac{\\varepsilon A}{d} \\) → larger \\( d \\) gives smaller \\( C \\).",
       "\\( Q \\) remains constant because the circuit is open.",
     ],
+    topic: "Electrostatics (Capacitors)",
   },
   {
     question:
@@ -321,20 +490,66 @@ const examQuestions = [
       "\\( \\sqrt{1.1111} \\approx 1.054 \\)",
       "\\( v_2 \\approx 340 \\times 1.054 = 358.36\\,\\text{ms}^{-1} \\)",
     ],
+    topic: "Sound (Speed of Sound)",
   },
   {
     question:
       "Which of the current-voltage characteristics shown above is that exhibited by an ohmic conductor?",
-    image: "HdEF4oiLCMQA9ZlSlNOBmCvzbXljyZvfmEvl4x4t.jpeg",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" width="100%" height="100%">
+  <defs>
+    <marker id="axis-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 2 L 8 5 L 0 8 z" fill="#000" />
+    </marker>
+  </defs>
+  <style>
+    .axis { stroke: #000; stroke-width: 1.5; fill: none; }
+    .curve { stroke: #222; stroke-width: 2; fill: none; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; fill: #000; }
+    .sub-label { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: bold; fill: #000; }
+    .math { font-family: "Times New Roman", Times, serif; font-style: italic; }
+  </style>
+  <g transform="translate(10, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <path d="M 30,160 Q 110,150 145,40" class="curve" />
+    <text x="22" y="25" class="math label">I</text>
+    <text x="165" y="165" class="math label">V</text>
+    <text x="90" y="195" class="sub-label" text-anchor="middle">A.</text>
+  </g>
+  <g transform="translate(185, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="140" y2="40" class="curve" />
+    <text x="22" y="25" class="math label">I</text>
+    <text x="165" y="165" class="math label">V</text>
+    <text x="90" y="195" class="sub-label" text-anchor="middle">B.</text>
+  </g>
+  <g transform="translate(360, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <path d="M 30,160 Q 60,50 145,45" class="curve" />
+    <text x="22" y="25" class="math label">I</text>
+    <text x="165" y="165" class="math label">V</text>
+    <text x="90" y="195" class="sub-label" text-anchor="middle">C.</text>
+  </g>
+  <g transform="translate(535, 10)">
+    <line x1="30" y1="160" x2="30" y2="20" class="axis" marker-end="url(#axis-arrow)" />
+    <line x1="30" y1="160" x2="160" y2="160" class="axis" marker-end="url(#axis-arrow)" />
+    <path d="M 30,40 Q 60,120 145,145" class="curve" />
+    <text x="22" y="25" class="math label">I</text>
+    <text x="165" y="165" class="math label">V</text>
+    <text x="90" y="195" class="sub-label" text-anchor="middle">D.</text>
+  </g>
+</svg>`,
     options: ["A", "B", "C", "D"],
     correctIndex: null,
     hint: "Ohmic conductor has a linear \\( I-V \\) graph passing through the origin.",
     explanation: [],
+    topic: "Current Electricity (Ohm's Law)",
   },
   {
     question:
       "A \\( 500\\,\\text{N} \\) box rests on a horizontal floor. A constant horizontal force is exerted on the box so that it moves through \\( 8\\,\\text{m} \\). If the coefficient of kinetic friction between the floor and the box is \\( 0.22 \\), calculate the work done on the box",
-    image: null,
     options: [
       "\\( 880\\,\\text{J} \\)",
       "\\( 440\\,\\text{J} \\)",
@@ -347,11 +562,32 @@ const examQuestions = [
       "\\( F_f = \\mu N = 0.22 \\times 500 = 110\\,\\text{N} \\)",
       "\\( W = F_f \\times d = 110 \\times 8 = 880\\,\\text{J} \\)",
     ],
+    topic: "Work, Energy, Power",
   },
   {
     question:
       "The diagram illustrates a ball of mass \\( m \\) sliding down a plank inclined at an angle of \\( \\theta \\) to the horizontal. The kinetic friction between the ball and the plank is \\( F \\), and the acceleration of free fall is \\( g \\). The normal force on the ball is?",
-    image: "V2TK1qMNwfrvdZQGySvR9rhtNmTr1NU848XQ2B5Z.png",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
+    </marker>
+  </defs>
+  <style>
+    .line { stroke: #000; stroke-width: 2; fill: none; }
+    .mass { stroke: #000; stroke-width: 2; fill: #ffffff; }
+    .arrow-line { stroke: #000; stroke-width: 2; fill: none; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; fill: #000; }
+    .math { font-family: "Times New Roman", Times, serif; font-style: italic; }
+  </style>
+  <line x1="50" y1="240" x2="350" y2="240" class="line" />
+  <line x1="50" y1="240" x2="300" y2="60" class="line" />
+  <path d="M 90,240 A 40,40 0 0,0 82.5,216.5" fill="none" stroke="#000" stroke-width="1.5" />
+  <text x="96" y="233" class="math label">θ</text>
+  <circle cx="163.4" cy="133.8" r="20" class="mass" />
+  <line x1="179.6" y1="122.2" x2="238" y2="80.2" class="arrow-line" marker-end="url(#arrow)" />
+  <text x="245" y="78" class="math label">F</text>
+</svg>`,
     options: [
       "\\( mg\\sin\\theta \\)",
       "\\( mg\\tan\\theta \\)",
@@ -363,13 +599,34 @@ const examQuestions = [
     explanation: [
       "Resolving weight perpendicular to the plane: \\( N = mg\\cos\\theta \\)",
     ],
+    topic: "Dynamics (Forces on Inclined Plane)",
   },
 
   // Page 6 (Questions 26–30)
   {
     question:
       "The diagram above illustrates a ball of mass \\( m \\) sliding down a plank inclined at an angle of \\( \\theta \\) to the horizontal. The kinetic friction between the ball and the plank is \\( F \\) and the acceleration of free fall is \\( g \\). The net force on the ball along the plank is?",
-    image: "CxuF07TpO7bjc3rkXnYetjrZmgdihjKeXJdyhsqR.jpeg",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
+    </marker>
+  </defs>
+  <style>
+    .line { stroke: #000; stroke-width: 2; fill: none; }
+    .mass { stroke: #000; stroke-width: 2; fill: #ffffff; }
+    .arrow-line { stroke: #000; stroke-width: 2; fill: none; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; fill: #000; }
+    .math { font-family: "Times New Roman", Times, serif; font-style: italic; }
+  </style>
+  <line x1="50" y1="240" x2="350" y2="240" class="line" />
+  <line x1="50" y1="240" x2="300" y2="60" class="line" />
+  <path d="M 90,240 A 40,40 0 0,0 82.5,216.5" fill="none" stroke="#000" stroke-width="1.5" />
+  <text x="96" y="233" class="math label">θ</text>
+  <circle cx="163.4" cy="133.8" r="20" class="mass" />
+  <line x1="179.6" y1="122.2" x2="238" y2="80.2" class="arrow-line" marker-end="url(#arrow)" />
+  <text x="245" y="78" class="math label">F</text>
+</svg>`,
     options: [
       "\\( mg\\sin\\theta + F \\)",
       "\\( F - mg\\cos\\theta \\)",
@@ -381,6 +638,7 @@ const examQuestions = [
     explanation: [
       "Along the plane: \\( F_{\\text{net}} = mg\\sin\\theta - F \\)",
     ],
+    topic: "Dynamics (Forces on Inclined Plane)",
   },
   {
     question:
@@ -397,6 +655,7 @@ const examQuestions = [
     explanation: [
       "\\( f \\) depends on length (\\( L \\)), tension (\\( T \\)), and linear mass density (\\( \\mu \\)).",
     ],
+    topic: "Sound (Vibrating Strings)",
   },
   {
     question:
@@ -413,6 +672,7 @@ const examQuestions = [
     explanation: [
       "\\( F = (1.6 \\times 10^{-8}) \\times (5 \\times 10^{5}) = 8.0 \\times 10^{-3}\\,\\text{N} \\)",
     ],
+    topic: "Electrostatics (Electric Field)",
   },
   {
     question:
@@ -430,6 +690,7 @@ const examQuestions = [
       "\\( v = 20\\,\\text{m/s} \\), \\( u = 0 \\), \\( t = 10\\,\\text{s} \\)",
       "\\( a = \\frac{20 - 0}{10} = 2\\,\\text{m/s}^2 \\)",
     ],
+    topic: "Motion (Kinematics)",
   },
   {
     question:
@@ -446,443 +707,10 @@ const examQuestions = [
     explanation: [
       "\\( \\Delta T \\) (in Kelvin) = \\( \\Delta T \\) (in Celsius) = \\( 120\\,\\text{K} \\)",
     ],
-  },
-  // ========== PAGE 1 (Questions 1–5) ==========
-  {
-    question:
-      "In collision between two objects, kinetic energy is conserved only if",
-    image: null,
-    options: [
-      "one of the objects was initially at rest",
-      "potential energy is converted to work",
-      "the collision is inelastic",
-      "the collision is elastic",
-    ],
-    correctIndex: null,
-    hint: "Kinetic energy is conserved only in perfectly elastic collisions.",
-    explanation: [
-      "In an elastic collision, both momentum and kinetic energy are conserved.",
-      "In inelastic collisions, some kinetic energy is converted to other forms.",
-    ],
-  },
-  {
-    question: "The quantity of motion of a body is its",
-    image: null,
-    options: ["acceleration", "displacement", "momentum", "velocity"],
-    correctIndex: null,
-    hint: "Momentum is defined as mass times velocity.",
-    explanation: [
-      "Momentum \\( = m \\times v \\) represents the 'quantity of motion'.",
-    ],
-  },
-  {
-    question:
-      "The volume of a fixed mass of a gas varies inversely as the pressure on it provided the temperature is constant. This statement is",
-    image: null,
-    options: ["Pressure law", "Charles law", "Boyle's law", "General gas law"],
-    correctIndex: null,
-    hint: "Boyle's law states \\( P \\propto 1/V \\) at constant temperature.",
-    explanation: [
-      "Boyle's law: \\( P V = \\text{constant} \\) for a fixed mass of gas at constant temperature.",
-    ],
-  },
-  {
-    question: "An image formed on a screen is always?",
-    image: null,
-    options: ["inverted", "magnified", "upright", "virtual"],
-    correctIndex: null,
-    hint: "Real images (formed on a screen) are always inverted.",
-    explanation: [
-      "Real images are formed when light rays actually converge, and they are inverted relative to the object.",
-    ],
-  },
-  {
-    question:
-      "How would the capacitance of a parallel plate capacitor be affected if the distance of separation of its plates is decreased? It will",
-    image: null,
-    options: [
-      "increase in value",
-      "decrease slightly",
-      "remain unchanged",
-      "drop to zero",
-    ],
-    correctIndex: null,
-    hint: "Capacitance \\( C = \\frac{\\varepsilon A}{d} \\), so decreasing \\( d \\) increases \\( C \\).",
-    explanation: [
-      "\\( C \\propto 1/d \\), thus smaller distance gives larger capacitance.",
-    ],
+    topic: "Heat (Temperature Scales)",
   },
 
-  // ========== PAGE 2 (Questions 6–10) ==========
-  {
-    question:
-      "Which of the following machines does not apply the lever principle?",
-    image: null,
-    options: ["Claw hammer", "Wheelbarrow", "Single pulley", "sugar tong"],
-    correctIndex: null,
-    hint: "A single fixed pulley changes direction but does not act as a lever.",
-    explanation: [
-      "Claw hammer, wheelbarrow, and sugar tongs are levers; a single pulley is based on the wheel and axle.",
-    ],
-  },
-  {
-    question:
-      "The average distance moved by a molecule between collisions is called",
-    image: null,
-    options: [
-      "molecular distance",
-      "intermolecular distance",
-      "mean distance",
-      "mean free path",
-    ],
-    correctIndex: null,
-    hint: "Mean free path is the average distance a molecule travels between collisions.",
-    explanation: [
-      "\\( \\lambda = \\frac{1}{\\sqrt{2} n \\pi d^2} \\) in kinetic theory.",
-    ],
-  },
-  {
-    question:
-      "Which of the following waves requires a material medium for its propagation?",
-    image: null,
-    options: ["Radio waves", "Light waves", "Sound waves", "X-rays"],
-    correctIndex: null,
-    hint: "Mechanical waves need a medium; electromagnetic waves do not.",
-    explanation: [
-      "Sound is a mechanical wave that requires a medium (solid, liquid, or gas).",
-    ],
-  },
-  {
-    question: "The depolarising agent in a Leclanche cell is?",
-    image: null,
-    options: [
-      "carbon rod",
-      "ammonium chloride",
-      "manganese (IV) oxide",
-      "zinc plate",
-    ],
-    correctIndex: null,
-    hint: "Manganese(IV) oxide (\\( \\text{MnO}_2 \)) acts as a depolarizer.",
-    explanation: [
-      "\\( \\text{MnO}_2 \\) removes hydrogen gas by oxidation, preventing polarization.",
-    ],
-  },
-  {
-    question:
-      "The material used to slow down the neutrons in a nuclear reactor is",
-    image: null,
-    options: ["boron", "copper", "graphite", "uranium"],
-    correctIndex: null,
-    hint: "Graphite is a common moderator that slows neutrons via elastic collisions.",
-    explanation: [
-      "Moderators like graphite, heavy water, or beryllium reduce neutron speed to thermal energies.",
-    ],
-  },
-
-  // ========== PAGE 3 (Questions 11–15) ==========
-  {
-    question:
-      "Which of the following statements explain why hot soapy water is more effective in cleaning oil-stained dishes?",
-    image: null,
-    options: [
-      "The oil on the dishes repels the soap",
-      "soap and heat decrease the surface tension of oil",
-      "soap increases the surface tension of oil and water",
-      "Hot water increases the surface tension of oil",
-    ],
-    correctIndex: null,
-    hint: "Soap is a surfactant, and heat reduces viscosity and surface tension.",
-    explanation: [
-      "Both soap and heat reduce the surface tension of oil, allowing emulsification and easier washing.",
-    ],
-  },
-  {
-    question:
-      "The diagram above illustrates a beam of parallel rays from a distant object O, incident on one side of the total reflecting prism. Which diagram does not represent the correct path of the beam when it emerges from the prism?",
-    image: "MZ5SwnRA1P0BESJWEEIWkROp7k2zoRW6ng2W9yjq.png",
-    options: ["W", "X", "Y", "Z"],
-    correctIndex: null,
-    hint: "Check each diagram for correct total internal reflection at the prism faces.",
-    explanation: [],
-  },
-  {
-    question:
-      "An electrical device has \\( 50 \\) turns in its primary coil and \\( 20 \\) turns in the secondary coil. The device can be a/an?",
-    image: null,
-    options: [
-      "step-up transformer",
-      "step-down transformer",
-      "d.c generator",
-      "a.c generator",
-    ],
-    correctIndex: null,
-    hint: "\\( N_p > N_s \\) indicates a step-down transformer.",
-    explanation: [
-      "\\( \\frac{V_s}{V_p} = \\frac{N_s}{N_p} = \\frac{20}{50} = 0.4 \\), so voltage is stepped down.",
-    ],
-  },
-  {
-    question: "The earpiece of a telephone handset converts energy from",
-    image: null,
-    options: [
-      "electrical to sound",
-      "sound to electrical",
-      "sound to electrical",
-      "sound to radio wave",
-    ],
-    correctIndex: null,
-    hint: "The earpiece (speaker) converts electrical signals to sound waves.",
-    explanation: [
-      "The earpiece contains a loudspeaker that transforms electrical energy into acoustic energy.",
-    ],
-  },
-  {
-    question:
-      "Two identical cups containing the same volume of water at \\( 45^{\\circ} \\text{C} \\) and \\( 5^{\\circ} \\text{C} \\), are left in a room at \\( 25^{\\circ} \\text{C} \\). Which of the following graphs correctly illustrates the variation of temperature with time?",
-    image: "data:image/jpeg;base64,...", // truncated as in original
-    options: ["A", "B", "C", "D"],
-    correctIndex: null,
-    hint: "Both approach room temperature exponentially; the hotter one cools, the cooler one warms.",
-    explanation: [],
-  },
-
-  // ========== PAGE 4 (Questions 16–20) ==========
-  {
-    question:
-      "A ray of light traveling from glass into ethyl alcohol is incident at the boundary at an angle of incidence \\( 30^{\\circ} \\). Calculate the angle of refraction.\n[Refractive index of glass = \\( 1.5 \\); refractive index of ethyl alcohol = \\( 1.36 \\)]",
-    image: null,
-    options: [
-      "\\( 27^{\\circ} \\)",
-      "\\( 33.5^{\\circ} \\)",
-      "\\( 51.7^{\\circ} \\)",
-      "\\( 72.8^{\\circ} \\)",
-    ],
-    correctIndex: null,
-    hint: "Use Snell's law: \\( n_1 \\sin\\theta_1 = n_2 \\sin\\theta_2 \\).",
-    explanation: [
-      "\\( 1.5 \\times \\sin 30^{\\circ} = 1.36 \\times \\sin\\theta_2 \\)",
-      "\\( 0.75 = 1.36 \\sin\\theta_2 \\)",
-      "\\( \\sin\\theta_2 = 0.75/1.36 \\approx 0.55147 \\)",
-      "\\( \\theta_2 \\approx 33.5^{\\circ} \\)",
-    ],
-  },
-  {
-    question:
-      "A \\( 60\\,\\text{kg} \\) man stands on a weighing balance in an elevator. If the elevator accelerates upwards at \\( 5\\,\\text{ms}^{-2} \\), determine the reading of the scale. \\([g = 10\\,\\text{ms}^{-2}]\\)",
-    image: null,
-    options: [
-      "\\( 300\\,\\text{N} \\)",
-      "\\( 600\\,\\text{N} \\)",
-      "\\( 800\\,\\text{N} \\)",
-      "\\( 900\\,\\text{N} \\)",
-    ],
-    correctIndex: null,
-    hint: "Apparent weight = \\( m(g + a) \\).",
-    explanation: ["\\( R = 60 \\times (10 + 5) = 900\\,\\text{N} \\)"],
-  },
-  {
-    question:
-      "The length of an iron bar is \\( 100\\,\\text{cm} \\) at \\( 20^{\\circ}\\text{C} \\). At what temperature will its length increase by \\( 0.01\\% \\)? [Linear expansivity of iron = \\( 1.2 \\times 10^{-5}\\,\\text{°C}^{-1} \\)]",
-    image: null,
-    options: [
-      "\\( 48.0^{\\circ}\\text{C} \\)",
-      "\\( 38.0^{\\circ}\\text{C} \\)",
-      "\\( 28.3^{\\circ}\\text{C} \\)",
-      "\\( 23.0^{\\circ}\\text{C} \\)",
-    ],
-    correctIndex: null,
-    hint: "\\( \\frac{\\Delta L}{L} = \\alpha \\Delta T \\). \\( 0.01\\% = 0.0001 \\).",
-    explanation: [
-      "\\( \\Delta T = \\frac{0.0001}{1.2\\times10^{-5}} = 8.333\\,\\text{°C} \\)",
-      "\\( T_2 = 20 + 8.333 = 28.3^{\\circ}\\text{C} \\)",
-    ],
-  },
-  {
-    question:
-      "A moving-coil galvanometer which gives a full-scale deflection with \\( 0.005\\,\\text{A} \\) is converted to a voltmeter reading up to \\( 5\\,\\text{V} \\) using an external resistance of \\( 975\\,\\Omega \\). What is the resistance of the meter?",
-    image: null,
-    options: [
-      "\\( 0.25\\,\\Omega \\)",
-      "\\( 2.50\\,\\Omega \\)",
-      "\\( 25.00\\,\\Omega \\)",
-      "\\( 250.00\\,\\Omega \\)",
-    ],
-    correctIndex: null,
-    hint: "Total resistance = \\( V/I = 5/0.005 = 1000\\,\\Omega \\). Subtract external resistance.",
-    explanation: ["\\( R_g = 1000 - 975 = 25\\,\\Omega \\)"],
-  },
-  {
-    question:
-      "A beam consisting of \\( \\alpha \\)-particles, \\( \\beta \\)-particles and \\( \\gamma \\)-rays pass through a magnetic field at right angles to the direction of the field. Which of the following observations would be made about the \\( \\alpha \\)-particles, \\( \\beta \\)-particles, and \\( \\gamma \\)-rays respectively?",
-    image: null,
-    options: [
-      "Deflected, deflected, deflected",
-      "Deflected, deflected, not deflected",
-      "Deflected, not deflected, deflected",
-      "Not deflected, deflected, deflected",
-    ],
-    correctIndex: null,
-    hint: "\\( \\alpha \\) and \\( \\beta \\) are charged; \\( \\gamma \\) is neutral.",
-    explanation: [
-      "\\( \\alpha \\) (positive) and \\( \\beta \\) (negative) are deflected; \\( \\gamma \\) (neutral) is not deflected.",
-    ],
-  },
-
-  // ========== PAGE 5 (Questions 21–25) ==========
-  {
-    question:
-      "A parallel plate capacitor is charged and the charging battery is subsequently disconnected. If the plates of the capacitor are moved farther apart by means of insulating handles, the",
-    image: null,
-    options: [
-      "capacitance would increase",
-      "capacitance would decrease",
-      "charge on the capacitor would increase",
-      "charge on the capacitor would decrease",
-    ],
-    correctIndex: null,
-    hint: "\\( C = \\varepsilon A/d \\). With battery disconnected, charge \\( Q \\) is constant.",
-    explanation: [
-      "Increasing \\( d \\) decreases \\( C \\), and \\( Q \\) remains constant because the circuit is open.",
-    ],
-  },
-  {
-    question:
-      "The velocity of sound in air at \\( 15^{\\circ}\\text{C} \\) is \\( 340\\,\\text{ms}^{-1} \\). Calculate the velocity at \\( 47^{\\circ}\\text{C} \\)",
-    image: null,
-    options: [
-      "\\( 790\\,\\text{ms}^{-1} \\)",
-      "\\( 602\\,\\text{ms}^{-1} \\)",
-      "\\( 358\\,\\text{ms}^{-1} \\)",
-      "\\( 322\\,\\text{ms}^{-1} \\)",
-    ],
-    correctIndex: null,
-    hint: "\\( v \\propto \\sqrt{T} \\) (absolute temperature).",
-    explanation: [
-      "\\( T_1 = 288\\,\\text{K}, T_2 = 320\\,\\text{K} \\)",
-      "\\( v_2 = 340 \\times \\sqrt{320/288} \\approx 358\\,\\text{ms}^{-1} \\)",
-    ],
-  },
-  {
-    question:
-      "Which of the current-voltage characteristics shown above is that exhibited by an ohmic conductor?",
-    image: "HdEF4oiLCMQA9ZlSlNOBmCvzbXljyZvfmEvl4x4t.jpeg",
-    options: ["A", "B", "C", "D"],
-    correctIndex: null,
-    hint: "Ohmic conductor has a linear \\( I-V \\) graph through the origin.",
-    explanation: [],
-  },
-  {
-    question:
-      "A \\( 500\\,\\text{N} \\) box rests on a horizontal floor. A constant horizontal force is exerted on the box so that it moves through \\( 8\\,\\text{m} \\). If the coefficient of kinetic friction between the floor and the box is \\( 0.22 \\), calculate the work done on the box",
-    image: null,
-    options: [
-      "\\( 880\\,\\text{J} \\)",
-      "\\( 440\\,\\text{J} \\)",
-      "\\( 400\\,\\text{J} \\)",
-      "\\( 110\\,\\text{J} \\)",
-    ],
-    correctIndex: null,
-    hint: "Work = friction force × distance. Friction = \\( \\mu N \\).",
-    explanation: [
-      "\\( F_f = 0.22 \\times 500 = 110\\,\\text{N} \\), \\( W = 110 \\times 8 = 880\\,\\text{J} \\)",
-    ],
-  },
-  {
-    question:
-      "The diagram illustrates a ball of mass \\( m \\) sliding down a plank inclined at an angle of \\( \\theta \\) to the horizontal. The kinetic friction between the ball and the plank is \\( F \\), and the acceleration of free fall is \\( g \\). The normal force on the ball is?",
-    image: "V2TK1qMNwfrvdZQGySvR9rhtNmTr1NU848XQ2B5Z.png",
-    options: [
-      "\\( mg\\sin\\theta \\)",
-      "\\( mg\\tan\\theta \\)",
-      "\\( mg\\cos\\theta \\)",
-      "\\( mg\\cot\\theta \\)",
-    ],
-    correctIndex: null,
-    hint: "Normal force on an inclined plane is \\( mg\\cos\\theta \\).",
-    explanation: [
-      "Resolving weight perpendicular to the plane gives \\( N = mg\\cos\\theta \\).",
-    ],
-  },
-
-  // ========== PAGE 6 (Questions 26–30) ==========
-  {
-    question:
-      "The diagram above illustrates a ball of mass \\( m \\) sliding down a plank inclined at an angle of \\( \\theta \\) to the horizontal. The kinetic friction between the ball and the plank is \\( F \\) and the acceleration of free fall is \\( g \\). The net force on the ball along the plank is?",
-    image: "CxuF07TpO7bjc3rkXnYetjrZmgdihjKeXJdyhsqR.jpeg",
-    options: [
-      "\\( mg\\sin\\theta + F \\)",
-      "\\( F - mg\\cos\\theta \\)",
-      "\\( mg\\sin\\theta - F \\)",
-      "\\( F + mg\\cos\\theta \\)",
-    ],
-    correctIndex: null,
-    hint: "Component of weight down the plane is \\( mg\\sin\\theta \\); friction opposes motion.",
-    explanation: ["Net force = \\( mg\\sin\\theta - F \\)"],
-  },
-  {
-    question:
-      "What factors determine the frequency of a note emitted by a vibrating string?",
-    image: null,
-    options: [
-      "Amplitude of vibration, force constant of string and length of string",
-      "Amplitude of vibration, force constant of string, and tension in string",
-      "Mass per unit length of string, tension in string and length of string",
-      "Force constant of string, tension in string, and length of string.",
-    ],
-    correctIndex: null,
-    hint: "Frequency of a stretched string: \\( f = \\frac{1}{2L} \\sqrt{\\frac{T}{\\mu}} \\).",
-    explanation: [
-      "\\( f \\) depends on length \\( L \\), tension \\( T \\), and linear mass density \\( \\mu \\).",
-    ],
-  },
-  {
-    question:
-      "The magnitude of the force experienced by a charge of \\( 1.6 \\times 10^{-8}\\,\\text{C} \\) in a uniform electric field of intensity \\( 5 \\times 10^{5}\\,\\text{NC}^{-1} \\) is",
-    image: null,
-    options: [
-      "\\( 3.2 \\times 10^{-14}\\,\\text{N} \\)",
-      "\\( 8.0 \\times 10^{-13}\\,\\text{N} \\)",
-      "\\( 8.0 \\times 10^{-3}\\,\\text{N} \\)",
-      "\\( 3.1 \\times 10^{13}\\,\\text{N} \\)",
-    ],
-    correctIndex: null,
-    hint: "\\( F = qE \\).",
-    explanation: [
-      "\\( F = (1.6\\times10^{-8}) \\times (5\\times10^{5}) = 8.0\\times10^{-3}\\,\\text{N} \\)",
-    ],
-  },
-  {
-    question:
-      "A motorcycle starting from rest is uniformly accelerated such that its velocity in \\( 10\\,\\text{s} \\) is \\( 72\\,\\text{kmh}^{-1} \\). What is its acceleration?",
-    image: null,
-    options: [
-      "\\( 108\\,\\text{ms}^{-2} \\)",
-      "\\( 86\\,\\text{ms}^{-2} \\)",
-      "\\( 4\\,\\text{ms}^{-2} \\)",
-      "\\( 2\\,\\text{ms}^{-2} \\)",
-    ],
-    correctIndex: null,
-    hint: "Convert \\( 72\\,\\text{km/h} \\) to \\( 20\\,\\text{m/s} \\). Then \\( a = (v-u)/t \\).",
-    explanation: ["\\( a = (20 - 0)/10 = 2\\,\\text{ms}^{-2} \\)"],
-  },
-  {
-    question:
-      "The temperature of an object is raised by \\( 120^{\\circ}\\text{C} \\). The resulting increase in its absolute temperature is",
-    image: null,
-    options: [
-      "\\( 50\\,\\text{K} \\)",
-      "\\( 120\\,\\text{K} \\)",
-      "\\( 200\\,\\text{K} \\)",
-      "\\( 393\\,\\text{K} \\)",
-    ],
-    correctIndex: null,
-    hint: "A change of \\( 1^{\\circ}\\text{C} \\) equals a change of \\( 1\\,\\text{K} \\).",
-    explanation: [
-      "\\( \\Delta T (\\text{K}) = \\Delta T (^{\\circ}\\text{C}) = 120\\,\\text{K} \\)",
-    ],
-  },
-
-  // ========== PAGE 7 (Questions 31–35) ==========
+  // Page 7 (Questions 31–35)
   {
     question:
       "Which of the following statements about the motion of a simple pendulum is true?",
@@ -893,11 +721,12 @@ const examQuestions = [
       "It possesses maximum kinetic energy at the extreme positions",
       "lt swings faster at the poles than at the equator",
     ],
-    correctIndex: null,
+    correctIndex: 3,
     hint: "The period of a simple pendulum depends on \\( g \\), which is slightly greater at the poles.",
     explanation: [
       "\\( T = 2\\pi\\sqrt{L/g} \\), so larger \\( g \\) gives shorter period (faster swing).",
     ],
+    topic: "Simple Harmonic Motion",
   },
   {
     question:
@@ -909,9 +738,10 @@ const examQuestions = [
       "\\( \\frac{2\\pi m}{Be} \\)",
       "\\( \\frac{Be}{2\\pi m} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Magnetic force provides centripetal force: \\( Bev = \\frac{mv^2}{r} \\). Period \\( T = \\frac{2\\pi r}{v} \\).",
     explanation: ["\\( T = \\frac{2\\pi m}{Be} \\)"],
+    topic: "Magnetic Fields (Motion of Charged Particles)",
   },
   {
     question:
@@ -923,27 +753,52 @@ const examQuestions = [
       "A faint green light produces photoelectrons with greater kinetic energy than a bright red light",
       "A red light produces more photoelectrons than a green light",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Photoelectric effect: kinetic energy depends on frequency, not intensity.",
     explanation: [
       "Green light has higher frequency than red light, so photoelectrons have greater kinetic energy regardless of intensity.",
     ],
+    topic: "Modern Physics (Photoelectric Effect)",
   },
   {
     question:
       "The sketched graph above illustrates the heating curve of a 0.02kg of water. Determine the approximate value of the specific latent heat of vaporization of water",
-    image: "1wOTol8NT1MhDdtJdaUbRTvD806jOQ5BUfcc6bSe.png",
+    image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350" width="100%" height="100%">
+  <style>
+    .axis { stroke: #000; stroke-width: 1.5; fill: none; }
+    .curve { stroke: #111; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .grid-line { stroke: #888; stroke-width: 1; stroke-dasharray: 4,4; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; fill: #000; }
+  </style>
+  <line x1="150" y1="210" x2="150" y2="280" class="grid-line" />
+  <line x1="280" y1="210" x2="280" y2="280" class="grid-line" />
+  <line x1="390" y1="120" x2="390" y2="280" class="grid-line" />
+  <line x1="70" y1="210" x2="280" y2="210" class="grid-line" />
+  <line x1="70" y1="120" x2="390" y2="120" class="grid-line" />
+  <line x1="70" y1="30" x2="70" y2="280" class="axis" />
+  <line x1="70" y1="280" x2="440" y2="280" class="axis" />
+  <path d="M 70,260 L 150,210 L 280,210 L 390,120" class="curve" />
+  <text x="60" y="264" class="label" text-anchor="end">4</text>
+  <text x="60" y="214" class="label" text-anchor="end">10</text>
+  <text x="60" y="124" class="label" text-anchor="end">20</text>
+  <text x="65" y="25" class="label" text-anchor="middle">Temp/°C</text>
+  <text x="150" y="302" class="label" text-anchor="middle">8 × 10<tspan baseline-shift="super" font-size="10">2</tspan></text>
+  <text x="280" y="302" class="label" text-anchor="middle">33 × 10<tspan baseline-shift="super" font-size="10">2</tspan></text>
+  <text x="390" y="302" class="label" text-anchor="middle">53 × 10<tspan baseline-shift="super" font-size="10">2</tspan></text>
+  <text x="450" y="302" class="label" text-anchor="end">Heat/J</text>
+</svg>`,
     options: [
       "\\( 2.25 \\times 10^{6}\\,\\text{J kg}^{-1} \\)",
       "\\( 4.17 \\times 10^{3}\\,\\text{J kg}^{-1} \\)",
       "\\( 2.00 \\times 10^{3}\\,\\text{J kg}^{-1} \\)",
       "\\( 1.00 \\times 10^{3}\\,\\text{J kg}^{-1} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "From the graph, read the heat energy added during the plateau (vaporization) and divide by mass.",
     explanation: [
       "Without numerical values from the graph, a typical value for water is \\( 2.26 \\times 10^{6}\\,\\text{J kg}^{-1} \\).",
     ],
+    topic: "Heat (Latent Heat)",
   },
   {
     question:
@@ -955,12 +810,13 @@ const examQuestions = [
       "\\( F \\propto d^{-1} \\)",
       "\\( F \\propto d^{-2} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "Pressure = force/area, and pressure is transmitted equally. Area \\( \\propto d^2 \\).",
     explanation: ["\\( F = P \\times A \\propto d^2 \\)."],
+    topic: "Pressure (Pascal's Principle)",
   },
 
-  // ========== PAGE 8 (Questions 36–40) ==========
+  // Page 8 (Questions 36–40)
   {
     question:
       "In an electric circuit, an inductor of inductance 0.5 H and resistance \\( 50\\,\\Omega \\) is connected to an alternating current source of frequency 60 Hz. Calculate the impedance of the circuit.",
@@ -971,11 +827,12 @@ const examQuestions = [
       "\\( 195.0\\,\\Omega \\)",
       "\\( 1950.1\\,\\Omega \\)",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Impedance \\( Z = \\sqrt{R^2 + (\\omega L)^2} \\), with \\( \\omega = 2\\pi f \\).",
     explanation: [
       "\\( \\omega = 2\\pi \\times 60 \\approx 377\\,\\text{rad/s} \\), \\( \\omega L \\approx 188.5\\,\\Omega \\), \\( Z = \\sqrt{50^2 + 188.5^2} \\approx 195\\,\\Omega \\).",
     ],
+    topic: "Alternating Current (Impedance)",
   },
   {
     question:
@@ -987,11 +844,12 @@ const examQuestions = [
       "earth revolves around the sun",
       "earth is larger in diameter than the moon.",
     ],
-    correctIndex: null,
+    correctIndex: 3,
     hint: "The moon's umbra is very small where it hits the Earth.",
     explanation: [
       "Because the Earth is larger than the Moon, the Moon's shadow covers only a small area.",
     ],
+    topic: "Optics (Shadows and Eclipses)",
   },
   {
     question:
@@ -1003,11 +861,12 @@ const examQuestions = [
       "\\( 10.0\\,\\text{cm/s} \\)",
       "\\( 10.8\\,\\text{cm/s} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Frequency remains constant: \\( f = v_1/\\lambda_1 \\), then \\( v_2 = f \\lambda_2 \\).",
     explanation: [
       "\\( f = 18/3.6 = 5\\,\\text{Hz} \\), \\( v_2 = 5 \\times 2.0 = 10\\,\\text{cm/s} \\)",
     ],
+    topic: "Waves (Wave Motion)",
   },
   {
     question:
@@ -1019,11 +878,12 @@ const examQuestions = [
       "a.c. with d.c. source and connecting slip rings",
       "a.c. with d.c. source and connecting split rings",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "A d.c. motor uses a split-ring commutator and a d.c. supply.",
     explanation: [
       "An a.c. generator has slip rings; replacing them with split rings and using a battery makes it a d.c. motor.",
     ],
+    topic: "Electromagnetic Induction (Generators and Motors)",
   },
   {
     question:
@@ -1035,14 +895,15 @@ const examQuestions = [
       "The light refracts towards the normal",
       "There Is a change in the frequency of the light",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "When light enters a denser medium, it bends toward the normal.",
     explanation: [
       "\\( n = c/v \\), so speed decreases, wavelength decreases, frequency remains constant, and the ray bends toward the normal.",
     ],
+    topic: "Geometrical Optics (Refraction)",
   },
 
-  // ========== PAGE 9 (Questions 41–45) ==========
+  // Page 9 (Questions 41–45)
   {
     question:
       "An electron of mass \\( 9.1 \\times 10^{-31}\\,\\text{kg} \\) is travelling at a speed of \\( 2.0 \\times 10^{6}\\,\\text{ms}^{-1} \\). Calculate the associated wavelength of the electron. \\([h = 6.6 \\times 10^{-34}\\,\\text{Js}]\\)",
@@ -1053,11 +914,12 @@ const examQuestions = [
       "\\( 3.63 \\times 10^{-7}\\,\\text{m} \\)",
       "\\( 6.89 \\times 10^{-4}\\,\\text{m} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "De Broglie wavelength: \\( \\lambda = h/(mv) \\).",
     explanation: [
       "\\( \\lambda = \\frac{6.6 \\times 10^{-34}}{(9.1 \\times 10^{-31}) \\times (2.0 \\times 10^{6})} \\approx 3.63 \\times 10^{-10}\\,\\text{m} \\)",
     ],
+    topic: "Modern Physics (Wave-Particle Duality)",
   },
   {
     question:
@@ -1069,11 +931,12 @@ const examQuestions = [
       "I, II and III only",
       "II and IV only",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "During melting, temperature remains constant until all solid has melted.",
     explanation: [
       "Temperature rises until melting point, then remains constant during phase change, then rises again.",
     ],
+    topic: "Heat (Phase Changes)",
   },
   {
     question:
@@ -1085,11 +948,12 @@ const examQuestions = [
       "kinetic energy",
       "momentum",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "Gravitational potential energy decreases as height decreases.",
     explanation: [
       "Total mechanical energy is conserved (no air resistance), so PE decreases while KE increases.",
     ],
+    topic: "Work, Energy, Power",
   },
   {
     question:
@@ -1101,9 +965,10 @@ const examQuestions = [
       "Increasing the assistance between the particles",
       "Increasing the mass of the particles",
     ],
-    correctIndex: null,
+    correctIndex: 1,
     hint: "Coulomb's law: \\( F = k q_1 q_2 / r^2 \\).",
     explanation: ["Decreasing the distance \\( r \\) increases the force."],
+    topic: "Electrostatics (Coulomb's Law)",
   },
   {
     question: "A luminous object is one that",
@@ -1114,21 +979,23 @@ const examQuestions = [
       "shines by reflected light only",
       "glows only in the presence of light",
     ],
-    correctIndex: null,
+    correctIndex: 1,
     hint: "Luminous objects produce their own light.",
     explanation: [
       "The Sun, a light bulb, and a flame are luminous; the Moon is non-luminous (reflects light).",
     ],
+    topic: "Optics (Sources of Light)",
   },
 
-  // ========== PAGE 10 (Questions 46–50) ==========
+  // Page 10 (Questions 46–50)
   {
     question: "Which of the following units is not fundamental?",
     image: null,
     options: ["Metre", "Kilogram", "Joule", "Candela"],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Fundamental (base) units in SI: metre, kilogram, second, ampere, kelvin, mole, candela.",
     explanation: ["Joule is a derived unit (kg·m²/s²)."],
+    topic: "Measurement and Units",
   },
   {
     question:
@@ -1140,11 +1007,12 @@ const examQuestions = [
       "radiation only",
       "conduction only",
     ],
-    correctIndex: null,
+    correctIndex: 1,
     hint: "Vacuum eliminates conduction and convection, but not radiation.",
     explanation: [
       "Heat transfer by conduction and convection requires a medium; vacuum prevents both, but radiation still occurs (silvered surfaces reduce it).",
     ],
+    topic: "Heat (Heat Transfer)",
   },
   {
     question:
@@ -1156,11 +1024,12 @@ const examQuestions = [
       "energy of the incident radiation",
       "work function of the metal.",
     ],
-    correctIndex: null,
+    correctIndex: 0,
     hint: "Number of photoelectrons depends on intensity (number of photons), not frequency.",
     explanation: [
       "Increasing intensity increases the rate of photon arrival, hence more electrons emitted, provided frequency is above threshold.",
     ],
+    topic: "Modern Physics (Photoelectric Effect)",
   },
   {
     question:
@@ -1172,11 +1041,12 @@ const examQuestions = [
       "\\( E = E_1 = E_2 \\)",
       "\\( E = \\frac{E_1}{E_2} \\)",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "For cells in parallel with equal internal resistance (negligible), the effective e.m.f. is the same as each cell's e.m.f.",
     explanation: [
       "If \\( E_1 = E_2 \\), the parallel combination gives \\( E = E_1 = E_2 \\).",
     ],
+    topic: "Current Electricity (Cells and Circuits)",
   },
   {
     question:
@@ -1188,22 +1058,24 @@ const examQuestions = [
       "is independent of the relative velocity of the layers",
       "depends on the tangential force between the layers",
     ],
-    correctIndex: null,
+    correctIndex: 2,
     hint: "Viscosity is the resistance to flow; it depends on velocity gradient (relative velocity).",
     explanation: [
       "Viscosity is not independent of relative velocity; the viscous force is proportional to velocity gradient.",
     ],
+    topic: "Properties of Matter (Viscosity)",
   },
 
-  // ========== PAGE 11 (Questions 51–55) ==========
+  // Page 11 (Questions 51–55) – mostly theory
   {
     question:
       "An elastic material of length 3m is to be stretched to reduce an extension three times its original length. Calculate the force required to produce the extension",
     image: null,
-    options: [], // No options provided in the HTML – likely a theory question; leaving empty.
+    options: [],
     correctIndex: null,
     hint: "Incomplete data; need spring constant or Young's modulus.",
     explanation: [],
+    topic: "Elasticity (Hooke's Law)",
   },
   {
     question:
@@ -1213,6 +1085,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Metal plate absorbs radiation; insulator reduces heat loss; tubes carry fluid.",
     explanation: [],
+    topic: "Heat (Solar Energy)",
   },
   {
     question:
@@ -1222,6 +1095,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Core must have higher refractive index than cladding.",
     explanation: [],
+    topic: "Geometrical Optics (Total Internal Reflection)",
   },
   {
     question:
@@ -1231,6 +1105,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Use dimensional analysis: \\( v \\propto T^{a} \\mu^{b} \\).",
     explanation: ["\\( v = k \\sqrt{\\frac{T}{\\mu}} \\)"],
+    topic: "Waves (String Waves) & Dimensional Analysis",
   },
   {
     question:
@@ -1240,9 +1115,10 @@ const examQuestions = [
     correctIndex: null,
     hint: "Escape velocity \\( v_e = \\sqrt{2gR} \\). With \\( g = 10 \\), \\( v_e = \\sqrt{20R} \\).",
     explanation: [],
+    topic: "Gravitation (Escape Velocity)",
   },
 
-  // ========== PAGE 12 (Questions 56–60) ==========
+  // Page 12 (Questions 56–60)
   {
     question:
       "A bullet is fired from a gun at \\( 30^{\\circ} \\) to the horizontal. The bullet remains in flight for 25 s before touching the ground. Calculate the velocity of projection. \\([g = 10\\,\\text{ms}^{-2}]\\)",
@@ -1253,6 +1129,7 @@ const examQuestions = [
     explanation: [
       "\\( 25 = \\frac{2u \\sin 30^{\\circ}}{10} = \\frac{u}{10} \\) → \\( u = 250\\,\\text{ms}^{-1} \\)",
     ],
+    topic: "Motion (Projectile Motion)",
   },
   {
     question:
@@ -1262,6 +1139,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Coherence, monochromaticity, directionality.",
     explanation: [],
+    topic: "Optics (Lasers)",
   },
   {
     question:
@@ -1271,6 +1149,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Multiple parts: use equations of motion and Archimedes' principle.",
     explanation: [],
+    topic: "Dynamics (Torque) and Fluids (Buoyancy)",
   },
   {
     question:
@@ -1280,6 +1159,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Peak voltage = NBAω.",
     explanation: [],
+    topic: "Alternating Current (Resonance) and Electromagnetic Induction",
   },
   {
     question:
@@ -1289,10 +1169,10 @@ const examQuestions = [
     correctIndex: null,
     hint: "Compare with standard wave equation y = A sin(ωt - kx).",
     explanation: [],
+    topic: "Geometrical Optics and Waves",
   },
 
-  // ========== PAGE 13 (Questions 61–65) – Theory/Practical ==========
-  // These are not multiple-choice; we include them with empty options but keep them for completeness.
+  // Page 13 (Questions 61–65) – Practical/Theory
   {
     question:
       "(a) In an experiment to measure the specific latent heat of vaporisation of water, a student places a heater in a beaker containing water. The beaker stands on an electronic balance so that the mass of the beaker and water could be measured. The heater is switched on and readings were taken every 100s when the water starts boiling. The table below shows the readings.\n\n(i) Fill in the mass of water evaporated.\n(ii) Given that the heater supplies energy at the rate of 38 J/s, fill in the values of the energy supplied by the heater in 100s, 200s, 300s, and 400s.\n(iii) Plot a graph of energy supplied on the vertical axis and mass of water evaporated on the horizontal axis, starting both axes from the origin (0,0).\n(iv) Determine the slope of the graph.\n(v) what does the value of the slope mean?",
@@ -1301,6 +1181,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Slope gives specific latent heat.",
     explanation: [],
+    topic: "Heat (Latent Heat) – Practical",
   },
   {
     question:
@@ -1310,6 +1191,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Isotopes: same atomic number, different mass number.",
     explanation: [],
+    topic: "Nuclear Physics",
   },
   {
     question:
@@ -1319,6 +1201,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Experiment to verify principle of moments.",
     explanation: [],
+    topic: "Equilibrium of Forces (Moments) – Practical",
   },
   {
     question:
@@ -1328,6 +1211,7 @@ const examQuestions = [
     correctIndex: null,
     hint: "Use Snell's law and geometry to find refractive index.",
     explanation: [],
+    topic: "Geometrical Optics (Refraction) – Practical",
   },
   {
     question:
@@ -1337,5 +1221,6 @@ const examQuestions = [
     correctIndex: null,
     hint: "Plot V vs I; slope gives internal resistance.",
     explanation: [],
+    topic: "Current Electricity – Practical",
   },
 ];

@@ -23,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const BANK = path.join(ROOT, 'exam-archive', 'international', 'sat', 'opensat-bank.json');
+const MATH_DIR = path.join(ROOT, 'exam-archive', 'international', 'sat', 'math');
 const CHECK_ONLY = process.argv.includes('--check');
 
 // ── Authored data, keyed by index into bank.math (ids are NOT unique) ──────
@@ -176,15 +176,22 @@ function validState(s) {
 }
 
 (function main() {
-  const bank = JSON.parse(fs.readFileSync(BANK, 'utf8'));
-  const items = bank.math || [];
+  // Load all domain files and build a lookup keyed by original flat index (_idx).
+  const domainFiles = fs.readdirSync(MATH_DIR).filter(f => f.endsWith('.json')).sort();
+  const fileArrays = {};
+  domainFiles.forEach(f => {
+    fileArrays[f] = JSON.parse(fs.readFileSync(path.join(MATH_DIR, f), 'utf8'));
+  });
+  const byIdx = {};
+  Object.values(fileArrays).forEach(arr => arr.forEach(it => { byIdx[it._idx] = it; }));
+
   const log = [];
   let problems = 0;
 
   Object.keys(DATA).forEach((k) => {
     const i = parseInt(k, 10);
     const rec = DATA[k];
-    const it = items[i];
+    const it = byIdx[i];
     if (!it) { console.error(`! no math item at index ${i}`); problems++; return; }
     const q = it.question || (it.question = {});
 
@@ -220,6 +227,8 @@ function validState(s) {
 
   if (problems) { console.error('\nABORT: fix problems above before writing.'); process.exit(1); }
   if (CHECK_ONLY) { console.log('\n--check: no file written.'); return; }
-  fs.writeFileSync(BANK, JSON.stringify(bank));
-  console.log('\nBank written:', path.relative(ROOT, BANK));
+  domainFiles.forEach(f => {
+    fs.writeFileSync(path.join(MATH_DIR, f), JSON.stringify(fileArrays[f]));
+  });
+  console.log('\nMath domain files written to', path.relative(ROOT, MATH_DIR));
 })();
