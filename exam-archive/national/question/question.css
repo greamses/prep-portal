@@ -1220,6 +1220,10 @@ body {
   height: 100%;
   display: block;
 }
+/* Bright accent blobs wash out the dark background — keep them subtle. */
+[data-theme="dark"] .page-paint {
+  opacity: 0.14;
+}
 .quiz-shell {
   position: relative;
   z-index: 1;

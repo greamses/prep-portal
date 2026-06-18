@@ -258,7 +258,7 @@
   display: block;
 }
 [data-theme="dark"] .hero-paint {
-  opacity: 0.5;
+  opacity: 0.2;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1114,7 +1114,7 @@
   display: block;
 }
 [data-theme="dark"] .paths-paint {
-  opacity: 0.38;
+  opacity: 0.16;
 }
 
 .paths-wrap {
@@ -1766,7 +1766,7 @@
   display: block;
 }
 [data-theme="dark"] .books-paint {
-  opacity: 0.4;
+  opacity: 0.16;
 }
 
 .books-header {
@@ -2253,7 +2253,7 @@
   display: block;
 }
 [data-theme="dark"] .faq-paint {
-  opacity: 0.32;
+  opacity: 0.15;
 }
 
 .faq-inner {

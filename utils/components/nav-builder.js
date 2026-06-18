@@ -7,6 +7,8 @@ import {
   SVG_ROSE,
   SVG_PERSON,
   SVG_CAMERA,
+  SVG_SUN,
+  SVG_MOON,
 } from "/utils/components/nav-icons.js";
 import "/home/js/auth-modal.js";
 import { auth, db } from "/firebase-init.js";
@@ -24,6 +26,58 @@ import {
 } from "firebase/storage";
 
 const LOGO_PATH = "/logo/logo-light.svg";
+
+/* =============================================
+   THEME TOGGLE
+   ---------------------------------------------
+   A single global light/dark switch. The chosen theme is stored in
+   localStorage (`pp-theme`) and applied to <html data-theme>. loader.js
+   restores it before first paint; this keeps every mounted nav's button
+   icon in sync. The button shows the *target* state (moon → go dark,
+   sun → go light).
+============================================= */
+const THEME_KEY = "pp-theme";
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+}
+
+function themeToggleIcon(theme) {
+  return theme === "dark" ? SVG_SUN : SVG_MOON;
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (e) {}
+  document.querySelectorAll(".nav-theme-toggle").forEach((btn) => {
+    btn.innerHTML = themeToggleIcon(theme);
+    btn.setAttribute(
+      "aria-label",
+      theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+    );
+    btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+  });
+}
+
+function buildThemeToggle() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "nav-theme-toggle";
+  const theme = currentTheme();
+  btn.innerHTML = themeToggleIcon(theme);
+  btn.setAttribute(
+    "aria-label",
+    theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+  );
+  btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    applyTheme(currentTheme() === "dark" ? "light" : "dark");
+  });
+  return btn;
+}
 
 // The single designated admin — controls visibility of `adminOnly` nav items.
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
@@ -680,6 +734,7 @@ function buildNav(siteNav) {
 
   const rightWrap = document.createElement("div");
   rightWrap.className = "nav-right-wrap";
+  rightWrap.appendChild(buildThemeToggle());
   rightWrap.appendChild(buildUserMenu());
 
   const toggle = document.createElement("button");
@@ -837,6 +892,14 @@ function updateAuthUI(user) {
 function init() {
   const navs = document.querySelectorAll('.site-nav[data-nav="main"]');
   if (!navs.length) return;
+
+  // Restore the saved theme if loader.js didn't already (pages without it).
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved && document.documentElement.dataset.theme !== saved) {
+      document.documentElement.dataset.theme = saved;
+    }
+  } catch (e) {}
 
   navs.forEach(buildNav);
   attachEvents();

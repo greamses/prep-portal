@@ -67,6 +67,10 @@ body {
   height: 100%;
   display: block;
 }
+/* Bright accent blobs wash out the dark background — keep them subtle. */
+[data-theme="dark"] .builder-paint {
+  opacity: 0.16;
+}
 
 .builder-header,
 .builder-grid,

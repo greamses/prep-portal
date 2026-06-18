@@ -56,7 +56,7 @@ body {
   height: 100%;
   display: block;
 }
-[data-theme="dark"] .builder-paint { opacity: 0.5; }
+[data-theme="dark"] .builder-paint { opacity: 0.18; }
 
 .builder-header,
 .setup-card {

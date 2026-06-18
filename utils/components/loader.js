@@ -1,6 +1,20 @@
 (function () {
   const loaderId = "loader";
 
+  /* ── Restore the saved theme before first paint (avoids a flash) ──
+     The nav theme toggle persists the choice to localStorage("pp-theme").
+     Honour an explicit choice; otherwise fall back to the OS preference. */
+  try {
+    const saved = localStorage.getItem("pp-theme");
+    const theme =
+      saved ||
+      (window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light");
+    document.documentElement.dataset.theme = theme;
+  } catch (e) {}
+
   /* ── seeded amoeba paint (inlined — no module import available here) ── */
   const rnd = (s) => {
     const x = Math.sin(s * 127.1 + 311.7) * 43758.5453;
@@ -47,7 +61,7 @@
     #${loaderId} {
       position: fixed !important;
       inset: 0 !important;
-      background: #fffdf8 !important;
+      background: var(--bg, #fffdf8) !important;
       z-index: 999999 !important;
       display: flex;
       align-items: center;

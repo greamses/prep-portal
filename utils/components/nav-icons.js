@@ -266,6 +266,11 @@ export const SVG_PERSON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 // Camera overlay for the "change photo" hover state.
 export const SVG_CAMERA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
 
+// Theme-toggle glyphs. Single-stroke (currentColor) so they read on the
+// control button in either theme. Sun = "switch to light"; moon = "switch to dark".
+export const SVG_SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.6M12 19.4V22M4.2 4.2l1.85 1.85M17.95 17.95L19.8 19.8M2 12h2.6M19.4 12H22M4.2 19.8l1.85-1.85M17.95 6.05L19.8 4.2"/></svg>`;
+export const SVG_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.3A8.2 8.2 0 0 1 9.7 3.5 7.3 7.3 0 1 0 20.5 14.3z"/></svg>`;
+
 /* =========================================================================
    PLAN / SUBSCRIPTION EMBLEMS
    Multicolour, in the same icon language; wrapped on the blob tile in

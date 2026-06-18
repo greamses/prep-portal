@@ -139,6 +139,8 @@
         window.__botGuideEnabled = vals.botguide;
 
         document.documentElement.dataset.theme = vals.darkmode ? 'dark' : 'light';
+        // Keep the global nav theme toggle (pp-theme) in sync with this choice.
+        try { localStorage.setItem('pp-theme', vals.darkmode ? 'dark' : 'light'); } catch (e) {}
 
         const pb = document.getElementById('prepbot');
         if (pb) pb.style.display = vals.botguide ? '' : 'none';
