@@ -7,6 +7,7 @@
 
 const Quiz = (() => {
   let allQuestions = [];
+  let allQuestionsAll = []; // master list for type filtering
   let currentIndex = 0;
   let userAnswers = {};
   let submitted = false;
@@ -724,7 +725,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             : q.image
           : "",
         hint: q.hint || "",
-        type: "objective",
+        type: q.type || "objective",
         subject: comp,
         examType: comp,
         examYear: year,
@@ -807,6 +808,9 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         }
         return;
       }
+      allQuestionsAll = allQuestions.slice();
+      const distinctTypes = [...new Set(allQuestionsAll.map((q) => q.type).filter(Boolean))];
+      if (distinctTypes.length > 1) injectTypeFilter(distinctTypes);
       console.log(
         `Loaded ${allQuestions.length} questions from competition script`,
       );
@@ -941,6 +945,43 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     });
   }
 
+  // ── Type filter (competition datasets with multiple types) ──
+  function injectTypeFilter(types) {
+    const existing = document.getElementById("type-filter-bar");
+    if (existing) existing.remove();
+    const bar = document.createElement("div");
+    bar.id = "type-filter-bar";
+    ["all", ...types].forEach((t) => {
+      const pill = document.createElement("button");
+      pill.className = "type-filter-pill" + (t === "all" ? " active" : "");
+      pill.dataset.type = t;
+      pill.type = "button";
+      pill.textContent = t === "all" ? "All" : t.charAt(0).toUpperCase() + t.slice(1);
+      pill.addEventListener("click", () => applyTypeFilter(t));
+      bar.appendChild(pill);
+    });
+    const shell = document.querySelector(".quiz-shell");
+    const header = document.querySelector(".exam-header");
+    if (shell && header) shell.insertBefore(bar, header.nextSibling);
+    else if (shell) shell.prepend(bar);
+  }
+
+  function applyTypeFilter(type) {
+    allQuestions = type === "all"
+      ? allQuestionsAll.slice()
+      : allQuestionsAll.filter((q) => q.type === type);
+    currentIndex = 0;
+    userAnswers = {};
+    revealed = {};
+    submitted = false;
+    theoryMarks = {};
+    document.querySelectorAll(".type-filter-pill").forEach((p) => {
+      p.classList.toggle("active", p.dataset.type === type);
+    });
+    buildDotMap();
+    renderQuestion(0);
+  }
+
   // ── Dot map ──────────────────────────────────────────────
   function buildDotMap() {
     const c = document.getElementById("q-dots");
@@ -992,19 +1033,33 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
   }
 
   // ── Image rendering helper ───────────────────────────────
+  // Make an inline SVG scale cleanly: guarantee a viewBox (so it has a known
+  // aspect ratio), keep it proportional, and drop any hard-coded width/height
+  // so the CSS "stage" controls its footprint. This is what lets diagrams of
+  // wildly different intrinsic sizes all fit the same box without clipping.
+  function normalizeSvg(svg) {
+    if (!svg.getAttribute("viewBox")) {
+      const w = parseFloat(svg.getAttribute("width"));
+      const h = parseFloat(svg.getAttribute("height"));
+      if (w > 0 && h > 0) svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    }
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.removeAttribute("width");
+    svg.removeAttribute("height");
+    svg.style.width = "";
+    svg.style.height = "";
+    svg.style.maxWidth = "100%";
+    svg.style.maxHeight = "100%";
+    svg.style.display = "block";
+  }
+
   function renderImage(container, imageSrc, altText) {
     container.innerHTML = "";
     if (!imageSrc) return;
     if (typeof imageSrc === "string" && imageSrc.trim().startsWith("<svg")) {
       container.innerHTML = imageSrc;
       const svg = container.querySelector("svg");
-      if (svg) {
-        svg.setAttribute("width", "100%");
-        svg.removeAttribute("height");
-        svg.style.display = "block";
-        svg.style.maxHeight = "280px";
-        svg.style.height = "auto";
-      }
+      if (svg) normalizeSvg(svg);
     } else {
       const img = document.createElement("img");
       img.className = "q-image";

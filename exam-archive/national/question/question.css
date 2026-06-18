@@ -144,6 +144,43 @@ body {
   text-align: center;
 }
 
+/* ── TYPE FILTER BAR (competition datasets with objective + subjective) ── */
+#type-filter-bar {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0.15rem 0.4rem;
+}
+
+.type-filter-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 0.38rem 1rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  box-shadow: var(--shadow-sm);
+}
+
+.type-filter-pill.active {
+  background: var(--blue);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: none;
+}
+
+.type-filter-pill:hover:not(.active) {
+  background: color-mix(in srgb, var(--blue) 10%, var(--paper));
+  border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+}
+
 /* ── QUESTION NAVIGATOR DOTS (centered row under the card) ── */
 .q-dots-row {
   display: flex;
@@ -249,6 +286,9 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Diagram "stage": every diagram sits in a consistent, centered box and
+   scales to fit inside it, so big and small SVGs share one footprint and
+   nothing overflows the viewport. */
 #q-image-wrap,
 .review-img-wrap {
   max-width: 100%;
@@ -256,6 +296,17 @@ body {
   margin-bottom: 1rem;
   border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
   border-radius: 12px;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  height: clamp(220px, 42vh, 360px);
+}
+
+.review-img-wrap {
+  height: clamp(120px, 26vh, 200px);
+  padding: 8px;
 }
 
 #q-image-wrap:empty,
@@ -283,21 +334,20 @@ body {
   font-size: .82rem; line-height: 1.5; color: var(--ink, #2a2723);
 }
 
-.q-image {
-  max-width: 100%;
-  max-height: 280px;
-  object-fit: contain;
-  border-radius: 10px;
-  display: block;
-  width: 100%;
-}
-
+/* All diagram media — inline SVG or raster — scale down to fit the stage
+   while preserving aspect ratio; never upscaled past their natural size. */
 #q-image-wrap svg,
-.review-img-wrap svg {
+#q-image-wrap img,
+#q-image-wrap .q-image,
+.review-img-wrap svg,
+.review-img-wrap img,
+.review-img-wrap .q-image {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: 280px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   border-radius: 10px;
 }
 
