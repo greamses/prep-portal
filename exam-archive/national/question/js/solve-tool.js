@@ -309,8 +309,62 @@
             color: var(--text-secondary, #6b655c); flex-shrink: 0;
         }
         [data-theme="dark"] #solve-canvas { filter: invert(1) hue-rotate(180deg); }
+
+        /* ── Question overlay (floats over the canvas, draggable) ── */
+        #solve-q-overlay {
+            position: absolute; top: 54px; right: 14px; left: auto;
+            width: min(360px, 60%); max-height: calc(100% - 132px);
+            display: flex; flex-direction: column; overflow: hidden;
+            background: var(--surface-primary, #fffdf8);
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg, 0 9px 22px rgba(42,39,35,.14));
+            z-index: 5;
+        }
+        #solve-q-overlay.hidden { display: none; }
+        .solve-q__head {
+            display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+            padding: .4rem .4rem .4rem .65rem; cursor: grab; touch-action: none;
+            background: var(--surface-secondary, #f4f0e8);
+            border-bottom: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            flex-shrink: 0;
+        }
+        .solve-q__head:active { cursor: grabbing; }
+        .solve-q__title {
+            display: inline-flex; align-items: center; gap: .4rem;
+            font-family: var(--font-mono, monospace); font-size: .64rem; font-weight: 700;
+            letter-spacing: .04em; text-transform: uppercase; color: var(--ink, #2a2723);
+        }
+        .solve-q__title svg { width: 13px; height: 13px; flex-shrink: 0; }
+        .solve-q__head-btns { display: inline-flex; gap: .25rem; flex-shrink: 0; }
+        .solve-q__icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 7px; cursor: pointer;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
+        }
+        .solve-q__icon:hover { background: var(--surface-secondary, #f4f0e8); }
+        .solve-q__icon svg { width: 11px; height: 11px; }
+        #solve-q-overlay.min .solve-q__min svg { transform: rotate(180deg); }
+        .solve-q__body {
+            padding: .7rem .85rem; overflow: auto; min-height: 0;
+            font-family: var(--font-mono, monospace); font-size: .8rem; line-height: 1.55;
+            color: var(--ink, #2a2723);
+        }
+        #solve-q-overlay.min .solve-q__body { display: none; }
+        .solve-q__img { margin: .55rem 0; display: flex; justify-content: center; }
+        .solve-q__img svg, .solve-q__img img { max-width: 100%; max-height: 190px; height: auto; }
+        .solve-q__opts { margin-top: .55rem; pointer-events: none; }
+        .solve-q__opts .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
+        .solve-q__opts .option-btn {
+            padding: .35rem .5rem; font-size: .68rem; box-shadow: none !important;
+            transform: none !important; cursor: default;
+        }
+        .solve-q__opts .hint-row, .solve-q__opts .hint-lbl, .solve-q__opts .hint-body { display: none !important; }
+
         @media (max-width: 600px) {
             #solve-panel { inset: 4px; border-radius: 12px; }
+            #solve-q-overlay { width: calc(100% - 28px); max-height: 46%; }
         }
         @media print { #solve-fab, #solve-panel { display: none !important; } }`;
 
@@ -339,29 +393,117 @@
             '<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" ' +
             'stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
             '<path d="M1 1l10 10M11 1L1 11"/></svg>';
+        const docSVG =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+        const chevSVG =
+            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" aria-hidden="true"><path d="M2 8l4-4 4 4"/></svg>';
 
         panel.innerHTML =
             '<div class="solve-panel__bar">' +
                 '<span class="solve-panel__title">Graspable Math · Scratchpad</span>' +
                 '<div class="solve-panel__actions">' +
+                    '<button type="button" id="solve-q-toggle" class="solve-panel__btn">Question</button>' +
                     '<button type="button" id="solve-load"  class="solve-panel__btn">Load Q</button>' +
                     '<button type="button" id="solve-reset" class="solve-panel__btn">Clear</button>' +
                     '<button type="button" id="solve-close" class="solve-panel__btn" aria-label="Close">' + closeSVG + '</button>' +
                 '</div>' +
             '</div>' +
             '<div id="solve-canvas"></div>' +
+            '<div id="solve-q-overlay">' +
+                '<div class="solve-q__head" id="solve-q-head">' +
+                    '<span class="solve-q__title">' + docSVG + '<span id="solve-q-count">Question</span></span>' +
+                    '<span class="solve-q__head-btns">' +
+                        '<button type="button" id="solve-q-min"  class="solve-q__icon" aria-label="Minimize question">' + chevSVG + '</button>' +
+                        '<button type="button" id="solve-q-hide" class="solve-q__icon" aria-label="Hide question">' + closeSVG + '</button>' +
+                    '</span>' +
+                '</div>' +
+                '<div class="solve-q__body" id="solve-q-body"></div>' +
+            '</div>' +
             '<p class="solve-panel__hint">' +
-                'Math loads automatically · <strong>Load Q</strong> refreshes · ' +
-                'drag terms to rearrange · <strong>Insert (+)</strong> adds expressions, graphs, images, or video.' +
+                'The question floats on the canvas — drag its header to move it · ' +
+                '<strong>Load Q</strong> refreshes · <strong>Insert (+)</strong> adds expressions, graphs, images, or video.' +
             '</p>';
 
         document.body.appendChild(panel);
         mountEl = panel.querySelector('#solve-canvas');
 
         panel.querySelector('#solve-close').addEventListener('click', () => setOpen(false));
-        panel.querySelector('#solve-load').addEventListener('click', loadQuestionIntoCanvas);
+        panel.querySelector('#solve-load').addEventListener('click', () => {
+            loadQuestionIntoCanvas();
+            renderQuestionOverlay();
+        });
         panel.querySelector('#solve-reset').addEventListener('click', resetCanvas);
         panel.addEventListener('keydown', e => e.stopPropagation());
+
+        const overlay = panel.querySelector('#solve-q-overlay');
+        panel.querySelector('#solve-q-toggle').addEventListener('click', () => overlay.classList.toggle('hidden'));
+        panel.querySelector('#solve-q-min').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.toggle('min'); });
+        panel.querySelector('#solve-q-hide').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.add('hidden'); });
+        makeDraggable(overlay, panel.querySelector('#solve-q-head'));
+    }
+
+    // Mirror the current question (prompt + figure + options) into the overlay,
+    // reusing the quiz's already-rendered DOM so the math stays typeset.
+    function renderQuestionOverlay() {
+        const body = document.getElementById('solve-q-body');
+        const countEl = document.getElementById('solve-q-count');
+        if (!body) return;
+        const cur = currentQuestion();
+        if (!cur || !cur.q) { body.innerHTML = '<em style="opacity:.6">No question loaded.</em>'; return; }
+
+        try {
+            const st = window.Quiz.getState();
+            if (countEl) countEl.textContent = `Q ${cur.idx + 1} / ${st.allQuestions.length}`;
+        } catch (_) { if (countEl) countEl.textContent = 'Question'; }
+
+        body.innerHTML = '';
+        const grab = (id, cls) => {
+            const src = document.getElementById(id);
+            if (!src || !src.innerHTML.trim()) return;
+            const el = document.createElement('div');
+            el.className = cls;
+            el.innerHTML = src.innerHTML;
+            body.appendChild(el);
+        };
+        grab('q-text', 'solve-q__text');
+        grab('q-image-wrap', 'solve-q__img');
+        grab('q-options', 'solve-q__opts');
+
+        // Only typeset if the copy still holds raw delimiters (not yet rendered).
+        if (/\\\(|\\\)|\$\$/.test(body.textContent) && window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([body]).catch(() => {});
+        }
+    }
+
+    // Drag a panel element by a handle, clamped inside #solve-panel.
+    function makeDraggable(el, handle) {
+        if (!el || !handle) return;
+        let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+        handle.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('button')) return;
+            dragging = true;
+            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+            const r = el.getBoundingClientRect();
+            const pr = panel.getBoundingClientRect();
+            ox = r.left - pr.left; oy = r.top - pr.top;
+            sx = e.clientX; sy = e.clientY;
+            el.style.right = 'auto';
+        });
+        handle.addEventListener('pointermove', (e) => {
+            if (!dragging) return;
+            const pr = panel.getBoundingClientRect();
+            let nx = ox + (e.clientX - sx);
+            let ny = oy + (e.clientY - sy);
+            nx = Math.max(0, Math.min(nx, pr.width - el.offsetWidth));
+            ny = Math.max(0, Math.min(ny, pr.height - el.offsetHeight));
+            el.style.left = nx + 'px'; el.style.top = ny + 'px';
+        });
+        const end = (e) => { dragging = false; try { handle.releasePointerCapture(e.pointerId); } catch (_) {} };
+        handle.addEventListener('pointerup', end);
+        handle.addEventListener('pointercancel', end);
     }
 
     // ── Panel state ───────────────────────────────────────────────────────────
@@ -373,6 +515,7 @@
             ensureGM();
             const cur = currentQuestion();
             if (gmLoaded && cur && cur.idx !== lastLoadedQ) loadQuestionIntoCanvas();
+            renderQuestionOverlay();
         }
     }
 
