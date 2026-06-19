@@ -1,8 +1,6 @@
 {
   "name": "prep-portal",
   "private": true,
-  "description": "Root manifest so the Vercel Edge middleware can resolve jose.",
-  "dependencies": {
-    "jose": "^5.9.6"
-  }
+  "description": "Root manifest. The Vercel Edge middleware is dependency-free (verifies the Firebase session cookie with the built-in Web Crypto API), so no runtime deps are needed here.",
+  "dependencies": {}
 }
