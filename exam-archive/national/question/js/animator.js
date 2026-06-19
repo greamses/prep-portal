@@ -1048,12 +1048,21 @@
     function close() { playing = false; clearTimer(); if (overlay) overlay.classList.remove('open'); }
     function mountButton(actionsEl, q) {
         if (!actionsEl || !canAnimate(q)) return;
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'feedback-watch-btn';
-        b.innerHTML = PLAY_ICON + '<span>Watch solution</span>';
-        b.addEventListener('click', () => open(q));
-        actionsEl.appendChild(b);
+        // Watch-solution is admin-only for now (still being curated). Only mount
+        // the button once we've confirmed the signed-in user is an admin. The
+        // check is async + cached; the feedback strip may have moved on by the
+        // time it resolves, so bail if this actions element is gone.
+        const ss = window.SolutionSteps;
+        if (!ss || typeof ss.isAdmin !== 'function') return;
+        ss.isAdmin().then((ok) => {
+            if (!ok || !actionsEl.isConnected) return;
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'feedback-watch-btn';
+            b.innerHTML = PLAY_ICON + '<span>Watch solution</span>';
+            b.addEventListener('click', () => open(q));
+            actionsEl.appendChild(b);
+        }).catch(() => {});
     }
 
     window.MathAnimator = { mountButton, canAnimate, open };

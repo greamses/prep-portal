@@ -50,7 +50,7 @@
 
     // ── GM state ──────────────────────────────────────────────────────────────
     let gmLoaded = false, gmLoading = false, canvas = null;
-    let pendingLoad = false;
+    let pendingExprs = null;   // expressions queued to load once GM finishes booting
     let lastLoadedQ = -1;
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -177,6 +177,28 @@
         } catch (_) { return null; }
     }
 
+    // The GM scratchpad is for working out maths — only offer it on science /
+    // stats / maths subjects for now. For competitions the per-question subject
+    // is the competition key, so fall back to the section chosen in the URL.
+    const SOLVER_SUBJECTS = /(math|further\s*math|add(?:itional)?\s*math|physics|chem|bio|stat|science|quantitative|numeracy)/i;
+    function effectiveSubject(q) {
+        const subj = (q && q.subject) || '';
+        const cfg = (typeof PAGE_CONFIG !== 'undefined' && PAGE_CONFIG) || {};
+        if (cfg.comp && subj === cfg.comp) return cfg.section || subj;   // competition → section
+        return subj;
+    }
+    function solverAllowedFor(q) { return SOLVER_SUBJECTS.test(effectiveSubject(q)); }
+
+    // Show the FAB only when the current question is a solver-eligible subject
+    // (and the page hasn't explicitly disabled the solver).
+    function updateFabVisibility() {
+        if (!btn) return;
+        const cur = currentQuestion();
+        const allowed = window.__solverEnabled !== false && !!(cur && cur.q && solverAllowedFor(cur.q));
+        btn.style.display = allowed ? 'inline-flex' : 'none';
+        if (!allowed && panel && panel.classList.contains('open')) setOpen(false);
+    }
+
     // ── Canvas helpers ────────────────────────────────────────────────────────
     function makeCanvas() {
         canvas = new gmath.Canvas('#solve-canvas', CANVAS_OPTIONS);
@@ -186,21 +208,96 @@
         } catch (_) {}
     }
 
-    function loadQuestionIntoCanvas() {
-        if (!gmLoaded || typeof gmath === 'undefined') { pendingLoad = true; ensureGM(); return; }
-        pendingLoad = false;
+    // Place a set of expressions on a fresh canvas. Queues if GM isn't ready yet.
+    function loadExpressions(exprs) {
+        if (!gmLoaded || typeof gmath === 'undefined') { pendingExprs = exprs || []; ensureGM(); return; }
+        pendingExprs = null;
         const cur = currentQuestion();
         mountEl.innerHTML = '';
         makeCanvas();
         lastLoadedQ = cur ? cur.idx : -1;
-        const exprs = cur && cur.q ? collectLoadable(cur.q.question) : [];
         let y = 50;
-        exprs.forEach(eq => {
+        (exprs || []).forEach(eq => {
             try {
                 canvas.model.createElement('derivation', { eq, pos: { x: 40, y }, draggable: true });
                 y += 100;
             } catch (e) { console.warn('GM load:', eq, e.message); }
         });
+    }
+
+    async function isAdminUser() {
+        try { return !!(window.SolutionSteps && await window.SolutionSteps.isAdmin()); }
+        catch (_) { return false; }
+    }
+    async function savedExpressionFor(q) {
+        try { return (window.SolutionSteps && await window.SolutionSteps.getExpression(q)) || null; }
+        catch (_) { return null; }
+    }
+
+    function flashLoadBtn(msg) {
+        const b = document.getElementById('solve-load');
+        if (!b) return;
+        const orig = b.dataset.label || b.textContent;
+        b.dataset.label = orig;
+        b.textContent = msg;
+        setTimeout(() => { b.textContent = b.dataset.label || orig; }, 1800);
+    }
+
+    // "Load Q": load the admin-saved expression if one exists. If none is saved,
+    // an admin is prompted to enter + save it; a learner gets NOTHING loaded and
+    // simply types their own working on the canvas.
+    async function loadForCurrentQuestion() {
+        const cur = currentQuestion();
+        if (!cur || !cur.q) return;
+        const saved = await savedExpressionFor(cur.q);
+        if (saved && saved.length) { hideEditor(); loadExpressions(saved); return; }
+        if (await isAdminUser()) { showEditor(); return; }
+        flashLoadBtn('None saved — type your own');
+    }
+
+    // On open we do NOT auto-load. If the signed-in user is an admin and nothing
+    // has been saved for this question yet, prompt them to enter + save it. Each
+    // question is curated on its own (keyed by question|answer).
+    async function maybePromptAdmin() {
+        const cur = currentQuestion();
+        if (!cur || !cur.q) { hideEditor(); return; }
+        const saved = await savedExpressionFor(cur.q);
+        if (saved && saved.length) { hideEditor(); return; }
+        if (await isAdminUser()) showEditor();
+        else hideEditor();
+    }
+
+    // ── Admin expression editor ───────────────────────────────────────────────
+    function showEditor(prefill) {
+        const ed = document.getElementById('solve-expr-editor');
+        const ta = document.getElementById('solve-expr-input');
+        if (!ed || !ta) return;
+        ta.value = (prefill || []).join('\n');
+        ed.hidden = false;
+    }
+    function hideEditor() {
+        const ed = document.getElementById('solve-expr-editor');
+        if (ed) ed.hidden = true;
+    }
+    async function onSaveExpr() {
+        const cur = currentQuestion();
+        if (!cur || !cur.q) return;
+        const exprs = (document.getElementById('solve-expr-input').value || '')
+            .split('\n').map(s => s.trim()).filter(Boolean);
+        const saveBtn = document.getElementById('solve-expr-save');
+        if (!exprs.length) { return; }
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        try {
+            await window.SolutionSteps.saveExpression(cur.q, exprs);
+            hideEditor();
+            loadExpressions(exprs);
+        } catch (e) {
+            console.warn('saveExpression:', e.message);
+            saveBtn.textContent = 'Save failed';
+            setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save & load'; }, 1600);
+            return;
+        }
+        saveBtn.disabled = false; saveBtn.textContent = 'Save & load';
     }
 
     function resetCanvas() {
@@ -230,7 +327,9 @@
                     mountEl.innerHTML = '';
                     makeCanvas();
                     gmLoaded = true; gmLoading = false;
-                    loadQuestionIntoCanvas();
+                    // Don't auto-load the question — only flush an explicitly
+                    // requested (queued) load that arrived before GM was ready.
+                    if (pendingExprs) loadExpressions(pendingExprs);
                 } catch (e) { console.warn('GM init failed:', e); fail(); }
             }, { version: 'latest' });
         };
@@ -354,13 +453,40 @@
         #solve-q-overlay.min .solve-q__body { display: none; }
         .solve-q__img { margin: .55rem 0; display: flex; justify-content: center; }
         .solve-q__img svg, .solve-q__img img { max-width: 100%; max-height: 190px; height: auto; }
-        .solve-q__opts { margin-top: .55rem; pointer-events: none; }
+        .solve-q__opts { margin-top: .55rem; }
         .solve-q__opts .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
         .solve-q__opts .option-btn {
             padding: .35rem .5rem; font-size: .68rem; box-shadow: none !important;
-            transform: none !important; cursor: default;
+            transform: none !important; cursor: pointer;
         }
         .solve-q__opts .hint-row, .solve-q__opts .hint-lbl, .solve-q__opts .hint-body { display: none !important; }
+
+        /* Admin expression editor — a curation strip above the canvas. */
+        #solve-expr-editor {
+            position: absolute; top: 50px; left: 14px; right: 14px; z-index: 6;
+            display: flex; flex-direction: column; gap: .5rem;
+            padding: .7rem .8rem; border-radius: 12px;
+            background: var(--surface-primary, #fffdf8);
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            box-shadow: var(--shadow-lg, 0 9px 22px rgba(42,39,35,.14));
+        }
+        #solve-expr-editor[hidden] { display: none; }
+        .solve-expr__head {
+            font-family: var(--font-mono, monospace); font-size: .64rem; font-weight: 700;
+            color: var(--ink, #2a2723); display: flex; align-items: center; gap: .5rem;
+        }
+        .solve-expr__tag {
+            font-size: .54rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+            padding: .1rem .4rem; border-radius: 999px;
+            background: var(--accent-success, #6db58f); color: var(--text-on-accent, #fff);
+        }
+        .solve-expr__input {
+            width: 100%; resize: vertical; font-family: var(--font-mono, monospace); font-size: .8rem;
+            line-height: 1.5; padding: .5rem .6rem; border-radius: 9px;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            background: var(--surface-secondary, #f4f0e8); color: var(--ink, #2a2723);
+        }
+        .solve-expr__btns { display: flex; gap: .4rem; justify-content: flex-end; }
 
         @media (max-width: 600px) {
             #solve-panel { inset: 4px; border-radius: 12px; }
@@ -400,6 +526,12 @@
         const chevSVG =
             '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
             'stroke-linecap="round" aria-hidden="true"><path d="M2 8l4-4 4 4"/></svg>';
+        const prevSVG =
+            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 2L3.5 6l4 4"/></svg>';
+        const nextSVG =
+            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2l4 4-4 4"/></svg>';
 
         panel.innerHTML =
             '<div class="solve-panel__bar">' +
@@ -412,10 +544,20 @@
                 '</div>' +
             '</div>' +
             '<div id="solve-canvas"></div>' +
+            '<div id="solve-expr-editor" class="solve-expr" hidden>' +
+                '<div class="solve-expr__head">Enter the expression(s) to save for this question <span class="solve-expr__tag">admin</span></div>' +
+                '<textarea id="solve-expr-input" class="solve-expr__input" rows="3" spellcheck="false" placeholder="One per line, e.g.\n3x + 5 = 20"></textarea>' +
+                '<div class="solve-expr__btns">' +
+                    '<button type="button" id="solve-expr-save" class="solve-panel__btn">Save & load</button>' +
+                    '<button type="button" id="solve-expr-cancel" class="solve-panel__btn">Cancel</button>' +
+                '</div>' +
+            '</div>' +
             '<div id="solve-q-overlay">' +
                 '<div class="solve-q__head" id="solve-q-head">' +
                     '<span class="solve-q__title">' + docSVG + '<span id="solve-q-count">Question</span></span>' +
                     '<span class="solve-q__head-btns">' +
+                        '<button type="button" id="solve-q-prev" class="solve-q__icon" aria-label="Previous question">' + prevSVG + '</button>' +
+                        '<button type="button" id="solve-q-next" class="solve-q__icon" aria-label="Next question">' + nextSVG + '</button>' +
                         '<button type="button" id="solve-q-min"  class="solve-q__icon" aria-label="Minimize question">' + chevSVG + '</button>' +
                         '<button type="button" id="solve-q-hide" class="solve-q__icon" aria-label="Hide question">' + closeSVG + '</button>' +
                     '</span>' +
@@ -432,16 +574,20 @@
 
         panel.querySelector('#solve-close').addEventListener('click', () => setOpen(false));
         panel.querySelector('#solve-load').addEventListener('click', () => {
-            loadQuestionIntoCanvas();
             renderQuestionOverlay();
+            loadForCurrentQuestion();
         });
         panel.querySelector('#solve-reset').addEventListener('click', resetCanvas);
+        panel.querySelector('#solve-expr-save').addEventListener('click', onSaveExpr);
+        panel.querySelector('#solve-expr-cancel').addEventListener('click', hideEditor);
         panel.addEventListener('keydown', e => e.stopPropagation());
 
         const overlay = panel.querySelector('#solve-q-overlay');
         panel.querySelector('#solve-q-toggle').addEventListener('click', () => overlay.classList.toggle('hidden'));
         panel.querySelector('#solve-q-min').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.toggle('min'); });
         panel.querySelector('#solve-q-hide').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.add('hidden'); });
+        panel.querySelector('#solve-q-prev').addEventListener('click', (e) => { e.stopPropagation(); gotoQuestion(-1); });
+        panel.querySelector('#solve-q-next').addEventListener('click', (e) => { e.stopPropagation(); gotoQuestion(1); });
         makeDraggable(overlay, panel.querySelector('#solve-q-head'));
     }
 
@@ -472,9 +618,29 @@
         grab('q-image-wrap', 'solve-q__img');
         grab('q-options', 'solve-q__opts');
 
+        // Make the mirrored options answerable: a click drives the matching real
+        // quiz option (so the quiz's own selectOption handles state + locking +
+        // immediate-mode reveal), then we re-mirror the updated styling.
+        const optsEl = body.querySelector('.solve-q__opts');
+        if (optsEl) optsEl.addEventListener('click', onOverlayOptionClick);
+
         // Only typeset if the copy still holds raw delimiters (not yet rendered).
         if (/\\\(|\\\)|\$\$/.test(body.textContent) && window.MathJax && window.MathJax.typesetPromise) {
             window.MathJax.typesetPromise([body]).catch(() => {});
+        }
+    }
+
+    // A click on a mirrored option → click the real quiz option at the same
+    // index (disabled/locked ones are skipped by the real button), then re-mirror.
+    function onOverlayOptionClick(e) {
+        const hit = e.target.closest('.option-btn');
+        if (!hit) return;
+        const i = Array.from(e.currentTarget.querySelectorAll('.option-btn')).indexOf(hit);
+        if (i < 0) return;
+        const real = document.querySelectorAll('#q-options .option-btn')[i];
+        if (real && !real.disabled) {
+            real.click();
+            setTimeout(renderQuestionOverlay, 0);   // reflect selected / locked state
         }
     }
 
@@ -506,6 +672,13 @@
         handle.addEventListener('pointercancel', end);
     }
 
+    // Navigate the quiz from inside the solver (quiz keyboard is suspended while
+    // the panel is open, so these arrows are how you move between questions).
+    function gotoQuestion(delta) {
+        const q = window.Quiz;
+        if (q && typeof q.navigate === 'function') q.navigate(delta);
+    }
+
     // ── Panel state ───────────────────────────────────────────────────────────
     function setOpen(open) {
         if (!panel) return;
@@ -513,18 +686,29 @@
         btn.classList.toggle('active', open);
         if (open) {
             ensureGM();
-            const cur = currentQuestion();
-            if (gmLoaded && cur && cur.idx !== lastLoadedQ) loadQuestionIntoCanvas();
             renderQuestionOverlay();
+            hideEditor();
+            // Don't auto-load. If admin + nothing saved, prompt them to curate.
+            maybePromptAdmin();
         }
     }
 
     function togglePanel() { setOpen(!panel.classList.contains('open')); }
 
     // ── Entry point ───────────────────────────────────────────────────────────
+    function onQuestionRendered() {
+        updateFabVisibility();
+        if (panel && panel.classList.contains('open')) {
+            renderQuestionOverlay();
+            maybePromptAdmin();
+        }
+    }
     function init() {
         buildUI();
-        btn.style.display = window.__solverEnabled === false ? 'none' : 'inline-flex';
+        updateFabVisibility();
+        // Re-evaluate whenever the quiz renders a (possibly different-subject)
+        // question: refresh the overlay and FAB visibility as the learner moves.
+        window.addEventListener('quiz:questionRendered', onQuestionRendered);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

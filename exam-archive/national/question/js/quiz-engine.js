@@ -1132,6 +1132,9 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     const strip = document.getElementById("feedback-strip");
     if (card) typesetEl(card);
     if (strip) typesetEl(strip);
+
+    // Let other features (e.g. the GM solver FAB) react to the new question.
+    window.dispatchEvent(new CustomEvent("quiz:questionRendered", { detail: { idx } }));
   }
 
   function renderObjectiveOptions(q, idx, optWrap) {

@@ -178,7 +178,10 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
       addQuizNavigationPill();
       updateQuizNavigationPill();
     }
-    startNudgeInterval();
+    // Don't start the auto-nudges if PrepBot has been put to sleep.
+    let asleep = false;
+    try { asleep = localStorage.getItem("pp_prepbot_asleep") === "1"; } catch (_) {}
+    if (!asleep) startNudgeInterval();
   }
 
   function showNoKeyMessage() {
@@ -631,6 +634,23 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
   }
 
   /* ── 12. PROGRESSIVE HINT ── */
+  // Clip a string to ~n chars WITHOUT cutting through a LaTeX span: if the cut
+  // would land inside a \(...\) or \[...\], extend to the end of that span so the
+  // whole expression survives and MathJax can still render it.
+  function clipKeepMath(str, n) {
+    str = String(str || "");
+    if (str.length <= n) return str;
+    let cut = n;
+    const re = /\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g;
+    let m;
+    while ((m = re.exec(str))) {
+      const start = m.index, end = m.index + m[0].length;
+      if (start >= cut) break;          // span starts after the cut → safe
+      if (cut < end) { cut = end; break; } // cut falls inside → keep the whole span
+    }
+    return str.slice(0, cut);
+  }
+
   function generateProgressiveHint() {
     const qd = getQuizData();
     if (!qd || !qd.questions.length) return null;
@@ -666,22 +686,22 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
     let promptForAI = "";
 
     if (timeSpent < 15) {
-      suggestionText = `Try starting with: "${steps[0]?.substring(0, 60)}..."`;
+      suggestionText = `Try starting with: "${clipKeepMath(steps[0], 60)}..."`;
       promptForAI = `Give me a beginner-friendly hint for: ${q.question}`;
     } else if (timeSpent < 30) {
       stepIndex = Math.min(1, steps.length - 1);
-      suggestionText = `Next step: ${steps[stepIndex]?.substring(0, 80)}`;
+      suggestionText = `Next step: ${clipKeepMath(steps[stepIndex], 80)}`;
       promptForAI = `What is the next step after considering the basics for: ${q.question}`;
     } else if (timeSpent < 45) {
       stepIndex = Math.min(2, steps.length - 1);
-      suggestionText = `Focus on: ${steps[stepIndex]?.substring(0, 80)}`;
+      suggestionText = `Focus on: ${clipKeepMath(steps[stepIndex], 80)}`;
       promptForAI = `Explain this step in detail: ${steps[stepIndex]}`;
     } else if (timeSpent < 60) {
       stepIndex = Math.min(3, steps.length - 1);
-      suggestionText = `Let us work through: ${steps[stepIndex]?.substring(0, 80)}`;
+      suggestionText = `Let us work through: ${clipKeepMath(steps[stepIndex], 80)}`;
       promptForAI = `Provide a detailed walkthrough of: ${steps[stepIndex]}`;
     } else {
-      suggestionText = `Let me guide you through the complete solution. ${steps[0]?.substring(0, 60)}...`;
+      suggestionText = `Let me guide you through the complete solution. ${clipKeepMath(steps[0], 60)}...`;
       promptForAI = `Provide a complete step-by-step solution with explanations for: ${q.question}`;
     }
 
@@ -1933,18 +1953,33 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
     if (currentPopupTimeout) { clearTimeout(currentPopupTimeout); currentPopupTimeout = null; }
   };
 
-  document.getElementById("chat-fab-dismiss").onclick = (e) => {
-    e.stopPropagation();
+  // "Sleep" PrepBot: hide the FAB (leaving only the small restore tab) and
+  // remember it so it stays asleep across page loads until the learner wakes it.
+  const SLEEP_KEY = "pp_prepbot_asleep";
+  function sleepPrepBot() {
     fabWrap.classList.add("fab-hidden");
     document.getElementById("chat-fab-restore").classList.add("fab-restore-visible");
+    popup.classList.remove("visible");
     stopNudgeInterval();
-  };
-
-  document.getElementById("chat-fab-restore").onclick = () => {
+    try { localStorage.setItem(SLEEP_KEY, "1"); } catch (_) {}
+  }
+  function wakePrepBot() {
     fabWrap.classList.remove("fab-hidden");
     document.getElementById("chat-fab-restore").classList.remove("fab-restore-visible");
+    try { localStorage.removeItem(SLEEP_KEY); } catch (_) {}
     if (!nudgeInterval && isKeySet()) startNudgeInterval();
-  };
+  }
+
+  document.getElementById("chat-fab-dismiss").onclick = (e) => { e.stopPropagation(); sleepPrepBot(); };
+  document.getElementById("chat-fab-restore").onclick = wakePrepBot;
+
+  // Apply a persisted "asleep" state on load (don't auto-start nudges if so).
+  try {
+    if (localStorage.getItem(SLEEP_KEY) === "1") {
+      fabWrap.classList.add("fab-hidden");
+      document.getElementById("chat-fab-restore").classList.add("fab-restore-visible");
+    }
+  } catch (_) {}
 
   /* ── 24. QUIZ UPDATE EVENT ── */
   window.addEventListener("prepbot:quizUpdated", () => {

@@ -1225,7 +1225,7 @@ const chatbotcss = `
     min-height: 46px;
     padding: 11px 34px 12px 15px;
     font-family: var(--_f-mono);
-    font-size: 0.46rem;
+    font-size: 0.4rem;
     line-height: 1.5;
     cursor: pointer;
     z-index: 10000;

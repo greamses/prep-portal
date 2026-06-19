@@ -700,5 +700,50 @@ module.exports = function () {
     }
   });
 
+  // ── Solver expressions: admin-curated math to load into the GM scratchpad ──
+  // So every learner loads the SAME, vetted expression(s) for a question rather
+  // than a noisy auto-extraction. Keyed by the same (question|answer) hash.
+  const solverDoc = (h) => admin.firestore().collection("solverExpressions").doc(h);
+  const cleanExprs = (a) => Array.isArray(a)
+    ? a.map((s) => String(s || "").trim().slice(0, 400)).filter(Boolean).slice(0, 20)
+    : [];
+
+  // Public read of the saved expressions for a question ({found:false} if none).
+  router.get("/solver/:hash", async (req, res) => {
+    try {
+      const h = cleanHash(req.params.hash);
+      if (!h) return res.status(400).json({ error: "bad hash" });
+      const snap = await solverDoc(h).get();
+      if (!snap.exists) return res.json({ found: false });
+      res.json({ found: true, expressions: (snap.data() || {}).expressions || [] });
+    } catch (err) {
+      console.error("[/api/ai/solver GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin-only: save / replace the expressions for a question.
+  router.post("/solver", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Admin access only." });
+      const { hash, question, answer, expressions } = req.body || {};
+      const h = cleanHash(hash);
+      if (!h) return res.status(400).json({ error: "hash is required" });
+      const exprs = cleanExprs(expressions);
+      if (!exprs.length) return res.status(400).json({ error: "expressions must be 1+ non-empty strings" });
+      await solverDoc(h).set({
+        expressions: exprs,
+        question: String(question || "").slice(0, 1200),
+        answer: String(answer || "").slice(0, 400),
+        savedBy: req.user.email || req.user.uid,
+        savedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[/api/ai/solver POST]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 };

@@ -306,5 +306,38 @@ async function regenerate(q) {
   return pack(res.states, res.notes, 'ai', res.setup);
 }
 
-window.SolutionSteps = { get, isAdmin, approve, regenerate };
-export { get, isAdmin, approve, regenerate };
+// ── GM solver expressions (admin-curated math to load into the scratchpad) ───
+// Read the saved expressions for a question (null when none saved).
+async function getExpression(q) {
+  if (!q) return null;
+  const h = docHash(q);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 3500);
+  try {
+    const res = await fetch(`${API_BASE}/api/ai/solver/${encodeURIComponent(h)}`, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d && d.found ? (d.expressions || []) : null;
+  } catch (_) { return null; } finally { clearTimeout(t); }
+}
+
+// Admin: save the expressions a learner should load for this question.
+async function saveExpression(q, expressions) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sign in as admin to save.');
+  const token = await user.getIdToken();
+  const h = docHash(q);
+  const res = await fetch(`${API_BASE}/api/ai/solver`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ hash: h, question: plain(q.question), answer: plain(q && q._answer), expressions }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || `Save failed (${res.status})`);
+  }
+  return true;
+}
+
+window.SolutionSteps = { get, isAdmin, approve, regenerate, getExpression, saveExpression };
+export { get, isAdmin, approve, regenerate, getExpression, saveExpression };
