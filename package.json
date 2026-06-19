@@ -1,0 +1,8 @@
+{
+  "name": "prep-portal",
+  "private": true,
+  "description": "Root manifest so the Vercel Edge middleware can resolve jose.",
+  "dependencies": {
+    "jose": "^5.9.6"
+  }
+}
