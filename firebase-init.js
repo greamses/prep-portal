@@ -7,6 +7,7 @@ import {
 import {
   getAuth,
   GoogleAuthProvider,
+  onAuthStateChanged,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -35,5 +36,55 @@ googleProvider.setCustomParameters({
 });
 
 console.log("Firebase initialized:", app.name);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SERVER SESSION COOKIE
+   Keep an httpOnly Firebase session cookie in sync with the client auth state
+   so the Vercel middleware can gate pages server-side. On sign-in we POST a
+   fresh ID token to mint the cookie (throttled to ~12h so normal page loads
+   don't re-mint every time); on sign-out we clear it. Right after a login that
+   came from the gate, we return the learner to their original page (?next=).
+───────────────────────────────────────────────────────────────────────── */
+const API_BASE =
+  typeof window !== "undefined" && window.location.port === "5500"
+    ? "http://127.0.0.1:5000"
+    : "";
+const SESSION_TS_KEY = "pp_session_ts";
+const SESSION_REFRESH_MS = 12 * 60 * 60 * 1000;
+
+function readNext() {
+  try {
+    const n = new URLSearchParams(window.location.search).get("next");
+    if (n && n.charAt(0) === "/" && n.charAt(1) !== "/") return n;
+  } catch (e) {}
+  return null;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (typeof window === "undefined") return;
+  try {
+    if (user) {
+      let ts = 0;
+      try { ts = +localStorage.getItem(SESSION_TS_KEY) || 0; } catch (e) {}
+      if (Date.now() - ts > SESSION_REFRESH_MS) {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`${API_BASE}/api/auth/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+          credentials: "include",
+        });
+        if (res.ok) { try { localStorage.setItem(SESSION_TS_KEY, String(Date.now())); } catch (e) {} }
+      }
+      const next = readNext();
+      if (next) window.location.replace(next);
+    } else {
+      try { localStorage.removeItem(SESSION_TS_KEY); } catch (e) {}
+      await fetch(`${API_BASE}/api/auth/session`, { method: "DELETE", credentials: "include" });
+    }
+  } catch (e) {
+    console.warn("session sync failed:", e.message);
+  }
+});
 
 export { auth, db, storage, googleProvider };

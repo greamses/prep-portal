@@ -60,13 +60,14 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "4mb" }));
 
 // ── Routes ────────────────────────────────────────────────────────
+app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/questions", require("./routes/questions")());
 app.use("/api/tts",   require("./routes/tts")());

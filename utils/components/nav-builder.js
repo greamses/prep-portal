@@ -907,6 +907,18 @@ function init() {
   if (typeof auth !== "undefined" && auth.onAuthStateChanged) {
     auth.onAuthStateChanged(updateAuthUI);
   }
+
+  // Arrived here from the server gate (logged out) — pop the login modal open.
+  try {
+    if (new URLSearchParams(location.search).get("login") === "1") {
+      let n = 0;
+      const t = setInterval(() => {
+        if (auth.currentUser) { clearInterval(t); return; }
+        if (typeof window.openAuthModal === "function") { clearInterval(t); window.openAuthModal("login"); }
+        else if (++n > 80) clearInterval(t);
+      }, 120);
+    }
+  } catch (e) {}
 }
 
 if (document.readyState === "loading") {
