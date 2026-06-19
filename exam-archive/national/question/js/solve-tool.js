@@ -267,6 +267,22 @@
         else hideEditor();
     }
 
+    // Admin "Edit exp": open the editor prefilled with the saved expression so it
+    // can be revised and re-saved (overwrites the stored one). Blank if none yet.
+    async function onEditClicked() {
+        const cur = currentQuestion();
+        if (!cur || !cur.q) return;
+        const saved = await savedExpressionFor(cur.q);
+        showEditor(saved || []);
+    }
+
+    // Show the admin-only "Edit exp" button only to admins.
+    async function updateAdminControls() {
+        const eb = document.getElementById('solve-edit');
+        if (!eb) return;
+        eb.style.display = (await isAdminUser()) ? '' : 'none';
+    }
+
     // ── Admin expression editor ───────────────────────────────────────────────
     function showEditor(prefill) {
         const ed = document.getElementById('solve-expr-editor');
@@ -539,6 +555,7 @@
                 '<div class="solve-panel__actions">' +
                     '<button type="button" id="solve-q-toggle" class="solve-panel__btn">Question</button>' +
                     '<button type="button" id="solve-load"  class="solve-panel__btn">Load Q</button>' +
+                    '<button type="button" id="solve-edit" class="solve-panel__btn" style="display:none">Edit exp</button>' +
                     '<button type="button" id="solve-reset" class="solve-panel__btn">Clear</button>' +
                     '<button type="button" id="solve-close" class="solve-panel__btn" aria-label="Close">' + closeSVG + '</button>' +
                 '</div>' +
@@ -578,6 +595,7 @@
             loadForCurrentQuestion();
         });
         panel.querySelector('#solve-reset').addEventListener('click', resetCanvas);
+        panel.querySelector('#solve-edit').addEventListener('click', onEditClicked);
         panel.querySelector('#solve-expr-save').addEventListener('click', onSaveExpr);
         panel.querySelector('#solve-expr-cancel').addEventListener('click', hideEditor);
         panel.addEventListener('keydown', e => e.stopPropagation());
@@ -688,6 +706,7 @@
             ensureGM();
             renderQuestionOverlay();
             hideEditor();
+            updateAdminControls();
             // Don't auto-load. If admin + nothing saved, prompt them to curate.
             maybePromptAdmin();
         }
@@ -700,6 +719,7 @@
         updateFabVisibility();
         if (panel && panel.classList.contains('open')) {
             renderQuestionOverlay();
+            updateAdminControls();
             maybePromptAdmin();
         }
     }
