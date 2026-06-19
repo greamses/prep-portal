@@ -1993,4 +1993,20 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
       if (qbBar.style.display === "block" && qd) buildQuizNav();
     }
   };
+
+  /* ── 26. PUBLIC API ──
+     Lets other features (e.g. the Watch-solution view) open the chat and hand
+     it a starter question. The current question/options/answer/explanation are
+     already folded into the system context inside sendMessage(), so callers only
+     supply the ask. */
+  window.PrepBot = {
+    open: () => toggleChat(true),
+    ask: (text) => {
+      toggleChat(true);
+      if (!text) return;
+      // Give a just-opened (possibly first-time-initialised) panel a moment,
+      // then send so the user sees their question and the answer streams in.
+      setTimeout(() => { try { sendMessage(text); } catch (_) {} }, 450);
+    },
+  };
 })();

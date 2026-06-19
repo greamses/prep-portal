@@ -22,7 +22,9 @@
  *   GET  /api/admin/users
  */
 
-require("dotenv").config();
+// Load .env from this file's own directory so the keys load no matter what
+// the current working directory is (e.g. `node server/index.js` from the repo root).
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const express = require("express");
 const cors = require("cors");

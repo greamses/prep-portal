@@ -56,9 +56,23 @@
     <p class="note">Stub: <code>window.SolutionSteps.get()</code> returns each sample's own steps, so no AI/sign-in is needed here.</p>
   </div>
 
-  <!-- Stub the steps provider BEFORE the animator loads. -->
+  <!-- Stub the steps provider BEFORE the animator loads. Mirrors the real
+       solution-steps.js: legacy ["latex", …] passes through; structured
+       [{tex,action,note}] is packed into states + a parallel notes array. -->
   <script>
-    window.SolutionSteps = { get: async (q) => (Array.isArray(q.steps) ? q.steps : []) };
+    window.SolutionSteps = {
+      get: async (q) => {
+        const s = q.steps;
+        if (!Array.isArray(s) || s.length < 2) return [];
+        if (typeof s[0] !== 'object') return s;
+        const states = s.map((x) => x.tex);
+        const notes = s.map((x, i) =>
+          i === 0 ? '' : (x.action && x.note ? `${x.action} — ${x.note}` : (x.action || x.note || '')));
+        const arr = states.slice();
+        arr.notes = notes;
+        return arr;
+      },
+    };
   </script>
   <script src="/exam-archive/national/question/js/animator.js"></script>
 
@@ -83,6 +97,17 @@
         label: 'Fraction eval · f(\\sqrt3)',
         desc: 'fraction + sqrt morph',
         steps: ['f(\\sqrt{3}) = \\frac{1}{(\\sqrt{3})^2 + 1}', 'f(\\sqrt{3}) = \\frac{1}{3 + 1}', 'f(\\sqrt{3}) = \\frac{1}{4}'],
+      },
+      {
+        label: 'Structured · {tex, action, note}',
+        desc: 'AI-shape steps — hover the underlined action words',
+        steps: [
+          { tex: '3x + 2 = 11', action: 'given', note: '' },
+          { tex: '3x = 11 - 2', action: 'subtract', note: 'take 2 from both sides' },
+          { tex: '3x = 9', action: 'simplify', note: 'compute 11 - 2' },
+          { tex: 'x = \\frac{9}{3}', action: 'divide', note: 'divide both sides by 3' },
+          { tex: 'x = 3', action: 'evaluate', note: 'work out the fraction' },
+        ],
       },
       {
         label: 'Fallback · prose explanation',

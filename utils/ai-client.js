@@ -20,6 +20,13 @@ import {
 } from '/utils/ai-models.js';
 import { auth } from '/firebase-init.js';
 
+/* In local dev the static site is served on :5500 while the API runs on :5000;
+   in production they share an origin. Same trick PrepBot uses. */
+const API_BASE =
+  (typeof window !== 'undefined' && window.location.port === '5500')
+    ? 'http://127.0.0.1:5000'
+    : '';
+
 /* Firebase ID token for the authenticated backend proxy. */
 async function _idToken() {
   const user = auth.currentUser;
@@ -72,7 +79,7 @@ export async function geminiGenerate({
         });
         clearTimeout(timer);
       } else {
-        res = await fetch('/api/ai/gemini', {
+        res = await fetch(`${API_BASE}/api/ai/gemini`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ body, modelUrl }),
@@ -135,7 +142,7 @@ export async function groqGenerate({
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
           body: JSON.stringify(reqBody),
         })
-      : fetch('/api/ai/groq', {
+      : fetch(`${API_BASE}/api/ai/groq`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ body: reqBody }),

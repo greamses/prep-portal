@@ -633,5 +633,72 @@ module.exports = function () {
     }
   });
 
+  // ── Solution-step animations: admin-curated overrides ────────────────────
+  // The browser generates animation steps with the model, then an admin can
+  // APPROVE a good one. Approved {states,notes} live in Firestore keyed by a
+  // hash of (question|answer), and are served to every learner before any AI
+  // call — so a question is only ever generated once, by an admin, on purpose.
+  const stepsDoc = (h) => admin.firestore().collection("solutionSteps").doc(h);
+  const isAdmin = (req) => !!req.user && req.user.email === process.env.ADMIN_EMAIL;
+  const cleanHash = (h) => String(h || "").trim().replace(/[^a-z0-9]/gi, "").slice(0, 64);
+  // Word-problem translation: [{phrase, tex}] pairing prose with its algebra.
+  const cleanSetup = (arr) => Array.isArray(arr)
+    ? arr
+        .filter((x) => x && typeof x === "object")
+        .slice(0, 8)
+        .map((x) => ({ phrase: String(x.phrase || "").slice(0, 160), tex: String(x.tex || "").slice(0, 160) }))
+        .filter((x) => x.phrase || x.tex)
+    : [];
+
+  // Who am I? (lets the client decide whether to show the approve controls)
+  router.get("/whoami", authenticate, (req, res) => {
+    res.json({ email: req.user.email || null, admin: isAdmin(req) });
+  });
+
+  // Public read of an approved override (returns {found:false} when absent).
+  router.get("/steps/:hash", async (req, res) => {
+    try {
+      const h = cleanHash(req.params.hash);
+      if (!h) return res.status(400).json({ error: "bad hash" });
+      const snap = await stepsDoc(h).get();
+      if (!snap.exists) return res.json({ found: false });
+      const d = snap.data() || {};
+      res.json({ found: true, states: d.states || [], notes: d.notes || [], setup: d.setup || [] });
+    } catch (err) {
+      console.error("[/api/ai/steps GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin-only: store / replace an approved override.
+  router.post("/steps", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Admin access only." });
+      const { hash, question, answer, states, notes, setup } = req.body || {};
+      const h = cleanHash(hash);
+      if (!h) return res.status(400).json({ error: "hash is required" });
+      if (!Array.isArray(states) || states.length < 2 ||
+          !states.every((s) => typeof s === "string" && s.trim() && s.length <= 200)) {
+        return res.status(400).json({ error: "states must be 2+ short LaTeX strings" });
+      }
+      const cleanNotes = Array.isArray(notes)
+        ? notes.slice(0, states.length).map((n) => String(n || "").slice(0, 160))
+        : [];
+      await stepsDoc(h).set({
+        states: states.slice(0, 8),
+        notes: cleanNotes,
+        setup: cleanSetup(setup),
+        question: String(question || "").slice(0, 1200),
+        answer: String(answer || "").slice(0, 400),
+        approvedBy: req.user.email || req.user.uid,
+        approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[/api/ai/steps POST]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 };
