@@ -720,9 +720,13 @@
         if (text) {
             const note = document.createElement('div');
             note.className = 'pen-note';
-            note.innerHTML = PEN_DOODLE + '<span>' + wrapTerms(text) + '</span>';
+            // Notes can contain inline math (e.g. "divide by \(2\)"); normalise
+            // $...$ to \(...\) and typeset so it renders instead of showing raw.
+            const tex = String(text).replace(/\$([^$]+)\$/g, '\\($1\\)');
+            note.innerHTML = PEN_DOODLE + '<span>' + wrapTerms(tex) + '</span>';
             stage.insertBefore(note, row.nextSibling);
             addAnno(row, note);
+            typeset(note);
         }
     }
 
