@@ -67,16 +67,18 @@ const chatbotcss = `
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transform: scale(0.7);
+    /* Always visible (incl. touch, which has no hover) so the "sleep" control
+       is discoverable; it just emphasises a touch more on hover. */
+    opacity: 0.85;
+    transform: scale(1);
     transition: opacity 0.2s ease, transform 0.2s var(--_ease), background 0.15s;
     flex-shrink: 0;
     font-size: 14px;
     font-family: var(--_f-mono);
 }
 
-#chat-fab-wrap:hover #chat-fab-dismiss { opacity: 1; transform: scale(1); }
-#chat-fab-dismiss:hover { background: var(--_danger); }
+#chat-fab-wrap:hover #chat-fab-dismiss { opacity: 1; }
+#chat-fab-dismiss:hover { background: var(--_danger); opacity: 1; }
 
 /* ── Restore tab ── */
 #chat-fab-restore {
@@ -107,6 +109,28 @@ const chatbotcss = `
 
 #chat-fab-restore.fab-restore-visible { right: 0; }
 #chat-fab-restore:hover { background: var(--_accent); box-shadow: var(--_sh-lg); }
+
+/* Sleepy "z z z" on the restore tab — drifts up to read as snoozing. */
+#chat-fab-restore .fab-zzz {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 1px;
+    font-family: var(--_f-display);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+}
+#chat-fab-restore .fab-zzz > span:nth-child(1) { font-size: 0.78em; }
+#chat-fab-restore .fab-zzz > span:nth-child(2) { font-size: 0.95em; }
+#chat-fab-restore .fab-zzz { font-size: 0.7rem; }
+#chat-fab-restore .fab-zzz,
+#chat-fab-restore .fab-zzz > span { animation: pb-zzz 2.4s ease-in-out infinite; }
+#chat-fab-restore .fab-zzz > span:nth-child(1) { animation-delay: 0.25s; }
+#chat-fab-restore .fab-zzz > span:nth-child(2) { animation-delay: 0.5s; }
+@keyframes pb-zzz {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50%      { transform: translateY(-2px); opacity: 1; }
+}
 
 /* ── FAB — round sticker-logo launcher ── */
 #chat-fab {

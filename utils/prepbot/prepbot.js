@@ -417,6 +417,8 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
     sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l1.9 5.3 5.3 1.9-5.3 1.9L12 16.8l-1.9-5.3-5.3-1.9 5.3-1.9z" fill="var(--accent-primary)"/><circle cx="18.5" cy="5.5" r="1.4" fill="var(--accent-secondary)"/><circle cx="5.5" cy="17.5" r="1.1" fill="var(--accent-danger)"/></svg>`,
     // Close — clean rounded cross (inherits the button's colour)
     close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`,
+    // Power — "sleep" the assistant (inherits the button's colour)
+    power: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v8.2"/><path d="M6.5 6.6a8 8 0 1 0 11 0"/></svg>`,
     // Delete — friendly multicolour bin
     trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.4h6a1 1 0 0 1 1 1V6.4H8V5.4a1 1 0 0 1 1-1z" fill="var(--accent-danger)"/><rect x="4.5" y="6.2" width="15" height="2.3" rx="1.15" fill="var(--accent-danger)"/><path d="M6.4 8.5h11.2l-0.9 10.8a2 2 0 0 1-2 1.8H9.3a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.4" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/><rect x="13.1" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/></svg>`,
     // Key — BYUK ("bring your own key") sticker
@@ -442,10 +444,10 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
         ${pbLogo(5)}
         <span class="fab-dot"></span>
       </button>
-      <button id="chat-fab-dismiss">${PB_ICONS.close}</button>
+      <button id="chat-fab-dismiss" title="Sleep AI" aria-label="Sleep AI">${PB_ICONS.power}</button>
     </div>
     <div id="prepbot-popup" class="pp-sticky pp-sticky--c0"><button class="prepbot-popup-close" id="prepbot-popup-close">${PB_ICONS.close}</button><p id="prepbot-popup-text"></p></div>
-    <button id="chat-fab-restore" title="Show AI"><span>AI</span></button>
+    <button id="chat-fab-restore" title="Wake AI"><span class="fab-zzz" aria-hidden="true">z<span>z</span><span>z</span></span><span class="fab-restore-label">AI</span></button>
 
     <div id="chat-window" role="dialog">
       <div class="pb-paint" aria-hidden="true">${heroPaint()}</div>

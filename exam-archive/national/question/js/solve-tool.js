@@ -55,6 +55,11 @@
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
     let btn, panel, mountEl;
+    // Annotation layer state (draw over the question).
+    // Five colours from the site palette; the chosen one applies to ALL tools.
+    const ANNO_COLORS = ['#e07a5f', '#6fb7e8', '#6db58f', '#f4c95d', '#2a2723'];
+    let annoSvg = null, annoTool = null, annoDrawing = false, annoStart = null, annoEl = null, lastAnnoIdx = -1;
+    let annoColor = ANNO_COLORS[0];
 
     /* ── LaTeX → AsciiMath ─────────────────────────────────────────────────── */
 
@@ -412,6 +417,16 @@
             flex: 1 1 auto; min-height: 0;
             background: var(--surface-primary, #fffdf8);
         }
+        /* Graspable Math renders its settings/menus as popups at a low z-index,
+           so they hide behind the solver panel (z-index 9000). Lift GM's
+           popup/menu/modal containers above it. (Best-effort: targets GM's
+           own gm-* prefixed elements; harmless to our own UI.) */
+        .gm-popup, .gm-menu, .gm-submenu, .gm-window, .gm-modal, .gm-dialog,
+        .gm-dropdown, .gm-settings, .gm-settings-menu, .gm-overlay, .gm-tooltip,
+        [class*="gm-"][class*="menu"], [class*="gm-"][class*="popup"],
+        [class*="gm-"][class*="settings"], [class*="gm-"][class*="modal"] {
+            z-index: 10050 !important;
+        }
         .solve-panel__loading {
             display: flex; align-items: center; justify-content: center; height: 100%;
             font-family: var(--font-mono, monospace); font-size: .74rem;
@@ -461,12 +476,44 @@
         .solve-q__icon:hover { background: var(--surface-secondary, #f4f0e8); }
         .solve-q__icon svg { width: 11px; height: 11px; }
         #solve-q-overlay.min .solve-q__min svg { transform: rotate(180deg); }
+        /* Annotation toolbar (pen / highlight / box / circle / undo / clear). */
+        .solve-q__tools {
+            display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; flex-shrink: 0;
+            padding: .35rem .5rem;
+            background: var(--surface-secondary, #f4f0e8);
+            border-bottom: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+        }
+        .solve-q__tools-sp { flex: 1 1 auto; }
+        .solve-anno-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 7px; cursor: pointer;
+            border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+            background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
+        }
+        .solve-anno-btn svg { width: 13px; height: 13px; }
+        .solve-anno-btn:hover { background: var(--surface-secondary, #f4f0e8); }
+        .solve-anno-btn.active { background: var(--accent-primary, #f4c95d); color: var(--ink, #2a2723); border-color: transparent; }
+        /* Colour swatches — five from the palette; the chosen one rings up. */
+        .solve-swatch {
+            width: 18px; height: 18px; border-radius: 50%; cursor: pointer; flex-shrink: 0; padding: 0;
+            border: 2px solid var(--surface-primary, #fffdf8);
+            box-shadow: 0 0 0 1px rgba(42,39,35,.18);
+        }
+        .solve-swatch:hover { transform: scale(1.12); }
+        .solve-swatch.active { box-shadow: 0 0 0 2px var(--ink, #2a2723); }
+        /* The question + its drawing layer share a scrolling stage. */
+        .solve-q__stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; }
+        #solve-q-anno {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            pointer-events: none; touch-action: none; z-index: 2;
+        }
         .solve-q__body {
-            padding: .7rem .85rem; overflow: auto; min-height: 0;
+            padding: .7rem .85rem;
             font-family: var(--font-mono, monospace); font-size: .8rem; line-height: 1.55;
             color: var(--ink, #2a2723);
         }
-        #solve-q-overlay.min .solve-q__body { display: none; }
+        #solve-q-overlay.min .solve-q__tools,
+        #solve-q-overlay.min .solve-q__stage { display: none; }
         .solve-q__img { margin: .55rem 0; display: flex; justify-content: center; }
         .solve-q__img svg, .solve-q__img img { max-width: 100%; max-height: 190px; height: auto; }
         .solve-q__opts { margin-top: .55rem; }
@@ -548,6 +595,13 @@
         const nextSVG =
             '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
             'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2l4 4-4 4"/></svg>';
+        // Annotation tool icons.
+        const hlSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l4-4 3 3-4 4H3z"/><path d="M9 3.5l1.5 1.5"/><path d="M2.5 12.5h5"/></svg>';
+        const boxSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2.5" y="2.5" width="9" height="9" rx="1.4"/></svg>';
+        const circleSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/></svg>';
+        const undoSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5a3 3 0 1 1 0 6H6"/><path d="M4 5l2-2M4 5l2 2"/></svg>';
+        const clearSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h8"/><path d="M5 4.5V3.2h4v1.3"/><path d="M4 4.5l.6 6.3a1 1 0 0 0 1 .9h2.8a1 1 0 0 0 1-.9L10 4.5"/></svg>';
+        const underlineSVG = '<svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><text x="3" y="9.5" font-size="9" font-family="Georgia, serif" fill="currentColor">U</text><path d="M2.5 12h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
         panel.innerHTML =
             '<div class="solve-panel__bar">' +
@@ -579,7 +633,22 @@
                         '<button type="button" id="solve-q-hide" class="solve-q__icon" aria-label="Hide question">' + closeSVG + '</button>' +
                     '</span>' +
                 '</div>' +
-                '<div class="solve-q__body" id="solve-q-body"></div>' +
+                '<div class="solve-q__tools" id="solve-q-tools">' +
+                    '<button type="button" class="solve-anno-btn" data-tool="hl" title="Highlight">' + hlSVG + '</button>' +
+                    '<button type="button" class="solve-anno-btn" data-tool="underline" title="Underline">' + underlineSVG + '</button>' +
+                    '<button type="button" class="solve-anno-btn" data-tool="box" title="Box">' + boxSVG + '</button>' +
+                    '<button type="button" class="solve-anno-btn" data-tool="circle" title="Circle">' + circleSVG + '</button>' +
+                    ANNO_COLORS.map((c, i) =>
+                        '<button type="button" class="solve-swatch' + (i === 0 ? ' active' : '') + '" data-color="' + c + '" style="background:' + c + '" title="Colour" aria-label="Colour"></button>'
+                    ).join('') +
+                    '<span class="solve-q__tools-sp"></span>' +
+                    '<button type="button" class="solve-anno-btn" id="solve-anno-undo" title="Undo annotation">' + undoSVG + '</button>' +
+                    '<button type="button" class="solve-anno-btn" id="solve-anno-clear" title="Clear annotations">' + clearSVG + '</button>' +
+                '</div>' +
+                '<div class="solve-q__stage" id="solve-q-stage">' +
+                    '<div class="solve-q__body" id="solve-q-body"></div>' +
+                    '<svg id="solve-q-anno" xmlns="http://www.w3.org/2000/svg"></svg>' +
+                '</div>' +
             '</div>' +
             '<p class="solve-panel__hint">' +
                 'The question floats on the canvas — drag its header to move it · ' +
@@ -607,6 +676,22 @@
         panel.querySelector('#solve-q-prev').addEventListener('click', (e) => { e.stopPropagation(); gotoQuestion(-1); });
         panel.querySelector('#solve-q-next').addEventListener('click', (e) => { e.stopPropagation(); gotoQuestion(1); });
         makeDraggable(overlay, panel.querySelector('#solve-q-head'));
+
+        // Annotation layer + toolbar.
+        annoSvg = panel.querySelector('#solve-q-anno');
+        panel.querySelectorAll('.solve-anno-btn[data-tool]').forEach((b) =>
+            b.addEventListener('click', () => setAnnoTool(b.dataset.tool)));
+        const swatches = panel.querySelectorAll('.solve-swatch');
+        swatches.forEach((sw) => sw.addEventListener('click', () => {
+            annoColor = sw.dataset.color;
+            swatches.forEach((s) => s.classList.toggle('active', s === sw));
+        }));
+        panel.querySelector('#solve-anno-undo').addEventListener('click', annoUndo);
+        panel.querySelector('#solve-anno-clear').addEventListener('click', annoClear);
+        annoSvg.addEventListener('pointerdown', annoDown);
+        annoSvg.addEventListener('pointermove', annoMove);
+        annoSvg.addEventListener('pointerup', annoUp);
+        annoSvg.addEventListener('pointercancel', annoUp);
     }
 
     // Mirror the current question (prompt + figure + options) into the overlay,
@@ -617,6 +702,10 @@
         if (!body) return;
         const cur = currentQuestion();
         if (!cur || !cur.q) { body.innerHTML = '<em style="opacity:.6">No question loaded.</em>'; return; }
+
+        // Wipe annotations only when we've actually moved to a different question
+        // (not on the re-mirror that follows answering an option).
+        if (cur.idx !== lastAnnoIdx) { annoClear(); lastAnnoIdx = cur.idx; }
 
         try {
             const st = window.Quiz.getState();
@@ -661,6 +750,96 @@
             setTimeout(renderQuestionOverlay, 0);   // reflect selected / locked state
         }
     }
+
+    // ── Question annotation: pen / highlight / box / circle over the question ──
+    const ANNO_NS = 'http://www.w3.org/2000/svg';
+    // Select a drawing tool (clicking the active one turns drawing off so the
+    // mirrored options stay clickable). The SVG only captures pointers when a
+    // tool is active.
+    function setAnnoTool(t) {
+        annoTool = (annoTool === t) ? null : t;
+        panel.querySelectorAll('.solve-anno-btn[data-tool]').forEach((b) =>
+            b.classList.toggle('active', b.dataset.tool === annoTool));
+        if (annoSvg) {
+            annoSvg.style.pointerEvents = annoTool ? 'auto' : 'none';
+            annoSvg.style.cursor = annoTool ? 'crosshair' : '';
+        }
+    }
+    function annoPoint(e) {
+        const r = annoSvg.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+    // #rrggbb → rgba(...) so the highlighter is a translucent version of the
+    // chosen colour (the colour control affects every tool).
+    function annoRgba(hex, a) {
+        const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+        if (!m) return hex;
+        return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${a})`;
+    }
+    function annoDown(e) {
+        if (!annoTool) return;
+        e.preventDefault();
+        annoDrawing = true;
+        annoStart = annoPoint(e);
+        const p = annoStart;
+        if (annoTool === 'hl') {
+            annoEl = document.createElementNS(ANNO_NS, 'path');
+            annoEl.setAttribute('fill', 'none');
+            annoEl.setAttribute('stroke', annoRgba(annoColor, 0.4));
+            annoEl.setAttribute('stroke-width', 14);
+            annoEl.setAttribute('stroke-linecap', 'round');
+            annoEl.setAttribute('stroke-linejoin', 'round');
+            annoEl.setAttribute('d', 'M ' + p.x + ' ' + p.y);
+        } else if (annoTool === 'underline') {
+            annoEl = document.createElementNS(ANNO_NS, 'line');
+            annoEl.setAttribute('stroke', annoColor);
+            annoEl.setAttribute('stroke-width', 2.6);
+            annoEl.setAttribute('stroke-linecap', 'round');
+            annoEl.setAttribute('x1', p.x); annoEl.setAttribute('y1', p.y);
+            annoEl.setAttribute('x2', p.x); annoEl.setAttribute('y2', p.y);
+        } else {
+            annoEl = document.createElementNS(ANNO_NS, annoTool === 'box' ? 'rect' : 'ellipse');
+            annoEl.setAttribute('fill', 'none');
+            annoEl.setAttribute('stroke', annoColor);
+            annoEl.setAttribute('stroke-width', 2.4);
+            if (annoTool === 'box') annoEl.setAttribute('rx', 4);
+        }
+        annoSvg.appendChild(annoEl);
+        try { annoSvg.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    function annoMove(e) {
+        if (!annoDrawing || !annoEl) return;
+        const p = annoPoint(e), s = annoStart;
+        if (annoTool === 'hl') {
+            annoEl.setAttribute('d', annoEl.getAttribute('d') + ' L ' + p.x + ' ' + p.y);
+        } else if (annoTool === 'underline') {
+            // Lock to the horizontal so it reads as an underline.
+            annoEl.setAttribute('x2', p.x);
+            annoEl.setAttribute('y2', s.y);
+        } else if (annoTool === 'box') {
+            annoEl.setAttribute('x', Math.min(p.x, s.x));
+            annoEl.setAttribute('y', Math.min(p.y, s.y));
+            annoEl.setAttribute('width', Math.abs(p.x - s.x));
+            annoEl.setAttribute('height', Math.abs(p.y - s.y));
+        } else {
+            annoEl.setAttribute('cx', (p.x + s.x) / 2);
+            annoEl.setAttribute('cy', (p.y + s.y) / 2);
+            annoEl.setAttribute('rx', Math.abs(p.x - s.x) / 2);
+            annoEl.setAttribute('ry', Math.abs(p.y - s.y) / 2);
+        }
+    }
+    function annoUp(e) {
+        if (!annoDrawing) return;
+        annoDrawing = false;
+        // Drop a zero-size shape (a click with no drag).
+        if (annoEl && (annoTool === 'box' || annoTool === 'circle')) {
+            try { const bb = annoEl.getBBox(); if (bb.width < 3 && bb.height < 3) annoEl.remove(); } catch (_) {}
+        }
+        annoEl = null;
+        try { annoSvg.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    function annoUndo() { if (annoSvg && annoSvg.lastChild) annoSvg.removeChild(annoSvg.lastChild); }
+    function annoClear() { if (annoSvg) while (annoSvg.firstChild) annoSvg.removeChild(annoSvg.firstChild); }
 
     // Drag a panel element by a handle, clamped inside #solve-panel.
     function makeDraggable(el, handle) {
