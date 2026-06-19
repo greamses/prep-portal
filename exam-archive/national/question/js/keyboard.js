@@ -87,6 +87,12 @@
   document.addEventListener('keydown', (e) => {
     // Never interfere with the PrepBot chat panel.
     if (e.target && typeof e.target.closest === 'function' && e.target.closest('#chat-window')) return;
+    // While the Graspable Math solver is open, suspend ALL quiz shortcuts:
+    // typing your working (digits/letters) there must never be hijacked into
+    // picking a quiz option, and arrows shouldn't change the question.
+    if (e.target && typeof e.target.closest === 'function' && e.target.closest('#solve-panel')) return;
+    const solver = document.getElementById('solve-panel');
+    if (solver && solver.classList.contains('open')) return;
     if (!onQuizScreen()) return;
     const q = engine();
     if (!q) return;
