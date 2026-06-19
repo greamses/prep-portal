@@ -60,24 +60,33 @@ function readNext() {
   return null;
 }
 
+async function mintSession(user) {
+  try {
+    const idToken = await user.getIdToken();
+    const res = await fetch(`${API_BASE}/api/auth/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+      credentials: "include",
+    });
+    if (res.ok) { try { localStorage.setItem(SESSION_TS_KEY, String(Date.now())); } catch (e) {} }
+    return res.ok;
+  } catch (e) { return false; }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (typeof window === "undefined") return;
   try {
     if (user) {
+      const next = readNext();
+      // A gate redirect (?next=) means the server had no valid cookie, so we
+      // MUST mint a fresh one before returning — never trust the throttle here
+      // (otherwise a cleared/expired cookie would loop). Only redirect on success.
+      let ok = true;
       let ts = 0;
       try { ts = +localStorage.getItem(SESSION_TS_KEY) || 0; } catch (e) {}
-      if (Date.now() - ts > SESSION_REFRESH_MS) {
-        const idToken = await user.getIdToken();
-        const res = await fetch(`${API_BASE}/api/auth/session`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken }),
-          credentials: "include",
-        });
-        if (res.ok) { try { localStorage.setItem(SESSION_TS_KEY, String(Date.now())); } catch (e) {} }
-      }
-      const next = readNext();
-      if (next) window.location.replace(next);
+      if (next || Date.now() - ts > SESSION_REFRESH_MS) ok = await mintSession(user);
+      if (next && ok) window.location.replace(next);
     } else {
       try { localStorage.removeItem(SESSION_TS_KEY); } catch (e) {}
       await fetch(`${API_BASE}/api/auth/session`, { method: "DELETE", credentials: "include" });
