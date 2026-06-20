@@ -3198,3 +3198,151 @@ mjx-container {
 #yt-apikey-section {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOFT-UI ALIGNMENT — match the National Exams builder skin.
+   This page predated the soft-UI redesign: it leaned on a legacy colour
+   vocabulary (--yellow/--blue/--green/--red/--muted/--off) that no longer
+   exists in theme.css, plus hard neo-brutalist borders/shadows. Below we
+   (1) alias those tokens onto the current theme accents so the whole page
+   (incl. the modal) is coloured again, and (2) retune the dominant surfaces
+   to the soft, rounded, paint-washed look of /exam-archive/national/exams.
+   Appended last so it wins the cascade over the older rules above.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --yellow: var(--accent-primary);
+  --blue:   var(--accent-secondary);
+  --green:  var(--accent-success);
+  --red:    var(--accent-danger);
+  --muted:  var(--text-secondary);
+  --off:    var(--surface-secondary);
+}
+
+/* Organic paint-blob wash behind everything (filled by the inline module). */
+.builder-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.4;
+}
+.builder-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .builder-paint { opacity: 0.16; }
+
+/* Keep real content above the wash. (The modal is already a fixed z-index:400
+   overlay, so it sits above the paint without help — don't touch it here.) */
+.site-nav,
+.pg-hero,
+.setup-section { position: relative; z-index: 1; }
+
+/* Plain paper canvas — the paint provides the colour now. */
+body { background-image: none; }
+
+/* ── Hero: drop the hard slab; float the copy over the paint ── */
+.pg-hero {
+  background: transparent;
+  border-bottom: none;
+  padding-bottom: clamp(8px, 2vw, 24px);
+}
+.pg-hero::after { color: color-mix(in srgb, var(--ink) 5%, transparent); }
+.pg-title em { color: var(--accent-secondary); }
+
+/* Stat slab → soft rounded paper card with a tinted edge */
+.ph-stats {
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  background: var(--surface-primary);
+  overflow: hidden;
+}
+.ph-stat { border-right: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.ph-stat strong { color: var(--ink); }
+
+/* Badges → soft sticker pills (icons are inline SVG now, no emoji) */
+.ph-badge {
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+.ph-badge svg { flex-shrink: 0; }
+.ph-badge--ai {
+  background: color-mix(in srgb, var(--accent-primary) 18%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  color: var(--ink);
+}
+.ph-badge--instant {
+  background: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-success) 38%, transparent);
+  color: var(--accent-success);
+}
+.ph-badge--print {
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+  color: var(--accent-secondary);
+}
+
+/* ── Setup box → soft rounded paper card; dashed inner dividers ── */
+.setup-box {
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  box-shadow: var(--shadow-md);
+  background: var(--surface-primary);
+}
+.setup-row { border-bottom: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.setup-row:last-child { border-bottom: none; }
+.setup-cell { border-right: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.setup-cell:last-child { border-right: none; }
+
+/* Step number → tinted, rotated sticker badge (exactly like the exams cards) */
+.step-num {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent, #fff);
+  border-radius: 999px;
+  transform: rotate(-6deg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Name input → soft field with the handwritten font */
+.name-input,
+.name-input::placeholder { font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive; }
+.name-input {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--surface-secondary);
+  border-radius: 12px;
+}
+.name-input:focus {
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+
+/* ── Footer → soft bar ── */
+.setup-footer {
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+  background: color-mix(in srgb, var(--surface-secondary) 60%, transparent);
+}
+
+/* ── Buttons → soft pills with blurred shadows (no hard offsets) ── */
+.btn {
+  border-radius: 999px;
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+.btn-yellow { background: var(--accent-primary); color: var(--ink); box-shadow: var(--shadow-md); }
+.btn-yellow:hover:not(:disabled),
+.btn-blue:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.btn-yellow:active,
+.btn-blue:active,
+.btn-primary:active:not(:disabled) { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.btn-yellow:disabled,
+.btn-primary:disabled { background: color-mix(in srgb, var(--ink) 14%, var(--surface-secondary)); border-color: transparent; box-shadow: none; }
+.btn-primary { background: var(--ink); color: var(--app-bg); }
+.btn-blue { background: var(--accent-secondary); color: var(--text-on-accent, #fff); box-shadow: var(--shadow-md); }
+.btn-ghost {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--surface-primary);
+  color: var(--ink);
+  box-shadow: none;
+}
+.btn-ghost:hover { background: var(--surface-secondary); color: var(--ink); }

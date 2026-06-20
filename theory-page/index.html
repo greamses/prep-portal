@@ -10,7 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -47,6 +51,9 @@
     <!-- NAVIGATION -->
     <nav class="site-nav" data-nav="main"></nav>
 
+    <!-- Organic paint-blob wash behind the whole page (matches the exams builder) -->
+    <div class="builder-paint" aria-hidden="true"></div>
+
     <!-- ═══ HERO ═══ -->
     <header class="pg-hero">
       <div class="pg-hero-inner">
@@ -77,9 +84,18 @@
             </div>
           </div>
           <div class="ph-badges">
-            <span class="ph-badge ph-badge--ai">⚡ AI-Powered</span>
-            <span class="ph-badge ph-badge--instant">✓ Instant Marking</span>
-            <span class="ph-badge ph-badge--print">🖨 Printable Sheet</span>
+            <span class="ph-badge ph-badge--ai">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              AI-Powered
+            </span>
+            <span class="ph-badge ph-badge--instant">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Instant Marking
+            </span>
+            <span class="ph-badge ph-badge--print">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Printable Sheet
+            </span>
           </div>
         </div>
       </div>
@@ -328,5 +344,12 @@
     <script type="module" src="/utils/prepbot/prepbot.js"></script>
     <script type="module" src="./main.js"></script>
     <script src="/utils/components/nav-builder.js" type="module"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document
+        .querySelectorAll(".builder-paint")
+        .forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
   </body>
 </html>
