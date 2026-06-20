@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partner Dashboard — PrepPortal</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+  <style>
+    body { margin:0; background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723);
+      font-family: var(--font-mono, ui-monospace, monospace); padding:1.5rem; }
+    .pt-wrap { max-width: 860px; margin:0 auto; }
+    h1 { font-size:1.1rem; margin:0 0 1.2rem; }
+    .pt-card { background: var(--surface-primary,#fffdf8); border: var(--border-subtle,1px solid rgba(42,39,35,.12));
+      border-radius:14px; padding:1rem 1.1rem; margin-bottom:1.2rem; box-shadow: var(--shadow-sm,0 2px 5px rgba(42,39,35,.08)); }
+    .pt-card h2 { font-size:.82rem; margin:0 0 .8rem; }
+    label { display:block; font-size:.66rem; font-weight:700; margin:.5rem 0 .25rem; opacity:.85; }
+    input { width:100%; box-sizing:border-box; padding:.55rem .7rem; border-radius:10px; font-family:inherit; font-size:.82rem;
+      border: var(--border-subtle,1px solid rgba(42,39,35,.14)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
+    button { padding:.55rem 1rem; border:none; border-radius:10px; cursor:pointer; font-weight:700; font-family:inherit;
+      font-size:.75rem; background: var(--accent-primary,#f4c95d); color: var(--text-on-accent,#2a2723); }
+    button:disabled { opacity:.6; cursor:default; }
+    .pt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.7rem; }
+    .pt-stat { background: var(--surface-secondary,#f4f0e8); border-radius:12px; padding:.8rem .9rem; }
+    .pt-stat .k { font-size:.58rem; text-transform:uppercase; letter-spacing:.06em; opacity:.7; }
+    .pt-stat .v { font-size:1.05rem; font-weight:700; margin-top:.2rem; font-variant-numeric:tabular-nums; }
+    .pt-code { font-size:1.3rem; font-weight:800; letter-spacing:.12em; color: var(--accent-secondary,#6fb7e8); }
+    table { width:100%; border-collapse:collapse; font-size:.72rem; }
+    th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid rgba(42,39,35,.1); }
+    th { font-size:.58rem; text-transform:uppercase; letter-spacing:.05em; opacity:.7; }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .pt-msg { font-size:.7rem; margin:.5rem 0 0; min-height:1em; }
+    .pt-msg--ok { color: var(--accent-success,#6db58f); }
+    .pt-msg--err { color: var(--accent-danger,#e07a5f); }
+    .pt-row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:flex-end; }
+    .pt-row > div { flex:1 1 160px; }
+    .pt-pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.6rem; font-weight:700; text-transform:uppercase; }
+    .pt-pill--requested { background:#f4c95d33; color:#8a6d1f; }
+    .pt-pill--paid { background:#6db58f33; color:#2f6b50; }
+    .pt-pill--rejected { background:#e07a5f33; color:#a23d23; }
+    .pt-gate { text-align:center; padding:3rem 1rem; }
+    .pt-hidden { display:none; }
+    a { color: var(--accent-secondary,#6fb7e8); }
+  </style>
+</head>
+<body>
+  <div class="pt-wrap">
+    <h1>🎒 Partner Dashboard</h1>
+    <div id="pt-gate" class="pt-gate">Loading…</div>
+
+    <div id="pt-claim" class="pt-card pt-hidden">
+      <h2>Link your partner account</h2>
+      <p style="font-size:.74rem;opacity:.85">Enter the redeem code your PrepPortal contact gave you to access your earnings.</p>
+      <div class="pt-row">
+        <div><label for="pt-code">Redeem code</label><input id="pt-code" type="text" placeholder="e.g. LAGS7K2P" maxlength="16" /></div>
+        <div style="flex:0 0 auto"><button id="pt-claim-btn" type="button">Link account</button></div>
+      </div>
+      <p id="pt-claim-msg" class="pt-msg"></p>
+    </div>
+
+    <div id="pt-main" class="pt-hidden">
+      <div class="pt-card">
+        <h2 id="pt-school">—</h2>
+        <p style="margin:.2rem 0 1rem;font-size:.72rem;opacity:.8">Your code: <span id="pt-code-show" class="pt-code">—</span></p>
+        <div class="pt-grid">
+          <div class="pt-stat"><div class="k">Available balance</div><div class="v" id="pt-bal">—</div></div>
+          <div class="pt-stat"><div class="k">Lifetime earned</div><div class="v" id="pt-life">—</div></div>
+          <div class="pt-stat"><div class="k">Paid out</div><div class="v" id="pt-paid">—</div></div>
+          <div class="pt-stat"><div class="k">Students referred</div><div class="v" id="pt-refs">—</div></div>
+        </div>
+      </div>
+
+      <div class="pt-card">
+        <h2>Request a payout</h2>
+        <div id="pt-payout-pending" class="pt-hidden" style="font-size:.74rem"></div>
+        <div id="pt-payout-form">
+          <div class="pt-row">
+            <div><label for="pt-bank">Bank name</label><input id="pt-bank" type="text" placeholder="GTBank" /></div>
+            <div><label for="pt-acctname">Account name</label><input id="pt-acctname" type="text" placeholder="Lagos High School" /></div>
+          </div>
+          <div class="pt-row">
+            <div><label for="pt-acctno">Account number</label><input id="pt-acctno" type="text" inputmode="numeric" placeholder="0123456789" /></div>
+            <div><label for="pt-amt">Amount (₦, blank = full balance)</label><input id="pt-amt" type="number" min="0" placeholder="full balance" /></div>
+            <div style="flex:0 0 auto"><label>&nbsp;</label><button id="pt-payout-btn" type="button">Request payout</button></div>
+          </div>
+          <p id="pt-payout-msg" class="pt-msg"></p>
+        </div>
+      </div>
+
+      <div class="pt-card">
+        <h2>Earnings</h2>
+        <table><thead><tr><th>Date</th><th>Cycle</th><th>Plan</th><th class="num">Commission</th></tr></thead>
+          <tbody id="pt-earn"></tbody></table>
+      </div>
+
+      <div class="pt-card">
+        <h2>Payout history</h2>
+        <table><thead><tr><th>Requested</th><th class="num">Amount</th><th>Status</th></tr></thead>
+          <tbody id="pt-payouts"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const naira = (k) => "₦" + ((Number(k) || 0) / 100).toLocaleString("en-NG");
+    const $ = (id) => document.getElementById(id);
+    const tsDate = (x) => (x && x._seconds ? new Date(x._seconds * 1000).toLocaleDateString("en-NG") : "—");
+
+    async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
+
+    function show(el) { el.classList.remove("pt-hidden"); }
+    function hide(el) { el.classList.add("pt-hidden"); }
+
+    async function loadMe() {
+      const res = await fetch(`${API}/api/partner/me`, { headers: await authHeader() });
+      const d = await res.json();
+      if (!d.partner) { hide($("pt-main")); show($("pt-claim")); hide($("pt-gate")); wireClaim(); return; }
+      render(d);
+      hide($("pt-claim")); hide($("pt-gate")); show($("pt-main"));
+      wirePayout(d);
+    }
+
+    function render(d) {
+      const p = d.partner;
+      $("pt-school").textContent = p.schoolName || "Your school";
+      $("pt-code-show").textContent = p.code || "—";
+      $("pt-bal").textContent = naira(p.balanceKobo);
+      $("pt-life").textContent = naira(p.lifetimeKobo);
+      $("pt-paid").textContent = naira(p.paidOutKobo);
+      $("pt-refs").textContent = d.referrals;
+
+      $("pt-earn").innerHTML = (d.earnings || []).length
+        ? d.earnings.map((e) => `<tr><td>${tsDate(e.createdAt)}</td><td>${e.cycle || "—"}</td><td>${e.planTier || ""} ${e.billing || ""}</td><td class="num">${naira(e.amountKobo)}</td></tr>`).join("")
+        : '<tr><td colspan="4">No earnings yet.</td></tr>';
+
+      $("pt-payouts").innerHTML = (d.payouts || []).length
+        ? d.payouts.map((po) => `<tr><td>${tsDate(po.requestedAt)}</td><td class="num">${naira(po.amountKobo)}</td><td><span class="pt-pill pt-pill--${po.status}">${po.status}</span></td></tr>`).join("")
+        : '<tr><td colspan="3">No payouts yet.</td></tr>';
+
+      const pending = (d.payouts || []).some((po) => po.status === "requested");
+      if (pending) {
+        hide($("pt-payout-form"));
+        const el = $("pt-payout-pending");
+        el.textContent = "You have a pending payout request — we'll process it shortly.";
+        show(el);
+      } else {
+        show($("pt-payout-form")); hide($("pt-payout-pending"));
+      }
+    }
+
+    function wireClaim() {
+      const btn = $("pt-claim-btn"), msg = $("pt-claim-msg");
+      btn.onclick = async () => {
+        const code = $("pt-code").value.trim().toUpperCase();
+        if (!code) return;
+        btn.disabled = true; msg.textContent = "";
+        try {
+          const res = await fetch(`${API}/api/partner/claim`, {
+            method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
+            body: JSON.stringify({ code }),
+          });
+          const d = await res.json();
+          if (res.ok && d.ok) { loadMe(); }
+          else { msg.textContent = d.error || "Couldn't link that code."; msg.className = "pt-msg pt-msg--err"; }
+        } catch (e) { msg.textContent = e.message; msg.className = "pt-msg pt-msg--err"; }
+        finally { btn.disabled = false; }
+      };
+    }
+
+    function wirePayout(d) {
+      const btn = $("pt-payout-btn"), msg = $("pt-payout-msg");
+      if (!btn) return;
+      btn.onclick = async () => {
+        const body = {
+          bankName: $("pt-bank").value.trim(),
+          accountName: $("pt-acctname").value.trim(),
+          accountNumber: $("pt-acctno").value.trim(),
+        };
+        const amt = parseFloat($("pt-amt").value);
+        if (amt > 0) body.amountKobo = Math.round(amt * 100);
+        btn.disabled = true; msg.textContent = "";
+        try {
+          const res = await fetch(`${API}/api/partner/payout`, {
+            method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
+            body: JSON.stringify(body),
+          });
+          const r = await res.json();
+          if (res.ok && r.ok) { msg.textContent = "✓ Payout requested."; msg.className = "pt-msg pt-msg--ok"; loadMe(); }
+          else { msg.textContent = r.error || "Couldn't request payout."; msg.className = "pt-msg pt-msg--err"; }
+        } catch (e) { msg.textContent = e.message; msg.className = "pt-msg pt-msg--err"; }
+        finally { btn.disabled = false; }
+      };
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) { $("pt-gate").innerHTML = 'Please <a href="/index.html?login=1&next=/partner.html">sign in</a> to view your partner dashboard.'; return; }
+      loadMe().catch((e) => { $("pt-gate").textContent = "Error: " + e.message; });
+    });
+  </script>
+</body>
+</html>

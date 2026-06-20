@@ -82,6 +82,14 @@
         </table>
       </div>
 
+      <div class="ap-card">
+        <h2>Payout requests</h2>
+        <table>
+          <thead><tr><th>Requested</th><th>School</th><th>Bank details</th><th class="ap-num">Amount</th><th>Status</th><th></th></tr></thead>
+          <tbody id="ap-payouts"><tr><td colspan="6">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
       <div id="ap-earn" class="ap-card ap-hidden">
         <h2 id="ap-earn-title">Earnings</h2>
         <table>
@@ -180,6 +188,37 @@
       finally { btn.disabled = false; }
     }
 
+    async function loadPayouts() {
+      const tb = document.getElementById("ap-payouts");
+      try {
+        const res = await fetch(`${API}/api/admin/payouts`, { headers: await authHeader() });
+        const rows = await res.json();
+        if (!Array.isArray(rows) || !rows.length) { tb.innerHTML = '<tr><td colspan="6">No payout requests.</td></tr>'; return; }
+        tb.innerHTML = rows.map((r) => {
+          const d = r.requestedAt && r.requestedAt._seconds ? new Date(r.requestedAt._seconds * 1000).toLocaleDateString("en-NG") : "—";
+          const actions = r.status === "requested"
+            ? `<button class="ap-link" data-act="approve" data-id="${r.id}">approve</button> &middot; <button class="ap-link" data-act="reject" data-id="${r.id}">reject</button>`
+            : "";
+          const bank = `${r.bankName || ""} ${r.accountNumber || ""}`.trim();
+          return `<tr><td>${d}</td><td>${r.schoolName || "—"}</td><td>${bank || "—"}<br><span style="opacity:.6">${r.accountName || ""}</span></td><td class="ap-num">${naira(r.amountKobo)}</td><td>${r.status}</td><td>${actions}</td></tr>`;
+        }).join("");
+        tb.querySelectorAll(".ap-link").forEach((b) => b.onclick = () => actPayout(b.dataset.id, b.dataset.act));
+      } catch (e) { tb.innerHTML = `<tr><td colspan="6">Failed (${e.message}).</td></tr>`; }
+    }
+
+    async function actPayout(id, act) {
+      if (act === "approve" && !confirm("Mark this payout PAID and debit the partner's balance?")) return;
+      if (act === "reject" && !confirm("Reject this payout request?")) return;
+      try {
+        const res = await fetch(`${API}/api/admin/payouts/${encodeURIComponent(id)}/${act}`, {
+          method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) }, body: "{}",
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) alert(d.error || "Failed");
+        loadPayouts(); loadPartners();
+      } catch (e) { alert(e.message); }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.';
@@ -193,6 +232,7 @@
       main.classList.remove("ap-hidden");
       document.getElementById("ap-create").onclick = createPartner;
       loadPartners();
+      loadPayouts();
     });
   </script>
 </body>

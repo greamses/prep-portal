@@ -73,6 +73,7 @@ app.use(express.json({ limit: "4mb" }));
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use("/api/payments", payments.router);
+app.use("/api/partner", require("./routes/partner")());
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/questions", require("./routes/questions")());

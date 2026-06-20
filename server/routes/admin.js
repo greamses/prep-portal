@@ -129,5 +129,68 @@ module.exports = function (db, auth) {
     }
   });
 
+  // ── Payouts (Phase 3) ───────────────────────────────────────
+  // List payout requests (optionally ?status=requested|paid|rejected), newest first.
+  router.get("/payouts", async (req, res) => {
+    try {
+      const snap = await db.collection("payouts").get();
+      let rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (req.query.status) rows = rows.filter((r) => r.status === req.query.status);
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+      rows.sort((a, b) => ms(b.requestedAt) - ms(a.requestedAt));
+      res.json(rows);
+    } catch (err) {
+      console.error("[/api/admin/payouts GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Approve a payout: atomically debit the partner's balance and mark it paid.
+  router.post("/payouts/:id/approve", async (req, res) => {
+    try {
+      const poRef = db.collection("payouts").doc(req.params.id);
+      const inc = admin.firestore.FieldValue.increment;
+      const ts = admin.firestore.FieldValue.serverTimestamp;
+      const result = await db.runTransaction(async (t) => {
+        const poSnap = await t.get(poRef);
+        if (!poSnap.exists) { const e = new Error("Payout not found."); e.status = 404; throw e; }
+        const po = poSnap.data();
+        if (po.status !== "requested") { const e = new Error(`Payout is already ${po.status}.`); e.status = 409; throw e; }
+        const pRef = db.collection("partners").doc(po.partnerId);
+        const pSnap = await t.get(pRef);
+        const bal = (pSnap.exists && pSnap.data().balanceKobo) || 0;
+        if (bal < po.amountKobo) { const e = new Error("Partner balance is now lower than the request."); e.status = 409; throw e; }
+        t.set(pRef, { balanceKobo: inc(-po.amountKobo), paidOutKobo: inc(po.amountKobo), updatedAt: ts() }, { merge: true });
+        t.set(poRef, { status: "paid", paidAt: ts(), paidBy: req.user.email || req.user.uid }, { merge: true });
+        return { amountKobo: po.amountKobo };
+      });
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      console.error("[/api/admin/payouts approve]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Reject a payout (no balance change).
+  router.post("/payouts/:id/reject", async (req, res) => {
+    try {
+      const poRef = db.collection("payouts").doc(req.params.id);
+      const snap = await poRef.get();
+      if (!snap.exists) return res.status(404).json({ error: "Payout not found." });
+      if (snap.data().status !== "requested") return res.status(409).json({ error: `Payout is already ${snap.data().status}.` });
+      await poRef.set({
+        status: "rejected",
+        rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        rejectedBy: req.user.email || req.user.uid,
+        reason: String((req.body && req.body.reason) || "").slice(0, 200) || null,
+      }, { merge: true });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[/api/admin/payouts reject]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 };
