@@ -20,7 +20,13 @@
   <style>
     body { margin:0; background: var(--app-bg); color: var(--ink);
       font-family: var(--font-mono, ui-monospace, monospace); padding: clamp(1rem, 4vw, 2.5rem) 1rem; }
-    .pt-wrap { max-width: 880px; margin: 0 auto; }
+
+    /* Signature amoeba "paint" wash behind the page (our blob motif). */
+    .pt-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: .26; }
+    .pt-paint svg { width: 100%; height: 100%; display: block; }
+    [data-theme="dark"] .pt-paint { opacity: .15; }
+
+    .pt-wrap { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; }
 
     /* Header */
     .pt-head { display:flex; align-items:center; gap:1rem; margin: 0.5rem 0 2rem; flex-wrap:wrap; }
@@ -79,6 +85,7 @@
   </style>
 </head>
 <body>
+  <div class="pt-paint" aria-hidden="true"></div>
   <div class="pt-wrap">
     <div class="pt-head">
       <span class="pt-head__icon" aria-hidden="true">
@@ -173,6 +180,11 @@
   <script type="module">
     import { auth } from "/firebase-init.js";
     import { onAuthStateChanged } from "firebase/auth";
+    import { heroPaint } from "/utils/components/nav-icons.js";
+
+    // Signature blob wash behind the page.
+    const paintHost = document.querySelector(".pt-paint");
+    if (paintHost) paintHost.innerHTML = heroPaint();
 
     const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
     const naira = (k) => "₦" + ((Number(k) || 0) / 100).toLocaleString("en-NG");

@@ -15,14 +15,16 @@
   const KEY = "pp_promo_until";
   const SNOOZE_DAYS = 4;
   const DELAY_MS = 3500;
+  let shown = false; // guard against the timer + login event double-firing
 
-  try {
-    const until = +localStorage.getItem(KEY) || 0;
-    if (Date.now() < until) return; // still snoozed
-  } catch (_) {}
-
+  function isSnoozed() {
+    try { return Date.now() < (+localStorage.getItem(KEY) || 0); } catch (_) { return false; }
+  }
   function snooze() {
     try { localStorage.setItem(KEY, String(Date.now() + SNOOZE_DAYS * 864e5)); } catch (_) {}
+  }
+  function clearSnooze() {
+    try { localStorage.removeItem(KEY); } catch (_) {}
   }
 
   // Make sure the shared component styles are present (they normally arrive via
@@ -79,6 +81,8 @@
       '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
 
   function build() {
+    if (shown || document.getElementById("pp-promo")) return;
+    shown = true;
     ensureComponents();
     injectStyles();
     const root = document.createElement("div");
@@ -113,7 +117,13 @@
     });
   }
 
-  const start = () => setTimeout(build, DELAY_MS);
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
-  else start();
+  // Always greet a fresh login — this is the "entry ad" the moment someone
+  // signs in. A login resets the snooze so it shows every time.
+  window.addEventListener("pp:login", () => { clearSnooze(); build(); });
+
+  // Passive entry: show once for a new/returning visitor, unless recently
+  // dismissed. (A login above overrides this.)
+  const startPassive = () => { if (!isSnoozed()) setTimeout(build, DELAY_MS); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startPassive);
+  else startPassive();
 })();

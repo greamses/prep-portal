@@ -24,8 +24,12 @@ import { heroPaint } from "/utils/components/nav-icons.js";
 const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 function goToDashboard() {
-  // Intentionally empty — users stay on the page they logged in from.
-  // Auth state propagates to all components via Firebase onAuthStateChanged.
+  // Users stay on the page they logged in from; auth state propagates to all
+  // components via Firebase onAuthStateChanged. We only announce the login so
+  // entry widgets (e.g. the referral promo popup) can react to it.
+  try {
+    window.dispatchEvent(new CustomEvent("pp:login"));
+  } catch (_) {}
 }
 
 export function injectAuthModal() {

@@ -1,14 +1,23 @@
 ---
 name: prep-portal-design
-description: Design-system reference for the Prep Portal site. Use whenever creating or editing UI — CSS/HTML/SVG, components, colours, fonts, borders, shadows, spacing, or layout — so new work matches the existing neo-brutalist look (and the separate editorial flipbook/yearbook sub-style). Trigger on any visual/styling task in this repo.
+description: Design-system reference for the Prep Portal site. Use whenever creating or editing UI — CSS/HTML/SVG, components, colours, fonts, borders, shadows, spacing, or layout — so new work matches the current soft paper/paint look (and the separate editorial flipbook/yearbook sub-style). Trigger on any visual/styling task in this repo.
 ---
 
 # Prep Portal design system
 
-The site is **neo-brutalist**: high contrast, flat fills, bold solid ink borders,
-hard offset shadows (no blur), and a small playful accent palette. There is a
-second, deliberately different **editorial** style used only inside the digital
-magazine / yearbook flipbook. Keep the two worlds separate.
+> **The authoritative, up-to-date reference is `/DESIGN.md` at the repo root —
+> read that first.** The notes below are a short summary; where they disagree with
+> DESIGN.md, DESIGN.md wins.
+
+The site is **soft, warm, paper-and-paint** (not neo-brutalist): cream paper
+surfaces, muted kid-friendly pastels, **soft blurred** shadows, mostly square
+corners, and a signature **amoeba "paint blob" background on every page** (our
+logo motif — `heroPaint()` in `utils/components/nav-icons.js`). Build from the
+shared components (`.pp-pill` / `.pp-sticky` / `.pp-receipt` / `.pp-btn` in
+`utils/components/components.css`), never bespoke cards. **All icons are our own
+inline SVGs — no emoji, ever.** There is a second, deliberately different
+**editorial** style used only inside the digital magazine / yearbook flipbook —
+keep the two worlds separate.
 
 ## 1. Always use tokens — never hardcode
 
