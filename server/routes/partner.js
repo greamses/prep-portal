@@ -16,6 +16,15 @@ const { authenticate } = require("../middleware/auth");
 
 const MIN_PAYOUT_KOBO = 100000; // ₦1,000 minimum withdrawal
 
+// Short, human-friendly code: name initials + 4 unambiguous chars.
+function makeCode(name) {
+  const alnum = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+  const initials = String(name || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) || "PREP";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) suffix += alnum[Math.floor(Math.random() * alnum.length)];
+  return initials + suffix;
+}
+
 module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
@@ -69,6 +78,43 @@ module.exports = function () {
     } catch (e) {
       if (e.status) return res.status(e.status).json({ error: e.message });
       console.error("[/api/partner/claim]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /create — self-serve: any signed-in user gets their own code ──
+  // Open to everyone (not just admin-onboarded schools). Idempotent: returns the
+  // existing partner if this account already has one.
+  router.post("/create", authenticate, async (req, res) => {
+    try {
+      const existing = await partnerForUser(req.user.uid);
+      if (existing) return res.json({ ok: true, partner: publicPartner(existing) });
+
+      const name = String((req.body && req.body.name) || req.user.name ||
+        (req.user.email ? req.user.email.split("@")[0] : "") || "Member").slice(0, 60);
+
+      let code;
+      for (let i = 0; i < 6; i++) {
+        const c = makeCode(name);
+        if (!(await db().collection("referralCodes").doc(c).get()).exists) { code = c; break; }
+      }
+      if (!code) return res.status(500).json({ error: "Could not generate a code — try again." });
+
+      const pRef = db().collection("partners").doc();
+      const batch = db().batch();
+      batch.set(pRef, {
+        schoolName: name, code, ownerUid: req.user.uid,
+        contactEmail: req.user.email || null,
+        balanceKobo: 0, lifetimeKobo: 0, paidOutKobo: 0,
+        selfServe: true, createdAt: stamp(), claimedAt: stamp(),
+      });
+      batch.set(db().collection("referralCodes").doc(code), {
+        partnerId: pRef.id, schoolName: name, createdAt: stamp(),
+      });
+      await batch.commit();
+      res.json({ ok: true, partner: publicPartner({ id: pRef.id, code, schoolName: name, balanceKobo: 0, lifetimeKobo: 0, paidOutKobo: 0 }) });
+    } catch (e) {
+      console.error("[/api/partner/create]", e.message);
       res.status(500).json({ error: e.message });
     }
   });

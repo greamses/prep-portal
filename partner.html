@@ -59,13 +59,18 @@
     <div id="pt-gate" class="pt-gate">Loading…</div>
 
     <div id="pt-claim" class="pt-card pt-hidden">
-      <h2>Link your partner account</h2>
-      <p style="font-size:.74rem;opacity:.85">Enter the redeem code your PrepPortal contact gave you to access your earnings.</p>
-      <div class="pt-row">
-        <div><label for="pt-code">Redeem code</label><input id="pt-code" type="text" placeholder="e.g. LAGS7K2P" maxlength="16" /></div>
-        <div style="flex:0 0 auto"><button id="pt-claim-btn" type="button">Link account</button></div>
-      </div>
-      <p id="pt-claim-msg" class="pt-msg"></p>
+      <h2>Start earning with PrepPortal</h2>
+      <p style="font-size:.78rem;opacity:.85;line-height:1.5">Get your own referral code, share it with anyone, and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools — everyone's welcome.</p>
+      <button id="pt-create-btn" type="button" style="margin:.6rem 0 .2rem">Create my referral code</button>
+      <p id="pt-create-msg" class="pt-msg"></p>
+      <details style="margin-top:.9rem">
+        <summary style="cursor:pointer;font-size:.72rem;opacity:.8">Have a code you were given? Enter it instead</summary>
+        <div class="pt-row" style="margin-top:.5rem">
+          <div><label for="pt-code">Redeem code</label><input id="pt-code" type="text" placeholder="e.g. LAGS7K2P" maxlength="16" /></div>
+          <div style="flex:0 0 auto"><button id="pt-claim-btn" type="button">Link code</button></div>
+        </div>
+        <p id="pt-claim-msg" class="pt-msg"></p>
+      </details>
     </div>
 
     <div id="pt-main" class="pt-hidden">
@@ -163,6 +168,20 @@
     }
 
     function wireClaim() {
+      const cbtn = $("pt-create-btn"), cmsg = $("pt-create-msg");
+      if (cbtn) cbtn.onclick = async () => {
+        cbtn.disabled = true; cmsg.textContent = "Creating your code…"; cmsg.className = "pt-msg";
+        try {
+          const res = await fetch(`${API}/api/partner/create`, {
+            method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) }, body: "{}",
+          });
+          const d = await res.json();
+          if (res.ok && d.ok) { loadMe(); }
+          else { cmsg.textContent = d.error || "Couldn't create a code."; cmsg.className = "pt-msg pt-msg--err"; }
+        } catch (e) { cmsg.textContent = e.message; cmsg.className = "pt-msg pt-msg--err"; }
+        finally { cbtn.disabled = false; }
+      };
+
       const btn = $("pt-claim-btn"), msg = $("pt-claim-msg");
       btn.onclick = async () => {
         const code = $("pt-code").value.trim().toUpperCase();
