@@ -68,6 +68,11 @@ MATHEMATICS RIGOR:
 - Make ALL four options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
 - Keep arithmetic clean enough to solve by hand unless the exam allows a calculator.
 ` : ""}
+MATH FORMATTING (MathJax) — REQUIRED:
+- Write EVERY mathematical element in LaTeX wrapped in single dollar signs: equations, expressions, variables, fractions, powers, roots, functions and numbers used mathematically. Examples: $3(2x-1)=2(x+5)+7$, $f(x)=\\frac{x+1}{x-1}$, $x^2+y^2=r^2$, $\\sqrt{2}$, $\\sin 30^\\circ$, $\\frac{3}{4}$.
+- Apply this in the question, in EVERY option, and in the explanation.
+- Ordinary words stay outside the dollar signs — only wrap the maths.
+
 MANDATORY:
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
 - No copyrighted passages, named datasets, diagrams or images. Self-contained text only.
@@ -76,6 +81,13 @@ MANDATORY:
 
 RESPOND ONLY WITH VALID JSON (no markdown):
 { "questions": [ { "question": "<text>", "options": ["A","B","C","D"], "answerIndex": <0-3>, "explanation": "<one sentence>" } ] }`;
+}
+
+// LaTeX often contains lone backslashes (\frac, \sin) that are invalid JSON
+// escapes and break JSON.parse — double any backslash that isn't a valid escape.
+function safeJson(t) {
+  try { return JSON.parse(t); }
+  catch (_) { return JSON.parse(String(t).replace(/\\(?![\\/"bfnrtu])/g, "\\\\")); }
 }
 
 // Try Groq first (fast/cheap), then Gemini. Returns parsed { questions: [...] }.
@@ -96,7 +108,7 @@ async function callModel(prompt) {
       if (r.ok) {
         const d = await r.json();
         const t = d.choices?.[0]?.message?.content;
-        if (t) return JSON.parse(t);
+        if (t) return safeJson(t);
       }
     } catch (e) { console.warn("[cbt] groq:", e.message); }
   }
@@ -114,7 +126,7 @@ async function callModel(prompt) {
         if (!r.ok) { if ([404, 429, 503].includes(r.status)) continue; break; }
         const d = await r.json();
         const t = d.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (t) return JSON.parse(t);
+        if (t) return safeJson(t);
       } catch (e) { continue; }
     }
   }
