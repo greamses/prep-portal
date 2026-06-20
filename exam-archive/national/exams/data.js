@@ -117,7 +117,7 @@ let natState = {
   stream: null,
   subjects: [],
   year: null,
-  types: ["objective"],
+  count: null,
 };
 let facets = null;
 let countByKey = {},
@@ -133,7 +133,7 @@ const doneExam = () => document.getElementById("done-exam");
 const doneStream = () => document.getElementById("done-stream");
 const doneYearNat = () => document.getElementById("done-year");
 const doneSubject = () => document.getElementById("done-subject");
-const doneType = () => document.getElementById("done-type");
+const doneCount = () => document.getElementById("done-count");
 
 function natUpdateReadyState() {
   const ready =
@@ -141,18 +141,18 @@ function natUpdateReadyState() {
     natState.stream &&
     natState.subjects.length > 0 &&
     natState.year &&
-    natState.types.length > 0;
+    natState.count;
   beginBtn.disabled = !ready;
   if (ready) {
-    setStatus("✓ All set. Ready to generate practice paper.", true);
+    setStatus("✓ All set. Ready — start your test.", true);
     return;
   }
   const need = [];
-  if (!natState.examType) need.push("exam type");
+  if (!natState.examType) need.push("scheme");
   if (!natState.stream) need.push("class");
   if (!natState.subjects.length) need.push("subjects");
   if (!natState.year) need.push("year");
-  if (!natState.types.length) need.push("format");
+  if (!natState.count) need.push("number of questions");
   setStatus("Select: " + need.join(" • "), false);
 }
 
@@ -234,7 +234,6 @@ async function selectExam(exam, chip) {
   subjectChipsDiv().innerHTML =
     '<span class="picker-hint">Loading subjects…</span>';
   natUpdateReadyState();
-  natUpdateTypeVisibility();
   try {
     // Our own AI-generated bank, by scheme. No years — questions aren't dated.
     const res = await fetch(
@@ -413,43 +412,20 @@ function renderNatYears() {
   doneYearNat().classList.toggle("show", !!natState.year);
 }
 
-function natUpdateTypeVisibility() {
-  const isJamb = natState.examType === "JAMB";
-  document.querySelectorAll("#type-chips .custom-chip").forEach((chip) => {
-    const type = chip.getAttribute("data-type");
-    if (type === "theory" || type === "essay") {
-      chip.style.display = isJamb ? "none" : "flex";
-      if (isJamb) {
-        const i = natState.types.indexOf(type);
-        if (i !== -1) {
-          natState.types.splice(i, 1);
-          chip.classList.remove("checked");
-        }
-      }
-    }
-  });
-  doneType().classList.toggle("show", natState.types.length > 0);
-}
-
-function initTypeToggles() {
-  document.querySelectorAll("#type-chips .custom-chip").forEach((chip) => {
-    const tVal = chip.getAttribute("data-type");
-    if (natState.types.includes(tVal)) chip.classList.add("checked");
-    chip.onclick = (e) => {
-      e.stopPropagation();
-      const i = natState.types.indexOf(tVal);
-      if (i !== -1) {
-        natState.types.splice(i, 1);
-        chip.classList.remove("checked");
-      } else {
-        natState.types.push(tVal);
-        chip.classList.add("checked");
-      }
-      doneType().classList.toggle("show", natState.types.length > 0);
+function initCountChips() {
+  document.querySelectorAll("#count-chips .count-chip").forEach((chip) => {
+    const val = parseInt(chip.getAttribute("data-count"), 10);
+    if (natState.count === val) chip.classList.add("checked");
+    chip.onclick = () => {
+      document
+        .querySelectorAll("#count-chips .count-chip")
+        .forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      natState.count = val;
+      doneCount().classList.add("show");
       natUpdateReadyState();
     };
   });
-  natUpdateTypeVisibility();
 }
 
 function initNational() {
@@ -459,15 +435,15 @@ function initNational() {
     stream: null,
     subjects: [],
     year: null,
-    types: ["objective"],
+    count: null,
   };
   facets = null;
   countByKey = {};
   keyByLabel = {};
   buildExamGrid();
   buildStreamGrid();
-  initTypeToggles();
-  ["done-exam", "done-stream", "done-year", "done-subject"].forEach((id) =>
+  initCountChips();
+  ["done-exam", "done-stream", "done-year", "done-subject", "done-count"].forEach((id) =>
     document.getElementById(id)?.classList.remove("show"),
   );
   subjectRow().style.display = "none";
@@ -1123,12 +1099,15 @@ beginBtn.onclick = () => {
   if (beginBtn.disabled) return;
 
   if (activeCat === "national") {
+    // Spread the chosen total across the selected subjects.
+    const total = natState.count || 40;
+    const per = Math.max(1, Math.ceil(total / Math.max(1, natState.subjects.length)));
     const params = new URLSearchParams({
       source: "cbt",
       scheme: natState.queryType,
       // pass subject KEYS (the bank is keyed by subject key, not label)
       subjects: natState.subjects.map((l) => keyByLabel[l] || l).join(","),
-      n: String(PER_SUBJECT),
+      n: String(per),
     });
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
