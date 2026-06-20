@@ -403,6 +403,92 @@ async function chargeTutor(pkg) {
   handler.openIframe();
 }
 
+// ─── PARTNER REFERRAL CODE ───────────────────────────────────
+// A learner attaches a school's redeem code before subscribing; the server
+// records it on their profile so the partner earns a commission on payment.
+function injectRefStyles() {
+  if (document.getElementById("sp-ref-styles")) return;
+  const s = document.createElement("style");
+  s.id = "sp-ref-styles";
+  s.textContent = `
+    .sp-ref { max-width: 460px; margin: 0 auto 1.4rem; padding: .9rem 1rem;
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 14px;
+      background: var(--surface-primary, #fffdf8); box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.08)); }
+    .sp-ref__label { display:block; font-family: var(--font-mono, monospace); font-size: .72rem;
+      font-weight: 700; color: var(--ink, #2a2723); margin-bottom: .5rem; }
+    .sp-ref__row { display:flex; gap:.5rem; }
+    .sp-ref__input { flex:1 1 auto; padding:.55rem .7rem; border-radius:10px; text-transform:uppercase;
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.14)); background: var(--surface-secondary,#f4f0e8);
+      color: var(--ink,#2a2723); font-family: var(--font-mono, monospace); font-size:.8rem; letter-spacing:.08em; }
+    .sp-ref__btn { padding:.55rem 1rem; border:none; border-radius:10px; cursor:pointer; font-weight:700;
+      font-family: var(--font-mono, monospace); font-size:.75rem; background: var(--accent-primary,#f4c95d);
+      color: var(--text-on-accent,#2a2723); }
+    .sp-ref__btn:disabled { opacity:.6; cursor:default; }
+    .sp-ref__status { margin:.5rem 0 0; font-family: var(--font-mono, monospace); font-size:.68rem; min-height:1em; }
+    .sp-ref__status--ok  { color: var(--accent-success,#6db58f); }
+    .sp-ref__status--err { color: var(--accent-danger,#e07a5f); }`;
+  document.head.appendChild(s);
+}
+
+async function applyReferral(code, statusEl, btn) {
+  const user = auth.currentUser;
+  if (!user) {
+    showToast("Sign in first to add a school code.", "error");
+    window.openAuthModal?.("login");
+    return;
+  }
+  const c = String(code || "").trim().toUpperCase();
+  if (!c) return;
+  btn.disabled = true;
+  try {
+    const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const token = await user.getIdToken();
+    const res = await fetch(`${base}/api/payments/apply-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code: c }),
+      credentials: "include",
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok && d.ok) {
+      statusEl.textContent = `✓ Code ${d.code} applied — your school earns when you subscribe.`;
+      statusEl.className = "sp-ref__status sp-ref__status--ok";
+      try { localStorage.setItem("pp_ref_code", d.code); } catch (_) {}
+    } else {
+      statusEl.textContent = d.error || "Couldn't apply that code.";
+      statusEl.className = "sp-ref__status sp-ref__status--err";
+    }
+  } catch (_) {
+    statusEl.textContent = "Network error — please try again.";
+    statusEl.className = "sp-ref__status sp-ref__status--err";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function mountReferralBox() {
+  const grid = document.getElementById("spPlanGrid");
+  if (!grid || document.getElementById("sp-ref")) return;
+  injectRefStyles();
+  const box = document.createElement("div");
+  box.id = "sp-ref";
+  box.className = "sp-ref";
+  box.innerHTML =
+    '<label class="sp-ref__label" for="sp-ref-input">Have a school redeem code?</label>' +
+    '<div class="sp-ref__row">' +
+      '<input id="sp-ref-input" class="sp-ref__input" type="text" placeholder="e.g. LAGS7K2P" autocomplete="off" spellcheck="false" maxlength="16" />' +
+      '<button id="sp-ref-apply" class="sp-ref__btn" type="button">Apply</button>' +
+    '</div>' +
+    '<p id="sp-ref-status" class="sp-ref__status"></p>';
+  grid.parentNode.insertBefore(box, grid);
+  const input = box.querySelector("#sp-ref-input");
+  const btn = box.querySelector("#sp-ref-apply");
+  const status = box.querySelector("#sp-ref-status");
+  try { const saved = localStorage.getItem("pp_ref_code"); if (saved) input.value = saved; } catch (_) {}
+  btn.onclick = () => applyReferral(input.value, status, btn);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") btn.click(); });
+}
+
 // ─── INIT ────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   const paint = document.querySelector(".sp-paint");
@@ -412,6 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("spTutorGrid").innerHTML = buildTutorCards();
   wirePlanCards();
   wireTutorCards();
+  mountReferralBox();
 
   // Children counter
   const minusBtn = document.getElementById("spChildMinus");

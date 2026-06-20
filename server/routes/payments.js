@@ -21,14 +21,22 @@ const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 
 // Paystack plan code → our plan metadata (mirrors payment-manager.js PLANS).
+// monthlyEqKobo is the per-month value (used to size the yearly commission as a
+// 6-month equivalent — see creditReferral below).
 const PLAN_BY_CODE = {
-  PLN_3mghi8hr1mxg5lk: { name: "Pro",        tier: "pro",        billing: "monthly" },
-  PLN_knvr81r8t903ria: { name: "Pro",        tier: "pro",        billing: "yearly"  },
-  PLN_xodc0xq5eki6vyg: { name: "Premium",    tier: "premium",    billing: "monthly" },
-  PLN_3os05kpnhpauvav: { name: "Premium",    tier: "premium",    billing: "yearly"  },
-  PLN_la6q8cp6ryy2alq: { name: "Enterprise", tier: "enterprise", billing: "monthly" },
-  PLN_bbypkk64rsyacww: { name: "Enterprise", tier: "enterprise", billing: "yearly"  },
+  PLN_3mghi8hr1mxg5lk: { name: "Pro",        tier: "pro",        billing: "monthly", monthlyEqKobo: 1000000 },
+  PLN_knvr81r8t903ria: { name: "Pro",        tier: "pro",        billing: "yearly",  monthlyEqKobo: 1000000 },
+  PLN_xodc0xq5eki6vyg: { name: "Premium",    tier: "premium",    billing: "monthly", monthlyEqKobo: 3000000 },
+  PLN_3os05kpnhpauvav: { name: "Premium",    tier: "premium",    billing: "yearly",  monthlyEqKobo: 2850000 },
+  PLN_la6q8cp6ryy2alq: { name: "Enterprise", tier: "enterprise", billing: "monthly", monthlyEqKobo: 15000000 },
+  PLN_bbypkk64rsyacww: { name: "Enterprise", tier: "enterprise", billing: "yearly",  monthlyEqKobo: 13500000 },
 };
+
+// Partner commission: 10% of each subscription, for the first 6 months.
+//   monthly plan → 10% of each charge, capped at 6 charges (6 cycles).
+//   yearly  plan → one payment of 10% × (6 × monthlyEq), exhausting the cap.
+const COMMISSION_RATE = 0.10;
+const COMMISSION_MAX_CYCLES = 6;
 
 module.exports = function () {
   const router = express.Router();
@@ -87,20 +95,44 @@ module.exports = function () {
 
     const evRef = db().collection("paymentEvents").doc(String(reference));
     const userRef = db().collection("users").doc(uid);
+    const inc = admin.firestore.FieldValue.increment;
+    const stamp = admin.firestore.FieldValue.serverTimestamp;
 
     return await db().runTransaction(async (t) => {
+      // ── READS (all reads must precede writes in a Firestore transaction) ──
       if ((await t.get(evRef)).exists) return { applied: false, premium: true }; // already processed
-
-      const now = new Date();
       const cur = (await t.get(userRef)).data() || {};
-      const curExp = cur.subscriptionExpiry && cur.subscriptionExpiry.toDate
-        ? cur.subscriptionExpiry.toDate()
-        : null;
-      // Extend from the later of now / current expiry so renewals stack.
-      const base = curExp && curExp > now ? curExp : now;
-      const expiry = addCycle(base, plan.billing);
 
-      t.set(userRef, {
+      // Resolve the referral → partner, and size the commission, before writing.
+      const refCode = cur.referredByCode || meta.ref_code || null;
+      const cyclesPaid = cur.referralCyclesPaid || 0;
+      let partnerRef = null, commissionKobo = 0, cyclesToAdd = 0, partnerId = null;
+      if (refCode && cyclesPaid < COMMISSION_MAX_CYCLES) {
+        const codeSnap = await t.get(db().collection("referralCodes").doc(String(refCode)));
+        partnerId = codeSnap.exists ? codeSnap.data().partnerId : null;
+        if (partnerId && partnerId !== uid) {            // never self-refer
+          const pRef = db().collection("partners").doc(partnerId);
+          if ((await t.get(pRef)).exists) {
+            if (plan.billing === "yearly") {
+              const baseKobo = (plan.monthlyEqKobo || Math.round(amountKobo / 12)) * COMMISSION_MAX_CYCLES;
+              commissionKobo = Math.round(baseKobo * COMMISSION_RATE);
+              cyclesToAdd = COMMISSION_MAX_CYCLES - cyclesPaid;   // exhaust the cap
+            } else {
+              commissionKobo = Math.round(amountKobo * COMMISSION_RATE);
+              cyclesToAdd = 1;
+            }
+            partnerRef = pRef;
+          }
+        }
+      }
+
+      // ── WRITES ──
+      const now = new Date();
+      const curExp = cur.subscriptionExpiry && cur.subscriptionExpiry.toDate
+        ? cur.subscriptionExpiry.toDate() : null;
+      const expiry = addCycle(curExp && curExp > now ? curExp : now, plan.billing);
+
+      const userUpdate = {
         isPremium: true,
         planId: code || cur.planId || null,
         planName: plan.name,
@@ -108,23 +140,43 @@ module.exports = function () {
         billingCycle: plan.billing,
         lastPaymentRef: reference,
         subscriptionExpiry: admin.firestore.Timestamp.fromDate(expiry),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
+        updatedAt: stamp(),
+      };
+      if (cyclesToAdd > 0) userUpdate.referralCyclesPaid = cyclesPaid + cyclesToAdd;
+      t.set(userRef, userUpdate, { merge: true });
 
       t.set(evRef, {
-        uid,
-        reference,
-        amountKobo,
-        planCode: code || null,
-        email,
-        processedAt: admin.firestore.FieldValue.serverTimestamp(),
-        // ── Phase 2 hook: the referral code travels here so a commission can be
-        //    credited to the partner from this verified charge.
-        referredByCode: cur.referredByCode || meta.ref_code || null,
-        commissionCredited: false,
+        uid, reference, amountKobo, planCode: code || null, email,
+        processedAt: stamp(),
+        referredByCode: refCode,
+        partnerId: commissionKobo > 0 ? partnerId : null,
+        commissionKobo,
+        commissionCredited: commissionKobo > 0,
       });
 
-      return { applied: true, premium: true };
+      if (partnerRef && commissionKobo > 0) {
+        // Bump the partner's running balance + lifetime…
+        t.set(partnerRef, {
+          balanceKobo: inc(commissionKobo),
+          lifetimeKobo: inc(commissionKobo),
+          updatedAt: stamp(),
+        }, { merge: true });
+        // …and append an immutable ledger entry (the audit trail).
+        t.set(db().collection("earnings").doc(), {
+          partnerId,
+          fromUser: uid,
+          fromEmail: email,
+          amountKobo: commissionKobo,
+          chargeKobo: amountKobo,
+          planTier: plan.tier,
+          billing: plan.billing,
+          reference,
+          cycle: cyclesPaid + 1,
+          createdAt: stamp(),
+        });
+      }
+
+      return { applied: true, premium: true, commissionKobo };
     });
   }
 
@@ -155,6 +207,30 @@ module.exports = function () {
       res.json({ ok: true, premium: !!out.premium });
     } catch (e) {
       console.error("[/api/payments/verify]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /api/payments/apply-code ───────────────────────────
+  // A learner attaches a partner's referral code to their account before paying.
+  // Locked once a commission has been paid, to stop code-swapping after the fact.
+  router.post("/apply-code", authenticate, async (req, res) => {
+    try {
+      const code = String((req.body && req.body.code) || "").trim().toUpperCase();
+      if (!code) return res.status(400).json({ error: "code required" });
+      const codeSnap = await db().collection("referralCodes").doc(code).get();
+      if (!codeSnap.exists) return res.status(404).json({ error: "That code isn't valid." });
+      const partnerId = codeSnap.data().partnerId;
+      if (partnerId === req.user.uid) return res.status(400).json({ error: "You can't use your own code." });
+      const userRef = db().collection("users").doc(req.user.uid);
+      const cur = (await userRef.get()).data() || {};
+      if ((cur.referralCyclesPaid || 0) > 0) {
+        return res.status(409).json({ error: "A referral is already locked to your subscription." });
+      }
+      await userRef.set({ referredByCode: code, referredByPartner: partnerId }, { merge: true });
+      res.json({ ok: true, code });
+    } catch (e) {
+      console.error("[/api/payments/apply-code]", e.message);
       res.status(500).json({ error: e.message });
     }
   });

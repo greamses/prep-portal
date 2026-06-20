@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partner Program — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+  <style>
+    body { margin: 0; background: var(--surface-secondary, #f4f0e8); color: var(--ink, #2a2723);
+      font-family: var(--font-mono, ui-monospace, monospace); padding: 1.5rem; }
+    .ap-wrap { max-width: 920px; margin: 0 auto; }
+    h1 { font-size: 1.1rem; margin: 0 0 1.2rem; }
+    .ap-card { background: var(--surface-primary, #fffdf8); border: var(--border-subtle, 1px solid rgba(42,39,35,.12));
+      border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1.2rem; box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.08)); }
+    .ap-card h2 { font-size: .82rem; margin: 0 0 .8rem; }
+    label { display:block; font-size:.66rem; font-weight:700; margin:.5rem 0 .25rem; opacity:.85; }
+    input { width:100%; box-sizing:border-box; padding:.55rem .7rem; border-radius:10px; font-family:inherit; font-size:.82rem;
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.14)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
+    button { padding:.55rem 1rem; border:none; border-radius:10px; cursor:pointer; font-weight:700; font-family:inherit;
+      font-size:.75rem; background: var(--accent-primary,#f4c95d); color: var(--text-on-accent,#2a2723); }
+    button:disabled { opacity:.6; cursor:default; }
+    .ap-row { display:flex; gap:.6rem; align-items:flex-end; flex-wrap:wrap; }
+    .ap-row > div { flex:1 1 200px; }
+    table { width:100%; border-collapse:collapse; font-size:.74rem; }
+    th, td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid rgba(42,39,35,.1); }
+    th { font-size:.6rem; text-transform:uppercase; letter-spacing:.05em; opacity:.7; }
+    .ap-code { font-weight:700; letter-spacing:.08em; }
+    .ap-num { text-align:right; font-variant-numeric: tabular-nums; }
+    .ap-link { background:none; color: var(--accent-secondary,#6fb7e8); padding:0; font-size:.7rem; text-decoration:underline; }
+    .ap-msg { font-size:.7rem; margin:.5rem 0 0; }
+    .ap-msg--ok { color: var(--accent-success,#6db58f); }
+    .ap-msg--err { color: var(--accent-danger,#e07a5f); }
+    .ap-new { margin-top:.7rem; padding:.6rem .8rem; border-radius:10px; background: var(--surface-secondary,#f4f0e8); font-size:.78rem; }
+    .ap-gate { text-align:center; padding:3rem 1rem; }
+    .ap-hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="ap-wrap">
+    <h1>🎒 Partner Program — Admin</h1>
+
+    <div id="ap-gate" class="ap-gate">Checking access…</div>
+
+    <div id="ap-main" class="ap-hidden">
+      <div class="ap-card">
+        <h2>Create a partner &amp; redeem code</h2>
+        <div class="ap-row">
+          <div>
+            <label for="ap-school">School / partner name</label>
+            <input id="ap-school" type="text" placeholder="Lagos High School" />
+          </div>
+          <div>
+            <label for="ap-email">Contact email (optional)</label>
+            <input id="ap-email" type="email" placeholder="admin@school.edu.ng" />
+          </div>
+          <div style="flex:0 0 auto">
+            <button id="ap-create" type="button">Generate code</button>
+          </div>
+        </div>
+        <p id="ap-create-msg" class="ap-msg"></p>
+        <div id="ap-new" class="ap-new ap-hidden"></div>
+      </div>
+
+      <div class="ap-card">
+        <h2>Partners</h2>
+        <table>
+          <thead>
+            <tr><th>Code</th><th>School</th><th class="ap-num">Balance</th><th class="ap-num">Lifetime</th><th></th></tr>
+          </thead>
+          <tbody id="ap-tbody"><tr><td colspan="5">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div id="ap-earn" class="ap-card ap-hidden">
+        <h2 id="ap-earn-title">Earnings</h2>
+        <table>
+          <thead><tr><th>Date</th><th>From</th><th>Cycle</th><th>Plan</th><th class="ap-num">Commission</th></tr></thead>
+          <tbody id="ap-earn-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const naira = (kobo) => "₦" + ((Number(kobo) || 0) / 100).toLocaleString("en-NG");
+    const gate = document.getElementById("ap-gate");
+    const main = document.getElementById("ap-main");
+
+    async function authHeader() {
+      const t = await auth.currentUser.getIdToken();
+      return { Authorization: "Bearer " + t };
+    }
+
+    async function isAdmin() {
+      try {
+        const res = await fetch(`${API}/api/ai/whoami`, { headers: await authHeader() });
+        return res.ok && (await res.json()).admin === true;
+      } catch (_) { return false; }
+    }
+
+    async function loadPartners() {
+      const tbody = document.getElementById("ap-tbody");
+      try {
+        const res = await fetch(`${API}/api/admin/partners`, { headers: await authHeader() });
+        const rows = await res.json();
+        if (!Array.isArray(rows) || !rows.length) { tbody.innerHTML = '<tr><td colspan="5">No partners yet.</td></tr>'; return; }
+        tbody.innerHTML = rows.map((p) =>
+          `<tr>
+             <td class="ap-code">${p.code || "—"}</td>
+             <td>${p.schoolName || "—"}</td>
+             <td class="ap-num">${naira(p.balanceKobo)}</td>
+             <td class="ap-num">${naira(p.lifetimeKobo)}</td>
+             <td><button class="ap-link" data-id="${p.id}" data-name="${(p.schoolName||'').replace(/"/g,'')}">earnings</button></td>
+           </tr>`).join("");
+        tbody.querySelectorAll(".ap-link").forEach((b) =>
+          b.onclick = () => loadEarnings(b.dataset.id, b.dataset.name));
+      } catch (e) { tbody.innerHTML = `<tr><td colspan="5">Failed to load (${e.message}).</td></tr>`; }
+    }
+
+    async function loadEarnings(id, name) {
+      const wrap = document.getElementById("ap-earn");
+      const body = document.getElementById("ap-earn-body");
+      document.getElementById("ap-earn-title").textContent = `Earnings — ${name || id}`;
+      wrap.classList.remove("ap-hidden");
+      body.innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+      try {
+        const res = await fetch(`${API}/api/admin/partners/${encodeURIComponent(id)}/earnings`, { headers: await authHeader() });
+        const rows = await res.json();
+        if (!Array.isArray(rows) || !rows.length) { body.innerHTML = '<tr><td colspan="5">No earnings yet.</td></tr>'; return; }
+        body.innerHTML = rows.map((r) => {
+          const d = r.createdAt && r.createdAt._seconds ? new Date(r.createdAt._seconds * 1000).toLocaleDateString("en-NG") : "—";
+          return `<tr><td>${d}</td><td>${r.fromEmail || r.fromUser || "—"}</td><td>${r.cycle || "—"}</td><td>${r.planTier || ""} ${r.billing || ""}</td><td class="ap-num">${naira(r.amountKobo)}</td></tr>`;
+        }).join("");
+        wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (e) { body.innerHTML = `<tr><td colspan="5">Failed (${e.message}).</td></tr>`; }
+    }
+
+    async function createPartner() {
+      const btn = document.getElementById("ap-create");
+      const msg = document.getElementById("ap-create-msg");
+      const newBox = document.getElementById("ap-new");
+      const schoolName = document.getElementById("ap-school").value.trim();
+      const contactEmail = document.getElementById("ap-email").value.trim();
+      msg.textContent = ""; msg.className = "ap-msg";
+      if (!schoolName) { msg.textContent = "Enter a school name."; msg.className = "ap-msg ap-msg--err"; return; }
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API}/api/admin/partners`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(await authHeader()) },
+          body: JSON.stringify({ schoolName, contactEmail }),
+        });
+        const d = await res.json();
+        if (res.ok && d.ok) {
+          newBox.classList.remove("ap-hidden");
+          newBox.innerHTML = `Code for <strong>${schoolName}</strong>: <span class="ap-code">${d.code}</span> — share this for the school to earn 10% for 6 months.`;
+          document.getElementById("ap-school").value = "";
+          document.getElementById("ap-email").value = "";
+          loadPartners();
+        } else {
+          msg.textContent = d.error || "Could not create partner.";
+          msg.className = "ap-msg ap-msg--err";
+        }
+      } catch (e) { msg.textContent = e.message; msg.className = "ap-msg ap-msg--err"; }
+      finally { btn.disabled = false; }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.';
+        return;
+      }
+      if (!(await isAdmin())) {
+        gate.innerHTML = "Admins only. <a href=\"/index.html\">Go home</a>.";
+        return;
+      }
+      gate.classList.add("ap-hidden");
+      main.classList.remove("ap-hidden");
+      document.getElementById("ap-create").onclick = createPartner;
+      loadPartners();
+    });
+  </script>
+</body>
+</html>
