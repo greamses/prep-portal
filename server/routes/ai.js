@@ -518,6 +518,86 @@ module.exports = function () {
     }
   });
 
+  // ── POST /api/ai/generate — counted, non-streaming generation ────
+  // Same allocation pool + premium gate as PrepBot, but a plain request/response
+  // shape for one-shot jobs (theory question auto-generation, answer marking).
+  // This is how the theory/activities AI shares the SAME token pool as PrepBot
+  // instead of running on the learner's own key. Fallback: Groq → Claude → Gemini.
+  router.post("/generate", authenticate, async (req, res) => {
+    if (!(await isPremiumUser(req))) {
+      return res.status(402).json({
+        provider: "premium_required",
+        premiumRequired: true,
+        text: "This is a premium feature. Upgrade your plan at /subscribe.html to use it.",
+      });
+    }
+    try {
+      const {
+        messages = [],
+        system,
+        model = GROQ_DEFAULT_MODEL,
+        temperature = 0.4,
+        max_tokens = 2000,
+      } = req.body || {};
+
+      const guard = guardrailCheck(messages);
+      if (guard) {
+        return res.json({ provider: "guardrail", text: guard, usage: await readUsage(req.user.uid) });
+      }
+
+      let text = "", provider = "unavailable", tokens = 0;
+
+      // ① Groq
+      if (process.env.GROQ_API_KEY) {
+        try {
+          const r = await fetch(GROQ_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+            body: JSON.stringify({
+              model,
+              messages: system ? [{ role: "system", content: system }, ...messages] : messages,
+              temperature, max_tokens,
+            }),
+          });
+          if (r.ok) {
+            const data = await r.json();
+            const t = data.choices?.[0]?.message?.content;
+            if (t) { text = t; provider = "groq"; tokens = data.usage?.total_tokens || 0; }
+          }
+        } catch (e) { console.warn("[/api/ai/generate] Groq:", e.message); }
+      }
+
+      // ② Claude
+      if (!text && process.env.ANTHROPIC_API_KEY) {
+        try {
+          const r = await anthropic.messages.create({
+            model: process.env.CLAUDE_MODEL || CLAUDE_DEFAULT_MODEL,
+            max_tokens, ...(system ? { system } : {}), messages,
+          });
+          const t = r.content?.[0]?.text;
+          if (t) { text = t; provider = "claude"; tokens = (r.usage?.input_tokens || 0) + (r.usage?.output_tokens || 0); }
+        } catch (e) { console.warn("[/api/ai/generate] Claude:", e.message); }
+      }
+
+      // ③ Gemini
+      if (!text && process.env.GEMINI_API_KEY) {
+        try {
+          const r = await geminiOnce({ system, messages, temperature, max_tokens });
+          if (r.text) { text = r.text; provider = "gemini"; tokens = r.tokens || 0; }
+        } catch (e) { console.warn("[/api/ai/generate] Gemini:", e.message); }
+      }
+
+      const usage = await bumpUsage(req.user.uid, tokens);
+      if (!text) {
+        return res.json({ provider: "unavailable", text: "AI is temporarily unavailable. Please try again in a moment.", usage });
+      }
+      res.json({ provider, text, usage });
+    } catch (err) {
+      console.error("[/api/ai/generate]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── GET /api/ai/usage — current token usage (5h window + month) ──
   router.get("/usage", authenticate, async (req, res) => {
     res.json(await readUsage(req.user.uid));
