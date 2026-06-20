@@ -191,6 +191,23 @@ module.exports = function () {
       await db().collection("activities").doc(a.id)
         .set({ submissionCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
 
+      // Aggregate the student's dashboard stats (one cheap doc, no indexes).
+      try {
+        const inc = admin.firestore.FieldValue.increment;
+        const sc = Number.isFinite(+b.score) ? +b.score : 0;
+        const mx = Number.isFinite(+b.totalMarks) ? +b.totalMarks : 0;
+        const subjName = a.subject || "General";
+        const subjKey = subjName.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40) || "general";
+        await db().collection("studentStats").doc(req.user.uid).collection("private").doc("summary").set({
+          submissions: inc(1),
+          problemsSolved: inc(answers.length),
+          scoreSum: inc(sc),
+          maxSum: inc(mx),
+          lastSubmitAt: stamp(),
+          subjects: { [subjKey]: { name: subjName, scoreSum: inc(sc), maxSum: inc(mx), count: inc(1) } },
+        }, { merge: true });
+      } catch (_) {}
+
       // If this student was assigned the activity, mark it done on their list.
       try {
         const asgRef = db().collection("studentAssignments").doc(req.user.uid).collection("items").doc(a.id);

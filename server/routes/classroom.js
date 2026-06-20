@@ -152,6 +152,23 @@ module.exports = function () {
     }
   });
 
+  // ── GET /my-stats — the student's real dashboard figures ─────────
+  router.get("/my-stats", authenticate, async (req, res) => {
+    try {
+      const snap = await db().collection("studentStats").doc(req.user.uid).collection("private").doc("summary").get();
+      const d = snap.exists ? snap.data() : {};
+      const accuracyPct = d.maxSum ? Math.round((d.scoreSum / d.maxSum) * 100) : 0;
+      const subjects = Object.values(d.subjects || {})
+        .map((x) => ({ name: x.name || "Subject", pct: x.maxSum ? Math.round((x.scoreSum / x.maxSum) * 100) : 0, count: x.count || 0 }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6);
+      res.json({ submissions: d.submissions || 0, problemsSolved: d.problemsSolved || 0, accuracyPct, subjects });
+    } catch (e) {
+      console.error("[/api/classroom/my-stats]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── GET /assignments — the student's "assigned to me" list ───────
   router.get("/assignments", authenticate, async (req, res) => {
     try {

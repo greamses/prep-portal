@@ -160,6 +160,9 @@ service cloud.firestore {
     match /studentAssignments/{studentUid}/items/{activityId} {
       allow read, write: if false;   // server/admin only
     }
+    match /studentStats/{studentUid}/private/{doc} {
+      allow read, write: if false;   // server/admin only (a student's aggregate scores)
+    }
 
     /* ─────────────────────────────
        PARTNER EARNINGS (server-mediated only)

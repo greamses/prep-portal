@@ -78,14 +78,53 @@ export async function mountStudentClassroom(layout) {
   const joinBtn = layout.querySelector('[data-action="join-class"]');
   if (joinBtn) joinBtn.onclick = openJoin;
   const list = layout.querySelector("#db-asg-list");
-  if (!list) return;
-  try {
-    const { assignments } = await api("/api/classroom/assignments");
-    list.innerHTML = assignments.length ? assignments.map(asgItem).join("")
-      : `<div class="db-empty">No assignments yet. Join your teacher's class with a code.</div>`;
-  } catch (e) {
-    list.innerHTML = `<div class="db-empty">Couldn't load assignments.</div>`;
+
+  let assignments = [];
+  if (list) {
+    try {
+      ({ assignments } = await api("/api/classroom/assignments"));
+      list.innerHTML = assignments.length ? assignments.map(asgItem).join("")
+        : `<div class="db-empty">No assignments yet. Join your teacher's class with a code.</div>`;
+    } catch (e) {
+      list.innerHTML = `<div class="db-empty">Couldn't load assignments.</div>`;
+    }
   }
+  fillStudentStats(layout, assignments);
+}
+
+async function fillStudentStats(layout, assignments) {
+  if (!layout.querySelector("#db-st-ring")) return; // not the student progress panel
+  const set = (id, v) => { const el = layout.querySelector("#" + id); if (el) el.textContent = v; };
+  const setBar = (id, w) => { const el = layout.querySelector("#" + id); if (el) el.style.width = Math.max(0, Math.min(100, w)) + "%"; };
+
+  // Completion ring from the assignment list.
+  const assigned = assignments.length;
+  const done = assignments.filter((a) => a.status === "submitted").length;
+  const completion = assigned ? Math.round((done / assigned) * 100) : 0;
+  const ring = layout.querySelector("#db-st-ring");
+  if (ring) ring.style.setProperty("--ring-progress", completion);
+  set("db-st-ring-val", completion + "%");
+  set("db-st-done", `${done}/${assigned} done`);
+  if (assignments[0]) set("db-st-focus", assignments[0].activityTitle || "Your activities");
+
+  // Score / questions / subjects from the aggregate stats doc.
+  try {
+    const s = await api("/api/classroom/my-stats");
+    set("db-st-acc-val", s.submissions ? s.accuracyPct + "%" : "—");
+    setBar("db-st-acc-bar", s.accuracyPct);
+    set("db-st-prob-val", Number(s.problemsSolved || 0).toLocaleString());
+    setBar("db-st-prob-bar", Math.min(100, (s.problemsSolved || 0) * 4));
+    const perf = layout.querySelector("#db-st-perf");
+    if (perf && s.subjects && s.subjects.length) {
+      perf.innerHTML = s.subjects.map((x) => `
+        <div style="margin:.45rem 0">
+          <div style="display:flex;justify-content:space-between;font-size:.72rem"><span>${esc(x.name)}</span><span>${x.pct}%</span></div>
+          <div style="height:8px;background:var(--surface-secondary);border-radius:999px;overflow:hidden;margin-top:.25rem">
+            <div style="height:100%;width:${x.pct}%;background:var(--accent-success)"></div>
+          </div>
+        </div>`).join("");
+    }
+  } catch (_) {}
 }
 
 function asgItem(a) {

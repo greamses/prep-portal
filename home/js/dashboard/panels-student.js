@@ -1,79 +1,51 @@
 import { I } from "/home/js/dashboard/icons.js";
-import {
-  pct,
-  scoreColor,
-  pillColor,
-  fmtDate,
-} from "/home/js/dashboard/utils.js";
-import { perfBarHTML } from "/home/js/dashboard/components.js";
-import { MOCK } from "/home/js/dashboard/mock-data.js";
-import { renderCalendar } from "/home/js/dashboard/calendar.js";
 import { doUpgrade } from "/home/js/dashboard/toolbar.js";
 import { mountStudentClassroom } from "/home/js/dashboard/classroom-client.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildStudentPanels(user, data, layout) {
-  const progress = pct(data.weeklyProgress, 72);
-  const accuracy = pct(data.accuracy, 84);
-  const streak = Math.max(0, Number(data.streakDays) || 3);
-  const focus = data.currentFocus || "Arithmetic Practice";
-  const subjPerf = data.subjectPerf || MOCK.subjectPerf;
-  const qCount = Number(data.questionsAnswered) || 0;
-  const qBarWidth = Math.min(100, Math.round(qCount / 5));
-
   layout.dataset.role = "student";
   layout.innerHTML = `
     <div class="db-panel bento-feature">
       <div class="db-panel-head">
         <div>
-          <p class="db-kicker">Current Focus</p>
-          <h2 class="db-panel-title">${focus}</h2>
+          <p class="db-kicker">Your progress</p>
+          <h2 class="db-panel-title" id="db-st-focus">Your activities</h2>
         </div>
-        <span class="db-pill pill-yellow">${streak}d streak</span>
+        <span class="db-pill pill-yellow" id="db-st-done">— done</span>
       </div>
 
-      <div class="db-ring" style="--ring-progress:${progress}">
+      <div class="db-ring" id="db-st-ring" style="--ring-progress:0">
         <div class="db-ring-inner">
-          <strong class="db-ring-value">${progress}%</strong>
-          <span class="db-ring-label">weekly<br>goal</span>
+          <strong class="db-ring-value" id="db-st-ring-val">0%</strong>
+          <span class="db-ring-label">assignments<br>done</span>
         </div>
       </div>
 
       <div class="db-meter">
         <div class="db-meter-top">
-          <span>Formula & Step Accuracy</span>
-          <strong>${accuracy}%</strong>
+          <span>Average score</span>
+          <strong id="db-st-acc-val">—</strong>
         </div>
         <div class="db-meter-track">
-          <div class="db-meter-fill ${scoreColor(accuracy)}" style="width:${accuracy}%"></div>
+          <div class="db-meter-fill fill-green" id="db-st-acc-bar" style="width:0%"></div>
         </div>
       </div>
 
       <div class="db-meter">
         <div class="db-meter-top">
-          <span>Problems Solved</span>
-          <strong>${qCount.toLocaleString()}</strong>
+          <span>Questions answered</span>
+          <strong id="db-st-prob-val">0</strong>
         </div>
         <div class="db-meter-track">
-          <div class="db-meter-fill fill-blue" style="width:${qBarWidth}%"></div>
+          <div class="db-meter-fill fill-blue" id="db-st-prob-bar" style="width:0%"></div>
         </div>
       </div>
 
       <div class="db-divider"></div>
-      <div class="db-perf-list">
-        ${subjPerf.map((s) => perfBarHTML(s.subject, s.score)).join("")}
+      <div class="db-perf-list" id="db-st-perf">
+        <div class="db-empty">Answer an activity to see your subject scores.</div>
       </div>
-    </div>
-
-    <div class="db-panel bento-tall">
-      <div class="db-panel-head">
-        <div>
-          <p class="db-kicker">Live Schedule</p>
-          <h2 class="db-panel-title">Class Calendar</h2>
-        </div>
-        <span class="db-pill pill-blue">Labs</span>
-      </div>
-      <div id="student-calendar-container"></div>
     </div>
 
     <div class="db-panel bento-tall">
@@ -109,13 +81,6 @@ export function buildStudentPanels(user, data, layout) {
         ${!data.isPremium ? `<button class="db-action act-red" type="button" data-action="upgrade">${I.star}<span>Go Premium</span></button>` : ""}
       </div>
     </div>`;
-
-  const calendarContainer = document.getElementById(
-    "student-calendar-container",
-  );
-  if (calendarContainer) {
-    renderCalendar(calendarContainer, MOCK.scheduleEvents);
-  }
 
   layout
     .querySelector("[data-action='upgrade']")
