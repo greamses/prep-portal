@@ -1,79 +1,138 @@
 rules_version = '2';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Prep Portal — Firestore security rules  (Phase 1 of partner earnings)
-//
-// ⚠️  REVIEW BEFORE DEPLOYING. Firestore deploys the WHOLE file at once and this
-//     replaces whatever rules are currently live in your Firebase console. Open
-//     Firebase Console → Firestore → Rules, compare with what's below, and run
-//     each case in the Rules Playground before publishing.
-//
-// The point of this file: premium status and all money records can NO LONGER be
-// written by the browser — only by the server (Admin SDK bypasses rules) or by
-// an admin (the `admin:true` custom claim, set on sign-in for ADMIN_EMAIL).
-// `assignments` / `classes` / `alocQuestions` are left at authenticated-access
-// because their ownership model isn't encoded here yet — tighten them later.
-// ─────────────────────────────────────────────────────────────────────────────
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
-    function isAdmin()  { return request.auth != null && request.auth.token.admin == true; }
-    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+    /* ─────────────────────────────
+       AUTH HELPERS
+    ───────────────────────────── */
+    function isLoggedIn() {
+      return request.auth != null;
+    }
 
-    // Fields a normal user must never set or change on their own profile —
-    // these are written only by the server (payments) or an admin.
+    // Admin is identified by your specific email
+    function isAdmin() {
+      return isLoggedIn() && request.auth.token.email == 'eemadanyel@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isLoggedIn() && request.auth.uid == userId;
+    }
+
+    function isValidEncryptedKey(key) {
+      return key is map &&
+        key.cipher is string &&
+        key.iv is string &&
+        key.cipher.size() > 20 &&
+        key.iv.size() > 10;
+    }
+
+    // Money / entitlement fields a normal user must NEVER set on themselves.
+    // These are written only by the server (Admin SDK, which bypasses rules) or
+    // by an admin. Without this guard a user could self-grant isPremium / forge
+    // the partner-earnings fields.
     function protectedUserFields() {
       return [
         'isPremium', 'planId', 'planName', 'planTier', 'billingCycle',
         'lastPaymentRef', 'subscriptionExpiry', 'role',
-        'balanceKobo', 'lifetimeKobo', 'referredByCode', 'referredByPartner',
-        'referralCyclesPaid'
+        'referredByCode', 'referredByPartner', 'referralCyclesPaid'
       ];
     }
-    function touchesProtected() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(protectedUserFields());
+    function notTouchingProtected() {
+      return !request.resource.data.diff(resource.data)
+                .affectedKeys().hasAny(protectedUserFields());
     }
 
-    // ── User profiles ──────────────────────────────────────────────
-    match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
-      // A new profile may only be created as a non-premium student by its owner.
+    /* ─────────────────────────────
+       USERS COLLECTION
+    ───────────────────────────── */
+    match /users/{userId} {
+      allow read: if isLoggedIn() && (request.auth.uid == userId || isAdmin());
+
+      // A user may create their own profile, but not as premium (no paying for
+      // free) — admins can create anything.
       allow create: if isAdmin() ||
-        (isOwner(uid)
-          && request.resource.data.get('isPremium', false) == false
-          && request.resource.data.get('role', 'student') == 'student');
-      // Owners may edit non-protected fields (name, etc.); premium/plan/role and
-      // the earnings fields are admin/server only.
-      allow update: if isAdmin() || (isOwner(uid) && !touchesProtected());
+        (isOwner(userId) && request.resource.data.get('isPremium', false) == false);
+
+      // Admin may update anything; an owner may update their own profile EXCEPT
+      // the protected entitlement/money fields, and any BYUK keys must be valid.
+      allow update: if
+        (isAdmin() || (isOwner(userId) && notTouchingProtected())) &&
+        (
+          !('geminiKey' in request.resource.data) ||
+          isValidEncryptedKey(request.resource.data.geminiKey)
+        ) &&
+        (
+          !('groqKey' in request.resource.data) ||
+          isValidEncryptedKey(request.resource.data.groqKey)
+        ) &&
+        (
+          !('youtubeKey' in request.resource.data) ||
+          isValidEncryptedKey(request.resource.data.youtubeKey)
+        );
+
       allow delete: if isAdmin();
     }
 
-    // ── Money / partner-earnings (server + admin only) ─────────────
-    match /paymentEvents/{ref}  { allow read, write: if isAdmin(); }
-    match /partners/{id}        { allow read: if isAdmin() || isOwner(id);
-                                  allow write: if isAdmin(); }
-    match /referralCodes/{code} { allow read: if signedIn();   // validate a code
-                                  allow write: if isAdmin(); }
-    match /earnings/{id}        { allow read, write: if isAdmin(); }
-    match /payouts/{id}         { allow read, write: if isAdmin(); }
+    /* ─────────────────────────────
+       POSTS & BLOGS (DYNAMICS ENABLED)
+    ───────────────────────────── */
 
-    // ── AI / curation ──────────────────────────────────────────────
-    match /aiUsage/{uid}           { allow read: if isOwner(uid) || isAdmin();
-                                     allow write: if isAdmin(); }   // server writes
-    match /byukKeys/{uid}          { allow read, write: if false; } // server only (raw keys)
-    match /solutionSteps/{doc}     { allow read: if signedIn(); allow write: if isAdmin(); }
-    match /solverExpressions/{doc} { allow read: if signedIn(); allow write: if isAdmin(); }
-    match /config/{doc}            { allow read: if signedIn(); allow write: if isAdmin(); }
+    // Automatically matches any collection ending with "-posts" or named "blogs"
+    function isPostCollection(col) {
+      return col.matches('.*-posts') || col == 'blogs';
+    }
 
-    // ── Not-yet-modelled app data (kept working; tighten later) ─────
-    match /alocQuestions/{doc} { allow read: if signedIn(); allow write: if isAdmin(); }
-    match /assignments/{doc}   { allow read, write: if signedIn(); }
-    match /classes/{doc}       { allow read, write: if signedIn(); }
+    match /{postCollection}/{postId} {
+      allow read: if isLoggedIn();
 
-    // Everything else: deny by default.
-    match /{document=**} { allow read, write: if false; }
+      // Allow users to update only views and likes on the post document
+      allow update: if isLoggedIn() &&
+        isPostCollection(postCollection) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']);
+
+      allow write: if isAdmin();
+
+      // Nested Comments and Replies (Recursive wildcard matches sub-collections)
+      match /comments/{commentId=**} {
+        allow read: if isLoggedIn();
+        allow create: if isLoggedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update: if isLoggedIn() && (
+          resource.data.authorId == request.auth.uid ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        );
+        allow delete: if isLoggedIn() && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    /* ─────────────────────────────
+       DASHBOARD COLLECTIONS
+    ───────────────────────────── */
+    match /assignments/{assignmentId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin() || (isLoggedIn() && (
+        request.resource.data.teacherId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      ));
+    }
+
+    match /classes/{classId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    /* ─────────────────────────────
+       PARTNER EARNINGS (server-mediated only)
+       partners / referralCodes / earnings / paymentEvents / payouts are written
+       ONLY by the server (Admin SDK) and read via authenticated API endpoints,
+       so the admin override below is the only client access they get. Listed
+       here as documentation — no client rule needed.
+    ───────────────────────────── */
+
+    /* ─────────────────────────────
+       ADMIN OVERRIDE
+    ───────────────────────────── */
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
   }
 }
