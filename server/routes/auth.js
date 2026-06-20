@@ -33,7 +33,14 @@ module.exports = function () {
       const { idToken } = req.body || {};
       if (!idToken) return res.status(400).json({ error: "idToken required" });
       // Verify the ID token (rejects expired/forged) before minting a cookie.
-      await admin.auth().verifyIdToken(idToken);
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      // Grant the admin an `admin:true` custom claim so Firestore rules can
+      // recognise admin writes (dashboard role/plan edits, money collections)
+      // without hardcoding the email in the rules. Takes effect on next token
+      // refresh — so an admin should sign out/in once after this ships.
+      if (decoded.email && decoded.email === process.env.ADMIN_EMAIL && decoded.admin !== true) {
+        try { await admin.auth().setCustomUserClaims(decoded.uid, { admin: true }); } catch (_) {}
+      }
       const sessionCookie = await admin
         .auth()
         .createSessionCookie(idToken, { expiresIn: SESSION_MS });

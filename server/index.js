@@ -64,9 +64,15 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+// Paystack webhook must read the RAW request body to verify its HMAC signature,
+// so it has to be registered BEFORE the JSON body parser consumes the stream.
+const payments = require("./routes/payments")();
+app.post("/api/payments/webhook", express.raw({ type: "*/*" }), payments.webhook);
+
 app.use(express.json({ limit: "4mb" }));
 
 // ── Routes ────────────────────────────────────────────────────────
+app.use("/api/payments", payments.router);
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/questions", require("./routes/questions")());

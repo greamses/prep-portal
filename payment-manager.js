@@ -18,7 +18,6 @@ import { auth, db } from "./firebase-init.js";
 import {
   doc,
   getDoc,
-  setDoc,
 } from "firebase/firestore";
 
 // ─── PLAN DEFINITIONS ──────────────────────────────────────
@@ -79,6 +78,29 @@ export const PLANS = {
   // ── helpers ──────────────────────────────────────────────
   function fmt(n) {
     return n.toLocaleString("en-NG");
+  }
+
+  // Confirm a Paystack charge with our own API (which verifies it with Paystack
+  // and grants premium server-side). The browser no longer writes isPremium —
+  // that's what makes the upcoming partner-earnings ledger trustworthy.
+  async function verifyPayment(reference) {
+    const user = auth.currentUser;
+    if (!user) return false;
+    try {
+      const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+      const token = await user.getIdToken();
+      const res = await fetch(`${base}/api/payments/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reference }),
+        credentials: "include",
+      });
+      if (!res.ok) return false;
+      const d = await res.json();
+      return !!(d.ok && d.premium);
+    } catch (_) {
+      return false;
+    }
   }
 
   function loadSDK() {
@@ -291,30 +313,23 @@ export const PLANS = {
         plan:     pricing.code,
         ref:      `pp_${plan.id}_${billing}_${Date.now()}`,
         metadata: {
+          // uid lets the webhook attribute renewals; ref_code (Phase 2) will
+          // carry the partner's referral code through to the commission ledger.
+          uid: user.uid,
           custom_fields: [
             { display_name: "Plan",    variable_name: "plan",    value: plan.name },
             { display_name: "Billing", variable_name: "billing", value: billing },
           ],
         },
         callback: (response) => {
-          setDoc(
-            doc(db, "users", user.uid),
-            {
-              isPremium:       true,
-              planId:          pricing.code,
-              planName:        plan.name,
-              planTier:        plan.tier,
-              billingCycle:    billing,
-              lastPaymentRef:  response.reference,
-              updatedAt:       new Date().toISOString(),
-            },
-            { merge: true }
-          ).then(() => {
-            this._showSuccess(plan);
-          }).catch((err) => {
-            console.error("Firestore update error:", err);
-            showToast("Payment received. Contact support if your plan doesn't activate.", "error");
-          });
+          // Confirm server-side (the API verifies with Paystack and grants
+          // premium). The browser no longer self-writes isPremium.
+          verifyPayment(response.reference)
+            .then((ok) => {
+              if (ok) this._showSuccess(plan);
+              else showToast("Payment received — activating shortly. Refresh in a minute, or contact support if it doesn't unlock.", "error");
+            })
+            .catch(() => showToast("Payment received — activating shortly. Contact support if it doesn't unlock.", "error"));
         },
         onClose: () => {
           const b = document.getElementById("pm-pay-btn");
@@ -368,7 +383,8 @@ export const PLANS = {
         const link = e.target.closest("a");
         if (!link) return;
         const href = link.getAttribute("href") || "";
-        if (!href.includes("/home/games/") && !href.includes("/prep-math/activity/")) return;
+        const GATED = ["/home/games/", "/prep-math/activity/", "/virtual-lab/", "/writing/"];
+        if (!GATED.some((p) => href.includes(p))) return;
 
         e.preventDefault();
 
