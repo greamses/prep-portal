@@ -250,8 +250,8 @@
       </svg>
     </section>
 
-    <!-- ═══ THE READING ROOM (three flipbook issues) ═══ -->
-    <section class="magazine-section books-section">
+    <!-- ═══ THE READING ROOM (three flipbook issues) — hidden for now ═══ -->
+    <section class="magazine-section books-section" hidden style="display:none !important">
       <!-- Soft paint splash behind the whole section (heroPaint amoebas) -->
       <div class="books-paint" aria-hidden="true"></div>
 
@@ -605,6 +605,56 @@
             </span>
             <span class="path-note path-note--tutor">1&#8209;to&#8209;1</span>
           </a>
+
+          <a class="path-card path-card--partner" href="/partner.html">
+            <span class="path-card__paper">
+              <span class="path-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+                  <path d="M3 9.5 12 4l9 5.5-9 5.5z" fill="var(--accent-secondary)" />
+                  <path
+                    d="M7 12.6V17c0 1.5 2.2 2.6 5 2.6s5-1.1 5-2.6v-4.4"
+                    fill="none"
+                    stroke="var(--accent-primary)"
+                    stroke-width="1.6"
+                  />
+                  <circle cx="18.4" cy="15.6" r="3.4" fill="var(--accent-warning)" />
+                  <text
+                    x="18.4"
+                    y="17.2"
+                    font-size="4.4"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="#fff"
+                    font-family="system-ui, sans-serif"
+                  >%</text>
+                </svg>
+              </span>
+              <span class="path-title">Earn for your school</span>
+              <span class="path-text"
+                >Share your school&rsquo;s code &mdash; earn 10% of every
+                student&rsquo;s subscription for their first 6 months. Fund
+                projects, reward staff.</span
+              >
+              <span class="path-price">10%<small>&nbsp;for 6 months</small></span>
+              <span class="path-go"
+                >Partner dashboard
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  width="15"
+                  height="15"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </span>
+            </span>
+            <span class="path-note path-note--partner">For schools</span>
+          </a>
         </div>
       </div>
     </section>
@@ -631,6 +681,7 @@
         <nav class="footer-links" aria-label="Footer navigation">
           <a href="/">Home</a>
           <a href="/subscribe.html">Plans &amp; Tutoring</a>
+          <a href="/partner.html">Partners</a>
           <a href="/dashboard.html">Dashboard</a>
           <a href="/exams/">Practice Papers</a>
           <a href="/questions/questions.html">Question Bank</a>
@@ -783,7 +834,9 @@
       });
     </script>
 
-    <!-- The Reading Room — three flipbook issues -->
+    <!-- The Reading Room — temporarily hidden (no books on home for now).
+         Re-enable by un-hiding the .books-section above and restoring this init. -->
+    <!--
     <script type="module">
       import { initBookshelf } from "/home/js/flipbook.js";
       import {
@@ -797,5 +850,6 @@
         editions: [DEFAULT_EDITION, RESULTS_EDITION, PLAYBOOK_EDITION],
       });
     </script>
+    -->
   </body>
 </html>

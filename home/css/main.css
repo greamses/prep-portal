@@ -1267,6 +1267,11 @@
 }
 .path-note--plans { background: #ffc9de; transform: rotate(5deg); }
 .path-note--tutor { background: #bfe3ff; transform: rotate(-4deg); }
+.path-note--partner { background: #c7efd8; transform: rotate(4deg); }
+.path-card--partner .path-card__paper {
+  background: color-mix(in srgb, var(--accent-success) 15%, var(--bg));
+}
+.path-card--partner .path-icon { color: var(--accent-success); }
 .path-note::before {
   content: "";
   position: absolute;
