@@ -5,10 +5,7 @@ import {
   pillColor,
   fmtDate,
 } from "/home/js/dashboard/utils.js";
-import {
-  assignmentItemHTML,
-  perfBarHTML,
-} from "/home/js/dashboard/components.js";
+import { perfBarHTML } from "/home/js/dashboard/components.js";
 import { MOCK } from "/home/js/dashboard/mock-data.js";
 import { renderCalendar } from "/home/js/dashboard/calendar.js";
 import { doUpgrade } from "/home/js/dashboard/toolbar.js";
@@ -20,8 +17,6 @@ export function buildStudentPanels(user, data, layout) {
   const accuracy = pct(data.accuracy, 84);
   const streak = Math.max(0, Number(data.streakDays) || 3);
   const focus = data.currentFocus || "Arithmetic Practice";
-  const tasks = data.assignedTasks || MOCK.studentTasks;
-  const results = data.recentResults || MOCK.studentResults;
   const subjPerf = data.subjectPerf || MOCK.subjectPerf;
   const qCount = Number(data.questionsAnswered) || 0;
   const qBarWidth = Math.min(100, Math.round(qCount / 5));

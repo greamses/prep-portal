@@ -178,7 +178,8 @@ module.exports = function () {
         activityTitle: a.title || null,
         ownerUid: a.ownerUid,
         studentUid: req.user.uid,
-        studentName: p.name || (req.user.email ? req.user.email.split("@")[0] : "Student"),
+        studentName: String((b.studentName || "")).trim().slice(0, 80) ||
+          p.name || (req.user.email ? req.user.email.split("@")[0] : "Student"),
         studentEmail: req.user.email || null,
         answers,
         marked,

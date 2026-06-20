@@ -37,6 +37,13 @@
       color: var(--text-secondary); background: var(--surface-primary); border:2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
       border-radius:999px; padding:.35rem .7rem; }
     /* Paper "sheet" frame around the reused .exam-paper */
+    .ac-namerow { margin: 0 0 1rem; }
+    .ac-namerow label { display:block; font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      color: var(--text-secondary); margin-bottom:.3rem; }
+    .ac-namerow input { width:100%; max-width:340px; box-sizing:border-box; padding:.6rem .8rem; border-radius:12px;
+      font-family:"Caveat",cursive; font-size:1.25rem; border:2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+      background: var(--surface-primary); color: var(--ink); outline:none; }
+    .ac-namerow input:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent); }
     .ac-paper { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg);
       border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent); background: var(--surface-primary); }
     .ac-actions { display:flex; gap:.7rem; align-items:center; margin:1.2rem 0; flex-wrap:wrap; }
@@ -63,6 +70,10 @@
     <div id="ac-gate" class="ac-gate">Loading activity…</div>
 
     <form id="ac-form" hidden>
+      <div class="ac-namerow">
+        <label for="ac-name">Your name</label>
+        <input id="ac-name" type="text" maxlength="80" placeholder="Type your name…" autocomplete="name" />
+      </div>
       <div class="ac-paper"><div class="exam-paper" id="exam-paper"></div></div>
       <div class="ac-actions">
         <button type="submit" class="pp-btn" id="ac-submit">Submit for marking</button>
@@ -131,14 +142,20 @@
       $("ac-title").textContent = activity.title;
       $("ac-meta").textContent = [activity.subject, activity.classLevel, `by ${activity.ownerName || "teacher"}`].filter(Boolean).join(" · ");
       $("ac-preview").hidden = !preview;
+      $("ac-name").value = defaultName();
       renderPaper();
+      $("ac-name").oninput = () => { const el = $("ac-paper-name"); if (el) el.textContent = studentName(); };
       $("ac-gate").hidden = true;
       $("ac-form").hidden = false;
       loadUsage();
     }
 
-    function studentName() {
+    function defaultName() {
       return auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split("@")[0] : "Student");
+    }
+    function studentName() {
+      const v = ($("ac-name")?.value || "").trim();
+      return v || defaultName();
     }
 
     function renderPaper() {
@@ -146,7 +163,7 @@
       let html = `
         <div class="paper-hdr">
           <div class="paper-info">
-            <span class="paper-field">Name:<span class="paper-field-val">${escHtml(studentName())}</span></span>
+            <span class="paper-field">Name:<span class="paper-field-val" id="ac-paper-name">${escHtml(studentName())}</span></span>
             <span class="paper-field">Subject:<span class="paper-field-val">${escHtml(activity.subject || "")}</span></span>
             <span class="paper-field">Class:<span class="paper-field-val">${escHtml(activity.classLevel || "")}</span></span>
             <span class="paper-field">Date:<span class="paper-field-val">${escHtml(date)}</span></span>
@@ -202,7 +219,7 @@
           await fetch(`${API}/api/activities/${encodeURIComponent(slug)}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(await authHeader()) },
-            body: JSON.stringify({ answers: answers.map((t) => ({ text: t })), marked: r.combined, score, totalMarks }),
+            body: JSON.stringify({ answers: answers.map((t) => ({ text: t })), marked: r.combined, score, totalMarks, studentName: studentName() }),
           });
           msg.textContent = `Submitted${score != null ? ` — ${score}/${totalMarks}` : ""}. Your teacher can see your result.`;
           eds.forEach((ed) => (ed.contentEditable = "false"));

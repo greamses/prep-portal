@@ -1,32 +1,8 @@
 import { I } from "./icons.js";
-import { PERSON_SVG, pillColor, fmtDate, pct } from "./utils.js";
-import { perfBarHTML } from "./components.js";
-import { MOCK } from "./mock-data.js";
-import { renderCalendar } from "./calendar.js";
 import { mountTeacherClassroom } from "./classroom-client.js";
 
 export function buildTeacherPanels(user, data, layout) {
-  const students = data.students || MOCK.teacherStudents;
-  const assignments = data.assignments || MOCK.teacherAssignments;
-  const className = data.activeClass || "My Math Class";
-  const activeCount = students.filter((s) => s.status === "active").length;
-  const avgAcc = students.length
-    ? Math.round(
-        students.reduce((a, s) => a + (Number(s.accuracy) || 0), 0) /
-          students.length,
-      )
-    : 0;
-  const needsHelp = students
-    .filter((s) => (Number(s.accuracy) || 0) < 60 || !s.activeThisWeek)
-    .slice(0, 6);
-  const completionRate = assignments.length
-    ? Math.round(
-        assignments.reduce(
-          (a, t) => a + pct((t.completedCount / (t.totalCount || 1)) * 100),
-          0,
-        ) / assignments.length,
-      )
-    : 0;
+  const className = data.activeClass || "My Class";
 
   layout.dataset.role = "teacher";
   layout.innerHTML = `
@@ -64,16 +40,6 @@ export function buildTeacherPanels(user, data, layout) {
     <div class="db-panel bento-tall">
       <div class="db-panel-head">
         <div>
-          <p class="db-kicker">Planning</p>
-          <h2 class="db-panel-title">My Class Calendar</h2>
-        </div>
-      </div>
-      <div id="teacher-calendar-container"></div>
-    </div>
-
-    <div class="db-panel bento-tall">
-      <div class="db-panel-head">
-        <div>
           <p class="db-kicker">Task Manager</p>
           <h2 class="db-panel-title">My Activities</h2>
         </div>
@@ -84,11 +50,6 @@ export function buildTeacherPanels(user, data, layout) {
       </div>
     </div>
 `;
-
-  const calendarContainer = document.getElementById(
-    "teacher-calendar-container",
-  );
-  if (calendarContainer) renderCalendar(calendarContainer, MOCK.scheduleEvents);
 
   mountTeacherClassroom(layout);
 }
