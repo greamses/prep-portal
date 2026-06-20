@@ -42,6 +42,7 @@ export function buildToolbar(container, role, isPremium) {
       <button class="dashboard-command cmd-blue" type="button" data-action="new-class">${I.plus}<span>New Class</span></button>
       <a class="dashboard-command" href="${ROUTES.MANAGE_USERS}">${I.users}<span>Manage Users</span></a>
       <a class="dashboard-command cmd-yellow" href="/admin-partners.html">${I.star}<span>Partner Program</span></a>
+      <a class="dashboard-command cmd-blue" href="/admin-cbt.html">${I.papers}<span>CBT Bank</span></a>
       <a class="dashboard-command" href="${ROUTES.SETTINGS}">${I.settings}<span>Settings</span></a>`,
   };
 

@@ -127,6 +127,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Our own AI-generated CBT bank — admin-written, served via /api/cbt.
+    match /cbtQuestions/{id} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
     /* ─────────────────────────────
        ACTIVITIES (teacher-authored question sets)
        Created/updated ONLY by the server (Admin SDK, which bypasses rules).

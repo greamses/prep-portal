@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBT Bank — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+  <style>
+    body { margin:0; background: var(--app-bg); color: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); padding:1.5rem; }
+    .cb-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity:.2; }
+    .cb-paint svg { width:100%; height:100%; display:block; }
+    [data-theme="dark"] .cb-paint { opacity:.13; }
+    .cb-wrap { position: relative; z-index: 1; max-width: 880px; margin:0 auto; }
+    h1 { font-family: var(--font-display); font-size:1.2rem; margin:0 0 1.2rem; }
+    .cb-card { background: var(--surface-primary); border:2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+      border-radius:16px; padding:1.1rem 1.2rem; margin-bottom:1.2rem; box-shadow: var(--shadow-sm); }
+    .cb-card h2 { font-family: var(--font-display); font-size:.95rem; margin:0 0 .8rem; }
+    label { display:block; font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin:.5rem 0 .3rem; color:var(--text-secondary); }
+    input, select { width:100%; box-sizing:border-box; padding:.6rem .7rem; border-radius:10px; font-family:inherit; font-size:.85rem;
+      border:2px solid color-mix(in srgb, var(--ink) 14%, transparent); background: var(--surface-secondary); color: var(--ink); }
+    .cb-row { display:flex; gap:.7rem; flex-wrap:wrap; align-items:flex-end; }
+    .cb-row > div { flex:1 1 150px; }
+    button { padding:.6rem 1.1rem; border:none; border-radius:999px; cursor:pointer; font-weight:700; font-family:var(--font-display);
+      font-size:.82rem; background: var(--accent-primary); color: var(--text-on-accent,#2a2723); box-shadow: var(--shadow-sm); }
+    button:disabled { opacity:.6; cursor:default; }
+    .cb-msg { font-size:.74rem; margin:.7rem 0 0; min-height:1em; }
+    .cb-msg--ok { color: var(--accent-success); } .cb-msg--err { color: var(--accent-danger); }
+    table { width:100%; border-collapse:collapse; font-size:.76rem; }
+    th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid rgba(var(--shadow-color),.12); }
+    th { font-size:.58rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-secondary); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .cb-gate { text-align:center; padding:3rem 1rem; color:var(--text-secondary); }
+    .cb-hidden { display:none; }
+    .cb-hint { font-size:.72rem; color:var(--text-secondary); line-height:1.5; margin:.2rem 0 .8rem; }
+    a { color: var(--accent-secondary); }
+  </style>
+</head>
+<body>
+  <div class="cb-paint" aria-hidden="true"></div>
+  <div class="cb-wrap">
+    <h1>CBT Question Bank — Admin</h1>
+    <div id="cb-gate" class="cb-gate">Checking access…</div>
+
+    <div id="cb-main" class="cb-hidden">
+      <div class="cb-card">
+        <h2>Generate questions</h2>
+        <p class="cb-hint">Original, exam-style MCQs are written by AI and saved to our bank — no past papers used. Generate in small batches (they vary each time), repeat to grow the bank.</p>
+        <div class="cb-row">
+          <div>
+            <label for="cb-scheme">Scheme</label>
+            <select id="cb-scheme">
+              <option value="utme">UTME-style</option>
+              <option value="wassce">WASSCE-style</option>
+              <option value="postutme">Post-UTME style</option>
+            </select>
+          </div>
+          <div>
+            <label for="cb-subject">Subject</label>
+            <input id="cb-subject" list="cb-subjects" placeholder="mathematics" />
+            <datalist id="cb-subjects">
+              <option value="mathematics"></option><option value="english"></option>
+              <option value="biology"></option><option value="physics"></option>
+              <option value="chemistry"></option><option value="economics"></option>
+              <option value="government"></option><option value="commerce"></option>
+              <option value="geography"></option><option value="accounting"></option>
+              <option value="history"></option><option value="agric"></option>
+            </datalist>
+          </div>
+          <div>
+            <label for="cb-topic">Topic (optional)</label>
+            <input id="cb-topic" placeholder="e.g. Quadratic equations" />
+          </div>
+          <div style="flex:0 0 90px">
+            <label for="cb-count">Count</label>
+            <input id="cb-count" type="number" min="1" max="30" value="10" />
+          </div>
+          <div style="flex:0 0 auto">
+            <button id="cb-gen" type="button">Generate</button>
+          </div>
+        </div>
+        <p id="cb-msg" class="cb-msg"></p>
+      </div>
+
+      <div class="cb-card">
+        <h2>Bank summary</h2>
+        <div id="cb-stats">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+    import { heroPaint } from "/utils/components/nav-icons.js";
+
+    document.querySelector(".cb-paint").innerHTML = heroPaint();
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const $ = (id) => document.getElementById(id);
+    const gate = $("cb-gate"), main = $("cb-main");
+    async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
+
+    async function isAdmin() {
+      try { const r = await fetch(`${API}/api/ai/whoami`, { headers: await authHeader() }); return r.ok && (await r.json()).admin === true; }
+      catch (_) { return false; }
+    }
+
+    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style" };
+
+    async function loadStats() {
+      try {
+        const r = await fetch(`${API}/api/cbt/stats`, { headers: await authHeader() });
+        const d = await r.json();
+        const box = $("cb-stats");
+        if (!d.total) { box.innerHTML = '<p class="cb-hint">No questions yet — generate your first batch above.</p>'; return; }
+        let html = `<p class="cb-hint"><strong>${d.total}</strong> questions in the bank.</p>`;
+        Object.keys(d.byScheme).sort().forEach((s) => {
+          const sc = d.byScheme[s];
+          html += `<h3 style="font-family:var(--font-display);font-size:.8rem;margin:.8rem 0 .3rem">${SCHEME_LABEL[s] || s} — ${sc.total}</h3>`;
+          html += '<table><tbody>' + Object.entries(sc.subjects).sort((a,b)=>b[1]-a[1])
+            .map(([k, n]) => `<tr><td>${(d.subjectLabels && d.subjectLabels[k]) || k}</td><td class="num">${n}</td></tr>`).join("") + '</tbody></table>';
+        });
+        box.innerHTML = html;
+      } catch (e) { $("cb-stats").innerHTML = `<p class="cb-msg cb-msg--err">${e.message}</p>`; }
+    }
+
+    async function generate() {
+      const btn = $("cb-gen"), msg = $("cb-msg");
+      const scheme = $("cb-scheme").value, subject = $("cb-subject").value.trim();
+      const topic = $("cb-topic").value.trim(), count = parseInt($("cb-count").value, 10) || 10;
+      if (!subject) { msg.textContent = "Enter a subject."; msg.className = "cb-msg cb-msg--err"; return; }
+      btn.disabled = true; msg.textContent = "Generating… (this can take ~10–20s)"; msg.className = "cb-msg";
+      try {
+        const r = await fetch(`${API}/api/cbt/generate`, {
+          method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
+          body: JSON.stringify({ scheme, subject, topic, count }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Failed");
+        msg.textContent = `Saved ${d.saved} questions to ${SCHEME_LABEL[scheme]} · ${subject}.`;
+        msg.className = "cb-msg cb-msg--ok";
+        loadStats();
+      } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
+      finally { btn.disabled = false; }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
+      if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
+      gate.classList.add("cb-hidden"); main.classList.remove("cb-hidden");
+      $("cb-gen").onclick = generate;
+      loadStats();
+    });
+  </script>
+</body>
+</html>
