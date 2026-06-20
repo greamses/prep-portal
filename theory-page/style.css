@@ -3570,13 +3570,112 @@ body { background-image: none; }
    The marked answer-sheet itself is rendered by theory-analyser.css, whose
    colours resolve through the legacy-token aliases at the top of this file.
    ═══════════════════════════════════════════════════════════════════════════ */
+/* The modal is a full-screen overlay — it must sit ABOVE the fixed nav
+   (z-index 9999 in nav.css), which was otherwise showing on top of it. */
+.modal-bd { z-index: 10000; }
+
 .modal-wrap {
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
   border-radius: clamp(16px, 2.5vw, 22px);
   box-shadow: var(--shadow-xl);
 }
-.modal-hdr { border-bottom: none; }
 .modal-body { background: var(--app-bg); }
+
+/* ── Better modal header — soft paper "letterhead" ──
+   subject + class stacked on the left, candidate name in the marker hand,
+   a phase pill, and a round close button. Replaces the dark slab bar. */
+.modal-hdr {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 60px;
+  padding: 0.55rem 0.7rem 0.55rem 1rem;
+  background: linear-gradient(180deg,
+    var(--surface-primary),
+    color-mix(in srgb, var(--surface-secondary) 65%, var(--surface-primary)));
+  color: var(--ink);
+  border-bottom: 1px dashed var(--ruled);
+}
+.mhdr-mark {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-secondary) 16%, var(--surface-primary));
+  color: var(--accent-secondary);
+  transform: rotate(-6deg);
+  box-shadow: var(--shadow-sm);
+}
+.mhdr-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mhdr-subject {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ink);
+  max-width: 42vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mhdr-class {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.mhdr-name {
+  margin-left: auto;
+  font-family: "Caveat", cursive;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-secondary);
+  max-width: 28vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mhdr-phase {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-accent, #2a2723);
+  background: var(--accent-primary);
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+}
+.mhdr-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.2s var(--ease-bounce, ease);
+}
+.mhdr-close:hover {
+  background: color-mix(in srgb, var(--accent-danger) 18%, var(--surface-secondary));
+  color: var(--accent-danger);
+  transform: rotate(90deg);
+}
+@media (max-width: 560px) {
+  .mhdr-name { display: none; } /* keep the bar from crowding on phones */
+  .mhdr-subject { max-width: 38vw; }
+}
 
 /* Write paper: soft header strip + dashed rules */
 .paper-hdr { border-bottom: 1px dashed var(--ruled); background: color-mix(in srgb, var(--surface-primary) 96%, transparent); }
