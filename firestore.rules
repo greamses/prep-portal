@@ -140,6 +140,28 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       CLASSROOM (roster + assignments) — server-mediated (Admin SDK).
+       Join codes are written server-side; the private bits — a teacher's
+       student roster and each student's assigned activities — live in
+       SUBcollections that no client rule grants, so only the server and admins
+       can read them.
+    ───────────────────────────── */
+    match /classCodes/{code} {
+      allow read: if isLoggedIn();   // a code→teacher lookup is not sensitive
+      allow write: if isAdmin();
+    }
+    match /teacherClass/{teacherUid} {
+      allow read: if isLoggedIn() && (request.auth.uid == teacherUid || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /teacherStudents/{teacherUid}/roster/{studentUid} {
+      allow read, write: if false;   // server/admin only
+    }
+    match /studentAssignments/{studentUid}/items/{activityId} {
+      allow read, write: if false;   // server/admin only
+    }
+
+    /* ─────────────────────────────
        PARTNER EARNINGS (server-mediated only)
        partners / referralCodes / earnings / paymentEvents / payouts are written
        ONLY by the server (Admin SDK) and read via authenticated API endpoints,

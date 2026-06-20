@@ -77,6 +77,7 @@ app.use("/api/partner", require("./routes/partner")());
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/activities", require("./routes/activities")());
+app.use("/api/classroom", require("./routes/classroom")());
 app.use("/api/questions", require("./routes/questions")());
 app.use("/api/tts",   require("./routes/tts")());
 app.use("/api/admin",   require("./routes/admin")(db, auth));

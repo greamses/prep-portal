@@ -190,6 +190,19 @@ module.exports = function () {
       await db().collection("activities").doc(a.id)
         .set({ submissionCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
 
+      // If this student was assigned the activity, mark it done on their list.
+      try {
+        const asgRef = db().collection("studentAssignments").doc(req.user.uid).collection("items").doc(a.id);
+        if ((await asgRef.get()).exists) {
+          await asgRef.set({
+            status: "submitted",
+            score: Number.isFinite(+b.score) ? +b.score : null,
+            totalMarks: Number.isFinite(+b.totalMarks) ? +b.totalMarks : null,
+            submittedAt: stamp(),
+          }, { merge: true });
+        }
+      } catch (_) {}
+
       res.json({ ok: true, id: ref.id });
     } catch (e) {
       console.error("[/api/activities/:id/submit]", e.message);
