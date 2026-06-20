@@ -170,7 +170,9 @@ module.exports = function () {
       try { marked = JSON.parse(JSON.stringify(b.marked ?? null)); } catch (_) { marked = null; }
       if (marked && JSON.stringify(marked).length > 60000) marked = { note: "result too large to store" };
 
-      const ref = db().collection("submissions").doc();
+      // Stored as a SUBCOLLECTION of the activity so the broad top-level
+      // Firestore read rule can't expose private student answers/scores.
+      const ref = db().collection("activities").doc(a.id).collection("submissions").doc();
       await ref.set({
         activityId: a.id,
         activityTitle: a.title || null,
@@ -203,7 +205,7 @@ module.exports = function () {
       if (a.ownerUid !== req.user.uid && !isAdmin(req)) {
         return res.status(403).json({ error: "Not your activity." });
       }
-      const snap = await db().collection("submissions").where("activityId", "==", a.id).get();
+      const snap = await db().collection("activities").doc(a.id).collection("submissions").get();
       const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
       const items = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((x, y) => ms(y.submittedAt) - ms(x.submittedAt));
       res.json({ activity: publicActivity(a), submissions: items });

@@ -121,6 +121,25 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       ACTIVITIES (teacher-authored question sets)
+       Created/updated ONLY by the server (Admin SDK, which bypasses rules).
+       The question set is readable by any signed-in user (so a shared link
+       works), but is written server-side. Private student submissions live in
+       a SUBcollection that NO client rule grants — that placement matters: the
+       broad single-segment rule above (/{postCollection}/{postId}) only matches
+       top-level docs, so a subcollection is never exposed by it. Only the server
+       (Admin SDK) and admins (catch-all below) can read/write submissions.
+    ───────────────────────────── */
+    match /activities/{activityId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+
+      match /submissions/{submissionId} {
+        allow read, write: if false;
+      }
+    }
+
+    /* ─────────────────────────────
        PARTNER EARNINGS (server-mediated only)
        partners / referralCodes / earnings / paymentEvents / payouts are written
        ONLY by the server (Admin SDK) and read via authenticated API endpoints,
