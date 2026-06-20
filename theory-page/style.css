@@ -3214,8 +3214,11 @@ mjx-container {
   --blue:   var(--accent-secondary);
   --green:  var(--accent-success);
   --red:    var(--accent-danger);
+  --amber:  var(--accent-warning);
   --muted:  var(--text-secondary);
   --off:    var(--surface-secondary);
+  --ruled:  color-mix(in srgb, var(--ink) 12%, transparent);
+  --paper:  var(--surface-primary);
 }
 
 /* Organic paint-blob wash behind everything (filled by the inline module). */
@@ -3383,3 +3386,178 @@ body { background-image: none; }
   box-shadow: none;
 }
 .btn-ghost:hover { background: var(--surface-secondary); color: var(--ink); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOPICS + GENERATE-QUESTIONS — soft-UI pass.
+   These two panels still used hard ink borders, 0-blur offset shadows, dark
+   ink headers and the neo-brutalist "slide-up ink fill" hover. Retune them to
+   soft tinted pills/cards + blurred shadows to match the exams builder. The
+   --tile here drives the accent (blue by default).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Topic picker shell ── */
+.topic-picker {
+  --tile: var(--accent-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  box-shadow: var(--shadow-sm);
+}
+.topic-picker-hdr { border-bottom: 1px dashed var(--ruled); }
+.topic-picker-title { color: var(--ink); }
+
+/* Count badge → soft tinted pill */
+.topic-count-badge {
+  border: 2px solid color-mix(in srgb, var(--tile) 45%, transparent);
+  border-radius: 999px;
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-sm);
+  font-size: 1.05rem;
+  padding: 0.45rem 1rem;
+}
+#topic-count { color: var(--tile); }
+
+/* Topic chips → soft tinted pills (drop the slide-up ink fill) */
+.topic-chip {
+  border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
+  background: var(--surface-secondary);
+  color: var(--ink);
+  border-radius: 999px;
+  overflow: visible;
+  transition:
+    transform var(--transition-smooth, 0.2s) var(--ease-bounce, ease),
+    box-shadow 0.18s ease, background 0.15s ease, color 0.15s ease;
+}
+.topic-chip::after { display: none !important; } /* kill the neo-brutalist fill */
+.topic-chip:hover {
+  color: var(--ink);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.topic-chip.checked {
+  background: var(--tile);
+  color: var(--text-on-accent, #fff);
+  border-color: var(--tile);
+}
+.topic-chip-check { border-radius: 5px; }
+.topic-chip.writing-link {
+  --tile: var(--accent-secondary);
+  background: var(--accent-secondary); color: var(--text-on-accent, #fff); border-color: var(--accent-secondary);
+}
+.topic-chip.writing-link:hover { color: var(--text-on-accent, #fff); }
+.topic-chip.calculation-link {
+  --tile: var(--accent-warning);
+  background: var(--accent-warning); color: var(--text-on-accent, #fff); border-color: var(--accent-warning);
+}
+.topic-chip.calculation-link:hover { color: var(--text-on-accent, #fff); filter: none; transform: translateY(-2px); }
+
+/* Footer + actions → soft */
+.topic-clear-btn {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 999px;
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+}
+.topic-clear-btn:hover { background: var(--surface-secondary); color: var(--ink); }
+.topic-actions {
+  border-top: 1px dashed var(--ruled);
+  background: color-mix(in srgb, var(--surface-secondary) 60%, transparent);
+}
+
+/* ── Question-count segmented control → soft sticker tiles ── */
+.qcount-row {
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.qcount-tile {
+  border-right: 1px dashed var(--ruled);
+  background: var(--surface-primary);
+}
+.qcount-tile::after { display: none !important; }
+.qcount-tile:hover {
+  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-primary));
+}
+.qcount-tile:hover span { color: var(--ink); }
+.qcount-tile.active { background: var(--accent-secondary); }
+.qcount-tile.active span { color: var(--text-on-accent, #fff); }
+
+/* ── Question builder card ── */
+.qbuilder {
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-primary);
+}
+/* Header: light tinted bar instead of solid ink */
+.qbuilder-header {
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
+  color: var(--ink);
+  border-bottom: 1px dashed var(--ruled);
+}
+.qbuilder-title { color: var(--ink); }
+.autogen-all-btn {
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.autogen-all-btn:hover { background: var(--accent-primary); color: var(--ink); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+/* Question slots */
+.q-slot { border-bottom: 1px dashed var(--ruled); background: transparent; }
+.q-slot-hd {
+  border-bottom: 1px dashed var(--ruled);
+  background: color-mix(in srgb, var(--surface-secondary) 55%, transparent);
+}
+.q-slot-num {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent, #fff);
+  border-radius: 12px;
+  transform: rotate(-6deg);
+  box-shadow: var(--shadow-sm);
+}
+.q-autogen-btn {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 999px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.q-autogen-btn:hover {
+  background: var(--surface-secondary);
+  color: var(--ink);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.compulsory-star {
+  border: 2px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 8px;
+  color: var(--text-secondary);
+}
+.q-slot-ta {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--surface-secondary);
+  border-radius: 12px;
+}
+.q-slot-ta:focus {
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+.q-slot-editor {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 12px;
+  background: var(--surface-secondary);
+}
+.q-slot-editor:focus {
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+/* Auto-filled (AI) state → token-based success tint (works in dark too) */
+.q-slot-ta.autofilled,
+.q-slot-editor.autofilled {
+  background: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-success) 55%, transparent);
+}
+.q-slot-editor:empty::before { color: var(--text-tertiary); }
