@@ -27,6 +27,24 @@ module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
 
+  // Verbatim past-paper archive is gated by config/site.archiveEnabled (default
+  // OFF). Cached 30s so we don't read config on every request. Fails CLOSED.
+  let _cfgAt = 0, _cfgVal = false;
+  async function archiveEnabled() {
+    if (Date.now() - _cfgAt < 30000) return _cfgVal;
+    try {
+      const s = await db().collection("config").doc("site").get();
+      _cfgVal = !!(s.exists && s.data().archiveEnabled === true);
+    } catch (_) { _cfgVal = false; }
+    _cfgAt = Date.now();
+    return _cfgVal;
+  }
+  async function gateArchive(res) {
+    if (await archiveEnabled()) return true;
+    res.status(503).json({ error: "The past-paper archive is currently unavailable.", archiveDisabled: true });
+    return false;
+  }
+
   // ── GET /api/questions/facets?type=utme ──
   // Available subjects (with counts) + years-per-subject (with counts) for a
   // type. Cached briefly since it only changes on import.
@@ -36,6 +54,7 @@ module.exports = function () {
 
   router.get("/facets", async (req, res) => {
     try {
+      if (!(await gateArchive(res))) return;
       const type = String(req.query.type || "").toLowerCase().trim();
       if (!type) return res.status(400).json({ error: "type is required" });
 
@@ -80,6 +99,7 @@ module.exports = function () {
 
   router.get("/", async (req, res) => {
     try {
+      if (!(await gateArchive(res))) return;
       const subject = String(req.query.subject || "").toLowerCase().trim();
       const type = String(req.query.type || "").toLowerCase().trim();
       const year = String(req.query.year || "").trim();

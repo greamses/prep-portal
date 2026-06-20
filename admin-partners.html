@@ -60,6 +60,20 @@
 
     <div id="ap-main" class="ap-hidden">
       <div class="ap-card">
+        <h2>Past-paper archive</h2>
+        <p style="font-size:.78rem;opacity:.85;line-height:1.5;margin:.2rem 0 .7rem">
+          Controls the verbatim past-question archive (exam builder + paper viewer).
+          Keep this <strong>off</strong> unless you've confirmed you have the rights —
+          original AI-generated practice keeps working either way.
+        </p>
+        <div class="ap-row" style="align-items:center">
+          <div style="flex:0 0 auto"><button id="ap-archive-toggle" type="button">…</button></div>
+          <div><span id="ap-archive-state" style="font-size:.8rem;opacity:.8">Checking…</span></div>
+        </div>
+        <p id="ap-archive-msg" class="ap-msg"></p>
+      </div>
+
+      <div class="ap-card">
         <h2>Create a partner &amp; redeem code</h2>
         <div class="ap-row">
           <div>
@@ -229,6 +243,39 @@
       } catch (e) { alert(e.message); }
     }
 
+    let archiveOn = false;
+    function renderArchive() {
+      const btn = document.getElementById("ap-archive-toggle");
+      const state = document.getElementById("ap-archive-state");
+      btn.textContent = archiveOn ? "Turn OFF" : "Turn ON";
+      state.innerHTML = archiveOn
+        ? '<strong style="color:var(--accent-success,#6db58f)">ON</strong> — past papers are visible'
+        : '<strong style="color:var(--accent-danger,#e07a5f)">OFF</strong> — past papers are hidden (safe)';
+    }
+    async function loadArchive() {
+      try { const r = await fetch(`${API}/api/config`); archiveOn = (await r.json()).archiveEnabled === true; } catch (_) { archiveOn = false; }
+      renderArchive();
+    }
+    async function toggleArchive() {
+      const btn = document.getElementById("ap-archive-toggle");
+      const msg = document.getElementById("ap-archive-msg");
+      const next = !archiveOn;
+      if (next && !confirm("Turn the past-paper archive ON? Only do this if you've confirmed you have the rights to those questions.")) return;
+      btn.disabled = true; msg.textContent = ""; msg.className = "ap-msg";
+      try {
+        const res = await fetch(`${API}/api/config`, {
+          method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
+          body: JSON.stringify({ archiveEnabled: next }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || "Failed");
+        archiveOn = d.archiveEnabled === true;
+        renderArchive();
+        msg.textContent = "Saved."; msg.className = "ap-msg ap-msg--ok";
+      } catch (e) { msg.textContent = e.message; msg.className = "ap-msg ap-msg--err"; }
+      finally { btn.disabled = false; }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.';
@@ -241,6 +288,8 @@
       gate.classList.add("ap-hidden");
       main.classList.remove("ap-hidden");
       document.getElementById("ap-create").onclick = createPartner;
+      document.getElementById("ap-archive-toggle").onclick = toggleArchive;
+      loadArchive();
       loadPartners();
       loadPayouts();
     });

@@ -120,6 +120,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Site config flags (e.g. archiveEnabled) — written only by an admin; read
+    // by the server (Admin SDK). Client read is harmless.
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     /* ─────────────────────────────
        ACTIVITIES (teacher-authored question sets)
        Created/updated ONLY by the server (Admin SDK, which bypasses rules).
