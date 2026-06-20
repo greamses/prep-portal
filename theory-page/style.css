@@ -3230,57 +3230,94 @@ mjx-container {
 .builder-paint svg { width: 100%; height: 100%; display: block; }
 [data-theme="dark"] .builder-paint { opacity: 0.16; }
 
-/* Keep real content above the wash. (The modal is already a fixed z-index:400
-   overlay, so it sits above the paint without help — don't touch it here.) */
-.site-nav,
-.pg-hero,
+/* Keep real content above the wash. (Don't touch .site-nav — it's a fixed
+   z-index:9999 bar from nav.css and must stay fixed; and the modal is a fixed
+   z-index:400 overlay. Both already sit above the paint.) */
+.builder-header,
 .setup-section { position: relative; z-index: 1; }
 
 /* Plain paper canvas — the paint provides the colour now. */
 body { background-image: none; }
 
-/* ── Hero: drop the hard slab; float the copy over the paint ── */
-.pg-hero {
-  background: transparent;
-  border-bottom: none;
-  padding-bottom: clamp(8px, 2vw, 24px);
+/* ── HERO — minimal centred header with a sticky note + stat pills,
+   copied from the National Exams builder so the two pages match. ── */
+.builder-header {
+  text-align: center;
+  max-width: 40rem;
+  /* clear the fixed nav bar (~76px) + breathing room */
+  margin: clamp(5.5rem, 10vw, 7rem) auto clamp(2rem, 5vw, 3rem);
+  padding: 0 1rem;
+  animation: fadeUp 0.5s ease both;
 }
-.pg-hero::after { color: color-mix(in srgb, var(--ink) 5%, transparent); }
-.pg-title em { color: var(--accent-secondary); }
 
-/* Stat slab → soft rounded paper card with a tinted edge */
-.ph-stats {
-  border: 2px solid color-mix(in srgb, var(--accent-secondary) 35%, transparent);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
-  background: var(--surface-primary);
-  overflow: hidden;
+/* Sticky note — tilted yellow paper, marker hand, a strip of tape on top. */
+.builder-note {
+  position: relative;
+  display: inline-block;
+  max-width: 34rem;
+  margin: 0 auto;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: clamp(0.98rem, 2.2vw, 1.18rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #14130f;
+  background: #fff39a;
+  border-radius: 3px;
+  padding: 0.95rem 1.5rem 1.05rem;
+  transform: rotate(-2.5deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transition: transform var(--transition-smooth, 0.25s) var(--ease-bounce, ease);
 }
-.ph-stat { border-right: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
-.ph-stat strong { color: var(--ink); }
+.builder-note::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 72px;
+  height: 20px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-note:hover { transform: rotate(-1deg) translateY(-2px); }
 
-/* Badges → soft sticker pills (icons are inline SVG now, no emoji) */
-.ph-badge {
-  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+/* Sticker stat pills — tinted by an inline --tile per pill. */
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: clamp(1.2rem, 3vw, 1.8rem);
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
   background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 50%, transparent);
   box-shadow: var(--shadow-sm);
+  padding: 0.4rem 0.7rem;
+  border-radius: 13px;
+  transition: transform var(--transition-smooth, 0.25s) var(--ease-bounce, ease);
 }
-.ph-badge svg { flex-shrink: 0; }
-.ph-badge--ai {
-  background: color-mix(in srgb, var(--accent-primary) 18%, var(--surface-primary));
-  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
-  color: var(--ink);
+.hero-stat strong {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: var(--tile, var(--accent-secondary));
 }
-.ph-badge--instant {
-  background: color-mix(in srgb, var(--accent-success) 14%, var(--surface-primary));
-  border-color: color-mix(in srgb, var(--accent-success) 38%, transparent);
-  color: var(--accent-success);
-}
-.ph-badge--print {
-  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
-  border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
-  color: var(--accent-secondary);
-}
+.hero-stat:nth-child(odd) { transform: rotate(-2.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(2.5deg); }
+.hero-stat:hover { transform: rotate(0deg) translateY(-2px); }
 
 /* ── Setup box → soft rounded paper card; dashed inner dividers ── */
 .setup-box {
