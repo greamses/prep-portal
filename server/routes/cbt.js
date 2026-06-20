@@ -20,9 +20,12 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Schemes we offer — DESCRIPTIVE "…-style" labels, never an exam body's name.
 const SCHEMES = {
-  wassce:   { label: "WASSCE-style",   desc: "a West-African senior-secondary certificate exam (SSCE/WASSCE style)" },
-  utme:     { label: "UTME-style",     desc: "a Nigerian university matriculation exam (UTME style): four options, single best answer" },
+  wassce:   { label: "WASSCE-style",    desc: "a West-African senior-secondary certificate exam (SSCE/WASSCE style) for students in Nigeria" },
+  utme:     { label: "UTME-style",      desc: "a Nigerian university matriculation exam (UTME style): four options, single best answer" },
   postutme: { label: "Post-UTME style", desc: "a Nigerian university post-UTME screening test" },
+  sat:      { label: "SAT-style",       desc: "the digital SAT US college-admissions test: concise four-option multiple choice; for verbal items write your OWN short original passage and base the question on it" },
+  igcse:    { label: "IGCSE-style",     desc: "an international GCSE (upper-secondary) exam at IGCSE difficulty: four-option multiple choice" },
+  alevel:   { label: "A-Level-style",   desc: "an A-Level (advanced upper-secondary) exam: rigorous four-option multiple choice at A-Level difficulty" },
 };
 
 const SUBJECT_LABELS = {
@@ -39,7 +42,7 @@ const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperC
 
 function genPrompt(scheme, subjectLabel, topic, count) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
-  return `You are an examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}, for students in Nigeria.
+  return `You are an examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
 Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
 

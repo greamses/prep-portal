@@ -83,6 +83,9 @@ const EXAM_TYPES = [
   { id: "utme", name: "UTME-style", queryType: "utme", live: true },
   { id: "wassce", name: "WASSCE-style", queryType: "wassce", live: true },
   { id: "postutme", name: "Post-UTME style", queryType: "postutme", live: true },
+  { id: "sat", name: "SAT-style", queryType: "sat", live: true },
+  { id: "igcse", name: "IGCSE-style", queryType: "igcse", live: true },
+  { id: "alevel", name: "A-Level-style", queryType: "alevel", live: true },
 ];
 const COMPULSORY = []; // no subject is forced — learners pick freely
 const MAX_SUBJECTS = 9;

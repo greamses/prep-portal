@@ -48,13 +48,23 @@ const NAV_CONFIG = [
 
     children: [
       {
-        text: "Practice tests",
+        text: "Nigerian",
         icon: I.national,
         description: "Original, exam-style CBT",
         children: [
           { text: "UTME-style", href: "/exam-archive/national/exams/index.html", description: "University matriculation practice" },
           { text: "WASSCE-style", href: "/exam-archive/national/exams/index.html", description: "Senior-school certificate practice" },
           { text: "Post-UTME style", href: "/exam-archive/national/exams/index.html", description: "University screening practice" },
+        ],
+      },
+      {
+        text: "International",
+        icon: I.international,
+        description: "Original, exam-style CBT",
+        children: [
+          { text: "SAT-style", href: "/exam-archive/national/exams/index.html", description: "US college-admissions practice" },
+          { text: "IGCSE-style", href: "/exam-archive/national/exams/index.html", description: "International GCSE practice" },
+          { text: "A-Level-style", href: "/exam-archive/national/exams/index.html", description: "Advanced-level practice" },
         ],
       },
     ],

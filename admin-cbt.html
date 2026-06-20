@@ -63,6 +63,9 @@
               <option value="utme">UTME-style</option>
               <option value="wassce">WASSCE-style</option>
               <option value="postutme">Post-UTME style</option>
+              <option value="sat">SAT-style</option>
+              <option value="igcse">IGCSE-style</option>
+              <option value="alevel">A-Level-style</option>
             </select>
           </div>
           <div>
@@ -115,7 +118,7 @@
       catch (_) { return false; }
     }
 
-    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style" };
+    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style" };
 
     async function loadStats() {
       try {
