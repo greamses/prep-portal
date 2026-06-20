@@ -415,9 +415,15 @@ RESPOND ONLY WITH VALID JSON — no preamble, no markdown fences:
       `Focus questions on these specific topics ONLY: ${_cfg.topics.join(', ')}.` :
       'Cover a range of appropriate topics for this subject.';
     
-    return `You are a ${_cfg.subject} teacher writing theory exam questions for ${profile.label} students (age ${profile.age}) in Nigeria.
+    return `You are a ${_cfg.subject} teacher writing ORIGINAL theory exam questions for ${profile.label} students (age ${profile.age}) in Nigeria.
 
 Generate exactly ${count} theory question(s) appropriate for this level.
+
+ORIGINALITY — MANDATORY (copyright):
+- Write your OWN, brand-new questions in the STYLE, format, tone and difficulty of Nigerian examinations (e.g. WAEC/JAMB/NECO). Match the genre, not any specific paper.
+- DO NOT reproduce, quote, or lightly reword any real past exam question. No "find the same question and swap a few words" — compose fresh items from the underlying syllabus topic/concept.
+- DO NOT include any copyrighted source material: comprehension passages, named datasets, tables, diagrams, figures, images, or an exam body's own answer/marking text.
+- If you are unsure whether something is an original question, rewrite it so it clearly is.
 
 STRICT RULES — READ CAREFULLY:
 - ${topicFocus}

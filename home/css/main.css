@@ -2571,6 +2571,13 @@
   text-underline-offset: 3px;
 }
 
+/* Copyright / non-affiliation disclaimer — full width under the footer row */
+.footer-disclaimer {
+  flex-basis: 100%;
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
 .footer-bottom a:hover {
   color: var(--accent-danger);
 }
