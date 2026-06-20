@@ -3561,3 +3561,48 @@ body { background-image: none; }
   border-color: color-mix(in srgb, var(--accent-success) 55%, transparent);
 }
 .q-slot-editor:empty::before { color: var(--text-tertiary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL + RESULTS PHASE — soft-UI pass.
+   The marking modal still had a 0-blur offset shadow and a couple of hard
+   dividers / a neo-brutalist video button. Soften them; keep the dark header
+   bar (good contrast for the modal toolbar) but make its accent + tape read.
+   The marked answer-sheet itself is rendered by theory-analyser.css, whose
+   colours resolve through the legacy-token aliases at the top of this file.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.modal-wrap {
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  box-shadow: var(--shadow-xl);
+}
+.modal-hdr { border-bottom: none; }
+.modal-body { background: var(--app-bg); }
+
+/* Write paper: soft header strip + dashed rules */
+.paper-hdr { border-bottom: 1px dashed var(--ruled); background: color-mix(in srgb, var(--surface-primary) 96%, transparent); }
+.paper-q-prompt { color: var(--text-tertiary); }
+.paper-ta::placeholder,
+.paper-editable:empty::before { color: var(--text-tertiary); }
+
+/* "Watch video" → soft pill */
+.paper-video-btn {
+  border: 2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  border-radius: 999px;
+  background: var(--surface-primary);
+  color: var(--accent-secondary);
+  box-shadow: var(--shadow-sm);
+}
+.paper-video-btn:hover {
+  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-primary));
+  color: var(--accent-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.paper-video-btn:active { transform: translateY(0); }
+
+/* Results + footer dividers → soft dashed */
+.results-actions { border-top: 1px dashed var(--ruled); }
+.modal-ftr {
+  background: color-mix(in srgb, var(--surface-secondary) 70%, transparent);
+  border-top: 1px dashed var(--ruled);
+}

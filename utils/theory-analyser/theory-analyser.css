@@ -1,6 +1,24 @@
 /* --- FONTS --- */
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;700&family=JetBrains+Mono:wght@400;600;800&family=Unbounded:wght@700;900&display=swap');
 
+/* --- LEGACY TOKEN ALIASES ---
+   This sheet predates the soft-UI redesign and uses an old colour vocabulary
+   (--yellow/--blue/--green/--red/--amber/--muted/--off/--ruled/--paper) that no
+   longer exists in theme.css. Map them onto the current theme so the marked
+   answer-sheet is coloured correctly (and self-contained, not reliant on the
+   host page's stylesheet). */
+:root {
+  --yellow: var(--accent-primary);
+  --blue:   var(--accent-secondary);
+  --green:  var(--accent-success);
+  --red:    var(--accent-danger);
+  --amber:  var(--accent-warning);
+  --muted:  var(--text-secondary);
+  --off:    var(--surface-secondary);
+  --ruled:  color-mix(in srgb, var(--ink) 12%, transparent);
+  --paper:  var(--surface-primary);
+}
+
 /* --- CORE LAYOUT --- */
 .ta-root {
   font-family: 'JetBrains Mono', monospace;
@@ -19,7 +37,7 @@
   padding: 20px 24px;
   border: var(--border, 2.5px solid #0a0a0a);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 600;
@@ -50,7 +68,7 @@
   border: var(--border, 2.5px solid #0a0a0a);
   border-left: 5px solid var(--red, #ff2200);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   font-size: 11px;
 }
 
@@ -74,7 +92,7 @@
   padding: 16px 20px;
   border: var(--border, 2.5px solid #0a0a0a);
   margin-bottom: 14px;
-  box-shadow: 4px 4px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-sm);
 }
 
 .ta-mismatch {
@@ -137,7 +155,7 @@
   background-color: var(--paper, #fffef8);
   background-image: linear-gradient(to right, transparent 56px, rgba(255, 34, 0, .25) 56px, rgba(255, 34, 0, .25) 58px, transparent 58px);
   border: var(--border, 2.5px solid #0a0a0a);
-  box-shadow: 6px 6px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-lg);
   margin-bottom: 22px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -332,7 +350,7 @@
 .ta-card {
   border: var(--border, 2.5px solid #0a0a0a);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   margin-bottom: 14px;
   overflow: hidden;
 }
@@ -402,7 +420,7 @@
   padding: 20px 24px;
   border: var(--border, 2.5px solid #0a0a0a);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 600;
@@ -431,7 +449,7 @@
   border: var(--border, 2.5px solid #0a0a0a);
   border-left: 5px solid var(--red, #ff2200);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   font-size: 11px;
 }
 
@@ -476,7 +494,7 @@
   padding: 16px 20px;
   border: var(--border, 2.5px solid #0a0a0a);
   margin-bottom: 14px;
-  box-shadow: 4px 4px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-sm);
 }
 
 .ta-mismatch {
@@ -539,7 +557,7 @@
   background-color: var(--paper, #fffef8);
   background-image: linear-gradient(to right, transparent 56px, rgba(255, 34, 0, .25) 56px, rgba(255, 34, 0, .25) 58px, transparent 58px);
   border: var(--border, 2.5px solid #0a0a0a);
-  box-shadow: 6px 6px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-lg);
   margin-bottom: 22px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -638,7 +656,7 @@
   right: -10px;
   background: var(--yellow, #ffe500);
   border: 2px solid var(--ink, #0a0a0a);
-  box-shadow: 2px 2px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-sm);
   font-size: 7px;
   font-weight: 900;
   font-family: 'Unbounded', sans-serif;
@@ -960,7 +978,7 @@
 .ta-card {
   border: var(--border, 2.5px solid #0a0a0a);
   background: var(--bg, #fff);
-  box-shadow: 5px 5px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-md);
   margin-bottom: 14px;
   overflow: hidden;
   animation: ta-in .3s ease both;
@@ -1184,7 +1202,7 @@
 .ta-tip {
   border: var(--border, 2.5px solid #0a0a0a);
   padding: 14px 16px;
-  box-shadow: 4px 4px 0 var(--ink, #0a0a0a);
+  box-shadow: var(--shadow-sm);
   background: var(--yellow, #ffe500);
   position: relative;
   overflow: hidden;
