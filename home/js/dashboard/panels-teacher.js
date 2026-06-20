@@ -32,25 +32,20 @@ export function buildTeacherPanels(user, data, layout) {
   layout.innerHTML = `
     <div class="db-stat">
       <div class="db-stat-icon">${I.users}</div>
-      <div class="db-stat-value">${students.length}</div>
-      <div class="db-stat-label">Math Students</div>
-      <div class="db-stat-trend trend-up">${I.trendUp} ${activeCount} active today</div>
+      <div class="db-stat-value" id="db-stat-students">—</div>
+      <div class="db-stat-label">Students in class</div>
+    </div>
+
+    <div class="db-stat">
+      <div class="db-stat-icon">${I.papers}</div>
+      <div class="db-stat-value" id="db-stat-activities">—</div>
+      <div class="db-stat-label">Activities</div>
     </div>
 
     <div class="db-stat">
       <div class="db-stat-icon">${I.check}</div>
-      <div class="db-stat-value">${assignments.length}</div>
-      <div class="db-stat-label">Active Math Tasks</div>
-      <div class="db-stat-trend">${completionRate}% completion</div>
-    </div>
-
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.chart}</div>
-      <div class="db-stat-value">${avgAcc}%</div>
-      <div class="db-stat-label">Formula Accuracy</div>
-      <div class="db-stat-trend ${avgAcc >= 70 ? "trend-up" : "trend-down"}">
-        ${avgAcc >= 70 ? I.trendUp + " Above target" : I.alert + " Below target"}
-      </div>
+      <div class="db-stat-value" id="db-stat-subs">—</div>
+      <div class="db-stat-label">Submissions</div>
     </div>
 
     <div class="db-panel bento-feature">
@@ -88,13 +83,7 @@ export function buildTeacherPanels(user, data, layout) {
         <div class="db-empty">Loading…</div>
       </div>
     </div>
-
-    <div class="db-panel span-full">
-      <div class="db-panel-head">
-        <div><p class="db-kicker" style="color:var(--red)">Intervention Alert</p><h2 class="db-panel-title">Students Struggling</h2></div>
-      </div>
-      ${needsHelp.length ? `<div class="db-perf-list">${needsHelp.map((s) => perfBarHTML(s.name, pct(s.accuracy), "var(--red)")).join("")}</div>` : `<div class="db-empty">All students are current on benchmarks.</div>`}
-    </div>`;
+`;
 
   const calendarContainer = document.getElementById(
     "teacher-calendar-container",

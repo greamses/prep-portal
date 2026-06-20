@@ -52,7 +52,24 @@ function injectStyles() {
     .cc-row { display:flex; gap:.6rem; margin-top:1rem; }
     .cc-msg { font-size:.74rem; margin-top:.6rem; min-height:1em; color: var(--text-secondary,#6b655c); }
     .cc-msg--err { color: var(--accent-danger,#e07a5f); }
-    .cc-msg--ok { color: var(--accent-success,#6db58f); }`;
+    .cc-msg--ok { color: var(--accent-success,#6db58f); }
+    .cc-modal__card.cc-rev { width: min(680px,100%); max-height: 86vh; display:flex; flex-direction:column; padding:0; }
+    .cc-rev__hd { display:flex; align-items:center; gap:.6rem; padding:1rem 1.2rem; border-bottom:1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+    .cc-rev__hd strong { font-family: var(--font-display,sans-serif); font-size:.95rem; flex:1; }
+    .cc-rev__x { border:none; background:var(--surface-secondary,#f4f0e8); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:1.2rem; line-height:1; color:var(--text-secondary); }
+    .cc-rev__body { overflow-y:auto; padding:.8rem 1.2rem 1.2rem; }
+    .cc-rev__sub { border:2px solid color-mix(in srgb, var(--ink) 12%, transparent); border-radius:12px; padding:.6rem .8rem; margin-bottom:.7rem; background:var(--surface-secondary,#f4f0e8); }
+    .cc-rev__sub > summary { display:flex; align-items:center; gap:.6rem; cursor:pointer; list-style:none; font-size:.82rem; }
+    .cc-rev__sub > summary::-webkit-details-marker { display:none; }
+    .cc-rev__name { font-weight:700; flex:1; }
+    .cc-rev__date { font-size:.66rem; color:var(--text-tertiary,#9a948a); }
+    .cc-rev__q { border-top:1px dashed color-mix(in srgb, var(--ink) 12%, transparent); margin-top:.6rem; padding-top:.6rem; }
+    .cc-rev__qh { display:flex; align-items:center; gap:.5rem; font-family:var(--font-display,sans-serif); font-weight:700; font-size:.74rem; }
+    .cc-rev__qt { font-size:.82rem; margin:.3rem 0; }
+    .cc-rev__lbl { font-size:.58rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-secondary); margin-top:.5rem; }
+    .cc-rev__ans { font-family:"Caveat",cursive; font-size:1.05rem; background:var(--surface-primary,#fffdf8); border-radius:8px; padding:.4rem .6rem; margin-top:.2rem; }
+    .cc-rev__fb { font-size:.78rem; line-height:1.5; color:var(--ink); }
+    .cc-rev__missed { margin:.2rem 0 0; padding-left:1.1rem; font-size:.76rem; color:var(--text-secondary); }`;
   document.head.appendChild(s);
 }
 
@@ -126,12 +143,13 @@ export async function mountTeacherClassroom(layout) {
       if (codeEl) codeEl.textContent = code ? `Code: ${code}` : "No code yet — tap +";
       roster.innerHTML = students.length ? students.map(rosterItem).join("")
         : `<div class="db-empty">No students yet. Share your class code (tap +).</div>`;
+      setStat(layout, "db-stat-students", students.length);
     } catch (e) {
       roster.innerHTML = `<div class="db-empty">Couldn't load roster.</div>`;
     }
   }
 
-  // Activities
+  // Activities + real stat cards
   const acts = layout.querySelector("#db-activities");
   if (acts) {
     try {
@@ -140,11 +158,17 @@ export async function mountTeacherClassroom(layout) {
         : `<div class="db-empty">No activities yet. Build one on the Theory page and "Save &amp; assign".</div>`;
       acts.querySelectorAll('[data-assign]').forEach((b) => b.onclick = () => assignActivity(b.dataset.assign, b));
       acts.querySelectorAll('[data-copy]').forEach((b) => b.onclick = () => { navigator.clipboard.writeText(`${location.origin}/activity.html?a=${b.dataset.copy}`); b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy link"), 1400); });
+      acts.querySelectorAll('[data-review]').forEach((b) => b.onclick = () => reviewActivity(b.dataset.review));
+      const subs = activities.reduce((n, a) => n + (a.submissionCount || 0), 0);
+      setStat(layout, "db-stat-activities", activities.length);
+      setStat(layout, "db-stat-subs", subs);
     } catch (e) {
       acts.innerHTML = `<div class="db-empty">Couldn't load activities.</div>`;
     }
   }
 }
+
+function setStat(layout, id, val) { const el = layout.querySelector("#" + id); if (el) el.textContent = val; }
 
 function rosterItem(s) {
   return `<li class="db-roster-item">
@@ -162,9 +186,64 @@ function actItem(a) {
       </div>
       <div class="db-assign-progress-row" style="gap:.5rem;flex-wrap:wrap">
         <button class="db-pill pill-blue" type="button" data-assign="${a.id}" style="border:none;cursor:pointer">Assign to class</button>
+        ${(a.submissionCount || 0) > 0 ? `<button class="db-pill pill-green" type="button" data-review="${a.id}" style="border:none;cursor:pointer">Review ${a.submissionCount}</button>` : ""}
         <button class="db-pill pill-grey" type="button" data-copy="${esc(a.shareSlug)}" style="border:none;cursor:pointer">Copy link</button>
       </div>
     </div>`;
+}
+
+/* ── Submission review (teacher) ── */
+async function reviewActivity(activityId) {
+  const { root, close } = reviewModal(`<div class="cc-rev__hd"><strong>Loading submissions…</strong>
+    <button class="cc-rev__x" type="button" aria-label="Close">&times;</button></div><div class="cc-rev__body"></div>`);
+  root.querySelector(".cc-rev__x").onclick = close;
+  try {
+    const { activity, submissions } = await api(`/api/activities/${encodeURIComponent(activityId)}/submissions`);
+    root.querySelector(".cc-rev__hd strong").textContent = `${activity.title} — ${submissions.length} submission${submissions.length === 1 ? "" : "s"}`;
+    root.querySelector(".cc-rev__body").innerHTML = submissions.length
+      ? submissions.map((s) => subCard(s, activity)).join("")
+      : `<div class="db-empty">No submissions yet.</div>`;
+  } catch (e) {
+    root.querySelector(".cc-rev__body").innerHTML = `<div class="db-empty">Couldn't load: ${esc(e.message)}</div>`;
+  }
+}
+
+function subCard(s, activity) {
+  const m = s.marked || {};
+  const qs = Array.isArray(m.questions) ? m.questions : [];
+  const score = (s.score != null ? s.score : m.totalScore);
+  const total = (s.totalMarks != null ? s.totalMarks : m.totalMax);
+  const when = s.submittedAt && s.submittedAt._seconds ? new Date(s.submittedAt._seconds * 1000).toLocaleDateString("en-NG") : "";
+  const perQ = (activity.questions || []).map((q, i) => {
+    const md = qs[i] || {};
+    const ans = (s.answers && s.answers[i] && s.answers[i].text) || "";
+    const missed = (md.missedPoints || []).filter(Boolean);
+    return `<div class="cc-rev__q">
+        <div class="cc-rev__qh"><span>Q${i + 1}</span>${md.maxMarks != null ? `<span class="db-pill pill-blue">${md.totalScore ?? 0}/${md.maxMarks}</span>` : ""}</div>
+        <div class="cc-rev__qt">${q.text}</div>
+        <div class="cc-rev__lbl">Answer</div><div class="cc-rev__ans">${ans || "<em>(blank)</em>"}</div>
+        ${md.feedback ? `<div class="cc-rev__lbl">Feedback</div><div class="cc-rev__fb">${esc(md.feedback)}</div>` : ""}
+        ${missed.length ? `<div class="cc-rev__lbl">Missed</div><ul class="cc-rev__missed">${missed.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      </div>`;
+  }).join("");
+  return `<details class="cc-rev__sub">
+      <summary><span class="cc-rev__name">${esc(s.studentName || "Student")}</span>
+        <span class="db-pill ${total && score / total >= 0.5 ? "pill-green" : "pill-yellow"}">${score != null ? `${score}/${total}` : "—"}</span>
+        <span class="cc-rev__date">${when}</span></summary>
+      ${m.overallFeedback ? `<div class="cc-rev__fb" style="margin:.5rem 0">${esc(m.overallFeedback)}</div>` : ""}
+      ${perQ}
+    </details>`;
+}
+
+function reviewModal(html) {
+  injectStyles();
+  const root = document.createElement("div");
+  root.className = "cc-modal";
+  root.innerHTML = `<div class="cc-modal__bd"></div><div class="cc-modal__card cc-rev">${html}</div>`;
+  document.body.appendChild(root);
+  const close = () => root.remove();
+  root.querySelector(".cc-modal__bd").onclick = close;
+  return { root, close };
 }
 
 async function assignActivity(activityId, btn) {
