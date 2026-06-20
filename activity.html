@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/utils/components/theme.css" />
   <link rel="stylesheet" href="/utils/components/components.css" />
   <link rel="stylesheet" href="/utils/theory-analyser/theory-analyser.css" />
+  <!-- Reuse the theory page's exam-paper + video-row styling for an identical answer experience -->
+  <link rel="stylesheet" href="/theory-page/style.css" />
   <script type="importmap">
     {
       "imports": {
@@ -26,28 +28,20 @@
     .ac-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity:.26; }
     .ac-paint svg { width: 100%; height: 100%; display: block; }
     [data-theme="dark"] .ac-paint { opacity: .15; }
-    .ac-wrap { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; }
-    .ac-head { display:flex; align-items:center; gap:1rem; margin:.5rem 0 1.6rem; flex-wrap:wrap; }
+    .ac-wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; }
+    .ac-head { display:flex; align-items:center; gap:1rem; margin:.5rem 0 1.4rem; flex-wrap:wrap; }
     .ac-head h1 { font-family: var(--font-display); font-weight: var(--weight-black,900);
       font-size: clamp(1.2rem,3.5vw,1.7rem); line-height:1.05; margin:0; }
     .ac-meta { font-size:.7rem; color: var(--text-secondary); margin-top:.2rem; }
     .ac-usage { margin-left:auto; font-size:.62rem; text-transform:uppercase; letter-spacing:.06em;
       color: var(--text-secondary); background: var(--surface-primary); border:2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
       border-radius:999px; padding:.35rem .7rem; }
+    /* Paper "sheet" frame around the reused .exam-paper */
+    .ac-paper { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg);
+      border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent); background: var(--surface-primary); }
+    .ac-actions { display:flex; gap:.7rem; align-items:center; margin:1.2rem 0; flex-wrap:wrap; }
     .ac-preview { font-family: var(--font-mono); font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
       color: var(--text-on-accent,#2a2723); background: var(--accent-warning,#f0a868); padding:.3rem .6rem; border-radius:999px; }
-    .ac-q { margin-bottom:1.1rem; }
-    .ac-q-num { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; font-family: var(--font-display);
-      font-weight: var(--weight-bold,700); font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.4rem; }
-    .ac-q-marks { font-family: var(--font-mono); font-size:.6rem; color: var(--text-secondary); }
-    .ac-q-comp { font-family: var(--font-mono); font-size:.6rem; color: var(--accent-danger); }
-    .ac-q-text { font-size:.9rem; line-height:1.55; margin-bottom:.5rem; }
-    .ac-ta { display:block; width:100%; box-sizing:border-box; min-height:120px; resize:vertical;
-      font-family: "Caveat", cursive; font-size:1.2rem; line-height:1.5; padding:.7rem .9rem;
-      border:2px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius:12px;
-      background: var(--surface-primary); color: var(--ink); outline:none; }
-    .ac-ta:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent); }
-    .ac-actions { display:flex; gap:.7rem; align-items:center; margin:1.2rem 0; flex-wrap:wrap; }
     .ac-msg { font-size:.74rem; color: var(--text-secondary); }
     .ac-msg--err { color: var(--accent-danger); }
     .ac-gate { text-align:center; padding:3rem 1rem; color: var(--text-secondary); font-size:.85rem; }
@@ -69,7 +63,7 @@
     <div id="ac-gate" class="ac-gate">Loading activity…</div>
 
     <form id="ac-form" hidden>
-      <div id="ac-questions"></div>
+      <div class="ac-paper"><div class="exam-paper" id="exam-paper"></div></div>
       <div class="ac-actions">
         <button type="submit" class="pp-btn" id="ac-submit">Submit for marking</button>
         <span class="ac-preview" id="ac-preview" hidden>Preview — not recorded</span>
@@ -85,8 +79,18 @@
     import { auth } from "/firebase-init.js";
     import { onAuthStateChanged } from "firebase/auth";
     import { heroPaint } from "/utils/components/nav-icons.js";
+    import { state } from "/theory-page/state.js";
+    import { handleVideoBtn } from "/theory-page/js/video.js";
+    import { initMathJax, initTextFormatting } from "/theory-page/js/ui-helpers.js";
 
     document.querySelector(".ac-paint").innerHTML = heroPaint();
+    // video.js + analyser authenticate backend calls through this hook.
+    window._getAuthToken = async () => {
+      if (!auth.currentUser) throw new Error("Please sign in.");
+      return auth.currentUser.getIdToken();
+    };
+    try { initMathJax(); } catch (_) {}
+    try { initTextFormatting(); } catch (_) {}
 
     const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
     const params = new URLSearchParams(location.search);
@@ -94,17 +98,17 @@
     const preview = params.get("preview") === "1";
     const $ = (id) => document.getElementById(id);
     const stripHtml = (h) => String(h || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+    const attr = (s) => String(s == null ? "" : s).replace(/"/g, "&quot;");
+    const escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
     let activity = null;
-
     async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
 
     async function loadUsage() {
       try {
         const r = await fetch(`${API}/api/ai/usage`, { headers: await authHeader() });
         const u = await r.json();
-        const el = $("ac-usage");
-        el.hidden = false;
+        const el = $("ac-usage"); el.hidden = false;
         el.textContent = `Tokens ${Number(u.used || 0).toLocaleString()}/${Number(u.allocation || 0).toLocaleString()} · 5h`;
       } catch (_) {}
     }
@@ -120,67 +124,88 @@
       if (!res.ok || !d.activity) { $("ac-gate").textContent = d.error || "Activity not found."; return; }
 
       activity = d.activity;
+      // Feed the shared state video.js reads (subject/level → channel picks).
+      state.st.subject = activity.subject || "General";
+      state.st.cls = activity.classLevel || "";
+
       $("ac-title").textContent = activity.title;
       $("ac-meta").textContent = [activity.subject, activity.classLevel, `by ${activity.ownerName || "teacher"}`].filter(Boolean).join(" · ");
       $("ac-preview").hidden = !preview;
-      renderQuestions();
+      renderPaper();
       $("ac-gate").hidden = true;
       $("ac-form").hidden = false;
       loadUsage();
     }
 
-    function renderQuestions() {
-      $("ac-questions").innerHTML = activity.questions.map((q, i) => `
-        <div class="ac-q">
-          <div class="ac-q-num">Question ${i + 1}
-            ${q.marks ? `<span class="ac-q-marks">${q.marks} marks</span>` : ""}
-            ${q.compulsory ? `<span class="ac-q-comp">★ compulsory</span>` : ""}
+    function studentName() {
+      return auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split("@")[0] : "Student");
+    }
+
+    function renderPaper() {
+      const date = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+      let html = `
+        <div class="paper-hdr">
+          <div class="paper-info">
+            <span class="paper-field">Name:<span class="paper-field-val">${escHtml(studentName())}</span></span>
+            <span class="paper-field">Subject:<span class="paper-field-val">${escHtml(activity.subject || "")}</span></span>
+            <span class="paper-field">Class:<span class="paper-field-val">${escHtml(activity.classLevel || "")}</span></span>
+            <span class="paper-field">Date:<span class="paper-field-val">${escHtml(date)}</span></span>
           </div>
-          <div class="ac-q-text">${q.text}</div>
-          <textarea class="ac-ta" data-i="${i}" placeholder="Type your answer here…"></textarea>
-        </div>`).join("");
+        </div>`;
+      activity.questions.forEach((q, i) => {
+        const marksText = q.marks ? `${q.marks} marks` : "";
+        html += `
+        <div class="paper-q-block" data-qidx="${i}">
+          <div class="paper-q-label">
+            <span class="paper-q-num">Question ${i + 1}</span>
+            ${q.compulsory ? `<span class="paper-q-compulsory">★ Compulsory</span>` : `<span class="paper-field">Optional</span>`}
+            ${marksText ? `<span style="margin-left:auto" class="paper-field">${escHtml(marksText)}</span>` : ""}
+          </div>
+          <div class="paper-q-text">${q.text}</div>
+          <div class="paper-q-prompt">Answer:</div>
+          <div class="paper-editable" id="editor-${i}" contenteditable="true" data-qidx="${i}"
+               data-placeholder="Write your answer here…" spellcheck="true"></div>
+          <div class="paper-video-row" id="video-row-${i}">
+            <button class="paper-video-btn" data-qidx="${i}" data-qtext="${attr(stripHtml(q.text))}" type="button">▶ Watch Video</button>
+          </div>
+        </div>`;
+      });
+      const paper = $("exam-paper");
+      paper.innerHTML = html;
+      paper.querySelectorAll(".paper-video-btn").forEach((b) => b.addEventListener("click", () => handleVideoBtn(b)));
+      setTimeout(() => {
+        if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise([paper]).catch(() => {});
+      }, 150);
     }
 
     $("ac-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = $("ac-submit"), msg = $("ac-msg");
-      const tas = [...document.querySelectorAll(".ac-ta")];
-      const answers = tas.map((t) => t.value.trim());
-      if (answers.every((a) => a.length < 2)) { msg.textContent = "Write your answers first."; msg.className = "ac-msg ac-msg--err"; return; }
+      const eds = [...document.querySelectorAll(".paper-editable")];
+      const answers = eds.map((ed) => ed.innerHTML.trim());
+      if (answers.every((a) => stripHtml(a).length < 2)) { msg.textContent = "Write your answers first."; msg.className = "ac-msg ac-msg--err"; return; }
 
       btn.disabled = true; msg.textContent = "Marking…"; msg.className = "ac-msg";
       try {
         const TA = window.TheoryAnalyser;
-        TA.init({
-          geminiKey: "backend",
-          subject: activity.subject || "General",
-          level: activity.classLevel || "JSS",
-          mountId: "theory-results",
-        });
+        TA.init({ geminiKey: "backend", subject: activity.subject || "General", level: activity.classLevel || "JSS", mountId: "theory-results" });
         const questions = activity.questions.map((q) => ({ text: stripHtml(q.text), marks: q.marks, compulsory: q.compulsory }));
-        const studentName = auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split("@")[0] : "Student");
-        const r = await TA.analyseAll(questions, answers, studentName, new Date().toLocaleDateString("en-NG"));
+        const r = await TA.analyseAll(questions, answers, studentName(), new Date().toLocaleDateString("en-NG"));
         if (!r) { msg.textContent = "Marking failed — see the message above."; msg.className = "ac-msg ac-msg--err"; btn.disabled = false; return; }
-
         const score = r.combined?.totalScore ?? null;
         const totalMarks = r.combined?.totalMax ?? null;
         loadUsage();
 
         if (preview) {
           msg.textContent = "Preview — submission was not recorded.";
-          $("ac-form").querySelector(".ac-actions").scrollIntoView({ behavior: "smooth", block: "nearest" });
         } else {
           await fetch(`${API}/api/activities/${encodeURIComponent(slug)}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(await authHeader()) },
-            body: JSON.stringify({
-              answers: answers.map((t) => ({ text: t })),
-              marked: r.combined,
-              score, totalMarks,
-            }),
+            body: JSON.stringify({ answers: answers.map((t) => ({ text: t })), marked: r.combined, score, totalMarks }),
           });
           msg.textContent = `Submitted${score != null ? ` — ${score}/${totalMarks}` : ""}. Your teacher can see your result.`;
-          tas.forEach((t) => (t.readOnly = true));
+          eds.forEach((ed) => (ed.contentEditable = "false"));
           btn.style.display = "none";
         }
       } catch (err) {
