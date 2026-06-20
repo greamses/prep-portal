@@ -89,3 +89,81 @@
 .pp-sticky--c3 { --pp-note-bg: #bfe3ff; }
 .pp-sticky--c4 { --pp-note-bg: #ffd7a3; }
 .pp-sticky--c5 { --pp-note-bg: #b8ece2; }
+
+/* ── RECEIPT CARD ───────────────────────────────────────────────────────
+   The torn-paper "receipt" used on the home doorways, made reusable. Two
+   elements on purpose: the wrapper carries the soft drop-shadow, the inner
+   paper carries the serrated mask (a filter under a mask gets clipped, so
+   they can't share an element). Tint the paper with --pp-paper. */
+.pp-receipt {
+  position: relative;
+  display: block;
+  filter: drop-shadow(0 7px 16px rgba(var(--shadow-color, 42, 39, 35), 0.14));
+}
+.pp-receipt__paper {
+  --tooth: 13px;
+  position: relative;
+  display: block;
+  padding: 1.4rem 1.5rem;
+  background: var(--pp-paper, var(--surface-primary, #fffdf8));
+  color: var(--ink, #2a2723);
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
+}
+/* Perforated rails down each side, like the home doorways */
+.pp-receipt__paper::before,
+.pp-receipt__paper::after {
+  content: "";
+  position: absolute;
+  top: var(--tooth);
+  bottom: var(--tooth);
+  width: 6px;
+  background: radial-gradient(circle 2.6px at center, var(--surface-secondary, #f4f0e8) 0 2.6px, #0000 2.9px) center / 6px 13px repeat-y;
+  pointer-events: none;
+}
+.pp-receipt__paper::before { left: 6px; }
+.pp-receipt__paper::after { right: 6px; }
+
+/* Status variants for the pill (tinted by accent) */
+.pp-pill--ok { --tile: var(--accent-success, #7cc47c); color: var(--accent-success, #7cc47c); }
+.pp-pill--warn { --tile: var(--accent-warning, #f0a868); color: var(--accent-warning, #f0a868); }
+.pp-pill--danger { --tile: var(--accent-danger, #f07a7a); color: var(--accent-danger, #f07a7a); }
+.pp-pill--static { cursor: default; }
+.pp-pill--static:hover { transform: none; }
+
+/* ── BUTTON ─────────────────────────────────────────────────────────────
+   Yellow primary "key" with the soft lift the rest of the site uses. */
+.pp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-display, system-ui), sans-serif;
+  font-weight: var(--weight-bold, 700);
+  font-size: 0.9rem;
+  padding: 0.7rem 1.2rem;
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  background: var(--accent-primary, #f4c95d);
+  color: var(--text-on-accent, #2a2723);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm, 0 2px 5px rgba(42, 39, 35, 0.1));
+  transition:
+    transform var(--transition-smooth, 0.25s) cubic-bezier(0.34, 1.3, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+.pp-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md, 0 4px 11px rgba(42, 39, 35, 0.12)); }
+.pp-btn:active { transform: translateY(0); }
+.pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; box-shadow: none; }
+.pp-btn--ghost {
+  background: var(--surface-primary, #fffdf8);
+  color: var(--ink, #2a2723);
+}
+.pp-btn svg { width: 16px; height: 16px; }

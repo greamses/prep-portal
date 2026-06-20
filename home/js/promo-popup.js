@@ -1,10 +1,15 @@
 /**
  * Promo popup — "earn by referring" growth nudge, shown to everyone.
  *
- * Self-contained (no deps): injects its own styles + modal, appears a few
- * seconds after load, and is throttled via localStorage so it doesn't nag —
- * dismissing hides it for several days. CTA sends them to the partner page where
- * anyone can generate their own referral code.
+ * Built from the site's own UI components: a torn-paper receipt card
+ * (.pp-receipt), a handwritten sticky-note tag (.pp-sticky), a stat pill
+ * (.pp-pill) and the yellow key button (.pp-btn) — so it matches the rest of
+ * the site instead of looking like a generic modal. Icons are our own inline
+ * SVGs; emoji are used only as playful accents.
+ *
+ * Self-contained: appears a few seconds after load and is throttled via
+ * localStorage so it doesn't nag — dismissing snoozes it for several days.
+ * CTA sends them to the partner page where anyone can generate a referral code.
  */
 (function () {
   const KEY = "pp_promo_until";
@@ -20,6 +25,16 @@
     try { localStorage.setItem(KEY, String(Date.now() + SNOOZE_DAYS * 864e5)); } catch (_) {}
   }
 
+  // Make sure the shared component styles are present (they normally arrive via
+  // the loader's @import, but link them defensively so the popup never degrades).
+  function ensureComponents() {
+    if (document.querySelector('link[href$="/utils/components/components.css"]')) return;
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "/utils/components/components.css";
+    document.head.appendChild(l);
+  }
+
   function injectStyles() {
     if (document.getElementById("pp-promo-styles")) return;
     const s = document.createElement("style");
@@ -27,32 +42,44 @@
     s.textContent = `
       #pp-promo { position: fixed; inset: 0; z-index: 100000; display: flex;
         align-items: center; justify-content: center; padding: 1rem;
-        background: rgba(28,24,21,.55); opacity: 0; transition: opacity .25s ease; }
+        background: rgba(42,39,35,.5); opacity: 0; transition: opacity .25s ease; }
       #pp-promo.show { opacity: 1; }
-      .pp-promo__card { position: relative; width: min(420px, 100%);
-        background: var(--surface-primary, #fffdf8); color: var(--ink, #2a2723);
-        border: var(--border-subtle, 1px solid rgba(42,39,35,.12)); border-radius: 18px;
-        box-shadow: 0 24px 60px rgba(28,24,21,.35); padding: 1.6rem 1.4rem 1.4rem;
-        transform: translateY(14px) scale(.98); transition: transform .28s cubic-bezier(.16,1,.3,1);
-        font-family: var(--font-mono, ui-monospace, monospace); text-align: center; }
-      #pp-promo.show .pp-promo__card { transform: none; }
-      .pp-promo__close { position: absolute; top: .7rem; right: .7rem; width: 30px; height: 30px;
-        border: none; border-radius: 9px; cursor: pointer; background: var(--surface-secondary, #f4f0e8);
-        color: var(--ink, #2a2723); font-size: 1rem; line-height: 1; }
-      .pp-promo__emoji { font-size: 2.2rem; }
-      .pp-promo__title { font-size: 1.15rem; font-weight: 800; margin: .5rem 0 .1rem; }
-      .pp-promo__big { color: var(--accent-success, #6db58f); }
-      .pp-promo__text { font-size: .82rem; line-height: 1.55; opacity: .9; margin: .4rem 0 1.1rem; }
-      .pp-promo__cta { display: inline-flex; align-items: center; gap: .4rem; width: 100%;
-        justify-content: center; box-sizing: border-box; padding: .7rem 1rem; border: none;
-        border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 800; font-size: .85rem;
-        background: var(--accent-primary, #f4c95d); color: var(--text-on-accent, #2a2723); text-decoration: none; }
-      .pp-promo__later { display: block; margin: .7rem auto 0; background: none; border: none; cursor: pointer;
-        font-family: inherit; font-size: .72rem; color: var(--text-secondary, #6b655c); text-decoration: underline; }`;
+      #pp-promo .pp-receipt { width: min(400px, 100%);
+        transform: translateY(14px) scale(.98); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+      #pp-promo.show .pp-receipt { transform: none; }
+      .pp-promo__paper { text-align: center; padding: 2rem 1.6rem 1.6rem; font-family: var(--font-mono, ui-monospace, monospace); }
+      .pp-promo__close { position: absolute; top: .6rem; right: .9rem; width: 30px; height: 30px;
+        border: none; background: none; cursor: pointer; color: var(--text-secondary, #6b655c);
+        font-size: 1.5rem; line-height: 1; z-index: 4; }
+      .pp-promo__close:hover { color: var(--ink, #2a2723); }
+      .pp-promo__tag { position: absolute; top: -14px; left: 18px; z-index: 4; font-size: .82rem;
+        --pp-note-tilt: -5deg; }
+      .pp-promo__coin { width: 56px; height: 56px; margin: .2rem auto .6rem; display: grid; place-items: center;
+        border-radius: 50%; background: var(--surface-secondary, #f4f0e8); color: var(--accent-success, #7cc47c);
+        box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1)); }
+      .pp-promo__coin svg { width: 32px; height: 32px; }
+      .pp-promo__title { font-family: var(--font-display, system-ui), sans-serif; font-weight: 900;
+        font-size: 1.25rem; margin: 0 0 .5rem; color: var(--ink, #2a2723); line-height: 1.1; }
+      .pp-promo__text { font-size: .8rem; line-height: 1.6; color: var(--text-secondary, #6b655c); margin: 0 0 1.1rem; }
+      .pp-promo__pill { margin: 0 auto 1.1rem; }
+      .pp-promo__cta { width: 100%; box-sizing: border-box; }
+      .pp-promo__later { display: block; margin: .8rem auto 0; background: none; border: none; cursor: pointer;
+        font-family: var(--font-mono, monospace); font-size: .72rem; color: var(--text-tertiary, #9a948a); text-decoration: underline; }`;
     document.head.appendChild(s);
   }
 
+  // Our own coin / commission glyph (matches the partner page + home doorway).
+  const COIN_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="12" cy="12" r="9"/><path d="M12 7v10"/>' +
+      '<path d="M14.5 9.2c0-1-1.1-1.7-2.5-1.7s-2.5.7-2.5 1.7.9 1.4 2.5 1.8 2.5.8 2.5 1.8-1.1 1.7-2.5 1.7-2.5-.7-2.5-1.7"/>' +
+    '</svg>';
+  const ARROW_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+
   function build() {
+    ensureComponents();
     injectStyles();
     const root = document.createElement("div");
     root.id = "pp-promo";
@@ -60,13 +87,18 @@
     root.setAttribute("aria-modal", "true");
     root.setAttribute("aria-label", "Earn by referring friends");
     root.innerHTML =
-      '<div class="pp-promo__card">' +
+      '<div class="pp-receipt">' +
+        // tag + close sit OUTSIDE the masked paper (the mask clips descendants)
+        '<span class="pp-sticky pp-sticky--c2 pp-sticky--tape pp-promo__tag">10% 🎉</span>' +
         '<button class="pp-promo__close" aria-label="Close">&times;</button>' +
-        '<div class="pp-promo__emoji">🎉</div>' +
-        '<h2 class="pp-promo__title">Earn while they learn</h2>' +
-        '<p class="pp-promo__text">Invite anyone to PrepPortal and earn <span class="pp-promo__big">10% of every subscription</span> they pay — for their first 6 months. Students, parents, teachers, schools… everyone can join. Grab your free referral code and start sharing.</p>' +
-        '<a class="pp-promo__cta" href="/partner.html">Get my referral code →</a>' +
-        '<button class="pp-promo__later" type="button">Maybe later</button>' +
+        '<div class="pp-receipt__paper pp-promo__paper">' +
+          '<div class="pp-promo__coin" aria-hidden="true">' + COIN_SVG + '</div>' +
+          '<h2 class="pp-promo__title">Earn while they learn</h2>' +
+          '<p class="pp-promo__text">Invite anyone to PrepPortal and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools… everyone can join. 🚀</p>' +
+          '<span class="pp-pill pp-pill--ok pp-pill--static pp-promo__pill">Free referral code</span>' +
+          '<a class="pp-btn pp-promo__cta" href="/partner.html">Get my code ' + ARROW_SVG + '</a>' +
+          '<button class="pp-promo__later" type="button">Maybe later</button>' +
+        '</div>' +
       '</div>';
     document.body.appendChild(root);
     requestAnimationFrame(() => root.classList.add("show"));

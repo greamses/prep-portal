@@ -6,6 +6,7 @@
   <title>Partner Dashboard — PrepPortal</title>
   <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
   <link rel="stylesheet" href="/utils/components/theme.css" />
+  <link rel="stylesheet" href="/utils/components/components.css" />
   <script type="importmap">
     {
       "imports": {
@@ -17,101 +18,154 @@
     }
   </script>
   <style>
-    body { margin:0; background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723);
-      font-family: var(--font-mono, ui-monospace, monospace); padding:1.5rem; }
-    .pt-wrap { max-width: 860px; margin:0 auto; }
-    h1 { font-size:1.1rem; margin:0 0 1.2rem; }
-    .pt-card { background: var(--surface-primary,#fffdf8); border: var(--border-subtle,1px solid rgba(42,39,35,.12));
-      border-radius:14px; padding:1rem 1.1rem; margin-bottom:1.2rem; box-shadow: var(--shadow-sm,0 2px 5px rgba(42,39,35,.08)); }
-    .pt-card h2 { font-size:.82rem; margin:0 0 .8rem; }
-    label { display:block; font-size:.66rem; font-weight:700; margin:.5rem 0 .25rem; opacity:.85; }
-    input { width:100%; box-sizing:border-box; padding:.55rem .7rem; border-radius:10px; font-family:inherit; font-size:.82rem;
-      border: var(--border-subtle,1px solid rgba(42,39,35,.14)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
-    button { padding:.55rem 1rem; border:none; border-radius:10px; cursor:pointer; font-weight:700; font-family:inherit;
-      font-size:.75rem; background: var(--accent-primary,#f4c95d); color: var(--text-on-accent,#2a2723); }
-    button:disabled { opacity:.6; cursor:default; }
-    .pt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.7rem; }
-    .pt-stat { background: var(--surface-secondary,#f4f0e8); border-radius:12px; padding:.8rem .9rem; }
-    .pt-stat .k { font-size:.58rem; text-transform:uppercase; letter-spacing:.06em; opacity:.7; }
-    .pt-stat .v { font-size:1.05rem; font-weight:700; margin-top:.2rem; font-variant-numeric:tabular-nums; }
-    .pt-code { font-size:1.3rem; font-weight:800; letter-spacing:.12em; color: var(--accent-secondary,#6fb7e8); }
-    table { width:100%; border-collapse:collapse; font-size:.72rem; }
-    th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid rgba(42,39,35,.1); }
-    th { font-size:.58rem; text-transform:uppercase; letter-spacing:.05em; opacity:.7; }
+    body { margin:0; background: var(--app-bg); color: var(--ink);
+      font-family: var(--font-mono, ui-monospace, monospace); padding: clamp(1rem, 4vw, 2.5rem) 1rem; }
+    .pt-wrap { max-width: 880px; margin: 0 auto; }
+
+    /* Header */
+    .pt-head { display:flex; align-items:center; gap:1rem; margin: 0.5rem 0 2rem; flex-wrap:wrap; }
+    .pt-head__icon { width:54px; height:54px; flex:0 0 auto; display:grid; place-items:center;
+      border-radius:50%; background:var(--surface-secondary); color:var(--accent-success); box-shadow:var(--shadow-sm); }
+    .pt-head__icon svg { width:30px; height:30px; }
+    .pt-head h1 { font-family:var(--font-display); font-weight:var(--weight-black, 900);
+      font-size: clamp(1.3rem, 4vw, 1.8rem); line-height:1.05; margin:0; color:var(--ink); }
+
+    /* Receipt cards get inner spacing rhythm */
+    .pt-card { margin-bottom: 1.6rem; }
+    .pt-card h2 { font-family:var(--font-display); font-weight:var(--weight-bold, 700);
+      font-size: 1.05rem; margin: 0 0 1rem; color:var(--ink); }
+
+    label { display:block; font-size:.62rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+      margin:.5rem 0 .3rem; color:var(--text-secondary); font-family:var(--font-mono); }
+    input { width:100%; box-sizing:border-box; padding:.6rem .75rem; border-radius:2px; font-family:var(--font-mono); font-size:.85rem;
+      border: var(--border); background: var(--surface-primary); color: var(--ink); }
+    input:focus { outline:2px solid color-mix(in srgb, var(--accent-secondary) 55%, transparent); outline-offset:1px; }
+
+    /* Stats grid */
+    .pt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.8rem; }
+    .pt-stat { background: var(--surface-secondary); border:var(--border-subtle); border-radius:2px; padding:.85rem .95rem; }
+    .pt-stat .k { font-size:.56rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-secondary); }
+    .pt-stat .v { font-family:var(--font-display); font-size:1.2rem; font-weight:var(--weight-black,900); margin-top:.25rem;
+      font-variant-numeric:tabular-nums; color:var(--ink); }
+    .pt-stat--accent .v { color: var(--accent-success); }
+
+    .pt-code-row { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin:.2rem 0 1.2rem; }
+    .pt-code { font-family:var(--font-display); font-size:1.4rem; font-weight:var(--weight-black,900); letter-spacing:.14em;
+      color:var(--accent-secondary); }
+
+    table { width:100%; border-collapse:collapse; font-size:.74rem; }
+    th,td { text-align:left; padding:.5rem .55rem; border-bottom:1px solid rgba(var(--shadow-color),.12); }
+    th { font-size:.56rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-secondary); }
     .num { text-align:right; font-variant-numeric:tabular-nums; }
-    .pt-msg { font-size:.7rem; margin:.5rem 0 0; min-height:1em; }
-    .pt-msg--ok { color: var(--accent-success,#6db58f); }
-    .pt-msg--err { color: var(--accent-danger,#e07a5f); }
-    .pt-row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:flex-end; }
+
+    .pt-msg { font-size:.72rem; margin:.6rem 0 0; min-height:1em; }
+    .pt-msg--ok { color: var(--accent-success); }
+    .pt-msg--err { color: var(--accent-danger); }
+
+    .pt-row { display:flex; gap:.7rem; flex-wrap:wrap; align-items:flex-end; }
     .pt-row > div { flex:1 1 160px; }
-    .pt-pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.6rem; font-weight:700; text-transform:uppercase; }
-    .pt-pill--requested { background:#f4c95d33; color:#8a6d1f; }
-    .pt-pill--paid { background:#6db58f33; color:#2f6b50; }
-    .pt-pill--rejected { background:#e07a5f33; color:#a23d23; }
-    .pt-gate { text-align:center; padding:3rem 1rem; }
+
+    .pt-gate { text-align:center; padding:3.5rem 1rem; font-size:.85rem; color:var(--text-secondary); }
     .pt-hidden { display:none; }
-    a { color: var(--accent-secondary,#6fb7e8); }
+    .pt-lead { font-size:.82rem; line-height:1.6; color:var(--text-secondary); margin:.2rem 0 1.1rem; }
+    .pt-lead strong { color: var(--accent-success); }
+    details summary { cursor:pointer; font-size:.74rem; color:var(--text-secondary); }
+    a { color: var(--accent-secondary); }
+
+    /* copy button */
+    .pt-copy { font-family:var(--font-mono); font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+      padding:.3rem .6rem; border:var(--border-subtle); border-radius:2px; background:var(--surface-primary); color:var(--text-secondary); cursor:pointer; }
+    .pt-copy:hover { color:var(--ink); }
   </style>
 </head>
 <body>
   <div class="pt-wrap">
-    <h1>🎒 Partner Dashboard</h1>
-    <div id="pt-gate" class="pt-gate">Loading…</div>
-
-    <div id="pt-claim" class="pt-card pt-hidden">
-      <h2>Start earning with PrepPortal</h2>
-      <p style="font-size:.78rem;opacity:.85;line-height:1.5">Get your own referral code, share it with anyone, and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools — everyone's welcome.</p>
-      <button id="pt-create-btn" type="button" style="margin:.6rem 0 .2rem">Create my referral code</button>
-      <p id="pt-create-msg" class="pt-msg"></p>
-      <details style="margin-top:.9rem">
-        <summary style="cursor:pointer;font-size:.72rem;opacity:.8">Have a code you were given? Enter it instead</summary>
-        <div class="pt-row" style="margin-top:.5rem">
-          <div><label for="pt-code">Redeem code</label><input id="pt-code" type="text" placeholder="e.g. LAGS7K2P" maxlength="16" /></div>
-          <div style="flex:0 0 auto"><button id="pt-claim-btn" type="button">Link code</button></div>
-        </div>
-        <p id="pt-claim-msg" class="pt-msg"></p>
-      </details>
+    <div class="pt-head">
+      <span class="pt-head__icon" aria-hidden="true">
+        <!-- coin / commission icon (our own svg) -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" /><path d="M12 7v10" /><path d="M14.5 9.2c0-1-1.1-1.7-2.5-1.7s-2.5.7-2.5 1.7.9 1.4 2.5 1.8 2.5.8 2.5 1.8-1.1 1.7-2.5 1.7-2.5-.7-2.5-1.7" />
+        </svg>
+      </span>
+      <span class="pp-sticky pp-sticky--c2 pp-sticky--tape" style="--pp-note-tilt:-3deg">Partner</span>
+      <h1>Earn while they learn 🎉</h1>
     </div>
 
+    <div id="pt-gate" class="pt-gate">Loading…</div>
+
+    <!-- CLAIM / CREATE -->
+    <div id="pt-claim" class="pp-receipt pt-card pt-hidden">
+      <div class="pp-receipt__paper">
+        <h2>Start earning with PrepPortal</h2>
+        <p class="pt-lead">Get your own referral code, share it with anyone, and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools — everyone's welcome. 🚀</p>
+        <button id="pt-create-btn" class="pp-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create my referral code
+        </button>
+        <p id="pt-create-msg" class="pt-msg"></p>
+        <details style="margin-top:1.1rem">
+          <summary>Have a code you were given? Enter it instead</summary>
+          <div class="pt-row" style="margin-top:.6rem">
+            <div><label for="pt-code">Redeem code</label><input id="pt-code" type="text" placeholder="e.g. LAGS7K2P" maxlength="16" /></div>
+            <div style="flex:0 0 auto"><button id="pt-claim-btn" class="pp-btn pp-btn--ghost" type="button">Link code</button></div>
+          </div>
+          <p id="pt-claim-msg" class="pt-msg"></p>
+        </details>
+      </div>
+    </div>
+
+    <!-- MAIN -->
     <div id="pt-main" class="pt-hidden">
-      <div class="pt-card">
-        <h2 id="pt-school">—</h2>
-        <p style="margin:.2rem 0 1rem;font-size:.72rem;opacity:.8">Your code: <span id="pt-code-show" class="pt-code">—</span></p>
-        <div class="pt-grid">
-          <div class="pt-stat"><div class="k">Available balance</div><div class="v" id="pt-bal">—</div></div>
-          <div class="pt-stat"><div class="k">Lifetime earned</div><div class="v" id="pt-life">—</div></div>
-          <div class="pt-stat"><div class="k">Paid out</div><div class="v" id="pt-paid">—</div></div>
-          <div class="pt-stat"><div class="k">Students referred</div><div class="v" id="pt-refs">—</div></div>
+      <div class="pp-receipt pt-card">
+        <div class="pp-receipt__paper">
+          <h2 id="pt-school">—</h2>
+          <div class="pt-code-row">
+            <span style="font-size:.72rem;color:var(--text-secondary)">Your code:</span>
+            <span id="pt-code-show" class="pt-code">—</span>
+            <button id="pt-copy" class="pt-copy" type="button">Copy</button>
+          </div>
+          <div class="pt-grid">
+            <div class="pt-stat pt-stat--accent"><div class="k">Available balance</div><div class="v" id="pt-bal">—</div></div>
+            <div class="pt-stat"><div class="k">Lifetime earned</div><div class="v" id="pt-life">—</div></div>
+            <div class="pt-stat"><div class="k">Paid out</div><div class="v" id="pt-paid">—</div></div>
+            <div class="pt-stat"><div class="k">People referred</div><div class="v" id="pt-refs">—</div></div>
+          </div>
         </div>
       </div>
 
-      <div class="pt-card">
-        <h2>Request a payout</h2>
-        <div id="pt-payout-pending" class="pt-hidden" style="font-size:.74rem"></div>
-        <div id="pt-payout-form">
-          <div class="pt-row">
-            <div><label for="pt-bank">Bank name</label><input id="pt-bank" type="text" placeholder="GTBank" /></div>
-            <div><label for="pt-acctname">Account name</label><input id="pt-acctname" type="text" placeholder="Lagos High School" /></div>
+      <div class="pp-receipt pt-card">
+        <div class="pp-receipt__paper">
+          <h2>Request a payout</h2>
+          <div id="pt-payout-pending" class="pt-hidden" style="font-size:.76rem;color:var(--text-secondary)"></div>
+          <div id="pt-payout-form">
+            <div class="pt-row">
+              <div><label for="pt-bank">Bank name</label><input id="pt-bank" type="text" placeholder="GTBank" /></div>
+              <div><label for="pt-acctname">Account name</label><input id="pt-acctname" type="text" placeholder="Jane Doe" /></div>
+            </div>
+            <div class="pt-row" style="margin-top:.4rem">
+              <div><label for="pt-acctno">Account number</label><input id="pt-acctno" type="text" inputmode="numeric" placeholder="0123456789" /></div>
+              <div><label for="pt-amt">Amount (₦, blank = full balance)</label><input id="pt-amt" type="number" min="0" placeholder="full balance" /></div>
+              <div style="flex:0 0 auto"><label>&nbsp;</label><button id="pt-payout-btn" class="pp-btn" type="button">Request payout</button></div>
+            </div>
+            <p id="pt-payout-msg" class="pt-msg"></p>
           </div>
-          <div class="pt-row">
-            <div><label for="pt-acctno">Account number</label><input id="pt-acctno" type="text" inputmode="numeric" placeholder="0123456789" /></div>
-            <div><label for="pt-amt">Amount (₦, blank = full balance)</label><input id="pt-amt" type="number" min="0" placeholder="full balance" /></div>
-            <div style="flex:0 0 auto"><label>&nbsp;</label><button id="pt-payout-btn" type="button">Request payout</button></div>
-          </div>
-          <p id="pt-payout-msg" class="pt-msg"></p>
         </div>
       </div>
 
-      <div class="pt-card">
-        <h2>Earnings</h2>
-        <table><thead><tr><th>Date</th><th>Cycle</th><th>Plan</th><th class="num">Commission</th></tr></thead>
-          <tbody id="pt-earn"></tbody></table>
+      <div class="pp-receipt pt-card">
+        <div class="pp-receipt__paper">
+          <h2>Earnings</h2>
+          <table><thead><tr><th>Date</th><th>Cycle</th><th>Plan</th><th class="num">Commission</th></tr></thead>
+            <tbody id="pt-earn"></tbody></table>
+        </div>
       </div>
 
-      <div class="pt-card">
-        <h2>Payout history</h2>
-        <table><thead><tr><th>Requested</th><th class="num">Amount</th><th>Status</th></tr></thead>
-          <tbody id="pt-payouts"></tbody></table>
+      <div class="pp-receipt pt-card">
+        <div class="pp-receipt__paper">
+          <h2>Payout history</h2>
+          <table><thead><tr><th>Requested</th><th class="num">Amount</th><th>Status</th></tr></thead>
+            <tbody id="pt-payouts"></tbody></table>
+        </div>
       </div>
     </div>
   </div>
@@ -124,6 +178,7 @@
     const naira = (k) => "₦" + ((Number(k) || 0) / 100).toLocaleString("en-NG");
     const $ = (id) => document.getElementById(id);
     const tsDate = (x) => (x && x._seconds ? new Date(x._seconds * 1000).toLocaleDateString("en-NG") : "—");
+    const PILL = { requested: "warn", paid: "ok", rejected: "danger" };
 
     async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
 
@@ -141,19 +196,24 @@
 
     function render(d) {
       const p = d.partner;
-      $("pt-school").textContent = p.schoolName || "Your school";
+      $("pt-school").textContent = p.schoolName || "Your code";
       $("pt-code-show").textContent = p.code || "—";
       $("pt-bal").textContent = naira(p.balanceKobo);
       $("pt-life").textContent = naira(p.lifetimeKobo);
       $("pt-paid").textContent = naira(p.paidOutKobo);
       $("pt-refs").textContent = d.referrals;
 
+      const copyBtn = $("pt-copy");
+      if (copyBtn) copyBtn.onclick = async () => {
+        try { await navigator.clipboard.writeText(p.code || ""); copyBtn.textContent = "Copied ✓"; setTimeout(() => (copyBtn.textContent = "Copy"), 1600); } catch (_) {}
+      };
+
       $("pt-earn").innerHTML = (d.earnings || []).length
         ? d.earnings.map((e) => `<tr><td>${tsDate(e.createdAt)}</td><td>${e.cycle || "—"}</td><td>${e.planTier || ""} ${e.billing || ""}</td><td class="num">${naira(e.amountKobo)}</td></tr>`).join("")
         : '<tr><td colspan="4">No earnings yet.</td></tr>';
 
       $("pt-payouts").innerHTML = (d.payouts || []).length
-        ? d.payouts.map((po) => `<tr><td>${tsDate(po.requestedAt)}</td><td class="num">${naira(po.amountKobo)}</td><td><span class="pt-pill pt-pill--${po.status}">${po.status}</span></td></tr>`).join("")
+        ? d.payouts.map((po) => `<tr><td>${tsDate(po.requestedAt)}</td><td class="num">${naira(po.amountKobo)}</td><td><span class="pp-pill pp-pill--static pp-pill--${PILL[po.status] || "warn"}">${po.status}</span></td></tr>`).join("")
         : '<tr><td colspan="3">No payouts yet.</td></tr>';
 
       const pending = (d.payouts || []).some((po) => po.status === "requested");
