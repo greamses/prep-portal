@@ -4,8 +4,8 @@
  * Built from the site's own UI components: a torn-paper receipt card
  * (.pp-receipt), a handwritten sticky-note tag (.pp-sticky), a stat pill
  * (.pp-pill) and the yellow key button (.pp-btn) — so it matches the rest of
- * the site instead of looking like a generic modal. Icons are our own inline
- * SVGs; emoji are used only as playful accents.
+ * the site instead of looking like a generic modal. All iconography is our own
+ * inline SVGs — no emoji.
  *
  * Self-contained: appears a few seconds after load and is throttled via
  * localStorage so it doesn't nag — dismissing snoozes it for several days.
@@ -89,12 +89,12 @@
     root.innerHTML =
       '<div class="pp-receipt">' +
         // tag + close sit OUTSIDE the masked paper (the mask clips descendants)
-        '<span class="pp-sticky pp-sticky--c2 pp-sticky--tape pp-promo__tag">10% 🎉</span>' +
+        '<span class="pp-sticky pp-sticky--c2 pp-sticky--tape pp-promo__tag">10%</span>' +
         '<button class="pp-promo__close" aria-label="Close">&times;</button>' +
         '<div class="pp-receipt__paper pp-promo__paper">' +
           '<div class="pp-promo__coin" aria-hidden="true">' + COIN_SVG + '</div>' +
           '<h2 class="pp-promo__title">Earn while they learn</h2>' +
-          '<p class="pp-promo__text">Invite anyone to PrepPortal and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools… everyone can join. 🚀</p>' +
+          '<p class="pp-promo__text">Invite anyone to PrepPortal and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools&mdash;everyone can join.</p>' +
           '<span class="pp-pill pp-pill--ok pp-pill--static pp-promo__pill">Free referral code</span>' +
           '<a class="pp-btn pp-promo__cta" href="/partner.html">Get my code ' + ARROW_SVG + '</a>' +
           '<button class="pp-promo__later" type="button">Maybe later</button>' +

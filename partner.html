@@ -88,7 +88,7 @@
         </svg>
       </span>
       <span class="pp-sticky pp-sticky--c2 pp-sticky--tape" style="--pp-note-tilt:-3deg">Partner</span>
-      <h1>Earn while they learn 🎉</h1>
+      <h1>Earn while they learn</h1>
     </div>
 
     <div id="pt-gate" class="pt-gate">Loading…</div>
@@ -97,7 +97,7 @@
     <div id="pt-claim" class="pp-receipt pt-card pt-hidden">
       <div class="pp-receipt__paper">
         <h2>Start earning with PrepPortal</h2>
-        <p class="pt-lead">Get your own referral code, share it with anyone, and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools — everyone's welcome. 🚀</p>
+        <p class="pt-lead">Get your own referral code, share it with anyone, and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools — everyone's welcome.</p>
         <button id="pt-create-btn" class="pp-btn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Create my referral code
@@ -205,7 +205,7 @@
 
       const copyBtn = $("pt-copy");
       if (copyBtn) copyBtn.onclick = async () => {
-        try { await navigator.clipboard.writeText(p.code || ""); copyBtn.textContent = "Copied ✓"; setTimeout(() => (copyBtn.textContent = "Copy"), 1600); } catch (_) {}
+        try { await navigator.clipboard.writeText(p.code || ""); copyBtn.textContent = "Copied"; setTimeout(() => (copyBtn.textContent = "Copy"), 1600); } catch (_) {}
       };
 
       $("pt-earn").innerHTML = (d.earnings || []).length
@@ -278,7 +278,7 @@
             body: JSON.stringify(body),
           });
           const r = await res.json();
-          if (res.ok && r.ok) { msg.textContent = "✓ Payout requested."; msg.className = "pt-msg pt-msg--ok"; loadMe(); }
+          if (res.ok && r.ok) { msg.textContent = "Payout requested."; msg.className = "pt-msg pt-msg--ok"; loadMe(); }
           else { msg.textContent = r.error || "Couldn't request payout."; msg.className = "pt-msg pt-msg--err"; }
         } catch (e) { msg.textContent = e.message; msg.className = "pt-msg pt-msg--err"; }
         finally { btn.disabled = false; }

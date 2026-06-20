@@ -451,7 +451,7 @@ async function applyReferral(code, statusEl, btn) {
     });
     const d = await res.json().catch(() => ({}));
     if (res.ok && d.ok) {
-      statusEl.textContent = `✓ Code ${d.code} applied — your school earns when you subscribe.`;
+      statusEl.textContent = `Code ${d.code} applied — your referrer earns when you subscribe.`;
       statusEl.className = "sp-ref__status sp-ref__status--ok";
       try { localStorage.setItem("pp_ref_code", d.code); } catch (_) {}
     } else {
