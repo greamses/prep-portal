@@ -9,6 +9,17 @@
 (function () {
   var API = location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
+  // Our own AI-generated CBT is always allowed (it isn't past-paper content):
+  // the exam builder page and any viewer launched with source=cbt. Only the
+  // verbatim/third-party modes (aloc / competition / SAT / Cambridge) are gated.
+  try {
+    var qp = new URLSearchParams(location.search);
+    if (qp.get("source") === "cbt" || /\/exams(\/|$)/.test(location.pathname) ||
+        /national\/exams/.test(location.pathname)) {
+      return;
+    }
+  } catch (_) {}
+
   var hide = document.createElement("style");
   hide.id = "ag-hide";
   hide.textContent = "body{visibility:hidden!important}";

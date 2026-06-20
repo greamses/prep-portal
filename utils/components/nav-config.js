@@ -48,33 +48,13 @@ const NAV_CONFIG = [
 
     children: [
       {
-        text: "National",
+        text: "Practice tests",
         icon: I.national,
-        description: "Local exam prep",
+        description: "Original, exam-style CBT",
         children: [
-          { text: "CEE", href: "#common-entrance", description: "Entrance exam mastery" },
-          { text: "WASSCE", href: "/exam-archive/national/exams/index.html", description: "Senior school success" },
-          { text: "SSCE", href: "/exam-archive/national/exams/index.html", description: "Internal exam prep" },
-          { text: "UTME", href: "/exam-archive/national/exams/index.html", description: "University admission prep" },
-        ],
-      },
-      {
-        text: "International",
-        icon: I.international,
-        description: "Global exam standards",
-        children: [
-          { text: "Cambridge", href: "/exam-archive/national/exams/index.html?cat=international", description: "Cambridge Mathematics" },
-          { text: "IGCSE", href: "/exam-archive/national/exams/index.html?cat=international", description: "British curriculum prep" },
-          { text: "SAT", href: "/exam-archive/national/exams/index.html?cat=international", description: "American college prep" },
-        ],
-      },
-      {
-        text: "Competitions",
-        icon: I.competitions,
-        description: "Win top prizes",
-        children: [
-          { text: "Scholastic", href: "/exam-archive/national/exams/index.html?cat=competition", description: "Scholastic Awards practice" },
-          { text: "ANMC", href: "/exam-archive/national/exams/index.html?cat=competition", description: "National math contest" },
+          { text: "UTME-style", href: "/exam-archive/national/exams/index.html", description: "University matriculation practice" },
+          { text: "WASSCE-style", href: "/exam-archive/national/exams/index.html", description: "Senior-school certificate practice" },
+          { text: "Post-UTME style", href: "/exam-archive/national/exams/index.html", description: "University screening practice" },
         ],
       },
     ],

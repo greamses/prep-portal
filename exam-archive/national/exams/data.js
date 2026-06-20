@@ -43,12 +43,12 @@ function applyCat(cat) {
 
 const HEADER_CONTENT = {
   national: {
-    note: "Pick a board, a year & your subjects — we'll generate a practice paper, marked by AI.",
+    note: "Pick a scheme, your class & subjects — we'll build an original practice test, marked instantly.",
     stats: `
-      <span class="hero-stat theme-blue"><strong>2023&ndash;25</strong> Live exams</span>
-      <span class="hero-stat theme-green"><strong>SSCE/JAMB</strong> Standard</span>
-      <span class="hero-stat theme-red"><strong>AI</strong> Marking</span>`,
-    ctaLabel: "Generate practice paper →",
+      <span class="hero-stat theme-blue"><strong>UTME</strong>-style</span>
+      <span class="hero-stat theme-green"><strong>WASSCE</strong>-style</span>
+      <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
+    ctaLabel: "Start practice test →",
   },
   competition: {
     note: "Pick a competition, your level & round — start practising the exact paper.",
@@ -80,9 +80,9 @@ function updateHeaderContent(cat) {
 // ════════════════════════════════════════════════════════════════════
 
 const EXAM_TYPES = [
-  { id: "WAEC", name: "WASSCE", queryType: "wassce", live: true },
-  { id: "NECO", name: "SSCE", queryType: "wassce", live: false },
-  { id: "JAMB", name: "UTME", queryType: "utme", live: true },
+  { id: "utme", name: "UTME-style", queryType: "utme", live: true },
+  { id: "wassce", name: "WASSCE-style", queryType: "wassce", live: true },
+  { id: "postutme", name: "Post-UTME style", queryType: "postutme", live: true },
 ];
 const COMPULSORY = []; // no subject is forced — learners pick freely
 const MAX_SUBJECTS = 9;
@@ -233,23 +233,14 @@ async function selectExam(exam, chip) {
   natUpdateReadyState();
   natUpdateTypeVisibility();
   try {
+    // Our own AI-generated bank, by scheme. No years — questions aren't dated.
     const res = await fetch(
-      `${API_BASE}/api/questions/facets?type=${natState.queryType}`,
+      `${API_BASE}/api/cbt/facets?scheme=${natState.queryType}`,
     );
     if (!res.ok) throw new Error("HTTP " + res.status);
     facets = await res.json();
-    mergeLocalFacets(natState.examType); // fold in the years/subjects we host ourselves
-    countByKey = {};
-    keyByLabel = {};
-    facets.subjects.forEach((s) => {
-      countByKey[s.key] = s.count;
-      keyByLabel[s.label] = s.key;
-    });
-    maybeRenderSubjects();
-  } catch (e) {
-    // ALOC server unreachable — still offer the years/subjects we host locally.
-    facets = { subjects: [], yearsBySubject: {} };
-    mergeLocalFacets(natState.examType);
+    facets.subjects = facets.subjects || [];
+    facets.yearsBySubject = facets.yearsBySubject || {}; // engine expects this map
     countByKey = {};
     keyByLabel = {};
     facets.subjects.forEach((s) => {
@@ -259,7 +250,13 @@ async function selectExam(exam, chip) {
     if (facets.subjects.length) maybeRenderSubjects();
     else
       subjectChipsDiv().innerHTML =
-        '<span class="picker-error">Could not load subjects. Is the server running?</span>';
+        '<span class="picker-hint">No questions in the bank for this scheme yet.</span>';
+  } catch (e) {
+    facets = { subjects: [], yearsBySubject: {} };
+    countByKey = {};
+    keyByLabel = {};
+    subjectChipsDiv().innerHTML =
+      '<span class="picker-error">Could not load subjects. Is the server running?</span>';
   }
 }
 
@@ -1124,14 +1121,12 @@ beginBtn.onclick = () => {
 
   if (activeCat === "national") {
     const params = new URLSearchParams({
-      examType: natState.examType,
-      subjects: natState.subjects.join(","),
-      types: natState.types.join(","),
-      source: "aloc",
+      source: "cbt",
+      scheme: natState.queryType,
+      // pass subject KEYS (the bank is keyed by subject key, not label)
+      subjects: natState.subjects.map((l) => keyByLabel[l] || l).join(","),
       n: String(PER_SUBJECT),
     });
-    if (natState.year && natState.year !== "all")
-      params.set("year", natState.year);
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
   }
@@ -1177,6 +1172,12 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────
-applyCat(initialCat);
-updateHeaderContent(initialCat);
-initMode(initialCat);
+// Only the national CBT (our own AI-generated bank) is offered. Competition and
+// international modes use third-party papers and stay hidden until licensed.
+document.querySelectorAll(".cat-tab").forEach((b) => {
+  if (b.dataset.tab !== "national") b.style.display = "none";
+});
+activeCat = "national";
+applyCat("national");
+updateHeaderContent("national");
+initMode("national");

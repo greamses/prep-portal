@@ -511,6 +511,41 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     }
   }
 
+  // ── CBT loader (source=cbt): our own AI-generated bank (/api/cbt),
+  //    keyed by scheme + subject. Maps onto the engine's question shape. ──
+  async function loadFromCbt() {
+    const scheme = PAGE_CONFIG.scheme || "utme";
+    const subjects = PAGE_CONFIG.subjects.length ? PAGE_CONFIG.subjects : ["mathematics"];
+    const per = PAGE_CONFIG.limit || 15;
+    const all = [];
+    for (const subKey of subjects) {
+      try {
+        const params = new URLSearchParams({ scheme, subject: subKey, limit: String(per), random: "1" });
+        const res = await fetch(`${API_BASE}/api/cbt?${params}`);
+        if (!res.ok) { console.warn("CBT fetch", subKey, "→ HTTP", res.status); continue; }
+        const data = await res.json();
+        (data.questions || []).forEach((q) => {
+          const options = q.options || [];
+          const ai = typeof q.answerIndex === "number" ? q.answerIndex
+            : typeof q.correctIndex === "number" ? q.correctIndex : -1;
+          all.push({
+            question: q.question,
+            options,
+            _answer: ai >= 0 && options[ai] !== undefined ? options[ai] : null,
+            explanation: q.explanation || "",
+            image: "",
+            hint: "",
+            type: "objective",
+            subject: q.subjectLabel || subKey,
+            examType: scheme,
+            examYear: "",
+          });
+        });
+      } catch (e) { console.warn("CBT load failed for", subKey, e.message); }
+    }
+    return all;
+  }
+
   // ── Hybrid loader: our curated files for the years we host, ALOC for
   //    every other year. Maps both sources onto the engine's question shape.
   async function loadFromAloc() {
@@ -738,6 +773,31 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     if (loadingEl) loadingEl.style.display = "flex";
 
     allQuestions = [];
+
+    // CBT source → our own AI-generated bank (/api/cbt).
+    if (PAGE_CONFIG.source === "cbt") {
+      allQuestions = await loadFromCbt();
+      if (loadingEl) loadingEl.style.display = "none";
+      if (allQuestions.length === 0) {
+        const card = document.getElementById("question-card");
+        if (card) {
+          card.style.display = "flex";
+          card.innerHTML = `<div style="padding:40px;text-align:center">
+                    <strong style="font-family:var(--font-display);font-size:15px">No Questions Yet</strong>
+                    <p style="font-size:12px;opacity:.6;margin-top:8px">No questions in the bank for this selection yet — check back soon.</p>
+                 </div>`;
+        }
+        return;
+      }
+      console.log(`Loaded ${allQuestions.length} questions from CBT bank (/api/cbt)`);
+      buildDotMap();
+      renderQuestion(0);
+      const card = document.getElementById("question-card");
+      const nav = document.getElementById("nav-bar");
+      if (card) card.style.display = "flex";
+      if (nav) nav.style.display = "grid";
+      return;
+    }
 
     // ALOC / API source → fetch from Firestore-backed endpoint and skip the
     // static per-folder script loading below.
