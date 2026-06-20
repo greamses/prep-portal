@@ -7,25 +7,14 @@
  * the site instead of looking like a generic modal. All iconography is our own
  * inline SVGs — no emoji.
  *
- * Self-contained: appears a few seconds after load and is throttled via
- * localStorage so it doesn't nag — dismissing snoozes it for several days.
- * CTA sends them to the partner page where anyone can generate a referral code.
+ * Self-contained: appears a few seconds after every home-page load, for every
+ * visitor (logged in or not). It only loads on the home page, so "every load"
+ * means every entry to the site's front door. CTA sends them to the partner
+ * page where anyone can generate a referral code.
  */
 (function () {
-  const KEY = "pp_promo_until";
-  const SNOOZE_DAYS = 4;
   const DELAY_MS = 3500;
-  let shown = false; // guard against the timer + login event double-firing
-
-  function isSnoozed() {
-    try { return Date.now() < (+localStorage.getItem(KEY) || 0); } catch (_) { return false; }
-  }
-  function snooze() {
-    try { localStorage.setItem(KEY, String(Date.now() + SNOOZE_DAYS * 864e5)); } catch (_) {}
-  }
-  function clearSnooze() {
-    try { localStorage.removeItem(KEY); } catch (_) {}
-  }
+  let shown = false; // guard against the timer + login event double-firing per page load
 
   // Make sure the shared component styles are present (they normally arrive via
   // the loader's @import, but link them defensively so the popup never degrades).
@@ -107,23 +96,22 @@
     document.body.appendChild(root);
     requestAnimationFrame(() => root.classList.add("show"));
 
-    const close = () => { snooze(); root.classList.remove("show"); setTimeout(() => root.remove(), 250); };
+    const close = () => { root.classList.remove("show"); setTimeout(() => root.remove(), 250); };
     root.querySelector(".pp-promo__close").onclick = close;
     root.querySelector(".pp-promo__later").onclick = close;
-    root.querySelector(".pp-promo__cta").onclick = () => { snooze(); }; // let the link navigate
     root.addEventListener("click", (e) => { if (e.target === root) close(); });
     document.addEventListener("keydown", function esc(e) {
       if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
     });
   }
 
-  // Always greet a fresh login — this is the "entry ad" the moment someone
-  // signs in. A login resets the snooze so it shows every time.
-  window.addEventListener("pp:login", () => { clearSnooze(); build(); });
+  // Show on every entry of the home page (this script only loads there), for
+  // everyone — logged in or not. The `shown` guard keeps it to once per load.
+  const start = () => setTimeout(build, DELAY_MS);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 
-  // Passive entry: show once for a new/returning visitor, unless recently
-  // dismissed. (A login above overrides this.)
-  const startPassive = () => { if (!isSnoozed()) setTimeout(build, DELAY_MS); };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startPassive);
-  else startPassive();
+  // Also greet an in-page login immediately (e.g. signing in via the modal
+  // before the timer fires); the guard prevents a duplicate.
+  window.addEventListener("pp:login", build);
 })();
