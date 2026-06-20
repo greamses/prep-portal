@@ -1,6 +1,7 @@
 import chatbotcss from "./prepbotcss.js";
 
-import { auth } from "/firebase-init.js";
+import { auth, db } from "/firebase-init.js";
+import { doc, getDoc } from "firebase/firestore";
 import { heroPaint } from "/utils/components/nav-icons.js";
 import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.js";
 
@@ -1695,8 +1696,35 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
   }
 
   /* ── 20. TOGGLE CHAT ── */
+  // PrepBot is a premium feature. Cache the entitlement per uid (admins are
+  // flagged premium on sign-up, so they pass). Non-premium users are sent to
+  // the subscribe page; the server also enforces this on /api/ai/chat.
+  let _pbPremium = { uid: null, ok: false };
+  async function prepbotAllowed() {
+    const user = auth.currentUser;
+    if (!user) { window.openAuthModal?.("login"); return false; }
+    if (_pbPremium.uid === user.uid) return _pbPremium.ok;
+    let ok = false;
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      ok = !!(snap.exists() && snap.data().isPremium);
+    } catch (_) { ok = false; }
+    _pbPremium = { uid: user.uid, ok };
+    return ok;
+  }
+  function goSubscribe() { window.location.href = "/subscribe.html#plans"; }
+
   function toggleChat(force) {
     const isOpen = force !== undefined ? force : !win.classList.contains("open");
+    if (isOpen) {
+      // Fast path: a user we already know isn't premium never even flashes open.
+      const u = auth.currentUser;
+      if (u && _pbPremium.uid === u.uid && !_pbPremium.ok) return goSubscribe();
+      // Otherwise confirm asynchronously and bounce if not entitled.
+      prepbotAllowed().then((ok) => {
+        if (!ok) { toggleChat(false); goSubscribe(); }
+      });
+    }
     win.classList.toggle("open", isOpen);
     if (isOpen) {
       fabWrap.classList.add("fab-hidden");

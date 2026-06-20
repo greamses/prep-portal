@@ -369,10 +369,39 @@ module.exports = function () {
     res.end();
   }
 
+  // ── Premium gate: PrepBot is a paid feature ──────────────────
+  // Admins (by ADMIN_EMAIL) and users with isPremium in their Firestore profile
+  // may chat; everyone else is refused with a friendly upsell message.
+  const usersDoc = (uid) => admin.firestore().collection("users").doc(uid);
+  async function isPremiumUser(req) {
+    if (!req.user) return false;
+    if (req.user.email && req.user.email === process.env.ADMIN_EMAIL) return true;
+    try {
+      const snap = await usersDoc(req.user.uid).get();
+      return !!(snap.exists && snap.data() && snap.data().isPremium);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── POST /api/ai/chat — PrepBot ──────────────────────────────
   // Fallback chain: Groq → Claude → Gemini (each skipped if key absent).
   // Pass { stream:true } for an NDJSON token stream; otherwise a single JSON reply.
   router.post("/chat", authenticate, async (req, res) => {
+    // Premium-only. The browser also gates this, so this is the un-bypassable
+    // backstop: return the upsell as normal chat text in either response shape.
+    if (!(await isPremiumUser(req))) {
+      const text =
+        "PrepBot is a premium feature. Upgrade your plan at /subscribe.html to chat with PrepBot.";
+      if (req.body && req.body.stream) {
+        res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+        res.write(JSON.stringify({ type: "delta", text }) + "\n");
+        res.write(JSON.stringify({ type: "done", provider: "premium_required" }) + "\n");
+        return res.end();
+      }
+      return res.json({ provider: "premium_required", premiumRequired: true, text });
+    }
+
     if (req.body && req.body.stream) {
       try {
         return await handleStreamingChat(req, res);
