@@ -12,6 +12,7 @@ import {
 import { MOCK } from "/home/js/dashboard/mock-data.js";
 import { renderCalendar } from "/home/js/dashboard/calendar.js";
 import { doUpgrade } from "/home/js/dashboard/toolbar.js";
+import { mountStudentClassroom } from "/home/js/dashboard/classroom-client.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildStudentPanels(user, data, layout) {
@@ -84,12 +85,12 @@ export function buildStudentPanels(user, data, layout) {
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">From Your Teacher</p>
-          <h2 class="db-panel-title">Active Tasks</h2>
+          <h2 class="db-panel-title">Assigned to me</h2>
         </div>
-        <a href="${ROUTES.ASSIGNMENTS}" class="db-icon-btn" title="View all assignments">${I.arrow}</a>
+        <button class="db-icon-btn ib-blue" type="button" data-action="join-class" title="Join a class">${I.plus}</button>
       </div>
-      <div class="db-assign-list">
-        ${tasks.length ? tasks.map((t) => assignmentItemHTML(t)).join("") : `<div class="db-empty">No active assignments.</div>`}
+      <div class="db-assign-list" id="db-asg-list">
+        <div class="db-empty">Loading…</div>
       </div>
     </div>
 
@@ -124,4 +125,6 @@ export function buildStudentPanels(user, data, layout) {
   layout
     .querySelector("[data-action='upgrade']")
     ?.addEventListener("click", doUpgrade);
+
+  mountStudentClassroom(layout);
 }

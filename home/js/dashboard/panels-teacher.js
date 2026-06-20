@@ -3,7 +3,7 @@ import { PERSON_SVG, pillColor, fmtDate, pct } from "./utils.js";
 import { perfBarHTML } from "./components.js";
 import { MOCK } from "./mock-data.js";
 import { renderCalendar } from "./calendar.js";
-import { showAssignmentModal } from "./dashboard-modals.js";
+import { mountTeacherClassroom } from "./classroom-client.js";
 
 export function buildTeacherPanels(user, data, layout) {
   const students = data.students || MOCK.teacherStudents;
@@ -56,35 +56,13 @@ export function buildTeacherPanels(user, data, layout) {
     <div class="db-panel bento-feature">
       <div class="db-panel-head">
         <div>
-          <p class="db-kicker">Class Roster</p>
+          <p class="db-kicker" id="db-class-code">Class roster</p>
           <h2 class="db-panel-title">${className}</h2>
         </div>
-        <button class="db-icon-btn ib-blue" type="button" data-action="add-student" title="Add student">${I.plus}</button>
+        <button class="db-icon-btn ib-blue" type="button" data-action="add-student" title="Show class code">${I.plus}</button>
       </div>
-      <ul class="db-roster">
-        ${students
-          .map((s) => {
-            const dotCls =
-              s.status === "active"
-                ? "dot-green"
-                : s.status === "idle"
-                  ? "dot-yellow"
-                  : "dot-grey";
-            const acc = pct(s.accuracy);
-            return `
-            <li class="db-roster-item">
-              <div class="db-roster-avatar">${PERSON_SVG}</div>
-              <div>
-                <div class="db-roster-name">${s.name}</div>
-                <div class="db-roster-sub">${s.class || className} &bull; Last active: ${s.lastActive || "never"}</div>
-              </div>
-              <div class="db-roster-meta">
-                <span class="db-dot ${dotCls}" title="${s.status}"></span>
-                <span class="db-pill ${pillColor(acc)}">${acc}%</span>
-              </div>
-            </li>`;
-          })
-          .join("")}
+      <ul class="db-roster" id="db-roster">
+        <div class="db-empty">Loading…</div>
       </ul>
     </div>
 
@@ -102,36 +80,12 @@ export function buildTeacherPanels(user, data, layout) {
       <div class="db-panel-head">
         <div>
           <p class="db-kicker">Task Manager</p>
-          <h2 class="db-panel-title">Math Assignments</h2>
+          <h2 class="db-panel-title">My Activities</h2>
         </div>
-        <button class="db-icon-btn ib-blue" type="button" data-action="new-assignment" title="Create assignment">${I.plus}</button>
+        <a class="db-icon-btn ib-blue" href="/theory-page/" title="Build a new activity">${I.plus}</a>
       </div>
-      <div class="db-assign-list">
-        ${
-          assignments.length
-            ? assignments
-                .map((a) => {
-                  const done = pct(
-                    (a.completedCount / (a.totalCount || 1)) * 100,
-                  );
-                  return `
-            <div class="db-assign-item">
-              <div class="db-assign-top">
-                <div>
-                  <div class="db-assign-title">${a.title}</div>
-                  <div class="db-assign-meta">Due ${fmtDate(a.dueDate)}</div>
-                </div>
-                <span class="db-pill pill-blue">${a.completedCount || 0}/${a.totalCount || 0}</span>
-              </div>
-              <div class="db-assign-progress-row">
-                <div class="db-assign-track"><div class="db-assign-fill" style="width:${done}%"></div></div>
-                <span class="db-assign-pct">${done}% done</span>
-              </div>
-            </div>`;
-                })
-                .join("")
-            : `<div class="db-empty">No active assignments.</div>`
-        }
+      <div class="db-assign-list" id="db-activities">
+        <div class="db-empty">Loading…</div>
       </div>
     </div>
 
@@ -147,7 +101,5 @@ export function buildTeacherPanels(user, data, layout) {
   );
   if (calendarContainer) renderCalendar(calendarContainer, MOCK.scheduleEvents);
 
-  layout
-    .querySelector("[data-action='new-assignment']")
-    ?.addEventListener("click", showAssignmentModal);
+  mountTeacherClassroom(layout);
 }
