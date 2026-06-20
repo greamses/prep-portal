@@ -4,6 +4,7 @@
 import { initGeminiKey, initYTKey, clearKeysOnUnload } from './js/keys.js';
 import { initSetupForm, rebuildSlots, checkReady } from './js/setup-form.js';
 import { initModal } from './js/modal.js';
+import { initTeacherAssign } from './js/teacher-assign.js';
 import { auth } from '/firebase-init.js';
 
 /* Expose auth-token getter so TheoryAnalyser (global IIFE) can
@@ -19,5 +20,6 @@ initYTKey();
 clearKeysOnUnload();
 initSetupForm();
 initModal();
+initTeacherAssign();
 rebuildSlots();
 checkReady();

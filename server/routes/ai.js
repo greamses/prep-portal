@@ -688,6 +688,9 @@ module.exports = function () {
       });
 
       const data = await upstream.json();
+      // Count against the shared allocation pool (same one PrepBot uses) so all
+      // backend-proxied AI — theory/activities, writing, math — draws on it.
+      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usageMetadata?.totalTokenCount || 0);
       res.status(upstream.status).json(data);
     } catch (err) {
       console.error("[/api/ai/gemini]", err.message);
@@ -735,6 +738,7 @@ module.exports = function () {
       });
 
       const data = await upstream.json();
+      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usage?.total_tokens || 0);
       res.status(upstream.status).json(data);
     } catch (err) {
       console.error("[/api/ai/groq]", err.message);

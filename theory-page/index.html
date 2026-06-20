@@ -40,6 +40,9 @@
 
     <!-- Loader must run synchronously in <head> to cover page render -->
     <script src="/utils/components/loader.js"></script>
+
+    <!-- Premium-only feature: gate free users (redirects to /subscribe.html#plans) -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
   </head>
 
   <body>

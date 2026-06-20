@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity — PrepPortal</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <link rel="stylesheet" href="/utils/components/components.css" />
+  <link rel="stylesheet" href="/utils/theory-analyser/theory-analyser.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":       "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth":      "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage":   "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+  <!-- Premium-only: free users are redirected to /subscribe.html#plans -->
+  <script type="module" src="/utils/auth/premium-guard.js"></script>
+  <style>
+    body { margin:0; background: var(--app-bg); color: var(--ink);
+      font-family: var(--font-mono, ui-monospace, monospace); padding: clamp(1rem,4vw,2.5rem) 1rem; }
+    .ac-paint { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity:.26; }
+    .ac-paint svg { width: 100%; height: 100%; display: block; }
+    [data-theme="dark"] .ac-paint { opacity: .15; }
+    .ac-wrap { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; }
+    .ac-head { display:flex; align-items:center; gap:1rem; margin:.5rem 0 1.6rem; flex-wrap:wrap; }
+    .ac-head h1 { font-family: var(--font-display); font-weight: var(--weight-black,900);
+      font-size: clamp(1.2rem,3.5vw,1.7rem); line-height:1.05; margin:0; }
+    .ac-meta { font-size:.7rem; color: var(--text-secondary); margin-top:.2rem; }
+    .ac-usage { margin-left:auto; font-size:.62rem; text-transform:uppercase; letter-spacing:.06em;
+      color: var(--text-secondary); background: var(--surface-primary); border:2px solid color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+      border-radius:999px; padding:.35rem .7rem; }
+    .ac-preview { font-family: var(--font-mono); font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      color: var(--text-on-accent,#2a2723); background: var(--accent-warning,#f0a868); padding:.3rem .6rem; border-radius:999px; }
+    .ac-q { margin-bottom:1.1rem; }
+    .ac-q-num { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; font-family: var(--font-display);
+      font-weight: var(--weight-bold,700); font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.4rem; }
+    .ac-q-marks { font-family: var(--font-mono); font-size:.6rem; color: var(--text-secondary); }
+    .ac-q-comp { font-family: var(--font-mono); font-size:.6rem; color: var(--accent-danger); }
+    .ac-q-text { font-size:.9rem; line-height:1.55; margin-bottom:.5rem; }
+    .ac-ta { display:block; width:100%; box-sizing:border-box; min-height:120px; resize:vertical;
+      font-family: "Caveat", cursive; font-size:1.2rem; line-height:1.5; padding:.7rem .9rem;
+      border:2px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius:12px;
+      background: var(--surface-primary); color: var(--ink); outline:none; }
+    .ac-ta:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 55%, transparent); }
+    .ac-actions { display:flex; gap:.7rem; align-items:center; margin:1.2rem 0; flex-wrap:wrap; }
+    .ac-msg { font-size:.74rem; color: var(--text-secondary); }
+    .ac-msg--err { color: var(--accent-danger); }
+    .ac-gate { text-align:center; padding:3rem 1rem; color: var(--text-secondary); font-size:.85rem; }
+    a { color: var(--accent-secondary); }
+  </style>
+</head>
+<body>
+  <div class="ac-paint" aria-hidden="true"></div>
+  <div class="ac-wrap">
+    <div class="ac-head">
+      <span class="pp-sticky pp-sticky--c3 pp-sticky--tape" style="--pp-note-tilt:-3deg">Activity</span>
+      <div>
+        <h1 id="ac-title">Loading…</h1>
+        <div class="ac-meta" id="ac-meta"></div>
+      </div>
+      <span class="ac-usage" id="ac-usage" hidden></span>
+    </div>
+
+    <div id="ac-gate" class="ac-gate">Loading activity…</div>
+
+    <form id="ac-form" hidden>
+      <div id="ac-questions"></div>
+      <div class="ac-actions">
+        <button type="submit" class="pp-btn" id="ac-submit">Submit for marking</button>
+        <span class="ac-preview" id="ac-preview" hidden>Preview — not recorded</span>
+        <span class="ac-msg" id="ac-msg"></span>
+      </div>
+    </form>
+
+    <div id="theory-results"></div>
+  </div>
+
+  <script type="module" src="/utils/theory-analyser/theory-analyser.js"></script>
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+    import { heroPaint } from "/utils/components/nav-icons.js";
+
+    document.querySelector(".ac-paint").innerHTML = heroPaint();
+
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const params = new URLSearchParams(location.search);
+    const slug = (params.get("a") || "").trim();
+    const preview = params.get("preview") === "1";
+    const $ = (id) => document.getElementById(id);
+    const stripHtml = (h) => String(h || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+
+    let activity = null;
+
+    async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
+
+    async function loadUsage() {
+      try {
+        const r = await fetch(`${API}/api/ai/usage`, { headers: await authHeader() });
+        const u = await r.json();
+        const el = $("ac-usage");
+        el.hidden = false;
+        el.textContent = `Tokens ${Number(u.used || 0).toLocaleString()}/${Number(u.allocation || 0).toLocaleString()} · 5h`;
+      } catch (_) {}
+    }
+
+    async function load() {
+      if (!slug) { $("ac-gate").textContent = "No activity specified."; return; }
+      let res, d;
+      try {
+        res = await fetch(`${API}/api/activities/${encodeURIComponent(slug)}`, { headers: await authHeader() });
+        d = await res.json();
+      } catch (e) { $("ac-gate").textContent = "Error: " + e.message; return; }
+      if (res.status === 402) { location.href = "/subscribe.html#plans"; return; }
+      if (!res.ok || !d.activity) { $("ac-gate").textContent = d.error || "Activity not found."; return; }
+
+      activity = d.activity;
+      $("ac-title").textContent = activity.title;
+      $("ac-meta").textContent = [activity.subject, activity.classLevel, `by ${activity.ownerName || "teacher"}`].filter(Boolean).join(" · ");
+      $("ac-preview").hidden = !preview;
+      renderQuestions();
+      $("ac-gate").hidden = true;
+      $("ac-form").hidden = false;
+      loadUsage();
+    }
+
+    function renderQuestions() {
+      $("ac-questions").innerHTML = activity.questions.map((q, i) => `
+        <div class="ac-q">
+          <div class="ac-q-num">Question ${i + 1}
+            ${q.marks ? `<span class="ac-q-marks">${q.marks} marks</span>` : ""}
+            ${q.compulsory ? `<span class="ac-q-comp">★ compulsory</span>` : ""}
+          </div>
+          <div class="ac-q-text">${q.text}</div>
+          <textarea class="ac-ta" data-i="${i}" placeholder="Type your answer here…"></textarea>
+        </div>`).join("");
+    }
+
+    $("ac-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = $("ac-submit"), msg = $("ac-msg");
+      const tas = [...document.querySelectorAll(".ac-ta")];
+      const answers = tas.map((t) => t.value.trim());
+      if (answers.every((a) => a.length < 2)) { msg.textContent = "Write your answers first."; msg.className = "ac-msg ac-msg--err"; return; }
+
+      btn.disabled = true; msg.textContent = "Marking…"; msg.className = "ac-msg";
+      try {
+        const TA = window.TheoryAnalyser;
+        TA.init({
+          geminiKey: "backend",
+          subject: activity.subject || "General",
+          level: activity.classLevel || "JSS",
+          mountId: "theory-results",
+        });
+        const questions = activity.questions.map((q) => ({ text: stripHtml(q.text), marks: q.marks, compulsory: q.compulsory }));
+        const studentName = auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split("@")[0] : "Student");
+        const r = await TA.analyseAll(questions, answers, studentName, new Date().toLocaleDateString("en-NG"));
+        if (!r) { msg.textContent = "Marking failed — see the message above."; msg.className = "ac-msg ac-msg--err"; btn.disabled = false; return; }
+
+        const score = r.combined?.totalScore ?? null;
+        const totalMarks = r.combined?.totalMax ?? null;
+        loadUsage();
+
+        if (preview) {
+          msg.textContent = "Preview — submission was not recorded.";
+          $("ac-form").querySelector(".ac-actions").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } else {
+          await fetch(`${API}/api/activities/${encodeURIComponent(slug)}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(await authHeader()) },
+            body: JSON.stringify({
+              answers: answers.map((t) => ({ text: t })),
+              marked: r.combined,
+              score, totalMarks,
+            }),
+          });
+          msg.textContent = `Submitted${score != null ? ` — ${score}/${totalMarks}` : ""}. Your teacher can see your result.`;
+          tas.forEach((t) => (t.readOnly = true));
+          btn.style.display = "none";
+        }
+      } catch (err) {
+        msg.textContent = err.message; msg.className = "ac-msg ac-msg--err"; btn.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) { $("ac-gate").innerHTML = 'Please <a href="/index.html?login=1&next=' + encodeURIComponent(location.pathname + location.search) + '">sign in</a> to open this activity.'; return; }
+      load();
+    });
+  </script>
+</body>
+</html>
