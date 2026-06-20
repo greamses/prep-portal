@@ -19,13 +19,23 @@ const { GEMINI_MODELS, GROQ_DEFAULT_MODEL } = require("../ai-models");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Schemes we offer — DESCRIPTIVE "…-style" labels, never an exam body's name.
+// `region`: "nigeria" | "international" (for the builder's National/International tabs).
+// `calib`: difficulty guidance fed into the prompt so questions match the exam.
 const SCHEMES = {
-  wassce:   { label: "WASSCE-style",    desc: "a West-African senior-secondary certificate exam (SSCE/WASSCE style) for students in Nigeria" },
-  utme:     { label: "UTME-style",      desc: "a Nigerian university matriculation exam (UTME style): four options, single best answer" },
-  postutme: { label: "Post-UTME style", desc: "a Nigerian university post-UTME screening test" },
-  sat:      { label: "SAT-style",       desc: "the digital SAT US college-admissions test: concise four-option multiple choice; for verbal items write your OWN short original passage and base the question on it" },
-  igcse:    { label: "IGCSE-style",     desc: "an international GCSE (upper-secondary) exam at IGCSE difficulty: four-option multiple choice" },
-  alevel:   { label: "A-Level-style",   desc: "an A-Level (advanced upper-secondary) exam: rigorous four-option multiple choice at A-Level difficulty" },
+  cee:      { label: "Common Entrance style", region: "nigeria", desc: "a Nigerian Common Entrance examination into junior secondary school (primary 5–6 level)",
+    calib: "- Target ages 10–12 (end of primary). Basic arithmetic, fractions/decimals, simple geometry and everyday word problems. Keep it clear and age-appropriate." },
+  utme:     { label: "UTME-style", region: "nigeria", desc: "a Nigerian university matriculation exam (UTME style): four options, single best answer",
+    calib: "- UTME/JAMB standard for university entry (SS3 level). Questions must require real working — multi-step algebra, indices/surds/logs, trigonometry, basic calculus, sequences, probability, coordinate geometry. Comparable to a moderately hard JAMB item, NOT junior-school arithmetic." },
+  wassce:   { label: "WASSCE-style", region: "nigeria", desc: "a West-African senior-secondary certificate exam (SSCE/WASSCE style)",
+    calib: "- Senior-secondary certificate (SS1–SS3) standard. Solid multi-step problems across the senior syllabus — clearly harder than basic recall." },
+  postutme: { label: "Post-UTME style", region: "nigeria", desc: "a Nigerian university post-UTME screening test",
+    calib: "- University screening level: at or slightly above UTME difficulty, multi-step reasoning." },
+  sat:      { label: "SAT-style", region: "international", desc: "the digital SAT US college-admissions test; for verbal items write your OWN short original passage and base the question on it",
+    calib: "- Digital SAT standard: Heart of Algebra, Problem-Solving & Data Analysis, and Advanced Math; real-world contexts, multi-step reasoning, carefully designed distractors." },
+  igcse:    { label: "IGCSE-style", region: "international", desc: "an international GCSE (upper-secondary) exam at IGCSE difficulty",
+    calib: "- IGCSE (Extended) standard: multi-step problems covering the IGCSE syllabus at full exam difficulty." },
+  alevel:   { label: "A-Level-style", region: "international", desc: "an A-Level (advanced upper-secondary) exam",
+    calib: "- A-Level standard: advanced and rigorous — calculus, further algebra, mechanics/statistics where relevant; genuinely demanding multi-step questions." },
 };
 
 const SUBJECT_LABELS = {
@@ -42,15 +52,26 @@ const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperC
 
 function genPrompt(scheme, subjectLabel, topic, count) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
-  return `You are an examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
+  const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
+  return `You are a SENIOR examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
 Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
 
+DIFFICULTY — match the real exam (critical):
+${sc.calib}
+- Do NOT write trivially easy or single-step questions unless the exam itself is at that level (${scheme === "cee" ? "this one is" : "this one is NOT — it is a senior/exam-level test"}).
+- Spread difficulty realistically: a few easier, mostly medium, some genuinely hard.
+${isMath ? `
+MATHEMATICS RIGOR:
+- Require real multi-step working (typically 2–4 steps), not one-operation recall.
+- Use topics that fit the level (algebra, indices, surds, logarithms, trigonometry, calculus, sequences/series, probability, coordinate geometry — choose what suits the scheme).
+- Make ALL four options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
+- Keep arithmetic clean enough to solve by hand unless the exam allows a calculator.
+` : ""}
 MANDATORY:
-- Write your OWN, brand-new questions. Match the genre, format and difficulty of the exam — but NEVER reproduce, quote, or lightly reword any real past exam question.
-- Do NOT include copyrighted passages, named datasets, diagrams or images. Self-contained text only.
-- Exactly FOUR options each, with exactly ONE correct answer.
-- Keep each question and option concise and unambiguous.
+- Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
+- No copyrighted passages, named datasets, diagrams or images. Self-contained text only.
+- Exactly FOUR options each, exactly ONE correct.
 - Add a one-sentence explanation of the correct answer.
 
 RESPOND ONLY WITH VALID JSON (no markdown):

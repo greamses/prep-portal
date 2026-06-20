@@ -26,12 +26,12 @@ function applyCat(cat) {
   document
     .querySelectorAll(".cat-tab")
     .forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === cat));
-  // Show only the active category's inline elements.
-  // Use style.display so inline style wins over any author CSS (display:grid, flex, etc.)
-  document.querySelectorAll("[data-cat]").forEach((el) => {
-    el.style.display = el.dataset.cat !== cat ? "none" : "";
-  });
-  // Step-3 rows are always hidden initially; each mode reveals them at the right time
+  // National and International both run the same CBT builder (our own data), so
+  // always show the "national" cards and hide the legacy competition/intl ones.
+  document.querySelectorAll('[data-cat="national"]').forEach((el) => { el.style.display = ""; });
+  document
+    .querySelectorAll('[data-cat="competition"],[data-cat="international"]')
+    .forEach((el) => { el.style.display = "none"; });
   document.getElementById("subject-row").style.display = "none";
   document.getElementById("year-row").style.display = "none";
   document.getElementById("subject-row-intl").style.display = "none";
@@ -59,12 +59,12 @@ const HEADER_CONTENT = {
     ctaLabel: "Start practice →",
   },
   international: {
-    note: "Pick an exam board, your level & subject — practise the actual paper.",
+    note: "Pick a scheme, your level & subjects — we'll build an original practice test, marked instantly.",
     stats: `
-      <span class="hero-stat theme-blue"><strong>Cambridge</strong> Live</span>
-      <span class="hero-stat theme-green"><strong>IGCSE</strong> Coming soon</span>
-      <span class="hero-stat theme-red"><strong>SAT</strong> Coming soon</span>`,
-    ctaLabel: "Open paper →",
+      <span class="hero-stat theme-blue"><strong>SAT</strong>-style</span>
+      <span class="hero-stat theme-green"><strong>IGCSE</strong>-style</span>
+      <span class="hero-stat theme-red"><strong>A-Level</strong>-style</span>`,
+    ctaLabel: "Start practice test →",
   },
 };
 
@@ -79,14 +79,18 @@ function updateHeaderContent(cat) {
 //  NATIONAL MODE
 // ════════════════════════════════════════════════════════════════════
 
-const EXAM_TYPES = [
+const NAT_EXAM_TYPES = [
   { id: "utme", name: "UTME-style", queryType: "utme", live: true },
   { id: "wassce", name: "WASSCE-style", queryType: "wassce", live: true },
   { id: "postutme", name: "Post-UTME style", queryType: "postutme", live: true },
+  { id: "cee", name: "Common Entrance style", queryType: "cee", live: true },
+];
+const INTL_EXAM_TYPES = [
   { id: "sat", name: "SAT-style", queryType: "sat", live: true },
   { id: "igcse", name: "IGCSE-style", queryType: "igcse", live: true },
   { id: "alevel", name: "A-Level-style", queryType: "alevel", live: true },
 ];
+let activeExamTypes = NAT_EXAM_TYPES;
 const COMPULSORY = []; // no subject is forced — learners pick freely
 const MAX_SUBJECTS = 9;
 const PER_SUBJECT = 15;
@@ -158,7 +162,7 @@ function natUpdateReadyState() {
 
 function buildExamGrid() {
   examContainer().innerHTML = "";
-  EXAM_TYPES.forEach((exam) => {
+  activeExamTypes.forEach((exam) => {
     const chip = document.createElement("div");
     chip.className = `custom-chip exam-chip${!exam.live ? " disabled" : ""}`;
     chip.innerHTML = `<div class="status-dot ${exam.live ? "live" : "offline"}"></div><span>${exam.name}</span>`;
@@ -1098,7 +1102,7 @@ function initInternational() {
 beginBtn.onclick = () => {
   if (beginBtn.disabled) return;
 
-  if (activeCat === "national") {
+  if (activeCat === "national" || activeCat === "international") {
     // Spread the chosen total across the selected subjects.
     const total = natState.count || 40;
     const per = Math.max(1, Math.ceil(total / Math.max(1, natState.subjects.length)));
@@ -1134,9 +1138,9 @@ beginBtn.onclick = () => {
 };
 
 function initMode(cat) {
-  if (cat === "national") initNational();
-  else if (cat === "competition") initCompetition();
-  else if (cat === "international") initInternational();
+  // Both National and International run the CBT builder; only the scheme set differs.
+  activeExamTypes = cat === "international" ? INTL_EXAM_TYPES : NAT_EXAM_TYPES;
+  initNational();
   setStatus("Awaiting selections...", false);
   beginBtn.disabled = true;
 }
@@ -1154,12 +1158,13 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────
-// Only the national CBT (our own AI-generated bank) is offered. Competition and
-// international modes use third-party papers and stay hidden until licensed.
+// National + International are both our own CBT now. Competition (third-party
+// papers) stays hidden until licensed.
 document.querySelectorAll(".cat-tab").forEach((b) => {
-  if (b.dataset.tab !== "national") b.style.display = "none";
+  if (b.dataset.tab === "competition") b.style.display = "none";
 });
-activeCat = "national";
-applyCat("national");
-updateHeaderContent("national");
-initMode("national");
+const startCat = initialCat === "international" ? "international" : "national";
+activeCat = startCat;
+applyCat(startCat);
+updateHeaderContent(startCat);
+initMode(startCat);
