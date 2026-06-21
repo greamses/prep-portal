@@ -125,6 +125,8 @@ function fixLatex(s) {
     if (c === 12) out += "\\f";
     else if (c === 8) out += "\\b";
     else if (c === 9) out += "\\t";
+    else if (c === 13) out += "\\r"; // \rightarrow, \rho, \rfloor…
+    else if (c === 10) out += "\\n"; // \nu, \neq, \nabla… (exam text rarely needs real newlines)
     else out += ch;
   }
   return out;
