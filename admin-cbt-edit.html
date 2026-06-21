@@ -77,9 +77,23 @@
         <h2 id="ed-form-title" style="font-family:var(--font-display);font-size:1rem;margin:.1rem 0 .6rem">Add question</h2>
         <label>Question (use $…$ for maths)</label>
         <textarea id="f-question" placeholder="Solve $3x+1=10$."></textarea>
-        <label>Options — select the correct one</label>
-        <div id="f-options"></div>
-        <button id="f-addopt" class="ghost" type="button" style="margin-top:.3rem">+ Option</button>
+        <label>Type</label>
+        <select id="f-type">
+          <option value="objective">Objective (multiple choice)</option>
+          <option value="polar">Polar (true / false)</option>
+          <option value="short">Short answer</option>
+          <option value="theory">Theory</option>
+          <option value="subjective">Subjective</option>
+        </select>
+        <div id="f-mcq">
+          <label>Options — select the correct one</label>
+          <div id="f-options"></div>
+          <button id="f-addopt" class="ghost" type="button" style="margin-top:.3rem">+ Option</button>
+        </div>
+        <div id="f-free" class="hide">
+          <label>Answer (model answer / key points)</label>
+          <textarea id="f-answer" placeholder="The expected answer…"></textarea>
+        </div>
         <div class="row">
           <div><label>Paper</label><select id="f-paper"><option value="">None</option><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
         </div>
@@ -197,7 +211,7 @@
         $("ed-list").innerHTML=(d.questions||[]).map(q=>`
           <div class="ed-list-item">
             <div class="q">${esc((q.question||"").slice(0,160))}
-              <div class="ed-meta"><span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.image?'<span class="pill">img</span>':""} · ${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}</div>
+              <div class="ed-meta"><span class="pill">${q.type||"objective"}</span> <span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.image?'<span class="pill">img</span>':""} ${q.video?'<span class="pill">video</span>':""} · ${(q.options&&q.options.length)?`${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}`:`ans: ${esc((q.answer||"").slice(0,40))}`}</div>
             </div>
             <button class="ghost ic" data-edit="${q.id}" title="Edit" type="button">${PENCIL}</button>
             <button class="ghost ic" data-del="${q.id}" title="Delete" type="button" style="color:var(--accent-danger)">${TRASH}</button>
@@ -231,23 +245,37 @@
       $("f-image").value = q ? q.image||"" : "";
       $("f-video").value = q ? q.video||"" : "";
       $("f-vscope").value = q && q.videoScope==="set" ? "set" : "question";
+      $("f-type").value = q && q.type ? q.type : "objective";
+      $("f-answer").value = q ? (q.answer||"") : "";
       const opts = q && q.options && q.options.length ? q.options : ["","",""," "];
-      const ai = q ? q.answerIndex : 0;
+      const ai = q && typeof q.answerIndex==="number" ? q.answerIndex : 0;
       $("f-options").innerHTML="";
       opts.forEach((o,i)=>$("f-options").appendChild(optionRow(o, i===ai)));
-      refreshPreview();
+      applyType(); // toggles MCQ/answer sections + refreshes preview
       $("f-msg").textContent="";
       $("ed-form").scrollIntoView({behavior:"smooth",block:"start"});
     }
 
+    const FREE_TYPES = ["short","theory","subjective"];
+    function applyType(){
+      const free = FREE_TYPES.includes($("f-type").value);
+      $("f-mcq").classList.toggle("hide", free);
+      $("f-free").classList.toggle("hide", !free);
+      refreshPreview();
+    }
+
     function collect(){
+      const type=$("f-type").value, free=FREE_TYPES.includes(type);
       const options=[...$("f-options").querySelectorAll(".opt")].map(i=>i.value.trim()).filter(Boolean);
       const radios=[...$("f-options").querySelectorAll("input[type=radio]")];
       let answerIndex=radios.findIndex(r=>r.checked); if(answerIndex<0)answerIndex=0;
       const expl=$("f-explanation").value.split("\n").map(s=>s.trim()).filter(Boolean);
       return {
         scheme:$("ed-scheme").value, subject:$("ed-subject").value, paper:$("f-paper").value||null,
-        question:$("f-question").value, options, answerIndex,
+        type,
+        question:$("f-question").value,
+        options: free?null:options, answerIndex: free?null:answerIndex,
+        answer: free?$("f-answer").value:null,
         explanation: expl.length>1?expl:(expl[0]||""), hint:$("f-hint").value, image:$("f-image").value,
         video:$("f-video").value.trim(), videoScope:$("f-vscope").value,
       };
@@ -257,7 +285,10 @@
       const b=collect();
       const img=(b.image||"").trim();
       const imgHtml = img.startsWith("<svg") ? img : (img ? `<img src="${esc(img)}" style="max-width:200px"/>` : "");
-      $("f-preview").innerHTML=`<div>${esc(b.question)}</div>${imgHtml}<ol type="A" style="margin:.4rem 0 0">${b.options.map((o,i)=>`<li${i===b.answerIndex?' style="font-weight:700;color:var(--accent-success)"':''}>${esc(o)}</li>`).join("")}</ol>`;
+      const body = FREE_TYPES.includes(b.type)
+        ? `<div style="margin-top:.4rem"><strong>Answer:</strong> ${esc(b.answer||"")}</div>`
+        : `<ol type="A" style="margin:.4rem 0 0">${(b.options||[]).map((o,i)=>`<li${i===b.answerIndex?' style="font-weight:700;color:var(--accent-success)"':''}>${esc(o)}</li>`).join("")}</ol>`;
+      $("f-preview").innerHTML=`<div>${esc(b.question)}</div>${imgHtml}${body}`;
       // MathJax can't read $..$ from escaped text reliably; set textContent then typeset
       typeset($("f-preview"));
     }
@@ -297,10 +328,9 @@
       // Compact icon buttons (tooltips via title)
       ic("ed-load","refresh","Load questions"); ic("ed-new","plus","Add question");
       ic("f-addopt","plus","Add option"); ic("f-save","check","Save"); ic("f-cancel","x","Cancel"); ic("f-delete","trash","Delete");
-      ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
-      // Primary action — keep a visible label so it's easy to find.
-      { const b=$("im-go"); if(b){ b.classList.add("iconbtn"); b.style.cssText="gap:.45rem;padding:.55rem 1rem;line-height:1"; b.innerHTML=ICONS.upload+"<span>Import to bank</span>"; b.title="Import to bank"; b.setAttribute("aria-label","Import to bank"); } }
-      ["f-question","f-image"].forEach(id=>$(id).oninput=refreshPreview);
+      ic("im-go","upload","Import to bank"); ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
+      ["f-question","f-image","f-answer"].forEach(id=>$(id).oninput=refreshPreview);
+      $("f-type").onchange=applyType;
       // Import library
       $("im-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
       $("im-file").onchange=async()=>{ const f=$("im-file").files[0]; if(f) $("im-code").value=await f.text(); };

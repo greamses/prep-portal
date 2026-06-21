@@ -333,14 +333,13 @@ function cleanQuestions(arr) {
   return out;
 }
 
-// Validate/normalise an admin-supplied question (manual add or edit).
+// Validate/normalise an admin-supplied question (manual add or edit). Handles
+// both MCQ (objective/polar) and free-response (short/theory/subjective).
 function validBody(b) {
   const question = fixLatex(b.question).trim();
-  const options = Array.isArray(b.options) ? b.options.map((o) => fixLatex(o).trim().slice(0, 400)).filter(Boolean) : [];
-  const ai = parseInt(b.answerIndex, 10);
   if (question.length < 3) return { error: "Question text is required." };
-  if (options.length < 2 || options.length > 6) return { error: "Provide 2 to 6 options." };
-  if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) return { error: "Choose which option is correct." };
+  const wanted = String(b.type || "").toLowerCase();
+  const isFree = ["short", "theory", "subjective"].includes(wanted);
   const explanation = Array.isArray(b.explanation)
     ? b.explanation.map((x) => fixLatex(x).slice(0, 800)).filter(Boolean).slice(0, 15)
     : fixLatex(b.explanation || "").slice(0, 2000);
@@ -350,7 +349,17 @@ function validBody(b) {
   const video = safeUrl(b.video);
   const videoScope = video ? videoScopeOf(b.videoScope) : "question";
   const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
-  const type = options.length === 2 ? "polar" : "objective";
+
+  if (isFree) {
+    const answer = fixLatex(b.answer || "").trim().slice(0, 4000);
+    if (!answer) return { error: "Provide the model answer for this question." };
+    return { type: wanted, question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, paper };
+  }
+  const options = Array.isArray(b.options) ? b.options.map((o) => fixLatex(o).trim().slice(0, 400)).filter(Boolean) : [];
+  const ai = parseInt(b.answerIndex, 10);
+  if (options.length < 2 || options.length > 6) return { error: "Provide 2 to 6 options." };
+  if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) return { error: "Choose which option is correct." };
+  const type = wanted === "polar" || options.length === 2 ? "polar" : "objective";
   return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, paper };
 }
 
