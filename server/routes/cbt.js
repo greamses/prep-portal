@@ -263,6 +263,34 @@ function importQuestions(arr) {
   return out;
 }
 
+// Rephrase a group of questions (keeps option order/count → correct answer stays
+// at the same index). Returns an array aligned to `group` ([{question,options}]|null).
+async function rephraseGroup(group) {
+  const list = group.map((q, i) => `[${i}] QUESTION: ${q.question}\nOPTIONS: ${JSON.stringify(q.options || [])}`).join("\n\n");
+  const prompt = `Rephrase these ${group.length} multiple-choice questions to be ORIGINAL wording while keeping the EXACT same meaning, difficulty and correct answer.
+For EACH question:
+- Reword the question stem in fresh language.
+- Reword EVERY option, but keep them in the SAME order and the SAME count — do NOT add, remove or reorder options. The correct answer must stay in its original position.
+- Preserve all $...$ LaTeX and keep every number/answer correct.
+- Do not change which option is correct.
+
+Return ONLY JSON (same order as given):
+{ "items": [ { "question": "<reworded>", "options": ["<reworded option 0>", "<reworded option 1>", "..."] } ] }
+
+QUESTIONS:
+${list}`;
+  const raw = await callModel(prompt);
+  const items = (raw && (raw.items || raw.questions)) || [];
+  return group.map((q, i) => {
+    const it = items[i];
+    if (!it || typeof it !== "object") return null;
+    const question = fixLatex(it.question).trim();
+    const options = Array.isArray(it.options) ? it.options.map((o) => fixLatex(o).trim()).filter(Boolean) : [];
+    if (question.length < 3 || options.length !== (q.options || []).length) return null;
+    return { question, options };
+  });
+}
+
 module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
@@ -477,6 +505,56 @@ module.exports = function () {
       res.json({ ok: true });
     } catch (e) {
       console.error("[/api/cbt/question PUT]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /rephrase — admin: AI-reword originals into "rephrased" copies ──
+  // { scheme, subject, paper?, max? } — idempotent (skips originals already done).
+  router.post("/rephrase", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const scheme = String(b.scheme || "").toLowerCase().trim();
+      const key = subjKey(b.subject);
+      if (!SCHEMES[scheme] || !key) return res.status(400).json({ error: "scheme and subject required." });
+      const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
+      const max = Math.min(Math.max(parseInt(b.max, 10) || 20, 1), 40);
+      const ss = `${scheme}__${key}`;
+
+      const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", ss).get();
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const done = new Set(docs.filter((d) => d.source === "rephrased" && d.originalId).map((d) => d.originalId));
+      let originals = docs.filter((d) => d.source === "past" && !done.has(d.id));
+      if (paper) originals = originals.filter((d) => String(d.paper || "") === paper);
+      const remainingBefore = originals.length;
+      const slice = originals.slice(0, max);
+
+      let created = 0;
+      for (let i = 0; i < slice.length; i += 10) {
+        const group = slice.slice(i, i + 10);
+        let out = null;
+        try { out = await rephraseGroup(group); } catch (_) { out = null; }
+        if (!out) continue;
+        const batch = db().batch();
+        let n = 0;
+        group.forEach((orig, gi) => {
+          const r = out[gi];
+          if (!r || !Array.isArray(r.options) || r.options.length !== (orig.options || []).length) return;
+          const ref = db().collection("cbtQuestions").doc();
+          batch.set(ref, {
+            scheme, subject: key, subjectLabel: orig.subjectLabel || subjLabel(key), schemeSubject: ss,
+            paper: orig.paper || null, source: "rephrased", originalId: orig.id,
+            question: r.question, options: r.options, answerIndex: orig.answerIndex,
+            explanation: orig.explanation || "", hint: orig.hint || "", image: orig.image || null,
+            createdAt: stamp(), updatedAt: stamp(),
+          });
+          n++;
+        });
+        if (n) { await batch.commit(); created += n; }
+      }
+      res.json({ ok: true, created, processed: slice.length, remaining: Math.max(0, remainingBefore - slice.length) });
+    } catch (e) {
+      console.error("[/api/cbt/rephrase]", e.message);
       res.status(500).json({ error: e.message });
     }
   });

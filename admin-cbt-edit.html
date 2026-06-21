@@ -112,6 +112,18 @@
         <div class="row" style="margin-top:.6rem"><div style="flex:0 0 auto"><button id="im-go" type="button">Import</button></div></div>
         <p id="im-msg" class="ed-msg"></p>
       </div>
+
+      <div class="ed-card">
+        <h2 style="font-family:var(--font-display);font-size:1rem;margin:.1rem 0 .4rem">Rephrase originals → AI copies</h2>
+        <p class="ed-meta" style="margin:0 0 .6rem">Creates an AI-reworded <strong>rephrased</strong> copy of each <strong>original</strong> question — same answer, same images, fresh wording. Runs in batches; safe to re-run (skips ones already done). Use the “Originals visibility” switch (on the CBT Bank page) to hide originals once you're happy.</p>
+        <div class="row">
+          <div><label>Scheme</label><select id="rp-scheme"></select></div>
+          <div><label>Subject</label><input id="rp-subject" placeholder="mathematics" /></div>
+          <div><label>Paper</label><select id="rp-paper"><option value="">Any</option><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
+          <div style="flex:0 0 auto"><button id="rp-go" type="button">Rephrase</button></div>
+        </div>
+        <p id="rp-msg" class="ed-msg"></p>
+      </div>
     </div>
   </div>
 
@@ -255,6 +267,26 @@
         btn.disabled=true; msg.textContent="Importing…"; msg.className="ed-msg";
         try{ const r=await fetch(`${API}/api/cbt/import`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeader())},body:JSON.stringify(body)}); const d=await r.json(); if(!r.ok)throw new Error(d.error||"Failed"); msg.textContent=`Imported ${d.imported} question(s).`; msg.className="ed-msg ed-msg--ok"; loadSubjects(); loadList(); }
         catch(e){ msg.textContent=e.message; msg.className="ed-msg ed-msg--err"; }
+        finally{ btn.disabled=false; }
+      };
+      // Rephrase originals → rephrased copies (loops in batches until done)
+      $("rp-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+      $("rp-go").onclick=async()=>{
+        const btn=$("rp-go"), msg=$("rp-msg");
+        const scheme=$("rp-scheme").value, subject=$("rp-subject").value.trim(), paper=$("rp-paper").value;
+        if(!subject){ msg.textContent="Enter a subject."; msg.className="ed-msg ed-msg--err"; return; }
+        btn.disabled=true; let total=0;
+        try{
+          while(true){
+            msg.textContent=`Rephrasing… ${total} created so far`; msg.className="ed-msg";
+            const r=await fetch(`${API}/api/cbt/rephrase`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeader())},body:JSON.stringify({scheme,subject,paper,max:20})});
+            const d=await r.json(); if(!r.ok)throw new Error(d.error||"Failed");
+            total+=d.created;
+            if(d.remaining===0 || d.created===0) break; // done, or no progress this round
+          }
+          msg.textContent=`Done — created ${total} rephrased question(s).`; msg.className="ed-msg ed-msg--ok";
+          loadSubjects(); loadList();
+        }catch(e){ msg.textContent=e.message; msg.className="ed-msg ed-msg--err"; }
         finally{ btn.disabled=false; }
       };
       loadList();
