@@ -230,37 +230,24 @@ const Quiz = (() => {
     return typeof GEMINI_API_KEY !== "undefined" && GEMINI_API_KEY;
   }
 
+  // AI-mark a free-response answer via our server (keys stay server-side).
   async function markTheory(question, answer, markScheme) {
-    const prompt = `You are an AI examiner for ${PAGE_CONFIG.examType?.toUpperCase() || "WASSCE"} exams.
-Grade this theory/essay answer.
-Question: ${question}
-Marking Scheme: ${markScheme || "Standard marking based on accuracy, depth, and clarity."}
-Student Answer: ${answer}
-
-Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive feedback"}`;
-
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.3,
-              responseMimeType: "application/json",
-            },
-          }),
-        },
-      );
-      const data = await response.json();
-      const text =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        '{"score":0,"outOf":10,"feedback":"Unable to mark"}';
-      return JSON.parse(text);
+      const headers = { "Content-Type": "application/json" };
+      try {
+        const u = window.firebaseAuth && window.firebaseAuth.currentUser;
+        if (u) headers.Authorization = "Bearer " + (await u.getIdToken());
+      } catch (_) {}
+      const r = await fetch(`${API_BASE}/api/cbt/mark`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ question, answer, modelAnswer: markScheme || "" }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Marking failed");
+      return d;
     } catch (e) {
-      return { score: 0, outOf: 10, feedback: `Marking error: ${e.message}` };
+      return { score: 0, outOf: 10, feedback: `Marking unavailable — compare with the model answer. (${e.message})` };
     }
   }
 
@@ -528,18 +515,22 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
         const data = await res.json();
         (data.questions || []).forEach((q) => {
           const options = q.options || [];
+          const isMcq = Array.isArray(options) && options.length >= 2;
           const ai = typeof q.answerIndex === "number" ? q.answerIndex
             : typeof q.correctIndex === "number" ? q.correctIndex : -1;
           all.push({
             question: q.question,
-            options,
-            _answer: ai >= 0 && options[ai] !== undefined ? options[ai] : null,
+            options: isMcq ? options : [],
+            // MCQ → correct option; free-response → the model answer (revealed + used as mark scheme).
+            _answer: isMcq ? (ai >= 0 && options[ai] !== undefined ? options[ai] : null) : (q.answer || null),
+            markScheme: isMcq ? "" : (q.answer || ""),
             explanation: q.explanation || "",
             image: q.image || "",
             video: q.video || "",
             videoScope: q.videoScope || "question",
             hint: q.hint || "",
-            type: "objective",
+            // The engine treats any non-"objective" type as free-response (theory box).
+            type: isMcq ? "objective" : "theory",
             subject: q.subjectLabel || subKey,
             examType: scheme,
             examYear: "",
@@ -1424,18 +1415,22 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
 
     if (q.type !== "objective") {
       const mark = theoryMarks[idx];
+      let html = "";
       if (mark) {
         strip.classList.add("neutral");
         if (label) label.textContent = `AI Mark: ${mark.score}/${mark.outOf}`;
-        if (expl)
-          expl.innerHTML = `<p class="expl-line">${esc(mark.feedback)}</p>`;
+        html += `<p class="expl-line">${esc(mark.feedback)}</p>`;
       } else if (userAnswers[idx]) {
         strip.classList.add("neutral");
-        if (label) label.textContent = "Theory — marking with AI…";
+        if (label) label.textContent = "Theory — marking…";
       } else {
         strip.classList.add("wrong");
         if (label) label.textContent = "No answer submitted.";
       }
+      // Always reveal the model answer + explanation for self-study.
+      if (ans) html += `<p class="expl-line">Model answer: <strong>${escFmt(ans)}</strong></p>`;
+      html += buildExpl(q.explanation);
+      if (expl) expl.innerHTML = html;
       return;
     }
 
@@ -1545,7 +1540,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
       const q = allQuestions[i];
       if (q.type !== "theory" && q.type !== "essay") continue;
       const answer = userAnswers[i] || "";
-      if (!answer.trim() || !geminiKey()) continue;
+      if (!answer.trim()) continue;
       try {
         const result = await markTheory(q.question, answer, q.markScheme || "");
         theoryMarks[i] = result;

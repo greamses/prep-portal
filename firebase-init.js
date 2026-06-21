@@ -96,4 +96,8 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// Expose auth to classic (non-module) scripts that need an ID token,
+// e.g. the CBT quiz engine's free-response AI marking.
+if (typeof window !== "undefined") window.firebaseAuth = auth;
+
 export { auth, db, storage, googleProvider };

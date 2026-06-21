@@ -585,13 +585,13 @@ module.exports = function () {
         .map((d) => ({ id: d.id, ...d.data() }))
         // Kill-switch: hide verbatim originals if enabled (keep rephrased/ai/manual).
         .filter((x) => !(ho && x.source === "past"))
-        // The test engine is MCQ — only serve options-bearing items (objective/polar).
-        // Free-response (short/theory/subjective) stays in the bank for now.
-        .filter((x) => Array.isArray(x.options) && x.options.length >= 2)
+        // Must be answerable: MCQ (options) OR free-response (model answer).
+        .filter((x) => (Array.isArray(x.options) && x.options.length >= 2) || (typeof x.answer === "string" && x.answer.trim()))
         .map((x) => ({
           id: x.id, type: x.type || "objective", question: x.question, options: x.options || [],
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
+          answer: x.answer || null,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
           video: x.video || null, videoScope: x.videoScope || "question",
           paper: x.paper || null, subject: x.subject, subjectLabel: x.subjectLabel,
@@ -623,6 +623,37 @@ module.exports = function () {
     const wantImages = q.images === "1" || q.images === "true";
     const video = { url: safeUrl(q.video), text: String(q.videoText || "").trim().slice(0, 6000), scope: videoScopeOf(q.videoScope) };
     res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages, video) });
+  });
+
+  // ── POST /mark — AI-grade a free-response answer (server-side, signed-in) ──
+  // { question, answer, modelAnswer } → { score, outOf, feedback } out of 10.
+  router.post("/mark", authenticate, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const question = String(b.question || "").trim().slice(0, 4000);
+      const answer = String(b.answer || "").trim().slice(0, 6000);
+      const model = String(b.modelAnswer || "").trim().slice(0, 6000);
+      if (!question || !answer) return res.json({ score: 0, outOf: 10, feedback: "No answer to mark." });
+      const prompt = `You are a fair, encouraging examiner. Grade the student's answer out of 10.
+QUESTION: ${question}
+${model ? `MODEL ANSWER / KEY POINTS: ${model}` : ""}
+STUDENT ANSWER: ${answer}
+
+Award marks for accuracy, relevant key points and clarity; ignore spelling/grammar unless it changes meaning. Give brief, specific, constructive feedback (1-3 sentences) and note any missed key points.
+Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>"}`;
+      let out;
+      try { out = await callModel(prompt); } catch (_) { out = null; }
+      let score = parseInt(out && out.score, 10);
+      if (!Number.isInteger(score) || score < 0) score = 0;
+      if (score > 10) score = 10;
+      const feedback = (out && typeof out.feedback === "string" && out.feedback.trim())
+        ? out.feedback.trim().slice(0, 1500)
+        : "Couldn't grade automatically — compare your answer with the model answer shown.";
+      res.json({ score, outOf: 10, feedback });
+    } catch (e) {
+      console.error("[/api/cbt/mark]", e.message);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──
