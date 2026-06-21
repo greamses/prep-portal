@@ -90,12 +90,15 @@ const SAMPLE_JS = String.raw`const examQuestions = [
   }
 ];`;
 
-function genPrompt(scheme, subjectLabel, topic, count) {
+function genPrompt(scheme, subjectLabel, topic, count, types) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
+  const typeLine = (Array.isArray(types) && types.length)
+    ? `\nUse a mix of these question types: ${types.join(", ")}.`
+    : "";
   return `You are a SENIOR examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
-Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
+Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.${typeLine}
 
 DIFFICULTY — match the real exam (critical):
 ${sc.calib}
@@ -324,9 +327,10 @@ module.exports = function () {
       const topic = String(b.topic || "").trim().slice(0, 120);
       const count = Math.min(Math.max(parseInt(b.count, 10) || 10, 1), 30);
       const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
+      const types = Array.isArray(b.types) ? b.types.filter((t) => typeof t === "string" && t.trim()).slice(0, 6) : [];
 
       // Ask for a .js file and parse it in the sandbox; fall back to JSON.
-      const text = await callModelRaw(genPrompt(scheme, label, topic, count), false);
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
       const questions = cleanQuestions(arr);

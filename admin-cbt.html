@@ -40,6 +40,10 @@
     th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid rgba(var(--shadow-color),.12); }
     th { font-size:.58rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-secondary); }
     .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .cb-type{display:inline-flex;align-items:center;gap:.35rem;color:var(--text-secondary)}
+    .cb-type input{width:auto}
+    button.iconbtn{padding:.55rem;line-height:0;display:inline-flex;align-items:center;justify-content:center}
+    button.iconbtn svg{width:17px;height:17px;display:block}
     .cb-gate { text-align:center; padding:3rem 1rem; color:var(--text-secondary); }
     .cb-hidden { display:none; }
     .cb-hint { font-size:.72rem; color:var(--text-secondary); line-height:1.5; margin:.2rem 0 .8rem; }
@@ -92,6 +96,18 @@
           <div style="flex:0 0 auto">
             <button id="cb-gen" type="button">Generate</button>
           </div>
+          <div style="flex:0 0 auto">
+            <button id="cb-copy" class="ghost" type="button">Copy prompt</button>
+          </div>
+        </div>
+        <div id="cb-types" style="margin-top:.7rem">
+          <label style="margin-bottom:.4rem">Question types to include</label>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem">
+            <label class="cb-type"><input type="checkbox" value="objective recall" checked /> Objective</label>
+            <label class="cb-type"><input type="checkbox" value="calculation / numeric" /> Calculation</label>
+            <label class="cb-type"><input type="checkbox" value="conceptual / application" /> Conceptual</label>
+            <label class="cb-type"><input type="checkbox" value="short comprehension passage then a question about it" /> Comprehension</label>
+          </div>
         </div>
         <p id="cb-msg" class="cb-msg"></p>
       </div>
@@ -128,6 +144,15 @@
 
     const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style" };
 
+    const ICONS = {
+      copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+      wand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>',
+      eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+      eyeoff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
+    };
+    function ic(id, name, title){ const b=$(id); if(!b)return; b.classList.add("iconbtn"); b.innerHTML=ICONS[name]; b.title=title; b.setAttribute("aria-label",title); }
+    const selectedTypes = () => [...document.querySelectorAll("#cb-types input:checked")].map(c=>c.value);
+
     async function loadStats() {
       try {
         const r = await fetch(`${API}/api/cbt/stats`, { headers: await authHeader() });
@@ -154,7 +179,7 @@
       try {
         const r = await fetch(`${API}/api/cbt/generate`, {
           method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
-          body: JSON.stringify({ scheme, subject, topic, count }),
+          body: JSON.stringify({ scheme, subject, topic, count, types: selectedTypes() }),
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Failed");
@@ -165,12 +190,33 @@
       finally { btn.disabled = false; }
     }
 
+    async function copyPrompt() {
+      const msg = $("cb-msg");
+      const scheme = SCHEME_LABEL[$("cb-scheme").value] || $("cb-scheme").value;
+      const subject = $("cb-subject").value.trim() || "[subject]";
+      const topic = $("cb-topic").value.trim(), count = parseInt($("cb-count").value, 10) || 20;
+      const types = selectedTypes();
+      try {
+        const r = await fetch(`${API}/api/cbt/template`, { headers: await authHeader() });
+        const d = await r.json();
+        const prompt = `Generate ${count} ORIGINAL ${subject} multiple-choice questions in the style of ${scheme} (do NOT copy any real past question).`
+          + (topic ? `\nFocus on the topic: ${topic}.` : "")
+          + (types.length ? `\nInclude these question types: ${types.join(", ")}.` : "")
+          + `\n\nReturn ONLY a JavaScript file in EXACTLY this format — no prose, no JSON, no markdown fences:\n\n${d.template}\n\nRules:\n- "answerIndex" is the 0-based index of the correct option.\n- Options are the real answer values, never the letters A, B, C, D.\n- Wrap all maths in \\( … \\) with DOUBLE backslashes for commands (\\frac, \\int, \\sqrt), exactly as shown.\n- "explanation" is an array of short strings; "image" is null.`;
+        await navigator.clipboard.writeText(prompt);
+        msg.textContent = "AI prompt copied — paste into your AI, then import the .js it returns."; msg.className = "cb-msg cb-msg--ok";
+      } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
+    }
+
     let hideOrig = false;
     function renderOrig() {
       $("cb-orig-state").innerHTML = hideOrig
         ? '<span style="color:var(--accent-danger)">HIDDEN</span>'
         : '<span style="color:var(--accent-success)">visible</span>';
-      $("cb-orig-toggle").textContent = hideOrig ? "Show originals" : "Hide all originals";
+      const b = $("cb-orig-toggle"); b.classList.add("iconbtn");
+      b.innerHTML = hideOrig ? ICONS.eye : ICONS.eyeoff;
+      const t = hideOrig ? "Show originals" : "Hide all originals";
+      b.title = t; b.setAttribute("aria-label", t);
     }
     async function loadOrig() {
       try { const r = await fetch(`${API}/api/config`); hideOrig = (await r.json()).hideOriginals === true; } catch (_) {}
@@ -194,7 +240,10 @@
       if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
       gate.classList.add("cb-hidden"); main.classList.remove("cb-hidden");
       $("cb-gen").onclick = generate;
+      $("cb-copy").onclick = copyPrompt;
       $("cb-orig-toggle").onclick = toggleOrig;
+      ic("cb-gen", "wand", "Generate questions");
+      ic("cb-copy", "copy", "Copy AI prompt");
       loadOrig();
       loadStats();
     });

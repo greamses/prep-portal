@@ -38,6 +38,8 @@
     .opt-row input[type=text] { flex:1; }
     .opt-row button { padding:.3rem .6rem; }
     button.ic { padding:.35rem .5rem; line-height:0; }
+    button.iconbtn { padding:.55rem; line-height:0; display:inline-flex; align-items:center; justify-content:center; }
+    button.iconbtn svg { width:17px; height:17px; display:block; }
     code { background:var(--surface-secondary); padding:.05rem .3rem; border-radius:5px; font-size:.78rem; }
     .ed-list-item { border:1px solid color-mix(in srgb,var(--ink) 12%,transparent); border-radius:10px; padding:.6rem .8rem; margin:.5rem 0; display:flex; gap:.6rem; align-items:flex-start; }
     .ed-list-item .q { flex:1; font-size:.82rem; }
@@ -139,6 +141,18 @@
     const SCHEMES = { cee:"Common Entrance style", utme:"UTME-style", wassce:"WASSCE-style", postutme:"Post-UTME style", sat:"SAT-style", igcse:"IGCSE-style", alevel:"A-Level-style" };
     let editingId = null;
 
+    const ICONS = {
+      copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+      plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+      refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+      check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+      trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+      wand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>',
+    };
+    function ic(id, name, title){ const b=$(id); if(!b)return; b.classList.add("iconbtn"); b.innerHTML=ICONS[name]; b.title=title; b.setAttribute("aria-label",title); }
+
     async function authHeader(){ return { Authorization:"Bearer "+(await auth.currentUser.getIdToken()) }; }
     async function isAdmin(){ try{ const r=await fetch(`${API}/api/ai/whoami`,{headers:await authHeader()}); return r.ok && (await r.json()).admin===true; }catch(_){return false;} }
 
@@ -179,7 +193,7 @@
 
     function optionRow(val="", checked=false){
       const div=document.createElement("div"); div.className="opt-row";
-      div.innerHTML=`<input type="radio" name="correct"${checked?" checked":""}/><input type="text" class="opt" value="${esc(val)}" placeholder="option text ($…$ ok)"/><button class="ghost" type="button">✕</button>`;
+      div.innerHTML=`<input type="radio" name="correct"${checked?" checked":""}/><input type="text" class="opt" value="${esc(val)}" placeholder="option text ($…$ ok)"/><button class="ghost iconbtn" title="Remove option" aria-label="Remove option" type="button">${ICONS.x}</button>`;
       div.querySelector("button").onclick=()=>{ div.remove(); refreshPreview(); };
       div.querySelector(".opt").oninput=refreshPreview;
       div.querySelector("input[type=radio]").onchange=refreshPreview;
@@ -258,6 +272,10 @@
       $("ed-new").onclick=()=>openEditor(null);
       $("f-addopt").onclick=()=>{ if($("f-options").children.length<6){ $("f-options").appendChild(optionRow()); } };
       $("f-save").onclick=save; $("f-cancel").onclick=()=>$("ed-form").classList.add("hide"); $("f-delete").onclick=del;
+      // Compact icon buttons (tooltips via title)
+      ic("ed-load","refresh","Load questions"); ic("ed-new","plus","Add question");
+      ic("f-addopt","plus","Add option"); ic("f-save","check","Save"); ic("f-cancel","x","Cancel"); ic("f-delete","trash","Delete");
+      ic("im-go","upload","Import .js"); ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
       ["f-question","f-image"].forEach(id=>$(id).oninput=refreshPreview);
       // Import library
       $("im-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
