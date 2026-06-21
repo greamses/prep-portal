@@ -45,6 +45,26 @@ const SUBJECT_LABELS = {
   crk: "Christian Religious Studies", irk: "Islamic Religious Studies",
   englishlit: "Literature in English", accounting: "Financial Accounting",
   history: "History", civiledu: "Civic Education", agric: "Agricultural Science",
+  quantitative: "Quantitative Reasoning", verbal: "Verbal Reasoning",
+  generalstudies: "General Studies", furthermaths: "Further Mathematics",
+  ict: "ICT", businessstudies: "Business Studies",
+};
+
+// The exam scheme determines which subjects are offered (drives the builder's
+// subject list). Subject keys map to SUBJECT_LABELS above.
+const SENIOR_NG = [
+  "english", "mathematics", "biology", "physics", "chemistry", "economics",
+  "government", "commerce", "geography", "englishlit", "accounting",
+  "crk", "irk", "agric", "history", "civiledu",
+];
+const SCHEME_SUBJECTS = {
+  cee: ["english", "mathematics", "quantitative", "verbal", "generalstudies"],
+  utme: SENIOR_NG,
+  wassce: SENIOR_NG,
+  postutme: SENIOR_NG,
+  sat: ["mathematics", "english"],
+  igcse: ["mathematics", "english", "biology", "physics", "chemistry", "economics", "geography", "history", "ict", "businessstudies"],
+  alevel: ["mathematics", "furthermaths", "physics", "chemistry", "biology", "economics", "geography", "history"],
 };
 
 const subjKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
@@ -173,6 +193,24 @@ function cleanQuestions(arr) {
   return out;
 }
 
+// Validate/normalise an admin-supplied question (manual add or edit).
+function validBody(b) {
+  const question = fixLatex(b.question).trim();
+  const options = Array.isArray(b.options) ? b.options.map((o) => fixLatex(o).trim().slice(0, 400)).filter(Boolean) : [];
+  const ai = parseInt(b.answerIndex, 10);
+  if (question.length < 3) return { error: "Question text is required." };
+  if (options.length < 2 || options.length > 6) return { error: "Provide 2 to 6 options." };
+  if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) return { error: "Choose which option is correct." };
+  const explanation = Array.isArray(b.explanation)
+    ? b.explanation.map((x) => fixLatex(x).slice(0, 800)).filter(Boolean).slice(0, 15)
+    : fixLatex(b.explanation || "").slice(0, 2000);
+  const hint = fixLatex(b.hint || "").slice(0, 600);
+  let image = typeof b.image === "string" ? b.image.trim().slice(0, 80000) : null;
+  if (!image) image = null;
+  const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
+  return { question, options, answerIndex: ai, explanation, hint, image, paper };
+}
+
 module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
@@ -189,6 +227,7 @@ module.exports = function () {
       const label = subjLabel(key, b.subject);
       const topic = String(b.topic || "").trim().slice(0, 120);
       const count = Math.min(Math.max(parseInt(b.count, 10) || 10, 1), 30);
+      const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
 
       const raw = await callModel(genPrompt(scheme, label, topic, count));
       const questions = cleanQuestions(raw.questions);
@@ -200,9 +239,10 @@ module.exports = function () {
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
           schemeSubject: `${scheme}__${key}`,
-          topic: topic || null,
+          topic: topic || null, paper,
           question: q.question, options: q.options, answerIndex: q.answerIndex,
-          explanation: q.explanation, source: "ai", createdAt: stamp(),
+          explanation: q.explanation, image: null, source: "ai",
+          createdAt: stamp(), updatedAt: stamp(),
         });
       });
       await batch.commit();
@@ -259,10 +299,12 @@ module.exports = function () {
       const subject = subjKey(req.query.subject);
       const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 60);
       const random = req.query.random !== "0";
+      const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
       if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "scheme and subject are required." });
 
-      // Single-field equality on schemeSubject → no composite index needed.
-      const pool = random ? Math.max(limit * 4, 80) : limit;
+      // Single-field equality on schemeSubject → no composite index needed; the
+      // optional paper filter is applied in code.
+      const pool = Math.max(limit * 4, 120);
       const snap = await db().collection("cbtQuestions")
         .where("schemeSubject", "==", `${scheme}__${subject}`).limit(pool).get();
 
@@ -272,17 +314,115 @@ module.exports = function () {
           id: d.id, question: x.question, options: x.options || [],
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
-          explanation: x.explanation || "", subject: x.subject, subjectLabel: x.subjectLabel,
+          explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
+          paper: x.paper || null, subject: x.subject, subjectLabel: x.subjectLabel,
           scheme: x.scheme,
         };
       });
+      if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
       if (random) {
         for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
       }
       questions = questions.slice(0, limit);
-      res.json({ count: questions.length, scheme, subject, questions });
+      res.json({ count: questions.length, scheme, subject, paper, questions });
     } catch (e) {
       console.error("[/api/cbt]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──
+  // The exam scheme DETERMINES the subject list (config), with live counts.
+  router.get("/subjects", async (req, res) => {
+    try {
+      const scheme = String(req.query.scheme || "").toLowerCase().trim();
+      if (!SCHEMES[scheme]) return res.json({ scheme, subjects: [] });
+      const configured = SCHEME_SUBJECTS[scheme] || [];
+      const snap = await db().collection("cbtQuestions").where("scheme", "==", scheme).get();
+      const counts = {};
+      snap.forEach((d) => { const k = d.data().subject; if (k) counts[k] = (counts[k] || 0) + 1; });
+      const subjects = configured.map((k) => ({ key: k, label: subjLabel(k), count: counts[k] || 0 }));
+      res.json({ scheme, schemeLabel: SCHEMES[scheme].label, subjects });
+    } catch (e) {
+      console.error("[/api/cbt/subjects]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /list?scheme=&subject=&paper= — admin: full docs for editing ──
+  router.get("/list", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const scheme = String(req.query.scheme || "").toLowerCase().trim();
+      const subject = subjKey(req.query.subject);
+      const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
+      if (!scheme || !subject) return res.status(400).json({ error: "scheme and subject required." });
+      const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${subject}`).get();
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+      let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (paper) items = items.filter((x) => String(x.paper || "") === paper);
+      items.sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+      res.json({ count: items.length, questions: items });
+    } catch (e) {
+      console.error("[/api/cbt/list]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /question — admin: add one question manually ──
+  router.post("/question", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const scheme = String(b.scheme || "").toLowerCase().trim();
+      const key = subjKey(b.subject);
+      if (!SCHEMES[scheme]) return res.status(400).json({ error: "Unknown scheme." });
+      if (!key) return res.status(400).json({ error: "Subject is required." });
+      const v = validBody(b);
+      if (v.error) return res.status(400).json({ error: v.error });
+      const ref = db().collection("cbtQuestions").doc();
+      await ref.set({
+        scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
+        schemeSubject: `${scheme}__${key}`, source: "manual",
+        ...v, createdAt: stamp(), updatedAt: stamp(),
+      });
+      res.json({ ok: true, id: ref.id });
+    } catch (e) {
+      console.error("[/api/cbt/question POST]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── PUT /question/:id — admin: edit a question (incl. scheme/subject) ──
+  router.put("/question/:id", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const ref = db().collection("cbtQuestions").doc(req.params.id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: "Question not found." });
+      const v = validBody(b);
+      if (v.error) return res.status(400).json({ error: v.error });
+      const patch = { ...v, updatedAt: stamp() };
+      const scheme = String(b.scheme || "").toLowerCase().trim();
+      const key = subjKey(b.subject);
+      if (SCHEMES[scheme] && key) {
+        patch.scheme = scheme; patch.subject = key;
+        patch.subjectLabel = subjLabel(key, b.subject);
+        patch.schemeSubject = `${scheme}__${key}`;
+      }
+      await ref.set(patch, { merge: true });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("[/api/cbt/question PUT]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── DELETE /question/:id — admin ──
+  router.delete("/question/:id", authenticate, requireAdmin, async (req, res) => {
+    try {
+      await db().collection("cbtQuestions").doc(req.params.id).delete();
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("[/api/cbt/question DELETE]", e.message);
       res.status(500).json({ error: e.message });
     }
   });
