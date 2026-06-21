@@ -137,6 +137,18 @@
         </div>
         <label class="ed-tick" style="margin-top:.5rem"><input id="im-images" type="checkbox" /> Let the AI draw SVG/diagrams where helpful</label>
         <div class="row">
+          <div style="flex:1 1 45%"><label>Class / grade (for the copied AI prompt)</label>
+            <select id="im-grade">
+              <option value="">Any</option>
+              <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+              <option>JSS1</option><option>JSS2</option><option>JSS3</option>
+              <option>SSS1</option><option>SSS2</option><option>SSS3</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
           <div style="flex:1 1 60%"><label>Stamp a video on the whole batch (optional)</label><input id="im-video" placeholder="https://www.youtube.com/watch?v=…" /></div>
           <div style="flex:1 1 30%"><label>When to show</label><select id="im-vscope"><option value="set">Watch first (whole set)</option><option value="question">With each question</option></select></div>
         </div>
@@ -338,7 +350,7 @@
         const msg=$("im-msg");
         const subject=$("im-subject").value.trim();
         if(!subject){ msg.textContent="Enter a subject first."; msg.className="ed-msg ed-msg--err"; return; }
-        const qs=new URLSearchParams({ scheme:$("im-scheme").value, subject, count:"40", types:[...document.querySelectorAll("#im-types input:checked")].map(c=>c.value).join(","), images:$("im-images")&&$("im-images").checked?"1":"0" });
+        const qs=new URLSearchParams({ scheme:$("im-scheme").value, subject, count:"40", types:[...document.querySelectorAll("#im-types input:checked")].map(c=>c.value).join(","), images:$("im-images")&&$("im-images").checked?"1":"0", grade:$("im-grade")?$("im-grade").value:"", video:$("im-video")?$("im-video").value.trim():"", videoScope:$("im-vscope")?$("im-vscope").value:"set" });
         try{
           // Server renders the SAME advanced prompt used by in-app generation.
           const r=await fetch(`${API}/api/cbt/template?${qs}`,{headers:await authHeader()}); const d=await r.json();
