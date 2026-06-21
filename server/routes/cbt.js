@@ -908,3 +908,6 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
 
   return router;
 };
+
+// Pure helpers exposed for one-off maintenance scripts (not used by the app).
+module.exports.helpers = { genPrompt, parseExamJs, cleanQuestions, callModelRaw, safeJson, SAMPLE_JS };
