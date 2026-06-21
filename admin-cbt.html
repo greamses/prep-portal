@@ -97,6 +97,13 @@
       </div>
 
       <div class="cb-card">
+        <h2>Originals visibility</h2>
+        <p class="cb-hint">Verbatim past-paper questions (type “original”) are <strong id="cb-orig-state">…</strong> to learners. Turn off if the exam bodies object — your rephrased &amp; AI questions stay visible either way.</p>
+        <button id="cb-orig-toggle" type="button">…</button>
+        <p id="cb-orig-msg" class="cb-msg"></p>
+      </div>
+
+      <div class="cb-card">
         <h2>Bank summary</h2>
         <div id="cb-stats">Loading…</div>
       </div>
@@ -158,11 +165,37 @@
       finally { btn.disabled = false; }
     }
 
+    let hideOrig = false;
+    function renderOrig() {
+      $("cb-orig-state").innerHTML = hideOrig
+        ? '<span style="color:var(--accent-danger)">HIDDEN</span>'
+        : '<span style="color:var(--accent-success)">visible</span>';
+      $("cb-orig-toggle").textContent = hideOrig ? "Show originals" : "Hide all originals";
+    }
+    async function loadOrig() {
+      try { const r = await fetch(`${API}/api/config`); hideOrig = (await r.json()).hideOriginals === true; } catch (_) {}
+      renderOrig();
+    }
+    async function toggleOrig() {
+      const btn = $("cb-orig-toggle"), msg = $("cb-orig-msg");
+      const next = !hideOrig;
+      btn.disabled = true; msg.textContent = "";
+      try {
+        const r = await fetch(`${API}/api/config`, { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) }, body: JSON.stringify({ hideOriginals: next }) });
+        const d = await r.json(); if (!r.ok) throw new Error(d.error || "Failed");
+        hideOrig = d.hideOriginals === true; renderOrig();
+        msg.textContent = "Saved."; msg.className = "cb-msg cb-msg--ok";
+      } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
+      finally { btn.disabled = false; }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) { gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
       if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
       gate.classList.add("cb-hidden"); main.classList.remove("cb-hidden");
       $("cb-gen").onclick = generate;
+      $("cb-orig-toggle").onclick = toggleOrig;
+      loadOrig();
       loadStats();
     });
   </script>

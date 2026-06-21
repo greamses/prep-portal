@@ -37,6 +37,8 @@
     .opt-row input[type=radio] { width:auto; }
     .opt-row input[type=text] { flex:1; }
     .opt-row button { padding:.3rem .6rem; }
+    button.ic { padding:.35rem .5rem; line-height:0; }
+    code { background:var(--surface-secondary); padding:.05rem .3rem; border-radius:5px; font-size:.78rem; }
     .ed-list-item { border:1px solid color-mix(in srgb,var(--ink) 12%,transparent); border-radius:10px; padding:.6rem .8rem; margin:.5rem 0; display:flex; gap:.6rem; align-items:flex-start; }
     .ed-list-item .q { flex:1; font-size:.82rem; }
     .ed-meta { font-size:.62rem; color:var(--text-secondary); }
@@ -93,6 +95,23 @@
         </div>
         <p id="f-msg" class="ed-msg"></p>
       </div>
+
+      <div class="ed-card">
+        <h2 style="font-family:var(--font-display);font-size:1rem;margin:.1rem 0 .4rem">Import a question library (.js)</h2>
+        <p class="ed-meta" style="margin:0 0 .6rem">Upload or paste a file like <code>const examQuestions = [ … ]</code> (also reads <code>quizData</code>, <code>chemistryObjective</code>, etc.). Keeps SVG image paths. Tip: have your AI return a <code>.js</code> file in this shape.</p>
+        <div class="row">
+          <div><label>Scheme</label><select id="im-scheme"></select></div>
+          <div><label>Subject</label><input id="im-subject" placeholder="mathematics" /></div>
+          <div><label>Paper</label><select id="im-paper"><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
+          <div><label>Type</label><select id="im-source"><option value="past">Original (verbatim)</option><option value="rephrased">Rephrased</option><option value="manual">Manual</option></select></div>
+        </div>
+        <label>Upload .js file</label>
+        <input id="im-file" type="file" accept=".js,text/javascript" />
+        <label>…or paste the file contents</label>
+        <textarea id="im-code" placeholder="const examQuestions = [ { question, options, correctIndex, explanation, image } , … ]"></textarea>
+        <div class="row" style="margin-top:.6rem"><div style="flex:0 0 auto"><button id="im-go" type="button">Import</button></div></div>
+        <p id="im-msg" class="ed-msg"></p>
+      </div>
     </div>
   </div>
 
@@ -125,14 +144,21 @@
         const r=await fetch(`${API}/api/cbt/list?scheme=${scheme}&subject=${subject}${paper?`&paper=${paper}`:""}`,{headers:await authHeader()});
         const d=await r.json();
         $("ed-list-msg").textContent=`${d.count||0} question(s).`;
+        const PENCIL='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        const TRASH='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
         $("ed-list").innerHTML=(d.questions||[]).map(q=>`
           <div class="ed-list-item">
             <div class="q">${esc((q.question||"").slice(0,160))}
               <div class="ed-meta"><span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.image?'<span class="pill">img</span>':""} · ${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}</div>
             </div>
-            <button class="ghost" data-edit="${q.id}" type="button">Edit</button>
+            <button class="ghost ic" data-edit="${q.id}" title="Edit" type="button">${PENCIL}</button>
+            <button class="ghost ic" data-del="${q.id}" title="Delete" type="button" style="color:var(--accent-danger)">${TRASH}</button>
           </div>`).join("") || '<div class="ed-meta">No questions yet — add one.</div>';
         $("ed-list").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEditor((d.questions||[]).find(q=>q.id===b.dataset.edit)));
+        $("ed-list").querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+          if(!confirm("Delete this question?"))return;
+          try{ await fetch(`${API}/api/cbt/question/${b.dataset.del}`,{method:"DELETE",headers:await authHeader()}); loadList(); loadSubjects(); }catch(e){ alert(e.message); }
+        });
       }catch(e){ $("ed-list-msg").textContent="Failed: "+e.message; }
     }
 
@@ -218,6 +244,19 @@
       $("f-addopt").onclick=()=>{ if($("f-options").children.length<6){ $("f-options").appendChild(optionRow()); } };
       $("f-save").onclick=save; $("f-cancel").onclick=()=>$("ed-form").classList.add("hide"); $("f-delete").onclick=del;
       ["f-question","f-image"].forEach(id=>$(id).oninput=refreshPreview);
+      // Import library
+      $("im-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+      $("im-file").onchange=async()=>{ const f=$("im-file").files[0]; if(f) $("im-code").value=await f.text(); };
+      $("im-go").onclick=async()=>{
+        const btn=$("im-go"), msg=$("im-msg");
+        const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value };
+        if(!body.subject){ msg.textContent="Enter a subject."; msg.className="ed-msg ed-msg--err"; return; }
+        if(!body.jsCode.trim()){ msg.textContent="Upload or paste a .js file."; msg.className="ed-msg ed-msg--err"; return; }
+        btn.disabled=true; msg.textContent="Importing…"; msg.className="ed-msg";
+        try{ const r=await fetch(`${API}/api/cbt/import`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeader())},body:JSON.stringify(body)}); const d=await r.json(); if(!r.ok)throw new Error(d.error||"Failed"); msg.textContent=`Imported ${d.imported} question(s).`; msg.className="ed-msg ed-msg--ok"; loadSubjects(); loadList(); }
+        catch(e){ msg.textContent=e.message; msg.className="ed-msg ed-msg--err"; }
+        finally{ btn.disabled=false; }
+      };
       loadList();
     });
   </script>
