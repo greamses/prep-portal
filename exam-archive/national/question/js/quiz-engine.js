@@ -521,6 +521,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     for (const subKey of subjects) {
       try {
         const params = new URLSearchParams({ scheme, subject: subKey, limit: String(per), random: "1" });
+        if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
         const res = await fetch(`${API_BASE}/api/cbt?${params}`);
         if (!res.ok) { console.warn("CBT fetch", subKey, "→ HTTP", res.status); continue; }
         const data = await res.json();

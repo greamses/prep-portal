@@ -23,6 +23,7 @@ const PAGE_CONFIG = {
     source:    (urlParams.get('source') || '').toLowerCase(),
     // source=cbt → our own AI-generated bank (/api/cbt), keyed by scheme.
     scheme:    (urlParams.get('scheme') || '').toLowerCase(),
+    paper:     (urlParams.get('paper') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
     // feedback=on → reveal the correct answer + explanation the instant a
     // learner picks an option (the question then locks), instead of only at submit.

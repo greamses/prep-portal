@@ -43,7 +43,7 @@ function applyCat(cat) {
 
 const HEADER_CONTENT = {
   national: {
-    note: "Pick a scheme, your class & subjects — we'll build an original practice test, marked instantly.",
+    note: "Pick a scheme, paper & subjects — we'll build an original practice test, marked instantly.",
     stats: `
       <span class="hero-stat theme-blue"><strong>UTME</strong>-style</span>
       <span class="hero-stat theme-green"><strong>WASSCE</strong>-style</span>
@@ -59,7 +59,7 @@ const HEADER_CONTENT = {
     ctaLabel: "Start practice →",
   },
   international: {
-    note: "Pick a scheme, your level & subjects — we'll build an original practice test, marked instantly.",
+    note: "Pick a scheme, paper & subjects — we'll build an original practice test, marked instantly.",
     stats: `
       <span class="hero-stat theme-blue"><strong>SAT</strong>-style</span>
       <span class="hero-stat theme-green"><strong>IGCSE</strong>-style</span>
@@ -118,9 +118,8 @@ const STREAMS = [
 let natState = {
   examType: null,
   queryType: null,
-  stream: null,
+  paper: "", // "" = any, "1", "2"
   subjects: [],
-  year: null,
   count: null,
 };
 let facets = null;
@@ -142,9 +141,7 @@ const doneCount = () => document.getElementById("done-count");
 function natUpdateReadyState() {
   const ready =
     natState.examType &&
-    natState.stream &&
     natState.subjects.length > 0 &&
-    natState.year &&
     natState.count;
   beginBtn.disabled = !ready;
   if (ready) {
@@ -153,9 +150,7 @@ function natUpdateReadyState() {
   }
   const need = [];
   if (!natState.examType) need.push("scheme");
-  if (!natState.stream) need.push("class");
   if (!natState.subjects.length) need.push("subjects");
-  if (!natState.year) need.push("year");
   if (!natState.count) need.push("number of questions");
   setStatus("Select: " + need.join(" • "), false);
 }
@@ -228,37 +223,32 @@ async function selectExam(exam, chip) {
   natState.examType = exam.id;
   natState.queryType = exam.queryType;
   natState.subjects = [];
-  natState.year = null;
   doneExam().classList.add("show");
   doneSubject().classList.remove("show");
-  doneYearNat().classList.remove("show");
-  yearContainerNat().innerHTML =
-    '<span class="picker-hint">Choose subjects to see available years</span>';
   subjectRow().style.display = "flex";
   subjectChipsDiv().innerHTML =
     '<span class="picker-hint">Loading subjects…</span>';
   natUpdateReadyState();
   try {
-    // Our own AI-generated bank, by scheme. No years — questions aren't dated.
+    // The scheme determines the subjects (server config + live counts).
     const res = await fetch(
-      `${API_BASE}/api/cbt/facets?scheme=${natState.queryType}`,
+      `${API_BASE}/api/cbt/subjects?scheme=${natState.queryType}`,
     );
     if (!res.ok) throw new Error("HTTP " + res.status);
     facets = await res.json();
-    facets.subjects = facets.subjects || [];
-    facets.yearsBySubject = facets.yearsBySubject || {}; // engine expects this map
+    facets.subjects = (facets.subjects || []).filter((s) => s.count > 0);
     countByKey = {};
     keyByLabel = {};
     facets.subjects.forEach((s) => {
       countByKey[s.key] = s.count;
       keyByLabel[s.label] = s.key;
     });
-    if (facets.subjects.length) maybeRenderSubjects();
+    if (facets.subjects.length) renderNatSubjects();
     else
       subjectChipsDiv().innerHTML =
         '<span class="picker-hint">No questions in the bank for this scheme yet.</span>';
   } catch (e) {
-    facets = { subjects: [], yearsBySubject: {} };
+    facets = { subjects: [] };
     countByKey = {};
     keyByLabel = {};
     subjectChipsDiv().innerHTML =
@@ -266,63 +256,38 @@ async function selectExam(exam, chip) {
   }
 }
 
+// Step 2 is now the PAPER picker (Paper 1 / Paper 2 / Any) — lets our questions
+// mix with real ones per paper. Reuses the stream chip container + done marker.
+const PAPERS = [
+  { id: "", name: "Any paper" },
+  { id: "1", name: "Paper 1" },
+  { id: "2", name: "Paper 2" },
+];
 function buildStreamGrid() {
   streamContainer().innerHTML = "";
-  STREAMS.forEach((st) => {
+  PAPERS.forEach((p) => {
     const chip = document.createElement("div");
-    chip.className = "custom-chip stream-chip";
-    chip.innerHTML = `<div class="chip-check-box"></div><span>${st.name}</span>`;
+    chip.className = "custom-chip stream-chip" + (natState.paper === p.id ? " checked" : "");
+    chip.innerHTML = `<div class="chip-check-box"></div><span>${p.name}</span>`;
     chip.onclick = () => {
       streamContainer()
         .querySelectorAll(".stream-chip")
         .forEach((c) => c.classList.remove("checked"));
       chip.classList.add("checked");
-      natState.stream = st.id;
-      natState.subjects = [];
-      natState.year = null;
+      natState.paper = p.id;
       doneStream().classList.add("show");
-      doneSubject().classList.remove("show");
-      doneYearNat().classList.remove("show");
-      yearContainerNat().innerHTML =
-        '<span class="picker-hint">Choose subjects to see available years</span>';
-      maybeRenderSubjects();
       natUpdateReadyState();
     };
     streamContainer().appendChild(chip);
   });
 }
 
-function maybeRenderSubjects() {
-  if (!natState.examType) {
-    subjectChipsDiv().innerHTML =
-      '<span class="picker-hint">Select an exam type first.</span>';
-    return;
-  }
-  if (!facets) {
-    subjectChipsDiv().innerHTML =
-      '<span class="picker-hint">Loading subjects…</span>';
-    return;
-  }
-  if (!natState.stream) {
-    subjectChipsDiv().innerHTML =
-      '<span class="picker-hint">Select your class to see its subjects.</span>';
-    return;
-  }
-  renderNatSubjects();
-}
-
 function renderNatSubjects() {
   subjectChipsDiv().innerHTML = "";
-  const allowed = new Set([
-    ...CORE_SUBJECTS,
-    ...(STREAM_SUBJECTS[natState.stream] || []),
-  ]);
-  const list = (facets ? facets.subjects : []).filter((s) =>
-    allowed.has(s.key),
-  );
+  const list = facets ? facets.subjects : [];
   if (!list.length) {
     subjectChipsDiv().innerHTML =
-      '<span class="picker-error">No questions yet for this class &amp; exam — try another class.</span>';
+      '<span class="picker-hint">No questions in the bank for this scheme yet.</span>';
     natState.subjects = [];
     onNatSubjectsChanged();
     return;
@@ -368,7 +333,6 @@ function renderNatSubjects() {
 function onNatSubjectsChanged() {
   subjectCountSpan().textContent = natState.subjects.length;
   doneSubject().classList.toggle("show", natState.subjects.length > 0);
-  renderNatYears();
   natUpdateReadyState();
 }
 
@@ -436,9 +400,8 @@ function initNational() {
   natState = {
     examType: null,
     queryType: null,
-    stream: null,
+    paper: "",
     subjects: [],
-    year: null,
     count: null,
   };
   facets = null;
@@ -447,12 +410,22 @@ function initNational() {
   buildExamGrid();
   buildStreamGrid();
   initCountChips();
-  ["done-exam", "done-stream", "done-year", "done-subject", "done-count"].forEach((id) =>
+  ["done-exam", "done-stream", "done-subject", "done-count"].forEach((id) =>
     document.getElementById(id)?.classList.remove("show"),
   );
   subjectRow().style.display = "none";
-  yearContainerNat().innerHTML =
-    '<span class="picker-hint">Choose subjects to see available years</span>';
+
+  // Relabel step 2 (was Class/Stream) → Paper; hide the old Year step (step 4)
+  // since questions aren't dated; renumber the visible step badges 1–4.
+  document.querySelectorAll('.step-card-2 [data-cat="national"]').forEach((el) => {
+    if (el.classList.contains("step-title")) el.textContent = "Paper";
+    if (el.classList.contains("step-sub")) el.textContent = "Filter by paper (optional)";
+  });
+  const yearCard = document.querySelector(".step-card-4");
+  if (yearCard) yearCard.style.display = "none";
+  const n5 = document.querySelector(".step-card-5 .step-num");
+  if (n5) n5.textContent = "4";
+
   natUpdateReadyState();
 }
 
@@ -1113,6 +1086,7 @@ beginBtn.onclick = () => {
       subjects: natState.subjects.map((l) => keyByLabel[l] || l).join(","),
       n: String(per),
     });
+    if (natState.paper) params.set("paper", natState.paper);
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
   }
