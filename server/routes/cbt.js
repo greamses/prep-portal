@@ -78,10 +78,11 @@ MANDATORY:
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
 - No copyrighted passages, named datasets, diagrams or images. Self-contained text only.
 - Exactly FOUR options each, exactly ONE correct.
+- Options MUST be the real answer choices (actual values/expressions). NEVER output the letters "A"/"B"/"C"/"D" or any placeholder as an option.
 - Add a one-sentence explanation of the correct answer.
 
-RESPOND ONLY WITH VALID JSON (no markdown):
-{ "questions": [ { "question": "<text>", "options": ["A","B","C","D"], "answerIndex": <0-3>, "explanation": "<one sentence>" } ] }`;
+RESPOND ONLY WITH VALID JSON (no markdown). Example shape (use your OWN real options, not these):
+{ "questions": [ { "question": "Solve $3(2x-1)=2(x+5)+7$.", "options": ["$5$", "$4$", "$\\frac{7}{2}$", "$6$"], "answerIndex": 0, "explanation": "Expanding gives $6x-3=2x+17$, so $x=5$." } ] }`;
 }
 
 // LaTeX often contains lone backslashes (\sqrt, \sin) that are invalid JSON
@@ -155,6 +156,8 @@ function cleanQuestions(arr) {
     const options = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
     let ai = parseInt(q.answerIndex, 10);
     if (question.length < 6 || options.length < 2 || options.length > 6) continue;
+    // Reject placeholder options like ["A","B","C","D"] the model sometimes echoes.
+    if (options.every((o) => /^[A-D]$/i.test(o.trim()))) continue;
     if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) ai = 0;
     const dedupe = question.toLowerCase().replace(/\s+/g, " ");
     if (seen.has(dedupe)) continue;
