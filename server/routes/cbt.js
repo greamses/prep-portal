@@ -71,6 +71,25 @@ const SCHEME_SUBJECTS = {
 const subjKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
 const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperCase() + k.slice(1) : "Subject");
 
+// The exact .js shape we want the model to return (and that admins can copy to
+// feed their own AI). String.raw keeps the double backslashes literal.
+const SAMPLE_JS = String.raw`const examQuestions = [
+  {
+    question: "Evaluate \\( \\int_0^1 (3x^2 + 2x)\\,dx \\).",
+    image: null,
+    options: ["\\( 2 \\)", "\\( 3 \\)", "\\( \\frac{5}{2} \\)", "\\( 1 \\)"],
+    answerIndex: 0,
+    explanation: ["\\( [x^3 + x^2]_0^1 = 1 + 1 = 2 \\)."]
+  },
+  {
+    question: "Which gas is usually collected by downward delivery (upward displacement of air)?",
+    image: null,
+    options: ["Hydrogen", "Ammonia", "Carbon dioxide", "Methane"],
+    answerIndex: 2,
+    explanation: ["Carbon dioxide is denser than air, so it is collected by upward displacement of air."]
+  }
+];`;
+
 function genPrompt(scheme, subjectLabel, topic, count) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
@@ -89,21 +108,20 @@ MATHEMATICS RIGOR:
 - Make ALL four options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
 - Keep arithmetic clean enough to solve by hand unless the exam allows a calculator.
 ` : ""}
-MATH FORMATTING (MathJax) — REQUIRED:
-- Write EVERY mathematical element in LaTeX wrapped in single dollar signs: equations, expressions, variables, fractions, powers, roots, functions and numbers used mathematically. Examples: $3(2x-1)=2(x+5)+7$, $f(x)=\\frac{x+1}{x-1}$, $x^2+y^2=r^2$, $\\sqrt{2}$, $\\sin 30^\\circ$, $\\frac{3}{4}$.
-- Apply this in the question, in EVERY option, and in the explanation.
-- Ordinary words stay outside the dollar signs — only wrap the maths.
-- Write money/currency in plain text (e.g. "420 naira" or "$420" as words), NEVER inside math dollar signs.
-
 MANDATORY:
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
 - No copyrighted passages, named datasets, diagrams or images. Self-contained text only.
-- Exactly FOUR options each, exactly ONE correct.
-- Options MUST be the real answer choices (actual values/expressions). NEVER output the letters "A"/"B"/"C"/"D" or any placeholder as an option.
-- Add a one-sentence explanation of the correct answer.
+- Exactly FOUR options each, exactly ONE correct. Options are the real answer values — NEVER the letters A/B/C/D or placeholders.
+- "answerIndex" is the 0-based index of the correct option.
+- "explanation" is an array of short strings. "image" is null.
+- Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
 
-RESPOND ONLY WITH VALID JSON (no markdown). Example shape (use your OWN real options, not these):
-{ "questions": [ { "question": "Solve $3(2x-1)=2(x+5)+7$.", "options": ["$5$", "$4$", "$\\frac{7}{2}$", "$6$"], "answerIndex": 0, "explanation": "Expanding gives $6x-3=2x+17$, so $x=5$." } ] }`;
+OUTPUT — return ONLY a JavaScript file: a single "const examQuestions = [ … ];" array
+EXACTLY in this format. No JSON, no markdown fences, no prose, no comments:
+
+${SAMPLE_JS}
+
+Now output ONLY the JavaScript for ${count} ${subjectLabel} question(s).`;
 }
 
 // LaTeX often contains lone backslashes (\sqrt, \sin) that are invalid JSON
@@ -132,48 +150,32 @@ function fixLatex(s) {
   return out;
 }
 
-// Try Groq first (fast/cheap), then Gemini. Returns parsed { questions: [...] }.
-async function callModel(prompt) {
-  // ① Groq
+// Raw model text (Groq → Gemini). json=true asks for a JSON object response.
+async function callModelRaw(prompt, json) {
   if (process.env.GROQ_API_KEY) {
     try {
-      const r = await fetch(GROQ_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-        body: JSON.stringify({
-          model: GROQ_DEFAULT_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7, max_tokens: 4000,
-          response_format: { type: "json_object" },
-        }),
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const t = d.choices?.[0]?.message?.content;
-        if (t) return safeJson(t);
-      }
+      const body = { model: GROQ_DEFAULT_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 6000 };
+      if (json) body.response_format = { type: "json_object" };
+      const r = await fetch(GROQ_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` }, body: JSON.stringify(body) });
+      if (r.ok) { const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (t) return t; }
     } catch (e) { console.warn("[cbt] groq:", e.message); }
   }
-  // ② Gemini
   if (process.env.GEMINI_API_KEY) {
     for (const url of GEMINI_MODELS) {
       try {
-        const r = await fetch(`${url}?key=${process.env.GEMINI_API_KEY}`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json", temperature: 0.7, maxOutputTokens: 6000 },
-          }),
-        });
+        const gc = { temperature: 0.7, maxOutputTokens: 8000 };
+        if (json) gc.responseMimeType = "application/json";
+        const r = await fetch(`${url}?key=${process.env.GEMINI_API_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: gc }) });
         if (!r.ok) { if ([404, 429, 503].includes(r.status)) continue; break; }
-        const d = await r.json();
-        const t = d.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (t) return safeJson(t);
+        const d = await r.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text; if (t) return t;
       } catch (e) { continue; }
     }
   }
   throw new Error("AI is unavailable right now — try again.");
 }
+
+// JSON convenience wrapper (used by the rephrase flow).
+async function callModel(prompt) { return safeJson(await callModelRaw(prompt, true)); }
 
 function cleanQuestions(arr) {
   if (!Array.isArray(arr)) return [];
@@ -183,7 +185,7 @@ function cleanQuestions(arr) {
     if (!q || typeof q !== "object") continue;
     const question = fixLatex(q.question).trim().slice(0, 1000);
     const options = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
-    let ai = parseInt(q.answerIndex, 10);
+    let ai = parseInt(q.answerIndex ?? q.correctIndex, 10);
     if (question.length < 6 || options.length < 2 || options.length > 6) continue;
     // Reject placeholder options like ["A","B","C","D"] the model sometimes echoes.
     if (options.every((o) => /^[A-D]$/i.test(o.trim()))) continue;
@@ -221,6 +223,7 @@ function validBody(b) {
 // no JSON-escape corruption.
 function parseExamJs(code) {
   let src = String(code)
+    .replace(/```[a-zA-Z]*\n?/g, "").replace(/```/g, "") // strip markdown code fences
     .replace(/^\s*import\s.*$/gm, "")          // drop ES import lines (break vm)
     .replace(/^\s*export\s+default\s+/gm, "")
     .replace(/^\s*export\s+/gm, "");
@@ -322,8 +325,11 @@ module.exports = function () {
       const count = Math.min(Math.max(parseInt(b.count, 10) || 10, 1), 30);
       const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
 
-      const raw = await callModel(genPrompt(scheme, label, topic, count));
-      const questions = cleanQuestions(raw.questions);
+      // Ask for a .js file and parse it in the sandbox; fall back to JSON.
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count), false);
+      let arr = parseExamJs(text);
+      if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
+      const questions = cleanQuestions(arr);
       if (!questions.length) return res.status(502).json({ error: "The model returned no usable questions — try again." });
 
       const batch = db().batch();
@@ -424,6 +430,11 @@ module.exports = function () {
       console.error("[/api/cbt]", e.message);
       res.status(500).json({ error: e.message });
     }
+  });
+
+  // ── GET /template — the exact .js shape to feed an AI (admin) ──
+  router.get("/template", authenticate, requireAdmin, (_req, res) => {
+    res.json({ template: SAMPLE_JS });
   });
 
   // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──

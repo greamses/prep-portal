@@ -109,7 +109,10 @@
         <input id="im-file" type="file" accept=".js,text/javascript" />
         <label>…or paste the file contents</label>
         <textarea id="im-code" placeholder="const examQuestions = [ { question, options, correctIndex, explanation, image } , … ]"></textarea>
-        <div class="row" style="margin-top:.6rem"><div style="flex:0 0 auto"><button id="im-go" type="button">Import</button></div></div>
+        <div class="row" style="margin-top:.6rem">
+          <div style="flex:0 0 auto"><button id="im-go" type="button">Import</button></div>
+          <div style="flex:0 0 auto"><button id="im-tmpl" class="ghost" type="button">Copy AI template</button></div>
+        </div>
         <p id="im-msg" class="ed-msg"></p>
       </div>
 
@@ -259,6 +262,17 @@
       // Import library
       $("im-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
       $("im-file").onchange=async()=>{ const f=$("im-file").files[0]; if(f) $("im-code").value=await f.text(); };
+      $("im-tmpl").onclick=async()=>{
+        const msg=$("im-msg");
+        try{
+          const r=await fetch(`${API}/api/cbt/template`,{headers:await authHeader()}); const d=await r.json();
+          const scheme=SCHEMES[$("im-scheme").value]||$("im-scheme").value;
+          const subject=$("im-subject").value.trim()||"[subject]";
+          const prompt=`Generate 40 ORIGINAL ${subject} multiple-choice questions in the style of ${scheme} (do NOT copy any real past question).\n\nReturn ONLY a JavaScript file in EXACTLY this format — no prose, no JSON, no markdown fences:\n\n${d.template}\n\nRules:\n- "answerIndex" is the 0-based index of the correct option.\n- Options are the real answer values, never the letters A, B, C, D.\n- Wrap all maths in \\( … \\) with DOUBLE backslashes for commands (\\frac, \\int, \\sqrt), exactly as shown in the sample.\n- "explanation" is an array of short strings; "image" is null.`;
+          await navigator.clipboard.writeText(prompt);
+          msg.textContent="AI template copied — paste it into your AI, then upload/paste the .js it returns."; msg.className="ed-msg ed-msg--ok";
+        }catch(e){ msg.textContent=e.message; msg.className="ed-msg ed-msg--err"; }
+      };
       $("im-go").onclick=async()=>{
         const btn=$("im-go"), msg=$("im-msg");
         const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value };
