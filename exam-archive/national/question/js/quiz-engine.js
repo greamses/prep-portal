@@ -800,6 +800,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
       const nav = document.getElementById("nav-bar");
       if (card) card.style.display = "flex";
       if (nav) nav.style.display = "grid";
+      showIntroGate(); // watch-first video → hold questions behind a Start button
       return;
     }
 
@@ -1187,27 +1188,49 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     return w;
   }
 
-  // Watch-first intro video(s): shown ONCE above the question card (not per item).
-  function renderIntroVideos() {
+  // Watch-first gate: if the set has intro video(s), show them with a "Start"
+  // button and keep the questions hidden until the learner clicks Start.
+  function showIntroGate() {
+    if (introVideoDone) return false;
     const vids = [...new Set(
       allQuestions.filter((q) => q.videoScope === "set" && q.video).map((q) => q.video)
     )];
-    let host = document.getElementById("quiz-intro-video");
-    if (!vids.length) { if (host) host.remove(); return; }
+    if (!vids.length) return false;
+    introVideoDone = true;
     const card = document.getElementById("question-card");
-    if (!host) {
-      host = document.createElement("div");
-      host.id = "quiz-intro-video";
-      host.style.cssText = "margin:0 0 1rem;";
-      if (card && card.parentNode) card.parentNode.insertBefore(host, card);
-      else return;
+    const nav = document.getElementById("nav-bar");
+    let gate = document.getElementById("quiz-intro-gate");
+    if (!gate) {
+      gate = document.createElement("div");
+      gate.id = "quiz-intro-gate";
+      gate.className = "question-card"; // reuse the card's styling
+      gate.style.cssText = "display:flex; flex-direction:column; gap:.8rem;";
+      if (card && card.parentNode) card.parentNode.insertBefore(gate, card);
+      else return false;
     }
-    host.innerHTML = "";
+    gate.innerHTML = "";
     const title = document.createElement("div");
     title.textContent = vids.length > 1 ? "Watch these first" : "Watch this first";
-    title.style.cssText = "font-family:var(--font-display); font-size:.9rem; margin:0 0 .4rem;";
-    host.appendChild(title);
-    vids.forEach((u) => { const c = document.createElement("div"); renderVideo(c, u, "question"); host.appendChild(c); });
+    title.style.cssText = "font-family:var(--font-display); font-size:1rem;";
+    gate.appendChild(title);
+    vids.forEach((u) => { const c = document.createElement("div"); renderVideo(c, u, "question"); gate.appendChild(c); });
+    const start = document.createElement("button");
+    start.type = "button";
+    start.className = "btn btn-yellow";
+    start.textContent = "Start questions →";
+    start.style.cssText = "align-self:flex-start;";
+    start.onclick = () => {
+      gate.remove();
+      if (card) card.style.display = "flex";
+      if (nav) nav.style.display = "grid";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    gate.appendChild(start);
+    // Hide the quiz until Start is clicked.
+    if (card) card.style.display = "none";
+    if (nav) nav.style.display = "none";
+    gate.style.display = "flex";
+    return true;
   }
 
   // ── Render question ──────────────────────────────────────
@@ -1228,8 +1251,7 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     const qTextEl = document.getElementById("q-text");
     if (qTextEl) qTextEl.innerHTML = escFmt(q.question);
 
-    // Watch-first intro: render once above the card; per-question videos inline.
-    if (!introVideoDone) { renderIntroVideos(); introVideoDone = true; }
+    // Per-question videos render inline; the watch-first intro is a separate gate.
     const vidWrap = ensureVideoWrap();
     if (vidWrap) renderVideo(vidWrap, q.videoScope === "set" ? "" : q.video, q.videoScope);
 
