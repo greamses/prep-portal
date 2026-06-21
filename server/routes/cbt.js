@@ -97,10 +97,16 @@ function safeJson(t) {
 // them into a control char + the rest. Repair those control chars back to a
 // backslash so the command (\frac, \beta, \theta…) is restored for MathJax.
 function fixLatex(s) {
-  return String(s == null ? "" : s)
-    .replace(//g, "\f")
-    .replace(/[]/g, "\b")
-    .replace(/	/g, "\t");
+  s = String(s == null ? "" : s);
+  let out = "";
+  for (const ch of s) {
+    const c = ch.charCodeAt(0);
+    if (c === 12) out += "\\f";
+    else if (c === 8) out += "\\b";
+    else if (c === 9) out += "\\t";
+    else out += ch;
+  }
+  return out;
 }
 
 // Try Groq first (fast/cheap), then Gemini. Returns parsed { questions: [...] }.
