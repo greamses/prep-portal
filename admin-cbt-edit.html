@@ -297,7 +297,9 @@
       // Compact icon buttons (tooltips via title)
       ic("ed-load","refresh","Load questions"); ic("ed-new","plus","Add question");
       ic("f-addopt","plus","Add option"); ic("f-save","check","Save"); ic("f-cancel","x","Cancel"); ic("f-delete","trash","Delete");
-      ic("im-go","upload","Import .js"); ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
+      ic("im-tmpl","copy","Copy AI prompt"); ic("rp-go","wand","Rephrase originals");
+      // Primary action — keep a visible label so it's easy to find.
+      { const b=$("im-go"); if(b){ b.classList.add("iconbtn"); b.style.cssText="gap:.45rem;padding:.55rem 1rem;line-height:1"; b.innerHTML=ICONS.upload+"<span>Import to bank</span>"; b.title="Import to bank"; b.setAttribute("aria-label","Import to bank"); } }
       ["f-question","f-image"].forEach(id=>$(id).oninput=refreshPreview);
       // Import library
       $("im-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
