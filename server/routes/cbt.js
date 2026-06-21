@@ -171,11 +171,19 @@ function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video)
   const imageBlock = wantImages
     ? `IMAGES: where a diagram genuinely helps (geometry, circuits, graphs, structures), set "image" to a SELF-CONTAINED inline SVG string you create (<svg viewBox='…'>…</svg>, use stroke='currentColor' so it adapts to the theme); otherwise set "image": null. NEVER reference external or copyrighted image files.`
     : `IMAGES: set "image": null for every question (no diagrams).`;
-  // Optional: questions BASED ON a video the learner watches (transcript/notes supplied).
+  // Optional: questions BASED ON a video. The URL goes INTO the prompt so a
+  // video-capable model (e.g. Gemini) can open and watch it; transcript optional.
+  const vurl = video && video.url;
   const vtext = video && String(video.text || "").trim().slice(0, 6000);
-  const videoBlock = vtext
-    ? `\nSOURCE VIDEO — the learner watches this video${video.scope === "set" ? " FIRST, before the whole set" : " alongside each question"}. Base EVERY question STRICTLY on its content below; only ask what can be answered from the video. Do NOT invent facts not present.\n--- VIDEO CONTENT START ---\n${vtext}\n--- VIDEO CONTENT END ---\n(The video URL is added automatically — set "video": null in your output; it will be filled in.)\n`
-    : `\nVIDEO: set "video": null for every question (unless you have a specific public video URL that the question is about, in which case set "video" to that URL and "videoScope" to "question").\n`;
+  let videoBlock;
+  if (vurl || vtext) {
+    const ref = `${vurl ? `Video: ${vurl}\n` : ""}${vtext ? `Transcript / notes:\n${vtext}\n` : ""}`;
+    videoBlock = video.scope === "set"
+      ? `\nSOURCE VIDEO — WATCH-FIRST INTRO. The learner watches this ONE video first, then answers the whole set.\n${ref}Open and watch the link, then base EVERY question STRICTLY on its content — do NOT invent anything not in the video. This single intro video is shown ONCE for the whole set, so set "video": null on each item (do not repeat it per question).\n`
+      : `\nSOURCE VIDEO. Base the questions on this video.\n${ref}Open and watch the link. For EACH question set "video" to the most relevant public URL (the one above, or a more specific clip/timestamp) and "videoScope": "question", so the learner watches it with that question.\n`;
+  } else {
+    videoBlock = `\nVIDEO (optional): you MAY give any question its own clip — set "video" to a public YouTube/Vimeo/.mp4 URL and "videoScope": "question". Otherwise set "video": null.\n`;
+  }
   return `You are a SENIOR examiner writing ORIGINAL questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
 Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
@@ -477,9 +485,13 @@ module.exports = function () {
 
       const batch = db().batch();
       questions.forEach((q) => {
-        // If the admin supplied a video for this batch, stamp it on every item.
-        const vurl = video.url || q.video || null;
-        const vscope = video.url ? video.scope : (q.video ? q.videoScope : "question");
+        // Watch-first → one intro URL stamped on the set; per-question → keep the
+        // AI's own per-item video (falling back to the batch URL if it omitted one).
+        let vurl, vscope;
+        if (video.url && video.scope === "set") { vurl = video.url; vscope = "set"; }
+        else if (q.video) { vurl = q.video; vscope = q.videoScope || "question"; }
+        else if (video.url) { vurl = video.url; vscope = video.scope; }
+        else { vurl = null; vscope = "question"; }
         const ref = db().collection("cbtQuestions").doc();
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
@@ -767,8 +779,11 @@ module.exports = function () {
         const batch = db().batch();
         items.slice(i, i + 400).forEach((q) => {
           const ref = db().collection("cbtQuestions").doc();
-          const video = q.video || batchVideo || null;
-          const videoScope = q.video ? q.videoScope : (batchVideo ? batchVideoScope : "question");
+          let video, videoScope;
+          if (batchVideo && batchVideoScope === "set") { video = batchVideo; videoScope = "set"; }
+          else if (q.video) { video = q.video; videoScope = q.videoScope; }
+          else if (batchVideo) { video = batchVideo; videoScope = batchVideoScope; }
+          else { video = null; videoScope = "question"; }
           batch.set(ref, {
             scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
             schemeSubject: `${scheme}__${key}`, paper, source,

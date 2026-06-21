@@ -9,6 +9,7 @@ const Quiz = (() => {
   let allQuestions = [];
   let allQuestionsAll = []; // master list for type filtering
   let currentIndex = 0;
+  let introVideoDone = false; // watch-first intro is shown once per quiz
   let userAnswers = {};
   let submitted = false;
   let theoryMarks = {};
@@ -1186,6 +1187,29 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     return w;
   }
 
+  // Watch-first intro video(s): shown ONCE above the question card (not per item).
+  function renderIntroVideos() {
+    const vids = [...new Set(
+      allQuestions.filter((q) => q.videoScope === "set" && q.video).map((q) => q.video)
+    )];
+    let host = document.getElementById("quiz-intro-video");
+    if (!vids.length) { if (host) host.remove(); return; }
+    const card = document.getElementById("question-card");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "quiz-intro-video";
+      host.style.cssText = "margin:0 0 1rem;";
+      if (card && card.parentNode) card.parentNode.insertBefore(host, card);
+      else return;
+    }
+    host.innerHTML = "";
+    const title = document.createElement("div");
+    title.textContent = vids.length > 1 ? "Watch these first" : "Watch this first";
+    title.style.cssText = "font-family:var(--font-display); font-size:.9rem; margin:0 0 .4rem;";
+    host.appendChild(title);
+    vids.forEach((u) => { const c = document.createElement("div"); renderVideo(c, u, "question"); host.appendChild(c); });
+  }
+
   // ── Render question ──────────────────────────────────────
   function renderQuestion(idx) {
     currentIndex = idx;
@@ -1204,8 +1228,10 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     const qTextEl = document.getElementById("q-text");
     if (qTextEl) qTextEl.innerHTML = escFmt(q.question);
 
+    // Watch-first intro: render once above the card; per-question videos inline.
+    if (!introVideoDone) { renderIntroVideos(); introVideoDone = true; }
     const vidWrap = ensureVideoWrap();
-    if (vidWrap) renderVideo(vidWrap, q.video, q.videoScope);
+    if (vidWrap) renderVideo(vidWrap, q.videoScope === "set" ? "" : q.video, q.videoScope);
 
     const imgWrap = document.getElementById("q-image-wrap");
     if (imgWrap) renderImage(imgWrap, q.image, `Q${idx + 1} diagram`);
