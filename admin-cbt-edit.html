@@ -89,6 +89,10 @@
         <input id="f-hint" />
         <label>Image — paste inline SVG (&lt;svg…&gt;…&lt;/svg&gt;) or an image URL (optional)</label>
         <textarea id="f-image" placeholder="&lt;svg viewBox='0 0 100 100'&gt;…&lt;/svg&gt;"></textarea>
+        <div class="row">
+          <div style="flex:1 1 60%"><label>Video URL (optional)</label><input id="f-video" placeholder="https://www.youtube.com/watch?v=…" /></div>
+          <div style="flex:1 1 30%"><label>When to show</label><select id="f-vscope"><option value="question">With this question</option><option value="set">Watch first (intro)</option></select></div>
+        </div>
         <label>Live preview</label>
         <div id="f-preview" class="ed-preview"></div>
         <div class="row" style="margin-top:.8rem">
@@ -118,6 +122,10 @@
           <label class="ed-tick"><input type="checkbox" value="subjective" /> Subjective</label>
         </div>
         <label class="ed-tick" style="margin-top:.5rem"><input id="im-images" type="checkbox" /> Let the AI draw SVG/diagrams where helpful</label>
+        <div class="row">
+          <div style="flex:1 1 60%"><label>Stamp a video on the whole batch (optional)</label><input id="im-video" placeholder="https://www.youtube.com/watch?v=…" /></div>
+          <div style="flex:1 1 30%"><label>When to show</label><select id="im-vscope"><option value="set">Watch first (whole set)</option><option value="question">With each question</option></select></div>
+        </div>
         <label>Upload .js file</label>
         <input id="im-file" type="file" accept=".js,text/javascript" />
         <label>…or paste the file contents</label>
@@ -221,6 +229,8 @@
       $("f-explanation").value = q ? (Array.isArray(q.explanation)?q.explanation.join("\n"):(q.explanation||"")) : "";
       $("f-hint").value = q ? q.hint||"" : "";
       $("f-image").value = q ? q.image||"" : "";
+      $("f-video").value = q ? q.video||"" : "";
+      $("f-vscope").value = q && q.videoScope==="set" ? "set" : "question";
       const opts = q && q.options && q.options.length ? q.options : ["","",""," "];
       const ai = q ? q.answerIndex : 0;
       $("f-options").innerHTML="";
@@ -239,6 +249,7 @@
         scheme:$("ed-scheme").value, subject:$("ed-subject").value, paper:$("f-paper").value||null,
         question:$("f-question").value, options, answerIndex,
         explanation: expl.length>1?expl:(expl[0]||""), hint:$("f-hint").value, image:$("f-image").value,
+        video:$("f-video").value.trim(), videoScope:$("f-vscope").value,
       };
     }
 
@@ -306,7 +317,7 @@
       };
       $("im-go").onclick=async()=>{
         const btn=$("im-go"), msg=$("im-msg");
-        const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value };
+        const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value, video:$("im-video").value.trim(), videoScope:$("im-vscope").value };
         if(!body.subject){ msg.textContent="Enter a subject."; msg.className="ed-msg ed-msg--err"; return; }
         if(!body.jsCode.trim()){ msg.textContent="Upload or paste a .js file."; msg.className="ed-msg ed-msg--err"; return; }
         btn.disabled=true; msg.textContent="Importing…"; msg.className="ed-msg";

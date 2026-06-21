@@ -534,8 +534,10 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
             options,
             _answer: ai >= 0 && options[ai] !== undefined ? options[ai] : null,
             explanation: q.explanation || "",
-            image: "",
-            hint: "",
+            image: q.image || "",
+            video: q.video || "",
+            videoScope: q.videoScope || "question",
+            hint: q.hint || "",
             type: "objective",
             subject: q.subjectLabel || subKey,
             examType: scheme,
@@ -1130,6 +1132,60 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
     }
   }
 
+  // ── Video support (YouTube / Vimeo / direct file) ────────
+  const ytId = (u) => (String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/) || [])[1] || null;
+  const vimeoId = (u) => (String(u).match(/vimeo\.com\/(?:video\/)?(\d+)/) || [])[1] || null;
+
+  function renderVideo(container, url, scope) {
+    container.innerHTML = "";
+    if (!url) return;
+    const wrap = document.createElement("div");
+    wrap.className = "q-video";
+    wrap.style.cssText = "margin:.6rem 0; max-width:560px;";
+    if (scope === "set") {
+      const lbl = document.createElement("div");
+      lbl.textContent = "▶ Watch this first";
+      lbl.style.cssText = "font-size:.72rem; font-weight:700; margin-bottom:.35rem; color:var(--accent-secondary);";
+      wrap.appendChild(lbl);
+    }
+    const yt = ytId(url), vm = vimeoId(url);
+    let media;
+    if (yt) {
+      media = document.createElement("iframe");
+      media.src = "https://www.youtube-nocookie.com/embed/" + yt;
+      media.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      media.allowFullscreen = true;
+    } else if (vm) {
+      media = document.createElement("iframe");
+      media.src = "https://player.vimeo.com/video/" + vm;
+      media.allow = "autoplay; fullscreen; picture-in-picture";
+      media.allowFullscreen = true;
+    } else if (/\.(mp4|webm|ogg)(\?|#|$)/i.test(url)) {
+      media = document.createElement("video");
+      media.src = url; media.controls = true; media.preload = "metadata";
+    } else {
+      media = document.createElement("iframe");
+      media.src = url; media.allowFullscreen = true;
+    }
+    media.style.cssText = "width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; background:#000;";
+    wrap.appendChild(media);
+    container.appendChild(wrap);
+  }
+
+  // Lazily create a video container above the question's image.
+  function ensureVideoWrap() {
+    let w = document.getElementById("q-video-wrap");
+    if (!w) {
+      w = document.createElement("div");
+      w.id = "q-video-wrap";
+      const img = document.getElementById("q-image-wrap");
+      const txt = document.getElementById("q-text");
+      if (img && img.parentNode) img.parentNode.insertBefore(w, img);
+      else if (txt && txt.parentNode) txt.parentNode.insertBefore(w, txt.nextSibling);
+    }
+    return w;
+  }
+
   // ── Render question ──────────────────────────────────────
   function renderQuestion(idx) {
     currentIndex = idx;
@@ -1147,6 +1203,9 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
 
     const qTextEl = document.getElementById("q-text");
     if (qTextEl) qTextEl.innerHTML = escFmt(q.question);
+
+    const vidWrap = ensureVideoWrap();
+    if (vidWrap) renderVideo(vidWrap, q.video, q.videoScope);
 
     const imgWrap = document.getElementById("q-image-wrap");
     if (imgWrap) renderImage(imgWrap, q.image, `Q${idx + 1} diagram`);
@@ -1533,6 +1592,13 @@ Return JSON: {"score": number (0-10), "outOf": 10, "feedback": "constructive fee
       qTxt.className = "review-q-text";
       qTxt.innerHTML = escFmt(q.question);
       body.appendChild(qTxt);
+
+      if (q.video) {
+        const vidDiv = document.createElement("div");
+        vidDiv.className = "review-video-wrap";
+        body.appendChild(vidDiv);
+        renderVideo(vidDiv, q.video, q.videoScope);
+      }
 
       if (q.image) {
         const imgDiv = document.createElement("div");

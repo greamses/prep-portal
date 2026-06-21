@@ -113,6 +113,21 @@
           </div>
           <label class="cb-type" style="margin-top:.6rem"><input id="cb-images" type="checkbox" /> Let the AI draw SVG/diagrams where helpful</label>
         </div>
+        <details style="margin-top:.7rem">
+          <summary style="cursor:pointer;font-size:.78rem;color:var(--text-secondary)">Build questions from a video (optional)</summary>
+          <div class="cb-hint" style="margin:.5rem 0 .3rem">Paste a video link and (optionally) its transcript/notes. The AI writes questions answerable from the video; the link is stamped on every question so learners watch it.</div>
+          <div class="cb-row">
+            <div style="flex:1 1 60%"><label for="cb-video">Video URL</label><input id="cb-video" placeholder="https://www.youtube.com/watch?v=…" /></div>
+            <div style="flex:1 1 30%"><label for="cb-video-scope">When to show</label>
+              <select id="cb-video-scope">
+                <option value="set">Watch first (whole set)</option>
+                <option value="question">With each question</option>
+              </select>
+            </div>
+          </div>
+          <label for="cb-video-text">Transcript / notes (optional — improves accuracy)</label>
+          <textarea id="cb-video-text" rows="3" style="width:100%;box-sizing:border-box;padding:.6rem .7rem;border-radius:10px;font-family:inherit;font-size:.82rem;border:2px solid color-mix(in srgb, var(--ink) 14%, transparent);background:var(--surface-secondary);color:var(--ink)" placeholder="Paste the video's key points or transcript here…"></textarea>
+        </details>
         <p id="cb-msg" class="cb-msg"></p>
       </div>
 
@@ -183,7 +198,10 @@
       try {
         const r = await fetch(`${API}/api/cbt/generate`, {
           method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
-          body: JSON.stringify({ scheme, subject, topic, count, types: selectedTypes(), images: $("cb-images").checked }),
+          body: JSON.stringify({
+            scheme, subject, topic, count, types: selectedTypes(), images: $("cb-images").checked,
+            video: $("cb-video").value.trim(), videoText: $("cb-video-text").value.trim(), videoScope: $("cb-video-scope").value,
+          }),
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Failed");
@@ -205,6 +223,9 @@
         count: String(parseInt($("cb-count").value, 10) || 20),
         types: selectedTypes().join(","),
         images: $("cb-images").checked ? "1" : "0",
+        video: $("cb-video").value.trim(),
+        videoText: $("cb-video-text").value.trim(),
+        videoScope: $("cb-video-scope").value,
       });
       try {
         // The server renders the SAME advanced prompt used by in-app generation,

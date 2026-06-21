@@ -74,6 +74,14 @@ const SCHEME_SUBJECTS = {
 const subjKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
 const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperCase() + k.slice(1) : "Subject");
 
+// Accept only http(s) or site-relative URLs for images/videos (no inline scripts).
+const safeUrl = (u) => {
+  const s = String(u == null ? "" : u).trim().slice(0, 500);
+  return /^(https?:\/\/|\/)\S+$/i.test(s) ? s : null;
+};
+// "set" = an intro video to watch before the questions; else tied to the question.
+const videoScopeOf = (v) => (String(v || "").toLowerCase() === "set" ? "set" : "question");
+
 // The exact .js shape we want the model to return (and that admins can copy to
 // feed their own AI). String.raw keeps the double backslashes literal. It shows
 // EVERY supported question type plus an inline-SVG image example.
@@ -83,6 +91,8 @@ const SAMPLE_JS = String.raw`/**
  *   objective / polar  → "options" (array) + "answerIndex" (0-based). No "answer".
  *   short / theory / subjective → "answer" (string). No "options"/"answerIndex".
  * "image" is null, OR a self-contained inline <svg>…</svg> string, OR a public URL.
+ * "video" is null, OR a public video URL (YouTube/Vimeo/.mp4). "videoScope" is
+ *   "question" (watch with this question) or "set" (an intro to watch first).
  * Wrap maths in \( … \) using DOUBLE backslashes for commands, exactly as shown.
  */
 const examQuestions = [
@@ -90,10 +100,21 @@ const examQuestions = [
     type: "objective",                       // 4 options, one correct
     question: "Evaluate \\( \\int_0^1 (3x^2 + 2x)\\,dx \\).",
     image: null,
+    video: null,
     options: ["\\( 2 \\)", "\\( 3 \\)", "\\( \\frac{5}{2} \\)", "\\( 1 \\)"],
     answerIndex: 0,
     hint: "Integrate term by term, then apply the limits.",
     explanation: ["\\( [x^3 + x^2]_0^1 = (1+1) - 0 = 2 \\)."]
+  },
+  {
+    type: "objective",                       // video example — learner watches, then answers
+    question: "According to the video, what is the main product of photosynthesis?",
+    image: null,
+    video: "https://www.youtube.com/watch?v=example",
+    videoScope: "question",
+    options: ["Glucose", "Protein", "Lipid", "Starch only"],
+    answerIndex: 0,
+    explanation: ["The video states glucose is the primary product; starch is a storage form."]
   },
   {
     type: "polar",                           // true/false or yes/no — two poles
@@ -137,7 +158,7 @@ const TYPE_GUIDE = {
 };
 const ALL_TYPES = Object.keys(TYPE_GUIDE);
 
-function genPrompt(scheme, subjectLabel, topic, count, types, wantImages) {
+function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
   let chosen = (Array.isArray(types) && types.length ? types : ["objective"])
@@ -150,6 +171,11 @@ function genPrompt(scheme, subjectLabel, topic, count, types, wantImages) {
   const imageBlock = wantImages
     ? `IMAGES: where a diagram genuinely helps (geometry, circuits, graphs, structures), set "image" to a SELF-CONTAINED inline SVG string you create (<svg viewBox='…'>…</svg>, use stroke='currentColor' so it adapts to the theme); otherwise set "image": null. NEVER reference external or copyrighted image files.`
     : `IMAGES: set "image": null for every question (no diagrams).`;
+  // Optional: questions BASED ON a video the learner watches (transcript/notes supplied).
+  const vtext = video && String(video.text || "").trim().slice(0, 6000);
+  const videoBlock = vtext
+    ? `\nSOURCE VIDEO — the learner watches this video${video.scope === "set" ? " FIRST, before the whole set" : " alongside each question"}. Base EVERY question STRICTLY on its content below; only ask what can be answered from the video. Do NOT invent facts not present.\n--- VIDEO CONTENT START ---\n${vtext}\n--- VIDEO CONTENT END ---\n(The video URL is added automatically — set "video": null in your output; it will be filled in.)\n`
+    : `\nVIDEO: set "video": null for every question (unless you have a specific public video URL that the question is about, in which case set "video" to that URL and "videoScope" to "question").\n`;
   return `You are a SENIOR examiner writing ORIGINAL questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
 Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
@@ -175,14 +201,15 @@ MANDATORY:
 - For short/theory/subjective: provide a clear, correct "answer" (model answer / key points) and OMIT options.
 - "explanation" is an array of short strings. Every item carries its correct "type".
 ${imageBlock}
-- Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
+${videoBlock}- Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
 
-OUTPUT — return ONLY a JavaScript file: a single "const examQuestions = [ … ];" array
-EXACTLY in this format. No JSON, no markdown fences, no prose, no extra comments:
+OUTPUT — return the result as a SINGLE COPY BLOCK: one fenced \`\`\`js code block containing ONLY "const examQuestions = [ … ];" EXACTLY in the format below. Put nothing before or after the code block — no prose, no JSON, no commentary:
 
+\`\`\`js
 ${SAMPLE_JS}
+\`\`\`
 
-Now output ONLY the JavaScript for ${count} ${subjectLabel} question(s).`;
+Now output ONLY the \`\`\`js copy block for ${count} ${subjectLabel} question(s).`;
 }
 
 // Resolve a question's type from its declared "type" (or infer from its shape).
@@ -271,6 +298,8 @@ function cleanQuestions(arr) {
     const explanation = normExpl(q.explanation, true);
     const hint = fixLatex(q.hint || "").slice(0, 600);
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
+    const video = safeUrl(q.video);
+    const videoScope = video ? videoScopeOf(q.videoScope) : "question";
     const opts = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
 
     if (opts.length >= 2) {
@@ -284,13 +313,13 @@ function cleanQuestions(arr) {
       }
       if (!Number.isInteger(ai) || ai < 0 || ai >= opts.length) ai = 0;
       seen.add(dedupe);
-      out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image });
+      out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope });
     } else {
       // Free-response (short / theory / subjective) — needs an answer.
       const answer = fixLatex(q.answer || "").trim().slice(0, 4000);
       if (!answer) continue;
       seen.add(dedupe);
-      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image });
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope });
     }
   }
   return out;
@@ -310,9 +339,11 @@ function validBody(b) {
   const hint = fixLatex(b.hint || "").slice(0, 600);
   let image = typeof b.image === "string" ? b.image.trim().slice(0, 80000) : null;
   if (!image) image = null;
+  const video = safeUrl(b.video);
+  const videoScope = video ? videoScopeOf(b.videoScope) : "question";
   const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
   const type = options.length === 2 ? "polar" : "objective";
-  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, paper };
+  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, paper };
 }
 
 // Parse an uploaded question-library .js file of the form
@@ -353,6 +384,8 @@ function importQuestions(arr) {
     const explanation = normExpl(q.explanation, false);
     const hint = String(q.hint || "").slice(0, 800);
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
+    const video = safeUrl(q.video);
+    const videoScope = video ? videoScopeOf(q.videoScope) : "question";
     const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 800)).filter(Boolean) : [];
 
     if (options.length >= 2) {
@@ -363,12 +396,12 @@ function importQuestions(arr) {
         if (idx >= 0) ai = idx;
       }
       if (ai < 0 || ai >= options.length) ai = 0;
-      out.push({ type: options.length === 2 && type === "polar" ? "polar" : "objective", question, options, answerIndex: ai, answer: null, explanation, hint, image });
+      out.push({ type: options.length === 2 && type === "polar" ? "polar" : "objective", question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope });
     } else {
       // Free-response import (short / theory / subjective).
       const answer = String(q.answer == null ? "" : q.answer).trim().slice(0, 6000);
       if (!answer) continue;
-      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image });
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope });
     }
   }
   return out;
@@ -432,9 +465,11 @@ module.exports = function () {
       const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
       const types = Array.isArray(b.types) ? b.types.filter((t) => typeof t === "string" && t.trim()).slice(0, 6) : [];
       const wantImages = b.images === true || b.wantImages === true;
+      // Optional: generate FROM a video the learner watches first.
+      const video = { url: safeUrl(b.video), text: String(b.videoText || "").trim().slice(0, 6000), scope: videoScopeOf(b.videoScope) };
 
       // Ask for a .js file and parse it in the sandbox; fall back to JSON.
-      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages), false);
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
       const questions = cleanQuestions(arr);
@@ -442,6 +477,9 @@ module.exports = function () {
 
       const batch = db().batch();
       questions.forEach((q) => {
+        // If the admin supplied a video for this batch, stamp it on every item.
+        const vurl = video.url || q.video || null;
+        const vscope = video.url ? video.scope : (q.video ? q.videoScope : "question");
         const ref = db().collection("cbtQuestions").doc();
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
@@ -453,6 +491,7 @@ module.exports = function () {
           answerIndex: typeof q.answerIndex === "number" ? q.answerIndex : null,
           answer: q.answer || null,
           explanation: q.explanation, hint: q.hint || "", image: q.image || null,
+          video: vurl, videoScope: vscope,
           source: "ai",
           createdAt: stamp(), updatedAt: stamp(),
         });
@@ -533,6 +572,7 @@ module.exports = function () {
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
+          video: x.video || null, videoScope: x.videoScope || "question",
           paper: x.paper || null, subject: x.subject, subjectLabel: x.subjectLabel,
           scheme: x.scheme,
         }));
@@ -560,7 +600,8 @@ module.exports = function () {
     const count = Math.min(Math.max(parseInt(q.count, 10) || 20, 1), 60);
     const types = String(q.types || "").split(",").map((t) => t.trim().toLowerCase()).filter((t) => TYPE_GUIDE[t]);
     const wantImages = q.images === "1" || q.images === "true";
-    res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages) });
+    const video = { url: safeUrl(q.video), text: String(q.videoText || "").trim().slice(0, 6000), scope: videoScopeOf(q.videoScope) };
+    res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages, video) });
   });
 
   // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──
@@ -683,8 +724,10 @@ module.exports = function () {
           batch.set(ref, {
             scheme, subject: key, subjectLabel: orig.subjectLabel || subjLabel(key), schemeSubject: ss,
             paper: orig.paper || null, source: "rephrased", originalId: orig.id,
+            type: orig.type || "objective",
             question: r.question, options: r.options, answerIndex: orig.answerIndex,
             explanation: orig.explanation || "", hint: orig.hint || "", image: orig.image || null,
+            video: orig.video || null, videoScope: orig.videoScope || "question",
             createdAt: stamp(), updatedAt: stamp(),
           });
           n++;
@@ -709,6 +752,9 @@ module.exports = function () {
       if (!key) return res.status(400).json({ error: "Subject is required." });
       const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : "1";
       const source = ["past", "rephrased", "manual"].includes(b.source) ? b.source : "past";
+      // Optional: stamp one video on the whole imported batch (watch-first sets).
+      const batchVideo = safeUrl(b.video);
+      const batchVideoScope = videoScopeOf(b.videoScope);
 
       let arr;
       try { arr = parseExamJs(b.jsCode || ""); }
@@ -721,10 +767,12 @@ module.exports = function () {
         const batch = db().batch();
         items.slice(i, i + 400).forEach((q) => {
           const ref = db().collection("cbtQuestions").doc();
+          const video = q.video || batchVideo || null;
+          const videoScope = q.video ? q.videoScope : (batchVideo ? batchVideoScope : "question");
           batch.set(ref, {
             scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
             schemeSubject: `${scheme}__${key}`, paper, source,
-            ...q, createdAt: stamp(), updatedAt: stamp(),
+            ...q, video, videoScope, createdAt: stamp(), updatedAt: stamp(),
           });
         });
         await batch.commit();
