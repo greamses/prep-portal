@@ -10,6 +10,9 @@ const Quiz = (() => {
   let allQuestionsAll = []; // master list for type filtering
   let currentIndex = 0;
   let introVideoDone = false; // watch-first intro is shown once per quiz
+  // Free-response types (anything not multiple-choice): short = small input,
+  // subjective = inline fill-in-the-blank, theory/essay = textarea.
+  const isFree = (t) => t === "theory" || t === "essay" || t === "short" || t === "subjective";
   let userAnswers = {};
   let submitted = false;
   let theoryMarks = {};
@@ -510,6 +513,8 @@ const Quiz = (() => {
       try {
         const params = new URLSearchParams({ scheme, subject: subKey, limit: String(per), random: "1" });
         if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
+        if (PAGE_CONFIG.format) params.set("format", PAGE_CONFIG.format);
+        if (PAGE_CONFIG.topic) params.set("topic", PAGE_CONFIG.topic);
         const res = await fetch(`${API_BASE}/api/cbt?${params}`);
         if (!res.ok) { console.warn("CBT fetch", subKey, "→ HTTP", res.status); continue; }
         const data = await res.json();
@@ -529,8 +534,9 @@ const Quiz = (() => {
             video: q.video || "",
             videoScope: q.videoScope || "question",
             hint: q.hint || "",
-            // The engine treats any non-"objective" type as free-response (theory box).
-            type: isMcq ? "objective" : "theory",
+            // Keep the real free-response style (short/subjective/theory) so the
+            // viewer can pick the right input; default to theory.
+            type: isMcq ? "objective" : (isFree(q.type) ? q.type : "theory"),
             subject: q.subjectLabel || subKey,
             examType: scheme,
             examYear: "",
@@ -1240,7 +1246,16 @@ const Quiz = (() => {
       progressFill.style.width = `${((idx + 1) / total) * 100}%`;
 
     const qTextEl = document.getElementById("q-text");
-    if (qTextEl) qTextEl.innerHTML = escFmt(q.question);
+    if (qTextEl) {
+      if (q.type === "subjective") {
+        // Fill-in-the-blank: render an input inline where the blank sits.
+        qTextEl.innerHTML = clozeHtml(q.question, idx);
+        const cloze = qTextEl.querySelector("[data-cloze]");
+        if (cloze) cloze.addEventListener("input", () => { userAnswers[idx] = cloze.value; updateDots(); });
+      } else {
+        qTextEl.innerHTML = escFmt(q.question);
+      }
+    }
 
     // Per-question videos render inline; the watch-first intro is a separate gate.
     const vidWrap = ensureVideoWrap();
@@ -1279,7 +1294,7 @@ const Quiz = (() => {
       if (q.type === "objective") {
         renderObjectiveOptions(q, idx, optWrap);
       } else {
-        renderTheoryOptions(q, idx, optWrap);
+        renderFreeResponse(q, idx, optWrap);
       }
     }
 
@@ -1348,17 +1363,41 @@ const Quiz = (() => {
     }
   }
 
-  function renderTheoryOptions(q, idx, optWrap) {
-    const ta = document.createElement("textarea");
-    ta.className = "theory-box";
-    ta.placeholder = "Write your answer here…";
-    ta.value = userAnswers[idx] || "";
-    if (submitted) ta.disabled = true;
-    ta.addEventListener("input", () => {
-      userAnswers[idx] = ta.value;
-      updateDots();
-    });
-    optWrap.appendChild(ta);
+  // Build question HTML with an inline input where the blank (____ or [blank]) is.
+  function clozeHtml(question, idx) {
+    const inputHtml = `<input type="text" data-cloze="${idx}" autocomplete="off" value="${esc(userAnswers[idx] || "")}"${submitted ? " disabled" : ""} style="display:inline-block;min-width:120px;padding:2px 8px;border:none;border-bottom:2px solid var(--blue,#0055ff);background:rgba(0,85,255,.06);font-family:inherit;font-size:inherit;color:inherit;" />`;
+    const q = String(question || "");
+    const m = q.match(/_{2,}|\[\s*blank\s*\]|\.{3,}/i);
+    if (!m) return escFmt(q) + " " + inputHtml; // no marker → input at the end
+    return escFmt(q.slice(0, m.index)) + inputHtml + escFmt(q.slice(m.index + m[0].length));
+  }
+
+  function renderFreeResponse(q, idx, optWrap) {
+    if (q.type === "short") {
+      // A word or short phrase → a single-line input.
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.className = "short-box";
+      inp.placeholder = "Your answer…";
+      inp.autocomplete = "off";
+      inp.style.cssText = "width:100%;max-width:360px;box-sizing:border-box;padding:10px 12px;border:2px solid var(--ink,#222);border-radius:10px;font-family:inherit;font-size:15px;background:var(--surface,#fff);color:inherit;";
+      inp.value = userAnswers[idx] || "";
+      if (submitted) inp.disabled = true;
+      inp.addEventListener("input", () => { userAnswers[idx] = inp.value; updateDots(); });
+      optWrap.appendChild(inp);
+    } else if (q.type !== "subjective") {
+      // theory / essay → a textarea (subjective's input is inline in the question).
+      const ta = document.createElement("textarea");
+      ta.className = "theory-box";
+      ta.placeholder = "Write your answer here…";
+      ta.value = userAnswers[idx] || "";
+      if (submitted) ta.disabled = true;
+      ta.addEventListener("input", () => {
+        userAnswers[idx] = ta.value;
+        updateDots();
+      });
+      optWrap.appendChild(ta);
+    }
 
     if (submitted && theoryMarks[idx]) {
       const m = theoryMarks[idx];
@@ -1538,7 +1577,7 @@ const Quiz = (() => {
   async function runTheoryMarking() {
     for (let i = 0; i < allQuestions.length; i++) {
       const q = allQuestions[i];
-      if (q.type !== "theory" && q.type !== "essay") continue;
+      if (!isFree(q.type)) continue;
       const answer = userAnswers[i] || "";
       if (!answer.trim()) continue;
       try {

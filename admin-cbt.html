@@ -95,6 +95,17 @@
             <label for="cb-count">Count</label>
             <input id="cb-count" type="number" min="1" max="30" value="10" />
           </div>
+          <div style="flex:0 0 150px">
+            <label for="cb-grade">Class / grade</label>
+            <select id="cb-grade">
+              <option value="">Any</option>
+              <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+              <option>JSS1</option><option>JSS2</option><option>JSS3</option>
+              <option>SSS1</option><option>SSS2</option><option>SSS3</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
           <div style="flex:0 0 auto">
             <button id="cb-gen" type="button">Generate</button>
           </div>
@@ -200,6 +211,7 @@
           method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
           body: JSON.stringify({
             scheme, subject, topic, count, types: selectedTypes(), images: $("cb-images").checked,
+            grade: $("cb-grade").value,
             video: $("cb-video").value.trim(), videoText: $("cb-video-text").value.trim(), videoScope: $("cb-video-scope").value,
           }),
         });
@@ -223,6 +235,7 @@
         count: String(parseInt($("cb-count").value, 10) || 20),
         types: selectedTypes().join(","),
         images: $("cb-images").checked ? "1" : "0",
+        grade: $("cb-grade").value,
         video: $("cb-video").value.trim(),
         videoText: $("cb-video-text").value.trim(),
         videoScope: $("cb-video-scope").value,

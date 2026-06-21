@@ -344,6 +344,7 @@ function renderNatSubjects() {
 function onNatSubjectsChanged() {
   subjectCountSpan().textContent = natState.subjects.length;
   doneSubject().classList.toggle("show", natState.subjects.length > 0);
+  refreshTopics();
   natUpdateReadyState();
 }
 
@@ -405,6 +406,41 @@ function initCountChips() {
       natUpdateReadyState();
     };
   });
+  initFormatChips();
+}
+
+// Optional filters: MCQ-only / Theory-only, and a topic dropdown.
+function initFormatChips() {
+  document.querySelectorAll("#format-chips .fmt-chip").forEach((chip) => {
+    chip.onclick = () => {
+      document.querySelectorAll("#format-chips .fmt-chip").forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      natState.format = chip.getAttribute("data-fmt") || "";
+    };
+  });
+  const sel = document.getElementById("topic-select");
+  if (sel) sel.onchange = () => { natState.topic = sel.value || ""; };
+}
+
+// Load distinct topics for the chosen scheme + subjects into the dropdown.
+async function refreshTopics() {
+  const wrap = document.getElementById("topic-wrap");
+  const sel = document.getElementById("topic-select");
+  if (!wrap || !sel) return;
+  if (!natState.queryType || !natState.subjects.length) { wrap.style.display = "none"; natState.topic = ""; return; }
+  try {
+    const keys = natState.subjects.map((l) => keyByLabel[l] || l);
+    const params = new URLSearchParams({ scheme: natState.queryType });
+    keys.forEach((k) => params.append("subject", k));
+    const r = await fetch(`${API_BASE}/api/cbt/topics?${params}`);
+    const d = await r.json();
+    const topics = (d.topics || []).filter((t) => t.topic);
+    if (!topics.length) { wrap.style.display = "none"; natState.topic = ""; return; }
+    sel.innerHTML = `<option value="">All topics</option>` +
+      topics.map((t) => `<option value="${t.topic.replace(/"/g, "&quot;")}">${t.topic} (${t.count})</option>`).join("");
+    sel.value = natState.topic || "";
+    wrap.style.display = "";
+  } catch (_) { wrap.style.display = "none"; }
 }
 
 function initNational() {
@@ -414,6 +450,8 @@ function initNational() {
     paper: "",
     subjects: [],
     count: null,
+    format: "",
+    topic: "",
   };
   facets = null;
   countByKey = {};
@@ -1098,6 +1136,8 @@ beginBtn.onclick = () => {
       n: String(per),
     });
     if (natState.paper) params.set("paper", natState.paper);
+    if (natState.format) params.set("format", natState.format);
+    if (natState.topic) params.set("topic", natState.topic);
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
   }

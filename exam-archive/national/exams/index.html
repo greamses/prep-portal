@@ -237,6 +237,18 @@
             <div class="custom-chip count-chip" data-count="50"><div class="chip-check-box"></div><span>50</span></div>
             <div class="custom-chip count-chip" data-count="60"><div class="chip-check-box"></div><span>60</span></div>
           </div>
+          <div data-cat="national" id="filter-extra" style="margin-top:.9rem">
+            <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Question format</div>
+            <div class="chips-container" id="format-chips">
+              <div class="custom-chip fmt-chip checked" data-fmt=""><div class="chip-check-box"></div><span>All</span></div>
+              <div class="custom-chip fmt-chip" data-fmt="mcq"><div class="chip-check-box"></div><span>MCQ only</span></div>
+              <div class="custom-chip fmt-chip" data-fmt="theory"><div class="chip-check-box"></div><span>Theory only</span></div>
+            </div>
+            <div id="topic-wrap" style="margin-top:.7rem;display:none">
+              <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Topic (optional)</div>
+              <select id="topic-select" style="width:100%;max-width:340px;padding:.5rem .6rem;border-radius:8px;border:2px solid rgba(0,0,0,.15);font-family:inherit;font-size:.85rem;background:#fff"></select>
+            </div>
+          </div>
           <div
             class="chips-container"
             id="section-chips"

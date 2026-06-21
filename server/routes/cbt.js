@@ -125,11 +125,18 @@ const examQuestions = [
     explanation: ["Sodium is a Group 1 metal; it reacts vigorously with cold water to give hydrogen and sodium hydroxide."]
   },
   {
-    type: "short",                           // short answer — no options
+    type: "short",                           // short answer (a word/phrase) — no options
     question: "State the SI unit of electric current.",
     image: null,
-    answer: "Ampere (A)",
+    answer: "Ampere",
     explanation: ["The ampere (A) is the SI base unit of electric current."]
+  },
+  {
+    type: "subjective",                      // fill-in-the-blank: ____ goes inside the sentence
+    question: "The process by which green plants make food using sunlight is called ____.",
+    image: null,
+    answer: "photosynthesis",
+    explanation: ["Photosynthesis converts light energy into chemical energy stored in glucose."]
   },
   {
     type: "theory",                          // written answer — model answer in "answer"
@@ -152,15 +159,19 @@ const examQuestions = [
 const TYPE_GUIDE = {
   objective:  'OBJECTIVE (MCQ) — a stem with EXACTLY four options and ONE correct answer. Set "options" (4 strings) + "answerIndex" (0-based). No "answer" field.',
   polar:      'POLAR — a true/false (or yes/no) statement. Set "options" to the two poles (e.g. ["True","False"]) + "answerIndex". No "answer" field.',
-  short:      'SHORT — a short-answer question answered in a few words. Set "answer" to the expected answer. OMIT "options"/"answerIndex".',
-  theory:     'THEORY — a written-answer question. Set "answer" to a concise model answer (the key marking points). OMIT "options"/"answerIndex".',
-  subjective: 'SUBJECTIVE — an open/discursive prompt. Set "answer" to a sample answer or the key points expected. OMIT "options"/"answerIndex".',
+  short:      'SHORT — answered with a single word or short phrase. Set "answer" to that word/phrase. OMIT "options"/"answerIndex".',
+  theory:     'THEORY — a longer written answer. Set "answer" to a concise model answer (the key marking points). OMIT "options"/"answerIndex".',
+  subjective: 'SUBJECTIVE — a fill-in-the-blank: put a blank of 4+ underscores (____) somewhere INSIDE the question sentence where the missing word/phrase belongs, and set "answer" to the word/phrase that fills it. OMIT "options"/"answerIndex".',
 };
 const ALL_TYPES = Object.keys(TYPE_GUIDE);
 
-function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video) {
+function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video, grade) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
+  const gradeStr = String(grade || "").trim().slice(0, 60);
+  const gradeBlock = gradeStr
+    ? `\nTARGET CLASS / GRADE: ${gradeStr}. Pitch the vocabulary, contexts, examples and difficulty to be appropriate for ${gradeStr} learners.\n`
+    : "";
   let chosen = (Array.isArray(types) && types.length ? types : ["objective"])
     .map((t) => String(t).toLowerCase().trim()).filter((t) => TYPE_GUIDE[t]);
   if (!chosen.length) chosen = ["objective"];
@@ -178,18 +189,23 @@ function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video)
   let videoBlock;
   if (vurl || vtext) {
     const ref = `${vurl ? `Video: ${vurl}\n` : ""}${vtext ? `Transcript / notes:\n${vtext}\n` : ""}`;
+    const vrules = `Open and watch the link, then write questions GROUNDED in the video's concepts (do not contradict it). Do NOT just ask "what did the video say" literal recall — instead test real understanding ACROSS Bloom's levels: recall a key fact, explain an idea in the learner's own words, APPLY a concept to a fresh example/scenario not shown in the video, and analyse/compare where it fits. Weight toward Understand and Apply.`;
     videoBlock = video.scope === "set"
-      ? `\nSOURCE VIDEO — WATCH-FIRST INTRO. The learner watches this ONE video first, then answers the whole set.\n${ref}Open and watch the link, then base EVERY question STRICTLY on its content — do NOT invent anything not in the video. This single intro video is shown ONCE for the whole set, so set "video": null on each item (do not repeat it per question).\n`
-      : `\nSOURCE VIDEO. Base the questions on this video.\n${ref}Open and watch the link. For EACH question set "video" to the most relevant public URL (the one above, or a more specific clip/timestamp) and "videoScope": "question", so the learner watches it with that question.\n`;
+      ? `\nSOURCE VIDEO — WATCH-FIRST INTRO. The learner watches this ONE video first, then answers the whole set.\n${ref}${vrules} This single intro video is shown ONCE for the whole set, so set "video": null on each item (do not repeat it per question).\n`
+      : `\nSOURCE VIDEO. Base the questions on this video.\n${ref}${vrules} For EACH question set "video" to the most relevant public URL (the one above, or a more specific clip/timestamp) and "videoScope": "question", so the learner watches it with that question.\n`;
   } else {
     videoBlock = `\nVIDEO (optional): you MAY give any question its own clip — set "video" to a public YouTube/Vimeo/.mp4 URL and "videoScope": "question". Otherwise set "video": null.\n`;
   }
   return `You are a SENIOR examiner writing ORIGINAL questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
 Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
-
+${gradeBlock}
 QUESTION TYPES — ${mixLine}
 ${typeBlock}
+
+COGNITIVE RANGE (Bloom's taxonomy) — do NOT make every question literal recall. Spread across:
+- Remember (recall a fact/definition), Understand (explain/interpret in own words), Apply (use the idea in a NEW situation or worked example), Analyse (compare, contrast, give reasons), and where suitable Evaluate/Create.
+Weight the mix toward Understand and Apply.
 
 DIFFICULTY — match the real exam (critical):
 ${sc.calib}
@@ -484,9 +500,10 @@ module.exports = function () {
       const wantImages = b.images === true || b.wantImages === true;
       // Optional: generate FROM a video the learner watches first.
       const video = { url: safeUrl(b.video), text: String(b.videoText || "").trim().slice(0, 6000), scope: videoScopeOf(b.videoScope) };
+      const grade = String(b.grade || "").trim().slice(0, 60);
 
       // Ask for a .js file and parse it in the sandbox; fall back to JSON.
-      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video), false);
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages, video, grade), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
       const questions = cleanQuestions(arr);
@@ -572,6 +589,8 @@ module.exports = function () {
       const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 60);
       const random = req.query.random !== "0";
       const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
+      const format = String(req.query.format || "").toLowerCase(); // "mcq" | "theory" | ""
+      const topicFilter = String(req.query.topic || "").toLowerCase().trim();
       if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "scheme and subject are required." });
 
       // Single-field equality on schemeSubject → no composite index needed; the
@@ -594,10 +613,14 @@ module.exports = function () {
           answer: x.answer || null,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
           video: x.video || null, videoScope: x.videoScope || "question",
-          paper: x.paper || null, subject: x.subject, subjectLabel: x.subjectLabel,
+          paper: x.paper || null, topic: x.topic || null, subject: x.subject, subjectLabel: x.subjectLabel,
           scheme: x.scheme,
         }));
       if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
+      // Format filter: mcq = options-bearing; theory = free-response (no options).
+      if (format === "mcq") questions = questions.filter((q) => q.options && q.options.length >= 2);
+      else if (format === "theory") questions = questions.filter((q) => !(q.options && q.options.length >= 2));
+      if (topicFilter) questions = questions.filter((q) => String(q.topic || "").toLowerCase() === topicFilter);
       if (random) {
         for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
       }
@@ -622,7 +645,8 @@ module.exports = function () {
     const types = String(q.types || "").split(",").map((t) => t.trim().toLowerCase()).filter((t) => TYPE_GUIDE[t]);
     const wantImages = q.images === "1" || q.images === "true";
     const video = { url: safeUrl(q.video), text: String(q.videoText || "").trim().slice(0, 6000), scope: videoScopeOf(q.videoScope) };
-    res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages, video) });
+    const grade = String(q.grade || "").trim().slice(0, 60);
+    res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages, video, grade) });
   });
 
   // ── POST /mark — AI-grade a free-response answer (server-side, signed-in) ──
@@ -670,6 +694,37 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       res.json({ scheme, schemeLabel: SCHEMES[scheme].label, subjects });
     } catch (e) {
       console.error("[/api/cbt/subjects]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /topics?scheme=&subject=[&subject=…] — distinct topics (+counts) ──
+  // Used by the builder's topic filter. Accepts one or many subjects.
+  router.get("/topics", async (req, res) => {
+    try {
+      const scheme = String(req.query.scheme || "").toLowerCase().trim();
+      if (!SCHEMES[scheme]) return res.json({ scheme, topics: [] });
+      const subs = []
+        .concat(req.query.subject || [])
+        .flatMap((s) => String(s).split(","))
+        .map((s) => subjKey(s)).filter(Boolean);
+      const counts = {};
+      const tally = (docs) => docs.forEach((d) => { const t = (d.data().topic || "").trim(); if (t) counts[t] = (counts[t] || 0) + 1; });
+      if (subs.length) {
+        for (const sub of subs) {
+          const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${sub}`).get();
+          tally(snap.docs);
+        }
+      } else {
+        const snap = await db().collection("cbtQuestions").where("scheme", "==", scheme).get();
+        tally(snap.docs);
+      }
+      const topics = Object.entries(counts)
+        .map(([topic, count]) => ({ topic, count }))
+        .sort((a, b) => a.topic.localeCompare(b.topic));
+      res.json({ scheme, topics });
+    } catch (e) {
+      console.error("[/api/cbt/topics]", e.message);
       res.status(500).json({ error: e.message });
     }
   });
