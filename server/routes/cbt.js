@@ -72,6 +72,7 @@ MATH FORMATTING (MathJax) — REQUIRED:
 - Write EVERY mathematical element in LaTeX wrapped in single dollar signs: equations, expressions, variables, fractions, powers, roots, functions and numbers used mathematically. Examples: $3(2x-1)=2(x+5)+7$, $f(x)=\\frac{x+1}{x-1}$, $x^2+y^2=r^2$, $\\sqrt{2}$, $\\sin 30^\\circ$, $\\frac{3}{4}$.
 - Apply this in the question, in EVERY option, and in the explanation.
 - Ordinary words stay outside the dollar signs — only wrap the maths.
+- Write money/currency in plain text (e.g. "420 naira" or "$420" as words), NEVER inside math dollar signs.
 
 MANDATORY:
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
@@ -83,11 +84,22 @@ RESPOND ONLY WITH VALID JSON (no markdown):
 { "questions": [ { "question": "<text>", "options": ["A","B","C","D"], "answerIndex": <0-3>, "explanation": "<one sentence>" } ] }`;
 }
 
-// LaTeX often contains lone backslashes (\frac, \sin) that are invalid JSON
+// LaTeX often contains lone backslashes (\sqrt, \sin) that are invalid JSON
 // escapes and break JSON.parse — double any backslash that isn't a valid escape.
 function safeJson(t) {
   try { return JSON.parse(t); }
   catch (_) { return JSON.parse(String(t).replace(/\\(?![\\/"bfnrtu])/g, "\\\\")); }
+}
+
+// Some LaTeX commands collide with VALID JSON escapes (\frac→\f=form-feed,
+// \beta→\b=backspace, \theta/\times/\tan→\t=tab), so JSON.parse silently turns
+// them into a control char + the rest. Repair those control chars back to a
+// backslash so the command (\frac, \beta, \theta…) is restored for MathJax.
+function fixLatex(s) {
+  return String(s == null ? "" : s)
+    .replace(//g, "\f")
+    .replace(/[]/g, "\b")
+    .replace(/	/g, "\t");
 }
 
 // Try Groq first (fast/cheap), then Gemini. Returns parsed { questions: [...] }.
@@ -139,15 +151,15 @@ function cleanQuestions(arr) {
   const out = [];
   for (const q of arr) {
     if (!q || typeof q !== "object") continue;
-    const question = String(q.question || "").trim().slice(0, 1000);
-    const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 300)).filter(Boolean) : [];
+    const question = fixLatex(q.question).trim().slice(0, 1000);
+    const options = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
     let ai = parseInt(q.answerIndex, 10);
     if (question.length < 6 || options.length < 2 || options.length > 6) continue;
     if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) ai = 0;
     const dedupe = question.toLowerCase().replace(/\s+/g, " ");
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
-    out.push({ question, options, answerIndex: ai, explanation: String(q.explanation || "").slice(0, 500) });
+    out.push({ question, options, answerIndex: ai, explanation: fixLatex(q.explanation).slice(0, 500) });
   }
   return out;
 }
