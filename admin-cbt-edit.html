@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBT Editor — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <script>
+    MathJax = { tex: { inlineMath: [["$","$"],["\\(","\\)"]], displayMath: [["$$","$$"],["\\[","\\]"]] }, options: { skipHtmlTags: ["script","noscript","style","textarea","pre"] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" async></script>
+  <script type="importmap">
+    { "imports": {
+      "firebase/app":"https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+      "firebase/auth":"https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+      "firebase/firestore":"https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+      "firebase/storage":"https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js" } }
+  </script>
+  <style>
+    body { margin:0; background: var(--app-bg); color: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); padding:1.4rem; }
+    .ed-wrap { max-width: 1000px; margin:0 auto; }
+    h1 { font-family: var(--font-display); font-size:1.2rem; margin:0 0 1rem; }
+    .ed-card { background: var(--surface-primary); border:2px solid color-mix(in srgb,var(--ink) 12%,transparent); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1.1rem; box-shadow: var(--shadow-sm); }
+    label { display:block; font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-secondary); margin:.5rem 0 .3rem; }
+    input, select, textarea { width:100%; box-sizing:border-box; padding:.55rem .7rem; border-radius:10px; font-family:inherit; font-size:.85rem;
+      border:2px solid color-mix(in srgb,var(--ink) 14%,transparent); background: var(--surface-secondary); color: var(--ink); }
+    textarea { resize:vertical; min-height:60px; }
+    .row { display:flex; gap:.7rem; flex-wrap:wrap; align-items:flex-end; }
+    .row > div { flex:1 1 160px; }
+    button { padding:.55rem 1rem; border:none; border-radius:999px; cursor:pointer; font-weight:700; font-family:var(--font-display); font-size:.78rem;
+      background: var(--accent-primary); color: var(--text-on-accent,#2a2723); box-shadow:var(--shadow-sm); }
+    button.ghost { background: var(--surface-primary); border:2px solid color-mix(in srgb,var(--ink) 14%,transparent); color:var(--ink); box-shadow:none; }
+    button.danger { background: var(--accent-danger); color:#fff; }
+    button:disabled { opacity:.55; cursor:default; }
+    .opt-row { display:flex; gap:.5rem; align-items:center; margin:.35rem 0; }
+    .opt-row input[type=radio] { width:auto; }
+    .opt-row input[type=text] { flex:1; }
+    .opt-row button { padding:.3rem .6rem; }
+    .ed-list-item { border:1px solid color-mix(in srgb,var(--ink) 12%,transparent); border-radius:10px; padding:.6rem .8rem; margin:.5rem 0; display:flex; gap:.6rem; align-items:flex-start; }
+    .ed-list-item .q { flex:1; font-size:.82rem; }
+    .ed-meta { font-size:.62rem; color:var(--text-secondary); }
+    .ed-preview { border:1px dashed color-mix(in srgb,var(--ink) 20%,transparent); border-radius:10px; padding:.7rem; background:var(--surface-primary); font-size:.9rem; }
+    .ed-preview svg { max-width:200px; max-height:160px; display:block; margin:.4rem 0; }
+    .ed-msg { font-size:.74rem; margin:.5rem 0 0; } .ed-msg--ok{color:var(--accent-success)} .ed-msg--err{color:var(--accent-danger)}
+    .ed-gate { text-align:center; padding:3rem 1rem; color:var(--text-secondary); }
+    .hide { display:none; }
+    a { color: var(--accent-secondary); }
+    .pill { font-size:.55rem; padding:.15rem .45rem; border-radius:999px; background:var(--surface-secondary); color:var(--text-secondary); text-transform:uppercase; }
+  </style>
+</head>
+<body>
+  <div class="ed-wrap">
+    <h1>CBT Question Editor — Admin</h1>
+    <div id="ed-gate" class="ed-gate">Checking access…</div>
+
+    <div id="ed-main" class="hide">
+      <div class="ed-card">
+        <div class="row">
+          <div><label>Scheme</label><select id="ed-scheme"></select></div>
+          <div><label>Subject</label><select id="ed-subject"></select></div>
+          <div><label>Paper</label><select id="ed-paper"><option value="">Any</option><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
+          <div style="flex:0 0 auto"><button id="ed-load" type="button">Load</button></div>
+          <div style="flex:0 0 auto"><button id="ed-new" class="ghost" type="button">+ Add question</button></div>
+        </div>
+        <p id="ed-list-msg" class="ed-meta" style="margin-top:.6rem"></p>
+        <div id="ed-list"></div>
+      </div>
+
+      <div id="ed-form" class="ed-card hide">
+        <h2 id="ed-form-title" style="font-family:var(--font-display);font-size:1rem;margin:.1rem 0 .6rem">Add question</h2>
+        <label>Question (use $…$ for maths)</label>
+        <textarea id="f-question" placeholder="Solve $3x+1=10$."></textarea>
+        <label>Options — select the correct one</label>
+        <div id="f-options"></div>
+        <button id="f-addopt" class="ghost" type="button" style="margin-top:.3rem">+ Option</button>
+        <div class="row">
+          <div><label>Paper</label><select id="f-paper"><option value="">None</option><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
+        </div>
+        <label>Explanation (one per line)</label>
+        <textarea id="f-explanation" placeholder="Why the answer is correct…"></textarea>
+        <label>Hint (optional)</label>
+        <input id="f-hint" />
+        <label>Image — paste inline SVG (&lt;svg…&gt;…&lt;/svg&gt;) or an image URL (optional)</label>
+        <textarea id="f-image" placeholder="&lt;svg viewBox='0 0 100 100'&gt;…&lt;/svg&gt;"></textarea>
+        <label>Live preview</label>
+        <div id="f-preview" class="ed-preview"></div>
+        <div class="row" style="margin-top:.8rem">
+          <div style="flex:0 0 auto"><button id="f-save" type="button">Save</button></div>
+          <div style="flex:0 0 auto"><button id="f-cancel" class="ghost" type="button">Cancel</button></div>
+          <div style="flex:1"></div>
+          <div style="flex:0 0 auto"><button id="f-delete" class="danger hide" type="button">Delete</button></div>
+        </div>
+        <p id="f-msg" class="ed-msg"></p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+    const SCHEMES = { cee:"Common Entrance style", utme:"UTME-style", wassce:"WASSCE-style", postutme:"Post-UTME style", sat:"SAT-style", igcse:"IGCSE-style", alevel:"A-Level-style" };
+    let editingId = null;
+
+    async function authHeader(){ return { Authorization:"Bearer "+(await auth.currentUser.getIdToken()) }; }
+    async function isAdmin(){ try{ const r=await fetch(`${API}/api/ai/whoami`,{headers:await authHeader()}); return r.ok && (await r.json()).admin===true; }catch(_){return false;} }
+
+    function typeset(el){ if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetClear&&MathJax.typesetClear([el]); MathJax.typesetPromise([el]).catch(()=>{}); } }
+
+    async function loadSubjects(){
+      const scheme=$("ed-scheme").value;
+      try{ const r=await fetch(`${API}/api/cbt/subjects?scheme=${scheme}`); const d=await r.json();
+        $("ed-subject").innerHTML=(d.subjects||[]).map(s=>`<option value="${s.key}">${esc(s.label)} (${s.count})</option>`).join("");
+      }catch(_){ $("ed-subject").innerHTML=""; }
+    }
+
+    async function loadList(){
+      const scheme=$("ed-scheme").value, subject=$("ed-subject").value, paper=$("ed-paper").value;
+      if(!subject){ $("ed-list").innerHTML=""; return; }
+      $("ed-list-msg").textContent="Loading…";
+      try{
+        const r=await fetch(`${API}/api/cbt/list?scheme=${scheme}&subject=${subject}${paper?`&paper=${paper}`:""}`,{headers:await authHeader()});
+        const d=await r.json();
+        $("ed-list-msg").textContent=`${d.count||0} question(s).`;
+        $("ed-list").innerHTML=(d.questions||[]).map(q=>`
+          <div class="ed-list-item">
+            <div class="q">${esc((q.question||"").slice(0,160))}
+              <div class="ed-meta"><span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.image?'<span class="pill">img</span>':""} · ${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}</div>
+            </div>
+            <button class="ghost" data-edit="${q.id}" type="button">Edit</button>
+          </div>`).join("") || '<div class="ed-meta">No questions yet — add one.</div>';
+        $("ed-list").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEditor((d.questions||[]).find(q=>q.id===b.dataset.edit)));
+      }catch(e){ $("ed-list-msg").textContent="Failed: "+e.message; }
+    }
+
+    function optionRow(val="", checked=false){
+      const div=document.createElement("div"); div.className="opt-row";
+      div.innerHTML=`<input type="radio" name="correct"${checked?" checked":""}/><input type="text" class="opt" value="${esc(val)}" placeholder="option text ($…$ ok)"/><button class="ghost" type="button">✕</button>`;
+      div.querySelector("button").onclick=()=>{ div.remove(); refreshPreview(); };
+      div.querySelector(".opt").oninput=refreshPreview;
+      div.querySelector("input[type=radio]").onchange=refreshPreview;
+      return div;
+    }
+
+    function openEditor(q){
+      editingId = q ? q.id : null;
+      $("ed-form").classList.remove("hide");
+      $("ed-form-title").textContent = q ? "Edit question" : "Add question";
+      $("f-delete").classList.toggle("hide", !q);
+      $("f-question").value = q ? q.question||"" : "";
+      $("f-paper").value = q && q.paper ? String(q.paper) : "";
+      $("f-explanation").value = q ? (Array.isArray(q.explanation)?q.explanation.join("\n"):(q.explanation||"")) : "";
+      $("f-hint").value = q ? q.hint||"" : "";
+      $("f-image").value = q ? q.image||"" : "";
+      const opts = q && q.options && q.options.length ? q.options : ["","",""," "];
+      const ai = q ? q.answerIndex : 0;
+      $("f-options").innerHTML="";
+      opts.forEach((o,i)=>$("f-options").appendChild(optionRow(o, i===ai)));
+      refreshPreview();
+      $("f-msg").textContent="";
+      $("ed-form").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+
+    function collect(){
+      const options=[...$("f-options").querySelectorAll(".opt")].map(i=>i.value.trim()).filter(Boolean);
+      const radios=[...$("f-options").querySelectorAll("input[type=radio]")];
+      let answerIndex=radios.findIndex(r=>r.checked); if(answerIndex<0)answerIndex=0;
+      const expl=$("f-explanation").value.split("\n").map(s=>s.trim()).filter(Boolean);
+      return {
+        scheme:$("ed-scheme").value, subject:$("ed-subject").value, paper:$("f-paper").value||null,
+        question:$("f-question").value, options, answerIndex,
+        explanation: expl.length>1?expl:(expl[0]||""), hint:$("f-hint").value, image:$("f-image").value,
+      };
+    }
+
+    function refreshPreview(){
+      const b=collect();
+      const img=(b.image||"").trim();
+      const imgHtml = img.startsWith("<svg") ? img : (img ? `<img src="${esc(img)}" style="max-width:200px"/>` : "");
+      $("f-preview").innerHTML=`<div>${esc(b.question)}</div>${imgHtml}<ol type="A" style="margin:.4rem 0 0">${b.options.map((o,i)=>`<li${i===b.answerIndex?' style="font-weight:700;color:var(--accent-success)"':''}>${esc(o)}</li>`).join("")}</ol>`;
+      // MathJax can't read $..$ from escaped text reliably; set textContent then typeset
+      typeset($("f-preview"));
+    }
+
+    async function save(){
+      const b=collect();
+      const btn=$("f-save"), msg=$("f-msg");
+      btn.disabled=true; msg.textContent="Saving…"; msg.className="ed-msg";
+      try{
+        const url = editingId ? `${API}/api/cbt/question/${editingId}` : `${API}/api/cbt/question`;
+        const r=await fetch(url,{method:editingId?"PUT":"POST",headers:{"Content-Type":"application/json",...(await authHeader())},body:JSON.stringify(b)});
+        const d=await r.json();
+        if(!r.ok) throw new Error(d.error||"Failed");
+        msg.textContent="Saved."; msg.className="ed-msg ed-msg--ok";
+        editingId=d.id||editingId; $("f-delete").classList.remove("hide");
+        loadSubjects(); loadList();
+      }catch(e){ msg.textContent=e.message; msg.className="ed-msg ed-msg--err"; }
+      finally{ btn.disabled=false; }
+    }
+
+    async function del(){
+      if(!editingId||!confirm("Delete this question?")) return;
+      try{ await fetch(`${API}/api/cbt/question/${editingId}`,{method:"DELETE",headers:await authHeader()}); $("ed-form").classList.add("hide"); loadSubjects(); loadList(); }catch(e){ $("f-msg").textContent=e.message; }
+    }
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $("ed-gate").innerHTML='Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
+      if(!(await isAdmin())){ $("ed-gate").innerHTML='Admins only. <a href="/index.html">Home</a>.'; return; }
+      $("ed-gate").classList.add("hide"); $("ed-main").classList.remove("hide");
+      $("ed-scheme").innerHTML=Object.entries(SCHEMES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+      await loadSubjects();
+      $("ed-scheme").onchange=async()=>{ await loadSubjects(); loadList(); };
+      $("ed-load").onclick=loadList;
+      $("ed-new").onclick=()=>openEditor(null);
+      $("f-addopt").onclick=()=>{ if($("f-options").children.length<6){ $("f-options").appendChild(optionRow()); } };
+      $("f-save").onclick=save; $("f-cancel").onclick=()=>$("ed-form").classList.add("hide"); $("f-delete").onclick=del;
+      ["f-question","f-image"].forEach(id=>$(id).oninput=refreshPreview);
+      loadList();
+    });
+  </script>
+</body>
+</html>
