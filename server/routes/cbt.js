@@ -273,8 +273,8 @@ async function rephraseGroup(group) {
 For EACH question:
 - Reword the question stem in fresh language.
 - Reword EVERY option, but keep them in the SAME order and the SAME count — do NOT add, remove or reorder options. The correct answer must stay in its original position.
-- Preserve all $...$ LaTeX and keep every number/answer correct.
-- Do not change which option is correct.
+- Keep EVERY mathematical/chemical expression wrapped in its delimiters exactly as in the original — \\( … \\) or $ … $. Never output a LaTeX command (\\frac, \\rightarrow, etc.) outside delimiters.
+- Keep every number/answer correct. Do not change which option is correct.
 
 Return ONLY JSON (same order as given):
 { "items": [ { "question": "<reworded>", "options": ["<reworded option 0>", "<reworded option 1>", "..."] } ] }
