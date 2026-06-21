@@ -68,6 +68,14 @@ const NAV_CONFIG = [
           { text: "A-Level-style", href: "/exam-archive/national/exams/index.html?cat=international", description: "Advanced-level practice" },
         ],
       },
+      {
+        text: "Practice",
+        icon: I.tools,
+        description: "Mixed revision bank — not exam-specific",
+        children: [
+          { text: "Practice questions", href: "/exam-archive/national/exams/index.html?cat=practice", description: "All subjects, mixed difficulty" },
+        ],
+      },
     ],
   },
 

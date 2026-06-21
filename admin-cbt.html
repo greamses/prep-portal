@@ -68,9 +68,11 @@
               <option value="utme">UTME-style</option>
               <option value="wassce">WASSCE-style</option>
               <option value="postutme">Post-UTME style</option>
+              <option value="cee">Common Entrance style</option>
               <option value="sat">SAT-style</option>
               <option value="igcse">IGCSE-style</option>
               <option value="alevel">A-Level-style</option>
+              <option value="practice">Practice (general bank)</option>
             </select>
           </div>
           <div>
@@ -103,11 +105,13 @@
         <div id="cb-types" style="margin-top:.7rem">
           <label style="margin-bottom:.4rem">Question types to include</label>
           <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem">
-            <label class="cb-type"><input type="checkbox" value="objective recall" checked /> Objective</label>
-            <label class="cb-type"><input type="checkbox" value="calculation / numeric" /> Calculation</label>
-            <label class="cb-type"><input type="checkbox" value="conceptual / application" /> Conceptual</label>
-            <label class="cb-type"><input type="checkbox" value="short comprehension passage then a question about it" /> Comprehension</label>
+            <label class="cb-type"><input type="checkbox" value="objective" checked /> Objective</label>
+            <label class="cb-type"><input type="checkbox" value="polar" /> Polar (true/false)</label>
+            <label class="cb-type"><input type="checkbox" value="short" /> Short answer</label>
+            <label class="cb-type"><input type="checkbox" value="theory" /> Theory</label>
+            <label class="cb-type"><input type="checkbox" value="subjective" /> Subjective</label>
           </div>
+          <label class="cb-type" style="margin-top:.6rem"><input id="cb-images" type="checkbox" /> Let the AI draw SVG/diagrams where helpful</label>
         </div>
         <p id="cb-msg" class="cb-msg"></p>
       </div>
@@ -142,7 +146,7 @@
       catch (_) { return false; }
     }
 
-    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style" };
+    const SCHEME_LABEL = { utme: "UTME-style", wassce: "WASSCE-style", postutme: "Post-UTME style", cee: "Common Entrance style", sat: "SAT-style", igcse: "IGCSE-style", alevel: "A-Level-style", practice: "Practice" };
 
     const ICONS = {
       copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
@@ -179,7 +183,7 @@
       try {
         const r = await fetch(`${API}/api/cbt/generate`, {
           method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) },
-          body: JSON.stringify({ scheme, subject, topic, count, types: selectedTypes() }),
+          body: JSON.stringify({ scheme, subject, topic, count, types: selectedTypes(), images: $("cb-images").checked }),
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Failed");
@@ -192,18 +196,23 @@
 
     async function copyPrompt() {
       const msg = $("cb-msg");
-      const scheme = SCHEME_LABEL[$("cb-scheme").value] || $("cb-scheme").value;
-      const subject = $("cb-subject").value.trim() || "[subject]";
-      const topic = $("cb-topic").value.trim(), count = parseInt($("cb-count").value, 10) || 20;
-      const types = selectedTypes();
+      const subject = $("cb-subject").value.trim();
+      if (!subject) { msg.textContent = "Enter a subject first."; msg.className = "cb-msg cb-msg--err"; return; }
+      const qs = new URLSearchParams({
+        scheme: $("cb-scheme").value,
+        subject,
+        topic: $("cb-topic").value.trim(),
+        count: String(parseInt($("cb-count").value, 10) || 20),
+        types: selectedTypes().join(","),
+        images: $("cb-images").checked ? "1" : "0",
+      });
       try {
-        const r = await fetch(`${API}/api/cbt/template`, { headers: await authHeader() });
+        // The server renders the SAME advanced prompt used by in-app generation,
+        // so the external AI gets exactly the right instructions + .js sample.
+        const r = await fetch(`${API}/api/cbt/template?${qs}`, { headers: await authHeader() });
         const d = await r.json();
-        const prompt = `Generate ${count} ORIGINAL ${subject} multiple-choice questions in the style of ${scheme} (do NOT copy any real past question).`
-          + (topic ? `\nFocus on the topic: ${topic}.` : "")
-          + (types.length ? `\nInclude these question types: ${types.join(", ")}.` : "")
-          + `\n\nReturn ONLY a JavaScript file in EXACTLY this format — no prose, no JSON, no markdown fences:\n\n${d.template}\n\nRules:\n- "answerIndex" is the 0-based index of the correct option.\n- Options are the real answer values, never the letters A, B, C, D.\n- Wrap all maths in \\( … \\) with DOUBLE backslashes for commands (\\frac, \\int, \\sqrt), exactly as shown.\n- "explanation" is an array of short strings; "image" is null.`;
-        await navigator.clipboard.writeText(prompt);
+        if (!r.ok) throw new Error(d.error || "Failed");
+        await navigator.clipboard.writeText(d.prompt);
         msg.textContent = "AI prompt copied — paste into your AI, then import the .js it returns."; msg.className = "cb-msg cb-msg--ok";
       } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
     }

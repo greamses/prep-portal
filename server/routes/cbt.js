@@ -37,6 +37,8 @@ const SCHEMES = {
     calib: "- IGCSE (Extended) standard: multi-step problems covering the IGCSE syllabus at full exam difficulty." },
   alevel:   { label: "A-Level-style", region: "international", desc: "an A-Level (advanced upper-secondary) exam",
     calib: "- A-Level standard: advanced and rigorous — calculus, further algebra, mechanics/statistics where relevant; genuinely demanding multi-step questions." },
+  practice: { label: "Practice", region: "practice", desc: "general revision/practice questions for the subject (NOT tied to any specific exam)",
+    calib: "- Cover the core syllabus at a fair, mixed difficulty (a few easy, mostly medium, some genuinely hard) suitable for self-study revision." },
 };
 
 const SUBJECT_LABELS = {
@@ -66,65 +68,140 @@ const SCHEME_SUBJECTS = {
   sat: ["mathematics", "english"],
   igcse: ["mathematics", "english", "biology", "physics", "chemistry", "economics", "geography", "history", "ict", "businessstudies"],
   alevel: ["mathematics", "furthermaths", "physics", "chemistry", "biology", "economics", "geography", "history"],
+  practice: [...SENIOR_NG, "quantitative", "verbal", "generalstudies", "furthermaths", "ict", "businessstudies"],
 };
 
 const subjKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
 const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperCase() + k.slice(1) : "Subject");
 
 // The exact .js shape we want the model to return (and that admins can copy to
-// feed their own AI). String.raw keeps the double backslashes literal.
-const SAMPLE_JS = String.raw`const examQuestions = [
+// feed their own AI). String.raw keeps the double backslashes literal. It shows
+// EVERY supported question type plus an inline-SVG image example.
+const SAMPLE_JS = String.raw`/**
+ * Return ONE JavaScript file shaped EXACTLY like this. Keep the array name
+ * examQuestions. Every item MUST have a "type". Field rules per type:
+ *   objective / polar  → "options" (array) + "answerIndex" (0-based). No "answer".
+ *   short / theory / subjective → "answer" (string). No "options"/"answerIndex".
+ * "image" is null, OR a self-contained inline <svg>…</svg> string, OR a public URL.
+ * Wrap maths in \( … \) using DOUBLE backslashes for commands, exactly as shown.
+ */
+const examQuestions = [
   {
+    type: "objective",                       // 4 options, one correct
     question: "Evaluate \\( \\int_0^1 (3x^2 + 2x)\\,dx \\).",
     image: null,
     options: ["\\( 2 \\)", "\\( 3 \\)", "\\( \\frac{5}{2} \\)", "\\( 1 \\)"],
     answerIndex: 0,
-    explanation: ["\\( [x^3 + x^2]_0^1 = 1 + 1 = 2 \\)."]
+    hint: "Integrate term by term, then apply the limits.",
+    explanation: ["\\( [x^3 + x^2]_0^1 = (1+1) - 0 = 2 \\)."]
   },
   {
-    question: "Which gas is usually collected by downward delivery (upward displacement of air)?",
+    type: "polar",                           // true/false or yes/no — two poles
+    question: "Sodium reacts vigorously with cold water.",
     image: null,
-    options: ["Hydrogen", "Ammonia", "Carbon dioxide", "Methane"],
-    answerIndex: 2,
-    explanation: ["Carbon dioxide is denser than air, so it is collected by upward displacement of air."]
+    options: ["True", "False"],
+    answerIndex: 0,
+    explanation: ["Sodium is a Group 1 metal; it reacts vigorously with cold water to give hydrogen and sodium hydroxide."]
+  },
+  {
+    type: "short",                           // short answer — no options
+    question: "State the SI unit of electric current.",
+    image: null,
+    answer: "Ampere (A)",
+    explanation: ["The ampere (A) is the SI base unit of electric current."]
+  },
+  {
+    type: "theory",                          // written answer — model answer in "answer"
+    question: "Explain why ionic compounds conduct electricity when molten but not when solid.",
+    image: null,
+    answer: "When molten, the ions are free to move and carry charge through the liquid. In the solid state the ions are locked in fixed positions in the lattice, so they cannot move and no current flows.",
+    explanation: ["Conduction needs mobile charge carriers; in an ionic solid the ions are not free to move."]
+  },
+  {
+    type: "objective",                       // image example — a SELF-CONTAINED inline SVG
+    question: "In the diagram, the two resistors are connected in:",
+    image: "<svg viewBox='0 0 120 40' xmlns='http://www.w3.org/2000/svg'><line x1='5' y1='20' x2='30' y2='20' stroke='currentColor' fill='none'/><rect x='30' y='12' width='25' height='16' fill='none' stroke='currentColor'/><rect x='65' y='12' width='25' height='16' fill='none' stroke='currentColor'/><line x1='90' y1='20' x2='115' y2='20' stroke='currentColor'/></svg>",
+    options: ["Series", "Parallel", "Short circuit", "Open circuit"],
+    answerIndex: 0,
+    explanation: ["The resistors lie end to end on a single current path, so they are in series."]
   }
 ];`;
 
-function genPrompt(scheme, subjectLabel, topic, count, types) {
+// What each question "type" means + the fields it must carry.
+const TYPE_GUIDE = {
+  objective:  'OBJECTIVE (MCQ) — a stem with EXACTLY four options and ONE correct answer. Set "options" (4 strings) + "answerIndex" (0-based). No "answer" field.',
+  polar:      'POLAR — a true/false (or yes/no) statement. Set "options" to the two poles (e.g. ["True","False"]) + "answerIndex". No "answer" field.',
+  short:      'SHORT — a short-answer question answered in a few words. Set "answer" to the expected answer. OMIT "options"/"answerIndex".',
+  theory:     'THEORY — a written-answer question. Set "answer" to a concise model answer (the key marking points). OMIT "options"/"answerIndex".',
+  subjective: 'SUBJECTIVE — an open/discursive prompt. Set "answer" to a sample answer or the key points expected. OMIT "options"/"answerIndex".',
+};
+const ALL_TYPES = Object.keys(TYPE_GUIDE);
+
+function genPrompt(scheme, subjectLabel, topic, count, types, wantImages) {
   const sc = SCHEMES[scheme] || SCHEMES.utme;
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
-  const typeLine = (Array.isArray(types) && types.length)
-    ? `\nUse a mix of these question types: ${types.join(", ")}.`
-    : "";
-  return `You are a SENIOR examiner writing ORIGINAL multiple-choice questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
+  let chosen = (Array.isArray(types) && types.length ? types : ["objective"])
+    .map((t) => String(t).toLowerCase().trim()).filter((t) => TYPE_GUIDE[t]);
+  if (!chosen.length) chosen = ["objective"];
+  const typeBlock = chosen.map((t) => "- " + TYPE_GUIDE[t]).join("\n");
+  const mixLine = chosen.length > 1
+    ? `Use a realistic MIX of these ${chosen.length} question types across the set (not all the same): ${chosen.join(", ")}.`
+    : `EVERY question must be of type "${chosen[0]}".`;
+  const imageBlock = wantImages
+    ? `IMAGES: where a diagram genuinely helps (geometry, circuits, graphs, structures), set "image" to a SELF-CONTAINED inline SVG string you create (<svg viewBox='…'>…</svg>, use stroke='currentColor' so it adapts to the theme); otherwise set "image": null. NEVER reference external or copyrighted image files.`
+    : `IMAGES: set "image": null for every question (no diagrams).`;
+  return `You are a SENIOR examiner writing ORIGINAL questions for ${subjectLabel}, in the STYLE of ${sc.desc}.
 
-Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.${typeLine}
+Generate exactly ${count} questions${topic ? ` focused on the topic: ${topic}` : ""}.
+
+QUESTION TYPES — ${mixLine}
+${typeBlock}
 
 DIFFICULTY — match the real exam (critical):
 ${sc.calib}
-- Do NOT write trivially easy or single-step questions unless the exam itself is at that level (${scheme === "cee" ? "this one is" : "this one is NOT — it is a senior/exam-level test"}).
+- Do NOT write trivially easy or single-step questions unless the exam itself is at that level (${scheme === "cee" ? "this one is" : scheme === "practice" ? "use mixed difficulty" : "this one is NOT — it is a senior/exam-level test"}).
 - Spread difficulty realistically: a few easier, mostly medium, some genuinely hard.
 ${isMath ? `
 MATHEMATICS RIGOR:
 - Require real multi-step working (typically 2–4 steps), not one-operation recall.
 - Use topics that fit the level (algebra, indices, surds, logarithms, trigonometry, calculus, sequences/series, probability, coordinate geometry — choose what suits the scheme).
-- Make ALL four options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
+- For objective items, make ALL options plausible: distractors should reflect common mistakes (sign slips, wrong formula, mis-applied rule), never random numbers.
 - Keep arithmetic clean enough to solve by hand unless the exam allows a calculator.
 ` : ""}
 MANDATORY:
 - Original, brand-new questions. NEVER reproduce, quote, or lightly reword a real past exam question.
-- No copyrighted passages, named datasets, diagrams or images. Self-contained text only.
-- Exactly FOUR options each, exactly ONE correct. Options are the real answer values — NEVER the letters A/B/C/D or placeholders.
-- "answerIndex" is the 0-based index of the correct option.
-- "explanation" is an array of short strings. "image" is null.
+- No copyrighted passages, named datasets or third-party diagrams. Self-contained content only.
+- For objective/polar: options are the real answer values — NEVER the letters A/B/C/D or placeholders; "answerIndex" is the 0-based index of the correct option.
+- For short/theory/subjective: provide a clear, correct "answer" (model answer / key points) and OMIT options.
+- "explanation" is an array of short strings. Every item carries its correct "type".
+${imageBlock}
 - Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
 
 OUTPUT — return ONLY a JavaScript file: a single "const examQuestions = [ … ];" array
-EXACTLY in this format. No JSON, no markdown fences, no prose, no comments:
+EXACTLY in this format. No JSON, no markdown fences, no prose, no extra comments:
 
 ${SAMPLE_JS}
 
 Now output ONLY the JavaScript for ${count} ${subjectLabel} question(s).`;
+}
+
+// Resolve a question's type from its declared "type" (or infer from its shape).
+function normType(t, q) {
+  const s = String(t || "").toLowerCase().trim();
+  if (TYPE_GUIDE[s]) return s;
+  if (q && Array.isArray(q.options) && q.options.filter(Boolean).length >= 2) {
+    return q.options.filter(Boolean).length === 2 ? "polar" : "objective";
+  }
+  if (q && typeof q.answer === "string" && q.answer.trim()) return "short";
+  return "objective";
+}
+
+// Normalise an explanation (array kept as array, else trimmed string), fixLatex'd.
+function normExpl(e, fix) {
+  const f = fix ? fixLatex : (x) => String(x == null ? "" : x);
+  return Array.isArray(e)
+    ? e.map((x) => f(x).slice(0, 1200)).filter(Boolean).slice(0, 20)
+    : f(e || "").slice(0, 3000);
 }
 
 // LaTeX often contains lone backslashes (\sqrt, \sin) that are invalid JSON
@@ -186,17 +263,35 @@ function cleanQuestions(arr) {
   const out = [];
   for (const q of arr) {
     if (!q || typeof q !== "object") continue;
-    const question = fixLatex(q.question).trim().slice(0, 1000);
-    const options = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
-    let ai = parseInt(q.answerIndex ?? q.correctIndex, 10);
-    if (question.length < 6 || options.length < 2 || options.length > 6) continue;
-    // Reject placeholder options like ["A","B","C","D"] the model sometimes echoes.
-    if (options.every((o) => /^[A-D]$/i.test(o.trim()))) continue;
-    if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) ai = 0;
+    const question = fixLatex(q.question).trim().slice(0, 2000);
+    if (question.length < 6) continue;
     const dedupe = question.toLowerCase().replace(/\s+/g, " ");
     if (seen.has(dedupe)) continue;
-    seen.add(dedupe);
-    out.push({ question, options, answerIndex: ai, explanation: fixLatex(q.explanation).slice(0, 500) });
+    const type = normType(q.type, q);
+    const explanation = normExpl(q.explanation, true);
+    const hint = fixLatex(q.hint || "").slice(0, 600);
+    const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
+    const opts = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
+
+    if (opts.length >= 2) {
+      // Objective / polar (MCQ) — needs 2–6 real options + a correct index.
+      if (opts.length > 6) continue;
+      if (opts.every((o) => /^[A-D]$/i.test(o.trim()))) continue; // reject placeholders
+      let ai = parseInt(q.answerIndex ?? q.correctIndex, 10);
+      if ((!Number.isInteger(ai) || ai < 0 || ai >= opts.length) && typeof q.answer === "string") {
+        const idx = opts.findIndex((o) => o === fixLatex(q.answer).trim());
+        ai = idx >= 0 ? idx : 0;
+      }
+      if (!Number.isInteger(ai) || ai < 0 || ai >= opts.length) ai = 0;
+      seen.add(dedupe);
+      out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image });
+    } else {
+      // Free-response (short / theory / subjective) — needs an answer.
+      const answer = fixLatex(q.answer || "").trim().slice(0, 4000);
+      if (!answer) continue;
+      seen.add(dedupe);
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image });
+    }
   }
   return out;
 }
@@ -216,7 +311,8 @@ function validBody(b) {
   let image = typeof b.image === "string" ? b.image.trim().slice(0, 80000) : null;
   if (!image) image = null;
   const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
-  return { question, options, answerIndex: ai, explanation, hint, image, paper };
+  const type = options.length === 2 ? "polar" : "objective";
+  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, paper };
 }
 
 // Parse an uploaded question-library .js file of the form
@@ -252,21 +348,28 @@ function importQuestions(arr) {
   for (const q of arr || []) {
     if (!q || typeof q !== "object") continue;
     const question = String(q.question || "").trim().slice(0, 4000);
-    const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 800)).filter(Boolean) : [];
-    let ai = Number.isInteger(q.correctIndex) ? q.correctIndex : (Number.isInteger(q.answerIndex) ? q.answerIndex : -1);
-    if (question.length < 3 || options.length < 2) continue;
-    // Some files store the answer as text — match it to an option.
-    if ((ai < 0 || ai >= options.length) && typeof q.answer === "string") {
-      const idx = options.findIndex((o) => o === q.answer.trim());
-      if (idx >= 0) ai = idx;
-    }
-    if (ai < 0 || ai >= options.length) ai = 0;
-    const explanation = Array.isArray(q.explanation)
-      ? q.explanation.map((x) => String(x == null ? "" : x).slice(0, 1200)).filter(Boolean).slice(0, 20)
-      : String(q.explanation || "").slice(0, 3000);
+    if (question.length < 3) continue;
+    const type = normType(q.type, q);
+    const explanation = normExpl(q.explanation, false);
     const hint = String(q.hint || "").slice(0, 800);
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
-    out.push({ question, options, answerIndex: ai, explanation, hint, image });
+    const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 800)).filter(Boolean) : [];
+
+    if (options.length >= 2) {
+      let ai = Number.isInteger(q.correctIndex) ? q.correctIndex : (Number.isInteger(q.answerIndex) ? q.answerIndex : -1);
+      // Some files store the answer as text — match it to an option.
+      if ((ai < 0 || ai >= options.length) && typeof q.answer === "string") {
+        const idx = options.findIndex((o) => o === q.answer.trim());
+        if (idx >= 0) ai = idx;
+      }
+      if (ai < 0 || ai >= options.length) ai = 0;
+      out.push({ type: options.length === 2 && type === "polar" ? "polar" : "objective", question, options, answerIndex: ai, answer: null, explanation, hint, image });
+    } else {
+      // Free-response import (short / theory / subjective).
+      const answer = String(q.answer == null ? "" : q.answer).trim().slice(0, 6000);
+      if (!answer) continue;
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image });
+    }
   }
   return out;
 }
@@ -328,9 +431,10 @@ module.exports = function () {
       const count = Math.min(Math.max(parseInt(b.count, 10) || 10, 1), 30);
       const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
       const types = Array.isArray(b.types) ? b.types.filter((t) => typeof t === "string" && t.trim()).slice(0, 6) : [];
+      const wantImages = b.images === true || b.wantImages === true;
 
       // Ask for a .js file and parse it in the sandbox; fall back to JSON.
-      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types), false);
+      const text = await callModelRaw(genPrompt(scheme, label, topic, count, types, wantImages), false);
       let arr = parseExamJs(text);
       if (!arr.length) { try { const j = safeJson(text); arr = j.questions || j.items || (Array.isArray(j) ? j : []); } catch (_) {} }
       const questions = cleanQuestions(arr);
@@ -343,8 +447,13 @@ module.exports = function () {
           scheme, subject: key, subjectLabel: label,
           schemeSubject: `${scheme}__${key}`,
           topic: topic || null, paper,
-          question: q.question, options: q.options, answerIndex: q.answerIndex,
-          explanation: q.explanation, image: null, source: "ai",
+          type: q.type || "objective",
+          question: q.question,
+          options: q.options || null,
+          answerIndex: typeof q.answerIndex === "number" ? q.answerIndex : null,
+          answer: q.answer || null,
+          explanation: q.explanation, hint: q.hint || "", image: q.image || null,
+          source: "ai",
           createdAt: stamp(), updatedAt: stamp(),
         });
       });
@@ -416,8 +525,11 @@ module.exports = function () {
         .map((d) => ({ id: d.id, ...d.data() }))
         // Kill-switch: hide verbatim originals if enabled (keep rephrased/ai/manual).
         .filter((x) => !(ho && x.source === "past"))
+        // The test engine is MCQ — only serve options-bearing items (objective/polar).
+        // Free-response (short/theory/subjective) stays in the bank for now.
+        .filter((x) => Array.isArray(x.options) && x.options.length >= 2)
         .map((x) => ({
-          id: x.id, question: x.question, options: x.options || [],
+          id: x.id, type: x.type || "objective", question: x.question, options: x.options || [],
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
@@ -436,9 +548,19 @@ module.exports = function () {
     }
   });
 
-  // ── GET /template — the exact .js shape to feed an AI (admin) ──
-  router.get("/template", authenticate, requireAdmin, (_req, res) => {
-    res.json({ template: SAMPLE_JS });
+  // ── GET /template — the exact .js shape + a ready-to-paste prompt (admin) ──
+  // Optional params (scheme, subject, topic, count, types, images) make the
+  // returned `prompt` parameter-aware — the SAME advanced prompt used in-app.
+  router.get("/template", authenticate, requireAdmin, (req, res) => {
+    const q = req.query || {};
+    const scheme = SCHEMES[String(q.scheme || "").toLowerCase().trim()] ? String(q.scheme).toLowerCase().trim() : "utme";
+    const key = subjKey(q.subject);
+    const label = key ? subjLabel(key, q.subject) : "the subject";
+    const topic = String(q.topic || "").trim().slice(0, 120);
+    const count = Math.min(Math.max(parseInt(q.count, 10) || 20, 1), 60);
+    const types = String(q.types || "").split(",").map((t) => t.trim().toLowerCase()).filter((t) => TYPE_GUIDE[t]);
+    const wantImages = q.images === "1" || q.images === "true";
+    res.json({ template: SAMPLE_JS, types: ALL_TYPES, prompt: genPrompt(scheme, label, topic, count, types, wantImages) });
   });
 
   // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──

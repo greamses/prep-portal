@@ -66,6 +66,14 @@ const HEADER_CONTENT = {
       <span class="hero-stat theme-red"><strong>A-Level</strong>-style</span>`,
     ctaLabel: "Start practice test →",
   },
+  practice: {
+    note: "A mixed revision bank — pick subjects & how many questions for an instant, marked practice set (not tied to any exam).",
+    stats: `
+      <span class="hero-stat theme-blue"><strong>All</strong> subjects</span>
+      <span class="hero-stat theme-green"><strong>Mixed</strong> difficulty</span>
+      <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
+    ctaLabel: "Start practice →",
+  },
 };
 
 function updateHeaderContent(cat) {
@@ -89,6 +97,9 @@ const INTL_EXAM_TYPES = [
   { id: "sat", name: "SAT-style", queryType: "sat", live: true },
   { id: "igcse", name: "IGCSE-style", queryType: "igcse", live: true },
   { id: "alevel", name: "A-Level-style", queryType: "alevel", live: true },
+];
+const PRACTICE_EXAM_TYPES = [
+  { id: "practice", name: "Practice", queryType: "practice", live: true },
 ];
 let activeExamTypes = NAT_EXAM_TYPES;
 const COMPULSORY = []; // no subject is forced — learners pick freely
@@ -1075,7 +1086,7 @@ function initInternational() {
 beginBtn.onclick = () => {
   if (beginBtn.disabled) return;
 
-  if (activeCat === "national" || activeCat === "international") {
+  if (activeCat === "national" || activeCat === "international" || activeCat === "practice") {
     // Spread the chosen total across the selected subjects.
     const total = natState.count || 40;
     const per = Math.max(1, Math.ceil(total / Math.max(1, natState.subjects.length)));
@@ -1112,8 +1123,8 @@ beginBtn.onclick = () => {
 };
 
 function initMode(cat) {
-  // Both National and International run the CBT builder; only the scheme set differs.
-  activeExamTypes = cat === "international" ? INTL_EXAM_TYPES : NAT_EXAM_TYPES;
+  // National, International and Practice all run the CBT builder; only the scheme set differs.
+  activeExamTypes = cat === "international" ? INTL_EXAM_TYPES : cat === "practice" ? PRACTICE_EXAM_TYPES : NAT_EXAM_TYPES;
   initNational();
   setStatus("Awaiting selections...", false);
   beginBtn.disabled = true;
@@ -1137,7 +1148,7 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 document.querySelectorAll(".cat-tab").forEach((b) => {
   if (b.dataset.tab === "competition") b.style.display = "none";
 });
-const startCat = initialCat === "international" ? "international" : "national";
+const startCat = ["international", "practice"].includes(initialCat) ? initialCat : "national";
 activeCat = startCat;
 applyCat(startCat);
 updateHeaderContent(startCat);
