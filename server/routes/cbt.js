@@ -12,6 +12,7 @@
  */
 
 const express = require("express");
+const vm = require("vm");
 const admin = require("firebase-admin");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const { GEMINI_MODELS, GROQ_DEFAULT_MODEL } = require("../ai-models");
@@ -211,10 +212,72 @@ function validBody(b) {
   return { question, options, answerIndex: ai, explanation, hint, image, paper };
 }
 
+// Parse an uploaded question-library .js file of the form
+//   const examQuestions = [ { question, image, options, correctIndex, hint, explanation } , … ];
+// Runs in a sandboxed VM (admin-only feature) and returns the array. Because the
+// file is real JS, string escaping (\( \) \frac …) is handled by the JS engine —
+// no JSON-escape corruption.
+function parseExamJs(code) {
+  let src = String(code)
+    .replace(/^\s*import\s.*$/gm, "")          // drop ES import lines (break vm)
+    .replace(/^\s*export\s+default\s+/gm, "")
+    .replace(/^\s*export\s+/gm, "");
+  // Capture the FIRST array-valued top-level declaration (examQuestions,
+  // quizData, chemistryObjective, …) regardless of its name.
+  src = src.replace(/\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*\[/, "globalThis.__arr = [");
+  const wrapped = src +
+    "\n;(function(){ try { return (typeof __arr!=='undefined' && __arr) ||" +
+    " (typeof examQuestions!=='undefined' && examQuestions) ||" +
+    " (typeof module!=='undefined' && Array.isArray(module.exports) && module.exports) || []; } catch (e) { return []; } })();";
+  const sandbox = { module: { exports: [] }, exports: {}, window: {}, console: { log() {}, warn() {}, error() {} } };
+  sandbox.globalThis = sandbox;
+  let out;
+  try { out = vm.runInNewContext(wrapped, sandbox, { timeout: 4000 }); } catch (_) { out = null; }
+  if (Array.isArray(out)) return out;
+  return Array.isArray(sandbox.__arr) ? sandbox.__arr : [];
+}
+
+// Normalise imported items (correctIndex→answerIndex, keep image paths, keep
+// explanation arrays). No fixLatex — the JS file's strings are already correct.
+function importQuestions(arr) {
+  const out = [];
+  for (const q of arr || []) {
+    if (!q || typeof q !== "object") continue;
+    const question = String(q.question || "").trim().slice(0, 4000);
+    const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 800)).filter(Boolean) : [];
+    let ai = Number.isInteger(q.correctIndex) ? q.correctIndex : (Number.isInteger(q.answerIndex) ? q.answerIndex : -1);
+    if (question.length < 3 || options.length < 2) continue;
+    // Some files store the answer as text — match it to an option.
+    if ((ai < 0 || ai >= options.length) && typeof q.answer === "string") {
+      const idx = options.findIndex((o) => o === q.answer.trim());
+      if (idx >= 0) ai = idx;
+    }
+    if (ai < 0 || ai >= options.length) ai = 0;
+    const explanation = Array.isArray(q.explanation)
+      ? q.explanation.map((x) => String(x == null ? "" : x).slice(0, 1200)).filter(Boolean).slice(0, 20)
+      : String(q.explanation || "").slice(0, 3000);
+    const hint = String(q.hint || "").slice(0, 800);
+    const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
+    out.push({ question, options, answerIndex: ai, explanation, hint, image });
+  }
+  return out;
+}
+
 module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
   const stamp = admin.firestore.FieldValue.serverTimestamp;
+
+  // Whether to hide "original" (verbatim past-paper) questions from learners —
+  // a kill-switch if the exam bodies object. Cached 30s; admins still see them.
+  let _hoAt = 0, _ho = false;
+  async function hideOriginals() {
+    if (Date.now() - _hoAt < 30000) return _ho;
+    try { const s = await db().collection("config").doc("site").get(); _ho = !!(s.exists && s.data().hideOriginals === true); }
+    catch (_) { _ho = false; }
+    _hoAt = Date.now();
+    return _ho;
+  }
 
   // ── POST /generate — admin builds the bank ──────────────────────
   router.post("/generate", authenticate, requireAdmin, async (req, res) => {
@@ -304,21 +367,23 @@ module.exports = function () {
 
       // Single-field equality on schemeSubject → no composite index needed; the
       // optional paper filter is applied in code.
-      const pool = Math.max(limit * 4, 120);
+      const ho = await hideOriginals();
+      const pool = Math.max(limit * 4, 150);
       const snap = await db().collection("cbtQuestions")
         .where("schemeSubject", "==", `${scheme}__${subject}`).limit(pool).get();
 
-      let questions = snap.docs.map((d) => {
-        const x = d.data();
-        return {
-          id: d.id, question: x.question, options: x.options || [],
+      let questions = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        // Kill-switch: hide verbatim originals if enabled (keep rephrased/ai/manual).
+        .filter((x) => !(ho && x.source === "past"))
+        .map((x) => ({
+          id: x.id, question: x.question, options: x.options || [],
           answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
           paper: x.paper || null, subject: x.subject, subjectLabel: x.subjectLabel,
           scheme: x.scheme,
-        };
-      });
+        }));
       if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
       if (random) {
         for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
@@ -412,6 +477,45 @@ module.exports = function () {
       res.json({ ok: true });
     } catch (e) {
       console.error("[/api/cbt/question PUT]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /import — admin: bulk-import a question-library .js file ──
+  // body { scheme, subject, paper, source ("past"|"rephrased"|"manual"), jsCode }
+  router.post("/import", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const scheme = String(b.scheme || "").toLowerCase().trim();
+      const key = subjKey(b.subject);
+      if (!SCHEMES[scheme]) return res.status(400).json({ error: "Unknown scheme." });
+      if (!key) return res.status(400).json({ error: "Subject is required." });
+      const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : "1";
+      const source = ["past", "rephrased", "manual"].includes(b.source) ? b.source : "past";
+
+      let arr;
+      try { arr = parseExamJs(b.jsCode || ""); }
+      catch (e) { return res.status(400).json({ error: "Couldn't parse the JS file: " + e.message }); }
+      const items = importQuestions(arr);
+      if (!items.length) return res.status(400).json({ error: "No questions found (expected `const examQuestions = [ … ]`)." });
+
+      let written = 0;
+      for (let i = 0; i < items.length; i += 400) {
+        const batch = db().batch();
+        items.slice(i, i + 400).forEach((q) => {
+          const ref = db().collection("cbtQuestions").doc();
+          batch.set(ref, {
+            scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
+            schemeSubject: `${scheme}__${key}`, paper, source,
+            ...q, createdAt: stamp(), updatedAt: stamp(),
+          });
+        });
+        await batch.commit();
+        written += Math.min(400, items.length - i);
+      }
+      res.json({ ok: true, imported: written });
+    } catch (e) {
+      console.error("[/api/cbt/import]", e.message);
       res.status(500).json({ error: e.message });
     }
   });

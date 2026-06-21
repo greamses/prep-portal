@@ -19,20 +19,27 @@ module.exports = function () {
   router.get("/", async (_req, res) => {
     try {
       const s = await ref().get();
-      res.json({ archiveEnabled: !!(s.exists && s.data().archiveEnabled === true) });
+      const d = s.exists ? s.data() : {};
+      res.json({
+        archiveEnabled: d.archiveEnabled === true,
+        hideOriginals: d.hideOriginals === true,
+      });
     } catch (_) {
-      res.json({ archiveEnabled: false });
+      res.json({ archiveEnabled: false, hideOriginals: false });
     }
   });
 
+  // Set any provided flag(s); only the keys present in the body are changed.
   router.post("/", authenticate, requireAdmin, async (req, res) => {
     try {
-      const archiveEnabled = !!(req.body && req.body.archiveEnabled);
-      await ref().set(
-        { archiveEnabled, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
-        { merge: true }
-      );
-      res.json({ ok: true, archiveEnabled });
+      const b = req.body || {};
+      const patch = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+      if ("archiveEnabled" in b) patch.archiveEnabled = !!b.archiveEnabled;
+      if ("hideOriginals" in b) patch.hideOriginals = !!b.hideOriginals;
+      await ref().set(patch, { merge: true });
+      const s = await ref().get();
+      const d = s.data() || {};
+      res.json({ ok: true, archiveEnabled: d.archiveEnabled === true, hideOriginals: d.hideOriginals === true });
     } catch (e) {
       console.error("[/api/config POST]", e.message);
       res.status(500).json({ error: e.message });
