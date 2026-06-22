@@ -27,6 +27,7 @@ const PAGE_CONFIG = {
     // CBT optional filters: format = '' | 'mcq' | 'theory'; topic = exact topic.
     format:    (urlParams.get('format') || '').toLowerCase().trim(),
     topic:     (urlParams.get('topic') || '').trim(),
+    grade:     (urlParams.get('grade') || '').trim(),
     limit:     parseInt(urlParams.get('n') || urlParams.get('limit') || '20', 10) || 20,
     // feedback=on → reveal the correct answer + explanation the instant a
     // learner picks an option (the question then locks), instead of only at submit.

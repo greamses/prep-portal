@@ -420,14 +420,19 @@ function initFormatChips() {
   });
   const sel = document.getElementById("topic-select");
   if (sel) sel.onchange = () => { natState.topic = sel.value || ""; };
+  const gsel = document.getElementById("grade-select");
+  if (gsel) gsel.onchange = () => { natState.grade = gsel.value || ""; };
 }
 
-// Load distinct topics for the chosen scheme + subjects into the dropdown.
+// Load distinct topics + grades for the chosen scheme + subjects into the dropdowns.
 async function refreshTopics() {
-  const wrap = document.getElementById("topic-wrap");
-  const sel = document.getElementById("topic-select");
-  if (!wrap || !sel) return;
-  if (!natState.queryType || !natState.subjects.length) { wrap.style.display = "none"; natState.topic = ""; return; }
+  const wrap = document.getElementById("topic-wrap"), sel = document.getElementById("topic-select");
+  const gwrap = document.getElementById("grade-wrap"), gsel = document.getElementById("grade-select");
+  const hide = () => {
+    if (wrap) wrap.style.display = "none"; natState.topic = "";
+    if (gwrap) gwrap.style.display = "none"; natState.grade = "";
+  };
+  if (!natState.queryType || !natState.subjects.length) return hide();
   try {
     const keys = natState.subjects.map((l) => keyByLabel[l] || l);
     const params = new URLSearchParams({ scheme: natState.queryType });
@@ -435,12 +440,22 @@ async function refreshTopics() {
     const r = await fetch(`${API_BASE}/api/cbt/topics?${params}`);
     const d = await r.json();
     const topics = (d.topics || []).filter((t) => t.topic);
-    if (!topics.length) { wrap.style.display = "none"; natState.topic = ""; return; }
-    sel.innerHTML = `<option value="">All topics</option>` +
-      topics.map((t) => `<option value="${t.topic.replace(/"/g, "&quot;")}">${t.topic} (${t.count})</option>`).join("");
-    sel.value = natState.topic || "";
-    wrap.style.display = "";
-  } catch (_) { wrap.style.display = "none"; }
+    const grades = (d.grades || []).filter((g) => g.grade);
+    if (sel && wrap) {
+      if (topics.length) {
+        sel.innerHTML = `<option value="">All topics</option>` +
+          topics.map((t) => `<option value="${t.topic.replace(/"/g, "&quot;")}">${t.topic} (${t.count})</option>`).join("");
+        sel.value = natState.topic || ""; wrap.style.display = "";
+      } else { wrap.style.display = "none"; natState.topic = ""; }
+    }
+    if (gsel && gwrap) {
+      if (grades.length) {
+        gsel.innerHTML = `<option value="">All grades</option>` +
+          grades.map((g) => `<option value="${g.grade.replace(/"/g, "&quot;")}">${g.grade} (${g.count})</option>`).join("");
+        gsel.value = natState.grade || ""; gwrap.style.display = "";
+      } else { gwrap.style.display = "none"; natState.grade = ""; }
+    }
+  } catch (_) { hide(); }
 }
 
 function initNational() {
@@ -452,6 +467,7 @@ function initNational() {
     count: null,
     format: "",
     topic: "",
+    grade: "",
   };
   facets = null;
   countByKey = {};
@@ -1138,6 +1154,7 @@ beginBtn.onclick = () => {
     if (natState.paper) params.set("paper", natState.paper);
     if (natState.format) params.set("format", natState.format);
     if (natState.topic) params.set("topic", natState.topic);
+    if (natState.grade) params.set("grade", natState.grade);
     window.location.href = `../question/question.html?${params.toString()}`;
     return;
   }

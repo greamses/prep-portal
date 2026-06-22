@@ -365,18 +365,19 @@ function validBody(b) {
   const video = safeUrl(b.video);
   const videoScope = video ? videoScopeOf(b.videoScope) : "question";
   const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
+  const grade = String(b.grade || "").trim().slice(0, 60) || null;
 
   if (isFree) {
     const answer = fixLatex(b.answer || "").trim().slice(0, 4000);
     if (!answer) return { error: "Provide the model answer for this question." };
-    return { type: wanted, question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, paper };
+    return { type: wanted, question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, paper, grade };
   }
   const options = Array.isArray(b.options) ? b.options.map((o) => fixLatex(o).trim().slice(0, 400)).filter(Boolean) : [];
   const ai = parseInt(b.answerIndex, 10);
   if (options.length < 2 || options.length > 6) return { error: "Provide 2 to 6 options." };
   if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) return { error: "Choose which option is correct." };
   const type = wanted === "polar" || options.length === 2 ? "polar" : "objective";
-  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, paper };
+  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, paper, grade };
 }
 
 // Parse an uploaded question-library .js file of the form
@@ -522,7 +523,7 @@ module.exports = function () {
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
           schemeSubject: `${scheme}__${key}`,
-          topic: topic || null, paper,
+          topic: topic || null, paper, grade: grade || null,
           type: q.type || "objective",
           question: q.question,
           options: q.options || null,
@@ -591,6 +592,7 @@ module.exports = function () {
       const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
       const format = String(req.query.format || "").toLowerCase(); // "mcq" | "theory" | ""
       const topicFilter = String(req.query.topic || "").toLowerCase().trim();
+      const gradeFilter = String(req.query.grade || "").trim();
       if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "scheme and subject are required." });
 
       // Single-field equality on schemeSubject → no composite index needed; the
@@ -613,7 +615,8 @@ module.exports = function () {
           answer: x.answer || null,
           explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
           video: x.video || null, videoScope: x.videoScope || "question",
-          paper: x.paper || null, topic: x.topic || null, subject: x.subject, subjectLabel: x.subjectLabel,
+          paper: x.paper || null, topic: x.topic || null, grade: x.grade || null,
+          subject: x.subject, subjectLabel: x.subjectLabel,
           scheme: x.scheme,
         }));
       if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
@@ -621,6 +624,7 @@ module.exports = function () {
       if (format === "mcq") questions = questions.filter((q) => q.options && q.options.length >= 2);
       else if (format === "theory") questions = questions.filter((q) => !(q.options && q.options.length >= 2));
       if (topicFilter) questions = questions.filter((q) => String(q.topic || "").toLowerCase() === topicFilter);
+      if (gradeFilter) questions = questions.filter((q) => String(q.grade || "") === gradeFilter);
       if (random) {
         for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
       }
@@ -708,8 +712,12 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         .concat(req.query.subject || [])
         .flatMap((s) => String(s).split(","))
         .map((s) => subjKey(s)).filter(Boolean);
-      const counts = {};
-      const tally = (docs) => docs.forEach((d) => { const t = (d.data().topic || "").trim(); if (t) counts[t] = (counts[t] || 0) + 1; });
+      const counts = {}, gcounts = {};
+      const tally = (docs) => docs.forEach((d) => {
+        const x = d.data();
+        const t = (x.topic || "").trim(); if (t) counts[t] = (counts[t] || 0) + 1;
+        const g = (x.grade || "").trim(); if (g) gcounts[g] = (gcounts[g] || 0) + 1;
+      });
       if (subs.length) {
         for (const sub of subs) {
           const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${sub}`).get();
@@ -722,7 +730,10 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       const topics = Object.entries(counts)
         .map(([topic, count]) => ({ topic, count }))
         .sort((a, b) => a.topic.localeCompare(b.topic));
-      res.json({ scheme, topics });
+      const grades = Object.entries(gcounts)
+        .map(([grade, count]) => ({ grade, count }))
+        .sort((a, b) => a.grade.localeCompare(b.grade, undefined, { numeric: true }));
+      res.json({ scheme, topics, grades });
     } catch (e) {
       console.error("[/api/cbt/topics]", e.message);
       res.status(500).json({ error: e.message });
@@ -862,6 +873,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       // Optional: stamp one video on the whole imported batch (watch-first sets).
       const batchVideo = safeUrl(b.video);
       const batchVideoScope = videoScopeOf(b.videoScope);
+      const batchGrade = String(b.grade || "").trim().slice(0, 60) || null;
 
       let arr;
       try { arr = parseExamJs(b.jsCode || ""); }
@@ -882,7 +894,8 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
           batch.set(ref, {
             scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
             schemeSubject: `${scheme}__${key}`, paper, source,
-            ...q, video, videoScope, createdAt: stamp(), updatedAt: stamp(),
+            ...q, video, videoScope, grade: q.grade || batchGrade || null,
+            createdAt: stamp(), updatedAt: stamp(),
           });
         });
         await batch.commit();

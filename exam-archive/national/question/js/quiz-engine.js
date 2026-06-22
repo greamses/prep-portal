@@ -532,6 +532,7 @@ const Quiz = (() => {
         if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
         if (PAGE_CONFIG.format) params.set("format", PAGE_CONFIG.format);
         if (PAGE_CONFIG.topic) params.set("topic", PAGE_CONFIG.topic);
+        if (PAGE_CONFIG.grade) params.set("grade", PAGE_CONFIG.grade);
         const res = await fetch(`${API_BASE}/api/cbt?${params}`);
         if (!res.ok) { console.warn("CBT fetch", subKey, "→ HTTP", res.status); continue; }
         const data = await res.json();

@@ -96,6 +96,16 @@
         </div>
         <div class="row">
           <div><label>Paper</label><select id="f-paper"><option value="">None</option><option value="1">Paper 1</option><option value="2">Paper 2</option></select></div>
+          <div><label>Class / grade</label>
+            <select id="f-grade">
+              <option value="">Any</option>
+              <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
+              <option>JSS1</option><option>JSS2</option><option>JSS3</option>
+              <option>SSS1</option><option>SSS2</option><option>SSS3</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
         </div>
         <label>Explanation (one per line)</label>
         <textarea id="f-explanation" placeholder="Why the answer is correct…"></textarea>
@@ -223,7 +233,7 @@
         $("ed-list").innerHTML=(d.questions||[]).map(q=>`
           <div class="ed-list-item">
             <div class="q">${esc((q.question||"").slice(0,160))}
-              <div class="ed-meta"><span class="pill">${q.type||"objective"}</span> <span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.image?'<span class="pill">img</span>':""} ${q.video?'<span class="pill">video</span>':""} · ${(q.options&&q.options.length)?`${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}`:`ans: ${esc((q.answer||"").slice(0,40))}`}</div>
+              <div class="ed-meta"><span class="pill">${q.type||"objective"}</span> <span class="pill">${q.source||"?"}</span> ${q.paper?`<span class="pill">Paper ${q.paper}</span>`:""} ${q.grade?`<span class="pill">${esc(q.grade)}</span>`:""} ${q.image?'<span class="pill">img</span>':""} ${q.video?'<span class="pill">video</span>':""} · ${(q.options&&q.options.length)?`${q.options.length} opts · ✓ ${esc((q.options[q.answerIndex]||"").slice(0,30))}`:`ans: ${esc((q.answer||"").slice(0,40))}`}</div>
             </div>
             <button class="ghost ic" data-edit="${q.id}" title="Edit" type="button">${PENCIL}</button>
             <button class="ghost ic" data-del="${q.id}" title="Delete" type="button" style="color:var(--accent-danger)">${TRASH}</button>
@@ -252,6 +262,7 @@
       $("f-delete").classList.toggle("hide", !q);
       $("f-question").value = q ? q.question||"" : "";
       $("f-paper").value = q && q.paper ? String(q.paper) : "";
+      $("f-grade").value = q && q.grade ? q.grade : "";
       $("f-explanation").value = q ? (Array.isArray(q.explanation)?q.explanation.join("\n"):(q.explanation||"")) : "";
       $("f-hint").value = q ? q.hint||"" : "";
       $("f-image").value = q ? q.image||"" : "";
@@ -284,6 +295,7 @@
       const expl=$("f-explanation").value.split("\n").map(s=>s.trim()).filter(Boolean);
       return {
         scheme:$("ed-scheme").value, subject:$("ed-subject").value, paper:$("f-paper").value||null,
+        grade:$("f-grade").value||"",
         type,
         question:$("f-question").value,
         options: free?null:options, answerIndex: free?null:answerIndex,
@@ -361,7 +373,7 @@
       };
       $("im-go").onclick=async()=>{
         const btn=$("im-go"), msg=$("im-msg");
-        const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value, video:$("im-video").value.trim(), videoScope:$("im-vscope").value };
+        const body={ scheme:$("im-scheme").value, subject:$("im-subject").value.trim(), paper:$("im-paper").value, source:$("im-source").value, jsCode:$("im-code").value, video:$("im-video").value.trim(), videoScope:$("im-vscope").value, grade:$("im-grade")?$("im-grade").value:"" };
         if(!body.subject){ msg.textContent="Enter a subject."; msg.className="ed-msg ed-msg--err"; return; }
         if(!body.jsCode.trim()){ msg.textContent="Upload or paste a .js file."; msg.className="ed-msg ed-msg--err"; return; }
         btn.disabled=true; msg.textContent="Importing…"; msg.className="ed-msg";
