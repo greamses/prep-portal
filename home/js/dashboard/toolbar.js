@@ -1,5 +1,6 @@
 import { I } from "./icons.js";
 import { auth } from "/firebase-init.js";
+import { signOut } from "firebase/auth";
 import { ROUTES } from "/home/js/routing.js";
 import {
   showAssignmentModal,
