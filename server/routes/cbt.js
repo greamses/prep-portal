@@ -93,11 +93,14 @@ const SAMPLE_JS = String.raw`/**
  * "image" is null, OR a self-contained inline <svg>…</svg> string, OR a public URL.
  * "video" is null, OR a public video URL (YouTube/Vimeo/.mp4). "videoScope" is
  *   "question" (watch with this question) or "set" (an intro to watch first).
+ * "grade" is the class/level the question suits (e.g. "JSS1", "Primary 6",
+ *   "SSS2") — REQUIRED on EVERY item.
  * Wrap maths in \( … \) using DOUBLE backslashes for commands, exactly as shown.
  */
 const examQuestions = [
   {
     type: "objective",                       // 4 options, one correct
+    grade: "SSS2",
     question: "Evaluate \\( \\int_0^1 (3x^2 + 2x)\\,dx \\).",
     image: null,
     video: null,
@@ -170,8 +173,8 @@ function genPrompt(scheme, subjectLabel, topic, count, types, wantImages, video,
   const isMath = /math|further\s*math|quantitative/i.test(subjectLabel);
   const gradeStr = String(grade || "").trim().slice(0, 60);
   const gradeBlock = gradeStr
-    ? `\nTARGET CLASS / GRADE: ${gradeStr}. Pitch the vocabulary, contexts, examples and difficulty to be appropriate for ${gradeStr} learners.\n`
-    : "";
+    ? `\nTARGET CLASS / GRADE: ${gradeStr}. Pitch vocabulary, context and difficulty for ${gradeStr}, and set "grade": "${gradeStr}" on EVERY question.\n`
+    : `\nCLASS TAG: set "grade" on EVERY question to the class/level it best fits (e.g. "Primary 6", "JSS1", "JSS3", "SSS2"). This is REQUIRED — never omit it.\n`;
   let chosen = (Array.isArray(types) && types.length ? types : ["objective"])
     .map((t) => String(t).toLowerCase().trim()).filter((t) => TYPE_GUIDE[t]);
   if (!chosen.length) chosen = ["objective"];
@@ -223,7 +226,7 @@ MANDATORY:
 - No copyrighted passages, named datasets or third-party diagrams. Self-contained content only.
 - For objective/polar: options are the real answer values — NEVER the letters A/B/C/D or placeholders; "answerIndex" is the 0-based index of the correct option.
 - For short/theory/subjective: provide a clear, correct "answer" (model answer / key points) and OMIT options.
-- "explanation" is an array of short strings. Every item carries its correct "type".
+- "explanation" is an array of short strings. Every item carries its correct "type" AND a "grade" (its class/level).
 ${imageBlock}
 ${videoBlock}- Wrap ALL mathematics in LaTeX delimiters using DOUBLE backslashes for commands, EXACTLY as in the sample (e.g. the sample's fractions/integrals). Keep money/currency as plain text, not inside math.
 
@@ -324,6 +327,7 @@ function cleanQuestions(arr) {
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
     const video = safeUrl(q.video);
     const videoScope = video ? videoScopeOf(q.videoScope) : "question";
+    const grade = String(q.grade || "").trim().slice(0, 60) || null;
     const opts = Array.isArray(q.options) ? q.options.map((o) => fixLatex(o).trim().slice(0, 300)).filter(Boolean) : [];
 
     if (opts.length >= 2) {
@@ -337,13 +341,13 @@ function cleanQuestions(arr) {
       }
       if (!Number.isInteger(ai) || ai < 0 || ai >= opts.length) ai = 0;
       seen.add(dedupe);
-      out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope });
+      out.push({ type: opts.length === 2 && type === "polar" ? "polar" : "objective", question, options: opts, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, grade });
     } else {
       // Free-response (short / theory / subjective) — needs an answer.
       const answer = fixLatex(q.answer || "").trim().slice(0, 4000);
       if (!answer) continue;
       seen.add(dedupe);
-      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope });
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, grade });
     }
   }
   return out;
@@ -420,6 +424,7 @@ function importQuestions(arr) {
     const image = typeof q.image === "string" && q.image.trim() ? q.image.trim().slice(0, 80000) : null;
     const video = safeUrl(q.video);
     const videoScope = video ? videoScopeOf(q.videoScope) : "question";
+    const grade = String(q.grade || "").trim().slice(0, 60) || null;
     const options = Array.isArray(q.options) ? q.options.map((o) => String(o == null ? "" : o).trim().slice(0, 800)).filter(Boolean) : [];
 
     if (options.length >= 2) {
@@ -430,12 +435,12 @@ function importQuestions(arr) {
         if (idx >= 0) ai = idx;
       }
       if (ai < 0 || ai >= options.length) ai = 0;
-      out.push({ type: options.length === 2 && type === "polar" ? "polar" : "objective", question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope });
+      out.push({ type: options.length === 2 && type === "polar" ? "polar" : "objective", question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, grade });
     } else {
       // Free-response import (short / theory / subjective).
       const answer = String(q.answer == null ? "" : q.answer).trim().slice(0, 6000);
       if (!answer) continue;
-      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope });
+      out.push({ type: ["short", "theory", "subjective"].includes(type) ? type : "short", question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, grade });
     }
   }
   return out;
@@ -523,7 +528,7 @@ module.exports = function () {
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
           schemeSubject: `${scheme}__${key}`,
-          topic: topic || null, paper, grade: grade || null,
+          topic: topic || null, paper, grade: q.grade || grade || null,
           type: q.type || "objective",
           question: q.question,
           options: q.options || null,
