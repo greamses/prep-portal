@@ -435,13 +435,24 @@ body {
   min-height: 170px;
   border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
   border-radius: 14px;
-  background: var(--surface-secondary, var(--bg));
-  padding: 1rem 1.1rem;
+  /* Ruled writing paper: faint horizontal rules + a warm paper tint. */
+  background-color: var(--paper, #fdfbf3);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(2rem - 1px),
+    color-mix(in srgb, var(--blue, #3b6ea5) 22%, transparent) calc(2rem - 1px),
+    color-mix(in srgb, var(--blue, #3b6ea5) 22%, transparent) 2rem
+  );
+  background-attachment: local;
+  padding: .6rem 1.1rem;
+  line-height: 2rem;          /* match the rule spacing so text sits on the lines */
   font-family: var(--font-hand);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--ink);
   resize: vertical;
   outline: none;
+  box-shadow: var(--shadow-sm);
   transition: box-shadow .15s, border-color .15s;
 }
 
@@ -1119,6 +1130,15 @@ body {
   #prepbot-popup,
   .no-print {
     display: none !important;
+  }
+
+  /* Videos can't play on paper — hide the embed, show the link instead. */
+  .q-video iframe,
+  .q-video video {
+    display: none !important;
+  }
+  .q-video .q-video-link {
+    display: inline-block !important;
   }
   
   #results-screen {

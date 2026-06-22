@@ -1186,6 +1186,15 @@ const Quiz = (() => {
     }
     media.style.cssText = "width:100%; aspect-ratio:16/9; height:auto; border:0; border-radius:12px; background:#000;";
     wrap.appendChild(media);
+    // A plain link — shown on print (where the embed can't play) and as a fallback.
+    const link = document.createElement("a");
+    link.className = "q-video-link";
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "▶ Watch video: " + url;
+    link.style.cssText = "display:none; margin-top:.35rem; font-size:.8rem; word-break:break-all; color:var(--blue,#0055ff);";
+    wrap.appendChild(link);
     container.appendChild(wrap);
   }
 
@@ -1381,9 +1390,22 @@ const Quiz = (() => {
     }
   }
 
+  // Stop the browser/password-managers autofilling email/name into answer fields.
+  function noAutofill(el, idx) {
+    el.autocomplete = "off";
+    el.name = "ans-" + idx + "-" + Math.random().toString(36).slice(2, 7);
+    el.setAttribute("autocorrect", "off");
+    el.setAttribute("autocapitalize", "off");
+    el.spellcheck = false;
+    el.setAttribute("data-lpignore", "true");
+    el.setAttribute("data-1p-ignore", "true");
+    el.setAttribute("data-form-type", "other");
+  }
+  const ATTRS = `autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
+
   // Build question HTML with an inline input where the blank (____ or [blank]) is.
   function clozeHtml(question, idx) {
-    const inputHtml = `<input type="text" data-cloze="${idx}" autocomplete="off" value="${esc(userAnswers[idx] || "")}"${submitted ? " disabled" : ""} style="display:inline-block;min-width:120px;padding:2px 8px;border:none;border-bottom:2px solid var(--blue,#0055ff);background:rgba(0,85,255,.06);font-family:inherit;font-size:inherit;color:inherit;" />`;
+    const inputHtml = `<input type="text" data-cloze="${idx}" name="cz-${idx}-${Math.random().toString(36).slice(2, 7)}" ${ATTRS} value="${esc(userAnswers[idx] || "")}"${submitted ? " disabled" : ""} style="display:inline-block;min-width:120px;padding:2px 8px;border:none;border-bottom:2px solid var(--blue,#0055ff);background:transparent;font-family:inherit;font-size:inherit;color:inherit;" />`;
     const q = String(question || "");
     const m = q.match(/_{2,}|\[\s*blank\s*\]|\.{3,}/i);
     if (!m) return escFmt(q) + " " + inputHtml; // no marker → input at the end
@@ -1397,8 +1419,9 @@ const Quiz = (() => {
       inp.type = "text";
       inp.className = "short-box";
       inp.placeholder = "Your answer…";
-      inp.autocomplete = "off";
-      inp.style.cssText = "width:100%;max-width:360px;box-sizing:border-box;padding:10px 12px;border:2px solid var(--ink,#222);border-radius:10px;font-family:inherit;font-size:15px;background:var(--surface,#fff);color:inherit;";
+      noAutofill(inp, idx);
+      // A writing LINE, not a box.
+      inp.style.cssText = "width:100%;max-width:360px;box-sizing:border-box;padding:6px 2px;border:none;border-bottom:2px solid color-mix(in srgb, var(--ink) 45%, transparent);border-radius:0;background:transparent;font-family:inherit;font-size:15px;color:inherit;outline:none;";
       inp.value = userAnswers[idx] || "";
       if (submitted) inp.disabled = true;
       inp.addEventListener("input", () => { userAnswers[idx] = inp.value; updateDots(); });
@@ -1408,6 +1431,7 @@ const Quiz = (() => {
       const ta = document.createElement("textarea");
       ta.className = "theory-box";
       ta.placeholder = "Write your answer here…";
+      noAutofill(ta, idx);
       ta.value = userAnswers[idx] || "";
       if (submitted) ta.disabled = true;
       ta.addEventListener("input", () => {
