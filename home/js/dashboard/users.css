@@ -79,7 +79,7 @@ body::before {
 
 .stat-chip {
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   padding: 0.85rem 1.4rem;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
@@ -138,7 +138,7 @@ body::before {
   align-self: stretch;
   background: var(--ink);
   color: var(--accent-primary);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 1.5rem;
   font-family: var(--font-mono);
@@ -190,7 +190,7 @@ body::before {
 .header-btn {
   height: 48px;
   padding: 0 1.25rem;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-weight: var(--weight-bold);
@@ -254,7 +254,7 @@ body::before {
 .search-wrap input {
   width: 100%;
   height: 48px;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 1.25rem 0 3rem;
   font-family: var(--font-mono);
@@ -301,14 +301,14 @@ body::before {
   align-items: center;
   gap: 0.4rem;
   padding: 0.3rem 0.75rem;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: 99px;
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
   font-weight: var(--weight-bold);
   background: var(--accent-primary);
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
     transform var(--duration-fast) var(--ease-default),
     box-shadow var(--duration-fast) var(--ease-default);
@@ -322,7 +322,7 @@ body::before {
 
 .filter-chip-active:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 .filter-chip-active .chip-x {
@@ -342,10 +342,11 @@ body::before {
 /* ─── USERS TABLE CONTAINER ───────────────────────────── */
 .users-list-container {
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
-  overflow: hidden;
+  overflow-x: auto;            /* the 860px table scrolls on narrow screens */
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 1.25rem;
 }
 
@@ -389,7 +390,7 @@ body::before {
   align-items: center;
   padding: 0.85rem 1.5rem;
   min-width: 860px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: var(--border-subtle);
   background: var(--bg);
   transition: background var(--duration-fast) var(--ease-default);
   animation: rowFadeIn 0.2s var(--ease-default) both;
@@ -447,14 +448,14 @@ body::before {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  border: var(--border);
+  border: var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
   font-weight: var(--weight-black);
   font-size: var(--text-body);
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -502,12 +503,12 @@ body::before {
   -webkit-appearance: none;
   width: 18px;
   height: 18px;
-  border: var(--border);
+  border: var(--border-subtle);
   background: var(--bg);
   border-radius: 3px;
   cursor: pointer;
   position: relative;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
   transition:
     transform var(--duration-fast) var(--ease-default),
@@ -533,7 +534,7 @@ body::before {
 
 .brutal-checkbox:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 /* ─── PLAN EMBLEM ─────────────────────────────────────── */
@@ -592,7 +593,7 @@ body::before {
 }
 
 .action-btn {
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   background: var(--bg);
   cursor: pointer;
@@ -600,7 +601,7 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
     transform var(--duration-fast) var(--ease-default),
     box-shadow var(--duration-fast) var(--ease-default),
@@ -614,7 +615,7 @@ body::before {
 
 .action-btn:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 .action-btn.btn-delete:hover {
@@ -639,7 +640,7 @@ body::before {
 .empty-state-icon {
   width: 60px;
   height: 60px;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   background: var(--surface-secondary);
   display: flex;
@@ -672,7 +673,7 @@ body::before {
   align-items: center;
   padding: 0.85rem 1.25rem;
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   gap: 0.75rem;
@@ -688,14 +689,14 @@ body::before {
 
 .pag-btn {
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0.4rem 0.8rem;
   font-family: var(--font-mono);
   font-weight: var(--weight-bold);
   font-size: var(--text-mono-sm);
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -709,13 +710,13 @@ body::before {
 
 .pag-btn:hover:not(:disabled) {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-md);
   background: var(--surface-secondary);
 }
 
 .pag-btn.active {
   background: var(--accent-primary);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-md);
 }
 
 .pag-btn:disabled {
@@ -744,7 +745,7 @@ body::before {
   transform: translateX(-50%);
   background: var(--ink);
   color: var(--accent-primary);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
   padding: 1rem 1.5rem;
@@ -882,7 +883,7 @@ body::before {
 
 .brutal-modal-card {
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-xl);
   width: 100%;
@@ -951,7 +952,7 @@ body::before {
   align-items: center;
   gap: 1.25rem;
   padding-bottom: 1.25rem;
-  border-bottom: var(--border);
+  border-bottom: var(--border-subtle);
 }
 
 .large-avatar {
@@ -983,7 +984,7 @@ body::before {
 }
 
 .meta-item {
-  border: var(--border);
+  border: var(--border-subtle);
   background: var(--surface-secondary);
   border-radius: var(--radius-sm);
   padding: 0.75rem 1rem;
@@ -1046,7 +1047,7 @@ body::before {
 .badge {
   display: inline-block;
   padding: 0.2rem 0.55rem;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
@@ -1054,7 +1055,7 @@ body::before {
   width: max-content;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .badge-admin   { background: var(--accent-danger);   color: var(--text-on-accent); }
@@ -1075,7 +1076,7 @@ body::before {
 .raw-data-area pre {
   background: #0d1117;
   color: #79c0ff;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 1rem 1.25rem;
   overflow-x: auto;
@@ -1087,7 +1088,7 @@ body::before {
 
 /* ─── MODAL FOOTER ────────────────────────────────────── */
 .modal-footer {
-  border-top: var(--border);
+  border-top: var(--border-subtle);
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
@@ -1097,23 +1098,23 @@ body::before {
 }
 
 .brutal-btn-flat {
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-primary);
   padding: 0.5rem 1.25rem;
   font-family: var(--font-mono);
   font-weight: var(--weight-bold);
   font-size: var(--text-mono-sm);
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition:
     transform var(--duration-fast) var(--ease-default),
     box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .brutal-btn-flat:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .brutal-btn-primary {
@@ -1144,7 +1145,7 @@ body::before {
 
 .form-input {
   height: 48px;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 1rem;
   font-family: var(--font-mono);
@@ -1197,7 +1198,7 @@ body::before {
 
 .toast {
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   padding: 0.75rem 1.1rem;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
@@ -1238,13 +1239,13 @@ body::before {
 .kbd-hint {
   display: inline-block;
   padding: 1px 5px;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: 3px;
   font-family: var(--font-mono);
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   background: var(--surface-secondary);
-  box-shadow: 1px 1px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   margin-left: 0.35rem;
   vertical-align: middle;
 }

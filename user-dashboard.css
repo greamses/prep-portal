@@ -630,12 +630,24 @@
 /* Roster list */
 .db-roster-item {
   display: grid;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.6rem;
   background: var(--surface-primary);
   border-radius: 12px;
+}
+
+/* The text column must be allowed to shrink + truncate, or long emails
+   overflow the (narrow) rail card. */
+.db-roster-item > div {
+  min-width: 0;
+}
+.db-roster-name,
+.db-roster-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .db-roster-avatar {
