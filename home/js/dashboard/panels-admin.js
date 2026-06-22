@@ -33,29 +33,25 @@ export function buildAdminPanels(user, data, layout) {
       </div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.users}</div>
+    <div class="db-stat pp-sticky pp-sticky--c3" style="--pp-note-tilt:-2deg;">
       <div class="db-stat-value">${totalUsers.toLocaleString()}</div>
       <div class="db-stat-label">Total Users</div>
       <div class="db-stat-trend trend-up">${I.trendUp} +${data.newSignupsToday || 0} today</div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.trendUp}</div>
+    <div class="db-stat pp-sticky pp-sticky--c2" style="--pp-note-tilt:1.5deg;">
       <div class="db-stat-value">${activeToday.toLocaleString()}</div>
       <div class="db-stat-label">Solving Math Today</div>
       <div class="db-stat-trend">${totalUsers ? Math.round((activeToday / totalUsers) * 100) : 0}% active</div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.star}</div>
+    <div class="db-stat pp-sticky pp-sticky--c4" style="--pp-note-tilt:-1.5deg;">
       <div class="db-stat-value">${premiumCount.toLocaleString()}</div>
       <div class="db-stat-label">Premium Plans</div>
       <div class="db-stat-trend">${totalUsers ? Math.round((premiumCount / totalUsers) * 100) : 0}% conversion</div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.book}</div>
+    <div class="db-stat pp-sticky pp-sticky--c0" style="--pp-note-tilt:2deg;">
       <div class="db-stat-value">${totalClasses.toLocaleString()}</div>
       <div class="db-stat-label">Active Classes</div>
       <div class="db-stat-trend">${data.unassignedClasses || 0} unassigned</div>

@@ -11,19 +11,21 @@
      or a local path like "/home/img/students/amara.jpg" both work.
 ========================================================================= */
 
-// Hotlinked Pexels photo, cropped to a portrait card.
-const PX = (id) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop`;
+// Cloudinary photo, server-cropped to a consistent portrait card (g_auto keeps
+// faces in frame). Pass the version + filename segment of the upload URL.
+const CL = (path) =>
+  `https://res.cloudinary.com/duvqnpvbu/image/upload/c_fill,g_auto,w_700,h_900/${path}`;
 
 // cx/cy = the card's centre as a % of the stage; rot = fan angle; z = stack
 // order (centre cards sit in front). Captions are little yearbook notes.
 const CARDS = [
-  { photo: PX(13538613), name: "Arjun",  tag: "JAMB 320",   cx: 23, cy: 60, rot: -14, z: 1, note: "Scored 320 in JAMB on my first try!",     pad: "#bfe3ff" },
-  { photo: PX(5538020),  name: "Amara",  tag: "WAEC A1",    cx: 35, cy: 50, rot: -8,  z: 3, note: "Went from C's to straight A1's in WAEC.", pad: "#ffc9de" },
-  { photo: PX(36608621), name: "Mei",    tag: "Top 5%",     cx: 46, cy: 45, rot: -3,  z: 5, note: "Finished top 5% of my whole school.",     pad: "#c8f0c0" },
-  { photo: PX(5940722),  name: "Daniel", tag: "Maths whiz", cx: 57, cy: 45, rot: 3,   z: 6, note: "Maths finally clicked — now it's my best.", pad: "#fff39a" },
-  { photo: PX(3808849),  name: "Layla",  tag: "Science",    cx: 68, cy: 50, rot: 8,   z: 4, note: "Won my regional science fair this term!",  pad: "#e8d5ff" },
-  { photo: PX(6238089),  name: "Kai",    tag: "Coding",     cx: 78, cy: 60, rot: 14,  z: 2, note: "Built and shipped my first app at 14.",    pad: "#ffd9a8" },
+  { photo: CL("v1782015101/496216720_1782014294929759_nk8obu.jpg"),       name: "Arjun",  tag: "JAMB 320",   cx: 18, cy: 62, rot: -16, z: 1, note: "Scored 320 in JAMB on my first try!",     pad: "#bfe3ff" },
+  { photo: CL("v1782015100/311502132_1782014135194463_mav2h7.jpg"),       name: "Amara",  tag: "WAEC A1",    cx: 29, cy: 52, rot: -11, z: 3, note: "Went from C's to straight A1's in WAEC.", pad: "#ffc9de" },
+  { photo: CL("v1782015099/54024348_1782014016869533_vr5spb.jpg"),        name: "Mei",    tag: "Top 5%",     cx: 40, cy: 46, rot: -5,  z: 5, note: "Finished top 5% of my whole school.",     pad: "#c8f0c0" },
+  { photo: CL("v1782015099/403814218_1781987988690441_vx8ufl.jpg"),       name: "Daniel", tag: "Maths whiz", cx: 50, cy: 44, rot: 0,   z: 7, note: "Maths finally clicked — now it's my best.", pad: "#fff39a" },
+  { photo: CL("v1782015099/file_00000000e97471f4a454e0e691ff993e_ofxqhd.png"), name: "Layla", tag: "Science", cx: 60, cy: 46, rot: 5,  z: 6, note: "Won my regional science fair this term!",  pad: "#e8d5ff" },
+  { photo: CL("v1782015095/618842865_1782014454163681_ozpp2n.jpg"),       name: "Kai",    tag: "Coding",     cx: 71, cy: 52, rot: 11,  z: 4, note: "Built and shipped my first app at 14.",    pad: "#ffd9a8" },
+  { photo: CL("v1782015082/926169530_1781989517144905_av22gh.jpg"),       name: "Zara",   tag: "Reading",    cx: 82, cy: 62, rot: 16,  z: 2, note: "Reading is my favourite part of the day.", pad: "#bdeae6" },
 ];
 
 const stage = document.querySelector(".cards-stage");

@@ -1,5 +1,37 @@
 @import url("/utils/components/theme.css");
 @import url("/utils/components/dropdown.css");
+@import url("/utils/components/select.css");
+
+/* =============================================
+   PAGE PAINT — global blob background
+   ---------------------------------------------
+   Injected into <body> by nav-builder.js on every page that mounts the shared
+   nav. Fixed full-viewport, z-index:-1 so it washes above the page background
+   but behind all content. Decorative only. */
+.pp-page-paint {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.34;
+}
+.pp-page-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .pp-page-paint {
+  opacity: 0.16;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pp-page-paint {
+    animation: pp-paint-in 0.8s var(--ease-default, ease) both;
+  }
+}
+@keyframes pp-paint-in {
+  from { opacity: 0; }
+}
 
 /* =============================================
    MEGA NAVIGATION — SOFT / STICKER / KID-FRIENDLY

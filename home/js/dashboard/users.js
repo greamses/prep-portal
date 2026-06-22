@@ -431,16 +431,16 @@ function renderStats(users, filteredCount) {
   const admins = users.filter((u) => u.role === "admin").length;
 
   statsEl.innerHTML = `
-    <div class="stat-chip live-chip">
+    <div class="pp-sticky pp-sticky--c0 stat-note" style="--pp-note-tilt:-2deg;">
       <strong>${total}</strong><span>Total Users</span>
     </div>
-    <div class="stat-chip">
+    <div class="pp-sticky pp-sticky--c3 stat-note" style="--pp-note-tilt:1.5deg;">
       <strong>${teachers}</strong><span>Teachers</span>
     </div>
-    <div class="stat-chip">
+    <div class="pp-sticky pp-sticky--c2 stat-note" style="--pp-note-tilt:-1deg;">
       <strong>${premium}</strong><span>Premium</span>
     </div>
-    <div class="stat-chip">
+    <div class="pp-sticky pp-sticky--c4 stat-note" style="--pp-note-tilt:2deg;">
       <strong>${admins}</strong><span>Admins</span>
     </div>
     <button id="sync-trigger-btn" class="sync-action-btn" title="Sync database">

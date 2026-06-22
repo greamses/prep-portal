@@ -48,6 +48,12 @@
 
 .pp-pill:active { transform: translateY(0); }
 
+.pp-pill svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 /* ── STICKY NOTE ────────────────────────────────────────────────────────
    Always real "paper": light pastel + dark ink, so it reads on any theme.
    Colour with .pp-sticky--c0…c5, tilt with --pp-note-tilt, tape with

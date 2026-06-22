@@ -3,6 +3,7 @@ import {
   NAV_ICONS,
   paintLayer,
   paintBlob,
+  heroPaint,
   planEmblem,
   SVG_ROSE,
   SVG_PERSON,
@@ -887,11 +888,35 @@ function updateAuthUI(user) {
 }
 
 /* =============================================
+   PAGE PAINT
+   ---------------------------------------------
+   The organic "paint" blob wash that lives behind the home hero, applied as a
+   fixed, full-viewport background on every page that mounts the shared nav.
+   Sits at z-index:-1 (above the page background, behind all content) and is
+   skipped on pages that already manage their own paint layer.
+============================================= */
+function ensurePagePaint() {
+  if (
+    document.querySelector(
+      ".pp-page-paint, .hero-paint, .builder-paint",
+    )
+  )
+    return;
+  const layer = document.createElement("div");
+  layer.className = "pp-page-paint";
+  layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = heroPaint();
+  document.body.insertBefore(layer, document.body.firstChild);
+}
+
+/* =============================================
    INIT
 ============================================= */
 function init() {
   const navs = document.querySelectorAll('.site-nav[data-nav="main"]');
   if (!navs.length) return;
+
+  ensurePagePaint();
 
   // Restore the saved theme if loader.js didn't already (pages without it).
   try {
