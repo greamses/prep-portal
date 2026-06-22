@@ -71,7 +71,7 @@
   justify-content: space-between;
   gap: 2rem;
   margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
-  border-bottom: var(--border);
+  border-bottom: var(--border-subtle);
   padding-bottom: 1.25rem;
 }
 
@@ -254,10 +254,15 @@
 ══════════════════════════════════════════════════════ */
 .dashboard-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 30%, 360px);
+  grid-template-columns: 1fr;     /* single column unless a rail exists */
   align-items: start;
   gap: clamp(0.85rem, 1.6vw, 1.5rem);
   width: 100%;
+}
+
+/* Two columns only when there are rail tiles. */
+.dashboard-layout:has(.db-rail) {
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 30%, 360px);
 }
 
 .dashboard-layout[data-role="loading"] {
@@ -272,15 +277,21 @@
   min-width: 0;
 }
 
-/* Tiles fill their column; the old grid span helpers are now no-ops in flex,
-   but the hero keeps its emphasis. */
+/* Tiles fill their column; the old grid span helpers are no-ops in flex. */
 .dashboard-layout .db-panel {
   width: 100%;
 }
 
+/* Compact stat cards sit in one responsive row, not full-width giants. */
+.db-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: clamp(0.85rem, 1.6vw, 1.5rem);
+}
+
 /* Stack the rail under the main column on narrow screens. */
 @media (max-width: 900px) {
-  .dashboard-layout {
+  .dashboard-layout:has(.db-rail) {
     grid-template-columns: 1fr;
   }
 }
@@ -292,7 +303,7 @@
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: clamp(14px, 2vw, 20px);
   padding: clamp(1rem, 2vw, 1.4rem);
   box-shadow: var(--shadow-md);
@@ -400,7 +411,7 @@
   display: grid;
   place-items: center;
   background: var(--accent-primary);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: 12px;
   color: var(--ink);
   cursor: pointer;
@@ -456,7 +467,7 @@
   flex-direction: column;
   padding: clamp(1rem, 2vw, 1.4rem);
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: clamp(14px, 2vw, 20px);
   box-shadow: var(--shadow-sm);
   box-sizing: border-box;
@@ -527,7 +538,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: var(--border);
+  border: var(--border-subtle);
   background:
     radial-gradient(circle at center, var(--bg) 0 54%, transparent 55%),
     conic-gradient(
@@ -918,7 +929,7 @@
   min-height: 40px;
   padding: 0 0.85rem;
   background: var(--bg);
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: 12px;
   font-family: var(--font-display);
   font-size: 0.85rem;
@@ -972,7 +983,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem;
-  border: var(--border);
+  border: var(--border-subtle);
   border-radius: clamp(14px, 2vw, 18px);
   box-shadow: var(--shadow-md);
   font-family: var(--font-display);

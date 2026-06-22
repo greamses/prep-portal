@@ -46,9 +46,17 @@ function applyFocusRail(el) {
   main.className = "db-main";
   const rail = document.createElement("div");
   rail.className = "db-rail";
+  let strip = null; // groups consecutive small stat cards into one compact row
   kids.forEach((node) => {
-    const railTile = node.classList?.contains("db-panel") &&
-      (node.classList.contains("bento-tall") || node.classList.contains("db-rail-tile"));
+    const cl = node.classList;
+    if (cl?.contains("db-stat")) {
+      if (!strip) { strip = document.createElement("div"); strip.className = "db-stat-strip"; main.appendChild(strip); }
+      strip.appendChild(node);
+      return;
+    }
+    strip = null;
+    const railTile = cl?.contains("db-panel") &&
+      (cl.contains("bento-tall") || cl.contains("db-rail-tile"));
     (railTile ? rail : main).appendChild(node);
   });
   el.appendChild(main);
