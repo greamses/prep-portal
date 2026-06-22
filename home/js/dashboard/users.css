@@ -113,6 +113,13 @@ body::before {
   font-weight: var(--weight-bold);
 }
 
+/* Sticker-note feel: soft pastel paper per chip + a tiny tilt that straightens
+   on hover. (Order: live-chip, then the three stat chips.) */
+.admin-stats .stat-chip:nth-child(2) { background: #bfe3ff; transform: rotate(-1.2deg); }
+.admin-stats .stat-chip:nth-child(3) { background: #c8f0c0; transform: rotate(0.8deg); }
+.admin-stats .stat-chip:nth-child(4) { background: #ffd7a3; transform: rotate(-0.6deg); }
+.admin-stats .stat-chip:hover { transform: rotate(0) translateY(-2px); }
+
 .stat-chip.live-chip {
   background: var(--accent-primary);
   position: relative;
@@ -127,8 +134,8 @@ body::before {
   font-size: 0.5rem;
   font-weight: var(--weight-black);
   letter-spacing: var(--tracking-wide);
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -136,8 +143,8 @@ body::before {
 /* ─── SYNC BUTTON ─────────────────────────────────────── */
 .sync-action-btn {
   align-self: stretch;
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: var(--ink);
   border: var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 1.5rem;
@@ -332,8 +339,8 @@ body::before {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  color: var(--ink);
   font-size: 0.6rem;
   font-weight: var(--weight-black);
   line-height: 1;
@@ -362,8 +369,9 @@ body::before {
   align-items: center;
   padding: 0.9rem 1.5rem;
   min-width: 860px;
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border-bottom: var(--border-subtle);
   font-family: var(--font-display);
   font-weight: var(--weight-black);
   font-size: var(--text-mono-xs);
@@ -375,12 +383,12 @@ body::before {
 }
 
 .users-table-header .brutal-checkbox {
-  border-color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
   background: transparent;
 }
 
 .users-table-header .brutal-checkbox:checked {
-  background: var(--accent-primary);
+  background: var(--accent-secondary);
 }
 
 /* ─── USER ROWS ───────────────────────────────────────── */
@@ -743,8 +751,8 @@ body::before {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: var(--surface-primary);
+  color: var(--ink);
   border: var(--border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
@@ -899,8 +907,8 @@ body::before {
 }
 
 .modal-header {
-  background: var(--ink);
-  color: var(--accent-primary);
+  background: var(--surface-secondary);
+  color: var(--ink);
   border-radius: calc(var(--radius-sm) - 2px) calc(var(--radius-sm) - 2px) 0 0;
   padding: 1.1rem 1.5rem;
   display: flex;

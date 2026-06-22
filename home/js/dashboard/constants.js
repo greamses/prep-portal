@@ -2,7 +2,7 @@ export const ROLE_LABELS = {
   student: "Student Math Workspace",
   teacher: "Teacher Math Portal",
   parent: "Parent Math Dashboard",
-  admin: "Math Admin Console",
+  admin: "Admin",
 };
 
 export const ROLE_SUBTITLES = {
