@@ -34,6 +34,27 @@ const fields = {
 let unsubUser = null;
 let unsubRoleData = []; // Store multiple listeners for role-specific data
 
+// Focus + rail: after a role builder fills the layout with a flat list of tiles,
+// reflow them into a wide MAIN column (hero + lists) and a narrow RAIL (the
+// compact "bento-tall"/"db-rail-tile" side widgets). Listeners survive the move.
+function applyFocusRail(el) {
+  const role = el.dataset.role;
+  if (!role || role === "loading") return;
+  const kids = [...el.children];
+  if (!kids.length || kids[0].classList?.contains("db-main")) return;
+  const main = document.createElement("div");
+  main.className = "db-main";
+  const rail = document.createElement("div");
+  rail.className = "db-rail";
+  kids.forEach((node) => {
+    const railTile = node.classList?.contains("db-panel") &&
+      (node.classList.contains("bento-tall") || node.classList.contains("db-rail-tile"));
+    (railTile ? rail : main).appendChild(node);
+  });
+  el.appendChild(main);
+  if (rail.childElementCount) el.appendChild(rail);
+}
+
 const isDashboardPage = window.location.pathname.includes(ROUTES.DASHBOARD);
 
 function updateHeader(user, data = {}) {
@@ -108,6 +129,7 @@ function handleUser(user) {
     (err) => {
       console.error("Firestore snapshot error:", err);
       buildStudentPanels(user, {}, layout);
+      applyFocusRail(layout);
     },
   );
 }
@@ -185,6 +207,7 @@ function setupRoleDataListeners(user, role, userData) {
           },
           layout,
         );
+        applyFocusRail(layout);
       });
       unsubRoleData.push(cUnsub);
     });
@@ -213,6 +236,7 @@ function setupRoleDataListeners(user, role, userData) {
           },
           layout,
         );
+        applyFocusRail(layout);
       });
       unsubRoleData.push(aUnsub);
     });
@@ -223,6 +247,7 @@ function setupRoleDataListeners(user, role, userData) {
     const tUnsub = onSnapshot(qTasks, (snap) => {
       const tasks = snap.docs.map((d) => d.data());
       buildStudentPanels(user, { ...userData, assignedTasks: tasks }, layout);
+      applyFocusRail(layout);
     });
     unsubRoleData.push(tUnsub);
   }
