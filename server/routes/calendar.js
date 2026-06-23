@@ -20,6 +20,27 @@ const { authenticate } = require("../middleware/auth");
 // Sticky-note palette (mirrors the dashboard's pp-sticky colours).
 const COLORS = ["#bfe3ff", "#c8f0c0", "#fff39a", "#ffd9a8", "#ffc9de", "#e8d5ff"];
 const isoDate = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || "")) ? String(s) : null);
+const pad2 = (n) => String(n).padStart(2, "0");
+
+// Expand a start date into a list of session dates for consecutive classes.
+// repeat: "none" | "daily" | "weekdays" | "weekly"; count = number of sessions.
+function seriesDates(start, repeat, count) {
+  const n = Math.max(1, Math.min(60, parseInt(count, 10) || 1));
+  if (!repeat || repeat === "none") return [start];
+  const [y, m, d] = start.split("-").map(Number);
+  const cur = new Date(Date.UTC(y, m - 1, d));
+  const out = [];
+  while (out.length < n) {
+    const dow = cur.getUTCDay();
+    if (repeat === "weekdays" && (dow === 0 || dow === 6)) {
+      cur.setUTCDate(cur.getUTCDate() + 1);
+      continue;
+    }
+    out.push(`${cur.getUTCFullYear()}-${pad2(cur.getUTCMonth() + 1)}-${pad2(cur.getUTCDate())}`);
+    cur.setUTCDate(cur.getUTCDate() + (repeat === "weekly" ? 7 : 1));
+  }
+  return out;
+}
 
 module.exports = function () {
   const router = express.Router();
@@ -51,6 +72,7 @@ module.exports = function () {
     teacherUid: e.teacherUid || null,
     teacherName: e.teacherName || null,
     studentCount: typeof e.studentCount === "number" ? e.studentCount : null,
+    seriesId: e.seriesId || null,
   });
 
   const byDate = (a, b) =>
@@ -208,8 +230,33 @@ module.exports = function () {
     }
   });
 
-  // ── POST /pin — admin pins a class to a teacher's calendar ────────
-  // { teacherUid, title, className?, date (YYYY-MM-DD), time?, color? }
+  // Fan a single event out to (or back off) the teacher's roster.
+  async function fanOut(id, ev, rosterDocs) {
+    for (let i = 0; i < rosterDocs.length; i += 400) {
+      const batch = db().batch();
+      rosterDocs.slice(i, i + 400).forEach((d) =>
+        batch.set(
+          db().collection("studentCalendar").doc(d.id).collection("items").doc(id),
+          { ...ev, eventId: id },
+          { merge: true },
+        ));
+      await batch.commit();
+    }
+  }
+  async function fanDelete(id, teacherUid) {
+    if (!teacherUid) return;
+    const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
+    for (let i = 0; i < roster.docs.length; i += 400) {
+      const batch = db().batch();
+      roster.docs.slice(i, i + 400).forEach((d) =>
+        batch.delete(db().collection("studentCalendar").doc(d.id).collection("items").doc(id)));
+      await batch.commit();
+    }
+  }
+
+  // ── POST /pin — admin pins a class (or a run of consecutive classes) ─
+  // { teacherUid, title, className?, subject?, date, time?, endTime?, location?,
+  //   notes?, color?, repeat?: none|daily|weekdays|weekly, count?: number }
   router.post("/pin", authenticate, async (req, res) => {
     try {
       if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
@@ -226,6 +273,10 @@ module.exports = function () {
       const location = String(b.location || "").trim().slice(0, 160) || null;
       const notes = String(b.notes || "").trim().slice(0, 600) || null;
       const color = COLORS.includes(b.color) ? b.color : COLORS[Math.floor(Math.random() * COLORS.length)];
+      const repeat = ["daily", "weekdays", "weekly"].includes(b.repeat) ? b.repeat : "none";
+
+      const dates = seriesDates(date, repeat, b.count);
+      const seriesId = dates.length > 1 ? db().collection("calendarEvents").doc().id : null;
 
       const tp = await profile(teacherUid);
       const teacherName = tp.name || (tp.email ? tp.email.split("@")[0] : "Teacher");
@@ -234,56 +285,96 @@ module.exports = function () {
       const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
       const studentCount = roster.docs.length;
 
-      const ref = db().collection("calendarEvents").doc();
-      const ev = {
-        teacherUid, teacherName, title, className, subject, date, time, endTime,
-        location, notes, color, studentCount,
-        createdBy: req.user.uid, createdAt: stamp(),
-      };
-      await ref.set(ev);
-
-      // Fan out to the teacher's roster so each of their students sees it.
-      let fan = 0;
-      for (let i = 0; i < roster.docs.length; i += 400) {
-        const batch = db().batch();
-        roster.docs.slice(i, i + 400).forEach((d) => {
-          batch.set(
-            db().collection("studentCalendar").doc(d.id).collection("items").doc(ref.id),
-            { ...ev, eventId: ref.id },
-            { merge: true },
-          );
-          fan++;
-        });
-        await batch.commit();
+      const created = [];
+      for (const d of dates) {
+        const ref = db().collection("calendarEvents").doc();
+        const ev = {
+          teacherUid, teacherName, title, className, subject, date: d, time, endTime,
+          location, notes, color, studentCount, seriesId,
+          createdBy: req.user.uid, createdAt: stamp(),
+        };
+        await ref.set(ev);
+        await fanOut(ref.id, ev, roster.docs);
+        created.push(publicEvent({ id: ref.id, ...ev }));
       }
-      res.json({ ok: true, event: publicEvent({ id: ref.id, ...ev }), students: fan });
+      res.json({ ok: true, events: created, event: created[0], sessions: created.length, students: studentCount });
     } catch (e) {
       console.error("[/api/calendar/pin]", e.message);
       res.status(500).json({ error: e.message });
     }
   });
 
-  // ── DELETE /:id — admin unpins an event everywhere ────────────────
+  // ── PUT /:id — admin edits a pinned class ─────────────────────────
+  // Same fields as /pin (minus teacher/repeat). applyToSeries?: also apply the
+  // shared fields (not the date) to every session in the same series.
+  router.put("/:id", authenticate, async (req, res) => {
+    try {
+      if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
+      const id = String(req.params.id);
+      const ref = db().collection("calendarEvents").doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: "Class not found." });
+      const cur = snap.data();
+      const b = req.body || {};
+
+      // Shared fields editable across a whole series.
+      const shared = {
+        title: String(b.title || "").trim().slice(0, 120) || "Class",
+        className: String(b.className || "").trim().slice(0, 120) || null,
+        subject: String(b.subject || "").trim().slice(0, 80) || null,
+        time: String(b.time || "").trim().slice(0, 20) || null,
+        endTime: String(b.endTime || "").trim().slice(0, 20) || null,
+        location: String(b.location || "").trim().slice(0, 160) || null,
+        notes: String(b.notes || "").trim().slice(0, 600) || null,
+      };
+      if (COLORS.includes(b.color)) shared.color = b.color;
+      const date = isoDate(b.date);
+
+      const roster = await db().collection("teacherStudents").doc(cur.teacherUid).collection("roster").get();
+
+      // This event: shared fields + its own (possibly changed) date.
+      const thisUpd = { ...shared };
+      if (date) thisUpd.date = date;
+      await ref.set(thisUpd, { merge: true });
+      await fanOut(id, { ...cur, ...thisUpd }, roster.docs);
+
+      // The rest of the series: shared fields only (keep each one's own date).
+      if (b.applyToSeries && cur.seriesId) {
+        const sibs = await db().collection("calendarEvents").where("seriesId", "==", cur.seriesId).get();
+        for (const s of sibs.docs) {
+          if (s.id === id) continue;
+          await s.ref.set(shared, { merge: true });
+          await fanOut(s.id, { ...s.data(), ...shared }, roster.docs);
+        }
+      }
+      res.json({ ok: true, event: publicEvent({ id, ...cur, ...thisUpd }) });
+    } catch (e) {
+      console.error("[/api/calendar/:id PUT]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── DELETE /:id — admin unpins an event (or the whole series) ──────
   router.delete("/:id", authenticate, async (req, res) => {
     try {
       if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
       const id = String(req.params.id);
       const ref = db().collection("calendarEvents").doc(id);
       const snap = await ref.get();
-      if (snap.exists) {
-        const teacherUid = snap.data().teacherUid;
-        if (teacherUid) {
-          const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
-          for (let i = 0; i < roster.docs.length; i += 400) {
-            const batch = db().batch();
-            roster.docs.slice(i, i + 400).forEach((d) =>
-              batch.delete(db().collection("studentCalendar").doc(d.id).collection("items").doc(id)));
-            await batch.commit();
-          }
-        }
-        await ref.delete();
+      if (!snap.exists) return res.json({ ok: true, removed: 0 });
+      const cur = snap.data();
+
+      // Optionally remove every session in the same series.
+      let targets = [{ id, teacherUid: cur.teacherUid }];
+      if (req.query.series && cur.seriesId) {
+        const sibs = await db().collection("calendarEvents").where("seriesId", "==", cur.seriesId).get();
+        targets = sibs.docs.map((d) => ({ id: d.id, teacherUid: d.data().teacherUid }));
       }
-      res.json({ ok: true });
+      for (const t of targets) {
+        await fanDelete(t.id, t.teacherUid);
+        await db().collection("calendarEvents").doc(t.id).delete();
+      }
+      res.json({ ok: true, removed: targets.length });
     } catch (e) {
       console.error("[/api/calendar/:id DELETE]", e.message);
       res.status(500).json({ error: e.message });

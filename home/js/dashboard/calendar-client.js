@@ -173,15 +173,21 @@ export async function mountCalendar(layout) {
 
   function showPop(target, e) {
     const p = ensurePop();
-    const remove = state.admin
-      ? `<button class="dbc-pop-del" type="button" data-del="${esc(e.id)}">Remove from calendar</button>`
+    const actions = state.admin
+      ? `<div class="dbc-pop-actions">
+           <button class="dbc-pop-edit" type="button">Edit</button>
+           <button class="dbc-pop-del" type="button" data-scope="one">Remove</button>
+           ${e.seriesId ? `<button class="dbc-pop-del" type="button" data-scope="series">Remove series</button>` : ""}
+         </div>`
       : "";
     const when = esc(fmtLong(e.date)) +
       (e.time ? " · " + esc(e.time) + (e.endTime ? "–" + esc(e.endTime) : "") : "");
+    const seriesCount = e.seriesId ? state.events.filter((x) => x.seriesId === e.seriesId).length : 0;
     const rows = [
       e.subject ? row("Subject", esc(e.subject)) : "",
       e.teacherName ? row("Instructor", esc(e.teacherName)) : "",
       e.location ? row("Where", esc(e.location)) : "",
+      seriesCount > 1 ? row("Series", `${seriesCount} sessions`) : "",
       // The reach — how many children this class is assigned to (teacher/admin only).
       (state.admin && typeof e.studentCount === "number")
         ? row("Class", `${e.studentCount} student${e.studentCount === 1 ? "" : "s"}`) : "",
@@ -193,20 +199,25 @@ export async function mountCalendar(layout) {
       <p class="dbc-pop-when">${when}</p>
       ${rows ? `<dl class="dbc-pop-list">${rows}</dl>` : ""}
       ${e.notes ? `<p class="dbc-pop-notes">${esc(e.notes)}</p>` : ""}
-      ${remove}`;
+      ${actions}`;
     p.style.display = "block";
 
     if (state.admin) {
-      p.querySelector("[data-del]").onclick = async (ev) => {
+      p.querySelector(".dbc-pop-edit").onclick = (ev) => { ev.stopPropagation(); openEdit(e); };
+      p.querySelectorAll(".dbc-pop-del").forEach((b) => b.onclick = async (ev) => {
         ev.stopPropagation();
-        if (!confirm("Remove this pinned class?")) return;
+        const series = b.dataset.scope === "series";
+        if (!confirm(series ? `Remove all ${seriesCount} sessions in this series?` : "Remove this pinned class?")) return;
         try {
-          await api(`/api/calendar/${encodeURIComponent(e.id)}`, { method: "DELETE" });
-          state.events = state.events.filter((x) => x.id !== e.id);
+          await api(`/api/calendar/${encodeURIComponent(e.id)}${series ? "?series=1" : ""}`, { method: "DELETE" });
+          state.events = series
+            ? state.events.filter((x) => x.seriesId !== e.seriesId)
+            : state.events.filter((x) => x.id !== e.id);
           indexEvents();
+          hidePop();
           render();
         } catch (err) { alert(err.message); }
-      };
+      });
     }
 
     const r = target.getBoundingClientRect();
@@ -292,6 +303,17 @@ export async function mountCalendar(layout) {
           <label class="dbc-field">Ends (optional)
             <input id="dbc-endtime" type="time" /></label>
         </div>
+        <div class="dbc-field-2">
+          <label class="dbc-field">Repeat
+            <select id="dbc-repeat">
+              <option value="none">Just this day</option>
+              <option value="daily">Every day</option>
+              <option value="weekdays">Weekdays (Mon–Fri)</option>
+              <option value="weekly">Weekly</option>
+            </select></label>
+          <label class="dbc-field">Sessions
+            <input id="dbc-count" type="number" min="1" max="60" value="1" disabled /></label>
+        </div>
         <label class="dbc-field">Where (optional)
           <input id="dbc-location" type="text" maxlength="160" placeholder="e.g. Room 3 / Zoom link" /></label>
         <label class="dbc-field">Notes (optional)
@@ -310,6 +332,16 @@ export async function mountCalendar(layout) {
     titleEl.focus();
     titleEl.select();
 
+    // The session count only matters when the class repeats.
+    const repeatEl = root.querySelector("#dbc-repeat");
+    const countEl = root.querySelector("#dbc-count");
+    repeatEl.onchange = () => {
+      const on = repeatEl.value !== "none";
+      countEl.disabled = !on;
+      if (on && (+countEl.value || 1) < 2) countEl.value = 5;
+      if (!on) countEl.value = 1;
+    };
+
     root.querySelector("#dbc-pin").onclick = async () => {
       const teacher = root.querySelector("#dbc-teacher").value;
       const title = titleEl.value.trim() || "Class";
@@ -318,20 +350,84 @@ export async function mountCalendar(layout) {
       const endTime = root.querySelector("#dbc-endtime").value || "";
       const location = root.querySelector("#dbc-location").value.trim();
       const notes = root.querySelector("#dbc-notes").value.trim();
+      const repeat = repeatEl.value;
+      const count = repeat === "none" ? 1 : Math.max(1, Math.min(60, +countEl.value || 1));
       const msg = root.querySelector("#dbc-msg");
       if (!teacher) { msg.textContent = "Pick a teacher."; return; }
       if (endTime && time && endTime < time) { msg.textContent = "End time is before the start time."; return; }
-      msg.textContent = "Pinning…";
+      msg.textContent = count > 1 ? `Pinning ${count} sessions…` : "Pinning…";
       try {
         const d = await api("/api/calendar/pin", {
           method: "POST",
-          body: JSON.stringify({ teacherUid: teacher, title, className: title, subject, date, time, endTime, location, notes }),
+          body: JSON.stringify({ teacherUid: teacher, title, className: title, subject, date, time, endTime, location, notes, repeat, count }),
         });
-        state.events.push(d.event);
+        (d.events || [d.event]).forEach((e) => state.events.push(e));
         indexEvents();
         render();
         close();
       } catch (e) { msg.textContent = e.message; }
+    };
+  }
+
+  // ── Edit an existing pinned class ─────────────────────────────────
+  function openEdit(e) {
+    hidePop();
+    const seriesCount = e.seriesId ? state.events.filter((x) => x.seriesId === e.seriesId).length : 0;
+    const root = document.createElement("div");
+    root.className = "dbc-modal";
+    root.innerHTML = `
+      <div class="dbc-modal__bd"></div>
+      <div class="dbc-modal__card">
+        <h3>Edit class</h3>
+        <p class="dbc-modal__sub">${esc(e.teacherName || "")}</p>
+        <label class="dbc-field">Class / title
+          <input id="dbc-title" type="text" maxlength="120" value="${esc(e.title || "Class")}" /></label>
+        <label class="dbc-field">Subject (optional)
+          <input id="dbc-subject" type="text" maxlength="80" value="${esc(e.subject || "")}" /></label>
+        <label class="dbc-field">Date
+          <input id="dbc-date" type="date" value="${esc(e.date || "")}" /></label>
+        <div class="dbc-field-2">
+          <label class="dbc-field">Starts
+            <input id="dbc-time" type="time" value="${esc(e.time || "")}" /></label>
+          <label class="dbc-field">Ends (optional)
+            <input id="dbc-endtime" type="time" value="${esc(e.endTime || "")}" /></label>
+        </div>
+        <label class="dbc-field">Where (optional)
+          <input id="dbc-location" type="text" maxlength="160" value="${esc(e.location || "")}" /></label>
+        <label class="dbc-field">Notes (optional)
+          <textarea id="dbc-notes" maxlength="600" rows="2">${esc(e.notes || "")}</textarea></label>
+        ${seriesCount > 1 ? `<label class="dbc-check"><input id="dbc-series" type="checkbox" /> Apply to all ${seriesCount} sessions in this series (keeps each date)</label>` : ""}
+        <div class="dbc-modal__row">
+          <button class="btn btn-yellow" id="dbc-save" type="button">Save changes</button>
+          <button class="btn btn-ghost" id="dbc-cancel" type="button">Cancel</button>
+        </div>
+        <p class="dbc-msg" id="dbc-msg"></p>
+      </div>`;
+    document.body.appendChild(root);
+    const close = () => root.remove();
+    root.querySelector(".dbc-modal__bd").onclick = close;
+    root.querySelector("#dbc-cancel").onclick = close;
+
+    root.querySelector("#dbc-save").onclick = async () => {
+      const title = root.querySelector("#dbc-title").value.trim() || "Class";
+      const subject = root.querySelector("#dbc-subject").value.trim();
+      const newDate = root.querySelector("#dbc-date").value || e.date;
+      const time = root.querySelector("#dbc-time").value || "";
+      const endTime = root.querySelector("#dbc-endtime").value || "";
+      const location = root.querySelector("#dbc-location").value.trim();
+      const notes = root.querySelector("#dbc-notes").value.trim();
+      const applyToSeries = !!root.querySelector("#dbc-series")?.checked;
+      const msg = root.querySelector("#dbc-msg");
+      if (endTime && time && endTime < time) { msg.textContent = "End time is before the start time."; return; }
+      msg.textContent = "Saving…";
+      try {
+        await api(`/api/calendar/${encodeURIComponent(e.id)}`, {
+          method: "PUT",
+          body: JSON.stringify({ title, className: title, subject, date: newDate, time, endTime, location, notes, applyToSeries }),
+        });
+        await refreshEvents();
+        close();
+      } catch (err) { msg.textContent = err.message; }
     };
   }
 
@@ -508,10 +604,16 @@ function injectStyles() {
     .dbc-pop-row dd { font-size:.72rem; color:#2a2723; margin:0; word-break:break-word; }
     .dbc-pop-notes { font-size:.7rem; color: var(--text-secondary,#6b655c); margin:.6rem 0 0; line-height:1.4;
       border-top:1px dashed rgba(20,19,15,.16); padding-top:.5rem; white-space:pre-wrap; }
-    .dbc-pop-del { margin-top:.7rem; width:100%; padding:.4rem; border-radius:8px; cursor:pointer;
-      font-family:inherit; font-size:.66rem; border:1px solid rgba(224,122,95,.5);
-      background: rgba(224,122,95,.12); color:#b9543c; }
+    .dbc-pop-actions { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.8rem; }
+    .dbc-pop-actions button { flex:1; min-width:64px; padding:.4rem; border-radius:8px; cursor:pointer;
+      font-family:inherit; font-size:.66rem; }
+    .dbc-pop-edit { border:1px solid rgba(20,19,15,.22); background: var(--surface-secondary,#f4f0e8); color:#14130f; }
+    .dbc-pop-edit:hover { background: var(--surface-tertiary,#e9e2d4); }
+    .dbc-pop-del { border:1px solid rgba(224,122,95,.5); background: rgba(224,122,95,.12); color:#b9543c; }
     .dbc-pop-del:hover { background: rgba(224,122,95,.2); }
+    .dbc-check { display:flex; align-items:flex-start; gap:.45rem; font-size:.66rem; color: var(--text-secondary,#6b655c);
+      margin:-.1rem 0 .8rem; line-height:1.35; cursor:pointer; }
+    .dbc-check input { margin-top:.1rem; }
 
     /* Admin teacher palette. */
     .dbc-palette { margin-top:.8rem; padding-top:.7rem; border-top:1px dashed rgba(20,19,15,.2); }

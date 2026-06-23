@@ -1,7 +1,7 @@
 export const ROLE_LABELS = {
-  student: "Student Math Workspace",
-  teacher: "Teacher Math Portal",
-  parent: "Parent Math Dashboard",
+  student: "Student",
+  teacher: "Teacher",
+  parent: "Parent",
   admin: "Admin",
 };
 

@@ -7,20 +7,17 @@ export function buildTeacherPanels(user, data, layout) {
 
   layout.dataset.role = "teacher";
   layout.innerHTML = `
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.users}</div>
+    <div class="db-stat pp-sticky pp-sticky--c2" style="--pp-note-tilt:-2deg;">
       <div class="db-stat-value" id="db-stat-students">—</div>
       <div class="db-stat-label">Students in class</div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.papers}</div>
+    <div class="db-stat pp-sticky pp-sticky--c4" style="--pp-note-tilt:1.5deg;">
       <div class="db-stat-value" id="db-stat-activities">—</div>
       <div class="db-stat-label">Activities</div>
     </div>
 
-    <div class="db-stat">
-      <div class="db-stat-icon">${I.check}</div>
+    <div class="db-stat pp-sticky pp-sticky--c0" style="--pp-note-tilt:-1.5deg;">
       <div class="db-stat-value" id="db-stat-subs">—</div>
       <div class="db-stat-label">Submissions</div>
     </div>
