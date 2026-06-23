@@ -152,6 +152,60 @@ module.exports = function () {
     }
   });
 
+  // ── POST /assign-cbt — teacher assigns a built CBT practice test ──
+  // { url, title, subject?, all?:bool, studentUids?:[] }. The CBT isn't a stored
+  // doc (it's a builder config), so we assign the launch URL itself. Re-assigning
+  // the same test is idempotent (the doc id is derived from the URL).
+  router.post("/assign-cbt", authenticate, async (req, res) => {
+    try {
+      const p = await profile(req.user.uid);
+      if (!isTeacher(req, p)) return res.status(403).json({ error: "Teachers only." });
+      const b = req.body || {};
+
+      // Accept only a site-relative launch URL for our own CBT engine.
+      const url = String(b.url || "").trim().slice(0, 1000);
+      if (!/^\/[^\s]*\bsource=cbt\b/.test(url) || !url.includes("question.html")) {
+        return res.status(400).json({ error: "Not a valid practice-test link." });
+      }
+      const title = String(b.title || "").trim().slice(0, 140) || "Practice test";
+      const subject = String(b.subject || "").trim().slice(0, 80) || null;
+
+      let targets = [];
+      if (b.all) {
+        const r = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
+        targets = r.docs.map((d) => d.id);
+      } else if (Array.isArray(b.studentUids)) {
+        targets = b.studentUids.slice(0, 300).map(String);
+      }
+      if (!targets.length) return res.status(400).json({ error: "No students to assign — add students to your class first." });
+
+      // Stable doc id from the URL so the same config doesn't pile up duplicates.
+      let h = 5381;
+      for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) | 0;
+      const docId = "cbt_" + (h >>> 0).toString(36);
+
+      const batch = db().batch();
+      for (const uid of targets) {
+        const ref = db().collection("studentAssignments").doc(uid).collection("items").doc(docId);
+        batch.set(ref, {
+          kind: "cbt",
+          cbtUrl: url,
+          activityTitle: title,
+          subject,
+          teacherUid: req.user.uid,
+          teacherName: displayName(req, p),
+          status: "assigned",
+          assignedAt: stamp(),
+        }, { merge: true });
+      }
+      await batch.commit();
+      res.json({ ok: true, assigned: targets.length });
+    } catch (e) {
+      console.error("[/api/classroom/assign-cbt]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── GET /my-stats — the student's real dashboard figures ─────────
   router.get("/my-stats", authenticate, async (req, res) => {
     try {

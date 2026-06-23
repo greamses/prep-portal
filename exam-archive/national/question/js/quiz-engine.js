@@ -234,7 +234,8 @@ const Quiz = (() => {
   }
 
   // AI-mark a free-response answer via our server (keys stay server-side).
-  async function markTheory(question, answer, markScheme) {
+  // `type` lets the server route the model (short/blank → Groq, theory → Gemini).
+  async function markTheory(question, answer, markScheme, type) {
     try {
       const headers = { "Content-Type": "application/json" };
       try {
@@ -244,7 +245,7 @@ const Quiz = (() => {
       const r = await fetch(`${API_BASE}/api/cbt/mark`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ question, answer, modelAnswer: markScheme || "" }),
+        body: JSON.stringify({ question, answer, modelAnswer: markScheme || "", type: type || "" }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Marking failed");
@@ -277,8 +278,9 @@ const Quiz = (() => {
       const subs = (PAGE_CONFIG.subjects || []).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" & ") || "Practice";
       const bits = [];
       if (PAGE_CONFIG.paper) bits.push(`Paper ${PAGE_CONFIG.paper}`);
-      if (PAGE_CONFIG.format === "mcq") bits.push("MCQ only");
-      else if (PAGE_CONFIG.format === "theory") bits.push("Theory only");
+      if (PAGE_CONFIG.format === "mcq") bits.push("MCQs");
+      else if (PAGE_CONFIG.format === "blank") bits.push("Fill in the Blanks");
+      else if (PAGE_CONFIG.format === "theory") bits.push("Theories");
       if (PAGE_CONFIG.topic) bits.push(PAGE_CONFIG.topic);
       subText = `${schemeLabel} • ${subs}`;
       metaText = bits.join(" · ") || "Practice set";
@@ -1405,7 +1407,8 @@ const Quiz = (() => {
 
   // Build question HTML with an inline input where the blank (____ or [blank]) is.
   function clozeHtml(question, idx) {
-    const inputHtml = `<input type="text" data-cloze="${idx}" name="cz-${idx}-${Math.random().toString(36).slice(2, 7)}" ${ATTRS} value="${esc(userAnswers[idx] || "")}"${submitted ? " disabled" : ""} style="display:inline-block;min-width:120px;padding:2px 8px;border:none;border-bottom:2px solid var(--blue,#0055ff);background:transparent;font-family:inherit;font-size:inherit;color:inherit;" />`;
+    const locked = submitted || (immediate && revealed[idx]);
+    const inputHtml = `<input type="text" data-cloze="${idx}" name="cz-${idx}-${Math.random().toString(36).slice(2, 7)}" ${ATTRS} value="${esc(userAnswers[idx] || "")}"${locked ? " disabled" : ""} style="display:inline-block;min-width:120px;padding:2px 8px;border:none;border-bottom:2px solid var(--blue,#0055ff);background:transparent;font-family:inherit;font-size:inherit;color:inherit;" />`;
     const q = String(question || "");
     const m = q.match(/_{2,}|\[\s*blank\s*\]|\.{3,}/i);
     if (!m) return escFmt(q) + " " + inputHtml; // no marker → input at the end
@@ -1413,6 +1416,9 @@ const Quiz = (() => {
   }
 
   function renderFreeResponse(q, idx, optWrap) {
+    // Lock the input once submitted, or (immediate mode) once this answer has
+    // been marked. The cloze input for subjective is handled in renderQuestion.
+    const locked = submitted || (immediate && revealed[idx]);
     if (q.type === "short") {
       // A word or short phrase → a single-line input.
       const inp = document.createElement("input");
@@ -1423,7 +1429,7 @@ const Quiz = (() => {
       // A writing LINE, not a box.
       inp.style.cssText = "width:100%;max-width:360px;box-sizing:border-box;padding:6px 2px;border:none;border-bottom:2px solid color-mix(in srgb, var(--ink) 45%, transparent);border-radius:0;background:transparent;font-family:inherit;font-size:15px;color:inherit;outline:none;";
       inp.value = userAnswers[idx] || "";
-      if (submitted) inp.disabled = true;
+      if (locked) inp.disabled = true;
       inp.addEventListener("input", () => { userAnswers[idx] = inp.value; updateDots(); });
       optWrap.appendChild(inp);
     } else if (q.type !== "subjective") {
@@ -1433,7 +1439,7 @@ const Quiz = (() => {
       ta.placeholder = "Write your answer here…";
       noAutofill(ta, idx);
       ta.value = userAnswers[idx] || "";
-      if (submitted) ta.disabled = true;
+      if (locked) ta.disabled = true;
       ta.addEventListener("input", () => {
         userAnswers[idx] = ta.value;
         updateDots();
@@ -1441,7 +1447,20 @@ const Quiz = (() => {
       optWrap.appendChild(ta);
     }
 
-    if (submitted && theoryMarks[idx]) {
+    // Immediate mode: a "Mark answer" button so free-response is graded BEFORE
+    // moving on (objective questions reveal on pick; these need an explicit step).
+    if (immediate && !submitted && !revealed[idx]) {
+      const markBtn = document.createElement("button");
+      markBtn.type = "button";
+      markBtn.className = "btn btn-yellow free-mark-btn";
+      markBtn.textContent = "Mark answer";
+      markBtn.style.cssText = "margin-top:12px;";
+      markBtn.addEventListener("click", () => markFreeResponseNow(idx, markBtn));
+      optWrap.appendChild(markBtn);
+    }
+
+    const showMark = submitted || (immediate && revealed[idx]);
+    if (showMark && theoryMarks[idx]) {
       const m = theoryMarks[idx];
       const mEl = document.createElement("div");
       mEl.style.cssText =
@@ -1450,12 +1469,38 @@ const Quiz = (() => {
                 <div class="theory-score-badge">AI Mark: ${m.score}/${m.outOf}</div>
                 <div class="theory-mark-text">${esc(m.feedback)}</div>`;
       optWrap.appendChild(mEl);
-    } else if (submitted && userAnswers[idx]) {
+    } else if (showMark && userAnswers[idx]) {
       const sp = document.createElement("div");
       sp.className = "ai-marking-row";
       sp.innerHTML = `<div class="ai-spin"></div>AI Marking…`;
       optWrap.appendChild(sp);
     }
+  }
+
+  // Immediate-mode: mark a single free-response answer, lock it, then reveal the
+  // score + model answer (and optionally auto-advance, like objective questions).
+  async function markFreeResponseNow(idx, btn) {
+    const q = allQuestions[idx];
+    const answer = (userAnswers[idx] || "").trim();
+    if (!answer) { setStatusBtn(btn, "Type an answer first"); return; }
+    revealed[idx] = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Marking…"; }
+    try {
+      theoryMarks[idx] = await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
+    } catch (e) {
+      console.warn(`Immediate marking Q${idx + 1}:`, e.message);
+    }
+    renderQuestion(idx);
+    if (window.__autoAdvance && idx < allQuestions.length - 1) {
+      setTimeout(() => navigate(1), 1600);
+    }
+  }
+
+  function setStatusBtn(btn, msg) {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = msg;
+    setTimeout(() => { btn.textContent = orig; }, 1500);
   }
 
   function updateNavButtons(idx, total) {
@@ -1483,9 +1528,8 @@ const Quiz = (() => {
     if (acts) acts.innerHTML = "";
 
     // Show feedback at submit, or instantly (immediate mode) once answered.
-    // Theory has no objective key, so it only gets feedback after submit/AI marking.
-    const reveal =
-      submitted || (immediate && revealed[idx] && q.type === "objective");
+    // Free-response is revealed too — its mark/model-answer show once marked.
+    const reveal = submitted || (immediate && revealed[idx]);
     if (!reveal) return;
 
     function buildExpl(raw) {
@@ -1622,8 +1666,9 @@ const Quiz = (() => {
       if (!isFree(q.type)) continue;
       const answer = userAnswers[i] || "";
       if (!answer.trim()) continue;
+      if (theoryMarks[i]) continue; // already marked (e.g. in immediate mode)
       try {
-        const result = await markTheory(q.question, answer, q.markScheme || "");
+        const result = await markTheory(q.question, answer, q.markScheme || q._answer || "", q.type);
         theoryMarks[i] = result;
         updateDots();
         if (currentIndex === i) renderQuestion(i);
@@ -1639,7 +1684,7 @@ const Quiz = (() => {
     if (!el) return;
     el.innerHTML = `
             <div class="theory-score-badge">AI Mark: ${mark.score}/${mark.outOf}</div>
-            <div class="theory-mark-text">${esc(m.feedback)}</div>`;
+            <div class="theory-mark-text">${esc(mark.feedback)}</div>`;
     typesetEl(el);
   }
 

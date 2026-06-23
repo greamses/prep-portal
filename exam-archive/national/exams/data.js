@@ -1137,10 +1137,10 @@ function initInternational() {
 //  UNIFIED: begin button + category wiring
 // ════════════════════════════════════════════════════════════════════
 
-beginBtn.onclick = () => {
-  if (beginBtn.disabled) return;
-
-  if (activeCat === "national" || activeCat === "international" || activeCat === "practice") {
+// Build the relative URL the current selection would launch — also used to make
+// a shareable link. Returns null when the active category has no target yet.
+function targetUrl() {
+  if (activeCat === "national" || activeCat === "practice") {
     // Spread the chosen total across the selected subjects.
     const total = natState.count || 40;
     const per = Math.max(1, Math.ceil(total / Math.max(1, natState.subjects.length)));
@@ -1155,8 +1155,7 @@ beginBtn.onclick = () => {
     if (natState.format) params.set("format", natState.format);
     if (natState.topic) params.set("topic", natState.topic);
     if (natState.grade) params.set("grade", natState.grade);
-    window.location.href = `../question/question.html?${params.toString()}`;
-    return;
+    return `../question/question.html?${params.toString()}`;
   }
 
   if (activeCat === "competition") {
@@ -1169,15 +1168,162 @@ beginBtn.onclick = () => {
       round,
       section,
     });
-    window.location.href = `../question/question.html?${params.toString()}`;
-    return;
+    return `../question/question.html?${params.toString()}`;
   }
 
   if (activeCat === "international") {
-    if (!intlState.paperUrl) return;
-    window.location.href = intlState.paperUrl;
+    return intlState.paperUrl || null;
   }
+
+  return null;
+}
+
+beginBtn.onclick = () => {
+  if (beginBtn.disabled) return;
+  const url = targetUrl();
+  if (url) window.location.href = url;
 };
+
+// ── Copy a shareable link to the configured test ───────────────────────
+const shareBtn = document.getElementById("share-btn");
+const shareLabel = shareBtn && shareBtn.querySelector(".share-label");
+let shareResetTimer = null;
+
+// Keep the share button enabled exactly when "Begin" is (it watches the same
+// readiness state, set in many places, via the disabled attribute).
+if (shareBtn) {
+  const syncShare = () => {
+    shareBtn.disabled = beginBtn.disabled;
+  };
+  new MutationObserver(syncShare).observe(beginBtn, {
+    attributes: true,
+    attributeFilter: ["disabled"],
+  });
+  syncShare();
+
+  shareBtn.onclick = async () => {
+    if (shareBtn.disabled) return;
+    const rel = targetUrl();
+    if (!rel) return;
+    const abs = new URL(rel, location.href).href;
+    const done = (ok) => {
+      if (shareLabel) shareLabel.textContent = ok ? "Link copied!" : "Copy failed";
+      shareBtn.classList.toggle("copied", ok);
+      clearTimeout(shareResetTimer);
+      shareResetTimer = setTimeout(() => {
+        if (shareLabel) shareLabel.textContent = "Copy link";
+        shareBtn.classList.remove("copied");
+      }, 2000);
+    };
+    try {
+      await navigator.clipboard.writeText(abs);
+      done(true);
+    } catch (e) {
+      // Fallback for non-secure contexts / older browsers.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = abs;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        done(true);
+      } catch (_) {
+        done(false);
+      }
+    }
+  };
+}
+
+// ── Teacher-only: assign the configured CBT to the class roster ────────
+// The button stays hidden until we confirm the signed-in user is a teacher
+// (the roster endpoint answers 200 for teachers/admins, 403 otherwise).
+const assignBtn = document.getElementById("assign-btn");
+
+async function ppCurrentUser() {
+  let auth = window.firebaseAuth;
+  if (!auth) {
+    try { auth = (await import("/firebase-init.js")).auth; } catch (_) { return null; }
+  }
+  if (auth.currentUser) return auth.currentUser;
+  try {
+    const { onAuthStateChanged } = await import("firebase/auth");
+    return await new Promise((resolve) => {
+      const unsub = onAuthStateChanged(auth, (u) => { unsub(); resolve(u || null); });
+      setTimeout(() => resolve(auth.currentUser || null), 4000);
+    });
+  } catch (_) { return auth.currentUser || null; }
+}
+
+async function ppAuthToken() {
+  const u = await ppCurrentUser();
+  if (!u) return null;
+  try { return await u.getIdToken(); } catch (_) { return null; }
+}
+
+if (assignBtn) {
+  const assignLabel = assignBtn.querySelector(".assign-label");
+  let assignResetTimer = null;
+  const setAssign = (msg, ok) => {
+    if (assignLabel) assignLabel.textContent = msg;
+    assignBtn.classList.toggle("copied", !!ok);
+    clearTimeout(assignResetTimer);
+    assignResetTimer = setTimeout(() => {
+      if (assignLabel) assignLabel.textContent = "Assign to class";
+      assignBtn.classList.remove("copied");
+    }, 2200);
+  };
+
+  // Mirror "Begin"'s readiness, and reveal only for teachers.
+  const syncAssign = () => { assignBtn.disabled = beginBtn.disabled; };
+  new MutationObserver(syncAssign).observe(beginBtn, {
+    attributes: true,
+    attributeFilter: ["disabled"],
+  });
+  syncAssign();
+
+  (async () => {
+    const token = await ppAuthToken();
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE}/api/classroom/roster`, {
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (r.ok) assignBtn.hidden = false;
+    } catch (_) {}
+  })();
+
+  assignBtn.onclick = async () => {
+    if (assignBtn.disabled) return;
+    const rel = targetUrl();
+    if (!rel) return;
+    // Store a site-root path (pathname + search) — what the dashboard links to.
+    const u = new URL(rel, location.href);
+    const url = u.pathname + u.search;
+    const schemeName =
+      (activeExamTypes.find((e) => e.id === natState.examType) || {}).name || "Practice";
+    const defTitle = `${schemeName} • ${natState.subjects.join(", ")}`.slice(0, 120);
+    const title = (window.prompt("Title for this assignment:", defTitle) || "").trim();
+    if (!title) return; // cancelled or empty
+    const token = await ppAuthToken();
+    if (!token) { setAssign("Sign in first"); return; }
+    setAssign("Assigning…");
+    try {
+      const r = await fetch(`${API_BASE}/api/classroom/assign-cbt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ url, title, subject: natState.subjects[0] || "", all: true }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "Failed");
+      setAssign(`Assigned to ${d.assigned}`, true);
+    } catch (e) {
+      setAssign(String(e.message || "Failed").slice(0, 28));
+    }
+  };
+}
 
 function initMode(cat) {
   // National, International and Practice all run the CBT builder; only the scheme set differs.

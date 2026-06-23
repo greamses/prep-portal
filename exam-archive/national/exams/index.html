@@ -238,11 +238,12 @@
             <div class="custom-chip count-chip" data-count="60"><div class="chip-check-box"></div><span>60</span></div>
           </div>
           <div data-cat="national" id="filter-extra" style="margin-top:.9rem">
-            <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Question format</div>
+            <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">What to answer</div>
             <div class="chips-container" id="format-chips">
               <div class="custom-chip fmt-chip checked" data-fmt=""><div class="chip-check-box"></div><span>All</span></div>
-              <div class="custom-chip fmt-chip" data-fmt="mcq"><div class="chip-check-box"></div><span>MCQ only</span></div>
-              <div class="custom-chip fmt-chip" data-fmt="theory"><div class="chip-check-box"></div><span>Theory only</span></div>
+              <div class="custom-chip fmt-chip" data-fmt="mcq"><div class="chip-check-box"></div><span>MCQs</span></div>
+              <div class="custom-chip fmt-chip" data-fmt="blank"><div class="chip-check-box"></div><span>Fill in the Blanks</span></div>
+              <div class="custom-chip fmt-chip" data-fmt="theory"><div class="chip-check-box"></div><span>Theories</span></div>
             </div>
             <div id="topic-wrap" style="margin-top:.7rem;display:none">
               <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Topic (optional)</div>
@@ -276,9 +277,55 @@
         <span class="setup-status" id="setup-status"
           >Awaiting selections...</span
         >
-        <button class="builder-cta" id="begin-btn" disabled>
-          practice paper →
-        </button>
+        <div class="builder-actions">
+          <button
+            class="builder-share"
+            id="share-btn"
+            type="button"
+            disabled
+            title="Copy a shareable link to this test"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            <span class="share-label">Copy link</span>
+          </button>
+          <button
+            class="builder-share builder-assign"
+            id="assign-btn"
+            type="button"
+            disabled
+            hidden
+            title="Assign this test to your class"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M16 18v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="3.2" />
+              <path d="M17 11l2 2 4-4" />
+            </svg>
+            <span class="assign-label">Assign to class</span>
+          </button>
+          <button class="builder-cta" id="begin-btn" disabled>
+            practice paper →
+          </button>
+        </div>
       </footer>
 
       <p class="builder-disclaimer" style="position:relative;z-index:1;max-width:60ch;margin:1.5rem auto 0;text-align:center;font-family:var(--font-mono);font-size:.7rem;line-height:1.6;color:var(--text-secondary)">

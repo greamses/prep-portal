@@ -284,32 +284,42 @@ function fixLatex(s) {
   return out;
 }
 
-// Raw model text (Groq → Gemini). json=true asks for a JSON object response.
-async function callModelRaw(prompt, json) {
-  if (process.env.GROQ_API_KEY) {
+// One provider's raw text (or null on failure). json=true asks for JSON.
+async function callGroqRaw(prompt, json) {
+  if (!process.env.GROQ_API_KEY) return null;
+  const body = { model: GROQ_DEFAULT_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 6000 };
+  if (json) body.response_format = { type: "json_object" };
+  const r = await fetch(GROQ_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` }, body: JSON.stringify(body) });
+  if (r.ok) { const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (t) return t; }
+  return null;
+}
+async function callGeminiRaw(prompt, json) {
+  if (!process.env.GEMINI_API_KEY) return null;
+  for (const url of GEMINI_MODELS) {
     try {
-      const body = { model: GROQ_DEFAULT_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 6000 };
-      if (json) body.response_format = { type: "json_object" };
-      const r = await fetch(GROQ_URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` }, body: JSON.stringify(body) });
-      if (r.ok) { const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (t) return t; }
-    } catch (e) { console.warn("[cbt] groq:", e.message); }
+      const gc = { temperature: 0.7, maxOutputTokens: 8000 };
+      if (json) gc.responseMimeType = "application/json";
+      const r = await fetch(`${url}?key=${process.env.GEMINI_API_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: gc }) });
+      if (!r.ok) { if ([404, 429, 503].includes(r.status)) continue; break; }
+      const d = await r.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text; if (t) return t;
+    } catch (e) { continue; }
   }
-  if (process.env.GEMINI_API_KEY) {
-    for (const url of GEMINI_MODELS) {
-      try {
-        const gc = { temperature: 0.7, maxOutputTokens: 8000 };
-        if (json) gc.responseMimeType = "application/json";
-        const r = await fetch(`${url}?key=${process.env.GEMINI_API_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: gc }) });
-        if (!r.ok) { if ([404, 429, 503].includes(r.status)) continue; break; }
-        const d = await r.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text; if (t) return t;
-      } catch (e) { continue; }
-    }
+  return null;
+}
+
+// Raw model text with a provider preference order. Defaults to Groq → Gemini
+// (the generator's choice); marking overrides it per question type.
+async function callModelRaw(prompt, json, order = ["groq", "gemini"]) {
+  for (const p of order) {
+    const fn = p === "gemini" ? callGeminiRaw : callGroqRaw;
+    try { const t = await fn(prompt, json); if (t) return t; }
+    catch (e) { console.warn(`[cbt] ${p}:`, e.message); }
   }
   throw new Error("AI is unavailable right now — try again.");
 }
 
-// JSON convenience wrapper (used by the rephrase flow).
-async function callModel(prompt) { return safeJson(await callModelRaw(prompt, true)); }
+// JSON convenience wrapper (used by the rephrase flow + marking).
+async function callModel(prompt, order) { return safeJson(await callModelRaw(prompt, true, order)); }
 
 function cleanQuestions(arr) {
   if (!Array.isArray(arr)) return [];
@@ -595,7 +605,7 @@ module.exports = function () {
       const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 60);
       const random = req.query.random !== "0";
       const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
-      const format = String(req.query.format || "").toLowerCase(); // "mcq" | "theory" | ""
+      const format = String(req.query.format || "").toLowerCase(); // "mcq" | "blank" | "theory" | ""
       const topicFilter = String(req.query.topic || "").toLowerCase().trim();
       const gradeFilter = String(req.query.grade || "").trim();
       if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "scheme and subject are required." });
@@ -625,9 +635,12 @@ module.exports = function () {
           scheme: x.scheme,
         }));
       if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
-      // Format filter: mcq = options-bearing; theory = free-response (no options).
-      if (format === "mcq") questions = questions.filter((q) => q.options && q.options.length >= 2);
-      else if (format === "theory") questions = questions.filter((q) => !(q.options && q.options.length >= 2));
+      // Format filter: mcq = options-bearing; blank = fill-in-the-blank
+      // (subjective); theory = the remaining free-response (theory/short/essay).
+      const hasOpts = (q) => q.options && q.options.length >= 2;
+      if (format === "mcq") questions = questions.filter(hasOpts);
+      else if (format === "blank") questions = questions.filter((q) => !hasOpts(q) && q.type === "subjective");
+      else if (format === "theory") questions = questions.filter((q) => !hasOpts(q) && q.type !== "subjective");
       if (topicFilter) questions = questions.filter((q) => String(q.topic || "").toLowerCase() === topicFilter);
       if (gradeFilter) questions = questions.filter((q) => String(q.grade || "") === gradeFilter);
       if (random) {
@@ -659,14 +672,30 @@ module.exports = function () {
   });
 
   // ── POST /mark — AI-grade a free-response answer (server-side, signed-in) ──
-  // { question, answer, modelAnswer } → { score, outOf, feedback } out of 10.
+  // { question, answer, modelAnswer, type } → { score, outOf, feedback } /10.
+  // Model rotation by type: short answers & fill-in-the-blanks go to Groq (fast,
+  // cheap, plenty for a word/phrase); full theory goes to Gemini first (stronger
+  // long-form reasoning). Each falls back to the other if its first pick is down.
   router.post("/mark", authenticate, async (req, res) => {
     try {
       const b = req.body || {};
       const question = String(b.question || "").trim().slice(0, 4000);
       const answer = String(b.answer || "").trim().slice(0, 6000);
       const model = String(b.modelAnswer || "").trim().slice(0, 6000);
+      const type = String(b.type || "").toLowerCase().trim();
       if (!question || !answer) return res.json({ score: 0, outOf: 10, feedback: "No answer to mark." });
+
+      // Short / fill-in-the-blank: a confident match to the model answer is full
+      // marks with no AI round-trip — so these ALWAYS get marked, instantly.
+      const isShort = type === "short" || type === "subjective";
+      if (isShort && model) {
+        const norm = (s) => String(s).toLowerCase().replace(/\\[()[\]]/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+        const a = norm(answer), m = norm(model);
+        if (a && m && (a === m || (m.length > 3 && (a === m || a.includes(m) || m.includes(a))))) {
+          return res.json({ score: 10, outOf: 10, feedback: "Correct — matches the expected answer." });
+        }
+      }
+
       const prompt = `You are a fair, encouraging examiner. Grade the student's answer out of 10.
 QUESTION: ${question}
 ${model ? `MODEL ANSWER / KEY POINTS: ${model}` : ""}
@@ -674,8 +703,10 @@ STUDENT ANSWER: ${answer}
 
 Award marks for accuracy, relevant key points and clarity; ignore spelling/grammar unless it changes meaning. Give brief, specific, constructive feedback (1-3 sentences) and note any missed key points.
 Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>"}`;
+      // short/subjective → Groq first; theory/essay (or unknown) → Gemini first.
+      const order = isShort ? ["groq", "gemini"] : ["gemini", "groq"];
       let out;
-      try { out = await callModel(prompt); } catch (_) { out = null; }
+      try { out = await callModel(prompt, order); } catch (_) { out = null; }
       let score = parseInt(out && out.score, 10);
       if (!Number.isInteger(score) || score < 0) score = 0;
       if (score > 10) score = 10;

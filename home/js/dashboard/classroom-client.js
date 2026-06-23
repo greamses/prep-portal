@@ -128,13 +128,18 @@ async function fillStudentStats(layout, assignments) {
 }
 
 function asgItem(a) {
+  const isCbt = a.kind === "cbt";
   const done = a.status === "submitted";
-  const pill = done
-    ? `<span class="db-pill pill-green">${a.score != null ? `${a.score}/${a.totalMarks}` : "Done"}</span>`
-    : `<span class="db-pill pill-yellow">To do</span>`;
-  return `<a class="db-assign-item" href="/activity.html?a=${encodeURIComponent(a.shareSlug || a.id)}" style="text-decoration:none;color:inherit">
+  // CBT practice has no submission hook yet, so it just launches the test.
+  const pill = isCbt
+    ? `<span class="db-pill pill-blue">Practice</span>`
+    : done
+      ? `<span class="db-pill pill-green">${a.score != null ? `${a.score}/${a.totalMarks}` : "Done"}</span>`
+      : `<span class="db-pill pill-yellow">To do</span>`;
+  const href = isCbt ? a.cbtUrl : `/activity.html?a=${encodeURIComponent(a.shareSlug || a.id)}`;
+  return `<a class="db-assign-item" href="${esc(href)}" style="text-decoration:none;color:inherit">
       <div class="db-assign-top">
-        <div><div class="db-assign-title">${esc(a.activityTitle || "Activity")}</div>
+        <div><div class="db-assign-title">${esc(a.activityTitle || (isCbt ? "Practice test" : "Activity"))}</div>
         <div class="db-assign-meta">${esc([a.subject, a.teacherName].filter(Boolean).join(" · "))}</div></div>
         ${pill}
       </div>

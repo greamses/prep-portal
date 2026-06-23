@@ -579,6 +579,64 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* Begin + share grouped on the right of the footer */
+.builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Soft secondary "copy shareable link" button */
+.builder-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: clamp(46px, 9vw, 54px);
+  padding: 0 clamp(1rem, 2.5vw, 1.3rem);
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 999px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+.builder-share svg {
+  width: 16px;
+  height: 16px;
+}
+.builder-share:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.builder-share:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+.builder-share:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.builder-share.copied {
+  background: var(--accent-success);
+  color: var(--text-on-accent);
+  border-color: transparent;
+}
+/* Teacher-only "Assign to class" — stays hidden until the role check passes
+   (the [hidden] attribute alone loses to .builder-share's display rule). */
+.builder-assign[hidden] {
+  display: none;
+}
+
 /* Timed-exam toggle (soft switch in the footer) */
 .builder-toggles {
   display: flex;
@@ -654,7 +712,8 @@ body {
   .builder-grid { grid-template-columns: 1fr; }
   .step-card:nth-child(n) { grid-column: auto; }
   .builder-footer { flex-direction: column; align-items: stretch; }
-  .builder-cta { width: 100%; }
+  .builder-actions { width: 100%; }
+  .builder-share, .builder-cta { flex: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

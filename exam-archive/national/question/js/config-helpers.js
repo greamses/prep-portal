@@ -24,7 +24,7 @@ const PAGE_CONFIG = {
     // source=cbt → our own AI-generated bank (/api/cbt), keyed by scheme.
     scheme:    (urlParams.get('scheme') || '').toLowerCase(),
     paper:     (urlParams.get('paper') || '').trim(),
-    // CBT optional filters: format = '' | 'mcq' | 'theory'; topic = exact topic.
+    // CBT optional filters: format = '' | 'mcq' | 'blank' | 'theory'; topic = exact topic.
     format:    (urlParams.get('format') || '').toLowerCase().trim(),
     topic:     (urlParams.get('topic') || '').trim(),
     grade:     (urlParams.get('grade') || '').trim(),
