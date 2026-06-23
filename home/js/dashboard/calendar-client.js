@@ -62,6 +62,7 @@ export async function mountCalendar(layout) {
 
   let pop = null;          // shared details popover (one at a time)
   let popPinned = false;   // true after a click — stays open until dismissed
+  let studentsCache = null; // admin: lazily-loaded pool of all students
 
   function indexEvents() {
     state.byDate = {};
@@ -116,7 +117,10 @@ export async function mountCalendar(layout) {
 
     const palette = state.admin
       ? `<div class="dbc-palette">
-           <span class="dbc-palette-lbl">Drag a teacher onto a day to pin a class:</span>
+           <div class="dbc-palette-top">
+             <span class="dbc-palette-lbl">Drag a teacher onto a day to pin a class:</span>
+             <button class="dbc-roster-btn" type="button" data-roster>Class lists</button>
+           </div>
            <div class="dbc-chips">${
              state.teachers.length
                ? state.teachers.map((t) => `<span class="dbc-teacher" draggable="true" data-uid="${esc(t.uid)}" data-name="${esc(t.name)}">${esc(t.name)}</span>`).join("")
@@ -237,6 +241,8 @@ export async function mountCalendar(layout) {
   }
 
   function wireAdmin() {
+    mount.querySelector("[data-roster]")?.addEventListener("click", openRoster);
+
     // Drag teachers onto day cells.
     mount.querySelectorAll(".dbc-teacher").forEach((chip) => {
       chip.addEventListener("dragstart", (e) => {
@@ -328,6 +334,112 @@ export async function mountCalendar(layout) {
       } catch (e) { msg.textContent = e.message; }
     };
   }
+
+  // ── Class lists: assign students to a teacher's roster ────────────
+  async function openRoster() {
+    if (!state.teachers.length) { alert("Add a teacher first."); return; }
+    const root = document.createElement("div");
+    root.className = "dbc-modal";
+    root.innerHTML = `
+      <div class="dbc-modal__bd"></div>
+      <div class="dbc-modal__card">
+        <h3>Class lists</h3>
+        <p class="dbc-modal__sub">Assign students to a teacher. They'll get every class pinned to that teacher.</p>
+        <label class="dbc-field">Teacher
+          <select id="dbc-rt">${state.teachers.map((t) => `<option value="${esc(t.uid)}">${esc(t.name)}</option>`).join("")}</select></label>
+        <div class="dbc-roster-body"><div class="db-empty">Loading…</div></div>
+        <div class="dbc-modal__row">
+          <button class="btn btn-ghost" id="dbc-rclose" type="button">Done</button>
+        </div>
+        <p class="dbc-msg" id="dbc-rmsg"></p>
+      </div>`;
+    document.body.appendChild(root);
+    let touched = false;
+    const close = () => {
+      root.remove();
+      // Roster sizes changed → refresh events so "Class: N students" stays accurate.
+      if (touched) refreshEvents();
+    };
+    root.querySelector(".dbc-modal__bd").onclick = close;
+    root.querySelector("#dbc-rclose").onclick = close;
+
+    const sel = root.querySelector("#dbc-rt");
+    const body = root.querySelector(".dbc-roster-body");
+    const msg = root.querySelector("#dbc-rmsg");
+
+    if (!studentsCache) {
+      try { studentsCache = (await api("/api/calendar/students")).students || []; }
+      catch (e) { body.innerHTML = `<div class="db-empty">${esc(e.message)}</div>`; return; }
+    }
+
+    async function loadRoster() {
+      const teacherUid = sel.value;
+      body.innerHTML = `<div class="db-empty">Loading…</div>`;
+      let roster = [];
+      try { roster = (await api(`/api/calendar/roster/${encodeURIComponent(teacherUid)}`)).students || []; }
+      catch (e) { body.innerHTML = `<div class="db-empty">${esc(e.message)}</div>`; return; }
+      renderRoster(teacherUid, roster);
+    }
+
+    function renderRoster(teacherUid, roster) {
+      const inClass = new Set(roster.map((s) => s.uid));
+      const avail = studentsCache.filter((s) => !inClass.has(s.uid));
+      const list = roster.length
+        ? roster.map((s) => `<div class="dbc-rrow">
+             <span class="dbc-rname">${esc(s.name)}</span>
+             <button class="dbc-rx" type="button" data-rm="${esc(s.uid)}" title="Remove">&times;</button>
+           </div>`).join("")
+        : `<div class="db-empty">No students yet.</div>`;
+      body.innerHTML = `
+        <div class="dbc-rlist">${list}</div>
+        <div class="dbc-radd">
+          <select id="dbc-rs"${avail.length ? "" : " disabled"}>
+            ${avail.length
+              ? avail.map((s) => `<option value="${esc(s.uid)}">${esc(s.name)}${s.email ? " — " + esc(s.email) : ""}</option>`).join("")
+              : `<option>All students assigned</option>`}
+          </select>
+          <button class="btn btn-yellow" id="dbc-radd-btn" type="button"${avail.length ? "" : " disabled"}>Add</button>
+        </div>`;
+
+      body.querySelector("#dbc-radd-btn")?.addEventListener("click", async () => {
+        const studentUid = body.querySelector("#dbc-rs").value;
+        if (!studentUid) return;
+        msg.textContent = "Adding…";
+        try {
+          await api("/api/calendar/assign-student", {
+            method: "POST",
+            body: JSON.stringify({ teacherUid, studentUid }),
+          });
+          touched = true;
+          msg.textContent = "";
+          loadRoster();
+        } catch (e) { msg.textContent = e.message; }
+      });
+
+      body.querySelectorAll("[data-rm]").forEach((b) => b.onclick = async () => {
+        if (!confirm("Remove this student from the class?")) return;
+        msg.textContent = "Removing…";
+        try {
+          await api(`/api/calendar/roster/${encodeURIComponent(teacherUid)}/${encodeURIComponent(b.dataset.rm)}`, { method: "DELETE" });
+          touched = true;
+          msg.textContent = "";
+          loadRoster();
+        } catch (e) { msg.textContent = e.message; }
+      });
+    }
+
+    sel.onchange = loadRoster;
+    loadRoster();
+  }
+
+  async function refreshEvents() {
+    try {
+      const { events } = await api("/api/calendar");
+      state.events = events || [];
+      indexEvents();
+      render();
+    } catch (_) {}
+  }
 }
 
 function injectStyles() {
@@ -403,7 +515,11 @@ function injectStyles() {
 
     /* Admin teacher palette. */
     .dbc-palette { margin-top:.8rem; padding-top:.7rem; border-top:1px dashed rgba(20,19,15,.2); }
-    .dbc-palette-lbl { font-size:.62rem; color: rgba(20,19,15,.6); display:block; margin-bottom:.4rem; }
+    .dbc-palette-top { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.4rem; }
+    .dbc-roster-btn { font-size:.62rem; padding:.28rem .7rem; border-radius:999px; cursor:pointer; white-space:nowrap;
+      border:1px solid rgba(20,19,15,.25); background: rgba(255,255,255,.6); color:#14130f; font-family:inherit; }
+    .dbc-roster-btn:hover { background: rgba(255,255,255,.9); }
+    .dbc-palette-lbl { font-size:.62rem; color: rgba(20,19,15,.6); display:block; }
     .dbc-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
     .dbc-teacher { font-size:.66rem; padding:.25rem .6rem; border-radius:999px; cursor:grab; user-select:none;
       background: var(--accent-secondary, #6fb7e8); color: var(--text-on-accent, #fff); box-shadow: var(--shadow-sm, 0 1px 3px rgba(42,39,35,.16)); }
@@ -423,6 +539,17 @@ function injectStyles() {
     .dbc-field select, .dbc-field input, .dbc-field textarea { width:100%; box-sizing:border-box; margin-top:.25rem; padding:.5rem .6rem; border-radius:10px; font-family:inherit;
       font-size:.85rem; border: var(--border-subtle, 1px solid rgba(42,39,35,.16)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
     .dbc-field textarea { resize:vertical; min-height:2.4em; }
+    .dbc-roster-body { margin:.2rem 0 .9rem; }
+    .dbc-rlist { display:flex; flex-direction:column; gap:.35rem; max-height:200px; overflow:auto; margin-bottom:.7rem; }
+    .dbc-rrow { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.4rem .6rem;
+      border-radius:10px; background: var(--surface-secondary,#f4f0e8); font-size:.78rem; }
+    .dbc-rname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dbc-rx { border:none; background:transparent; color: var(--text-tertiary,#9a948a); cursor:pointer; font-size:1.1rem; line-height:1; padding:0 .2rem; }
+    .dbc-rx:hover { color: var(--accent-danger,#e07a5f); }
+    .dbc-radd { display:flex; gap:.5rem; }
+    .dbc-radd select { flex:1; min-width:0; padding:.5rem .6rem; border-radius:10px; font-family:inherit; font-size:.8rem;
+      border: var(--border-subtle, 1px solid rgba(42,39,35,.16)); background: var(--surface-secondary,#f4f0e8); color: var(--ink,#2a2723); }
+    .dbc-radd .btn { white-space:nowrap; }
     .dbc-modal__row { display:flex; gap:.6rem; margin-top:.3rem; }
     .dbc-msg { font-size:.7rem; min-height:1em; margin:.6rem 0 0; color: var(--accent-danger,#e07a5f); }`;
   document.head.appendChild(s);

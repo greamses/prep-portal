@@ -102,6 +102,112 @@ module.exports = function () {
     }
   });
 
+  // ── GET /students — admin: the pool of students to assign ─────────
+  router.get("/students", authenticate, async (req, res) => {
+    try {
+      if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
+      const snap = await db().collection("users").where("role", "==", "student").get();
+      const students = snap.docs
+        .map((d) => {
+          const x = d.data();
+          return { uid: d.id, name: x.name || (x.email ? x.email.split("@")[0] : "Student"), email: x.email || null };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+      res.json({ students });
+    } catch (e) {
+      console.error("[/api/calendar/students]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /roster/:teacherUid — admin: who's in a teacher's class ───
+  router.get("/roster/:teacherUid", authenticate, async (req, res) => {
+    try {
+      if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
+      const snap = await db().collection("teacherStudents").doc(String(req.params.teacherUid)).collection("roster").get();
+      const students = snap.docs.map((d) => ({ uid: d.id, name: d.data().name || "Student", email: d.data().email || null }));
+      res.json({ students });
+    } catch (e) {
+      console.error("[/api/calendar/roster GET]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Keep each of a teacher's events' studentCount in sync with their roster size.
+  async function syncCount(teacherUid) {
+    const r = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
+    const count = r.docs.length;
+    const evs = await db().collection("calendarEvents").where("teacherUid", "==", teacherUid).get();
+    for (let i = 0; i < evs.docs.length; i += 400) {
+      const batch = db().batch();
+      evs.docs.slice(i, i + 400).forEach((d) => batch.update(d.ref, { studentCount: count }));
+      await batch.commit();
+    }
+    return count;
+  }
+
+  // ── POST /assign-student — admin adds a student to a teacher ──────
+  // { teacherUid, studentUid }. Also back-fills that teacher's already-pinned
+  // events to the new student so they immediately see the class schedule.
+  router.post("/assign-student", authenticate, async (req, res) => {
+    try {
+      if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
+      const b = req.body || {};
+      const teacherUid = String(b.teacherUid || "").trim();
+      const studentUid = String(b.studentUid || "").trim();
+      if (!teacherUid || !studentUid) return res.status(400).json({ error: "Pick a teacher and a student." });
+
+      const sp = await profile(studentUid);
+      const name = sp.name || (sp.email ? sp.email.split("@")[0] : "Student");
+      await db().collection("teacherStudents").doc(teacherUid).collection("roster").doc(studentUid).set(
+        { name, email: sp.email || null, joinedAt: stamp(), source: "admin" },
+        { merge: true },
+      );
+
+      // Back-fill the teacher's existing pinned events onto this student's calendar.
+      const evs = await db().collection("calendarEvents").where("teacherUid", "==", teacherUid).get();
+      for (let i = 0; i < evs.docs.length; i += 400) {
+        const batch = db().batch();
+        evs.docs.slice(i, i + 400).forEach((d) =>
+          batch.set(
+            db().collection("studentCalendar").doc(studentUid).collection("items").doc(d.id),
+            { ...d.data(), eventId: d.id },
+            { merge: true },
+          ));
+        await batch.commit();
+      }
+      const count = await syncCount(teacherUid);
+      res.json({ ok: true, student: { uid: studentUid, name, email: sp.email || null }, count });
+    } catch (e) {
+      console.error("[/api/calendar/assign-student]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── DELETE /roster/:teacherUid/:studentUid — admin removes a student
+  router.delete("/roster/:teacherUid/:studentUid", authenticate, async (req, res) => {
+    try {
+      if (!(await isAdmin(req))) return res.status(403).json({ error: "Admin access only." });
+      const teacherUid = String(req.params.teacherUid);
+      const studentUid = String(req.params.studentUid);
+      await db().collection("teacherStudents").doc(teacherUid).collection("roster").doc(studentUid).delete();
+
+      // Pull that teacher's pinned events back off the student's calendar.
+      const evs = await db().collection("calendarEvents").where("teacherUid", "==", teacherUid).get();
+      for (let i = 0; i < evs.docs.length; i += 400) {
+        const batch = db().batch();
+        evs.docs.slice(i, i + 400).forEach((d) =>
+          batch.delete(db().collection("studentCalendar").doc(studentUid).collection("items").doc(d.id)));
+        await batch.commit();
+      }
+      const count = await syncCount(teacherUid);
+      res.json({ ok: true, count });
+    } catch (e) {
+      console.error("[/api/calendar/roster DELETE]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── POST /pin — admin pins a class to a teacher's calendar ────────
   // { teacherUid, title, className?, date (YYYY-MM-DD), time?, color? }
   router.post("/pin", authenticate, async (req, res) => {
