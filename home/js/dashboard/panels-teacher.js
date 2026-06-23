@@ -1,5 +1,6 @@
 import { I } from "./icons.js";
 import { mountTeacherClassroom } from "./classroom-client.js";
+import { mountCalendar } from "./calendar-client.js";
 
 export function buildTeacherPanels(user, data, layout) {
   const className = data.activeClass || "My Class";
@@ -49,7 +50,18 @@ export function buildTeacherPanels(user, data, layout) {
         <div class="db-empty">Loading…</div>
       </div>
     </div>
+
+    <div class="db-panel span-full db-calendar-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Schedule</p>
+          <h2 class="db-panel-title">Class Calendar</h2>
+        </div>
+      </div>
+      <div id="db-calendar-mount"><div class="db-empty">Loading…</div></div>
+    </div>
 `;
 
   mountTeacherClassroom(layout);
+  mountCalendar(layout);
 }

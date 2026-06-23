@@ -1,6 +1,7 @@
 import { I } from "/home/js/dashboard/icons.js";
 import { doUpgrade } from "/home/js/dashboard/toolbar.js";
 import { mountStudentClassroom } from "/home/js/dashboard/classroom-client.js";
+import { mountCalendar } from "/home/js/dashboard/calendar-client.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildStudentPanels(user, data, layout) {
@@ -61,6 +62,16 @@ export function buildStudentPanels(user, data, layout) {
       </div>
     </div>
 
+    <div class="db-panel span-full db-calendar-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Schedule</p>
+          <h2 class="db-panel-title">Class Calendar</h2>
+        </div>
+      </div>
+      <div id="db-calendar-mount"><div class="db-empty">Loading…</div></div>
+    </div>
+
     <div class="db-panel span-full">
       <div class="db-panel-head">
         <div>
@@ -87,4 +98,5 @@ export function buildStudentPanels(user, data, layout) {
     ?.addEventListener("click", doUpgrade);
 
   mountStudentClassroom(layout);
+  mountCalendar(layout);
 }

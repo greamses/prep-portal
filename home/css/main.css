@@ -1617,21 +1617,31 @@
   filter: drop-shadow(3px 7px 9px rgba(var(--shadow-color), 0.26));
 }
 
-/* White scrapbook paper holding the photo; its edges are torn by the SVG
-   displacement filter (the photo edge tears with it). Caption stays outside
-   this element so the text isn't displaced. */
+/* White scrapbook paper holding the photo. The SVG displacement filter is on a
+   paper-only layer (::before) so ONLY the paper edge tears — the photo on top
+   stays crisp and faces aren't warped. Caption stays outside this element. */
 .photocard__rip {
   position: relative;
-  background: #fdfbf4;
+  background: transparent;
   padding: 7% 7% 19%;
   border-radius: 4px;
-  filter: url(#torn-card);
 }
-.photocard:nth-child(even) .photocard__rip {
+.photocard__rip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fdfbf4;
+  border-radius: 4px;
+  filter: url(#torn-card);
+  z-index: 0;
+}
+.photocard:nth-child(even) .photocard__rip::before {
   filter: url(#torn-card-b);
 }
 
 .photocard__photo {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;

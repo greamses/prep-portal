@@ -11,6 +11,7 @@ import {
 } from "/home/js/dashboard/components.js";
 import { MOCK } from "/home/js/dashboard/mock-data.js";
 import { showClassModal } from "/home/js/dashboard/dashboard-modals.js";
+import { mountCalendar } from "/home/js/dashboard/calendar-client.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildAdminPanels(user, data, layout) {
@@ -118,6 +119,16 @@ export function buildAdminPanels(user, data, layout) {
       </div>
     </div>
 
+    <div class="db-panel span-full db-calendar-panel">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Schedule</p>
+          <h2 class="db-panel-title">Class Calendar</h2>
+        </div>
+      </div>
+      <div id="db-calendar-mount"><div class="db-empty">Loading…</div></div>
+    </div>
+
     <div class="db-panel span-full">
       <div class="db-panel-head">
         <div>
@@ -133,4 +144,6 @@ export function buildAdminPanels(user, data, layout) {
   layout
     .querySelector("[data-action='new-class']")
     ?.addEventListener("click", showClassModal);
+
+  mountCalendar(layout);
 }
