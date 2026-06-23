@@ -41,11 +41,16 @@ module.exports = function () {
     id: e.id,
     title: e.title,
     className: e.className || null,
+    subject: e.subject || null,
     date: e.date,
     time: e.time || null,
+    endTime: e.endTime || null,
+    location: e.location || null,
+    notes: e.notes || null,
     color: e.color || null,
     teacherUid: e.teacherUid || null,
     teacherName: e.teacherName || null,
+    studentCount: typeof e.studentCount === "number" ? e.studentCount : null,
   });
 
   const byDate = (a, b) =>
@@ -109,21 +114,29 @@ module.exports = function () {
       if (!date) return res.status(400).json({ error: "Pick a valid date." });
       const title = String(b.title || "").trim().slice(0, 120) || "Class";
       const className = String(b.className || "").trim().slice(0, 120) || null;
+      const subject = String(b.subject || "").trim().slice(0, 80) || null;
       const time = String(b.time || "").trim().slice(0, 20) || null;
+      const endTime = String(b.endTime || "").trim().slice(0, 20) || null;
+      const location = String(b.location || "").trim().slice(0, 160) || null;
+      const notes = String(b.notes || "").trim().slice(0, 600) || null;
       const color = COLORS.includes(b.color) ? b.color : COLORS[Math.floor(Math.random() * COLORS.length)];
 
       const tp = await profile(teacherUid);
       const teacherName = tp.name || (tp.email ? tp.email.split("@")[0] : "Teacher");
 
+      // The teacher's roster is the set of children this class is assigned to.
+      const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
+      const studentCount = roster.docs.length;
+
       const ref = db().collection("calendarEvents").doc();
       const ev = {
-        teacherUid, teacherName, title, className, date, time, color,
+        teacherUid, teacherName, title, className, subject, date, time, endTime,
+        location, notes, color, studentCount,
         createdBy: req.user.uid, createdAt: stamp(),
       };
       await ref.set(ev);
 
       // Fan out to the teacher's roster so each of their students sees it.
-      const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
       let fan = 0;
       for (let i = 0; i < roster.docs.length; i += 400) {
         const batch = db().batch();
