@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Cartesian Art</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Cartesian</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="ca-paint" aria-hidden="true"></div>
+
+    <main class="ca-page">
+      <!-- ═══ HERO (above, homepage-consistent) ═══ -->
+      <header class="ca-hero">
+        <span class="ca-eyebrow">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.6 21 12 17.3 6.4 21 8 13.3 3 9l6.4-.7L12 2z" />
+          </svg>
+          Mathematics · Coordinate plane
+        </span>
+
+        <h1 class="ca-title">Cartesian <em>Art</em>.</h1>
+
+        <p class="ca-lead">
+          Plot points on the grid to trace a hidden picture, then paint it in.
+          Steer the mascot with the arrow keys or the on-screen pad, press
+          <kbd>Enter</kbd> to drop a point, and watch the outline come to life.
+        </p>
+
+        <div class="ca-features">
+          <span class="pp-pill pp-pill--static" style="--tile: var(--accent-secondary)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/><circle cx="19" cy="6" r="1.6"/></svg>
+            Plot &amp; connect
+          </span>
+          <span class="pp-pill pp-pill--static" style="--tile: var(--accent-danger)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l4-1 11-11a2.8 2.8 0 0 0-4-4L3 16l-1 5z"/><path d="M14 6l4 4"/></svg>
+            Paint it in
+          </span>
+          <span class="pp-pill pp-pill--static" style="--tile: var(--accent-success)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="12" height="9" rx="1"/><path d="M6 9V4h12v5"/><path d="M8 14h8"/></svg>
+            Print your work
+          </span>
+        </div>
+
+        <button class="ca-settings-trigger" type="button" title="Settings" disabled>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Settings
+        </button>
+      </header>
+
+      <!-- ═══ STUDIO ═══ -->
+      <section class="ca-studio">
+        <!-- the coordinate plane -->
+        <div class="ca-stage-wrap">
+          <div id="ca-stage" class="ca-stage"></div>
+        </div>
+
+        <!-- side panel -->
+        <aside class="ca-panel">
+          <div class="pp-receipt ca-readout">
+            <div class="pp-receipt__paper">
+              <span class="ca-readout-eyebrow">Mascot is at</span>
+              <div class="ca-readout-coord">
+                (<span id="read-x">0</span>, <span id="read-y">0</span>)
+              </div>
+              <div class="ca-readout-hover">
+                cursor <span id="read-hover">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pp-sticky pp-sticky--c2 ca-tip" style="--pp-note-tilt: -2.5deg">
+            Tip: tap anywhere on the grid to park the mascot there. Keyboard
+            steering &amp; point-dropping arrive next.
+          </div>
+
+          <div class="ca-panel-status">
+            <span class="pp-pill pp-pill--static" style="--tile: var(--accent-primary)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Phase 1 · grid live
+            </span>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div id="prepbot"></div>
+    <script type="module" src="/utils/prepbot/prepbot.js"></script>
+
+    <script type="module" src="./js/main.js"></script>
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document
+        .querySelectorAll(".ca-paint")
+        .forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>
