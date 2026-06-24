@@ -12,10 +12,14 @@ import {
   updateDoc,
   increment,
   addDoc,
+  deleteDoc,
   serverTimestamp,
   arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
+
+// The single designated admin (matches firestore.rules + nav-builder.js).
+const ADMIN_EMAIL = "eemadanyel@gmail.com";
 
 // ─── ASSET LOADING WITH PATH DETECTION ─────────────────────
 function getBasePath() {
@@ -96,6 +100,7 @@ let currentSubject = "all";
 let currentClass = "all";
 let currentSearch = "";
 let currentUser = null;
+let isAdmin = false;
 let activePost = null;
 let groqApiKeyPublic = null;
 let geminiApiKeyPublic = null;
@@ -223,16 +228,20 @@ document.addEventListener("DOMContentLoaded", initBlog);
 
 onAuthStateChanged(auth, async (u) => {
   currentUser = u;
+  isAdmin = !!(u && u.email === ADMIN_EMAIL);
   if (u) {
     try {
       const snap = await getDoc(doc(db, "users", u.uid));
       if (snap.exists()) {
         const d = snap.data();
+        if (d.role === "admin") isAdmin = true;
         groqApiKeyPublic = d.groqKey || d.groqApiKey || null;
         geminiApiKeyPublic = d.geminiKey || d.geminiApiKey || d.apiKey || null;
       }
     } catch (_) {}
   }
+  // If a post is open, re-render comments so delete controls reflect auth.
+  if (activePost) loadComments(activePost.id);
 });
 
 // ─── MARKDOWN → HTML ──────────────────────────────────────
@@ -412,6 +421,7 @@ const I = {
   link: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
   video: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`,
   practice: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`,
+  trash: `<svg style="width:11px;height:11px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`,
 };
 
 // ─── CARD RENDER ──────────────────────────────────────────
@@ -876,6 +886,8 @@ async function loadComments(postId) {
         (c.authorEmail ? c.authorEmail.split("@")[0] : "Anonymous");
       const cLikes = c.likes || [];
       const cLiked = currentUser && cLikes.includes(currentUser.uid);
+      const canDelete =
+        currentUser && (isAdmin || c.authorId === currentUser.uid);
       let replyCount = 0;
       try {
         const rs = await getDocs(
@@ -903,6 +915,7 @@ async function loadComments(postId) {
           <div class="comment-actions">
             <button class="comment-action-btn comment-like-btn${cLiked ? " liked" : ""}" data-comment-id="${d.id}" data-post-id="${postId}">${cLiked ? I.heartFill : I.heart}<span class="clikes">${cLikes.length || ""}</span></button>
             <button class="comment-action-btn reply-toggle-btn" data-comment-id="${d.id}" data-post-id="${postId}">${I.reply} ${replyCount > 0 ? `${replyCount} Repl${replyCount === 1 ? "y" : "ies"}` : "Reply"}</button>
+            ${canDelete ? `<button class="comment-action-btn comment-delete-btn" data-comment-id="${d.id}" data-post-id="${postId}" title="Delete comment">${I.trash} Delete</button>` : ""}
           </div>
         </div>
         <div class="replies-section" id="replies-${d.id}" style="display:none">
@@ -938,6 +951,13 @@ async function loadComments(postId) {
         if (s) s.style.display = "none";
       }),
     );
+    list
+      .querySelectorAll(".comment-delete-btn")
+      .forEach((btn) =>
+        btn.addEventListener("click", () =>
+          deleteComment(btn.dataset.postId, btn.dataset.commentId),
+        ),
+      );
   } catch (_) {
     list.innerHTML = '<p class="no-comments">Could not load comments.</p>';
   }
@@ -961,6 +981,40 @@ async function toggleCommentLike(postId, commentId, btn) {
     await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
     btn.classList.add("liked");
     btn.innerHTML = `${I.heartFill}<span class="clikes">${likes.length + 1}</span>`;
+  }
+}
+
+async function deleteComment(postId, commentId) {
+  if (!currentUser) {
+    showToast("Sign in to delete");
+    return;
+  }
+  if (!confirm("Delete this comment? This cannot be undone.")) return;
+  try {
+    await deleteDoc(doc(db, COLLECTION_NAME, postId, "comments", commentId));
+    loadedReplies.delete(commentId);
+    await loadComments(postId);
+    showToast("Comment deleted");
+  } catch (e) {
+    showToast("Could not delete comment");
+  }
+}
+
+async function deleteReply(postId, commentId, replyId) {
+  if (!currentUser) {
+    showToast("Sign in to delete");
+    return;
+  }
+  if (!confirm("Delete this reply?")) return;
+  try {
+    await deleteDoc(
+      doc(db, COLLECTION_NAME, postId, "comments", commentId, "replies", replyId),
+    );
+    loadedReplies.delete(commentId);
+    await loadReplies(postId, commentId);
+    showToast("Reply deleted");
+  } catch (e) {
+    showToast("Could not delete reply");
   }
 }
 
@@ -1012,10 +1066,12 @@ async function loadReplies(postId, commentId) {
         (r.authorEmail ? r.authorEmail.split("@")[0] : "Anonymous");
       const rLikes = r.likes || [];
       const rLiked = currentUser && rLikes.includes(currentUser.uid);
+      const canDeleteReply =
+        currentUser && (isAdmin || r.authorId === currentUser.uid);
       const el = document.createElement("div");
       el.className = "reply-item";
       el.dataset.replyId = d.id;
-      el.innerHTML = `<div class="reply-author-row"><span class="reply-author">${escHtml(name)}</span><span class="reply-time">${date}</span></div><p class="reply-text">${escHtml(r.text)}</p><button class="reply-like-btn${rLiked ? " liked" : ""}" data-reply-id="${d.id}" data-comment-id="${commentId}" data-post-id="${postId}">${rLiked ? I.heartFill : I.heart}<span class="rlikes">${rLikes.length || ""}</span></button>`;
+      el.innerHTML = `<div class="reply-author-row"><span class="reply-author">${escHtml(name)}</span><span class="reply-time">${date}</span></div><p class="reply-text">${escHtml(r.text)}</p><div class="reply-actions"><button class="reply-like-btn${rLiked ? " liked" : ""}" data-reply-id="${d.id}" data-comment-id="${commentId}" data-post-id="${postId}">${rLiked ? I.heartFill : I.heart}<span class="rlikes">${rLikes.length || ""}</span></button>${canDeleteReply ? `<button class="reply-delete-btn" data-reply-id="${d.id}" data-comment-id="${commentId}" data-post-id="${postId}" title="Delete reply">${I.trash}</button>` : ""}</div>`;
       listEl.appendChild(el);
     });
     listEl
@@ -1027,6 +1083,17 @@ async function loadReplies(postId, commentId) {
             btn.dataset.commentId,
             btn.dataset.replyId,
             btn,
+          ),
+        ),
+      );
+    listEl
+      .querySelectorAll(".reply-delete-btn")
+      .forEach((btn) =>
+        btn.addEventListener("click", () =>
+          deleteReply(
+            btn.dataset.postId,
+            btn.dataset.commentId,
+            btn.dataset.replyId,
           ),
         ),
       );

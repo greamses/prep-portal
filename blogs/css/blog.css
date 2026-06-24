@@ -127,8 +127,15 @@ html {
 /* ─── STUDY SHEET GRID ────────────────────────────────── */
 .science-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 1.75rem;
+}
+
+/* Large screens: lock to a comfortable 3-up so cards never get oversized */
+@media (min-width: 1000px) {
+  .science-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* ─── LEARNING UNIT CARD ──────────────────────────────── */
@@ -1235,6 +1242,11 @@ body:has(.embed-overlay.active) {
   color: var(--text-on-accent);
 }
 
+.comment-delete-btn:hover {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
 /* ─── NESTED REPLY TRACKS ─────────────────────────────── */
 .replies-section {
   border-top: var(--border-subtle);
@@ -1323,6 +1335,30 @@ body:has(.embed-overlay.active) {
   background: var(--accent-primary);
   border-color: transparent;
   color: var(--text-on-accent);
+}
+
+.reply-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reply-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.45rem;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.reply-delete-btn:hover {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
 }
 
 /* ─── REPLY WORKSPACE AREA ────────────────────────────── */

@@ -83,18 +83,27 @@ service cloud.firestore {
     }
 
     match /{postCollection}/{postId} {
-      allow read: if isLoggedIn();
+      // Blog posts are PUBLIC: anyone (signed in or not) can read them.
+      // Any other top-level collection caught by this generic rule keeps the
+      // previous behaviour (signed-in read only).
+      allow read: if isPostCollection(postCollection) || isLoggedIn();
 
-      // Allow users to update only views and likes on the post document
-      allow update: if isLoggedIn() &&
-        isPostCollection(postCollection) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']);
+      // View counts may be bumped by anyone (so anonymous reads still count);
+      // likes require a signed-in user.
+      allow update: if isPostCollection(postCollection) && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) ||
+        (isLoggedIn() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes']))
+      );
 
       allow write: if isAdmin();
 
-      // Nested Comments and Replies (Recursive wildcard matches sub-collections)
+      // Nested Comments and Replies (Recursive wildcard matches sub-collections).
+      // Anyone can READ comments; only signed-in users can add them; a user may
+      // delete their OWN comment; the admin override at the bottom lets the admin
+      // delete ANY comment.
       match /comments/{commentId=**} {
-        allow read: if isLoggedIn();
+        allow read: if true;
         allow create: if isLoggedIn() && request.resource.data.authorId == request.auth.uid;
         allow update: if isLoggedIn() && (
           resource.data.authorId == request.auth.uid ||
