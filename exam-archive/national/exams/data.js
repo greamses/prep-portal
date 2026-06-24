@@ -48,7 +48,7 @@ const HEADER_CONTENT = {
       <span class="hero-stat theme-blue"><strong>UTME</strong>-style</span>
       <span class="hero-stat theme-green"><strong>WASSCE</strong>-style</span>
       <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
-    ctaLabel: "Start practice test →",
+    ctaLabel: "Start practice test",
   },
   competition: {
     note: "Pick a competition, your level & round — start practising the exact paper.",
@@ -56,7 +56,7 @@ const HEADER_CONTENT = {
       <span class="hero-stat theme-blue"><strong>Scholastic</strong> Awards</span>
       <span class="hero-stat theme-green"><strong>ANMC</strong> Upper Primary</span>
       <span class="hero-stat theme-red"><strong>Olympiad</strong> Coming soon</span>`,
-    ctaLabel: "Start practice →",
+    ctaLabel: "Start practice",
   },
   international: {
     note: "Pick a scheme, paper & subjects — we'll build an original practice test, marked instantly.",
@@ -64,7 +64,7 @@ const HEADER_CONTENT = {
       <span class="hero-stat theme-blue"><strong>SAT</strong>-style</span>
       <span class="hero-stat theme-green"><strong>IGCSE</strong>-style</span>
       <span class="hero-stat theme-red"><strong>A-Level</strong>-style</span>`,
-    ctaLabel: "Start practice test →",
+    ctaLabel: "Start practice test",
   },
   practice: {
     note: "A mixed revision bank — pick subjects & how many questions for an instant, marked practice set (not tied to any exam).",
@@ -72,7 +72,7 @@ const HEADER_CONTENT = {
       <span class="hero-stat theme-blue"><strong>All</strong> subjects</span>
       <span class="hero-stat theme-green"><strong>Mixed</strong> difficulty</span>
       <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
-    ctaLabel: "Start practice →",
+    ctaLabel: "Start practice",
   },
 };
 
@@ -80,7 +80,9 @@ function updateHeaderContent(cat) {
   const h = HEADER_CONTENT[cat] || HEADER_CONTENT.national;
   builderNote.textContent = h.note;
   builderStats.innerHTML = h.stats;
-  beginBtn.textContent = h.ctaLabel;
+  const ctaLabelEl = beginBtn.querySelector(".cta-label");
+  if (ctaLabelEl) ctaLabelEl.textContent = h.ctaLabel;
+  else beginBtn.textContent = h.ctaLabel;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -156,7 +158,7 @@ function natUpdateReadyState() {
     natState.count;
   beginBtn.disabled = !ready;
   if (ready) {
-    setStatus("✓ All set. Ready — start your test.", true);
+    setStatus("All set. Ready — start your test.", true);
     return;
   }
   const need = [];
@@ -585,7 +587,7 @@ function compUpdateReadyState() {
     compState.round;
   beginBtn.disabled = !ready;
   if (ready) {
-    setStatus("✓ All set. Ready to start.", true);
+    setStatus("All set. Ready to start.", true);
     return;
   }
   const need = [];
@@ -906,7 +908,7 @@ function intlUpdateReadyState() {
     intlState.paper;
   beginBtn.disabled = !ready;
   if (ready) {
-    setStatus("✓ All set. Ready to open paper.", true);
+    setStatus("All set. Ready to open paper.", true);
     return;
   }
   const need = [];

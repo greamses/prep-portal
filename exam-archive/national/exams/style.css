@@ -5,6 +5,13 @@
    so this page works in both light and dark themes.
    ============================================================= */
 
+/* Local icon glyphs as SVG mask sources (no emoji/text glyphs, per DESIGN.md).
+   Used as CSS masks so they take their colour from a token and flip in dark. */
+:root {
+  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  --icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -226,16 +233,23 @@ body {
 .step-done {
   margin-left: auto;
   display: none;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.7rem;
-  color: var(--accent-success);
-  background: color-mix(in srgb, var(--accent-success) 15%, transparent);
-  padding: 0.15rem 0.55rem;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-success) 16%, transparent);
+}
+.step-done::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: var(--accent-success);
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
 }
 .step-done.show {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   animation: popCheck 0.22s ease;
 }
 
@@ -357,7 +371,7 @@ body {
   padding: 4px 2px;
 }
 .picker-error {
-  color: var(--red, #e5000a);
+  color: var(--accent-danger);
   opacity: 0.9;
 }
 
@@ -543,6 +557,17 @@ body {
   color: var(--text-secondary);
 }
 .setup-status.ready { color: var(--accent-success); }
+.setup-status.ready::before {
+  content: "";
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 0.4rem;
+  vertical-align: -2px;
+  background: var(--accent-success);
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
+}
 
 .builder-cta {
   display: inline-flex;
@@ -577,6 +602,15 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: var(--shadow-sm);
+}
+.builder-cta .cta-arrow {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.builder-cta:hover:not(:disabled) .cta-arrow {
+  transform: translateX(3px);
 }
 
 /* Begin + share grouped on the right of the footer */
@@ -692,6 +726,86 @@ body {
 .exam-timer-toggle input:focus-visible + .exam-timer-toggle__track {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
+}
+
+/* =============================================================
+   STEP-5 EXTRA FILTERS (format chips + topic / grade dropdowns)
+   ============================================================= */
+.filter-extra {
+  margin-top: 0.9rem;
+}
+.filter-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary, var(--text-secondary));
+  margin: 0.2rem 0 0.35rem;
+}
+.filter-field {
+  margin-top: 0.7rem;
+}
+
+/* Native <select> restyled to match the soft chip / .csel look, dark-mode safe.
+   The chevron is a CSS mask on a wrapper ::after so it inherits the ink token. */
+.filter-select-wrap {
+  position: relative;
+  max-width: 340px;
+}
+.filter-select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  width: 11px;
+  height: 11px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: var(--ink);
+  -webkit-mask: var(--icon-chevron) center / contain no-repeat;
+  mask: var(--icon-chevron) center / contain no-repeat;
+}
+.filter-select {
+  width: 100%;
+  padding: 0.55rem 2rem 0.55rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface-secondary, var(--bg));
+  border: 2px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  border-radius: 12px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.filter-select:hover {
+  border-color: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.filter-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 25%, transparent);
+}
+
+/* =============================================================
+   DISCLAIMER
+   ============================================================= */
+.builder-disclaimer {
+  position: relative;
+  z-index: 1;
+  max-width: 60ch;
+  margin: 1.5rem auto 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.builder-disclaimer a {
+  color: var(--accent-secondary);
 }
 
 /* =============================================================

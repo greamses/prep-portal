@@ -80,12 +80,12 @@
             <span class="step-title" data-cat="national">Exam Type</span>
             <span class="step-title" data-cat="competition">Competition</span>
             <span class="step-title" data-cat="international">Exam Board</span>
-            <span class="step-done" id="done-exam" data-cat="national">✓</span>
+            <span class="step-done" id="done-exam" data-cat="national"></span>
             <span class="step-done" id="done-comp" data-cat="competition"
-              >✓</span
+              ></span
             >
             <span class="step-done" id="done-board" data-cat="international"
-              >✓</span
+              ></span
             >
           </div>
           <div class="exam-grid" id="exam-chips" data-cat="national"></div>
@@ -110,13 +110,13 @@
             <span class="step-title" data-cat="competition">Division</span>
             <span class="step-title" data-cat="international">Level</span>
             <span class="step-done" id="done-stream" data-cat="national"
-              >✓</span
+              ></span
             >
             <span class="step-done" id="done-division" data-cat="competition"
-              >✓</span
+              ></span
             >
             <span class="step-done" id="done-level" data-cat="international"
-              >✓</span
+              ></span
             >
           </div>
           <div
@@ -150,7 +150,7 @@
             <span class="step-title"
               >Subjects (<span id="subject-count">0</span>/9 max)</span
             >
-            <span class="step-done" id="done-subject">✓</span>
+            <span class="step-done" id="done-subject"></span>
           </div>
           <div class="chips-container" id="subject-chips"></div>
           <p class="step-sub" id="compulsoryHint">
@@ -164,7 +164,7 @@
           <div class="step-label">
             <span class="step-num">3</span>
             <span class="step-title">Year</span>
-            <span class="step-done" id="done-year-comp">✓</span>
+            <span class="step-done" id="done-year-comp"></span>
           </div>
           <div class="year-grid" id="year-chips-comp"></div>
           <p class="step-sub">
@@ -177,7 +177,7 @@
           <div class="step-label">
             <span class="step-num">3</span>
             <span class="step-title">Subject</span>
-            <span class="step-done" id="done-subject-intl">✓</span>
+            <span class="step-done" id="done-subject-intl"></span>
           </div>
           <div class="chips-container" id="subject-chips-intl"></div>
           <p class="step-sub">Available subjects for this board &amp; level</p>
@@ -190,12 +190,12 @@
             <span class="step-title" data-cat="national">Exam Year</span>
             <span class="step-title" data-cat="competition">Round</span>
             <span class="step-title" data-cat="international">Year</span>
-            <span class="step-done" id="done-year" data-cat="national">✓</span>
+            <span class="step-done" id="done-year" data-cat="national"></span>
             <span class="step-done" id="done-round" data-cat="competition"
-              >✓</span
+              ></span
             >
             <span class="step-done" id="done-year-intl" data-cat="international"
-              >✓</span
+              ></span
             >
           </div>
           <div class="year-grid" id="year-chips" data-cat="national"></div>
@@ -223,12 +223,12 @@
             <span class="step-title" data-cat="national">Number of Questions</span>
             <span class="step-title" data-cat="competition">Section Focus</span>
             <span class="step-title" data-cat="international">Paper</span>
-            <span class="step-done" id="done-count" data-cat="national">✓</span>
+            <span class="step-done" id="done-count" data-cat="national"></span>
             <span class="step-done" id="done-section" data-cat="competition"
-              >✓</span
+              ></span
             >
             <span class="step-done" id="done-paper" data-cat="international"
-              >✓</span
+              ></span
             >
           </div>
           <div class="chips-container" id="count-chips" data-cat="national">
@@ -237,21 +237,25 @@
             <div class="custom-chip count-chip" data-count="50"><div class="chip-check-box"></div><span>50</span></div>
             <div class="custom-chip count-chip" data-count="60"><div class="chip-check-box"></div><span>60</span></div>
           </div>
-          <div data-cat="national" id="filter-extra" style="margin-top:.9rem">
-            <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">What to answer</div>
+          <div data-cat="national" id="filter-extra" class="filter-extra">
+            <div class="filter-eyebrow">What to answer</div>
             <div class="chips-container" id="format-chips">
               <div class="custom-chip fmt-chip checked" data-fmt=""><div class="chip-check-box"></div><span>All</span></div>
               <div class="custom-chip fmt-chip" data-fmt="mcq"><div class="chip-check-box"></div><span>MCQs</span></div>
               <div class="custom-chip fmt-chip" data-fmt="blank"><div class="chip-check-box"></div><span>Fill in the Blanks</span></div>
               <div class="custom-chip fmt-chip" data-fmt="theory"><div class="chip-check-box"></div><span>Theories</span></div>
             </div>
-            <div id="topic-wrap" style="margin-top:.7rem;display:none">
-              <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Topic (optional)</div>
-              <select id="topic-select" style="width:100%;max-width:340px;padding:.5rem .6rem;border-radius:8px;border:2px solid rgba(0,0,0,.15);font-family:inherit;font-size:.85rem;background:#fff"></select>
+            <div class="filter-field" id="topic-wrap" style="display:none">
+              <div class="filter-eyebrow">Topic (optional)</div>
+              <div class="filter-select-wrap">
+                <select id="topic-select" class="filter-select"></select>
+              </div>
             </div>
-            <div id="grade-wrap" style="margin-top:.7rem;display:none">
-              <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:.2rem 0 .35rem">Class / grade (optional)</div>
-              <select id="grade-select" style="width:100%;max-width:340px;padding:.5rem .6rem;border-radius:8px;border:2px solid rgba(0,0,0,.15);font-family:inherit;font-size:.85rem;background:#fff"></select>
+            <div class="filter-field" id="grade-wrap" style="display:none">
+              <div class="filter-eyebrow">Class / grade (optional)</div>
+              <div class="filter-select-wrap">
+                <select id="grade-select" class="filter-select"></select>
+              </div>
             </div>
           </div>
           <div
@@ -323,17 +327,30 @@
             <span class="assign-label">Assign to class</span>
           </button>
           <button class="builder-cta" id="begin-btn" disabled>
-            practice paper →
+            <span class="cta-label">practice paper</span>
+            <svg
+              class="cta-arrow"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
           </button>
         </div>
       </footer>
 
-      <p class="builder-disclaimer" style="position:relative;z-index:1;max-width:60ch;margin:1.5rem auto 0;text-align:center;font-family:var(--font-mono);font-size:.7rem;line-height:1.6;color:var(--text-secondary)">
+      <p class="builder-disclaimer">
         Practice papers are original questions written in the style of Nigerian
         examinations. Prep Portal is not affiliated with or endorsed by WAEC,
         JAMB, NECO or any examination body; exam names are used descriptively.
         To report content, email
-        <a href="mailto:hello@prepportal.com.ng" style="color:var(--accent-secondary)">hello@prepportal.com.ng</a>.
+        <a href="mailto:hello@prepportal.com.ng">hello@prepportal.com.ng</a>.
       </p>
     </main>
 
