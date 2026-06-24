@@ -13,10 +13,17 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
+// THE single AI route — same authenticated server proxy (/api/ai/*) every other
+// feature uses. The server holds the provider keys, so there is no CORS proxy
+// and no per-user "bring your own key" to expire.
+import {
+  groqGenerate,
+  geminiGenerate,
+  groqText,
+  geminiText,
+} from "/utils/ai-client.js";
 
 // ─── STATE ─────────────────────────────────────────────────
-let geminiApiKey = null;
-let groqApiKey = null;
 let currentUser = null;
 let subjectConfig = null;
 let subjectData = null;
@@ -31,24 +38,10 @@ export function setCurrentUser(user) {
   currentUser = user;
 }
 
-export async function loadApiKeys(user, config) {
-  if (!user) return false;
-  const apiKeyField = config?.apiKeyField || "geminiKey";
-  const groqKeyField = config?.groqKeyField || "groqKey";
-
-  for (let i = 1; i <= 3; i++) {
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (!snap.exists()) return false;
-      const d = snap.data();
-      geminiApiKey = d[apiKeyField] || d.geminiApiKey || d.apiKey || null;
-      groqApiKey = d[groqKeyField] || d.groqApiKey || null;
-      return !!(geminiApiKey || groqApiKey);
-    } catch (e) {
-      if (i < 3) await new Promise((r) => setTimeout(r, 2000));
-    }
-  }
-  return false;
+// Provider keys live on the server; the publisher just needs a signed-in user
+// (ai-client attaches the Firebase ID token to the /api/ai/* proxy calls).
+export async function loadApiKeys(user) {
+  return !!user;
 }
 
 // ─── MARKDOWN → HTML ───────────────────────────────────────
@@ -129,36 +122,16 @@ export function markdownToHtml(text) {
   return html;
 }
 
-// ─── GENERIC API CALLS ─────────────────────────────────────
+// ─── AI GENERATION (via the ONE server route, /api/ai/*) ────
+// No CORS proxy, no per-user keys: ai-client posts to the authenticated
+// /api/ai/groq and /api/ai/gemini proxies, which use the server's app keys —
+// exactly the same path PrepBot, the writing evaluator and the math tutor use.
 
-async function callGemini(model, prompt) {
-  const r = await fetch(`${model.url}?key=${geminiApiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.72, maxOutputTokens: 3200 },
-    }),
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`Gemini ${r.status}: ${t.substring(0, 100)}`);
-  }
-  const d = await r.json();
-  const c = d.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!c) throw new Error("Gemini empty");
-  return c;
-}
+const PUBLISHER_SYSTEM = `You are an expert educator for Nigerian students. Output only clean HTML. No markdown, no <img> tags. Use clear, practical examples relevant to Nigerian students.`;
 
 export async function healthCheck() {
-  const checks = {
-    firestore: false,
-    apiKeys: false,
-    config: false,
-  };
-
+  const checks = { firestore: false, apiKeys: true, config: false };
   try {
-    // Test Firestore connection
     const testQuery = query(
       collection(db, subjectConfig.collectionName),
       limit(1),
@@ -168,11 +141,37 @@ export async function healthCheck() {
   } catch (e) {
     console.error("Firestore check failed:", e);
   }
-
-  checks.apiKeys = !!(geminiApiKey || groqApiKey);
+  // Provider keys live on the server now, so there is nothing for the client to
+  // check — the backend route is always available to a signed-in user.
+  checks.apiKeys = true;
   checks.config = !!subjectConfig;
-
   return checks;
+}
+
+// Shape a raw model answer into a publishable post.
+function shapePost(raw, topic, modelUsed) {
+  raw = (raw || "")
+    .trim()
+    .replace(/```html\n?/gi, "")
+    .replace(/```\n?/g, "")
+    .replace(/<img[^>]*>/gi, "");
+  raw = markdownToHtml(raw);
+
+  const titleMatch = raw.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim() : topic.text;
+  const excerpt = raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 160);
+  return {
+    title,
+    content: raw,
+    excerpt,
+    subject: topic.subject,
+    classLevel: topic.classLevel,
+    modelUsed,
+  };
 }
 
 export async function generateWithFallback(topic, onModelChange) {
@@ -182,136 +181,46 @@ export async function generateWithFallback(topic, onModelChange) {
 
   const prompt = subjectData.buildSubjectPrompt(topic);
   const complex = topic.complexity || "standard";
+  // "deep" topics start on Gemini (longer context); everything else on Groq.
+  const providers = complex === "deep" ? ["gemini", "groq"] : ["groq", "gemini"];
 
-  const groqModels = subjectData.SUBJECT_MODELS?.groq || [];
-  const geminiModels = subjectData.SUBJECT_MODELS?.gemini || [];
-
-  let chain;
-  if (complex === "simple" && groqApiKey) {
-    chain = [
-      ...groqModels.map((m) => ({ ...m, isFallback: false })),
-      ...geminiModels.slice(0, 2).map((m) => ({ ...m, isFallback: true })),
-    ];
-  } else if (complex === "deep" && geminiApiKey) {
-    chain = [
-      ...geminiModels.slice(0, 2).map((m) => ({ ...m, isFallback: false })),
-      ...(groqApiKey
-        ? groqModels.slice(0, 1).map((m) => ({ ...m, isFallback: true }))
-        : []),
-      ...geminiModels.slice(2).map((m) => ({ ...m, isFallback: true })),
-    ];
-  } else {
-    chain = [
-      ...(groqApiKey
-        ? groqModels.map((m) => ({ ...m, isFallback: false }))
-        : []),
-      ...geminiModels.map((m) => ({ ...m, isFallback: false })),
-    ];
-  }
-  chain = chain.filter((m) =>
-    m.provider === "groq" ? !!groqApiKey : !!geminiApiKey,
-  );
-  if (!chain.length) throw new Error("No API keys available");
-
-  for (const model of chain) {
+  let lastErr = null;
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i];
     if (onModelChange)
-      onModelChange(model.label, model.provider, model.isFallback);
-    try {
-      let raw =
-        model.provider === "groq"
-          ? await callGroq(model, prompt)
-          : await callGemini(model, prompt);
-
-      // Strip code fences and stray img tags, then convert any markdown to HTML
-      raw = raw
-        .trim()
-        .replace(/```html\n?/gi, "")
-        .replace(/```\n?/g, "")
-        .replace(/<img[^>]*>/gi, "");
-      raw = markdownToHtml(raw);
-
-      const titleMatch = raw.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-      const title = titleMatch ? titleMatch[1].trim() : topic.text;
-      const excerpt = raw
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .substring(0, 160);
-      return {
-        title,
-        content: raw,
-        excerpt,
-        subject: topic.subject,
-        classLevel: topic.classLevel,
-        modelUsed: model.label,
-      };
-    } catch (e) {
-      console.error(`Failed with ${model.label}:`, e);
-    }
-  }
-  throw new Error("All models exhausted");
-}
-
-// Add to publisher-core.js - wrapper with retry
-async function callWithRetry(fn, maxRetries = 3, delay = 2000) {
-  let lastError;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastError = e;
-      console.warn(`Attempt ${i + 1} failed:`, e.message);
-      if (i < maxRetries - 1) {
-        await new Promise((r) => setTimeout(r, delay * (i + 1)));
-      }
-    }
-  }
-  throw lastError;
-}
-
-// Update callGroq to use retry
-async function callGroq(model, prompt) {
-  return callWithRetry(async () => {
-    const targetUrl = encodeURIComponent(
-      "https://api.groq.com/openai/v1/chat/completions",
-    );
-
-    const response = await fetch("https://corsproxy.io/?" + targetUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${groqApiKey}`,
-      },
-      body: JSON.stringify({
-        model: model.model,
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert educator for Nigerian students. Output only clean HTML. No markdown, no <img> tags. Use clear, practical examples relevant to Nigerian students.`,
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.72,
-        max_tokens: 3500,
-        top_p: 0.95,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Groq ${response.status}: ${errorText.substring(0, 150)}`,
+      onModelChange(
+        provider === "groq" ? "Server AI (Groq)" : "Server AI (Gemini)",
+        provider,
+        i > 0,
       );
+    try {
+      if (provider === "groq") {
+        const data = await groqGenerate({
+          system: PUBLISHER_SYSTEM,
+          prompt,
+          temperature: 0.72,
+          maxTokens: 3500,
+        });
+        const text = groqText(data);
+        if (!text) throw new Error("Groq returned empty response");
+        return shapePost(text, topic, "Groq (server)");
+      } else {
+        const data = await geminiGenerate({
+          body: {
+            contents: [{ parts: [{ text: `${PUBLISHER_SYSTEM}\n\n${prompt}` }] }],
+            generationConfig: { temperature: 0.72, maxOutputTokens: 3200 },
+          },
+        });
+        const text = geminiText(data);
+        if (!text) throw new Error("Gemini returned empty response");
+        return shapePost(text, topic, "Gemini (server)");
+      }
+    } catch (e) {
+      lastErr = e;
+      console.error(`Failed with ${provider}:`, e.message);
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error("Groq returned empty response");
-    return content;
-  });
+  }
+  throw lastErr || new Error("All models exhausted");
 }
 
 export async function executePublishCycle(
@@ -325,11 +234,6 @@ export async function executePublishCycle(
     return false;
   }
 
-  if (!geminiApiKey && !groqApiKey) {
-    if (onLog) onLog("[CYCLE] No API keys available", "warn");
-    if (onSchedule) onSchedule(5 * 60 * 1000);
-    return false;
-  }
   if (!currentUser) {
     if (onLog) onLog("[CYCLE] No user signed in", "error");
     if (onSchedule) onSchedule(5 * 60 * 1000);
@@ -432,8 +336,9 @@ export async function getPost(postId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+// Keys are server-side now; a signed-in user is all the publisher needs.
 export function hasApiKeys() {
-  return !!(geminiApiKey || groqApiKey);
+  return !!currentUser;
 }
 
 export function getSubjectName() {
