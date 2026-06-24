@@ -1142,3 +1142,65 @@ body {
 .ca-tf-history { display: flex; gap: 6px; margin-top: 2px; }
 .ca-tf-history .ca-soft-btn { flex: 1; }
 .ca-soft-btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+.ca-fab:disabled { opacity: 0.45; cursor: default; transform: none; box-shadow: var(--shadow-sm); }
+
+/* ── export / print / share modal ────────────────────────────────────────── */
+.ca-export-modal { width: min(680px, 100%); }
+.ca-export-body { flex-direction: row; gap: 1.2rem; align-items: stretch; }
+.ca-export-preview-wrap {
+  flex: 1 1 56%;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 10px;
+  background:
+    repeating-conic-gradient(var(--surface-secondary) 0% 25%, transparent 0% 50%)
+    50% / 18px 18px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+.ca-export-preview {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  background: var(--surface-primary);
+}
+.ca-export-side {
+  flex: 1 1 44%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+.ca-export-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ca-export-opt input { width: 17px; height: 17px; accent-color: var(--accent-secondary); cursor: pointer; }
+.ca-export-actions { display: flex; gap: 8px; margin: 0.4rem 0 0.6rem; }
+.ca-export-actions .ca-soft-btn { flex: 1; }
+.ca-export-share { display: flex; gap: 8px; align-items: stretch; }
+.ca-export-link {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.45rem 0.7rem;
+  border: var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+.ca-export-note { font-size: 0.74rem; color: var(--text-tertiary); margin: 0.2rem 0 0; }
+
+@media (max-width: 560px) {
+  .ca-export-body { flex-direction: column; }
+  .ca-export-preview { max-height: 220px; }
+}

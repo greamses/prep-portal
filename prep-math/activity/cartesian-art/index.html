@@ -105,6 +105,9 @@
           <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
           </button>
+          <button class="ca-fab" type="button" id="ca-export-btn" title="Export, print &amp; share" aria-label="Export, print and share">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/></svg>
+          </button>
           <button class="ca-fab" type="button" id="ca-fullscreen-btn" title="Fullscreen" aria-label="Fullscreen">
             <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
             <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
@@ -381,6 +384,55 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
             Done
           </button>
+        </div>
+      </div>
+        </div>
+
+    <!-- ═══ EXPORT / PRINT / SHARE ═══ -->
+    <div class="ca-overlay" id="ca-export">
+      <div class="ca-modal ca-export-modal" role="dialog" aria-label="Export, print and share">
+        <div class="ca-modal-head">
+          <h2>Save &amp; share</h2>
+          <button class="ca-modal-close" type="button" id="export-close" title="Close" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="ca-modal-body ca-export-body">
+          <div class="ca-export-preview-wrap">
+            <img id="export-preview" class="ca-export-preview" alt="Preview of your artwork" />
+          </div>
+          <div class="ca-export-side">
+            <span class="ca-tf-label">Show in the picture</span>
+            <label class="ca-export-opt">
+              <input type="checkbox" id="export-points" checked />
+              <span>Outline &amp; points</span>
+            </label>
+            <label class="ca-export-opt">
+              <input type="checkbox" id="export-grid" />
+              <span>Grid &amp; axes</span>
+            </label>
+
+            <div class="ca-export-actions">
+              <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="export-download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+                Download PNG
+              </button>
+              <button class="ca-soft-btn" type="button" id="export-print">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="12" height="9" rx="1"/><path d="M6 9V4h12v5"/><path d="M8 14h8"/></svg>
+                Print
+              </button>
+            </div>
+
+            <span class="ca-tf-label">Share your drawing</span>
+            <div class="ca-export-share">
+              <input type="text" id="export-link" class="ca-export-link" readonly aria-label="Share link" />
+              <button class="ca-soft-btn ca-soft-btn--sm" type="button" id="export-copy" title="Copy link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                <span class="ca-copy-label">Copy</span>
+              </button>
+            </div>
+            <p class="ca-export-note">A link reproduces the outline &amp; fill. The PNG keeps your brushwork.</p>
+          </div>
         </div>
       </div>
         </div>

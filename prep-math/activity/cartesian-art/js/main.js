@@ -18,6 +18,7 @@ import { initTransforms } from "./transforms.js";
 import { initHistory } from "./history.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
+import { initExport, loadFromUrl } from "./export.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -34,6 +35,8 @@ function init() {
   initDocks(document);
   initPuzzleMode();
   initLibrary();
+  initExport();
+  loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
   initHistory(); // last: baseline snapshot needs the brush bridge registered
 
   // ── readouts: cursor position + how many points dropped ────────────────
