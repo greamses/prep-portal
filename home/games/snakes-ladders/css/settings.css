@@ -85,79 +85,112 @@ button,
 
 .pg-header {
   display: flex;
-  align-items: flex-end;
-  gap: clamp(1.5rem, 5vw, 3rem);
-  padding: clamp(2rem, 6vw, 3.75rem) clamp(1rem, 4vw, 2.5rem)
-    clamp(1.5rem, 4vw, 2.5rem);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(2.5rem, 7vw, 4.5rem) clamp(1rem, 4vw, 2rem)
+    clamp(2rem, 5vw, 3rem);
   background: transparent;
-  overflow: hidden;
 }
 
-.pg-header::after {
-  content: "SNL";
-  position: absolute;
-  right: clamp(18px, 4vw, 48px);
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: var(--font-display);
-  font-weight: var(--weight-black);
-  font-size: clamp(5rem, 12vw, 8rem);
-  color: color-mix(in srgb, var(--ink) 4%, transparent);
-  line-height: var(--leading-none);
-  pointer-events: none;
-  user-select: none;
-  letter-spacing: var(--tracking-tight);
+/* Centred hero column for the heading + controls (matches homepage .hero-inner) */
+.sl-hero {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 1.6rem);
 }
 
-.ph-left {
-  flex: 0 0 auto;
-}
-
+/* Eyebrow — sticky note (paper-yellow, taped, marker hand), same as homepage */
 .pg-eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-lg);
-  font-weight: var(--weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-mega);
-  color: var(--light-muted);
-  margin-bottom: clamp(0.75rem, 2vw, 1rem);
-  display: inline-block;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: #fff39a;
+  border: 0;
+  border-radius: 2px;
+  padding: 0.6rem 1.1rem 0.65rem;
+  transform: rotate(-3deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transition: transform var(--duration-smooth) var(--ease-bounce);
+}
+.pg-eyebrow::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.pg-eyebrow:hover {
+  transform: rotate(-1deg) translateY(-2px);
+}
+.pg-eyebrow svg {
+  width: 15px;
+  height: 15px;
+  color: #14130f;
+  opacity: 0.85;
 }
 
+/* Title — same scale/treatment as the homepage .hero-title */
 .pg-title {
+  margin: 0;
+  max-width: 15ch;
   font-family: var(--font-display);
+  font-size: clamp(2.6rem, 8.5vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
   font-weight: var(--weight-black);
-  font-size: clamp(2.4rem, 8vw, 5.5rem);
-  line-height: var(--leading-tight);
-  letter-spacing: var(--tracking-tight);
   color: var(--ink);
-  max-width: 620px;
 }
 
+/* Highlighted word — soft pastel marker behind it (matches homepage) */
 .pg-title em {
   font-style: normal;
-  color: var(--blue);
+  background: color-mix(
+    in srgb,
+    var(--accent-primary) 55%,
+    var(--surface-primary)
+  );
+  border-radius: 0.16em;
+  padding: 0 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
-.ph-right {
-  flex: 1;
-  max-width: 480px;
-}
-
-.ph-right p {
+.sl-lead {
+  margin: 0;
+  max-width: 46ch;
   font-family: var(--font-mono);
-  font-size: var(--text-mono-lg);
-  line-height: var(--leading-relaxed);
-  color: var(--muted);
-  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+  font-size: clamp(0.9rem, 1.8vw, 1.02rem);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 /* ── Entry feature chips (fills the landing, uses shared pills) ── */
 .sl-features {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.6rem;
-  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
 }
 
 .sl-features .pp-pill {
@@ -168,7 +201,6 @@ button,
 }
 
 .sl-tip {
-  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
   font-size: 0.72rem;
   line-height: 1.5;
   --pp-note-tilt: -2deg;
@@ -854,15 +886,17 @@ body.settings-modal-open {
 }
 
 .board-container {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 800px;
+  max-width: min(560px, 92vw);
+  margin: clamp(0.5rem, 2vw, 1rem) auto 0;
   aspect-ratio: 1 / 1;
   background: #fdfbf7;
   border: var(--border-subtle);
   border-radius: 18px;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
-  position: relative;
 }
 
 svg {

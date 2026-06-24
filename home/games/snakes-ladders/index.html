@@ -53,14 +53,17 @@
 
     <nav class="site-nav" data-nav="main"></nav>
 
-    <!-- Page Header -->
+    <!-- Page Header (centred hero — matches the homepage heading) -->
     <header class="pg-header">
-      <div class="ph-left">
-        <p class="pg-eyebrow">Mathematics</p>
-        <h1 class="pg-title">SNAKES<br /><em>N' LADDERS</em></h1>
-      </div>
-      <div class="ph-right">
-        <p>
+      <div class="sl-hero">
+        <span class="pg-eyebrow">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 8.7l5.9-.9z" />
+          </svg>
+          Mathematics Game
+        </span>
+        <h1 class="pg-title">Snakes <em>N' Ladders</em>.</h1>
+        <p class="sl-lead">
           Roll the dice, climb ladders, avoid snakes! Convert fractions
           correctly to trigger powerful Lucky Cards. First to square 64 wins!
         </p>
@@ -80,12 +83,31 @@
           </span>
         </div>
 
+        <!-- ═══ SETTINGS TRIGGER BUTTON ═══ -->
+        <button class="btn-settings-trigger" id="btn-settings-trigger">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
+          Game Settings
+        </button>
+
         <div class="pp-sticky pp-sticky--c2 pp-sticky--tape sl-tip">
           Tip: press <strong>Space</strong> or <strong>R</strong> to roll, then
           <strong>Space</strong> again to move. Roll an exact 64 to win!
         </div>
+      </div>
 
-        <div class="board-container">
+      <div class="board-container">
         <svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <!-- Gradients for Board Background -->
@@ -673,29 +695,6 @@
             </g>
 
         </svg>
-    </div>
-
-        <!-- ═══ SETTINGS TRIGGER BUTTON ═══ -->
-        <button
-          class="btn-settings-trigger"
-          id="btn-settings-trigger"
-          style="margin-top: 16px"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-            />
-          </svg>
-          Game Settings
-        </button>
       </div>
     </header>
 
