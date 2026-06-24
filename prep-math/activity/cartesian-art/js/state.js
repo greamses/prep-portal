@@ -35,6 +35,10 @@ export const state = {
    *  closed, grid } — or null in free mode. */
   puzzle: null,
 
+  /** Paint state. fillColor tints the closed shape's interior (null = the faint
+   *  pre-paint wash). Brush strokes live on a separate canvas (paint.js). */
+  paint: { fillColor: null },
+
   /** UI flags. */
   ui: {
     showLabels: true, // axis number labels
@@ -125,6 +129,13 @@ export function deletePointAtCursor() {
 export function clearPoints() {
   state.points = [];
   state.closed = false;
+  state.paint.fillColor = null;
+  emit("points");
+}
+
+/** Set (or clear, with null) the closed shape's fill colour. */
+export function setFill(color) {
+  state.paint.fillColor = color;
   emit("points");
 }
 
@@ -147,6 +158,7 @@ export function setGrid(patch) {
 export function loadShape({ points = [], closed = false, grid = null } = {}) {
   state.mode = "free";
   state.puzzle = null;
+  state.paint.fillColor = null;
   if (grid) Object.assign(state.grid, grid);
   state.points = points.map((p) => ({ x: p.x, y: p.y, id: ++_pid }));
   state.closed = !!closed && state.points.length > 2;
@@ -164,6 +176,7 @@ export function enterPuzzle(puzzle) {
   state.puzzle = puzzle;
   state.points = [];
   state.closed = false;
+  state.paint.fillColor = null;
   if (puzzle.grid) Object.assign(state.grid, puzzle.grid);
   state.cursor.x = clamp(0, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(0, state.grid.yMin, state.grid.yMax);
@@ -176,6 +189,7 @@ export function exitPuzzle() {
   state.puzzle = null;
   state.points = [];
   state.closed = false;
+  state.paint.fillColor = null;
   emit("puzzle");
 }
 

@@ -12,6 +12,7 @@ import { initGrid, clientToMath, toLattice } from "./grid.js";
 import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
+import { initPaint } from "./paint.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 
@@ -25,6 +26,7 @@ function init() {
   initMascot();
   initPoints();
   initControls(document);
+  initPaint();
   initPuzzleMode();
   initLibrary();
 
@@ -59,6 +61,7 @@ function init() {
   // convenience: tap the plane to park the mascot there (point-drop is Enter /
   // the drop key, so a stray tap never registers an unwanted vertex)
   stage.addEventListener("pointerdown", (e) => {
+    if (stage.classList.contains("ca-painting")) return; // painting, not plotting
     const l = toLattice(...svgPixelArgs(e));
     setCursor(l.x, l.y);
   });

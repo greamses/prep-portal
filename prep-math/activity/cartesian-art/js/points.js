@@ -39,7 +39,8 @@ function redraw() {
     const d =
       "M " + px.map((p) => `${p.x} ${p.y}`).join(" L ") + (state.closed ? " Z" : "");
     if (state.closed) {
-      el("path", { d, class: "ca-shape-fill" }, S); // faint pre-paint fill
+      const f = el("path", { d, class: "ca-shape-fill" }, S); // faint pre-paint fill
+      if (state.paint.fillColor) f.setAttribute("style", `fill:${state.paint.fillColor}`);
     }
     el("path", { d, class: "ca-shape-line" }, S);
   }

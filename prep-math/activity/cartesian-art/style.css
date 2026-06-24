@@ -179,9 +179,22 @@ body {
 }
 .ca-svg {
   display: block;
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   cursor: crosshair;
+}
+/* brush layer sits BEHIND the svg so grid/outline/points stay on top */
+.ca-paint-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius-sm) - 2px);
+  touch-action: none;
+  pointer-events: none;
 }
 
 /* SVG plane primitives */
@@ -719,4 +732,82 @@ body {
 @media (max-width: 560px) {
   .ca-mission { flex-direction: column; align-items: flex-start; }
   .ca-mission-side { width: 100%; }
+}
+
+/* ============================================================================
+   PHASE 4 — paint toolbar
+   ========================================================================== */
+.ca-paintbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  margin-top: clamp(0.6rem, 1.5vw, 0.9rem);
+  padding-top: clamp(0.6rem, 1.5vw, 0.9rem);
+  border-top: var(--border-subtle);
+}
+
+.ca-tool-group,
+.ca-size-group {
+  display: inline-flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: var(--surface-secondary);
+  border-radius: 12px;
+}
+.ca-tool,
+.ca-size {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.ca-tool svg { width: 19px; height: 19px; }
+.ca-tool:hover,
+.ca-size:hover { color: var(--ink); }
+.ca-tool.is-active,
+.ca-size.is-active {
+  background: var(--surface-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.ca-size-dot {
+  width: var(--d, 13px);
+  height: var(--d, 13px);
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--text-secondary);
+}
+.ca-size.is-active .ca-size-dot { color: var(--ink); }
+
+/* colour swatches */
+.ca-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+}
+.ca-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--sw);
+  border: 2px solid rgba(20, 19, 15, 0.18);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease;
+}
+.ca-swatch:hover { transform: translateY(-2px) scale(1.08); }
+.ca-swatch.is-active {
+  border-color: var(--ink);
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--surface-primary), var(--shadow-md);
+}
+
+@media (max-width: 560px) {
+  .ca-paintbar { gap: 0.5rem; }
+  .ca-swatches { order: 3; flex-basis: 100%; }
 }
