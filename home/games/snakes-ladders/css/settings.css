@@ -1,9 +1,28 @@
 @import url("/utils/components/theme.css");
+@import url("/utils/components/components.css");
 
 /* ============================================================
    game-base.css
    Snakes N' Ladders — page chrome, settings, shared controls
    ============================================================ */
+
+/* ── Legacy colour aliases ──────────────────────────────────
+   This game was authored against an older palette (--yellow, --paper,
+   --muted …). Those variables no longer exist in the soft-UI theme, which
+   left backgrounds/colours broken. Map them onto the current theme tokens so
+   the whole game adopts the soft paper/pastel look from one place. */
+:root {
+  --yellow: var(--accent-primary);
+  --blue: var(--accent-secondary);
+  --red: var(--accent-danger);
+  --green: var(--accent-success);
+  --accent: var(--accent-primary);
+  --paper: var(--surface-primary);
+  --off: var(--surface-secondary);
+  --muted: var(--text-secondary);
+  --light-muted: var(--text-tertiary);
+  --ruled: color-mix(in srgb, var(--ink) 12%, transparent);
+}
 
 *,
 *::before,
@@ -215,11 +234,11 @@ button,
 .pp-dropdown-header:hover {
   background: var(--card-hover);
   color: var(--bg);
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .pp-dropdown-header:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 
 .pp-dropdown-header svg {
@@ -320,11 +339,11 @@ button,
 }
 
 .btn-start:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .btn-start:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 
 .btn-start svg {
@@ -355,11 +374,11 @@ button,
 .btn-secondary:hover {
   background: var(--card-hover);
   color: var(--bg);
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .btn-secondary:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 
 .btn-speaker {
@@ -392,11 +411,11 @@ button,
 .btn-speaker:hover {
   background: var(--card-hover);
   color: var(--bg);
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .btn-speaker:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 
 .btn-speaker.active {
@@ -405,7 +424,7 @@ button,
 }
 
 .btn-speaker.active:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 
 .btn-speaker.active svg {
@@ -508,11 +527,11 @@ button,
   user-select: none;
 }
 .btn-settings-trigger:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
   background: var(--card-hover, #f5f5f5);
 }
 .btn-settings-trigger:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 .btn-settings-trigger svg {
   width: 18px;
@@ -731,10 +750,10 @@ button,
 }
 .btn-settings-cancel:hover {
   background: rgba(0, 0, 0, 0.04);
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
 }
 .btn-settings-cancel:active {
-  transform: translate(2px, 2px);
+  transform: translateY(0);
 }
 
 /* Scrollbar for modal */
@@ -780,10 +799,9 @@ body.settings-modal-open {
   max-width: 800px;
   aspect-ratio: 1 / 1;
   background: #fdfbf7;
-  border-radius: 12px;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.5),
-    0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
   position: relative;
 }

@@ -12,52 +12,71 @@
 import { state }       from './state.js';
 import { BOARD_SIZE }  from './constants.js';
 
+// ─── Our own inline SVG icon set (NO emoji anywhere on the site) ───────────────
+const S = (paths) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+
+const ICONS = {
+  dice: S('<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>'),
+  target: S('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
+  fire: S('<path d="M12 3c1 2.5 4 3.8 4 7.5a4 4 0 0 1-8 0c0-1.8 1-3 2-3.8.2 1.8 2 1.8 2 0 0-1.6 0-2.6 0-3.7Z"/>'),
+  snake: S('<path d="M6 6.5a2.5 2.5 0 0 1 5 0c0 3-6 2.8-6 6.5a4 4 0 0 0 8 .5"/><circle cx="6" cy="6" r="0.9" fill="currentColor" stroke="none"/>'),
+  ladder: S('<path d="M7.5 21V4M16.5 21V4M7.5 8h9M7.5 12h9M7.5 16h9"/>'),
+  star: S('<path d="M12 3l2.5 6.1 6.5.5-5 4.2 1.6 6.3L12 16.9l-5.6 3.2 1.6-6.3-5-4.2 6.5-.5L12 3Z"/>'),
+  check: S('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/>'),
+  think: S('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.4a2.5 2.5 0 0 1 4.6 1.3c0 1.6-2.1 2-2.1 3.3"/><circle cx="12" cy="16.6" r="0.9" fill="currentColor" stroke="none"/>'),
+  cross: S('<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'),
+  trophy: S('<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5a2 2 0 0 0 0 4H7M17 6h2.5a2 2 0 0 1 0 4H17"/><path d="M12 14v3M9.5 21h5M10 17h4l-.4 4h-3.2L10 17Z"/>'),
+  robot: S('<rect x="5" y="8" width="14" height="11" rx="2.5"/><path d="M12 5v3M8.5 13v.01M15.5 13v.01M9 16h6"/><circle cx="12" cy="4" r="1.2" fill="currentColor" stroke="none"/>'),
+  shield: S('<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="M9 12l2 2 4-4"/>'),
+};
+
 // ─── Reaction catalog ─────────────────────────────────────────────────────────
-// Each key maps to an array of { emoji, label } objects.
+// Each key maps to an array of { i: iconKey, t: label } objects.
 // A random variant is chosen each time, adding natural variety.
 
 const CATALOG = {
   // ── Dice rolls ──────────────────────────────────────────────────────────────
-  roll_1:    [{ e:'😬', t:'ROLLED 1…' }, { e:'🙈', t:'JUST 1!' }],
-  roll_2:    [{ e:'🎲', t:'ROLLED 2' }],
-  roll_3:    [{ e:'🎲', t:'ROLLED 3' }],
-  roll_4:    [{ e:'🎲', t:'ROLLED 4' }],
-  roll_5:    [{ e:'🎯', t:'ROLLED 5!' }],
-  roll_6:    [{ e:'🔥', t:'ROLLED 6!' }, { e:'💪', t:'MAX ROLL!' }, { e:'🚀', t:'SIX!' }],
+  roll_1:    [{ i:'dice', t:'ROLLED 1…' }, { i:'dice', t:'JUST 1!' }],
+  roll_2:    [{ i:'dice', t:'ROLLED 2' }],
+  roll_3:    [{ i:'dice', t:'ROLLED 3' }],
+  roll_4:    [{ i:'dice', t:'ROLLED 4' }],
+  roll_5:    [{ i:'target', t:'ROLLED 5!' }],
+  roll_6:    [{ i:'fire', t:'ROLLED 6!' }, { i:'fire', t:'MAX ROLL!' }, { i:'fire', t:'SIX!' }],
 
   // ── Board events ─────────────────────────────────────────────────────────────
-  snake:     [{ e:'😱', t:'SNAKE!' }, { e:'🐍', t:'OH NO!' }, { e:'😭', t:'SLITHERING DOWN…' }],
-  ladder:    [{ e:'🎉', t:'LADDER!' }, { e:'🚀', t:'CLIMBING UP!' }, { e:'⚡', t:'SHORTCUT!' }],
+  snake:     [{ i:'snake', t:'SNAKE!' }, { i:'snake', t:'OH NO!' }, { i:'snake', t:'SLITHERING DOWN…' }],
+  ladder:    [{ i:'ladder', t:'LADDER!' }, { i:'ladder', t:'CLIMBING UP!' }, { i:'ladder', t:'SHORTCUT!' }],
 
   // ── Question answers ─────────────────────────────────────────────────────────
   correct_bonus: [
-    { e:'🌟', t:'PERFECT!' }, { e:'💯', t:'LOWEST TERMS!' },
-    { e:'🧠', t:'GENIUS!' }, { e:'🏅', t:'FLAWLESS!' },
+    { i:'star', t:'PERFECT!' }, { i:'star', t:'LOWEST TERMS!' },
+    { i:'star', t:'GENIUS!' }, { i:'star', t:'FLAWLESS!' },
   ],
   correct: [
-    { e:'✅', t:'CORRECT!' }, { e:'👍', t:'NICE ONE!' },
-    { e:'😎', t:'GOT IT!' }, { e:'🎯', t:'SPOT ON!' },
+    { i:'check', t:'CORRECT!' }, { i:'check', t:'NICE ONE!' },
+    { i:'check', t:'GOT IT!' }, { i:'target', t:'SPOT ON!' },
   ],
   wrong: [
-    { e:'😅', t:'NOT QUITE…' }, { e:'🤔', t:'THINK AGAIN' },
-    { e:'💭', t:'TRY AGAIN' }, { e:'😬', t:'HMMMM…' },
+    { i:'think', t:'NOT QUITE…' }, { i:'think', t:'THINK AGAIN' },
+    { i:'think', t:'TRY AGAIN' }, { i:'think', t:'HMMMM…' },
   ],
   disqualified: [
-    { e:'💀', t:'DISQUALIFIED' }, { e:'😵', t:'GAME OVER' }, { e:'🚫', t:'5 STRIKES!' },
+    { i:'cross', t:'DISQUALIFIED' }, { i:'cross', t:'GAME OVER' }, { i:'cross', t:'5 STRIKES!' },
   ],
 
   // ── Win ───────────────────────────────────────────────────────────────────────
   win: [
-    { e:'🏆', t:'WINNER!' }, { e:'👑', t:'CHAMPION!' },
-    { e:'🎊', t:'VICTORY!' }, { e:'🥇', t:'FIRST PLACE!' },
+    { i:'trophy', t:'WINNER!' }, { i:'trophy', t:'CHAMPION!' },
+    { i:'trophy', t:'VICTORY!' }, { i:'trophy', t:'FIRST PLACE!' },
   ],
 
   // ── CPU legendary reasoning ───────────────────────────────────────────────────
   cpu_advance: [
-    { e:'🤖', t:'ADVANCING…' }, { e:'📊', t:'CALCULATED' }, { e:'🧮', t:'OPTIMAL MOVE' },
+    { i:'robot', t:'ADVANCING…' }, { i:'robot', t:'CALCULATED' }, { i:'robot', t:'OPTIMAL MOVE' },
   ],
   cpu_block: [
-    { e:'🛡️', t:'BLOCKING!' }, { e:'🤖', t:'PREDICTED YOU' }, { e:'🧠', t:'ADAPTED' },
+    { i:'shield', t:'BLOCKING!' }, { i:'robot', t:'PREDICTED YOU' }, { i:'shield', t:'ADAPTED' },
   ],
 };
 
@@ -94,7 +113,8 @@ export function showReaction(type, pi, override = '') {
   const variants = CATALOG[type];
   if (!variants) return;
 
-  const { e: emoji, t: label } = variants[Math.floor(Math.random() * variants.length)];
+  const { i: iconKey, t: label } = variants[Math.floor(Math.random() * variants.length)];
+  const icon = ICONS[iconKey] || ICONS.dice;
   const fullLabel = override ? `${label} ${override}` : label;
 
   _evictToast();
@@ -116,7 +136,7 @@ export function showReaction(type, pi, override = '') {
   toast.style.left = `${screenX}px`;
   toast.style.top  = `${screenY}px`;
   toast.innerHTML = `
-    <div class="rt-emoji">${emoji}</div>
+    <div class="rt-emoji">${icon}</div>
     <div class="rt-label">${fullLabel}</div>
   `;
 

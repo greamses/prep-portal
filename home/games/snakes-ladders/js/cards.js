@@ -163,7 +163,12 @@ export function showBonusFlipCards(pi) {
     el.className = 'bc-card';
     el.innerHTML = `
       <div class="bc-card-inner">
-        <div class="bc-face bc-front">✨</div>
+        <div class="bc-face bc-front">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/>
+            <path d="M19 14l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1Z"/>
+          </svg>
+        </div>
         <div class="bc-face bc-back">
           <strong class="bc-card-title">${card.title}</strong>
           <span class="bc-card-desc">${card.desc}</span>

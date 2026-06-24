@@ -816,7 +816,7 @@
                     Grandmaster
                   </div>
                   <div class="pp-dropdown-item" data-value="legendary">
-                    Legendary ✦ Adaptive
+                    Legendary — Adaptive
                   </div>
                 </div>
               </div>
@@ -1156,7 +1156,7 @@
             </div>
           </div>
           <canvas id="boardCanvas" class="snakes-canvas"></canvas>
-          <div class="snakes-dt-hint" id="dtHint">DRAG DICE TO ROLL</div>
+          <div class="snakes-dt-hint" id="dtHint">PRESS ROLL OR DRAG DICE</div>
           <div class="snakes-log-overlay" id="logOverlay"></div>
           <div class="snakes-frac-popup" id="fracPopup">
             <div class="snakes-frac-popup-label">FRACTION CONVERSION</div>
@@ -1165,11 +1165,34 @@
         </div>
       </div>
       <div class="gp-bottom-sheet">
-        <div class="gp-feedback-box" id="game-feedback">
-          Drag the dice to roll!
+        <div class="gp-feedback-wrap pp-receipt">
+          <div class="pp-receipt__paper">
+            <span class="gp-feedback-box" id="game-feedback"
+              >Roll the dice to begin!</span
+            >
+          </div>
         </div>
         <div class="answer-row">
           <button class="btn-secondary" id="reset-game-btn">New Game</button>
+          <button class="btn-start gp-action-btn" id="btn-game-action" disabled>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="4" />
+              <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+              <circle cx="8" cy="16" r="1.4" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none" />
+            </svg>
+            <span id="btn-game-action-label">Roll Dice</span>
+          </button>
           <button
             class="btn-speaker"
             id="btn-speaker"
@@ -1197,15 +1220,30 @@
 
     <!-- Win overlay -->
     <div class="snakes-win-overlay" id="winOverlay">
-      <div class="snakes-win-box">
-        <div class="snakes-win-icon">🏆</div>
+      <div
+        class="snakes-win-box pp-sticky pp-sticky--c0 pp-sticky--tape"
+        style="--pp-note-tilt: -2deg"
+      >
+        <div class="snakes-win-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+            <path d="M7 6H4.5a2 2 0 0 0 0 4H7" />
+            <path d="M17 6h2.5a2 2 0 0 1 0 4H17" />
+            <path d="M12 14v3" />
+            <path d="M9.5 21h5" />
+            <path d="M10 17h4l-.4 4h-3.2L10 17Z" />
+          </svg>
+        </div>
         <h2 id="winName">P1 WINS!</h2>
         <p class="snakes-win-sub" id="winSub">Reached square 64 first!</p>
-        <button
-          class="btn-start"
-          id="btn-play-again"
-          style="padding: 12px 28px"
-        >
+        <button class="btn-start" id="btn-play-again" style="padding: 12px 28px">
           PLAY AGAIN
         </button>
       </div>

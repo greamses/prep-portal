@@ -40,6 +40,7 @@ import { showReaction, clearReactions } from "./reactions.js";
 
 let _fracEventsWired = false;
 let _tokenDragWired = false;
+let _actionBtnWired = false;
 
 // ─── Register cross-module callbacks ─────────────────────────────────────────
 
@@ -83,14 +84,71 @@ export function startTurn() {
   } else {
     s.gameState = STATE.WAITING_ROLL;
     addLog(
-      `${s.players[s.turn].name}'s turn. Drag dice or double-tap to roll.`,
+      `${s.players[s.turn].name}'s turn. Press Roll Dice (or drag the dice).`,
       "info",
     );
     s.dtHint?.classList.add("show");
     setTimeout(() => s.dtHint?.classList.remove("show"), 2000);
     if (s.gameFeedback)
-      s.gameFeedback.textContent = `${s.players[s.turn].name}'s turn. Drag dice or double-tap to roll!`;
+      s.gameFeedback.textContent = `${s.players[s.turn].name}'s turn — press Roll Dice!`;
   }
+  refreshActionButton();
+}
+
+// ─── Context-aware movement button (Roll / Move) ───────────────────────────────
+// Players can drive the whole game from buttons: it rolls when waiting to roll,
+// and advances the token to the required square when waiting to move.
+
+export function refreshActionButton() {
+  const s = state;
+  const btn = document.getElementById("btn-game-action");
+  const lbl = document.getElementById("btn-game-action-label");
+  if (!btn || !lbl) return;
+
+  let label = "Roll Dice";
+  let enabled = false;
+  let isMove = false;
+
+  if (!s.gameActive) {
+    enabled = false;
+  } else if (s.vsCPU && s.turn === 1) {
+    label = "CPU Turn…";
+  } else if (s.gameState === STATE.WAITING_ROLL) {
+    label = "Roll Dice";
+    enabled = true;
+  } else if (s.gameState === STATE.WAITING_DRAG) {
+    label = `Move to ${s.expectedSquare}`;
+    enabled = true;
+    isMove = true;
+  } else if (s.gameState === STATE.WAITING_DRAG_SNAKELADDER) {
+    label = s.expectedSquare < s.players[s.turn].pos
+      ? `Slide to ${s.expectedSquare}`
+      : `Climb to ${s.expectedSquare}`;
+    enabled = true;
+    isMove = true;
+  }
+
+  lbl.textContent = label;
+  btn.disabled = !enabled;
+  btn.classList.toggle("is-move", isMove);
+}
+
+function onGameAction() {
+  const s = state;
+  if (!s.gameActive || (s.vsCPU && s.turn === 1)) return;
+
+  if (s.gameState === STATE.WAITING_ROLL) {
+    executeRoll();
+  } else if (s.gameState === STATE.WAITING_DRAG) {
+    s.players[s.turn].pos = s.expectedSquare;
+    snapToken(s.turn, s.players[s.turn].pos);
+    checkSquareLogic(s.turn, s.players[s.turn].pos);
+  } else if (s.gameState === STATE.WAITING_DRAG_SNAKELADDER) {
+    s.players[s.turn].pos = s.expectedSquare;
+    snapToken(s.turn, s.players[s.turn].pos);
+    checkFraction(s.turn, s.players[s.turn].pos);
+  }
+  refreshActionButton();
 }
 
 function roll3DDice(result) {
@@ -117,6 +175,7 @@ export function executeRoll() {
     return;
 
   s.gameState = STATE.ROLLING;
+  refreshActionButton();
   s.currentRoll = Math.floor(Math.random() * 6) + 1;
   roll3DDice(s.currentRoll);
   showReaction(`roll_${s.currentRoll}`, s.turn);
@@ -150,11 +209,12 @@ export function executeRoll() {
       s.expectedSquare = target;
       s.gameState = STATE.WAITING_DRAG;
       addLog(
-        `${s.players[s.turn].name} rolled ${s.currentRoll}! Drag token to square ${target}.`,
+        `${s.players[s.turn].name} rolled ${s.currentRoll}! Press Move (or drag) to square ${target}.`,
         "action",
       );
       if (s.gameFeedback)
-        s.gameFeedback.textContent = `Rolled ${s.currentRoll}! Drag token to square ${target}.`;
+        s.gameFeedback.textContent = `Rolled ${s.currentRoll}! Press Move to ${target} (or drag the token).`;
+      refreshActionButton();
     }
   }, 600);
 }
@@ -178,7 +238,8 @@ export function checkSquareLogic(pi, sq) {
       s.expectedSquare = tail;
       s.gameState = STATE.WAITING_DRAG_SNAKELADDER;
       if (s.gameFeedback)
-        s.gameFeedback.textContent = `Snake! Drag down to ${tail}.`;
+        s.gameFeedback.textContent = `Snake! Press Slide (or drag) down to ${tail}.`;
+      refreshActionButton();
     }
   } else if (sq in s.LADDERS) {
     const top = s.LADDERS[sq];
@@ -197,7 +258,8 @@ export function checkSquareLogic(pi, sq) {
       s.expectedSquare = top;
       s.gameState = STATE.WAITING_DRAG_SNAKELADDER;
       if (s.gameFeedback)
-        s.gameFeedback.textContent = `Ladder! Drag up to ${top}.`;
+        s.gameFeedback.textContent = `Ladder! Press Climb (or drag) up to ${top}.`;
+      refreshActionButton();
     }
   } else if (sq === 64) {
     triggerWin(pi);
@@ -472,8 +534,9 @@ export function resetGame() {
 
   drawBoard();
   startTurn();
+  refreshActionButton();
   if (s.gameFeedback)
-    s.gameFeedback.textContent = "Game reset! Drag dice or double-tap to roll.";
+    s.gameFeedback.textContent = "New game! Press Roll Dice to begin.";
 }
 
 // ─── Open / close modal ───────────────────────────────────────────────────────
@@ -505,10 +568,17 @@ export function openGameModal() {
   setupTokenDrag();
   setupFracInputEvents();
 
+  if (!_actionBtnWired) {
+    document
+      .getElementById("btn-game-action")
+      ?.addEventListener("click", onGameAction);
+    _actionBtnWired = true;
+  }
+
   s.gameModal.classList.add("active");
   document.body.style.overflow = "hidden";
 
-  // ✅ Hide site nav when game opens
+  // Hide site nav when game opens
   hideSiteNav();
 
   initColorDropdowns();
@@ -536,7 +606,7 @@ export function closeGameModal() {
   s.luckyCardOverlay?.classList.remove("show");
   s.bonusCardOverlay?.classList.remove("show");
 
-  // ✅ Restore site nav when game closes
+  // Restore site nav when game closes
   showSiteNav();
 
   updateFullscreenUI();
