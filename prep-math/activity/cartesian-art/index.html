@@ -88,60 +88,143 @@
           </span>
         </div>
 
-        <div class="ca-hero-actions">
-          <button class="pp-btn pp-btn--ghost ca-hero-btn" type="button" id="ca-fullscreen-btn">
-            <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-            <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
-            <span class="ca-fs-label">Fullscreen</span>
-          </button>
-          <button class="pp-btn ca-hero-btn" type="button" id="ca-puzzles-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h6v6H5zM13 3h6v6h-6zM5 15h6v6H5zM13 15h6v6h-6z"/></svg>
-            Puzzles
-          </button>
-          <button class="pp-btn pp-btn--ghost ca-hero-btn ca-admin-only" type="button" id="ca-author-btn" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
-            Save as puzzle
-          </button>
-          <button class="ca-settings-trigger" type="button" title="Settings" disabled>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            Settings
-          </button>
-        </div>
       </header>
 
-      <!-- ═══ MISSION BAR (puzzle mode) ═══ -->
-      <div class="ca-mission" id="ca-mission" hidden>
-        <div class="ca-mission-copy">
-          <span class="ca-mission-eyebrow">Mission</span>
-          <strong class="ca-mission-title" id="mission-title">—</strong>
-          <span class="ca-mission-prompt" id="mission-prompt">—</span>
-        </div>
-        <div class="ca-mission-side">
-          <span class="pp-pill pp-pill--static" style="--tile: var(--accent-secondary)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/></svg>
-            <span id="mission-progress">0/0 points</span>
-          </span>
-          <button class="pp-btn ca-act" type="button" id="mission-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-            Check
-          </button>
-          <button class="pp-btn pp-btn--ghost ca-act" type="button" id="mission-exit">Exit</button>
-        </div>
-      </div>
-
-      <!-- ═══ STUDIO ═══ -->
-      <section class="ca-studio">
-        <!-- the coordinate plane -->
+      <!-- ═══ STUDIO — the graph is the canvas; everything else floats ═══ -->
+      <section class="ca-studio" id="ca-studio">
+        <!-- the coordinate plane fills the studio -->
         <div class="ca-stage-wrap">
           <div id="ca-stage" class="ca-stage"></div>
+        </div>
 
-          <!-- paint toolbar -->
-          <div class="ca-paintbar">
+        <!-- floating round toggles -->
+        <div class="ca-fabs">
+          <button class="ca-fab ca-fab--accent" type="button" id="ca-puzzles-btn" title="Puzzles" aria-label="Puzzles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h6v6H5zM13 3h6v6h-6zM5 15h6v6H5zM13 15h6v6h-6z"/></svg>
+          </button>
+          <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
+          </button>
+          <button class="ca-fab" type="button" id="ca-fullscreen-btn" title="Fullscreen" aria-label="Fullscreen">
+            <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+          </button>
+        </div>
+
+        <!-- floating mission bar (puzzle mode) -->
+        <div class="ca-mission" id="ca-mission" hidden>
+          <div class="ca-mission-copy">
+            <span class="ca-mission-eyebrow">Mission</span>
+            <strong class="ca-mission-title" id="mission-title">—</strong>
+            <span class="ca-mission-prompt" id="mission-prompt">—</span>
+          </div>
+          <div class="ca-mission-side">
+            <span class="pp-pill pp-pill--static" style="--tile: var(--accent-secondary)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/></svg>
+              <span id="mission-progress">0/0 points</span>
+            </span>
+            <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="mission-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+              Check
+            </button>
+            <button class="ca-soft-btn" type="button" id="mission-exit">Exit</button>
+          </div>
+        </div>
+
+        <!-- ═══ DOCK: position readout ═══ -->
+        <div class="ca-dock ca-dock--readout" id="dock-readout" data-dock="readout">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Position</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
+            <div class="ca-readout-coord">(<span id="read-x">0</span>, <span id="read-y">0</span>)</div>
+            <div class="ca-readout-meta">
+              <span class="ca-readout-hover">cursor <span id="read-hover">—</span></span>
+              <span class="ca-readout-pts"><strong id="read-count">0</strong> pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DOCK: steering ═══ -->
+        <div class="ca-dock ca-dock--move" id="dock-move" data-dock="move">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Steer</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
+            <div class="ca-pad-toggle" role="tablist" aria-label="Control style">
+              <button type="button" data-pad="arrows" class="is-active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><path d="M9 8l3-3 3 3M16 9l3 3-3 3M15 16l-3 3-3-3M8 15l-3-3 3-3"/></svg>
+                Arrows
+              </button>
+              <button type="button" data-pad="analog">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+                Analog
+              </button>
+            </div>
+
+            <div class="ca-pad" data-mode="arrows">
+              <div id="ca-dpad" class="ca-dpad">
+                <button type="button" class="ca-dpad-btn ca-dpad-up" data-dir="up" title="Up" aria-label="Up">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                </button>
+                <button type="button" class="ca-dpad-btn ca-dpad-left" data-dir="left" title="Left" aria-label="Left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                </button>
+                <button type="button" id="dpad-drop" class="ca-dpad-btn ca-dpad-mid" title="Drop point (Enter)" aria-label="Drop point">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7.5"/></svg>
+                </button>
+                <button type="button" class="ca-dpad-btn ca-dpad-right" data-dir="right" title="Right" aria-label="Right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+                <button type="button" class="ca-dpad-btn ca-dpad-down" data-dir="down" title="Down" aria-label="Down">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </button>
+              </div>
+
+              <div class="ca-joystick">
+                <div id="joy-ring" class="ca-joy-ring">
+                  <span class="ca-joy-dish" aria-hidden="true"></span>
+                  <div id="joy-knob" class="ca-joy-knob"><span class="ca-joy-knob-cap"></span></div>
+                </div>
+                <span class="ca-joy-hint">Tilt to glide</span>
+              </div>
+            </div>
+
+            <div class="ca-actions">
+              <button type="button" id="act-drop" class="ca-soft-btn ca-soft-btn--accent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="8"/></svg>
+                Drop
+              </button>
+              <button type="button" id="act-delete" class="ca-soft-btn" title="Delete point at cursor / last">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+                Delete
+              </button>
+              <button type="button" id="act-close" class="ca-soft-btn" title="Close / open the loop (C)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5-3 5 3v6l-5 7-5-7z"/></svg>
+                Close
+              </button>
+              <button type="button" id="act-clear" class="ca-soft-btn" title="Clear all points">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DOCK: paint ═══ -->
+        <div class="ca-dock ca-dock--paint" id="dock-paint" data-dock="paint">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Paint</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
             <div class="ca-tool-group" role="group" aria-label="Tools">
-              <button type="button" class="ca-tool" data-tool="move" title="Move / plot">
+              <button type="button" class="ca-tool is-active" data-tool="move" title="Move / plot">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>
               </button>
               <button type="button" class="ca-tool" data-tool="fill" title="Fill the shape">
@@ -157,133 +240,46 @@
 
             <div class="ca-swatches" id="paint-swatches" role="group" aria-label="Colours"></div>
 
-            <div class="ca-size-group" role="group" aria-label="Brush size">
-              <button type="button" class="ca-size" data-size="small" title="Thin"><span class="ca-size-dot" style="--d:7px"></span></button>
-              <button type="button" class="ca-size is-active" data-size="medium" title="Medium"><span class="ca-size-dot" style="--d:13px"></span></button>
-              <button type="button" class="ca-size" data-size="large" title="Thick"><span class="ca-size-dot" style="--d:19px"></span></button>
-            </div>
-
-            <button type="button" class="pp-btn pp-btn--ghost ca-act" id="paint-clear" title="Clear paint">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
-              Clear paint
-            </button>
-          </div>
-        </div>
-
-        <!-- side panel -->
-        <aside class="ca-panel">
-          <div class="pp-receipt ca-readout">
-            <div class="pp-receipt__paper">
-              <span class="ca-readout-eyebrow">Mascot is at</span>
-              <div class="ca-readout-coord">
-                (<span id="read-x">0</span>, <span id="read-y">0</span>)
+            <div class="ca-paint-foot">
+              <div class="ca-size-group" role="group" aria-label="Brush size">
+                <button type="button" class="ca-size" data-size="small" title="Thin"><span class="ca-size-dot" style="--d:7px"></span></button>
+                <button type="button" class="ca-size is-active" data-size="medium" title="Medium"><span class="ca-size-dot" style="--d:13px"></span></button>
+                <button type="button" class="ca-size" data-size="large" title="Thick"><span class="ca-size-dot" style="--d:19px"></span></button>
               </div>
-              <div class="ca-readout-meta">
-                <span class="ca-readout-hover">cursor <span id="read-hover">—</span></span>
-                <span class="ca-readout-pts"><strong id="read-count">0</strong> points</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ═══ STEERING ═══ -->
-          <div class="ca-controls">
-            <div class="ca-pad-toggle" role="tablist" aria-label="Control style">
-              <button type="button" data-pad="arrows" class="is-active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><path d="M9 8l3-3 3 3M16 9l3 3-3 3M15 16l-3 3-3-3M8 15l-3-3 3-3"/></svg>
-                Arrows
-              </button>
-              <button type="button" data-pad="analog">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
-                Analog
-              </button>
-            </div>
-
-            <div class="ca-pad" data-mode="arrows">
-              <!-- arrow d-pad -->
-              <div id="ca-dpad" class="ca-dpad">
-                <button type="button" class="ca-dpad-btn ca-dpad-up" data-dir="up" title="Up (↑)" aria-label="Up">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                </button>
-                <button type="button" class="ca-dpad-btn ca-dpad-left" data-dir="left" title="Left (←)" aria-label="Left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                </button>
-                <button type="button" id="dpad-drop" class="ca-dpad-btn ca-dpad-mid" title="Drop point (Enter)" aria-label="Drop point">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7.5"/></svg>
-                </button>
-                <button type="button" class="ca-dpad-btn ca-dpad-right" data-dir="right" title="Right (→)" aria-label="Right">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </button>
-                <button type="button" class="ca-dpad-btn ca-dpad-down" data-dir="down" title="Down (↓)" aria-label="Down">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                </button>
-              </div>
-
-              <!-- analog joystick -->
-              <div class="ca-joystick">
-                <div id="joy-ring" class="ca-joy-ring">
-                  <span class="ca-joy-dish" aria-hidden="true"></span>
-                  <div id="joy-knob" class="ca-joy-knob"><span class="ca-joy-knob-cap"></span></div>
-                </div>
-                <span class="ca-joy-hint">Tilt to glide</span>
-              </div>
-            </div>
-
-            <!-- action row -->
-            <div class="ca-actions">
-              <button type="button" id="act-drop" class="pp-btn ca-act">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="8"/></svg>
-                Drop
-              </button>
-              <button type="button" id="act-delete" class="pp-btn pp-btn--ghost ca-act" title="Delete point at cursor / last">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
-                Delete
-              </button>
-              <button type="button" id="act-close" class="pp-btn pp-btn--ghost ca-act" title="Close / open the loop (C)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5-3 5 3v6l-5 7-5-7z"/></svg>
-                Close
-              </button>
-              <button type="button" id="act-clear" class="pp-btn pp-btn--ghost ca-act" title="Clear all points">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
+              <button type="button" class="ca-soft-btn ca-soft-btn--sm" id="paint-clear" title="Clear paint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
                 Clear
               </button>
             </div>
           </div>
+        </div>
 
-          <div class="pp-sticky pp-sticky--c2 ca-tip" style="--pp-note-tilt: -2.5deg">
-            Arrow keys move &bull; <kbd>Enter</kbd> drops a point &bull;
-            double-click a point to delete &bull; <kbd>C</kbd> closes the loop.
+        <!-- ═══ PUZZLES SIDEBAR ═══ -->
+        <div class="ca-sidebar-backdrop" id="picker-backdrop"></div>
+        <aside class="ca-sidebar" id="ca-picker" aria-label="Puzzles">
+          <div class="ca-sidebar-head">
+            <h2>Puzzles</h2>
+            <div class="ca-sidebar-head-actions">
+              <button class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-admin-only" type="button" id="picker-new" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                New
+              </button>
+              <button class="ca-icon-btn" type="button" id="picker-close" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="ca-sidebar-body">
+            <div id="picker-list" class="ca-puzzle-list"></div>
+            <div id="picker-empty" class="ca-modal-empty" hidden>
+              <p>No puzzles yet.</p>
+              <p class="ca-admin-only" hidden>Plot a shape on the grid, then tap <strong>Save as puzzle</strong> to create the first one.</p>
+            </div>
           </div>
         </aside>
-      </section>
-    </main>
 
-    <!-- ═══ PUZZLE PICKER ═══ -->
-    <div class="ca-overlay" id="ca-picker">
-      <div class="ca-modal" role="dialog" aria-label="Choose a puzzle">
-        <div class="ca-modal-head">
-          <h2>Choose a puzzle</h2>
-          <div class="ca-modal-head-actions">
-            <button class="pp-btn ca-act ca-admin-only" type="button" id="picker-new" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-              New from grid
-            </button>
-            <button class="ca-modal-close" type="button" id="picker-close" title="Close" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="ca-modal-body">
-          <div id="picker-list" class="ca-puzzle-list"></div>
-          <div id="picker-empty" class="ca-modal-empty" hidden>
-            <p>No puzzles yet.</p>
-            <p class="ca-admin-only" hidden>Plot a shape on the grid, then use <strong>Save as puzzle</strong> to create the first one.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ AUTHORING (admin) ═══ -->
-    <div class="ca-overlay" id="ca-author">
+        <!-- ═══ AUTHORING (admin) ═══ -->
+        <div class="ca-overlay" id="ca-author">
       <form class="ca-modal" id="author-form" role="dialog" aria-label="Save puzzle">
         <div class="ca-modal-head">
           <h2>Save as puzzle</h2>
@@ -315,7 +311,7 @@
         </div>
         <div class="ca-modal-foot">
           <span class="ca-author-status" id="author-status"></span>
-          <button class="pp-btn" type="submit" id="author-save">
+          <button class="ca-soft-btn ca-soft-btn--accent" type="submit" id="author-save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7"/><path d="M8 20v-6h8v6"/></svg>
             Save puzzle
           </button>
@@ -334,17 +330,19 @@
         <div class="ca-result-score" id="result-score">0%</div>
         <p class="ca-result-detail" id="result-detail">—</p>
         <div class="ca-result-actions">
-          <button class="pp-btn pp-btn--ghost ca-act" type="button" id="result-retry">
+          <button class="ca-soft-btn" type="button" id="result-retry">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
             Try again
           </button>
-          <button class="pp-btn ca-act" type="button" id="result-done">
+          <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="result-done">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
             Done
           </button>
         </div>
       </div>
-    </div>
+        </div>
+      </section>
+    </main>
 
     <div id="prepbot"></div>
     <script type="module" src="/utils/prepbot/prepbot.js"></script>

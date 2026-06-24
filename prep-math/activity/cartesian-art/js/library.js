@@ -47,8 +47,8 @@ function toPuzzle(doc) {
 
 /* ── picker ────────────────────────────────────────────────────────────── */
 async function openPicker() {
-  const ov = $("#ca-picker");
-  ov.classList.add("is-open");
+  $("#ca-picker").classList.add("is-open");
+  $("#picker-backdrop")?.classList.add("is-open");
   const list = $("#picker-list");
   const empty = $("#picker-empty");
   list.innerHTML = `<p class="ca-modal-loading">Loading puzzles…</p>`;
@@ -66,7 +66,10 @@ async function openPicker() {
     list.innerHTML = `<p class="ca-modal-loading">Couldn't load puzzles (${e.code || e.message}).</p>`;
   }
 }
-function closePicker() { $("#ca-picker").classList.remove("is-open"); }
+function closePicker() {
+  $("#ca-picker").classList.remove("is-open");
+  $("#picker-backdrop")?.classList.remove("is-open");
+}
 
 function card(doc) {
   const tile = DIFF_TILE[doc.difficulty] || "var(--accent-secondary)";
@@ -85,14 +88,14 @@ function card(doc) {
   const actions = wrap.querySelector(".ca-puzzle-actions");
 
   const play = document.createElement("button");
-  play.className = "pp-btn ca-act";
+  play.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent";
   play.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg> Play`;
   play.addEventListener("click", () => { enterPuzzle(toPuzzle(doc)); closePicker(); });
   actions.appendChild(play);
 
   if (admin) {
     const edit = document.createElement("button");
-    edit.className = "pp-btn pp-btn--ghost ca-act";
+    edit.className = "ca-soft-btn ca-soft-btn--sm";
     edit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg> Edit`;
     edit.addEventListener("click", () => {
       loadShape({ points: doc.points, closed: doc.closed, grid: doc.grid });
@@ -103,7 +106,7 @@ function card(doc) {
     actions.appendChild(edit);
 
     const del = document.createElement("button");
-    del.className = "pp-btn pp-btn--ghost ca-act ca-act--danger";
+    del.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--danger ca-soft-btn--icon";
     del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
     del.title = "Delete puzzle";
     del.addEventListener("click", async () => {
@@ -175,7 +178,7 @@ export function initLibrary() {
 
   $("#ca-puzzles-btn")?.addEventListener("click", openPicker);
   $("#picker-close")?.addEventListener("click", closePicker);
-  $("#ca-picker")?.addEventListener("click", (e) => { if (e.target.id === "ca-picker") closePicker(); });
+  $("#picker-backdrop")?.addEventListener("click", closePicker);
   $("#picker-new")?.addEventListener("click", () => { editId = null; closePicker(); openAuthor(); });
 
   $("#ca-author-btn")?.addEventListener("click", () => { editId = null; openAuthor(); });

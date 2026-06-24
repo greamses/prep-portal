@@ -868,7 +868,245 @@ body {
   .ca-swatches { order: 3; flex-basis: 100%; }
 }
 
-/* ── fullscreen ──────────────────────────────────────────────────────────── */
-.ca-fs-icon { width: 16px; height: 16px; }
-body.ca-fs .ca-page { max-width: 1400px; }
-body.ca-fs .ca-stage { max-height: min(84vh, 1000px); }
+/* ============================================================================
+   STUDIO REDESIGN — graph is the canvas; controls float as draggable docks
+   (overrides the earlier two-column layout)
+   ========================================================================== */
+
+/* studio = positioned canvas */
+.ca-studio {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: clamp(440px, 72vh, 780px);
+  margin-top: clamp(1rem, 3vw, 1.6rem);
+}
+.ca-stage-wrap {
+  position: absolute;
+  inset: 0;
+  padding: clamp(6px, 1.4vw, 12px);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+.ca-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  max-height: none;
+  touch-action: none;
+}
+
+/* fullscreen targets the studio → the graph fills the screen */
+.ca-studio:fullscreen { width: 100%; height: 100%; margin: 0; background: var(--app-bg); }
+.ca-studio:fullscreen .ca-stage-wrap { border-radius: 0; }
+.ca-fs-icon { width: 20px; height: 20px; }
+
+/* ── floating round toggles (FABs) ───────────────────────────────────────── */
+.ca-fabs {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ca-fab {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+.ca-fab:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.ca-fab:active { transform: translateY(0) scale(0.94); }
+.ca-fab svg { width: 20px; height: 20px; }
+.ca-fab--accent { background: var(--accent-primary); color: var(--text-on-accent); }
+
+/* ── docks (draggable, collapsible widgets) ──────────────────────────────── */
+.ca-dock {
+  position: absolute;
+  z-index: 25;
+  width: max-content;
+  max-width: min(300px, 86vw);
+  background: color-mix(in srgb, var(--surface-primary) 90%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ca-dock--readout { left: 12px; top: 12px; }
+.ca-dock--move { left: 12px; bottom: 12px; }
+.ca-dock--paint { right: 12px; bottom: 12px; }
+.ca-dock.is-dragging { box-shadow: var(--shadow-xl); }
+
+.ca-dock-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 5px;
+  cursor: grab;
+  background: color-mix(in srgb, var(--surface-secondary) 65%, transparent);
+  touch-action: none;
+}
+.ca-dock-head:active { cursor: grabbing; }
+.ca-dock-grip { display: inline-flex; color: var(--text-tertiary); }
+.ca-dock-grip svg { width: 16px; height: 16px; }
+.ca-dock-title {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ca-dock-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.2s ease;
+}
+.ca-dock-toggle:hover { background: var(--surface-secondary); }
+.ca-dock-toggle svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
+.ca-dock.is-collapsed .ca-dock-toggle svg { transform: rotate(-90deg); }
+.ca-dock-body { display: flex; flex-direction: column; gap: 10px; padding: 10px; }
+.ca-dock.is-collapsed .ca-dock-body { display: none; }
+
+/* readout inside its dock */
+.ca-dock .ca-readout-coord { font-size: 1.5rem; margin: 0; }
+.ca-dock .ca-readout-meta { font-size: 0.72rem; }
+
+/* steering dock internals */
+.ca-actions .ca-soft-btn { width: 100%; }
+.ca-paint-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ── soft (rounded) buttons — no hard ink border ─────────────────────────── */
+.ca-soft-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.ca-soft-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.ca-soft-btn:active { transform: translateY(0) scale(0.97); }
+.ca-soft-btn svg { width: 15px; height: 15px; }
+.ca-soft-btn--accent { background: var(--accent-primary); color: var(--text-on-accent); }
+.ca-soft-btn--sm { font-size: 0.72rem; padding: 0.42rem 0.72rem; }
+.ca-soft-btn--danger { color: var(--accent-danger); }
+.ca-soft-btn--icon { padding: 0.42rem; }
+
+.ca-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ca-icon-btn:hover { background: var(--surface-secondary); color: var(--ink); }
+.ca-icon-btn svg { width: 18px; height: 18px; }
+
+/* ── floating mission bar ────────────────────────────────────────────────── */
+.ca-mission {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 28;
+  width: max-content;
+  max-width: min(540px, 64%);
+  margin: 0;
+  border: var(--border-subtle);
+  border-left: 5px solid var(--accent-secondary);
+  background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+/* ── puzzles sidebar ─────────────────────────────────────────────────────── */
+.ca-sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: rgba(20, 19, 15, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.ca-sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
+.ca-sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(330px, 88%);
+  background: var(--surface-primary);
+  border-left: var(--border-subtle);
+  box-shadow: var(--shadow-xl);
+  transform: translateX(101%);
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ca-sidebar.is-open { transform: none; }
+.ca-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 11px;
+  border-bottom: var(--border-subtle);
+}
+.ca-sidebar-head h2 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.ca-sidebar-head-actions { display: flex; align-items: center; gap: 6px; }
+.ca-sidebar-body { flex: 1; padding: 12px 14px; overflow-y: auto; }
+
+/* author + result modals now live inside the studio */
+.ca-overlay { position: absolute; z-index: 60; }
+
+@media (max-width: 560px) {
+  .ca-studio { height: clamp(420px, 66vh, 620px); }
+  .ca-dock { max-width: min(78vw, 260px); }
+  .ca-mission { max-width: 80%; }
+}

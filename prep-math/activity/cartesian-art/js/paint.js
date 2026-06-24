@@ -13,9 +13,7 @@
    ========================================================================== */
 
 import { state, setFill, subscribe } from "./state.js";
-import { clientToMath } from "./grid.js";
-
-const RES = 900; // canvas internal resolution (square)
+import { clientToMath, onRender } from "./grid.js";
 
 export const PALETTE = [
   "#f07a7a", "#f0a868", "#f4c95d", "#7cc47c", "#6fd0c0",
@@ -31,6 +29,26 @@ let drawing = false;
 let last = null;
 
 const $ = (s) => document.querySelector(s);
+
+/* Match the canvas bitmap to the stage's pixel size so brush dabs stay round
+   and aligned; rescale existing strokes so the artwork survives a resize. */
+function resizeCanvas() {
+  if (!canvas || !stage) return;
+  const r = stage.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width));
+  const h = Math.max(1, Math.round(r.height));
+  if (canvas.width === w && canvas.height === h) return;
+  let prev = null;
+  if (canvas.width && canvas.height) {
+    prev = document.createElement("canvas");
+    prev.width = canvas.width;
+    prev.height = canvas.height;
+    prev.getContext("2d").drawImage(canvas, 0, 0);
+  }
+  canvas.width = w;
+  canvas.height = h;
+  if (prev) ctx.drawImage(prev, 0, 0, prev.width, prev.height, 0, 0, w, h);
+}
 
 /* ── canvas helpers ────────────────────────────────────────────────────── */
 function toCanvas(e) {
@@ -143,10 +161,11 @@ export function initPaint() {
 
   canvas = document.createElement("canvas");
   canvas.className = "ca-paint-canvas";
-  canvas.width = RES;
-  canvas.height = RES;
   stage.insertBefore(canvas, stage.firstChild); // behind the svg
   ctx = canvas.getContext("2d");
+  resizeCanvas();
+  // keep the canvas matched to the (now non-square) stage; preserve the artwork
+  onRender(resizeCanvas);
 
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointermove", onMove);

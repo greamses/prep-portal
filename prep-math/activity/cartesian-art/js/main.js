@@ -13,6 +13,7 @@ import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
+import { initDocks } from "./dock.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 
@@ -27,6 +28,7 @@ function init() {
   initPoints();
   initControls(document);
   initPaint();
+  initDocks(document);
   initPuzzleMode();
   initLibrary();
 
@@ -75,20 +77,19 @@ function initFullscreen() {
   if (!btn) return;
   const enterIcon = btn.querySelector(".ca-fs-enter");
   const exitIcon = btn.querySelector(".ca-fs-exit");
-  const label = btn.querySelector(".ca-fs-label");
+  const target = $("#ca-studio"); // fullscreen the GRAPH, not the whole page
 
   btn.addEventListener("click", () => {
     if (document.fullscreenElement) document.exitFullscreen?.();
-    else (document.documentElement.requestFullscreen?.() || Promise.reject()).catch(() => {});
+    else if (target) (target.requestFullscreen?.() || Promise.reject()).catch(() => {});
   });
 
   document.addEventListener("fullscreenchange", () => {
-    const on = !!document.fullscreenElement;
+    const on = document.fullscreenElement === target;
     if (enterIcon) enterIcon.hidden = on;
     if (exitIcon) exitIcon.hidden = !on;
-    if (label) label.textContent = on ? "Exit full screen" : "Fullscreen";
     document.body.classList.toggle("ca-fs", on);
-    // the stage size changes — the grid's ResizeObserver redraws, but nudge it
+    // the stage resizes — the grid's ResizeObserver redraws, but nudge it too
     setTimeout(() => window.dispatchEvent(new Event("resize")), 80);
   });
 }
