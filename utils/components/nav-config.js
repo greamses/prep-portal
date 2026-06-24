@@ -187,6 +187,7 @@ const NAV_CONFIG = [
           { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html", description: "Explore angle rules and sums" },
           { text: "Surface Area", href: "/prep-math/activity/surface-area/index.html", description: "Calculate area on 3D shapes" },
           { text: "Transversals", href: "/prep-math/activity/transversals/index.html", description: "Learn parallel lines and angles" },
+          { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
         ],
       },
       {
