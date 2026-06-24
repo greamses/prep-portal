@@ -97,6 +97,7 @@ function initJoystick(ring, knob) {
     timer = null;
     dir = null;
     active = false;
+    ring.classList.remove("ca-dragging");
     recenter();
   };
 
@@ -131,6 +132,7 @@ function initJoystick(ring, knob) {
   const onDown = (e) => {
     e.preventDefault();
     active = true;
+    ring.classList.add("ca-dragging");
     ring.setPointerCapture?.(e.pointerId);
     onMove(e);
   };

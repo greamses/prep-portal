@@ -393,63 +393,119 @@ body {
 .ca-dpad-mid { grid-area: 2 / 2; }
 .ca-dpad-right { grid-area: 2 / 3; }
 .ca-dpad-down { grid-area: 3 / 2; }
+/* chunky 3D keycaps (matches the rubik's-cube gamepad) */
 .ca-dpad-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--border);
-  border-radius: 12px;
-  background: var(--surface-primary);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  --key: #d9dde4;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  color: #241f1b;
+  cursor: pointer;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--key) 72%, #fff) 0%,
+    var(--key) 44%,
+    color-mix(in srgb, var(--key) 74%, #000) 100%
+  );
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -4px 7px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 6px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 10px 16px rgba(15, 16, 20, 0.32);
+  transition: transform 0.07s ease, box-shadow 0.07s ease;
 }
-.ca-dpad-btn svg { width: 22px; height: 22px; }
-.ca-dpad-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.ca-dpad-btn:active { transform: translateY(1px) scale(0.96); box-shadow: var(--shadow-sm); }
-.ca-dpad-mid {
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
+.ca-dpad-btn::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 11%;
+  height: 38%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
+.ca-dpad-btn svg {
+  position: relative;
+  z-index: 1;
+  width: 55%;
+  height: 55%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
+}
+.ca-dpad-btn:active,
+.ca-dpad-btn.is-down {
+  transform: translateY(5px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--key) 50%, #fff) inset,
+    0 -2px 5px color-mix(in srgb, var(--key) 60%, #000) inset,
+    0 1px 0 color-mix(in srgb, var(--key) 64%, #000),
+    0 3px 6px rgba(15, 16, 20, 0.4);
+}
+.ca-dpad-mid { --key: #f4c95d; }
 
-/* analog joystick */
+/* analog thumbstick (matches the rubik's-cube analog) */
 .ca-joystick { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
 .ca-joy-ring {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 124px;
+  height: 124px;
   border-radius: 50%;
-  border: var(--border);
-  background:
-    radial-gradient(circle at 50% 38%, var(--surface-primary), var(--surface-secondary));
-  box-shadow: inset 0 3px 10px rgba(var(--shadow-color), 0.18), var(--shadow-sm);
   touch-action: none;
   cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(circle at 50% 32%, #434956 0%, #23272f 62%, #15181d 100%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -14px 26px rgba(0, 0, 0, 0.5) inset,
+    0 12px 22px rgba(0, 0, 0, 0.4);
 }
 .ca-joy-ring:active { cursor: grabbing; }
-.ca-joy-cross::before,
-.ca-joy-cross::after {
+.ca-joy-dish {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2c313b, #181b21 78%);
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.6) inset;
+  pointer-events: none;
+}
+.ca-joy-dish::before {
   content: "";
   position: absolute;
-  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  inset: 14%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
 }
-.ca-joy-cross::before { left: 12%; right: 12%; top: 50%; height: 1.5px; }
-.ca-joy-cross::after { top: 12%; bottom: 12%; left: 50%; width: 1.5px; }
 .ca-joy-knob {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  width: 46%;
+  height: 46%;
+  margin: -23% 0 0 -23%;
   border-radius: 50%;
-  border: var(--border);
-  background: radial-gradient(circle at 38% 32%, color-mix(in srgb, var(--accent-secondary) 70%, #fff), var(--accent-secondary));
-  box-shadow: var(--shadow-md);
-  transition: transform 0.08s ease-out;
+  background: radial-gradient(circle at 50% 32%, #8a93a3 0%, #565e6c 45%, #2b313b 78%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.28) inset,
+    0 -8px 14px rgba(0, 0, 0, 0.55) inset,
+    0 8px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 0.09s ease-out;
+  will-change: transform;
   pointer-events: none;
 }
+.ca-joy-knob-cap {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #c3cad6, #6b7280 70%);
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.5) inset;
+}
+.ca-joy-ring.ca-dragging .ca-joy-knob { transition: none; }
 .ca-joy-hint {
   font-family: var(--font-mono);
   font-size: 0.66rem;
@@ -811,3 +867,8 @@ body {
   .ca-paintbar { gap: 0.5rem; }
   .ca-swatches { order: 3; flex-basis: 100%; }
 }
+
+/* ── fullscreen ──────────────────────────────────────────────────────────── */
+.ca-fs-icon { width: 16px; height: 16px; }
+body.ca-fs .ca-page { max-width: 1400px; }
+body.ca-fs .ca-stage { max-height: min(84vh, 1000px); }

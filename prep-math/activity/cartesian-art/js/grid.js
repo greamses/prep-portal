@@ -23,7 +23,7 @@ export const layout = {
 
 let svg = null;
 let stage = null;
-let layers = {}; // named <g> groups, back-to-front
+export const layers = {}; // named <g> groups, back-to-front
 
 /** Math → pixel. */
 export function toPx(mx, my) {
@@ -74,6 +74,7 @@ export function initGrid(stageEl) {
 
   const ro = new ResizeObserver(() => render());
   ro.observe(stage);
+  window.addEventListener("resize", () => render());
 
   subscribe((reason) => {
     // grid window changes need a full re-measure; everything else just redraws

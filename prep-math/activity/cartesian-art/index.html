@@ -89,6 +89,11 @@
         </div>
 
         <div class="ca-hero-actions">
+          <button class="pp-btn pp-btn--ghost ca-hero-btn" type="button" id="ca-fullscreen-btn">
+            <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+            <span class="ca-fs-label">Fullscreen</span>
+          </button>
           <button class="pp-btn ca-hero-btn" type="button" id="ca-puzzles-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h6v6H5zM13 3h6v6h-6zM5 15h6v6H5zM13 15h6v6h-6z"/></svg>
             Puzzles
@@ -216,8 +221,8 @@
               <!-- analog joystick -->
               <div class="ca-joystick">
                 <div id="joy-ring" class="ca-joy-ring">
-                  <span class="ca-joy-cross" aria-hidden="true"></span>
-                  <div id="joy-knob" class="ca-joy-knob"></div>
+                  <span class="ca-joy-dish" aria-hidden="true"></span>
+                  <div id="joy-knob" class="ca-joy-knob"><span class="ca-joy-knob-cap"></span></div>
                 </div>
                 <span class="ca-joy-hint">Tilt to glide</span>
               </div>

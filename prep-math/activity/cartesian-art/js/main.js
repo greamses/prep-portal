@@ -65,6 +65,32 @@ function init() {
     const l = toLattice(...svgPixelArgs(e));
     setCursor(l.x, l.y);
   });
+
+  initFullscreen();
+}
+
+/* ── fullscreen toggle ─────────────────────────────────────────────────── */
+function initFullscreen() {
+  const btn = $("#ca-fullscreen-btn");
+  if (!btn) return;
+  const enterIcon = btn.querySelector(".ca-fs-enter");
+  const exitIcon = btn.querySelector(".ca-fs-exit");
+  const label = btn.querySelector(".ca-fs-label");
+
+  btn.addEventListener("click", () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else (document.documentElement.requestFullscreen?.() || Promise.reject()).catch(() => {});
+  });
+
+  document.addEventListener("fullscreenchange", () => {
+    const on = !!document.fullscreenElement;
+    if (enterIcon) enterIcon.hidden = on;
+    if (exitIcon) exitIcon.hidden = !on;
+    if (label) label.textContent = on ? "Exit full screen" : "Fullscreen";
+    document.body.classList.toggle("ca-fs", on);
+    // the stage size changes — the grid's ResizeObserver redraws, but nudge it
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 80);
+  });
 }
 
 /** clientX/clientY → svg-pixel coords, honouring any CSS scaling. */
