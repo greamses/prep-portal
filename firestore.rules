@@ -142,6 +142,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Cartesian Art puzzles — coordinate-plotting "trace the picture" missions.
+    // Authored by the admin (client-side, allowed by the admin override too) and
+    // played by any signed-in learner, so a shared link works.
+    match /cartesianArt/{puzzleId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
     /* ─────────────────────────────
        ACTIVITIES (teacher-authored question sets)
        Created/updated ONLY by the server (Admin SDK, which bypasses rules).

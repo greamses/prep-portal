@@ -12,6 +12,8 @@ import { initGrid, clientToMath, toLattice } from "./grid.js";
 import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
+import { initPuzzleMode } from "./puzzle-mode.js";
+import { initLibrary } from "./library.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -23,6 +25,8 @@ function init() {
   initMascot();
   initPoints();
   initControls(document);
+  initPuzzleMode();
+  initLibrary();
 
   // ── readouts: cursor position + how many points dropped ────────────────
   const cx = $("#read-x");

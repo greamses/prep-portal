@@ -28,6 +28,13 @@ export const state = {
   /** Whether the path is closed back to the first point. */
   closed: false,
 
+  /** "free" studio vs a loaded "puzzle" mission. */
+  mode: "free",
+
+  /** The active puzzle: { id, title, prompt, difficulty, targets:[{x,y}],
+   *  closed, grid } — or null in free mode. */
+  puzzle: null,
+
   /** UI flags. */
   ui: {
     showLabels: true, // axis number labels
@@ -133,6 +140,65 @@ export function setGrid(patch) {
   // keep the cursor inside the new window
   setCursor(state.cursor.x, state.cursor.y);
   emit("grid");
+}
+
+/** Load an existing outline into the FREE studio (used by admin authoring to
+ *  edit a saved puzzle's shape). Re-ids the points so deletes stay unique. */
+export function loadShape({ points = [], closed = false, grid = null } = {}) {
+  state.mode = "free";
+  state.puzzle = null;
+  if (grid) Object.assign(state.grid, grid);
+  state.points = points.map((p) => ({ x: p.x, y: p.y, id: ++_pid }));
+  state.closed = !!closed && state.points.length > 2;
+  state.cursor.x = clamp(state.cursor.x, state.grid.xMin, state.grid.xMax);
+  state.cursor.y = clamp(state.cursor.y, state.grid.yMin, state.grid.yMax);
+  emit("points");
+}
+
+/* ── puzzle mode ─────────────────────────────────────────────────────────── */
+
+/** Load a puzzle into the studio: adopt its grid window, clear the canvas and
+ *  switch to puzzle mode. The solution outline lives on state.puzzle.targets. */
+export function enterPuzzle(puzzle) {
+  state.mode = "puzzle";
+  state.puzzle = puzzle;
+  state.points = [];
+  state.closed = false;
+  if (puzzle.grid) Object.assign(state.grid, puzzle.grid);
+  state.cursor.x = clamp(0, state.grid.xMin, state.grid.xMax);
+  state.cursor.y = clamp(0, state.grid.yMin, state.grid.yMax);
+  emit("puzzle");
+}
+
+/** Leave puzzle mode back to the free studio. */
+export function exitPuzzle() {
+  state.mode = "free";
+  state.puzzle = null;
+  state.points = [];
+  state.closed = false;
+  emit("puzzle");
+}
+
+/** Score the current attempt against the loaded puzzle's target outline.
+ *  Returns { total, correct, missed, extra, score, stars }. Order-independent
+ *  vertex matching (exact lattice hits) keeps it fair and kid-friendly. */
+export function scoreAttempt() {
+  const targets = (state.puzzle && state.puzzle.targets) || [];
+  const total = targets.length;
+  const key = (p) => `${p.x},${p.y}`;
+  const want = new Set(targets.map(key));
+  const got = new Set(state.points.map(key));
+  let correct = 0;
+  for (const k of want) if (got.has(k)) correct++;
+  const extra = [...got].filter((k) => !want.has(k)).length;
+  const missed = total - correct;
+  const raw = total ? (correct - extra * 0.5) / total : 0;
+  const score = Math.max(0, Math.round(raw * 100));
+  let stars = 0;
+  if (score >= 100 && state.closed) stars = 3;
+  else if (score >= 75) stars = 2;
+  else if (score >= 40) stars = 1;
+  return { total, correct, missed, extra, score, stars };
 }
 
 export function clamp(v, lo, hi) {
