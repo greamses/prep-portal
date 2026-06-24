@@ -84,6 +84,14 @@ export function initGrid(stageEl) {
   return { svg, layers };
 }
 
+/* Post-render hooks — mascot/points/paint layers reposition after each measure
+   (so they track resizes and grid-window changes, not just state edits). */
+const renderCallbacks = new Set();
+export function onRender(fn) {
+  renderCallbacks.add(fn);
+  return () => renderCallbacks.delete(fn);
+}
+
 /** Recompute layout from the container size + current grid window. */
 function measure() {
   const rect = stage.getBoundingClientRect();
@@ -179,15 +187,6 @@ function drawArrow(parent, p, dir) {
   el("polygon", { points: pts, class: "ca-axis-arrow" }, parent);
 }
 
-/** Placeholder mascot marker (Phase 2 replaces with the real character). */
-function drawMascot() {
-  const M = layers.mascot;
-  clear(M);
-  const p = toPx(state.cursor.x, state.cursor.y);
-  el("circle", { cx: p.x, cy: p.y, r: 9, class: "ca-mascot-ring" }, M);
-  el("circle", { cx: p.x, cy: p.y, r: 4.5, class: "ca-mascot-dot" }, M);
-}
-
 let raf = 0;
 export function render() {
   if (!svg) return;
@@ -195,6 +194,6 @@ export function render() {
   raf = requestAnimationFrame(() => {
     measure();
     drawGrid();
-    drawMascot();
+    for (const fn of renderCallbacks) fn();
   });
 }

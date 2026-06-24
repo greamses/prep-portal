@@ -1,14 +1,17 @@
 /* ============================================================================
    Cartesian Art — entry point
    ----------------------------------------------------------------------------
-   Boots the studio: mounts the coordinate plane, keeps the coordinate readout
-   in sync with the cursor, and shows a live hover coordinate over the plane.
-   Mascot movement, point plotting, painting, transforms, sharing and AI all
-   land in later phases — this is the Phase-1 shell + grid.
+   Boots the studio: coordinate plane, mascot, point/outline layer, and the
+   controls (keyboard + d-pad + analog). Keeps the coordinate readout and the
+   point counter in sync, and shows a live hover coordinate over the plane.
+   Painting, transforms, sharing and AI land in later phases.
    ========================================================================== */
 
 import { state, subscribe, setCursor } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
+import { initMascot } from "./mascot.js";
+import { initPoints } from "./points.js";
+import { initControls } from "./controls.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -17,18 +20,23 @@ function init() {
   if (!stage) return;
 
   initGrid(stage);
+  initMascot();
+  initPoints();
+  initControls(document);
 
-  // ── live readout of the cursor (mascot) position ───────────────────────
+  // ── readouts: cursor position + how many points dropped ────────────────
   const cx = $("#read-x");
   const cy = $("#read-y");
+  const count = $("#read-count");
   const syncReadout = () => {
     if (cx) cx.textContent = state.cursor.x;
     if (cy) cy.textContent = state.cursor.y;
+    if (count) count.textContent = state.points.length;
   };
   subscribe(syncReadout);
   syncReadout();
 
-  // ── hover coordinate (preview before plotting lands in Phase 2) ─────────
+  // ── hover coordinate preview over the plane ────────────────────────────
   const hov = $("#read-hover");
   stage.addEventListener("pointermove", (e) => {
     const m = clientToMath(e.clientX, e.clientY);
@@ -37,25 +45,24 @@ function init() {
       if (hov) hov.textContent = "—";
       return;
     }
-    const l = toLattice(...mathToClientArgs(e));
+    const l = toLattice(...svgPixelArgs(e));
     if (hov) hov.textContent = `(${l.x}, ${l.y})`;
   });
   stage.addEventListener("pointerleave", () => {
     if (hov) hov.textContent = "—";
   });
 
-  // Preview: tapping the plane parks the cursor there. Real "register a point"
-  // (Enter / click) arrives in Phase 2 with the mascot + controls.
+  // convenience: tap the plane to park the mascot there (point-drop is Enter /
+  // the drop key, so a stray tap never registers an unwanted vertex)
   stage.addEventListener("pointerdown", (e) => {
-    const l = toLattice(...mathToClientArgs(e));
+    const l = toLattice(...svgPixelArgs(e));
     setCursor(l.x, l.y);
   });
 }
 
-// toLattice takes pixel coords relative to the svg; reuse clientToMath's box math
-function mathToClientArgs(e) {
-  const stage = document.querySelector("#ca-stage");
-  const svg = stage.querySelector("svg");
+/** clientX/clientY → svg-pixel coords, honouring any CSS scaling. */
+function svgPixelArgs(e) {
+  const svg = document.querySelector("#ca-stage svg");
   const r = svg.getBoundingClientRect();
   const sx = svg.viewBox.baseVal.width / r.width;
   const sy = svg.viewBox.baseVal.height / r.height;
