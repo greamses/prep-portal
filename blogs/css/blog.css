@@ -33,9 +33,9 @@ html {
 .filter-bar {
   margin-bottom: 2rem;
   padding: 1.25rem;
-  background: var(--surface-secondary);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 16px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-wrap: nowrap;
@@ -101,26 +101,26 @@ html {
   padding: 0.7rem 1rem 0.7rem 2.4rem;
   font-family: var(--font-mono);
   font-size: var(--text-mono-md);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-secondary);
   color: var(--ink);
-  box-shadow: var(--shadow-sm);
   transition:
-    transform var(--duration-fast) var(--ease-default),
-    box-shadow var(--duration-fast) var(--ease-default);
+    box-shadow var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
 }
 
 .search-input:focus {
   outline: none;
-  transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-md);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 22%, transparent);
 }
 
 .search-input:-webkit-autofill,
 .search-input:-webkit-autofill:hover,
 .search-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px var(--bg) inset;
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface-secondary) inset;
   -webkit-text-fill-color: var(--ink);
 }
 
@@ -133,30 +133,29 @@ html {
 
 /* ─── LEARNING UNIT CARD ──────────────────────────────── */
 .science-card {
-  border: var(--border);
-  background: var(--bg);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  border-radius: 18px;
   box-shadow: var(--shadow-sm);
   transition:
-    transform var(--duration-fast) var(--ease-default),
-    box-shadow var(--duration-fast) var(--ease-default);
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
   will-change: transform;
-  transform: translateZ(0);
 }
 
 .science-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 @media (max-width: 640px) {
   .science-card:hover {
-    transform: translate(-2px, -2px);
+    transform: translateY(-2px);
   }
 }
 
@@ -164,7 +163,7 @@ html {
   width: 100%;
   height: 180px;
   object-fit: cover;
-  border-bottom: var(--border);
+  border-bottom: var(--border-subtle);
   background: var(--surface-secondary);
   display: block;
   flex-shrink: 0;
@@ -179,7 +178,7 @@ html {
   width: 100%;
   height: 180px;
   background: var(--surface-secondary);
-  border-bottom: var(--border);
+  border-bottom: var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +203,7 @@ html {
 
 .sci-badge,
 .cls-badge {
-  padding: 0.2rem 0.55rem;
+  padding: 0.25rem 0.6rem;
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
   font-weight: var(--weight-bold);
@@ -213,9 +212,8 @@ html {
   display: inline-block;
   color: var(--ink);
   white-space: nowrap;
-  border: 1.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 999px;
 }
 
 .sci-math {
@@ -299,21 +297,21 @@ html {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
+  padding: 0.25rem 0.6rem;
   font-family: var(--font-mono);
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-  border: 1.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  background: var(--surface-secondary);
 }
 
 .card-resource-chip.has-link {
-  color: var(--ink);
+  color: var(--text-on-accent);
   background: var(--accent-primary);
+  border-color: transparent;
 }
 
 .card-resource-chip svg {
@@ -409,8 +407,9 @@ body:has(.single-post-view.active) nav {
   max-height: 420px;
   object-fit: cover;
   margin: 1rem 0 1.75rem;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
   display: block;
 }
 
@@ -436,7 +435,7 @@ body:has(.single-post-view.active) nav {
   gap: 0.5rem 1rem;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: var(--border);
+  border-bottom: var(--border-subtle);
   font-family: var(--font-mono);
   font-size: var(--text-mono-md);
   color: var(--text-secondary);
@@ -464,21 +463,21 @@ body:has(.single-post-view.active) nav {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 0.95rem;
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-secondary);
   cursor: pointer;
   color: var(--ink);
-  box-shadow: var(--shadow-sm);
   transition:
     transform var(--duration-fast) var(--ease-default),
-    box-shadow var(--duration-fast) var(--ease-default);
+    box-shadow var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default);
 }
 
 .action-btn svg {
@@ -488,18 +487,20 @@ body:has(.single-post-view.active) nav {
 }
 
 .action-btn:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-btn.liked {
   background: var(--accent-primary);
-  color: var(--ink);
+  border-color: transparent;
+  color: var(--text-on-accent);
 }
 
 .action-btn.share-btn:hover {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--accent-secondary);
+  border-color: transparent;
+  color: var(--text-on-accent);
 }
 
 /* ─── STUDY RESOURCE LINKS ────────────────────────────── */
@@ -507,7 +508,8 @@ body:has(.single-post-view.active) nav {
   margin-bottom: 2rem;
   background: var(--surface-secondary);
   padding: 1.25rem;
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 16px;
 }
 
 .resource-links-heading {
@@ -536,9 +538,9 @@ body:has(.single-post-view.active) nav {
 }
 
 .resource-card {
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-primary);
   text-decoration: none;
   color: var(--ink);
   display: flex;
@@ -546,13 +548,13 @@ body:has(.single-post-view.active) nav {
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition:
-    transform var(--duration-fast) var(--ease-default),
-    box-shadow var(--duration-fast) var(--ease-default);
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
   cursor: pointer;
 }
 
 .resource-card:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
@@ -939,8 +941,9 @@ body:has(.embed-overlay.active) {
   max-width: 100%;
   width: 100%;
   height: auto;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
   margin: 1.25rem 0;
   display: block;
 }
@@ -982,11 +985,11 @@ body:has(.embed-overlay.active) {
 
 .single-post-body blockquote {
   margin: 1.5rem 0;
-  padding: 0.75rem 1.25rem;
+  padding: 0.85rem 1.25rem;
   font-style: italic;
   background: var(--surface-secondary);
   border-left: 4px solid var(--accent-primary);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0 12px 12px 0;
 }
 
 .single-post-body table {
@@ -1022,8 +1025,9 @@ body:has(.embed-overlay.active) {
   padding: 1rem 1.25rem;
   margin: 1.25rem 0;
   overflow-x: auto;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
   font-size: var(--text-mono-base);
   white-space: pre;
 }
@@ -1090,16 +1094,16 @@ body:has(.embed-overlay.active) {
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   padding: 0.55rem 1.1rem;
-  background: var(--ink);
-  color: var(--bg);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-primary);
+  color: var(--ink);
+  border: var(--border-subtle);
+  border-radius: 999px;
   cursor: pointer;
   z-index: 1001;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition: all var(--duration-base) var(--ease-default);
 }
 
@@ -1111,9 +1115,9 @@ body:has(.embed-overlay.active) {
 
 .close-post:hover {
   background: var(--accent-primary);
-  color: var(--ink);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-md);
+  color: var(--text-on-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
 }
 
 @media (max-width: 640px) {
@@ -1128,7 +1132,7 @@ body:has(.embed-overlay.active) {
 .comments-section {
   margin-top: 3rem;
   padding-top: 2rem;
-  border-top: var(--border);
+  border-top: var(--border-subtle);
 }
 
 .comments-title {
@@ -1149,8 +1153,8 @@ body:has(.embed-overlay.active) {
 }
 
 .comment-item {
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 14px;
   margin-bottom: 1rem;
   background: var(--surface-secondary);
   overflow: hidden;
@@ -1201,14 +1205,14 @@ body:has(.embed-overlay.active) {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.65rem;
   font-family: var(--font-mono);
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-  border: 1px solid var(--border-color);
-  background: var(--bg);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  border-radius: 999px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
@@ -1221,14 +1225,14 @@ body:has(.embed-overlay.active) {
 }
 
 .comment-action-btn:hover {
-  border-color: var(--ink);
+  border-color: var(--accent-secondary);
   color: var(--ink);
 }
 
 .comment-action-btn.liked {
   background: var(--accent-primary);
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: transparent;
+  color: var(--text-on-accent);
 }
 
 /* ─── NESTED REPLY TRACKS ─────────────────────────────── */
@@ -1292,21 +1296,21 @@ body:has(.embed-overlay.active) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.2rem 0.45rem;
+  padding: 0.25rem 0.5rem;
   font-family: var(--font-mono);
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-  border: 1px solid var(--border-color);
-  background: var(--bg);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  border-radius: 999px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
 }
 
 .reply-like-btn:hover {
-  border-color: var(--ink);
+  border-color: var(--accent-secondary);
   color: var(--ink);
 }
 
@@ -1317,8 +1321,8 @@ body:has(.embed-overlay.active) {
 
 .reply-like-btn.liked {
   background: var(--accent-primary);
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: transparent;
+  color: var(--text-on-accent);
 }
 
 /* ─── REPLY WORKSPACE AREA ────────────────────────────── */
@@ -1334,19 +1338,22 @@ body:has(.embed-overlay.active) {
   padding: 0.6rem 0.75rem;
   font-family: var(--font-mono);
   font-size: var(--text-body);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-primary);
   color: var(--ink);
   resize: vertical;
   display: block;
   margin-bottom: 0.6rem;
+  transition: box-shadow var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
 }
 
 .reply-textarea:focus {
   outline: none;
-  background: var(--bg);
-  box-shadow: inset 0 0 0 2px var(--accent-primary);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 22%, transparent);
 }
 
 .reply-form-actions {
@@ -1359,26 +1366,26 @@ body:has(.embed-overlay.active) {
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-  padding: 0.45rem 1rem;
+  padding: 0.5rem 1.1rem;
   background: var(--accent-primary);
-  color: var(--ink);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition: all var(--duration-fast) var(--ease-default);
 }
 
 .reply-submit-btn:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--ink);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .reply-submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .reply-cancel-btn {
@@ -1386,17 +1393,17 @@ body:has(.embed-overlay.active) {
   font-size: var(--text-body-xxs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.85rem;
   background: none;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 999px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-default);
 }
 
 .reply-cancel-btn:hover {
-  border-color: var(--ink);
+  border-color: var(--accent-secondary);
   color: var(--ink);
 }
 
@@ -1404,17 +1411,17 @@ body:has(.embed-overlay.active) {
 .no-comments {
   font-family: var(--font-mono);
   font-size: var(--text-body-sm);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   text-align: center;
   padding: 1.5rem;
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 14px;
 }
 
 .add-comment-form {
   margin-top: 1.5rem;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  border-radius: 16px;
   padding: 1.25rem;
   background: var(--surface-secondary);
 }
@@ -1432,21 +1439,25 @@ body:has(.embed-overlay.active) {
 .comment-textarea {
   width: 100%;
   min-height: 100px;
-  padding: 0.75rem;
+  padding: 0.85rem;
   font-family: var(--font-mono);
   font-size: var(--text-body);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-primary);
   color: var(--ink);
   resize: vertical;
   margin-bottom: 0.75rem;
   display: block;
+  transition: box-shadow var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
 }
 
 .comment-textarea:focus {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--accent-primary);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent-secondary) 22%, transparent);
 }
 
 .comment-submit-btn {
@@ -1455,35 +1466,35 @@ body:has(.embed-overlay.active) {
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  padding: 0.55rem 1.4rem;
+  padding: 0.65rem 1.5rem;
   background: var(--accent-primary);
-  color: var(--ink);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
   transition: all var(--duration-fast) var(--ease-default);
 }
 
 .comment-submit-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .comment-submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .login-to-comment {
   font-family: var(--font-mono);
   font-size: var(--text-body-sm);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   padding: 1rem;
   text-align: center;
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 14px;
   margin-top: 1rem;
 }
 
@@ -1530,10 +1541,11 @@ body:has(.embed-overlay.active) {
   bottom: 1.5rem;
   right: 1.5rem;
   background: var(--accent-primary);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  width: 42px;
-  height: 42px;
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
   cursor: pointer;
   display: none;
   align-items: center;
@@ -1548,8 +1560,8 @@ body:has(.embed-overlay.active) {
 }
 
 .scroll-top:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--ink);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 .scroll-top svg {
@@ -1582,15 +1594,15 @@ body:has(.embed-overlay.active) {
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   font-weight: var(--weight-semibold);
-  padding: 0.65rem 1.4rem;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 999px;
   z-index: 2001;
   transition: transform var(--duration-normal) var(--ease-default);
   max-width: calc(100vw - 2rem);
   text-align: center;
   pointer-events: none;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
 }
 
 .toast.show {

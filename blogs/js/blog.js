@@ -1,5 +1,6 @@
 // blog.js - Central dynamic blog viewer engine
 import { auth, db } from "/firebase-init.js";
+import { getSubjectData } from "/blogs/js/data.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -132,12 +133,6 @@ function assignDomElements() {
   embedSpinner = document.getElementById("embedSpinner");
 }
 
-// Map parameters to their specific configuration module paths
-const CONFIG_PATH_MAP = {
-  plants: "/blogs/science/biology/plants/auto/data.js",
-  animal: "/blogs/science/biology/animal/auto/data.js",
-};
-
 async function initBlog() {
   assignDomElements();
   ensureLessonAssets();
@@ -146,20 +141,8 @@ async function initBlog() {
   const params = new URLSearchParams(window.location.search);
   const subjectKey = params.get("s") || params.get("subject") || "plants";
 
-  // Determine configuration location
-  const configPath =
-    CONFIG_PATH_MAP[subjectKey] ||
-    `/blogs/science/biology/${subjectKey}/auto/data.js`;
-
-  let subjectData = {};
-  try {
-    subjectData = await import(configPath);
-  } catch (err) {
-    console.error(
-      `Unable to dynamically import subject configuration at: ${configPath}`,
-      err,
-    );
-  }
+  // All subject data now lives in one place: /blogs/js/data.js
+  const subjectData = getSubjectData(subjectKey);
 
   // Bind parameters globally
   COLLECTION_NAME =

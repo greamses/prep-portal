@@ -24,7 +24,7 @@
 /* ── HEADLINE ── */
 .ln-headline {
   padding: 2rem 2rem 0;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
 }
 
 .ln-kicker {
@@ -89,7 +89,7 @@
   gap: 12px;
   padding: 0.75rem 2rem;
   background: var(--surface-secondary);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   color: var(--text-secondary);
@@ -112,9 +112,9 @@
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-wide);
   padding: 2px 8px;
-  border: 2px solid var(--ink);
+  border: var(--border-subtle);
   border-radius: 6px;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   text-transform: uppercase;
 }
 
@@ -123,7 +123,7 @@
   background: var(--surface-secondary);
   color: var(--ink);
   padding: 1.5rem 2rem;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
 }
 
 .ln-facts-label {
@@ -195,7 +195,7 @@
 .ln-article-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
 }
 
 @media (max-width: 768px) {
@@ -205,7 +205,7 @@
 
   .ln-col:first-child {
     border-right: none;
-    border-bottom: 2px solid var(--ink);
+    border-bottom: var(--border-subtle);
   }
 }
 
@@ -214,7 +214,7 @@
 }
 
 .ln-col:first-child {
-  border-right: 2px solid var(--ink);
+  border-right: var(--border-subtle);
 }
 
 /* ── BODY TEXT ── */
@@ -239,9 +239,9 @@
   font-size: var(--text-mono-xs);
   font-weight: var(--weight-bold);
   padding: 2px 8px;
-  border: 1.5px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
   white-space: nowrap;
   line-height: 1.4;
   vertical-align: middle;
@@ -312,9 +312,9 @@
 /* ── RESPONSIVE IMAGE ── */
 .ln-img-wrap {
   width: 100%;
-  border: 2px solid var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  border-radius: 16px;
   margin: 1.5rem 0;
   overflow: hidden;
   background: var(--surface-secondary);
@@ -333,7 +333,7 @@
   font-size: var(--text-mono-xs);
   color: var(--text-secondary);
   padding: 8px 12px;
-  border-top: 1.5px solid var(--ink);
+  border-top: var(--border-subtle);
   letter-spacing: var(--tracking-wide);
 }
 
@@ -364,7 +364,7 @@
 /* ── TABLE SECTION ── */
 .ln-table-section {
   padding: 1.5rem 2rem;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
   background: var(--surface-primary);
   overflow-x: auto;
 }
@@ -448,7 +448,7 @@
 /* ── FEATURES GRID ── */
 .ln-features {
   padding: 1.5rem 2rem;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--border-subtle);
   background: var(--surface-secondary);
 }
 
@@ -480,27 +480,27 @@
 
 .ln-feature-card {
   background: var(--surface-primary);
-  border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  border-radius: var(--radius-sm);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  border-radius: 14px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 8px;
   transition:
-    transform var(--duration-fast) var(--ease-default),
-    box-shadow var(--duration-fast) var(--ease-default);
+    transform var(--duration-smooth) var(--ease-default),
+    box-shadow var(--duration-smooth) var(--ease-default);
 }
 
 .ln-feature-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .ln-feature-icon {
   width: 36px;
   height: 36px;
-  border: 2px solid var(--ink);
+  border: var(--border-subtle);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -556,7 +556,7 @@
 .ln-activity {
   padding: 1.5rem 2rem;
   background: var(--bg);
-  border-top: 2px solid var(--ink);
+  border-top: var(--border-subtle);
   display: flex;
   gap: 16px;
   align-items: flex-start;
@@ -693,7 +693,7 @@
   }
 
   .ln-pull-quote {
-    box-shadow: 2px 2px 0 var(--ink);
+    box-shadow: var(--shadow-sm);
   }
 
   .ln-quote-mark {

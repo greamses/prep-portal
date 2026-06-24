@@ -16,12 +16,9 @@ export const SHARED_MODELS = {
 };
 
 // ─── SUBJECT DATA REGISTRY ──────────────────────────────────
-// Maps URL parameters (?s=...) to the physical data.js paths
-export const SUBJECT_REGISTRY = {
-  plants: "/blogs/science/biology/plants/auto/data.js",
-  animals: "/blogs/science/biology/animal/auto/data.js",
-  animalfacts: "/blogs/science/biology/animal/auto/data.js",
-};
+// All subject data (config, topics, labels, styles) now lives in one place:
+//   /blogs/js/data.js  →  SUBJECTS + getSubjectData(key)
+// This module only keeps the shared AI model list.
 
-// Alias for backward compatibility if needed in data.js
+// Alias kept for backward compatibility.
 export const SUBJECT_MODELS = SHARED_MODELS;
