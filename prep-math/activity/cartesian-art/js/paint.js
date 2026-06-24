@@ -14,6 +14,7 @@
 
 import { state, setFill, subscribe } from "./state.js";
 import { clientToMath, onRender } from "./grid.js";
+import { registerCanvas, commit as historyCommit } from "./history.js";
 
 export const PALETTE = [
   "#f07a7a", "#f0a868", "#f4c95d", "#7cc47c", "#6fd0c0",
@@ -26,6 +27,7 @@ const tool = { name: "move", color: "#6fb7e8", size: SIZES.medium };
 
 let canvas, ctx, svg, stage;
 let drawing = false;
+let didDraw = false;
 let last = null;
 
 const $ = (s) => document.querySelector(s);
@@ -61,6 +63,7 @@ function toCanvas(e) {
 }
 
 function strokeTo(p) {
+  didDraw = true;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = tool.size * (canvas.width / canvas.getBoundingClientRect().width);
@@ -96,6 +99,7 @@ function onDown(e) {
     return;
   }
   drawing = true;
+  didDraw = false;
   last = toCanvas(e);
   strokeTo(last); // a dot on click
 }
@@ -104,7 +108,9 @@ function onMove(e) {
   strokeTo(toCanvas(e));
 }
 function onUp(e) {
+  if (drawing && didDraw) historyCommit(); // record the finished stroke
   drawing = false;
+  didDraw = false;
   canvas.releasePointerCapture?.(e.pointerId);
 }
 
@@ -167,6 +173,21 @@ export function initPaint() {
   // keep the canvas matched to the (now non-square) stage; preserve the artwork
   onRender(resizeCanvas);
 
+  // let undo/redo capture + restore the brush layer
+  registerCanvas(
+    () => (canvas.width && canvas.height ? canvas.toDataURL() : null),
+    (url) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!url) return;
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = url;
+    }
+  );
+
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointermove", onMove);
   canvas.addEventListener("pointerup", onUp);
@@ -189,7 +210,8 @@ export function initPaint() {
 
   $("#paint-clear")?.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (state.paint.fillColor) setFill(null);
+    if (state.paint.fillColor) setFill(null); // emits "points" → history commits
+    else historyCommit(); // brush-only clear still records a step
   });
 
   // a fresh puzzle / loaded shape starts with a clean canvas

@@ -1110,3 +1110,35 @@ body {
   .ca-dock { max-width: min(78vw, 260px); }
   .ca-mission { max-width: 80%; }
 }
+
+/* ── transform dock ──────────────────────────────────────────────────────── */
+.ca-dock--transform { right: 12px; top: 184px; }
+.ca-tf-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.ca-tf-row { display: flex; gap: 6px; }
+.ca-tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.ca-tbtn:hover { transform: translateY(-1px); background: var(--surface-primary); box-shadow: var(--shadow-md); }
+.ca-tbtn:active { transform: translateY(0) scale(0.94); }
+.ca-tbtn svg { width: 20px; height: 20px; }
+.ca-tf-history { display: flex; gap: 6px; margin-top: 2px; }
+.ca-tf-history .ca-soft-btn { flex: 1; }
+.ca-soft-btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }

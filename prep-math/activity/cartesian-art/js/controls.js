@@ -18,6 +18,7 @@ import {
   clearPoints,
   state,
 } from "./state.js";
+import { undo, redo } from "./history.js";
 
 const DIRS = {
   up: { dx: 0, dy: 1 },
@@ -42,6 +43,17 @@ function isTyping(t) {
 function initKeyboard() {
   window.addEventListener("keydown", (e) => {
     if (isTyping(e.target)) return;
+    // undo / redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
+    if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+      e.preventDefault();
+      e.shiftKey ? redo() : undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "Y")) {
+      e.preventDefault();
+      redo();
+      return;
+    }
     switch (e.key) {
       case "ArrowUp": e.preventDefault(); moveCursor(0, 1); break;
       case "ArrowDown": e.preventDefault(); moveCursor(0, -1); break;

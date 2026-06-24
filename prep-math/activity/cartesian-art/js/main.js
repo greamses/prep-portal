@@ -14,6 +14,8 @@ import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
 import { initDocks } from "./dock.js";
+import { initTransforms } from "./transforms.js";
+import { initHistory } from "./history.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 
@@ -28,9 +30,11 @@ function init() {
   initPoints();
   initControls(document);
   initPaint();
+  initTransforms(document);
   initDocks(document);
   initPuzzleMode();
   initLibrary();
+  initHistory(); // last: baseline snapshot needs the brush bridge registered
 
   // ── readouts: cursor position + how many points dropped ────────────────
   const cx = $("#read-x");

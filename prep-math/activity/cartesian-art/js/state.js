@@ -167,6 +167,39 @@ export function loadShape({ points = [], closed = false, grid = null } = {}) {
   emit("points");
 }
 
+/* ── transforms ──────────────────────────────────────────────────────────── */
+
+/** Grow the grid window (symmetric, capped) so every point stays visible. */
+function fitGridToPoints() {
+  let need = 0;
+  for (const p of state.points) need = Math.max(need, Math.abs(p.x), Math.abs(p.y));
+  const g = state.grid;
+  const cur = Math.max(Math.abs(g.xMin), g.xMax, Math.abs(g.yMin), g.yMax);
+  const half = Math.min(40, Math.max(cur, need));
+  g.xMin = -half; g.xMax = half; g.yMin = -half; g.yMax = half;
+}
+
+/** Map every plotted point through fn(x,y)->{x,y}, keeping ids. Grows the grid
+ *  to fit, then redraws. Used for the standard coordinate transformations. */
+export function transformPoints(fn) {
+  if (!state.points.length) return;
+  state.points = state.points.map((p) => {
+    const n = fn(p.x, p.y);
+    return { x: Math.round(n.x), y: Math.round(n.y), id: p.id };
+  });
+  fitGridToPoints();
+  emit("points");
+}
+
+/** Restore a full snapshot (used by undo/redo). */
+export function restoreState(snap) {
+  if (snap.grid) Object.assign(state.grid, snap.grid);
+  state.points = (snap.points || []).map((p) => ({ x: p.x, y: p.y, id: ++_pid }));
+  state.closed = !!snap.closed;
+  state.paint.fillColor = snap.fillColor ?? null;
+  emit("points");
+}
+
 /* ── puzzle mode ─────────────────────────────────────────────────────────── */
 
 /** Load a puzzle into the studio: adopt its grid window, clear the canvas and
