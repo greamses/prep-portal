@@ -58,15 +58,38 @@ button,
 
 /* ─── Page Header ──────────────────────────────────────────────────────────── */
 
+/* ── Signature amoeba paint-blob wash (filled by inline module) ── */
+.sl-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.38;
+}
+.sl-paint svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+[data-theme="dark"] .sl-paint {
+  opacity: 0.16;
+}
+
+/* Keep real page content above the wash */
+.pg-header,
+.sl-entry {
+  position: relative;
+  z-index: 1;
+}
+
 .pg-header {
   display: flex;
   align-items: flex-end;
   gap: clamp(1.5rem, 5vw, 3rem);
-  padding: clamp(2rem, 6vw, 3.75rem) clamp(1rem, 3vw, 1.25rem)
+  padding: clamp(2rem, 6vw, 3.75rem) clamp(1rem, 4vw, 2.5rem)
     clamp(1.5rem, 4vw, 2.5rem);
-  border-bottom: var(--border);
-  background: var(--bg);
-  position: relative;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -79,7 +102,7 @@ button,
   font-family: var(--font-display);
   font-weight: var(--weight-black);
   font-size: clamp(5rem, 12vw, 8rem);
-  color: rgba(10, 10, 10, 0.04);
+  color: color-mix(in srgb, var(--ink) 4%, transparent);
   line-height: var(--leading-none);
   pointer-events: none;
   user-select: none;
@@ -126,7 +149,29 @@ button,
   font-size: var(--text-mono-lg);
   line-height: var(--leading-relaxed);
   color: var(--muted);
-  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+/* ── Entry feature chips (fills the landing, uses shared pills) ── */
+.sl-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.sl-features .pp-pill {
+  cursor: default;
+}
+.sl-features .pp-pill:hover {
+  transform: none;
+}
+
+.sl-tip {
+  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  --pp-note-tilt: -2deg;
 }
 
 /* Stats bar */
@@ -223,22 +268,25 @@ button,
   font-family: var(--font-mono);
   font-size: var(--text-mono-lg);
   font-weight: var(--weight-semibold);
-  background: var(--paper);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition:
+    box-shadow var(--transition-base),
+    border-color var(--transition-base),
+    transform var(--transition-base);
   user-select: none;
 }
 
 .pp-dropdown-header:hover {
-  background: var(--card-hover);
-  color: var(--bg);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent-secondary) 55%, transparent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
-.pp-dropdown-header:active {
-  transform: translateY(0);
+.pp-dropdown.open .pp-dropdown-header {
+  border-color: color-mix(in srgb, var(--accent-secondary) 70%, transparent);
 }
 
 .pp-dropdown-header svg {
@@ -258,9 +306,9 @@ button,
   left: 0;
   right: 0;
   z-index: var(--z-nav);
-  background: var(--paper);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 12px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -268,7 +316,7 @@ button,
   transition:
     max-height var(--transition-smooth),
     opacity var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-lg);
 }
 
 .pp-dropdown.open .pp-dropdown-list {
@@ -293,13 +341,13 @@ button,
 }
 
 .pp-dropdown-item:hover {
-  background: var(--card-hover);
-  color: var(--bg);
+  background: var(--surface-secondary);
+  color: var(--ink);
   padding-left: clamp(1rem, 2.5vw, 1.25rem);
 }
 
 .pp-dropdown-item.selected {
-  background: var(--yellow);
+  background: color-mix(in srgb, var(--accent-primary) 45%, transparent);
   color: var(--ink);
   font-weight: var(--weight-bold);
 }
@@ -329,21 +377,26 @@ button,
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  background: var(--yellow);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
-  transition: transform var(--transition-base);
-  color: var(--ink);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+  color: var(--text-on-accent);
   text-decoration: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-start:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-start:active {
   transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-start svg {
@@ -357,24 +410,24 @@ button,
   justify-content: center;
   gap: 0.5em;
   min-height: clamp(36px, 8vw, 44px);
-  padding: 0 clamp(0.8rem, 2vw, 1.25rem);
+  padding: 0 clamp(0.9rem, 2vw, 1.35rem);
   font-family: var(--font-display);
   font-size: var(--text-mono-sm);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  background: var(--paper);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 999px;
   cursor: pointer;
   transition: all var(--transition-base);
   color: var(--ink);
 }
 
 .btn-secondary:hover {
-  background: var(--card-hover);
-  color: var(--bg);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent-secondary) 55%, transparent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .btn-secondary:active {
@@ -393,9 +446,9 @@ button,
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  background: var(--paper);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 999px;
   cursor: pointer;
   transition: all var(--transition-base);
   color: var(--ink);
@@ -409,9 +462,9 @@ button,
 }
 
 .btn-speaker:hover {
-  background: var(--card-hover);
-  color: var(--bg);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent-secondary) 55%, transparent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .btn-speaker:active {
@@ -419,8 +472,9 @@ button,
 }
 
 .btn-speaker.active {
-  background: var(--yellow);
-  color: var(--ink);
+  background: var(--accent-primary);
+  border-color: transparent;
+  color: var(--text-on-accent);
 }
 
 .btn-speaker.active:hover {
@@ -517,21 +571,25 @@ button,
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: var(--paper, #fff);
-  border: var(--border, 2px solid #0a0a0a);
-  border-radius: var(--radius-sm, 6px);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
-  transition: transform 0.15s ease;
-  color: var(--ink, #0a0a0a);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-md);
   white-space: nowrap;
   user-select: none;
 }
 .btn-settings-trigger:hover {
   transform: translateY(-2px);
-  background: var(--card-hover, #f5f5f5);
+  box-shadow: var(--shadow-lg);
 }
 .btn-settings-trigger:active {
   transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 .btn-settings-trigger svg {
   width: 18px;
@@ -570,14 +628,14 @@ button,
 
 /* ─── Modal Window ───────────────────────── */
 .settings-modal-window {
-  background: var(--paper, #faf8f5);
-  border: var(--border, 2px solid #0a0a0a);
-  border-radius: 12px;
+  background: var(--surface-primary, #faf8f5);
+  border: var(--border-subtle);
+  border-radius: 20px;
   width: 100%;
   max-width: 620px;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-xl);
   transform: scale(0.94);
   transition: transform var(--settings-transition);
   display: flex;
@@ -597,8 +655,8 @@ button,
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  background: var(--paper, #faf8f5);
-  border-radius: 12px 12px 0 0;
+  background: var(--surface-primary, #faf8f5);
+  border-radius: 20px 20px 0 0;
   z-index: 2;
 }
 .settings-modal-dots {
@@ -742,15 +800,15 @@ button,
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: transparent;
-  border: var(--border, 2px solid #0a0a0a);
-  border-radius: var(--radius-sm, 6px);
+  border: var(--border-subtle);
+  border-radius: 999px;
   cursor: pointer;
   color: var(--ink, #0a0a0a);
   transition: all 0.15s ease;
 }
 .btn-settings-cancel:hover {
-  background: rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
+  background: var(--surface-secondary);
+  transform: translateY(-1px);
 }
 .btn-settings-cancel:active {
   transform: translateY(0);
@@ -775,12 +833,13 @@ body.settings-modal-open {
 
 .settings-modal-footer-summary {
   padding: 1rem 1.25rem;
-  border-top: var(--border);
+  border-top: var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  background: var(--bg);
+  background: var(--surface-secondary);
+  border-radius: 0 0 20px 20px;
 }
 .ft-info {
   font-size: 0.65rem;

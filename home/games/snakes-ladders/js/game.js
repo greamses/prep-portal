@@ -151,6 +151,39 @@ function onGameAction() {
   refreshActionButton();
 }
 
+// ─── Keyboard controls ─────────────────────────────────────────────────────────
+// Space / Enter / R drive the whole game: roll the dice, then advance the token.
+// The fraction popup owns the keyboard while a question is open, so we defer.
+
+function onGameKey(e) {
+  const s = state;
+  if (!s.gameModal?.classList.contains("active")) return;
+  if (s.fracPopup?.classList.contains("show")) return; // question keys handled elsewhere
+
+  const t = e.target;
+  if (
+    t &&
+    (t.tagName === "INPUT" ||
+      t.tagName === "TEXTAREA" ||
+      t.isContentEditable)
+  )
+    return;
+
+  const isAction =
+    e.code === "Space" || e.key === " " || e.key === "Enter" ||
+    e.key === "r" || e.key === "R";
+  if (!isAction) return;
+
+  e.preventDefault();
+
+  // After a win, Space/Enter starts a fresh game.
+  if (!s.gameActive) {
+    if (s.winOverlay?.classList.contains("show")) resetGame();
+    return;
+  }
+  onGameAction();
+}
+
 function roll3DDice(result) {
   const rot = {
     1: { x: 0, y: 0 },
@@ -572,6 +605,7 @@ export function openGameModal() {
     document
       .getElementById("btn-game-action")
       ?.addEventListener("click", onGameAction);
+    window.addEventListener("keydown", onGameKey);
     _actionBtnWired = true;
   }
 
