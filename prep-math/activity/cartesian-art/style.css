@@ -1008,14 +1008,77 @@ body {
 }
 .ca-grad-status { font-size: 0.66rem; opacity: 0.7; min-height: 0.8em; }
 
-/* multi-stop editor rows */
-.ca-grad-stops { display: flex; flex-direction: column; gap: 0.35rem; }
-.ca-grad-stop { display: flex; align-items: center; gap: 0.35rem; }
-.ca-grad-stop .gs-color { width: 30px; height: 26px; flex-shrink: 0; }
-.ca-grad-stop .gs-pos { flex: 1 1 auto; min-width: 40px; }
-.ca-grad-stop .gs-alpha { flex: 1 1 auto; min-width: 36px; }
-.ca-grad-stop .gs-del { flex-shrink: 0; }
-.ca-grad-stop .gs-del:disabled { opacity: 0.3; cursor: default; }
+/* Photoshop-style gradient bar: ramp + draggable stop markers */
+.ca-grad-bar {
+  position: relative;
+  border-radius: 8px;
+  padding-bottom: 15px; /* room for the markers below the ramp */
+  /* checkerboard so transparency reads through the ramp */
+  background-image:
+    linear-gradient(45deg, #d4cdbf 25%, transparent 25%),
+    linear-gradient(-45deg, #d4cdbf 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4cdbf 75%),
+    linear-gradient(-45deg, transparent 75%, #d4cdbf 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-color: #fff;
+}
+.ca-grad-bar-grad {
+  height: 30px;
+  border-radius: 8px 8px 0 0;
+  cursor: copy;
+  box-shadow: inset 0 0 0 1px rgba(20, 19, 15, 0.12);
+}
+.ca-grad-stops { position: absolute; left: 0; right: 0; top: 30px; height: 15px; }
+.ca-grad-stop {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 15px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: grab;
+}
+.ca-grad-stop::before { /* upward pointer */
+  content: "";
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 6px solid var(--ink);
+}
+.ca-grad-stop::after { /* colour chip */
+  content: "";
+  position: absolute;
+  top: 5px; left: 50%;
+  transform: translateX(-50%);
+  width: 12px; height: 10px;
+  border-radius: 2px;
+  background: var(--c);
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+.ca-grad-stop.is-sel { z-index: 2; }
+.ca-grad-stop.is-sel::after { box-shadow: 0 0 0 2px var(--accent-secondary); }
+.ca-grad-stop:active { cursor: grabbing; }
+
+/* selected-stop editor */
+.ca-grad-stopctl { display: flex; align-items: center; gap: 0.4rem; }
+.ca-grad-mini { display: flex; align-items: center; gap: 0.25rem; flex: 1 1 auto; min-width: 0; }
+.ca-grad-mini svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+.ca-grad-mini input[type="range"] { flex: 1 1 auto; min-width: 30px; }
+.ca-grad-num {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  padding: 0.28rem 0.3rem;
+  border-radius: 8px;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--ink);
+}
 
 /* ============================================================================
    STUDIO REDESIGN — graph is the canvas; controls float as draggable docks

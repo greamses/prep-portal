@@ -90,64 +90,113 @@ function applyTemplate(name) {
     default:
       return;
   }
-  renderStops();
-  updatePreview();
+  sel = 0;
+  renderBar();
 }
 
-/* ── stop editor rows ────────────────────────────────────────────────────── */
-function renderStops() {
-  const host = $("#grad-stops");
-  if (!host) return;
-  host.innerHTML = "";
-  stops.forEach((stop, i) => {
-    const row = document.createElement("div");
-    row.className = "ca-grad-stop";
-
-    const color = document.createElement("input");
-    color.type = "color";
-    color.className = "ca-color-input gs-color";
-    color.value = stop.color;
-    color.title = "Stop colour";
-    color.addEventListener("input", () => { stop.color = color.value; updatePreview(); });
-
-    const pos = document.createElement("input");
-    pos.type = "range"; pos.min = 0; pos.max = 100; pos.value = stop.pos;
-    pos.className = "gs-pos"; pos.title = "Position";
-    pos.addEventListener("input", () => { stop.pos = Number(pos.value); updatePreview(); });
-
-    const alpha = document.createElement("input");
-    alpha.type = "range"; alpha.min = 0; alpha.max = 100; alpha.value = Math.round(stop.alpha * 100);
-    alpha.className = "gs-alpha"; alpha.title = "Opacity (slide to 0 for transparent)";
-    alpha.addEventListener("input", () => { stop.alpha = Number(alpha.value) / 100; updatePreview(); });
-
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "ca-icon-btn ca-icon-btn--sm gs-del";
-    del.title = "Remove stop";
-    del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
-    del.disabled = stops.length <= 2;
-    del.addEventListener("click", () => { stops.splice(i, 1); renderStops(); updatePreview(); });
-
-    row.append(color, pos, alpha, del);
-    host.appendChild(row);
-  });
-}
+/* ── Photoshop-style gradient bar ────────────────────────────────────────── */
+let sel = 0; // index of the selected stop
 
 function sorted() {
   return [...stops].sort((a, b) => a.pos - b.pos);
 }
 
-/** CSS preview string for the current stops. */
-function updatePreview() {
-  const p = $("#grad-preview");
-  if (!p) return;
-  const type = $("#grad-type")?.value || "linear";
-  const angle = Number($("#grad-angle")?.value || 90);
+/** The colour of the ramp at position p (0..100) — used when adding a stop. */
+function colorAt(p) {
+  const s = sorted();
+  if (p <= s[0].pos) return s[0].color;
+  if (p >= s[s.length - 1].pos) return s[s.length - 1].color;
+  for (let i = 0; i < s.length - 1; i++) {
+    if (p >= s[i].pos && p <= s[i + 1].pos) {
+      const t = (p - s[i].pos) / ((s[i + 1].pos - s[i].pos) || 1);
+      return mix(s[i].color, s[i + 1].color, t);
+    }
+  }
+  return s[0].color;
+}
+
+/** Paint the ramp swatch (always a left→right preview, like Photoshop). */
+function updateRamp() {
+  const grad = $("#grad-bar-grad");
+  if (!grad) return;
   const list = sorted().map((s) => `${rgba(s.color, s.alpha)} ${s.pos}%`).join(", ");
-  p.style.background =
-    type === "radial"
-      ? `radial-gradient(circle at 50% 50%, ${list})`
-      : `linear-gradient(${angle}deg, ${list})`;
+  grad.style.backgroundImage = `linear-gradient(90deg, ${list})`;
+}
+
+/** Reflect the selected stop into the little editor controls. */
+function syncStopCtl() {
+  const c = $("#grad-stop-color"), a = $("#grad-stop-alpha"), p = $("#grad-stop-pos"), d = $("#grad-stop-del");
+  const s = stops[sel];
+  if (!s) return;
+  if (c) c.value = s.color;
+  if (a) a.value = Math.round(s.alpha * 100);
+  if (p) p.value = Math.round(s.pos);
+  if (d) d.disabled = stops.length <= 2;
+}
+
+/** Rebuild the draggable stop markers under the ramp. */
+function renderBar() {
+  updateRamp();
+  const host = $("#grad-stops");
+  if (!host) return;
+  host.innerHTML = "";
+  stops.forEach((s, i) => {
+    const m = document.createElement("button");
+    m.type = "button";
+    m.className = "ca-grad-stop" + (i === sel ? " is-sel" : "");
+    m.style.left = s.pos + "%";
+    m.style.setProperty("--c", s.color);
+    m.title = "Drag to move · click to select";
+    m.addEventListener("pointerdown", (e) => startDrag(e, i, m));
+    host.appendChild(m);
+  });
+  syncStopCtl();
+}
+
+function selectStop(i) {
+  sel = i;
+  document.querySelectorAll("#grad-stops .ca-grad-stop").forEach((m, j) =>
+    m.classList.toggle("is-sel", j === i)
+  );
+  syncStopCtl();
+}
+
+/** Drag a marker along the ramp (no full re-render mid-drag, to keep capture). */
+function startDrag(e, i, m) {
+  e.preventDefault();
+  e.stopPropagation();
+  selectStop(i);
+  m.setPointerCapture?.(e.pointerId);
+  const bar = $("#grad-bar-grad");
+  const move = (ev) => {
+    const r = bar.getBoundingClientRect();
+    let pos = Math.round(((ev.clientX - r.left) / r.width) * 100);
+    pos = Math.max(0, Math.min(100, pos));
+    stops[i].pos = pos;
+    m.style.left = pos + "%";
+    updateRamp();
+    syncStopCtl();
+  };
+  const up = (ev) => {
+    m.releasePointerCapture?.(ev.pointerId);
+    m.removeEventListener("pointermove", move);
+    m.removeEventListener("pointerup", up);
+    m.removeEventListener("pointercancel", up);
+  };
+  m.addEventListener("pointermove", move);
+  m.addEventListener("pointerup", up);
+  m.addEventListener("pointercancel", up);
+}
+
+/** Click the ramp itself → add a new stop at that position. */
+function addStopAt(e) {
+  const bar = $("#grad-bar-grad");
+  const r = bar.getBoundingClientRect();
+  let pos = Math.round(((e.clientX - r.left) / r.width) * 100);
+  pos = Math.max(0, Math.min(100, pos));
+  stops.push({ color: colorAt(pos), pos, alpha: 1 });
+  sel = stops.length - 1;
+  renderBar();
 }
 
 /* ── apply to shape (SVG gradient def) ───────────────────────────────────── */
@@ -209,18 +258,35 @@ function apply() {
 
 export function initGradient() {
   if (!$("#grad-apply")) return;
-  $("#grad-type")?.addEventListener("input", updatePreview);
-  $("#grad-angle")?.addEventListener("input", updatePreview);
+
   $("#grad-template")?.addEventListener("change", (e) => {
     applyTemplate(e.target.value);
     e.target.value = ""; // reset to placeholder so the same template can re-fire
   });
-  $("#grad-add-stop")?.addEventListener("click", () => {
-    stops.push({ color: stops[stops.length - 1]?.color || "#6fb7e8", pos: 100, alpha: 1 });
-    renderStops();
-    updatePreview();
+
+  // click the ramp (not a marker) to add a stop there
+  $("#grad-bar-grad")?.addEventListener("pointerdown", addStopAt);
+
+  // selected-stop editor controls
+  $("#grad-stop-color")?.addEventListener("input", (e) => {
+    if (stops[sel]) { stops[sel].color = e.target.value; renderBar(); }
   });
+  $("#grad-stop-alpha")?.addEventListener("input", (e) => {
+    if (stops[sel]) { stops[sel].alpha = Number(e.target.value) / 100; updateRamp(); }
+  });
+  $("#grad-stop-pos")?.addEventListener("input", (e) => {
+    if (stops[sel]) {
+      stops[sel].pos = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+      renderBar();
+    }
+  });
+  $("#grad-stop-del")?.addEventListener("click", () => {
+    if (stops.length <= 2) return;
+    stops.splice(sel, 1);
+    sel = Math.max(0, sel - 1);
+    renderBar();
+  });
+
   $("#grad-apply").addEventListener("click", apply);
-  renderStops();
-  updatePreview();
+  renderBar();
 }

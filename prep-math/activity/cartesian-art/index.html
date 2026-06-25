@@ -394,12 +394,26 @@
                 <label class="ca-grad-angle">Angle
                   <input type="range" id="grad-angle" min="0" max="360" value="90" />
                 </label>
-                <div class="ca-grad-preview" id="grad-preview" aria-hidden="true"></div>
-                <div class="ca-grad-stops" id="grad-stops"></div>
-                <button type="button" class="ca-soft-btn ca-soft-btn--sm" id="grad-add-stop">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  Add stop
-                </button>
+
+                <!-- Photoshop-style gradient bar: click the ramp to add a stop,
+                     drag the markers to move them, select one to edit it. -->
+                <div class="ca-grad-bar" id="grad-bar">
+                  <div class="ca-grad-bar-grad" id="grad-bar-grad" title="Click to add a colour stop"></div>
+                  <div class="ca-grad-stops" id="grad-stops"></div>
+                </div>
+
+                <div class="ca-grad-stopctl">
+                  <input type="color" id="grad-stop-color" class="ca-color-input" title="Stop colour" />
+                  <label class="ca-grad-mini" title="Opacity (0 = transparent)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3s7 7 7 12a7 7 0 0 1-14 0c0-5 7-12 7-12z"/></svg>
+                    <input type="range" id="grad-stop-alpha" min="0" max="100" value="100" />
+                  </label>
+                  <input type="number" id="grad-stop-pos" class="ca-grad-num" min="0" max="100" value="0" title="Location %" />
+                  <button type="button" class="ca-icon-btn ca-icon-btn--sm" id="grad-stop-del" title="Delete stop">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                  </button>
+                </div>
+
                 <button type="button" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent" id="grad-apply">Fill selected shape</button>
                 <span class="ca-grad-status" id="grad-status" role="status"></span>
               </div>
