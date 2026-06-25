@@ -1290,6 +1290,31 @@ body {
 /* ── shapes & coordinates dock ────────────────────────────────────────────── */
 .ca-dock--shapes { left: 12px; top: 108px; }
 .ca-dock--shapes .ca-dock-body { display: flex; flex-direction: column; gap: 8px; }
+
+/* collapsible sections — each part folds away so they stop squeezing together */
+.ca-dock-sect { display: flex; flex-direction: column; }
+.ca-sect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 0.36rem 0.5rem;
+  border: none;
+  border-radius: 9px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: var(--weight-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.ca-sect-head:hover { background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-secondary)); }
+.ca-sect-chev { width: 15px; height: 15px; flex-shrink: 0; transition: transform 0.2s ease; }
+.ca-dock-sect.is-collapsed .ca-sect-chev { transform: rotate(-90deg); }
+.ca-sect-body { display: flex; flex-direction: column; gap: 8px; padding: 8px 2px 2px; }
+.ca-dock-sect.is-collapsed .ca-sect-body { display: none; }
 .ca-shapes-list {
   display: flex;
   flex-direction: column;

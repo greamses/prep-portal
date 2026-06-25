@@ -137,11 +137,41 @@ function refresh() {
   markActiveSwatches();
 }
 
+/* ── collapsible sections (so shapes/coords/colours don't all squeeze together) ── */
+const SECT_KEY = "ca-shapes-sects-v1";
+function loadSectState() {
+  try { return JSON.parse(localStorage.getItem(SECT_KEY)) || {}; } catch { return {}; }
+}
+function saveSectState(st) {
+  try { localStorage.setItem(SECT_KEY, JSON.stringify(st)); } catch {}
+}
+function initSections() {
+  const st = loadSectState();
+  document.querySelectorAll("#dock-shapes .ca-dock-sect").forEach((sect) => {
+    const key = sect.dataset.sect;
+    const head = sect.querySelector(".ca-sect-head");
+    if (!head) return;
+    const setOpen = (open) => {
+      sect.classList.toggle("is-collapsed", !open);
+      head.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    if (st[key] === false) setOpen(false);
+    head.addEventListener("click", () => {
+      const open = sect.classList.contains("is-collapsed"); // opening now
+      setOpen(open);
+      const cur = loadSectState();
+      cur[key] = open;
+      saveSectState(cur);
+    });
+  });
+}
+
 export function initShapesDock() {
   if (!$("#dock-shapes")) return;
 
   buildSwatchRow("#shapes-stroke", (c) => setStroke(c), false);
   buildSwatchRow("#shapes-fill", (c) => setFill(c), true);
+  initSections();
 
   $("#shapes-add")?.addEventListener("click", () => startNewShape());
   $("#shapes-coord-apply")?.addEventListener("click", applyCoords);

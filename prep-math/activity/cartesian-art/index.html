@@ -209,26 +209,54 @@
             <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
           <div class="ca-dock-body">
-            <div class="ca-shapes-list" id="shapes-list" role="list"></div>
-            <button type="button" id="shapes-add" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-shapes-add">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-              New shape
-            </button>
-
-            <div class="ca-shapes-coords">
-              <span class="ca-tf-label">Coordinates of selected shape</span>
-              <textarea id="shapes-coord-input" class="ca-coord-input" rows="3" spellcheck="false" placeholder="(-4,-11), (-6,-6), (-7,4) …"></textarea>
-              <div class="ca-coord-foot">
-                <label class="ca-coord-closed"><input type="checkbox" id="shapes-coord-closed" /> Close loop</label>
-                <button type="button" id="shapes-coord-apply" class="ca-soft-btn ca-soft-btn--sm">Apply</button>
+            <section class="ca-dock-sect" data-sect="shapes">
+              <button type="button" class="ca-sect-head" aria-expanded="true">
+                <span>Shapes</span>
+                <svg class="ca-sect-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="ca-sect-body">
+                <div class="ca-shapes-list" id="shapes-list" role="list"></div>
+                <button type="button" id="shapes-add" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-shapes-add">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  New shape
+                </button>
               </div>
-              <span class="ca-coord-status" id="shapes-coord-status"></span>
-            </div>
+            </section>
 
-            <span class="ca-tf-label">Line colour</span>
-            <div class="ca-swatches ca-swatches--sm" id="shapes-stroke" role="group" aria-label="Line colour"></div>
-            <span class="ca-tf-label">Fill colour</span>
-            <div class="ca-swatches ca-swatches--sm" id="shapes-fill" role="group" aria-label="Fill colour"></div>
+            <section class="ca-dock-sect" data-sect="coords">
+              <button type="button" class="ca-sect-head" aria-expanded="true">
+                <span>Coordinates</span>
+                <svg class="ca-sect-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="ca-sect-body">
+                <textarea id="shapes-coord-input" class="ca-coord-input" rows="4" spellcheck="false" placeholder="(-4,-11), (-6,-6), (-7,4) …"></textarea>
+                <div class="ca-coord-foot">
+                  <label class="ca-coord-closed"><input type="checkbox" id="shapes-coord-closed" /> Close loop</label>
+                  <button type="button" id="shapes-coord-apply" class="ca-soft-btn ca-soft-btn--sm">Apply</button>
+                </div>
+                <span class="ca-coord-status" id="shapes-coord-status"></span>
+              </div>
+            </section>
+
+            <section class="ca-dock-sect" data-sect="stroke">
+              <button type="button" class="ca-sect-head" aria-expanded="true">
+                <span>Line colour</span>
+                <svg class="ca-sect-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="ca-sect-body">
+                <div class="ca-swatches ca-swatches--sm" id="shapes-stroke" role="group" aria-label="Line colour"></div>
+              </div>
+            </section>
+
+            <section class="ca-dock-sect" data-sect="fill">
+              <button type="button" class="ca-sect-head" aria-expanded="true">
+                <span>Fill colour</span>
+                <svg class="ca-sect-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="ca-sect-body">
+                <div class="ca-swatches ca-swatches--sm" id="shapes-fill" role="group" aria-label="Fill colour"></div>
+              </div>
+            </section>
           </div>
         </div>
 
