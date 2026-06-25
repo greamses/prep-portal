@@ -1008,6 +1008,15 @@ body {
 }
 .ca-grad-status { font-size: 0.66rem; opacity: 0.7; min-height: 0.8em; }
 
+/* multi-stop editor rows */
+.ca-grad-stops { display: flex; flex-direction: column; gap: 0.35rem; }
+.ca-grad-stop { display: flex; align-items: center; gap: 0.35rem; }
+.ca-grad-stop .gs-color { width: 30px; height: 26px; flex-shrink: 0; }
+.ca-grad-stop .gs-pos { flex: 1 1 auto; min-width: 40px; }
+.ca-grad-stop .gs-alpha { flex: 1 1 auto; min-width: 36px; }
+.ca-grad-stop .gs-del { flex-shrink: 0; }
+.ca-grad-stop .gs-del:disabled { opacity: 0.3; cursor: default; }
+
 /* ============================================================================
    STUDIO REDESIGN — graph is the canvas; controls float as draggable docks
    (overrides the earlier two-column layout)
@@ -1291,30 +1300,11 @@ body {
 .ca-dock--shapes { left: 12px; top: 108px; }
 .ca-dock--shapes .ca-dock-body { display: flex; flex-direction: column; gap: 8px; }
 
-/* collapsible sections — each part folds away so they stop squeezing together */
-.ca-dock-sect { display: flex; flex-direction: column; }
-.ca-sect-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  padding: 0.36rem 0.5rem;
-  border: none;
-  border-radius: 9px;
-  background: var(--surface-secondary);
-  color: var(--ink);
-  font-size: 0.7rem;
-  font-weight: var(--weight-bold, 700);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-}
-.ca-sect-head:hover { background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-secondary)); }
-.ca-sect-chev { width: 15px; height: 15px; flex-shrink: 0; transition: transform 0.2s ease; }
-.ca-dock-sect.is-collapsed .ca-sect-chev { transform: rotate(-90deg); }
-.ca-sect-body { display: flex; flex-direction: column; gap: 8px; padding: 8px 2px 2px; }
-.ca-dock-sect.is-collapsed .ca-sect-body { display: none; }
+/* top tabs (like the Paint dock) — one panel shown at a time, never squeezed */
+.ca-shapes-tabs { display: flex; width: 100%; }
+.ca-shapes-tabs .ca-tool { flex: 1; }
+.ca-shapes-panel { display: none; flex-direction: column; gap: 8px; }
+.ca-shapes-panel.is-active { display: flex; }
 .ca-shapes-list {
   display: flex;
   flex-direction: column;

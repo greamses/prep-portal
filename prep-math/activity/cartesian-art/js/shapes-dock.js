@@ -137,33 +137,25 @@ function refresh() {
   markActiveSwatches();
 }
 
-/* ── collapsible sections (so shapes/coords/colours don't all squeeze together) ── */
-const SECT_KEY = "ca-shapes-sects-v1";
-function loadSectState() {
-  try { return JSON.parse(localStorage.getItem(SECT_KEY)) || {}; } catch { return {}; }
+/* ── top tabs (one panel at a time, like the Paint dock) ─────────────────────── */
+const TAB_KEY = "ca-shapes-tab-v1";
+function showTab(name) {
+  document.querySelectorAll("#dock-shapes .ca-shapes-tabs .ca-tool").forEach((b) =>
+    b.classList.toggle("is-active", b.dataset.tab === name)
+  );
+  document.querySelectorAll("#dock-shapes .ca-shapes-panel").forEach((p) =>
+    p.classList.toggle("is-active", p.dataset.panel === name)
+  );
+  try { localStorage.setItem(TAB_KEY, name); } catch {}
 }
-function saveSectState(st) {
-  try { localStorage.setItem(SECT_KEY, JSON.stringify(st)); } catch {}
-}
-function initSections() {
-  const st = loadSectState();
-  document.querySelectorAll("#dock-shapes .ca-dock-sect").forEach((sect) => {
-    const key = sect.dataset.sect;
-    const head = sect.querySelector(".ca-sect-head");
-    if (!head) return;
-    const setOpen = (open) => {
-      sect.classList.toggle("is-collapsed", !open);
-      head.setAttribute("aria-expanded", open ? "true" : "false");
-    };
-    if (st[key] === false) setOpen(false);
-    head.addEventListener("click", () => {
-      const open = sect.classList.contains("is-collapsed"); // opening now
-      setOpen(open);
-      const cur = loadSectState();
-      cur[key] = open;
-      saveSectState(cur);
-    });
-  });
+function initTabs() {
+  const tabs = document.querySelectorAll("#dock-shapes .ca-shapes-tabs .ca-tool");
+  if (!tabs.length) return;
+  tabs.forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  let saved = "shapes";
+  try { saved = localStorage.getItem(TAB_KEY) || "shapes"; } catch {}
+  if (![...tabs].some((b) => b.dataset.tab === saved)) saved = "shapes";
+  showTab(saved);
 }
 
 export function initShapesDock() {
@@ -171,7 +163,7 @@ export function initShapesDock() {
 
   buildSwatchRow("#shapes-stroke", (c) => setStroke(c), false);
   buildSwatchRow("#shapes-fill", (c) => setFill(c), true);
-  initSections();
+  initTabs();
 
   $("#shapes-add")?.addEventListener("click", () => startNewShape());
   $("#shapes-coord-apply")?.addEventListener("click", applyCoords);
