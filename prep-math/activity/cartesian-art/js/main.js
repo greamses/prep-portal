@@ -23,6 +23,7 @@ import { initHistory } from "./history.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 import { initExport, loadFromUrl } from "./export.js";
+import { initAiGenerate } from "./ai-generate.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -43,6 +44,7 @@ function init() {
   initShapesDock();
   initZoom(stage);
   initExport();
+  initAiGenerate();
   loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
   initHistory(); // last: baseline snapshot needs the brush bridge registered
 

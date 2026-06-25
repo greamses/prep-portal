@@ -1281,6 +1281,9 @@ body {
   .ca-shapes-list { max-height: 120px; }
 }
 
+/* ── generate-with-AI modal ──────────────────────────────────────────────── */
+.ca-ai-modal { width: min(440px, 100%); }
+
 /* ── export / print / share modal ────────────────────────────────────────── */
 .ca-export-modal { width: min(680px, 100%); }
 .ca-export-body { flex-direction: row; gap: 1.2rem; align-items: stretch; }
