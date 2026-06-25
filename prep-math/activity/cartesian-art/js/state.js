@@ -12,6 +12,8 @@
    onto the active shape so single-shape callers keep working.
    ========================================================================== */
 
+import { snapStep, snap } from "./scale.js";
+
 /** Default coordinate-plane window. Symmetric four-quadrant plane. */
 export const DEFAULT_GRID = Object.freeze({
   xMin: -10,
@@ -110,17 +112,27 @@ export function emit(reason = "") {
 
 /* ── cursor ──────────────────────────────────────────────────────────────── */
 
+/** The current adaptive step (one fine gridline cell) per axis. */
+export function cursorStep() {
+  const g = state.grid;
+  return { x: snapStep(g.xMax - g.xMin), y: snapStep(g.yMax - g.yMin) };
+}
+
 /** Move the cursor to an absolute math coordinate, clamped to the grid. */
 export function setCursor(x, y) {
   const g = state.grid;
-  state.cursor.x = clamp(Math.round(x), g.xMin, g.xMax);
-  state.cursor.y = clamp(Math.round(y), g.yMin, g.yMax);
+  state.cursor.x = clamp(x, g.xMin, g.xMax);
+  state.cursor.y = clamp(y, g.yMin, g.yMax);
   emit("cursor");
 }
 
-/** Nudge the cursor by a whole-unit delta. */
+/** Nudge the cursor by one adaptive step — strides scale with the zoom level. */
 export function moveCursor(dx, dy) {
-  setCursor(state.cursor.x + dx, state.cursor.y + dy);
+  const s = cursorStep();
+  setCursor(
+    snap(state.cursor.x + dx * s.x, s.x),
+    snap(state.cursor.y + dy * s.y, s.y)
+  );
 }
 
 /* ── shapes ──────────────────────────────────────────────────────────────── */

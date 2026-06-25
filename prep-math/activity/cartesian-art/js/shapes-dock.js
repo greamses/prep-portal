@@ -14,6 +14,7 @@ import {
 } from "./state.js";
 import { PALETTE } from "./paint.js";
 import { parsePoints } from "./parse.js";
+import { fmtCoord } from "./scale.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -22,7 +23,7 @@ function shapeColor(s) {
 }
 
 function ptsToText(pts) {
-  return pts.map((p) => `(${p.x}, ${p.y})`).join(", ");
+  return pts.map((p) => `(${fmtCoord(p.x)}, ${fmtCoord(p.y)})`).join(", ");
 }
 
 /* ── shape list ──────────────────────────────────────────────────────────── */

@@ -8,6 +8,7 @@
    ========================================================================== */
 
 import { state, subscribe } from "./state.js";
+import { niceStep, subStep, snapStep, snap } from "./scale.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 
@@ -40,13 +41,15 @@ export function toMath(px, py) {
   return { x: (px - layout.ox) / layout.unitX, y: (layout.oy - py) / layout.unitY };
 }
 
-/** Pixel → nearest lattice point (rounded, clamped to the grid window). */
+/** Pixel → nearest lattice point (snapped to the adaptive step, clamped). */
 export function toLattice(px, py) {
   const m = toMath(px, py);
   const g = state.grid;
+  const sx = snapStep(g.xMax - g.xMin);
+  const sy = snapStep(g.yMax - g.yMin);
   return {
-    x: Math.max(g.xMin, Math.min(g.xMax, Math.round(m.x))),
-    y: Math.max(g.yMin, Math.min(g.yMax, Math.round(m.y))),
+    x: Math.max(g.xMin, Math.min(g.xMax, snap(m.x, sx))),
+    y: Math.max(g.yMin, Math.min(g.yMax, snap(m.y, sy))),
   };
 }
 
@@ -137,40 +140,10 @@ function clear(g) {
   while (g.firstChild) g.removeChild(g.firstChild);
 }
 
-/** A "nice" gridline spacing (1, 2, 5 ×10ⁿ) aiming for ~target divisions. */
-function niceStep(span, target = 14) {
-  const raw = span / target;
-  const pow = Math.pow(10, Math.floor(Math.log10(raw || 1)));
-  const n = raw / pow;
-  let step;
-  if (n < 1.5) step = 1;
-  else if (n < 3) step = 2;
-  else if (n < 7) step = 5;
-  else step = 10;
-  return step * pow; // may be fractional for deep zoom (e.g. 0.001)
-}
-
 /** Format a tick value to the precision implied by its step (no float noise). */
 function fmtTick(v, step) {
   const d = step < 1 ? Math.min(6, Math.ceil(-Math.log10(step) - 1e-9)) : 0;
   return Number(v.toFixed(d)).toString();
-}
-
-/** Sub-step for the fainter "inner" gridlines drawn between labelled lines. */
-function subStep(major) {
-  if (major >= 2) {
-    if (major % 5 === 0) return major / 5;
-    if (major % 4 === 0) return major / 4;
-    if (major % 2 === 0) return major / 2;
-    return 0;
-  }
-  if (major < 1) { // deep zoom — subdivide the fractional major (0.5→0.1, 0.2→0.05…)
-    const m = Math.round(major / Math.pow(10, Math.floor(Math.log10(major) + 1e-9)));
-    if (m === 1 || m === 5) return major / 5;
-    if (m === 2) return major / 4;
-    return 0;
-  }
-  return 0; // major === 1: keep the integer grid clean
 }
 
 /** Vertical lines at every multiple of `step` spanning the full stage height. */

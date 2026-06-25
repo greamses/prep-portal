@@ -26,6 +26,7 @@ import { initExport, loadFromUrl } from "./export.js";
 import { initAiGenerate } from "./ai-generate.js";
 import { initGallery } from "./gallery.js";
 import { initTaskPanel } from "./task-panel.js";
+import { fmtCoord } from "./scale.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -57,8 +58,8 @@ function init() {
   const cy = $("#read-y");
   const count = $("#read-count");
   const syncReadout = () => {
-    if (cx) cx.textContent = state.cursor.x;
-    if (cy) cy.textContent = state.cursor.y;
+    if (cx) cx.textContent = fmtCoord(state.cursor.x);
+    if (cy) cy.textContent = fmtCoord(state.cursor.y);
     if (count) count.textContent = allPoints().length;
   };
   subscribe(syncReadout);
@@ -74,7 +75,7 @@ function init() {
       return;
     }
     const l = toLattice(...svgPixelArgs(e));
-    if (hov) hov.textContent = `(${l.x}, ${l.y})`;
+    if (hov) hov.textContent = `(${fmtCoord(l.x)}, ${fmtCoord(l.y)})`;
   });
   stage.addEventListener("pointerleave", () => {
     if (hov) hov.textContent = "—";

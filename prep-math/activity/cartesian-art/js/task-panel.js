@@ -11,6 +11,7 @@
 import { state, subscribe, scoreAttempt, exitPuzzle } from "./state.js";
 import { makeDraggable } from "./draggable.js";
 import { setShowTargets, showResult } from "./puzzle-mode.js";
+import { fmtCoord } from "./scale.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -28,7 +29,7 @@ function taskLines() {
   return [{ points: p.targets || [], fill: null, stroke: null }];
 }
 
-const coordText = (pts) => pts.map((p) => `(${p.x}, ${p.y})`).join(", ");
+const coordText = (pts) => pts.map((p) => `(${fmtCoord(p.x)}, ${fmtCoord(p.y)})`).join(", ");
 
 function updateProgress() {
   const el = $("#task-progress");
