@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <title>Prep Portal 2026 | 3D Maze</title>
+    <meta name="theme-color" content="#0055ff" />
+    <meta name="description" content="Find your way out of a randomly generated 3D maze. Walk in first person with WASD and the mouse, and reach the glowing exit." />
+
+    <!-- Shared theme + nav -->
+    <link rel="stylesheet" href="/home/css/main.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/home/games/maze/css/game.css" />
+
+    <!-- Firebase import map (the shared nav imports /firebase-init.js) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <!-- Babylon.js engine (UMD global: window.BABYLON) -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  </head>
+
+  <body>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="maze-page">
+      <div class="maze-stage">
+        <canvas id="maze-canvas" class="maze-canvas" touch-action="none"></canvas>
+
+        <div class="maze-hud">
+          <span class="maze-title">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h6M15 9h6M9 3v6M9 15v6M9 9h6v6"/></svg>
+            3D Maze
+          </span>
+          <button type="button" id="maze-new" class="maze-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+            New maze
+          </button>
+        </div>
+
+        <div class="maze-hint" id="maze-hint">Click to look around · WASD / Arrow keys to move · Reach the glowing exit</div>
+
+        <div class="maze-win" id="maze-win" hidden>
+          <div class="maze-win-card">
+            <h2>You escaped!</h2>
+            <p>Nicely done. Ready for a fresh maze?</p>
+            <button type="button" id="maze-again" class="maze-btn">Play again</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/home/games/maze/js/main.js"></script>
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+  </body>
+</html>
