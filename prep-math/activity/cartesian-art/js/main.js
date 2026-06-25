@@ -7,9 +7,9 @@
    Painting, transforms, sharing and AI land in later phases.
    ========================================================================== */
 
-import { state, subscribe, setCursor, allPoints } from "./state.js";
+import { state, subscribe, setCursor, allPoints, squareView } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
-import { initZoom, isGesturing, isPanMode, setPanMode } from "./zoom.js";
+import { initZoom, isGesturing, isPanMode, setPanMode, zoomBy } from "./zoom.js";
 import { initShapesDock } from "./shapes-dock.js";
 import { initTransformMode } from "./transform-mode.js";
 import { initMascot } from "./mascot.js";
@@ -93,7 +93,27 @@ function init() {
 
   initMenu();
   initSteer();
+  initShortcuts();
   initFullscreen();
+}
+
+/* ── keyboard shortcuts (arrows/Enter/Del/C/undo live in controls.js) ─────── */
+function initShortcuts() {
+  const typing = (t) => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" ||
+    t.tagName === "SELECT" || t.isContentEditable);
+  window.addEventListener("keydown", (e) => {
+    if (typing(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+    switch (e.key) {
+      case "v": case "V": $("#ca-pan-btn")?.click(); break;       // toggle pan
+      case "n": case "N": $("#act-new")?.click(); break;          // new shape
+      case "t": case "T": $("#tf-mode")?.click(); break;          // transform mode
+      case "f": case "F": $("#ca-fullscreen-btn")?.click(); break; // fullscreen
+      case "+": case "=": e.preventDefault(); zoomBy(1 / 1.2); break; // zoom in
+      case "-": case "_": e.preventDefault(); zoomBy(1.2); break;     // zoom out
+      case "0": squareView(); break;                              // reset to square
+      default: return;
+    }
+  });
 }
 
 /* ── steering pad: extracted from the rail, toggled on its own ─────────────── */

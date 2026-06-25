@@ -8,7 +8,7 @@
    ========================================================================== */
 
 import { state, subscribe } from "./state.js";
-import { niceStep, subStep, snapStep, snap } from "./scale.js";
+import { niceStep, subStep, snapStep, snap, fmtShort } from "./scale.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 
@@ -146,6 +146,13 @@ function fmtTick(v, step) {
   return Number(v.toFixed(d)).toString();
 }
 
+/** A tick label: compact text, full value on hover. */
+function tick(parent, x, y, cls, v, step) {
+  const t = el("text", { x, y, class: cls }, parent);
+  t.textContent = fmtShort(v);
+  el("title", {}, t).textContent = fmtTick(v, step);
+}
+
 /** Vertical lines at every multiple of `step` spanning the full stage height. */
 function gridLinesX(parent, step, cls, xLo, xHi) {
   if (step <= 0) return;
@@ -221,13 +228,13 @@ function drawGrid() {
       const x = k * majorX;
       if (x === 0) continue;
       const px = toPx(x, 0).x;
-      el("text", { x: px, y: labelY + 16, class: "ca-tick" }, A).textContent = fmtTick(x, majorX);
+      tick(A, px, labelY + 16, "ca-tick", x, majorX);
     }
     for (let k = Math.ceil(yLo / majorY); k * majorY <= yHi; k++) {
       const y = k * majorY;
       if (y === 0) continue;
       const py = toPx(0, y).y;
-      el("text", { x: labelX - 9, y: py + 4, class: "ca-tick ca-tick--y" }, A).textContent = fmtTick(y, majorY);
+      tick(A, labelX - 9, py + 4, "ca-tick ca-tick--y", y, majorY);
     }
     if (xAxisOn && yAxisOn) {
       el("text", { x: axisX - 9, y: axisY + 16, class: "ca-tick ca-tick--o" }, A).textContent = "0";

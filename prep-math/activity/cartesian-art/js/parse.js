@@ -73,7 +73,7 @@ export function parsePoints(text) {
   const re = /\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?/g;
   let m;
   while ((m = re.exec(text)) !== null) {
-    pts.push({ x: Math.round(+m[1]), y: Math.round(+m[2]) });
+    pts.push({ x: +m[1], y: +m[2] }); // keep fractional coordinates
   }
   return pts;
 }

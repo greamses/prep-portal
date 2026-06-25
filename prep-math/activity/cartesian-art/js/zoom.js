@@ -65,18 +65,28 @@ function scaleAxis(axis, factor, anchor, v) {
   }
 }
 
-/* ── wheel: scroll = pan, Ctrl/⌘ + wheel = zoom ─────────────────────────── */
+/** Uniform zoom about the centre (keyboard +/-). */
+export function zoomBy(factor) {
+  applyView(centerX(), centerY(), spanX() * factor, spanY() * factor);
+}
+
+/* ── wheel: scroll = pan, Ctrl/⌘ + scroll = per-axis zoom ───────────────── */
 function onWheel(e, stage) {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
   const px = e.clientX - r.left, py = e.clientY - r.top;
 
   if (e.ctrlKey || e.metaKey) {
-    const factor = e.deltaY > 0 ? 1.08 : 1 / 1.08; // pinch/zoom about the pointer
-    const ax = (px - layout.ox) / layout.unitX;
-    const ay = (layout.oy - py) / layout.unitY;
-    applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
-      spanX() * factor, spanY() * factor);
+    // per-axis zoom by scroll direction, anchored on the pointer.
+    // x: scroll right = grow (zoom in), left = shrink; y: up = grow, down = shrink.
+    const v = visible();
+    if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) {
+      const factor = e.deltaX > 0 ? 1 / 1.08 : 1.08;
+      scaleAxis("x", factor, (px - layout.ox) / layout.unitX, v);
+    } else {
+      const factor = e.deltaY < 0 ? 1 / 1.08 : 1.08;
+      scaleAxis("y", factor, (layout.oy - py) / layout.unitY, v);
+    }
     return;
   }
   // plain scroll → pan the graph

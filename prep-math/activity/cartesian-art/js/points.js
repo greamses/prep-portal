@@ -10,7 +10,7 @@
 import { state, subscribe, deletePointById, activeShape } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
 import { isAnimatingActive } from "./transform-mode.js";
-import { fmtCoord } from "./scale.js";
+import { fmtCoord, fmtShort } from "./scale.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 
@@ -67,8 +67,10 @@ export function redrawPoints() {
       }, P);
       el("circle", { cx: p.x, cy: p.y, r: isActive ? 7 : 5, class: "ca-point-dot" }, m);
       if (isActive) {
-        el("text", { x: p.x, y: p.y - 12, class: "ca-point-label" }, m).textContent =
-          `${fmtCoord(pts[i].x)},${fmtCoord(pts[i].y)}`;
+        const full = `${fmtCoord(pts[i].x)}, ${fmtCoord(pts[i].y)}`;
+        const t = el("text", { x: p.x, y: p.y - 12, class: "ca-point-label" }, m);
+        t.textContent = `${fmtShort(pts[i].x)},${fmtShort(pts[i].y)}`;
+        el("title", {}, t).textContent = full; // full value on hover
       }
     });
   }

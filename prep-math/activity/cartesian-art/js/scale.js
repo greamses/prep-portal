@@ -53,3 +53,22 @@ export function snap(v, step) {
 export function fmtCoord(v) {
   return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(4)));
 }
+
+/* Magnitude suffixes — one digit + one letter for big/small values:
+   …  3T = 3 thousand · 3H = 3 hundred · 3d = 0.3 · 3c = 0.03 · 3m = 0.003 · 3u = 0.0002 */
+const SUFFIX = { 3: "T", 2: "H", "-1": "d", "-2": "c", "-3": "m", "-4": "u", "-5": "u", "-6": "u" };
+
+/** Compact label for crowded spots (≤ 1 digit + 1 letter); full value on hover.
+ *  Values that already fit in two digits / a short decimal are shown as-is. */
+export function fmtShort(v) {
+  if (v === 0) return "0";
+  const a = Math.abs(v), s = v < 0 ? "-" : "";
+  if (a >= 100 || a < 0.1) {
+    let e = Math.floor(Math.log10(a) + 1e-12);
+    let d = Math.round(a / Math.pow(10, e));
+    if (d >= 10) { e += 1; d = Math.round(a / Math.pow(10, e)); }
+    const suf = SUFFIX[e];
+    if (suf) return s + d + suf;
+  }
+  return fmtCoord(v);
+}

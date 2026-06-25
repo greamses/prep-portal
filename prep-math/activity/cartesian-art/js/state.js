@@ -202,7 +202,7 @@ export function setShapes(list, grid = null) {
 /** Replace the active shape's vertices outright (direct coordinate entry). */
 export function setActivePoints(points, closed) {
   const s = activeShape();
-  s.points = (points || []).map((p) => ({ x: Math.round(p.x), y: Math.round(p.y), id: ++_pid }));
+  s.points = (points || []).map((p) => ({ x: +p.x, y: +p.y, id: ++_pid })); // keep fractional
   if (closed != null) s.closed = !!closed && s.points.length > 2;
   else if (s.points.length < 3) s.closed = false;
   fitGridToPoints();
