@@ -192,7 +192,7 @@ export function setShapes(list, grid = null) {
   const shapes = (list || []).map((s) => makeShape(s));
   state.shapes = shapes.length ? shapes : [makeShape()];
   state.activeId = state.shapes[0].id;
-  if (grid) { Object.assign(state.grid, grid); state.grid.lockAspect = true; }
+  if (grid) { Object.assign(state.grid, grid); state.grid.lockAspect = true; enforcePosOnly(); }
   else fitGridToPoints();
   state.cursor.x = clamp(state.cursor.x, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(state.cursor.y, state.grid.yMin, state.grid.yMax);
@@ -297,6 +297,7 @@ export function toggleClosed() {
 /** Replace the grid window (merges over current). */
 export function setGrid(patch) {
   Object.assign(state.grid, patch);
+  enforcePosOnly();
   setCursor(state.cursor.x, state.cursor.y); // keep cursor inside
   emit("grid");
 }
@@ -353,8 +354,17 @@ export function loadShape({ points = [], closed = false, grid = null, shapes = n
   setShapes([{ points, closed }], grid);
 }
 
-/** Grow the grid window (symmetric, capped at ±GRID_MAX) so every point of
- *  every shape stays visible. */
+/** Keep first-quadrant mode after a direct window assignment (load/undo/refit):
+ *  shift any negative edge up to 0 so the negative axes stay hidden. */
+function enforcePosOnly() {
+  if (!state.grid.posOnly) return;
+  const g = state.grid;
+  if (g.xMin < 0) { g.xMax = Math.min(GRID_MAX, g.xMax - g.xMin); g.xMin = 0; }
+  if (g.yMin < 0) { g.yMax = Math.min(GRID_MAX, g.yMax - g.yMin); g.yMin = 0; }
+}
+
+/** Grow the grid window (capped at ±GRID_MAX) so every point stays visible.
+ *  In first-quadrant mode the window starts at the origin. */
 function fitGridToPoints() {
   let need = 0;
   for (const s of state.shapes)
@@ -362,8 +372,12 @@ function fitGridToPoints() {
   const g = state.grid;
   const cur = Math.max(Math.abs(g.xMin), g.xMax, Math.abs(g.yMin), g.yMax);
   const half = Math.min(GRID_MAX, Math.max(cur, need + 1));
-  g.xMin = -half; g.xMax = half; g.yMin = -half; g.yMax = half;
-  g.lockAspect = true; // a fresh symmetric window is square again
+  if (g.posOnly) {
+    g.xMin = 0; g.xMax = half; g.yMin = 0; g.yMax = half;
+  } else {
+    g.xMin = -half; g.xMax = half; g.yMin = -half; g.yMax = half;
+  }
+  g.lockAspect = true; // a fresh window is square again
 }
 
 /** Map every point of every shape through fn(x,y)->{x,y}, keeping ids. */
@@ -385,6 +399,7 @@ export function transformPoints(fn) {
 /** Restore a full snapshot (used by undo/redo). */
 export function restoreState(snap) {
   if (snap.grid) Object.assign(state.grid, snap.grid);
+  enforcePosOnly();
   const list = snap.shapes || [{ points: snap.points || [], closed: snap.closed, fillColor: snap.fillColor }];
   state.shapes = list.map((s) => makeShape(s));
   if (!state.shapes.length) state.shapes = [makeShape()];
@@ -404,6 +419,7 @@ export function enterPuzzle(puzzle) {
   state.activeId = state.shapes[0].id;
   if (puzzle.grid) Object.assign(state.grid, puzzle.grid);
   state.grid.lockAspect = true;
+  enforcePosOnly();
   state.cursor.x = clamp(0, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(0, state.grid.yMin, state.grid.yMax);
   emit("puzzle");
