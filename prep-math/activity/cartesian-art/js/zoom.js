@@ -1,31 +1,31 @@
 /* ============================================================================
-   Cartesian Art — pan / zoom (wheel, pinch, per-axis)
+   Cartesian Art — pan / zoom (Desmos-style)
    ----------------------------------------------------------------------------
-   • Wheel / trackpad scroll PANS the graph; Ctrl/⌘ + wheel (or trackpad pinch)
-     ZOOMS about the pointer.
-   • Two-finger touch:
-       – hold one finger still and slide the other → scale a SINGLE axis
-         (slide up/down = grow/shrink the y-axis; right/left = grow/shrink x),
-         anchored on the still finger.
-       – move both fingers (pinch) → uniform zoom of all axes.
-   • Drag-to-pan tool / hold-Space also pan. Everything drives state.setView
-     (clamped to ±GRID_MAX). Pointers aren't captured, so taps still reach the
-     plot/paint layers; isGesturing() lets tap-to-park bail mid-gesture.
+     • Drag the background        → pan.
+     • Drag directly on an axis    → stretch ONLY that axis (the grabbed value
+                                     follows the cursor; the origin stays fixed).
+     • Scroll wheel                → zoom about the pointer.
+     • Two-finger pinch            → zoom (+ pan with the midpoint).
+     • Click without dragging      → drop the cursor there (plot).
+   Keyboard +/- zoom (zoomBy) and V/Space force-pan stay. Everything drives
+   state.setView (clamped to ±GRID_MAX). The "V"/pan tool just forces a drag to
+   pan even when it starts on an axis.
    ========================================================================== */
 
-import { state, setView, squareView } from "./state.js";
-import { layout, toPx, toMath } from "./grid.js";
+import { state, setView, squareView, setCursor } from "./state.js";
+import { layout, toPx, toMath, toLattice } from "./grid.js";
 
-const pointers = new Map(); // pointerId → { x, y } (client coords)
-let gesture = null;
-let panMode = false;
-let spaceDown = false;
-let pan = null;
+const pointers = new Map(); // touch pointers
+let drag = null;            // active single-pointer interaction
+let pinch = null;           // active two-finger gesture
+let panMode = false;        // V / pan tool
+let spaceDown = false;      // hold Space
 
-const MOVE_TH = 9;   // px a finger must travel to count as "moving"
-const AXIS_SENS = 170; // px of finger travel to double/halve an axis
+const CLICK_TH = 5;   // px before a press becomes a drag
+const AXIS_TOL = 24;  // px from an axis line that counts as "grabbing" it
+const AXIS_MIN = 40;  // must be this far from the origin to grab an axis
 
-export function isGesturing() { return pointers.size >= 2 || !!pan; }
+export function isGesturing() { return !!pinch || (!!drag && drag.moved); }
 export function isPanMode() { return panMode || spaceDown; }
 export function setPanMode(on) {
   panMode = !!on;
@@ -41,7 +41,6 @@ function centerY() { return (state.grid.yMax + state.grid.yMin) / 2; }
 function applyView(cx, cy, sx, sy, lock) {
   setView(cx - sx / 2, cx + sx / 2, cy - sy / 2, cy + sy / 2, lock);
 }
-
 function visible() {
   const a = toMath(0, 0), b = toMath(layout.w, layout.h);
   return {
@@ -50,113 +49,93 @@ function visible() {
   };
 }
 
-/** Scale one axis by `factor` about a fixed math anchor, using a start window. */
-function scaleAxis(axis, factor, anchor, v) {
-  if (axis === "x") {
-    const span = (v.xHi - v.xLo) * factor;
-    const f = (anchor - v.xLo) / (v.xHi - v.xLo);
-    const lo = anchor - f * span;
-    setView(lo, lo + span, v.yLo, v.yHi, false);
-  } else {
-    const span = (v.yHi - v.yLo) * factor;
-    const f = (anchor - v.yLo) / (v.yHi - v.yLo);
-    const lo = anchor - f * span;
-    setView(v.xLo, v.xHi, lo, lo + span, false);
-  }
-}
-
 /** Uniform zoom about the centre (keyboard +/-). */
 export function zoomBy(factor) {
   applyView(centerX(), centerY(), spanX() * factor, spanY() * factor);
 }
 
-/* ── wheel: scroll = pan, Ctrl/⌘ + scroll = per-axis zoom ───────────────── */
+/** Which axis a stage-pixel sits on (away from the origin), or null. */
+function axisAt(px, py) {
+  const o = toPx(0, 0);
+  if (Math.abs(py - o.y) <= AXIS_TOL && Math.abs(px - o.x) > AXIS_MIN) return "x";
+  if (Math.abs(px - o.x) <= AXIS_TOL && Math.abs(py - o.y) > AXIS_MIN) return "y";
+  return null;
+}
+
+/* ── wheel: zoom about the pointer ──────────────────────────────────────── */
 function onWheel(e, stage) {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
   const px = e.clientX - r.left, py = e.clientY - r.top;
-
-  if (e.ctrlKey || e.metaKey) {
-    // per-axis zoom by scroll direction, anchored on the pointer.
-    // x: scroll right = grow (zoom in), left = shrink; y: up = grow, down = shrink.
-    const v = visible();
-    if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) {
-      const factor = e.deltaX > 0 ? 1 / 1.08 : 1.08;
-      scaleAxis("x", factor, (px - layout.ox) / layout.unitX, v);
-    } else {
-      const factor = e.deltaY < 0 ? 1 / 1.08 : 1.08;
-      scaleAxis("y", factor, (layout.oy - py) / layout.unitY, v);
-    }
-    return;
-  }
-  // plain scroll → pan the graph
-  applyView(centerX() + e.deltaX / layout.unitX, centerY() - e.deltaY / layout.unitY,
-    spanX(), spanY());
+  const factor = e.deltaY > 0 ? 1.1 : 1 / 1.1;
+  const ax = (px - layout.ox) / layout.unitX;
+  const ay = (layout.oy - py) / layout.unitY;
+  applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
+    spanX() * factor, spanY() * factor);
 }
 
-/* ── two-finger gesture ─────────────────────────────────────────────────── */
-function startGesture(stage) {
+/* ── single-pointer drag: pan or axis-stretch ───────────────────────────── */
+function beginDrag(e, stage) {
   const r = stage.getBoundingClientRect();
-  const [[idA, a], [idB, b]] = [...pointers.entries()];
-  gesture = {
-    ids: [idA, idB],
-    a0: { x: a.x, y: a.y }, b0: { x: b.x, y: b.y },
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const axis = isPanMode() ? null : axisAt(px, py);
+  drag = {
+    id: e.pointerId, axis, moved: false,
+    sx0: e.clientX, sy0: e.clientY,
     left: r.left, top: r.top,
     ox: layout.ox, oy: layout.oy, ux: layout.unitX, uy: layout.unitY,
-    v: visible(),
+    v: visible(), cx: centerX(), cy: centerY(), spanx: spanX(), spany: spanY(),
+    X0: axis === "x" ? (px - layout.ox) / layout.unitX : 0,
+    Y0: axis === "y" ? (layout.oy - py) / layout.unitY : 0,
+  };
+  stage.setPointerCapture?.(e.pointerId);
+}
+
+function panDrag(dx, dy) {
+  applyView(drag.cx - dx / drag.ux, drag.cy + dy / drag.uy, drag.spanx, drag.spany);
+}
+
+function axisDragX(px) {
+  const ux2 = (px - drag.ox) / drag.X0; // keep grabbed value under the cursor
+  if (!isFinite(ux2) || ux2 <= 0) return;
+  const span = (layout.w - 2 * layout.pad) / ux2;
+  const xMin = (layout.pad - drag.ox) / ux2; // keeps the origin pixel fixed
+  setView(xMin, xMin + span, drag.v.yLo, drag.v.yHi, false);
+}
+function axisDragY(py) {
+  const uy2 = (drag.oy - py) / drag.Y0;
+  if (!isFinite(uy2) || uy2 <= 0) return;
+  const span = (layout.h - 2 * layout.pad) / uy2;
+  const yMin = (drag.oy - (layout.h - layout.pad)) / uy2;
+  setView(drag.v.xLo, drag.v.xHi, yMin, yMin + span, false);
+}
+
+/* ── two-finger pinch (zoom + pan) ──────────────────────────────────────── */
+function startPinch() {
+  const [a, b] = [...pointers.values()];
+  pinch = {
     startDist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
     startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-    cx: centerX(), cy: centerY(), sx: spanX(), sy: spanY(),
+    ux: layout.unitX, uy: layout.unitY,
+    cx: centerX(), cy: centerY(), spanx: spanX(), spany: spanY(),
   };
 }
-
-function updateGesture() {
-  if (!gesture) return;
-  const a = pointers.get(gesture.ids[0]);
-  const b = pointers.get(gesture.ids[1]);
-  if (!a || !b) return;
-
-  const dA = { x: a.x - gesture.a0.x, y: a.y - gesture.a0.y };
-  const dB = { x: b.x - gesture.b0.x, y: b.y - gesture.b0.y };
-  const mA = Math.hypot(dA.x, dA.y);
-  const mB = Math.hypot(dB.x, dB.y);
-
-  // both fingers moving → uniform zoom (pinch by distance), about the midpoint
-  if (mA > MOVE_TH && mB > MOVE_TH) {
-    const scale = (Math.hypot(a.x - b.x, a.y - b.y) || 1) / gesture.startDist;
-    let ncx = gesture.cx, ncy = gesture.cy;
-    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    ncx += -(mid.x - gesture.startMid.x) / gesture.ux;
-    ncy += (mid.y - gesture.startMid.y) / gesture.uy;
-    applyView(ncx, ncy, gesture.sx / scale, gesture.sy / scale); // leaves lock as-is
-    return;
-  }
-
-  // one finger still, the other sliding → single-axis scale
-  const mover = mA >= mB ? dA : dB;
-  const still = mA >= mB ? gesture.b0 : gesture.a0;
-  if (Math.max(mA, mB) < MOVE_TH) return; // nothing moved enough yet
-
-  if (Math.abs(mover.y) >= Math.abs(mover.x)) {
-    // vertical slide → y-axis. up (negative screen-y) grows the axis (zoom in)
-    const factor = Math.exp(mover.y / AXIS_SENS);
-    const anchorY = (gesture.oy - (still.y - gesture.top)) / gesture.uy;
-    scaleAxis("y", factor, anchorY, gesture.v);
-  } else {
-    // horizontal slide → x-axis. right (positive screen-x) grows the axis
-    const factor = Math.exp(-mover.x / AXIS_SENS);
-    const anchorX = (still.x - gesture.left - gesture.ox) / gesture.ux;
-    scaleAxis("x", factor, anchorX, gesture.v);
-  }
+function updatePinch() {
+  const [a, b] = [...pointers.values()];
+  const scale = (Math.hypot(a.x - b.x, a.y - b.y) || 1) / pinch.startDist;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  applyView(
+    pinch.cx - (mid.x - pinch.startMid.x) / pinch.ux,
+    pinch.cy + (mid.y - pinch.startMid.y) / pinch.uy,
+    pinch.spanx / scale, pinch.spany / scale
+  );
 }
 
-/* ── single-pointer pan (pan tool / Space-drag) ─────────────────────────── */
-function startPan(e) {
-  pan = { x: e.clientX, y: e.clientY, cx: centerX(), cy: centerY(), ux: layout.unitX, uy: layout.unitY };
-}
-function updatePan(e) {
-  if (!pan) return;
-  applyView(pan.cx - (e.clientX - pan.x) / pan.ux, pan.cy + (e.clientY - pan.y) / pan.uy, spanX(), spanY());
+function clickPlace(e, stage) {
+  if (stage.classList.contains("ca-painting")) return;
+  const r = stage.getBoundingClientRect();
+  const l = toLattice(e.clientX - r.left, e.clientY - r.top);
+  setCursor(l.x, l.y);
 }
 
 export function initZoom(stage) {
@@ -165,32 +144,53 @@ export function initZoom(stage) {
   stage.addEventListener("wheel", (e) => onWheel(e, stage), { passive: false });
 
   stage.addEventListener("pointerdown", (e) => {
-    if (isPanMode() && pointers.size === 0) {
-      startPan(e);
-      stage.setPointerCapture?.(e.pointerId);
-      e.preventDefault();
-      return;
+    if (stage.classList.contains("ca-painting")) return; // painting owns the pointer
+    if (e.pointerType === "touch") {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size >= 2) { drag = null; startPinch(); return; }
     }
-    if (e.pointerType !== "touch") return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2) { pan = null; startGesture(stage); }
+    beginDrag(e, stage);
   });
 
   stage.addEventListener("pointermove", (e) => {
-    if (pan) { e.preventDefault(); updatePan(e); return; }
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size >= 2) { e.preventDefault(); updateGesture(); }
+    if (stage.classList.contains("ca-painting") && !drag && !pinch) return;
+    if (pinch) {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size >= 2) { e.preventDefault(); updatePinch(); }
+      return;
+    }
+    if (drag && e.pointerId === drag.id) {
+      const dx = e.clientX - drag.sx0, dy = e.clientY - drag.sy0;
+      if (!drag.moved && Math.hypot(dx, dy) < CLICK_TH) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        stage.style.cursor = drag.axis === "x" ? "ew-resize" : drag.axis === "y" ? "ns-resize" : "grabbing";
+      }
+      e.preventDefault();
+      if (drag.axis === "x") axisDragX(e.clientX - drag.left);
+      else if (drag.axis === "y") axisDragY(e.clientY - drag.top);
+      else panDrag(dx, dy);
+      return;
+    }
+    // hover (no active drag): show the axis-stretch cursor
+    if (!isPanMode()) {
+      const r = stage.getBoundingClientRect();
+      const ax = axisAt(e.clientX - r.left, e.clientY - r.top);
+      stage.style.cursor = ax === "x" ? "ew-resize" : ax === "y" ? "ns-resize" : "";
+    }
   });
 
-  const drop = (e) => {
-    if (pan) pan = null;
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) gesture = null;
+  const onUp = (e) => {
+    if (pointers.has(e.pointerId)) pointers.delete(e.pointerId);
+    if (pinch && pointers.size < 2) pinch = null;
+    if (drag && e.pointerId === drag.id) {
+      if (!drag.moved && !isPanMode()) clickPlace(e, stage);
+      if (!isPanMode()) stage.style.cursor = "";
+      drag = null;
+    }
   };
-  stage.addEventListener("pointerup", drop);
-  stage.addEventListener("pointercancel", drop);
-  stage.addEventListener("pointerleave", drop);
+  stage.addEventListener("pointerup", onUp);
+  stage.addEventListener("pointercancel", onUp);
 
   // double-click empty canvas → back to square cells
   stage.addEventListener("dblclick", (e) => {
@@ -198,6 +198,7 @@ export function initZoom(stage) {
     if (state.grid.lockAspect === false) squareView();
   });
 
+  // hold Space to pan
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space" && !spaceDown && !isTyping(e.target)) {
       spaceDown = true;

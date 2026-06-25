@@ -7,9 +7,9 @@
    Painting, transforms, sharing and AI land in later phases.
    ========================================================================== */
 
-import { state, subscribe, setCursor, allPoints, squareView } from "./state.js";
+import { state, subscribe, allPoints, squareView } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
-import { initZoom, isGesturing, isPanMode, setPanMode, zoomBy } from "./zoom.js";
+import { initZoom, setPanMode, zoomBy } from "./zoom.js";
 import { initShapesDock } from "./shapes-dock.js";
 import { initTransformMode } from "./transform-mode.js";
 import { initMascot } from "./mascot.js";
@@ -81,15 +81,8 @@ function init() {
     if (hov) hov.textContent = "—";
   });
 
-  // convenience: tap the plane to park the mascot there (point-drop is Enter /
-  // the drop key, so a stray tap never registers an unwanted vertex)
-  stage.addEventListener("pointerdown", (e) => {
-    if (stage.classList.contains("ca-painting")) return; // painting, not plotting
-    if (isPanMode() || isGesturing()) return; // panning / pinch gesture in progress
-    if (e.pointerType === "touch" && !e.isPrimary) return; // second finger of a pinch
-    const l = toLattice(...svgPixelArgs(e));
-    setCursor(l.x, l.y);
-  });
+  // (click-to-place the cursor is handled in zoom.js, which distinguishes a
+  // click from a pan/axis drag)
 
   initMenu();
   initSteer();
