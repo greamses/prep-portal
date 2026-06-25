@@ -43,6 +43,7 @@ function toPuzzle(doc) {
     difficulty: doc.difficulty,
     grid: doc.grid,
     targets: doc.points || [],
+    shapes: Array.isArray(doc.shapes) ? doc.shapes : null,
     closed: doc.closed,
   };
 }

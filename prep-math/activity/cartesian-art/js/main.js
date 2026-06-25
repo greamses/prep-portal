@@ -25,6 +25,7 @@ import { initLibrary } from "./library.js";
 import { initExport, loadFromUrl } from "./export.js";
 import { initAiGenerate } from "./ai-generate.js";
 import { initGallery } from "./gallery.js";
+import { initTaskPanel } from "./task-panel.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -41,6 +42,7 @@ function init() {
   initToolRail(document);
   initTransformMode();
   initPuzzleMode();
+  initTaskPanel();
   initLibrary();
   initShapesDock();
   initZoom(stage);

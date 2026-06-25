@@ -21,11 +21,17 @@ function el(name, attrs = {}, parent = null) {
 }
 function clear(g) { while (g.firstChild) g.removeChild(g.firstChild); }
 
+/* The numbered target dots are now an optional hint — by default a task shows
+   only its coordinates (task-panel.js) and the learner plots them. */
+let showTargets = false;
+export function setShowTargets(on) { showTargets = !!on; renderGhosts(); }
+export function getShowTargets() { return showTargets; }
+
 /* ── ghost target dots ─────────────────────────────────────────────────── */
 function renderGhosts() {
   const G = layers.ghost;
   clear(G);
-  if (state.mode !== "puzzle" || !state.puzzle) return;
+  if (state.mode !== "puzzle" || !state.puzzle || !showTargets) return;
   const got = new Set(allPoints().map((p) => `${p.x},${p.y}`));
   state.puzzle.targets.forEach((t, i) => {
     const p = toPx(t.x, t.y);
@@ -87,7 +93,7 @@ export function initPuzzleMode() {
   updateMission();
 
   subscribe((reason) => {
-    if (reason === "puzzle") { renderGhosts(); updateMission(); }
+    if (reason === "puzzle") { showTargets = false; renderGhosts(); updateMission(); }
     else if (reason === "points" || reason === "close" || reason === "shapes") { renderGhosts(); updateMission(); }
     else if (reason === "grid") { renderGhosts(); }
   });

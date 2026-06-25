@@ -141,11 +141,30 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/></svg>
               <span id="mission-progress">0/0 points</span>
             </span>
+            <button class="ca-soft-btn" type="button" id="mission-coords" title="Show the task coordinates">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+              Coordinates
+            </button>
             <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="mission-check">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
               Check
             </button>
             <button class="ca-soft-btn" type="button" id="mission-exit">Exit</button>
+          </div>
+        </div>
+
+        <!-- ═══ TASK PANEL (puzzle mode — coordinates to plot) ═══ -->
+        <div class="ca-dock ca-dock--task" id="dock-task" data-dock="task">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Your task</span>
+            <button class="ca-dock-toggle" type="button" id="task-close" aria-label="Hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
+            <div class="ca-task-object" id="task-object">—</div>
+            <p class="ca-task-help">Plot these points in order and join them with line segments. Use the colours shown.</p>
+            <label class="ca-task-dots"><input type="checkbox" id="task-show-dots" /> Show dots on the grid</label>
+            <div class="ca-task-lines" id="task-lines"></div>
           </div>
         </div>
 
@@ -583,24 +602,48 @@
         <div class="ca-modal-body">
           <label class="ca-field">
             <span>Describe the picture</span>
-            <textarea id="ai-desc" rows="3" maxlength="200" placeholder="e.g. a sailboat on the water"></textarea>
+            <textarea id="ai-desc" rows="2" maxlength="200" placeholder="e.g. a sailboat on the water"></textarea>
           </label>
-          <label class="ca-field">
-            <span>Detail</span>
-            <select id="ai-detail">
-              <option value="simple">Simple</option>
-              <option value="medium" selected>Medium</option>
-              <option value="detailed">Detailed</option>
-            </select>
-          </label>
-          <p class="ca-export-note">The AI sketches connect-the-dots coordinates straight onto the grid. Review and tweak before saving — keep puzzles original.</p>
+          <div class="ca-ai-row">
+            <label class="ca-field">
+              <span>Detail</span>
+              <select id="ai-detail">
+                <option value="simple">Simple</option>
+                <option value="medium" selected>Medium</option>
+                <option value="detailed">Detailed</option>
+              </select>
+            </label>
+            <label class="ca-field">
+              <span>Colours / notes <em>(optional)</em></span>
+              <input type="text" id="ai-notes" maxlength="160" placeholder="e.g. blue hull, white sail" />
+            </label>
+          </div>
+
+          <div class="ca-ai-actions">
+            <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="ai-generate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>
+              Generate here
+            </button>
+            <button class="ca-soft-btn" type="button" id="ai-copy" title="Copy the full prompt for an external AI">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <span class="ca-copy-label">Copy prompt</span>
+            </button>
+          </div>
+
+          <details class="ca-author-paste">
+            <summary>Paste a result from another AI</summary>
+            <p class="ca-author-paste-help">Copy the prompt above, run it in any AI, then paste its worksheet answer here.</p>
+            <textarea id="ai-paste" class="ca-coord-input" rows="5" spellcheck="false" placeholder="Object: …&#10;Line 1 {Orange with yellow fill}: (-4,-11), (-6,-6), …"></textarea>
+            <div class="ca-coord-foot">
+              <span></span>
+              <button type="button" id="ai-load" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent">Load result onto grid</button>
+            </div>
+          </details>
+
+          <p class="ca-export-note">Coordinates load straight onto the grid. Review and tweak before saving — keep puzzles original.</p>
         </div>
         <div class="ca-modal-foot">
           <span class="ca-author-status" id="ai-status"></span>
-          <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="ai-generate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>
-            Generate
-          </button>
         </div>
       </div>
     </div>

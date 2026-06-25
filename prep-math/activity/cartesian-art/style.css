@@ -1282,7 +1282,11 @@ body {
 }
 
 /* ── generate-with-AI modal ──────────────────────────────────────────────── */
-.ca-ai-modal { width: min(440px, 100%); }
+.ca-ai-modal { width: min(480px, 100%); }
+.ca-ai-row { display: flex; gap: 0.8rem; }
+.ca-ai-row .ca-field { flex: 1; min-width: 0; }
+.ca-ai-actions { display: flex; gap: 8px; margin: 0.2rem 0; }
+.ca-ai-actions .ca-soft-btn { flex: 1; justify-content: center; }
 
 /* ── export / print / share modal ────────────────────────────────────────── */
 .ca-export-modal { width: min(680px, 100%); }
@@ -1421,6 +1425,51 @@ body {
   text-overflow: ellipsis;
 }
 .ca-gallery-hint { font-size: 0.72rem; color: var(--text-tertiary); }
+
+/* ── task panel (puzzle mode: object + colours + coordinates) ────────────── */
+.ca-studio .ca-dock--task { left: auto; right: 12px; top: 12px; bottom: auto; max-width: min(330px, 86vw); }
+.ca-soft-btn.is-active { background: var(--accent-primary); color: var(--text-on-accent); }
+.ca-task-object {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: 1rem;
+  color: var(--ink);
+}
+.ca-task-help { font-size: 0.72rem; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+.ca-task-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ca-task-lines { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; }
+.ca-task-line { display: flex; gap: 8px; align-items: flex-start; }
+.ca-task-swatch {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 2px solid var(--ink);
+  margin-top: 2px;
+}
+.ca-task-line-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ca-task-line-name {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.ca-task-coords {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink);
+  line-height: 1.5;
+  word-break: break-word;
+}
 
 /* ============================================================================
    IMPROVEMENTS — hamburger menu · pan · transform mode (arrows/analog) · ghost
