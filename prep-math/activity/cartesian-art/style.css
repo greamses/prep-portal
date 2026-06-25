@@ -1412,7 +1412,7 @@ body {
 .ca-tf-ghost-dot { fill: color-mix(in srgb, var(--ink) 24%, transparent); }
 .ca-anim-group { pointer-events: none; }
 
-/* ── left tool rail (Photoshop-style) ────────────────────────────────────── */
+/* ── left tool rail (draggable; bare icons, no background) ────────────────── */
 .ca-toolrail {
   position: absolute;
   left: 12px;
@@ -1421,32 +1421,62 @@ body {
   z-index: 28;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-  background: color-mix(in srgb, var(--surface-primary) 90%, transparent);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-  border: var(--border-subtle);
-  border-radius: 18px;
-  box-shadow: var(--shadow-lg);
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
+.ca-toolrail.is-dragging { opacity: 0.92; }
+.ca-toolrail-grip {
+  display: flex;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: grab;
+  padding: 2px 0 4px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+.ca-toolrail-grip:active { cursor: grabbing; }
+.ca-toolrail-grip svg { width: 18px; height: 18px; }
 .ca-toolrail-btn {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 12px;
-  background: var(--surface-secondary);
+  background: none;
+  box-shadow: none;
   color: var(--ink);
-  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.12s ease, color 0.15s ease;
 }
-.ca-toolrail-btn:hover { transform: translateY(-1px); background: var(--surface-primary); box-shadow: var(--shadow-md); }
-.ca-toolrail-btn:active { transform: translateY(0) scale(0.94); }
-.ca-toolrail-btn.is-active { background: var(--accent-primary); color: var(--text-on-accent); }
-.ca-toolrail-btn svg { width: 20px; height: 20px; }
+.ca-toolrail-btn:hover { transform: translateY(-1px) scale(1.06); color: var(--accent-secondary); }
+.ca-toolrail-btn:active { transform: scale(0.92); }
+.ca-toolrail-btn.is-active { color: var(--accent-secondary); transform: scale(1.08); }
+.ca-toolrail-btn svg { width: 23px; height: 23px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.22)); }
+
+/* ── steering pad toggle (its own bare-icon button) + floating pad ───────── */
+.ca-steer-toggle {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 29;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.15s ease;
+}
+.ca-steer-toggle:hover { transform: translateY(-1px) scale(1.06); color: var(--accent-secondary); }
+.ca-steer-toggle.is-active { color: var(--accent-secondary); }
+.ca-steer-toggle svg { width: 30px; height: 30px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.22)); }
+.ca-studio .ca-dock--float { left: 12px; bottom: 70px; top: auto; right: auto; }
 
 /* docks are now rail flyout panels: anchored beside the rail, one open at a time,
    no longer draggable (override the old per-dock corner positions) */

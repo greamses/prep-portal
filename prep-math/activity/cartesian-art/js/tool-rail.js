@@ -8,17 +8,25 @@
    draggable-dock behaviour.
    ========================================================================== */
 
+import { makeDraggable } from "./draggable.js";
+
 const OPEN_KEY = "ca-rail-open-v1";
 
 export function initToolRail(scope = document) {
   const rail = scope.querySelector("#ca-toolrail");
   if (!rail) return;
 
-  const docks = {};
-  scope.querySelectorAll(".ca-dock").forEach((d) => { docks[d.dataset.dock] = d; });
   const btns = [...rail.querySelectorAll(".ca-toolrail-btn")];
 
-  let open = "move"; // first visit: show the steering panel
+  // only docks that have a rail button are part of the accordion (the steering
+  // pad is extracted and toggled separately — see main.js initSteer)
+  const docks = {};
+  btns.forEach((b) => {
+    const d = scope.querySelector(`.ca-dock[data-dock="${b.dataset.panel}"]`);
+    if (d) docks[b.dataset.panel] = d;
+  });
+
+  let open = "shapes"; // first visit: show a useful panel
   try {
     const saved = localStorage.getItem(OPEN_KEY);
     if (saved !== null) open = saved || null; // "" = deliberately all-closed
@@ -38,14 +46,18 @@ export function initToolRail(scope = document) {
     });
   });
 
-  // the panel's chevron closes it
+  // the panel's chevron closes it; each panel is draggable by its header
   for (const k in docks) {
     docks[k].querySelector(".ca-dock-toggle")?.addEventListener("click", (e) => {
       e.stopPropagation();
       open = null;
       apply();
     });
+    makeDraggable(docks[k], docks[k].querySelector(".ca-dock-head"), `ca-dockpos-${k}`);
   }
+
+  // the rail itself is draggable by its grip
+  makeDraggable(rail, scope.querySelector("#ca-toolrail-grip"), "ca-rail-pos");
 
   apply();
 }

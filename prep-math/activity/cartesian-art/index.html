@@ -145,14 +145,17 @@
 
         <!-- ═══ LEFT TOOL RAIL (Photoshop-style; opens one panel at a time) ═══ -->
         <div class="ca-toolrail" id="ca-toolrail" role="toolbar" aria-label="Tools">
+          <span class="ca-toolrail-grip" id="ca-toolrail-grip" aria-hidden="true" title="Drag to move">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+          </span>
           <button class="ca-toolrail-btn" type="button" data-panel="readout" title="Position" aria-label="Position">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
           </button>
           <button class="ca-toolrail-btn" type="button" data-panel="shapes" title="Shapes &amp; coordinates" aria-label="Shapes and coordinates">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
           </button>
-          <button class="ca-toolrail-btn" type="button" data-panel="move" title="Steer" aria-label="Steer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><path d="M9 8l3-3 3 3M16 9l3 3-3 3M15 16l-3 3-3-3M8 15l-3-3 3-3"/></svg>
+          <button class="ca-toolrail-btn" type="button" data-panel="actions" title="Point actions" aria-label="Point actions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7.5"/></svg>
           </button>
           <button class="ca-toolrail-btn" type="button" data-panel="paint" title="Paint" aria-label="Paint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l4-1 11-11a2.8 2.8 0 0 0-4-4L3 16l-1 5z"/><path d="M14 6l4 4"/></svg>
@@ -161,6 +164,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4"/><path d="M14 7h6M17 4v6M14 17l3 3 3-3M17 14v6M4 17h6M7 14v6"/></svg>
           </button>
         </div>
+
+        <!-- ═══ STEER TOGGLE (separate from the rail) ═══ -->
+        <button class="ca-steer-toggle" id="ca-steer-toggle" type="button" title="Steering controls" aria-label="Steering controls" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10" /><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>
+        </button>
 
         <!-- ═══ DOCK: position readout ═══ -->
         <div class="ca-dock ca-dock--readout" id="dock-readout" data-dock="readout">
@@ -210,7 +218,7 @@
         </div>
 
         <!-- ═══ DOCK: steering ═══ -->
-        <div class="ca-dock ca-dock--move" id="dock-move" data-dock="move">
+        <div class="ca-dock ca-dock--move ca-dock--float" id="dock-move" data-dock="move">
           <div class="ca-dock-head">
             <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
             <span class="ca-dock-title">Steer</span>
@@ -256,6 +264,17 @@
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- ═══ DOCK: point actions ═══ -->
+        <div class="ca-dock ca-dock--actions" id="dock-actions" data-dock="actions">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Actions</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
             <div class="ca-actions">
               <button type="button" id="act-drop" class="ca-soft-btn ca-soft-btn--accent">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="8"/></svg>

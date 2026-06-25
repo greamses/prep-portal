@@ -17,6 +17,7 @@ import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
 import { initToolRail } from "./tool-rail.js";
+import { makeDraggable } from "./draggable.js";
 import { initTransforms } from "./transforms.js";
 import { initHistory } from "./history.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
@@ -84,7 +85,32 @@ function init() {
   });
 
   initMenu();
+  initSteer();
   initFullscreen();
+}
+
+/* ── steering pad: extracted from the rail, toggled on its own ─────────────── */
+function initSteer() {
+  const dock = $("#dock-move");
+  const toggle = $("#ca-steer-toggle");
+  if (!dock || !toggle) return;
+  const KEY = "ca-steer-open";
+
+  const setOpen = (on) => {
+    dock.classList.toggle("is-open", on);
+    toggle.classList.toggle("is-active", on);
+    toggle.setAttribute("aria-pressed", on ? "true" : "false");
+    try { localStorage.setItem(KEY, on ? "1" : "0"); } catch {}
+  };
+
+  let open = true; // visible by default — it's the primary control
+  try { const s = localStorage.getItem(KEY); if (s !== null) open = s === "1"; } catch {}
+
+  toggle.addEventListener("click", () => setOpen(!dock.classList.contains("is-open")));
+  dock.querySelector(".ca-dock-toggle")?.addEventListener("click", () => setOpen(false));
+  makeDraggable(dock, dock.querySelector(".ca-dock-head"), "ca-steerpos");
+
+  setOpen(open);
 }
 
 /* ── hamburger menu of floating toggles ───────────────────────────────────── */
