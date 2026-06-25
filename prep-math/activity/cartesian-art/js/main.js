@@ -16,7 +16,7 @@ import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
-import { initDocks } from "./dock.js";
+import { initToolRail } from "./tool-rail.js";
 import { initTransforms } from "./transforms.js";
 import { initHistory } from "./history.js";
 import { initPuzzleMode } from "./puzzle-mode.js";
@@ -35,7 +35,7 @@ function init() {
   initControls(document);
   initPaint();
   initTransforms(document);
-  initDocks(document);
+  initToolRail(document);
   initTransformMode();
   initPuzzleMode();
   initLibrary();

@@ -1411,3 +1411,60 @@ body {
 }
 .ca-tf-ghost-dot { fill: color-mix(in srgb, var(--ink) 24%, transparent); }
 .ca-anim-group { pointer-events: none; }
+
+/* ── left tool rail (Photoshop-style) ────────────────────────────────────── */
+.ca-toolrail {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 28;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--surface-primary) 90%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+}
+.ca-toolrail-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.ca-toolrail-btn:hover { transform: translateY(-1px); background: var(--surface-primary); box-shadow: var(--shadow-md); }
+.ca-toolrail-btn:active { transform: translateY(0) scale(0.94); }
+.ca-toolrail-btn.is-active { background: var(--accent-primary); color: var(--text-on-accent); }
+.ca-toolrail-btn svg { width: 20px; height: 20px; }
+
+/* docks are now rail flyout panels: anchored beside the rail, one open at a time,
+   no longer draggable (override the old per-dock corner positions) */
+.ca-studio .ca-dock {
+  left: 74px;
+  right: auto;
+  top: 16px;
+  bottom: auto;
+  display: none;
+  max-height: calc(100% - 32px);
+}
+.ca-studio .ca-dock.is-open { display: block; }
+.ca-studio .ca-dock .ca-dock-body { max-height: calc(88vh - 56px); overflow-y: auto; }
+.ca-dock-grip { display: none; } /* dragging replaced by the rail */
+.ca-dock-toggle svg { transform: rotate(90deg); } /* chevron points left = "close" */
+
+@media (max-width: 560px) {
+  .ca-toolrail { gap: 6px; padding: 6px; }
+  .ca-toolrail-btn { width: 38px; height: 38px; }
+  .ca-studio .ca-dock { left: 62px; }
+}

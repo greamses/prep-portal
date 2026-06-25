@@ -44,10 +44,14 @@ function applyView(cx, cy, sx, sy) {
   setView(cx - sx / 2, cx + sx / 2, cy - sy / 2, cy + sy / 2);
 }
 
-/* ── wheel zoom (about the pointer) ─────────────────────────────────────── */
+/* ── pinch zoom (about the pointer) ─────────────────────────────────────────
+   Only a pinch gesture zooms — on a trackpad the browser delivers that as a
+   wheel event with ctrlKey set. A plain scroll is left alone so the page can
+   scroll normally; touchscreens use the two-finger pinch handler below. */
 function onWheel(e, stage) {
+  if (!e.ctrlKey) return; // plain scroll → let the page scroll
   e.preventDefault();
-  const factor = e.deltaY > 0 ? 1.12 : 1 / 1.12; // down = zoom out
+  const factor = e.deltaY > 0 ? 1.08 : 1 / 1.08; // down = zoom out
   // math point under the cursor (anchor)
   const r = stage.getBoundingClientRect();
   const px = e.clientX - r.left;

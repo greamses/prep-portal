@@ -144,27 +144,32 @@ function subStep(major) {
   return 0;
 }
 
-/** Vertical/horizontal lines at every multiple of `step` within [lo,hi]. */
-function gridLinesX(parent, step, cls, g) {
+/** Vertical lines at every multiple of `step` spanning the full stage height. */
+function gridLinesX(parent, step, cls, xLo, xHi) {
   if (step <= 0) return;
-  for (let k = Math.ceil(g.xMin / step); k * step <= g.xMax + 1e-9; k++) {
+  for (let k = Math.ceil(xLo / step); k * step <= xHi; k++) {
     const x = k * step;
     if (x === 0) continue;
-    const a = toPx(x, g.yMin), b = toPx(x, g.yMax);
-    el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }, parent);
+    const px = toPx(x, 0).x;
+    el("line", { x1: px, y1: 0, x2: px, y2: layout.h, class: cls }, parent);
   }
 }
-function gridLinesY(parent, step, cls, g) {
+/** Horizontal lines at every multiple of `step` spanning the full stage width. */
+function gridLinesY(parent, step, cls, yLo, yHi) {
   if (step <= 0) return;
-  for (let k = Math.ceil(g.yMin / step); k * step <= g.yMax + 1e-9; k++) {
+  for (let k = Math.ceil(yLo / step); k * step <= yHi; k++) {
     const y = k * step;
     if (y === 0) continue;
-    const a = toPx(g.xMin, y), b = toPx(g.xMax, y);
-    el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }, parent);
+    const py = toPx(0, y).y;
+    el("line", { x1: 0, y1: py, x2: layout.w, y2: py, class: cls }, parent);
   }
 }
 
-/** Draw gridlines + axes + tick labels. */
+const cap = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/** Draw gridlines + axes + tick labels. The grid fills the ENTIRE stage (lines
+ *  extend past the coordinate window to the viewport edges — no white margins);
+ *  the window just sets the scale + centring. */
 function drawGrid() {
   const g = state.grid;
   const G = layers.grid;
@@ -172,54 +177,56 @@ function drawGrid() {
   clear(G);
   clear(A);
 
+  const w = layout.w, h = layout.h;
+  // math span actually visible in the stage rectangle
+  const xLo = toMath(0, 0).x, xHi = toMath(w, 0).x;
+  const yLo = toMath(0, h).y, yHi = toMath(0, 0).y;
+
   const major = niceStep(Math.max(g.xMax - g.xMin, g.yMax - g.yMin));
   const minor = subStep(major);
 
   // inner (minor) gridlines first, then the major lines over them
-  gridLinesX(G, minor, "ca-grid-line ca-grid-line--minor", g);
-  gridLinesY(G, minor, "ca-grid-line ca-grid-line--minor", g);
-  gridLinesX(G, major, "ca-grid-line", g);
-  gridLinesY(G, major, "ca-grid-line", g);
+  gridLinesX(G, minor, "ca-grid-line ca-grid-line--minor", xLo, xHi);
+  gridLinesY(G, minor, "ca-grid-line ca-grid-line--minor", yLo, yHi);
+  gridLinesX(G, major, "ca-grid-line", xLo, xHi);
+  gridLinesY(G, major, "ca-grid-line", yLo, yHi);
 
-  // the two axes themselves
-  el("line", {
-    x1: toPx(g.xMin, 0).x, y1: toPx(g.xMin, 0).y,
-    x2: toPx(g.xMax, 0).x, y2: toPx(g.xMax, 0).y, class: "ca-grid-axisline",
-  }, G);
-  el("line", {
-    x1: toPx(0, g.yMin).x, y1: toPx(0, g.yMin).y,
-    x2: toPx(0, g.yMax).x, y2: toPx(0, g.yMax).y, class: "ca-grid-axisline",
-  }, G);
+  // axes span the full stage; arrowheads sit at the viewport edges
+  const axisY = toPx(0, 0).y; // pixel y of the x-axis
+  const axisX = toPx(0, 0).x; // pixel x of the y-axis
+  const xAxisOn = axisY >= 0 && axisY <= h;
+  const yAxisOn = axisX >= 0 && axisX <= w;
+  if (xAxisOn) {
+    el("line", { x1: 0, y1: axisY, x2: w, y2: axisY, class: "ca-axis" }, A);
+    drawArrow(A, { x: w - 2, y: axisY }, "x+");
+    drawArrow(A, { x: 2, y: axisY }, "x-");
+  }
+  if (yAxisOn) {
+    el("line", { x1: axisX, y1: 0, x2: axisX, y2: h, class: "ca-axis" }, A);
+    drawArrow(A, { x: axisX, y: 2 }, "y+");
+    drawArrow(A, { x: axisX, y: h - 2 }, "y-");
+  }
 
-  // axes (drawn over gridlines, with arrowheads)
-  const left = toPx(g.xMin, 0);
-  const right = toPx(g.xMax, 0);
-  const top = toPx(0, g.yMax);
-  const bottom = toPx(0, g.yMin);
-  el("line", { x1: left.x, y1: left.y, x2: right.x, y2: right.y, class: "ca-axis" }, A);
-  el("line", { x1: bottom.x, y1: bottom.y, x2: top.x, y2: top.y, class: "ca-axis" }, A);
-  drawArrow(A, right, "x+");
-  drawArrow(A, left, "x-");
-  drawArrow(A, top, "y+");
-  drawArrow(A, bottom, "y-");
-
-  // tick labels (on major lines only)
+  // tick labels (on major lines only); when an axis is panned off-screen, pin
+  // the labels to the nearest edge so the numbers stay readable
   if (state.ui.showLabels) {
-    for (let k = Math.ceil(g.xMin / major); k * major <= g.xMax + 1e-9; k++) {
+    const labelY = cap(axisY, 14, h - 6);
+    const labelX = cap(axisX, 16, w - 4);
+    for (let k = Math.ceil(xLo / major); k * major <= xHi; k++) {
       const x = k * major;
       if (x === 0) continue;
-      const p = toPx(x, 0);
-      el("text", { x: p.x, y: p.y + 16, class: "ca-tick" }, A).textContent = String(x);
+      const px = toPx(x, 0).x;
+      el("text", { x: px, y: labelY + 16, class: "ca-tick" }, A).textContent = String(x);
     }
-    for (let k = Math.ceil(g.yMin / major); k * major <= g.yMax + 1e-9; k++) {
+    for (let k = Math.ceil(yLo / major); k * major <= yHi; k++) {
       const y = k * major;
       if (y === 0) continue;
-      const p = toPx(0, y);
-      el("text", { x: p.x - 9, y: p.y + 4, class: "ca-tick ca-tick--y" }, A).textContent = String(y);
+      const py = toPx(0, y).y;
+      el("text", { x: labelX - 9, y: py + 4, class: "ca-tick ca-tick--y" }, A).textContent = String(y);
     }
-    // origin
-    const o = toPx(0, 0);
-    el("text", { x: o.x - 9, y: o.y + 16, class: "ca-tick ca-tick--o" }, A).textContent = "0";
+    if (xAxisOn && yAxisOn) {
+      el("text", { x: axisX - 9, y: axisY + 16, class: "ca-tick ca-tick--o" }, A).textContent = "0";
+    }
   }
 }
 

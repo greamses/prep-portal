@@ -143,6 +143,25 @@
           </div>
         </div>
 
+        <!-- ═══ LEFT TOOL RAIL (Photoshop-style; opens one panel at a time) ═══ -->
+        <div class="ca-toolrail" id="ca-toolrail" role="toolbar" aria-label="Tools">
+          <button class="ca-toolrail-btn" type="button" data-panel="readout" title="Position" aria-label="Position">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+          </button>
+          <button class="ca-toolrail-btn" type="button" data-panel="shapes" title="Shapes &amp; coordinates" aria-label="Shapes and coordinates">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
+          </button>
+          <button class="ca-toolrail-btn" type="button" data-panel="move" title="Steer" aria-label="Steer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><path d="M9 8l3-3 3 3M16 9l3 3-3 3M15 16l-3 3-3-3M8 15l-3-3 3-3"/></svg>
+          </button>
+          <button class="ca-toolrail-btn" type="button" data-panel="paint" title="Paint" aria-label="Paint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l4-1 11-11a2.8 2.8 0 0 0-4-4L3 16l-1 5z"/><path d="M14 6l4 4"/></svg>
+          </button>
+          <button class="ca-toolrail-btn" type="button" data-panel="transform" title="Transform" aria-label="Transform">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4"/><path d="M14 7h6M17 4v6M14 17l3 3 3-3M17 14v6M4 17h6M7 14v6"/></svg>
+          </button>
+        </div>
+
         <!-- ═══ DOCK: position readout ═══ -->
         <div class="ca-dock ca-dock--readout" id="dock-readout" data-dock="readout">
           <div class="ca-dock-head">
@@ -302,7 +321,7 @@
         </div>
 
         <!-- ═══ DOCK: transform (starts collapsed) ═══ -->
-        <div class="ca-dock ca-dock--transform is-collapsed" id="dock-transform" data-dock="transform">
+        <div class="ca-dock ca-dock--transform" id="dock-transform" data-dock="transform">
           <div class="ca-dock-head">
             <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
             <span class="ca-dock-title">Transform</span>
