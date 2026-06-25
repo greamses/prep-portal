@@ -16,6 +16,7 @@ import {
   isAdminUser,
 } from "./puzzles.js";
 import { parseWorksheet } from "./parse.js";
+import { buildThumb, normalizeShapes } from "./thumb.js";
 import { auth } from "/firebase-init.js";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -86,6 +87,16 @@ function card(doc) {
       </span>
     </div>
     <div class="ca-puzzle-actions"></div>`;
+
+  // visual preview of the puzzle's outline
+  const shapes = normalizeShapes(doc);
+  if (shapes.length) {
+    const thumb = document.createElement("div");
+    thumb.className = "ca-puzzle-thumb";
+    thumb.appendChild(buildThumb(shapes, 116, 88));
+    wrap.prepend(thumb);
+  }
+
   const actions = wrap.querySelector(".ca-puzzle-actions");
 
   const play = document.createElement("button");

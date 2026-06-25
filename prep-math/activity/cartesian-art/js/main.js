@@ -24,6 +24,7 @@ import { initPuzzleMode } from "./puzzle-mode.js";
 import { initLibrary } from "./library.js";
 import { initExport, loadFromUrl } from "./export.js";
 import { initAiGenerate } from "./ai-generate.js";
+import { initGallery } from "./gallery.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -45,6 +46,7 @@ function init() {
   initZoom(stage);
   initExport();
   initAiGenerate();
+  initGallery();
   loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
   initHistory(); // last: baseline snapshot needs the brush bridge registered
 
