@@ -27,6 +27,7 @@ import { initExport, loadFromUrl } from "./export.js";
 import { initAiGenerate } from "./ai-generate.js";
 import { initGallery } from "./gallery.js";
 import { initTaskPanel } from "./task-panel.js";
+import { initRangeFills } from "./range-fill.js";
 import { fmtCoord } from "./scale.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -90,6 +91,7 @@ function init() {
   initSteer();
   initShortcuts();
   initFullscreen();
+  initRangeFills(document); // custom filled-track sliders
 }
 
 /* ── keyboard shortcuts (arrows/Enter/Del/C/undo live in controls.js) ─────── */

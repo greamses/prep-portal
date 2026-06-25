@@ -1008,6 +1008,70 @@ body {
 }
 .ca-grad-status { font-size: 0.66rem; opacity: 0.7; min-height: 0.8em; }
 
+/* ── custom range sliders (soft-UI, filled track via --p) ────────────────── */
+.ca-dock input[type="range"],
+.ca-wheel input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+  --p: 50%;
+}
+/* WebKit / Blink */
+.ca-dock input[type="range"]::-webkit-slider-runnable-track,
+.ca-wheel input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--accent-secondary) var(--p), rgba(0, 0, 0, 0) var(--p)),
+    color-mix(in srgb, var(--ink) 12%, var(--surface-secondary));
+  box-shadow: inset 0 1px 2px rgba(20, 19, 15, 0.16);
+}
+.ca-dock input[type="range"]::-webkit-slider-thumb,
+.ca-wheel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--surface-primary);
+  border: 3px solid var(--accent-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.ca-dock input[type="range"]:hover::-webkit-slider-thumb,
+.ca-wheel input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.14); }
+.ca-dock input[type="range"]:active::-webkit-slider-thumb,
+.ca-wheel input[type="range"]:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+}
+/* Firefox */
+.ca-dock input[type="range"]::-moz-range-track,
+.ca-wheel input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 12%, var(--surface-secondary));
+  box-shadow: inset 0 1px 2px rgba(20, 19, 15, 0.16);
+}
+.ca-dock input[type="range"]::-moz-range-progress,
+.ca-wheel input[type="range"]::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent-secondary);
+}
+.ca-dock input[type="range"]::-moz-range-thumb,
+.ca-wheel input[type="range"]::-moz-range-thumb {
+  width: 17px;
+  height: 17px;
+  border: 3px solid var(--accent-secondary);
+  border-radius: 50%;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Photoshop-style gradient bar: ramp + draggable stop markers */
 .ca-grad-bar {
   position: relative;

@@ -15,6 +15,7 @@
 import { state, setFill, setActiveShape, subscribe } from "./state.js";
 import { clientToMath, onRender } from "./grid.js";
 import { registerCanvas, commit as historyCommit } from "./history.js";
+import { paintRange } from "./range-fill.js";
 
 export const PALETTE = [
   "#f07a7a", "#f0a868", "#f4c95d", "#7cc47c", "#6fd0c0",
@@ -329,7 +330,7 @@ function initWheel() {
     const next = hexToHsv(e.target.value);
     if (!next) { e.target.value = rgbToHex(hsvToRgb(hsv.h, hsv.s, hsv.v)); return; }
     Object.assign(hsv, next);
-    const vs = $("#ca-wheel-val"); if (vs) vs.value = Math.round(hsv.v * 100);
+    const vs = $("#ca-wheel-val"); if (vs) { vs.value = Math.round(hsv.v * 100); paintRange(vs); }
     drawWheel();
     applyWheelColor(false);
     if (tool.name === "move") setTool("brush");

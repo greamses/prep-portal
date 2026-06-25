@@ -11,6 +11,7 @@
    ========================================================================== */
 
 import { setFill, activeShape } from "./state.js";
+import { paintRange } from "./range-fill.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const $ = (s) => document.querySelector(s);
@@ -129,7 +130,7 @@ function syncStopCtl() {
   const s = stops[sel];
   if (!s) return;
   if (c) c.value = s.color;
-  if (a) a.value = Math.round(s.alpha * 100);
+  if (a) { a.value = Math.round(s.alpha * 100); paintRange(a); }
   if (p) p.value = Math.round(s.pos);
   if (d) d.disabled = stops.length <= 2;
 }
