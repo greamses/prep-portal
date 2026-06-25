@@ -7,12 +7,13 @@
      • Scroll wheel                → zoom about the pointer.
      • Two-finger pinch            → zoom (+ pan with the midpoint).
      • Click without dragging      → drop the cursor there (plot).
+     • Double-click / double-tap    → add a point here (or remove one on it).
    Keyboard +/- zoom (zoomBy) and V/Space force-pan stay. Everything drives
    state.setView (clamped to ±GRID_MAX). The "V"/pan tool just forces a drag to
    pan even when it starts on an axis.
    ========================================================================== */
 
-import { state, setView, squareView, setCursor } from "./state.js";
+import { state, setView, setCursor, addPoint, deletePointAtCursor } from "./state.js";
 import { layout, toPx, toMath, toLattice } from "./grid.js";
 
 const pointers = new Map(); // touch pointers
@@ -157,6 +158,29 @@ function clickPlace(e, stage) {
   setCursor(l.x, l.y);
 }
 
+/* Double-click / double-tap: drop a point here, or remove the one already on
+   this lattice cell. Snaps to the lattice first so it lands exactly on grid. */
+function toggleAt(clientX, clientY, stage) {
+  if (stage.classList.contains("ca-painting")) return;
+  const r = stage.getBoundingClientRect();
+  const l = toLattice(clientX - r.left, clientY - r.top);
+  setCursor(l.x, l.y);
+  if (!deletePointAtCursor()) addPoint();
+}
+
+/* Touch double-tap detection (browsers don't reliably fire dblclick on touch). */
+let lastTap = 0, lastTapX = 0, lastTapY = 0;
+function maybeDoubleTap(e, stage) {
+  if (e.pointerType !== "touch") return;
+  const now = Date.now();
+  if (now - lastTap < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 30) {
+    lastTap = 0;
+    toggleAt(e.clientX, e.clientY, stage);
+  } else {
+    lastTap = now; lastTapX = e.clientX; lastTapY = e.clientY;
+  }
+}
+
 export function initZoom(stage) {
   if (!stage) return;
 
@@ -203,7 +227,10 @@ export function initZoom(stage) {
     if (pointers.has(e.pointerId)) pointers.delete(e.pointerId);
     if (pinch && pointers.size < 2) pinch = null;
     if (drag && e.pointerId === drag.id) {
-      if (!drag.moved && !isPanMode()) clickPlace(e, stage);
+      if (!drag.moved && !isPanMode()) {
+        clickPlace(e, stage);
+        maybeDoubleTap(e, stage); // touch: a quick second tap toggles a point
+      }
       if (!isPanMode()) stage.style.cursor = "";
       drag = null;
     }
@@ -211,10 +238,13 @@ export function initZoom(stage) {
   stage.addEventListener("pointerup", onUp);
   stage.addEventListener("pointercancel", onUp);
 
-  // double-click empty canvas → back to square cells
+  // double-click: add a point here (or remove the one already on this cell).
+  // A double-click directly on a marker is handled in points.js (delete by id).
+  // Re-square the grid lives on the "0" key now.
   stage.addEventListener("dblclick", (e) => {
+    if (stage.classList.contains("ca-painting")) return;
     if (e.target.closest(".ca-point")) return;
-    if (state.grid.lockAspect === false) squareView();
+    toggleAt(e.clientX, e.clientY, stage);
   });
 
   // hold Space to pan

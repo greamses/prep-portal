@@ -79,7 +79,40 @@ body {
 .nav-brand-wrap {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   flex-shrink: 0;
+}
+
+/* Site-wide back arrow (injected by nav-builder.js). */
+.nav-back {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-smooth) var(--ease-default),
+    transform var(--duration-smooth) var(--ease-bounce);
+}
+.nav-back[hidden] {
+  display: none;
+}
+.nav-back:hover {
+  background: var(--surface-secondary);
+  transform: translateX(-2px);
+}
+.nav-back:active {
+  transform: translateX(-2px) scale(0.92);
+}
+.nav-back svg {
+  width: 20px;
+  height: 20px;
 }
 
 .nav-logo {

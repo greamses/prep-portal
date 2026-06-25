@@ -17,10 +17,36 @@ import { groqGenerate, groqText } from "/utils/ai-client.js";
 
 const $ = (s) => document.querySelector(s);
 
+/* Each tier is sized so the finished picture is genuinely detailed: from a
+   clean symmetric ~150-point figure up to a rich asymmetric ~300-point scene.
+   `symmetry` steers the model toward mirrored or free-form composition. */
 const DETAIL = {
-  simple:   { shapes: "2 to 4", pts: "5 to 12 integer" },
-  medium:   { shapes: "4 to 6", pts: "6 to 18 integer" },
-  detailed: { shapes: "6 to 9", pts: "6 to 26 integer" },
+  simple: {
+    total: "150 to 200",
+    shapes: "5 to 8",
+    pts: "16 to 32",
+    symmetry:
+      "Make it cleanly SYMMETRIC: pick a vertical centre line and mirror the " +
+      "left and right halves so matching vertices reflect exactly (x, y) ↔ (-x, y). " +
+      "Great for flowers, faces, butterflies, vases, snowflakes.",
+  },
+  medium: {
+    total: "200 to 260",
+    shapes: "7 to 11",
+    pts: "18 to 36",
+    symmetry:
+      "Use symmetry where the subject is naturally symmetric, but add asymmetric " +
+      "detail (shading shapes, highlights, small features) so it doesn't look rigid.",
+  },
+  detailed: {
+    total: "260 to 320",
+    shapes: "9 to 16",
+    pts: "18 to 44",
+    symmetry:
+      "Make it richly DETAILED and ASYMMETRIC: an irregular, organic composition " +
+      "(an animal mid-action, a person, a landscape, a vehicle at an angle). Do NOT " +
+      "force symmetry — let the outline and inner detail be lively and uneven.",
+  },
 };
 
 /* The reference the user supplied — a recognisable, multi-line worked example. */
@@ -52,16 +78,18 @@ Line 2 {<colour> fill}: (x,y), ...
 Line 3 {<colour>}: (x,y), ...
 
 Rules:
-- First sketch the object in your head, then lay the points along its outline.
-- Integer coordinates only, roughly within -33..33, centred near (0,0); keep proportions realistic.
-- Order each line's points so consecutive points are ADJACENT along the outline — never jump across the figure.
-- Build big outline shapes first, then detail shapes (eyes, windows, stripes, base, etc.).
+- First sketch the object in your head, then lay the points densely along its outline.
+- Integer coordinates only, on a LARGE plane: spread the drawing across roughly -200..200 (use most of that space), centred near (0,0); keep proportions realistic.
+- Order each line's points so consecutive points are ADJACENT along the outline — never jump across the figure. Use plenty of points on curves so they read smoothly.
+- Build big outline shapes first, then detail shapes (eyes, windows, stripes, petals, base, etc.).
 - To close a loop, repeat the first point as the last point of that line.
-- Use ${d.shapes} lines; each line has ${d.pts} points.
+- Aim for ${d.total} points IN TOTAL, across ${d.shapes} lines of about ${d.pts} points each.
+- ${d.symmetry}
 - Colours are plain words only: red, orange, yellow, light yellow, light orange, green, turquoise, blue, light blue, indigo, purple, pink, brown, black, white. "{Colour}" = stroke only; "{A with B fill}" = stroke A, fill B; "{Colour fill}" = fill only.
 - It MUST be recognisable as "${desc}".
 
 ${REFERENCE}
+(The example above is small — it only shows the format, ordering and colours. Your drawing must be larger and more detailed, following the point counts above.)
 
 Now output ONLY the worksheet for "${desc}".`
   );
@@ -108,7 +136,7 @@ async function generate() {
       system: SYSTEM,
       prompt: buildPrompt(desc, detail, notes),
       temperature: 0.5,
-      maxTokens: 4096,
+      maxTokens: 8192, // detailed art runs to ~300 coordinates
     });
     if (loadFromText(groqText(result), desc, status)) setTimeout(close, 1400);
   } catch (e) {

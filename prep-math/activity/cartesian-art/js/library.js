@@ -17,6 +17,7 @@ import {
 } from "./puzzles.js";
 import { parseWorksheet } from "./parse.js";
 import { buildThumb, normalizeShapes } from "./thumb.js";
+import { BUILTIN_PUZZLES } from "./builtin-puzzles.js";
 import { auth } from "/firebase-init.js";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -57,16 +58,19 @@ async function openPicker() {
   list.innerHTML = `<p class="ca-modal-loading">Loading puzzles…</p>`;
   empty.hidden = true;
   try {
-    const puzzles = await listPuzzles();
-    if (!puzzles.length) {
-      list.innerHTML = "";
-      empty.hidden = false;
-      return;
-    }
+    const saved = await listPuzzles();
+    // Built-in hard arts always lead the list; saved puzzles follow.
+    const puzzles = [...BUILTIN_PUZZLES, ...saved];
     list.innerHTML = "";
     puzzles.forEach((p) => list.appendChild(card(p)));
   } catch (e) {
-    list.innerHTML = `<p class="ca-modal-loading">Couldn't load puzzles (${e.code || e.message}).</p>`;
+    // Even if Firestore fails, still show the built-in arts.
+    list.innerHTML = "";
+    BUILTIN_PUZZLES.forEach((p) => list.appendChild(card(p)));
+    const note = document.createElement("p");
+    note.className = "ca-modal-loading";
+    note.textContent = `Couldn't load saved puzzles (${e.code || e.message}).`;
+    list.appendChild(note);
   }
 }
 function closePicker() {
@@ -106,7 +110,7 @@ function card(doc) {
   play.addEventListener("click", () => { enterPuzzle(toPuzzle(doc)); closePicker(); });
   actions.appendChild(play);
 
-  if (admin) {
+  if (admin && !doc.builtin) {
     const edit = document.createElement("button");
     edit.className = "ca-soft-btn ca-soft-btn--sm";
     edit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg> Edit`;
