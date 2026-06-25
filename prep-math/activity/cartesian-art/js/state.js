@@ -39,8 +39,9 @@ function makeShape({ points = [], closed = false, fillColor = null, strokeColor 
 }
 
 export const state = {
-  /** Coordinate window currently shown. */
-  grid: { ...DEFAULT_GRID },
+  /** Coordinate window currently shown. lockAspect=true keeps square cells;
+   *  it flips to false once the user zooms on a single axis line. */
+  grid: { ...DEFAULT_GRID, lockAspect: true },
 
   /** Where the mascot/cursor sits, in math units (snapped to integers). */
   cursor: { x: 0, y: 0 },
@@ -179,7 +180,7 @@ export function setShapes(list, grid = null) {
   const shapes = (list || []).map((s) => makeShape(s));
   state.shapes = shapes.length ? shapes : [makeShape()];
   state.activeId = state.shapes[0].id;
-  if (grid) Object.assign(state.grid, grid);
+  if (grid) { Object.assign(state.grid, grid); state.grid.lockAspect = true; }
   else fitGridToPoints();
   state.cursor.x = clamp(state.cursor.x, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(state.cursor.y, state.grid.yMin, state.grid.yMax);
@@ -289,8 +290,10 @@ export function setGrid(patch) {
 }
 
 /** Set an explicit view window (pan/zoom). Clamped to ±GRID_MAX with a sane
- *  minimum span so you can't invert or over-zoom. Emits "grid". */
-export function setView(xMin, xMax, yMin, yMax) {
+ *  minimum span so you can't invert or over-zoom. `lock` controls aspect:
+ *  true → square cells, false → non-uniform (per-axis zoom), undefined → leave
+ *  the current lock state untouched. Emits "grid". */
+export function setView(xMin, xMax, yMin, yMax, lock) {
   // enforce minimum span
   if (xMax - xMin < MIN_SPAN) {
     const c = (xMax + xMin) / 2;
@@ -305,6 +308,13 @@ export function setView(xMin, xMax, yMin, yMax) {
   g.xMax = Math.min(GRID_MAX, Math.round(xMax));
   g.yMin = Math.max(-GRID_MAX, Math.round(yMin));
   g.yMax = Math.min(GRID_MAX, Math.round(yMax));
+  if (lock !== undefined) g.lockAspect = lock;
+  emit("grid");
+}
+
+/** Snap back to square cells (uniform aspect), keeping the current centre. */
+export function squareView() {
+  state.grid.lockAspect = true;
   emit("grid");
 }
 
@@ -326,6 +336,7 @@ function fitGridToPoints() {
   const cur = Math.max(Math.abs(g.xMin), g.xMax, Math.abs(g.yMin), g.yMax);
   const half = Math.min(GRID_MAX, Math.max(cur, need + 1));
   g.xMin = -half; g.xMax = half; g.yMin = -half; g.yMax = half;
+  g.lockAspect = true; // a fresh symmetric window is square again
 }
 
 /** Map every point of every shape through fn(x,y)->{x,y}, keeping ids. */
@@ -365,6 +376,7 @@ export function enterPuzzle(puzzle) {
   state.shapes = [makeShape()];
   state.activeId = state.shapes[0].id;
   if (puzzle.grid) Object.assign(state.grid, puzzle.grid);
+  state.grid.lockAspect = true;
   state.cursor.x = clamp(0, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(0, state.grid.yMin, state.grid.yMax);
   emit("puzzle");

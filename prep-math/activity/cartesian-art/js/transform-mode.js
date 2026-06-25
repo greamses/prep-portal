@@ -40,10 +40,10 @@ export function isAnimatingActive(id) {
 
 /* ── op definitions: math point map + an animated screen transform ─────────── */
 const OPS = {
-  left:   { fn: (x, y) => ({ x: x - 1, y }),     frame: (e) => `translate(${-unit() * e} 0)` },
-  right:  { fn: (x, y) => ({ x: x + 1, y }),     frame: (e) => `translate(${unit() * e} 0)` },
-  up:     { fn: (x, y) => ({ x, y: y + 1 }),     frame: (e) => `translate(0 ${-unit() * e})` },
-  down:   { fn: (x, y) => ({ x, y: y - 1 }),     frame: (e) => `translate(0 ${unit() * e})` },
+  left:   { fn: (x, y) => ({ x: x - 1, y }),     frame: (e) => `translate(${-unitX() * e} 0)` },
+  right:  { fn: (x, y) => ({ x: x + 1, y }),     frame: (e) => `translate(${unitX() * e} 0)` },
+  up:     { fn: (x, y) => ({ x, y: y + 1 }),     frame: (e) => `translate(0 ${-unitY() * e})` },
+  down:   { fn: (x, y) => ({ x, y: y - 1 }),     frame: (e) => `translate(0 ${unitY() * e})` },
   "flip-h": { fn: (x, y) => ({ x: -x, y }),      frame: (e) => about(`scale(${1 - 2 * e} 1)`) },
   "flip-v": { fn: (x, y) => ({ x, y: -y }),      frame: (e) => about(`scale(1 ${1 - 2 * e})`) },
   "rot-cw":  { fn: (x, y) => ({ x: y, y: -x }),  frame: (e) => rot(90 * e) },
@@ -52,7 +52,8 @@ const OPS = {
   smaller: { fn: (x, y) => ({ x: x / 2, y: y / 2 }), frame: (e) => about(`scale(${1 - 0.5 * e})`) },
 };
 
-function unit() { const a = toPx(0, 0), b = toPx(1, 0); return Math.abs(b.x - a.x) || 40; }
+function unitX() { const a = toPx(0, 0), b = toPx(1, 0); return Math.abs(b.x - a.x) || 40; }
+function unitY() { const a = toPx(0, 0), b = toPx(0, 1); return Math.abs(b.y - a.y) || 40; }
 function about(t) { const o = toPx(0, 0); return `translate(${o.x} ${o.y}) ${t} translate(${-o.x} ${-o.y})`; }
 function rot(deg) { const o = toPx(0, 0); return `rotate(${deg} ${o.x} ${o.y})`; }
 

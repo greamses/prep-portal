@@ -11,12 +11,17 @@ import { state, subscribe } from "./state.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 
-/* Live layout, recomputed every render. Other modules read this. */
+/* Live layout, recomputed every render. Other modules read this. unitX/unitY
+   are usually equal (square cells); they diverge only when the user zooms on a
+   single axis line (non-uniform scaling, like a data-plot tool). `unit` is kept
+   as an alias of unitX for older callers. */
 export const layout = {
   w: 0,
   h: 0,
   pad: 34, // gutter for axis number labels
-  unit: 40, // pixels per math unit
+  unit: 40, // pixels per math unit (x)
+  unitX: 40,
+  unitY: 40,
   ox: 0, // origin x in px
   oy: 0, // origin y in px
 };
@@ -27,12 +32,12 @@ export const layers = {}; // named <g> groups, back-to-front
 
 /** Math → pixel. */
 export function toPx(mx, my) {
-  return { x: layout.ox + mx * layout.unit, y: layout.oy - my * layout.unit };
+  return { x: layout.ox + mx * layout.unitX, y: layout.oy - my * layout.unitY };
 }
 
 /** Pixel → math (unrounded). */
 export function toMath(px, py) {
-  return { x: (px - layout.ox) / layout.unit, y: (layout.oy - py) / layout.unit };
+  return { x: (px - layout.ox) / layout.unitX, y: (layout.oy - py) / layout.unitY };
 }
 
 /** Pixel → nearest lattice point (rounded, clamped to the grid window). */
@@ -108,14 +113,24 @@ function measure() {
   const spanX = g.xMax - g.xMin;
   const spanY = g.yMax - g.yMin;
   const pad = layout.pad;
-  // square cells: pick the limiting axis
-  const unit = Math.min((w - pad * 2) / spanX, (h - pad * 2) / spanY);
-  layout.unit = unit;
-  // centre the plane in the stage
-  const plotW = unit * spanX;
-  const plotH = unit * spanY;
-  layout.ox = (w - plotW) / 2 - g.xMin * unit;
-  layout.oy = (h - plotH) / 2 + g.yMax * unit;
+
+  if (g.lockAspect === false) {
+    // non-uniform: each axis fills its dimension independently (per-axis zoom)
+    layout.unitX = (w - pad * 2) / spanX;
+    layout.unitY = (h - pad * 2) / spanY;
+    layout.ox = pad - g.xMin * layout.unitX;
+    layout.oy = (h - pad) + g.yMin * layout.unitY;
+  } else {
+    // square cells: pick the limiting axis, centre the window (grid fills the
+    // rest via edge-to-edge lines in drawGrid)
+    const unit = Math.min((w - pad * 2) / spanX, (h - pad * 2) / spanY);
+    layout.unitX = layout.unitY = unit;
+    const plotW = unit * spanX;
+    const plotH = unit * spanY;
+    layout.ox = (w - plotW) / 2 - g.xMin * unit;
+    layout.oy = (h - plotH) / 2 + g.yMax * unit;
+  }
+  layout.unit = layout.unitX;
 }
 
 function clear(g) {
@@ -182,14 +197,17 @@ function drawGrid() {
   const xLo = toMath(0, 0).x, xHi = toMath(w, 0).x;
   const yLo = toMath(0, h).y, yHi = toMath(0, 0).y;
 
-  const major = niceStep(Math.max(g.xMax - g.xMin, g.yMax - g.yMin));
-  const minor = subStep(major);
+  // independent steps per axis (they differ only under non-uniform zoom)
+  const majorX = niceStep(g.xMax - g.xMin);
+  const majorY = niceStep(g.yMax - g.yMin);
+  const minorX = subStep(majorX);
+  const minorY = subStep(majorY);
 
   // inner (minor) gridlines first, then the major lines over them
-  gridLinesX(G, minor, "ca-grid-line ca-grid-line--minor", xLo, xHi);
-  gridLinesY(G, minor, "ca-grid-line ca-grid-line--minor", yLo, yHi);
-  gridLinesX(G, major, "ca-grid-line", xLo, xHi);
-  gridLinesY(G, major, "ca-grid-line", yLo, yHi);
+  gridLinesX(G, minorX, "ca-grid-line ca-grid-line--minor", xLo, xHi);
+  gridLinesY(G, minorY, "ca-grid-line ca-grid-line--minor", yLo, yHi);
+  gridLinesX(G, majorX, "ca-grid-line", xLo, xHi);
+  gridLinesY(G, majorY, "ca-grid-line", yLo, yHi);
 
   // axes span the full stage; arrowheads sit at the viewport edges
   const axisY = toPx(0, 0).y; // pixel y of the x-axis
@@ -212,14 +230,14 @@ function drawGrid() {
   if (state.ui.showLabels) {
     const labelY = cap(axisY, 14, h - 6);
     const labelX = cap(axisX, 16, w - 4);
-    for (let k = Math.ceil(xLo / major); k * major <= xHi; k++) {
-      const x = k * major;
+    for (let k = Math.ceil(xLo / majorX); k * majorX <= xHi; k++) {
+      const x = k * majorX;
       if (x === 0) continue;
       const px = toPx(x, 0).x;
       el("text", { x: px, y: labelY + 16, class: "ca-tick" }, A).textContent = String(x);
     }
-    for (let k = Math.ceil(yLo / major); k * major <= yHi; k++) {
-      const y = k * major;
+    for (let k = Math.ceil(yLo / majorY); k * majorY <= yHi; k++) {
+      const y = k * majorY;
       if (y === 0) continue;
       const py = toPx(0, y).y;
       el("text", { x: labelX - 9, y: py + 4, class: "ca-tick ca-tick--y" }, A).textContent = String(y);
