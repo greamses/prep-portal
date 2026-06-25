@@ -16,9 +16,22 @@ import { layout } from "./grid.js";
 
 const pointers = new Map(); // pointerId → { x, y } (client coords)
 let gesture = null; // active pinch snapshot
+let panMode = false; // dedicated drag-to-pan tool
+let spaceDown = false; // hold Space to pan on desktop
+let pan = null; // active single-pointer pan snapshot
 
 export function isGesturing() {
-  return pointers.size >= 2;
+  return pointers.size >= 2 || !!pan;
+}
+
+export function isPanMode() {
+  return panMode || spaceDown;
+}
+
+export function setPanMode(on) {
+  panMode = !!on;
+  const stage = document.querySelector("#ca-stage");
+  if (stage) stage.classList.toggle("ca-pan-ready", isPanMode());
 }
 
 function spanX() { return state.grid.xMax - state.grid.xMin; }
@@ -92,18 +105,41 @@ function updateGesture() {
   applyView(ncx, ncy, nsx, nsy);
 }
 
+/* ── single-pointer pan (pan tool / Space-drag) ─────────────────────────── */
+function startPan(e) {
+  pan = {
+    x: e.clientX, y: e.clientY,
+    cx: centerX(), cy: centerY(),
+    unit: layout.unit || 1,
+  };
+}
+function updatePan(e) {
+  if (!pan) return;
+  const ncx = pan.cx - (e.clientX - pan.x) / pan.unit;
+  const ncy = pan.cy + (e.clientY - pan.y) / pan.unit;
+  applyView(ncx, ncy, spanX(), spanY());
+}
+
 export function initZoom(stage) {
   if (!stage) return;
 
   stage.addEventListener("wheel", (e) => onWheel(e, stage), { passive: false });
 
   stage.addEventListener("pointerdown", (e) => {
+    // drag-to-pan (pan tool or Space held) — works for mouse and one finger
+    if (isPanMode() && pointers.size === 0) {
+      startPan(e);
+      stage.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+      return;
+    }
     if (e.pointerType !== "touch") return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2) startGesture(stage);
+    if (pointers.size === 2) { pan = null; startGesture(stage); }
   });
 
   stage.addEventListener("pointermove", (e) => {
+    if (pan) { e.preventDefault(); updatePan(e); return; }
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size >= 2) {
@@ -113,10 +149,30 @@ export function initZoom(stage) {
   });
 
   const drop = (e) => {
+    if (pan) pan = null;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) gesture = null;
   };
   stage.addEventListener("pointerup", drop);
   stage.addEventListener("pointercancel", drop);
   stage.addEventListener("pointerleave", drop);
+
+  // hold Space to pan on desktop
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !spaceDown && !isTyping(e.target)) {
+      spaceDown = true;
+      stage.classList.add("ca-pan-ready");
+    }
+  });
+  window.addEventListener("keyup", (e) => {
+    if (e.code === "Space") {
+      spaceDown = false;
+      stage.classList.toggle("ca-pan-ready", panMode);
+    }
+  });
+}
+
+function isTyping(t) {
+  return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" ||
+    t.tagName === "SELECT" || t.isContentEditable);
 }

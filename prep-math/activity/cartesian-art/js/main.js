@@ -9,8 +9,9 @@
 
 import { state, subscribe, setCursor, allPoints } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
-import { initZoom, isGesturing } from "./zoom.js";
+import { initZoom, isGesturing, isPanMode, setPanMode } from "./zoom.js";
 import { initShapesDock } from "./shapes-dock.js";
+import { initTransformMode } from "./transform-mode.js";
 import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
@@ -35,6 +36,7 @@ function init() {
   initPaint();
   initTransforms(document);
   initDocks(document);
+  initTransformMode();
   initPuzzleMode();
   initLibrary();
   initShapesDock();
@@ -75,13 +77,43 @@ function init() {
   // the drop key, so a stray tap never registers an unwanted vertex)
   stage.addEventListener("pointerdown", (e) => {
     if (stage.classList.contains("ca-painting")) return; // painting, not plotting
-    if (isGesturing()) return; // a pinch/pan gesture is in progress
+    if (isPanMode() || isGesturing()) return; // panning / pinch gesture in progress
     if (e.pointerType === "touch" && !e.isPrimary) return; // second finger of a pinch
     const l = toLattice(...svgPixelArgs(e));
     setCursor(l.x, l.y);
   });
 
+  initMenu();
   initFullscreen();
+}
+
+/* ── hamburger menu of floating toggles ───────────────────────────────────── */
+function initMenu() {
+  const menu = $("#ca-menu");
+  const btn = $("#ca-menu-btn");
+  if (!menu || !btn) return;
+  const openIcon = btn.querySelector(".ca-menu-open");
+  const closeIcon = btn.querySelector(".ca-menu-close");
+  const setOpen = (on) => {
+    menu.classList.toggle("is-open", on);
+    btn.setAttribute("aria-expanded", on ? "true" : "false");
+    if (openIcon) openIcon.hidden = on;
+    if (closeIcon) closeIcon.hidden = !on;
+  };
+  btn.addEventListener("click", () => setOpen(!menu.classList.contains("is-open")));
+  // tapping a menu item closes the menu (except pan, which is a sticky toggle)
+  menu.querySelectorAll(".ca-menu-items .ca-fab").forEach((b) => {
+    if (b.id === "ca-pan-btn") return;
+    b.addEventListener("click", () => setOpen(false));
+  });
+
+  // pan toggle
+  const panBtn = $("#ca-pan-btn");
+  panBtn?.addEventListener("click", () => {
+    const on = !panBtn.classList.contains("is-active");
+    panBtn.classList.toggle("is-active", on);
+    setPanMode(on);
+  });
 }
 
 /* ── fullscreen toggle ─────────────────────────────────────────────────── */

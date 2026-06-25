@@ -9,6 +9,7 @@
 
 import { state, subscribe, deletePointById, activeShape } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
+import { isAnimatingActive } from "./transform-mode.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 
@@ -23,7 +24,7 @@ function clear(g) {
   while (g.firstChild) g.removeChild(g.firstChild);
 }
 
-function redraw() {
+export function redrawPoints() {
   const S = layers.shape;
   const P = layers.points;
   clear(S);
@@ -35,6 +36,9 @@ function redraw() {
     const pts = shape.points;
     if (!pts.length) continue;
     const isActive = shape.id === active.id;
+    // while the active shape is mid-transform, its outline is drawn (animated)
+    // in the anim layer instead, so skip the static copy here
+    if (isActive && isAnimatingActive(shape.id)) continue;
     const px = pts.map((p) => toPx(p.x, p.y));
 
     // ── connecting outline ──────────────────────────────────────────────
@@ -78,10 +82,10 @@ export function initPoints() {
     deletePointById(Number(host.getAttribute("data-id")));
   });
 
-  redraw();
+  redrawPoints();
   subscribe((reason) => {
     if (reason === "points" || reason === "close" || reason === "grid" ||
-        reason === "shapes" || reason === "puzzle") redraw();
+        reason === "shapes" || reason === "puzzle") redrawPoints();
   });
-  onRender(redraw);
+  onRender(redrawPoints);
 }

@@ -61,6 +61,7 @@ export const state = {
   ui: {
     showLabels: true, // axis number labels
     snap: true, // snap cursor to integer lattice
+    transformMode: false, // arrows/analog transform the active shape
   },
 };
 state.activeId = state.shapes[0].id;
@@ -402,6 +403,12 @@ export function scoreAttempt() {
   else if (score >= 75) stars = 2;
   else if (score >= 40) stars = 1;
   return { total, correct, missed, extra, score, stars };
+}
+
+/** Toggle the transform mode (arrows/analog steer the active shape). */
+export function setTransformMode(on) {
+  state.ui.transformMode = !!on;
+  emit("transform");
 }
 
 export function clamp(v, lo, hi) {

@@ -68,7 +68,7 @@ export function initGrid(stageEl) {
   stage.appendChild(svg);
 
   // back-to-front draw order
-  for (const name of ["grid", "axes", "ghost", "shape", "paint", "points", "mascot"]) {
+  for (const name of ["grid", "axes", "ghost", "tfghost", "shape", "paint", "points", "anim", "mascot"]) {
     layers[name] = el("g", { class: `ca-layer ca-layer--${name}` }, svg);
   }
 

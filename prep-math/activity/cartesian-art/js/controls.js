@@ -21,6 +21,7 @@ import {
   state,
 } from "./state.js";
 import { undo, redo } from "./history.js";
+import { runOp } from "./transform-mode.js";
 
 const DIRS = {
   up: { dx: 0, dy: 1 },
@@ -28,6 +29,19 @@ const DIRS = {
   left: { dx: -1, dy: 0 },
   right: { dx: 1, dy: 0 },
 };
+
+const tf = () => state.ui.transformMode;
+
+/** A directional press: translate the shape in transform mode, else move cursor. */
+function nudge(name) {
+  if (tf()) runOp(name); // up/down/left/right are translate ops
+  else { const d = DIRS[name]; moveCursor(d.dx, d.dy); }
+}
+
+/** Analog tilt in transform mode → turn (left/right) or resize (up/down). */
+function analogTransform(name) {
+  runOp({ left: "rot-ccw", right: "rot-cw", up: "bigger", down: "smaller" }[name]);
+}
 
 const PAD_KEY = "ca-pad-mode";
 
@@ -57,10 +71,10 @@ function initKeyboard() {
       return;
     }
     switch (e.key) {
-      case "ArrowUp": e.preventDefault(); moveCursor(0, 1); break;
-      case "ArrowDown": e.preventDefault(); moveCursor(0, -1); break;
-      case "ArrowLeft": e.preventDefault(); moveCursor(-1, 0); break;
-      case "ArrowRight": e.preventDefault(); moveCursor(1, 0); break;
+      case "ArrowUp": e.preventDefault(); nudge("up"); break;
+      case "ArrowDown": e.preventDefault(); nudge("down"); break;
+      case "ArrowLeft": e.preventDefault(); nudge("left"); break;
+      case "ArrowRight": e.preventDefault(); nudge("right"); break;
       case "Enter": e.preventDefault(); addPoint(); break;
       case "Delete":
       case "Backspace":
@@ -79,12 +93,14 @@ function initDpad(root) {
   const stop = () => { clearInterval(timer); timer = null; };
 
   root.querySelectorAll("[data-dir]").forEach((btn) => {
-    const dir = DIRS[btn.dataset.dir];
+    const name = btn.dataset.dir;
+    const dir = DIRS[name];
     const start = (e) => {
       e.preventDefault();
-      moveCursor(dir.dx, dir.dy);
+      nudge(name);
       stop();
-      timer = setInterval(() => moveCursor(dir.dx, dir.dy), 150);
+      // hold-to-repeat only when moving the cursor; transforms step once per press
+      if (!tf()) timer = setInterval(() => moveCursor(dir.dx, dir.dy), 150);
       btn.setPointerCapture?.(e.pointerId);
     };
     btn.addEventListener("pointerdown", start);
@@ -115,16 +131,19 @@ function initJoystick(ring, knob) {
     recenter();
   };
 
-  const setDir = (next) => {
-    const key = next ? `${next.dx},${next.dy}` : null;
-    const cur = dir ? `${dir.dx},${dir.dy}` : null;
-    if (key === cur) return;
-    dir = next;
+  // dir is now a name string ("up"/"down"/"left"/"right") or null
+  const setDir = (name) => {
+    if (name === dir) return;
+    dir = name;
     clearInterval(timer);
     timer = null;
-    if (dir) {
-      moveCursor(dir.dx, dir.dy); // immediate step
-      timer = setInterval(() => dir && moveCursor(dir.dx, dir.dy), 160);
+    if (!dir) return;
+    if (tf()) {
+      analogTransform(dir); // one turn/resize per tilt; re-centre to repeat
+    } else {
+      const d = DIRS[dir];
+      moveCursor(d.dx, d.dy); // immediate step
+      timer = setInterval(() => dir && moveCursor(DIRS[dir].dx, DIRS[dir].dy), 160);
     }
   };
 
@@ -139,8 +158,8 @@ function initJoystick(ring, knob) {
     knob.style.transform = `translate(${vx * k}px, ${vy * k}px)`;
     if (dist < DEAD) { setDir(null); return; }
     // 4-way: pick the dominant axis (screen-y is inverted vs math-y)
-    if (Math.abs(vx) > Math.abs(vy)) setDir(vx > 0 ? DIRS.right : DIRS.left);
-    else setDir(vy > 0 ? DIRS.down : DIRS.up);
+    if (Math.abs(vx) > Math.abs(vy)) setDir(vx > 0 ? "right" : "left");
+    else setDir(vy > 0 ? "down" : "up");
   };
 
   const onDown = (e) => {

@@ -97,21 +97,30 @@
           <div id="ca-stage" class="ca-stage"></div>
         </div>
 
-        <!-- floating round toggles -->
-        <div class="ca-fabs">
-          <button class="ca-fab ca-fab--accent" type="button" id="ca-puzzles-btn" title="Puzzles" aria-label="Puzzles">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h6v6H5zM13 3h6v6h-6zM5 15h6v6H5zM13 15h6v6h-6z"/></svg>
+        <!-- floating hamburger menu of toggles -->
+        <div class="ca-menu" id="ca-menu">
+          <button class="ca-fab ca-fab--accent ca-menu-toggle" type="button" id="ca-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false">
+            <svg class="ca-menu-icon ca-menu-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            <svg class="ca-menu-icon ca-menu-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" hidden><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
-          <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
-          </button>
-          <button class="ca-fab" type="button" id="ca-export-btn" title="Export, print &amp; share" aria-label="Export, print and share">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/></svg>
-          </button>
-          <button class="ca-fab" type="button" id="ca-fullscreen-btn" title="Fullscreen" aria-label="Fullscreen">
-            <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-            <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
-          </button>
+          <div class="ca-menu-items" id="ca-menu-items">
+            <button class="ca-fab" type="button" id="ca-puzzles-btn" title="Puzzles" aria-label="Puzzles">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h6v6H5zM13 3h6v6h-6zM5 15h6v6H5zM13 15h6v6h-6z"/></svg>
+            </button>
+            <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
+            </button>
+            <button class="ca-fab" type="button" id="ca-pan-btn" title="Pan (drag the view)" aria-label="Pan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a1.6 1.6 0 0 1 3.2 0v5M12.2 10V4a1.6 1.6 0 0 1 3.2 0v6M15.4 10.5V6a1.6 1.6 0 0 1 3.2 0v7a6 6 0 0 1-6 6h-1.6a5 5 0 0 1-3.6-1.5l-3-3.2a1.7 1.7 0 0 1 2.5-2.2L7 11"/></svg>
+            </button>
+            <button class="ca-fab" type="button" id="ca-export-btn" title="Export, print &amp; share" aria-label="Export, print and share">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/></svg>
+            </button>
+            <button class="ca-fab" type="button" id="ca-fullscreen-btn" title="Fullscreen" aria-label="Fullscreen">
+              <svg class="ca-fs-icon ca-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+              <svg class="ca-fs-icon ca-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+            </button>
+          </div>
         </div>
 
         <!-- floating mission bar (puzzle mode) -->
@@ -300,12 +309,17 @@
             <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
           <div class="ca-dock-body">
+            <button class="ca-soft-btn ca-soft-btn--sm ca-tf-mode" type="button" id="tf-mode" title="Steer the selected shape with arrows / analog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><rect x="9" y="9" width="6" height="6" rx="1.4"/></svg>
+              Move with controls
+            </button>
+
             <span class="ca-tf-label">Slide</span>
-            <div class="ca-tf-row">
-              <button class="ca-tbtn" type="button" data-tf="left" title="Slide left" aria-label="Slide left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
-              <button class="ca-tbtn" type="button" data-tf="up" title="Slide up" aria-label="Slide up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
-              <button class="ca-tbtn" type="button" data-tf="down" title="Slide down" aria-label="Slide down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
-              <button class="ca-tbtn" type="button" data-tf="right" title="Slide right" aria-label="Slide right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+            <div class="ca-tf-cross">
+              <button class="ca-tbtn ca-tf-up" type="button" data-tf="up" title="Slide up" aria-label="Slide up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+              <button class="ca-tbtn ca-tf-left" type="button" data-tf="left" title="Slide left" aria-label="Slide left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+              <button class="ca-tbtn ca-tf-down" type="button" data-tf="down" title="Slide down" aria-label="Slide down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+              <button class="ca-tbtn ca-tf-right" type="button" data-tf="right" title="Slide right" aria-label="Slide right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
             </div>
 
             <span class="ca-tf-label">Flip &amp; turn</span>

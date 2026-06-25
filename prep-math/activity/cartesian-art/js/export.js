@@ -55,7 +55,7 @@ function snapshotSvg({ grid = true, points = true, mascot = false } = {}) {
   if (!grid) drop.push(".ca-layer--grid", ".ca-layer--axes");
   if (!points) drop.push(".ca-layer--points", ".ca-layer--shape");
   if (!mascot) drop.push(".ca-layer--mascot");
-  drop.push(".ca-layer--ghost"); // puzzle target dots never belong in the art
+  drop.push(".ca-layer--ghost", ".ca-layer--tfghost", ".ca-layer--anim"); // helpers, never in the art
   drop.forEach((sel) => clone.querySelectorAll(sel).forEach((n) => n.remove()));
 
   return clone;
