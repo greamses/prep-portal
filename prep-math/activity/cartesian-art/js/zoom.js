@@ -1,34 +1,32 @@
 /* ============================================================================
-   Cartesian Art — pinch / wheel zoom + pan (+ per-axis zoom)
+   Cartesian Art — pan / zoom (wheel, pinch, per-axis)
    ----------------------------------------------------------------------------
-   Zoom + pan the coordinate window:
-     • Pinch (trackpad pinch = ctrl+wheel; touchscreen two-finger) — zoom about
-       the pointer; plain scroll is left alone.
-     • Drag-to-pan (pan tool / hold Space) and two-finger pan.
-     • Zooming ON an axis line scales ONLY that axis (non-uniform, like a data
-       plot). Double-click empty canvas snaps back to square cells.
-   Everything drives state.setView (clamped to ±GRID_MAX). We don't capture the
-   pointers, so taps still reach the plot/paint layers; isGesturing() lets the
-   tap-to-park handler bail while a gesture/pan is in progress.
+   • Wheel / trackpad scroll PANS the graph; Ctrl/⌘ + wheel (or trackpad pinch)
+     ZOOMS about the pointer.
+   • Two-finger touch:
+       – hold one finger still and slide the other → scale a SINGLE axis
+         (slide up/down = grow/shrink the y-axis; right/left = grow/shrink x),
+         anchored on the still finger.
+       – move both fingers (pinch) → uniform zoom of all axes.
+   • Drag-to-pan tool / hold-Space also pan. Everything drives state.setView
+     (clamped to ±GRID_MAX). Pointers aren't captured, so taps still reach the
+     plot/paint layers; isGesturing() lets tap-to-park bail mid-gesture.
    ========================================================================== */
 
 import { state, setView, squareView } from "./state.js";
 import { layout, toPx, toMath } from "./grid.js";
 
 const pointers = new Map(); // pointerId → { x, y } (client coords)
-let gesture = null; // active pinch snapshot
-let panMode = false; // dedicated drag-to-pan tool
-let spaceDown = false; // hold Space to pan on desktop
-let pan = null; // active single-pointer pan snapshot
+let gesture = null;
+let panMode = false;
+let spaceDown = false;
+let pan = null;
 
-const AXIS_TOL = 16; // px from an axis line that counts as "on the axis"
+const MOVE_TH = 9;   // px a finger must travel to count as "moving"
+const AXIS_SENS = 170; // px of finger travel to double/halve an axis
 
-export function isGesturing() {
-  return pointers.size >= 2 || !!pan;
-}
-export function isPanMode() {
-  return panMode || spaceDown;
-}
+export function isGesturing() { return pointers.size >= 2 || !!pan; }
+export function isPanMode() { return panMode || spaceDown; }
 export function setPanMode(on) {
   panMode = !!on;
   const stage = document.querySelector("#ca-stage");
@@ -40,11 +38,10 @@ function spanY() { return state.grid.yMax - state.grid.yMin; }
 function centerX() { return (state.grid.xMax + state.grid.xMin) / 2; }
 function centerY() { return (state.grid.yMax + state.grid.yMin) / 2; }
 
-function applyView(cx, cy, sx, sy) {
-  setView(cx - sx / 2, cx + sx / 2, cy - sy / 2, cy + sy / 2);
+function applyView(cx, cy, sx, sy, lock) {
+  setView(cx - sx / 2, cx + sx / 2, cy - sy / 2, cy + sy / 2, lock);
 }
 
-/** Math bounds currently visible in the stage rectangle. */
 function visible() {
   const a = toMath(0, 0), b = toMath(layout.w, layout.h);
   return {
@@ -53,121 +50,103 @@ function visible() {
   };
 }
 
-/** Which axis line (if any) a stage-pixel point sits on. */
-function axisAt(px, py) {
-  const o = toPx(0, 0);
-  const onX = Math.abs(py - o.y) <= AXIS_TOL; // near the horizontal x-axis
-  const onY = Math.abs(px - o.x) <= AXIS_TOL; // near the vertical y-axis
-  if (onX && !onY) return "x";
-  if (onY && !onX) return "y";
-  return null; // origin (both) or open canvas (neither) → uniform zoom
-}
-
-/** Scale a single axis about an anchor (keeps the other axis fixed). */
-function axisZoom(axis, factor, px, py) {
-  const v = visible();
-  const m = toMath(px, py);
+/** Scale one axis by `factor` about a fixed math anchor, using a start window. */
+function scaleAxis(axis, factor, anchor, v) {
   if (axis === "x") {
-    const s = (v.xHi - v.xLo) * factor;
-    const f = (m.x - v.xLo) / (v.xHi - v.xLo);
-    const lo = m.x - f * s;
-    setView(lo, lo + s, v.yLo, v.yHi, false);
+    const span = (v.xHi - v.xLo) * factor;
+    const f = (anchor - v.xLo) / (v.xHi - v.xLo);
+    const lo = anchor - f * span;
+    setView(lo, lo + span, v.yLo, v.yHi, false);
   } else {
-    const s = (v.yHi - v.yLo) * factor;
-    const f = (m.y - v.yLo) / (v.yHi - v.yLo);
-    const lo = m.y - f * s;
-    setView(v.xLo, v.xHi, lo, lo + s, false);
+    const span = (v.yHi - v.yLo) * factor;
+    const f = (anchor - v.yLo) / (v.yHi - v.yLo);
+    const lo = anchor - f * span;
+    setView(v.xLo, v.xHi, lo, lo + span, false);
   }
 }
 
-/* ── pinch zoom via wheel (trackpad) ────────────────────────────────────── */
+/* ── wheel: scroll = pan, Ctrl/⌘ + wheel = zoom ─────────────────────────── */
 function onWheel(e, stage) {
-  if (!e.ctrlKey) return; // plain scroll → let the page scroll
   e.preventDefault();
-  const factor = e.deltaY > 0 ? 1.08 : 1 / 1.08; // down = zoom out
   const r = stage.getBoundingClientRect();
-  const px = e.clientX - r.left;
-  const py = e.clientY - r.top;
+  const px = e.clientX - r.left, py = e.clientY - r.top;
 
-  const axis = axisAt(px, py);
-  if (axis) { axisZoom(axis, factor, px, py); return; }
-
-  // uniform: keep the anchor fixed
-  const ax = (px - layout.ox) / layout.unitX;
-  const ay = (layout.oy - py) / layout.unitY;
-  applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
-    spanX() * factor, spanY() * factor);
+  if (e.ctrlKey || e.metaKey) {
+    const factor = e.deltaY > 0 ? 1.08 : 1 / 1.08; // pinch/zoom about the pointer
+    const ax = (px - layout.ox) / layout.unitX;
+    const ay = (layout.oy - py) / layout.unitY;
+    applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
+      spanX() * factor, spanY() * factor);
+    return;
+  }
+  // plain scroll → pan the graph
+  applyView(centerX() + e.deltaX / layout.unitX, centerY() - e.deltaY / layout.unitY,
+    spanX(), spanY());
 }
 
-/* ── two-finger pinch ───────────────────────────────────────────────────── */
-function midClient() {
-  const [a, b] = [...pointers.values()];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-function dist() {
-  const [a, b] = [...pointers.values()];
-  return Math.hypot(a.x - b.x, a.y - b.y) || 1;
-}
-
+/* ── two-finger gesture ─────────────────────────────────────────────────── */
 function startGesture(stage) {
   const r = stage.getBoundingClientRect();
-  const mid = midClient();
-  const px = mid.x - r.left, py = mid.y - r.top;
+  const [[idA, a], [idB, b]] = [...pointers.entries()];
   gesture = {
-    startDist: dist(),
-    startMid: mid,
-    axis: axisAt(px, py),
+    ids: [idA, idB],
+    a0: { x: a.x, y: a.y }, b0: { x: b.x, y: b.y },
+    left: r.left, top: r.top,
+    ox: layout.ox, oy: layout.oy, ux: layout.unitX, uy: layout.unitY,
     v: visible(),
-    startCx: centerX(), startCy: centerY(),
-    startSx: spanX(), startSy: spanY(),
-    unitX: layout.unitX || 1, unitY: layout.unitY || 1,
-    ax: (px - layout.ox) / layout.unitX,
-    ay: (layout.oy - py) / layout.unitY,
+    startDist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+    startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+    cx: centerX(), cy: centerY(), sx: spanX(), sy: spanY(),
   };
 }
 
 function updateGesture() {
   if (!gesture) return;
-  const scale = dist() / gesture.startDist; // >1 = spreading = zoom in
-  const v = gesture.v;
-  if (gesture.axis === "x") {
-    const s = (v.xHi - v.xLo) / scale;
-    const f = (gesture.ax - v.xLo) / (v.xHi - v.xLo);
-    const lo = gesture.ax - f * s;
-    setView(lo, lo + s, v.yLo, v.yHi, false);
+  const a = pointers.get(gesture.ids[0]);
+  const b = pointers.get(gesture.ids[1]);
+  if (!a || !b) return;
+
+  const dA = { x: a.x - gesture.a0.x, y: a.y - gesture.a0.y };
+  const dB = { x: b.x - gesture.b0.x, y: b.y - gesture.b0.y };
+  const mA = Math.hypot(dA.x, dA.y);
+  const mB = Math.hypot(dB.x, dB.y);
+
+  // both fingers moving → uniform zoom (pinch by distance), about the midpoint
+  if (mA > MOVE_TH && mB > MOVE_TH) {
+    const scale = (Math.hypot(a.x - b.x, a.y - b.y) || 1) / gesture.startDist;
+    let ncx = gesture.cx, ncy = gesture.cy;
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    ncx += -(mid.x - gesture.startMid.x) / gesture.ux;
+    ncy += (mid.y - gesture.startMid.y) / gesture.uy;
+    applyView(ncx, ncy, gesture.sx / scale, gesture.sy / scale); // leaves lock as-is
     return;
   }
-  if (gesture.axis === "y") {
-    const s = (v.yHi - v.yLo) / scale;
-    const f = (gesture.ay - v.yLo) / (v.yHi - v.yLo);
-    const lo = gesture.ay - f * s;
-    setView(v.xLo, v.xHi, lo, lo + s, false);
-    return;
+
+  // one finger still, the other sliding → single-axis scale
+  const mover = mA >= mB ? dA : dB;
+  const still = mA >= mB ? gesture.b0 : gesture.a0;
+  if (Math.max(mA, mB) < MOVE_TH) return; // nothing moved enough yet
+
+  if (Math.abs(mover.y) >= Math.abs(mover.x)) {
+    // vertical slide → y-axis. up (negative screen-y) grows the axis (zoom in)
+    const factor = Math.exp(mover.y / AXIS_SENS);
+    const anchorY = (gesture.oy - (still.y - gesture.top)) / gesture.uy;
+    scaleAxis("y", factor, anchorY, gesture.v);
+  } else {
+    // horizontal slide → x-axis. right (positive screen-x) grows the axis
+    const factor = Math.exp(-mover.x / AXIS_SENS);
+    const anchorX = (still.x - gesture.left - gesture.ox) / gesture.ux;
+    scaleAxis("x", factor, anchorX, gesture.v);
   }
-  // uniform: zoom about the anchor + pan with the midpoint drift
-  let ncx = gesture.ax + (gesture.startCx - gesture.ax) / scale;
-  let ncy = gesture.ay + (gesture.startCy - gesture.ay) / scale;
-  const mid = midClient();
-  ncx += -(mid.x - gesture.startMid.x) / gesture.unitX;
-  ncy += (mid.y - gesture.startMid.y) / gesture.unitY;
-  applyView(ncx, ncy, gesture.startSx / scale, gesture.startSy / scale);
 }
 
 /* ── single-pointer pan (pan tool / Space-drag) ─────────────────────────── */
 function startPan(e) {
-  pan = {
-    x: e.clientX, y: e.clientY,
-    cx: centerX(), cy: centerY(),
-    unitX: layout.unitX || 1, unitY: layout.unitY || 1,
-  };
+  pan = { x: e.clientX, y: e.clientY, cx: centerX(), cy: centerY(), ux: layout.unitX, uy: layout.unitY };
 }
 function updatePan(e) {
   if (!pan) return;
-  applyView(
-    pan.cx - (e.clientX - pan.x) / pan.unitX,
-    pan.cy + (e.clientY - pan.y) / pan.unitY,
-    spanX(), spanY()
-  );
+  applyView(pan.cx - (e.clientX - pan.x) / pan.ux, pan.cy + (e.clientY - pan.y) / pan.uy, spanX(), spanY());
 }
 
 export function initZoom(stage) {
@@ -205,11 +184,10 @@ export function initZoom(stage) {
 
   // double-click empty canvas → back to square cells
   stage.addEventListener("dblclick", (e) => {
-    if (e.target.closest(".ca-point")) return; // that's a point delete
+    if (e.target.closest(".ca-point")) return;
     if (state.grid.lockAspect === false) squareView();
   });
 
-  // hold Space to pan on desktop
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space" && !spaceDown && !isTyping(e.target)) {
       spaceDown = true;

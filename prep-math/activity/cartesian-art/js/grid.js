@@ -147,16 +147,30 @@ function niceStep(span, target = 14) {
   else if (n < 3) step = 2;
   else if (n < 7) step = 5;
   else step = 10;
-  return Math.max(1, step * pow);
+  return step * pow; // may be fractional for deep zoom (e.g. 0.001)
+}
+
+/** Format a tick value to the precision implied by its step (no float noise). */
+function fmtTick(v, step) {
+  const d = step < 1 ? Math.min(6, Math.ceil(-Math.log10(step) - 1e-9)) : 0;
+  return Number(v.toFixed(d)).toString();
 }
 
 /** Sub-step for the fainter "inner" gridlines drawn between labelled lines. */
 function subStep(major) {
-  if (major <= 1) return 0; // already at integer resolution — no inner grid
-  if (major % 5 === 0) return major / 5;
-  if (major % 4 === 0) return major / 4;
-  if (major % 2 === 0) return major / 2;
-  return 0;
+  if (major >= 2) {
+    if (major % 5 === 0) return major / 5;
+    if (major % 4 === 0) return major / 4;
+    if (major % 2 === 0) return major / 2;
+    return 0;
+  }
+  if (major < 1) { // deep zoom — subdivide the fractional major (0.5→0.1, 0.2→0.05…)
+    const m = Math.round(major / Math.pow(10, Math.floor(Math.log10(major) + 1e-9)));
+    if (m === 1 || m === 5) return major / 5;
+    if (m === 2) return major / 4;
+    return 0;
+  }
+  return 0; // major === 1: keep the integer grid clean
 }
 
 /** Vertical lines at every multiple of `step` spanning the full stage height. */
@@ -234,13 +248,13 @@ function drawGrid() {
       const x = k * majorX;
       if (x === 0) continue;
       const px = toPx(x, 0).x;
-      el("text", { x: px, y: labelY + 16, class: "ca-tick" }, A).textContent = String(x);
+      el("text", { x: px, y: labelY + 16, class: "ca-tick" }, A).textContent = fmtTick(x, majorX);
     }
     for (let k = Math.ceil(yLo / majorY); k * majorY <= yHi; k++) {
       const y = k * majorY;
       if (y === 0) continue;
       const py = toPx(0, y).y;
-      el("text", { x: labelX - 9, y: py + 4, class: "ca-tick ca-tick--y" }, A).textContent = String(y);
+      el("text", { x: labelX - 9, y: py + 4, class: "ca-tick ca-tick--y" }, A).textContent = fmtTick(y, majorY);
     }
     if (xAxisOn && yAxisOn) {
       el("text", { x: axisX - 9, y: axisY + 16, class: "ca-tick ca-tick--o" }, A).textContent = "0";

@@ -22,8 +22,8 @@ export const DEFAULT_GRID = Object.freeze({
 });
 
 /** Hard limit on how far the coordinate window can reach in any direction. */
-export const GRID_MAX = 100;
-const MIN_SPAN = 4; // closest you can zoom in (math units across)
+export const GRID_MAX = 1000;
+const MIN_SPAN = 0.002; // closest you can zoom in (math units across ≈ ±0.001)
 
 let _pid = 0; // unique point ids (across all shapes)
 let _sid = 0; // unique shape ids
@@ -303,11 +303,12 @@ export function setView(xMin, xMax, yMin, yMax, lock) {
     const c = (yMax + yMin) / 2;
     yMin = c - MIN_SPAN / 2; yMax = c + MIN_SPAN / 2;
   }
+  // bounds stay fractional so deep zoom (sub-unit) works; only clamp to ±GRID_MAX
   const g = state.grid;
-  g.xMin = Math.max(-GRID_MAX, Math.round(xMin));
-  g.xMax = Math.min(GRID_MAX, Math.round(xMax));
-  g.yMin = Math.max(-GRID_MAX, Math.round(yMin));
-  g.yMax = Math.min(GRID_MAX, Math.round(yMax));
+  g.xMin = Math.max(-GRID_MAX, xMin);
+  g.xMax = Math.min(GRID_MAX, xMax);
+  g.yMin = Math.max(-GRID_MAX, yMin);
+  g.yMax = Math.min(GRID_MAX, yMax);
   if (lock !== undefined) g.lockAspect = lock;
   emit("grid");
 }
