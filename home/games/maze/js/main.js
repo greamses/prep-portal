@@ -14,6 +14,8 @@ import { CFG } from "./config.js";
 const B = window.BABYLON;
 const $ = (s) => document.querySelector(s);
 
+const HINT = "Click to look around · WASD / Arrow keys to move · Reach the glowing exit";
+
 const canvas = $("#maze-canvas");
 let engine, scene, cam, goal, goalPos, won;
 
@@ -39,6 +41,7 @@ function start() {
   won = false;
   $("#maze-win").hidden = true;
   $("#maze-hint").hidden = false;
+  $("#maze-hint").textContent = HINT;
 
   scene = createScene(engine);
   const grid = generateMaze(CFG.cols, CFG.rows);

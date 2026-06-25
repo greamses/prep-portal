@@ -25,9 +25,6 @@
         }
       }
     </script>
-
-    <!-- Babylon.js engine (UMD global: window.BABYLON) -->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
   </head>
 
   <body>
@@ -48,7 +45,7 @@
           </button>
         </div>
 
-        <div class="maze-hint" id="maze-hint">Click to look around · WASD / Arrow keys to move · Reach the glowing exit</div>
+        <div class="maze-hint" id="maze-hint">Loading the 3D engine…</div>
 
         <div class="maze-win" id="maze-win" hidden>
           <div class="maze-win-card">
@@ -60,6 +57,9 @@
       </div>
     </main>
 
+    <!-- Babylon.js engine (UMD global: window.BABYLON). Deferred so it loads
+         after the page paints, then runs before the deferred module below. -->
+    <script defer src="https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js"></script>
     <script type="module" src="/home/games/maze/js/main.js"></script>
     <script type="module" src="/utils/components/nav-builder.js"></script>
   </body>
