@@ -340,6 +340,31 @@
 
             <div class="ca-swatches" id="paint-swatches" role="group" aria-label="Colours"></div>
 
+            <div class="ca-color-custom">
+              <input type="color" id="paint-color-input" class="ca-color-input" value="#6fb7e8" title="Pick any colour" />
+              <button type="button" class="ca-soft-btn ca-soft-btn--sm" id="paint-color-add">Add swatch</button>
+            </div>
+
+            <details class="ca-grad">
+              <summary class="ca-grad-summary">Gradient fill</summary>
+              <div class="ca-grad-body">
+                <div class="ca-grad-row">
+                  <input type="color" id="grad-c1" class="ca-color-input" value="#f0a868" title="Start colour" />
+                  <input type="color" id="grad-c2" class="ca-color-input" value="#b89ae8" title="End colour" />
+                  <select id="grad-type" class="ca-grad-type" title="Gradient type">
+                    <option value="linear">Linear</option>
+                    <option value="radial">Radial</option>
+                  </select>
+                </div>
+                <label class="ca-grad-angle">Angle
+                  <input type="range" id="grad-angle" min="0" max="360" value="90" />
+                </label>
+                <div class="ca-grad-preview" id="grad-preview" aria-hidden="true"></div>
+                <button type="button" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent" id="grad-apply">Fill selected shape</button>
+                <span class="ca-grad-status" id="grad-status" role="status"></span>
+              </div>
+            </details>
+
             <div class="ca-paint-foot">
               <div class="ca-size-group" role="group" aria-label="Brush size">
                 <button type="button" class="ca-size" data-size="small" title="Thin"><span class="ca-size-dot" style="--d:7px"></span></button>

@@ -82,6 +82,7 @@ Rules:
 - Integer coordinates only, on a LARGE plane: spread the drawing across roughly -200..200 (use most of that space), centred near (0,0); keep proportions realistic.
 - Order each line's points so consecutive points are ADJACENT along the outline — never jump across the figure. Use plenty of points on curves so they read smoothly.
 - Build big outline shapes first, then detail shapes (eyes, windows, stripes, petals, base, etc.).
+- LAYERING: lines paint in the order you list them — each later line is drawn ON TOP of the earlier ones. So never let a filled shape hide one you want seen: a beard, hair, hat or clothing fill must be SHAPED to FRAME the skin/face (leave the cheeks, nose, eyes and forehead uncovered) rather than drawn as one big block over it. List the background/skin first, then place hair/beard/details so each filled region only covers what it should.
 - To close a loop, repeat the first point as the last point of that line.
 - Aim for ${d.total} points IN TOTAL, across ${d.shapes} lines of about ${d.pts} points each.
 - ${d.symmetry}

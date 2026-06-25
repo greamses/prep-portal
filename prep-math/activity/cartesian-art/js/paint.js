@@ -146,25 +146,96 @@ function setTool(name) {
   );
 }
 
-function buildSwatches() {
+const CUSTOM_KEY = "ca-custom-colors-v1";
+function loadCustom() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || []; } catch { return []; }
+}
+function saveCustom(list) {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list.slice(0, 24))); } catch {}
+}
+
+/** Colours used by the currently loaded task / artwork (so the palette shows
+ *  exactly the colours this picture needs). Reads the puzzle's target shapes in
+ *  puzzle mode, otherwise the shapes on the grid. */
+function artColors() {
+  const src = (state.puzzle && state.puzzle.shapes) || state.shapes || [];
+  const cols = [];
+  for (const s of src) {
+    for (const c of [s.strokeColor, s.fillColor]) {
+      if (c && /^#|^rgb/i.test(c) && !cols.includes(c)) cols.push(c);
+    }
+  }
+  return cols;
+}
+
+/** Make one swatch button. */
+function swatch(host, c) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "ca-swatch";
+  b.style.setProperty("--sw", c);
+  b.title = c;
+  b.addEventListener("click", () => {
+    tool.color = c;
+    const ci = $("#paint-color-input");
+    if (ci) ci.value = normHex(c) || ci.value;
+    document.querySelectorAll("#paint-swatches .ca-swatch").forEach((s) => s.classList.remove("is-active"));
+    b.classList.add("is-active");
+    // picking a colour while on Move jumps to the brush so it does something
+    if (tool.name === "move") setTool("brush");
+  });
+  if (c === tool.color) b.classList.add("is-active");
+  host.appendChild(b);
+  return b;
+}
+
+function group(host, label, colors) {
+  if (!colors.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "ca-swatch-group";
+  const lab = document.createElement("span");
+  lab.className = "ca-swatch-label";
+  lab.textContent = label;
+  wrap.appendChild(lab);
+  const row = document.createElement("div");
+  row.className = "ca-swatch-row";
+  colors.forEach((c) => swatch(row, c));
+  wrap.appendChild(row);
+  host.appendChild(wrap);
+}
+
+/** Rebuild the whole swatch panel: the task's colours, the base palette, and
+ *  the user's saved custom colours. Called on load and whenever a task loads. */
+function refreshSwatches() {
   const host = $("#paint-swatches");
   if (!host) return;
-  PALETTE.forEach((c) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "ca-swatch";
-    b.style.setProperty("--sw", c);
-    b.title = c;
-    b.addEventListener("click", () => {
-      tool.color = c;
-      host.querySelectorAll(".ca-swatch").forEach((s) => s.classList.remove("is-active"));
-      b.classList.add("is-active");
-      // picking a colour while on Move jumps to the brush so it does something
-      if (tool.name === "move" || tool.name === "fill") setTool(tool.name === "fill" ? "fill" : "brush");
-    });
-    if (c === tool.color) b.classList.add("is-active");
-    host.appendChild(b);
-  });
+  host.innerHTML = "";
+  const arts = artColors().filter((c) => !PALETTE.includes(c));
+  group(host, "This artwork", arts);
+  group(host, "Palette", PALETTE);
+  group(host, "Custom", loadCustom());
+}
+
+/** Add a custom colour from the picker → save, show, select it. */
+function addCustomColor(hex) {
+  const c = normHex(hex);
+  if (!c) return;
+  tool.color = c;
+  if (!PALETTE.includes(c)) {
+    const list = loadCustom();
+    if (!list.includes(c)) { list.unshift(c); saveCustom(list); }
+  }
+  refreshSwatches();
+  if (tool.name === "move") setTool("brush");
+}
+
+function normHex(c) {
+  if (!c) return null;
+  const m = String(c).trim().match(/^#?([0-9a-f]{6}|[0-9a-f]{3})$/i);
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((x) => x + x).join("");
+  return "#" + h.toLowerCase();
 }
 
 export function initPaint() {
@@ -213,7 +284,12 @@ export function initPaint() {
       if (tool.name === "move" || tool.name === "fill") setTool("brush");
     })
   );
-  buildSwatches();
+  refreshSwatches();
+
+  // custom colour panel: native picker + "Add swatch"
+  const colorInput = $("#paint-color-input");
+  colorInput?.addEventListener("input", (e) => { tool.color = e.target.value; if (tool.name === "move") setTool("brush"); });
+  $("#paint-color-add")?.addEventListener("click", () => addCustomColor(colorInput?.value));
 
   $("#paint-clear")?.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -221,9 +297,10 @@ export function initPaint() {
     else historyCommit(); // brush-only clear still records a step
   });
 
-  // a fresh puzzle / loaded shape starts with a clean canvas
+  // a fresh puzzle / loaded shape starts with a clean canvas + task-coloured palette
   subscribe((reason) => {
     if (reason === "puzzle") ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (reason === "puzzle" || reason === "shapes") refreshSwatches();
   });
 
   setTool("move");

@@ -16,6 +16,7 @@ import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
+import { initGradient } from "./gradient.js";
 import { initToolRail } from "./tool-rail.js";
 import { makeDraggable } from "./draggable.js";
 import { initTransforms } from "./transforms.js";
@@ -39,6 +40,7 @@ function init() {
   initPoints();
   initControls(document);
   initPaint();
+  initGradient();
   initTransforms(document);
   initToolRail(document);
   initTransformMode();
