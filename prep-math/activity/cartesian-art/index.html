@@ -340,6 +340,18 @@
 
             <div class="ca-swatches" id="paint-swatches" role="group" aria-label="Task colours"></div>
 
+            <div class="ca-wheel" id="ca-wheel" hidden>
+              <canvas id="ca-wheel-canvas" class="ca-wheel-canvas" width="176" height="176" aria-label="Colour wheel"></canvas>
+              <label class="ca-wheel-bright" title="Brightness">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+                <input type="range" id="ca-wheel-val" min="0" max="100" value="100" />
+              </label>
+              <div class="ca-wheel-foot">
+                <span class="ca-wheel-preview" id="ca-wheel-preview" aria-hidden="true"></span>
+                <input type="text" id="ca-wheel-hex" class="ca-wheel-hex" maxlength="7" spellcheck="false" value="#6fb7e8" />
+              </div>
+            </div>
+
             <details class="ca-grad">
               <summary class="ca-grad-summary">Gradient fill</summary>
               <div class="ca-grad-body">

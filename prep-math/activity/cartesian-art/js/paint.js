@@ -182,26 +182,21 @@ function swatch(host, c) {
   return b;
 }
 
-/** The extra swatch that toggles open the custom colour wheel (native picker). */
+/** The extra swatch that toggles open the in-app custom colour WHEEL. */
 function wheelSwatch(host) {
-  const lab = document.createElement("label");
-  lab.className = "ca-swatch ca-swatch--wheel";
-  lab.title = "Custom colour";
-  const inp = document.createElement("input");
-  inp.type = "color";
-  inp.className = "ca-swatch-wheel-input";
-  inp.value = normHex(tool.color) || "#6fb7e8";
-  inp.addEventListener("input", () => {
-    tool.color = inp.value;
-    lab.style.setProperty("--sw", inp.value);
-    lab.classList.add("has-color");
-    clearActive();
-    lab.classList.add("is-active");
-    if (tool.name === "move") setTool("brush");
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "ca-swatch ca-swatch--wheel";
+  b.title = "Custom colour wheel";
+  b.addEventListener("click", () => {
+    const pop = $("#ca-wheel");
+    if (!pop) return;
+    pop.hidden = !pop.hidden;
+    b.classList.toggle("is-active", !pop.hidden);
+    if (!pop.hidden) drawWheel();
   });
-  lab.appendChild(inp);
-  host.appendChild(lab);
-  return lab;
+  host.appendChild(b);
+  return b;
 }
 
 /** Rebuild the swatch row: just this task's colours + the custom-wheel toggle. */
@@ -220,6 +215,128 @@ function normHex(c) {
   let h = m[1];
   if (h.length === 3) h = h.split("").map((x) => x + x).join("");
   return "#" + h.toLowerCase();
+}
+
+/* ── custom colour wheel (HSV: hue = angle, saturation = radius, value slider) ── */
+let wheelCanvas, wheelCtx;
+const hsv = { h: 205, s: 0.55, v: 0.91 }; // ≈ #6fb7e8 to start
+
+function hsvToRgb(h, s, v) {
+  h = ((h % 360) + 360) % 360 / 60;
+  const i = Math.floor(h), f = h - i;
+  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [
+    [v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q],
+  ][i % 6];
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function rgbToHex([r, g, b]) {
+  return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+function hexToHsv(hex) {
+  const h = normHex(hex);
+  if (!h) return null;
+  const r = parseInt(h.slice(1, 3), 16) / 255;
+  const g = parseInt(h.slice(3, 5), 16) / 255;
+  const b = parseInt(h.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let hue = 0;
+  if (d) {
+    if (max === r) hue = ((g - b) / d) % 6;
+    else if (max === g) hue = (b - r) / d + 2;
+    else hue = (r - g) / d + 4;
+    hue *= 60; if (hue < 0) hue += 360;
+  }
+  return { h: hue, s: max ? d / max : 0, v: max };
+}
+
+/** Repaint the wheel for the current brightness + draw the selection marker. */
+function drawWheel() {
+  if (!wheelCanvas || !wheelCtx) return;
+  const size = wheelCanvas.width, r = size / 2;
+  const img = wheelCtx.createImageData(size, size), d = img.data;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - r, dy = y - r, dist = Math.hypot(dx, dy), i = (y * size + x) * 4;
+      if (dist > r) { d[i + 3] = 0; continue; }
+      let hue = (Math.atan2(dy, dx) * 180) / Math.PI; if (hue < 0) hue += 360;
+      const [R, G, B] = hsvToRgb(hue, Math.min(1, dist / r), hsv.v);
+      d[i] = R; d[i + 1] = G; d[i + 2] = B; d[i + 3] = 255;
+    }
+  }
+  wheelCtx.putImageData(img, 0, 0);
+  // selection marker
+  const a = (hsv.h * Math.PI) / 180, mr = hsv.s * r;
+  const mx = r + Math.cos(a) * mr, my = r + Math.sin(a) * mr;
+  wheelCtx.beginPath();
+  wheelCtx.arc(mx, my, 6, 0, Math.PI * 2);
+  wheelCtx.strokeStyle = hsv.v > 0.6 ? "#1c1a16" : "#fff";
+  wheelCtx.lineWidth = 2.5;
+  wheelCtx.stroke();
+}
+
+/** Push the current HSV out: live preview, hex box, the wheel swatch, tool.color. */
+function applyWheelColor(updateHex = true) {
+  const hex = rgbToHex(hsvToRgb(hsv.h, hsv.s, hsv.v));
+  tool.color = hex;
+  const prev = $("#ca-wheel-preview");
+  if (prev) prev.style.background = hex;
+  if (updateHex) { const hx = $("#ca-wheel-hex"); if (hx) hx.value = hex; }
+  document.querySelectorAll(".ca-swatch--wheel").forEach((s) => {
+    s.style.setProperty("--sw", hex);
+    s.classList.add("has-color");
+  });
+}
+
+function pickFromEvent(e) {
+  const rect = wheelCanvas.getBoundingClientRect();
+  const r = wheelCanvas.width / 2;
+  const x = ((e.clientX - rect.left) / rect.width) * wheelCanvas.width - r;
+  const y = ((e.clientY - rect.top) / rect.height) * wheelCanvas.height - r;
+  let hue = (Math.atan2(y, x) * 180) / Math.PI; if (hue < 0) hue += 360;
+  hsv.h = hue;
+  hsv.s = Math.min(1, Math.hypot(x, y) / r);
+  drawWheel();
+  applyWheelColor();
+  if (tool.name === "move") setTool("brush");
+}
+
+function initWheel() {
+  wheelCanvas = $("#ca-wheel-canvas");
+  if (!wheelCanvas) return;
+  wheelCtx = wheelCanvas.getContext("2d");
+
+  let dragging = false;
+  wheelCanvas.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    dragging = true;
+    wheelCanvas.setPointerCapture?.(e.pointerId);
+    pickFromEvent(e);
+  });
+  wheelCanvas.addEventListener("pointermove", (e) => { if (dragging) pickFromEvent(e); });
+  const stop = () => (dragging = false);
+  wheelCanvas.addEventListener("pointerup", stop);
+  wheelCanvas.addEventListener("pointercancel", stop);
+
+  $("#ca-wheel-val")?.addEventListener("input", (e) => {
+    hsv.v = Number(e.target.value) / 100;
+    drawWheel();
+    applyWheelColor();
+    if (tool.name === "move") setTool("brush");
+  });
+
+  $("#ca-wheel-hex")?.addEventListener("change", (e) => {
+    const next = hexToHsv(e.target.value);
+    if (!next) { e.target.value = rgbToHex(hsvToRgb(hsv.h, hsv.s, hsv.v)); return; }
+    Object.assign(hsv, next);
+    const vs = $("#ca-wheel-val"); if (vs) vs.value = Math.round(hsv.v * 100);
+    drawWheel();
+    applyWheelColor(false);
+    if (tool.name === "move") setTool("brush");
+  });
+
+  drawWheel();
+  applyWheelColor();
 }
 
 export function initPaint() {
@@ -269,6 +386,7 @@ export function initPaint() {
     })
   );
   refreshSwatches();
+  initWheel();
 
   $("#paint-clear")?.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
