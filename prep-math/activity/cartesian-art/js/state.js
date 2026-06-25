@@ -24,8 +24,8 @@ export const DEFAULT_GRID = Object.freeze({
 });
 
 /** Hard limit on how far the coordinate window can reach in any direction. */
-export const GRID_MAX = 1000;
-const MIN_SPAN = 0.002; // closest you can zoom in (math units across ≈ ±0.001)
+export const GRID_MAX = 500;
+const MIN_SPAN = 0.1; // closest you can zoom in (math units across ≈ ±0.05)
 
 let _pid = 0; // unique point ids (across all shapes)
 let _sid = 0; // unique shape ids
@@ -43,7 +43,7 @@ function makeShape({ points = [], closed = false, fillColor = null, strokeColor 
 export const state = {
   /** Coordinate window currently shown. lockAspect=true keeps square cells;
    *  it flips to false once the user zooms on a single axis line. */
-  grid: { ...DEFAULT_GRID, lockAspect: true },
+  grid: { ...DEFAULT_GRID, lockAspect: true, posOnly: false },
 
   /** Where the mascot/cursor sits, in math units (snapped to integers). */
   cursor: { x: 0, y: 0 },
@@ -315,8 +315,13 @@ export function setView(xMin, xMax, yMin, yMax, lock) {
     const c = (yMax + yMin) / 2;
     yMin = c - MIN_SPAN / 2; yMax = c + MIN_SPAN / 2;
   }
-  // bounds stay fractional so deep zoom (sub-unit) works; only clamp to ±GRID_MAX
   const g = state.grid;
+  // first-quadrant mode: never show below 0 on either axis
+  if (g.posOnly) {
+    if (xMin < 0) { xMax -= xMin; xMin = 0; }
+    if (yMin < 0) { yMax -= yMin; yMin = 0; }
+  }
+  // bounds stay fractional so deep zoom (sub-unit) works; only clamp to ±GRID_MAX
   g.xMin = Math.max(-GRID_MAX, xMin);
   g.xMax = Math.min(GRID_MAX, xMax);
   g.yMin = Math.max(-GRID_MAX, yMin);
@@ -329,6 +334,15 @@ export function setView(xMin, xMax, yMin, yMax, lock) {
 export function squareView() {
   state.grid.lockAspect = true;
   emit("grid");
+}
+
+/** Toggle first-quadrant mode (hide the negative axes). */
+export function setPosOnly(on) {
+  state.grid.posOnly = !!on;
+  const g = state.grid;
+  const sx = g.xMax - g.xMin, sy = g.yMax - g.yMin;
+  if (on) setView(0, sx, 0, sy);
+  else setView(-sx / 2, sx / 2, -sy / 2, sy / 2);
 }
 
 /* ── load / transform ──────────────────────────────────────────────────────── */

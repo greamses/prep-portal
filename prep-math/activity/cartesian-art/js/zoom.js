@@ -54,6 +54,18 @@ export function zoomBy(factor) {
   applyView(centerX(), centerY(), spanX() * factor, spanY() * factor);
 }
 
+/** Zoom one axis only about its centre (keyboard x/y + +/-). */
+export function zoomAxisBy(axis, factor) {
+  const v = visible();
+  if (axis === "x") {
+    const c = (v.xLo + v.xHi) / 2, s = (v.xHi - v.xLo) * factor;
+    setView(c - s / 2, c + s / 2, v.yLo, v.yHi, false);
+  } else {
+    const c = (v.yLo + v.yHi) / 2, s = (v.yHi - v.yLo) * factor;
+    setView(v.xLo, v.xHi, c - s / 2, c + s / 2, false);
+  }
+}
+
 /** Which axis a stage-pixel sits on (away from the origin), or null. */
 function axisAt(px, py) {
   const o = toPx(0, 0);
@@ -62,16 +74,23 @@ function axisAt(px, py) {
   return null;
 }
 
-/* ── wheel: zoom about the pointer ──────────────────────────────────────── */
+/* ── wheel: plain scroll pans, Ctrl/⌘ + scroll zooms about the pointer ───── */
 function onWheel(e, stage) {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
   const px = e.clientX - r.left, py = e.clientY - r.top;
-  const factor = e.deltaY > 0 ? 1.1 : 1 / 1.1;
-  const ax = (px - layout.ox) / layout.unitX;
-  const ay = (layout.oy - py) / layout.unitY;
-  applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
-    spanX() * factor, spanY() * factor);
+
+  if (e.ctrlKey || e.metaKey) {
+    const factor = e.deltaY > 0 ? 1.1 : 1 / 1.1;
+    const ax = (px - layout.ox) / layout.unitX;
+    const ay = (layout.oy - py) / layout.unitY;
+    applyView(ax + (centerX() - ax) * factor, ay + (centerY() - ay) * factor,
+      spanX() * factor, spanY() * factor);
+    return;
+  }
+  // plain scroll → pan
+  applyView(centerX() + e.deltaX / layout.unitX, centerY() - e.deltaY / layout.unitY,
+    spanX(), spanY());
 }
 
 /* ── single-pointer drag: pan or axis-stretch ───────────────────────────── */

@@ -153,10 +153,13 @@ function tick(parent, x, y, cls, v, step) {
   el("title", {}, t).textContent = fmtTick(v, step);
 }
 
+const MAX_LINES = 800; // hard cap so an extreme zoom can never lock up the page
+
 /** Vertical lines at every multiple of `step` spanning the full stage height. */
 function gridLinesX(parent, step, cls, xLo, xHi) {
-  if (step <= 0) return;
-  for (let k = Math.ceil(xLo / step); k * step <= xHi; k++) {
+  if (!(step > 0) || !isFinite(xLo) || !isFinite(xHi)) return;
+  let k = Math.ceil(xLo / step), n = 0;
+  for (; k * step <= xHi && n < MAX_LINES; k++, n++) {
     const x = k * step;
     if (x === 0) continue;
     const px = toPx(x, 0).x;
@@ -165,8 +168,9 @@ function gridLinesX(parent, step, cls, xLo, xHi) {
 }
 /** Horizontal lines at every multiple of `step` spanning the full stage width. */
 function gridLinesY(parent, step, cls, yLo, yHi) {
-  if (step <= 0) return;
-  for (let k = Math.ceil(yLo / step); k * step <= yHi; k++) {
+  if (!(step > 0) || !isFinite(yLo) || !isFinite(yHi)) return;
+  let k = Math.ceil(yLo / step), n = 0;
+  for (; k * step <= yHi && n < MAX_LINES; k++, n++) {
     const y = k * step;
     if (y === 0) continue;
     const py = toPx(0, y).y;
@@ -224,13 +228,13 @@ function drawGrid() {
   if (state.ui.showLabels) {
     const labelY = cap(axisY, 14, h - 6);
     const labelX = cap(axisX, 16, w - 4);
-    for (let k = Math.ceil(xLo / majorX); k * majorX <= xHi; k++) {
+    for (let k = Math.ceil(xLo / majorX), n = 0; k * majorX <= xHi && n < MAX_LINES; k++, n++) {
       const x = k * majorX;
       if (x === 0) continue;
       const px = toPx(x, 0).x;
       tick(A, px, labelY + 16, "ca-tick", x, majorX);
     }
-    for (let k = Math.ceil(yLo / majorY); k * majorY <= yHi; k++) {
+    for (let k = Math.ceil(yLo / majorY), n = 0; k * majorY <= yHi && n < MAX_LINES; k++, n++) {
       const y = k * majorY;
       if (y === 0) continue;
       const py = toPx(0, y).y;

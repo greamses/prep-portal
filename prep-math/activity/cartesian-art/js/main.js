@@ -7,9 +7,9 @@
    Painting, transforms, sharing and AI land in later phases.
    ========================================================================== */
 
-import { state, subscribe, allPoints, squareView } from "./state.js";
+import { state, subscribe, allPoints, squareView, setPosOnly } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
-import { initZoom, setPanMode, zoomBy } from "./zoom.js";
+import { initZoom, setPanMode, zoomBy, zoomAxisBy } from "./zoom.js";
 import { initShapesDock } from "./shapes-dock.js";
 import { initTransformMode } from "./transform-mode.js";
 import { initMascot } from "./mascot.js";
@@ -94,15 +94,32 @@ function init() {
 function initShortcuts() {
   const typing = (t) => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" ||
     t.tagName === "SELECT" || t.isContentEditable);
+  const held = new Set(); // x / y axis modifier held for +/- zoom
+
+  // hold x or y, then press +/- to zoom only that axis
+  const zoom = (factor) => {
+    if (held.has("x")) zoomAxisBy("x", factor);
+    else if (held.has("y")) zoomAxisBy("y", factor);
+    else zoomBy(factor);
+  };
+
+  window.addEventListener("keyup", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "x" || k === "y") held.delete(k);
+  });
+  window.addEventListener("blur", () => held.clear());
+
   window.addEventListener("keydown", (e) => {
     if (typing(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
     switch (e.key) {
+      case "x": case "X": held.add("x"); break;                   // axis modifier
+      case "y": case "Y": held.add("y"); break;
       case "v": case "V": $("#ca-pan-btn")?.click(); break;       // toggle pan
       case "n": case "N": $("#act-new")?.click(); break;          // new shape
       case "t": case "T": $("#tf-mode")?.click(); break;          // transform mode
       case "f": case "F": $("#ca-fullscreen-btn")?.click(); break; // fullscreen
-      case "+": case "=": e.preventDefault(); zoomBy(1 / 1.2); break; // zoom in
-      case "-": case "_": e.preventDefault(); zoomBy(1.2); break;     // zoom out
+      case "+": case "=": e.preventDefault(); zoom(1 / 1.2); break; // zoom in
+      case "-": case "_": e.preventDefault(); zoom(1.2); break;     // zoom out
       case "0": squareView(); break;                              // reset to square
       default: return;
     }
@@ -147,9 +164,10 @@ function initMenu() {
     if (closeIcon) closeIcon.hidden = !on;
   };
   btn.addEventListener("click", () => setOpen(!menu.classList.contains("is-open")));
-  // tapping a menu item closes the menu (except pan, which is a sticky toggle)
+  // tapping a menu item closes the menu (except the sticky toggles)
+  const sticky = new Set(["ca-pan-btn", "ca-quadrant-btn"]);
   menu.querySelectorAll(".ca-menu-items .ca-fab").forEach((b) => {
-    if (b.id === "ca-pan-btn") return;
+    if (sticky.has(b.id)) return;
     b.addEventListener("click", () => setOpen(false));
   });
 
@@ -159,6 +177,14 @@ function initMenu() {
     const on = !panBtn.classList.contains("is-active");
     panBtn.classList.toggle("is-active", on);
     setPanMode(on);
+  });
+
+  // negative-axis (first-quadrant) toggle
+  const quadBtn = $("#ca-quadrant-btn");
+  quadBtn?.addEventListener("click", () => {
+    const on = !quadBtn.classList.contains("is-active");
+    quadBtn.classList.toggle("is-active", on);
+    setPosOnly(on);
   });
 }
 
