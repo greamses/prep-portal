@@ -50,6 +50,7 @@ export async function savePuzzle(data, id = null) {
     prompt: String(data.prompt || "").slice(0, 400),
     difficulty: data.difficulty || "easy",
     grid: data.grid,
+    shapes: data.shapes || null,
     points: data.points || [],
     closed: !!data.closed,
     authorEmail: auth.currentUser?.email || null,

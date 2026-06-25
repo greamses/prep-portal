@@ -7,7 +7,7 @@
    with a star result. Free mode hides all of this.
    ========================================================================== */
 
-import { state, subscribe, exitPuzzle, scoreAttempt, clearPoints } from "./state.js";
+import { state, subscribe, exitPuzzle, scoreAttempt, clearPoints, allPoints } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -26,7 +26,7 @@ function renderGhosts() {
   const G = layers.ghost;
   clear(G);
   if (state.mode !== "puzzle" || !state.puzzle) return;
-  const got = new Set(state.points.map((p) => `${p.x},${p.y}`));
+  const got = new Set(allPoints().map((p) => `${p.x},${p.y}`));
   state.puzzle.targets.forEach((t, i) => {
     const p = toPx(t.x, t.y);
     const hit = got.has(`${t.x},${t.y}`);
@@ -70,7 +70,8 @@ function showResult() {
   $("#result-score").textContent = `${s.score}%`;
   let msg = `${s.correct} of ${s.total} points matched`;
   if (s.extra) msg += ` · ${s.extra} extra`;
-  if (!state.closed && s.correct === s.total) msg += " · close the loop for 3 stars!";
+  const anyClosed = state.shapes.some((sh) => sh.closed);
+  if (!anyClosed && s.correct === s.total) msg += " · close the loop for 3 stars!";
   $("#result-detail").textContent = msg;
   const head = $("#result-head");
   if (head) head.textContent = s.stars === 3 ? "Masterpiece!" : s.stars ? "Nice work!" : "Keep going!";
@@ -87,7 +88,7 @@ export function initPuzzleMode() {
 
   subscribe((reason) => {
     if (reason === "puzzle") { renderGhosts(); updateMission(); }
-    else if (reason === "points" || reason === "close") { renderGhosts(); updateMission(); }
+    else if (reason === "points" || reason === "close" || reason === "shapes") { renderGhosts(); updateMission(); }
     else if (reason === "grid") { renderGhosts(); }
   });
   onRender(renderGhosts);

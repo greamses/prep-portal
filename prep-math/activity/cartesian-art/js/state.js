@@ -4,6 +4,12 @@
    One small reactive-ish store the whole studio reads from. Modules mutate it
    through the setters here (never reach in and reassign) so we get a single
    "changed" broadcast and re-render path. Kept deliberately framework-free.
+
+   An artwork is made of MANY shapes (the worksheet calls them "Lines"): each is
+   an ordered list of vertices with its own stroke + fill colour and open/closed
+   flag. Point setters act on the *active* shape; rendering, history, export and
+   transforms iterate every shape. state.points / state.closed are live getters
+   onto the active shape so single-shape callers keep working.
    ========================================================================== */
 
 /** Default coordinate-plane window. Symmetric four-quadrant plane. */
@@ -12,8 +18,25 @@ export const DEFAULT_GRID = Object.freeze({
   xMax: 10,
   yMin: -10,
   yMax: 10,
-  step: 1, // spacing between gridlines, in math units
+  step: 1, // spacing between labelled gridlines, in math units
 });
+
+/** Hard limit on how far the coordinate window can reach in any direction. */
+export const GRID_MAX = 100;
+const MIN_SPAN = 4; // closest you can zoom in (math units across)
+
+let _pid = 0; // unique point ids (across all shapes)
+let _sid = 0; // unique shape ids
+
+function makeShape({ points = [], closed = false, fillColor = null, strokeColor = null } = {}) {
+  return {
+    id: ++_sid,
+    points: points.map((p) => ({ x: p.x, y: p.y, id: ++_pid })),
+    closed: !!closed && points.length > 2,
+    fillColor,
+    strokeColor,
+  };
+}
 
 export const state = {
   /** Coordinate window currently shown. */
@@ -22,22 +45,17 @@ export const state = {
   /** Where the mascot/cursor sits, in math units (snapped to integers). */
   cursor: { x: 0, y: 0 },
 
-  /** Plotted vertices, in order, each { x, y, id }. Filled in Phase 2+. */
-  points: [],
+  /** All shapes that make up the artwork. Always at least one. */
+  shapes: [makeShape()],
 
-  /** Whether the path is closed back to the first point. */
-  closed: false,
+  /** id of the shape currently being edited. */
+  activeId: 0,
 
   /** "free" studio vs a loaded "puzzle" mission. */
   mode: "free",
 
-  /** The active puzzle: { id, title, prompt, difficulty, targets:[{x,y}],
-   *  closed, grid } — or null in free mode. */
+  /** The active puzzle, or null in free mode. */
   puzzle: null,
-
-  /** Paint state. fillColor tints the closed shape's interior (null = the faint
-   *  pre-paint wash). Brush strokes live on a separate canvas (paint.js). */
-  paint: { fillColor: null },
 
   /** UI flags. */
   ui: {
@@ -45,6 +63,34 @@ export const state = {
     snap: true, // snap cursor to integer lattice
   },
 };
+state.activeId = state.shapes[0].id;
+
+/** The shape currently being edited (always returns one). */
+export function activeShape() {
+  return state.shapes.find((s) => s.id === state.activeId) || state.shapes[0];
+}
+
+/* Live convenience getters so single-shape callers (mascot, readouts, the old
+   paint/score paths) keep reading the active shape without changes. */
+Object.defineProperties(state, {
+  points: {
+    get() { return activeShape().points; },
+    set(v) { activeShape().points = v; },
+  },
+  closed: {
+    get() { return activeShape().closed; },
+    set(v) { activeShape().closed = v; },
+  },
+  paint: {
+    get() {
+      const s = activeShape();
+      return {
+        get fillColor() { return s.fillColor; },
+        set fillColor(c) { s.fillColor = c; },
+      };
+    },
+  },
+});
 
 /* ── change broadcasting ─────────────────────────────────────────────────── */
 const listeners = new Set();
@@ -60,7 +106,7 @@ export function emit(reason = "") {
   for (const fn of listeners) fn(reason);
 }
 
-/* ── setters ─────────────────────────────────────────────────────────────── */
+/* ── cursor ──────────────────────────────────────────────────────────────── */
 
 /** Move the cursor to an absolute math coordinate, clamped to the grid. */
 export function setCursor(x, y) {
@@ -75,118 +121,224 @@ export function moveCursor(dx, dy) {
   setCursor(state.cursor.x + dx, state.cursor.y + dy);
 }
 
-/* ── points ──────────────────────────────────────────────────────────────── */
-let _pid = 0;
+/* ── shapes ──────────────────────────────────────────────────────────────── */
+
+/** Start a fresh empty shape and make it active. Returns the new shape. */
+export function startNewShape(props = {}) {
+  const s = makeShape(props);
+  state.shapes.push(s);
+  state.activeId = s.id;
+  emit("shapes");
+  return s;
+}
+
+/** Make a shape active by id. */
+export function setActiveShape(id) {
+  if (state.shapes.some((s) => s.id === id)) {
+    state.activeId = id;
+    emit("shapes");
+  }
+}
+
+/** Remove a shape by id. Always keeps at least one shape. */
+export function deleteShape(id) {
+  if (state.shapes.length <= 1) {
+    // last shape: just empty it instead of removing
+    const s = state.shapes[0];
+    s.points = [];
+    s.closed = false;
+    s.fillColor = null;
+    state.activeId = s.id;
+    emit("shapes");
+    return;
+  }
+  const i = state.shapes.findIndex((s) => s.id === id);
+  if (i === -1) return;
+  state.shapes.splice(i, 1);
+  if (state.activeId === id) {
+    state.activeId = state.shapes[Math.max(0, i - 1)].id;
+  }
+  emit("shapes");
+}
+
+/** Add a fully-specified shape (used by coordinate paste / import). */
+export function addShape({ points = [], closed = false, fillColor = null, strokeColor = null } = {}) {
+  const s = makeShape({ points, closed, fillColor, strokeColor });
+  state.shapes.push(s);
+  state.activeId = s.id;
+  fitGridToPoints();
+  emit("shapes");
+  return s;
+}
+
+/** Replace every shape at once (used by load / paste-whole-artwork). */
+export function setShapes(list, grid = null) {
+  state.mode = "free";
+  state.puzzle = null;
+  const shapes = (list || []).map((s) => makeShape(s));
+  state.shapes = shapes.length ? shapes : [makeShape()];
+  state.activeId = state.shapes[0].id;
+  if (grid) Object.assign(state.grid, grid);
+  else fitGridToPoints();
+  state.cursor.x = clamp(state.cursor.x, state.grid.xMin, state.grid.xMax);
+  state.cursor.y = clamp(state.cursor.y, state.grid.yMin, state.grid.yMax);
+  emit("shapes");
+}
+
+/** Replace the active shape's vertices outright (direct coordinate entry). */
+export function setActivePoints(points, closed) {
+  const s = activeShape();
+  s.points = (points || []).map((p) => ({ x: Math.round(p.x), y: Math.round(p.y), id: ++_pid }));
+  if (closed != null) s.closed = !!closed && s.points.length > 2;
+  else if (s.points.length < 3) s.closed = false;
+  fitGridToPoints();
+  emit("points");
+}
+
+/* ── points (act on the active shape) ──────────────────────────────────────── */
 
 /** Register a vertex at the current cursor. Ignores an exact repeat of the
- *  last point (double-tap Enter shouldn't stack duplicates). Returns the
- *  point, or null if it was a no-op. */
+ *  last point. Tapping the first point again closes the active loop. */
 export function addPoint() {
   const { x, y } = state.cursor;
-  const last = state.points[state.points.length - 1];
+  const s = activeShape();
+  const last = s.points[s.points.length - 1];
   if (last && last.x === x && last.y === y) return null;
-  // tapping the very first point again closes the loop instead of adding
-  const first = state.points[0];
-  if (state.points.length > 2 && first && first.x === x && first.y === y) {
-    state.closed = true;
+  const first = s.points[0];
+  if (s.points.length > 2 && first && first.x === x && first.y === y) {
+    s.closed = true;
     emit("close");
     return null;
   }
   const pt = { x, y, id: ++_pid };
-  state.points.push(pt);
+  s.points.push(pt);
   emit("points");
   return pt;
 }
 
 /** Remove a point by id (used by double-click on a marker). */
 export function deletePointById(id) {
-  const i = state.points.findIndex((p) => p.id === id);
-  if (i === -1) return;
-  state.points.splice(i, 1);
-  if (state.points.length < 3) state.closed = false;
-  emit("points");
+  for (const s of state.shapes) {
+    const i = s.points.findIndex((p) => p.id === id);
+    if (i !== -1) {
+      s.points.splice(i, 1);
+      if (s.points.length < 3) s.closed = false;
+      emit("points");
+      return;
+    }
+  }
 }
 
-/** Remove the most recently added point. */
+/** Remove the most recently added point from the active shape. */
 export function deleteLastPoint() {
-  if (!state.points.length) return;
-  state.points.pop();
-  if (state.points.length < 3) state.closed = false;
+  const s = activeShape();
+  if (!s.points.length) return;
+  s.points.pop();
+  if (s.points.length < 3) s.closed = false;
   emit("points");
 }
 
-/** Remove a point sitting on the cursor, if any. */
+/** Remove a point sitting on the cursor in the active shape, if any. */
 export function deletePointAtCursor() {
+  const s = activeShape();
   const { x, y } = state.cursor;
-  const i = state.points.findIndex((p) => p.x === x && p.y === y);
+  const i = s.points.findIndex((p) => p.x === x && p.y === y);
   if (i === -1) return false;
-  state.points.splice(i, 1);
-  if (state.points.length < 3) state.closed = false;
+  s.points.splice(i, 1);
+  if (s.points.length < 3) s.closed = false;
   emit("points");
   return true;
 }
 
+/** Clear the active shape's points. */
 export function clearPoints() {
-  state.points = [];
-  state.closed = false;
-  state.paint.fillColor = null;
+  const s = activeShape();
+  s.points = [];
+  s.closed = false;
+  s.fillColor = null;
   emit("points");
 }
 
-/** Set (or clear, with null) the closed shape's fill colour. */
+/** Set (or clear, with null) the active shape's fill colour. */
 export function setFill(color) {
-  state.paint.fillColor = color;
+  activeShape().fillColor = color;
+  emit("points");
+}
+
+/** Set (or clear, with null) the active shape's stroke colour. */
+export function setStroke(color) {
+  activeShape().strokeColor = color;
   emit("points");
 }
 
 export function toggleClosed() {
-  if (state.points.length < 3) return;
-  state.closed = !state.closed;
+  const s = activeShape();
+  if (s.points.length < 3) return;
+  s.closed = !s.closed;
   emit("close");
 }
+
+/* ── grid window ────────────────────────────────────────────────────────────── */
 
 /** Replace the grid window (merges over current). */
 export function setGrid(patch) {
   Object.assign(state.grid, patch);
-  // keep the cursor inside the new window
-  setCursor(state.cursor.x, state.cursor.y);
+  setCursor(state.cursor.x, state.cursor.y); // keep cursor inside
   emit("grid");
 }
 
-/** Load an existing outline into the FREE studio (used by admin authoring to
- *  edit a saved puzzle's shape). Re-ids the points so deletes stay unique. */
-export function loadShape({ points = [], closed = false, grid = null } = {}) {
-  state.mode = "free";
-  state.puzzle = null;
-  state.paint.fillColor = null;
-  if (grid) Object.assign(state.grid, grid);
-  state.points = points.map((p) => ({ x: p.x, y: p.y, id: ++_pid }));
-  state.closed = !!closed && state.points.length > 2;
-  state.cursor.x = clamp(state.cursor.x, state.grid.xMin, state.grid.xMax);
-  state.cursor.y = clamp(state.cursor.y, state.grid.yMin, state.grid.yMax);
-  emit("points");
+/** Set an explicit view window (pan/zoom). Clamped to ±GRID_MAX with a sane
+ *  minimum span so you can't invert or over-zoom. Emits "grid". */
+export function setView(xMin, xMax, yMin, yMax) {
+  // enforce minimum span
+  if (xMax - xMin < MIN_SPAN) {
+    const c = (xMax + xMin) / 2;
+    xMin = c - MIN_SPAN / 2; xMax = c + MIN_SPAN / 2;
+  }
+  if (yMax - yMin < MIN_SPAN) {
+    const c = (yMax + yMin) / 2;
+    yMin = c - MIN_SPAN / 2; yMax = c + MIN_SPAN / 2;
+  }
+  const g = state.grid;
+  g.xMin = Math.max(-GRID_MAX, Math.round(xMin));
+  g.xMax = Math.min(GRID_MAX, Math.round(xMax));
+  g.yMin = Math.max(-GRID_MAX, Math.round(yMin));
+  g.yMax = Math.min(GRID_MAX, Math.round(yMax));
+  emit("grid");
 }
 
-/* ── transforms ──────────────────────────────────────────────────────────── */
+/* ── load / transform ──────────────────────────────────────────────────────── */
 
-/** Grow the grid window (symmetric, capped) so every point stays visible. */
+/** Load an outline (single shape — used by admin edit) into the FREE studio. */
+export function loadShape({ points = [], closed = false, grid = null, shapes = null } = {}) {
+  if (shapes) return setShapes(shapes, grid);
+  setShapes([{ points, closed }], grid);
+}
+
+/** Grow the grid window (symmetric, capped at ±GRID_MAX) so every point of
+ *  every shape stays visible. */
 function fitGridToPoints() {
   let need = 0;
-  for (const p of state.points) need = Math.max(need, Math.abs(p.x), Math.abs(p.y));
+  for (const s of state.shapes)
+    for (const p of s.points) need = Math.max(need, Math.abs(p.x), Math.abs(p.y));
   const g = state.grid;
   const cur = Math.max(Math.abs(g.xMin), g.xMax, Math.abs(g.yMin), g.yMax);
-  const half = Math.min(40, Math.max(cur, need));
+  const half = Math.min(GRID_MAX, Math.max(cur, need + 1));
   g.xMin = -half; g.xMax = half; g.yMin = -half; g.yMax = half;
 }
 
-/** Map every plotted point through fn(x,y)->{x,y}, keeping ids. Grows the grid
- *  to fit, then redraws. Used for the standard coordinate transformations. */
+/** Map every point of every shape through fn(x,y)->{x,y}, keeping ids. */
 export function transformPoints(fn) {
-  if (!state.points.length) return;
-  state.points = state.points.map((p) => {
-    const n = fn(p.x, p.y);
-    return { x: Math.round(n.x), y: Math.round(n.y), id: p.id };
-  });
+  let any = false;
+  for (const s of state.shapes) {
+    if (!s.points.length) continue;
+    any = true;
+    s.points = s.points.map((p) => {
+      const n = fn(p.x, p.y);
+      return { x: Math.round(n.x), y: Math.round(n.y), id: p.id };
+    });
+  }
+  if (!any) return;
   fitGridToPoints();
   emit("points");
 }
@@ -194,55 +346,59 @@ export function transformPoints(fn) {
 /** Restore a full snapshot (used by undo/redo). */
 export function restoreState(snap) {
   if (snap.grid) Object.assign(state.grid, snap.grid);
-  state.points = (snap.points || []).map((p) => ({ x: p.x, y: p.y, id: ++_pid }));
-  state.closed = !!snap.closed;
-  state.paint.fillColor = snap.fillColor ?? null;
+  const list = snap.shapes || [{ points: snap.points || [], closed: snap.closed, fillColor: snap.fillColor }];
+  state.shapes = list.map((s) => makeShape(s));
+  if (!state.shapes.length) state.shapes = [makeShape()];
+  const idx = Number.isInteger(snap.activeIndex)
+    ? clamp(snap.activeIndex, 0, state.shapes.length - 1)
+    : 0;
+  state.activeId = state.shapes[idx].id;
   emit("points");
 }
 
 /* ── puzzle mode ─────────────────────────────────────────────────────────── */
 
-/** Load a puzzle into the studio: adopt its grid window, clear the canvas and
- *  switch to puzzle mode. The solution outline lives on state.puzzle.targets. */
 export function enterPuzzle(puzzle) {
   state.mode = "puzzle";
   state.puzzle = puzzle;
-  state.points = [];
-  state.closed = false;
-  state.paint.fillColor = null;
+  state.shapes = [makeShape()];
+  state.activeId = state.shapes[0].id;
   if (puzzle.grid) Object.assign(state.grid, puzzle.grid);
   state.cursor.x = clamp(0, state.grid.xMin, state.grid.xMax);
   state.cursor.y = clamp(0, state.grid.yMin, state.grid.yMax);
   emit("puzzle");
 }
 
-/** Leave puzzle mode back to the free studio. */
 export function exitPuzzle() {
   state.mode = "free";
   state.puzzle = null;
-  state.points = [];
-  state.closed = false;
-  state.paint.fillColor = null;
+  state.shapes = [makeShape()];
+  state.activeId = state.shapes[0].id;
   emit("puzzle");
 }
 
+/** Every plotted point across all shapes (for scoring / export bounds). */
+export function allPoints() {
+  return state.shapes.flatMap((s) => s.points);
+}
+
 /** Score the current attempt against the loaded puzzle's target outline.
- *  Returns { total, correct, missed, extra, score, stars }. Order-independent
- *  vertex matching (exact lattice hits) keeps it fair and kid-friendly. */
+ *  Order-independent vertex matching over the union of all shapes' points. */
 export function scoreAttempt() {
   const targets = (state.puzzle && state.puzzle.targets) || [];
   const total = targets.length;
   const key = (p) => `${p.x},${p.y}`;
   const want = new Set(targets.map(key));
-  const got = new Set(state.points.map(key));
+  const got = new Set(allPoints().map(key));
   let correct = 0;
   for (const k of want) if (got.has(k)) correct++;
   const extra = [...got].filter((k) => !want.has(k)).length;
   const missed = total - correct;
   const raw = total ? (correct - extra * 0.5) / total : 0;
   const score = Math.max(0, Math.round(raw * 100));
+  const anyClosed = state.shapes.some((s) => s.closed);
   let stars = 0;
-  if (score >= 100 && state.closed) stars = 3;
+  if (score >= 100 && anyClosed) stars = 3;
   else if (score >= 75) stars = 2;
   else if (score >= 40) stars = 1;
   return { total, correct, missed, extra, score, stars };

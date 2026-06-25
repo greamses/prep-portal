@@ -7,8 +7,10 @@
    Painting, transforms, sharing and AI land in later phases.
    ========================================================================== */
 
-import { state, subscribe, setCursor } from "./state.js";
+import { state, subscribe, setCursor, allPoints } from "./state.js";
 import { initGrid, clientToMath, toLattice } from "./grid.js";
+import { initZoom, isGesturing } from "./zoom.js";
+import { initShapesDock } from "./shapes-dock.js";
 import { initMascot } from "./mascot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
@@ -35,6 +37,8 @@ function init() {
   initDocks(document);
   initPuzzleMode();
   initLibrary();
+  initShapesDock();
+  initZoom(stage);
   initExport();
   loadFromUrl(); // a shared ?#art= link rehydrates the drawing before baseline
   initHistory(); // last: baseline snapshot needs the brush bridge registered
@@ -46,7 +50,7 @@ function init() {
   const syncReadout = () => {
     if (cx) cx.textContent = state.cursor.x;
     if (cy) cy.textContent = state.cursor.y;
-    if (count) count.textContent = state.points.length;
+    if (count) count.textContent = allPoints().length;
   };
   subscribe(syncReadout);
   syncReadout();
@@ -71,6 +75,8 @@ function init() {
   // the drop key, so a stray tap never registers an unwanted vertex)
   stage.addEventListener("pointerdown", (e) => {
     if (stage.classList.contains("ca-painting")) return; // painting, not plotting
+    if (isGesturing()) return; // a pinch/pan gesture is in progress
+    if (e.pointerType === "touch" && !e.isPrimary) return; // second finger of a pinch
     const l = toLattice(...svgPixelArgs(e));
     setCursor(l.x, l.y);
   });

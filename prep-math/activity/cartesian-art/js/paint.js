@@ -12,7 +12,7 @@
    pointer events, so plotting and painting never fight.
    ========================================================================== */
 
-import { state, setFill, subscribe } from "./state.js";
+import { state, setFill, setActiveShape, subscribe } from "./state.js";
 import { clientToMath, onRender } from "./grid.js";
 import { registerCanvas, commit as historyCommit } from "./history.js";
 
@@ -93,9 +93,16 @@ function onDown(e) {
   canvas.setPointerCapture?.(e.pointerId);
 
   if (tool.name === "fill") {
-    if (!state.closed) return;
     const m = clientToMath(e.clientX, e.clientY);
-    if (pointInPolygon(m.x, m.y, state.points)) setFill(tool.color);
+    // topmost closed shape whose interior contains the click wins
+    for (let i = state.shapes.length - 1; i >= 0; i--) {
+      const sh = state.shapes[i];
+      if (sh.closed && sh.points.length > 2 && pointInPolygon(m.x, m.y, sh.points)) {
+        setActiveShape(sh.id);
+        setFill(tool.color);
+        return;
+      }
+    }
     return;
   }
   drawing = true;

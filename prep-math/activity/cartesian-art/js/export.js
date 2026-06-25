@@ -10,7 +10,7 @@
        so a link reproduces the outline + fill; the PNG carries the full paint.
    ========================================================================== */
 
-import { state, subscribe, loadShape, setFill } from "./state.js";
+import { state, subscribe, loadShape, allPoints } from "./state.js";
 import { layout } from "./grid.js";
 import { getPaintCanvas } from "./paint.js";
 
@@ -151,14 +151,19 @@ function b64decode(str) {
   return decodeURIComponent(escape(atob(str)));
 }
 
-/** Pack the current drawing into a compact, URL-safe token. */
+/** Pack the current drawing (every shape) into a compact, URL-safe token. */
 export function serializeArt() {
   const g = state.grid;
   const payload = {
-    p: state.points.map((pt) => [pt.x, pt.y]),
-    c: state.closed ? 1 : 0,
+    s: state.shapes
+      .filter((sh) => sh.points.length)
+      .map((sh) => ({
+        p: sh.points.map((pt) => [pt.x, pt.y]),
+        c: sh.closed ? 1 : 0,
+        f: sh.fillColor || null,
+        k: sh.strokeColor || null,
+      })),
     g: [g.xMin, g.xMax, g.yMin, g.yMax],
-    f: state.paint.fillColor || null,
   };
   return b64encode(JSON.stringify(payload));
 }
@@ -175,17 +180,33 @@ export function loadFromUrl() {
   if (!m) return false;
   try {
     const data = JSON.parse(b64decode(m[1]));
-    if (!Array.isArray(data.p)) return false;
     const grid = data.g
       ? { xMin: data.g[0], xMax: data.g[1], yMin: data.g[2], yMax: data.g[3] }
       : null;
-    loadShape({
-      points: data.p.map(([x, y]) => ({ x, y })),
-      closed: !!data.c,
-      grid,
-    });
-    if (data.f) setFill(data.f);
-    return true;
+    if (Array.isArray(data.s)) {
+      // new multi-shape format
+      const shapes = data.s.map((sh) => ({
+        points: (sh.p || []).map(([x, y]) => ({ x, y })),
+        closed: !!sh.c,
+        fillColor: sh.f || null,
+        strokeColor: sh.k || null,
+      }));
+      loadShape({ shapes, grid });
+      return true;
+    }
+    if (Array.isArray(data.p)) {
+      // legacy single-shape format
+      loadShape({
+        shapes: [{
+          points: data.p.map(([x, y]) => ({ x, y })),
+          closed: !!data.c,
+          fillColor: data.f || null,
+        }],
+        grid,
+      });
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -220,7 +241,7 @@ export function initExport() {
   }
 
   const open = () => {
-    if (!state.points.length) return;
+    if (!allPoints().length) return;
     if (linkField) linkField.value = shareUrl();
     overlay.classList.add("is-open");
     refreshPreview();
@@ -257,7 +278,7 @@ export function initExport() {
 
   // gate the export FAB: only meaningful once something is drawn
   const sync = () => {
-    openBtn.disabled = state.points.length === 0;
+    openBtn.disabled = allPoints().length === 0;
   };
   subscribe(sync);
   sync();

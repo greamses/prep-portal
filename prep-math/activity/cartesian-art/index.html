@@ -150,6 +150,37 @@
           </div>
         </div>
 
+        <!-- ═══ DOCK: shapes + coordinates ═══ -->
+        <div class="ca-dock ca-dock--shapes" id="dock-shapes" data-dock="shapes">
+          <div class="ca-dock-head">
+            <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+            <span class="ca-dock-title">Shapes &amp; coordinates</span>
+            <button class="ca-dock-toggle" type="button" aria-label="Collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="ca-dock-body">
+            <div class="ca-shapes-list" id="shapes-list" role="list"></div>
+            <button type="button" id="shapes-add" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-shapes-add">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              New shape
+            </button>
+
+            <div class="ca-shapes-coords">
+              <span class="ca-tf-label">Coordinates of selected shape</span>
+              <textarea id="shapes-coord-input" class="ca-coord-input" rows="3" spellcheck="false" placeholder="(-4,-11), (-6,-6), (-7,4) …"></textarea>
+              <div class="ca-coord-foot">
+                <label class="ca-coord-closed"><input type="checkbox" id="shapes-coord-closed" /> Close loop</label>
+                <button type="button" id="shapes-coord-apply" class="ca-soft-btn ca-soft-btn--sm">Apply</button>
+              </div>
+              <span class="ca-coord-status" id="shapes-coord-status"></span>
+            </div>
+
+            <span class="ca-tf-label">Line colour</span>
+            <div class="ca-swatches ca-swatches--sm" id="shapes-stroke" role="group" aria-label="Line colour"></div>
+            <span class="ca-tf-label">Fill colour</span>
+            <div class="ca-swatches ca-swatches--sm" id="shapes-fill" role="group" aria-label="Fill colour"></div>
+          </div>
+        </div>
+
         <!-- ═══ DOCK: steering ═══ -->
         <div class="ca-dock ca-dock--move" id="dock-move" data-dock="move">
           <div class="ca-dock-head">
@@ -210,9 +241,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5-3 5 3v6l-5 7-5-7z"/></svg>
                 Close
               </button>
-              <button type="button" id="act-clear" class="ca-soft-btn" title="Clear all points">
+              <button type="button" id="act-clear" class="ca-soft-btn" title="Clear this shape's points">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
                 Clear
+              </button>
+              <button type="button" id="act-new" class="ca-soft-btn ca-soft-btn--accent" title="Start a new shape">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M14 8v8M10 12h8"/></svg>
+                New shape
               </button>
             </div>
           </div>
@@ -354,6 +389,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/><circle cx="19" cy="6" r="1.6"/></svg>
             Solution outline: <strong id="author-shapeinfo">—</strong>
           </div>
+
+          <details class="ca-author-paste">
+            <summary>Enter coordinates directly</summary>
+            <p class="ca-author-paste-help">
+              Paste lines in the form
+              <code>Line 1 {Orange with light yellow fill}: (-4,-11), (-6,-6), …</code>
+              — one shape per line. Or just paste a list of points for a single shape.
+            </p>
+            <textarea id="author-paste-input" class="ca-coord-input" rows="5" spellcheck="false" placeholder="Line 1 {Orange with yellow fill}: (-4,-11), (-6,-6), (-7,4)…"></textarea>
+            <div class="ca-coord-foot">
+              <span class="ca-coord-status" id="author-paste-status"></span>
+              <button type="button" id="author-paste-load" class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent">Load onto grid</button>
+            </div>
+          </details>
         </div>
         <div class="ca-modal-foot">
           <span class="ca-author-status" id="author-status"></span>

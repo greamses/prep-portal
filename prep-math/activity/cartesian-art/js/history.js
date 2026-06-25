@@ -27,9 +27,13 @@ export function registerCanvas(getDataURL, putDataURL) {
 function snapshot() {
   const g = state.grid;
   return {
-    points: state.points.map((p) => ({ x: p.x, y: p.y })),
-    closed: state.closed,
-    fillColor: state.paint.fillColor,
+    shapes: state.shapes.map((s) => ({
+      points: s.points.map((p) => ({ x: p.x, y: p.y })),
+      closed: s.closed,
+      fillColor: s.fillColor,
+      strokeColor: s.strokeColor,
+    })),
+    activeIndex: Math.max(0, state.shapes.findIndex((s) => s.id === state.activeId)),
     grid: { xMin: g.xMin, xMax: g.xMax, yMin: g.yMin, yMax: g.yMax, step: g.step },
     img: getImg(),
   };
@@ -82,7 +86,7 @@ export function initHistory() {
   subscribe((reason) => {
     if (restoring) return;
     if (reason === "puzzle") reset(); // new mission → fresh timeline
-    else if (reason === "points" || reason === "close") commit();
+    else if (reason === "points" || reason === "close" || reason === "shapes") commit();
   });
   reset(); // baseline
   updateButtons();

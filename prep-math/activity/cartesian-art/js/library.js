@@ -8,13 +8,14 @@
    enforced server-side by firestore.rules.
    ========================================================================== */
 
-import { state, enterPuzzle, loadShape } from "./state.js";
+import { state, enterPuzzle, loadShape, setShapes, allPoints } from "./state.js";
 import {
   listPuzzles,
   savePuzzle,
   deletePuzzle,
   isAdminUser,
 } from "./puzzles.js";
+import { parseWorksheet } from "./parse.js";
 import { auth } from "/firebase-init.js";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -98,7 +99,11 @@ function card(doc) {
     edit.className = "ca-soft-btn ca-soft-btn--sm";
     edit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg> Edit`;
     edit.addEventListener("click", () => {
-      loadShape({ points: doc.points, closed: doc.closed, grid: doc.grid });
+      if (Array.isArray(doc.shapes) && doc.shapes.length) {
+        loadShape({ shapes: doc.shapes, grid: doc.grid });
+      } else {
+        loadShape({ points: doc.points, closed: doc.closed, grid: doc.grid });
+      }
       editId = doc.id;
       closePicker();
       openAuthor(doc);
@@ -121,7 +126,7 @@ function card(doc) {
 
 /* ── authoring (admin) ─────────────────────────────────────────────────── */
 function openAuthor(doc = null) {
-  if (state.points.length < 2) {
+  if (allPoints().length < 2) {
     alert("Plot at least 2 points on the grid first, then save them as a puzzle.");
     return;
   }
@@ -135,9 +140,11 @@ function openAuthor(doc = null) {
 function closeAuthor() { $("#ca-author").classList.remove("is-open"); editId = null; }
 
 function updateShapeInfo() {
-  const n = state.points.length;
+  const shapes = state.shapes.filter((s) => s.points.length);
+  const n = allPoints().length;
+  const k = shapes.length;
   $("#author-shapeinfo").textContent =
-    `${n} point${n === 1 ? "" : "s"}${state.closed ? " · closed loop" : " · open path"}`;
+    `${k} shape${k === 1 ? "" : "s"} · ${n} point${n === 1 ? "" : "s"}`;
 }
 
 async function submitAuthor(e) {
@@ -146,14 +153,24 @@ async function submitAuthor(e) {
   btn.disabled = true;
   $("#author-status").textContent = "Saving…";
   try {
+    const shapes = state.shapes
+      .filter((s) => s.points.length)
+      .map((s) => ({
+        points: s.points.map((p) => ({ x: p.x, y: p.y })),
+        closed: s.closed,
+        fillColor: s.fillColor || null,
+        strokeColor: s.strokeColor || null,
+      }));
     const id = await savePuzzle(
       {
         title: $("#author-title").value.trim() || "Untitled",
         prompt: $("#author-prompt").value.trim(),
         difficulty: $("#author-difficulty").value,
         grid: gridWindow(),
-        points: state.points.map((p) => ({ x: p.x, y: p.y })),
-        closed: state.closed,
+        shapes,
+        // flattened union of every vertex — used as the connect-the-dots targets
+        points: allPoints().map((p) => ({ x: p.x, y: p.y })),
+        closed: shapes.some((s) => s.closed),
       },
       editId
     );
@@ -185,6 +202,26 @@ export function initLibrary() {
   $("#author-close")?.addEventListener("click", closeAuthor);
   $("#ca-author")?.addEventListener("click", (e) => { if (e.target.id === "ca-author") closeAuthor(); });
   $("#author-form")?.addEventListener("submit", submitAuthor);
+
+  $("#author-paste-load")?.addEventListener("click", loadPaste);
+}
+
+/* Parse pasted worksheet text and lay the shapes onto the grid. */
+function loadPaste() {
+  const ta = $("#author-paste-input");
+  const status = $("#author-paste-status");
+  if (!ta) return;
+  const shapes = parseWorksheet(ta.value);
+  if (!shapes.length) {
+    if (status) status.textContent = "No coordinates found.";
+    return;
+  }
+  setShapes(shapes);
+  updateShapeInfo();
+  if (status) {
+    const pts = shapes.reduce((n, s) => n + s.points.length, 0);
+    status.textContent = `Loaded ${shapes.length} shape${shapes.length === 1 ? "" : "s"} · ${pts} points.`;
+  }
 }
 
 function escapeHtml(s) {

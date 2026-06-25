@@ -16,6 +16,8 @@ import {
   deleteLastPoint,
   toggleClosed,
   clearPoints,
+  startNewShape,
+  activeShape,
   state,
 } from "./state.js";
 import { undo, redo } from "./history.js";
@@ -179,7 +181,11 @@ function initActions(scope) {
   });
   scope.querySelector("#act-close")?.addEventListener("click", () => toggleClosed());
   scope.querySelector("#act-clear")?.addEventListener("click", () => {
-    if (state.points.length && confirm("Clear all points?")) clearPoints();
+    if (activeShape().points.length && confirm("Clear this shape's points?")) clearPoints();
+  });
+  // start a fresh shape (only adds one if the current shape already has points)
+  scope.querySelector("#act-new")?.addEventListener("click", () => {
+    if (activeShape().points.length) startNewShape();
   });
 }
 

@@ -7,7 +7,7 @@
    and after each grid render (resize / window change).
    ========================================================================== */
 
-import { state, subscribe, deletePointById } from "./state.js";
+import { state, subscribe, deletePointById, activeShape } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -29,34 +29,44 @@ function redraw() {
   clear(S);
   clear(P);
 
-  const pts = state.points;
-  if (!pts.length) return;
+  const active = activeShape();
 
-  const px = pts.map((p) => toPx(p.x, p.y));
+  for (const shape of state.shapes) {
+    const pts = shape.points;
+    if (!pts.length) continue;
+    const isActive = shape.id === active.id;
+    const px = pts.map((p) => toPx(p.x, p.y));
 
-  // ── connecting outline ────────────────────────────────────────────────
-  if (px.length >= 2) {
-    const d =
-      "M " + px.map((p) => `${p.x} ${p.y}`).join(" L ") + (state.closed ? " Z" : "");
-    if (state.closed) {
-      const f = el("path", { d, class: "ca-shape-fill" }, S); // faint pre-paint fill
-      if (state.paint.fillColor) f.setAttribute("style", `fill:${state.paint.fillColor}`);
+    // ── connecting outline ──────────────────────────────────────────────
+    if (px.length >= 2) {
+      const d =
+        "M " + px.map((p) => `${p.x} ${p.y}`).join(" L ") + (shape.closed ? " Z" : "");
+      if (shape.closed) {
+        const f = el("path", { d, class: "ca-shape-fill" }, S); // faint pre-paint fill
+        if (shape.fillColor) f.setAttribute("style", `fill:${shape.fillColor}`);
+      }
+      const line = el("path", {
+        d,
+        class: `ca-shape-line${isActive ? "" : " ca-shape-line--idle"}`,
+      }, S);
+      if (shape.strokeColor) line.setAttribute("style", `stroke:${shape.strokeColor}`);
     }
-    el("path", { d, class: "ca-shape-line" }, S);
-  }
 
-  // ── vertex markers ────────────────────────────────────────────────────
-  px.forEach((p, i) => {
-    const isFirst = i === 0;
-    const m = el("g", {
-      class: `ca-point${isFirst ? " ca-point--first" : ""}`,
-      "data-id": pts[i].id,
-      tabindex: "-1",
-    }, P);
-    el("circle", { cx: p.x, cy: p.y, r: 7, class: "ca-point-dot" }, m);
-    el("text", { x: p.x, y: p.y - 12, class: "ca-point-label" }, m).textContent =
-      `${pts[i].x},${pts[i].y}`;
-  });
+    // ── vertex markers ──────────────────────────────────────────────────
+    px.forEach((p, i) => {
+      const isFirst = i === 0;
+      const m = el("g", {
+        class: `ca-point${isFirst ? " ca-point--first" : ""}${isActive ? "" : " ca-point--idle"}`,
+        "data-id": pts[i].id,
+        tabindex: "-1",
+      }, P);
+      el("circle", { cx: p.x, cy: p.y, r: isActive ? 7 : 5, class: "ca-point-dot" }, m);
+      if (isActive) {
+        el("text", { x: p.x, y: p.y - 12, class: "ca-point-label" }, m).textContent =
+          `${pts[i].x},${pts[i].y}`;
+      }
+    });
+  }
 }
 
 export function initPoints() {
@@ -70,7 +80,8 @@ export function initPoints() {
 
   redraw();
   subscribe((reason) => {
-    if (reason === "points" || reason === "close" || reason === "grid") redraw();
+    if (reason === "points" || reason === "close" || reason === "grid" ||
+        reason === "shapes" || reason === "puzzle") redraw();
   });
   onRender(redraw);
 }

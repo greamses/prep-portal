@@ -122,6 +122,48 @@ function clear(g) {
   while (g.firstChild) g.removeChild(g.firstChild);
 }
 
+/** A "nice" gridline spacing (1, 2, 5 ×10ⁿ) aiming for ~target divisions. */
+function niceStep(span, target = 14) {
+  const raw = span / target;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const n = raw / pow;
+  let step;
+  if (n < 1.5) step = 1;
+  else if (n < 3) step = 2;
+  else if (n < 7) step = 5;
+  else step = 10;
+  return Math.max(1, step * pow);
+}
+
+/** Sub-step for the fainter "inner" gridlines drawn between labelled lines. */
+function subStep(major) {
+  if (major <= 1) return 0; // already at integer resolution — no inner grid
+  if (major % 5 === 0) return major / 5;
+  if (major % 4 === 0) return major / 4;
+  if (major % 2 === 0) return major / 2;
+  return 0;
+}
+
+/** Vertical/horizontal lines at every multiple of `step` within [lo,hi]. */
+function gridLinesX(parent, step, cls, g) {
+  if (step <= 0) return;
+  for (let k = Math.ceil(g.xMin / step); k * step <= g.xMax + 1e-9; k++) {
+    const x = k * step;
+    if (x === 0) continue;
+    const a = toPx(x, g.yMin), b = toPx(x, g.yMax);
+    el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }, parent);
+  }
+}
+function gridLinesY(parent, step, cls, g) {
+  if (step <= 0) return;
+  for (let k = Math.ceil(g.yMin / step); k * step <= g.yMax + 1e-9; k++) {
+    const y = k * step;
+    if (y === 0) continue;
+    const a = toPx(g.xMin, y), b = toPx(g.xMax, y);
+    el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }, parent);
+  }
+}
+
 /** Draw gridlines + axes + tick labels. */
 function drawGrid() {
   const g = state.grid;
@@ -130,23 +172,24 @@ function drawGrid() {
   clear(G);
   clear(A);
 
-  // minor gridlines
-  for (let x = g.xMin; x <= g.xMax; x += g.step) {
-    const a = toPx(x, g.yMin);
-    const b = toPx(x, g.yMax);
-    el("line", {
-      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-      class: x === 0 ? "ca-grid-axisline" : "ca-grid-line",
-    }, G);
-  }
-  for (let y = g.yMin; y <= g.yMax; y += g.step) {
-    const a = toPx(g.xMin, y);
-    const b = toPx(g.xMax, y);
-    el("line", {
-      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-      class: y === 0 ? "ca-grid-axisline" : "ca-grid-line",
-    }, G);
-  }
+  const major = niceStep(Math.max(g.xMax - g.xMin, g.yMax - g.yMin));
+  const minor = subStep(major);
+
+  // inner (minor) gridlines first, then the major lines over them
+  gridLinesX(G, minor, "ca-grid-line ca-grid-line--minor", g);
+  gridLinesY(G, minor, "ca-grid-line ca-grid-line--minor", g);
+  gridLinesX(G, major, "ca-grid-line", g);
+  gridLinesY(G, major, "ca-grid-line", g);
+
+  // the two axes themselves
+  el("line", {
+    x1: toPx(g.xMin, 0).x, y1: toPx(g.xMin, 0).y,
+    x2: toPx(g.xMax, 0).x, y2: toPx(g.xMax, 0).y, class: "ca-grid-axisline",
+  }, G);
+  el("line", {
+    x1: toPx(0, g.yMin).x, y1: toPx(0, g.yMin).y,
+    x2: toPx(0, g.yMax).x, y2: toPx(0, g.yMax).y, class: "ca-grid-axisline",
+  }, G);
 
   // axes (drawn over gridlines, with arrowheads)
   const left = toPx(g.xMin, 0);
@@ -160,14 +203,16 @@ function drawGrid() {
   drawArrow(A, top, "y+");
   drawArrow(A, bottom, "y-");
 
-  // tick labels
+  // tick labels (on major lines only)
   if (state.ui.showLabels) {
-    for (let x = g.xMin; x <= g.xMax; x += g.step) {
+    for (let k = Math.ceil(g.xMin / major); k * major <= g.xMax + 1e-9; k++) {
+      const x = k * major;
       if (x === 0) continue;
       const p = toPx(x, 0);
       el("text", { x: p.x, y: p.y + 16, class: "ca-tick" }, A).textContent = String(x);
     }
-    for (let y = g.yMin; y <= g.yMax; y += g.step) {
+    for (let k = Math.ceil(g.yMin / major); k * major <= g.yMax + 1e-9; k++) {
+      const y = k * major;
       if (y === 0) continue;
       const p = toPx(0, y);
       el("text", { x: p.x - 9, y: p.y + 4, class: "ca-tick ca-tick--y" }, A).textContent = String(y);
