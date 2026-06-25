@@ -850,20 +850,32 @@ body {
 /* colour swatches */
 .ca-swatches {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
   flex: 1 1 auto;
 }
-/* grouped swatches: "This artwork" / "Palette" / "Custom" */
-.ca-swatch-group { display: flex; flex-direction: column; gap: 0.22rem; }
-.ca-swatch-label {
-  font-size: 0.62rem;
-  font-weight: var(--weight-bold, 700);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.6;
+/* the extra swatch that opens the custom colour wheel */
+.ca-swatch--wheel {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  cursor: pointer;
+  /* rainbow until a colour is chosen, then it shows the chosen colour */
+  background: conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red);
 }
-.ca-swatch-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.ca-swatch--wheel.has-color { background: var(--sw); }
+.ca-swatch-wheel-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
 .ca-swatch {
   width: 26px;
   height: 26px;
@@ -902,15 +914,29 @@ body {
 /* ── gradient customizer ─────────────────────────────────────────────────── */
 .ca-grad { border-radius: 12px; }
 .ca-grad-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.74rem;
   font-weight: var(--weight-bold, 700);
   cursor: pointer;
-  padding: 0.3rem 0;
+  padding: 0.42rem 0.6rem;
+  border-radius: 10px;
+  background: var(--surface-secondary);
   list-style: none;
 }
+.ca-grad-summary:hover { background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-secondary)); }
 .ca-grad-summary::-webkit-details-marker { display: none; }
-.ca-grad-summary::before { content: "▸ "; opacity: 0.6; }
-.ca-grad[open] .ca-grad-summary::before { content: "▾ "; }
+.ca-grad-summary::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f0a868, #b89ae8);
+  flex-shrink: 0;
+}
+.ca-grad-summary::after { content: "▸"; margin-left: auto; opacity: 0.6; }
+.ca-grad[open] .ca-grad-summary::after { content: "▾"; }
 .ca-grad-body { display: flex; flex-direction: column; gap: 0.45rem; padding-top: 0.3rem; }
 .ca-grad-row { display: flex; align-items: center; gap: 0.4rem; }
 .ca-grad-type {

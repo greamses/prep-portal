@@ -106,6 +106,7 @@ function initShortcuts() {
   };
 
   window.addEventListener("keyup", (e) => {
+    if (!e.key) return; // some inputs (colour/range) fire keyup without a key
     const k = e.key.toLowerCase();
     if (k === "x" || k === "y") held.delete(k);
   });
