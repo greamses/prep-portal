@@ -129,31 +129,7 @@
           </div>
         </div>
 
-        <!-- floating mission bar (puzzle mode) -->
-        <div class="ca-mission" id="ca-mission" hidden>
-          <div class="ca-mission-copy">
-            <span class="ca-mission-eyebrow">Mission</span>
-            <strong class="ca-mission-title" id="mission-title">—</strong>
-            <span class="ca-mission-prompt" id="mission-prompt">—</span>
-          </div>
-          <div class="ca-mission-side">
-            <span class="pp-pill pp-pill--static" style="--tile: var(--accent-secondary)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><circle cx="9" cy="15" r="1.6"/><circle cx="14" cy="9" r="1.6"/></svg>
-              <span id="mission-progress">0/0 points</span>
-            </span>
-            <button class="ca-soft-btn" type="button" id="mission-coords" title="Show the task coordinates">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-              Coordinates
-            </button>
-            <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="mission-check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-              Check
-            </button>
-            <button class="ca-soft-btn" type="button" id="mission-exit">Exit</button>
-          </div>
-        </div>
-
-        <!-- ═══ TASK PANEL (puzzle mode — coordinates to plot) ═══ -->
+        <!-- ═══ TASK PANEL (puzzle mode — opened from the Task tool) ═══ -->
         <div class="ca-dock ca-dock--task" id="dock-task" data-dock="task">
           <div class="ca-dock-head">
             <span class="ca-dock-grip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
@@ -162,9 +138,17 @@
           </div>
           <div class="ca-dock-body">
             <div class="ca-task-object" id="task-object">—</div>
-            <p class="ca-task-help">Plot these points in order and join them with line segments. Use the colours shown.</p>
+            <p class="ca-task-help" id="task-prompt">Plot these points in order and join them with line segments. Use the colours shown.</p>
+            <div class="ca-task-progress"><span id="task-progress">0/0 points</span></div>
             <label class="ca-task-dots"><input type="checkbox" id="task-show-dots" /> Show dots on the grid</label>
             <div class="ca-task-lines" id="task-lines"></div>
+            <div class="ca-task-foot">
+              <button class="ca-soft-btn ca-soft-btn--accent" type="button" id="task-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                Check
+              </button>
+              <button class="ca-soft-btn" type="button" id="task-exit">Exit</button>
+            </div>
           </div>
         </div>
 
@@ -187,6 +171,9 @@
           </button>
           <button class="ca-toolrail-btn" type="button" data-panel="transform" title="Transform" aria-label="Transform">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4"/><path d="M14 7h6M17 4v6M14 17l3 3 3-3M17 14v6M4 17h6M7 14v6"/></svg>
+          </button>
+          <button class="ca-toolrail-btn ca-toolrail-task" type="button" id="rail-task" title="Your task" aria-label="Your task" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </button>
         </div>
 

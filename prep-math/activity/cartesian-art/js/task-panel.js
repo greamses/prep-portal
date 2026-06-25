@@ -1,16 +1,16 @@
 /* ============================================================================
-   Cartesian Art — task panel (puzzle mode)
+   Cartesian Art — task panel (puzzle HUD)
    ----------------------------------------------------------------------------
-   When a task (puzzle) is loaded, this draggable, toggleable panel shows the
-   worksheet the learner works from: the object name, and for each "Line" its
-   colour and the list of coordinates to plot. It does NOT plot the points —
-   that's the exercise. A "Show dots" switch can reveal the numbered targets on
-   the grid as a hint (puzzle-mode.setShowTargets).
+   When a task (puzzle) is loaded, a "Task" icon appears on the tool rail and
+   opens this draggable panel — the studio's puzzle HUD. It shows the object
+   name, the worksheet (each "Line": its colour + the coordinates to plot), live
+   progress, and Check / Exit. It does NOT plot the points — that's the exercise;
+   a "Show dots" switch can reveal the numbered targets as a hint.
    ========================================================================== */
 
-import { state, subscribe } from "./state.js";
+import { state, subscribe, scoreAttempt, exitPuzzle } from "./state.js";
 import { makeDraggable } from "./draggable.js";
-import { setShowTargets } from "./puzzle-mode.js";
+import { setShowTargets, showResult } from "./puzzle-mode.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -28,15 +28,25 @@ function taskLines() {
   return [{ points: p.targets || [], fill: null, stroke: null }];
 }
 
-function coordText(points) {
-  return points.map((pt) => `(${pt.x}, ${pt.y})`).join(", ");
+const coordText = (pts) => pts.map((p) => `(${p.x}, ${p.y})`).join(", ");
+
+function updateProgress() {
+  const el = $("#task-progress");
+  if (!el || state.mode !== "puzzle") return;
+  const s = scoreAttempt();
+  el.textContent = `${s.correct}/${s.total} points`;
 }
 
 function render() {
   const obj = $("#task-object");
+  const prompt = $("#task-prompt");
   const host = $("#task-lines");
   if (!host) return;
   if (obj) obj.textContent = state.puzzle?.title || "Mystery picture";
+  if (prompt) {
+    prompt.textContent = state.puzzle?.prompt ||
+      "Plot these points in order and join them with line segments. Use the colours shown.";
+  }
   host.innerHTML = "";
   taskLines().forEach((ln, i) => {
     if (!ln.points.length) return;
@@ -58,33 +68,45 @@ function render() {
 
     host.appendChild(row);
   });
+  updateProgress();
 }
 
-function show(on) {
+/* show/hide the panel + its rail icon */
+function showPanel(on) {
   $("#dock-task")?.classList.toggle("is-open", on);
-  $("#mission-coords")?.classList.toggle("is-active", on);
+  $("#rail-task")?.classList.toggle("is-active", on);
+}
+function revealTool(on) {
+  const btn = $("#rail-task");
+  if (btn) btn.hidden = !on;
+  if (!on) showPanel(false);
 }
 
 export function initTaskPanel() {
   const dock = $("#dock-task");
   if (!dock) return;
 
-  $("#mission-coords")?.addEventListener("click", () =>
-    show(!dock.classList.contains("is-open"))
-  );
-  $("#task-close")?.addEventListener("click", () => show(false));
+  $("#rail-task")?.addEventListener("click", () => showPanel(!dock.classList.contains("is-open")));
+  $("#task-close")?.addEventListener("click", () => showPanel(false));
   $("#task-show-dots")?.addEventListener("change", (e) => setShowTargets(e.target.checked));
+  $("#task-check")?.addEventListener("click", showResult);
+  $("#task-exit")?.addEventListener("click", () => exitPuzzle());
   makeDraggable(dock, dock.querySelector(".ca-dock-head"), "ca-taskpos");
 
   subscribe((reason) => {
-    if (reason !== "puzzle") return;
-    if (state.mode === "puzzle" && state.puzzle) {
-      render();
-      const dots = $("#task-show-dots");
-      if (dots) dots.checked = false; // each task starts coordinates-only
-      show(true);
-    } else {
-      show(false);
+    if (reason === "puzzle") {
+      const inPuzzle = state.mode === "puzzle" && !!state.puzzle;
+      if (inPuzzle) {
+        render();
+        const dots = $("#task-show-dots");
+        if (dots) dots.checked = false; // each task starts coordinates-only
+        revealTool(true);
+        showPanel(true);
+      } else {
+        revealTool(false);
+      }
+    } else if (reason === "points" || reason === "close" || reason === "shapes") {
+      updateProgress();
     }
   });
 }

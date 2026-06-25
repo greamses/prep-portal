@@ -7,7 +7,7 @@
    with a star result. Free mode hides all of this.
    ========================================================================== */
 
-import { state, subscribe, exitPuzzle, scoreAttempt, clearPoints, allPoints } from "./state.js";
+import { state, subscribe, scoreAttempt, clearPoints, allPoints } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -49,26 +49,16 @@ function renderGhosts() {
   });
 }
 
-/* ── mission bar ───────────────────────────────────────────────────────── */
-function updateMission() {
-  const bar = $("#ca-mission");
-  if (!bar) return;
-  const on = state.mode === "puzzle" && !!state.puzzle;
-  bar.hidden = !on;
-  document.body.classList.toggle("ca-in-puzzle", on);
-  if (!on) return;
-  $("#mission-title").textContent = state.puzzle.title || "Mission";
-  $("#mission-prompt").textContent =
-    state.puzzle.prompt || "Plot the numbered points, then close the loop.";
-  const s = scoreAttempt();
-  $("#mission-progress").textContent = `${s.correct}/${s.total} points`;
+/* Puzzle on/off body flag (task UI lives in the Task tool — see task-panel.js). */
+function setBodyState() {
+  document.body.classList.toggle("ca-in-puzzle", state.mode === "puzzle" && !!state.puzzle);
 }
 
 /* ── result overlay ────────────────────────────────────────────────────── */
 const STAR = (filled) =>
   `<svg viewBox="0 0 24 24" class="ca-star ${filled ? "is-on" : ""}" fill="${filled ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l2.7 6.1 6.6.6-5 4.4 1.5 6.5L12 18.4 5.7 21.1 7.2 14.6l-5-4.4 6.6-.6z"/></svg>`;
 
-function showResult() {
+export function showResult() {
   const s = scoreAttempt();
   const overlay = $("#ca-result");
   if (!overlay) return;
@@ -90,17 +80,14 @@ function hideResult() {
 
 export function initPuzzleMode() {
   renderGhosts();
-  updateMission();
+  setBodyState();
 
   subscribe((reason) => {
-    if (reason === "puzzle") { showTargets = false; renderGhosts(); updateMission(); }
-    else if (reason === "points" || reason === "close" || reason === "shapes") { renderGhosts(); updateMission(); }
+    if (reason === "puzzle") { showTargets = false; renderGhosts(); setBodyState(); }
+    else if (reason === "points" || reason === "close" || reason === "shapes") { renderGhosts(); }
     else if (reason === "grid") { renderGhosts(); }
   });
   onRender(renderGhosts);
-
-  $("#mission-check")?.addEventListener("click", showResult);
-  $("#mission-exit")?.addEventListener("click", () => { hideResult(); exitPuzzle(); });
 
   $("#result-retry")?.addEventListener("click", () => { hideResult(); clearPoints(); });
   $("#result-done")?.addEventListener("click", () => { hideResult(); });

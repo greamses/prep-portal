@@ -16,7 +16,7 @@ export function initToolRail(scope = document) {
   const rail = scope.querySelector("#ca-toolrail");
   if (!rail) return;
 
-  const btns = [...rail.querySelectorAll(".ca-toolrail-btn")];
+  const btns = [...rail.querySelectorAll(".ca-toolrail-btn[data-panel]")];
 
   // only docks that have a rail button are part of the accordion (the steering
   // pad is extracted and toggled separately — see main.js initSteer)
