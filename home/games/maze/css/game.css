@@ -314,6 +314,75 @@
 .mz-result--win .mz-result-text p { color: var(--mz-green); }
 .mz-result-btn { margin-top: 1.7rem; }
 
+/* ── riddle gate (wheel opener) — bottom panel, maze stays visible ─────────── */
+.maze-riddle {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(94vw, 460px);
+}
+.maze-riddle[hidden] { display: none; }
+.mz-riddle-card {
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 14px;
+  background: rgba(15, 19, 27, 0.78);
+  -webkit-backdrop-filter: blur(13px) saturate(135%);
+  backdrop-filter: blur(13px) saturate(135%);
+  border: 1px solid rgba(111, 208, 192, 0.45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: var(--mz-text);
+  font-family: var(--mz-font);
+  text-align: center;
+}
+.mz-riddle-tag {
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--mz-green);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.mz-riddle-q { margin: 0 0 0.8rem; font-size: 0.92rem; line-height: 1.4; }
+.mz-wheel { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; }
+.mz-wheel-arrow {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mz-text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mz-wheel-arrow:active { transform: scale(0.92); }
+.mz-wheel-window {
+  flex: 1 1 auto;
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.mz-wheel-opt { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
+.mz-riddle-go {
+  width: 100%;
+  justify-content: center;
+  border-color: rgba(111, 208, 192, 0.7) !important;
+  color: var(--mz-green) !important;
+}
+.mz-riddle-go:hover { background: var(--mz-green) !important; color: #0a1410 !important; }
+.mz-riddle-fb { margin: 0.5rem 0 0; min-height: 1em; font-size: 0.78rem; color: var(--mz-red); }
+.mz-riddle-card.shake { animation: mz-shake 0.4s ease; }
+@keyframes mz-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
 /* ── game load screen — terminal/boot style (flat) ────────────────────────── */
 .maze-loader {
   position: absolute;

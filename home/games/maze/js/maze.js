@@ -149,5 +149,86 @@ export function buildMaze(scene, grid) {
 
   const startPos = new B.Vector3(0, CFG.eyeH, backZ + cell * 0.7); // outside, facing the door
   const goalPos = new B.Vector3((cols - 1) * cell, 0, (rows - 1) * cell);
-  return { root, startPos, goalPos, door, entrance: { doorZ, backZ, halfX: h } };
+  const gates = placeGates(scene, grid, root, cell, wallH, wallT);
+  return { root, startPos, goalPos, door, gates, entrance: { doorZ, backZ, halfX: h } };
+}
+
+/* ── riddle gates: block 3 passages along the unique solution path ──────────── */
+function setWall(grid, [ar, ac], [br, bc], closed) {
+  if (bc === ac + 1) { grid[ar][ac].e = closed; grid[br][bc].w = closed; }
+  else if (bc === ac - 1) { grid[ar][ac].w = closed; grid[br][bc].e = closed; }
+  else if (br === ar + 1) { grid[ar][ac].s = closed; grid[br][bc].n = closed; }
+  else if (br === ar - 1) { grid[ar][ac].n = closed; grid[br][bc].s = closed; }
+}
+
+function solutionPath(grid) {
+  const rows = grid.length, cols = grid[0].length;
+  const open = (r, c, nr, nc) =>
+    nr === r - 1 ? !grid[r][c].n : nr === r + 1 ? !grid[r][c].s
+      : nc === c + 1 ? !grid[r][c].e : !grid[r][c].w;
+  const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
+  const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const q = [[0, 0]];
+  seen[0][0] = true;
+  const dirs = [[-1, 0], [1, 0], [0, 1], [0, -1]];
+  while (q.length) {
+    const [r, c] = q.shift();
+    if (r === rows - 1 && c === cols - 1) break;
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr < 0 || nc < 0 || nr >= rows || nc >= cols || seen[nr][nc] || !open(r, c, nr, nc)) continue;
+      seen[nr][nc] = true; prev[nr][nc] = [r, c]; q.push([nr, nc]);
+    }
+  }
+  if (!seen[rows - 1][cols - 1]) return [];
+  const path = [];
+  let cur = [rows - 1, cols - 1];
+  while (cur) { path.push(cur); cur = prev[cur[0]][cur[1]]; }
+  return path.reverse();
+}
+
+function placeGates(scene, grid, root, cell, wallH, wallT) {
+  const path = solutionPath(grid);
+  const edges = path.length - 1;
+  if (edges < 3) return [];
+
+  const mat = new B.StandardMaterial("gateMat", scene);
+  mat.diffuseColor = B.Color3.FromHexString("#6fd0c0");
+  mat.emissiveColor = new B.Color3(0.08, 0.22, 0.2);
+  mat.specularColor = new B.Color3(0.2, 0.2, 0.2);
+
+  const fracs = [0.3, 0.55, 0.8];
+  const gates = [];
+  for (const f of fracs) {
+    const i = Math.max(1, Math.min(edges - 1, Math.round(edges * f)));
+    const A = path[i], B2 = path[i + 1];
+    if (!A || !B2) continue;
+    setWall(grid, A, B2, true); // block the passage
+
+    const sameRow = A[0] === B2[0];
+    const mx = ((A[1] + B2[1]) / 2) * cell;
+    const mz = ((A[0] + B2[0]) / 2) * cell;
+    const mesh = B.MeshBuilder.CreateBox("gate", {
+      width: sameRow ? wallT * 1.6 : cell,
+      height: wallH,
+      depth: sameRow ? cell : wallT * 1.6,
+    }, scene);
+    mesh.position.set(mx, wallH / 2, mz);
+    mesh.material = mat;
+    mesh.parent = root;
+
+    const gate = {
+      pos: { x: mx, z: mz },
+      solved: false,
+      active: false,
+      mesh,
+      open() {
+        setWall(grid, A, B2, false); // carve the passage
+        this.solved = true;
+        B.Animation.CreateAndStartAnimation("gateUp", mesh, "position.y", 60, 55, mesh.position.y, mesh.position.y + wallH * 1.3, 0);
+      },
+    };
+    gates.push(gate);
+  }
+  return gates;
 }

@@ -1,15 +1,14 @@
 /* ============================================================================
-   3D Maze — enemies ("hunters")
+   3D Maze — enemies ("zombies")
    ----------------------------------------------------------------------------
-   Red drones that roam the corridors and hunt the player using BFS through the
-   maze grid (so they never walk through walls). They're slower than the player,
-   so they're escapable. caught() reports a collision with the player.
+   Hunters that chase the player through the maze using BFS over the grid (never
+   through walls), slower than the player so they're escapable. Uses the loaded
+   zombie rig (run/idle) when supplied; falls back to a red octahedron otherwise.
    ========================================================================== */
 
 import { CFG } from "./config.js";
 
 const B = window.BABYLON;
-const FLOAT_Y = CFG.eyeH * 0.6;
 
 function cellOf(x, z, rows, cols) {
   return {
@@ -17,27 +16,20 @@ function cellOf(x, z, rows, cols) {
     c: Math.max(0, Math.min(cols - 1, Math.round(x / CFG.cell))),
   };
 }
-function centerOf(r, c) {
-  return new B.Vector3(c * CFG.cell, FLOAT_Y, r * CFG.cell);
+function centerOf(r, c, y) {
+  return new B.Vector3(c * CFG.cell, y, r * CFG.cell);
 }
-
-/** Open neighbours of a cell (no wall between). */
 function neighbours(grid, r, c) {
-  const rows = grid.length,
-    cols = grid[0].length;
-  const out = [];
-  if (r > 0 && !grid[r][c].n) out.push([r - 1, c]);
-  if (c < cols - 1 && !grid[r][c].e) out.push([r, c + 1]);
-  if (r < rows - 1 && !grid[r][c].s) out.push([r + 1, c]);
-  if (c > 0 && !grid[r][c].w) out.push([r, c - 1]);
+  const rows = grid.length, cols = grid[0].length, out = [];
+  if (r > 0 && !grid[r - 1][c].n && !grid[r][c].n) out.push([r - 1, c]);
+  if (c < cols - 1 && !grid[r][c].e && !grid[r][c + 1].e) out.push([r, c + 1]);
+  if (r < rows - 1 && !grid[r][c].s && !grid[r + 1][c].s) out.push([r + 1, c]);
+  if (c > 0 && !grid[r][c].w && !grid[r][c - 1].w) out.push([r, c - 1]);
   return out;
 }
-
-/** BFS from (sr,sc) to (tr,tc); return the first step cell, or null. */
 function bfsNext(grid, sr, sc, tr, tc) {
   if (sr === tr && sc === tc) return null;
-  const rows = grid.length,
-    cols = grid[0].length;
+  const rows = grid.length, cols = grid[0].length;
   const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
   const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
   const q = [[sr, sc]];
@@ -46,65 +38,52 @@ function bfsNext(grid, sr, sc, tr, tc) {
     const [r, c] = q.shift();
     if (r === tr && c === tc) break;
     for (const [nr, nc] of neighbours(grid, r, c)) {
-      if (!seen[nr][nc]) {
-        seen[nr][nc] = true;
-        prev[nr][nc] = [r, c];
-        q.push([nr, nc]);
-      }
+      if (!seen[nr][nc]) { seen[nr][nc] = true; prev[nr][nc] = [r, c]; q.push([nr, nc]); }
     }
   }
   if (!seen[tr][tc]) return null;
   let cur = [tr, tc];
-  while (
-    prev[cur[0]][cur[1]] &&
-    !(prev[cur[0]][cur[1]][0] === sr && prev[cur[0]][cur[1]][1] === sc)
-  ) {
+  while (prev[cur[0]][cur[1]] && !(prev[cur[0]][cur[1]][0] === sr && prev[cur[0]][cur[1]][1] === sc)) {
     cur = prev[cur[0]][cur[1]];
   }
   return cur;
 }
 
-export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
-  const rows = grid.length,
-    cols = grid[0].length;
+export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = null } = {}) {
+  const rows = grid.length, cols = grid[0].length;
 
-  const mat = new B.StandardMaterial("enemyMat", scene);
-  mat.diffuseColor = B.Color3.FromHexString("#f04a4a");
-  mat.emissiveColor = new B.Color3(0.55, 0.05, 0.05);
-  mat.specularColor = new B.Color3(0.2, 0.2, 0.2);
-  const glow = new B.GlowLayer("enemyGlow", scene);
-  glow.intensity = 0.8;
-
-  // spawn in the far half of the maze, away from the player's start (0,0)
+  // spawn in the far half (near the goal), away from the entrance
   const spots = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
-      if (r + c > (rows + cols) / 2) spots.push([r, c]);
+      if (r + c > (rows + cols) * 0.6) spots.push([r, c]);
 
+  let octMat = null, octGlow = null;
   const enemies = [];
   for (let i = 0; i < count; i++) {
-    const [r, c] = spots.length
-      ? spots[(Math.random() * spots.length) | 0]
-      : [rows - 1, cols - 1];
-    const mesh = B.MeshBuilder.CreatePolyhedron(
-      "enemy",
-      { type: 1, size: 0.62 },
-      scene,
-    ); // octahedron
-    mesh.material = mat;
-    mesh.position = centerOf(r, c);
-    glow.addIncludedOnlyMesh(mesh);
-    enemies.push({ mesh, target: null, phase: Math.random() * 6.28 });
+    const [r, c] = spots.length ? spots[(Math.random() * spots.length) | 0] : [rows - 1, cols - 1];
+    let mesh, play = null, footY = 0;
+    if (model && i === 0) {
+      mesh = model.root;
+      footY = -(model.footOffset || 0); // seat feet on the ground
+      play = model.play;
+    } else {
+      if (!octMat) {
+        octMat = new B.StandardMaterial("enemyMat", scene);
+        octMat.diffuseColor = B.Color3.FromHexString("#f04a4a");
+        octMat.emissiveColor = new B.Color3(0.55, 0.05, 0.05);
+        octGlow = new B.GlowLayer("enemyGlow", scene);
+        octGlow.intensity = 0.8;
+      }
+      mesh = B.MeshBuilder.CreatePolyhedron("enemy", { type: 1, size: 0.62 }, scene);
+      mesh.material = octMat;
+      footY = CFG.eyeH * 0.6;
+      octGlow.addIncludedOnlyMesh(mesh);
+    }
+    mesh.position = centerOf(r, c, footY);
+    enemies.push({ mesh, play, footY, target: null, phase: Math.random() * 6.28, isModel: !!(model && i === 0) });
   }
 
-  /** Brighten the drones when they wake (end of the grace period). */
-  function setAlert(on) {
-    mat.emissiveColor = on
-      ? new B.Color3(0.9, 0.08, 0.08)
-      : new B.Color3(0.55, 0.05, 0.05);
-  }
-
-  /** hunting=false → dormant: bob/spin in place (no chase, no move). */
   function update(playerPos, hunting = true) {
     const p = cellOf(playerPos.x, playerPos.z, rows, cols);
     const t = performance.now() * 0.004;
@@ -113,7 +92,7 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
         if (!e.target || B.Vector3.Distance(e.mesh.position, e.target) < 0.12) {
           const ec = cellOf(e.mesh.position.x, e.mesh.position.z, rows, cols);
           const next = bfsNext(grid, ec.r, ec.c, p.r, p.c);
-          e.target = next ? centerOf(next[0], next[1]) : null;
+          e.target = next ? centerOf(next[0], next[1], e.footY) : null;
         }
         if (e.target) {
           const dir = e.target.subtract(e.mesh.position);
@@ -123,12 +102,17 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
             dir.normalize();
             e.mesh.position.x += dir.x * Math.min(speed, d);
             e.mesh.position.z += dir.z * Math.min(speed, d);
+            if (e.isModel) e.mesh.rotation.y = Math.atan2(dir.x, dir.z) + CFG.modelYaw;
           }
         }
+        if (e.play) e.play("run");
+      } else if (e.play) {
+        e.play("idle");
       }
-      e.mesh.rotation.y += hunting ? 0.05 : 0.02;
-      e.mesh.position.y =
-        FLOAT_Y + Math.sin(t + e.phase) * (hunting ? 0.16 : 0.1);
+      if (!e.isModel) {
+        e.mesh.rotation.y += 0.05;
+        e.mesh.position.y = e.footY + Math.sin(t + e.phase) * 0.16;
+      }
     }
   }
 
@@ -140,6 +124,8 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
     }
     return false;
   }
+
+  function setAlert() {} // (zombie has no alert colour)
 
   return { enemies, update, caught, setAlert };
 }

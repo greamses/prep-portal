@@ -62,20 +62,22 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
   model.parent = body;
   model.position.set(0, -0.85 - (character.footOffset || 0), 0);
 
-  // ── camera: starts above, eases to behind-the-back ───────────────────────
-  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 0.35, 9, body.position, scene);
+  // ── camera: drone overview of the whole maze → behind-the-back follow ────
+  const mazeCenter = new B.Vector3((cols - 1) * CFG.cell / 2, 0, (rows - 1) * CFG.cell / 2);
+  const droneRadius = Math.max(cols, rows) * CFG.cell * 1.15;
+
+  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 0.12, droneRadius, mazeCenter.clone(), scene);
   cam.attachControl(canvas, true);
   cam.inputs.removeByType("ArcRotateCameraKeyboardMoveInput"); // arrows = move
-  cam.lockedTarget = body;
   cam.lowerRadiusLimit = 2.5;
-  cam.upperRadiusLimit = 10;
-  cam.lowerBetaLimit = 0.3;
+  cam.upperRadiusLimit = Math.max(60, droneRadius + 6);
+  cam.lowerBetaLimit = 0.08;
   cam.upperBetaLimit = 1.46;
   cam.wheelPrecision = 40;
-  cam.checkCollisions = true;
   cam.collisionRadius = new B.Vector3(0.5, 0.5, 0.5);
   cam.targetScreenOffset = new B.Vector2(0, -0.35);
   scene.activeCamera = cam;
+  let followed = false;
 
   let dragging = false, lastDrag = -1e9;
   canvas.addEventListener("pointerdown", () => { dragging = true; });
@@ -112,15 +114,20 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
 
     character.play(running ? "run" : "walk");
 
-    // cinematic intro: above → behind as she advances toward the gate
+    // drone intro: from a whole-maze overview down to behind-the-back as she
+    // advances toward the gate; then lock to follow.
     if (getDoorState && getDoorState() === "shut" && entrance) {
       const t = clamp((body.position.z - startZ) / (entrance.doorZ - startZ), 0, 1);
-      cam.beta = 0.35 + (1.32 - 0.35) * t;
-      cam.radius = 9 + (CFG.camDist - 9) * t;
-    } else if (!dragging && performance.now() - lastDrag > 1100) {
-      // auto-trail behind once she's through the gate
-      const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
-      cam.alpha = lerpAngle(cam.alpha, want, 0.05);
+      cam.target = B.Vector3.Lerp(mazeCenter, body.position, t);
+      cam.alpha = -Math.PI / 2;
+      cam.beta = 0.12 + (1.32 - 0.12) * t;
+      cam.radius = droneRadius + (CFG.camDist - droneRadius) * t;
+    } else {
+      if (!followed) { cam.lockedTarget = body; cam.checkCollisions = true; followed = true; }
+      if (!dragging && performance.now() - lastDrag > 1100) {
+        const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
+        cam.alpha = lerpAngle(cam.alpha, want, 0.05);
+      }
     }
   }
 

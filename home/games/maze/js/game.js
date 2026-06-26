@@ -10,10 +10,11 @@
 import { createEngine, createScene } from "./engine.js";
 import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
-import { loadCharacter, placeholderCharacter } from "./character.js";
+import { loadCharacter, loadZombie, placeholderCharacter } from "./character.js";
 import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
 import { createEnemies } from "./enemy.js";
+import { initRiddles, openRiddle, isRiddleOpen, closeRiddle } from "./riddles.js";
 import { CFG } from "./config.js";
 
 const B = window.BABYLON;
@@ -23,6 +24,7 @@ const canvas = $("#maze-canvas");
 let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = 0, alerted = false, alertTimer = null;
 let door = null, doorState = "shut", doorBaseY = 0, entranceDoorZ = 0;
+let gates = [];
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -67,6 +69,7 @@ function endGame(overlayId) {
   $("#" + overlayId).hidden = false;
   $("#maze-hint").hidden = true;
   hideGrace();
+  closeRiddle();
 }
 
 /* ── glowing exit pillar ──────────────────────────────────────────────────── */
@@ -107,8 +110,13 @@ async function start() {
   try { character = await loadCharacter(scene); }
   catch (e) { character = placeholderCharacter(scene); }
 
+  let zombie = null;
+  if (CFG.enemyCount > 0) { try { zombie = await loadZombie(scene); } catch (e) { zombie = null; } }
+
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
-  enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: 0.12 });
+  enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: CFG.enemySpeed, model: zombie });
+  gates = info.gates || [];
+  closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
 
   // one-way gate: shut until she reaches it, opens to enter, seals behind her
@@ -124,14 +132,27 @@ async function start() {
     const hunting = haveEnemies && now >= graceUntil;
     const body = player.body;
 
-    if (!over) player.update(readInput());
-    if (haveEnemies) enemies.update(body.position, hunting && !over);
+    const riddling = isRiddleOpen();
+    if (!over) player.update(riddling ? { x: 0, y: 0, run: false } : readInput());
+    if (haveEnemies) enemies.update(body.position, hunting && !over); // zombies keep coming during riddles
     if (map) {
       const pts = haveEnemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
       map.update(body.position.x, body.position.z, body.rotation.y - CFG.modelYaw, pts);
     }
     if (goal) goal.rotation.y += 0.012;
     if (over) return;
+
+    // riddle gates: walking up to a locked gate pops its wheel riddle
+    if (!riddling) {
+      for (const g of gates) {
+        if (g.solved || g.active) continue;
+        if (Math.hypot(body.position.x - g.pos.x, body.position.z - g.pos.z) < 1.7) {
+          g.active = true;
+          openRiddle(() => { g.open(); g.active = false; });
+          break;
+        }
+      }
+    }
 
     // gate: open when she walks up to it, seal it once she's inside
     if (door) {
@@ -198,6 +219,7 @@ export async function startGame() {
   engine = createEngine(canvas);
   joy = createJoystick($("#mz-joy-ring"), $("#mz-joy-knob"));
   map = initMinimap($("#maze-map"));
+  initRiddles();
 
   const MOVE = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
   window.addEventListener("keydown", (e) => {
