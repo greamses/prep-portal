@@ -52,11 +52,12 @@ function bfsNext(grid, sr, sc, tr, tc) {
 export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = null } = {}) {
   const rows = grid.length, cols = grid[0].length;
 
-  // spawn in the far half (near the goal), away from the entrance
+  // spawn near the entrance so they chase her from BEHIND as she heads in
   const spots = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
-      if (r + c > (rows + cols) * 0.6) spots.push([r, c]);
+      if (r + c <= 2) spots.push([r, c]);
+  if (!spots.length) spots.push([0, 0]);
 
   let octMat = null, octGlow = null;
   const enemies = [];
@@ -88,6 +89,7 @@ export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = nu
     const p = cellOf(playerPos.x, playerPos.z, rows, cols);
     const t = performance.now() * 0.004;
     for (const e of enemies) {
+      let moved = false;
       if (hunting) {
         if (!e.target || B.Vector3.Distance(e.mesh.position, e.target) < 0.12) {
           const ec = cellOf(e.mesh.position.x, e.mesh.position.z, rows, cols);
@@ -103,12 +105,11 @@ export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = nu
             e.mesh.position.x += dir.x * Math.min(speed, d);
             e.mesh.position.z += dir.z * Math.min(speed, d);
             if (e.isModel) e.mesh.rotation.y = Math.atan2(dir.x, dir.z) + CFG.modelYaw;
+            moved = true;
           }
         }
-        if (e.play) e.play("run");
-      } else if (e.play) {
-        e.play("idle");
       }
+      if (e.play) e.play(moved ? "run" : "idle"); // idle until actually chasing
       if (!e.isModel) {
         e.mesh.rotation.y += 0.05;
         e.mesh.position.y = e.footY + Math.sin(t + e.phase) * 0.16;

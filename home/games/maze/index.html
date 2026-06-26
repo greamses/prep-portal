@@ -158,17 +158,15 @@
           </div>
         </div>
 
-        <!-- riddle gate (wheel opener) -->
+        <!-- riddle gate (ancient wooden panel) -->
         <div class="maze-riddle" id="maze-riddle" hidden>
           <div class="mz-riddle-card">
-            <div class="mz-riddle-tag">LOCKED GATE · SOLVE TO OPEN</div>
+            <div class="mz-riddle-tag">⚜ LOCKED GATE ⚜</div>
             <p class="mz-riddle-q" id="mz-riddle-q"></p>
-            <div class="mz-wheel">
-              <button type="button" class="mz-wheel-arrow" id="mz-wheel-prev" aria-label="Previous">&#9664;</button>
-              <div class="mz-wheel-window"><span class="mz-wheel-opt" id="mz-wheel-opt"></span></div>
-              <button type="button" class="mz-wheel-arrow" id="mz-wheel-next" aria-label="Next">&#9654;</button>
+            <div class="mz-riddle-row">
+              <input type="text" id="mz-riddle-input" class="mz-riddle-input" placeholder="speak your answer…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" class="mz-riddle-go" id="mz-riddle-go">OPEN</button>
             </div>
-            <button type="button" class="maze-btn mz-riddle-go" id="mz-riddle-go">OPEN GATE</button>
             <p class="mz-riddle-fb" id="mz-riddle-fb"></p>
           </div>
         </div>

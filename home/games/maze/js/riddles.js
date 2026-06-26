@@ -1,73 +1,88 @@
 /* ============================================================================
-   3D Maze — riddle gates ("wheel openers")
+   3D Maze — riddle gates (ancient wooden gate)
    ----------------------------------------------------------------------------
-   A locked gate pops a riddle with a rotary wheel of answers: spin with ◄ ► to
-   the answer and press OPEN GATE. Correct → onSolve() (the gate opens). The game
-   keeps running behind the panel, so a slow answer lets the zombies catch up.
+   A locked gate types out a riddle (typewriter) on an aged-wood panel; the
+   player TYPES the answer and presses OPEN GATE. Correct → onSolve() opens the
+   gate. The game keeps running behind the panel, so a slow answer lets the
+   zombies catch up.
    ========================================================================== */
 
 const $ = (s) => document.querySelector(s);
 
 const BANK = [
-  { q: "I have keys but no locks, and space but no room. What am I?", options: ["A map", "A keyboard", "A piano", "A car"], answer: 1 },
-  { q: "What has to be broken before you can use it?", options: ["A window", "A promise", "An egg", "A code"], answer: 2 },
-  { q: "What gets wetter the more it dries?", options: ["A towel", "The sun", "A sponge", "The rain"], answer: 0 },
-  { q: "What has hands but cannot clap?", options: ["A clock", "A statue", "A glove", "A tree"], answer: 0 },
-  { q: "What has a neck but no head?", options: ["A giraffe", "A bottle", "A shirt", "A road"], answer: 1 },
-  { q: "I travel the world but stay in a corner. What am I?", options: ["A bird", "A stamp", "The wind", "A clock"], answer: 1 },
-  { q: "The more you take, the more you leave behind. What are they?", options: ["Footsteps", "Photos", "Coins", "Words"], answer: 0 },
-  { q: "What has many teeth but cannot bite?", options: ["A saw", "A comb", "A zipper", "A shark"], answer: 1 },
-  { q: "What goes up but never comes down?", options: ["A balloon", "Your age", "Smoke", "A kite"], answer: 1 },
+  { q: "I have keys but no locks, and space but no room. What am I?", a: ["keyboard"] },
+  { q: "What must be broken before you can use it?", a: ["egg"] },
+  { q: "What gets wetter the more it dries?", a: ["towel"] },
+  { q: "What has hands but cannot clap?", a: ["clock"] },
+  { q: "What has a neck but no head?", a: ["bottle"] },
+  { q: "I travel the world but stay in a corner. What am I?", a: ["stamp", "postage stamp"] },
+  { q: "The more you take, the more you leave behind. What are they?", a: ["footsteps", "footprints", "steps"] },
+  { q: "What has many teeth but cannot bite?", a: ["comb", "zipper", "zip"] },
+  { q: "What goes up but never comes down?", a: ["age"] },
+  { q: "What has a thumb and four fingers but is not alive?", a: ["glove"] },
 ];
 
-let state = null; // { options, answer, idx, onSolve }
+let state = null;     // { answers:[], onSolve }
+let typeTimer = null;
 
-function render() {
-  if (!state) return;
-  $("#mz-wheel-opt").textContent = state.options[state.idx];
+const norm = (s) => s.toLowerCase().trim().replace(/^(a|an|the)\s+/, "").replace(/[^a-z0-9 ]/g, "");
+
+function typeQuestion(text) {
+  const el = $("#mz-riddle-q");
+  if (!el) return;
+  el.textContent = "";
+  let i = 0;
+  clearInterval(typeTimer);
+  typeTimer = setInterval(() => {
+    el.textContent = text.slice(0, ++i);
+    if (i >= text.length) clearInterval(typeTimer);
+  }, 26);
 }
-function cycle(d) {
+
+function submit() {
   if (!state) return;
-  state.idx = (state.idx + d + state.options.length) % state.options.length;
-  $("#mz-riddle-fb").textContent = "";
-  render();
-}
-function confirm() {
-  if (!state) return;
-  if (state.idx === state.answer) {
+  const input = $("#mz-riddle-input");
+  const val = norm(input.value || "");
+  if (val && state.answers.some((a) => norm(a) === val)) {
     const cb = state.onSolve;
     state = null;
+    clearInterval(typeTimer);
     $("#maze-riddle").hidden = true;
     cb && cb();
   } else {
-    $("#mz-riddle-fb").textContent = "Wrong — try again!";
+    $("#mz-riddle-fb").textContent = "The gate holds fast… try again.";
     const card = $("#maze-riddle .mz-riddle-card");
     card.classList.remove("shake");
-    void card.offsetWidth; // restart animation
+    void card.offsetWidth;
     card.classList.add("shake");
   }
 }
 
 export function initRiddles() {
   if (!$("#maze-riddle")) return;
-  $("#mz-wheel-prev").addEventListener("click", () => cycle(-1));
-  $("#mz-wheel-next").addEventListener("click", () => cycle(1));
-  $("#mz-riddle-go").addEventListener("click", confirm);
+  $("#mz-riddle-go").addEventListener("click", submit);
+  $("#mz-riddle-input").addEventListener("keydown", (e) => {
+    e.stopPropagation(); // don't leak typing to game controls
+    if (e.key === "Enter") submit();
+  });
 }
 
 export function openRiddle(onSolve) {
   const r = BANK[(Math.random() * BANK.length) | 0];
-  state = { options: r.options.slice(), answer: r.answer, idx: 0, onSolve };
-  $("#mz-riddle-q").textContent = r.q;
+  state = { answers: r.a, onSolve };
   $("#mz-riddle-fb").textContent = "";
-  render();
+  const input = $("#mz-riddle-input");
+  input.value = "";
   $("#maze-riddle").hidden = false;
+  typeQuestion(r.q);
+  setTimeout(() => input.focus(), 60);
 }
 
 export function isRiddleOpen() { return !!state; }
 
 export function closeRiddle() {
   state = null;
+  clearInterval(typeTimer);
   const el = $("#maze-riddle");
   if (el) el.hidden = true;
 }

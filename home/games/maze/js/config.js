@@ -22,7 +22,7 @@ export const CFG = {
   runThreshold: 0.85, // stick magnitude above which the character runs
   turnLerp: 0.2, // how fast the character turns to face movement (0..1)
   modelYaw: 0, // facing offset so the model points the right way (placeholder faces +Z)
-  camDist: 5, // third-person camera distance
+  camDist: 3.6, // third-person camera distance (closer behind)
   lookSensitivity: 3500, // higher = slower mouse-look
   graceMs: 4000, // head-start before the hunters wake
   enemyCount: 1, // zombie hunters

@@ -314,7 +314,19 @@
 .mz-result--win .mz-result-text p { color: var(--mz-green); }
 .mz-result-btn { margin-top: 1.7rem; }
 
-/* ── riddle gate (wheel opener) — bottom panel, maze stays visible ─────────── */
+/* ── ancient-wood theme (shared) ──────────────────────────────────────────── */
+.mz-wood {
+  background-color: #4a3119;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.20) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.26) 0 2px, transparent 2px 40px),
+    linear-gradient(180deg, #6b4a2b, #43301c);
+  border: 2px solid #2c1d10;
+  box-shadow: inset 0 1px 0 rgba(160, 110, 60, 0.35), 0 8px 26px rgba(0, 0, 0, 0.5);
+  color: #ecd9b0;
+}
+
+/* ── riddle gate (aged wood panel, typed answer) ──────────────────────────── */
 .maze-riddle {
   position: absolute;
   left: 50%;
@@ -325,55 +337,63 @@
 }
 .maze-riddle[hidden] { display: none; }
 .mz-riddle-card {
-  padding: 0.9rem 1rem 1rem;
-  border-radius: 14px;
-  background: rgba(15, 19, 27, 0.78);
-  -webkit-backdrop-filter: blur(13px) saturate(135%);
-  backdrop-filter: blur(13px) saturate(135%);
-  border: 1px solid rgba(111, 208, 192, 0.45);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  color: var(--mz-text);
+  padding: 1rem 1.1rem 1.1rem;
+  border-radius: 10px;
+  background-color: #4a3119;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.20) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.26) 0 2px, transparent 2px 40px),
+    linear-gradient(180deg, #6b4a2b, #43301c);
+  border: 2px solid #2c1d10;
+  box-shadow: inset 0 0 0 2px rgba(120, 80, 40, 0.25), 0 12px 40px rgba(0, 0, 0, 0.6);
+  color: #ecd9b0;
   font-family: var(--mz-font);
   text-align: center;
 }
 .mz-riddle-tag {
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  color: var(--mz-green);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: #c9a24a;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
 }
-.mz-riddle-q { margin: 0 0 0.8rem; font-size: 0.92rem; line-height: 1.4; }
-.mz-wheel { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; }
-.mz-wheel-arrow {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--mz-text);
+.mz-riddle-q {
+  margin: 0 0 0.9rem;
   font-size: 1rem;
+  line-height: 1.45;
+  min-height: 2.6em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.mz-riddle-q::after { content: "▮"; margin-left: 2px; color: #c9a24a; animation: mz-blink 0.9s steps(1) infinite; }
+.mz-riddle-row { display: flex; gap: 0.5rem; }
+.mz-riddle-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  border: 2px solid #2c1d10;
+  background: #271a0e;
+  color: #ecd9b0;
+  font-family: var(--mz-font);
+  font-size: 0.95rem;
+}
+.mz-riddle-input::placeholder { color: rgba(236, 217, 176, 0.45); }
+.mz-riddle-input:focus { outline: none; border-color: #c9a24a; }
+.mz-riddle-go {
+  flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  border: 2px solid #2c1d10;
+  background: #7d5832;
+  color: #fff;
+  font-family: var(--mz-font);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
 }
-.mz-wheel-arrow:active { transform: scale(0.92); }
-.mz-wheel-window {
-  flex: 1 1 auto;
-  min-height: 46px;
-  display: grid;
-  place-items: center;
-  padding: 0.5rem;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-.mz-wheel-opt { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
-.mz-riddle-go {
-  width: 100%;
-  justify-content: center;
-  border-color: rgba(111, 208, 192, 0.7) !important;
-  color: var(--mz-green) !important;
-}
-.mz-riddle-go:hover { background: var(--mz-green) !important; color: #0a1410 !important; }
-.mz-riddle-fb { margin: 0.5rem 0 0; min-height: 1em; font-size: 0.78rem; color: var(--mz-red); }
+.mz-riddle-go:hover { background: #936a3e; }
+.mz-riddle-go:active { transform: scale(0.96); }
+.mz-riddle-fb { margin: 0.6rem 0 0; min-height: 1em; font-size: 0.78rem; color: #e88; }
 .mz-riddle-card.shake { animation: mz-shake 0.4s ease; }
 @keyframes mz-shake {
   0%, 100% { transform: translateX(0); }
@@ -382,6 +402,40 @@
   60% { transform: translateX(-5px); }
   80% { transform: translateX(5px); }
 }
+
+/* ── wood-themed HUD + load screen ───────────────────────────────────────── */
+.maze-title,
+.maze-btn {
+  background-color: #4a3119 !important;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 18px),
+    linear-gradient(180deg, #6b4a2b, #43301c) !important;
+  border: 2px solid #2c1d10 !important;
+  color: #ecd9b0 !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.maze-title svg, .maze-btn svg { color: #c9a24a !important; }
+.maze-btn:hover { background-color: #6b4a2b !important; color: #fff !important; }
+.maze-title::before, .maze-title::after { border-color: #c9a24a !important; }
+
+.maze-loader-card {
+  background-color: #3a2614;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.24) 0 2px, transparent 2px 44px),
+    linear-gradient(180deg, #5e3f24, #38260f);
+  border: 2px solid #20150b;
+  border-radius: 10px;
+  padding: 1.4rem 1.5rem;
+  color: #ecd9b0;
+  box-shadow: inset 0 0 0 2px rgba(120, 80, 40, 0.25), 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+.maze-loader { background-color: #160e07; }
+.mz-load-title { color: #ecd9b0; }
+.mz-load-tag { background: #c9a24a; color: #160e07; }
+.mz-seg.on { background: #c9a24a; border-color: #c9a24a; box-shadow: 0 0 8px rgba(201, 162, 74, 0.6); }
+#maze-loader-pct { color: #c9a24a !important; }
 
 /* ── game load screen — terminal/boot style (flat) ────────────────────────── */
 .maze-loader {

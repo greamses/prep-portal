@@ -92,8 +92,13 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
     const mag = Math.hypot(input.x, input.y);
     if (mag < 0.02) { character.play("idle"); return; }
 
-    const f = cam.getForwardRay().direction;
-    f.y = 0; f.normalize();
+    // camera-relative basis; if the camera is steep (drone intro), its forward
+    // is nearly vertical and useless — fall back to world forward so the stick
+    // moves her instead of spinning her in place.
+    const f = cam.getForwardRay().direction.clone();
+    f.y = 0;
+    if (f.lengthSquared() < 0.05) f.set(0, 0, 1);
+    f.normalize();
     const r = B.Vector3.Cross(B.Vector3.Up(), f);
     r.normalize();
 

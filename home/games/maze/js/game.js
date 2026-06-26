@@ -223,6 +223,7 @@ export async function startGame() {
 
   const MOVE = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
   window.addEventListener("keydown", (e) => {
+    if (e.target && e.target.tagName === "INPUT") return; // let the riddle input type
     keys.add(e.code);
     if (MOVE.includes(e.code)) e.preventDefault();
   });

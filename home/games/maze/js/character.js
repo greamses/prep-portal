@@ -10,8 +10,8 @@
 const B = window.BABYLON;
 const NOSYNC = 3; // SceneLoaderAnimationGroupLoadingMode.NoSync
 
-async function importClip(scene, dir, file, name) {
-  await B.SceneLoader.ImportAnimationsAsync(dir, file, scene, false, NOSYNC);
+async function importClip(scene, dir, file, name, converter) {
+  await B.SceneLoader.ImportAnimationsAsync(dir, file, scene, false, NOSYNC, converter);
   const g = scene.animationGroups[scene.animationGroups.length - 1];
   if (g) { g.name = name; g.stop(); }
   return g || null;
@@ -55,9 +55,20 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
   // drop the base file's built-in clip (often a T-pose), use retargeted clips
   res.animationGroups.forEach((g) => { g.stop(); g.dispose(); });
 
+  // Map the base skeleton's nodes by name so imported clips retarget onto the
+  // VISIBLE mesh (without this the clip animates orphan nodes → T-pose / glide).
+  const nodeMap = {};
+  (res.transformNodes || []).forEach((n) => { if (n && n.name) nodeMap[n.name] = n; });
+  const sk = res.skeletons && res.skeletons[0];
+  if (sk) sk.bones.forEach((b) => {
+    const tn = b.getTransformNode && b.getTransformNode();
+    if (tn && tn.name) nodeMap[tn.name] = tn;
+  });
+  const converter = (target) => (target && nodeMap[target.name]) || target;
+
   const groups = {};
   for (const name of Object.keys(clipFiles)) {
-    groups[name] = await importClip(scene, dir, clipFiles[name], name);
+    groups[name] = await importClip(scene, dir, clipFiles[name], name, converter);
   }
   for (const k in groups) stripRootMotion(groups[k]);
   for (const k in groups) groups[k]?.stop();

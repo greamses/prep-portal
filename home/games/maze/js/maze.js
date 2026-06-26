@@ -153,6 +153,44 @@ export function buildMaze(scene, grid) {
   return { root, startPos, goalPos, door, gates, entrance: { doorZ, backZ, halfX: h } };
 }
 
+/** Procedural aged-wood texture (vertical planks, grain, iron bands + rivets). */
+function makeWoodTexture(scene) {
+  const S = 256;
+  const tex = new B.DynamicTexture("wood", { width: S, height: S }, scene, true);
+  const ctx = tex.getContext();
+  ctx.fillStyle = "#4a3119";
+  ctx.fillRect(0, 0, S, S);
+  const planks = 4, pw = S / planks;
+  for (let i = 0; i < planks; i++) {
+    const v = 0.8 + Math.random() * 0.35;
+    ctx.fillStyle = `rgb(${Math.min(255, 96 * v) | 0}, ${Math.min(255, 66 * v) | 0}, ${Math.min(255, 38 * v) | 0})`;
+    ctx.fillRect(i * pw + 1, 0, pw - 2, S);
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1;
+    for (let g = 0; g < 5; g++) {
+      const x = i * pw + 4 + Math.random() * (pw - 8);
+      ctx.beginPath();
+      for (let y = 0; y <= S; y += 14) ctx.lineTo(x + Math.sin(y * 0.05 + i) * 2.2, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(i * pw, 0, 2, S); // seam shadow
+  }
+  // iron bands + rivets
+  ctx.fillStyle = "#26262b";
+  ctx.fillRect(0, S * 0.16, S, 11);
+  ctx.fillRect(0, S * 0.74, S, 11);
+  ctx.fillStyle = "#5a5a63";
+  for (let i = 0; i < planks; i++) {
+    const cx = i * pw + pw / 2;
+    [S * 0.16 + 5.5, S * 0.74 + 5.5].forEach((cy) => { ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill(); });
+  }
+  tex.update();
+  tex.wrapU = B.Texture.WRAP_ADDRESSMODE;
+  tex.wrapV = B.Texture.WRAP_ADDRESSMODE;
+  return tex;
+}
+
 /* ── riddle gates: block 3 passages along the unique solution path ──────────── */
 function setWall(grid, [ar, ac], [br, bc], closed) {
   if (bc === ac + 1) { grid[ar][ac].e = closed; grid[br][bc].w = closed; }
@@ -193,9 +231,8 @@ function placeGates(scene, grid, root, cell, wallH, wallT) {
   if (edges < 3) return [];
 
   const mat = new B.StandardMaterial("gateMat", scene);
-  mat.diffuseColor = B.Color3.FromHexString("#6fd0c0");
-  mat.emissiveColor = new B.Color3(0.08, 0.22, 0.2);
-  mat.specularColor = new B.Color3(0.2, 0.2, 0.2);
+  mat.diffuseTexture = makeWoodTexture(scene);
+  mat.specularColor = new B.Color3(0.05, 0.04, 0.03);
 
   const fracs = [0.3, 0.55, 0.8];
   const gates = [];
