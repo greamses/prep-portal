@@ -26,9 +26,11 @@ export function createPlayer(scene, canvas, startPos, character) {
   body.ellipsoid = new B.Vector3(0.38, 0.85, 0.38);
 
   // ── character model under the body ───────────────────────────────────────
+  // Body capsule: height 1.7 → local base at y = -0.85. Seat the model's feet
+  // (footOffset = feet relative to the model origin) on that base.
   const model = character.root;
   model.parent = body;
-  model.position.set(0, -0.9, 0); // feet at the body's base
+  model.position.set(0, -0.85 - (character.footOffset || 0), 0);
 
   // ── third-person orbit camera ────────────────────────────────────────────
   // Raised behind-the-back view: high enough to clear the 3-unit walls so it

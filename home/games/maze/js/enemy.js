@@ -23,7 +23,8 @@ function centerOf(r, c) {
 
 /** Open neighbours of a cell (no wall between). */
 function neighbours(grid, r, c) {
-  const rows = grid.length, cols = grid[0].length;
+  const rows = grid.length,
+    cols = grid[0].length;
   const out = [];
   if (r > 0 && !grid[r][c].n) out.push([r - 1, c]);
   if (c < cols - 1 && !grid[r][c].e) out.push([r, c + 1]);
@@ -35,7 +36,8 @@ function neighbours(grid, r, c) {
 /** BFS from (sr,sc) to (tr,tc); return the first step cell, or null. */
 function bfsNext(grid, sr, sc, tr, tc) {
   if (sr === tr && sc === tc) return null;
-  const rows = grid.length, cols = grid[0].length;
+  const rows = grid.length,
+    cols = grid[0].length;
   const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
   const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
   const q = [[sr, sc]];
@@ -44,19 +46,27 @@ function bfsNext(grid, sr, sc, tr, tc) {
     const [r, c] = q.shift();
     if (r === tr && c === tc) break;
     for (const [nr, nc] of neighbours(grid, r, c)) {
-      if (!seen[nr][nc]) { seen[nr][nc] = true; prev[nr][nc] = [r, c]; q.push([nr, nc]); }
+      if (!seen[nr][nc]) {
+        seen[nr][nc] = true;
+        prev[nr][nc] = [r, c];
+        q.push([nr, nc]);
+      }
     }
   }
   if (!seen[tr][tc]) return null;
   let cur = [tr, tc];
-  while (prev[cur[0]][cur[1]] && !(prev[cur[0]][cur[1]][0] === sr && prev[cur[0]][cur[1]][1] === sc)) {
+  while (
+    prev[cur[0]][cur[1]] &&
+    !(prev[cur[0]][cur[1]][0] === sr && prev[cur[0]][cur[1]][1] === sc)
+  ) {
     cur = prev[cur[0]][cur[1]];
   }
   return cur;
 }
 
 export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
-  const rows = grid.length, cols = grid[0].length;
+  const rows = grid.length,
+    cols = grid[0].length;
 
   const mat = new B.StandardMaterial("enemyMat", scene);
   mat.diffuseColor = B.Color3.FromHexString("#f04a4a");
@@ -73,8 +83,14 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
 
   const enemies = [];
   for (let i = 0; i < count; i++) {
-    const [r, c] = spots.length ? spots[(Math.random() * spots.length) | 0] : [rows - 1, cols - 1];
-    const mesh = B.MeshBuilder.CreatePolyhedron("enemy", { type: 1, size: 0.62 }, scene); // octahedron
+    const [r, c] = spots.length
+      ? spots[(Math.random() * spots.length) | 0]
+      : [rows - 1, cols - 1];
+    const mesh = B.MeshBuilder.CreatePolyhedron(
+      "enemy",
+      { type: 1, size: 0.62 },
+      scene,
+    ); // octahedron
     mesh.material = mat;
     mesh.position = centerOf(r, c);
     glow.addIncludedOnlyMesh(mesh);
@@ -83,7 +99,9 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
 
   /** Brighten the drones when they wake (end of the grace period). */
   function setAlert(on) {
-    mat.emissiveColor = on ? new B.Color3(0.9, 0.08, 0.08) : new B.Color3(0.55, 0.05, 0.05);
+    mat.emissiveColor = on
+      ? new B.Color3(0.9, 0.08, 0.08)
+      : new B.Color3(0.55, 0.05, 0.05);
   }
 
   /** hunting=false → dormant: bob/spin in place (no chase, no move). */
@@ -109,7 +127,8 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
         }
       }
       e.mesh.rotation.y += hunting ? 0.05 : 0.02;
-      e.mesh.position.y = FLOAT_Y + Math.sin(t + e.phase) * (hunting ? 0.16 : 0.1);
+      e.mesh.position.y =
+        FLOAT_Y + Math.sin(t + e.phase) * (hunting ? 0.16 : 0.1);
     }
   }
 

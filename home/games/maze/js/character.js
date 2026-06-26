@@ -18,9 +18,20 @@ async function importClip(scene, file, name) {
   return g || null;
 }
 
+const TARGET_H = 1.7; // desired character height in world units
+
 export async function loadCharacter(scene) {
   const res = await B.SceneLoader.ImportMeshAsync("", BASE, "idle.glb", scene);
   const root = res.meshes[0]; // __root__ (keeps the loader's RH→LH transform)
+
+  // Mixamo GLBs import at wildly different scales — fit to a sane height.
+  res.meshes.forEach((m) => m.computeWorldMatrix(true));
+  let b = root.getHierarchyBoundingVectors(true);
+  const h = Math.max(0.001, b.max.y - b.min.y);
+  root.scaling.scaleInPlace(TARGET_H / h);
+  res.meshes.forEach((m) => m.computeWorldMatrix(true));
+  b = root.getHierarchyBoundingVectors(true);
+  const footOffset = b.min.y - root.position.y; // feet relative to root origin
 
   const idle = res.animationGroups[0] || null;
   if (idle) idle.name = "idle";
@@ -46,7 +57,7 @@ export async function loadCharacter(scene) {
   }
   play("idle");
 
-  return { root, groups, play, ok: true };
+  return { root, groups, play, footOffset, ok: true };
 }
 
 /** Fallback placeholder if the GLB fails to load — keeps the game playable. */
@@ -55,5 +66,5 @@ export function placeholderCharacter(scene) {
   const mat = new B.StandardMaterial("playerMat", scene);
   mat.diffuseColor = B.Color3.FromHexString("#6fb7e8");
   root.material = mat;
-  return { root, groups: {}, play() {}, ok: false };
+  return { root, groups: {}, play() {}, footOffset: -0.85, ok: false };
 }
