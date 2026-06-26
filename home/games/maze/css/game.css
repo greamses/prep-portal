@@ -72,6 +72,110 @@
 .maze-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .maze-btn:active { transform: translateY(0) scale(0.96); }
 .maze-btn svg { width: 18px; height: 18px; }
+.maze-hud-actions { display: inline-flex; align-items: center; gap: 8px; }
+.maze-btn--icon { padding: 0.5rem; }
+
+/* ── analog movement stick (ported from the studio joystick) ──────────────── */
+.mz-joy {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 4;
+  user-select: none;
+}
+.mz-joy-ring {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(circle at 50% 32%, #434956 0%, #23272f 62%, #15181d 100%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -14px 26px rgba(0, 0, 0, 0.5) inset,
+    0 12px 22px rgba(0, 0, 0, 0.4);
+  opacity: 0.92;
+}
+.mz-joy-ring:active { cursor: grabbing; }
+.mz-joy-dish {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2c313b, #181b21 78%);
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.6) inset;
+  pointer-events: none;
+}
+.mz-joy-dish::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+}
+.mz-joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  margin: -23% 0 0 -23%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, #8a93a3 0%, #565e6c 45%, #2b313b 78%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.28) inset,
+    0 -8px 14px rgba(0, 0, 0, 0.55) inset,
+    0 8px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 0.09s ease-out;
+  will-change: transform;
+  pointer-events: none;
+}
+.mz-joy-knob-cap {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #c3cad6, #6b7280 70%);
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.5) inset;
+}
+.mz-joy-ring.mz-dragging .mz-joy-knob { transition: none; }
+
+/* ── game load screen ─────────────────────────────────────────────────────── */
+.maze-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #2a3550, #141824 80%);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.maze-loader.is-hidden { opacity: 0; visibility: hidden; }
+.maze-loader-card { text-align: center; color: #f3f1ea; }
+.maze-loader-text {
+  margin-top: 1.1rem;
+  font-weight: var(--weight-bold, 700);
+  letter-spacing: 0.02em;
+}
+.maze-loader.is-error .maze-spinner { display: none; }
+.maze-spinner {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 10px;
+}
+.maze-spinner span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-secondary, #6fb7e8);
+  animation: maze-bounce 1s ease-in-out infinite;
+}
+.maze-spinner span:nth-child(2) { background: var(--accent-primary, #f4c95d); animation-delay: 0.15s; }
+.maze-spinner span:nth-child(3) { background: var(--accent-success, #7cc47c); animation-delay: 0.3s; }
+@keyframes maze-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-12px); opacity: 1; }
+}
 
 /* ── bottom hint ──────────────────────────────────────────────────────────── */
 .maze-hint {
@@ -116,5 +220,7 @@
 
 @media (max-width: 600px) {
   .maze-stage { height: calc(100vh - 76px); }
-  .maze-hint { font-size: 0.76rem; }
+  .maze-hint { font-size: 0.76rem; bottom: 150px; }
+  .mz-joy { left: 12px; bottom: 14px; }
+  .mz-joy-ring { width: 108px; height: 108px; }
 }
