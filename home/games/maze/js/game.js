@@ -12,15 +12,14 @@ import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
 import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
+import { createEnemies } from "./enemy.js";
 import { CFG } from "./config.js";
 
 const B = window.BABYLON;
 const $ = (s) => document.querySelector(s);
 
-const HINT = "Click to look around · WASD / Arrow keys (or the stick) to move · Reach the glowing exit";
-
 const canvas = $("#maze-canvas");
-let engine, scene, cam, goal, goalPos, won, joy, map;
+let engine, scene, cam, goal, goalPos, won, lost, joy, map, enemies;
 
 /* ── glowing exit pillar at the maze's far corner ───────────────────────── */
 function buildGoal(scn, pos) {
@@ -50,12 +49,19 @@ function applyStick() {
 }
 
 /** Tear down any previous scene and build a brand-new maze. */
+function endGame(overlayId) {
+  $("#" + overlayId).hidden = false;
+  $("#maze-hint").hidden = true;
+  document.exitPointerLock?.();
+}
+
 function start() {
   if (scene) scene.dispose();
   won = false;
+  lost = false;
   $("#maze-win").hidden = true;
-  $("#maze-hint").hidden = false;
-  $("#maze-hint").textContent = HINT;
+  $("#maze-lose").hidden = true;
+  $("#maze-hint").hidden = true; // controls live on the load screen now
 
   scene = createScene(engine);
   const grid = generateMaze(CFG.cols, CFG.rows);
@@ -63,21 +69,32 @@ function start() {
   goalPos = info.goalPos;
   goal = buildGoal(scene, goalPos);
   cam = createPlayer(scene, canvas, info.startPos);
+  enemies = createEnemies(scene, grid, { count: 2, speed: 0.12 });
   if (map) map.setMaze(grid, CFG.cell);
 
   scene.registerBeforeRender(() => {
-    applyStick();
-    if (map && cam) map.update(cam.position.x, cam.position.z, cam.rotation.y);
+    const over = won || lost;
+    if (!over) applyStick();
+    if (enemies && cam && !over) enemies.update(cam.position);
+    if (map && cam) {
+      const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
+      map.update(cam.position.x, cam.position.z, cam.rotation.y, pts);
+    }
     if (goal) goal.rotation.y += 0.012;
-    if (!won && cam) {
-      const dx = cam.position.x - goalPos.x;
-      const dz = cam.position.z - goalPos.z;
-      if (Math.hypot(dx, dz) < CFG.cell * 0.55) {
-        won = true;
-        $("#maze-win").hidden = false;
-        $("#maze-hint").hidden = true;
-        document.exitPointerLock?.();
-      }
+    if (over || !cam) return;
+
+    // caught by a hunter?
+    if (enemies && enemies.caught(cam.position)) {
+      lost = true;
+      endGame("maze-lose");
+      return;
+    }
+    // reached the exit?
+    const dx = cam.position.x - goalPos.x;
+    const dz = cam.position.z - goalPos.z;
+    if (Math.hypot(dx, dz) < CFG.cell * 0.55) {
+      won = true;
+      endGame("maze-win");
     }
   });
 }
@@ -133,6 +150,7 @@ export function startGame() {
   initFullscreen();
   $("#maze-new")?.addEventListener("click", start);
   $("#maze-again")?.addEventListener("click", start);
+  $("#maze-retry")?.addEventListener("click", start);
 
   return new Promise((resolve) => {
     let done = false;

@@ -14,7 +14,7 @@
   --mz-amber: #f0a868;
   --mz-green: #7cc47c;
   --mz-red: #f07a7a;
-  --mz-font: "Shantell Sans", system-ui, sans-serif;
+  --mz-font: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
   --mz-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.7);
 }
 
@@ -208,73 +208,71 @@
 }
 .maze-win-card p { margin: 0 0 1.1rem; color: var(--mz-muted); }
 @keyframes maze-pop { from { opacity: 0; transform: scale(0.9); } }
+.maze-lose .maze-win-card h2 { color: var(--mz-red); text-shadow: 0 0 22px rgba(240, 122, 122, 0.45); }
 
-/* ── game load screen (percentage, flat) ──────────────────────────────────── */
+/* ── game load screen — terminal/boot style (flat) ────────────────────────── */
 .maze-loader {
   position: absolute;
   inset: 0;
   z-index: 10;
   display: grid;
   place-items: center;
-  background: #0e111a; /* flat */
+  background: #0a0c12; /* flat */
   transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 .maze-loader.is-hidden { opacity: 0; visibility: hidden; }
 .maze-loader-card {
-  width: min(82vw, 340px);
-  text-align: center;
+  width: min(88vw, 400px);
+  text-align: left;
   color: var(--mz-text);
   font-family: var(--mz-font);
 }
-.maze-loader-emblem {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 1.1rem;
-  display: grid;
-  place-items: center;
-  border-radius: 16px;
-  color: var(--mz-amber);
-  background: rgba(240, 168, 104, 0.1); /* flat */
-  border: 1.5px solid rgba(240, 168, 104, 0.4);
-  animation: mz-pulse 1.6s ease-in-out infinite;
-}
-.maze-loader-emblem svg { width: 34px; height: 34px; }
-@keyframes mz-pulse {
-  0%, 100% { border-color: rgba(240, 168, 104, 0.3); }
-  50% { border-color: rgba(240, 168, 104, 0.85); }
-}
-.maze-loader-title {
-  margin: 0 0 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-}
-.maze-loader-track {
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5); /* flat */
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-.maze-loader-fill {
-  width: 0%;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--mz-amber); /* flat */
-  transition: width 0.25s ease;
-}
-.maze-loader-pct {
-  margin: 0.7rem 0 0;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 1.4rem;
+.mz-load-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 16px; }
+.mz-load-tag {
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--mz-amber);
+  letter-spacing: 0.12em;
+  color: #0a0c12;
+  background: var(--mz-amber);
+  padding: 2px 7px;
+  border-radius: 3px;
 }
-.maze-loader.is-error .maze-loader-emblem { animation: none; color: var(--mz-red); border-color: rgba(240, 122, 122, 0.5); }
-.maze-loader.is-error .maze-loader-fill { background: var(--mz-red); }
-.maze-loader.is-error .maze-loader-pct { color: var(--mz-red); }
+.mz-load-title {
+  font-family: "Share Tech Mono", var(--mz-font);
+  font-size: 1.45rem;
+  letter-spacing: 0.2em;
+  color: var(--mz-text);
+}
+.mz-load-blink { color: var(--mz-amber); animation: mz-blink 1s steps(1) infinite; }
+@keyframes mz-blink { 50% { opacity: 0; } }
+
+.mz-bar { display: flex; gap: 3px; margin-bottom: 10px; }
+.mz-seg {
+  flex: 1;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mz-seg.on {
+  background: var(--mz-amber);
+  border-color: var(--mz-amber);
+  box-shadow: 0 0 8px rgba(240, 168, 104, 0.6);
+}
+
+.mz-load-status { font-size: 0.84rem; letter-spacing: 0.05em; color: var(--mz-muted); margin-bottom: 22px; }
+.mz-load-status #maze-loader-pct { color: var(--mz-amber); font-weight: 700; }
+.mz-load-sep { opacity: 0.4; margin: 0 6px; }
+
+.mz-controls { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 14px; }
+.mz-controls-h { font-size: 0.72rem; letter-spacing: 0.16em; color: var(--mz-amber); margin-bottom: 10px; }
+.mz-controls ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.mz-controls li { display: flex; justify-content: space-between; gap: 14px; font-size: 0.8rem; }
+.mz-controls li b { color: var(--mz-text); font-weight: 700; letter-spacing: 0.04em; }
+.mz-controls li span { color: var(--mz-muted); }
+
+.maze-loader.is-error .mz-seg.on { background: var(--mz-red); border-color: var(--mz-red); box-shadow: none; }
+.maze-loader.is-error #maze-loader-pct,
+.maze-loader.is-error #maze-loader-status { color: var(--mz-red); }
 
 @media (max-width: 600px) {
   .maze-stage { height: calc(100vh - 76px); }

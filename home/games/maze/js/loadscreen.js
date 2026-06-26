@@ -1,17 +1,27 @@
 /* ============================================================================
-   3D Maze — load screen (percentage)
+   3D Maze — load screen (terminal-style percentage)
    ----------------------------------------------------------------------------
-   Drives the dungeon-style load overlay: a progress bar + percentage that
-   reflects the real Babylon download (streamed in main.js) and the scene build.
-   Progress only moves forward so it never visually jumps backwards.
+   Builds a segmented progress bar + boot status from real load progress (the
+   Babylon download is streamed in main.js, then the scene build). Progress only
+   moves forward. Controls are listed statically in the markup.
    ========================================================================== */
 
 const $ = (s) => document.querySelector(s);
+const SEGMENTS = 24;
 let cur = 0;
 
 export function initLoader() {
   cur = 0;
+  const bar = $("#mz-bar");
+  if (bar && !bar.childElementCount) {
+    for (let i = 0; i < SEGMENTS; i++) {
+      const seg = document.createElement("span");
+      seg.className = "mz-seg";
+      bar.appendChild(seg);
+    }
+  }
   paint(0);
+  setStatus("booting…");
 }
 
 /** frac is 0..1. */
@@ -20,30 +30,39 @@ export function setProgress(frac) {
   if (pct <= cur) return;
   cur = pct;
   paint(cur);
+  if (cur < 88) setStatus("loading engine…");
+  else if (cur < 96) setStatus("building maze…");
+  else setStatus("spawning hunters…");
 }
 
 function paint(pct) {
-  const fill = $("#maze-loader-fill");
-  if (fill) fill.style.width = pct + "%";
+  const segs = document.querySelectorAll("#mz-bar .mz-seg");
+  const on = Math.round((pct / 100) * segs.length);
+  segs.forEach((s, i) => s.classList.toggle("on", i < on));
   const t = $("#maze-loader-pct");
-  if (t) t.textContent = pct + "%";
+  if (t) t.textContent = String(pct).padStart(2, "0") + "%";
+}
+
+function setStatus(msg) {
+  const s = $("#maze-loader-status");
+  if (s) s.textContent = msg;
 }
 
 export function finishLoader() {
   cur = 100;
   paint(100);
+  setStatus("ready");
   const el = $("#maze-loader");
   if (!el) return;
   setTimeout(() => {
     el.classList.add("is-hidden");
     setTimeout(() => (el.hidden = true), 450);
-  }, 220);
+  }, 300);
 }
 
 export function loaderError(msg) {
   $("#maze-loader")?.classList.add("is-error");
-  const title = $("#maze-loader-title");
-  if (title) title.textContent = msg;
+  setStatus(msg);
   const t = $("#maze-loader-pct");
-  if (t) t.textContent = "—";
+  if (t) t.textContent = "ERR";
 }

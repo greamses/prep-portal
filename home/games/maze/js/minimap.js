@@ -26,7 +26,7 @@ export function initMinimap(canvasEl) {
     oy = (H - s * rows) / 2;
   }
 
-  function update(px, pz, ry) {
+  function update(px, pz, ry, enemyPts) {
     if (!grid) return;
     ctx.clearRect(0, 0, W, H);
 
@@ -59,6 +59,18 @@ export function initMinimap(canvasEl) {
     ctx.beginPath();
     ctx.arc(gx, gy, Math.max(2.5, s * 0.26), 0, Math.PI * 2);
     ctx.fill();
+
+    // enemies (red dots)
+    if (enemyPts && enemyPts.length) {
+      ctx.fillStyle = "#f04a4a";
+      for (const e of enemyPts) {
+        const ex = ox + ((e.x + cell / 2) / cell) * s;
+        const ey = oy + ((e.z + cell / 2) / cell) * s;
+        ctx.beginPath();
+        ctx.arc(ex, ey, Math.max(2, s * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     // player arrow (position + facing)
     const pc = (px + cell / 2) / cell;

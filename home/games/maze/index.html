@@ -18,6 +18,15 @@
     <!-- Shared theme + nav -->
     <link rel="stylesheet" href="/home/css/main.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
+
+    <!-- Techy monospace for the maze UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+
     <link rel="stylesheet" href="/home/games/maze/css/game.css" />
 
     <!-- Firebase import map (the shared nav imports /firebase-init.js) -->
@@ -145,19 +154,42 @@
           </div>
         </div>
 
-        <!-- Game load screen (real download percentage) -->
+        <div class="maze-win maze-lose" id="maze-lose" hidden>
+          <div class="maze-win-card">
+            <h2>Caught!</h2>
+            <p>A hunter got you. Try a new maze?</p>
+            <button type="button" id="maze-retry" class="maze-btn">
+              Try again
+            </button>
+          </div>
+        </div>
+
+        <!-- Game load screen — terminal boot style -->
         <div class="maze-loader" id="maze-loader">
           <div class="maze-loader-card">
-            <div class="maze-loader-emblem" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 3h18v18H3zM3 9h6M15 9h6M9 3v6M9 15v6M9 9h6v6" />
-              </svg>
+            <div class="mz-load-head">
+              <span class="mz-load-tag">SYS</span>
+              <span class="mz-load-title">MAZE_RUNNER</span>
+              <span class="mz-load-blink">_</span>
             </div>
-            <p class="maze-loader-title" id="maze-loader-title">Entering the maze</p>
-            <div class="maze-loader-track">
-              <div class="maze-loader-fill" id="maze-loader-fill"></div>
+
+            <div class="mz-bar" id="mz-bar" aria-hidden="true"></div>
+            <div class="mz-load-status">
+              <span id="maze-loader-pct">00%</span>
+              <span class="mz-load-sep">//</span>
+              <span id="maze-loader-status">booting…</span>
             </div>
-            <p class="maze-loader-pct" id="maze-loader-pct">0%</p>
+
+            <div class="mz-controls">
+              <div class="mz-controls-h">// CONTROLS</div>
+              <ul>
+                <li><b>WASD / ARROWS</b><span>move</span></li>
+                <li><b>MOUSE / DRAG</b><span>look around</span></li>
+                <li><b>STICK</b><span>move (touch)</span></li>
+                <li><b>FIND</b><span>the green exit</span></li>
+                <li><b>AVOID</b><span>the red hunters</span></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
