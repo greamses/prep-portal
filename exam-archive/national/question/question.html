@@ -15,6 +15,14 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      /* large screens → browser display, small screens → standalone */
+      try {
+        if (window.matchMedia("(min-width: 1024px)").matches) {
+          document.querySelector('link[rel="manifest"]').href = "/manifest-browser.json";
+        }
+      } catch (e) {}
+    </script>
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#0055ff" />
     

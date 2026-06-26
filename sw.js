@@ -1,8 +1,9 @@
-const CACHE_NAME = "prepportal-v3";
+const CACHE_NAME = "prepportal-v4";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
   "/manifest.json",
+  "/manifest-browser.json",
   "/icon.svg",
   "/home/css/main.css",
   "/home/css/login.css",

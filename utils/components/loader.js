@@ -1,6 +1,16 @@
 (function () {
   const loaderId = "loader";
 
+  /* ── PWA display mode by screen size ──
+     Large screens install/open in a normal browser tab (display: browser);
+     small screens get the app-like standalone manifest. Swap the manifest link
+     before the browser evaluates installability. */
+  try {
+    const big = window.matchMedia("(min-width: 1024px)").matches;
+    const link = document.querySelector('link[rel="manifest"]');
+    if (link) link.setAttribute("href", big ? "/manifest-browser.json" : "/manifest.json");
+  } catch (e) {}
+
   /* ── Restore the saved theme before first paint (avoids a flash) ──
      The nav theme toggle persists the choice to localStorage("pp-theme").
      Honour an explicit choice; otherwise fall back to the OS preference. */

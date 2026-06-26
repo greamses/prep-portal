@@ -714,23 +714,6 @@ function buildNav(siteNav) {
   const brandWrap = document.createElement("div");
   brandWrap.className = "nav-brand-wrap";
 
-  // Site-wide "back" arrow → returns to the previous page. Helps users who
-  // drill into an activity/game escape without hunting for a link. Hidden on
-  // the home page and when there's no in-app history to go back to.
-  const back = document.createElement("button");
-  back.type = "button";
-  back.className = "nav-back";
-  back.title = "Back";
-  back.setAttribute("aria-label", "Go back to the previous page");
-  back.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`;
-  back.addEventListener("click", () => {
-    if (window.history.length > 1) window.history.back();
-    else window.location.href = "/";
-  });
-  const onHome = ["/", "/index.html"].includes(window.location.pathname);
-  if (onHome || window.history.length <= 1) back.hidden = true;
-  brandWrap.appendChild(back);
-
   const logo = document.createElement("a");
   logo.href = "/";
   logo.className = "nav-logo";
