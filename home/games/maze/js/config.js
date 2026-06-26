@@ -1,14 +1,14 @@
 /* ============================================================================
    3D Maze — configuration
    ----------------------------------------------------------------------------
-   One small place to tune the maze size, scale and look. Everything else reads
-   from here so the game is easy to retune without hunting through modules.
+   One small place to tune the maze size, scale and look. Player settings (size,
+   gates, zombies, scene) persist in localStorage and override the defaults.
    ========================================================================== */
 
 export const CFG = {
   // maze grid (cells)
-  cols: 8,
-  rows: 8,
+  cols: 12,
+  rows: 12,
 
   // world scale (Babylon units)
   cell: 4, // size of one maze cell
@@ -17,24 +17,42 @@ export const CFG = {
 
   // player
   eyeH: 1.7, // camera (eye) height
-  moveSpeed: 0.1, // walk speed (per frame) — smaller steps
+  moveSpeed: 0.1, // walk speed (per frame)
   runSpeed: 0.28, // run speed (per frame)
   runThreshold: 0.85, // stick magnitude above which the character runs
   turnLerp: 0.2, // how fast the character turns to face movement (0..1)
-  modelYaw: 0, // facing offset so the model points the right way (placeholder faces +Z)
+  modelYaw: 0, // facing offset so the model points the right way
   camDist: 3.6, // third-person camera distance (closer behind)
   lookSensitivity: 3500, // higher = slower mouse-look
-  graceMs: 2000, // head-start after you move before the hunter wakes
-  enemyCount: 1, // zombie hunters
-  enemySpeed: 0.07, // slower than the player (walk 0.1)
-  debugCollision: false, // show the collision volume (translucent capsule)
 
-  // palette (soft-UI friendly)
-  colors: {
-    sky: "#aed4f2",
-    ground: "#d7cdb8",
-    wallA: "#8aa0e8",
-    wallB: "#6fb7e8",
-    goal: "#7cc47c",
+  // enemies / gates (overridable in Settings)
+  enemyCount: 1, // the detailed chaser that trails from behind (0/1)
+  ambushCount: 5, // shadow zombies hidden in dead-ends (wake when you pass)
+  enemySpeed: 0.07, // zombie move speed (< player walk)
+  gateCount: 3, // riddle gates on the solution path
+  debugCollision: false,
+
+  // scene / theme
+  scene: "dungeon",
+  themes: {
+    dungeon: { sky: "#2a3550", fog: "#161d30", fogD: 0.012, ground: "#cfc6b4", wallTint: "#9aa6c8", name: "Dungeon" },
+    grass:   { sky: "#bfe6ff", fog: "#cfeaff", fogD: 0.009, ground: "#6faa4c", wallTint: "#a9cf86", name: "Grass" },
+    forest:  { sky: "#7e9472", fog: "#67805d", fogD: 0.022, ground: "#5a4a32", wallTint: "#7c6a48", name: "Forest" },
+    ice:     { sky: "#dff1ff", fog: "#eaf6ff", fogD: 0.016, ground: "#cfe6f2", wallTint: "#bcd9ec", name: "Ice" },
   },
+  goalColor: "#7cc47c",
+
+  /** Current theme palette. */
+  theme() { return this.themes[this.scene] || this.themes.dungeon; },
 };
+
+// ── apply persisted player settings ───────────────────────────────────────
+export const SIZES = { S: 8, M: 12, L: 16, XL: 22 };
+try {
+  const s = JSON.parse(localStorage.getItem("mz-settings") || "{}");
+  if (s.size && SIZES[s.size]) { CFG.cols = CFG.rows = SIZES[s.size]; CFG.sizeKey = s.size; }
+  if (Number.isInteger(s.gates)) CFG.gateCount = s.gates;
+  if (Number.isInteger(s.zombies)) CFG.ambushCount = s.zombies;
+  if (s.scene && CFG.themes[s.scene]) CFG.scene = s.scene;
+} catch (e) {}
+if (!CFG.sizeKey) CFG.sizeKey = CFG.cols >= 22 ? "XL" : CFG.cols >= 16 ? "L" : CFG.cols >= 12 ? "M" : "S";

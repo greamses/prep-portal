@@ -20,13 +20,14 @@ export function createEngine(canvas) {
 }
 
 export function createScene(engine) {
+  const TH = CFG.theme();
   const scene = new B.Scene(engine);
-  scene.clearColor = B.Color4.FromHexString(CFG.colors.sky + "ff");
+  scene.clearColor = B.Color4.FromHexString(TH.sky + "ff");
   scene.collisionsEnabled = true;
   scene.gravity = new B.Vector3(0, -0.45, 0);
   scene.fogMode = B.Scene.FOGMODE_EXP2;
-  scene.fogColor = B.Color3.FromHexString(CFG.colors.sky);
-  scene.fogDensity = 0.012;
+  scene.fogColor = B.Color3.FromHexString(TH.fog);
+  scene.fogDensity = TH.fogD;
 
   // ── lights ──────────────────────────────────────────────────────────────
   const hemi = new B.HemisphericLight("hemi", new B.Vector3(0, 1, 0), scene);
@@ -42,7 +43,7 @@ export function createScene(engine) {
   const ground = B.MeshBuilder.CreateGround("ground", { width: span, height: span }, scene);
   ground.position.set(((CFG.cols - 1) * CFG.cell) / 2, 0, ((CFG.rows - 1) * CFG.cell) / 2);
   const gmat = new B.StandardMaterial("groundMat", scene);
-  const ftex = makeFloorTexture(scene);
+  const ftex = makeFloorTexture(scene, TH.ground);
   ftex.uScale = span / 4;
   ftex.vScale = span / 4;
   gmat.diffuseTexture = ftex;
@@ -54,11 +55,11 @@ export function createScene(engine) {
 }
 
 /** Procedural flagstone floor (2×2 stones per tile, grout + speckle). */
-function makeFloorTexture(scene) {
+function makeFloorTexture(scene, groundHex) {
   const S = 256;
   const tex = new B.DynamicTexture("floor", { width: S, height: S }, scene, true);
   const ctx = tex.getContext();
-  const base = B.Color3.FromHexString(CFG.colors.ground);
+  const base = B.Color3.FromHexString(groundHex || "#cfc6b4");
 
   ctx.fillStyle = "#34302a"; // grout
   ctx.fillRect(0, 0, S, S);

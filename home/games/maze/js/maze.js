@@ -61,8 +61,7 @@ function makeBrickTexture(scene) {
   const tex = new B.DynamicTexture("bricks", { width: S, height: S }, scene, true);
   const ctx = tex.getContext();
 
-  const base = B.Color3.FromHexString(CFG.colors.wallA);
-  const tint = `rgb(${(base.r * 255) | 0}, ${(base.g * 255) | 0}, ${(base.b * 255) | 0})`;
+  const base = B.Color3.FromHexString("#b7ad9b"); // neutral stone (tinted per theme)
   // mortar
   ctx.fillStyle = "#cdc6b8";
   ctx.fillRect(0, 0, S, S);
@@ -104,6 +103,7 @@ export function buildMaze(scene, grid) {
   mat.diffuseTexture = makeBrickTexture(scene);
   mat.diffuseTexture.uScale = 1.6;
   mat.diffuseTexture.vScale = 1.2;
+  mat.diffuseColor = B.Color3.FromHexString(CFG.theme().wallTint); // theme tint
   mat.specularColor = new B.Color3(0.06, 0.06, 0.08);
 
   const wall = (x, z, w, d) => {
@@ -150,7 +150,21 @@ export function buildMaze(scene, grid) {
   const startPos = new B.Vector3(0, CFG.eyeH, backZ + cell * 0.7); // outside, facing the door
   const goalPos = new B.Vector3((cols - 1) * cell, 0, (rows - 1) * cell);
   const gates = placeGates(scene, grid, root, cell, wallH, wallT);
-  return { root, startPos, goalPos, door, gates, entrance: { doorZ, backZ, halfX: h } };
+  return { root, startPos, goalPos, door, gates, deadEnds: deadEnds(grid), entrance: { doorZ, backZ, halfX: h } };
+}
+
+/** Dead-end cells (exactly one open side), away from the start — ambush spots. */
+function deadEnds(grid) {
+  const rows = grid.length, cols = grid[0].length, out = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (r + c < 3) continue; // not right at the entrance
+      const k = grid[r][c];
+      const open = (k.n ? 0 : 1) + (k.e ? 0 : 1) + (k.s ? 0 : 1) + (k.w ? 0 : 1);
+      if (open === 1) out.push([r, c]);
+    }
+  }
+  return out;
 }
 
 /** Procedural aged-wood texture (vertical planks, grain, iron bands + rivets). */
@@ -226,18 +240,25 @@ function solutionPath(grid) {
 }
 
 function placeGates(scene, grid, root, cell, wallH, wallT) {
+  const n = Math.max(0, CFG.gateCount | 0);
+  if (n === 0) return [];
   const path = solutionPath(grid);
   const edges = path.length - 1;
-  if (edges < 3) return [];
+  if (edges < n + 1) return [];
 
   const mat = new B.StandardMaterial("gateMat", scene);
   mat.diffuseTexture = makeWoodTexture(scene);
   mat.specularColor = new B.Color3(0.05, 0.04, 0.03);
 
-  const fracs = [0.3, 0.55, 0.8];
+  // evenly spaced positions along the solution path
+  const fracs = [];
+  for (let g = 1; g <= n; g++) fracs.push(g / (n + 1));
   const gates = [];
+  const used = new Set();
   for (const f of fracs) {
-    const i = Math.max(1, Math.min(edges - 1, Math.round(edges * f)));
+    let i = Math.max(1, Math.min(edges - 1, Math.round(edges * f)));
+    while (used.has(i) && i < edges - 1) i++;
+    used.add(i);
     const A = path[i], B2 = path[i + 1];
     if (!A || !B2) continue;
     setWall(grid, A, B2, true); // block the passage

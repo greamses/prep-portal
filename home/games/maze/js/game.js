@@ -15,6 +15,7 @@ import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
 import { createEnemies } from "./enemy.js";
 import { initRiddles, openRiddle, isRiddleOpen, closeRiddle } from "./riddles.js";
+import { initSettings } from "./settings.js";
 import { CFG } from "./config.js";
 
 const B = window.BABYLON;
@@ -138,8 +139,12 @@ async function start() {
   catch (e) { character = placeholderCharacter(scene); }
 
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
-  enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // zombie spawned later
-  prewarmZombie(); // load it quietly in the background now
+  enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // chaser spawned later
+  prewarmZombie(); // load the detailed chaser quietly in the background
+  // hide shadow zombies in random dead-ends — they wake when you run past
+  const aspots = (info.deadEnds || []).slice();
+  for (let i = aspots.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [aspots[i], aspots[j]] = [aspots[j], aspots[i]]; }
+  aspots.slice(0, CFG.ambushCount).forEach((cell) => enemies.spawnShadow(cell));
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
@@ -175,19 +180,15 @@ async function start() {
       prevX = body.position.x; prevZ = body.position.z;
       if (doorState === "sealed" && turned) zombieRequested = true;
     }
-    // spawn the (pre-warmed) zombie once requested + loaded
+    // spawn the (pre-warmed) chaser once requested + loaded
     if (zombieRequested && !zombieSpawned && zombieReady && enemies) {
       zombieSpawned = true;
-      enemies.spawn(zombieModel); // null → octahedron fallback
-      woke = true;
-      graceUntil = now + CFG.graceMs;
+      enemies.spawn(zombieModel, { cell: [0, 0], awake: true }); // null → marker fallback
     }
 
-    const haveEnemies = enemies && enemies.enemies.length > 0;
-    const hunting = haveEnemies && woke && now >= graceUntil;
-    if (haveEnemies) enemies.update(body.position, hunting && !over); // zombies keep coming during riddles
+    if (enemies) enemies.update(body.position); // ambushers wake on proximity
     if (map) {
-      const pts = haveEnemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
+      const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
       map.update(body.position.x, body.position.z, body.rotation.y - CFG.modelYaw, pts);
     }
     if (goal) goal.rotation.y += 0.012;
@@ -217,19 +218,12 @@ async function start() {
       }
     }
 
-    if (haveEnemies) {
-      if (woke && !hunting) {
-        showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
-      } else if (hunting && !alerted) {
-        alerted = true;
-        enemies.setAlert(true);
-        flashAlert();
-      }
-      if (hunting && enemies.caught(body.position)) {
-        lost = true;
-        endGame("maze-lose");
-        return;
-      }
+    // caught → the nearest zombie bites, then the defeat screen
+    if (enemies && enemies.caught(body.position)) {
+      lost = true;
+      enemies.bite(body.position);
+      setTimeout(() => endGame("maze-lose"), 950);
+      return;
     }
     const dx = body.position.x - goalPos.x;
     const dz = body.position.z - goalPos.z;
@@ -271,6 +265,7 @@ export async function startGame() {
   joy = createJoystick($("#mz-joy-ring"), $("#mz-joy-knob"));
   map = initMinimap($("#maze-map"));
   initRiddles();
+  initSettings(() => start());
 
   const MOVE = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
   window.addEventListener("keydown", (e) => {
