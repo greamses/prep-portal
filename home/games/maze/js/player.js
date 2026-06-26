@@ -87,6 +87,20 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
 
   let yaw = 0;
 
+  // keep the camera from seeing through walls: if a wall sits between her head
+  // and the camera, pull the camera in to just before it.
+  const headOff = new B.Vector3(0, 1.3, 0);
+  const occludes = (m) => m && (m.name === "wall" || m.name === "gate" || m.name === "door");
+  function occludeCamera() {
+    const tgt = body.position.add(headOff);
+    const toCam = cam.position.subtract(tgt);
+    const dist = toCam.length();
+    if (dist < 0.15) return;
+    toCam.scaleInPlace(1 / dist);
+    const hit = scene.pickWithRay(new B.Ray(tgt, toCam, dist), occludes);
+    if (hit && hit.hit) cam.radius = Math.max(cam.lowerRadiusLimit, hit.distance - 0.35);
+  }
+
   /** input = { x: strafe(-1..1), y: forward(-1..1), run: bool } */
   function update(input) {
     const mag = Math.hypot(input.x, input.y);
@@ -129,7 +143,7 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
       cam.beta = 0.12 + (1.32 - 0.12) * t;
       cam.radius = droneRadius + (CFG.camDist - droneRadius) * t;
     } else {
-      if (!followed) { cam.lockedTarget = body; cam.checkCollisions = true; followed = true; }
+      if (!followed) { cam.lockedTarget = body; followed = true; }
       if (!dragging && performance.now() - lastDrag > 1100) {
         const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
         cam.alpha = lerpAngle(cam.alpha, want, 0.05);
@@ -137,6 +151,7 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
         const wantR = (CFG.closeOnRun && running) ? Math.max(1.8, CFG.camDist * 0.55) : CFG.camDist;
         cam.radius += (wantR - cam.radius) * 0.12;
       }
+      occludeCamera();
     }
   }
 

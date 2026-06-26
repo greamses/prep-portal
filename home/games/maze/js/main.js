@@ -52,6 +52,10 @@ async function loadBabylon(onProgress) {
 
 const LOADERS_URL = "https://cdn.jsdelivr.net/npm/babylonjs-loaders@7/babylonjs.loaders.min.js";
 
+// Returning here via the browser Back button restores a stale WebGL frame from
+// the bfcache (glitchy). Force a fresh load instead.
+window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
+
 async function boot() {
   initLoader();
   logStep("link established");

@@ -29,7 +29,8 @@ let gates = [];
 // deferred zombie: pre-warmed in the background, spawned after she passes the
 // entrance AND makes her first turn
 let turned = false, initHeading = null, zombieRequested = false, prevX = null, prevZ = null;
-let zombieModel = null, zombieReady = false, zombieSpawned = false;
+let zombieModel = null, zombieReady = false, zombieSpawned = false, chaserWakeAt = 0;
+let playerChar = null;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -137,6 +138,7 @@ async function start() {
   let character;
   try { character = await loadCharacter(scene); }
   catch (e) { character = placeholderCharacter(scene); }
+  playerChar = character;
 
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
   enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // chaser spawned later
@@ -148,6 +150,8 @@ async function start() {
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
+  scene.createOrUpdateSelectionOctree(); // fast ray-picks for camera occlusion
+  chaserWakeAt = 0;
 
   // one-way gate: shut until she reaches it, opens to enter, seals behind her
   door = info.door;
@@ -180,10 +184,17 @@ async function start() {
       prevX = body.position.x; prevZ = body.position.z;
       if (doorState === "sealed" && turned) zombieRequested = true;
     }
-    // spawn the (pre-warmed) chaser once requested + loaded
+    // spawn the (pre-warmed) chaser once requested + loaded — it wakes after a countdown
     if (zombieRequested && !zombieSpawned && zombieReady && enemies) {
       zombieSpawned = true;
-      enemies.spawn(zombieModel, { cell: [0, 0], awake: true }); // null → marker fallback
+      alerted = false;
+      chaserWakeAt = now + CFG.graceMs;
+      enemies.spawn(zombieModel, { cell: [0, 0], awake: false, wakeAt: chaserWakeAt });
+    }
+    // chaser wake countdown HUD
+    if (zombieSpawned && chaserWakeAt) {
+      if (now < chaserWakeAt) showGrace(Math.max(1, Math.ceil((chaserWakeAt - now) / 1000)));
+      else if (!alerted) { alerted = true; flashAlert(); }
     }
 
     if (enemies) enemies.update(body.position); // ambushers wake on proximity
@@ -218,11 +229,12 @@ async function start() {
       }
     }
 
-    // caught → the nearest zombie bites, then the defeat screen
+    // caught → zombie bites, she plays her death, then the defeat screen
     if (enemies && enemies.caught(body.position)) {
       lost = true;
       enemies.bite(body.position);
-      setTimeout(() => endGame("maze-lose"), 950);
+      if (playerChar) playerChar.play("death");
+      setTimeout(() => endGame("maze-lose"), 1400);
       return;
     }
     const dx = body.position.x - goalPos.x;

@@ -31,6 +31,7 @@ export const CFG = {
   enemyCount: 1, // the detailed chaser that trails from behind (0/1)
   ambushCount: 5, // shadow zombies hidden in dead-ends (wake when you pass)
   enemySpeed: 0.07, // zombie move speed (< player walk)
+  graceMs: 3000, // countdown after the chaser appears before it hunts
   gateCount: 3, // riddle gates on the solution path
   debugCollision: false,
 

@@ -47,6 +47,17 @@ const BANKS = {
 };
 const LABEL = { math: "MATH GATE", english: "ENGLISH GATE", science: "SCIENCE GATE" };
 
+/** Dynamic mental-maths question (generated fresh each time, no repeats). */
+function rnd(a, b) { return a + ((Math.random() * (b - a + 1)) | 0); }
+function genMath() {
+  const op = ["+", "−", "×"][(Math.random() * 3) | 0];
+  let a, b, ans;
+  if (op === "+") { a = rnd(8, 49); b = rnd(8, 49); ans = a + b; }
+  else if (op === "−") { a = rnd(20, 70); b = rnd(3, a - 1); ans = a - b; }
+  else { a = rnd(2, 12); b = rnd(2, 12); ans = a * b; }
+  return { q: `${a} ${op} ${b} = ?`, a: [String(ans)] };
+}
+
 let state = null;     // { answers:[], onSolve }
 let typeTimer = null;
 
@@ -96,7 +107,7 @@ export function openRiddle(onSolve) {
   const subs = ["math", "english", "science"];
   const sub = CFG.subject && BANKS[CFG.subject] ? CFG.subject : subs[(Math.random() * subs.length) | 0];
   const bank = BANKS[sub];
-  const r = bank[(Math.random() * bank.length) | 0];
+  const r = sub === "math" ? genMath() : bank[(Math.random() * bank.length) | 0];
   state = { answers: r.a, onSolve };
   const tag = $("#mz-riddle-tag");
   if (tag) tag.textContent = "⚜ " + LABEL[sub] + " ⚜";

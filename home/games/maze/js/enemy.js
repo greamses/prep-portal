@@ -55,7 +55,7 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
   const enemies = [];
 
   /** The detailed chaser (Yaku rig). Wrapped in a holder so facing works. */
-  function spawn(model, { cell = [0, 0], awake = true, ambush = false } = {}) {
+  function spawn(model, { cell = [0, 0], awake = true, ambush = false, wakeAt = 0 } = {}) {
     const holder = new B.TransformNode("zhold", scene);
     holder.position = centerOf(cell[0], cell[1], 0);
     let play = null;
@@ -72,7 +72,7 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
       mm.emissiveColor = new B.Color3(0.55, 0.05, 0.05);
       m.material = mm; m.parent = holder; m.position.y = CFG.eyeH * 0.6;
     }
-    enemies.push({ mesh: holder, play, target: null, phase: Math.random() * 6.28, awake, ambush, biting: false, model: !!model });
+    enemies.push({ mesh: holder, play, target: null, phase: Math.random() * 6.28, awake, ambush, wakeAt, biting: false, model: !!model });
   }
 
   /** A dark shadow zombie (primitives + glowing eyes), dormant until you pass. */
@@ -104,10 +104,14 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
     for (const e of enemies) {
       if (e.biting) { if (e.play) e.play("bite"); continue; }
 
-      // ambush wake when the player passes near
-      if (e.ambush && !e.awake) {
-        const d0 = Math.hypot(e.mesh.position.x - playerPos.x, e.mesh.position.z - playerPos.z);
-        if (d0 < CFG.cell * 1.6) e.awake = true;
+      // wake: ambushers when you pass near; the chaser after its countdown
+      if (!e.awake) {
+        if (e.ambush) {
+          const d0 = Math.hypot(e.mesh.position.x - playerPos.x, e.mesh.position.z - playerPos.z);
+          if (d0 < CFG.cell * 1.6) e.awake = true;
+        } else if (e.wakeAt && performance.now() >= e.wakeAt) {
+          e.awake = true;
+        }
       }
       if (!e.awake) {
         if (e.play) e.play("idle");
@@ -149,7 +153,7 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
       if (!e.awake) continue;
       const dx = e.mesh.position.x - playerPos.x;
       const dz = e.mesh.position.z - playerPos.z;
-      if (Math.hypot(dx, dz) < CFG.cell * 0.55) return true;
+      if (Math.hypot(dx, dz) < CFG.cell * 0.3) return true; // must be right on her
     }
     return false;
   }

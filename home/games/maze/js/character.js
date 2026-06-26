@@ -70,7 +70,8 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
   for (const name of Object.keys(clipFiles)) {
     groups[name] = await importClip(scene, dir, clipFiles[name], name, converter);
   }
-  for (const k in groups) stripRootMotion(groups[k]);
+  // strip root motion from locomotion clips only — death/bite play in place/fall
+  for (const k in groups) if (k !== "death") stripRootMotion(groups[k]);
   for (const k in groups) groups[k]?.stop();
 
   let current = null;
@@ -78,7 +79,7 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
     const g = groups[name];
     if (!g || g === current) return;
     for (const k in groups) if (groups[k] && groups[k] !== g) groups[k].stop();
-    g.start(true, 1.0, g.from, g.to, false);
+    g.start(name !== "death", 1.0, g.from, g.to, false); // death plays once
     current = g;
   }
   play(Object.keys(clipFiles)[0]);
@@ -89,7 +90,7 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
 export function loadCharacter(scene) {
   return loadRig(scene, "/home/games/maze/assets/character/", "base.glb", {
     idle: "idle.glb", walk: "walk.glb", run: "run.glb",
-    strafeL: "strafe-left.glb", strafeR: "strafe-right.glb",
+    strafeL: "strafe-left.glb", strafeR: "strafe-right.glb", death: "death.glb",
   }, 1.7);
 }
 
