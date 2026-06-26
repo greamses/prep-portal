@@ -96,22 +96,42 @@ function start() {
 }
 
 /* ── fullscreen toggle (on the game stage) ──────────────────────────────── */
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
 function initFullscreen() {
   const stage = $(".maze-stage");
   const btn = $("#maze-fs");
   if (!stage || !btn) return;
+
+  const enterFs = (el) =>
+    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen)?.call(el);
+  const exitFs = () =>
+    (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
+
   btn.addEventListener("click", () => {
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else stage.requestFullscreen?.().catch(() => {});
+    document.exitPointerLock?.(); // pointer-lock can block the FS request
+    try {
+      if (fsElement()) exitFs();
+      else {
+        const p = enterFs(stage);
+        if (p && p.catch) p.catch((e) => ($("#maze-hint").textContent = "Fullscreen blocked by the browser."));
+      }
+    } catch (e) {
+      $("#maze-hint").textContent = "Fullscreen isn't available here.";
+    }
   });
-  document.addEventListener("fullscreenchange", () => {
-    const on = !!document.fullscreenElement;
+
+  const onChange = () => {
+    const on = !!fsElement();
     const enter = btn.querySelector(".mz-fs-enter");
     const exit = btn.querySelector(".mz-fs-exit");
     if (enter) enter.hidden = on;
     if (exit) exit.hidden = !on;
     setTimeout(() => engine && engine.resize(), 80);
-  });
+  };
+  document.addEventListener("fullscreenchange", onChange);
+  document.addEventListener("webkitfullscreenchange", onChange);
 }
 
 function init() {

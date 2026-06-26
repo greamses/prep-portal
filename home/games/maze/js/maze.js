@@ -55,6 +55,44 @@ export function generateMaze(cols, rows) {
   return grid;
 }
 
+/** Procedural brick texture drawn onto a canvas (no external image assets). */
+function makeBrickTexture(scene) {
+  const S = 256;
+  const tex = new B.DynamicTexture("bricks", { width: S, height: S }, scene, true);
+  const ctx = tex.getContext();
+
+  const base = B.Color3.FromHexString(CFG.colors.wallA);
+  const tint = `rgb(${(base.r * 255) | 0}, ${(base.g * 255) | 0}, ${(base.b * 255) | 0})`;
+  // mortar
+  ctx.fillStyle = "#cdc6b8";
+  ctx.fillRect(0, 0, S, S);
+
+  const rows = 6;
+  const cols = 3;
+  const bh = S / rows;
+  const bw = S / cols;
+  const gap = 4;
+  for (let r = 0; r < rows; r++) {
+    const off = r % 2 ? bw / 2 : 0; // running bond
+    for (let c = -1; c <= cols; c++) {
+      const x = c * bw + off + gap / 2;
+      const y = r * bh + gap / 2;
+      // slight per-brick shade variation for texture
+      const v = 0.82 + Math.random() * 0.3;
+      ctx.fillStyle = `rgb(${Math.min(255, base.r * 255 * v) | 0}, ${Math.min(255, base.g * 255 * v) | 0}, ${Math.min(255, base.b * 255 * v) | 0})`;
+      ctx.fillRect(x, y, bw - gap, bh - gap);
+    }
+  }
+  // faint top highlight on each course for depth
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  for (let r = 0; r < rows; r++) ctx.fillRect(0, r * bh + gap / 2, S, 2);
+
+  tex.update();
+  tex.wrapU = B.Texture.WRAP_ADDRESSMODE;
+  tex.wrapV = B.Texture.WRAP_ADDRESSMODE;
+  return tex;
+}
+
 /** Build wall meshes for a grid. Returns { root, startPos, goalPos }. */
 export function buildMaze(scene, grid) {
   const { cell, wallH, wallT } = CFG;
@@ -62,18 +100,16 @@ export function buildMaze(scene, grid) {
   const cols = grid[0].length;
   const root = new B.TransformNode("maze", scene);
 
-  const matA = new B.StandardMaterial("wallA", scene);
-  matA.diffuseColor = B.Color3.FromHexString(CFG.colors.wallA);
-  matA.specularColor = new B.Color3(0.08, 0.08, 0.1);
-  const matB = new B.StandardMaterial("wallB", scene);
-  matB.diffuseColor = B.Color3.FromHexString(CFG.colors.wallB);
-  matB.specularColor = new B.Color3(0.08, 0.08, 0.1);
+  const mat = new B.StandardMaterial("wall", scene);
+  mat.diffuseTexture = makeBrickTexture(scene);
+  mat.diffuseTexture.uScale = 1.6;
+  mat.diffuseTexture.vScale = 1.2;
+  mat.specularColor = new B.Color3(0.06, 0.06, 0.08);
 
-  let i = 0;
   const wall = (x, z, w, d) => {
     const m = B.MeshBuilder.CreateBox("wall", { width: w, height: wallH, depth: d }, scene);
     m.position.set(x, wallH / 2, z);
-    m.material = (i++ & 1) ? matB : matA; // alternate tints for a bit of depth
+    m.material = mat;
     m.checkCollisions = true;
     m.parent = root;
     return m;
