@@ -115,6 +115,9 @@ export function buildMaze(scene, grid) {
     return m;
   };
 
+  // Carve a doorway in the north boundary of the start cell (0,0).
+  grid[0][0].n = false;
+
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const cx = c * cell;
@@ -126,7 +129,25 @@ export function buildMaze(scene, grid) {
     }
   }
 
-  const startPos = new B.Vector3(0, CFG.eyeH, 0);
+  // ── entrance: a straight approach corridor outside the doorway + a door ────
+  const h = cell / 2;
+  const doorZ = -h;               // doorway sits on the north boundary
+  const approachLen = cell * 2;   // straight path length
+  const backZ = doorZ - approachLen;
+  const midZ = (doorZ + backZ) / 2;
+  wall(-h, midZ, wallT, approachLen); // left corridor wall
+  wall(h, midZ, wallT, approachLen);  // right corridor wall
+  wall(0, backZ, cell + wallT, wallT); // back wall (closed end)
+
+  const door = B.MeshBuilder.CreateBox("door", { width: cell - 0.1, height: wallH, depth: wallT * 1.3 }, scene);
+  door.position.set(0, wallH / 2, doorZ);
+  const dmat = new B.StandardMaterial("doorMat", scene);
+  dmat.diffuseColor = B.Color3.FromHexString("#6b4a2b"); // wood
+  dmat.specularColor = new B.Color3(0.08, 0.08, 0.08);
+  door.material = dmat;
+  door.parent = root;
+
+  const startPos = new B.Vector3(0, CFG.eyeH, backZ + cell * 0.7); // outside, facing the door
   const goalPos = new B.Vector3((cols - 1) * cell, 0, (rows - 1) * cell);
-  return { root, startPos, goalPos };
+  return { root, startPos, goalPos, door, entrance: { doorZ, backZ, halfX: h } };
 }

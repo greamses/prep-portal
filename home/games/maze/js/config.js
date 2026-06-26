@@ -25,6 +25,7 @@ export const CFG = {
   camDist: 5, // third-person camera distance
   lookSensitivity: 3500, // higher = slower mouse-look
   graceMs: 4000, // head-start before the hunters wake
+  enemyCount: 0, // hunters (0 = disabled for now)
 
   // palette (soft-UI friendly)
   colors: {

@@ -17,13 +17,30 @@ function lerpAngle(a, b, t) {
   return a + d * t;
 }
 
-export function createPlayer(scene, canvas, startPos, character) {
+export function createPlayer(scene, canvas, startPos, character, grid, entrance) {
+  const rows = grid.length, cols = grid[0].length;
+  const R = 0.42, h = CFG.cell / 2; // body radius + half cell
+
   // ── physics body (invisible) ─────────────────────────────────────────────
   const body = B.MeshBuilder.CreateCapsule("playerBody", { height: 1.7, radius: 0.38 }, scene);
   body.position.set(startPos.x, 0.9, startPos.z);
   body.isVisible = false;
-  body.checkCollisions = true;
-  body.ellipsoid = new B.Vector3(0.38, 0.85, 0.38);
+
+  // Grid-based wall collision: clamp the body out of any CLOSED wall of the cell
+  // it's in (per-axis, so it slides). Outside the maze → the approach corridor.
+  function clampWalls(p) {
+    const c = Math.round(p.x / CFG.cell), r = Math.round(p.z / CFG.cell);
+    if (r >= 0 && c >= 0 && r < rows && c < cols) {
+      const cx = c * CFG.cell, cz = r * CFG.cell, k = grid[r][c];
+      if (k.w) p.x = Math.max(p.x, cx - h + R);
+      if (k.e) p.x = Math.min(p.x, cx + h - R);
+      if (k.n) p.z = Math.max(p.z, cz - h + R);
+      if (k.s) p.z = Math.min(p.z, cz + h - R);
+    } else if (entrance) {
+      p.x = Math.min(Math.max(p.x, -h + R), h - R);
+      p.z = Math.max(p.z, entrance.backZ + R);
+    }
+  }
 
   // ── character model under the body ───────────────────────────────────────
   // Body capsule: height 1.7 → local base at y = -0.85. Seat the model's feet
@@ -73,7 +90,10 @@ export function createPlayer(scene, canvas, startPos, character) {
     move.normalize();
 
     const running = input.run || mag > CFG.runThreshold;
-    body.moveWithCollisions(move.scale(running ? CFG.runSpeed : CFG.moveSpeed));
+    const speed = running ? CFG.runSpeed : CFG.moveSpeed;
+    body.position.x += move.x * speed;
+    body.position.z += move.z * speed;
+    clampWalls(body.position);
 
     // turn the character to face travel (+ model offset), smoothed
     const facing = Math.atan2(move.x, move.z);

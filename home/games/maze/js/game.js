@@ -106,37 +106,47 @@ async function start() {
   try { character = await loadCharacter(scene); }
   catch (e) { character = placeholderCharacter(scene); }
 
-  player = createPlayer(scene, canvas, info.startPos, character);
-  enemies = createEnemies(scene, grid, { count: 2, speed: 0.12 });
+  player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance);
+  enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: 0.12 });
   if (map) map.setMaze(grid, CFG.cell);
+
+  // open the entrance door so the camera can follow her in
+  if (info.door) {
+    B.Animation.CreateAndStartAnimation(
+      "doorOpen", info.door, "position.y", 60, 80,
+      info.door.position.y, info.door.position.y + CFG.wallH * 1.25, 0
+    );
+  }
 
   scene.registerBeforeRender(() => {
     const over = won || lost;
     const now = performance.now();
-    const hunting = now >= graceUntil;
+    const haveEnemies = enemies && enemies.enemies.length > 0;
+    const hunting = haveEnemies && now >= graceUntil;
     const body = player.body;
 
     if (!over) player.update(readInput());
-    if (enemies) enemies.update(body.position, hunting && !over);
+    if (haveEnemies) enemies.update(body.position, hunting && !over);
     if (map) {
-      const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
+      const pts = haveEnemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
       map.update(body.position.x, body.position.z, body.rotation.y - CFG.modelYaw, pts);
     }
     if (goal) goal.rotation.y += 0.012;
     if (over) return;
 
-    if (!hunting) {
-      showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
-    } else if (!alerted) {
-      alerted = true;
-      enemies?.setAlert(true);
-      flashAlert();
-    }
-
-    if (hunting && enemies && enemies.caught(body.position)) {
-      lost = true;
-      endGame("maze-lose");
-      return;
+    if (haveEnemies) {
+      if (!hunting) {
+        showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
+      } else if (!alerted) {
+        alerted = true;
+        enemies.setAlert(true);
+        flashAlert();
+      }
+      if (enemies.caught(body.position)) {
+        lost = true;
+        endGame("maze-lose");
+        return;
+      }
     }
     const dx = body.position.x - goalPos.x;
     const dz = body.position.z - goalPos.z;
