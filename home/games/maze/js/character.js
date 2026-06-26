@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    loadRig() loads a skinned base mesh, retargets the (anim-only) clip files onto
    its skeleton by bone name, strips root motion (animate in place), auto-fits
-   the height and reports the foot offset. loadCharacter (Medea) and loadZombie
+   the height and reports the foot offset. loadCharacter (Medea) and the zombie
    (Yaku) are thin wrappers. play(state) switches the active clip.
    ========================================================================== */
 
@@ -79,7 +79,9 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
     const g = groups[name];
     if (!g || g === current) return;
     for (const k in groups) if (groups[k] && groups[k] !== g) groups[k].stop();
-    g.start(name !== "death", 1.0, g.from, g.to, false); // death plays once
+    const loop = name !== "death";
+    g.start(loop, 1.0, g.from, g.to, false);
+    if (!loop) g.onAnimationGroupEndObservable.addOnce(() => g.pause()); // die once, hold the pose
     current = g;
   }
   play(Object.keys(clipFiles)[0]);
@@ -94,10 +96,45 @@ export function loadCharacter(scene) {
   }, 1.7);
 }
 
-export function loadZombie(scene) {
-  return loadRig(scene, "/home/games/maze/assets/zombie/", "zombie.glb", {
-    idle: "idle.glb", run: "run.glb", crawl: "crawl.glb", bite: "bite.glb",
-  }, 1.85);
+/** Load the zombie once as a CLONABLE prototype (AssetContainer) with its clips
+ *  retargeted, so every zombie can be the same model via instantiateModelsToScene. */
+export async function loadZombiePrototype(scene) {
+  const dir = "/home/games/maze/assets/zombie/";
+  const container = await B.SceneLoader.LoadAssetContainerAsync(dir, "zombie.glb", scene);
+  container.addAllToScene(); // temporarily, to retarget the clips
+  container.animationGroups.slice().forEach((g) => g.dispose()); // drop the T-pose clip
+  container.animationGroups.length = 0;
+
+  const root = container.meshes.find((m) => !m.parent) || container.meshes[0];
+  container.meshes.forEach((m) => m.computeWorldMatrix(true));
+  let bb = root.getHierarchyBoundingVectors(true);
+  root.scaling.scaleInPlace(1.85 / Math.max(0.001, bb.max.y - bb.min.y));
+  container.meshes.forEach((m) => m.computeWorldMatrix(true));
+  bb = root.getHierarchyBoundingVectors(true);
+  const footOffset = bb.min.y - root.position.y;
+
+  const sk = container.skeletons[0];
+  const nodeMap = {};
+  (container.transformNodes || []).forEach((n) => { if (n && n.name) nodeMap[n.name] = n; });
+  if (sk) sk.bones.forEach((b) => { const tn = b.getTransformNode && b.getTransformNode(); if (tn && tn.name) nodeMap[tn.name] = tn; });
+  const conv = (t) => (t && nodeMap[t.name]) || t;
+
+  const clipOrder = ["idle", "run", "crawl", "bite"];
+  const files = { idle: "idle.glb", run: "run.glb", crawl: "crawl.glb", bite: "bite.glb" };
+  for (const name of clipOrder) {
+    await B.SceneLoader.ImportAnimationsAsync(dir, files[name], scene, false, NOSYNC, conv);
+    const g = scene.animationGroups[scene.animationGroups.length - 1];
+    if (!g) continue;
+    g.name = name;
+    if (name !== "bite") stripRootMotion(g);
+    g.stop();
+    const i = scene.animationGroups.indexOf(g);
+    if (i >= 0) scene.animationGroups.splice(i, 1); // move out of the live scene…
+    container.animationGroups.push(g);              // …into the container so it clones
+  }
+
+  container.removeAllFromScene(); // keep the prototype out of the scene
+  return { container, footOffset, clipOrder };
 }
 
 /** Low-poly humanoid placeholder (feet at the root origin), facing +Z. */

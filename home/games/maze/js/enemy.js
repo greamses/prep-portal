@@ -51,51 +51,39 @@ function bfsNext(grid, sr, sc, tr, tc) {
 
 export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
   const rows = grid.length, cols = grid[0].length;
-  let shadowMat = null, eyeMat = null, shadowGlow = null;
   const enemies = [];
 
-  /** The detailed chaser (Yaku rig). Wrapped in a holder so facing works. */
-  function spawn(model, { cell = [0, 0], awake = true, ambush = false, wakeAt = 0 } = {}) {
+  /** Spawn a zombie. Clones the shared prototype so every zombie is the same
+   *  Yaku model with its own skeleton + animations. Marker fallback if no proto. */
+  function spawn(proto, { cell = [0, 0], awake = true, ambush = false, wakeAt = 0 } = {}) {
     const holder = new B.TransformNode("zhold", scene);
     holder.position = centerOf(cell[0], cell[1], 0);
     let play = null;
-    if (model) {
-      model.root.setEnabled(true);
-      model.root.parent = holder;
-      model.root.position.set(0, -(model.footOffset || 0), 0);
-      play = model.play;
+    if (proto && proto.container) {
+      const inst = proto.container.instantiateModelsToScene((n) => n, false);
+      const cloneRoot = inst.rootNodes[0];
+      cloneRoot.parent = holder;
+      cloneRoot.position.set(0, -(proto.footOffset || 0), 0);
+      const ag = inst.animationGroups;
+      const byName = {};
+      proto.clipOrder.forEach((nm, i) => { if (ag[i]) { byName[nm] = ag[i]; ag[i].stop(); } });
+      let current = null;
+      play = (nm) => {
+        const g = byName[nm];
+        if (!g || g === current) return;
+        for (const k in byName) if (byName[k] !== g) byName[k].stop();
+        g.start(nm !== "bite", 1.0, g.from, g.to, false);
+        current = g;
+      };
+      play("idle");
     } else {
-      // marker fallback
       const m = B.MeshBuilder.CreatePolyhedron("enemy", { type: 1, size: 0.62 }, scene);
       const mm = new B.StandardMaterial("em", scene);
       mm.diffuseColor = B.Color3.FromHexString("#f04a4a");
       mm.emissiveColor = new B.Color3(0.55, 0.05, 0.05);
       m.material = mm; m.parent = holder; m.position.y = CFG.eyeH * 0.6;
     }
-    enemies.push({ mesh: holder, play, target: null, phase: Math.random() * 6.28, awake, ambush, wakeAt, biting: false, model: !!model });
-  }
-
-  /** A dark shadow zombie (primitives + glowing eyes), dormant until you pass. */
-  function spawnShadow(cell) {
-    if (!shadowMat) {
-      shadowMat = new B.StandardMaterial("shMat", scene);
-      shadowMat.diffuseColor = new B.Color3(0.04, 0.05, 0.06);
-      shadowMat.specularColor = new B.Color3(0, 0, 0);
-      eyeMat = new B.StandardMaterial("eyeMat", scene);
-      eyeMat.emissiveColor = new B.Color3(0.9, 0.1, 0.05);
-      eyeMat.diffuseColor = new B.Color3(0.9, 0.1, 0.05);
-      shadowGlow = new B.GlowLayer("shGlow", scene);
-      shadowGlow.intensity = 0.7;
-    }
-    const root = new B.TransformNode("shadow", scene);
-    root.position = centerOf(cell[0], cell[1], 0);
-    const part = (mesh, mat, x, y, z) => { mesh.material = mat; mesh.position.set(x, y, z); mesh.parent = root; return mesh; };
-    part(B.MeshBuilder.CreateCapsule("sb", { height: 1.5, radius: 0.34 }, scene), shadowMat, 0, 0.95, 0);
-    part(B.MeshBuilder.CreateSphere("sh", { diameter: 0.42 }, scene), shadowMat, 0, 1.75, 0);
-    const eL = part(B.MeshBuilder.CreateSphere("eL", { diameter: 0.09 }, scene), eyeMat, -0.09, 1.78, 0.18);
-    const eR = part(B.MeshBuilder.CreateSphere("eR", { diameter: 0.09 }, scene), eyeMat, 0.09, 1.78, 0.18);
-    shadowGlow.addIncludedOnlyMesh(eL); shadowGlow.addIncludedOnlyMesh(eR);
-    enemies.push({ mesh: root, play: null, target: null, phase: Math.random() * 6.28, awake: false, ambush: true, biting: false, model: false });
+    enemies.push({ mesh: holder, play, target: null, phase: Math.random() * 6.28, awake, ambush, wakeAt, biting: false, model: !!(proto && proto.container) });
   }
 
   function update(playerPos) {
@@ -175,5 +163,5 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
 
   function setAlert() {}
 
-  return { enemies, update, caught, setAlert, bite, spawn, spawnShadow };
+  return { enemies, update, caught, setAlert, bite, spawn };
 }
