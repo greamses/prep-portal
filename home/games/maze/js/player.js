@@ -107,7 +107,8 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
     if (move.lengthSquared() < 1e-5) { character.play("idle"); return; }
     move.normalize();
 
-    const running = input.run; // walk by default; hold Shift to run
+    // Shift runs (desktop); a full analog push runs (mobile — no Shift key)
+    const running = input.run || (input.stickMag || 0) > CFG.runThreshold;
     const speed = running ? CFG.runSpeed : CFG.moveSpeed;
     body.position.x += move.x * speed;
     body.position.z += move.z * speed;

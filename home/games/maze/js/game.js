@@ -25,6 +25,8 @@ let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = Infinity, alerted = false, alertTimer = null, woke = false;
 let door = null, doorState = "shut", doorBaseY = 0, entranceDoorZ = 0;
 let gates = [];
+// deferred zombie: only after she passes the entrance AND makes her first turn
+let turned = false, initHeading = null, zombieRequested = false, prevX = null, prevZ = null;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -36,10 +38,11 @@ function readInput() {
   if (keys.has("KeyS") || keys.has("ArrowDown")) y -= 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) x += 1;
   if (keys.has("KeyA") || keys.has("ArrowLeft")) x -= 1;
-  if (joy) { x += joy.value.x; y += -joy.value.y; }
+  let stickMag = 0;
+  if (joy) { x += joy.value.x; y += -joy.value.y; stickMag = Math.hypot(joy.value.x, joy.value.y); }
   x = Math.max(-1, Math.min(1, x));
   y = Math.max(-1, Math.min(1, y));
-  return { x, y, run: keys.has("ShiftLeft") || keys.has("ShiftRight") };
+  return { x, y, run: keys.has("ShiftLeft") || keys.has("ShiftRight"), stickMag };
 }
 
 /* ── grace-period HUD ─────────────────────────────────────────────────────── */
@@ -72,6 +75,17 @@ function endGame(overlayId) {
   closeRiddle();
 }
 
+/** Load the zombie on demand and spawn it behind her (entrance), then wake it. */
+async function spawnZombieLazy() {
+  const s = scene;
+  let z = null;
+  try { z = await loadZombie(s); } catch (e) { z = null; }
+  if (s !== scene || !enemies) { z?.root?.dispose?.(); return; } // maze changed mid-load
+  enemies.spawn(z);
+  woke = true;
+  graceUntil = performance.now() + CFG.graceMs;
+}
+
 /* ── glowing exit pillar ──────────────────────────────────────────────────── */
 function buildGoal(scn, pos) {
   const m = B.MeshBuilder.CreateCylinder("goal", { diameter: 1.7, height: CFG.wallH * 0.9, tessellation: 24 }, scn);
@@ -95,7 +109,11 @@ async function start() {
   lost = false;
   alerted = false;
   woke = false;
-  graceUntil = Infinity; // set when she first moves
+  turned = false;
+  initHeading = null;
+  zombieRequested = false;
+  prevX = prevZ = null;
+  graceUntil = Infinity;
   $("#maze-win").hidden = true;
   $("#maze-lose").hidden = true;
   $("#maze-hint").hidden = true;
@@ -111,11 +129,8 @@ async function start() {
   try { character = await loadCharacter(scene); }
   catch (e) { character = placeholderCharacter(scene); }
 
-  let zombie = null;
-  if (CFG.enemyCount > 0) { try { zombie = await loadZombie(scene); } catch (e) { zombie = null; } }
-
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
-  enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: CFG.enemySpeed, model: zombie });
+  enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // zombie spawned later
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
@@ -135,8 +150,22 @@ async function start() {
     const input = (over || riddling) ? { x: 0, y: 0, run: false } : readInput();
     if (!over) player.update(input);
 
-    // the hunter sleeps until you MOVE; then the grace countdown starts
-    if (!woke && (input.x || input.y)) { woke = true; graceUntil = now + CFG.graceMs; }
+    // bring the zombie in only AFTER she passes the entrance and turns once
+    if (!zombieRequested && CFG.enemyCount > 0) {
+      if (prevX !== null) {
+        const ddx = body.position.x - prevX, ddz = body.position.z - prevZ;
+        if (Math.hypot(ddx, ddz) > 0.02) {
+          const heading = Math.atan2(ddx, ddz);
+          if (initHeading === null) { if (doorState === "sealed") initHeading = heading; }
+          else {
+            const d = Math.abs(((heading - initHeading + Math.PI) % (Math.PI * 2)) - Math.PI);
+            if (d > 0.9) turned = true;
+          }
+        }
+      }
+      prevX = body.position.x; prevZ = body.position.z;
+      if (doorState === "sealed" && turned) { zombieRequested = true; spawnZombieLazy(); }
+    }
 
     const haveEnemies = enemies && enemies.enemies.length > 0;
     const hunting = haveEnemies && woke && now >= graceUntil;

@@ -95,7 +95,7 @@ export function loadCharacter(scene) {
 
 export function loadZombie(scene) {
   return loadRig(scene, "/home/games/maze/assets/zombie/", "zombie.glb", {
-    idle: "idle.glb", run: "run.glb",
+    idle: "idle.glb", run: "run.glb", crawl: "crawl.glb",
   }, 1.85);
 }
 

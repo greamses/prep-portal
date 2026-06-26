@@ -49,21 +49,19 @@ function bfsNext(grid, sr, sc, tr, tc) {
   return cur;
 }
 
-export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = null } = {}) {
+export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
   const rows = grid.length, cols = grid[0].length;
-
-  // spawn AT the entrance cell so they trail her from BEHIND as she heads in
-  const spots = [[1, 0], [0, 1], [1, 1]];
-
   let octMat = null, octGlow = null;
   const enemies = [];
-  for (let i = 0; i < count; i++) {
-    const [r, c] = i === 0 ? [0, 0] : spots[(Math.random() * spots.length) | 0];
-    let mesh, play = null, footY = 0;
-    if (model && i === 0) {
+
+  /** Spawn a hunter at the entrance cell (behind the player). */
+  function spawn(model) {
+    let mesh, play = null, footY = 0, isModel = false;
+    if (model) {
       mesh = model.root;
-      footY = -(model.footOffset || 0); // seat feet on the ground
+      footY = -(model.footOffset || 0);
       play = model.play;
+      isModel = true;
     } else {
       if (!octMat) {
         octMat = new B.StandardMaterial("enemyMat", scene);
@@ -77,8 +75,8 @@ export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = nu
       footY = CFG.eyeH * 0.6;
       octGlow.addIncludedOnlyMesh(mesh);
     }
-    mesh.position = centerOf(r, c, footY);
-    enemies.push({ mesh, play, footY, target: null, phase: Math.random() * 6.28, isModel: !!(model && i === 0) });
+    mesh.position = centerOf(0, 0, footY);
+    enemies.push({ mesh, play, footY, target: null, phase: Math.random() * 6.28, isModel });
   }
 
   function update(playerPos, hunting = true) {
@@ -105,7 +103,11 @@ export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = nu
           }
         }
       }
-      if (e.play) e.play(moved ? "run" : "idle"); // idle until actually chasing
+      // run when chasing close, crawl when inspecting/far, idle when still
+      if (e.play) {
+        const dist = Math.hypot(e.mesh.position.x - playerPos.x, e.mesh.position.z - playerPos.z);
+        e.play(!moved ? "idle" : dist < CFG.cell * 2.5 ? "run" : "crawl");
+      }
       if (!e.isModel) {
         e.mesh.rotation.y += 0.05;
         e.mesh.position.y = e.footY + Math.sin(t + e.phase) * 0.16;
@@ -124,5 +126,5 @@ export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = nu
 
   function setAlert() {} // (zombie has no alert colour)
 
-  return { enemies, update, caught, setAlert };
+  return { enemies, update, caught, setAlert, spawn };
 }
