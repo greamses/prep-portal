@@ -67,7 +67,8 @@ async function boot() {
     logStep("hunters online");
     finishLoader();
   } catch (e) {
-    loaderError("Couldn't load the game. Check your connection and refresh.");
+    console.error("[maze] boot failed:", e);
+    loaderError("Couldn't load the game: " + (e && e.message ? e.message : e));
   }
 }
 

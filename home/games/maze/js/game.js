@@ -99,7 +99,7 @@ function buildGoal(scn, pos) {
   const m = B.MeshBuilder.CreateCylinder("goal", { diameter: 1.7, height: CFG.wallH * 0.9, tessellation: 24 }, scn);
   m.position.set(pos.x, (CFG.wallH * 0.9) / 2, pos.z);
   const mat = new B.StandardMaterial("goalMat", scn);
-  const c = B.Color3.FromHexString(CFG.colors.goal);
+  const c = B.Color3.FromHexString(CFG.goalColor);
   mat.diffuseColor = c;
   mat.emissiveColor = c.scale(0.55);
   m.material = mat;
