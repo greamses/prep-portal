@@ -26,6 +26,7 @@ export const CFG = {
   lookSensitivity: 3500, // higher = slower mouse-look
   graceMs: 4000, // head-start before the hunters wake
   enemyCount: 0, // hunters (0 = disabled for now)
+  debugCollision: true, // show the collision volume (translucent capsule)
 
   // palette (soft-UI friendly)
   colors: {

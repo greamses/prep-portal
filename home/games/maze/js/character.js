@@ -18,17 +18,18 @@ async function importClip(scene, file, name) {
   return g || null;
 }
 
-/** Remove forward/sideways root motion: lock the Hips X/Z to their first key
- *  (keep Y bob) so the character animates IN PLACE and code drives movement. */
+/** Remove ALL root motion: pin the Hips position to its first key so the clip
+ *  has zero translation (animates fully IN PLACE); code drives movement. This
+ *  stops the "extra step / backtrack / past the wall" drift. */
 function stripRootMotion(group) {
   if (!group) return;
   for (const ta of group.targetedAnimations) {
     const name = (ta.target && ta.target.name) || "";
-    if (/hips/i.test(name) && ta.animation.targetProperty === "position") {
+    if (/hips/i.test(name) && /position/i.test(ta.animation.targetProperty || "")) {
       const keys = ta.animation.getKeys();
       if (keys.length) {
-        const x0 = keys[0].value.x, z0 = keys[0].value.z;
-        for (const k of keys) k.value = new B.Vector3(x0, k.value.y, z0);
+        const v0 = keys[0].value.clone();
+        for (const k of keys) k.value = v0.clone();
       }
     }
   }

@@ -22,7 +22,7 @@ const $ = (s) => document.querySelector(s);
 const canvas = $("#maze-canvas");
 let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = 0, alerted = false, alertTimer = null;
-let door = null, doorOpened = false, doorTriggerZ = 0;
+let door = null, doorState = "shut", doorBaseY = 0, entranceDoorZ = 0;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -107,14 +107,15 @@ async function start() {
   try { character = await loadCharacter(scene); }
   catch (e) { character = placeholderCharacter(scene); }
 
-  player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance);
+  player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
   enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: 0.12 });
   if (map) map.setMaze(grid, CFG.cell);
 
-  // the door stays shut (visible) until she walks up to it — opened in the loop
+  // one-way gate: shut until she reaches it, opens to enter, seals behind her
   door = info.door;
-  doorOpened = false;
-  doorTriggerZ = info.entrance ? info.entrance.doorZ - 3 : 0;
+  doorState = "shut";
+  doorBaseY = door ? door.position.y : 0;
+  entranceDoorZ = info.entrance ? info.entrance.doorZ : 0;
 
   scene.registerBeforeRender(() => {
     const over = won || lost;
@@ -132,13 +133,16 @@ async function start() {
     if (goal) goal.rotation.y += 0.012;
     if (over) return;
 
-    // open the entrance door as she approaches (it's visible/shut until then)
-    if (door && !doorOpened && body.position.z > doorTriggerZ) {
-      doorOpened = true;
-      B.Animation.CreateAndStartAnimation(
-        "doorOpen", door, "position.y", 60, 70,
-        door.position.y, door.position.y + CFG.wallH * 1.3, 0
-      );
+    // gate: open when she walks up to it, seal it once she's inside
+    if (door) {
+      const z = body.position.z;
+      if (doorState === "shut" && z > entranceDoorZ - 0.95) {
+        doorState = "open";
+        B.Animation.CreateAndStartAnimation("doorOpen", door, "position.y", 60, 55, doorBaseY, doorBaseY + CFG.wallH * 1.3, 0);
+      } else if (doorState === "open" && z > entranceDoorZ + 1.6) {
+        doorState = "sealed";
+        B.Animation.CreateAndStartAnimation("doorClose", door, "position.y", 60, 55, door.position.y, doorBaseY, 0);
+      }
     }
 
     if (haveEnemies) {
