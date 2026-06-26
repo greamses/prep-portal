@@ -23,6 +23,8 @@ export const CFG = {
   turnLerp: 0.2, // how fast the character turns to face movement (0..1)
   modelYaw: 0, // facing offset so the model points the right way
   camDist: 3.6, // third-person camera distance (closer behind)
+  camKey: "Normal",
+  closeOnRun: true, // pull the camera in close behind while running
   lookSensitivity: 3500, // higher = slower mouse-look
 
   // enemies / gates (overridable in Settings)
@@ -41,6 +43,7 @@ export const CFG = {
     ice:     { sky: "#dff1ff", fog: "#eaf6ff", fogD: 0.016, ground: "#cfe6f2", wallTint: "#bcd9ec", name: "Ice" },
   },
   goalColor: "#7cc47c",
+  subject: "all", // gate question subject: all | math | english | science
 
   /** Current theme palette. */
   theme() { return this.themes[this.scene] || this.themes.dungeon; },
@@ -48,11 +51,14 @@ export const CFG = {
 
 // ── apply persisted player settings ───────────────────────────────────────
 export const SIZES = { S: 8, M: 12, L: 16, XL: 22 };
+export const CAM = { Close: 2.6, Normal: 3.6, Far: 5.5 };
 try {
   const s = JSON.parse(localStorage.getItem("mz-settings") || "{}");
   if (s.size && SIZES[s.size]) { CFG.cols = CFG.rows = SIZES[s.size]; CFG.sizeKey = s.size; }
   if (Number.isInteger(s.gates)) CFG.gateCount = s.gates;
   if (Number.isInteger(s.zombies)) CFG.ambushCount = s.zombies;
   if (s.scene && CFG.themes[s.scene]) CFG.scene = s.scene;
+  if (s.cam && CAM[s.cam]) { CFG.camKey = s.cam; CFG.camDist = CAM[s.cam]; }
+  if (s.subject) CFG.subject = s.subject;
 } catch (e) {}
 if (!CFG.sizeKey) CFG.sizeKey = CFG.cols >= 22 ? "XL" : CFG.cols >= 16 ? "L" : CFG.cols >= 12 ? "M" : "S";

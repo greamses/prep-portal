@@ -7,20 +7,45 @@
    zombies catch up.
    ========================================================================== */
 
+import { CFG } from "./config.js";
+
 const $ = (s) => document.querySelector(s);
 
-const BANK = [
-  { q: "I have keys but no locks, and space but no room. What am I?", a: ["keyboard"] },
-  { q: "What must be broken before you can use it?", a: ["egg"] },
-  { q: "What gets wetter the more it dries?", a: ["towel"] },
-  { q: "What has hands but cannot clap?", a: ["clock"] },
-  { q: "What has a neck but no head?", a: ["bottle"] },
-  { q: "I travel the world but stay in a corner. What am I?", a: ["stamp", "postage stamp"] },
-  { q: "The more you take, the more you leave behind. What are they?", a: ["footsteps", "footprints", "steps"] },
-  { q: "What has many teeth but cannot bite?", a: ["comb", "zipper", "zip"] },
-  { q: "What goes up but never comes down?", a: ["age"] },
-  { q: "What has a thumb and four fingers but is not alive?", a: ["glove"] },
-];
+const BANKS = {
+  math: [
+    { q: "7 × 8 = ?", a: ["56"] },
+    { q: "15% of 200 = ?", a: ["30"] },
+    { q: "12 + 9 × 2 = ?", a: ["30"] },
+    { q: "Square root of 144 = ?", a: ["12"] },
+    { q: "Half of 250 = ?", a: ["125"] },
+    { q: "3 cubed (3³) = ?", a: ["27"] },
+    { q: "Perimeter of a 5 × 3 rectangle?", a: ["16"] },
+    { q: "The prime number right after 7?", a: ["11"] },
+    { q: "100 − 37 = ?", a: ["63"] },
+    { q: "A dozen plus a half-dozen?", a: ["18"] },
+  ],
+  english: [
+    { q: "Plural of 'mouse'?", a: ["mice"] },
+    { q: "Past tense of 'go'?", a: ["went"] },
+    { q: "Opposite of 'ancient'?", a: ["modern", "new"] },
+    { q: "Correct spelling — recieve or receive?", a: ["receive"] },
+    { q: "A synonym for 'happy'?", a: ["glad", "joyful", "cheerful", "merry"] },
+    { q: "Opposite of 'begin'?", a: ["end", "finish", "stop"] },
+    { q: "Plural of 'child'?", a: ["children"] },
+    { q: "Past tense of 'run'?", a: ["ran"] },
+  ],
+  science: [
+    { q: "What gas do plants take in?", a: ["carbon dioxide", "co2"] },
+    { q: "How many legs does an insect have?", a: ["6", "six"] },
+    { q: "Which planet is the Red Planet?", a: ["mars"] },
+    { q: "Water is hydrogen and ___?", a: ["oxygen"] },
+    { q: "Which organ pumps blood?", a: ["heart"] },
+    { q: "The centre of an atom is the ___?", a: ["nucleus"] },
+    { q: "What force pulls things to Earth?", a: ["gravity"] },
+    { q: "Solid, liquid and ___?", a: ["gas"] },
+  ],
+};
+const LABEL = { math: "MATH GATE", english: "ENGLISH GATE", science: "SCIENCE GATE" };
 
 let state = null;     // { answers:[], onSolve }
 let typeTimer = null;
@@ -68,8 +93,13 @@ export function initRiddles() {
 }
 
 export function openRiddle(onSolve) {
-  const r = BANK[(Math.random() * BANK.length) | 0];
+  const subs = ["math", "english", "science"];
+  const sub = CFG.subject && BANKS[CFG.subject] ? CFG.subject : subs[(Math.random() * subs.length) | 0];
+  const bank = BANKS[sub];
+  const r = bank[(Math.random() * bank.length) | 0];
   state = { answers: r.a, onSolve };
+  const tag = $("#mz-riddle-tag");
+  if (tag) tag.textContent = "⚜ " + LABEL[sub] + " ⚜";
   $("#mz-riddle-fb").textContent = "";
   const input = $("#mz-riddle-input");
   input.value = "";

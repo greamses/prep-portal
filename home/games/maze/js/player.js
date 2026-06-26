@@ -69,7 +69,7 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
   const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 0.12, droneRadius, mazeCenter.clone(), scene);
   cam.attachControl(canvas, true);
   cam.inputs.removeByType("ArcRotateCameraKeyboardMoveInput"); // arrows = move
-  cam.lowerRadiusLimit = 2.5;
+  cam.lowerRadiusLimit = 1.4; // allow a tight close-in view
   cam.upperRadiusLimit = Math.max(60, droneRadius + 6);
   cam.lowerBetaLimit = 0.08;
   cam.upperBetaLimit = 1.46;
@@ -133,6 +133,9 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
       if (!dragging && performance.now() - lastDrag > 1100) {
         const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
         cam.alpha = lerpAngle(cam.alpha, want, 0.05);
+        // close in behind her while running (a tight, wall-skimming view)
+        const wantR = (CFG.closeOnRun && running) ? Math.max(1.8, CFG.camDist * 0.55) : CFG.camDist;
+        cam.radius += (wantR - cam.radius) * 0.12;
       }
     }
   }

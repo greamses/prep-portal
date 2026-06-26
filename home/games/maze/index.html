@@ -170,7 +170,7 @@
         <!-- riddle gate (ancient wooden panel) -->
         <div class="maze-riddle" id="maze-riddle" hidden>
           <div class="mz-riddle-card">
-            <div class="mz-riddle-tag">⚜ LOCKED GATE ⚜</div>
+            <div class="mz-riddle-tag" id="mz-riddle-tag">⚜ LOCKED GATE ⚜</div>
             <p class="mz-riddle-q" id="mz-riddle-q"></p>
             <div class="mz-riddle-row">
               <input type="text" id="mz-riddle-input" class="mz-riddle-input" placeholder="speak your answer…" autocomplete="off" autocapitalize="off" spellcheck="false" />
@@ -211,6 +211,17 @@
             </label>
             <label class="mz-set-row">Zombies
               <select id="mz-set-zombies"><option>0</option><option>3</option><option>5</option><option>8</option><option>12</option></select>
+            </label>
+            <label class="mz-set-row">Camera
+              <select id="mz-set-cam"><option value="Close">Close</option><option value="Normal">Normal</option><option value="Far">Far</option></select>
+            </label>
+            <label class="mz-set-row">Gate subject
+              <select id="mz-set-subject">
+                <option value="all">All</option>
+                <option value="math">Math</option>
+                <option value="english">English</option>
+                <option value="science">Science</option>
+              </select>
             </label>
             <label class="mz-set-row">Scene
               <select id="mz-set-scene">
