@@ -31,17 +31,19 @@ export function createPlayer(scene, canvas, startPos, character) {
   model.position.set(0, -0.9, 0); // feet at the body's base
 
   // ── third-person orbit camera ────────────────────────────────────────────
-  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 1.15, CFG.camDist, body.position, scene);
+  // Raised behind-the-back view: high enough to clear the 3-unit walls so it
+  // stays *inside* the maze rather than orbiting out past the boundary.
+  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 0.78, CFG.camDist, body.position, scene);
   cam.attachControl(canvas, true);
   cam.lockedTarget = body;
-  cam.lowerRadiusLimit = 3;
-  cam.upperRadiusLimit = 9;
-  cam.lowerBetaLimit = 0.45;
-  cam.upperBetaLimit = 1.45;
-  cam.wheelPrecision = 30;
-  cam.checkCollisions = true; // keep the camera out of walls
-  cam.collisionRadius = new B.Vector3(0.4, 0.4, 0.4);
-  cam.targetScreenOffset = new B.Vector2(0, -0.7); // aim at the head, body lower in frame
+  cam.lowerRadiusLimit = 2.5;
+  cam.upperRadiusLimit = 6.5;
+  cam.lowerBetaLimit = 0.35; // never fully top-down
+  cam.upperBetaLimit = 1.05; // never drop below the wall tops
+  cam.wheelPrecision = 40;
+  cam.checkCollisions = true; // tuck in when a wall is behind
+  cam.collisionRadius = new B.Vector3(0.5, 0.5, 0.5);
+  cam.targetScreenOffset = new B.Vector2(0, -0.6);
   scene.activeCamera = cam;
 
   let yaw = 0;

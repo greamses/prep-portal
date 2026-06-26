@@ -22,6 +22,7 @@ const $ = (s) => document.querySelector(s);
 const canvas = $("#maze-canvas");
 let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = 0, alerted = false, alertTimer = null;
+let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
 
@@ -84,6 +85,7 @@ function buildGoal(scn, pos) {
 
 /* ── build / rebuild a maze ───────────────────────────────────────────────── */
 async function start() {
+  ready = false;
   if (scene) scene.dispose();
   won = false;
   lost = false;
@@ -143,6 +145,8 @@ async function start() {
       endGame("maze-win");
     }
   });
+
+  ready = true;
 }
 
 /* ── fullscreen toggle ────────────────────────────────────────────────────── */
@@ -184,7 +188,7 @@ export async function startGame() {
 
   await start();
 
-  engine.runRenderLoop(() => scene && scene.render());
+  engine.runRenderLoop(() => { if (ready && scene && scene.activeCamera) scene.render(); });
   window.addEventListener("resize", () => engine.resize());
 
   initFullscreen();
