@@ -21,10 +21,10 @@ async function importClip(scene, file, name) {
 const TARGET_H = 1.7; // desired character height in world units
 
 export async function loadCharacter(scene) {
-  const res = await B.SceneLoader.ImportMeshAsync("", BASE, "idle.glb", scene);
+  // base.glb = the skinned character (mesh + skeleton + its idle clip).
+  const res = await B.SceneLoader.ImportMeshAsync("", BASE, "base.glb", scene);
 
-  // The supplied GLBs may be "without skin" (skeleton + animation, no mesh) —
-  // nothing to render. Bail so the controller uses the humanoid placeholder.
+  // Guard: if a mesh-less ("Without Skin") file was supplied, use the placeholder.
   const hasGeo = res.meshes.some((m) => (m.getTotalVertices?.() || 0) > 0);
   if (!hasGeo) {
     res.meshes.forEach((m) => m.dispose());
