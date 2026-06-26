@@ -52,17 +52,13 @@ function bfsNext(grid, sr, sc, tr, tc) {
 export function createEnemies(scene, grid, { count = 1, speed = 0.07, model = null } = {}) {
   const rows = grid.length, cols = grid[0].length;
 
-  // spawn near the entrance so they chase her from BEHIND as she heads in
-  const spots = [];
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      if (r + c <= 2) spots.push([r, c]);
-  if (!spots.length) spots.push([0, 0]);
+  // spawn AT the entrance cell so they trail her from BEHIND as she heads in
+  const spots = [[1, 0], [0, 1], [1, 1]];
 
   let octMat = null, octGlow = null;
   const enemies = [];
   for (let i = 0; i < count; i++) {
-    const [r, c] = spots.length ? spots[(Math.random() * spots.length) | 0] : [rows - 1, cols - 1];
+    const [r, c] = i === 0 ? [0, 0] : spots[(Math.random() * spots.length) | 0];
     let mesh, play = null, footY = 0;
     if (model && i === 0) {
       mesh = model.root;

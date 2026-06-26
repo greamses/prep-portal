@@ -22,7 +22,7 @@ const $ = (s) => document.querySelector(s);
 
 const canvas = $("#maze-canvas");
 let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
-let graceUntil = 0, alerted = false, alertTimer = null;
+let graceUntil = Infinity, alerted = false, alertTimer = null, woke = false;
 let door = null, doorState = "shut", doorBaseY = 0, entranceDoorZ = 0;
 let gates = [];
 let ready = false; // scene fully built (camera exists) — gate the render loop
@@ -94,7 +94,8 @@ async function start() {
   won = false;
   lost = false;
   alerted = false;
-  graceUntil = performance.now() + CFG.graceMs;
+  woke = false;
+  graceUntil = Infinity; // set when she first moves
   $("#maze-win").hidden = true;
   $("#maze-lose").hidden = true;
   $("#maze-hint").hidden = true;
@@ -128,12 +129,17 @@ async function start() {
   scene.registerBeforeRender(() => {
     const over = won || lost;
     const now = performance.now();
-    const haveEnemies = enemies && enemies.enemies.length > 0;
-    const hunting = haveEnemies && now >= graceUntil;
     const body = player.body;
 
     const riddling = isRiddleOpen();
-    if (!over) player.update(riddling ? { x: 0, y: 0, run: false } : readInput());
+    const input = (over || riddling) ? { x: 0, y: 0, run: false } : readInput();
+    if (!over) player.update(input);
+
+    // the hunter sleeps until you MOVE; then the grace countdown starts
+    if (!woke && (input.x || input.y)) { woke = true; graceUntil = now + CFG.graceMs; }
+
+    const haveEnemies = enemies && enemies.enemies.length > 0;
+    const hunting = haveEnemies && woke && now >= graceUntil;
     if (haveEnemies) enemies.update(body.position, hunting && !over); // zombies keep coming during riddles
     if (map) {
       const pts = haveEnemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
@@ -167,14 +173,14 @@ async function start() {
     }
 
     if (haveEnemies) {
-      if (!hunting) {
+      if (woke && !hunting) {
         showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
-      } else if (!alerted) {
+      } else if (hunting && !alerted) {
         alerted = true;
         enemies.setAlert(true);
         flashAlert();
       }
-      if (enemies.caught(body.position)) {
+      if (hunting && enemies.caught(body.position)) {
         lost = true;
         endGame("maze-lose");
         return;

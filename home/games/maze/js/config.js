@@ -18,13 +18,13 @@ export const CFG = {
   // player
   eyeH: 1.7, // camera (eye) height
   moveSpeed: 0.1, // walk speed (per frame) — smaller steps
-  runSpeed: 0.17, // run speed (per frame)
+  runSpeed: 0.28, // run speed (per frame)
   runThreshold: 0.85, // stick magnitude above which the character runs
   turnLerp: 0.2, // how fast the character turns to face movement (0..1)
   modelYaw: 0, // facing offset so the model points the right way (placeholder faces +Z)
   camDist: 3.6, // third-person camera distance (closer behind)
   lookSensitivity: 3500, // higher = slower mouse-look
-  graceMs: 4000, // head-start before the hunters wake
+  graceMs: 2000, // head-start after you move before the hunter wakes
   enemyCount: 1, // zombie hunters
   enemySpeed: 0.07, // slower than the player (walk 0.1)
   debugCollision: false, // show the collision volume (translucent capsule)
