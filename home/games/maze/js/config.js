@@ -19,6 +19,7 @@ export const CFG = {
   eyeH: 1.7, // camera (eye) height
   moveSpeed: 0.32, // walk speed
   lookSensitivity: 3500, // higher = slower mouse-look
+  graceMs: 4000, // head-start before the hunters wake
 
   // palette (soft-UI friendly)
   colors: {

@@ -23,7 +23,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Oswald:wght@500;600;700&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
 
@@ -120,10 +120,10 @@
           </div>
         </div>
 
-        <div class="maze-hint" id="maze-hint">
-          Click to look around · WASD / Arrow keys (or the stick) to move · Reach
-          the glowing exit
-        </div>
+        <div class="maze-hint" id="maze-hint" hidden></div>
+
+        <!-- grace-period countdown / "hunters active" flash -->
+        <div class="maze-grace" id="maze-grace" hidden></div>
 
         <!-- Minimap (top-down view of the maze, player + exit) -->
         <canvas
@@ -144,21 +144,29 @@
           </div>
         </div>
 
-        <div class="maze-win" id="maze-win" hidden>
-          <div class="maze-win-card">
-            <h2>You escaped!</h2>
-            <p>Nicely done. Ready for a fresh maze?</p>
-            <button type="button" id="maze-again" class="maze-btn">
+        <div class="mz-result mz-result--win" id="maze-win" hidden>
+          <div class="mz-result-inner">
+            <div class="mz-rule mz-rule--top"><i></i><i></i></div>
+            <div class="mz-result-text">
+              <h2>VICTORY</h2>
+              <p>You reached the exit</p>
+            </div>
+            <div class="mz-rule mz-rule--bottom"><i></i><i></i></div>
+            <button type="button" id="maze-again" class="maze-btn mz-result-btn">
               Play again
             </button>
           </div>
         </div>
 
-        <div class="maze-win maze-lose" id="maze-lose" hidden>
-          <div class="maze-win-card">
-            <h2>Caught!</h2>
-            <p>A hunter got you. Try a new maze?</p>
-            <button type="button" id="maze-retry" class="maze-btn">
+        <div class="mz-result mz-result--lose" id="maze-lose" hidden>
+          <div class="mz-result-inner">
+            <div class="mz-rule mz-rule--top"><i></i><i></i></div>
+            <div class="mz-result-text">
+              <h2>DEFEAT</h2>
+              <p>A hunter caught you</p>
+            </div>
+            <div class="mz-rule mz-rule--bottom"><i></i><i></i></div>
+            <button type="button" id="maze-retry" class="maze-btn mz-result-btn">
               Try again
             </button>
           </div>
@@ -179,6 +187,8 @@
               <span class="mz-load-sep">//</span>
               <span id="maze-loader-status">booting…</span>
             </div>
+
+            <div class="mz-log" id="mz-log" aria-hidden="true"></div>
 
             <div class="mz-controls">
               <div class="mz-controls-h">// CONTROLS</div>

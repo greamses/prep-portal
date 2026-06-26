@@ -81,27 +81,35 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
     enemies.push({ mesh, target: null, phase: Math.random() * 6.28 });
   }
 
-  function update(playerPos) {
+  /** Brighten the drones when they wake (end of the grace period). */
+  function setAlert(on) {
+    mat.emissiveColor = on ? new B.Color3(0.9, 0.08, 0.08) : new B.Color3(0.55, 0.05, 0.05);
+  }
+
+  /** hunting=false → dormant: bob/spin in place (no chase, no move). */
+  function update(playerPos, hunting = true) {
     const p = cellOf(playerPos.x, playerPos.z, rows, cols);
     const t = performance.now() * 0.004;
     for (const e of enemies) {
-      if (!e.target || B.Vector3.Distance(e.mesh.position, e.target) < 0.12) {
-        const ec = cellOf(e.mesh.position.x, e.mesh.position.z, rows, cols);
-        const next = bfsNext(grid, ec.r, ec.c, p.r, p.c);
-        e.target = next ? centerOf(next[0], next[1]) : null;
-      }
-      if (e.target) {
-        const dir = e.target.subtract(e.mesh.position);
-        dir.y = 0;
-        const d = dir.length();
-        if (d > 0.001) {
-          dir.normalize();
-          e.mesh.position.x += dir.x * Math.min(speed, d);
-          e.mesh.position.z += dir.z * Math.min(speed, d);
+      if (hunting) {
+        if (!e.target || B.Vector3.Distance(e.mesh.position, e.target) < 0.12) {
+          const ec = cellOf(e.mesh.position.x, e.mesh.position.z, rows, cols);
+          const next = bfsNext(grid, ec.r, ec.c, p.r, p.c);
+          e.target = next ? centerOf(next[0], next[1]) : null;
+        }
+        if (e.target) {
+          const dir = e.target.subtract(e.mesh.position);
+          dir.y = 0;
+          const d = dir.length();
+          if (d > 0.001) {
+            dir.normalize();
+            e.mesh.position.x += dir.x * Math.min(speed, d);
+            e.mesh.position.z += dir.z * Math.min(speed, d);
+          }
         }
       }
-      e.mesh.rotation.y += 0.05;
-      e.mesh.position.y = FLOAT_Y + Math.sin(t + e.phase) * 0.16;
+      e.mesh.rotation.y += hunting ? 0.05 : 0.02;
+      e.mesh.position.y = FLOAT_Y + Math.sin(t + e.phase) * (hunting ? 0.16 : 0.1);
     }
   }
 
@@ -114,5 +122,5 @@ export function createEnemies(scene, grid, { count = 2, speed = 0.12 } = {}) {
     return false;
   }
 
-  return { enemies, update, caught };
+  return { enemies, update, caught, setAlert };
 }

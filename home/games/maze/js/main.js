@@ -7,7 +7,7 @@
    isn't possible (CORS/CSP), and shows an error if the engine can't load.
    ========================================================================== */
 
-import { initLoader, setProgress, finishLoader, loaderError } from "./loadscreen.js";
+import { initLoader, setProgress, finishLoader, loaderError, logStep } from "./loadscreen.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
 
@@ -52,11 +52,15 @@ async function loadBabylon(onProgress) {
 
 async function boot() {
   initLoader();
+  logStep("link established");
   try {
     await loadBabylon((f) => setProgress(f * 0.9)); // download → 0–90%
+    logStep("engine loaded");
     setProgress(0.93);
+    logStep("generating maze");
     const { startGame } = await import("./game.js"); // BABYLON now exists
     await startGame(); // resolves when the scene is ready
+    logStep("hunters online");
     finishLoader();
   } catch (e) {
     loaderError("Couldn't load the 3D engine. Check your connection and refresh.");

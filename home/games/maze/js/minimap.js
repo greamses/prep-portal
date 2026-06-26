@@ -30,8 +30,8 @@ export function initMinimap(canvasEl) {
     if (!grid) return;
     ctx.clearRect(0, 0, W, H);
 
-    // flat translucent panel
-    ctx.fillStyle = "rgba(12, 15, 22, 0.55)";
+    // faint fill so the CSS glass blur shows through
+    ctx.fillStyle = "rgba(12, 15, 22, 0.28)";
     ctx.fillRect(0, 0, W, H);
 
     // walls

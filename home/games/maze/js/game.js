@@ -20,6 +20,30 @@ const $ = (s) => document.querySelector(s);
 
 const canvas = $("#maze-canvas");
 let engine, scene, cam, goal, goalPos, won, lost, joy, map, enemies;
+let graceUntil = 0, alerted = false, alertTimer = null;
+
+/* ── grace-period HUD (countdown, then a brief "HUNTERS ACTIVE" flash) ────── */
+function showGrace(sec) {
+  const el = $("#maze-grace");
+  if (!el) return;
+  el.hidden = false;
+  el.classList.remove("is-alert");
+  el.textContent = `HUNTERS WAKE IN ${sec}`;
+}
+function flashAlert() {
+  const el = $("#maze-grace");
+  if (!el) return;
+  el.hidden = false;
+  el.classList.add("is-alert");
+  el.textContent = "HUNTERS ACTIVE";
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(() => { el.hidden = true; }, 1300);
+}
+function hideGrace() {
+  clearTimeout(alertTimer);
+  const el = $("#maze-grace");
+  if (el) el.hidden = true;
+}
 
 /* ── glowing exit pillar at the maze's far corner ───────────────────────── */
 function buildGoal(scn, pos) {
@@ -52,6 +76,7 @@ function applyStick() {
 function endGame(overlayId) {
   $("#" + overlayId).hidden = false;
   $("#maze-hint").hidden = true;
+  hideGrace();
   document.exitPointerLock?.();
 }
 
@@ -59,9 +84,12 @@ function start() {
   if (scene) scene.dispose();
   won = false;
   lost = false;
+  alerted = false;
+  graceUntil = performance.now() + CFG.graceMs;
   $("#maze-win").hidden = true;
   $("#maze-lose").hidden = true;
   $("#maze-hint").hidden = true; // controls live on the load screen now
+  hideGrace();
 
   scene = createScene(engine);
   const grid = generateMaze(CFG.cols, CFG.rows);
@@ -74,8 +102,10 @@ function start() {
 
   scene.registerBeforeRender(() => {
     const over = won || lost;
+    const now = performance.now();
+    const hunting = now >= graceUntil;
     if (!over) applyStick();
-    if (enemies && cam && !over) enemies.update(cam.position);
+    if (enemies && cam) enemies.update(cam.position, hunting && !over);
     if (map && cam) {
       const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
       map.update(cam.position.x, cam.position.z, cam.rotation.y, pts);
@@ -83,8 +113,17 @@ function start() {
     if (goal) goal.rotation.y += 0.012;
     if (over || !cam) return;
 
-    // caught by a hunter?
-    if (enemies && enemies.caught(cam.position)) {
+    // grace countdown → wake the hunters
+    if (!hunting) {
+      showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
+    } else if (!alerted) {
+      alerted = true;
+      enemies?.setAlert(true);
+      flashAlert();
+    }
+
+    // caught by a hunter? (only once they're awake)
+    if (hunting && enemies && enemies.caught(cam.position)) {
       lost = true;
       endGame("maze-lose");
       return;

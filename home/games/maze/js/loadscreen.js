@@ -48,6 +48,17 @@ function setStatus(msg) {
   if (s) s.textContent = msg;
 }
 
+/** Append a boot-log line (keeps the last few). */
+export function logStep(msg) {
+  const log = $("#mz-log");
+  if (!log) return;
+  const line = document.createElement("div");
+  line.className = "mz-log-line";
+  line.textContent = "» " + msg;
+  log.appendChild(line);
+  while (log.childElementCount > 4) log.removeChild(log.firstChild);
+}
+
 export function finishLoader() {
   cur = 100;
   paint(100);

@@ -50,67 +50,111 @@
 .maze-hud > * { pointer-events: auto; }
 .maze-hud-actions { display: inline-flex; align-items: center; gap: 10px; }
 
+/* glass surface shared by HUD chrome (translucent + blur + hairline) */
+.mz-glass,
+.maze-title,
+.maze-btn,
+.maze-hint,
+.maze-grace,
+.maze-map {
+  background: rgba(15, 19, 27, 0.42);
+  -webkit-backdrop-filter: blur(13px) saturate(135%);
+  backdrop-filter: blur(13px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
 .maze-title {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 0.5rem 0.95rem;
+  border-radius: 12px;
   color: var(--mz-text);
   font-family: var(--mz-font);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-size: 0.95rem;
-  text-shadow: var(--mz-shadow);
+  font-size: 0.9rem;
 }
-.maze-title svg { color: var(--mz-amber); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
+.maze-title svg { color: var(--mz-amber); }
 
-/* transparent buttons: just an amber outline; fill flat amber on hover */
 .maze-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0.46rem 0.9rem;
-  border: 1.5px solid var(--mz-amber);
-  border-radius: 11px;
-  background: transparent;
+  border-radius: 12px;
+  border-color: rgba(240, 168, 104, 0.45);
   color: var(--mz-amber);
   font-family: var(--mz-font);
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
-  text-shadow: var(--mz-shadow);
-  transition: transform 0.12s ease, background 0.14s ease, color 0.14s ease;
+  transition: transform 0.12s ease, background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
 }
 .maze-btn svg { width: 18px; height: 18px; color: currentColor; }
-.maze-btn:hover { background: var(--mz-amber); color: #1b1305; text-shadow: none; transform: translateY(-1px); }
+.maze-btn:hover {
+  background: var(--mz-amber);
+  border-color: var(--mz-amber);
+  color: #1b1305;
+  transform: translateY(-1px);
+}
 .maze-btn:active { transform: translateY(0) scale(0.95); }
 .maze-btn--icon { padding: 0.46rem; }
 
-/* ── bottom hint (transparent) ────────────────────────────────────────────── */
+/* ── bottom hint (glass, transient messages only) ─────────────────────────── */
 .maze-hint {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   max-width: calc(100% - 28px);
+  padding: 0.46rem 1rem;
+  border-radius: 999px;
   color: var(--mz-text);
   font-family: var(--mz-font);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   letter-spacing: 0.02em;
   text-align: center;
-  text-shadow: var(--mz-shadow);
   pointer-events: none;
 }
+.maze-hint[hidden] { display: none; }
 
-/* ── minimap ──────────────────────────────────────────────────────────────── */
+/* ── grace-period countdown banner ────────────────────────────────────────── */
+.maze-grace {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  color: var(--mz-amber);
+  font-family: var(--mz-font);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-size: 1rem;
+  text-transform: uppercase;
+  pointer-events: none;
+  border-color: rgba(240, 168, 104, 0.4);
+}
+.maze-grace[hidden] { display: none; }
+.maze-grace.is-alert {
+  color: var(--mz-red);
+  border-color: rgba(240, 122, 122, 0.6);
+  animation: mz-alert 0.4s steps(1) 3;
+}
+@keyframes mz-alert { 50% { opacity: 0.35; } }
+
+/* ── minimap (glass frame) ────────────────────────────────────────────────── */
 .maze-map {
   position: absolute;
   top: 16px;
   right: 16px;
   width: 156px;
   height: 156px;
-  border: 1.5px solid rgba(240, 168, 104, 0.55);
-  border-radius: 12px;
+  border-radius: 14px;
+  border-color: rgba(240, 168, 104, 0.4);
   pointer-events: none;
 }
 /* when the HUD actions are on the right too, drop the map below them */
@@ -179,36 +223,79 @@
 }
 .mz-joy-ring.mz-dragging .mz-joy-knob { transition: none; }
 
-/* ── win banner ───────────────────────────────────────────────────────────── */
-.maze-win {
+/* ── result screen (Valorant-style banner) ────────────────────────────────── */
+.mz-result {
   position: absolute;
   inset: 0;
+  z-index: 8;
   display: grid;
   place-items: center;
-  background: rgba(8, 10, 16, 0.66); /* flat */
+  background: rgba(6, 8, 12, 0.74); /* flat */
+  animation: mz-fade 0.25s ease both;
 }
-.maze-win[hidden] { display: none; }
-.maze-win-card {
+.mz-result[hidden] { display: none; }
+.mz-result--lose { background: rgba(26, 8, 9, 0.8); }  /* flat red wash */
+.mz-result--win { background: rgba(8, 22, 14, 0.8); }  /* flat green wash */
+@keyframes mz-fade { from { opacity: 0; } }
+
+.mz-result-inner {
+  width: min(90vw, 740px);
   text-align: center;
-  padding: 1.9rem 2.3rem;
-  border-radius: 16px;
-  background: #171b25; /* flat */
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-  color: var(--mz-text);
+  animation: mz-result-in 0.4s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+@keyframes mz-result-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+
+/* thin framing rules with bracket end-ticks + faint tick marks */
+.mz-rule {
+  position: relative;
+  height: 13px;
+  margin: 0 auto;
+  background-repeat: repeat-x;
+}
+.mz-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.mz-rule--top {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='13'%3E%3Cpath d='M0 0V5' stroke='rgba(255,255,255,0.22)' stroke-width='1'/%3E%3C/svg%3E");
+  background-position: top;
+}
+.mz-rule--top::after { top: 0; }
+.mz-rule--bottom {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='13'%3E%3Cpath d='M0 13V8' stroke='rgba(255,255,255,0.22)' stroke-width='1'/%3E%3C/svg%3E");
+  background-position: bottom;
+}
+.mz-rule--bottom::after { bottom: 0; }
+.mz-rule i { position: absolute; width: 1.5px; height: 13px; background: rgba(255, 255, 255, 0.8); }
+.mz-rule i:first-child { left: 0; }
+.mz-rule i:last-child { right: 0; }
+
+.mz-result-text { padding: 1.7rem 0 1.9rem; }
+.mz-result-text h2 {
+  margin: 0;
+  font-family: "Oswald", var(--mz-font);
+  font-weight: 700;
+  font-size: clamp(2.8rem, 11vw, 5.4rem);
+  letter-spacing: 0.22em;
+  text-indent: 0.22em; /* offset the trailing letter-spacing → optically centred */
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 34px rgba(0, 0, 0, 0.6);
+}
+.mz-result-text p {
+  margin: 0.8rem 0 0;
   font-family: var(--mz-font);
-  animation: maze-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-.maze-win-card h2 {
-  margin: 0 0 0.4rem;
-  color: var(--mz-green);
-  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  text-shadow: 0 0 22px rgba(124, 196, 124, 0.45);
 }
-.maze-win-card p { margin: 0 0 1.1rem; color: var(--mz-muted); }
-@keyframes maze-pop { from { opacity: 0; transform: scale(0.9); } }
-.maze-lose .maze-win-card h2 { color: var(--mz-red); text-shadow: 0 0 22px rgba(240, 122, 122, 0.45); }
+.mz-result--lose .mz-result-text p { color: var(--mz-red); }
+.mz-result--win .mz-result-text p { color: var(--mz-green); }
+.mz-result-btn { margin-top: 1.7rem; }
 
 /* ── game load screen — terminal/boot style (flat) ────────────────────────── */
 .maze-loader {
@@ -217,7 +304,10 @@
   z-index: 10;
   display: grid;
   place-items: center;
-  background: #0a0c12; /* flat */
+  background-color: #0a0c12; /* flat */
+  /* faint techy grid (an SVG image, not a CSS gradient) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M34 0H0V34' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 34px 34px;
   transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 .maze-loader.is-hidden { opacity: 0; visibility: hidden; }
@@ -226,6 +316,13 @@
   text-align: left;
   color: var(--mz-text);
   font-family: var(--mz-font);
+  padding: 1.6rem 1.7rem;
+  border-radius: 16px;
+  background: rgba(15, 19, 27, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  backdrop-filter: blur(14px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 60px rgba(0, 0, 0, 0.5);
 }
 .mz-load-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 16px; }
 .mz-load-tag {
@@ -259,9 +356,20 @@
   box-shadow: 0 0 8px rgba(240, 168, 104, 0.6);
 }
 
-.mz-load-status { font-size: 0.84rem; letter-spacing: 0.05em; color: var(--mz-muted); margin-bottom: 22px; }
+.mz-load-status { font-size: 0.84rem; letter-spacing: 0.05em; color: var(--mz-muted); margin-bottom: 14px; }
 .mz-load-status #maze-loader-pct { color: var(--mz-amber); font-weight: 700; }
 .mz-load-sep { opacity: 0.4; margin: 0 6px; }
+
+.mz-log {
+  min-height: 70px;
+  margin-bottom: 18px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--mz-muted);
+}
+.mz-log-line { animation: mz-logline 0.25s ease both; }
+.mz-log-line::first-letter { color: var(--mz-amber); }
+@keyframes mz-logline { from { opacity: 0; transform: translateX(-4px); } }
 
 .mz-controls { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 14px; }
 .mz-controls-h { font-size: 0.72rem; letter-spacing: 0.16em; color: var(--mz-amber); margin-bottom: 10px; }
