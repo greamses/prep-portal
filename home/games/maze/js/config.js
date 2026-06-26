@@ -17,7 +17,12 @@ export const CFG = {
 
   // player
   eyeH: 1.7, // camera (eye) height
-  moveSpeed: 0.32, // walk speed
+  moveSpeed: 0.22, // walk speed (per frame)
+  runSpeed: 0.36, // run speed (per frame)
+  runThreshold: 0.85, // stick magnitude above which the character runs
+  turnLerp: 0.2, // how fast the character turns to face movement (0..1)
+  modelYaw: Math.PI, // facing offset so the model points the right way
+  camDist: 6, // third-person camera distance
   lookSensitivity: 3500, // higher = slower mouse-look
   graceMs: 4000, // head-start before the hunters wake
 

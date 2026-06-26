@@ -24,7 +24,7 @@
 export const config = {
   // Skip /api, Vercel internals, and anything with a static-asset extension.
   matcher: [
-    "/((?!api/|_vercel/|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.(?:js|mjs|css|png|jpg|jpeg|gif|svg|webp|avif|ico|woff|woff2|ttf|otf|eot|map|json|txt|xml|mp3|mp4|webm|wasm|pdf|csv)).*)",
+    "/((?!api/|_vercel/|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.(?:js|mjs|css|png|jpg|jpeg|gif|svg|webp|avif|ico|woff|woff2|ttf|otf|eot|map|json|txt|xml|mp3|mp4|webm|wasm|pdf|csv|glb|gltf|bin)).*)",
   ],
 };
 

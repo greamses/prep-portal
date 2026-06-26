@@ -1,15 +1,16 @@
 /* ============================================================================
-   3D Maze — game logic
+   3D Maze — game logic (third-person)
    ----------------------------------------------------------------------------
-   Builds the engine, a fresh random maze + first-person player, the glowing
-   exit, fullscreen + analog movement, and the render loop. Imported by main.js
-   only AFTER Babylon has loaded, so the global BABYLON is guaranteed here.
-   startGame() resolves once the first scene is ready (used to finish the loader).
+   Builds the engine, a random maze, the Mixamo character (third-person), the
+   glowing exit and the hunters. COD-style controls: left stick / WASD move
+   relative to the camera, drag / right-stick orbits the camera, the character
+   turns to face movement. Imported by main.js after Babylon + glTF loader exist.
    ========================================================================== */
 
 import { createEngine, createScene } from "./engine.js";
 import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
+import { loadCharacter, placeholderCharacter } from "./character.js";
 import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
 import { createEnemies } from "./enemy.js";
@@ -19,10 +20,25 @@ const B = window.BABYLON;
 const $ = (s) => document.querySelector(s);
 
 const canvas = $("#maze-canvas");
-let engine, scene, cam, goal, goalPos, won, lost, joy, map, enemies;
+let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = 0, alerted = false, alertTimer = null;
 
-/* ── grace-period HUD (countdown, then a brief "HUNTERS ACTIVE" flash) ────── */
+const keys = new Set();
+
+/* ── input: keyboard + stick → { x: strafe, y: forward, run } ─────────────── */
+function readInput() {
+  let x = 0, y = 0;
+  if (keys.has("KeyW") || keys.has("ArrowUp")) y += 1;
+  if (keys.has("KeyS") || keys.has("ArrowDown")) y -= 1;
+  if (keys.has("KeyD") || keys.has("ArrowRight")) x += 1;
+  if (keys.has("KeyA") || keys.has("ArrowLeft")) x -= 1;
+  if (joy) { x += joy.value.x; y += -joy.value.y; }
+  x = Math.max(-1, Math.min(1, x));
+  y = Math.max(-1, Math.min(1, y));
+  return { x, y, run: keys.has("ShiftLeft") || keys.has("ShiftRight") };
+}
+
+/* ── grace-period HUD ─────────────────────────────────────────────────────── */
 function showGrace(sec) {
   const el = $("#maze-grace");
   if (!el) return;
@@ -45,7 +61,13 @@ function hideGrace() {
   if (el) el.hidden = true;
 }
 
-/* ── glowing exit pillar at the maze's far corner ───────────────────────── */
+function endGame(overlayId) {
+  $("#" + overlayId).hidden = false;
+  $("#maze-hint").hidden = true;
+  hideGrace();
+}
+
+/* ── glowing exit pillar ──────────────────────────────────────────────────── */
 function buildGoal(scn, pos) {
   const m = B.MeshBuilder.CreateCylinder("goal", { diameter: 1.7, height: CFG.wallH * 0.9, tessellation: 24 }, scn);
   m.position.set(pos.x, (CFG.wallH * 0.9) / 2, pos.z);
@@ -54,33 +76,14 @@ function buildGoal(scn, pos) {
   mat.diffuseColor = c;
   mat.emissiveColor = c.scale(0.55);
   m.material = mat;
-
   const glow = new B.GlowLayer("glow", scn);
   glow.intensity = 0.9;
   glow.addIncludedOnlyMesh(m);
   return m;
 }
 
-/** Move the camera from the analog stick, relative to where it's facing. */
-function applyStick() {
-  if (!cam || !joy) return;
-  const { x, y } = joy.value;
-  if (!x && !y) return;
-  const fwd = cam.getDirection(B.Axis.Z); fwd.y = 0; fwd.normalize();
-  const right = cam.getDirection(B.Axis.X); right.y = 0; right.normalize();
-  const move = fwd.scale(-y).add(right.scale(x)).scale(CFG.moveSpeed);
-  cam.moveWithCollisions(move);
-}
-
-/** Tear down any previous scene and build a brand-new maze. */
-function endGame(overlayId) {
-  $("#" + overlayId).hidden = false;
-  $("#maze-hint").hidden = true;
-  hideGrace();
-  document.exitPointerLock?.();
-}
-
-function start() {
+/* ── build / rebuild a maze ───────────────────────────────────────────────── */
+async function start() {
   if (scene) scene.dispose();
   won = false;
   lost = false;
@@ -88,7 +91,7 @@ function start() {
   graceUntil = performance.now() + CFG.graceMs;
   $("#maze-win").hidden = true;
   $("#maze-lose").hidden = true;
-  $("#maze-hint").hidden = true; // controls live on the load screen now
+  $("#maze-hint").hidden = true;
   hideGrace();
 
   scene = createScene(engine);
@@ -96,7 +99,12 @@ function start() {
   const info = buildMaze(scene, grid);
   goalPos = info.goalPos;
   goal = buildGoal(scene, goalPos);
-  cam = createPlayer(scene, canvas, info.startPos);
+
+  let character;
+  try { character = await loadCharacter(scene); }
+  catch (e) { character = placeholderCharacter(scene); }
+
+  player = createPlayer(scene, canvas, info.startPos, character);
   enemies = createEnemies(scene, grid, { count: 2, speed: 0.12 });
   if (map) map.setMaze(grid, CFG.cell);
 
@@ -104,16 +112,17 @@ function start() {
     const over = won || lost;
     const now = performance.now();
     const hunting = now >= graceUntil;
-    if (!over) applyStick();
-    if (enemies && cam) enemies.update(cam.position, hunting && !over);
-    if (map && cam) {
+    const body = player.body;
+
+    if (!over) player.update(readInput());
+    if (enemies) enemies.update(body.position, hunting && !over);
+    if (map) {
       const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
-      map.update(cam.position.x, cam.position.z, cam.rotation.y, pts);
+      map.update(body.position.x, body.position.z, body.rotation.y - CFG.modelYaw, pts);
     }
     if (goal) goal.rotation.y += 0.012;
-    if (over || !cam) return;
+    if (over) return;
 
-    // grace countdown → wake the hunters
     if (!hunting) {
       showGrace(Math.max(0, Math.ceil((graceUntil - now) / 1000)));
     } else if (!alerted) {
@@ -122,15 +131,13 @@ function start() {
       flashAlert();
     }
 
-    // caught by a hunter? (only once they're awake)
-    if (hunting && enemies && enemies.caught(cam.position)) {
+    if (hunting && enemies && enemies.caught(body.position)) {
       lost = true;
       endGame("maze-lose");
       return;
     }
-    // reached the exit?
-    const dx = cam.position.x - goalPos.x;
-    const dz = cam.position.z - goalPos.z;
+    const dx = body.position.x - goalPos.x;
+    const dz = body.position.z - goalPos.z;
     if (Math.hypot(dx, dz) < CFG.cell * 0.55) {
       won = true;
       endGame("maze-win");
@@ -138,7 +145,7 @@ function start() {
   });
 }
 
-/* ── fullscreen toggle (on the game stage) ──────────────────────────────── */
+/* ── fullscreen toggle ────────────────────────────────────────────────────── */
 function fsElement() {
   return document.fullscreenElement || document.webkitFullscreenElement || null;
 }
@@ -146,43 +153,37 @@ function initFullscreen() {
   const stage = $(".maze-stage");
   const btn = $("#maze-fs");
   if (!stage || !btn) return;
-
-  const enterFs = (el) =>
-    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen)?.call(el);
-  const exitFs = () =>
-    (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
-
+  const enterFs = (el) => (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen)?.call(el);
+  const exitFs = () => (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
   btn.addEventListener("click", () => {
-    document.exitPointerLock?.();
-    try {
-      if (fsElement()) exitFs();
-      else {
-        const p = enterFs(stage);
-        if (p && p.catch) p.catch(() => ($("#maze-hint").textContent = "Fullscreen blocked by the browser."));
-      }
-    } catch (e) {
-      $("#maze-hint").textContent = "Fullscreen isn't available here.";
-    }
+    try { fsElement() ? exitFs() : enterFs(stage); } catch (e) {}
   });
-
   const onChange = () => {
     const on = !!fsElement();
-    const enter = btn.querySelector(".mz-fs-enter");
-    const exit = btn.querySelector(".mz-fs-exit");
-    if (enter) enter.hidden = on;
-    if (exit) exit.hidden = !on;
+    btn.querySelector(".mz-fs-enter") && (btn.querySelector(".mz-fs-enter").hidden = on);
+    btn.querySelector(".mz-fs-exit") && (btn.querySelector(".mz-fs-exit").hidden = !on);
     setTimeout(() => engine && engine.resize(), 80);
   };
   document.addEventListener("fullscreenchange", onChange);
   document.addEventListener("webkitfullscreenchange", onChange);
 }
 
-/** Boot the game. Resolves when the first scene is ready. */
-export function startGame() {
+/* ── boot. Resolves once the first scene is ready. ────────────────────────── */
+export async function startGame() {
   engine = createEngine(canvas);
   joy = createJoystick($("#mz-joy-ring"), $("#mz-joy-knob"));
   map = initMinimap($("#maze-map"));
-  start();
+
+  const MOVE = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+  window.addEventListener("keydown", (e) => {
+    keys.add(e.code);
+    if (MOVE.includes(e.code)) e.preventDefault();
+  });
+  window.addEventListener("keyup", (e) => keys.delete(e.code));
+  window.addEventListener("blur", () => keys.clear());
+
+  await start();
+
   engine.runRenderLoop(() => scene && scene.render());
   window.addEventListener("resize", () => engine.resize());
 
@@ -195,6 +196,6 @@ export function startGame() {
     let done = false;
     const fin = () => { if (!done) { done = true; resolve(); } };
     scene.executeWhenReady(fin);
-    setTimeout(fin, 6000); // safety
+    setTimeout(fin, 6000);
   });
 }

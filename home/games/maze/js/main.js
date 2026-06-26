@@ -50,20 +50,24 @@ async function loadBabylon(onProgress) {
   }
 }
 
+const LOADERS_URL = "https://cdn.jsdelivr.net/npm/babylonjs-loaders@7/babylonjs.loaders.min.js";
+
 async function boot() {
   initLoader();
   logStep("link established");
   try {
-    await loadBabylon((f) => setProgress(f * 0.9)); // download → 0–90%
+    await loadBabylon((f) => setProgress(f * 0.86)); // download → 0–86%
     logStep("engine loaded");
+    setProgress(0.9);
+    await injectScript(LOADERS_URL); // glTF loader (for the character)
+    logStep("loading character");
     setProgress(0.93);
-    logStep("generating maze");
     const { startGame } = await import("./game.js"); // BABYLON now exists
-    await startGame(); // resolves when the scene is ready
+    await startGame(); // resolves when the scene + character are ready
     logStep("hunters online");
     finishLoader();
   } catch (e) {
-    loaderError("Couldn't load the 3D engine. Check your connection and refresh.");
+    loaderError("Couldn't load the game. Check your connection and refresh.");
   }
 }
 
