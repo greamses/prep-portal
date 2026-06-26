@@ -17,8 +17,8 @@ export const CFG = {
 
   // player
   eyeH: 1.7, // camera (eye) height
-  moveSpeed: 0.22, // walk speed (per frame)
-  runSpeed: 0.36, // run speed (per frame)
+  moveSpeed: 0.2, // walk speed (per frame; keep < wallT to avoid tunnelling)
+  runSpeed: 0.3, // run speed (per frame; keep < wallT 0.35)
   runThreshold: 0.85, // stick magnitude above which the character runs
   turnLerp: 0.2, // how fast the character turns to face movement (0..1)
   modelYaw: 0, // facing offset so the model points the right way (placeholder faces +Z)

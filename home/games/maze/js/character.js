@@ -44,11 +44,12 @@ export async function loadCharacter(scene) {
   b = root.getHierarchyBoundingVectors(true);
   const footOffset = b.min.y - root.position.y; // feet relative to root origin
 
-  const idle = res.animationGroups[0] || null;
-  if (idle) idle.name = "idle";
+  // base.glb's built-in clip is just a T-pose — drop it and use the real idle
+  // clip (retargeted from the anim-only file), like walk/run.
+  res.animationGroups.forEach((g) => { g.stop(); g.dispose(); });
 
   const groups = {
-    idle,
+    idle: await importClip(scene, "idle.glb", "idle"),
     walk: await importClip(scene, "walk.glb", "walk"),
     run: await importClip(scene, "run.glb", "run"),
     strafeL: await importClip(scene, "strafe-left.glb", "strafeL"),

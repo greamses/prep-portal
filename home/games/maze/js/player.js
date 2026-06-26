@@ -32,35 +32,37 @@ export function createPlayer(scene, canvas, startPos, character) {
   model.parent = body;
   model.position.set(0, -0.85 - (character.footOffset || 0), 0);
 
-  // ── third-person orbit camera ────────────────────────────────────────────
-  // Raised behind-the-back view: high enough to clear the 3-unit walls so it
-  // stays *inside* the maze rather than orbiting out past the boundary.
-  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 0.78, CFG.camDist, body.position, scene);
-  cam.attachControl(canvas, true);
+  // ── third-person camera: behind the back, near eye-level ─────────────────
+  const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 1.32, CFG.camDist, body.position, scene);
+  cam.attachControl(canvas, true); // mouse / touch drag pans the view
   cam.lockedTarget = body;
   cam.lowerRadiusLimit = 2.5;
-  cam.upperRadiusLimit = 6.5;
-  cam.lowerBetaLimit = 0.35; // never fully top-down
-  cam.upperBetaLimit = 1.05; // never drop below the wall tops
+  cam.upperRadiusLimit = 6;
+  cam.lowerBetaLimit = 0.7;
+  cam.upperBetaLimit = 1.46; // stays behind, not overhead
   cam.wheelPrecision = 40;
   cam.checkCollisions = true; // tuck in when a wall is behind
   cam.collisionRadius = new B.Vector3(0.5, 0.5, 0.5);
-  cam.targetScreenOffset = new B.Vector2(0, -0.6);
+  cam.targetScreenOffset = new B.Vector2(0, -0.35);
   scene.activeCamera = cam;
+
+  // track active dragging so auto-trail doesn't fight a mouse-pan
+  let dragging = false, lastDrag = -1e9;
+  canvas.addEventListener("pointerdown", () => { dragging = true; });
+  window.addEventListener("pointerup", () => {
+    if (dragging) { dragging = false; lastDrag = performance.now(); }
+  });
 
   let yaw = 0;
 
   /** input = { x: strafe(-1..1), y: forward(-1..1), run: bool } */
   function update(input) {
     const mag = Math.hypot(input.x, input.y);
-    if (mag < 0.02) {
-      character.play("idle");
-      return;
-    }
+    if (mag < 0.02) { character.play("idle"); return; }
+
     // camera-relative basis (flattened)
     const f = cam.getForwardRay().direction;
-    f.y = 0;
-    f.normalize();
+    f.y = 0; f.normalize();
     const r = B.Vector3.Cross(B.Vector3.Up(), f); // right (left-handed)
     r.normalize();
 
@@ -70,14 +72,21 @@ export function createPlayer(scene, canvas, startPos, character) {
     move.normalize();
 
     const running = input.run || mag > CFG.runThreshold;
-    const speed = running ? CFG.runSpeed : CFG.moveSpeed;
-    body.moveWithCollisions(move.scale(speed));
+    body.moveWithCollisions(move.scale(running ? CFG.runSpeed : CFG.moveSpeed));
 
-    // face movement direction (+ model offset), smoothed
-    yaw = lerpAngle(yaw, Math.atan2(move.x, move.z) + CFG.modelYaw, CFG.turnLerp);
+    // turn the character to face travel (+ model offset), smoothed
+    const facing = Math.atan2(move.x, move.z);
+    yaw = lerpAngle(yaw, facing + CFG.modelYaw, CFG.turnLerp);
     body.rotation.y = yaw;
 
     character.play(running ? "run" : "walk");
+
+    // auto-trail: ease the camera back behind the character when the player
+    // isn't actively panning with the mouse (COD-style).
+    if (!dragging && performance.now() - lastDrag > 1100) {
+      const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
+      cam.alpha = lerpAngle(cam.alpha, want, 0.05);
+    }
   }
 
   return { body, cam, model, update };
