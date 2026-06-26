@@ -25,8 +25,10 @@ let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = Infinity, alerted = false, alertTimer = null, woke = false;
 let door = null, doorState = "shut", doorBaseY = 0, entranceDoorZ = 0;
 let gates = [];
-// deferred zombie: only after she passes the entrance AND makes her first turn
+// deferred zombie: pre-warmed in the background, spawned after she passes the
+// entrance AND makes her first turn
 let turned = false, initHeading = null, zombieRequested = false, prevX = null, prevZ = null;
+let zombieModel = null, zombieReady = false, zombieSpawned = false;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -75,15 +77,20 @@ function endGame(overlayId) {
   closeRiddle();
 }
 
-/** Load the zombie on demand and spawn it behind her (entrance), then wake it. */
-async function spawnZombieLazy() {
+/** Quietly load the zombie in the background (hidden) so spawning is instant. */
+function prewarmZombie() {
+  zombieModel = null;
+  zombieReady = false;
+  if (!CFG.enemyCount) { zombieReady = true; return; }
   const s = scene;
-  let z = null;
-  try { z = await loadZombie(s); } catch (e) { z = null; }
-  if (s !== scene || !enemies) { z?.root?.dispose?.(); return; } // maze changed mid-load
-  enemies.spawn(z);
-  woke = true;
-  graceUntil = performance.now() + CFG.graceMs;
+  loadZombie(s)
+    .then((z) => {
+      if (s !== scene) { z.root?.dispose?.(); return; } // maze changed during load
+      z.root.setEnabled(false); // keep hidden until spawned
+      zombieModel = z;
+      zombieReady = true;
+    })
+    .catch(() => { zombieModel = null; zombieReady = true; }); // octahedron fallback
 }
 
 /* ── glowing exit pillar ──────────────────────────────────────────────────── */
@@ -112,6 +119,7 @@ async function start() {
   turned = false;
   initHeading = null;
   zombieRequested = false;
+  zombieSpawned = false;
   prevX = prevZ = null;
   graceUntil = Infinity;
   $("#maze-win").hidden = true;
@@ -131,6 +139,7 @@ async function start() {
 
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
   enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // zombie spawned later
+  prewarmZombie(); // load it quietly in the background now
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
@@ -164,7 +173,14 @@ async function start() {
         }
       }
       prevX = body.position.x; prevZ = body.position.z;
-      if (doorState === "sealed" && turned) { zombieRequested = true; spawnZombieLazy(); }
+      if (doorState === "sealed" && turned) zombieRequested = true;
+    }
+    // spawn the (pre-warmed) zombie once requested + loaded
+    if (zombieRequested && !zombieSpawned && zombieReady && enemies) {
+      zombieSpawned = true;
+      enemies.spawn(zombieModel); // null → octahedron fallback
+      woke = true;
+      graceUntil = now + CFG.graceMs;
     }
 
     const haveEnemies = enemies && enemies.enemies.length > 0;

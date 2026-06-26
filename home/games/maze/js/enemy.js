@@ -20,11 +20,14 @@ function centerOf(r, c, y) {
   return new B.Vector3(c * CFG.cell, y, r * CFG.cell);
 }
 function neighbours(grid, r, c) {
+  // The generator + gates keep both sides of a wall in sync, so the cell's own
+  // wall flag is authoritative (matches the player's clamp). Using the wrong
+  // opposite side here is what froze the zombie.
   const rows = grid.length, cols = grid[0].length, out = [];
-  if (r > 0 && !grid[r - 1][c].n && !grid[r][c].n) out.push([r - 1, c]);
-  if (c < cols - 1 && !grid[r][c].e && !grid[r][c + 1].e) out.push([r, c + 1]);
-  if (r < rows - 1 && !grid[r][c].s && !grid[r + 1][c].s) out.push([r + 1, c]);
-  if (c > 0 && !grid[r][c].w && !grid[r][c - 1].w) out.push([r, c - 1]);
+  if (r > 0 && !grid[r][c].n) out.push([r - 1, c]);
+  if (c < cols - 1 && !grid[r][c].e) out.push([r, c + 1]);
+  if (r < rows - 1 && !grid[r][c].s) out.push([r + 1, c]);
+  if (c > 0 && !grid[r][c].w) out.push([r, c - 1]);
   return out;
 }
 function bfsNext(grid, sr, sc, tr, tc) {
@@ -59,6 +62,7 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
     let mesh, play = null, footY = 0, isModel = false;
     if (model) {
       mesh = model.root;
+      mesh.setEnabled(true); // it was pre-warmed hidden
       footY = -(model.footOffset || 0);
       play = model.play;
       isModel = true;
