@@ -72,6 +72,17 @@ export function initMinimap(canvasEl) {
       }
     }
 
+    // tactical corner brackets
+    ctx.strokeStyle = "rgba(240, 168, 104, 0.9)";
+    ctx.lineWidth = 2;
+    const m = 4, L = 14;
+    ctx.beginPath();
+    ctx.moveTo(m, m + L); ctx.lineTo(m, m); ctx.lineTo(m + L, m);
+    ctx.moveTo(W - m - L, m); ctx.lineTo(W - m, m); ctx.lineTo(W - m, m + L);
+    ctx.moveTo(W - m, H - m - L); ctx.lineTo(W - m, H - m); ctx.lineTo(W - m - L, H - m);
+    ctx.moveTo(m + L, H - m); ctx.lineTo(m, H - m); ctx.lineTo(m, H - m - L);
+    ctx.stroke();
+
     // player arrow (position + facing)
     const pc = (px + cell / 2) / cell;
     const pr = (pz + cell / 2) / cell;
