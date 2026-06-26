@@ -35,6 +35,7 @@ export function createPlayer(scene, canvas, startPos, character) {
   // ── third-person camera: behind the back, near eye-level ─────────────────
   const cam = new B.ArcRotateCamera("tpv", -Math.PI / 2, 1.32, CFG.camDist, body.position, scene);
   cam.attachControl(canvas, true); // mouse / touch drag pans the view
+  cam.inputs.removeByType("ArcRotateCameraKeyboardMoveInput"); // arrows = move, not camera
   cam.lockedTarget = body;
   cam.lowerRadiusLimit = 2.5;
   cam.upperRadiusLimit = 6;

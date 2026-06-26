@@ -18,6 +18,22 @@ async function importClip(scene, file, name) {
   return g || null;
 }
 
+/** Remove forward/sideways root motion: lock the Hips X/Z to their first key
+ *  (keep Y bob) so the character animates IN PLACE and code drives movement. */
+function stripRootMotion(group) {
+  if (!group) return;
+  for (const ta of group.targetedAnimations) {
+    const name = (ta.target && ta.target.name) || "";
+    if (/hips/i.test(name) && ta.animation.targetProperty === "position") {
+      const keys = ta.animation.getKeys();
+      if (keys.length) {
+        const x0 = keys[0].value.x, z0 = keys[0].value.z;
+        for (const k of keys) k.value = new B.Vector3(x0, k.value.y, z0);
+      }
+    }
+  }
+}
+
 const TARGET_H = 1.7; // desired character height in world units
 
 export async function loadCharacter(scene) {
@@ -56,7 +72,8 @@ export async function loadCharacter(scene) {
     strafeR: await importClip(scene, "strafe-right.glb", "strafeR"),
   };
 
-  // stop everything, then settle on idle
+  // animate in place (no root drift), then settle on idle
+  for (const k in groups) stripRootMotion(groups[k]);
   for (const k in groups) groups[k]?.stop();
 
   let current = null;
