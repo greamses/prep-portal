@@ -19,7 +19,7 @@ function lerpAngle(a, b, t) {
 
 export function createPlayer(scene, canvas, startPos, character, grid, entrance) {
   const rows = grid.length, cols = grid[0].length;
-  const R = 0.42, h = CFG.cell / 2; // body radius + half cell
+  const R = 0.62, h = CFG.cell / 2; // collision clearance from walls + half cell
 
   // ── physics body (invisible) ─────────────────────────────────────────────
   const body = B.MeshBuilder.CreateCapsule("playerBody", { height: 1.7, radius: 0.38 }, scene);

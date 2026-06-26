@@ -22,6 +22,7 @@ const $ = (s) => document.querySelector(s);
 const canvas = $("#maze-canvas");
 let engine, scene, goal, goalPos, won, lost, joy, map, enemies, player;
 let graceUntil = 0, alerted = false, alertTimer = null;
+let door = null, doorOpened = false, doorTriggerZ = 0;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -110,13 +111,10 @@ async function start() {
   enemies = createEnemies(scene, grid, { count: CFG.enemyCount, speed: 0.12 });
   if (map) map.setMaze(grid, CFG.cell);
 
-  // open the entrance door so the camera can follow her in
-  if (info.door) {
-    B.Animation.CreateAndStartAnimation(
-      "doorOpen", info.door, "position.y", 60, 80,
-      info.door.position.y, info.door.position.y + CFG.wallH * 1.25, 0
-    );
-  }
+  // the door stays shut (visible) until she walks up to it — opened in the loop
+  door = info.door;
+  doorOpened = false;
+  doorTriggerZ = info.entrance ? info.entrance.doorZ - 3 : 0;
 
   scene.registerBeforeRender(() => {
     const over = won || lost;
@@ -133,6 +131,15 @@ async function start() {
     }
     if (goal) goal.rotation.y += 0.012;
     if (over) return;
+
+    // open the entrance door as she approaches (it's visible/shut until then)
+    if (door && !doorOpened && body.position.z > doorTriggerZ) {
+      doorOpened = true;
+      B.Animation.CreateAndStartAnimation(
+        "doorOpen", door, "position.y", 60, 70,
+        door.position.y, door.position.y + CFG.wallH * 1.3, 0
+      );
+    }
 
     if (haveEnemies) {
       if (!hunting) {
