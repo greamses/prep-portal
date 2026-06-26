@@ -11,6 +11,7 @@ import { createEngine, createScene } from "./engine.js";
 import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
 import { createJoystick } from "./joystick.js";
+import { initMinimap } from "./minimap.js";
 import { CFG } from "./config.js";
 
 const B = window.BABYLON;
@@ -19,7 +20,7 @@ const $ = (s) => document.querySelector(s);
 const HINT = "Click to look around · WASD / Arrow keys (or the stick) to move · Reach the glowing exit";
 
 const canvas = $("#maze-canvas");
-let engine, scene, cam, goal, goalPos, won, joy;
+let engine, scene, cam, goal, goalPos, won, joy, map;
 
 /* ── glowing exit pillar at the maze's far corner ───────────────────────── */
 function buildGoal(scn, pos) {
@@ -62,9 +63,11 @@ function start() {
   goalPos = info.goalPos;
   goal = buildGoal(scene, goalPos);
   cam = createPlayer(scene, canvas, info.startPos);
+  if (map) map.setMaze(grid, CFG.cell);
 
   scene.registerBeforeRender(() => {
     applyStick();
+    if (map && cam) map.update(cam.position.x, cam.position.z, cam.rotation.y);
     if (goal) goal.rotation.y += 0.012;
     if (!won && cam) {
       const dx = cam.position.x - goalPos.x;
@@ -122,6 +125,7 @@ function initFullscreen() {
 export function startGame() {
   engine = createEngine(canvas);
   joy = createJoystick($("#mz-joy-ring"), $("#mz-joy-knob"));
+  map = initMinimap($("#maze-map"));
   start();
   engine.runRenderLoop(() => scene && scene.render());
   window.addEventListener("resize", () => engine.resize());

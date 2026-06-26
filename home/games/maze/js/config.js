@@ -17,7 +17,7 @@ export const CFG = {
 
   // player
   eyeH: 1.7, // camera (eye) height
-  moveSpeed: 0.16, // walk speed
+  moveSpeed: 0.32, // walk speed
   lookSensitivity: 3500, // higher = slower mouse-look
 
   // palette (soft-UI friendly)
