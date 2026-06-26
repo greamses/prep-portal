@@ -22,6 +22,17 @@ const TARGET_H = 1.7; // desired character height in world units
 
 export async function loadCharacter(scene) {
   const res = await B.SceneLoader.ImportMeshAsync("", BASE, "idle.glb", scene);
+
+  // The supplied GLBs may be "without skin" (skeleton + animation, no mesh) —
+  // nothing to render. Bail so the controller uses the humanoid placeholder.
+  const hasGeo = res.meshes.some((m) => (m.getTotalVertices?.() || 0) > 0);
+  if (!hasGeo) {
+    res.meshes.forEach((m) => m.dispose());
+    res.skeletons?.forEach((s) => s.dispose());
+    res.animationGroups?.forEach((g) => g.dispose());
+    throw new Error("animation-only GLB (no mesh) — export the character With Skin");
+  }
+
   const root = res.meshes[0]; // __root__ (keeps the loader's RH→LH transform)
 
   // Mixamo GLBs import at wildly different scales — fit to a sane height.
@@ -60,11 +71,25 @@ export async function loadCharacter(scene) {
   return { root, groups, play, footOffset, ok: true };
 }
 
-/** Fallback placeholder if the GLB fails to load — keeps the game playable. */
+/** Low-poly humanoid placeholder (feet at the root origin), used until a real
+ *  skinned character GLB is supplied. Built facing +Z (visor marks the front). */
 export function placeholderCharacter(scene) {
-  const root = B.MeshBuilder.CreateCapsule("playerModel", { height: 1.7, radius: 0.35 }, scene);
-  const mat = new B.StandardMaterial("playerMat", scene);
-  mat.diffuseColor = B.Color3.FromHexString("#6fb7e8");
-  root.material = mat;
-  return { root, groups: {}, play() {}, footOffset: -0.85, ok: false };
+  const root = new B.TransformNode("playerModel", scene);
+  const body = new B.StandardMaterial("pcBody", scene);
+  body.diffuseColor = B.Color3.FromHexString("#6fb7e8");
+  body.specularColor = new B.Color3(0.12, 0.12, 0.14);
+  const dark = new B.StandardMaterial("pcDark", scene);
+  dark.diffuseColor = B.Color3.FromHexString("#33405e");
+  const skin = new B.StandardMaterial("pcSkin", scene);
+  skin.diffuseColor = B.Color3.FromHexString("#e7b48a");
+
+  const part = (mesh, mat, x, y, z) => { mesh.material = mat; mesh.position.set(x, y, z); mesh.parent = root; return mesh; };
+  part(B.MeshBuilder.CreateCapsule("t", { height: 0.7, radius: 0.22 }, scene), body, 0, 1.05, 0);   // torso
+  part(B.MeshBuilder.CreateSphere("h", { diameter: 0.34 }, scene), skin, 0, 1.55, 0);                // head
+  part(B.MeshBuilder.CreateBox("v", { width: 0.2, height: 0.07, depth: 0.06 }, scene), dark, 0, 1.57, 0.16); // visor (front)
+  part(B.MeshBuilder.CreateCapsule("aL", { height: 0.6, radius: 0.08 }, scene), body, -0.3, 1.05, 0); // arms
+  part(B.MeshBuilder.CreateCapsule("aR", { height: 0.6, radius: 0.08 }, scene), body, 0.3, 1.05, 0);
+  part(B.MeshBuilder.CreateCapsule("lL", { height: 0.7, radius: 0.1 }, scene), dark, -0.12, 0.4, 0);  // legs
+  part(B.MeshBuilder.CreateCapsule("lR", { height: 0.7, radius: 0.1 }, scene), dark, 0.12, 0.4, 0);
+  return { root, groups: {}, play() {}, footOffset: 0, ok: false };
 }
