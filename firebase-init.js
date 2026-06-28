@@ -9,7 +9,12 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -26,7 +31,24 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const auth    = getAuth(app);
-const db      = getFirestore(app);
+
+// Firestore with a PERSISTENT on-disk cache (IndexedDB), shared across tabs.
+// This is the foundation of read optimisation: documents/queries are served from
+// the user's machine, listeners resume from local state, and only *changed* docs
+// are fetched from the server. `initializeFirestore` must run before any
+// `getFirestore`, and only once — so we fall back if it's already initialised.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  });
+} catch (e) {
+  // Already initialised elsewhere (or IndexedDB unavailable) — reuse it.
+  db = getFirestore(app);
+}
+
 const storage = getStorage(app);
 
 // Initialize the provider and configure it to always prompt for account selection

@@ -1,13 +1,11 @@
 import { auth, db } from "/firebase-init.js";
 import { signOut } from "firebase/auth";
 import {
-  doc,
-  onSnapshot,
   collection,
   query,
   where,
-  setDoc,
 } from "firebase/firestore";
+import { watchProfile, getList, saveDoc } from "/utils/data-service.js";
 
 import { setText, firstName, PERSON_SVG } from "/home/js/dashboard/utils.js";
 import { ROLE_LABELS, ROLE_SUBTITLES } from "/home/js/dashboard/constants.js";
@@ -31,8 +29,8 @@ const fields = {
   status: document.querySelector("[data-dashboard-status]"),
 };
 
-let unsubUser = null;
-let unsubRoleData = []; // Store multiple listeners for role-specific data
+let unsubProfile = null; // single shared profile listener
+let lastRole = null; // only rebuild role panels when the role actually changes
 
 // Focus + rail: after a role builder fills the layout with a flat list of tiles,
 // reflow them into a wide MAIN column (hero + lists) and a narrow RAIL (the
@@ -83,12 +81,11 @@ function updateHeader(user, data = {}) {
 }
 
 function cleanupListeners() {
-  if (unsubUser) {
-    unsubUser();
-    unsubUser = null;
+  if (unsubProfile) {
+    unsubProfile();
+    unsubProfile = null;
   }
-  unsubRoleData.forEach((unsub) => unsub());
-  unsubRoleData = [];
+  lastRole = null;
 }
 
 function handleUser(user) {
@@ -105,88 +102,81 @@ function handleUser(user) {
   updateHeader(user, {});
   buildToolbar(toolbar, "student", false);
 
-  // 2. Real-time User Profile Listener
-  unsubUser = onSnapshot(
-    doc(db, "users", user.uid),
-    (snap) => {
-      const data = snap.exists() ? snap.data() : {};
+  // 2. ONE shared profile listener (cache-backed, app-wide). It fires immediately
+  //    with the cached profile for instant paint, then on every live change.
+  unsubProfile = watchProfile(user.uid, (data) => {
+    data = data || {};
 
-      // If role is missing, assign 'student' by default and persist to Firestore
-      if (!data.role) {
-        setDoc(
-          doc(db, "users", user.uid),
-          {
-            role: "student",
-            email: user.email,
-            name: user.displayName || user.email.split("@")[0],
-            createdAt: data.createdAt || new Date().toISOString(),
-          },
-          { merge: true },
-        );
-        return;
-      }
+    // First-time users have no role — default to 'student' and persist. The
+    // write is skipped if the cache already holds these exact values.
+    if (!data.role) {
+      saveDoc(
+        `users/${user.uid}`,
+        {
+          role: "student",
+          email: user.email,
+          name: user.displayName || user.email.split("@")[0],
+          createdAt: data.createdAt || new Date().toISOString(),
+        },
+        { merge: true, skipIfUnchanged: true },
+      );
+      return;
+    }
 
-      const role = data.role;
+    updateHeader(user, data);
+    buildToolbar(toolbar, data.role, Boolean(data.isPremium));
 
-      updateHeader(user, data);
-      buildToolbar(toolbar, role, Boolean(data.isPremium));
-
-      // 3. Setup/Refresh role-specific listeners
-      setupRoleDataListeners(user, role, data);
-    },
-    (err) => {
-      console.error("Firestore snapshot error:", err);
-      buildStudentPanels(user, {}, layout);
-      applyFocusRail(layout);
-    },
-  );
+    // 3. Build the role panels — but only when the role actually changes, so a
+    //    routine profile tick (e.g. a plan toggle) doesn't re-fetch everything.
+    if (data.role !== lastRole) {
+      lastRole = data.role;
+      setupRoleData(user, data.role, data).catch((err) => {
+        console.error("Dashboard role data failed:", err);
+        buildStudentPanels(user, {}, layout);
+        applyFocusRail(layout);
+      });
+    }
+  });
 }
 
-function setupRoleDataListeners(user, role, userData) {
-  unsubRoleData.forEach((unsub) => unsub());
-  unsubRoleData = [];
+// Role-specific data, fetched THROUGH the cache (TTL). No permanent whole-
+// collection listeners — a dashboard visit inside the TTL window costs zero
+// reads, and there is no listener to leak.
+const ROLE_TTL = 2 * 60 * 1000;
 
+async function setupRoleData(user, role, userData) {
   if (role === "admin") {
     // --- ADMIN: Global stats from users and classes collections ---
-    const uUnsub = onSnapshot(collection(db, "users"), (snap) => {
-      const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const totalUsers = users.length;
-      const premiumCount = users.filter((u) => u.isPremium).length;
+    const [users, classes] = await Promise.all([
+      getList("users:all", () => collection(db, "users"), { ttl: ROLE_TTL }),
+      getList("classes:all", () => collection(db, "classes"), { ttl: ROLE_TTL }),
+    ]);
 
-      const roleCounts = users.reduce((acc, u) => {
-        const r = (u.role || "student") + "s";
-        acc[r] = (acc[r] || 0) + 1;
-        return acc;
-      }, {});
+    const totalUsers = users.length;
+    const premiumCount = users.filter((u) => u.isPremium).length;
+    const roleCounts = users.reduce((acc, u) => {
+      const r = (u.role || "student") + "s";
+      acc[r] = (acc[r] || 0) + 1;
+      return acc;
+    }, {});
+    const roleDist = [
+      { role: "Students", count: roleCounts.students || 0, color: "var(--blue)" },
+      { role: "Parents", count: roleCounts.parents || 0, color: "var(--green)" },
+      { role: "Teachers", count: roleCounts.teachers || 0, color: "var(--yellow)" },
+      { role: "Admins", count: roleCounts.admins || 0, color: "var(--red)" },
+    ].map((r) => ({
+      ...r,
+      pct: totalUsers ? Math.round((r.count / totalUsers) * 100) : 0,
+    }));
+    const recentSignups = users
+      .slice()
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 6)
+      .map((u) => ({ ...u, joinedAt: u.createdAt }));
 
-      const roleDist = [
-        {
-          role: "Students",
-          count: roleCounts.students || 0,
-          color: "var(--blue)",
-        },
-        {
-          role: "Parents",
-          count: roleCounts.parents || 0,
-          color: "var(--green)",
-        },
-        {
-          role: "Teachers",
-          count: roleCounts.teachers || 0,
-          color: "var(--yellow)",
-        },
-        { role: "Admins", count: roleCounts.admins || 0, color: "var(--red)" },
-      ].map((r) => ({
-        ...r,
-        pct: totalUsers ? Math.round((r.count / totalUsers) * 100) : 0,
-      }));
-
-      const recentSignups = users
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 6)
-        .map((u) => ({ ...u, joinedAt: u.createdAt }));
-
-      const adminData = {
+    buildAdminPanels(
+      user,
+      {
         ...userData,
         totalUsers,
         premiumCount,
@@ -194,70 +184,48 @@ function setupRoleDataListeners(user, role, userData) {
         recentSignups,
         activeToday: Math.round(totalUsers * 0.35),
         newSignupsToday: users.filter(
-          (u) =>
-            new Date(u.createdAt).toDateString() === new Date().toDateString(),
+          (u) => new Date(u.createdAt).toDateString() === new Date().toDateString(),
         ).length,
-      };
-
-      const cUnsub = onSnapshot(collection(db, "classes"), (cSnap) => {
-        const classes = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        buildAdminPanels(
-          user,
-          {
-            ...adminData,
-            totalClasses: classes.length,
-            unassignedClasses: classes.filter((c) => !c.teacherEmail).length,
-            classes: classes.map((c) => ({
-              name: c.name,
-              teacher: c.teacherEmail,
-              studentCount: c.studentCount || 0,
-            })),
-          },
-          layout,
-        );
-        applyFocusRail(layout);
-      });
-      unsubRoleData.push(cUnsub);
-    });
-    unsubRoleData.push(uUnsub);
+        totalClasses: classes.length,
+        unassignedClasses: classes.filter((c) => !c.teacherEmail).length,
+        classes: classes.map((c) => ({
+          name: c.name,
+          teacher: c.teacherEmail,
+          studentCount: c.studentCount || 0,
+        })),
+      },
+      layout,
+    );
+    applyFocusRail(layout);
   } else if (role === "teacher") {
     // --- TEACHER: Owned assignments and assigned classes ---
-    const qClasses = query(
-      collection(db, "classes"),
-      where("teacherEmail", "==", user.email),
+    const [classes, assignments] = await Promise.all([
+      getList(
+        `classes:teacher:${user.uid}`,
+        () => query(collection(db, "classes"), where("teacherEmail", "==", user.email)),
+        { ttl: ROLE_TTL },
+      ),
+      getList(
+        `assignments:teacher:${user.uid}`,
+        () => query(collection(db, "assignments"), where("teacherId", "==", user.uid)),
+        { ttl: ROLE_TTL },
+      ),
+    ]);
+    buildTeacherPanels(
+      user,
+      { ...userData, assignments, activeClass: classes[0]?.name || "My Classroom" },
+      layout,
     );
-    const cUnsub = onSnapshot(qClasses, (snap) => {
-      const classes = snap.docs.map((d) => d.data());
-
-      const qAssign = query(
-        collection(db, "assignments"),
-        where("teacherId", "==", user.uid),
-      );
-      const aUnsub = onSnapshot(qAssign, (aSnap) => {
-        const assignments = aSnap.docs.map((d) => d.data());
-        buildTeacherPanels(
-          user,
-          {
-            ...userData,
-            assignments,
-            activeClass: classes[0]?.name || "My Classroom",
-          },
-          layout,
-        );
-        applyFocusRail(layout);
-      });
-      unsubRoleData.push(aUnsub);
-    });
-    unsubRoleData.push(cUnsub);
+    applyFocusRail(layout);
   } else {
     // --- STUDENT: Global task stream (simplified) ---
-    const qTasks = query(collection(db, "assignments"));
-    const tUnsub = onSnapshot(qTasks, (snap) => {
-      const tasks = snap.docs.map((d) => d.data());
-      buildStudentPanels(user, { ...userData, assignedTasks: tasks }, layout);
-      applyFocusRail(layout);
-    });
-    unsubRoleData.push(tUnsub);
+    const tasks = await getList(
+      "assignments:all",
+      () => collection(db, "assignments"),
+      { ttl: ROLE_TTL },
+    );
+    buildStudentPanels(user, { ...userData, assignedTasks: tasks }, layout);
+    applyFocusRail(layout);
   }
 }
 

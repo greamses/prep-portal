@@ -13,10 +13,10 @@ import {
 } from "/utils/components/nav-icons.js";
 import "/home/js/auth-modal.js";
 import { auth, db } from "/firebase-init.js";
+import { watchProfile } from "/utils/data-service.js";
 import { signOut, updateProfile } from "firebase/auth";
 import {
   doc,
-  onSnapshot,
   updateDoc,
 } from "firebase/firestore";
 import {
@@ -849,8 +849,9 @@ function updateAuthUI(user) {
     const ddEmail = document.getElementById("dropdown-user-email");
     if (ddEmail) ddEmail.textContent = user.email;
 
-    subListener = onSnapshot(doc(db, "users", user.uid), (snap) => {
-      const d = snap.exists() ? snap.data() : {};
+    // Shared profile listener (one onSnapshot for the whole app, cache-backed).
+    subListener = watchProfile(user.uid, (profile) => {
+      const d = profile || {};
       const isPremium = Boolean(d.isPremium);
       const planName = d.planName || "";
       planBadge.innerHTML = wrapEmblem(planEmblem(isPremium, planName));

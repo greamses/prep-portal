@@ -1,5 +1,6 @@
 // blog.js - Central dynamic blog viewer engine
 import { auth, db } from "/firebase-init.js";
+import { getList, getProfile } from "/utils/data-service.js";
 import { getSubjectData } from "/blogs/js/data.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -219,9 +220,16 @@ async function initBlog() {
   // Connect close modal events
   closePostBtn.addEventListener("click", closePostView);
 
-  // Begin fetching data
+  // Begin fetching data (served from the local cache when fresh — see loadPosts).
   await loadPosts();
-  setInterval(silentUpdatePosts, 60000);
+
+  // Refresh when the learner returns to the tab, NOT on a timer. loadPosts()
+  // respects the cache TTL, so this costs zero reads if the cache is still fresh
+  // and only re-fetches once it has actually gone stale. This replaces the old
+  // 60-second poll that re-read the entire collection every minute, forever.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") loadPosts();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", initBlog);
@@ -231,9 +239,9 @@ onAuthStateChanged(auth, async (u) => {
   isAdmin = !!(u && u.email === ADMIN_EMAIL);
   if (u) {
     try {
-      const snap = await getDoc(doc(db, "users", u.uid));
-      if (snap.exists()) {
-        const d = snap.data();
+      // Shared cached profile — reuses nav-builder's read instead of its own.
+      const d = await getProfile(u.uid);
+      if (d) {
         if (d.role === "admin") isAdmin = true;
         groqApiKeyPublic = d.groqKey || d.groqApiKey || null;
         geminiApiKeyPublic = d.geminiKey || d.geminiApiKey || d.apiKey || null;
@@ -1204,38 +1212,67 @@ async function submitComment(postId) {
 }
 
 // ─── LOAD POSTS ───────────────────────────────────────────
-async function loadPosts() {
+// Firestore Timestamps lose their prototype when cached to localStorage (JSON
+// turns them into {seconds,nanoseconds}). Collapse to a millisecond number so the
+// value survives the cache round-trip and formatDate() still renders it.
+function tsToMillis(ts) {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts;
+  if (typeof ts === "string") {
+    const n = Date.parse(ts);
+    return isNaN(n) ? 0 : n;
+  }
+  if (typeof ts.toDate === "function") return ts.toDate().getTime();
+  if (typeof ts.seconds === "number") return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+  if (typeof ts._seconds === "number") return ts._seconds * 1000;
+  return 0;
+}
+
+// Normalise a raw Firestore post doc into the shape the UI renders.
+function normalizePost(data) {
+  return {
+    id: data.id,
+    title: data.title || "Untitled",
+    content: data.content || "",
+    excerpt: data.excerpt || "",
+    featuredImage: data.featuredImage || "",
+    videoLink: data.videoLink || "",
+    practiceLink: data.practiceLink || "",
+    subject: data.subject || Object.keys(SUBJECT_LABELS)[0] || "default",
+    classLevel: data.classLevel || "ss-1",
+    publishedAt: tsToMillis(data.publishedAt),
+    modelUsed: data.modelUsed || "",
+    views: data.views || 0,
+    likes: data.likes || [],
+  };
+}
+
+// Posts are served from the local TTL cache: a repeat visit (or a tab regaining
+// focus) inside the window costs ZERO Firestore reads. Pass { force:true } to
+// bypass the cache for an explicit "refresh". The whole list is re-rendered,
+// preserving scroll position so a background refresh isn't jarring.
+async function loadPosts({ force = false } = {}) {
   try {
-    const snap = await getDocs(
-      query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc")),
+    const raw = await getList(
+      `blog:${COLLECTION_NAME}`,
+      () => query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc")),
+      { ttl: 5 * 60 * 1000, force },
     );
-    allPosts = [];
-    snap.forEach((d) => {
-      const data = d.data();
-      allPosts.push({
-        id: d.id,
-        title: data.title || "Untitled",
-        content: data.content || "",
-        excerpt: data.excerpt || "",
-        featuredImage: data.featuredImage || "",
-        videoLink: data.videoLink || "",
-        practiceLink: data.practiceLink || "",
-        subject: data.subject || Object.keys(SUBJECT_LABELS)[0] || "default",
-        classLevel: data.classLevel || "ss-1",
-        publishedAt: data.publishedAt,
-        modelUsed: data.modelUsed || "",
-        views: data.views || 0,
-        likes: data.likes || [],
-      });
-    });
+    const next = raw.map(normalizePost);
+    const changed = next.map((p) => p.id).join(",") !== allPosts.map((p) => p.id).join(",");
+    const scrollY = window.scrollY;
+    allPosts = next;
+
     if (!allPosts.length) {
       scienceGrid.innerHTML = `<div class="no-posts">No ${SUBJECT_NAME} posts yet. Check back soon!</div>`;
       return;
     }
     renderPosts();
+    if (changed) window.scrollTo(0, scrollY);
     if (window.location.hash) openPostFromHash();
   } catch (err) {
-    scienceGrid.innerHTML = `<div class="no-posts">Error: ${escHtml(err.message)}</div>`;
+    if (!allPosts.length)
+      scienceGrid.innerHTML = `<div class="no-posts">Error: ${escHtml(err.message)}</div>`;
   }
 }
 
@@ -1267,64 +1304,6 @@ async function openPostFromHash() {
       likes: d.likes || [],
     });
   } catch (_) {}
-}
-
-// ─── SILENT BACKGROUND REFRESH ────────────────────────────
-async function silentUpdatePosts() {
-  const snap = await getDocs(
-    query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc")),
-  );
-  const newPosts = [];
-  snap.forEach((d) => {
-    const data = d.data();
-    newPosts.push({
-      id: d.id,
-      title: data.title || "Untitled",
-      content: data.content || "",
-      excerpt: data.excerpt || "",
-      featuredImage: data.featuredImage || "",
-      videoLink: data.videoLink || "",
-      practiceLink: data.practiceLink || "",
-      subject: data.subject || Object.keys(SUBJECT_LABELS)[0] || "default",
-      classLevel: data.classLevel || "ss-1",
-      publishedAt: data.publishedAt,
-      modelUsed: data.modelUsed || "",
-      views: data.views || 0,
-      likes: data.likes || [],
-    });
-  });
-
-  const oldIds = allPosts.map((p) => p.id).join(",");
-  const newIds = newPosts.map((p) => p.id).join(",");
-
-  if (oldIds !== newIds) {
-    const scrollY = window.scrollY;
-    allPosts = newPosts;
-    renderPosts();
-    window.scrollTo(0, scrollY);
-  } else {
-    allPosts = newPosts;
-    const visiblePosts = filterPosts();
-    document.querySelectorAll(".science-card").forEach((card) => {
-      const postId = card.dataset.postId;
-      const post = allPosts.find((p) => p.id === postId);
-      if (post && visiblePosts.some((vp) => vp.id === postId)) {
-        const newCardHtml = renderCard(post);
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = newCardHtml;
-        const newCard = tempDiv.firstElementChild;
-        if (newCard) {
-          card.replaceWith(newCard);
-          newCard.addEventListener("click", () => {
-            const p = allPosts.find((p) => p.id === newCard.dataset.postId);
-            if (p) showSinglePost(p);
-          });
-        }
-      } else if (post && !visiblePosts.some((vp) => vp.id === postId)) {
-        card.remove();
-      }
-    });
-  }
 }
 
 // Global window event listeners

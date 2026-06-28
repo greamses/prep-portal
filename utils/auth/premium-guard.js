@@ -70,12 +70,43 @@ function toSubscribe() {
   location.replace("/subscribe.html#plans");
 }
 
+// Cache the premium verdict locally so navigating across many premium pages in a
+// session doesn't read users/{uid} every single time. Within the TTL we trust the
+// cached verdict and skip the Firestore read entirely (the server still enforces
+// premium on the AI endpoints, so a stale "allowed" can't be abused). A short TTL
+// keeps a downgrade from lingering long.
+const PREMIUM_TTL = 10 * 60 * 1000; // 10 minutes
+function cachedVerdict(uid) {
+  try {
+    const raw = localStorage.getItem("pp_premium:" + uid);
+    if (!raw) return null;
+    const { t, premium } = JSON.parse(raw);
+    if (Date.now() - t > PREMIUM_TTL) return null;
+    return Boolean(premium);
+  } catch (e) {
+    return null;
+  }
+}
+function storeVerdict(uid, premium) {
+  try {
+    localStorage.setItem("pp_premium:" + uid, JSON.stringify({ t: Date.now(), premium }));
+  } catch (e) {}
+}
+
 onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
+
+  // Fast path: a fresh cached verdict avoids a Firestore read on every page.
+  const cached = cachedVerdict(user.uid);
+  if (cached === true) return reveal();
+  if (cached === false) return toSubscribe();
+
   try {
     const snap = await getDoc(doc(db, "users", user.uid));
-    if (snap.exists() && snap.data().isPremium) return reveal(); // allowed
+    const premium = snap.exists() && !!snap.data().isPremium;
+    storeVerdict(user.uid, premium);
+    if (premium) return reveal(); // allowed
   } catch (e) {
     return reveal(); // transient read error → fail open (server still gates AI)
   }
