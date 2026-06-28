@@ -23,6 +23,33 @@ module.exports = function (db, auth) {
 
   router.use(authenticate, requireAdmin);
 
+  // ── Publish: regenerate the static practice bank + redeploy ──────────────
+  // Triggers a Vercel Deploy Hook; the build re-exports data/cbt from Firestore,
+  // so questions added in the editor go live. A short cooldown prevents spamming
+  // redeploys (each rebuild reads the bank once). Needs the DEPLOY_HOOK_URL env.
+  let lastPublish = 0;
+  router.post("/publish", async (req, res) => {
+    const hook = process.env.DEPLOY_HOOK_URL;
+    if (!hook) {
+      return res.status(503).json({ error: "Publishing isn't set up yet. Create a Vercel Deploy Hook and add it as the DEPLOY_HOOK_URL env var." });
+    }
+    const now = Date.now();
+    if (now - lastPublish < 120000) {
+      const wait = Math.ceil((120000 - (now - lastPublish)) / 1000);
+      return res.status(429).json({ error: `Just published — wait ${wait}s before publishing again.` });
+    }
+    lastPublish = now;
+    try {
+      const r = await fetch(hook, { method: "POST" });
+      if (!r.ok) throw new Error("deploy hook returned " + r.status);
+      res.json({ ok: true, message: "Publishing… your changes go live in ~1–2 minutes." });
+    } catch (e) {
+      lastPublish = 0; // failed — allow an immediate retry
+      console.error("[/api/admin/publish]", e.message);
+      res.status(502).json({ error: "Couldn't trigger publish: " + e.message });
+    }
+  });
+
   // Sync Firebase Auth users into Firestore
   router.post("/sync-users", async (req, res) => {
     try {

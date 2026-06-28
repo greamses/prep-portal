@@ -142,6 +142,13 @@
       </div>
 
       <div class="cb-card">
+        <h2>Publish to students</h2>
+        <p class="cb-hint">Push your latest questions live. This regenerates the practice bank from the database and redeploys — new &amp; edited questions reach learners in ~1–2 minutes. (Each publish reads the bank once.)</p>
+        <button id="cb-publish" type="button">Publish to students</button>
+        <p id="cb-publish-msg" class="cb-msg"></p>
+      </div>
+
+      <div class="cb-card">
         <h2>Originals visibility</h2>
         <p class="cb-hint">Verbatim past-paper questions (type “original”) are <strong id="cb-orig-state">…</strong> to learners. Turn off if the exam bodies object — your rephrased &amp; AI questions stay visible either way.</p>
         <button id="cb-orig-toggle" type="button">…</button>
@@ -286,6 +293,18 @@
       finally { btn.disabled = false; }
     }
 
+    // ── Publish to students (regenerate bank + redeploy via Deploy Hook) ──
+    async function publish() {
+      const btn = $("cb-publish"), msg = $("cb-publish-msg");
+      btn.disabled = true; msg.textContent = "Publishing…"; msg.className = "cb-msg";
+      try {
+        const r = await fetch(`${API}/api/admin/publish`, { method: "POST", headers: await authHeader() });
+        const d = await r.json(); if (!r.ok) throw new Error(d.error || "Failed");
+        msg.textContent = d.message || "Publishing…"; msg.className = "cb-msg cb-msg--ok";
+      } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
+      finally { setTimeout(() => { btn.disabled = false; }, 3000); }
+    }
+
     // ── Past-paper archive toggle (archiveEnabled flag) ──
     let archiveOn = false;
     function renderArchive() {
@@ -322,6 +341,7 @@
       $("cb-copy").onclick = copyPrompt;
       $("cb-orig-toggle").onclick = toggleOrig;
       $("cb-archive-toggle").onclick = toggleArchive;
+      $("cb-publish").onclick = publish;
       ic("cb-gen", "wand", "Generate questions");
       ic("cb-copy", "copy", "Copy AI prompt");
       loadOrig();

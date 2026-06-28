@@ -1,6 +1,7 @@
 {
   "version": 2,
   "outputDirectory": ".",
+  "buildCommand": "npm --prefix server install --omit=dev --no-audit --no-fund && node server/scripts/export-cbt-bank.js || true",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" }
   ]
