@@ -25,6 +25,7 @@ const PAGE_CONFIG = {
     // Class → Subject → Topic → Paper; `scheme` is kept for the legacy path.
     scheme:    (urlParams.get('scheme') || '').toLowerCase(),
     cbtClass:  (urlParams.get('class') || '').trim(),
+    axis:      (urlParams.get('axis') || '').toLowerCase().trim(), // 'class' | 'exam' (source=cbtlocal)
     paper:     (urlParams.get('paper') || '').trim(),
     // CBT optional filters: format = '' | 'mcq' | 'blank' | 'theory'; topic = exact topic.
     format:    (urlParams.get('format') || '').toLowerCase().trim(),

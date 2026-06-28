@@ -67,10 +67,10 @@ const HEADER_CONTENT = {
     ctaLabel: "Start practice test",
   },
   practice: {
-    note: "A mixed revision bank — pick subjects & how many questions for an instant, marked practice set (not tied to any exam).",
+    note: "Practise by class — pick your class, subject, topic & paper for an instant, marked set.",
     stats: `
-      <span class="hero-stat theme-blue"><strong>All</strong> subjects</span>
-      <span class="hero-stat theme-green"><strong>Mixed</strong> difficulty</span>
+      <span class="hero-stat theme-blue"><strong>By</strong> class</span>
+      <span class="hero-stat theme-green"><strong>By</strong> topic</span>
       <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
     ctaLabel: "Start practice",
   },
@@ -128,45 +128,58 @@ const STREAMS = [
   { id: "arts", name: "Arts / Humanities" },
 ];
 
-// ── National / Practice CBT picker: Class → Subject → Topic → Paper ──
-// Class is the primary axis. Each step is a single choice; picking a paper
-// loads that paper's set (up to 60 questions). The legacy multi-subject /
-// scheme / count flow has been replaced by this cascade.
-let natState = {
-  classLevel: null, classLabel: null,
+// ── CBT picker: a generic Class/Exam → Subject → Topic → Paper cascade ──────
+// Drives three tabs from ONE flow, served from the static manifest
+// (/data/cbt/manifest.js) → 0 Firestore reads:
+//   • National  tab → axis "exam",  region "national"      (UTME/WASSCE/…)
+//   • International →  axis "exam",  region "international"  (SAT/IGCSE/A-Level)
+//   • Class     tab → axis "class"                          (JSS1/SSS2/…)
+let cbtState = {
+  axis: "class", region: null,
+  top: null, topLabel: null,        // class key or exam(scheme) key
   subject: null, subjectLabel: null,
-  topic: null,
-  paper: null,
+  topic: null, paper: null,
+  _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
 
-// The national step-cards, repurposed:
-//   step 1 (exam-chips)  → Class      step 2 (stream-chips) → Subject
-//   step 3 (subject-row) → Topic      step 4 (year-chips)   → Paper
-const classBox = () => document.getElementById("exam-chips");
-const subjectBox = () => document.getElementById("stream-chips");
-const topicBox = () => document.getElementById("subject-chips");
-const paperBox = () => document.getElementById("year-chips");
-const classDone = () => document.getElementById("done-exam");
-const subjectDone = () => document.getElementById("done-stream");
-const topicDone = () => document.getElementById("done-subject");
-const paperDone = () => document.getElementById("done-year");
-const topicCard = () => document.getElementById("subject-row");
-const paperCard = () => document.querySelector(".step-card-4");
+let CBT_BANK = null;       // the /utils/cbt-bank.js module (lazy)
+let CBT_MANIFEST = null;   // the navigation index (lazy)
+async function cbtManifest() {
+  if (CBT_MANIFEST) return CBT_MANIFEST;
+  try {
+    CBT_BANK = CBT_BANK || (await import("/utils/cbt-bank.js"));
+    CBT_MANIFEST = (await CBT_BANK.manifest()) || { classes: [], exams: { national: [], international: [] }, paperSize: 60 };
+  } catch (e) {
+    CBT_MANIFEST = { classes: [], exams: { national: [], international: [] }, paperSize: 60 };
+  }
+  return CBT_MANIFEST;
+}
+
+// Step-cards, repurposed: 1=Top (Class/Exam) 2=Subject 3=Topic 4=Paper.
+const cTopBox = () => document.getElementById("exam-chips");
+const cSubjectBox = () => document.getElementById("stream-chips");
+const cTopicBox = () => document.getElementById("subject-chips");
+const cPaperBox = () => document.getElementById("year-chips");
+const cTopDone = () => document.getElementById("done-exam");
+const cSubjectDone = () => document.getElementById("done-stream");
+const cTopicDone = () => document.getElementById("done-subject");
+const cPaperDone = () => document.getElementById("done-year");
+const cTopicCard = () => document.getElementById("subject-row");
+const cPaperCard = () => document.querySelector(".step-card-4");
 
 function natUpdateReadyState() {
-  const ready = natState.classLevel && natState.subject && natState.topic && natState.paper;
+  const ready = cbtState.top && cbtState.subject && cbtState.topic && cbtState.paper;
   beginBtn.disabled = !ready;
   if (ready) { setStatus("All set. Ready — start your test.", true); return; }
   const need = [];
-  if (!natState.classLevel) need.push("class");
-  else if (!natState.subject) need.push("subject");
-  else if (!natState.topic) need.push("topic");
+  if (!cbtState.top) need.push(cbtState.axis === "class" ? "class" : "exam");
+  else if (!cbtState.subject) need.push("subject");
+  else if (!cbtState.topic) need.push("topic");
   else need.push("paper");
   setStatus("Select: " + need.join(" • "), false);
 }
 
-// Render a single-select row of chips into `box`.
-function natChips(box, items, selectedId, onPick, { dot = false, empty = "Nothing here yet." } = {}) {
+function cbtChips(box, items, selectedId, onPick, { dot = false, empty = "Nothing here yet." } = {}) {
   box.innerHTML = "";
   if (!items.length) { box.innerHTML = `<span class="picker-hint">${empty}</span>`; return; }
   items.forEach((it) => {
@@ -183,104 +196,83 @@ function natChips(box, items, selectedId, onPick, { dot = false, empty = "Nothin
   });
 }
 
-async function buildClassGrid() {
-  const box = classBox();
-  box.innerHTML = '<span class="picker-hint">Loading classes…</span>';
-  try {
-    const d = await (await fetch(`${API_BASE}/api/cbt/classes`)).json();
-    const classes = (d.classes || []).filter((c) => c.count > 0);
-    if (!classes.length) { box.innerHTML = '<span class="picker-hint">No questions in the bank yet.</span>'; return; }
-    natChips(box, classes.map((c) => ({ id: c.key, label: c.label, count: c.count })), natState.classLevel, selectClass, { dot: true });
-  } catch (e) {
-    box.innerHTML = '<span class="picker-error">Could not load classes. Is the server running?</span>';
-  }
+// The "top" list (classes, or the exams for the active region).
+function cbtTops(M) {
+  if (cbtState.axis === "class") return (M.classes || []).map((c) => ({ id: c.key, label: c.label, _subjects: c.subjects }));
+  const list = (M.exams && M.exams[cbtState.region]) || [];
+  return list.map((e) => ({ id: e.key, label: e.label, _subjects: e.subjects }));
 }
 
-function selectClass(it) {
-  natState.classLevel = it.id; natState.classLabel = it.label;
-  natState.subject = natState.subjectLabel = natState.topic = natState.paper = null;
-  classDone().classList.add("show");
-  [subjectDone(), topicDone(), paperDone()].forEach((d) => d && d.classList.remove("show"));
-  topicCard().style.display = "none";
-  if (paperCard()) paperCard().style.display = "none";
-  loadNatSubjects();
+async function buildTops() {
+  const box = cTopBox();
+  box.innerHTML = '<span class="picker-hint">Loading…</span>';
+  const M = await cbtManifest();
+  const tops = cbtTops(M);
+  const empty = cbtState.axis === "class" ? "No class questions yet." : "No exam questions yet.";
+  cbtChips(box, tops.map((t) => ({ id: t.id, label: t.label })), cbtState.top,
+    (it) => selectTop(tops.find((t) => t.id === it.id)), { dot: true, empty });
+}
+
+function selectTop(top) {
+  cbtState.top = top.id; cbtState.topLabel = top.label; cbtState._subjects = top._subjects || [];
+  cbtState.subject = cbtState.subjectLabel = cbtState.topic = cbtState.paper = null;
+  cTopDone().classList.add("show");
+  [cSubjectDone(), cTopicDone(), cPaperDone()].forEach((d) => d && d.classList.remove("show"));
+  cTopicCard().style.display = "none";
+  if (cPaperCard()) cPaperCard().style.display = "none";
+  renderCbtSubjects();
   natUpdateReadyState();
 }
 
-async function loadNatSubjects() {
-  const box = subjectBox();
-  box.innerHTML = '<span class="picker-hint">Loading subjects…</span>';
-  try {
-    const d = await (await fetch(`${API_BASE}/api/cbt/subjects?class=${natState.classLevel}`)).json();
-    const subs = (d.subjects || []).filter((s) => s.count > 0);
-    natChips(box, subs.map((s) => ({ id: s.key, label: s.label, count: s.count })), natState.subject, selectSubject,
-      { empty: "No subjects for this class yet." });
-  } catch (e) {
-    box.innerHTML = '<span class="picker-error">Could not load subjects.</span>';
-  }
+function renderCbtSubjects() {
+  const subs = cbtState._subjects || [];
+  cbtChips(cSubjectBox(), subs.map((s) => ({ id: s.key, label: s.label, count: s.count })), cbtState.subject,
+    (it) => selectCbtSubject(subs.find((s) => s.key === it.id)), { empty: "No subjects yet." });
 }
 
-function selectSubject(it) {
-  natState.subject = it.id; natState.subjectLabel = it.label;
-  natState.topic = natState.paper = null;
-  subjectDone().classList.add("show");
-  [topicDone(), paperDone()].forEach((d) => d && d.classList.remove("show"));
-  topicCard().style.display = "";
-  if (paperCard()) paperCard().style.display = "none";
-  loadNatTopics();
+function selectCbtSubject(sub) {
+  cbtState.subject = sub.key; cbtState.subjectLabel = sub.label; cbtState._topics = sub.topics || [];
+  cbtState.topic = cbtState.paper = null;
+  cSubjectDone().classList.add("show");
+  [cTopicDone(), cPaperDone()].forEach((d) => d && d.classList.remove("show"));
+  cTopicCard().style.display = "";
+  if (cPaperCard()) cPaperCard().style.display = "none";
+  renderCbtTopics();
   natUpdateReadyState();
 }
 
-async function loadNatTopics() {
-  const box = topicBox();
-  box.innerHTML = '<span class="picker-hint">Loading topics…</span>';
-  try {
-    const d = await (await fetch(`${API_BASE}/api/cbt/topics?class=${natState.classLevel}&subject=${natState.subject}`)).json();
-    const topics = (d.topics || []).filter((t) => t.count > 0);
-    natChips(box, topics.map((t) => ({ id: t.topic, label: t.topic, count: t.count })), natState.topic, selectTopic,
-      { empty: "No topics for this subject yet." });
-  } catch (e) {
-    box.innerHTML = '<span class="picker-error">Could not load topics.</span>';
-  }
+function renderCbtTopics() {
+  const topics = cbtState._topics || [];
+  cbtChips(cTopicBox(), topics.map((t) => ({ id: t.name, label: t.name, count: t.count })), cbtState.topic,
+    (it) => selectCbtTopic(topics.find((t) => t.name === it.id)), { empty: "No topics yet." });
 }
 
-function selectTopic(it) {
-  natState.topic = it.id;
-  natState.paper = null;
-  topicDone().classList.add("show");
-  if (paperDone()) paperDone().classList.remove("show");
-  if (paperCard()) paperCard().style.display = "";
-  loadNatPapers();
+function selectCbtTopic(t) {
+  cbtState.topic = t.name; cbtState._papers = t.papers || 1; cbtState._topicCount = t.count || 0;
+  cbtState.paper = null;
+  cTopicDone().classList.add("show");
+  if (cPaperDone()) cPaperDone().classList.remove("show");
+  if (cPaperCard()) cPaperCard().style.display = "";
+  renderCbtPapers();
   natUpdateReadyState();
 }
 
-async function loadNatPapers() {
-  const box = paperBox();
-  box.innerHTML = '<span class="picker-hint">Loading papers…</span>';
-  try {
-    const params = new URLSearchParams({ class: natState.classLevel, subject: natState.subject, topic: natState.topic });
-    const d = await (await fetch(`${API_BASE}/api/cbt/papers?${params}`)).json();
-    const list = d.list || [];
-    if (!list.length) { box.innerHTML = '<span class="picker-hint">No papers yet for this topic.</span>'; return; }
-    const items = list.map((p) => ({ id: String(p.paper), label: p.label, count: Math.min(60, (d.count || 0) - (p.paper - 1) * 60) }));
-    natChips(box, items, natState.paper, selectPaper, { dot: true });
-  } catch (e) {
-    box.innerHTML = '<span class="picker-error">Could not load papers.</span>';
-  }
+function renderCbtPapers() {
+  const n = cbtState._papers || 1, cnt = cbtState._topicCount || 0;
+  const items = Array.from({ length: n }, (_, i) => ({ id: String(i + 1), label: `Paper ${i + 1}`, count: Math.min(60, cnt - i * 60) }));
+  cbtChips(cPaperBox(), items, cbtState.paper, (it) => {
+    cbtState.paper = it.id;
+    cPaperDone().classList.add("show");
+    natUpdateReadyState();
+  }, { dot: true, empty: "No papers yet." });
 }
 
-function selectPaper(it) {
-  natState.paper = it.id;
-  paperDone().classList.add("show");
-  natUpdateReadyState();
-}
-
-// Relabel the national step-cards for Class → Subject → Topic → Paper and hide
-// the now-unused "Number of questions" step (a paper is the unit of practice).
-function relabelNationalSteps() {
+// Relabel the national step-cards for the active axis; hide the count step.
+function relabelCbtSteps() {
   const set = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
-  set('.step-card-1 .step-title[data-cat="national"]', "Class");
-  set('.step-card-1 .step-sub[data-cat="national"]', "Pick your class");
+  const isClass = cbtState.axis === "class";
+  set('.step-card-1 .step-title[data-cat="national"]', isClass ? "Class" : "Exam");
+  set('.step-card-1 .step-sub[data-cat="national"]', isClass ? "Pick your class" : "Pick an exam style");
   set('.step-card-2 .step-title[data-cat="national"]', "Subject");
   set('.step-card-2 .step-sub[data-cat="national"]', "Pick a subject");
   set('#subject-row .step-title', "Topic");
@@ -291,15 +283,23 @@ function relabelNationalSteps() {
   if (countCard) countCard.style.display = "none";
 }
 
-function initNational() {
-  natState = { classLevel: null, classLabel: null, subject: null, subjectLabel: null, topic: null, paper: null };
-  relabelNationalSteps();
+// Entry point for the National / International / Class tabs.
+function initCbt(axis, region) {
+  cbtState = {
+    axis, region: region || null,
+    top: null, topLabel: null, subject: null, subjectLabel: null, topic: null, paper: null,
+    _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
+  };
+  relabelCbtSteps();
   ["done-exam", "done-stream", "done-subject", "done-year"].forEach((id) => document.getElementById(id)?.classList.remove("show"));
-  topicCard().style.display = "none";
-  if (paperCard()) paperCard().style.display = "none";
-  buildClassGrid();
+  cTopicCard().style.display = "none";
+  if (cPaperCard()) cPaperCard().style.display = "none";
+  buildTops();
   natUpdateReadyState();
 }
+
+// Back-compat shim: initMode() still calls initNational().
+function initNational() { initCbt(cbtState.axis || "class", cbtState.region); }
 
 // ════════════════════════════════════════════════════════════════════
 //  COMPETITION MODE
@@ -947,39 +947,29 @@ function initInternational() {
 // Build the relative URL the current selection would launch — also used to make
 // a shareable link. Returns null when the active category has no target yet.
 function targetUrl() {
-  // Every non-competition tab now runs the Class → Subject → Topic → Paper CBT
-  // builder. The chosen paper IS the test (up to 60 questions).
+  // National / International / Class all run the CBT cascade and serve from the
+  // local bank (source=cbtlocal). The chosen paper IS the test (up to 60 Qs).
   if (activeCat !== "competition") {
-    if (!natState.classLevel || !natState.subject || !natState.topic || !natState.paper) return null;
+    if (!cbtState.top || !cbtState.subject || !cbtState.topic || !cbtState.paper) return null;
     const params = new URLSearchParams({
-      source: "cbt",
-      class: natState.classLevel,
+      source: "cbtlocal",
+      axis: cbtState.axis,
+      // axis=class → class key; axis=exam → scheme key (both in `top`).
+      [cbtState.axis === "class" ? "class" : "scheme"]: cbtState.top,
       // `subjects` (plural) so the quiz engine's subject loop reads it; single value.
-      subjects: natState.subject,
-      topic: natState.topic,
-      paper: String(natState.paper),
+      subjects: cbtState.subject,
+      topic: cbtState.topic,
+      paper: String(cbtState.paper),
     });
     return `../question/question.html?${params.toString()}`;
   }
 
-  if (activeCat === "competition") {
-    const { competition, division, year, round, section } = compState;
-    const params = new URLSearchParams({
-      source: "competition",
-      comp: competition,
-      div: division,
-      year,
-      round,
-      section,
-    });
-    return `../question/question.html?${params.toString()}`;
-  }
-
-  if (activeCat === "international") {
-    return intlState.paperUrl || null;
-  }
-
-  return null;
+  // Competition tab keeps its existing static-paper flow.
+  const { competition, division, year, round, section } = compState;
+  const params = new URLSearchParams({
+    source: "competition", comp: competition, div: division, year, round, section,
+  });
+  return `../question/question.html?${params.toString()}`;
 }
 
 beginBtn.onclick = () => {
@@ -1106,7 +1096,7 @@ if (assignBtn) {
     // Store a site-root path (pathname + search) — what the dashboard links to.
     const u = new URL(rel, location.href);
     const url = u.pathname + u.search;
-    const defTitle = `${natState.classLabel || "Practice"} • ${natState.subjectLabel || natState.subject || ""} • ${natState.topic || ""} (Paper ${natState.paper || ""})`.slice(0, 120);
+    const defTitle = `${cbtState.topLabel || "Practice"} • ${cbtState.subjectLabel || cbtState.subject || ""} • ${cbtState.topic || ""} (Paper ${cbtState.paper || ""})`.slice(0, 120);
     const title = (window.prompt("Title for this assignment:", defTitle) || "").trim();
     if (!title) return; // cancelled or empty
     const token = await ppAuthToken();
@@ -1116,7 +1106,7 @@ if (assignBtn) {
       const r = await fetch(`${API_BASE}/api/classroom/assign-cbt`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ url, title, subject: natState.subject || "", all: true }),
+        body: JSON.stringify({ url, title, subject: cbtState.subject || "", all: true }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Failed");
@@ -1128,9 +1118,11 @@ if (assignBtn) {
 }
 
 function initMode(cat) {
-  // National, International and Practice all run the CBT builder; only the scheme set differs.
-  activeExamTypes = cat === "international" ? INTL_EXAM_TYPES : cat === "practice" ? PRACTICE_EXAM_TYPES : NAT_EXAM_TYPES;
-  initNational();
+  // Map each tab to the CBT cascade's axis/region:
+  //   national → exam/national   international → exam/international   else → class
+  if (cat === "national") initCbt("exam", "national");
+  else if (cat === "international") initCbt("exam", "international");
+  else initCbt("class", null); // the "practice" tab is now Class
   setStatus("Awaiting selections...", false);
   beginBtn.disabled = true;
 }
@@ -1148,13 +1140,11 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────
-// National + International are both our own CBT now. Competition (third-party
-// papers) stays hidden until licensed.
+// Tabs: National (exam) · International (exam) · Class (the old "practice" tab,
+// relabelled). Competition (third-party papers) stays hidden until licensed.
 document.querySelectorAll(".cat-tab").forEach((b) => {
-  // Competition (third-party papers) and International (legacy Cambridge flow)
-  // are hidden — all CBT now runs through the one Class→Subject→Topic→Paper
-  // builder under the National / Practice tabs.
-  if (b.dataset.tab === "competition" || b.dataset.tab === "international") b.style.display = "none";
+  if (b.dataset.tab === "competition") b.style.display = "none";
+  if (b.dataset.tab === "practice") b.textContent = "Class"; // the per-class practice tab
 });
 const startCat = initialCat === "practice" ? "practice" : "national";
 activeCat = startCat;
