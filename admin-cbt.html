@@ -96,14 +96,13 @@
             <input id="cb-count" type="number" min="1" max="30" value="10" />
           </div>
           <div style="flex:0 0 150px">
-            <label for="cb-grade">Class / grade</label>
+            <label for="cb-grade">Class (Grade)</label>
             <select id="cb-grade">
-              <option value="">Any</option>
-              <option>Primary 4</option><option>Primary 5</option><option>Primary 6</option>
-              <option>JSS1</option><option>JSS2</option><option>JSS3</option>
-              <option>SSS1</option><option>SSS2</option><option>SSS3</option>
-              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              <option value="">Choose…</option>
+              <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+              <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+              <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+              <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
             </select>
           </div>
           <div style="flex:0 0 auto">
@@ -147,6 +146,13 @@
         <p class="cb-hint">Verbatim past-paper questions (type “original”) are <strong id="cb-orig-state">…</strong> to learners. Turn off if the exam bodies object — your rephrased &amp; AI questions stay visible either way.</p>
         <button id="cb-orig-toggle" type="button">…</button>
         <p id="cb-orig-msg" class="cb-msg"></p>
+      </div>
+
+      <div class="cb-card">
+        <h2>Past-paper archive</h2>
+        <p class="cb-hint">The verbatim past-paper archive section is <strong id="cb-archive-state">…</strong>. This is separate from the CBT practice bank above — it gates the standalone past-paper browser. Off by default (copyright).</p>
+        <button id="cb-archive-toggle" type="button">…</button>
+        <p id="cb-archive-msg" class="cb-msg"></p>
       </div>
 
       <div class="cb-card">
@@ -280,6 +286,34 @@
       finally { btn.disabled = false; }
     }
 
+    // ── Past-paper archive toggle (archiveEnabled flag) ──
+    let archiveOn = false;
+    function renderArchive() {
+      $("cb-archive-state").innerHTML = archiveOn
+        ? '<span style="color:var(--accent-success)">ON</span>'
+        : '<span style="color:var(--accent-danger)">OFF</span>';
+      const b = $("cb-archive-toggle"); b.classList.add("iconbtn");
+      b.innerHTML = archiveOn ? ICONS.eyeoff : ICONS.eye;
+      const t = archiveOn ? "Turn archive off" : "Turn archive on";
+      b.title = t; b.setAttribute("aria-label", t);
+    }
+    async function loadArchive() {
+      try { const r = await fetch(`${API}/api/config`); archiveOn = (await r.json()).archiveEnabled === true; } catch (_) {}
+      renderArchive();
+    }
+    async function toggleArchive() {
+      const btn = $("cb-archive-toggle"), msg = $("cb-archive-msg");
+      const next = !archiveOn;
+      btn.disabled = true; msg.textContent = "";
+      try {
+        const r = await fetch(`${API}/api/config`, { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeader()) }, body: JSON.stringify({ archiveEnabled: next }) });
+        const d = await r.json(); if (!r.ok) throw new Error(d.error || "Failed");
+        archiveOn = d.archiveEnabled === true; renderArchive();
+        msg.textContent = "Saved."; msg.className = "cb-msg cb-msg--ok";
+      } catch (e) { msg.textContent = e.message; msg.className = "cb-msg cb-msg--err"; }
+      finally { btn.disabled = false; }
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) { gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
       if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
@@ -287,9 +321,11 @@
       $("cb-gen").onclick = generate;
       $("cb-copy").onclick = copyPrompt;
       $("cb-orig-toggle").onclick = toggleOrig;
+      $("cb-archive-toggle").onclick = toggleArchive;
       ic("cb-gen", "wand", "Generate questions");
       ic("cb-copy", "copy", "Copy AI prompt");
       loadOrig();
+      loadArchive();
       loadStats();
     });
   </script>

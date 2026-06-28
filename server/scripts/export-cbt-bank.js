@@ -26,16 +26,15 @@ const PAPER_SIZE = 60;
 const OUT_DIR = path.join(__dirname, "..", "..", "data", "cbt");
 
 // ── Labels (mirror server/routes/cbt.js) ───────────────────────────────────
-const CLASS_LABELS = {
-  primary1: "Primary 1", primary2: "Primary 2", primary3: "Primary 3",
-  primary4: "Primary 4", primary5: "Primary 5", primary6: "Primary 6",
-  jss1: "JSS1", jss2: "JSS2", jss3: "JSS3",
-  sss1: "SSS1", sss2: "SSS2", sss3: "SSS3",
-  grade1: "Grade 1", grade2: "Grade 2", grade3: "Grade 3", grade4: "Grade 4", grade5: "Grade 5",
-  grade6: "Grade 6", grade7: "Grade 7", grade8: "Grade 8",
-  grade9: "Grade 9", grade10: "Grade 10", grade11: "Grade 11", grade12: "Grade 12",
-};
+const CLASS_LABELS = {};
+for (let i = 1; i <= 12; i++) CLASS_LABELS["grade" + i] = "Grade " + i;
 const CLASS_ORDER = Object.keys(CLASS_LABELS);
+// Legacy Primary/JSS/SSS class keys → their Grade equivalent.
+const LEGACY_CLASS = {
+  primary1: "grade1", primary2: "grade2", primary3: "grade3", primary4: "grade4", primary5: "grade5", primary6: "grade6",
+  jss1: "grade7", jss2: "grade8", jss3: "grade9", sss1: "grade10", sss2: "grade11", sss3: "grade12",
+};
+const normClass = (cl) => LEGACY_CLASS[cl] || cl;
 const SUBJECT_LABELS = {
   english: "English Language", mathematics: "Mathematics", biology: "Biology",
   physics: "Physics", chemistry: "Chemistry", economics: "Economics",
@@ -112,9 +111,12 @@ function writeModule(file, exportName, value) {
     if (hideOriginals && x.source === "past") return;
     const q = slim(d.id, x);
     order[d.id] = ms(x.createdAt);
-    // Class tab: real classes only (never the "unsorted" holding pen).
-    if (x.classLevel && x.classLevel !== "unsorted" && CLASS_LABELS[x.classLevel]) {
-      (classBuckets[`${x.classLevel}__${x.subject}`] ||= []).push(q);
+    // Class tab: real Grade classes only (legacy Primary/JSS/SSS mapped to Grade;
+    // never the "unsorted" holding pen).
+    const cl = normClass(x.classLevel);
+    if (cl && cl !== "unsorted" && CLASS_LABELS[cl]) {
+      q.classLevel = cl;
+      (classBuckets[`${cl}__${x.subject}`] ||= []).push(q);
     }
     // Exam tabs: only national/international exam schemes.
     if (x.scheme && EXAM_OF[x.scheme]) {

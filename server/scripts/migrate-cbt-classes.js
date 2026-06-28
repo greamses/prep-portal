@@ -35,16 +35,16 @@ const db = admin.firestore();
 // ── Helpers (mirror server/routes/cbt.js) ──────────────────────────────────
 const PAPER_SIZE = 60;
 const GENERAL_TOPIC = "General";
-const CLASS_LABELS = {
-  primary4: "Primary 4", primary5: "Primary 5", primary6: "Primary 6",
-  jss1: "JSS1", jss2: "JSS2", jss3: "JSS3",
-  sss1: "SSS1", sss2: "SSS2", sss3: "SSS3",
-  grade6: "Grade 6", grade7: "Grade 7", grade8: "Grade 8",
-  grade9: "Grade 9", grade10: "Grade 10", grade11: "Grade 11", grade12: "Grade 12",
+const CLASS_LABELS = {};
+for (let i = 1; i <= 12; i++) CLASS_LABELS["grade" + i] = "Grade " + i;
+// Legacy Primary/JSS/SSS class keys → their Grade equivalent (the remap).
+const LEGACY_CLASS = {
+  primary1: "grade1", primary2: "grade2", primary3: "grade3", primary4: "grade4", primary5: "grade5", primary6: "grade6",
+  jss1: "grade7", jss2: "grade8", jss3: "grade9", sss1: "grade10", sss2: "grade11", sss3: "grade12",
 };
 const classKey = (g) => {
   const s = String(g == null ? "" : g).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
-  return s || null;
+  return LEGACY_CLASS[s] || s || null;
 };
 const classLabel = (k) => CLASS_LABELS[k] || (k === "unsorted" ? "Unsorted" : (k || null));
 const topicKeyOf = (t) =>
@@ -68,9 +68,9 @@ const ms = (x) => (x && x.toMillis ? x.toMillis() : (typeof x === "number" ? x :
     const data = d.data();
     const subject = data.subject;
     if (!subject) continue;
-    // Legacy questions with no resolvable class go to the "unsorted" holding pen
-    // so the admin can still find and re-tag them (they're hidden from students).
-    const resolved = data.classLevel || classKey(data.grade);
+    // Normalise the class to a Grade key (classKey remaps legacy Primary/JSS/SSS).
+    // No resolvable class → the "unsorted" holding pen for re-tagging.
+    const resolved = classKey(data.classLevel || data.grade);
     const cl = resolved || "unsorted";
     if (!resolved) classless++;
     const topicName = (data.topic && String(data.topic).trim()) || GENERAL_TOPIC;
@@ -123,6 +123,22 @@ const ms = (x) => (x && x.toMillis ? x.toMillis() : (typeof x === "number" ? x :
     await batch.commit();
   }
   console.log(`Seeded ${reg} class+subject topic lists into cbtTopics.`);
+
+  // Remove orphaned registry docs whose class is no longer valid (legacy
+  // Primary/JSS/SSS keys left over after the remap to Grade).
+  const valid = new Set([...Object.keys(CLASS_LABELS), "unsorted"]);
+  const allTopics = await db.collection("cbtTopics").get();
+  let removed = 0;
+  for (let i = 0; i < allTopics.docs.length; i += 400) {
+    const batch = db.batch();
+    let n = 0;
+    for (const t of allTopics.docs.slice(i, i + 400)) {
+      const cl = (t.id.split("__")[0]) || "";
+      if (!valid.has(cl)) { batch.delete(t.ref); n++; }
+    }
+    if (n) { await batch.commit(); removed += n; }
+  }
+  if (removed) console.log(`Removed ${removed} orphaned legacy topic lists.`);
   process.exit(0);
 })().catch((e) => {
   console.error("Migration failed:", e);

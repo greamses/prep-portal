@@ -77,21 +77,19 @@ const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperC
 // ── Class is the PRIMARY navigation axis: Class → Subject → Topic → Paper ────
 // A class is a school level. The legacy free-text `grade` ("JSS1", "Primary 6")
 // is normalised to a stable `classLevel` key ("jss1", "primary6") for querying.
-const CLASS_LEVELS = [
-  { key: "primary1", label: "Primary 1" }, { key: "primary2", label: "Primary 2" }, { key: "primary3", label: "Primary 3" },
-  { key: "primary4", label: "Primary 4" }, { key: "primary5", label: "Primary 5" }, { key: "primary6", label: "Primary 6" },
-  { key: "jss1", label: "JSS1" }, { key: "jss2", label: "JSS2" }, { key: "jss3", label: "JSS3" },
-  { key: "sss1", label: "SSS1" }, { key: "sss2", label: "SSS2" }, { key: "sss3", label: "SSS3" },
-  { key: "grade1", label: "Grade 1" }, { key: "grade2", label: "Grade 2" }, { key: "grade3", label: "Grade 3" },
-  { key: "grade4", label: "Grade 4" }, { key: "grade5", label: "Grade 5" }, { key: "grade6", label: "Grade 6" },
-  { key: "grade7", label: "Grade 7" }, { key: "grade8", label: "Grade 8" }, { key: "grade9", label: "Grade 9" },
-  { key: "grade10", label: "Grade 10" }, { key: "grade11", label: "Grade 11" }, { key: "grade12", label: "Grade 12" },
-];
+// Classes are Grade 1–12. The Nigerian Primary/JSS/SSS labels map onto these:
+//   Primary 1–6 → Grade 1–6 · JSS 1–3 → Grade 7–9 · SSS 1–3 → Grade 10–12.
+const CLASS_LEVELS = Array.from({ length: 12 }, (_, i) => ({ key: `grade${i + 1}`, label: `Grade ${i + 1}` }));
 const CLASS_LABELS = Object.fromEntries(CLASS_LEVELS.map((c) => [c.key, c.label]));
-// Accept either a normalised key or a free label and return the canonical key.
+// Legacy class keys → their Grade equivalent, so old data + any stray input normalise.
+const LEGACY_CLASS = {
+  primary1: "grade1", primary2: "grade2", primary3: "grade3", primary4: "grade4", primary5: "grade5", primary6: "grade6",
+  jss1: "grade7", jss2: "grade8", jss3: "grade9", sss1: "grade10", sss2: "grade11", sss3: "grade12",
+};
+// Accept a normalised key OR a free label and return the canonical Grade key.
 const classKey = (g) => {
   const s = String(g == null ? "" : g).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
-  return s || null;
+  return LEGACY_CLASS[s] || s || null;
 };
 // "unsorted" is a holding pen for legacy questions with no class — it is NOT in
 // CLASS_LEVELS (so it never shows to students via /classes), but it is a valid
