@@ -46,7 +46,7 @@ const classKey = (g) => {
   const s = String(g == null ? "" : g).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
   return s || null;
 };
-const classLabel = (k) => CLASS_LABELS[k] || k || null;
+const classLabel = (k) => CLASS_LABELS[k] || (k === "unsorted" ? "Unsorted" : (k || null));
 const topicKeyOf = (t) =>
   String(t == null ? "" : t).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "general";
 const csKey = (cl, s) => `${cl}__${s}`;
@@ -68,22 +68,22 @@ const ms = (x) => (x && x.toMillis ? x.toMillis() : (typeof x === "number" ? x :
     const data = d.data();
     const subject = data.subject;
     if (!subject) continue;
-    const cl = data.classLevel || classKey(data.grade);
+    // Legacy questions with no resolvable class go to the "unsorted" holding pen
+    // so the admin can still find and re-tag them (they're hidden from students).
+    const resolved = data.classLevel || classKey(data.grade);
+    const cl = resolved || "unsorted";
+    if (!resolved) classless++;
     const topicName = (data.topic && String(data.topic).trim()) || GENERAL_TOPIC;
     const tk = topicKeyOf(topicName);
     const patch = { topic: topicName, topicKey: tk };
 
-    if (cl) {
-      patch.classLevel = cl;
-      patch.grade = classLabel(cl) || data.grade || null;
-      patch.classSubject = csKey(cl, subject);
-      patch.classSubjectTopic = cstKey(cl, subject, tk);
-      (buckets[patch.classSubjectTopic] = buckets[patch.classSubjectTopic] || []).push({ ref: d.ref, createdAt: data.createdAt, cl, subject, tk });
-      const ck = csKey(cl, subject);
-      (registry[ck] = registry[ck] || new Map()).set(tk, topicName);
-    } else {
-      classless++;
-    }
+    patch.classLevel = cl;
+    patch.grade = classLabel(cl) || data.grade || null;
+    patch.classSubject = csKey(cl, subject);
+    patch.classSubjectTopic = cstKey(cl, subject, tk);
+    (buckets[patch.classSubjectTopic] = buckets[patch.classSubjectTopic] || []).push({ ref: d.ref, createdAt: data.createdAt, cl, subject, tk });
+    const ck = csKey(cl, subject);
+    (registry[ck] = registry[ck] || new Map()).set(tk, topicName);
     updates.push({ ref: d.ref, patch });
   }
 
@@ -107,7 +107,7 @@ const ms = (x) => (x && x.toMillis ? x.toMillis() : (typeof x === "number" ? x :
     for (const u of updates.slice(i, i + 400)) { batch.set(u.ref, u.patch, { merge: true }); written++; }
     await batch.commit();
   }
-  console.log(`Updated ${written} questions (${classless} had no class → left out of class navigation).`);
+  console.log(`Updated ${written} questions (${classless} had no class → filed under "Unsorted" for re-tagging).`);
 
   // Seed the cbtTopics registry.
   const entries = Object.entries(registry);

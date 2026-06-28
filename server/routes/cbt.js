@@ -90,7 +90,10 @@ const classKey = (g) => {
   const s = String(g == null ? "" : g).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
   return s || null;
 };
-const classLabel = (k) => CLASS_LABELS[k] || (k || "Any class");
+// "unsorted" is a holding pen for legacy questions with no class — it is NOT in
+// CLASS_LEVELS (so it never shows to students via /classes), but it is a valid
+// classLevel the admin editor can browse to re-tag those questions.
+const classLabel = (k) => CLASS_LABELS[k] || (k === "unsorted" ? "Unsorted" : (k || "Any class"));
 
 // Curated topic identity: `topic` is the display name, `topicKey` its stable id.
 // Legacy/untagged questions live under the catch-all "General" topic.
