@@ -74,6 +74,37 @@ const SCHEME_SUBJECTS = {
 const subjKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
 const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperCase() + k.slice(1) : "Subject");
 
+// ── Class is the PRIMARY navigation axis: Class → Subject → Topic → Paper ────
+// A class is a school level. The legacy free-text `grade` ("JSS1", "Primary 6")
+// is normalised to a stable `classLevel` key ("jss1", "primary6") for querying.
+const CLASS_LEVELS = [
+  { key: "primary4", label: "Primary 4" }, { key: "primary5", label: "Primary 5" }, { key: "primary6", label: "Primary 6" },
+  { key: "jss1", label: "JSS1" }, { key: "jss2", label: "JSS2" }, { key: "jss3", label: "JSS3" },
+  { key: "sss1", label: "SSS1" }, { key: "sss2", label: "SSS2" }, { key: "sss3", label: "SSS3" },
+  { key: "grade6", label: "Grade 6" }, { key: "grade7", label: "Grade 7" }, { key: "grade8", label: "Grade 8" },
+  { key: "grade9", label: "Grade 9" }, { key: "grade10", label: "Grade 10" }, { key: "grade11", label: "Grade 11" }, { key: "grade12", label: "Grade 12" },
+];
+const CLASS_LABELS = Object.fromEntries(CLASS_LEVELS.map((c) => [c.key, c.label]));
+// Accept either a normalised key or a free label and return the canonical key.
+const classKey = (g) => {
+  const s = String(g == null ? "" : g).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+  return s || null;
+};
+const classLabel = (k) => CLASS_LABELS[k] || (k || "Any class");
+
+// Curated topic identity: `topic` is the display name, `topicKey` its stable id.
+// Legacy/untagged questions live under the catch-all "General" topic.
+const GENERAL_TOPIC = "General";
+const topicKeyOf = (t) =>
+  String(t == null ? "" : t).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "general";
+
+// Composite keys → single-field equality queries (no composite index needed).
+const csKey = (cl, subj) => `${cl}__${subj}`;
+const cstKey = (cl, subj, tk) => `${cl}__${subj}__${tk}`;
+const PAPER_SIZE = 60; // each paper holds at most 60 questions; papers per topic are unlimited
+const paperKeyOf = (cl, subj, tk, paper) => `${cstKey(cl, subj, tk)}__p${paper}`;
+const paperNoForCount = (count) => Math.floor(count / PAPER_SIZE) + 1; // which paper the NEXT question fills
+
 // Accept only http(s) or site-relative URLs for images/videos (no inline scripts).
 const safeUrl = (u) => {
   const s = String(u == null ? "" : u).trim().slice(0, 500);
@@ -378,20 +409,24 @@ function validBody(b) {
   if (!image) image = null;
   const video = safeUrl(b.video);
   const videoScope = video ? videoScopeOf(b.videoScope) : "question";
-  const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
-  const grade = String(b.grade || "").trim().slice(0, 60) || null;
+  // Class is required; topic defaults to the catch-all "General". `grade` keeps
+  // the human label (derived from classLevel) for backward-compatible display.
+  const classLevel = classKey(b.classLevel || b.grade);
+  if (!classLevel) return { error: "Pick a class for this question." };
+  const grade = classLabel(classLevel);
+  const topic = String(b.topic || "").trim().slice(0, 120) || GENERAL_TOPIC;
 
   if (isFree) {
     const answer = fixLatex(b.answer || "").trim().slice(0, 4000);
     if (!answer) return { error: "Provide the model answer for this question." };
-    return { type: wanted, question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, paper, grade };
+    return { type: wanted, question, options: null, answerIndex: null, answer, explanation, hint, image, video, videoScope, classLevel, grade, topic };
   }
   const options = Array.isArray(b.options) ? b.options.map((o) => fixLatex(o).trim().slice(0, 400)).filter(Boolean) : [];
   const ai = parseInt(b.answerIndex, 10);
   if (options.length < 2 || options.length > 6) return { error: "Provide 2 to 6 options." };
   if (!Number.isInteger(ai) || ai < 0 || ai >= options.length) return { error: "Choose which option is correct." };
   const type = wanted === "polar" || options.length === 2 ? "polar" : "objective";
-  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, paper, grade };
+  return { type, question, options, answerIndex: ai, answer: null, explanation, hint, image, video, videoScope, classLevel, grade, topic };
 }
 
 // Parse an uploaded question-library .js file of the form
@@ -489,6 +524,84 @@ module.exports = function () {
   const db = () => admin.firestore();
   const stamp = admin.firestore.FieldValue.serverTimestamp;
 
+  // How many questions already sit in a class/subject/topic bucket. Uses the
+  // count aggregate → billed as ONE read regardless of bucket size.
+  async function bucketCount(cst) {
+    try {
+      const agg = await db().collection("cbtQuestions").where("classSubjectTopic", "==", cst).count().get();
+      return agg.data().count || 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // Resolve the organising fields (classLevel/topic/composite keys) + auto-assign
+  // the paper a question belongs in. `seq` lets batch writers pre-count once and
+  // pass an offset so a 200-question import spreads across papers correctly.
+  function organise(cl, subj, topicName, count) {
+    const tk = topicKeyOf(topicName);
+    const paperNo = paperNoForCount(count);
+    return {
+      classLevel: cl,
+      topic: String(topicName || GENERAL_TOPIC).trim().slice(0, 120) || GENERAL_TOPIC,
+      topicKey: tk,
+      classSubject: csKey(cl, subj),
+      classSubjectTopic: cstKey(cl, subj, tk),
+      paperNo,
+      paperKey: paperKeyOf(cl, subj, tk, paperNo),
+    };
+  }
+
+  // Assign papers across a whole BATCH: bucket by class/subject/topic and
+  // continue each bucket's paper numbering from its current size (one count read
+  // per distinct bucket). Returns org fields aligned 1:1 with `items`.
+  async function organiseBatch(subj, items) {
+    const counts = {};
+    const ensure = new Map(); // cst -> { cl, topic }
+    const out = [];
+    for (const it of items) {
+      const cl = it.classLevel;
+      const cst = cstKey(cl, subj, topicKeyOf(it.topic));
+      if (counts[cst] == null) counts[cst] = await bucketCount(cst);
+      out.push(organise(cl, subj, it.topic, counts[cst]));
+      counts[cst] += 1;
+      if (!ensure.has(cst)) ensure.set(cst, { cl, topic: it.topic });
+    }
+    for (const { cl, topic } of ensure.values()) await ensureTopic(cl, subj, topic);
+    return out;
+  }
+
+  // ── Topic registry (cbtTopics) — the curated topic list per class+subject ──
+  // One doc per `${classLevel}__${subject}` holding { classLevel, subject,
+  // topics: [{name, key}] }. Drives the admin topic picker and the student
+  // topic filter, so topics stay consistent instead of drifting free-text.
+  const topicRegRef = (cl, subj) => db().collection("cbtTopics").doc(csKey(cl, subj));
+  async function getTopicList(cl, subj) {
+    try {
+      const s = await topicRegRef(cl, subj).get();
+      const arr = (s.exists && Array.isArray(s.data().topics)) ? s.data().topics : [];
+      return arr.filter((t) => t && t.name).map((t) => ({ name: String(t.name).slice(0, 120), key: t.key || topicKeyOf(t.name) }));
+    } catch (_) {
+      return [];
+    }
+  }
+  // Make sure a topic name is registered for a class+subject (idempotent).
+  async function ensureTopic(cl, subj, topicName) {
+    const name = String(topicName || "").trim().slice(0, 120);
+    if (!name) return;
+    const key = topicKeyOf(name);
+    const ref = topicRegRef(cl, subj);
+    try {
+      await db().runTransaction(async (tx) => {
+        const s = await tx.get(ref);
+        const topics = (s.exists && Array.isArray(s.data().topics)) ? s.data().topics : [];
+        if (topics.some((t) => (t.key || topicKeyOf(t.name)) === key)) return;
+        topics.push({ name, key });
+        tx.set(ref, { classLevel: cl, subject: subj, topics, updatedAt: stamp() }, { merge: true });
+      });
+    } catch (_) {}
+  }
+
   // Whether to hide "original" (verbatim past-paper) questions from learners —
   // a kill-switch if the exam bodies object. Cached 30s; admins still see them.
   let _hoAt = 0, _ho = false;
@@ -511,7 +624,6 @@ module.exports = function () {
       const label = subjLabel(key, b.subject);
       const topic = String(b.topic || "").trim().slice(0, 120);
       const count = Math.min(Math.max(parseInt(b.count, 10) || 10, 1), 30);
-      const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : null;
       const types = Array.isArray(b.types) ? b.types.filter((t) => typeof t === "string" && t.trim()).slice(0, 6) : [];
       const wantImages = b.images === true || b.wantImages === true;
       // Optional: generate FROM a video the learner watches first.
@@ -525,8 +637,22 @@ module.exports = function () {
       const questions = cleanQuestions(arr);
       if (!questions.length) return res.status(502).json({ error: "The model returned no usable questions — try again." });
 
+      // Every question needs a class to file under (per-question grade or the
+      // batch grade). The topic is the generation's topic (or "General").
+      const batchClass = classKey(grade);
+      const topicName = topic || GENERAL_TOPIC;
+      const items = [];
+      for (const q of questions) {
+        const cl = classKey(q.grade) || batchClass;
+        if (!cl) continue; // unclassifiable → can't be navigated to; drop it
+        items.push({ q, classLevel: cl, grade: classLabel(cl), topic: topicName });
+      }
+      if (!items.length) return res.status(400).json({ error: "Pick a class/grade — generated questions need a class to file under." });
+
+      const orgs = await organiseBatch(key, items.map((it) => ({ classLevel: it.classLevel, topic: it.topic })));
       const batch = db().batch();
-      questions.forEach((q) => {
+      items.forEach((it, i) => {
+        const q = it.q;
         // Watch-first → one intro URL stamped on the set; per-question → keep the
         // AI's own per-item video (falling back to the batch URL if it omitted one).
         let vurl, vscope;
@@ -538,7 +664,7 @@ module.exports = function () {
         batch.set(ref, {
           scheme, subject: key, subjectLabel: label,
           schemeSubject: `${scheme}__${key}`,
-          topic: topic || null, paper, grade: q.grade || grade || null,
+          ...orgs[i], grade: it.grade,
           type: q.type || "objective",
           question: q.question,
           options: q.options || null,
@@ -551,7 +677,7 @@ module.exports = function () {
         });
       });
       await batch.commit();
-      res.json({ ok: true, saved: questions.length });
+      res.json({ ok: true, saved: items.length });
     } catch (e) {
       console.error("[/api/cbt/generate]", e.message);
       res.status(500).json({ error: e.message });
@@ -598,56 +724,72 @@ module.exports = function () {
   });
 
   // ── GET /questions?scheme=&subject=&limit=&random= — take a test ─
+  const msOf = (x) => (x && x.toMillis ? x.toMillis() : 0);
+  const mapPublic = (x) => ({
+    id: x.id, type: x.type || "objective", question: x.question, options: x.options || [],
+    answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
+    correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
+    answer: x.answer || null,
+    explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
+    video: x.video || null, videoScope: x.videoScope || "question",
+    paper: x.paperNo || x.paper || null, topic: x.topic || null,
+    classLevel: x.classLevel || null, grade: x.grade || null,
+    subject: x.subject, subjectLabel: x.subjectLabel, scheme: x.scheme,
+  });
+
   router.get("/", async (req, res) => {
     try {
-      const scheme = String(req.query.scheme || "").toLowerCase().trim();
       const subject = subjKey(req.query.subject);
-      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 60);
-      const random = req.query.random !== "0";
-      const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
+      const cls = classKey(req.query.class);
+      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 60, 1), 60);
       const format = String(req.query.format || "").toLowerCase(); // "mcq" | "blank" | "theory" | ""
-      const topicFilter = String(req.query.topic || "").toLowerCase().trim();
-      const gradeFilter = String(req.query.grade || "").trim();
-      if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "scheme and subject are required." });
-
-      // Single-field equality on schemeSubject → no composite index needed; the
-      // optional paper filter is applied in code.
       const ho = await hideOriginals();
-      const pool = Math.max(limit * 4, 150);
-      const snap = await db().collection("cbtQuestions")
-        .where("schemeSubject", "==", `${scheme}__${subject}`).limit(pool).get();
+      const answerable = (x) => (Array.isArray(x.options) && x.options.length >= 2) || (typeof x.answer === "string" && x.answer.trim());
 
-      let questions = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        // Kill-switch: hide verbatim originals if enabled (keep rephrased/ai/manual).
-        .filter((x) => !(ho && x.source === "past"))
-        // Must be answerable: MCQ (options) OR free-response (model answer).
-        .filter((x) => (Array.isArray(x.options) && x.options.length >= 2) || (typeof x.answer === "string" && x.answer.trim()))
-        .map((x) => ({
-          id: x.id, type: x.type || "objective", question: x.question, options: x.options || [],
-          answerIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
-          correctIndex: typeof x.answerIndex === "number" ? x.answerIndex : 0,
-          answer: x.answer || null,
-          explanation: x.explanation || "", hint: x.hint || "", image: x.image || null,
-          video: x.video || null, videoScope: x.videoScope || "question",
-          paper: x.paper || null, topic: x.topic || null, grade: x.grade || null,
-          subject: x.subject, subjectLabel: x.subjectLabel,
-          scheme: x.scheme,
-        }));
-      if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
+      let questions, meta;
+      if (cls && subject) {
+        // ── NEW MODEL: Class → Subject → Topic → Paper ──
+        // A paper is a STABLE set of ≤60 questions, served via the single-field
+        // paperKey equality (≤60 doc reads, ordered for a consistent paper).
+        const topic = String(req.query.topic || "").trim();
+        if (!topic) return res.status(400).json({ error: "topic is required for class/subject practice." });
+        const tk = topicKeyOf(topic);
+        const paperNo = Math.max(1, parseInt(req.query.paper, 10) || 1);
+        const pk = paperKeyOf(cls, subject, tk, paperNo);
+        const snap = await db().collection("cbtQuestions").where("paperKey", "==", pk).get();
+        let docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .filter((x) => !(ho && x.source === "past")).filter(answerable);
+        docs.sort((a, b) => msOf(a.createdAt) - msOf(b.createdAt)); // stable paper order
+        questions = docs.map(mapPublic);
+        meta = { class: cls, subject, topic, paper: paperNo };
+      } else {
+        // ── LEGACY: scheme → subject (kept for the existing exam flow) ──
+        const scheme = String(req.query.scheme || "").toLowerCase().trim();
+        if (!SCHEMES[scheme] || !subject) return res.status(400).json({ error: "Provide class+subject+topic (or scheme+subject)." });
+        const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
+        const topicFilter = String(req.query.topic || "").toLowerCase().trim();
+        const gradeFilter = String(req.query.grade || "").trim();
+        const random = req.query.random !== "0";
+        const snap = await db().collection("cbtQuestions")
+          .where("schemeSubject", "==", `${scheme}__${subject}`).limit(Math.max(limit * 4, 150)).get();
+        questions = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .filter((x) => !(ho && x.source === "past")).filter(answerable).map(mapPublic);
+        if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
+        if (topicFilter) questions = questions.filter((q) => String(q.topic || "").toLowerCase() === topicFilter);
+        if (gradeFilter) questions = questions.filter((q) => String(q.grade || "") === gradeFilter);
+        if (random) for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
+        meta = { scheme, subject, paper };
+      }
+
       // Format filter: mcq = options-bearing; blank = fill-in-the-blank
       // (subjective); theory = the remaining free-response (theory/short/essay).
       const hasOpts = (q) => q.options && q.options.length >= 2;
       if (format === "mcq") questions = questions.filter(hasOpts);
       else if (format === "blank") questions = questions.filter((q) => !hasOpts(q) && q.type === "subjective");
       else if (format === "theory") questions = questions.filter((q) => !hasOpts(q) && q.type !== "subjective");
-      if (topicFilter) questions = questions.filter((q) => String(q.topic || "").toLowerCase() === topicFilter);
-      if (gradeFilter) questions = questions.filter((q) => String(q.grade || "") === gradeFilter);
-      if (random) {
-        for (let i = questions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [questions[i], questions[j]] = [questions[j], questions[i]]; }
-      }
+
       questions = questions.slice(0, limit);
-      res.json({ count: questions.length, scheme, subject, paper, questions });
+      res.json({ count: questions.length, ...meta, questions });
     } catch (e) {
       console.error("[/api/cbt]", e.message);
       res.status(500).json({ error: e.message });
@@ -720,10 +862,43 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
     }
   });
 
-  // ── GET /subjects?scheme= — subjects the scheme offers (+counts) ──
-  // The exam scheme DETERMINES the subject list (config), with live counts.
+  // Count a bucket by a single-field key via the count aggregate (1 read).
+  const keyCount = async (field, val) => {
+    try { return (await db().collection("cbtQuestions").where(field, "==", val).count().get()).data().count || 0; }
+    catch (_) { return 0; }
+  };
+
+  // ── GET /classes — the class axis (the FIRST step) with live counts ──
+  let _clAt = 0, _clCache = null;
+  router.get("/classes", async (_req, res) => {
+    try {
+      if (_clCache && Date.now() - _clAt < 5 * 60 * 1000) return res.json(_clCache);
+      const classes = await Promise.all(
+        CLASS_LEVELS.map(async (c) => ({ key: c.key, label: c.label, count: await keyCount("classLevel", c.key) })),
+      );
+      const data = { classes };
+      _clCache = data; _clAt = Date.now();
+      res.json(data);
+    } catch (e) {
+      console.error("[/api/cbt/classes]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /subjects?class= — subjects available for a class (+counts) ──
+  // Class-first: subjects come from the topic registry (every class+subject that
+  // has questions has a registry doc). Legacy ?scheme= mode kept for exam flow.
   router.get("/subjects", async (req, res) => {
     try {
+      const cls = classKey(req.query.class);
+      if (cls) {
+        const snap = await db().collection("cbtTopics").where("classLevel", "==", cls).get();
+        const subs = [...new Set(snap.docs.map((d) => d.data().subject).filter(Boolean))];
+        const subjects = (await Promise.all(
+          subs.map(async (k) => ({ key: k, label: subjLabel(k), count: await keyCount("classSubject", csKey(cls, k)) })),
+        )).filter((s) => s.count > 0).sort((a, b) => a.label.localeCompare(b.label));
+        return res.json({ class: cls, classLabel: classLabel(cls), subjects });
+      }
       const scheme = String(req.query.scheme || "").toLowerCase().trim();
       if (!SCHEMES[scheme]) return res.json({ scheme, subjects: [] });
       const configured = SCHEME_SUBJECTS[scheme] || [];
@@ -738,56 +913,124 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
     }
   });
 
-  // ── GET /topics?scheme=&subject=[&subject=…] — distinct topics (+counts) ──
-  // Used by the builder's topic filter. Accepts one or many subjects.
+  // ── GET /topics?class=&subject= — curated topics for a class+subject ──
+  // Returns the registry topics with live question counts + how many papers each
+  // holds (ceil(count/60)). Legacy ?scheme=&subject= mode kept for exam flow.
   router.get("/topics", async (req, res) => {
     try {
+      const cls = classKey(req.query.class);
+      const subject = subjKey(req.query.subject);
+      if (cls && subject) {
+        const list = await getTopicList(cls, subject);
+        const topics = (await Promise.all(list.map(async (t) => {
+          const count = await keyCount("classSubjectTopic", cstKey(cls, subject, t.key));
+          return { topic: t.name, key: t.key, count, papers: Math.ceil(count / PAPER_SIZE) };
+        }))).sort((a, b) => a.topic.localeCompare(b.topic));
+        return res.json({ class: cls, subject, topics });
+      }
+      // Legacy: distinct topics for a scheme+subject(s).
       const scheme = String(req.query.scheme || "").toLowerCase().trim();
       if (!SCHEMES[scheme]) return res.json({ scheme, topics: [] });
-      const subs = []
-        .concat(req.query.subject || [])
-        .flatMap((s) => String(s).split(","))
-        .map((s) => subjKey(s)).filter(Boolean);
+      const subs = [].concat(req.query.subject || []).flatMap((s) => String(s).split(",")).map((s) => subjKey(s)).filter(Boolean);
       const counts = {}, gcounts = {};
       const tally = (docs) => docs.forEach((d) => {
         const x = d.data();
         const t = (x.topic || "").trim(); if (t) counts[t] = (counts[t] || 0) + 1;
         const g = (x.grade || "").trim(); if (g) gcounts[g] = (gcounts[g] || 0) + 1;
       });
-      if (subs.length) {
-        for (const sub of subs) {
-          const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${sub}`).get();
-          tally(snap.docs);
-        }
-      } else {
-        const snap = await db().collection("cbtQuestions").where("scheme", "==", scheme).get();
-        tally(snap.docs);
-      }
-      const topics = Object.entries(counts)
-        .map(([topic, count]) => ({ topic, count }))
-        .sort((a, b) => a.topic.localeCompare(b.topic));
-      const grades = Object.entries(gcounts)
-        .map(([grade, count]) => ({ grade, count }))
-        .sort((a, b) => a.grade.localeCompare(b.grade, undefined, { numeric: true }));
-      res.json({ scheme, topics, grades });
+      if (subs.length) for (const sub of subs) tally((await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${sub}`).get()).docs);
+      else tally((await db().collection("cbtQuestions").where("scheme", "==", scheme).get()).docs);
+      res.json({
+        scheme,
+        topics: Object.entries(counts).map(([topic, count]) => ({ topic, count })).sort((a, b) => a.topic.localeCompare(b.topic)),
+        grades: Object.entries(gcounts).map(([grade, count]) => ({ grade, count })).sort((a, b) => a.grade.localeCompare(b.grade, undefined, { numeric: true })),
+      });
     } catch (e) {
       console.error("[/api/cbt/topics]", e.message);
       res.status(500).json({ error: e.message });
     }
   });
 
-  // ── GET /list?scheme=&subject=&paper= — admin: full docs for editing ──
+  // ── GET /papers?class=&subject=&topic= — papers for a topic (≤60 each) ──
+  router.get("/papers", async (req, res) => {
+    try {
+      const cls = classKey(req.query.class);
+      const subject = subjKey(req.query.subject);
+      const topic = String(req.query.topic || "").trim();
+      if (!cls || !subject || !topic) return res.status(400).json({ error: "class, subject and topic are required." });
+      const count = await keyCount("classSubjectTopic", cstKey(cls, subject, topicKeyOf(topic)));
+      const papers = Math.ceil(count / PAPER_SIZE);
+      res.json({
+        class: cls, subject, topic, count, paperSize: PAPER_SIZE, papers,
+        list: Array.from({ length: papers }, (_, i) => ({ paper: i + 1, label: `Paper ${i + 1}` })),
+      });
+    } catch (e) {
+      console.error("[/api/cbt/papers]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Topic registry management (admin) ──
+  // GET  /topic-list?class=&subject=  → raw curated topics [{name,key}]
+  // POST /topic-list { class, subject, action:"add"|"remove", name }
+  router.get("/topic-list", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const cls = classKey(req.query.class), subject = subjKey(req.query.subject);
+      if (!cls || !subject) return res.status(400).json({ error: "class and subject required." });
+      res.json({ class: cls, subject, topics: await getTopicList(cls, subject) });
+    } catch (e) {
+      console.error("[/api/cbt/topic-list GET]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/topic-list", authenticate, requireAdmin, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const cls = classKey(b.class), subject = subjKey(b.subject);
+      const name = String(b.name || "").trim().slice(0, 120);
+      if (!cls || !subject || !name) return res.status(400).json({ error: "class, subject and name required." });
+      const action = b.action === "remove" ? "remove" : "add";
+      if (action === "add") {
+        await ensureTopic(cls, subject, name);
+      } else {
+        const key = topicKeyOf(name);
+        const ref = topicRegRef(cls, subject);
+        await db().runTransaction(async (tx) => {
+          const s = await tx.get(ref);
+          const topics = (s.exists && Array.isArray(s.data().topics)) ? s.data().topics : [];
+          tx.set(ref, { classLevel: cls, subject, topics: topics.filter((t) => (t.key || topicKeyOf(t.name)) !== key), updatedAt: stamp() }, { merge: true });
+        });
+      }
+      res.json({ ok: true, topics: await getTopicList(cls, subject) });
+    } catch (e) {
+      console.error("[/api/cbt/topic-list POST]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── GET /list?class=&subject=&topic=&paper= — admin: full docs for editing ──
+  // Class-first; falls back to legacy ?scheme=&subject= when no class is given.
   router.get("/list", authenticate, requireAdmin, async (req, res) => {
     try {
-      const scheme = String(req.query.scheme || "").toLowerCase().trim();
+      const cls = classKey(req.query.class);
       const subject = subjKey(req.query.subject);
-      const paper = ["1", "2"].includes(String(req.query.paper)) ? String(req.query.paper) : null;
-      if (!scheme || !subject) return res.status(400).json({ error: "scheme and subject required." });
-      const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${subject}`).get();
-      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
-      let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      if (paper) items = items.filter((x) => String(x.paper || "") === paper);
-      items.sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+      if (!subject) return res.status(400).json({ error: "subject required." });
+      const col = db().collection("cbtQuestions");
+      let items;
+      if (cls) {
+        const topic = String(req.query.topic || "").trim();
+        const paperNo = parseInt(req.query.paper, 10);
+        let snap;
+        if (topic && paperNo > 0) snap = await col.where("paperKey", "==", paperKeyOf(cls, subject, topicKeyOf(topic), paperNo)).get();
+        else if (topic) snap = await col.where("classSubjectTopic", "==", cstKey(cls, subject, topicKeyOf(topic))).get();
+        else snap = await col.where("classSubject", "==", csKey(cls, subject)).get();
+        items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } else {
+        const scheme = String(req.query.scheme || "").toLowerCase().trim();
+        if (!scheme) return res.status(400).json({ error: "class or scheme required." });
+        items = (await col.where("schemeSubject", "==", `${scheme}__${subject}`).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+      }
+      items.sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt));
       res.json({ count: items.length, questions: items });
     } catch (e) {
       console.error("[/api/cbt/list]", e.message);
@@ -799,19 +1042,26 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
   router.post("/question", authenticate, requireAdmin, async (req, res) => {
     try {
       const b = req.body || {};
-      const scheme = String(b.scheme || "").toLowerCase().trim();
+      // Scheme is now an optional attribute (AI calibration + tag); Class is the
+      // primary axis. Default to "practice" when not supplied.
+      const scheme = SCHEMES[String(b.scheme || "").toLowerCase().trim()] ? String(b.scheme).toLowerCase().trim() : "practice";
       const key = subjKey(b.subject);
-      if (!SCHEMES[scheme]) return res.status(400).json({ error: "Unknown scheme." });
       if (!key) return res.status(400).json({ error: "Subject is required." });
       const v = validBody(b);
       if (v.error) return res.status(400).json({ error: v.error });
+
+      // Auto-assign the paper from the current bucket size, register the topic.
+      const cst = cstKey(v.classLevel, key, topicKeyOf(v.topic));
+      const org = organise(v.classLevel, key, v.topic, await bucketCount(cst));
+      await ensureTopic(v.classLevel, key, v.topic);
+
       const ref = db().collection("cbtQuestions").doc();
       await ref.set({
         scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
         schemeSubject: `${scheme}__${key}`, source: "manual",
-        ...v, createdAt: stamp(), updatedAt: stamp(),
+        ...v, ...org, createdAt: stamp(), updatedAt: stamp(),
       });
-      res.json({ ok: true, id: ref.id });
+      res.json({ ok: true, id: ref.id, paper: org.paperNo });
     } catch (e) {
       console.error("[/api/cbt/question POST]", e.message);
       res.status(500).json({ error: e.message });
@@ -825,18 +1075,38 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       const ref = db().collection("cbtQuestions").doc(req.params.id);
       const snap = await ref.get();
       if (!snap.exists) return res.status(404).json({ error: "Question not found." });
+      const cur = snap.data();
       const v = validBody(b);
       if (v.error) return res.status(400).json({ error: v.error });
-      const patch = { ...v, updatedAt: stamp() };
-      const scheme = String(b.scheme || "").toLowerCase().trim();
-      const key = subjKey(b.subject);
-      if (SCHEMES[scheme] && key) {
-        patch.scheme = scheme; patch.subject = key;
-        patch.subjectLabel = subjLabel(key, b.subject);
-        patch.schemeSubject = `${scheme}__${key}`;
+
+      const scheme = SCHEMES[String(b.scheme || "").toLowerCase().trim()] ? String(b.scheme).toLowerCase().trim() : (cur.scheme || "practice");
+      const key = subjKey(b.subject) || cur.subject;
+      if (!key) return res.status(400).json({ error: "Subject is required." });
+
+      // Reassign the paper ONLY if the class/subject/topic bucket changed; an
+      // in-place edit keeps the question in its existing paper.
+      const newCst = cstKey(v.classLevel, key, topicKeyOf(v.topic));
+      let org;
+      if (cur.classSubjectTopic === newCst && cur.paperNo) {
+        const tk = topicKeyOf(v.topic);
+        org = {
+          classLevel: v.classLevel, topic: v.topic, topicKey: tk,
+          classSubject: csKey(v.classLevel, key), classSubjectTopic: newCst,
+          paperNo: cur.paperNo, paperKey: paperKeyOf(v.classLevel, key, tk, cur.paperNo),
+        };
+      } else {
+        org = organise(v.classLevel, key, v.topic, await bucketCount(newCst));
       }
+      await ensureTopic(v.classLevel, key, v.topic);
+
+      const patch = {
+        ...v, ...org,
+        scheme, subject: key, subjectLabel: subjLabel(key, b.subject || key),
+        schemeSubject: `${scheme}__${key}`,
+        updatedAt: stamp(),
+      };
       await ref.set(patch, { merge: true });
-      res.json({ ok: true });
+      res.json({ ok: true, paper: org.paperNo });
     } catch (e) {
       console.error("[/api/cbt/question PUT]", e.message);
       res.status(500).json({ error: e.message });
@@ -904,23 +1174,36 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       const key = subjKey(b.subject);
       if (!SCHEMES[scheme]) return res.status(400).json({ error: "Unknown scheme." });
       if (!key) return res.status(400).json({ error: "Subject is required." });
-      const paper = ["1", "2"].includes(String(b.paper)) ? String(b.paper) : "1";
       const source = ["past", "rephrased", "manual"].includes(b.source) ? b.source : "past";
       // Optional: stamp one video on the whole imported batch (watch-first sets).
       const batchVideo = safeUrl(b.video);
       const batchVideoScope = videoScopeOf(b.videoScope);
-      const batchGrade = String(b.grade || "").trim().slice(0, 60) || null;
+      const batchClass = classKey(b.grade);
+      const topicName = String(b.topic || "").trim().slice(0, 120) || GENERAL_TOPIC;
 
       let arr;
       try { arr = parseExamJs(b.jsCode || ""); }
       catch (e) { return res.status(400).json({ error: "Couldn't parse the JS file: " + e.message }); }
-      const items = importQuestions(arr);
-      if (!items.length) return res.status(400).json({ error: "No questions found (expected `const examQuestions = [ … ]`)." });
+      const parsed = importQuestions(arr);
+      if (!parsed.length) return res.status(400).json({ error: "No questions found (expected `const examQuestions = [ … ]`)." });
 
+      // Each imported question needs a class to file under (its own grade, else
+      // the batch class), and a topic (the batch topic, or "General").
+      const items = [];
+      for (const q of parsed) {
+        const cl = classKey(q.grade) || batchClass;
+        if (!cl) continue;
+        items.push({ q, classLevel: cl, grade: classLabel(cl), topic: topicName });
+      }
+      if (!items.length) return res.status(400).json({ error: "Pick a class/grade — imported questions need a class to file under." });
+
+      const orgs = await organiseBatch(key, items.map((it) => ({ classLevel: it.classLevel, topic: it.topic })));
       let written = 0;
       for (let i = 0; i < items.length; i += 400) {
         const batch = db().batch();
-        items.slice(i, i + 400).forEach((q) => {
+        items.slice(i, i + 400).forEach((it, j) => {
+          const q = it.q;
+          const org = orgs[i + j];
           const ref = db().collection("cbtQuestions").doc();
           let video, videoScope;
           if (batchVideo && batchVideoScope === "set") { video = batchVideo; videoScope = "set"; }
@@ -929,8 +1212,8 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
           else { video = null; videoScope = "question"; }
           batch.set(ref, {
             scheme, subject: key, subjectLabel: subjLabel(key, b.subject),
-            schemeSubject: `${scheme}__${key}`, paper, source,
-            ...q, video, videoScope, grade: q.grade || batchGrade || null,
+            schemeSubject: `${scheme}__${key}`, source,
+            ...q, ...org, grade: it.grade, video, videoScope,
             createdAt: stamp(), updatedAt: stamp(),
           });
         });
