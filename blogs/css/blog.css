@@ -1571,6 +1571,28 @@ body:has(.embed-overlay.active) {
   grid-column: 1 / -1;
 }
 
+.load-all-btn {
+  display: block;
+  margin: 1.6rem auto 0.4rem;
+  padding: 0.7rem 1.5rem;
+  border: 2px solid var(--border, rgba(42, 39, 35, 0.14));
+  border-radius: 999px;
+  background: var(--surface, #fffdf8);
+  color: var(--text-primary, #2a2723);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.load-all-btn:hover {
+  background: var(--surface-hover, rgba(42, 39, 35, 0.05));
+}
+.load-all-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ─── ACTIONS & FLOATS ────────────────────────────────── */
 .scroll-top {
   position: fixed;

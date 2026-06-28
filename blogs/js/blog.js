@@ -7,6 +7,7 @@ import {
   collection,
   query,
   orderBy,
+  limit,
   getDocs,
   doc,
   getDoc,
@@ -509,6 +510,23 @@ function renderPosts() {
       if (post) showSinglePost(post);
     });
   });
+
+  // Offer the full archive on demand — only when the cheap feed page was capped
+  // and we aren't already showing everything (and no filter is narrowing it).
+  const existing = scienceGrid.parentElement?.querySelector(".load-all-btn");
+  if (existing) existing.remove();
+  if (feedCapped && !feedShowingAll && !currentSearch) {
+    const more = document.createElement("button");
+    more.className = "load-all-btn";
+    more.type = "button";
+    more.textContent = "Show all posts";
+    more.addEventListener("click", () => {
+      more.disabled = true;
+      more.textContent = "Loading…";
+      loadPosts({ full: true });
+    });
+    scienceGrid.insertAdjacentElement("afterend", more);
+  }
 }
 
 // ─── DYNAMIC FILTER DROPDOWNS ─────────────────────────────
@@ -896,23 +914,9 @@ async function loadComments(postId) {
       const cLiked = currentUser && cLikes.includes(currentUser.uid);
       const canDelete =
         currentUser && (isAdmin || c.authorId === currentUser.uid);
-      let replyCount = 0;
-      try {
-        const rs = await getDocs(
-          query(
-            collection(
-              db,
-              COLLECTION_NAME,
-              postId,
-              "comments",
-              d.id,
-              "replies",
-            ),
-            orderBy("createdAt", "asc"),
-          ),
-        );
-        replyCount = rs.size;
-      } catch (_) {}
+      // Denormalised count — kept on the comment doc (incremented on reply).
+      // Avoids an N+1 getDocs-per-comment just to show a number (read spike).
+      const replyCount = c.replyCount || 0;
       const el = document.createElement("div");
       el.className = "comment-item";
       el.dataset.commentId = d.id;
@@ -1165,6 +1169,13 @@ async function submitReply(postId, commentId) {
         createdAt: serverTimestamp(),
       },
     );
+    // Keep the denormalised reply count current (read by loadComments, so the
+    // "N Replies" label needs no per-comment query).
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, postId, "comments", commentId), {
+        replyCount: increment(1),
+      });
+    } catch (_) {}
     input.value = "";
     loadedReplies.delete(commentId);
     await loadReplies(postId, commentId);
@@ -1251,13 +1262,25 @@ function normalizePost(data) {
 // focus) inside the window costs ZERO Firestore reads. Pass { force:true } to
 // bypass the cache for an explicit "refresh". The whole list is re-rendered,
 // preserving scroll position so a background refresh isn't jarring.
-async function loadPosts({ force = false } = {}) {
+// The feed reads only the latest FEED_PAGE_SIZE posts (cached) instead of the
+// whole collection — that's the single biggest client-side read on the site.
+// "Show all" (loadPosts({ full:true })) fetches everything on demand for search.
+const FEED_PAGE_SIZE = 48;
+let feedShowingAll = false;
+let feedCapped = false;
+
+async function loadPosts({ force = false, full = false } = {}) {
   try {
+    feedShowingAll = full;
     const raw = await getList(
-      `blog:${COLLECTION_NAME}`,
-      () => query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc")),
-      { ttl: 5 * 60 * 1000, force },
+      full ? `blog:${COLLECTION_NAME}:all` : `blog:${COLLECTION_NAME}`,
+      () =>
+        full
+          ? query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc"))
+          : query(collection(db, COLLECTION_NAME), orderBy("publishedAt", "desc"), limit(FEED_PAGE_SIZE)),
+      { ttl: 15 * 60 * 1000, force },
     );
+    feedCapped = !full && raw.length >= FEED_PAGE_SIZE;
     const next = raw.map(normalizePost);
     const changed = next.map((p) => p.id).join(",") !== allPosts.map((p) => p.id).join(",");
     const scrollY = window.scrollY;

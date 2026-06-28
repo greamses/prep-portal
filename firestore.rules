@@ -107,7 +107,10 @@ service cloud.firestore {
         allow create: if isLoggedIn() && request.resource.data.authorId == request.auth.uid;
         allow update: if isLoggedIn() && (
           resource.data.authorId == request.auth.uid ||
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          // anyone signed-in may like a comment, or bump its denormalised
+          // replyCount when they post a reply to it (no per-comment read needed).
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyCount'])
         );
         allow delete: if isLoggedIn() && resource.data.authorId == request.auth.uid;
       }

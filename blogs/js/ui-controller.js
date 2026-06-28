@@ -152,18 +152,9 @@ export function initUI(config, dataModule) {
     }
   });
 
-  // Healthcheck interval (moved from publisher-core to prevent ReferenceErrors)
-  setInterval(
-    async () => {
-      if (currentUser) {
-        const health = await healthCheck();
-        if (!health.firestore) {
-          addLog("[HEALTH] Firestore connection issue detected", "warn");
-        }
-      }
-    },
-    5 * 60 * 1000,
-  ); // Check every 5 minutes
+  // (Removed the 5-min Firestore healthcheck poll — it did a getDocs every
+  // 5 minutes on any open publisher tab, burning reads for no real benefit.
+  // Real connection problems already surface on the next save/publish.)
 
   // Safely reveal the document body once initialization finishes
   document.body.style.visibility = "visible";
