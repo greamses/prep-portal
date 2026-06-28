@@ -139,8 +139,24 @@ let cbtState = {
   top: null, topLabel: null,        // class key or exam(scheme) key
   subject: null, subjectLabel: null,
   topic: null, paper: null,
+  format: "",                       // "" | "mcq" | "short" | "theory"
   _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
+
+// Premium gate for the MCQ filter — resolved once, from the CACHED profile
+// (data-service: 0 extra reads when the nav already warmed it). null = unknown.
+let _pickerPremium = null;
+async function isPickerPremium() {
+  if (_pickerPremium !== null) return _pickerPremium;
+  try {
+    const u = await ppCurrentUser();
+    if (!u) return (_pickerPremium = false);
+    const { getProfile } = await import("/utils/data-service.js");
+    const p = await getProfile(u.uid);
+    _pickerPremium = !!(p && p.isPremium);
+  } catch (_) { _pickerPremium = false; }
+  return _pickerPremium;
+}
 
 let CBT_BANK = null;       // the /utils/cbt-bank.js module (lazy)
 let CBT_MANIFEST = null;   // the navigation index (lazy)
@@ -166,6 +182,42 @@ const cTopicDone = () => document.getElementById("done-subject");
 const cPaperDone = () => document.getElementById("done-year");
 const cTopicCard = () => document.getElementById("subject-row");
 const cPaperCard = () => document.querySelector(".step-card-4");
+const cFormatWrap = () => document.getElementById("cbt-format-wrap");
+const cFormatChips = () => document.getElementById("cbt-format-chips");
+const cFormatLockNote = () => document.getElementById("fmt-lock-note");
+
+// Render the "What to answer" filter (All / MCQs / Short Answer / Theory).
+// MCQs are Premium-only: for free users the chip is locked and clicking it shows
+// an upgrade prompt instead of selecting it.
+async function renderCbtFormat() {
+  const wrap = cFormatWrap(), chips = cFormatChips(), note = cFormatLockNote();
+  if (!wrap || !chips) return;
+  wrap.style.display = "";
+  const premium = await isPickerPremium();
+  chips.querySelectorAll(".fmt-chip").forEach((chip) => {
+    const fmt = chip.dataset.fmt || "";
+    const locked = fmt === "mcq" && !premium;
+    chip.classList.toggle("locked", locked);
+    let lock = chip.querySelector(".fmt-lock");
+    if (locked && !lock) {
+      lock = document.createElement("span");
+      lock.className = "fmt-lock";
+      lock.textContent = "PRO";
+      chip.appendChild(lock);
+    } else if (!locked && lock) { lock.remove(); }
+    chip.classList.toggle("checked", fmt === (cbtState.format || ""));
+    chip.onclick = () => {
+      if (chip.classList.contains("locked")) {
+        if (note) note.style.display = "";
+        return; // don't select — prompt upgrade
+      }
+      if (note) note.style.display = "none";
+      chips.querySelectorAll(".fmt-chip").forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      cbtState.format = fmt;
+    };
+  });
+}
 
 function natUpdateReadyState() {
   const ready = cbtState.top && cbtState.subject && cbtState.topic && cbtState.paper;
@@ -216,10 +268,12 @@ async function buildTops() {
 function selectTop(top) {
   cbtState.top = top.id; cbtState.topLabel = top.label; cbtState._subjects = top._subjects || [];
   cbtState.subject = cbtState.subjectLabel = cbtState.topic = cbtState.paper = null;
+  cbtState.format = "";
   cTopDone().classList.add("show");
   [cSubjectDone(), cTopicDone(), cPaperDone()].forEach((d) => d && d.classList.remove("show"));
   cTopicCard().style.display = "none";
   if (cPaperCard()) cPaperCard().style.display = "none";
+  if (cFormatWrap()) cFormatWrap().style.display = "none";
   renderCbtSubjects();
   natUpdateReadyState();
 }
@@ -233,10 +287,12 @@ function renderCbtSubjects() {
 function selectCbtSubject(sub) {
   cbtState.subject = sub.key; cbtState.subjectLabel = sub.label; cbtState._topics = sub.topics || [];
   cbtState.topic = cbtState.paper = null;
+  cbtState.format = "";
   cSubjectDone().classList.add("show");
   [cTopicDone(), cPaperDone()].forEach((d) => d && d.classList.remove("show"));
   cTopicCard().style.display = "";
   if (cPaperCard()) cPaperCard().style.display = "none";
+  if (cFormatWrap()) cFormatWrap().style.display = "none";
   renderCbtTopics();
   natUpdateReadyState();
 }
@@ -254,6 +310,7 @@ function selectCbtTopic(t) {
   if (cPaperDone()) cPaperDone().classList.remove("show");
   if (cPaperCard()) cPaperCard().style.display = "";
   renderCbtPapers();
+  renderCbtFormat();
   natUpdateReadyState();
 }
 
@@ -288,12 +345,14 @@ function initCbt(axis, region) {
   cbtState = {
     axis, region: region || null,
     top: null, topLabel: null, subject: null, subjectLabel: null, topic: null, paper: null,
+    format: "",
     _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
   };
   relabelCbtSteps();
   ["done-exam", "done-stream", "done-subject", "done-year"].forEach((id) => document.getElementById(id)?.classList.remove("show"));
   cTopicCard().style.display = "none";
   if (cPaperCard()) cPaperCard().style.display = "none";
+  if (cFormatWrap()) cFormatWrap().style.display = "none";
   buildTops();
   natUpdateReadyState();
 }
@@ -961,6 +1020,7 @@ function targetUrl() {
       topic: cbtState.topic,
       paper: String(cbtState.paper),
     });
+    if (cbtState.format) params.set("format", cbtState.format);
     return `../question/question.html?${params.toString()}`;
   }
 

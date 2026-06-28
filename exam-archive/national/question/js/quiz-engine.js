@@ -13,6 +13,39 @@ const Quiz = (() => {
   // Free-response types (anything not multiple-choice): short = small input,
   // subjective = inline fill-in-the-blank, theory/essay = textarea.
   const isFree = (t) => t === "theory" || t === "essay" || t === "short" || t === "subjective";
+
+  // Classify a bank question into one of the three learner-facing formats.
+  // A question with ≥2 options is multiple-choice regardless of its stored type.
+  function qFormat(q) {
+    const opts = q && q.options;
+    if (Array.isArray(opts) && opts.length >= 2) return "mcq";
+    const t = String((q && q.type) || "").toLowerCase();
+    if (t === "theory" || t === "essay") return "theory";
+    return "short"; // subjective / short / blank / fill-in-the-blank
+  }
+
+  // MCQ tests are Premium-only. Resolve once from the CACHED profile (0 extra
+  // reads when the nav already warmed it). Unknown/anonymous → not premium.
+  let _premiumVerdict = null;
+  async function isPremiumUser() {
+    if (_premiumVerdict !== null) return _premiumVerdict;
+    try {
+      const { auth } = await import("/firebase-init.js");
+      let u = auth.currentUser;
+      if (!u) {
+        const { onAuthStateChanged } = await import("firebase/auth");
+        u = await new Promise((res) => {
+          const unsub = onAuthStateChanged(auth, (x) => { unsub(); res(x || null); });
+          setTimeout(() => res(auth.currentUser || null), 3000);
+        });
+      }
+      if (!u) return (_premiumVerdict = false);
+      const { getProfile } = await import("/utils/data-service.js");
+      const p = await getProfile(u.uid);
+      _premiumVerdict = !!(p && p.isPremium);
+    } catch (_) { _premiumVerdict = false; }
+    return _premiumVerdict;
+  }
   let userAnswers = {};
   let submitted = false;
   let theoryMarks = {};
@@ -540,6 +573,16 @@ const Quiz = (() => {
           const top = axis === "exam" ? PAGE_CONFIG.scheme : PAGE_CONFIG.cbtClass;
           const bank = await import("/utils/cbt-bank.js");
           questions = await bank.paperQuestions(axis, top, subKey, PAGE_CONFIG.topic, PAGE_CONFIG.paper);
+          // Format filter (mcq | short | theory) + premium gate: MCQs are
+          // Premium-only, so free users never receive them — not even under "All".
+          const want = PAGE_CONFIG.format;
+          const premium = await isPremiumUser();
+          questions = questions.filter((q) => {
+            const f = qFormat(q);
+            if (f === "mcq" && !premium) return false; // MCQs locked for free users
+            if (want && f !== want) return false;       // explicit filter
+            return true;
+          });
         } else {
           const params = new URLSearchParams({ subject: subKey, limit: String(per) });
           if (cls) {

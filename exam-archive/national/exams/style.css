@@ -734,6 +734,49 @@ body {
 }
 
 /* =============================================================
+   CBT "What to answer" format filter (Paper card)
+   ============================================================= */
+.cbt-format {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border, rgba(42, 39, 35, 0.14));
+}
+.fmt-chip {
+  position: relative;
+}
+/* Premium-locked MCQ chip: dimmed, with a "PRO" badge. */
+.fmt-chip.locked {
+  opacity: 0.62;
+}
+.fmt-chip.locked .chip-check-box {
+  visibility: hidden;
+}
+.fmt-lock {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.34rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: var(--accent, #f4c95d);
+  color: var(--text-on-accent, #2a2723);
+}
+.fmt-lock-note {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.fmt-lock-note a {
+  color: var(--accent-strong, var(--accent, #c8902a));
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* =============================================================
    STEP-5 EXTRA FILTERS (format chips + topic / grade dropdowns)
    ============================================================= */
 .filter-extra {
