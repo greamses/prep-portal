@@ -78,11 +78,14 @@ const subjLabel = (k, given) => SUBJECT_LABELS[k] || given || (k ? k[0].toUpperC
 // A class is a school level. The legacy free-text `grade` ("JSS1", "Primary 6")
 // is normalised to a stable `classLevel` key ("jss1", "primary6") for querying.
 const CLASS_LEVELS = [
+  { key: "primary1", label: "Primary 1" }, { key: "primary2", label: "Primary 2" }, { key: "primary3", label: "Primary 3" },
   { key: "primary4", label: "Primary 4" }, { key: "primary5", label: "Primary 5" }, { key: "primary6", label: "Primary 6" },
   { key: "jss1", label: "JSS1" }, { key: "jss2", label: "JSS2" }, { key: "jss3", label: "JSS3" },
   { key: "sss1", label: "SSS1" }, { key: "sss2", label: "SSS2" }, { key: "sss3", label: "SSS3" },
-  { key: "grade6", label: "Grade 6" }, { key: "grade7", label: "Grade 7" }, { key: "grade8", label: "Grade 8" },
-  { key: "grade9", label: "Grade 9" }, { key: "grade10", label: "Grade 10" }, { key: "grade11", label: "Grade 11" }, { key: "grade12", label: "Grade 12" },
+  { key: "grade1", label: "Grade 1" }, { key: "grade2", label: "Grade 2" }, { key: "grade3", label: "Grade 3" },
+  { key: "grade4", label: "Grade 4" }, { key: "grade5", label: "Grade 5" }, { key: "grade6", label: "Grade 6" },
+  { key: "grade7", label: "Grade 7" }, { key: "grade8", label: "Grade 8" }, { key: "grade9", label: "Grade 9" },
+  { key: "grade10", label: "Grade 10" }, { key: "grade11", label: "Grade 11" }, { key: "grade12", label: "Grade 12" },
 ];
 const CLASS_LABELS = Object.fromEntries(CLASS_LEVELS.map((c) => [c.key, c.label]));
 // Accept either a normalised key or a free label and return the canonical key.
