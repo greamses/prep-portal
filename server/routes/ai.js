@@ -373,14 +373,27 @@ module.exports = function () {
   // Admins (by ADMIN_EMAIL) and users with isPremium in their Firestore profile
   // may chat; everyone else is refused with a friendly upsell message.
   const usersDoc = (uid) => admin.firestore().collection("users").doc(uid);
+
+  // PrepBot reads the premium flag on EVERY message. Cache the verdict per uid
+  // for a short window so a back-and-forth chat doesn't read users/{uid} each
+  // turn. In-memory only (best-effort across Fluid Compute instances); on a
+  // read error we fall back to the last known verdict, then to "not premium".
+  const PREMIUM_TTL_MS = 5 * 60 * 1000;
+  const premiumCache = new Map(); // uid -> { premium, exp }
+
   async function isPremiumUser(req) {
     if (!req.user) return false;
     if (req.user.email && req.user.email === process.env.ADMIN_EMAIL) return true;
+    const uid = req.user.uid;
+    const hit = premiumCache.get(uid);
+    if (hit && hit.exp > Date.now()) return hit.premium;
     try {
-      const snap = await usersDoc(req.user.uid).get();
-      return !!(snap.exists && snap.data() && snap.data().isPremium);
+      const snap = await usersDoc(uid).get();
+      const premium = !!(snap.exists && snap.data() && snap.data().isPremium);
+      premiumCache.set(uid, { premium, exp: Date.now() + PREMIUM_TTL_MS });
+      return premium;
     } catch (_) {
-      return false;
+      return hit ? hit.premium : false;
     }
   }
 

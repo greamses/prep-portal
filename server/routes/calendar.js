@@ -84,22 +84,30 @@ module.exports = function () {
   // fanned out to them from their teacher's roster.
   router.get("/", authenticate, async (req, res) => {
     try {
+      // Resolve role with a SINGLE profile read (the super-admin needs none).
+      // Previously this handler read users/{uid} 2–3× per call.
+      const superAdmin = req.user?.email && req.user.email === process.env.ADMIN_EMAIL;
+      let isAdminCaller = superAdmin;
+      let role = null;
+      if (!superAdmin) {
+        const p = await profile(req.user.uid);
+        role = p.role;
+        isAdminCaller = role === "admin";
+      }
+
       let docs = [];
-      if (await isAdmin(req)) {
+      if (isAdminCaller) {
         const snap = await db().collection("calendarEvents").get();
         docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } else if (role === "teacher") {
+        const snap = await db().collection("calendarEvents").where("teacherUid", "==", req.user.uid).get();
+        docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       } else {
-        const p = await profile(req.user.uid);
-        if (p.role === "teacher") {
-          const snap = await db().collection("calendarEvents").where("teacherUid", "==", req.user.uid).get();
-          docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        } else {
-          const snap = await db().collection("studentCalendar").doc(req.user.uid).collection("items").get();
-          docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        }
+        const snap = await db().collection("studentCalendar").doc(req.user.uid).collection("items").get();
+        docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       }
       docs.sort(byDate);
-      res.json({ events: docs.map(publicEvent), admin: await isAdmin(req) });
+      res.json({ events: docs.map(publicEvent), admin: isAdminCaller });
     } catch (e) {
       console.error("[/api/calendar GET]", e.message);
       res.status(500).json({ error: e.message });

@@ -1,12 +1,11 @@
 import { auth, db } from "/firebase-init.js";
 import {
   collection,
-  query,
-  onSnapshot,
   doc,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
+import { getList } from "/utils/data-service.js";
 import { PERSON_SVG, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
 import { I } from "/home/js/dashboard/icons.js";
 import "/utils/components/nav-builder.js";
@@ -119,6 +118,7 @@ async function triggerSync() {
       },
     });
     showToast("Database synchronised", "success");
+    await refreshUsers();
   } catch (err) {
     console.error("Sync failed:", err);
   } finally {
@@ -133,22 +133,44 @@ function init() {
   initDropdownGlobalHandlers();
   injectExtendedControls();
   registerKeyboardShortcuts();
-  triggerSync();
+  // Note: no auto-sync here. Syncing reads every user doc to check existence;
+  // it now runs only when the admin clicks "Sync DB". The list itself is served
+  // from the cache below.
 
-  const q = query(collection(db, "users"));
-  onSnapshot(q, (snapshot) => {
-    allUsers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-    const currentIds = new Set(allUsers.map((u) => u.id));
-    selectedUsers = new Set(
-      [...selectedUsers].filter((id) => currentIds.has(id)),
-    );
-    updateUI();
+  loadUsers();
+
+  // Refresh when the admin returns to the tab. loadUsers() respects the cache
+  // TTL, so this costs zero reads when the list is still fresh. This replaces
+  // the permanent whole-`users`-collection live listener.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") loadUsers();
   });
 
   searchInput.addEventListener("input", () => {
     currentPage = 1;
     updateUI();
   });
+}
+
+// The user list, served through the shared cache (same "users:all" key the
+// admin dashboard uses, so they share one fetch). force:true bypasses the TTL
+// after a mutation so the table reflects the change immediately.
+const USERS_TTL = 2 * 60 * 1000;
+async function loadUsers(force = false) {
+  try {
+    allUsers = await getList("users:all", () => collection(db, "users"), {
+      ttl: USERS_TTL,
+      force,
+    });
+    const currentIds = new Set(allUsers.map((u) => u.id));
+    selectedUsers = new Set([...selectedUsers].filter((id) => currentIds.has(id)));
+    updateUI();
+  } catch (e) {
+    console.error("Failed to load users:", e);
+  }
+}
+function refreshUsers() {
+  return loadUsers(true);
 }
 
 /* ============================================================
@@ -605,6 +627,7 @@ function attachListEvents() {
         // Update the role border accent in place
         const row = listEl.querySelector(`.user-row[data-id="${userId}"]`);
         if (row) row.dataset.role = newRole;
+        refreshUsers();
       } catch {
         showToast("Error updating role", "error");
       }
@@ -624,6 +647,7 @@ function attachListEvents() {
           `Plan ${isCurrentlyPremium ? "downgraded to Free" : "upgraded to Premium"}`,
           "success",
         );
+        refreshUsers();
       } catch {
         showToast("Error changing plan", "error");
       }
@@ -651,6 +675,7 @@ function attachListEvents() {
         try {
           await deleteDoc(doc(db, "users", el.dataset.id));
           showToast("User record deleted", "success");
+          refreshUsers();
         } catch {
           showToast("Failed to delete user", "error");
         }
@@ -734,7 +759,7 @@ function renderBulkBar() {
         );
         showToast(`Updated ${selectedUsers.size} user roles`, "success");
         selectedUsers.clear();
-        updateUI();
+        refreshUsers();
       } catch {
         showToast("Error updating bulk roles", "error");
       }
@@ -755,7 +780,7 @@ function renderBulkBar() {
       );
       showToast("Subscription status updated", "success");
       selectedUsers.clear();
-      updateUI();
+      refreshUsers();
     } catch {
       showToast("Error toggling subscriptions", "error");
     }
@@ -782,7 +807,7 @@ function renderBulkBar() {
       );
       showToast(`Deleted ${selectedUsers.size} user records`, "success");
       selectedUsers.clear();
-      updateUI();
+      refreshUsers();
     } catch {
       showToast("Failed during bulk delete", "error");
     }
