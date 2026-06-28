@@ -180,10 +180,12 @@ body {
   gap: clamp(0.9rem, 2vw, 1.4rem);
 }
 
-.step-card-1 { grid-column: span 2; }
-.step-card-2 { grid-column: span 4; }
-.step-card-3 { grid-column: 1 / -1; }
-.step-card-4 { grid-column: span 4; }
+/* Spans tuned for the Class → Subject → Topic → Paper flow:
+   Class (many chips) and Paper get the full width; Subject + Topic pair on a row. */
+.step-card-1 { grid-column: 1 / -1; }   /* Class  */
+.step-card-2 { grid-column: span 3; }   /* Subject */
+.step-card-3 { grid-column: span 3; }   /* Topic  */
+.step-card-4 { grid-column: 1 / -1; }   /* Paper  */
 .step-card-5 { grid-column: span 2; }
 
 .step-card {
@@ -289,10 +291,12 @@ body {
 /* =============================================================
    CHIPS (exam / year / format / subject)
    ============================================================= */
+/* Chips size to their own content and wrap as whole units (a rigid grid forced
+   two-word labels like "Primary 4" to break mid-word). */
 .exam-grid,
 .year-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.55rem;
 }
 
@@ -315,6 +319,7 @@ body {
   font-weight: 600;
   color: var(--ink);
   cursor: pointer;
+  white-space: nowrap; /* keep two-word labels ("Primary 4") on one line */
   transition:
     transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
     box-shadow var(--duration-smooth, 0.2s) var(--ease-default, ease),
