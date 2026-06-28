@@ -128,371 +128,176 @@ const STREAMS = [
   { id: "arts", name: "Arts / Humanities" },
 ];
 
+// ── National / Practice CBT picker: Class → Subject → Topic → Paper ──
+// Class is the primary axis. Each step is a single choice; picking a paper
+// loads that paper's set (up to 60 questions). The legacy multi-subject /
+// scheme / count flow has been replaced by this cascade.
 let natState = {
-  examType: null,
-  queryType: null,
-  paper: "", // "" = any, "1", "2"
-  subjects: [],
-  count: null,
+  classLevel: null, classLabel: null,
+  subject: null, subjectLabel: null,
+  topic: null,
+  paper: null,
 };
-let facets = null;
-let countByKey = {},
-  keyByLabel = {};
 
-const examContainer = () => document.getElementById("exam-chips");
-const streamContainer = () => document.getElementById("stream-chips");
-const yearContainerNat = () => document.getElementById("year-chips");
-const subjectChipsDiv = () => document.getElementById("subject-chips");
-const subjectCountSpan = () => document.getElementById("subject-count");
-const subjectRow = () => document.getElementById("subject-row");
-const doneExam = () => document.getElementById("done-exam");
-const doneStream = () => document.getElementById("done-stream");
-const doneYearNat = () => document.getElementById("done-year");
-const doneSubject = () => document.getElementById("done-subject");
-const doneCount = () => document.getElementById("done-count");
+// The national step-cards, repurposed:
+//   step 1 (exam-chips)  → Class      step 2 (stream-chips) → Subject
+//   step 3 (subject-row) → Topic      step 4 (year-chips)   → Paper
+const classBox = () => document.getElementById("exam-chips");
+const subjectBox = () => document.getElementById("stream-chips");
+const topicBox = () => document.getElementById("subject-chips");
+const paperBox = () => document.getElementById("year-chips");
+const classDone = () => document.getElementById("done-exam");
+const subjectDone = () => document.getElementById("done-stream");
+const topicDone = () => document.getElementById("done-subject");
+const paperDone = () => document.getElementById("done-year");
+const topicCard = () => document.getElementById("subject-row");
+const paperCard = () => document.querySelector(".step-card-4");
 
 function natUpdateReadyState() {
-  const ready =
-    natState.examType &&
-    natState.subjects.length > 0 &&
-    natState.count;
+  const ready = natState.classLevel && natState.subject && natState.topic && natState.paper;
   beginBtn.disabled = !ready;
-  if (ready) {
-    setStatus("All set. Ready — start your test.", true);
-    return;
-  }
+  if (ready) { setStatus("All set. Ready — start your test.", true); return; }
   const need = [];
-  if (!natState.examType) need.push("scheme");
-  if (!natState.subjects.length) need.push("subjects");
-  if (!natState.count) need.push("number of questions");
+  if (!natState.classLevel) need.push("class");
+  else if (!natState.subject) need.push("subject");
+  else if (!natState.topic) need.push("topic");
+  else need.push("paper");
   setStatus("Select: " + need.join(" • "), false);
 }
 
-function buildExamGrid() {
-  examContainer().innerHTML = "";
-  activeExamTypes.forEach((exam) => {
+// Render a single-select row of chips into `box`.
+function natChips(box, items, selectedId, onPick, { dot = false, empty = "Nothing here yet." } = {}) {
+  box.innerHTML = "";
+  if (!items.length) { box.innerHTML = `<span class="picker-hint">${empty}</span>`; return; }
+  items.forEach((it) => {
     const chip = document.createElement("div");
-    chip.className = `custom-chip exam-chip${!exam.live ? " disabled" : ""}`;
-    chip.innerHTML = `<div class="status-dot ${exam.live ? "live" : "offline"}"></div><span>${exam.name}</span>`;
-    if (exam.live) {
-      chip.onclick = () => selectExam(exam, chip);
-    } else {
-      chip.style.pointerEvents = "none";
-      chip.style.opacity = "0.5";
-    }
-    examContainer().appendChild(chip);
+    chip.className = `custom-chip ${it.id === selectedId ? "checked" : ""}`;
+    const lead = dot ? `<div class="status-dot live"></div>` : `<div class="chip-check-box"></div>`;
+    chip.innerHTML = `${lead}<span>${it.label}</span>${it.count != null ? `<span class="chip-count">${it.count}</span>` : ""}`;
+    chip.onclick = () => {
+      box.querySelectorAll(".custom-chip").forEach((c) => c.classList.remove("checked"));
+      chip.classList.add("checked");
+      onPick(it);
+    };
+    box.appendChild(chip);
   });
 }
 
-// Fold the locally-hosted question bank into the ALOC facets so years/subjects
-// we curate ourselves (e.g. WAEC 2020/2021) show up as pickable chips even when
-// ALOC has no questions for them. The loader then prefers our files for those
-// years and falls back to ALOC for the rest.
-function mergeLocalFacets(examId) {
-  if (!facets || typeof LOCAL_QUESTION_BANK === "undefined") return;
-  const board = localBoardKey(examId);
-  const bank = LOCAL_QUESTION_BANK[board];
-  if (!bank) return;
-  facets.subjects = facets.subjects || [];
-  facets.yearsBySubject = facets.yearsBySubject || {};
-  const labels = window.LOCAL_SUBJECT_LABELS || {};
-
-  Object.keys(bank).forEach((subKey) => {
-    const yearCounts = {};
-    let subjTotal = 0;
-    Object.keys(bank[subKey]).forEach((year) => {
-      Object.keys(bank[subKey][year]).forEach((type) => {
-        const c = bank[subKey][year][type].count || 0;
-        yearCounts[year] = (yearCounts[year] || 0) + c;
-        subjTotal += c;
-      });
-    });
-
-    let subj = facets.subjects.find((s) => s.key === subKey);
-    if (!subj) {
-      subj = { key: subKey, label: labels[subKey] || subKey, count: 0 };
-      facets.subjects.push(subj);
-    }
-    subj.count += subjTotal;
-
-    const arr = (facets.yearsBySubject[subKey] =
-      facets.yearsBySubject[subKey] || []);
-    Object.keys(yearCounts).forEach((year) => {
-      const existing = arr.find((y) => y.year === year);
-      if (existing) existing.count += yearCounts[year];
-      else arr.push({ year, count: yearCounts[year] });
-    });
-    arr.sort((a, b) => b.year.localeCompare(a.year));
-  });
-
-  facets.subjects.sort((a, b) => a.label.localeCompare(b.label));
-}
-
-async function selectExam(exam, chip) {
-  examContainer()
-    .querySelectorAll(".exam-chip")
-    .forEach((c) => c.classList.remove("checked"));
-  chip.classList.add("checked");
-  natState.examType = exam.id;
-  natState.queryType = exam.queryType;
-  natState.subjects = [];
-  doneExam().classList.add("show");
-  doneSubject().classList.remove("show");
-  subjectRow().style.display = "flex";
-  subjectChipsDiv().innerHTML =
-    '<span class="picker-hint">Loading subjects…</span>';
-  natUpdateReadyState();
+async function buildClassGrid() {
+  const box = classBox();
+  box.innerHTML = '<span class="picker-hint">Loading classes…</span>';
   try {
-    // The scheme determines the subjects (server config + live counts).
-    const res = await fetch(
-      `${API_BASE}/api/cbt/subjects?scheme=${natState.queryType}`,
-    );
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    facets = await res.json();
-    facets.subjects = (facets.subjects || []).filter((s) => s.count > 0);
-    countByKey = {};
-    keyByLabel = {};
-    facets.subjects.forEach((s) => {
-      countByKey[s.key] = s.count;
-      keyByLabel[s.label] = s.key;
-    });
-    if (facets.subjects.length) renderNatSubjects();
-    else
-      subjectChipsDiv().innerHTML =
-        '<span class="picker-hint">No questions in the bank for this scheme yet.</span>';
+    const d = await (await fetch(`${API_BASE}/api/cbt/classes`)).json();
+    const classes = (d.classes || []).filter((c) => c.count > 0);
+    if (!classes.length) { box.innerHTML = '<span class="picker-hint">No questions in the bank yet.</span>'; return; }
+    natChips(box, classes.map((c) => ({ id: c.key, label: c.label, count: c.count })), natState.classLevel, selectClass, { dot: true });
   } catch (e) {
-    facets = { subjects: [] };
-    countByKey = {};
-    keyByLabel = {};
-    subjectChipsDiv().innerHTML =
-      '<span class="picker-error">Could not load subjects. Is the server running?</span>';
+    box.innerHTML = '<span class="picker-error">Could not load classes. Is the server running?</span>';
   }
 }
 
-// Step 2 is now the PAPER picker (Paper 1 / Paper 2 / Any) — lets our questions
-// mix with real ones per paper. Reuses the stream chip container + done marker.
-const PAPERS = [
-  { id: "", name: "Any paper" },
-  { id: "1", name: "Paper 1" },
-  { id: "2", name: "Paper 2" },
-];
-function buildStreamGrid() {
-  streamContainer().innerHTML = "";
-  PAPERS.forEach((p) => {
-    const chip = document.createElement("div");
-    chip.className = "custom-chip stream-chip" + (natState.paper === p.id ? " checked" : "");
-    chip.innerHTML = `<div class="chip-check-box"></div><span>${p.name}</span>`;
-    chip.onclick = () => {
-      streamContainer()
-        .querySelectorAll(".stream-chip")
-        .forEach((c) => c.classList.remove("checked"));
-      chip.classList.add("checked");
-      natState.paper = p.id;
-      doneStream().classList.add("show");
-      natUpdateReadyState();
-    };
-    streamContainer().appendChild(chip);
-  });
-}
-
-function renderNatSubjects() {
-  subjectChipsDiv().innerHTML = "";
-  const list = facets ? facets.subjects : [];
-  if (!list.length) {
-    subjectChipsDiv().innerHTML =
-      '<span class="picker-hint">No questions in the bank for this scheme yet.</span>';
-    natState.subjects = [];
-    onNatSubjectsChanged();
-    return;
-  }
-  natState.subjects = natState.subjects.filter((lbl) =>
-    list.some((s) => s.label === lbl),
-  );
-  list.forEach((s) => {
-    if (COMPULSORY.includes(s.label) && !natState.subjects.includes(s.label))
-      natState.subjects.push(s.label);
-  });
-  list.forEach((s) => {
-    const isComp = COMPULSORY.includes(s.label);
-    const selected = natState.subjects.includes(s.label);
-    const chip = document.createElement("div");
-    chip.className = `custom-chip ${isComp ? "compulsory" : ""} ${selected ? "checked" : ""}`;
-    chip.innerHTML = `<div class="chip-check-box"></div><span>${s.label}</span><span class="chip-count">${s.count}</span>`;
-    if (!isComp) {
-      chip.onclick = () => {
-        const i = natState.subjects.indexOf(s.label);
-        if (i !== -1) {
-          natState.subjects.splice(i, 1);
-          chip.classList.remove("checked");
-        } else {
-          if (natState.subjects.length >= MAX_SUBJECTS) {
-            setStatus(`Max ${MAX_SUBJECTS} subjects`, false);
-            return;
-          }
-          natState.subjects.push(s.label);
-          chip.classList.add("checked");
-        }
-        onNatSubjectsChanged();
-      };
-    } else {
-      chip.style.cursor = "default";
-      chip.title = "Compulsory";
-    }
-    subjectChipsDiv().appendChild(chip);
-  });
-  onNatSubjectsChanged();
-}
-
-function onNatSubjectsChanged() {
-  subjectCountSpan().textContent = natState.subjects.length;
-  doneSubject().classList.toggle("show", natState.subjects.length > 0);
-  refreshTopics();
+function selectClass(it) {
+  natState.classLevel = it.id; natState.classLabel = it.label;
+  natState.subject = natState.subjectLabel = natState.topic = natState.paper = null;
+  classDone().classList.add("show");
+  [subjectDone(), topicDone(), paperDone()].forEach((d) => d && d.classList.remove("show"));
+  topicCard().style.display = "none";
+  if (paperCard()) paperCard().style.display = "none";
+  loadNatSubjects();
   natUpdateReadyState();
 }
 
-function renderNatYears() {
-  yearContainerNat().innerHTML = "";
-  if (!natState.subjects.length) {
-    yearContainerNat().innerHTML =
-      '<span class="picker-hint">Choose subjects to see available years</span>';
-    natState.year = null;
-    doneYearNat().classList.remove("show");
-    return;
-  }
-  const merged = {};
-  let allCount = 0;
-  natState.subjects.forEach((label) => {
-    const key = keyByLabel[label];
-    if (!key) return;
-    allCount += countByKey[key] || 0;
-    (facets.yearsBySubject[key] || []).forEach(({ year, count }) => {
-      merged[year] = (merged[year] || 0) + count;
-    });
-  });
-  const years = Object.entries(merged)
-    .map(([year, count]) => ({ year, count }))
-    .sort((a, b) => b.year.localeCompare(a.year));
-  if (natState.year !== "all" && !years.some((y) => y.year === natState.year))
-    natState.year = "all";
-  const addChip = (label, value, count) => {
-    const chip = document.createElement("div");
-    chip.className = `custom-chip year-chip ${natState.year === value ? "checked" : ""}`;
-    chip.innerHTML = `<div class="status-dot live"></div><span>${label}</span><span class="chip-count">${count}</span>`;
-    chip.onclick = () => {
-      yearContainerNat()
-        .querySelectorAll(".year-chip")
-        .forEach((c) => c.classList.remove("checked"));
-      chip.classList.add("checked");
-      natState.year = value;
-      doneYearNat().classList.add("show");
-      natUpdateReadyState();
-    };
-    yearContainerNat().appendChild(chip);
-  };
-  addChip("All Years", "all", allCount);
-  years.forEach((y) => addChip(y.year, y.year, y.count));
-  doneYearNat().classList.toggle("show", !!natState.year);
-}
-
-function initCountChips() {
-  document.querySelectorAll("#count-chips .count-chip").forEach((chip) => {
-    const val = parseInt(chip.getAttribute("data-count"), 10);
-    if (natState.count === val) chip.classList.add("checked");
-    chip.onclick = () => {
-      document
-        .querySelectorAll("#count-chips .count-chip")
-        .forEach((c) => c.classList.remove("checked"));
-      chip.classList.add("checked");
-      natState.count = val;
-      doneCount().classList.add("show");
-      natUpdateReadyState();
-    };
-  });
-  initFormatChips();
-}
-
-// Optional filters: MCQ-only / Theory-only, and a topic dropdown.
-function initFormatChips() {
-  document.querySelectorAll("#format-chips .fmt-chip").forEach((chip) => {
-    chip.onclick = () => {
-      document.querySelectorAll("#format-chips .fmt-chip").forEach((c) => c.classList.remove("checked"));
-      chip.classList.add("checked");
-      natState.format = chip.getAttribute("data-fmt") || "";
-    };
-  });
-  const sel = document.getElementById("topic-select");
-  if (sel) sel.onchange = () => { natState.topic = sel.value || ""; };
-  const gsel = document.getElementById("grade-select");
-  if (gsel) gsel.onchange = () => { natState.grade = gsel.value || ""; };
-}
-
-// Load distinct topics + grades for the chosen scheme + subjects into the dropdowns.
-async function refreshTopics() {
-  const wrap = document.getElementById("topic-wrap"), sel = document.getElementById("topic-select");
-  const gwrap = document.getElementById("grade-wrap"), gsel = document.getElementById("grade-select");
-  const hide = () => {
-    if (wrap) wrap.style.display = "none"; natState.topic = "";
-    if (gwrap) gwrap.style.display = "none"; natState.grade = "";
-  };
-  if (!natState.queryType || !natState.subjects.length) return hide();
+async function loadNatSubjects() {
+  const box = subjectBox();
+  box.innerHTML = '<span class="picker-hint">Loading subjects…</span>';
   try {
-    const keys = natState.subjects.map((l) => keyByLabel[l] || l);
-    const params = new URLSearchParams({ scheme: natState.queryType });
-    keys.forEach((k) => params.append("subject", k));
-    const r = await fetch(`${API_BASE}/api/cbt/topics?${params}`);
-    const d = await r.json();
-    const topics = (d.topics || []).filter((t) => t.topic);
-    const grades = (d.grades || []).filter((g) => g.grade);
-    if (sel && wrap) {
-      if (topics.length) {
-        sel.innerHTML = `<option value="">All topics</option>` +
-          topics.map((t) => `<option value="${t.topic.replace(/"/g, "&quot;")}">${t.topic} (${t.count})</option>`).join("");
-        sel.value = natState.topic || ""; wrap.style.display = "";
-      } else { wrap.style.display = "none"; natState.topic = ""; }
-    }
-    if (gsel && gwrap) {
-      if (grades.length) {
-        gsel.innerHTML = `<option value="">All grades</option>` +
-          grades.map((g) => `<option value="${g.grade.replace(/"/g, "&quot;")}">${g.grade} (${g.count})</option>`).join("");
-        gsel.value = natState.grade || ""; gwrap.style.display = "";
-      } else { gwrap.style.display = "none"; natState.grade = ""; }
-    }
-  } catch (_) { hide(); }
+    const d = await (await fetch(`${API_BASE}/api/cbt/subjects?class=${natState.classLevel}`)).json();
+    const subs = (d.subjects || []).filter((s) => s.count > 0);
+    natChips(box, subs.map((s) => ({ id: s.key, label: s.label, count: s.count })), natState.subject, selectSubject,
+      { empty: "No subjects for this class yet." });
+  } catch (e) {
+    box.innerHTML = '<span class="picker-error">Could not load subjects.</span>';
+  }
+}
+
+function selectSubject(it) {
+  natState.subject = it.id; natState.subjectLabel = it.label;
+  natState.topic = natState.paper = null;
+  subjectDone().classList.add("show");
+  [topicDone(), paperDone()].forEach((d) => d && d.classList.remove("show"));
+  topicCard().style.display = "";
+  if (paperCard()) paperCard().style.display = "none";
+  loadNatTopics();
+  natUpdateReadyState();
+}
+
+async function loadNatTopics() {
+  const box = topicBox();
+  box.innerHTML = '<span class="picker-hint">Loading topics…</span>';
+  try {
+    const d = await (await fetch(`${API_BASE}/api/cbt/topics?class=${natState.classLevel}&subject=${natState.subject}`)).json();
+    const topics = (d.topics || []).filter((t) => t.count > 0);
+    natChips(box, topics.map((t) => ({ id: t.topic, label: t.topic, count: t.count })), natState.topic, selectTopic,
+      { empty: "No topics for this subject yet." });
+  } catch (e) {
+    box.innerHTML = '<span class="picker-error">Could not load topics.</span>';
+  }
+}
+
+function selectTopic(it) {
+  natState.topic = it.id;
+  natState.paper = null;
+  topicDone().classList.add("show");
+  if (paperDone()) paperDone().classList.remove("show");
+  if (paperCard()) paperCard().style.display = "";
+  loadNatPapers();
+  natUpdateReadyState();
+}
+
+async function loadNatPapers() {
+  const box = paperBox();
+  box.innerHTML = '<span class="picker-hint">Loading papers…</span>';
+  try {
+    const params = new URLSearchParams({ class: natState.classLevel, subject: natState.subject, topic: natState.topic });
+    const d = await (await fetch(`${API_BASE}/api/cbt/papers?${params}`)).json();
+    const list = d.list || [];
+    if (!list.length) { box.innerHTML = '<span class="picker-hint">No papers yet for this topic.</span>'; return; }
+    const items = list.map((p) => ({ id: String(p.paper), label: p.label, count: Math.min(60, (d.count || 0) - (p.paper - 1) * 60) }));
+    natChips(box, items, natState.paper, selectPaper, { dot: true });
+  } catch (e) {
+    box.innerHTML = '<span class="picker-error">Could not load papers.</span>';
+  }
+}
+
+function selectPaper(it) {
+  natState.paper = it.id;
+  paperDone().classList.add("show");
+  natUpdateReadyState();
+}
+
+// Relabel the national step-cards for Class → Subject → Topic → Paper and hide
+// the now-unused "Number of questions" step (a paper is the unit of practice).
+function relabelNationalSteps() {
+  const set = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
+  set('.step-card-1 .step-title[data-cat="national"]', "Class");
+  set('.step-card-1 .step-sub[data-cat="national"]', "Pick your class");
+  set('.step-card-2 .step-title[data-cat="national"]', "Subject");
+  set('.step-card-2 .step-sub[data-cat="national"]', "Pick a subject");
+  set('#subject-row .step-title', "Topic");
+  set('#compulsoryHint', "Pick a topic");
+  set('.step-card-4 .step-title[data-cat="national"]', "Paper");
+  set('.step-card-4 .step-sub[data-cat="national"]', "Each paper has up to 60 questions");
+  const countCard = document.querySelector(".step-card-5");
+  if (countCard) countCard.style.display = "none";
 }
 
 function initNational() {
-  natState = {
-    examType: null,
-    queryType: null,
-    paper: "",
-    subjects: [],
-    count: null,
-    format: "",
-    topic: "",
-    grade: "",
-  };
-  facets = null;
-  countByKey = {};
-  keyByLabel = {};
-  buildExamGrid();
-  buildStreamGrid();
-  initCountChips();
-  ["done-exam", "done-stream", "done-subject", "done-count"].forEach((id) =>
-    document.getElementById(id)?.classList.remove("show"),
-  );
-  subjectRow().style.display = "none";
-
-  // Relabel step 2 (was Class/Stream) → Paper; hide the old Year step (step 4)
-  // since questions aren't dated; renumber the visible step badges 1–4.
-  document.querySelectorAll('.step-card-2 [data-cat="national"]').forEach((el) => {
-    if (el.classList.contains("step-title")) el.textContent = "Paper";
-    if (el.classList.contains("step-sub")) el.textContent = "Filter by paper (optional)";
-  });
-  const yearCard = document.querySelector(".step-card-4");
-  if (yearCard) yearCard.style.display = "none";
-  const n5 = document.querySelector(".step-card-5 .step-num");
-  if (n5) n5.textContent = "4";
-
+  natState = { classLevel: null, classLabel: null, subject: null, subjectLabel: null, topic: null, paper: null };
+  relabelNationalSteps();
+  ["done-exam", "done-stream", "done-subject", "done-year"].forEach((id) => document.getElementById(id)?.classList.remove("show"));
+  topicCard().style.display = "none";
+  if (paperCard()) paperCard().style.display = "none";
+  buildClassGrid();
   natUpdateReadyState();
 }
 
@@ -1142,21 +947,18 @@ function initInternational() {
 // Build the relative URL the current selection would launch — also used to make
 // a shareable link. Returns null when the active category has no target yet.
 function targetUrl() {
-  if (activeCat === "national" || activeCat === "practice") {
-    // Spread the chosen total across the selected subjects.
-    const total = natState.count || 40;
-    const per = Math.max(1, Math.ceil(total / Math.max(1, natState.subjects.length)));
+  // Every non-competition tab now runs the Class → Subject → Topic → Paper CBT
+  // builder. The chosen paper IS the test (up to 60 questions).
+  if (activeCat !== "competition") {
+    if (!natState.classLevel || !natState.subject || !natState.topic || !natState.paper) return null;
     const params = new URLSearchParams({
       source: "cbt",
-      scheme: natState.queryType,
-      // pass subject KEYS (the bank is keyed by subject key, not label)
-      subjects: natState.subjects.map((l) => keyByLabel[l] || l).join(","),
-      n: String(per),
+      class: natState.classLevel,
+      // `subjects` (plural) so the quiz engine's subject loop reads it; single value.
+      subjects: natState.subject,
+      topic: natState.topic,
+      paper: String(natState.paper),
     });
-    if (natState.paper) params.set("paper", natState.paper);
-    if (natState.format) params.set("format", natState.format);
-    if (natState.topic) params.set("topic", natState.topic);
-    if (natState.grade) params.set("grade", natState.grade);
     return `../question/question.html?${params.toString()}`;
   }
 
@@ -1304,9 +1106,7 @@ if (assignBtn) {
     // Store a site-root path (pathname + search) — what the dashboard links to.
     const u = new URL(rel, location.href);
     const url = u.pathname + u.search;
-    const schemeName =
-      (activeExamTypes.find((e) => e.id === natState.examType) || {}).name || "Practice";
-    const defTitle = `${schemeName} • ${natState.subjects.join(", ")}`.slice(0, 120);
+    const defTitle = `${natState.classLabel || "Practice"} • ${natState.subjectLabel || natState.subject || ""} • ${natState.topic || ""} (Paper ${natState.paper || ""})`.slice(0, 120);
     const title = (window.prompt("Title for this assignment:", defTitle) || "").trim();
     if (!title) return; // cancelled or empty
     const token = await ppAuthToken();
@@ -1316,7 +1116,7 @@ if (assignBtn) {
       const r = await fetch(`${API_BASE}/api/classroom/assign-cbt`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ url, title, subject: natState.subjects[0] || "", all: true }),
+        body: JSON.stringify({ url, title, subject: natState.subject || "", all: true }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Failed");
@@ -1351,9 +1151,12 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 // National + International are both our own CBT now. Competition (third-party
 // papers) stays hidden until licensed.
 document.querySelectorAll(".cat-tab").forEach((b) => {
-  if (b.dataset.tab === "competition") b.style.display = "none";
+  // Competition (third-party papers) and International (legacy Cambridge flow)
+  // are hidden — all CBT now runs through the one Class→Subject→Topic→Paper
+  // builder under the National / Practice tabs.
+  if (b.dataset.tab === "competition" || b.dataset.tab === "international") b.style.display = "none";
 });
-const startCat = ["international", "practice"].includes(initialCat) ? initialCat : "national";
+const startCat = initialCat === "practice" ? "practice" : "national";
 activeCat = startCat;
 applyCat(startCat);
 updateHeaderContent(startCat);

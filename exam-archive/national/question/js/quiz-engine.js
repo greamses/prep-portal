@@ -524,17 +524,29 @@ const Quiz = (() => {
   // ── CBT loader (source=cbt): our own AI-generated bank (/api/cbt),
   //    keyed by scheme + subject. Maps onto the engine's question shape. ──
   async function loadFromCbt() {
+    const cls = PAGE_CONFIG.cbtClass;
     const scheme = PAGE_CONFIG.scheme || "utme";
     const subjects = PAGE_CONFIG.subjects.length ? PAGE_CONFIG.subjects : ["mathematics"];
-    const per = PAGE_CONFIG.limit || 15;
+    // Class mode → one paper (the whole ≤60 set). Legacy scheme mode → `n` per subject.
+    const per = cls ? 60 : (PAGE_CONFIG.limit || 15);
     const all = [];
     for (const subKey of subjects) {
       try {
-        const params = new URLSearchParams({ scheme, subject: subKey, limit: String(per), random: "1" });
-        if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
-        if (PAGE_CONFIG.format) params.set("format", PAGE_CONFIG.format);
-        if (PAGE_CONFIG.topic) params.set("topic", PAGE_CONFIG.topic);
-        if (PAGE_CONFIG.grade) params.set("grade", PAGE_CONFIG.grade);
+        const params = new URLSearchParams({ subject: subKey, limit: String(per) });
+        if (cls) {
+          // NEW: Class → Subject → Topic → Paper (a stable paper, no shuffle).
+          params.set("class", cls);
+          if (PAGE_CONFIG.topic) params.set("topic", PAGE_CONFIG.topic);
+          if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
+        } else {
+          // LEGACY scheme mode.
+          params.set("scheme", scheme);
+          params.set("random", "1");
+          if (PAGE_CONFIG.paper) params.set("paper", PAGE_CONFIG.paper);
+          if (PAGE_CONFIG.format) params.set("format", PAGE_CONFIG.format);
+          if (PAGE_CONFIG.topic) params.set("topic", PAGE_CONFIG.topic);
+          if (PAGE_CONFIG.grade) params.set("grade", PAGE_CONFIG.grade);
+        }
         const res = await fetch(`${API_BASE}/api/cbt?${params}`);
         if (!res.ok) { console.warn("CBT fetch", subKey, "→ HTTP", res.status); continue; }
         const data = await res.json();

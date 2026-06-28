@@ -21,8 +21,10 @@ const PAGE_CONFIG = {
     // source=aloc → load from the Firestore-backed /api/questions endpoint
     // instead of the static per-folder scripts. `n`/`limit` = questions per subject.
     source:    (urlParams.get('source') || '').toLowerCase(),
-    // source=cbt → our own AI-generated bank (/api/cbt), keyed by scheme.
+    // source=cbt → our own AI-generated bank (/api/cbt). New model is keyed by
+    // Class → Subject → Topic → Paper; `scheme` is kept for the legacy path.
     scheme:    (urlParams.get('scheme') || '').toLowerCase(),
+    cbtClass:  (urlParams.get('class') || '').trim(),
     paper:     (urlParams.get('paper') || '').trim(),
     // CBT optional filters: format = '' | 'mcq' | 'blank' | 'theory'; topic = exact topic.
     format:    (urlParams.get('format') || '').toLowerCase().trim(),
