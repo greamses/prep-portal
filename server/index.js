@@ -71,19 +71,26 @@ app.post("/api/payments/webhook", express.raw({ type: "*/*" }), payments.webhook
 
 app.use(express.json({ limit: "4mb" }));
 
+// ── Firestore daily quota guard ───────────────────────────────────
+// Caps usage at 45k reads / 15k writes a day so we never hit the hard free-tier
+// limit (50k/20k) that blocks the DB. `quota.guard` blocks the data/panel routes
+// once over cap (429); the public usage route lets the browser check + report.
+const quota = require("./lib/quota");
+app.use("/api/usage", require("./routes/usage")());
+
 // ── Routes ────────────────────────────────────────────────────────
 app.use("/api/payments", payments.router);
-app.use("/api/partner", require("./routes/partner")());
+app.use("/api/partner", quota.guard, require("./routes/partner")());
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());
-app.use("/api/activities", require("./routes/activities")());
-app.use("/api/classroom", require("./routes/classroom")());
-app.use("/api/calendar", require("./routes/calendar")());
+app.use("/api/activities", quota.guard, require("./routes/activities")());
+app.use("/api/classroom", quota.guard, require("./routes/classroom")());
+app.use("/api/calendar", quota.guard, require("./routes/calendar")());
 app.use("/api/questions", require("./routes/questions")());
 app.use("/api/config", require("./routes/config")());
-app.use("/api/cbt", require("./routes/cbt")());
+app.use("/api/cbt", quota.guard, require("./routes/cbt")());
 app.use("/api/tts",   require("./routes/tts")());
-app.use("/api/admin",   require("./routes/admin")(db, auth));
+app.use("/api/admin",   quota.guard, require("./routes/admin")(db, auth));
 app.use("/api/magazine", require("./routes/magazine")(db));
 app.use("/api/youtube",  require("./routes/youtube")());
 app.use("/api/grammar",  require("./routes/grammar")());

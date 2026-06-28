@@ -166,7 +166,12 @@ async function loadUsers(force = false) {
     selectedUsers = new Set([...selectedUsers].filter((id) => currentIds.has(id)));
     updateUI();
   } catch (e) {
-    console.error("Failed to load users:", e);
+    if (e && e.quotaBlocked && listEl) {
+      listEl.innerHTML = `<div class="empty-state"><h3>Daily database limit reached</h3><p>${e.message}</p></div>`;
+      if (statsEl) statsEl.innerHTML = "";
+    } else {
+      console.error("Failed to load users:", e);
+    }
   }
 }
 function refreshUsers() {

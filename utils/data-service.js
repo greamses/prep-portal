@@ -98,6 +98,43 @@ function dedupe(key, factory) {
 
 /* ──────────────────────────────── reads ──────────────────────────────────── */
 
+/* ─────────────────────────── Firestore quota guard ──────────────────────── */
+// Mirrors the server caps (45k reads / 15k writes a day). We check the shared
+// tally before a read/write and report what we use, so a client-side runaway
+// (the old blog-poll failure mode) can never drive the project past the hard
+// free-tier limit that would block the DB. A cache hit costs nothing and is not
+// gated — only ACTUAL Firestore fetches are checked + counted.
+const QAPI = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+let _q = { at: 0, readsBlocked: false, writesBlocked: false };
+async function quotaStatus() {
+  if (Date.now() - _q.at < 60000) return _q;
+  _q.at = Date.now();
+  try {
+    const r = await fetch(`${QAPI}/api/usage`);
+    if (r.ok) { const d = await r.json(); _q.readsBlocked = !!d.readsBlocked; _q.writesBlocked = !!d.writesBlocked; }
+  } catch (e) {}
+  return _q;
+}
+let _report = { reads: 0, writes: 0, timer: null };
+function reportUsage(reads, writes) {
+  _report.reads += reads || 0;
+  _report.writes += writes || 0;
+  if (_report.timer) return;
+  _report.timer = setTimeout(() => {
+    const body = JSON.stringify({ reads: _report.reads, writes: _report.writes });
+    _report = { reads: 0, writes: 0, timer: null };
+    try { fetch(`${QAPI}/api/usage/record`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }); } catch (e) {}
+  }, 4000);
+}
+export function quotaError(kind) {
+  const e = new Error(kind === "write"
+    ? "Daily write limit reached — please try again tomorrow."
+    : "Daily read limit reached — please try again tomorrow.");
+  e.quotaBlocked = true;
+  e.kind = kind;
+  return e;
+}
+
 /**
  * Read a single document, served from cache when fresh.
  * @param {string} path  e.g. "users/abc123"
@@ -110,8 +147,10 @@ export async function getDoc(path, { ttl = DEFAULT_TTL, force = false } = {}) {
     if (hit !== undefined) return hit;
   }
   return dedupe(key, async () => {
+    if ((await quotaStatus()).readsBlocked) throw quotaError("read");
     const snap = await fsGetDoc(doc(db, ...path.split("/")));
     const v = snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    reportUsage(1, 0);
     writeCache(key, v);
     return v;
   });
@@ -134,8 +173,10 @@ export async function getList(
     if (hit !== undefined) return hit;
   }
   return dedupe(key, async () => {
+    if ((await quotaStatus()).readsBlocked) throw quotaError("read");
     const snap = await fsGetDocs(queryFactory());
     const v = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    reportUsage(snap.size || v.length, 0);
     writeCache(key, v);
     return v;
   });
@@ -184,6 +225,7 @@ export function watchProfile(uid, cb) {
       },
       () => {}, // swallow transient errors; cached value stands
     );
+    reportUsage(1, 0); // one initial read for the shared listener (not gated — it's the global nav)
   } else if (profileState.value !== undefined) {
     cb(profileState.value); // already have a live value to hand over
   }
@@ -225,7 +267,9 @@ export async function saveDoc(path, data, { merge = true, skipIfUnchanged = fals
     const cur = readCache(key, Infinity);
     if (cur !== undefined && shallowEqualSubset(cur, data)) return false;
   }
+  if ((await quotaStatus()).writesBlocked) throw quotaError("write");
   await setDoc(doc(db, ...path.split("/")), data, { merge });
+  reportUsage(0, 1);
   const cur = readCache(key, Infinity);
   writeCache(key, { ...(cur && typeof cur === "object" ? cur : {}), ...data });
   return true;
@@ -234,7 +278,9 @@ export async function saveDoc(path, data, { merge = true, skipIfUnchanged = fals
 /** updateDoc with cache write-through. */
 export async function updateFields(path, data) {
   const key = "doc:" + path;
+  if ((await quotaStatus()).writesBlocked) throw quotaError("write");
   await updateDoc(doc(db, ...path.split("/")), data);
+  reportUsage(0, 1);
   const cur = readCache(key, Infinity);
   writeCache(key, { ...(cur && typeof cur === "object" ? cur : {}), ...data });
 }
