@@ -2,9 +2,13 @@
  * archive-guard.js — gates the verbatim past-paper archive pages.
  *
  * Include as the FIRST script in <head> of any archive page. It hides the page,
- * asks the server whether the archive is enabled (config/site.archiveEnabled,
- * default OFF), and either reveals the page or replaces it with a friendly
- * "unavailable" notice. Fails CLOSED — if it can't confirm, it stays hidden.
+ * checks whether the archive is enabled, and either reveals the page or replaces
+ * it with a friendly "unavailable" notice.
+ *
+ * Source of truth is the STATIC /data/config.js (shipped with the deploy) — no
+ * Firestore read, so the gate works even when the Firestore quota is exhausted.
+ * Change it by editing /data/config.js and redeploying (the "Publish" flow).
+ * Fails CLOSED only if the static config itself can't load.
  */
 (function () {
   var API = location.port === "5500" ? "http://127.0.0.1:5000" : "";
@@ -50,8 +54,12 @@
     else document.addEventListener("DOMContentLoaded", paint);
   }
 
-  fetch(API + "/api/config")
-    .then(function (r) { return r.json(); })
-    .then(function (c) { if (c && c.archiveEnabled === true) reveal(); else block(); })
-    .catch(function () { block(); }); // fail closed
+  // Static config decides — no Firestore, quota-proof. Change it by editing
+  // /data/config.js and redeploying (the admin "Publish" flow).
+  import("/data/config.js")
+    .then(function (m) {
+      if (m && m.SITE_CONFIG && m.SITE_CONFIG.archiveEnabled === true) reveal();
+      else block();
+    })
+    .catch(function () { block(); }); // can't load static config → fail closed
 })();
