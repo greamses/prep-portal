@@ -5,4 +5,6 @@
 //
 // archiveEnabled  — reveal the verbatim past-paper archive pages (copyright gate).
 // hideOriginals   — hide source:"past" questions from learners in the CBT bank.
-export const SITE_CONFIG = { archiveEnabled: true, hideOriginals: false };
+//                   (Harmless for cbtQuestions now: no doc is tagged source:"past"
+//                   anymore — those were original AI questions, retagged to "ai".)
+export const SITE_CONFIG = { archiveEnabled: true, hideOriginals: true };
