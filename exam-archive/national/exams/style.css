@@ -306,6 +306,31 @@ body {
   gap: 0.55rem;
 }
 
+/* Topic search box (Step 3, Class/Practice axis) */
+.topic-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.1rem 0 0.7rem;
+  padding: 0.55rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  background: var(--surface-secondary, var(--bg));
+  border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color var(--duration-smooth, 0.25s) ease,
+    box-shadow var(--duration-smooth, 0.25s) ease;
+}
+.topic-search::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+.topic-search:focus {
+  border-color: var(--tile);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tile) 18%, transparent);
+}
+
 .custom-chip {
   display: inline-flex;
   align-items: center;

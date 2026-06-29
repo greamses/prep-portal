@@ -175,6 +175,8 @@ async function cbtManifest() {
 const cTopBox = () => document.getElementById("exam-chips");
 const cSubjectBox = () => document.getElementById("stream-chips");
 const cTopicBox = () => document.getElementById("subject-chips");
+const cTopicSearch = () => document.getElementById("topic-search");
+let _topicQuery = ""; // live filter text for the topic step
 const cPaperBox = () => document.getElementById("year-chips");
 const cTopDone = () => document.getElementById("done-exam");
 const cSubjectDone = () => document.getElementById("done-stream");
@@ -274,6 +276,7 @@ function selectTop(top) {
   cTopicCard().style.display = "none";
   if (cPaperCard()) cPaperCard().style.display = "none";
   if (cFormatWrap()) cFormatWrap().style.display = "none";
+  resetTopicSearch();
   renderCbtSubjects();
   natUpdateReadyState();
 }
@@ -293,14 +296,28 @@ function selectCbtSubject(sub) {
   cTopicCard().style.display = "";
   if (cPaperCard()) cPaperCard().style.display = "none";
   if (cFormatWrap()) cFormatWrap().style.display = "none";
+  resetTopicSearch();
   renderCbtTopics();
   natUpdateReadyState();
 }
 
+// Clear the topic filter (called whenever the topic list changes underneath it).
+function resetTopicSearch() {
+  _topicQuery = "";
+  const s = cTopicSearch();
+  if (s) s.value = "";
+}
+
 function renderCbtTopics() {
   const topics = cbtState._topics || [];
-  cbtChips(cTopicBox(), topics.map((t) => ({ id: t.name, label: t.name, count: t.count })), cbtState.topic,
-    (it) => selectCbtTopic(topics.find((t) => t.name === it.id)), { empty: "No topics yet." });
+  const search = cTopicSearch();
+  // Only surface the search box when there's more than one topic to filter among.
+  if (search) search.hidden = topics.length < 2;
+  const q = _topicQuery.trim().toLowerCase();
+  const shown = q ? topics.filter((t) => String(t.name).toLowerCase().includes(q)) : topics;
+  cbtChips(cTopicBox(), shown.map((t) => ({ id: t.name, label: t.name, count: t.count })), cbtState.topic,
+    (it) => selectCbtTopic(topics.find((t) => t.name === it.id)),
+    { empty: q ? "No topics match your search." : "No topics yet." });
 }
 
 function selectCbtTopic(t) {
@@ -350,6 +367,7 @@ function initCbt(axis, region) {
   };
   relabelCbtSteps();
   ["done-exam", "done-stream", "done-subject", "done-year"].forEach((id) => document.getElementById(id)?.classList.remove("show"));
+  resetTopicSearch();
   cTopicCard().style.display = "none";
   if (cPaperCard()) cPaperCard().style.display = "none";
   if (cFormatWrap()) cFormatWrap().style.display = "none";
@@ -1186,6 +1204,13 @@ function initMode(cat) {
   setStatus("Awaiting selections...", false);
   beginBtn.disabled = true;
 }
+
+// ── Topic search: live-filter the topic chips ──────────────────────
+(() => {
+  const s = cTopicSearch();
+  if (!s) return;
+  s.addEventListener("input", () => { _topicQuery = s.value; renderCbtTopics(); });
+})();
 
 // ── Category tab clicks ────────────────────────────────────────────
 document.querySelectorAll(".cat-tab").forEach((btn) => {
