@@ -23,15 +23,45 @@ module.exports = function (db, auth) {
 
   router.use(authenticate, requireAdmin);
 
-  // ── Publish: regenerate the static practice bank + redeploy ──────────────
-  // Triggers a Vercel Deploy Hook; the build re-exports data/cbt from Firestore,
-  // so questions added in the editor go live. A short cooldown prevents spamming
-  // redeploys (each rebuild reads the bank once). Needs the DEPLOY_HOOK_URL env.
+  // ── Publish: re-export the static practice bank from Firestore, then deploy ──
+  // Preferred path: trigger the "Publish CBT bank" GitHub Action (workflow_dispatch)
+  // which re-exports data/cbt from Firestore, commits it, and pushes — Vercel then
+  // auto-deploys. This is what makes editor changes actually go live; students keep
+  // reading committed static files at the edge (≈0 Firestore reads).
+  //   Needs: GH_DISPATCH_TOKEN (PAT with Actions: read/write) + the FIREBASE_SERVICE_ACCOUNT
+  //   GitHub Actions secret. GH_REPO/GH_PUBLISH_WORKFLOW override the defaults.
+  // Fallback: if no GH token is configured, POST the Vercel Deploy Hook (DEPLOY_HOOK_URL),
+  // which only REDEPLOYS the already-committed bank (no re-export) — kept so the button
+  // never hard-fails. A short cooldown prevents spamming publishes.
+  const GH_REPO = process.env.GH_REPO || "greamses/prep-portal";
+  const GH_WORKFLOW = process.env.GH_PUBLISH_WORKFLOW || "publish-bank.yml";
+  const GH_REF = process.env.GH_PUBLISH_REF || "main";
+
+  async function dispatchPublishWorkflow() {
+    const token = process.env.GH_DISPATCH_TOKEN;
+    if (!token) return false;
+    const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "prep-portal-publish",
+      },
+      body: JSON.stringify({ ref: GH_REF }),
+    });
+    if (r.status === 204) return true;
+    const body = await r.text().catch(() => "");
+    throw new Error(`GitHub dispatch ${r.status}: ${body.slice(0, 200)}`);
+  }
+
   let lastPublish = 0;
   router.post("/publish", async (req, res) => {
+    const hasGh = !!process.env.GH_DISPATCH_TOKEN;
     const hook = process.env.DEPLOY_HOOK_URL;
-    if (!hook) {
-      return res.status(503).json({ error: "Publishing isn't set up yet. Create a Vercel Deploy Hook and add it as the DEPLOY_HOOK_URL env var." });
+    if (!hasGh && !hook) {
+      return res.status(503).json({ error: "Publishing isn't set up yet. Add a GH_DISPATCH_TOKEN (to run the Publish CBT bank action) or a DEPLOY_HOOK_URL env var." });
     }
     const now = Date.now();
     if (now - lastPublish < 120000) {
@@ -40,9 +70,18 @@ module.exports = function (db, auth) {
     }
     lastPublish = now;
     try {
-      const r = await fetch(hook, { method: "POST" });
-      if (!r.ok) throw new Error("deploy hook returned " + r.status);
-      res.json({ ok: true, message: "Publishing… your changes go live in ~1–2 minutes." });
+      const ranExport = await dispatchPublishWorkflow();
+      if (!ranExport) {
+        const r = await fetch(hook, { method: "POST" });
+        if (!r.ok) throw new Error("deploy hook returned " + r.status);
+      }
+      res.json({
+        ok: true,
+        reexported: ranExport,
+        message: ranExport
+          ? "Publishing… re-exporting from Firestore and deploying. Live in ~2–3 minutes."
+          : "Redeploying the current bank… live in ~1–2 minutes. (Note: this does NOT pull new editor changes — set GH_DISPATCH_TOKEN to enable a full re-export.)",
+      });
     } catch (e) {
       lastPublish = 0; // failed — allow an immediate retry
       console.error("[/api/admin/publish]", e.message);

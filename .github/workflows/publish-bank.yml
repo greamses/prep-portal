@@ -1,0 +1,51 @@
+name: Publish CBT bank
+
+# Re-exports the static practice bank from Firestore and commits it, so content
+# added/edited in the admin editor goes live. Triggered on demand — by the
+# admin "Publish" button (POST /api/admin/publish → workflow_dispatch) or from
+# the Actions tab. The git push auto-deploys via Vercel's Git integration, so
+# students keep reading the committed static files at the edge (≈0 Firestore
+# reads); only this job reads Firestore, once per publish.
+
+on:
+  workflow_dispatch:
+
+# Don't pile up redeploys: a newer publish cancels an in-flight one.
+concurrency:
+  group: publish-bank
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install server deps
+        working-directory: server
+        run: npm ci
+
+      - name: Export bank from Firestore
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node server/scripts/export-cbt-bank.js
+
+      - name: Commit & push if the bank changed
+        run: |
+          git config user.name "prep-portal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/cbt data/config.js
+          if git diff --cached --quiet; then
+            echo "No bank changes to publish."
+          else
+            git commit -m "CBT: auto-publish bank from Firestore [skip ci]"
+            git push
+          fi
