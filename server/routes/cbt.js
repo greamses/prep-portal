@@ -1274,5 +1274,11 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
   return router;
 };
 
-// Pure helpers exposed for one-off maintenance scripts (not used by the app).
-module.exports.helpers = { genPrompt, parseExamJs, cleanQuestions, callModelRaw, safeJson, SAMPLE_JS };
+// Pure helpers exposed for one-off maintenance scripts + the local static-store
+// editor (routes/cbt-static.js). All are top-level pure functions/constants.
+module.exports.helpers = {
+  genPrompt, parseExamJs, cleanQuestions, importQuestions, validBody, normType,
+  callModelRaw, safeJson, safeUrl, videoScopeOf, SAMPLE_JS,
+  SCHEMES, SUBJECT_LABELS, SCHEME_SUBJECTS, GENERAL_TOPIC,
+  subjKey, subjLabel, classKey, classLabel, topicKeyOf, csKey, cstKey, paperKeyOf, paperNoForCount,
+};

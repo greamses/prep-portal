@@ -88,6 +88,11 @@ app.use("/api/classroom", quota.guard, require("./routes/classroom")());
 app.use("/api/calendar", quota.guard, require("./routes/calendar")());
 app.use("/api/questions", quota.guard, require("./routes/questions")());
 app.use("/api/config", require("./routes/config")());
+// Local editing: when CBT_STATIC_STORE=1, the admin edits the committed static
+// bank (data/cbt/*) directly with ZERO Firestore ops; this router overrides the
+// editor endpoints and falls through to the real (Firestore) router for serving,
+// /template, /mark and /facets. Prod leaves the flag unset → unchanged behaviour.
+if (process.env.CBT_STATIC_STORE === "1") app.use("/api/cbt", require("./routes/cbt-static")());
 app.use("/api/cbt", quota.guard, require("./routes/cbt")());
 app.use("/api/tts",   require("./routes/tts")());
 app.use("/api/admin",   quota.guard, require("./routes/admin")(db, auth));

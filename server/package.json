@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "edit:cbt": "cross-env CBT_STATIC_STORE=1 nodemon index.js",
+    "cbt:sync": "node scripts/sync-cbt-firestore.js",
+    "cbt:sync:dry": "node scripts/sync-cbt-firestore.js --dry",
+    "cbt:sync:seed": "node scripts/sync-cbt-firestore.js --seed",
     "import:aloc": "node scripts/import-aloc.js"
   },
   "dependencies": {
@@ -17,6 +21,7 @@
     "firebase-admin": "^12.0.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.0"
   },
   "engines": {
