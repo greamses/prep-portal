@@ -16,6 +16,7 @@ const vm = require("vm");
 const admin = require("firebase-admin");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const { GEMINI_MODELS, GROQ_DEFAULT_MODEL } = require("../ai-models");
+const quota = require("../lib/quota");
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -528,6 +529,16 @@ module.exports = function () {
   const db = () => admin.firestore();
   const stamp = admin.firestore.FieldValue.serverTimestamp;
 
+  // ── Admin /stats cache ──────────────────────────────────────────────────────
+  // /stats scans the WHOLE cbtQuestions collection (~2.6k docs = ~2.6k Firestore
+  // reads PER call). The admin Data tab re-loaded it on every visit, which alone
+  // drained the daily read quota (17 loads ≈ 45k reads). We cache the computed
+  // result and invalidate it whenever the bank is written to, so repeat loads —
+  // and concurrent admins — cost ZERO reads while staying accurate after edits.
+  let _statsCache = null, _statsAt = 0;
+  const STATS_TTL = 10 * 60 * 1000; // backstop; writes invalidate immediately
+  const invalidateStats = () => { _statsCache = null; _statsAt = 0; };
+
   // How many questions already sit in a class/subject/topic bucket. Uses the
   // count aggregate → billed as ONE read regardless of bucket size.
   async function bucketCount(cst) {
@@ -681,6 +692,7 @@ module.exports = function () {
         });
       });
       await batch.commit();
+      invalidateStats();
       res.json({ ok: true, saved: items.length });
     } catch (e) {
       console.error("[/api/cbt/generate]", e.message);
@@ -691,7 +703,11 @@ module.exports = function () {
   // ── GET /stats — admin bank summary ─────────────────────────────
   router.get("/stats", authenticate, requireAdmin, async (_req, res) => {
     try {
+      if (_statsCache && Date.now() - _statsAt < STATS_TTL) {
+        return res.json({ ..._statsCache, cached: true });
+      }
       const snap = await db().collection("cbtQuestions").get();
+      quota.addReads(snap.size); // count the real fan-out, not just 1/request
       const byScheme = {};
       snap.forEach((d) => {
         const x = d.data();
@@ -701,7 +717,9 @@ module.exports = function () {
         const k = x.subject || "?";
         byScheme[s].subjects[k] = (byScheme[s].subjects[k] || 0) + 1;
       });
-      res.json({ total: snap.size, byScheme, schemes: SCHEMES, subjectLabels: SUBJECT_LABELS });
+      _statsCache = { total: snap.size, byScheme, schemes: SCHEMES, subjectLabels: SUBJECT_LABELS };
+      _statsAt = Date.now();
+      res.json(_statsCache);
     } catch (e) {
       console.error("[/api/cbt/stats]", e.message);
       res.status(500).json({ error: e.message });
@@ -714,6 +732,7 @@ module.exports = function () {
       const scheme = String(req.query.scheme || "").toLowerCase().trim();
       if (!SCHEMES[scheme]) return res.json({ scheme, subjects: [] });
       const snap = await db().collection("cbtQuestions").where("scheme", "==", scheme).get();
+      quota.addReads(snap.size);
       const counts = {};
       snap.forEach((d) => { const x = d.data(); if (x.subject) counts[x.subject] = (counts[x.subject] || 0) + 1; });
       const subjects = Object.entries(counts)
@@ -761,6 +780,7 @@ module.exports = function () {
         const paperNo = Math.max(1, parseInt(req.query.paper, 10) || 1);
         const pk = paperKeyOf(cls, subject, tk, paperNo);
         const snap = await db().collection("cbtQuestions").where("paperKey", "==", pk).get();
+        quota.addReads(snap.size);
         let docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
           .filter((x) => !(ho && x.source === "past")).filter(answerable);
         docs.sort((a, b) => msOf(a.createdAt) - msOf(b.createdAt)); // stable paper order
@@ -776,6 +796,7 @@ module.exports = function () {
         const random = req.query.random !== "0";
         const snap = await db().collection("cbtQuestions")
           .where("schemeSubject", "==", `${scheme}__${subject}`).limit(Math.max(limit * 4, 150)).get();
+        quota.addReads(snap.size);
         questions = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
           .filter((x) => !(ho && x.source === "past")).filter(answerable).map(mapPublic);
         if (paper) questions = questions.filter((q) => String(q.paper || "") === paper);
@@ -907,6 +928,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       if (!SCHEMES[scheme]) return res.json({ scheme, subjects: [] });
       const configured = SCHEME_SUBJECTS[scheme] || [];
       const snap = await db().collection("cbtQuestions").where("scheme", "==", scheme).get();
+      quota.addReads(snap.size);
       const counts = {};
       snap.forEach((d) => { const k = d.data().subject; if (k) counts[k] = (counts[k] || 0) + 1; });
       const subjects = configured.map((k) => ({ key: k, label: subjLabel(k), count: counts[k] || 0 }));
@@ -937,11 +959,11 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       if (!SCHEMES[scheme]) return res.json({ scheme, topics: [] });
       const subs = [].concat(req.query.subject || []).flatMap((s) => String(s).split(",")).map((s) => subjKey(s)).filter(Boolean);
       const counts = {}, gcounts = {};
-      const tally = (docs) => docs.forEach((d) => {
+      const tally = (docs) => { quota.addReads(docs.length); docs.forEach((d) => {
         const x = d.data();
         const t = (x.topic || "").trim(); if (t) counts[t] = (counts[t] || 0) + 1;
         const g = (x.grade || "").trim(); if (g) gcounts[g] = (gcounts[g] || 0) + 1;
-      });
+      }); };
       if (subs.length) for (const sub of subs) tally((await db().collection("cbtQuestions").where("schemeSubject", "==", `${scheme}__${sub}`).get()).docs);
       else tally((await db().collection("cbtQuestions").where("scheme", "==", scheme).get()).docs);
       res.json({
@@ -1034,6 +1056,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         if (!scheme) return res.status(400).json({ error: "class or scheme required." });
         items = (await col.where("schemeSubject", "==", `${scheme}__${subject}`).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
       }
+      quota.addReads(items.length);
       items.sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt));
       res.json({ count: items.length, questions: items });
     } catch (e) {
@@ -1065,6 +1088,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         schemeSubject: `${scheme}__${key}`, source: "manual",
         ...v, ...org, createdAt: stamp(), updatedAt: stamp(),
       });
+      invalidateStats();
       res.json({ ok: true, id: ref.id, paper: org.paperNo });
     } catch (e) {
       console.error("[/api/cbt/question POST]", e.message);
@@ -1110,6 +1134,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         updatedAt: stamp(),
       };
       await ref.set(patch, { merge: true });
+      invalidateStats();
       res.json({ ok: true, paper: org.paperNo });
     } catch (e) {
       console.error("[/api/cbt/question PUT]", e.message);
@@ -1130,6 +1155,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
       const ss = `${scheme}__${key}`;
 
       const snap = await db().collection("cbtQuestions").where("schemeSubject", "==", ss).get();
+      quota.addReads(snap.size);
       const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const done = new Set(docs.filter((d) => d.source === "rephrased" && d.originalId).map((d) => d.originalId));
       let originals = docs.filter((d) => d.source === "past" && !done.has(d.id));
@@ -1162,6 +1188,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         });
         if (n) { await batch.commit(); created += n; }
       }
+      invalidateStats();
       res.json({ ok: true, created, processed: slice.length, remaining: Math.max(0, remainingBefore - slice.length) });
     } catch (e) {
       console.error("[/api/cbt/rephrase]", e.message);
@@ -1224,6 +1251,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
         await batch.commit();
         written += Math.min(400, items.length - i);
       }
+      invalidateStats();
       res.json({ ok: true, imported: written });
     } catch (e) {
       console.error("[/api/cbt/import]", e.message);
@@ -1235,6 +1263,7 @@ Return ONLY JSON: {"score": <0-10 integer>, "outOf": 10, "feedback": "<feedback>
   router.delete("/question/:id", authenticate, requireAdmin, async (req, res) => {
     try {
       await db().collection("cbtQuestions").doc(req.params.id).delete();
+      invalidateStats();
       res.json({ ok: true });
     } catch (e) {
       console.error("[/api/cbt/question DELETE]", e.message);

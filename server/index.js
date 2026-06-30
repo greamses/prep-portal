@@ -86,7 +86,7 @@ app.use("/api/ai",    require("./routes/ai")());
 app.use("/api/activities", quota.guard, require("./routes/activities")());
 app.use("/api/classroom", quota.guard, require("./routes/classroom")());
 app.use("/api/calendar", quota.guard, require("./routes/calendar")());
-app.use("/api/questions", require("./routes/questions")());
+app.use("/api/questions", quota.guard, require("./routes/questions")());
 app.use("/api/config", require("./routes/config")());
 app.use("/api/cbt", quota.guard, require("./routes/cbt")());
 app.use("/api/tts",   require("./routes/tts")());

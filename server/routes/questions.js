@@ -11,6 +11,7 @@
 
 const express = require("express");
 const admin = require("firebase-admin");
+const quota = require("../lib/quota");
 
 // ALOC subject key → display label used by the exam picker.
 const SUBJECT_LABELS = {
@@ -62,6 +63,7 @@ module.exports = function () {
       if (cached && Date.now() - cached.at < FACET_TTL) return res.json(cached.data);
 
       const snap = await db().collection("alocQuestions").where("queryType", "==", type).get();
+      quota.addReads(snap.size);
       const subjCount = {};
       const yearsBySubject = {};
       snap.forEach((d) => {
@@ -144,15 +146,18 @@ module.exports = function () {
         // Prefer the selected year, then top up from other years for the same
         // subject/type so sparse years don't yield a near-empty paper.
         const ySnap = await base.where("examYear", "==", year).limit(pool).get();
+        quota.addReads(ySnap.size);
         questions = shuffle(ySnap.docs.map(mapDoc));
         if (questions.length < limit) {
           const allSnap = await base.limit(pool).get();
+          quota.addReads(allSnap.size);
           const have = new Set(questions.map((q) => q.id));
           const extra = shuffle(allSnap.docs.map(mapDoc).filter((q) => !have.has(q.id)));
           questions = questions.concat(extra);
         }
       } else {
         const snap = await base.limit(pool).get();
+        quota.addReads(snap.size);
         questions = snap.docs.map(mapDoc);
         if (random) shuffle(questions);
       }
