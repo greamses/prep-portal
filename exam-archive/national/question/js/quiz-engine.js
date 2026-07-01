@@ -573,13 +573,14 @@ const Quiz = (() => {
           const top = axis === "exam" ? PAGE_CONFIG.scheme : PAGE_CONFIG.cbtClass;
           const bank = await import("/utils/cbt-bank.js");
           questions = await bank.paperQuestions(axis, top, subKey, PAGE_CONFIG.topic, PAGE_CONFIG.paper);
-          // Format filter (mcq | short | theory) + premium gate: MCQs are
-          // Premium-only, so free users never receive them — not even under "All".
+          // Format filter (mcq | short | theory) + premium gate: written answers
+          // (Short Answer / Theory) are Premium-only, so free users only ever
+          // receive MCQs — not even under "All".
           const want = PAGE_CONFIG.format;
           const premium = await isPremiumUser();
           questions = questions.filter((q) => {
             const f = qFormat(q);
-            if (f === "mcq" && !premium) return false; // MCQs locked for free users
+            if (f !== "mcq" && !premium) return false; // non-MCQs locked for free users
             if (want && f !== want) return false;       // explicit filter
             return true;
           });

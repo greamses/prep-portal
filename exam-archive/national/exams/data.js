@@ -189,8 +189,8 @@ const cFormatChips = () => document.getElementById("cbt-format-chips");
 const cFormatLockNote = () => document.getElementById("fmt-lock-note");
 
 // Render the "What to answer" filter (All / MCQs / Short Answer / Theory).
-// MCQs are Premium-only: for free users the chip is locked and clicking it shows
-// an upgrade prompt instead of selecting it.
+// Written answers (Short Answer / Theory) are Premium-only: for free users those
+// chips are locked and clicking one shows an upgrade prompt instead of selecting.
 async function renderCbtFormat() {
   const wrap = cFormatWrap(), chips = cFormatChips(), note = cFormatLockNote();
   if (!wrap || !chips) return;
@@ -198,7 +198,7 @@ async function renderCbtFormat() {
   const premium = await isPickerPremium();
   chips.querySelectorAll(".fmt-chip").forEach((chip) => {
     const fmt = chip.dataset.fmt || "";
-    const locked = fmt === "mcq" && !premium;
+    const locked = (fmt === "short" || fmt === "theory") && !premium;
     chip.classList.toggle("locked", locked);
     let lock = chip.querySelector(".fmt-lock");
     if (locked && !lock) {
