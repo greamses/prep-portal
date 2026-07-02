@@ -47,6 +47,24 @@ const Quiz = (() => {
     } catch (_) { _premiumVerdict = false; }
     return _premiumVerdict;
   }
+
+  // Whether written answers (Short/Theory) should be served, honouring the admin's
+  // "cbt-written" feature switch:
+  //   off     → never (everyone gets MCQs only)
+  //   free    → always (open to any user)
+  //   premium → only paying users  ← default
+  let _writtenVerdict = null;
+  async function writtenAllowed() {
+    if (_writtenVerdict !== null) return _writtenVerdict;
+    let state = "premium";
+    try {
+      const { getFeatureState } = await import("/utils/features.js");
+      state = await getFeatureState("cbt-written");
+    } catch (_) {}
+    if (state === "off") return (_writtenVerdict = false);
+    if (state === "free") return (_writtenVerdict = true);
+    return (_writtenVerdict = await isPremiumUser());
+  }
   let userAnswers = {};
   let submitted = false;
   let theoryMarks = {};
@@ -578,10 +596,10 @@ const Quiz = (() => {
           // (Short Answer / Theory) are Premium-only, so free users only ever
           // receive MCQs — not even under "All".
           const want = PAGE_CONFIG.format;
-          const premium = await isPremiumUser();
+          const written = await writtenAllowed();
           questions = questions.filter((q) => {
             const f = qFormat(q);
-            if (f !== "mcq" && !premium) return false; // non-MCQs locked for free users
+            if (f !== "mcq" && !written) return false; // written answers gated by admin
             if (want && f !== want) return false;       // explicit filter
             return true;
           });

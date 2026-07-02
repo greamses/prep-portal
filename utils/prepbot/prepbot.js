@@ -1696,33 +1696,45 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
   }
 
   /* ── 20. TOGGLE CHAT ── */
-  // PrepBot is a premium feature. Cache the entitlement per uid (admins are
-  // flagged premium on sign-up, so they pass). Non-premium users are sent to
-  // the subscribe page; the server also enforces this on /api/ai/chat.
+  // PrepBot's availability is admin-controlled via the "prepbot" feature switch:
+  //   off     → launcher does nothing (feature unavailable)
+  //   free    → any signed-in user may chat
+  //   premium → only paying users  ← default
+  // Non-premium users on a premium setting are sent to subscribe; the server also
+  // enforces premium on /api/ai/chat. Premium entitlement is cached per uid.
   let _pbPremium = { uid: null, ok: false };
-  async function prepbotAllowed() {
+  // Verdict: "ok" | "login" | "subscribe" | "off".
+  async function prepbotVerdict() {
     const user = auth.currentUser;
-    if (!user) { window.openAuthModal?.("login"); return false; }
-    if (_pbPremium.uid === user.uid) return _pbPremium.ok;
-    let ok = false;
+    if (!user) return "login";
+    let state = "premium";
     try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      ok = !!(snap.exists() && snap.data().isPremium);
-    } catch (_) { ok = false; }
-    _pbPremium = { uid: user.uid, ok };
-    return ok;
+      const { getFeatureState } = await import("/utils/features.js");
+      state = await getFeatureState("prepbot");
+    } catch (_) {}
+    if (state === "off") return "off";
+    if (state === "free") return "ok";
+    // premium: confirm entitlement (cached per uid).
+    if (_pbPremium.uid !== user.uid) {
+      let ok = false;
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        ok = !!(snap.exists() && snap.data().isPremium);
+      } catch (_) { ok = false; }
+      _pbPremium = { uid: user.uid, ok };
+    }
+    return _pbPremium.ok ? "ok" : "subscribe";
   }
   function goSubscribe() { window.location.href = "/subscribe.html#plans"; }
 
   function toggleChat(force) {
     const isOpen = force !== undefined ? force : !win.classList.contains("open");
     if (isOpen) {
-      // Fast path: a user we already know isn't premium never even flashes open.
-      const u = auth.currentUser;
-      if (u && _pbPremium.uid === u.uid && !_pbPremium.ok) return goSubscribe();
-      // Otherwise confirm asynchronously and bounce if not entitled.
-      prepbotAllowed().then((ok) => {
-        if (!ok) { toggleChat(false); goSubscribe(); }
+      // Confirm asynchronously and bounce if the user isn't entitled.
+      prepbotVerdict().then((v) => {
+        if (v === "login") { toggleChat(false); window.openAuthModal?.("login"); return; }
+        if (v === "subscribe") { toggleChat(false); goSubscribe(); return; }
+        if (v === "off") { toggleChat(false); return; } // silently unavailable
       });
     }
     win.classList.toggle("open", isOpen);

@@ -25,6 +25,7 @@ import {
 import {
   getFirestore, doc, getDoc,
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { featureForPath, getFeatureState } from "/utils/features.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2N3uI_XfSIVsto2Ku1g_qSezmD3qFmbk",
@@ -69,6 +70,16 @@ function toSubscribe() {
   veil.textContent = "Redirecting to plans…";
   location.replace("/subscribe.html#plans");
 }
+// Feature switched fully OFF by the admin: keep the veil up with a friendly note
+// instead of redirecting (nobody, premium or not, gets in until it's re-enabled).
+function toDisabled() {
+  veil.innerHTML =
+    '<div style="max-width:340px;text-align:center;padding:1.5rem;line-height:1.5;">' +
+    '<div style="font-size:1rem;font-weight:800;margin-bottom:.5rem;">This feature is currently unavailable</div>' +
+    '<div style="font-size:.85rem;opacity:.8;margin-bottom:1.2rem;">It has been switched off by the site administrator. Please check back later.</div>' +
+    '<a href="/dashboard.html" style="color:inherit;font-weight:700;text-decoration:underline;">&larr; Back to dashboard</a>' +
+    "</div>";
+}
 
 // Cache the premium verdict locally so navigating across many premium pages in a
 // session doesn't read users/{uid} every single time. Within the TTL we trust the
@@ -96,6 +107,20 @@ function storeVerdict(uid, premium) {
 onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
+
+  // Which feature does this page belong to, and how has the admin set it?
+  //   off     → nobody gets in
+  //   free    → any signed-in user gets in (no premium needed)
+  //   premium → fall through to the premium check below
+  // A page not in the registry (or a config blip) defaults to premium, i.e. the
+  // original guard behaviour, so nothing loosens by accident.
+  const featureId = featureForPath(location.pathname);
+  if (featureId) {
+    let state = "premium";
+    try { state = await getFeatureState(featureId); } catch (_) {}
+    if (state === "off") return toDisabled();
+    if (state === "free") return reveal();
+  }
 
   // Fast path: a fresh cached verdict avoids a Firestore read on every page.
   const cached = cachedVerdict(user.uid);

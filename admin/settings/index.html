@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app":  "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js"
+      }
+    }
+  </script>
+  <style>
+    body { margin:0; background: var(--app-bg); color: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); padding:1.5rem; }
+    .st-wrap { position: relative; z-index: 1; max-width: 780px; margin:0 auto; }
+    .st-top { display:flex; align-items:center; gap:.8rem; margin:0 0 .4rem; }
+    h1 { font-family: var(--font-display); font-size:1.25rem; margin:0; }
+    .st-sub { font-size:.78rem; color: var(--text-secondary); line-height:1.5; margin:0 0 1.4rem; }
+    .st-back { font-size:.75rem; color: var(--accent-secondary); text-decoration:none; font-weight:700; }
+
+    .st-card { background: var(--surface-primary); border:2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+      border-radius:16px; padding:1.1rem 1.2rem; margin-bottom:1.1rem; box-shadow: var(--shadow-sm); }
+    .st-card h2 { font-family: var(--font-display); font-size:.95rem; margin:0 0 .2rem; }
+    .st-card > .st-grouphint { font-size:.7rem; color:var(--text-secondary); margin:0 0 .9rem; }
+
+    .st-row { display:flex; align-items:center; gap:1rem; padding:.75rem 0; border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent); }
+    .st-row:first-of-type { border-top:none; }
+    .st-row-main { flex:1 1 auto; min-width:0; }
+    .st-row-label { font-family:var(--font-display); font-size:.85rem; font-weight:700; }
+    .st-row-desc { font-size:.7rem; color:var(--text-secondary); line-height:1.45; margin-top:.15rem; }
+
+    /* three-state segmented control */
+    .seg { display:inline-flex; flex:0 0 auto; border:2px solid color-mix(in srgb,var(--ink) 14%,transparent);
+      border-radius:999px; overflow:hidden; background: var(--surface-secondary); }
+    .seg button { border:none; background:transparent; color:var(--text-secondary); cursor:pointer;
+      font-family:var(--font-display); font-weight:700; font-size:.7rem; padding:.4rem .8rem; line-height:1;
+      text-transform:uppercase; letter-spacing:.04em; box-shadow:none; border-radius:0; }
+    .seg button + button { border-left:2px solid color-mix(in srgb,var(--ink) 14%,transparent); }
+    .seg button[aria-pressed="true"][data-state="off"]     { background: var(--accent-danger);    color:#fff; }
+    .seg button[aria-pressed="true"][data-state="free"]    { background: var(--accent-success);   color:#fff; }
+    .seg button[aria-pressed="true"][data-state="premium"] { background: var(--accent-primary);   color: var(--text-on-accent,#2a2723); }
+    .seg button:disabled { opacity:.6; cursor:default; }
+
+    /* on/off pill toggle for boolean content flags */
+    .st-toggle { flex:0 0 auto; border:2px solid color-mix(in srgb,var(--ink) 14%,transparent); border-radius:999px;
+      background: var(--surface-secondary); color:var(--text-secondary); cursor:pointer;
+      font-family:var(--font-display); font-weight:700; font-size:.72rem; padding:.42rem 1rem; box-shadow:none; }
+    .st-toggle[data-on="true"]  { background: var(--accent-success); color:#fff; border-color:transparent; }
+    .st-toggle:disabled { opacity:.6; cursor:default; }
+
+    .st-gate { text-align:center; padding:3rem 1rem; color:var(--text-secondary); font-size:.9rem; }
+    .st-msg { font-size:.72rem; min-height:1em; margin-top:1rem; text-align:right; }
+    .st-msg--ok { color: var(--accent-success); } .st-msg--err { color: var(--accent-danger); }
+    .hide { display:none; }
+    a { color: var(--accent-secondary); }
+    .legend { font-size:.66rem; color:var(--text-secondary); line-height:1.6; margin:.2rem 0 0; }
+    .legend b { color:var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="st-wrap">
+    <div id="st-gate" class="st-gate">Checking access…</div>
+
+    <main id="st-main" class="hide">
+      <div class="st-top">
+        <h1>Feature Settings</h1>
+      </div>
+      <p class="st-sub">
+        <a class="st-back" href="/dashboard.html">&larr; Dashboard</a> &nbsp;&bull;&nbsp;
+        Control who can use each feature across the whole site. Changes save instantly.
+      </p>
+
+      <div id="st-features"></div>
+
+      <div class="st-card">
+        <h2>Content</h2>
+        <p class="st-grouphint">Verbatim past-paper archive &amp; original-question visibility.</p>
+        <div class="st-row">
+          <div class="st-row-main">
+            <div class="st-row-label">Exam Archive</div>
+            <div class="st-row-desc">Verbatim past-paper archive endpoint. Off keeps only original exam-style questions live.</div>
+          </div>
+          <button class="st-toggle" type="button" data-flag="archiveEnabled">…</button>
+        </div>
+        <div class="st-row">
+          <div class="st-row-main">
+            <div class="st-row-label">Hide Originals</div>
+            <div class="st-row-desc">Kill-switch that hides all verbatim past papers from the CBT bank when on.</div>
+          </div>
+          <button class="st-toggle" type="button" data-flag="hideOriginals">…</button>
+        </div>
+      </div>
+
+      <p class="legend">
+        <b>Off</b> — hidden/blocked for everyone. &nbsp;
+        <b>Free</b> — any signed-in user. &nbsp;
+        <b>Premium</b> — paying subscribers only.
+      </p>
+      <p id="st-msg" class="st-msg"></p>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth } from "/firebase-init.js";
+    import { onAuthStateChanged } from "firebase/auth";
+    import { FEATURES, FEATURE_STATES, defaultStates } from "/utils/features.js";
+
+    const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+    const $ = (id) => document.getElementById(id);
+    const gate = $("st-gate"), main = $("st-main"), msg = $("st-msg");
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+    async function authHeader() { return { Authorization: "Bearer " + (await auth.currentUser.getIdToken()) }; }
+    async function isAdmin() {
+      try { const r = await fetch(`${API}/api/ai/whoami`, { headers: await authHeader() }); return r.ok && (await r.json()).admin === true; }
+      catch (_) { return false; }
+    }
+
+    let config = { features: {}, archiveEnabled: false, hideOriginals: false };
+
+    function flash(text, ok = true) {
+      msg.textContent = text; msg.className = "st-msg " + (ok ? "st-msg--ok" : "st-msg--err");
+      if (ok) setTimeout(() => { if (msg.textContent === text) msg.textContent = ""; }, 2500);
+    }
+
+    // POST a partial config patch; only the given keys change (server deep-merges).
+    async function save(patch) {
+      const r = await fetch(`${API}/api/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeader()) },
+        body: JSON.stringify(patch),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Save failed");
+      return d;
+    }
+
+    // ── Feature rows (grouped) ──
+    function renderFeatures() {
+      const defaults = defaultStates();
+      const groups = [];
+      for (const f of FEATURES) {
+        let g = groups.find((x) => x.name === f.group);
+        if (!g) { g = { name: f.group, items: [] }; groups.push(g); }
+        g.items.push(f);
+      }
+      $("st-features").innerHTML = groups.map((g) => `
+        <div class="st-card">
+          <h2>${esc(g.name)}</h2>
+          ${g.items.map((f) => {
+            const cur = config.features[f.id] || defaults[f.id];
+            return `
+            <div class="st-row">
+              <div class="st-row-main">
+                <div class="st-row-label">${esc(f.label)}</div>
+                <div class="st-row-desc">${esc(f.desc)}</div>
+              </div>
+              <div class="seg" data-feature="${esc(f.id)}">
+                ${FEATURE_STATES.map((s) => `
+                  <button type="button" data-state="${s}" aria-pressed="${cur === s}">${s}</button>`).join("")}
+              </div>
+            </div>`;
+          }).join("")}
+        </div>`).join("");
+
+      $("st-features").querySelectorAll(".seg").forEach((seg) => {
+        seg.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => setFeature(seg, btn.dataset.state));
+        });
+      });
+    }
+
+    async function setFeature(seg, state) {
+      const id = seg.dataset.feature;
+      const prev = config.features[id];
+      if (prev === state) return;
+      seg.querySelectorAll("button").forEach((b) => { b.disabled = true; b.setAttribute("aria-pressed", b.dataset.state === state); });
+      try {
+        const d = await save({ features: { [id]: state } });
+        config.features = d.features || config.features;
+        flash(`${id} → ${state}`);
+      } catch (e) {
+        // revert visual state on failure
+        seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.state === (prev || "")));
+        flash(e.message, false);
+      } finally {
+        seg.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+      }
+    }
+
+    // ── Boolean content flags ──
+    function renderFlags() {
+      document.querySelectorAll(".st-toggle").forEach((btn) => {
+        const on = config[btn.dataset.flag] === true;
+        btn.dataset.on = String(on);
+        btn.textContent = on ? "On" : "Off";
+      });
+    }
+    document.querySelectorAll(".st-toggle").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const flag = btn.dataset.flag;
+        const next = !(config[flag] === true);
+        btn.disabled = true;
+        try {
+          const d = await save({ [flag]: next });
+          config[flag] = d[flag] === true;
+          renderFlags();
+          flash(`${flag} → ${config[flag] ? "on" : "off"}`);
+        } catch (e) { flash(e.message, false); }
+        finally { btn.disabled = false; }
+      });
+    });
+
+    async function load() {
+      try { config = { ...config, ...(await (await fetch(`${API}/api/config`)).json()) }; }
+      catch (_) {}
+      if (!config.features || typeof config.features !== "object") config.features = {};
+      renderFeatures();
+      renderFlags();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { gate.innerHTML = 'Please <a href="/index.html?login=1">sign in</a> as an admin.'; return; }
+      if (!(await isAdmin())) { gate.innerHTML = 'Admins only. <a href="/index.html">Go home</a>.'; return; }
+      gate.classList.add("hide"); main.classList.remove("hide");
+      await load();
+    });
+  </script>
+</body>
+</html>
