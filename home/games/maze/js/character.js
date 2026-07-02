@@ -107,17 +107,15 @@ export function loadCharacter(scene) {
  *  the enemy states (crawl←walk, bite←run). Separate ImportMesh load ⇒ its own
  *  materials, so tinting it doesn't touch the player. */
 export async function loadZombie(scene) {
-  const rig = await loadRig(scene, "/home/games/maze/assets/character/", "base.glb", {
-    idle: "idle.glb", run: "run.glb", crawl: "walk.glb", bite: "run.glb",
+  const rig = await loadRig(scene, "/home/games/maze/assets/zombie/", "zombie.glb", {
+    idle: "idle.glb", run: "run.glb", crawl: "crawl.glb", bite: "bite.glb",
   }, 1.85);
   rig.root.getChildMeshes(false).forEach((m) => {
     const mat = m.material;
-    if (!mat) return;
-    if ("albedoColor" in mat) mat.albedoColor = new B.Color3(0.16, 0.03, 0.04);
-    if (mat.albedoTexture !== undefined) mat.albedoTexture = null; // drop the girl's skin texture
-    if ("emissiveColor" in mat) mat.emissiveColor = new B.Color3(0.55, 0.09, 0.09); // dark-red glow, visible in the dark
-    if ("emissiveTexture" in mat) mat.emissiveTexture = null;
-    if ("metallic" in mat && mat.metallic != null) mat.metallic = 0.2;
+    if (!mat || !("emissiveColor" in mat)) return;
+    if (mat.albedoTexture && "emissiveTexture" in mat) mat.emissiveTexture = mat.albedoTexture;
+    mat.emissiveColor = new B.Color3(0.6, 0.58, 0.62); // self-lit so it's visible in the dark
+    if (mat.metallic != null) mat.metallic = 0.1;
   });
   return rig;
 }
