@@ -150,7 +150,11 @@ async function start() {
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
-  scene.createOrUpdateSelectionOctree(); // fast ray-picks for camera occlusion
+  // NOTE: do NOT build a selection octree here. It snapshots only the meshes that
+  // exist at call time, and every enemy (chaser + ambushers) loads asynchronously
+  // AFTER this — an octree would exclude them from active-mesh selection and they
+  // would never render (the long-standing "invisible zombies" bug). Default
+  // frustum selection + pickWithRay for camera occlusion are plenty for this maze.
   chaserWakeAt = 0;
 
   // one-way gate: shut until she reaches it, opens to enter, seals behind her
