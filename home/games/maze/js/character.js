@@ -110,11 +110,22 @@ export async function loadZombiePrototype(scene) {
   container.animationGroups.slice().forEach((g) => g.dispose()); // drop the T-pose clip
   container.animationGroups.length = 0;
 
-  // Scale the whole rig by its TRUE root (the glTF __root__ node), never a child
-  // mesh. Scaling a mid-hierarchy mesh combined with the root's coordinate-flip
-  // into a net NEGATIVE scale, which flipped winding and rendered every zombie
-  // inside-out (invisible) while its logic kept hunting. Measure world bounds
-  // across all meshes so we don't depend on the root being an AbstractMesh.
+  // VISIBILITY: the zombie skins are metallic PBR with NO emissive, and the
+  // dungeon has no environment map + dark fog, so the zombies rendered near-black
+  // — invisible while they still hunted you. The player model stays visible by
+  // self-illuminating (emissive = its own texture); mirror that here so the
+  // zombies are lit by their own skin, and drop the metallic so they aren't a
+  // black blob.
+  container.materials.forEach((mat) => {
+    if (!mat || !("emissiveColor" in mat)) return;
+    if (mat.albedoTexture && "emissiveTexture" in mat) mat.emissiveTexture = mat.albedoTexture;
+    mat.emissiveColor = new B.Color3(0.85, 0.85, 0.85);
+    if (mat.metallic != null) mat.metallic = 0.1;
+  });
+
+  // Scale the whole rig by its true root (the glTF __root__ node), not a child
+  // mesh — measure world bounds across all meshes so we don't depend on the root
+  // being an AbstractMesh, then scale it so the rig stands 1.85 units tall.
   const root = container.rootNodes[0];
   const worldBounds = () => {
     let min = null, max = null;
