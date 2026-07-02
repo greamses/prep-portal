@@ -144,10 +144,6 @@ export async function loadZombiePrototype(scene) {
   const footOffset = wb.min.y - root.position.y;
 
   const sk = container.skeletons[0];
-  // Uniform-array skinning (not a GPU bone-matrix texture), so instantiated
-  // clones actually update their bones instead of collapsing to an invisible
-  // point. Set on the prototype so every clone inherits it.
-  container.skeletons.forEach((s) => { s.useTextureToStoreBoneMatrices = false; });
   const nodeMap = {};
   (container.transformNodes || []).forEach((n) => { if (n && n.name) nodeMap[n.name] = n; });
   if (sk) sk.bones.forEach((b) => { const tn = b.getTransformNode && b.getTransformNode(); if (tn && tn.name) nodeMap[tn.name] = tn; });

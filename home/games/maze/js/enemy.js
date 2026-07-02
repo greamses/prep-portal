@@ -70,16 +70,9 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
       // holder keeps hunting you. Opt the meshes out of frustum culling so they
       // always render wherever they actually stand.
       cloneRoot.getChildMeshes(false).forEach((m) => {
-        m.alwaysSelectAsActiveMesh = true;
+        m.alwaysSelectAsActiveMesh = true; // skinned meshes keep a bind-pose bbox; don't frustum-cull
         m.isVisible = true;
-        // These Mixamo rigs carry a scaled armature, so their bone matrices have a
-        // ~100x scale. On the GPU that overflows float precision and collapses
-        // every vertex to a point → the enemy renders INVISIBLE while its AI still
-        // hunts you. CPU skinning (double precision) handles it. Set at spawn, so
-        // the mesh's shader compiles for CPU skinning from the start.
-        m.computeBonesUsingShaders = false;
       });
-      inst.skeletons.forEach((sk) => { sk.useTextureToStoreBoneMatrices = false; });
       const ag = inst.animationGroups;
       const byName = {};
       proto.clipOrder.forEach((nm, i) => { if (ag[i]) { byName[nm] = ag[i]; ag[i].stop(); } });
