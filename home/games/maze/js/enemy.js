@@ -73,6 +73,12 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
         m.alwaysSelectAsActiveMesh = true;
         m.isVisible = true;
       });
+      // The cloned skeleton stores its bone matrices in a GPU TEXTURE that
+      // instantiateModelsToScene never populates for the clone, so every vertex
+      // collapses to a point and the zombie renders INVISIBLE (while its AI keeps
+      // hunting you). Force plain uniform-array skinning, which the clone updates
+      // correctly. Must be set now, before the mesh's shader first compiles.
+      inst.skeletons.forEach((sk) => { sk.useTextureToStoreBoneMatrices = false; });
       const ag = inst.animationGroups;
       const byName = {};
       proto.clipOrder.forEach((nm, i) => { if (ag[i]) { byName[nm] = ag[i]; ag[i].stop(); } });
