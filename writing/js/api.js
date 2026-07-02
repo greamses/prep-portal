@@ -307,11 +307,18 @@ export async function fetchGeneratedTopic(type, callbacks = {}) {
     const result = await generateTextWithFallback({
       geminiBody: {
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 130 }
+        // maxOutputTokens must cover both the model's internal "thinking"
+        // tokens (2.5+ series reasons before answering) and the visible
+        // reply — 130 was too tight and produced truncated fragments.
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 400,
+          thinkingConfig: { thinkingBudget: 0 },
+        }
       },
       groqPrompt: prompt,
       temperature: 0.9,
-      maxTokens: 130,
+      maxTokens: 400,
     });
     
     const text = (result.text || "").trim()
