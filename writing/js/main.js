@@ -2,15 +2,16 @@
    PREPBOT — MAIN ENTRY POINT
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, setCurrentTopic, commentCounter, setCommentCounter, resetCommentStore } from './config.js';
+import { $, setCommentCounter, resetCommentStore } from './config.js';
 import { gradeEssay } from './api.js';
 import { initPopover, setupPopoverListeners } from './popover.js';
 import { initRender, renderResults, clearResultsAccordions, resetParagraphState } from './render.js';
-import { initEditorAccordions, syncTopicDisplay, openModal, closeModal, injectRewriteStyles } from './ui.js';
+import {
+  initTypePicker, initColorKeyAccordion, syncTopicDisplay,
+  openWritingModal, closeWritingModal, showPhase, injectRewriteStyles
+} from './ui.js';
 
 // ── DOM Refs ───────────────────────────────────────────
-const elTopicBox = $('topic-box');
-const elTopic = $('topic-display');
 const elTextarea = $('writing-area');
 const elWordCount = $('word-count');
 const elSubmitBtn = $('submit-btn');
@@ -22,7 +23,7 @@ const elAnnotated = $('annotated-text');
 const elStamp = $('score-stamp');
 const elRetryBtn = $('retry-btn');
 const elPopover = $('mark-popover');
-const elModal = $('topic-modal');
+const elModal = $('modal');
 
 // ── Comment Popover ────────────────────────────────────
 const elCommentPop = document.createElement('div');
@@ -45,12 +46,13 @@ elTextarea.addEventListener('input', () => {
 elSubmitBtn.addEventListener('click', async () => {
   const userText = elTextarea.value.trim();
   if (!userText) return;
-  
+
   elLoading.classList.add('active');
-  
+
   try {
     const data = await gradeEssay(userText);
     renderResults(data, userText);
+    showPhase('results');
   } catch (err) {
     console.error("Grading failed:", err);
     alert(err.message.includes('API Error') ?
@@ -62,55 +64,46 @@ elSubmitBtn.addEventListener('click', async () => {
 
 // ── Retry ──────────────────────────────────────────────
 elRetryBtn?.addEventListener('click', () => {
-  elResultsSec.classList.remove('active');
-  elEditorSec.style.display = 'block';
+  showPhase('write');
   elTextarea.value = '';
   elWordCount.textContent = '0';
   elSubmitBtn.disabled = true;
-  
+
   setCommentCounter(0);
   resetCommentStore();
-  
+
   document.getElementById('para-nav')?.remove();
   document.getElementById('rewrite-info-btn')?.remove();
   document.getElementById('rewrite-info-note')?.remove();
-  
+
   resetParagraphState();
   clearResultsAccordions();
-  
-  const body = $('acc-body-topic');
-  if (body) {
-    body.style.display = '';
-    document.querySelector('#acc-topic .acc-chevron')?.classList.add('open');
-  }
+
   syncTopicDisplay();
-  
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
   elTextarea.focus();
 });
 
-// ── New Topic Button ───────────────────────────────────
-$('new-topic-btn')?.addEventListener('click', () => {
-  const body = $('acc-body-topic');
-  if (body) {
-    body.style.display = '';
-    document.querySelector('#acc-topic .acc-chevron')?.classList.add('open');
-    body.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } else {
-    openModal(elModal);
-  }
-});
+// ── Begin Writing (landing → modal) ────────────────────
+$('begin-writing-btn')?.addEventListener('click', () => openWritingModal());
+
+// ── Change Topic (modal → landing) ─────────────────────
+$('new-topic-btn')?.addEventListener('click', () => closeWritingModal());
+$('new-topic-results-btn')?.addEventListener('click', () => closeWritingModal());
 
 // ── Modal Close ────────────────────────────────────────
-$('close-modal')?.addEventListener('click', () => closeModal(elModal));
-elModal?.addEventListener('click', e => { if (e.target === elModal) closeModal(elModal); });
+$('modal-close')?.addEventListener('click', () => closeWritingModal());
+elModal?.addEventListener('click', e => {
+  if (e.target === elModal && elEditorSec.style.display !== 'none') closeWritingModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && elModal?.classList.contains('open')) closeWritingModal();
+});
 
 // ── Init ───────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   injectRewriteStyles();
-  initEditorAccordions(elTextarea);
-  openModal(elModal);
+  initColorKeyAccordion(elResultsSec);
+  initTypePicker();
 });
-
-// ── Expose for debugging (optional) ────────────────────
-window.PrepbotState = { currentTopic, commentCounter };

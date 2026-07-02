@@ -2,7 +2,7 @@
    PREPBOT — UI UTILITIES
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, setCurrentTopic } from './config.js';
+import { $, currentTopic, currentWritingType } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
 
 // ── Accordion Factory ──────────────────────────────────
@@ -10,9 +10,9 @@ export function makeAccordion({ id, title, bodyHtml, startOpen = false, extraCla
   const panel = document.createElement('div');
   panel.className = `acc-panel${extraClass ? ' ' + extraClass : ''}`;
   panel.id = `acc-${id}`;
-  
+
   const countSpan = count !== null ? ` <span class="acc-count">(${count})</span>` : '';
-  
+
   panel.innerHTML = `
     <button class="acc-header">
       <span class="acc-header-label">${title}${countSpan}</span>
@@ -23,14 +23,14 @@ export function makeAccordion({ id, title, bodyHtml, startOpen = false, extraCla
     <div class="acc-body" id="acc-body-${id}" style="${startOpen ? '' : 'display:none'}">
       ${bodyHtml}
     </div>`;
-  
+
   panel.querySelector('.acc-header').addEventListener('click', function() {
     const body = document.getElementById(`acc-body-${id}`);
     const opening = body.style.display === 'none';
     body.style.display = opening ? '' : 'none';
     this.querySelector('.acc-chevron').classList.toggle('open', opening);
   });
-  
+
   return panel;
 }
 
@@ -59,7 +59,7 @@ function buildColorKeyHtml() {
     { code: 'wo', name: 'Word Order Error', color: '#6366f1', loss: '-2' },
     { code: 'par', name: 'Faulty Parallel Structure', color: '#059669', loss: '-2' },
   ];
-  
+
   const highlights = [
     { name: 'Grammar Cluster', bg: 'rgba(253,224,71,.55)' },
     { name: 'Vocabulary Issue', bg: 'rgba(96,165,250,.3)' },
@@ -67,7 +67,7 @@ function buildColorKeyHtml() {
     { name: 'Style Issue', bg: 'rgba(196,181,253,.45)' },
     { name: 'Good Writing', bg: 'rgba(74,222,128,.3)' },
   ];
-  
+
   return `
     <p class="ck-section-title">Pen Marks — click any marked word to see options</p>
     <div class="ck-grid">
@@ -93,96 +93,105 @@ function buildColorKeyHtml() {
     </div>`;
 }
 
-// ── Editor Accordions ──────────────────────────────────
-export function initEditorAccordions(textareaEl) {
-  if (document.getElementById('editor-accordions')) return;
-  
-  const container = document.createElement('div');
-  container.id = 'editor-accordions';
-  
-  const topicBody = `
-    <p class="acc-topic-label">Choose a writing type to generate a topic</p>
-    <div class="acc-topic-types" id="acc-type-btns">
-      ${['Narrative','Descriptive','Argumentative','Expository'].map(t =>
-        `<button class="type-btn" data-type="${t.toLowerCase()}">${t}</button>`
-      ).join('')}
-    </div>
-    <div class="acc-current-topic">
-      <p class="acc-topic-label" style="margin-bottom:3px">Current writing prompt</p>
-      <div class="acc-topic-text" id="acc-topic-text">No topic yet — select a type above to generate one.</div>
-    </div>`;
-  
-  container.appendChild(makeAccordion({ id: 'topic', title: 'Writing Prompt', bodyHtml: topicBody, startOpen: true }));
-  container.appendChild(makeAccordion({ id: 'colorkey', title: 'Annotation Color Key', bodyHtml: buildColorKeyHtml(), startOpen: false }));
-  
-  if (textareaEl?.parentNode) {
-    textareaEl.parentNode.insertBefore(container, textareaEl.nextSibling);
-  }
-  
-  container.querySelectorAll('.type-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.type-btn').forEach(b => b.classList.remove('type-btn--active'));
-      btn.classList.add('type-btn--active');
-      
-      fetchGeneratedTopic(btn.dataset.type, {
-        onStart: () => {
-          const box = $('topic-box');
-          if (box) box.style.opacity = '0.5';
-          const textEl = $('acc-topic-text');
-          if (textEl) textEl.textContent = 'Generating prompt...';
-          const topicDisplay = $('topic-display');
-          if (topicDisplay) topicDisplay.innerHTML = `Generating ${btn.dataset.type} prompt...`;
-        },
-        onSuccess: (topic) => {
-          const box = $('topic-box');
-          if (box) box.style.opacity = '1';
-          syncTopicDisplay();
-          const textarea = $('writing-area');
-          const submitBtn = $('submit-btn');
-          if (textarea && submitBtn) {
-            const words = textarea.value.trim() ? textarea.value.trim().split(/\s+/).length : 0;
-            submitBtn.disabled = words < 20;
-          }
-        },
-        onError: () => {
-          const box = $('topic-box');
-          if (box) box.style.opacity = '1';
-          const textEl = $('acc-topic-text');
-          if (textEl) textEl.textContent = 'Error generating topic. Please try again.';
-          const topicDisplay = $('topic-display');
-          if (topicDisplay) topicDisplay.textContent = 'Error generating topic. Please try again.';
-        }
-      });
+// ── Color Key Accordion (lives inside the results phase) ──
+export function initColorKeyAccordion(container) {
+  if (!container || document.getElementById('acc-colorkey')) return;
+  container.appendChild(makeAccordion({
+    id: 'colorkey', title: 'Annotation Color Key', bodyHtml: buildColorKeyHtml(), startOpen: false
+  }));
+}
+
+// ── Landing Type Picker ────────────────────────────────
+export function initTypePicker({ onGenerated } = {}) {
+  const row = $('type-chip-row');
+  const beginBtn = $('begin-writing-btn');
+  const refreshBtn = $('topic-refresh-btn');
+  if (!row) return;
+
+  function generate(type, chipEl) {
+    row.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('checked'));
+    chipEl?.classList.add('checked');
+    row.querySelectorAll('.topic-chip').forEach(c => c.disabled = true);
+    if (beginBtn) beginBtn.disabled = true;
+
+    fetchGeneratedTopic(type, {
+      onStart: () => {
+        const topicDisplay = $('topic-display');
+        if (topicDisplay) topicDisplay.textContent = `Generating a ${type} prompt...`;
+      },
+      onSuccess: () => {
+        row.querySelectorAll('.topic-chip').forEach(c => c.disabled = false);
+        syncTopicDisplay();
+        if (beginBtn) beginBtn.disabled = false;
+        if (refreshBtn) refreshBtn.style.display = '';
+        onGenerated?.(type);
+      },
+      onError: () => {
+        row.querySelectorAll('.topic-chip').forEach(c => c.disabled = false);
+        const topicDisplay = $('topic-display');
+        if (topicDisplay) topicDisplay.textContent = 'Error generating topic. Please try again.';
+      }
     });
+  }
+
+  row.querySelectorAll('.topic-chip').forEach(chip => {
+    chip.addEventListener('click', () => generate(chip.dataset.type, chip));
   });
-  
-  syncTopicDisplay();
+
+  refreshBtn?.addEventListener('click', () => {
+    const active = row.querySelector('.topic-chip.checked') || row.querySelector('.topic-chip');
+    if (active) generate(active.dataset.type, active);
+  });
 }
 
 // ── Sync Topic Display ─────────────────────────────────
 export function syncTopicDisplay() {
-  const el = $('acc-topic-text');
-  if (el && currentTopic) el.textContent = currentTopic;
   const topicDisplay = $('topic-display');
   if (topicDisplay && currentTopic) topicDisplay.textContent = currentTopic;
+  const mhdrType = $('mhdr-type');
+  if (mhdrType) mhdrType.textContent = currentWritingType.toUpperCase();
 }
 
 // ── Modal ──────────────────────────────────────────────
-export function openModal(modalEl) {
-  modalEl?.classList.add('active');
-  const body = $('acc-body-topic');
-  if (body) {
-    body.style.display = '';
-    const chevron = document.querySelector('#acc-topic .acc-chevron');
-    if (chevron) chevron.classList.add('open');
-  }
+export function openWritingModal() {
+  const modal = $('modal');
+  if (!modal) return;
+  syncTopicDisplay();
+  showPhase('write');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('writing-area')?.focus(), 260);
 }
 
-export function closeModal(modalEl) {
-  modalEl?.classList.remove('active');
-  if (!currentTopic) {
-    setCurrentTopic("Write a descriptive essay about an abandoned place that suddenly comes to life.");
-    syncTopicDisplay();
+export function closeWritingModal() {
+  const modal = $('modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+export function showPhase(phase) {
+  const editorSec = $('editor-section');
+  const resultsSec = $('results-section');
+  const ftrWrite = $('ftr-write');
+  const ftrResults = $('ftr-results');
+  const mhdrPhase = $('mhdr-phase');
+
+  if (phase === 'write') {
+    if (editorSec) editorSec.style.display = 'block';
+    resultsSec?.classList.remove('active');
+    if (ftrWrite) ftrWrite.style.display = 'flex';
+    if (ftrResults) ftrResults.style.display = 'none';
+    if (mhdrPhase) mhdrPhase.textContent = 'Write';
+  } else {
+    if (editorSec) editorSec.style.display = 'none';
+    resultsSec?.classList.add('active');
+    if (ftrWrite) ftrWrite.style.display = 'none';
+    if (ftrResults) ftrResults.style.display = 'flex';
+    if (mhdrPhase) mhdrPhase.textContent = 'Results';
+    $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 

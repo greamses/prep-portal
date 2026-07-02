@@ -1,5 +1,5 @@
 /* ── FONTS ── */
-@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Caveat:wght@600;700&family=DM+Serif+Display&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Caveat:wght@600;700&family=DM+Serif+Display&family=Shantell+Sans:wght@500;600;700&display=swap");
 
 /* ════════════════════════════════════════════════════
    TOKENS
@@ -2028,82 +2028,465 @@ details.rubric-wrap[open] summary::before {
   }
 }
 
-/* =============================================
-   PREP PORTAL CONSISTENCY OVERRIDES
-   ============================================= */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOFT-UI ALIGNMENT — match /theory-page so the two AI-practice pages read as
+   one system. This page predated the soft-UI redesign: it leaned on a legacy
+   colour vocabulary (--yellow/--blue/--green/--red/--amber/--muted/--off/
+   --paper/--ruled) that no longer exists in theme.css, plus a hard-shadow
+   neo-brutalist chrome. Below we (1) alias those tokens onto the current
+   theme accents, and (2) add the blob-paint background, sticky note, pills,
+   and full-screen modal that theory-page already uses — copied from
+   theory-page/style.css so both pages share one look.
+   Appended last so it wins the cascade over the older rules above.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --yellow: var(--accent-primary);
+  --blue:   var(--accent-secondary);
+  --green:  var(--accent-success);
+  --red:    var(--accent-danger);
+  --amber:  var(--accent-warning);
+  --muted:  var(--text-secondary);
+  --off:    var(--surface-secondary);
+  --ruled:  color-mix(in srgb, var(--ink) 12%, transparent);
+  --paper:  var(--surface-primary);
+}
 
 body {
   background: var(--app-bg);
   background-image: none;
   font-family: var(--font-mono, "JetBrains Mono", monospace);
-  padding-top: calc(var(--nav-height, 62px) + 28px);
 }
 
-.app {
-  width: min(1180px, calc(100% - clamp(20px, 5vw, 64px)));
-  min-height: auto;
-  margin: 0 auto clamp(32px, 6vw, 72px);
-  border: var(--border);
-  border-radius: 18px;
-  background: var(--bg);
-  box-shadow: var(--shadow-lg);
-  animation: none;
+/* Organic paint-blob wash behind everything (filled by the inline module). */
+.builder-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.4;
+}
+.builder-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .builder-paint { opacity: 0.16; }
+
+/* Keep real content above the wash (the modal is a fixed z-index:400 overlay
+   and .site-nav is a fixed z-index:9999 bar — both already sit above it). */
+.builder-header,
+.setup-section { position: relative; z-index: 1; }
+
+/* ── HERO — sticky note + stat pills, copied from theory-page so the two
+   AI-practice builders match. ── */
+.builder-header {
+  text-align: center;
+  max-width: 40rem;
+  margin: clamp(5.5rem, 10vw, 7rem) auto clamp(2rem, 5vw, 3rem);
+  padding: 0 1rem;
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Sticky note — tilted yellow paper, marker hand, a strip of tape on top. */
+.builder-note {
+  position: relative;
+  display: inline-block;
+  max-width: 34rem;
+  margin: 0 auto;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: clamp(0.98rem, 2.2vw, 1.18rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #14130f;
+  background: #fff39a;
+  border-radius: 3px;
+  padding: 0.95rem 1.5rem 1.05rem;
+  transform: rotate(-2.5deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transition: transform var(--transition-smooth, 0.25s) var(--ease-bounce, ease);
+}
+.builder-note::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 72px;
+  height: 20px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-note:hover { transform: rotate(-1deg) translateY(-2px); }
+
+/* Sticker stat pills — tinted by an inline --tile per pill. */
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: clamp(1.2rem, 3vw, 1.8rem);
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 50%, transparent);
+  box-shadow: var(--shadow-sm);
+  padding: 0.4rem 0.7rem;
+  border-radius: 13px;
+  transition: transform var(--transition-smooth, 0.25s) var(--ease-bounce, ease);
+}
+.hero-stat strong {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: var(--tile, var(--accent-secondary));
+}
+.hero-stat:nth-child(odd) { transform: rotate(-2.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(2.5deg); }
+.hero-stat:hover { transform: rotate(0deg) translateY(-2px); }
+
+/* ── Setup section (type picker) — soft rounded paper, dashed dividers ── */
+.setup-section {
+  padding: clamp(28px, 5vw, 56px) var(--padding-lg, clamp(20px, 5vw, 60px)) clamp(48px, 7vw, 80px);
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeUp 0.5s ease 0.1s both;
+}
+
+.setup-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.setup-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--blue);
+  flex-shrink: 0;
+}
+
+.setup-section-hdr { margin-bottom: 24px; text-align: center; }
+.setup-section-hdr h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(20px, 3.5vw, 30px);
+  letter-spacing: -0.015em;
+  margin-bottom: 10px;
+}
+.setup-section-sub {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Topic picker shell (writing-type pills) ── */
+.topic-picker {
+  --tile: var(--accent-secondary);
+  background: var(--surface-primary);
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
-
-.app::before {
-  height: 8px;
+.topic-picker-hdr {
+  padding: 18px clamp(18px, 4vw, 28px);
+  border-bottom: 1px dashed var(--ruled);
 }
-
-.header {
-  min-height: 64px;
-  background: var(--paper);
+.topic-picker-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  display: block;
+  margin-bottom: 5px;
   color: var(--ink);
 }
+.topic-picker-sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.topic-groups {
+  padding: 20px clamp(18px, 4vw, 28px);
+}
+.topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-.title {
+/* Topic chips → soft tinted pills */
+.topic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: 2px solid color-mix(in srgb, var(--tile) 30%, transparent);
+  border-radius: 999px;
+  background: var(--surface-secondary);
   color: var(--ink);
-  border-right: var(--border);
-  letter-spacing: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--transition-smooth, 0.2s) var(--ease-bounce, ease),
+    box-shadow 0.18s ease, background 0.15s ease, color 0.15s ease;
 }
-
-.title::before {
-  content: "";
-  width: 34px;
-  height: 34px;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  background: var(--yellow);
-  box-shadow: 2px 2px 0 var(--ink);
+.topic-chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
-
-.title::after {
-  display: none;
+.topic-chip.checked {
+  background: var(--tile);
+  color: var(--text-on-accent, #fff);
+  border-color: var(--tile);
 }
+.topic-chip:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* Landing prompt-display card — soft rounded paper */
 .topic-box {
-  margin: clamp(22px, 4vw, 42px) clamp(20px, 5vw, 60px) 0;
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
-  transform: none;
+  border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: clamp(14px, 2vw, 18px);
+  background: var(--surface-secondary);
+  box-shadow: none;
+  margin: 0 clamp(18px, 4vw, 28px) 0;
+  overflow: hidden;
+  transition: none;
+}
+.topic-box:hover { box-shadow: none; transform: none; }
+.topic-header {
+  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  border-bottom: 1px dashed var(--ruled);
+}
+.topic-refresh {
+  background: var(--ink);
+  border-radius: 999px;
+}
+.topic-body { background: transparent; }
+
+.topic-actions {
+  display: flex;
+  justify-content: center;
+  padding: 20px clamp(18px, 4vw, 28px) 24px;
 }
 
-.topic-box:hover {
+/* ── Buttons → soft pills with blurred shadows ── */
+.btn {
+  border-radius: 999px;
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary {
+  background: var(--yellow);
+  color: var(--ink);
   box-shadow: var(--shadow-md);
-  transform: none;
+}
+.btn-primary:hover:not(:disabled) { background: var(--yellow); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.btn-primary:active:not(:disabled) { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.btn-primary:disabled { background: color-mix(in srgb, var(--ink) 14%, var(--surface-secondary)); box-shadow: none; }
+
+.btn-outline {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+.btn-outline:hover { background: #1c1c1c; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.btn-ghost {
+  background: var(--surface-primary);
+  color: var(--ink);
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  box-shadow: none;
+}
+.btn-ghost:hover { background: var(--surface-secondary); transform: translateY(-2px); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FULL-SCREEN MODAL — same skeleton/classes as theory-page so the "write"
+   experience matches across both AI-practice builders.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.modal-bd {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.84);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-bd.open { opacity: 1; pointer-events: all; }
+
+.modal-wrap {
+  width: 100%;
+  max-width: 920px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  background: var(--bg);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(18px);
+  transition: transform 0.25s var(--ease-bounce, ease);
+  overflow: hidden;
+}
+.modal-bd.open .modal-wrap { transform: translateY(0); }
+
+.modal-hdr {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 60px;
+  padding: 0.55rem 0.7rem 0.55rem 1rem;
+  flex-shrink: 0;
+  background: linear-gradient(180deg,
+    var(--surface-primary),
+    color-mix(in srgb, var(--surface-secondary) 65%, var(--surface-primary)));
+  color: var(--ink);
+  border-bottom: 1px dashed var(--ruled);
+}
+.mhdr-mark {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-secondary) 16%, var(--surface-primary));
+  color: var(--accent-secondary);
+  transform: rotate(-6deg);
+  box-shadow: var(--shadow-sm);
+}
+.mhdr-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mhdr-subject {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mhdr-class {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.mhdr-phase {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-accent, #2a2723);
+  background: var(--accent-primary);
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+}
+.mhdr-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.2s var(--ease-bounce, ease);
+}
+.mhdr-close:hover {
+  background: color-mix(in srgb, var(--accent-danger) 18%, var(--surface-secondary));
+  color: var(--accent-danger);
+  transform: rotate(90deg);
 }
 
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--app-bg);
+  padding: clamp(20px, 4vw, 36px);
+}
+
+.modal-ftr {
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--surface-secondary) 70%, transparent);
+  border-top: 1px dashed var(--ruled);
+}
+.mftr-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px clamp(18px, 4vw, 28px);
+}
+.mftr-wc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.mftr-wc span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+}
+.mftr-space { flex: 1; }
+
+/* Editor/results content now live inside .modal-body — drop the old
+   full-page section padding/backgrounds. */
+.topic-section,
+.type-section,
 #editor-section,
 #results-section {
-  padding-top: clamp(24px, 4vw, 44px);
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
 }
+#editor-section { padding-top: 0; }
+#results-section { padding-top: 0; padding-bottom: 0; }
 
 textarea {
-  min-height: min(58vh, 620px);
+  min-height: min(50vh, 480px);
   border-radius: 16px;
   box-shadow: var(--shadow-md);
 }
-
 textarea:focus {
   transform: none;
   box-shadow:
@@ -2111,150 +2494,55 @@ textarea:focus {
     0 0 0 3px rgba(0, 85, 255, 0.14);
 }
 
-.footer-controls {
-  border-top: 2px dashed var(--ink);
-}
-
-.btn,
-.chip,
-.type-btn,
 .acc-panel,
 details.rubric-wrap,
 .legend,
 .paper-scroll-wrap,
-.para-nav,
-.modal-content {
+.para-nav {
   border-radius: 14px;
 }
-
-.btn {
-  min-height: 46px;
-  width: auto;
-  max-width: max-content;
-  padding: 11px 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.btn-primary {
-  background: var(--yellow);
-}
-
-.btn-outline {
-  background: var(--bg);
-  color: var(--ink);
-}
-
-.btn-outline:hover {
-  background: var(--yellow);
-  color: var(--ink);
-}
-
-.header .btn {
-  min-height: 42px;
-  padding-inline: 14px;
-}
-
-.footer-controls .btn {
-  min-width: 0;
-}
-
-#submit-btn {
-  padding-inline: 18px;
-}
-
-.type-grid {
-  grid-template-columns: repeat(2, max-content);
-  justify-content: start;
-}
-
-.type-grid .type-btn,
-.acc-topic-types .type-btn {
-  width: auto;
-  max-width: max-content;
-  padding-inline: 16px;
-}
-
 .acc-panel,
 details.rubric-wrap,
 .legend,
 .paper-scroll-wrap {
   box-shadow: var(--shadow-sm);
 }
-
-.acc-panel:hover {
-  box-shadow: var(--shadow-sm);
-}
-
+.acc-panel:hover { box-shadow: var(--shadow-sm); }
 .acc-header,
-details.rubric-wrap summary {
-  min-height: 48px;
-}
+details.rubric-wrap summary { min-height: 48px; }
 
 .legend {
   background: var(--paper);
   color: var(--ink);
 }
-
-.legend-title {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
-}
-
-.legend-item {
-  color: var(--ink);
-}
+.legend-title { color: var(--ink); border-bottom-color: var(--ink); }
+.legend-item { color: var(--ink); }
 
 .loading-overlay {
-  position: fixed;
-  z-index: 99999;
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+}
+
+/* Annotation popovers live inside the modal's results phase — they must
+   render above the modal itself (raised to z-index:10000 above .site-nav). */
+#mark-popover,
+#comment-popover {
+  z-index: 10050;
 }
 
 @media (max-width: 768px) {
-  body {
-    padding-top: calc(var(--nav-height, 62px) + 16px);
-  }
-
-  .app {
-    width: min(100% - 24px, 1180px);
-    box-shadow: var(--shadow-md);
-  }
+  .builder-header { margin: clamp(4.5rem, 8vw, 6rem) auto clamp(1.6rem, 4vw, 2.4rem); }
 }
 
 @media (max-width: 560px) {
-  .header {
-    grid-template-columns: 1fr;
+  .modal-bd { padding: 0; align-items: flex-end; }
+  .modal-wrap {
+    max-height: 94vh;
+    border-radius: 18px 18px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
   }
-
-  .title {
-    border-right: 0;
-  }
-
-  .header > *:last-child:not(.title) {
-    justify-content: stretch;
-    padding: 14px 16px;
-  }
-
-  .header > *:last-child:not(.title) .btn {
-    width: auto;
-    max-width: none;
-    justify-content: center;
-  }
-
-  .topic-box {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
-
-  .type-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .type-grid .type-btn,
-  .acc-topic-types .type-btn {
-    max-width: none;
-  }
+  .topic-box { margin-left: 0; margin-right: 0; }
 }
