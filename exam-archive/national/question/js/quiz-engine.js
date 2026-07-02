@@ -24,8 +24,9 @@ const Quiz = (() => {
     return "short"; // subjective / short / blank / fill-in-the-blank
   }
 
-  // MCQ tests are Premium-only. Resolve once from the CACHED profile (0 extra
-  // reads when the nav already warmed it). Unknown/anonymous → not premium.
+  // Written-answer questions (Short Answer / Theory) are Premium-only; free users
+  // get MCQs. Resolve once from the CACHED profile (0 extra reads when the nav
+  // already warmed it). Unknown/anonymous → not premium.
   let _premiumVerdict = null;
   async function isPremiumUser() {
     if (_premiumVerdict !== null) return _premiumVerdict;

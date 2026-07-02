@@ -143,8 +143,9 @@ let cbtState = {
   _subjects: null, _topics: null, _papers: 1, _topicCount: 0,
 };
 
-// Premium gate for the MCQ filter — resolved once, from the CACHED profile
-// (data-service: 0 extra reads when the nav already warmed it). null = unknown.
+// Premium gate for the written-answer filters (Short Answer / Theory) — resolved
+// once, from the CACHED profile (data-service: 0 extra reads when the nav already
+// warmed it). null = unknown.
 let _pickerPremium = null;
 async function isPickerPremium() {
   if (_pickerPremium !== null) return _pickerPremium;
