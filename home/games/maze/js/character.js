@@ -120,6 +120,22 @@ export async function loadZombie(scene) {
   return rig;
 }
 
+/** The Erika "Guide" — walks ahead and leads the player to the exit. Uses the
+ *  render-correct loadRig path; softly self-illuminated so she reads in the dark. */
+export async function loadGuide(scene) {
+  const rig = await loadRig(scene, "/home/games/maze/assets/guide/", "guide.glb", {
+    idle: "idle.glb", walk: "walk.glb", run: "run.glb",
+  }, 1.7);
+  rig.root.getChildMeshes(false).forEach((m) => {
+    const mat = m.material;
+    if (!mat || !("emissiveColor" in mat)) return;
+    if (mat.albedoTexture && "emissiveTexture" in mat) mat.emissiveTexture = mat.albedoTexture;
+    mat.emissiveColor = new B.Color3(0.5, 0.55, 0.65); // soft, friendly glow
+    if (mat.metallic != null) mat.metallic = 0.1;
+  });
+  return rig;
+}
+
 /** Low-poly humanoid placeholder (feet at the root origin), facing +Z. */
 export function placeholderCharacter(scene) {
   const root = new B.TransformNode("playerModel", scene);

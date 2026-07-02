@@ -149,8 +149,9 @@ export function buildMaze(scene, grid) {
 
   const startPos = new B.Vector3(0, CFG.eyeH, backZ + cell * 0.7); // outside, facing the door
   const goalPos = new B.Vector3((cols - 1) * cell, 0, (rows - 1) * cell);
+  const path = solutionPath(grid); // the correct route (before gates block it) — for the Guide
   const gates = placeGates(scene, grid, root, cell, wallH, wallT);
-  return { root, startPos, goalPos, door, gates, deadEnds: deadEnds(grid), entrance: { doorZ, backZ, halfX: h } };
+  return { root, startPos, goalPos, door, gates, deadEnds: deadEnds(grid), path, entrance: { doorZ, backZ, halfX: h } };
 }
 
 /** Dead-end cells (exactly one open side), away from the start — ambush spots. */

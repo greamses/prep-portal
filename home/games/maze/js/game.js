@@ -10,10 +10,11 @@
 import { createEngine, createScene } from "./engine.js";
 import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
-import { loadCharacter, loadZombie, placeholderCharacter } from "./character.js";
+import { loadCharacter, loadZombie, loadGuide, placeholderCharacter } from "./character.js";
 import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
 import { createEnemies } from "./enemy.js";
+import { createGuide } from "./guide.js";
 import { initRiddles, openRiddle, isRiddleOpen, closeRiddle } from "./riddles.js";
 import { initSettings } from "./settings.js";
 import { CFG } from "./config.js";
@@ -31,6 +32,7 @@ let gates = [];
 let turned = false, initHeading = null, zombieRequested = false, prevX = null, prevZ = null;
 let zombieModel = null, zombieReady = false, zombieSpawned = false, chaserWakeAt = 0;
 let playerChar = null;
+let guide = null, guidePath = []; // the Erika guide who leads to the exit
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
 const keys = new Set();
@@ -95,6 +97,18 @@ function prewarmZombie() {
     .catch(() => { zombieModel = null; zombieReady = true; }); // octahedron fallback
 }
 
+/** Load the Erika guide in the background; she starts leading once loaded. */
+function prewarmGuide() {
+  guide = null;
+  const s = scene, pth = guidePath;
+  loadGuide(s)
+    .then((rig) => {
+      if (s !== scene) { rig.root?.dispose?.(); return; } // maze changed during load
+      guide = createGuide(s, rig, pth, gates);
+    })
+    .catch((e) => { console.warn("[maze] guide load failed:", e); guide = null; });
+}
+
 /* ── glowing exit pillar ──────────────────────────────────────────────────── */
 function buildGoal(scn, pos) {
   const m = B.MeshBuilder.CreateCylinder("goal", { diameter: 1.7, height: CFG.wallH * 0.9, tessellation: 24 }, scn);
@@ -134,6 +148,7 @@ async function start() {
   const info = buildMaze(scene, grid);
   goalPos = info.goalPos;
   goal = buildGoal(scene, goalPos);
+  guidePath = info.path || [];
 
   let character;
   try { character = await loadCharacter(scene); }
@@ -148,6 +163,7 @@ async function start() {
   for (let i = aspots.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [aspots[i], aspots[j]] = [aspots[j], aspots[i]]; }
   aspots.slice(0, CFG.ambushCount).forEach((cell) => enemies.spawnShadow(cell));
   gates = info.gates || [];
+  prewarmGuide(); // load Erika; she leads once the player is inside
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
   // NOTE: do NOT build a selection octree here. It snapshots only the meshes that
@@ -202,6 +218,7 @@ async function start() {
     }
 
     if (enemies) enemies.update(body.position); // ambushers wake on proximity
+    if (guide) guide.update(body.position, !over && doorState === "sealed"); // lead once inside
     if (map) {
       const pts = enemies ? enemies.enemies.map((e) => ({ x: e.mesh.position.x, z: e.mesh.position.z })) : [];
       map.update(body.position.x, body.position.z, body.rotation.y - CFG.modelYaw, pts);
