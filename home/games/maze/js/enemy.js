@@ -72,12 +72,13 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
       cloneRoot.getChildMeshes(false).forEach((m) => {
         m.alwaysSelectAsActiveMesh = true;
         m.isVisible = true;
+        // These Mixamo rigs carry a scaled armature, so their bone matrices have a
+        // ~100x scale. On the GPU that overflows float precision and collapses
+        // every vertex to a point → the enemy renders INVISIBLE while its AI still
+        // hunts you. CPU skinning (double precision) handles it. Set at spawn, so
+        // the mesh's shader compiles for CPU skinning from the start.
+        m.computeBonesUsingShaders = false;
       });
-      // The cloned skeleton stores its bone matrices in a GPU TEXTURE that
-      // instantiateModelsToScene never populates for the clone, so every vertex
-      // collapses to a point and the zombie renders INVISIBLE (while its AI keeps
-      // hunting you). Force plain uniform-array skinning, which the clone updates
-      // correctly. Must be set now, before the mesh's shader first compiles.
       inst.skeletons.forEach((sk) => { sk.useTextureToStoreBoneMatrices = false; });
       const ag = inst.animationGroups;
       const byName = {};
