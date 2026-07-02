@@ -101,70 +101,22 @@ export function loadCharacter(scene) {
   }, 1.7);
 }
 
-/** Load the zombie once as a CLONABLE prototype (AssetContainer) with its clips
- *  retargeted, so every zombie can be the same model via instantiateModelsToScene. */
-export async function loadZombiePrototype(scene) {
-  const dir = "/home/games/maze/assets/zombie/";
-  const container = await B.SceneLoader.LoadAssetContainerAsync(dir, "zombie.glb", scene);
-  container.addAllToScene(); // temporarily, to retarget the clips
-  container.animationGroups.slice().forEach((g) => g.dispose()); // drop the T-pose clip
-  container.animationGroups.length = 0;
-
-  // VISIBILITY: the zombie skins are metallic PBR with NO emissive, and the
-  // dungeon has no environment map + dark fog, so the zombies rendered near-black
-  // — invisible while they still hunted you. The player model stays visible by
-  // self-illuminating (emissive = its own texture); mirror that here so the
-  // zombies are lit by their own skin, and drop the metallic so they aren't a
-  // black blob.
-  container.materials.forEach((mat) => {
+/** Load the chaser zombie the SAME proven way as the player (direct loadRig).
+ *  The old AssetContainer + instantiateModelsToScene "clone" approach never
+ *  rendered the skinned mesh (invisible hunter); loadRig does. Self-illuminate
+ *  it so the hunter is visible in the dark dungeon. */
+export async function loadZombie(scene) {
+  const rig = await loadRig(scene, "/home/games/maze/assets/zombie/", "zombie.glb", {
+    idle: "idle.glb", run: "run.glb", crawl: "crawl.glb", bite: "bite.glb",
+  }, 1.85);
+  rig.root.getChildMeshes(false).forEach((m) => {
+    const mat = m.material;
     if (!mat || !("emissiveColor" in mat)) return;
     if (mat.albedoTexture && "emissiveTexture" in mat) mat.emissiveTexture = mat.albedoTexture;
-    mat.emissiveColor = new B.Color3(0.85, 0.85, 0.85);
+    mat.emissiveColor = new B.Color3(0.6, 0.58, 0.62); // lit enough to see in the dark
     if (mat.metallic != null) mat.metallic = 0.1;
   });
-
-  // Scale the whole rig by its true root (the glTF __root__ node), not a child
-  // mesh — measure world bounds across all meshes so we don't depend on the root
-  // being an AbstractMesh, then scale it so the rig stands 1.85 units tall.
-  const root = container.rootNodes[0];
-  const worldBounds = () => {
-    let min = null, max = null;
-    for (const m of container.meshes) {
-      if ((m.getTotalVertices?.() || 0) === 0) continue;
-      m.computeWorldMatrix(true);
-      const b = m.getBoundingInfo().boundingBox;
-      min = min ? B.Vector3.Minimize(min, b.minimumWorld) : b.minimumWorld.clone();
-      max = max ? B.Vector3.Maximize(max, b.maximumWorld) : b.maximumWorld.clone();
-    }
-    return { min: min || B.Vector3.Zero(), max: max || B.Vector3.One() };
-  };
-  let wb = worldBounds();
-  root.scaling.scaleInPlace(1.85 / Math.max(0.001, wb.max.y - wb.min.y));
-  wb = worldBounds();
-  const footOffset = wb.min.y - root.position.y;
-
-  const sk = container.skeletons[0];
-  const nodeMap = {};
-  (container.transformNodes || []).forEach((n) => { if (n && n.name) nodeMap[n.name] = n; });
-  if (sk) sk.bones.forEach((b) => { const tn = b.getTransformNode && b.getTransformNode(); if (tn && tn.name) nodeMap[tn.name] = tn; });
-  const conv = (t) => (t && nodeMap[t.name]) || t;
-
-  const clipOrder = ["idle", "run", "crawl", "bite"];
-  const files = { idle: "idle.glb", run: "run.glb", crawl: "crawl.glb", bite: "bite.glb" };
-  for (const name of clipOrder) {
-    await B.SceneLoader.ImportAnimationsAsync(dir, files[name], scene, false, NOSYNC, conv);
-    const g = scene.animationGroups[scene.animationGroups.length - 1];
-    if (!g) continue;
-    g.name = name;
-    if (name !== "bite") stripRootMotion(g);
-    g.stop();
-    const i = scene.animationGroups.indexOf(g);
-    if (i >= 0) scene.animationGroups.splice(i, 1); // move out of the live scene…
-    container.animationGroups.push(g);              // …into the container so it clones
-  }
-
-  container.removeAllFromScene(); // keep the prototype out of the scene
-  return { container, footOffset, clipOrder };
+  return rig;
 }
 
 /** Low-poly humanoid placeholder (feet at the root origin), facing +Z. */

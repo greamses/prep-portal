@@ -10,7 +10,7 @@
 import { createEngine, createScene } from "./engine.js";
 import { generateMaze, buildMaze } from "./maze.js";
 import { createPlayer } from "./player.js";
-import { loadCharacter, loadZombiePrototype, placeholderCharacter } from "./character.js";
+import { loadCharacter, loadZombie, placeholderCharacter } from "./character.js";
 import { createJoystick } from "./joystick.js";
 import { initMinimap } from "./minimap.js";
 import { createEnemies } from "./enemy.js";
@@ -29,8 +29,7 @@ let gates = [];
 // deferred zombie: pre-warmed in the background, spawned after she passes the
 // entrance AND makes her first turn
 let turned = false, initHeading = null, zombieRequested = false, prevX = null, prevZ = null;
-let zombieProto = null, zombieReady = false, zombieSpawned = false, chaserWakeAt = 0;
-let ambushSpots = [];
+let zombieModel = null, zombieReady = false, zombieSpawned = false, chaserWakeAt = 0;
 let playerChar = null;
 let ready = false; // scene fully built (camera exists) — gate the render loop
 
@@ -80,20 +79,20 @@ function endGame(overlayId) {
   closeRiddle();
 }
 
-/** Load the shared zombie prototype, then spawn the hidden ambush zombies. */
+/** Quietly load the zombie in the background (hidden) so spawning is instant. */
 function prewarmZombie() {
-  zombieProto = null;
+  zombieModel = null;
   zombieReady = false;
-  if (!CFG.enemyCount && !CFG.ambushCount) { zombieReady = true; return; }
+  if (!CFG.enemyCount) { zombieReady = true; return; }
   const s = scene;
-  loadZombiePrototype(s)
-    .then((proto) => {
-      if (s !== scene) { proto.container.dispose(); return; } // maze changed during load
-      zombieProto = proto;
+  loadZombie(s)
+    .then((z) => {
+      if (s !== scene) { z.root?.dispose?.(); return; } // maze changed during load
+      z.root.setEnabled(false); // keep hidden until spawned
+      zombieModel = z;
       zombieReady = true;
-      ambushSpots.forEach((cell) => enemies.spawn(proto, { cell, ambush: true, awake: false }));
     })
-    .catch((e) => { console.error("[maze] zombie load failed:", e); zombieReady = true; }); // marker fallback
+    .catch(() => { zombieModel = null; zombieReady = true; }); // octahedron fallback
 }
 
 /* ── glowing exit pillar ──────────────────────────────────────────────────── */
@@ -142,12 +141,12 @@ async function start() {
   playerChar = character;
 
   player = createPlayer(scene, canvas, info.startPos, character, grid, info.entrance, () => doorState);
-  enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed });
-  // pick random dead-ends for the hidden ambush zombies (spawned once loaded)
+  enemies = createEnemies(scene, grid, { speed: CFG.enemySpeed }); // chaser spawned later
+  prewarmZombie(); // load the detailed chaser quietly in the background
+  // hide shadow zombies in random dead-ends — they wake when you run past
   const aspots = (info.deadEnds || []).slice();
   for (let i = aspots.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [aspots[i], aspots[j]] = [aspots[j], aspots[i]]; }
-  ambushSpots = aspots.slice(0, CFG.ambushCount);
-  prewarmZombie(); // load the shared zombie model, then spawn the ambushers
+  aspots.slice(0, CFG.ambushCount).forEach((cell) => enemies.spawnShadow(cell));
   gates = info.gates || [];
   closeRiddle();
   if (map) map.setMaze(grid, CFG.cell);
@@ -190,7 +189,7 @@ async function start() {
       zombieSpawned = true;
       alerted = false;
       chaserWakeAt = now + CFG.graceMs;
-      enemies.spawn(zombieProto, { cell: [0, 0], awake: false, wakeAt: chaserWakeAt });
+      enemies.spawn(zombieModel, { cell: [0, 0], awake: false, wakeAt: chaserWakeAt });
     }
     // chaser wake countdown HUD
     if (zombieSpawned && chaserWakeAt) {
