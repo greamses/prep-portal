@@ -7,10 +7,10 @@
  * the site instead of looking like a generic modal. All iconography is our own
  * inline SVGs — no emoji.
  *
- * Self-contained: appears a few seconds after every home-page load, for every
- * visitor (logged in or not). It only loads on the home page, so "every load"
- * means every entry to the site's front door. CTA sends them to the partner
- * page where anyone can generate a referral code.
+ * Self-contained: a small NON-modal card that slides up in the lower-left a few
+ * seconds after every home-page load, for every visitor (logged in or not). It
+ * auto-dismisses after 30s (or on close/Esc) and never blocks the page. CTA
+ * sends them to the partner page where anyone can generate a referral code.
  */
 (function () {
   const DELAY_MS = 3500;
@@ -31,31 +31,26 @@
     const s = document.createElement("style");
     s.id = "pp-promo-styles";
     s.textContent = `
-      #pp-promo { position: fixed; inset: 0; z-index: 100000; display: flex;
-        align-items: center; justify-content: center; padding: 1rem;
-        background: rgba(42,39,35,.5); opacity: 0; transition: opacity .25s ease; }
-      #pp-promo.show { opacity: 1; }
-      #pp-promo .pp-receipt { width: min(400px, 100%);
-        transform: translateY(14px) scale(.98); transition: transform .3s cubic-bezier(.16,1,.3,1); }
-      #pp-promo.show .pp-receipt { transform: none; }
-      .pp-promo__paper { text-align: center; padding: 2rem 1.6rem 1.6rem; font-family: var(--font-mono, ui-monospace, monospace); }
-      .pp-promo__close { position: absolute; top: .6rem; right: .9rem; width: 30px; height: 30px;
+      #pp-promo { position: fixed; left: 18px; bottom: 18px; z-index: 100000;
+        opacity: 0; transform: translateY(14px) scale(.98); pointer-events: none;
+        transition: opacity .25s ease, transform .3s cubic-bezier(.16,1,.3,1); }
+      #pp-promo.show { opacity: 1; transform: none; pointer-events: auto; }
+      #pp-promo .pp-receipt { width: min(230px, calc(100vw - 36px)); }
+      .pp-promo__paper { text-align: center; padding: 1.1rem 1rem .95rem; font-family: var(--font-mono, ui-monospace, monospace); }
+      .pp-promo__close { position: absolute; top: .35rem; right: .5rem; width: 26px; height: 26px;
         border: none; background: none; cursor: pointer; color: var(--text-secondary, #6b655c);
-        font-size: 1.5rem; line-height: 1; z-index: 4; }
+        font-size: 1.25rem; line-height: 1; z-index: 4; }
       .pp-promo__close:hover { color: var(--ink, #2a2723); }
-      .pp-promo__tag { position: absolute; top: -14px; left: 18px; z-index: 4; font-size: .82rem;
+      .pp-promo__tag { position: absolute; top: -12px; left: 14px; z-index: 4; font-size: .72rem;
         --pp-note-tilt: -5deg; }
-      .pp-promo__coin { width: 56px; height: 56px; margin: .2rem auto .6rem; display: grid; place-items: center;
+      .pp-promo__coin { width: 40px; height: 40px; margin: .1rem auto .5rem; display: grid; place-items: center;
         border-radius: 50%; background: var(--surface-secondary, #f4f0e8); color: var(--accent-success, #7cc47c);
         box-shadow: var(--shadow-sm, 0 2px 5px rgba(42,39,35,.1)); }
-      .pp-promo__coin svg { width: 32px; height: 32px; }
+      .pp-promo__coin svg { width: 22px; height: 22px; }
       .pp-promo__title { font-family: var(--font-display, system-ui), sans-serif; font-weight: 900;
-        font-size: 1.25rem; margin: 0 0 .5rem; color: var(--ink, #2a2723); line-height: 1.1; }
-      .pp-promo__text { font-size: .8rem; line-height: 1.6; color: var(--text-secondary, #6b655c); margin: 0 0 1.1rem; }
-      .pp-promo__pill { margin: 0 auto 1.1rem; }
-      .pp-promo__cta { width: 100%; box-sizing: border-box; }
-      .pp-promo__later { display: block; margin: .8rem auto 0; background: none; border: none; cursor: pointer;
-        font-family: var(--font-mono, monospace); font-size: .72rem; color: var(--text-tertiary, #9a948a); text-decoration: underline; }`;
+        font-size: 1rem; margin: 0 0 .35rem; color: var(--ink, #2a2723); line-height: 1.1; }
+      .pp-promo__text { font-size: .72rem; line-height: 1.5; color: var(--text-secondary, #6b655c); margin: 0 0 .8rem; }
+      .pp-promo__cta { width: 100%; box-sizing: border-box; font-size: .8rem; }`;
     document.head.appendChild(s);
   }
 
@@ -76,8 +71,7 @@
     injectStyles();
     const root = document.createElement("div");
     root.id = "pp-promo";
-    root.setAttribute("role", "dialog");
-    root.setAttribute("aria-modal", "true");
+    root.setAttribute("role", "complementary");
     root.setAttribute("aria-label", "Earn by referring friends");
     root.innerHTML =
       '<div class="pp-receipt">' +
@@ -86,20 +80,23 @@
         '<button class="pp-promo__close" aria-label="Close">&times;</button>' +
         '<div class="pp-receipt__paper pp-promo__paper">' +
           '<div class="pp-promo__coin" aria-hidden="true">' + COIN_SVG + '</div>' +
-          '<h2 class="pp-promo__title">Earn while they learn</h2>' +
-          '<p class="pp-promo__text">Invite anyone to PrepPortal and earn <strong>10% of every subscription</strong> they pay — for their first 6 months. Students, parents, teachers, schools&mdash;everyone can join.</p>' +
-          '<span class="pp-pill pp-pill--ok pp-pill--static pp-promo__pill">Free referral code</span>' +
+          '<h2 class="pp-promo__title">Refer &amp; earn 10%</h2>' +
+          '<p class="pp-promo__text">Invite friends. Pocket 10% of what they pay.</p>' +
           '<a class="pp-btn pp-promo__cta" href="/partner.html">Get my code ' + ARROW_SVG + '</a>' +
-          '<button class="pp-promo__later" type="button">Maybe later</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(root);
     requestAnimationFrame(() => root.classList.add("show"));
 
-    const close = () => { root.classList.remove("show"); setTimeout(() => root.remove(), 250); };
+    let autoHide;
+    const close = () => {
+      clearTimeout(autoHide);
+      root.classList.remove("show");
+      setTimeout(() => root.remove(), 250);
+    };
     root.querySelector(".pp-promo__close").onclick = close;
-    root.querySelector(".pp-promo__later").onclick = close;
-    root.addEventListener("click", (e) => { if (e.target === root) close(); });
+    // Auto-dismiss after 30s if the visitor ignores it.
+    autoHide = setTimeout(close, 30000);
     document.addEventListener("keydown", function esc(e) {
       if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
     });

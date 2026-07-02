@@ -91,12 +91,10 @@ const chatbotcss = `
     right: -68px;
     transform: translateY(50%);
     z-index: 10001;
-    background: var(--_paper);
+    background: none;
     color: var(--_ink);
-    border: var(--_border);
-    border-right: none;
-    border-radius: var(--_r) 0 0 var(--_r);
-    padding: 12px 10px;
+    border: none;
+    padding: 10px 8px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -107,12 +105,12 @@ const chatbotcss = `
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    transition: right 0.3s var(--_ease), background 0.15s, box-shadow 0.2s ease;
-    box-shadow: var(--_sh-md);
+    transition: right 0.3s var(--_ease), transform 0.2s var(--_ease);
+    box-shadow: none;
 }
 
-#chat-fab-restore.fab-restore-visible { right: 0; }
-#chat-fab-restore:hover { background: var(--_surface); box-shadow: var(--_sh-lg); }
+#chat-fab-restore.fab-restore-visible { right: 4px; }
+#chat-fab-restore:hover { transform: scale(1.08); }
 
 /* Sleeping robot mascot on the restore tab (pairs with the awake robot on the FAB) */
 #chat-fab-restore .pb-robot--sleep { width: 30px; height: 30px; display: block; }
