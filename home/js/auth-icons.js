@@ -4,25 +4,43 @@
    Every icon the login / sign-up modal uses lives here, imported by
    home/js/auth-modal.js. Two families:
 
-   • ROLE MARKS (student / parent / teacher) — chunky multicolour "sticker"
-     glyphs in the same language as utils/components/nav-icons.js. Fills use
-     theme accent tokens so they re-tint in light/dark.
-   • LINE ICONS (close, arrow, email, lock, user, eye…) — single-stroke,
-     drawn in `currentColor` so CSS controls the colour.
+   • ROLE MARKS (student / parent / teacher) and FIELD MARKS (email, lock,
+     user) — chunky multicolour "sticker" glyphs in the same language as
+     utils/components/nav-icons.js. Fills use theme accent tokens so they
+     re-tint in light/dark.
+   • UI CHROME (close, arrow, eye/eyeOff) — single-stroke, drawn in
+     `currentColor` so CSS controls the colour. Same split nav-icons.js uses
+     for its own utility glyphs (SVG_SUN / SVG_MOON / SVG_CAMERA).
 ========================================================================= */
 
 const line = (paths) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 
+const svg = (paths) =>
+  `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paths}</svg>`;
+
 export const AUTH_ICONS = {
-  // ── UI line icons ───────────────────────────────────────────────────
+  // ── UI chrome (plain stroke, same convention as nav-icons.js SVG_SUN/SVG_MOON) ──
   close: line(`<path d="M18 6 6 18"/><path d="M6 6l12 12"/>`),
   arrow: line(`<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>`),
-  email: line(`<rect x="3" y="5" width="18" height="14" rx="2.6"/><path d="m3.6 7 8.4 6 8.4-6"/>`),
-  lock: line(`<rect x="4" y="10.5" width="16" height="10" rx="2.6"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>`),
-  user: line(`<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>`),
   eye: line(`<path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>`),
   eyeOff: line(`<path d="M2.5 12S6 5 12 5c2 0 3.8.6 5.4 1.5M21.5 12S18 19 12 19c-2 0-3.8-.6-5.4-1.5"/><path d="M4 4l16 16"/><path d="M9.7 9.7a3 3 0 0 0 4.2 4.2"/>`),
+
+  // ── Field marks — multicolour stickers, same language as nav-icons.js ──
+  email: svg(
+    `<rect x="2.4" y="5" width="19.2" height="14" rx="2.6" fill="var(--accent-secondary)"/>` +
+      `<path d="M2.4 6.5l9.6 6.8 9.6-6.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
+  lock: svg(
+    `<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" fill="none" stroke="var(--accent-secondary)" stroke-width="2.2" stroke-linecap="round"/>` +
+      `<rect x="4" y="10.5" width="16" height="10" rx="2.6" fill="var(--accent-secondary)"/>` +
+      `<circle cx="12" cy="15" r="1.6" fill="#fff"/>` +
+      `<rect x="11.2" y="15.6" width="1.6" height="2.4" rx="0.8" fill="#fff"/>`,
+  ),
+  user: svg(
+    `<circle cx="12" cy="8" r="4" fill="var(--accent-secondary)"/>` +
+      `<path d="M4.5 20.5a7.5 7.5 0 0 1 15 0z" fill="var(--accent-secondary)"/>`,
+  ),
 
   // ── Google brand mark (keeps its own colours) ───────────────────────
   google: `<svg viewBox="0 0 48 48" aria-hidden="true">

@@ -4,7 +4,7 @@
    ===================================================================== */
 
 export const ICONS = {
-  star: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 8.7l5.9-.9z"/></svg>`,
+  star: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.6 5.35 5.9.85-4.27 4.16 1.01 5.88L12 16.13l-5.24 2.76 1.01-5.88L3.5 8.8l5.9-.85z" fill="var(--accent-primary)"/><circle cx="12" cy="10.4" r="1.9" fill="#fff" opacity="0.85"/></svg>`,
 
   learn: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 4-9 4-9-4z" fill="var(--ink)"/><path d="M6.5 10.8v3.4c0 1.6 2.5 2.9 5.5 2.9s5.5-1.3 5.5-2.9v-3.4L12 13.2z" fill="var(--accent-secondary)"/><rect x="19.6" y="8.6" width="1.6" height="6" rx="0.8" fill="var(--accent-warning)"/></svg>`,
 
