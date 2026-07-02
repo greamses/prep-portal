@@ -110,13 +110,27 @@ export async function loadZombiePrototype(scene) {
   container.animationGroups.slice().forEach((g) => g.dispose()); // drop the T-pose clip
   container.animationGroups.length = 0;
 
-  const root = container.meshes.find((m) => !m.parent) || container.meshes[0];
-  container.meshes.forEach((m) => m.computeWorldMatrix(true));
-  let bb = root.getHierarchyBoundingVectors(true);
-  root.scaling.scaleInPlace(1.85 / Math.max(0.001, bb.max.y - bb.min.y));
-  container.meshes.forEach((m) => m.computeWorldMatrix(true));
-  bb = root.getHierarchyBoundingVectors(true);
-  const footOffset = bb.min.y - root.position.y;
+  // Scale the whole rig by its TRUE root (the glTF __root__ node), never a child
+  // mesh. Scaling a mid-hierarchy mesh combined with the root's coordinate-flip
+  // into a net NEGATIVE scale, which flipped winding and rendered every zombie
+  // inside-out (invisible) while its logic kept hunting. Measure world bounds
+  // across all meshes so we don't depend on the root being an AbstractMesh.
+  const root = container.rootNodes[0];
+  const worldBounds = () => {
+    let min = null, max = null;
+    for (const m of container.meshes) {
+      if ((m.getTotalVertices?.() || 0) === 0) continue;
+      m.computeWorldMatrix(true);
+      const b = m.getBoundingInfo().boundingBox;
+      min = min ? B.Vector3.Minimize(min, b.minimumWorld) : b.minimumWorld.clone();
+      max = max ? B.Vector3.Maximize(max, b.maximumWorld) : b.maximumWorld.clone();
+    }
+    return { min: min || B.Vector3.Zero(), max: max || B.Vector3.One() };
+  };
+  let wb = worldBounds();
+  root.scaling.scaleInPlace(1.85 / Math.max(0.001, wb.max.y - wb.min.y));
+  wb = worldBounds();
+  const footOffset = wb.min.y - root.position.y;
 
   const sk = container.skeletons[0];
   const nodeMap = {};
