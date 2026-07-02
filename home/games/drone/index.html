@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <title>Prep Portal 2026 | Bearing Courier</title>
+    <meta name="theme-color" content="#0055ff" />
+    <meta
+      name="description"
+      content="Pilot a delivery drone by bearing. Read the bearing to each landing pad, turn to match your compass, fly there and drop the package — as many as you can in one minute."
+    />
+
+    <!-- Shared theme + nav -->
+    <link rel="stylesheet" href="/home/css/main.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+
+    <!-- Techy monospace for the flight HUD -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Oswald:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/home/games/drone/css/game.css" />
+
+    <!-- Firebase import map (the shared nav imports /firebase-init.js) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="drone-page">
+      <div class="drone-stage">
+        <canvas id="dr-canvas" class="drone-canvas" touch-action="none"></canvas>
+
+        <!-- ── top HUD row ─────────────────────────────────────────────── -->
+        <div class="drone-hud drone-hud--top">
+          <span class="dr-title">
+            <span class="dr-title-dot"></span>
+            BEARING COURIER
+          </span>
+          <div class="dr-stats">
+            <div class="dr-stat">
+              <span class="dr-stat-k">TIME</span>
+              <span class="dr-stat-v" id="dr-timer">1:00</span>
+            </div>
+            <div class="dr-stat">
+              <span class="dr-stat-k">DELIVERED</span>
+              <span class="dr-stat-v" id="dr-score">0 / 6</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── compass ribbon (top-centre) ─────────────────────────────── -->
+        <div class="dr-compass-wrap">
+          <canvas id="dr-compass" class="dr-compass"></canvas>
+        </div>
+
+        <!-- ── delivery card (left) ────────────────────────────────────── -->
+        <div class="dr-card" id="dr-card">
+          <div class="dr-card-head">
+            <span id="dr-card-num">PKG 1 / 6</span>
+            <span class="dr-card-tag" id="dr-card-tag">DELIVER TO</span>
+          </div>
+          <div class="dr-card-big">
+            <span class="dr-card-bearing" id="dr-card-bearing">000°</span>
+            <span class="dr-card-sub">bearing</span>
+          </div>
+          <div class="dr-card-row">
+            <span class="dr-card-k">house</span>
+            <span class="dr-card-v" id="dr-card-house">#2</span>
+          </div>
+          <div class="dr-card-row">
+            <span class="dr-card-k">distance</span>
+            <span class="dr-card-v" id="dr-card-dist">0 m</span>
+          </div>
+          <div class="dr-hint" id="dr-hint">line up the bearing</div>
+        </div>
+
+        <!-- ── flight readouts (right) ─────────────────────────────────── -->
+        <div class="dr-readouts">
+          <div class="dr-readout">
+            <span class="dr-readout-k">HEADING</span>
+            <span class="dr-readout-v" id="dr-heading">000°</span>
+          </div>
+          <div class="dr-readout">
+            <span class="dr-readout-k">ALT</span>
+            <span class="dr-readout-v" id="dr-alt">0 m</span>
+          </div>
+          <canvas id="dr-radar" class="dr-radar"></canvas>
+        </div>
+
+        <!-- ── controls legend (bottom-centre) ─────────────────────────── -->
+        <div class="dr-legend">
+          <span><b>A</b> / <b>D</b> turn (bearing)</span>
+          <span><b>W</b> / <b>S</b> fly forward / back</span>
+          <span><b>↑</b> / <b>↓</b> up / down</span>
+        </div>
+
+        <!-- ── touch controls: two analog thumbsticks ──────────────────── -->
+        <div class="dr-joy dr-joy--left" id="dr-joy-l" aria-hidden="true">
+          <div id="dr-joy-l-ring" class="dr-joy-ring">
+            <span class="dr-joy-dish" aria-hidden="true"></span>
+            <div id="dr-joy-l-knob" class="dr-joy-knob"><span class="dr-joy-knob-cap"></span></div>
+          </div>
+          <span class="dr-joy-label">TURN · FLY</span>
+        </div>
+        <div class="dr-joy dr-joy--right" id="dr-joy-r" aria-hidden="true">
+          <div id="dr-joy-r-ring" class="dr-joy-ring">
+            <span class="dr-joy-dish" aria-hidden="true"></span>
+            <div id="dr-joy-r-knob" class="dr-joy-knob"><span class="dr-joy-knob-cap"></span></div>
+          </div>
+          <span class="dr-joy-label">ALTITUDE</span>
+        </div>
+
+        <!-- ── end overlay ─────────────────────────────────────────────── -->
+        <div class="dr-end" id="dr-end" hidden>
+          <div class="dr-end-card">
+            <h2 id="dr-end-title">TIME'S UP</h2>
+            <p id="dr-end-msg"></p>
+            <button id="dr-end-restart" class="dr-btn">FLY AGAIN</button>
+          </div>
+        </div>
+
+        <!-- ── load screen ─────────────────────────────────────────────── -->
+        <div class="dr-loader" id="dr-loader">
+          <div class="dr-loader-card">
+            <div class="dr-load-head">
+              <span class="dr-load-tag">SYS</span>
+              <span class="dr-load-title">BEARING COURIER</span>
+              <span class="dr-load-blink">_</span>
+            </div>
+            <div class="dr-bar" id="dr-bar" aria-hidden="true"></div>
+            <div class="dr-load-status">
+              <span id="dr-loader-pct">00%</span>
+              <span class="dr-load-sep">//</span>
+              <span id="dr-loader-status">booting…</span>
+            </div>
+            <div class="dr-log" id="dr-log" aria-hidden="true"></div>
+            <div class="dr-controls">
+              <div class="dr-controls-h">// MISSION</div>
+              <ul>
+                <li><b>READ</b><span>the bearing + house number</span></li>
+                <li><b>TURN</b><span>A / D until your compass matches</span></li>
+                <li><b>FLY</b><span>W forward, ↑ / ↓ for height</span></li>
+                <li><b>DROP</b><span>at that house, then fly back</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/home/games/drone/js/main.js"></script>
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+  </body>
+</html>
