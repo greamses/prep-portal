@@ -64,6 +64,15 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
       const cloneRoot = inst.rootNodes[0];
       cloneRoot.parent = holder;
       cloneRoot.position.set(0, -(proto.footOffset || 0), 0);
+      // A skinned mesh keeps its BIND-POSE bounding box (anchored near the world
+      // origin), so once a zombie stands off to the side its box leaves the view
+      // frustum and Babylon culls it — the zombie goes invisible while this
+      // holder keeps hunting you. Opt the meshes out of frustum culling so they
+      // always render wherever they actually stand.
+      cloneRoot.getChildMeshes(false).forEach((m) => {
+        m.alwaysSelectAsActiveMesh = true;
+        m.isVisible = true;
+      });
       const ag = inst.animationGroups;
       const byName = {};
       proto.clipOrder.forEach((nm, i) => { if (ag[i]) { byName[nm] = ag[i]; ag[i].stop(); } });
@@ -72,7 +81,10 @@ export function createEnemies(scene, grid, { speed = 0.07 } = {}) {
         const g = byName[nm];
         if (!g || g === current) return;
         for (const k in byName) if (byName[k] !== g) byName[k].stop();
-        g.start(nm !== "bite", 1.0, g.from, g.to, false);
+        const loop = nm !== "bite";
+        g.loopAnimation = loop;
+        g.start(loop, 1.0, g.from, g.to, false);
+        if (!loop) g.onAnimationGroupEndObservable.addOnce(() => { g.goToFrame(g.to); g.pause(); });
         current = g;
       };
       play("idle");

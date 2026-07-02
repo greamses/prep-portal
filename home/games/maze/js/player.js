@@ -75,9 +75,16 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
   cam.upperBetaLimit = 1.46;
   cam.wheelPrecision = 40;
   cam.collisionRadius = new B.Vector3(0.5, 0.5, 0.5);
-  cam.targetScreenOffset = new B.Vector2(0, -0.35);
+  cam.targetScreenOffset = new B.Vector2(0, -0.3);
   scene.activeCamera = cam;
   let followed = false;
+
+  // follow-camera feel
+  const FOLLOW_BETA = 1.15;   // behind & slightly above (0 = top-down, π/2 = level)
+  const SWING_LERP = 0.16;    // how fast the camera swings behind her (was 0.05)
+  const PITCH_LERP = 0.12;    // how fast the pitch eases back to FOLLOW_BETA
+  const RADIUS_LERP = 0.12;   // how fast the distance eases to target
+  const DRAG_HOLD_MS = 550;   // let a manual drag settle before auto-follow resumes
 
   let dragging = false, lastDrag = -1e9;
   canvas.addEventListener("pointerdown", () => { dragging = true; });
@@ -85,7 +92,7 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
     if (dragging) { dragging = false; lastDrag = performance.now(); }
   });
 
-  let yaw = 0;
+  let yaw = 0, lastFacing = 0;
 
   // keep the camera from seeing through walls: if a wall sits between her head
   // and the camera, pull the camera in to just before it.
@@ -98,61 +105,75 @@ export function createPlayer(scene, canvas, startPos, character, grid, entrance,
     if (dist < 0.15) return;
     toCam.scaleInPlace(1 / dist);
     const hit = scene.pickWithRay(new B.Ray(tgt, toCam, dist), occludes);
-    if (hit && hit.hit) cam.radius = Math.max(cam.lowerRadiusLimit, hit.distance - 0.35);
+    if (hit && hit.hit) cam.radius = Math.max(cam.lowerRadiusLimit, hit.distance - 0.4);
+  }
+
+  // Camera follow — runs EVERY frame (even while she stands still) so the view
+  // keeps settling behind her, holds a steady pitch and never rests in a wall.
+  function followCamera(moving, running) {
+    // drone intro: whole-maze overview eases down to behind-the-back as she
+    // advances toward the gate; then we lock to follow.
+    if (getDoorState && getDoorState() === "shut" && entrance) {
+      const t = clamp((body.position.z - startZ) / (entrance.doorZ - startZ), 0, 1);
+      cam.target = B.Vector3.Lerp(mazeCenter, body.position, t);
+      cam.alpha = -Math.PI / 2;
+      cam.beta = 0.12 + (FOLLOW_BETA - 0.12) * t;
+      cam.radius = droneRadius + (CFG.camDist - droneRadius) * t;
+      return;
+    }
+    if (!followed) { cam.lockedTarget = body; followed = true; }
+    if (!dragging && performance.now() - lastDrag > DRAG_HOLD_MS) {
+      // swing behind her only while she's moving (nothing to chase when idle)
+      if (moving) {
+        const want = Math.atan2(-Math.cos(lastFacing), -Math.sin(lastFacing));
+        cam.alpha = lerpAngle(cam.alpha, want, SWING_LERP);
+      }
+      cam.beta += (FOLLOW_BETA - cam.beta) * PITCH_LERP; // ease back to a steady pitch
+      // close in behind her while running (a tight, wall-skimming view)
+      const wantR = (CFG.closeOnRun && running) ? CFG.camDist * 0.82 : CFG.camDist;
+      cam.radius += (wantR - cam.radius) * RADIUS_LERP;
+    }
+    occludeCamera();
   }
 
   /** input = { x: strafe(-1..1), y: forward(-1..1), run: bool } */
   function update(input) {
     const mag = Math.hypot(input.x, input.y);
-    if (mag < 0.02) { character.play("idle"); return; }
+    let moving = false, running = false;
 
-    // camera-relative basis; if the camera is steep (drone intro), its forward
-    // is nearly vertical and useless — fall back to world forward so the stick
-    // moves her instead of spinning her in place.
-    const f = cam.getForwardRay().direction.clone();
-    f.y = 0;
-    if (f.lengthSquared() < 0.05) f.set(0, 0, 1);
-    f.normalize();
-    const r = B.Vector3.Cross(B.Vector3.Up(), f);
-    r.normalize();
+    if (mag >= 0.02) {
+      // camera-relative basis; if the camera is steep (drone intro), its forward
+      // is nearly vertical and useless — fall back to world forward so the stick
+      // moves her instead of spinning her in place.
+      const f = cam.getForwardRay().direction.clone();
+      f.y = 0;
+      if (f.lengthSquared() < 0.05) f.set(0, 0, 1);
+      f.normalize();
+      const r = B.Vector3.Cross(B.Vector3.Up(), f);
+      r.normalize();
 
-    const move = f.scale(input.y).add(r.scale(input.x));
-    move.y = 0;
-    if (move.lengthSquared() < 1e-5) { character.play("idle"); return; }
-    move.normalize();
+      const move = f.scale(input.y).add(r.scale(input.x));
+      move.y = 0;
+      if (move.lengthSquared() >= 1e-5) {
+        move.normalize();
+        // Shift runs (desktop); a full analog push runs (mobile — no Shift key)
+        running = input.run || (input.stickMag || 0) > CFG.runThreshold;
+        const speed = running ? CFG.runSpeed : CFG.moveSpeed;
+        body.position.x += move.x * speed;
+        body.position.z += move.z * speed;
+        clampWalls(body.position);
 
-    // Shift runs (desktop); a full analog push runs (mobile — no Shift key)
-    const running = input.run || (input.stickMag || 0) > CFG.runThreshold;
-    const speed = running ? CFG.runSpeed : CFG.moveSpeed;
-    body.position.x += move.x * speed;
-    body.position.z += move.z * speed;
-    clampWalls(body.position);
-
-    const facing = Math.atan2(move.x, move.z);
-    yaw = lerpAngle(yaw, facing + CFG.modelYaw, CFG.turnLerp);
-    body.rotation.y = yaw;
-
-    character.play(running ? "run" : "walk");
-
-    // drone intro: from a whole-maze overview down to behind-the-back as she
-    // advances toward the gate; then lock to follow.
-    if (getDoorState && getDoorState() === "shut" && entrance) {
-      const t = clamp((body.position.z - startZ) / (entrance.doorZ - startZ), 0, 1);
-      cam.target = B.Vector3.Lerp(mazeCenter, body.position, t);
-      cam.alpha = -Math.PI / 2;
-      cam.beta = 0.12 + (1.32 - 0.12) * t;
-      cam.radius = droneRadius + (CFG.camDist - droneRadius) * t;
-    } else {
-      if (!followed) { cam.lockedTarget = body; followed = true; }
-      if (!dragging && performance.now() - lastDrag > 1100) {
-        const want = Math.atan2(-Math.cos(facing), -Math.sin(facing));
-        cam.alpha = lerpAngle(cam.alpha, want, 0.05);
-        // close in behind her while running (a tight, wall-skimming view)
-        const wantR = (CFG.closeOnRun && running) ? Math.max(1.8, CFG.camDist * 0.55) : CFG.camDist;
-        cam.radius += (wantR - cam.radius) * 0.12;
+        const facing = Math.atan2(move.x, move.z);
+        yaw = lerpAngle(yaw, facing + CFG.modelYaw, CFG.turnLerp);
+        body.rotation.y = yaw;
+        lastFacing = facing;
+        character.play(running ? "run" : "walk");
+        moving = true;
       }
-      occludeCamera();
     }
+
+    if (!moving) character.play("idle");
+    followCamera(moving, running);
   }
 
   return { body, cam, model, update };

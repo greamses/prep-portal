@@ -44,6 +44,9 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
   }
 
   const root = res.meshes[0];
+  // Skinned meshes keep their bind-pose bounding box, so they can be wrongly
+  // frustum-culled (invisible) once they move away from the origin. Opt out.
+  res.meshes.forEach((m) => { if ((m.getTotalVertices?.() || 0) > 0) m.alwaysSelectAsActiveMesh = true; });
   res.meshes.forEach((m) => m.computeWorldMatrix(true));
   let bb = root.getHierarchyBoundingVectors(true);
   const hgt = Math.max(0.001, bb.max.y - bb.min.y);
@@ -80,8 +83,10 @@ async function loadRig(scene, dir, meshFile, clipFiles, targetH) {
     if (!g || g === current) return;
     for (const k in groups) if (groups[k] && groups[k] !== g) groups[k].stop();
     const loop = name !== "death";
+    g.loopAnimation = loop; // make sure a re-used clip doesn't keep an old loop flag
     g.start(loop, 1.0, g.from, g.to, false);
-    if (!loop) g.onAnimationGroupEndObservable.addOnce(() => g.pause()); // die once, hold the pose
+    // die once, then FREEZE on the final frame (don't let it loop or snap back)
+    if (!loop) g.onAnimationGroupEndObservable.addOnce(() => { g.goToFrame(g.to); g.pause(); });
     current = g;
   }
   play(Object.keys(clipFiles)[0]);
