@@ -420,6 +420,11 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
     close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`,
     // Power — "sleep" the assistant (inherits the button's colour)
     power: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v8.2"/><path d="M6.5 6.6a8 8 0 1 0 11 0"/></svg>`,
+    // Robot mascot — AWAKE (eyes open). Themed + rounded corners, ported from
+    // the polygon-activity teacher bot. Uses theme vars so it recolours in dark.
+    robotAwake: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="6" r="3.2" fill="var(--accent-warning)"/><rect x="4" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="52" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="11" y="16" width="42" height="38" rx="14" fill="var(--accent-secondary)"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="var(--ink)"/><circle cx="26" cy="31.5" r="3.1" fill="var(--accent-warning)"/><circle cx="38" cy="31.5" r="3.1" fill="var(--accent-warning)"/><rect x="24" y="46" width="16" height="4.4" rx="2.2" fill="var(--ink)"/></svg>`,
+    // Robot mascot — ASLEEP (eyes shut). Same body, curved-closed eyes.
+    robotAsleep: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="6" r="3.2" fill="var(--accent-warning)"/><rect x="4" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="52" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="11" y="16" width="42" height="38" rx="14" fill="var(--accent-secondary)"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="var(--ink)"/><path d="M22.5 31.5q3.5 3.6 7 0" stroke="var(--accent-warning)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M34.5 31.5q3.5 3.6 7 0" stroke="var(--accent-warning)" stroke-width="2.6" fill="none" stroke-linecap="round"/><rect x="26" y="46" width="12" height="4.4" rx="2.2" fill="var(--ink)"/></svg>`,
     // Delete — friendly multicolour bin
     trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.4h6a1 1 0 0 1 1 1V6.4H8V5.4a1 1 0 0 1 1-1z" fill="var(--accent-danger)"/><rect x="4.5" y="6.2" width="15" height="2.3" rx="1.15" fill="var(--accent-danger)"/><path d="M6.4 8.5h11.2l-0.9 10.8a2 2 0 0 1-2 1.8H9.3a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.4" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/><rect x="13.1" y="11" width="1.5" height="6.4" rx="0.75" fill="#fff" opacity="0.85"/></svg>`,
     // Key — BYUK ("bring your own key") sticker
@@ -440,15 +445,15 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
   }
 
   mount.innerHTML = `
-    <div id="chat-fab-wrap">
+    <div id="chat-fab-wrap" class="pb-locked">
       <button id="chat-fab" title="Open AI Assistant">
-        ${pbLogo(5)}
+        <span class="pb-logo pb-robot">${PB_ICONS.robotAwake}</span>
         <span class="fab-dot"></span>
       </button>
       <button id="chat-fab-dismiss" title="Sleep AI" aria-label="Sleep AI">${PB_ICONS.power}</button>
     </div>
     <div id="prepbot-popup" class="pp-sticky pp-sticky--c0"><button class="prepbot-popup-close" id="prepbot-popup-close">${PB_ICONS.close}</button><p id="prepbot-popup-text"></p></div>
-    <button id="chat-fab-restore" title="Wake AI"><span class="fab-zzz" aria-hidden="true">z<span>z</span><span>z</span></span><span class="fab-restore-label">AI</span></button>
+    <button id="chat-fab-restore" class="pb-locked" title="Wake AI"><span class="fab-zzz" aria-hidden="true">z<span>z</span><span>z</span></span><span class="pb-robot pb-robot--sleep" aria-hidden="true">${PB_ICONS.robotAsleep}</span></button>
 
     <div id="chat-window" role="dialog">
       <div class="pb-paint" aria-hidden="true">${heroPaint()}</div>
@@ -1803,7 +1808,7 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
   /* ── 21. POPUP SUGGESTION ── */
   async function showPopupSuggestion() {
     if (!isKeySet()) return;
-    if (win.classList.contains("open") || isBusy || fabWrap.classList.contains("fab-hidden")) return;
+    if (win.classList.contains("open") || isBusy || fabWrap.classList.contains("fab-hidden") || fabWrap.classList.contains("pb-locked")) return;
 
     const ctx = getPageContext();
 
@@ -2022,6 +2027,25 @@ GUARDRAILS: Only help with schoolwork, studying and the material here. Politely 
       document.getElementById("chat-fab-restore").classList.add("fab-restore-visible");
     }
   } catch (_) {}
+
+  /* ── 23b. HIDE FAB FOR NON-ENTITLED USERS ──
+   * The launcher only appears for users allowed to use PrepBot (verdict "ok" —
+   * i.e. the "prepbot" feature is set to free for any signed-in user, or premium
+   * and the user is premium). Free / logged-out / feature-off users never see it
+   * (no flash: it starts `pb-locked` in the markup). Re-checked on auth change. */
+  async function updateFabVisibility() {
+    let v = "subscribe";
+    try { v = await prepbotVerdict(); } catch (_) {}
+    const locked = v !== "ok";
+    fabWrap.classList.toggle("pb-locked", locked);
+    document.getElementById("chat-fab-restore")?.classList.toggle("pb-locked", locked);
+    if (locked) { popup.classList.remove("visible"); win.classList.remove("open"); }
+  }
+  updateFabVisibility();
+  auth.onAuthStateChanged(() => {
+    _pbPremium = { uid: null, ok: false }; // force a fresh entitlement check
+    updateFabVisibility();
+  });
 
   /* ── 24. QUIZ UPDATE EVENT ── */
   window.addEventListener("prepbot:quizUpdated", () => {

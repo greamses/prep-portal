@@ -55,6 +55,10 @@ const chatbotcss = `
     pointer-events: none;
 }
 
+/* Entitlement gate — fully remove the launcher for non-premium / free users. */
+#chat-fab-wrap.pb-locked,
+#chat-fab-restore.pb-locked { display: none !important; }
+
 /* ── Dismiss × ── */
 #chat-fab-dismiss {
     width: 24px;
@@ -109,6 +113,10 @@ const chatbotcss = `
 
 #chat-fab-restore.fab-restore-visible { right: 0; }
 #chat-fab-restore:hover { background: var(--_accent); box-shadow: var(--_sh-lg); }
+
+/* Sleeping robot mascot on the restore tab (pairs with the awake robot on the FAB) */
+#chat-fab-restore .pb-robot--sleep { width: 30px; height: 30px; display: block; }
+#chat-fab-restore .pb-robot--sleep svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
 /* Sleepy "z z z" on the restore tab — drifts up to read as snoozing. */
 #chat-fab-restore .fab-zzz {
