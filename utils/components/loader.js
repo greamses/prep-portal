@@ -68,19 +68,24 @@
     @import url("/utils/components/theme.css");
     @import url("/utils/components/components.css");
 
+    /* Hidden by default — the loader is only REVEALED (.show) if the page is
+       still loading past a short threshold, so fast pages never flash it. */
     #${loaderId} {
       position: fixed !important;
       inset: 0 !important;
       background: var(--bg, #fffdf8) !important;
       z-index: 999999 !important;
-      display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+      display: none;
+    }
+    #${loaderId}.show {
+      display: flex;
       visibility: visible;
       opacity: 1;
-      overflow: hidden;
     }
-    #${loaderId}.done {
+    #${loaderId}.show.done {
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
@@ -249,11 +254,8 @@
     setTimeout(tick, rand(0, 400));
   }
 
-  /* ── 2. BUILD DOM ── */
-  function init() {
-    const loader = document.getElementById(loaderId);
-    if (!loader) return;
-
+  /* ── 2. BUILD DOM (lazily — only when we actually decide to show it) ── */
+  function buildLoaderDom(loader) {
     /* paint blobs */
     if (!loader.querySelector(".loader-paint")) {
       const paint = document.createElement("div");
@@ -296,20 +298,57 @@
       loader.appendChild(notes);
       startTyping(loader, note);
     }
+  }
 
-    /* dismiss on page load */
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        loader.classList.add("done");
-        document.body.style.visibility = "visible";
-        document.body.classList.add("portal-ready");
-      }, 1800);
-    });
+  /* ── 3. TIMING — show the loader only for pages that actually stall ──
+     If the page finishes loading before SHOW_DELAY, the loader never appears.
+     Otherwise it's revealed until `load` fires, so it's on screen only for as
+     long as the page is genuinely delayed (plus a small MIN_VISIBLE so a
+     borderline case doesn't flash in and straight back out). */
+  const SHOW_DELAY = 700;   // grace period before we bother showing anything
+  const MIN_VISIBLE = 400;  // once shown, keep it up at least this long
+  let shown = false;
+  let finished = false;
+  let shownAt = 0;
+
+  function markReady() {
+    document.body.style.visibility = "visible";
+    document.body.classList.add("portal-ready");
+  }
+
+  function reveal() {
+    if (finished || shown) return;
+    const loader = document.getElementById(loaderId);
+    if (!loader) return;
+    buildLoaderDom(loader);
+    loader.classList.add("show");
+    shown = true;
+    shownAt = Date.now();
+  }
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    markReady();
+    const loader = document.getElementById(loaderId);
+    if (!loader) return;
+    if (shown) {
+      // was revealed → fade it out, honouring the minimum visible time
+      const wait = Math.max(0, MIN_VISIBLE - (Date.now() - shownAt));
+      setTimeout(() => loader.classList.add("done"), wait);
+    }
+    // never shown → it's still display:none, nothing to dismiss
+  }
+
+  function start() {
+    if (document.readyState === "complete") { finish(); return; }
+    window.addEventListener("load", finish);
+    setTimeout(reveal, SHOW_DELAY);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    init();
+    start();
   }
 })();
