@@ -1442,6 +1442,12 @@ If (and only if) you're pointing the student to one specific page from the site 
       if (txt) txt.textContent = `Key Mode · using your own ${u.provider || ""} key — not counted`.replace(/\s+/g, " ").trim();
       return;
     }
+    if (u.unlimited) {
+      el.hidden = false;
+      if (fill) { fill.style.width = "100%"; fill.classList.remove("over"); }
+      if (txt) txt.textContent = "Admin · unlimited tokens";
+      return;
+    }
     if (!u.allocation) return;
     el.hidden = false;
     if (fill) {

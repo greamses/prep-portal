@@ -27,6 +27,7 @@ module.exports = function () {
   //   • 10k per rolling 5-hour window (resets 5h after the window started)
   //   • 300k per calendar month (resets at the UTC month boundary)
   // BYUK requests (the student's own key) are not counted here. Never blocks.
+  // Admins (by ADMIN_EMAIL) are unlimited: not tracked, not shown against a cap.
   const USAGE_ALLOCATION = 10000;
   const USAGE_WINDOW_MS = 5 * 60 * 60 * 1000;
   const USAGE_MONTH_ALLOCATION = 300000;
@@ -34,6 +35,8 @@ module.exports = function () {
   const winStart = (d) => d?.windowStart?.toMillis?.() ?? d?.windowStart ?? 0;
   const monthKey = (ms) => { const dt = new Date(ms); return `${dt.getUTCFullYear()}-${dt.getUTCMonth()}`; };
   const nextMonthMs = (ms) => { const dt = new Date(ms); return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1); };
+  const isAdminEmail = (email) => !!email && email === process.env.ADMIN_EMAIL;
+  const unlimitedUsage = () => ({ used: 0, allocation: null, resetAt: null, monthUsed: 0, monthAllocation: null, monthResetAt: null, unlimited: true });
 
   function usageShape({ used, start, monthTokens, now }) {
     return {
@@ -46,7 +49,8 @@ module.exports = function () {
     };
   }
 
-  async function readUsage(uid) {
+  async function readUsage(uid, email) {
+    if (isAdminEmail(email)) return unlimitedUsage();
     const now = Date.now();
     const fresh = usageShape({ used: 0, start: now, monthTokens: 0, now });
     if (!uid) return fresh;
@@ -68,7 +72,8 @@ module.exports = function () {
     return fresh;
   }
 
-  async function bumpUsage(uid, addTokens) {
+  async function bumpUsage(uid, addTokens, email) {
+    if (isAdminEmail(email)) return unlimitedUsage();
     if (!uid || !addTokens) return readUsage(uid);
     const ref = usageDoc(uid);
     try {
@@ -283,7 +288,7 @@ module.exports = function () {
     };
     // Record tokens for this turn, report the running total, then close out.
     const finish = async (prov, tokens) => {
-      const usage = await bumpUsage(req.user?.uid, tokens || 0);
+      const usage = await bumpUsage(req.user?.uid, tokens || 0, req.user?.email);
       write({ type: "usage", ...usage });
       write({ type: "done", provider: prov });
       res.end();
@@ -293,7 +298,7 @@ module.exports = function () {
     const guard = guardrailCheck(messages);
     if (guard) {
       onDelta(guard);
-      write({ type: "usage", ...(await readUsage(req.user?.uid)) });
+      write({ type: "usage", ...(await readUsage(req.user?.uid, req.user?.email)) });
       write({ type: "done", provider: "guardrail" });
       return res.end();
     }
@@ -555,7 +560,7 @@ module.exports = function () {
 
       const guard = guardrailCheck(messages);
       if (guard) {
-        return res.json({ provider: "guardrail", text: guard, usage: await readUsage(req.user.uid) });
+        return res.json({ provider: "guardrail", text: guard, usage: await readUsage(req.user.uid, req.user.email) });
       }
 
       let text = "", provider = "unavailable", tokens = 0;
@@ -600,7 +605,7 @@ module.exports = function () {
         } catch (e) { console.warn("[/api/ai/generate] Gemini:", e.message); }
       }
 
-      const usage = await bumpUsage(req.user.uid, tokens);
+      const usage = await bumpUsage(req.user.uid, tokens, req.user.email);
       if (!text) {
         return res.json({ provider: "unavailable", text: "AI is temporarily unavailable. Please try again in a moment.", usage });
       }
@@ -613,7 +618,7 @@ module.exports = function () {
 
   // ── GET /api/ai/usage — current token usage (5h window + month) ──
   router.get("/usage", authenticate, async (req, res) => {
-    res.json(await readUsage(req.user.uid));
+    res.json(await readUsage(req.user.uid, req.user.email));
   });
 
   // ── BYUK key management (raw keys never leave the server) ──────
@@ -703,7 +708,7 @@ module.exports = function () {
       const data = await upstream.json();
       // Count against the shared allocation pool (same one PrepBot uses) so all
       // backend-proxied AI — theory/activities, writing, math — draws on it.
-      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usageMetadata?.totalTokenCount || 0);
+      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usageMetadata?.totalTokenCount || 0, req.user?.email);
       res.status(upstream.status).json(data);
     } catch (err) {
       console.error("[/api/ai/gemini]", err.message);
@@ -751,7 +756,7 @@ module.exports = function () {
       });
 
       const data = await upstream.json();
-      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usage?.total_tokens || 0);
+      if (upstream.ok) await bumpUsage(req.user?.uid, data?.usage?.total_tokens || 0, req.user?.email);
       res.status(upstream.status).json(data);
     } catch (err) {
       console.error("[/api/ai/groq]", err.message);
