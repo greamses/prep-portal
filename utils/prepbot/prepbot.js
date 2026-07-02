@@ -432,7 +432,7 @@ import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.j
   };
 
   // PrepBot logo = the multicolour bot mark (no blob tile behind it).
-  const pbLogo = () => `<span class="pb-logo">${PB_ICONS.bot}</span>`;
+  const pbLogo = () => `<span class="pb-logo pb-robot">${PB_ICONS.robotAwake}</span>`;
 
   /* ── 8. INJECT HTML ──
    * Single source of truth: any page that loads this one script gets the
