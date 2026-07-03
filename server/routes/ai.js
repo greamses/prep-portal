@@ -716,6 +716,36 @@ module.exports = function () {
     }
   });
 
+  // ── POST /api/ai/image — proxy simple image generation to the Cloudflare
+  //    Workers AI worker (see /cloudflare/image-worker). Kept off the Gemini/
+  //    Groq token pool on purpose: this draws on Cloudflare's own free daily
+  //    neuron allocation, a separate resource entirely. ──────────
+  router.post("/image", authenticate, async (req, res) => {
+    try {
+      if (!process.env.IMAGE_WORKER_URL || !process.env.IMAGE_WORKER_SECRET) {
+        return res.status(503).json({ error: "Image generation is not configured on this server." });
+      }
+
+      const prompt = String(req.body?.prompt || "").trim().slice(0, 500);
+      if (!prompt) return res.status(400).json({ error: "A prompt is required." });
+
+      const upstream = await fetch(process.env.IMAGE_WORKER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.IMAGE_WORKER_SECRET}`,
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await upstream.json();
+      res.status(upstream.status).json(data);
+    } catch (err) {
+      console.error("[/api/ai/image]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── GET /api/ai/youtube — proxy YouTube Data API ─────────────
   router.get("/youtube", authenticate, async (req, res) => {
     try {

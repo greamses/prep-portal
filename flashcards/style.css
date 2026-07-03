@@ -523,6 +523,7 @@ body {
 /* Toolbar — small pill utility buttons under the card (edit / image / redo). */
 .card-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
   margin-top: 0.85rem;

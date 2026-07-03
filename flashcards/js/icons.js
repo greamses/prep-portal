@@ -47,6 +47,12 @@ export const ICON_IMAGE = svg(
   `<path d="M4.5 16.5l4-4.4 3.2 3 2.8-3.4 4.5 4.8z" fill="var(--accent-secondary)"/>`,
 );
 
+// Generate — a magic sparkle (AI-created image, distinct from the upload icon).
+export const ICON_GENERATE = svg(
+  `<path d="M12 2.6l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z" fill="var(--accent-secondary)"/>` +
+  `<path d="M18.6 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="var(--accent-warning)"/>`,
+);
+
 // Regenerate — a retry loop (matches the flip-arrow stroke language).
 export const ICON_REGEN = svg(
   `<path d="M4.4 12a7.6 7.6 0 0 1 13-5.4M19.6 3.8v5h-5" fill="none" stroke="var(--accent-danger)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>` +

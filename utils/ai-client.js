@@ -191,3 +191,28 @@ export async function groqGenerate({
   }
   throw lastErr || new Error('All Groq models are unavailable. Please try again later.');
 }
+
+/**
+ * One simple-image generation call, proxied through /api/ai/image to the
+ * Cloudflare Workers AI worker. Kept separate from geminiGenerate/groqGenerate
+ * since it's a different provider drawing on a different resource pool
+ * (Cloudflare neurons, not LLM tokens) — see server/routes/ai.js.
+ *
+ * @param {string} o.prompt  Plain-text description of the image (max 500 chars).
+ * @returns {Promise<string>} A data: URI (base64 JPEG) ready for an <img src>.
+ */
+export async function imageGenerate({ prompt } = {}) {
+  const token = await _idToken();
+  const res = await fetch(`${API_BASE}/api/ai/image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Image generation ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  if (!data.image) throw new Error('No image came back — try again.');
+  return `data:image/jpeg;base64,${data.image}`;
+}

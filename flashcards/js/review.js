@@ -5,11 +5,11 @@
 import { $, safe, BOXES, MAX_BOX } from './config.js';
 import { listDecks, dueCardsInBox, boxCounts, gradeCard, updateCard } from './deck-store.js';
 import { printCards } from './api.js';
-import { uploadCardImage } from './image-upload.js';
+import { uploadCardImage, generateCardImage } from './image-upload.js';
 import {
   paintBlob, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
   ICON_AGAIN, ICON_HARD, ICON_GOOD, ICON_EASY,
-  ICON_EDIT, ICON_IMAGE, ICON_REGEN,
+  ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_REGEN,
 } from './icons.js';
 
 const deckGrid = $('deck-grid');
@@ -32,6 +32,7 @@ const doneEl = $('review-done');
 const doneCloseBtn = $('review-done-close');
 const toolEdit = $('tool-edit');
 const toolImage = $('tool-image');
+const toolGenerate = $('tool-generate');
 const toolRegen = $('tool-regen');
 const toolImageInput = $('tool-image-input');
 const siteNav = document.querySelector('.site-nav');
@@ -46,6 +47,7 @@ function mountIcons() {
   $('grade-icon-easy').innerHTML = ICON_EASY;
   $('tool-icon-edit').innerHTML = ICON_EDIT;
   $('tool-icon-image').innerHTML = ICON_IMAGE;
+  $('tool-icon-generate').innerHTML = ICON_GENERATE;
   $('tool-icon-regen').innerHTML = ICON_REGEN;
   frontIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(3);
   backIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(8);
@@ -206,6 +208,27 @@ async function handleImagePick(file) {
   toolImage.disabled = false;
 }
 
+async function handleGenerate() {
+  if (!session) return;
+  const card = session.queue[session.idx];
+  const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
+  const field = side === 'front' ? 'frontImage' : 'backImage';
+  const text = side === 'front' ? card.front : card.back;
+
+  toolGenerate.disabled = true;
+  try {
+    const prompt = `A simple, clean educational illustration for a flashcard. Concept: ${text}. Flat, minimal, no text or labels in the image.`;
+    const url = await generateCardImage(session.deckId, card.id, side, prompt);
+    await updateCard(session.deckId, card.id, { [field]: url });
+    card[field] = url;
+    paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);
+  } catch (err) {
+    console.error('[Recall Press] image generation failed:', err);
+    alert(err.message || 'Could not generate that image.');
+  }
+  toolGenerate.disabled = false;
+}
+
 async function regenerateCurrentCard() {
   if (!session) return;
   const card = session.queue[session.idx];
@@ -271,6 +294,7 @@ export function initReview() {
     toolImageInput.value = '';
     handleImagePick(file);
   });
+  toolGenerate.addEventListener('click', handleGenerate);
   toolRegen.addEventListener('click', regenerateCurrentCard);
 
   reviewClose.addEventListener('click', closeSession);
