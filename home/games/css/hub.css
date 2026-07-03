@@ -1,0 +1,36 @@
+/* games hub — header + tab toggle. Card grid reuses /blogs/css/blog.css. */
+
+.games-hub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.games-hub-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+  color: var(--ink);
+}
+
+.games-tabs {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.games-tab {
+  cursor: pointer;
+  border: 2px solid transparent;
+  font: inherit;
+}
+
+.games-tab:not(.is-active) {
+  opacity: 0.55;
+}
+
+.games-tab.is-active {
+  border-color: var(--tile, var(--accent-secondary));
+}

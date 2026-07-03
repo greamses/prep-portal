@@ -450,11 +450,31 @@ body {
   min-width: 0;
 }
 
+.nav-leaf-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .nav-leaf-title {
   font-weight: var(--weight-bold);
   font-size: 0.78rem;
   font-family: var(--font-display);
   letter-spacing: var(--tracking-tight);
+}
+
+.nav-leaf-badge {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nav-leaf small {

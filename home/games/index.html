@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Prep Portal 2026 | Games</title>
+    <meta
+      name="description"
+      content="Play our 2D and 3D math practice games — from board games and puzzles to full 3D simulations."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+
+    <link rel="stylesheet" href="/blogs/css/render.css" />
+    <link rel="stylesheet" href="/blogs/css/blog.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/home/games/css/hub.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Games</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="science-container">
+      <div class="games-hub-head">
+        <h1 class="games-hub-title" id="gamesHeading">2D Games</h1>
+        <div class="games-tabs" role="tablist">
+          <button type="button" class="pp-pill games-tab is-active" data-type="2d" role="tab">2D Games</button>
+          <button type="button" class="pp-pill games-tab" data-type="3d" role="tab">3D Games</button>
+        </div>
+      </div>
+
+      <div id="gamesGrid" class="science-grid"></div>
+    </div>
+
+    <script src="/utils/components/loader.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="/home/games/js/hub.js"></script>
+  </body>
+</html>

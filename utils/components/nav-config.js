@@ -170,13 +170,8 @@ const NAV_CONFIG = [
         icon: I.games,
         description: "Math practice games",
         children: [
-          { text: "Free Throw", href: "/home/games/free-throw/index.html", description: "Aim, shoot, and score" },
-          { text: "Alien Angle", href: "/home/games/aliens/index.html", description: "Read the angle, aim the cannon, fire" },
-          { text: "Snakes & Ladders", href: "/home/games/snakes-ladders/index.html", description: "Roll, climb, and slide" },
-          { text: "Rubik's Cube", href: "/home/games/rubiks-cube/index.html", description: "Twist, turn, and solve in 3D" },
-          { text: "Grand Chess", href: "/home/games/chess/index.html", description: "Realistic 3D chess with full rules" },
-          { text: "3D Maze", href: "/home/games/maze/index.html", description: "Escape a 3D maze in first person" },
-          { text: "Bearing Courier", href: "/home/games/drone/index.html", description: "Fly a delivery drone by bearing" },
+          { text: "2D Games", href: "/home/games/index.html?type=2d", description: "Board games, puzzles and arcade practice" },
+          { text: "3D Games", href: "/home/games/index.html?type=3d", description: "Immersive 3D simulations", badge: "Premium" },
         ],
       },
       {

@@ -247,10 +247,22 @@ function buildLeaf(item) {
   const textWrap = document.createElement("div");
   textWrap.className = "nav-leaf-text";
 
+  const titleRow = document.createElement("div");
+  titleRow.className = "nav-leaf-title-row";
+
   const text = document.createElement("span");
   text.className = "nav-leaf-title";
   text.textContent = item.text;
-  textWrap.appendChild(text);
+  titleRow.appendChild(text);
+
+  if (item.badge) {
+    const badge = document.createElement("span");
+    badge.className = "nav-leaf-badge";
+    badge.textContent = item.badge;
+    titleRow.appendChild(badge);
+  }
+
+  textWrap.appendChild(titleRow);
 
   if (item.description) {
     const desc = document.createElement("small");

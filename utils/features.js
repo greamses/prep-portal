@@ -62,6 +62,21 @@ export const FEATURES = [
     paths: ["/flashcards"],
   },
   {
+    id: "games-3d",
+    label: "3D Games",
+    desc: "Immersive 3D practice games (Bearing Courier, 3D Maze, Grand Chess, etc.)",
+    group: "Games",
+    default: "premium",
+    paths: [
+      "/home/games/aliens",
+      "/home/games/chess",
+      "/home/games/free-throw",
+      "/home/games/drone",
+      "/home/games/maze",
+      "/home/games/rubiks-cube",
+    ],
+  },
+  {
     id: "prepbot",
     label: "PrepBot AI",
     desc: "AI study-assistant chat launcher",
