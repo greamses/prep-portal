@@ -30,7 +30,7 @@ export async function startGame() {
   const engine = createEngine(canvas);
   const scene = createScene(engine);
 
-  const drone = createDrone(scene);
+  const drone = await createDrone(scene);
   const leftStick = createJoystick($("#dr-joy-l-ring"), $("#dr-joy-l-knob"));
   const rightStick = createJoystick($("#dr-joy-r-ring"), $("#dr-joy-r-knob"));
   const controls = createControls({ left: leftStick, right: rightStick });
