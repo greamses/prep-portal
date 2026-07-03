@@ -150,8 +150,9 @@ async function loadAircraft(scene, body, shadowGen) {
     if (!m.parent) m.parent = modelRoot;
   });
 
-  // The GLB's front faces -Z (glTF convention); the game's forward is +Z.
-  modelRoot.rotation.y = Math.PI;
+  // This GLB's nose already faces +Z, which matches the game's forward — no
+  // yaw correction needed (confirmed by checking the rudder/tail nodes sit
+  // on the -Z side of the model).
 
   res.meshes.forEach((m) => m.computeWorldMatrix(true));
   let bb = modelRoot.getHierarchyBoundingVectors(true);
