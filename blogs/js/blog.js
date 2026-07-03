@@ -358,14 +358,6 @@ const calcReadTime = (c) => {
 
 const getSubjectLabel = (subject) => SUBJECT_LABELS[subject] || subject;
 const getSubjectStyle = (subject) => SUBJECT_STYLES[subject] || "sci-default";
-// Deterministic 0-5 pick so the same subject always lands on the same sticky
-// note + receipt paper colour, while different subjects fan out across the set.
-const getSubjectColorIndex = (key) => {
-  const s = String(key || "");
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
-  return hash % 6;
-};
 const CLASS_THEME = { "cls-primary": "theme-yellow", "cls-jss": "theme-blue", "cls-ss": "theme-green" };
 const getClassLabel = (classLevel) => {
   if (!classLevel) return "--";
@@ -443,7 +435,7 @@ const I = {
 };
 
 // ─── CARD RENDER ──────────────────────────────────────────
-function renderCard(post) {
+function renderCard(post, idx) {
   const subj = post.subject || Object.keys(SUBJECT_LABELS)[0] || "default";
   const cls = post.classLevel || "ss-1";
   const clsCls = getClassStyle(cls);
@@ -462,7 +454,7 @@ function renderCard(post) {
       ? videoThumb
       : null;
 
-  const colorIdx = getSubjectColorIndex(subj);
+  const colorIdx = idx % 6;
   const clsTheme = CLASS_THEME[clsCls] || "theme-yellow";
 
   return `
