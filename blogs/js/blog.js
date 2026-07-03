@@ -358,6 +358,15 @@ const calcReadTime = (c) => {
 
 const getSubjectLabel = (subject) => SUBJECT_LABELS[subject] || subject;
 const getSubjectStyle = (subject) => SUBJECT_STYLES[subject] || "sci-default";
+// Deterministic 0-5 pick so the same subject always lands on the same sticky
+// note + receipt paper colour, while different subjects fan out across the set.
+const getSubjectColorIndex = (key) => {
+  const s = String(key || "");
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return hash % 6;
+};
+const CLASS_THEME = { "cls-primary": "theme-yellow", "cls-jss": "theme-blue", "cls-ss": "theme-green" };
 const getClassLabel = (classLevel) => {
   if (!classLevel) return "--";
   const [type, num] = classLevel.split("-");
@@ -437,7 +446,6 @@ const I = {
 function renderCard(post) {
   const subj = post.subject || Object.keys(SUBJECT_LABELS)[0] || "default";
   const cls = post.classLevel || "ss-1";
-  const sciCls = getSubjectStyle(subj);
   const clsCls = getClassStyle(cls);
   const subjLbl = getSubjectLabel(subj);
   const clsLbl = getClassShort(cls);
@@ -454,13 +462,16 @@ function renderCard(post) {
       ? videoThumb
       : null;
 
+  const colorIdx = getSubjectColorIndex(subj);
+  const clsTheme = CLASS_THEME[clsCls] || "theme-yellow";
+
   return `
-    <div class="science-card" data-post-id="${post.id}">
-      ${cardImage ? `<img class="card-featured-img" src="${escHtml(cardImage)}" alt="${escHtml(post.title)}" loading="lazy">` : ""}
-      <div class="card-inner">
+    <div class="science-card pp-receipt science-card--p${colorIdx}" data-post-id="${post.id}">
+      <div class="card-inner pp-receipt__paper">
+        ${cardImage ? `<img class="card-featured-img" src="${escHtml(cardImage)}" alt="${escHtml(post.title)}" loading="lazy">` : ""}
         <div class="card-badges">
-          <span class="sci-badge ${sciCls}">${subjLbl}</span>
-          <span class="cls-badge ${clsCls}">${clsLbl}</span>
+          <span class="pp-sticky pp-sticky--c${colorIdx}">${subjLbl}</span>
+          <span class="pp-pill pp-pill--static ${clsTheme}">${clsLbl}</span>
         </div>
         <div class="card-meta">
           <span>${I.calendar} ${date}</span>
@@ -468,8 +479,8 @@ function renderCard(post) {
         </div>
         <h2 class="card-title">${escHtml(post.title)}</h2>
         <div class="card-resource-row">
-          <span class="card-resource-chip${hasVideo ? " has-link" : ""}">${I.video} Video</span>
-          <span class="card-resource-chip${hasPractice ? " has-link" : ""}">${I.practice} Practice</span>
+          <span class="pp-pill pp-pill--static${hasVideo ? " theme-red" : ""}">${I.video}<span>Video</span></span>
+          <span class="pp-pill pp-pill--static${hasPractice ? " theme-blue" : ""}">${I.practice}<span>Practice</span></span>
         </div>
         <p class="card-excerpt">${escHtml(excerpt)}...</p>
         <div class="read-more">Open topic ${I.arrow}</div>
