@@ -21,11 +21,11 @@ export const CFG = {
   maxAlt: 60, // ceiling
   startAlt: 14,
   tiltMax: 0.35, // how far the body pitches/rolls with motion (radians)
-  aircraftSize: 9.5, // auto-fit: largest bounding-box dimension of the GLB, in world units
+  aircraftSize: 14, // auto-fit: largest bounding-box dimension of the GLB, in world units
 
   // ── camera (chase) ────────────────────────────────────────────────────────
-  camDist: 18, // distance behind the drone
-  camHeight: 8, // camera height above the drone
+  camDist: 22, // distance behind the drone (pulled back to suit the larger aircraft)
+  camHeight: 9, // camera height above the drone
   camLerp: 0.08, // how snappily the camera follows (0..1)
 
   // ── mission ─────────────────────────────────────────────────────────────

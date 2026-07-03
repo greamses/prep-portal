@@ -50,12 +50,15 @@
       <div class="drone-stage" data-game-stage>
         <canvas id="dr-canvas" class="drone-canvas" touch-action="none"></canvas>
 
-        <!-- ── top HUD row ─────────────────────────────────────────────── -->
+        <!-- ── top HUD (title · compass · stats, one compact row) ───────── -->
         <div class="drone-hud drone-hud--top">
           <span class="dr-title">
             <span class="dr-title-dot"></span>
             BEARING COURIER
           </span>
+          <div class="dr-compass-wrap">
+            <canvas id="dr-compass" class="dr-compass"></canvas>
+          </div>
           <div class="dr-stats">
             <div class="dr-stat">
               <span class="dr-stat-k">TIME</span>
@@ -76,11 +79,6 @@
             <path id="dr-hud-toggle-slash" d="M3 3l18 18" style="display:none" />
           </svg>
         </button>
-
-        <!-- ── compass ribbon (top-centre) ─────────────────────────────── -->
-        <div class="dr-compass-wrap">
-          <canvas id="dr-compass" class="dr-compass"></canvas>
-        </div>
 
         <!-- ── delivery card (left) ────────────────────────────────────── -->
         <div class="dr-card" id="dr-card">
@@ -103,24 +101,13 @@
           <div class="dr-hint" id="dr-hint">line up the bearing</div>
         </div>
 
-        <!-- ── flight readouts (right) ─────────────────────────────────── -->
+        <!-- ── flight readouts (right) — heading is already on the compass -->
         <div class="dr-readouts">
-          <div class="dr-readout">
-            <span class="dr-readout-k">HEADING</span>
-            <span class="dr-readout-v" id="dr-heading">000°</span>
-          </div>
           <div class="dr-readout">
             <span class="dr-readout-k">ALT</span>
             <span class="dr-readout-v" id="dr-alt">0 m</span>
           </div>
           <canvas id="dr-radar" class="dr-radar"></canvas>
-        </div>
-
-        <!-- ── controls legend (bottom-centre) ─────────────────────────── -->
-        <div class="dr-legend">
-          <span><b>A</b> / <b>D</b> turn (bearing)</span>
-          <span><b>W</b> / <b>S</b> fly forward / back</span>
-          <span><b>↑</b> / <b>↓</b> up / down</span>
         </div>
 
         <!-- ── touch controls: two analog thumbsticks ──────────────────── -->

@@ -47,7 +47,6 @@ export function createHud() {
       The required bearing homes live onto the target, so it's updated here. */
   function tick(state) {
     const { droneBearing, requiredBearing, distanceM, altM, overTarget, lowEnough, phase } = state;
-    $("#dr-heading").textContent = fmt3(droneBearing) + "°";
     $("#dr-alt").textContent = `${altM} m`;
     $("#dr-card-bearing").textContent = fmt3(requiredBearing) + "°";
     $("#dr-card-dist").textContent = `${distanceM} m`;
@@ -137,13 +136,16 @@ function fitCanvas(cv, ctx) {
 }
 
 /** Scrolling tape of bearings; the fixed centre notch reads the drone bearing,
-    and a green pip marks where the required bearing sits. */
+    and a green pip marks where the required bearing sits. All offsets scale
+    with the canvas height so this still reads at the compact HUD sizes (the
+    ribbon has shrunk from its original 62px down to as little as 34px). */
 function drawCompass(ctx, cv, bearing, required) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const W = cv.width / dpr, H = cv.height / dpr;
   ctx.clearRect(0, 0, W, H);
   const pxPerDeg = W / 90; // show a 90° window
   const cx = W / 2;
+  const s = Math.max(0.5, Math.min(1, H / 62)); // scale vs. the original design height
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -157,15 +159,15 @@ function drawCompass(ctx, cv, bearing, required) {
     const mid = b % 15 === 0;
     ctx.strokeStyle = major ? "rgba(255,255,255,0.9)" : mid ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.28)";
     ctx.lineWidth = major ? 2 : 1;
-    const h = major ? 14 : mid ? 10 : 6;
+    const h = (major ? 14 : mid ? 10 : 6) * s;
     ctx.beginPath();
-    ctx.moveTo(x, H - h - 16);
-    ctx.lineTo(x, H - 16);
+    ctx.moveTo(x, H - h - 16 * s);
+    ctx.lineTo(x, H - 16 * s);
     ctx.stroke();
     if (major) {
       ctx.fillStyle = LABELS[b] === "N" ? "#f0a868" : "rgba(255,255,255,0.92)";
-      ctx.font = "700 13px 'JetBrains Mono', monospace";
-      ctx.fillText(LABELS[b] || fmt3(b), x, H - h - 26);
+      ctx.font = `700 ${Math.max(8, 13 * s)}px 'JetBrains Mono', monospace`;
+      ctx.fillText(LABELS[b] || fmt3(b), x, H - h - 26 * s);
     }
   }
 
@@ -175,9 +177,9 @@ function drawCompass(ctx, cv, bearing, required) {
     const x = cx + off * pxPerDeg;
     ctx.fillStyle = "#7cc47c";
     ctx.beginPath();
-    ctx.moveTo(x, H - 34);
-    ctx.lineTo(x - 6, H - 46);
-    ctx.lineTo(x + 6, H - 46);
+    ctx.moveTo(x, H - 34 * s);
+    ctx.lineTo(x - 6 * s, H - 46 * s);
+    ctx.lineTo(x + 6 * s, H - 46 * s);
     ctx.closePath();
     ctx.fill();
   }
@@ -185,13 +187,13 @@ function drawCompass(ctx, cv, bearing, required) {
   // fixed centre marker (current heading)
   ctx.fillStyle = "#f0a868";
   ctx.beginPath();
-  ctx.moveTo(cx, H - 12);
-  ctx.lineTo(cx - 7, H - 2);
-  ctx.lineTo(cx + 7, H - 2);
+  ctx.moveTo(cx, H - 12 * s);
+  ctx.lineTo(cx - 7 * s, H - 2 * s);
+  ctx.lineTo(cx + 7 * s, H - 2 * s);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.font = "700 16px 'JetBrains Mono', monospace";
+  ctx.font = `700 ${Math.max(9, 16 * s)}px 'JetBrains Mono', monospace`;
   ctx.textBaseline = "top";
   ctx.fillText(fmt3(bearing) + "°", cx, 2);
 }

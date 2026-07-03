@@ -28,7 +28,7 @@ const BASE = { x: 0, z: 0 };
 export async function startGame() {
   const canvas = document.getElementById("dr-canvas");
   const engine = createEngine(canvas);
-  const scene = createScene(engine);
+  const scene = await createScene(engine);
 
   const drone = await createDrone(scene);
   const leftStick = createJoystick($("#dr-joy-l-ring"), $("#dr-joy-l-knob"));
