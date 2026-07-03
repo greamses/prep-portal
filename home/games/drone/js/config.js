@@ -30,9 +30,10 @@ export const CFG = {
   // ── mission ─────────────────────────────────────────────────────────────
   target: 6, // packages to deliver to win
   timeLimitMs: 60000, // one minute
-  baseRadius: 9, // depot pad radius (fly over it to pick up / land)
-  padMinDist: 45, // nearest a new pad can spawn (units)
-  padMaxDist: 120, // farthest a new pad can spawn (units)
+  baseRadius: 10, // depot pad radius (fly over it to pick up / land)
+  houseCount: 12, // number of big detailed houses in the suburb
+  padMinDist: 40, // nearest a new pad can spawn (units)
+  padMaxDist: 160, // farthest a new pad can spawn (units)
   padRadius: 6, // horizontal distance for a successful drop
   bearingSnap: 5, // within ±this many degrees the compass locks green
   landAlt: 22, // must be below this altitude to drop / pick up (descend to it)

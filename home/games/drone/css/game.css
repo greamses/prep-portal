@@ -22,8 +22,9 @@
 .drone-stage {
   position: relative;
   width: 100%;
+  /* size (16:9) is managed by the shared game-viewport helper; these are the
+     pre-init fallback so there's no zero-height flash before JS runs */
   height: calc(100vh - 84px);
-  min-height: 460px;
   overflow: hidden;
   background: #9fd0f0; /* flat sky while the canvas warms up */
 }

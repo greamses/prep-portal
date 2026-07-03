@@ -27,6 +27,7 @@
       rel="stylesheet"
     />
 
+    <link rel="stylesheet" href="/utils/components/game-viewport.css" />
     <link rel="stylesheet" href="/home/games/drone/css/game.css" />
 
     <!-- Firebase import map (the shared nav imports /firebase-init.js) -->
@@ -46,7 +47,7 @@
     <nav class="site-nav" data-nav="main"></nav>
 
     <main class="drone-page">
-      <div class="drone-stage">
+      <div class="drone-stage" data-game-stage>
         <canvas id="dr-canvas" class="drone-canvas" touch-action="none"></canvas>
 
         <!-- ── top HUD row ─────────────────────────────────────────────── -->

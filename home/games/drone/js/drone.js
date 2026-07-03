@@ -24,67 +24,92 @@ export function createDrone(scene) {
   // body group (tilts with motion; separate from root so yaw stays clean)
   const body = new B.TransformNode("droneBody", scene);
   body.parent = root;
+  const shadowGen = scene.metadata && scene.metadata.shadowGen;
 
-  const mat = (hex, emis = 0.15) => {
+  const mat = (hex, emis = 0.12, spec = 0.25) => {
     const m = new B.StandardMaterial("dm", scene);
     m.diffuseColor = B.Color3.FromHexString(hex);
     m.emissiveColor = B.Color3.FromHexString(hex).scale(emis);
-    m.specularColor = new B.Color3(0.2, 0.2, 0.2);
+    m.specularColor = new B.Color3(spec, spec, spec);
+    m.specularPower = 48;
     return m;
   };
+  const carbon = mat("#232a33", 0.06, 0.35);
+  const trim = mat("#39434f", 0.05, 0.2);
+  const cast = (m) => { if (shadowGen) shadowGen.addShadowCaster(m); m.parent = body; return m; };
 
-  // central hull
-  const hull = B.MeshBuilder.CreateBox("hull", { width: 2.4, height: 0.9, depth: 2.4 }, scene);
-  hull.material = mat("#2f3a4a", 0.1);
-  hull.parent = body;
+  // central hull: a tapered carbon body (two stacked boxes) + top canopy
+  const belly = B.MeshBuilder.CreateBox("belly", { width: 2.4, height: 0.6, depth: 3.2 }, scene);
+  belly.material = carbon; cast(belly);
+  const deck = B.MeshBuilder.CreateBox("deck", { width: 1.8, height: 0.5, depth: 2.4 }, scene);
+  deck.position.y = 0.5; deck.material = trim; cast(deck);
+  const canopy = B.MeshBuilder.CreateSphere("canopy", { diameter: 1.4, segments: 10 }, scene);
+  canopy.scaling.set(1, 0.6, 1.4); canopy.position.set(0, 0.75, 0.3);
+  const canopyMat = mat("#11161d", 0.04, 0.7); canopyMat.alpha = 0.92;
+  canopy.material = canopyMat; cast(canopy);
 
-  // a nose marker so the facing (bearing) is visible on the model
-  const nose = B.MeshBuilder.CreateBox("nose", { width: 0.7, height: 0.5, depth: 1.4 }, scene);
-  nose.position.set(0, 0, 1.6);
-  nose.material = mat("#f0a868", 0.4);
-  nose.parent = body;
+  // gimbal camera ball at the nose (marks facing / bearing)
+  const gimbal = B.MeshBuilder.CreateSphere("gimbal", { diameter: 0.85, segments: 12 }, scene);
+  gimbal.position.set(0, -0.15, 1.5); gimbal.material = mat("#0d1116", 0.03, 0.8); cast(gimbal);
+  const lens = B.MeshBuilder.CreateCylinder("lens", { diameter: 0.4, height: 0.2, tessellation: 16 }, scene);
+  lens.rotation.x = Math.PI / 2; lens.position.set(0, -0.15, 1.95);
+  lens.material = mat("#2a6ff0", 0.5, 0.9); cast(lens);
 
-  // four arms + rotors at the corners
+  // four arms (angled booms) with motors + twin-blade props
   const rotors = [];
   const arm = 2.0;
-  const corners = [
-    [arm, arm], [-arm, arm], [arm, -arm], [-arm, -arm],
-  ];
+  const corners = [[arm, arm, 1], [-arm, arm, -1], [arm, -arm, -1], [-arm, -arm, 1]];
   for (const [x, z] of corners) {
-    const armMesh = B.MeshBuilder.CreateBox("arm", { width: 0.3, height: 0.2, depth: 0.3 }, scene);
-    armMesh.position.set(x * 0.6, 0, z * 0.6);
-    armMesh.scaling.set(Math.abs(x) > 0 ? 2.2 : 1, 1, Math.abs(z) > 0 ? 2.2 : 1);
-    armMesh.material = mat("#3d4a5c", 0.08);
-    armMesh.parent = body;
+    const boom = B.MeshBuilder.CreateBox("boom", { width: 0.28, height: 0.22, depth: 0.28 }, scene);
+    boom.position.set(x * 0.5, 0.05, z * 0.5);
+    const len = Math.hypot(x, z);
+    boom.scaling.set(1, 1, len / 0.28);
+    boom.rotation.y = Math.atan2(x, z);
+    boom.material = carbon; cast(boom);
 
-    const motor = B.MeshBuilder.CreateCylinder("motor", { diameter: 0.6, height: 0.4, tessellation: 12 }, scene);
-    motor.position.set(x, 0.35, z);
-    motor.material = mat("#1f2732", 0.05);
-    motor.parent = body;
+    const motor = B.MeshBuilder.CreateCylinder("motor", { diameter: 0.72, height: 0.5, tessellation: 16 }, scene);
+    motor.position.set(x, 0.32, z); motor.material = mat("#c24a3a", 0.1, 0.4); cast(motor);
+    const bell = B.MeshBuilder.CreateCylinder("bell", { diameter: 0.5, height: 0.15, tessellation: 16 }, scene);
+    bell.position.set(x, 0.6, z); bell.material = mat("#e2e6ea", 0.15, 0.6); cast(bell);
 
-    const rotor = B.MeshBuilder.CreateBox("rotor", { width: 2.4, height: 0.08, depth: 0.28 }, scene);
-    rotor.position.set(x, 0.6, z);
-    rotor.material = mat("#c9d4e0", 0.2);
-    rotor.parent = body;
-    rotors.push(rotor);
+    // prop hub with two thin swept blades
+    const hub = new B.TransformNode("prop", scene);
+    hub.position.set(x, 0.7, z); hub.parent = body;
+    const bladeMat = mat("#1a1f26", 0.04, 0.3); bladeMat.alpha = 0.9;
+    for (const s of [1, -1]) {
+      const blade = B.MeshBuilder.CreateBox("blade", { width: 2.6, height: 0.05, depth: 0.34 }, scene);
+      blade.position.set(s * 1.2, 0, 0);
+      blade.rotation.z = s * 0.12;
+      blade.material = bladeMat; blade.parent = hub;
+    }
+    rotors.push(hub);
   }
 
+  // landing skids (two rails on struts)
+  for (const s of [-1, 1]) {
+    const rail = B.MeshBuilder.CreateBox("skid", { width: 0.18, height: 0.18, depth: 3.4 }, scene);
+    rail.position.set(s * 1.1, -0.85, 0); rail.material = trim; cast(rail);
+    for (const dz of [-1.1, 1.1]) {
+      const strut = B.MeshBuilder.CreateBox("strut", { width: 0.14, height: 0.7, depth: 0.14 }, scene);
+      strut.position.set(s * 1.0, -0.5, dz); strut.material = trim; cast(strut);
+    }
+  }
+
+  // LED nav lights: green on the right, red on the left, white tail
+  const led = (hex, x, z) => {
+    const l = B.MeshBuilder.CreateSphere("led", { diameter: 0.32, segments: 8 }, scene);
+    l.position.set(x, -0.05, z); l.material = mat(hex, 1.4, 0); cast(l);
+  };
+  led("#22dd55", 1.9, 1.9); led("#ff3344", -1.9, 1.9);
+  led("#ffffff", 1.9, -1.9); led("#ffffff", -1.9, -1.9);
+
   // the carton slung under the drone (shown only while carrying a package)
-  const carton = B.MeshBuilder.CreateBox("carton", { width: 1.6, height: 1.3, depth: 1.6 }, scene);
-  carton.position.set(0, -0.95, 0);
+  const carton = B.MeshBuilder.CreateBox("carton", { width: 1.7, height: 1.4, depth: 1.7 }, scene);
+  carton.position.set(0, -1.05, 0);
   carton.material = cartonMat(scene);
   carton.parent = body;
+  if (shadowGen) shadowGen.addShadowCaster(carton);
   carton.setEnabled(false);
-
-  // a soft "shadow" disc that tracks the drone on the ground — a cheap depth cue
-  const shadow = B.MeshBuilder.CreateDisc("droneShadow", { radius: 2.6, tessellation: 24 }, scene);
-  shadow.rotation.x = Math.PI / 2;
-  const smat = new B.StandardMaterial("shadowMat", scene);
-  smat.diffuseColor = new B.Color3(0, 0, 0);
-  smat.emissiveColor = new B.Color3(0, 0, 0);
-  smat.alpha = 0.22;
-  smat.specularColor = new B.Color3(0, 0, 0);
-  shadow.material = smat;
 
   // ── chase camera ──────────────────────────────────────────────────────────
   const cam = new B.UniversalCamera("chase", new B.Vector3(0, CFG.startAlt + CFG.camHeight, -CFG.camDist), scene);
@@ -125,15 +150,9 @@ export function createDrone(scene) {
     body.rotation.x = clamp(localFwdSpeed / CFG.maxSpeed, -1, 1) * CFG.tiltMax;
     body.rotation.z = -intent.turn * CFG.tiltMax * 0.6;
 
-    // spin rotors (fast, thrust-dependent)
-    const spin = 0.6 + Math.abs(intent.thrust) * 0.5;
+    // spin props (fast, thrust-dependent; alternating direction per motor)
+    const spin = 0.9 + Math.abs(intent.thrust) * 0.6;
     for (let i = 0; i < rotors.length; i++) rotors[i].rotation.y += spin * (i % 2 ? 1 : -1);
-
-    // shadow follows on the ground
-    shadow.position.set(root.position.x, 0.05, root.position.z);
-    const alt = root.position.y - CFG.minAlt;
-    shadow.scaling.setAll(1 + alt * 0.03);
-    smat.alpha = Math.max(0.05, 0.24 - alt * 0.004);
 
     // chase camera trails behind the current heading, smoothly
     const behind = new B.Vector3(

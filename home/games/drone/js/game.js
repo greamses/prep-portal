@@ -20,6 +20,7 @@ import { createJoystick } from "./joystick.js";
 import { createMission } from "./mission.js";
 import { createHud } from "./hud.js";
 import { bearingFromTo, planarDist } from "./bearing.js";
+import { initGameViewport } from "/utils/components/game-viewport.js";
 
 const $ = (s) => document.querySelector(s);
 const BASE = { x: 0, z: 0 };
@@ -122,7 +123,7 @@ export async function startGame() {
     scene.render();
   });
 
-  window.addEventListener("resize", () => engine.resize());
+  initGameViewport({ stage: ".drone-stage", onResize: () => engine.resize() });
   $("#dr-end-restart")?.addEventListener("click", begin);
 
   begin();

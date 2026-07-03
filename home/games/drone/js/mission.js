@@ -80,6 +80,8 @@ export function createMission(scene) {
     c.position.set(pad.position.x, 0.9, pad.position.z);
     c.rotation.y = Math.random() * 0.6 - 0.3;
     c.material = cartonMat(scene);
+    const sg = scene.metadata && scene.metadata.shadowGen;
+    if (sg) { sg.addShadowCaster(c); c.receiveShadows = true; }
   }
 
   function pulse(t) {
