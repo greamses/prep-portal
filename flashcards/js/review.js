@@ -1,12 +1,15 @@
 /* ═══════════════════════════════════════════════════════
    RECALL PRESS — THE SHELF (deck grid + Leitner drawers)
-   AND THE REVIEW SESSION (card flip + grading).
+   AND THE REVIEW SESSION (card flip, grading, edit/image/redo).
 ═══════════════════════════════════════════════════════ */
 import { $, safe, BOXES, MAX_BOX } from './config.js';
-import { listDecks, dueCardsInBox, boxCounts, gradeCard } from './deck-store.js';
+import { listDecks, dueCardsInBox, boxCounts, gradeCard, updateCard } from './deck-store.js';
+import { printCards } from './api.js';
+import { uploadCardImage } from './image-upload.js';
 import {
-  paintBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
+  paintBlob, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
   ICON_AGAIN, ICON_HARD, ICON_GOOD, ICON_EASY,
+  ICON_EDIT, ICON_IMAGE, ICON_REGEN,
 } from './icons.js';
 
 const deckGrid = $('deck-grid');
@@ -14,15 +17,23 @@ const deckEmpty = $('deck-empty');
 
 const reviewBd = $('review-bd');
 const reviewSubject = $('review-subject');
-const reviewBoxLabel = $('review-box');
 const reviewProgress = $('review-progress');
 const reviewClose = $('review-close');
 const flashCard = $('flash-card');
+const flashNote = $('flash-note');
 const frontText = $('flash-front-text');
 const backText = $('flash-back-text');
+const frontImage = $('flash-image-front');
+const backImage = $('flash-image-back');
+const frontIconWrap = $('flash-icon-wrap-front');
+const backIconWrap = $('flash-icon-wrap-back');
 const gradesEl = $('review-grades');
 const doneEl = $('review-done');
 const doneCloseBtn = $('review-done-close');
+const toolEdit = $('tool-edit');
+const toolImage = $('tool-image');
+const toolRegen = $('tool-regen');
+const toolImageInput = $('tool-image-input');
 const siteNav = document.querySelector('.site-nav');
 
 function mountIcons() {
@@ -33,11 +44,17 @@ function mountIcons() {
   $('grade-icon-hard').innerHTML = ICON_HARD;
   $('grade-icon-good').innerHTML = ICON_GOOD;
   $('grade-icon-easy').innerHTML = ICON_EASY;
+  $('tool-icon-edit').innerHTML = ICON_EDIT;
+  $('tool-icon-image').innerHTML = ICON_IMAGE;
+  $('tool-icon-regen').innerHTML = ICON_REGEN;
+  frontIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(3);
+  backIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(8);
   document.querySelector('.flash-blob--front').innerHTML = paintBlob(5);
   document.querySelector('.flash-blob--back').innerHTML = paintBlob(12);
 }
 
 let session = null; // { deckId, box, queue: [cards], idx }
+let editing = false;
 
 function drawerRow(deck) {
   const { counts, due } = boxCounts(deck);
@@ -79,12 +96,35 @@ function showFace(front) {
   flashCard.classList.toggle('flipped', !front);
 }
 
+function paintImage(imgEl, wrapEl, url) {
+  if (url) {
+    imgEl.src = url;
+    imgEl.hidden = false;
+    wrapEl.classList.add('has-image');
+  } else {
+    imgEl.hidden = true;
+    imgEl.src = '';
+    wrapEl.classList.remove('has-image');
+  }
+}
+
+function stopEditing() {
+  editing = false;
+  frontText.contentEditable = 'false';
+  backText.contentEditable = 'false';
+  toolEdit.classList.remove('active');
+}
+
 function loadCard() {
+  stopEditing();
   const card = session.queue[session.idx];
   frontText.textContent = card.front;
   backText.textContent = card.back;
+  paintImage(frontImage, frontIconWrap, card.frontImage);
+  paintImage(backImage, backIconWrap, card.backImage);
   showFace(true);
   gradesEl.hidden = true;
+  flashNote.textContent = BOXES[session.box].label;
   reviewProgress.textContent = `${session.idx + 1} / ${session.queue.length}`;
 }
 
@@ -101,9 +141,8 @@ async function startSession(deckId, box) {
   const queue = dueCardsInBox(deck, box);
   if (!queue.length) return;
 
-  session = { deckId, box, queue, idx: 0 };
+  session = { deckId, box, queue, idx: 0, classLabel: deck.classLabel, subject: deck.subject, topic: deck.topic };
   reviewSubject.textContent = `${deck.subject}: ${deck.topic}`;
-  reviewBoxLabel.textContent = BOXES[box].label;
   reviewBd.querySelector('.review-stage').hidden = false;
   doneEl.hidden = true;
   reviewBd.classList.add('open');
@@ -113,11 +152,82 @@ async function startSession(deckId, box) {
 }
 
 function closeSession() {
+  stopEditing();
   reviewBd.classList.remove('open');
   reviewBd.setAttribute('aria-hidden', 'true');
   if (siteNav) siteNav.style.display = '';
   session = null;
   renderDecks();
+}
+
+async function toggleEdit() {
+  if (!session) return;
+  const card = session.queue[session.idx];
+
+  if (editing) {
+    // Save whichever face text may have changed.
+    const front = frontText.textContent.trim();
+    const back = backText.textContent.trim();
+    stopEditing();
+    if (front === card.front && back === card.back) return;
+    try {
+      await updateCard(session.deckId, card.id, { front, back });
+      card.front = front;
+      card.back = back;
+    } catch (err) {
+      console.error('[Recall Press] edit save failed:', err);
+    }
+    return;
+  }
+
+  editing = true;
+  toolEdit.classList.add('active');
+  const front = !flashCard.classList.contains('flipped');
+  (front ? frontText : backText).contentEditable = 'true';
+  (front ? frontText : backText).focus();
+}
+
+async function handleImagePick(file) {
+  if (!session || !file) return;
+  const card = session.queue[session.idx];
+  const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
+  const field = side === 'front' ? 'frontImage' : 'backImage';
+
+  toolImage.disabled = true;
+  try {
+    const url = await uploadCardImage(session.deckId, card.id, side, file);
+    await updateCard(session.deckId, card.id, { [field]: url });
+    card[field] = url;
+    paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);
+  } catch (err) {
+    console.error('[Recall Press] image upload failed:', err);
+    alert(err.message || 'Could not add that image.');
+  }
+  toolImage.disabled = false;
+}
+
+async function regenerateCurrentCard() {
+  if (!session) return;
+  const card = session.queue[session.idx];
+  toolRegen.disabled = true;
+  try {
+    const [fresh] = await printCards({
+      classLabel: session.classLabel,
+      subject: session.subject,
+      topic: session.topic,
+      count: 1,
+    });
+    if (!fresh) throw new Error('No replacement came back — try again.');
+    await updateCard(session.deckId, card.id, {
+      front: fresh.front, back: fresh.back, frontImage: null, backImage: null,
+    });
+    Object.assign(card, { front: fresh.front, back: fresh.back, frontImage: null, backImage: null });
+    loadCard();
+  } catch (err) {
+    console.error('[Recall Press] regenerate failed:', err);
+    alert(err.message || 'Could not regenerate this card.');
+  }
+  toolRegen.disabled = false;
 }
 
 export function initReview() {
@@ -129,8 +239,9 @@ export function initReview() {
     startSession(btn.dataset.deck, parseInt(btn.dataset.box, 10));
   });
 
-  flashCard.addEventListener('click', () => {
-    if (!session) return;
+  flashCard.addEventListener('click', (e) => {
+    if (!session || editing) return;
+    if (e.target.closest('.flash-note')) return;
     const isFront = !flashCard.classList.contains('flipped');
     showFace(!isFront);
     gradesEl.hidden = isFront; // reveal grading once the answer is shown
@@ -152,6 +263,15 @@ export function initReview() {
     if (session.idx >= session.queue.length) endSession();
     else loadCard();
   });
+
+  toolEdit.addEventListener('click', toggleEdit);
+  toolImage.addEventListener('click', () => toolImageInput.click());
+  toolImageInput.addEventListener('change', () => {
+    const file = toolImageInput.files?.[0];
+    toolImageInput.value = '';
+    handleImagePick(file);
+  });
+  toolRegen.addEventListener('click', regenerateCurrentCard);
 
   reviewClose.addEventListener('click', closeSession);
   doneCloseBtn.addEventListener('click', closeSession);

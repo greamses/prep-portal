@@ -74,6 +74,13 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       AI FLASHCARDS (Recall Press) — a user's own decks, private.
+    ───────────────────────────── */
+    match /users/{userId}/flashcardDecks/{deckId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    /* ─────────────────────────────
        POSTS & BLOGS (DYNAMICS ENABLED)
     ───────────────────────────── */
 

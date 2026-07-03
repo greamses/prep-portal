@@ -104,3 +104,23 @@ export async function gradeCard(deckId, cardId, grade) {
   invalidateList(`flashcardDecks:${id}`);
   return cards;
 }
+
+/** Patch one card's fields (edited text, an image URL, a regenerated front/back). */
+export async function updateCard(deckId, cardId, patch) {
+  const id = uid();
+  const path = `users/${id}/flashcardDecks/${deckId}`;
+  const deck = await getDoc(path, { force: true });
+  if (!deck) return null;
+
+  let updated = null;
+  const cards = (deck.cards || []).map((c) => {
+    if (c.id !== cardId) return c;
+    updated = { ...c, ...patch };
+    return updated;
+  });
+
+  await saveDoc(path, { cards, updatedAt: Date.now() }, { merge: true });
+  invalidateDoc(path);
+  invalidateList(`flashcardDecks:${id}`);
+  return updated;
+}

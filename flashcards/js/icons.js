@@ -1,50 +1,75 @@
 /* ═══════════════════════════════════════════════════════
    RECALL PRESS — ICON SET
-   Same visual language as utils/components/nav-icons.js:
-   24×24 grid, chunky rounded shapes, 2-3 palette colours +
-   white highlights, sitting on a soft accent tile.
+   Matches utils/components/nav-icons.js exactly: no built-in
+   background — icons are bare 24×24 objects in 2-3 palette
+   colours + white highlights, sitting on the shared organic
+   "sticker" blob tile (iconBlob) applied by CSS, same as
+   .nav-icon/.nav-icon__blob in nav.css.
 ═══════════════════════════════════════════════════════ */
-export { paintBlob } from '/utils/components/nav-icons.js';
+export { paintBlob, iconBlob } from '/utils/components/nav-icons.js';
 
 const svg = (paths) =>
   `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paths}</svg>`;
 
-// Card front — a question mark on a tile.
+// Card front — a little card with a bold "?" (front = the prompt).
 export const ICON_QUESTION = svg(
-  `<circle cx="12" cy="12" r="9.4" fill="var(--accent-secondary)"/>` +
-  `<path d="M9.1 9.6a3 3 0 0 1 5.8.9c0 1.7-1.9 1.8-2.1 3.4" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>` +
-  `<circle cx="12.4" cy="17" r="1.15" fill="#fff"/>`,
+  `<rect x="4" y="3.5" width="16" height="17" rx="3" fill="var(--accent-secondary)"/>` +
+  `<rect x="6.4" y="6" width="11.2" height="2.2" rx="1.1" fill="#fff" opacity="0.85"/>` +
+  `<path d="M9.6 11.6a2.6 2.6 0 0 1 5-1c0 1.5-1.7 1.6-1.9 3" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>` +
+  `<circle cx="12.3" cy="16.7" r="1.05" fill="#fff"/>`,
 );
 
-// Card back — a checkmark on a tile.
+// Card back — a badge with a checkmark (back = you got it).
 export const ICON_CHECK = svg(
-  `<circle cx="12" cy="12" r="9.4" fill="var(--accent-success)"/>` +
-  `<path d="M7.3 12.5l3 3 6.4-6.9" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>`,
+  `<circle cx="12" cy="12" r="9.2" fill="var(--accent-success)"/>` +
+  `<circle cx="9" cy="8.6" r="2.6" fill="#fff" opacity="0.25"/>` +
+  `<path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
 
-// Flip hint — two chasing arrows.
+// Flip hint — two chasing arrows (same stroke language as signin/signout).
 export const ICON_FLIP = svg(
   `<path d="M4 9a8 8 0 0 1 13.8-5.3M20 3.7v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
   `<path d="M20 15a8 8 0 0 1-13.8 5.3M4 20.3v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
 
-// Grade: Again — retry arrow (white, sits on the accent-danger button).
+// Edit — a pencil (echoes the Editorials nav icon's diagonal-strokes build).
+export const ICON_EDIT = svg(
+  `<path d="M15.6 3.8l4.6 4.6-2 2-4.6-4.6z" fill="var(--accent-secondary)"/>` +
+  `<path d="M13.6 5.8l4.6 4.6-7.8 7.8-4.6-4.6z" fill="var(--accent-primary)"/>` +
+  `<path d="M5.8 13.6l4.6 4.6-5.5 1.6a.8.8 0 0 1-1-1z" fill="var(--accent-warning)"/>`,
+);
+
+// Add image — a little framed picture (mountain + sun), like the blogs scene.
+export const ICON_IMAGE = svg(
+  `<rect x="3" y="4.5" width="18" height="15" rx="2.4" fill="var(--accent-primary)"/>` +
+  `<rect x="4.5" y="6" width="15" height="12" rx="1.4" fill="#fff"/>` +
+  `<circle cx="9" cy="10" r="1.8" fill="var(--accent-warning)"/>` +
+  `<path d="M4.5 16.5l4-4.4 3.2 3 2.8-3.4 4.5 4.8z" fill="var(--accent-secondary)"/>`,
+);
+
+// Regenerate — a retry loop (matches the flip-arrow stroke language).
+export const ICON_REGEN = svg(
+  `<path d="M4.4 12a7.6 7.6 0 0 1 13-5.4M19.6 3.8v5h-5" fill="none" stroke="var(--accent-danger)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<path d="M19.6 12a7.6 7.6 0 0 1-13 5.4M4.4 20.2v-5h5" fill="none" stroke="var(--accent-danger)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+
+// Grade: Again — retry arrow (white, on accent-danger button).
 export const ICON_AGAIN = svg(
   `<path d="M4.4 12a7.6 7.6 0 0 1 13-5.4M19.6 3.8v5h-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
 
-// Grade: Hard — a flame (white, on accent-warning).
+// Grade: Hard — a flame (white, on accent-warning button).
 export const ICON_HARD = svg(
   `<path d="M12 2.4c1.5 2.8.7 4.2 2.3 5.7 1.6-.9 1.8-2.5 1.8-2.5 1.8 1.9 2.6 4.4 2.6 6.4a6.7 6.7 0 1 1-13.4 0c0-2.1.7-3.7 1.6-5 0 0 .5 2 1.9 2.3-.6-2.8.7-4.9 3.2-6.9z" fill="#fff"/>`,
 );
 
-// Grade: Good — thumbs up (white, on accent-secondary).
+// Grade: Good — thumbs up (white, on accent-secondary button).
 export const ICON_GOOD = svg(
   `<path d="M7 11h2.2l1.1-5.1a1.5 1.5 0 0 1 3 .5V11H17a1.5 1.5 0 0 1 1.5 1.9L17.4 18a2 2 0 0 1-1.9 1.4H9a2 2 0 0 1-2-2z" fill="#fff"/>` +
   `<rect x="3.2" y="11" width="2.8" height="8.4" rx="1" fill="#fff" opacity="0.8"/>`,
 );
 
-// Grade: Easy — a lightning bolt (white, on accent-success).
+// Grade: Easy — a lightning bolt (white, on accent-success button).
 export const ICON_EASY = svg(
   `<path d="M13 2.2 4.4 13.8h5.7l-1 8 8.5-11.6h-5.7z" fill="#fff"/>`,
 );
