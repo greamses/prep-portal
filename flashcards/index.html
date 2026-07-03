@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/utils/components/theme.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/select.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -150,10 +151,8 @@
     <div class="review-bd" id="review-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
         <div class="review-hdr">
-          <div class="review-id">
-            <span class="review-subject" id="review-subject"></span>
-            <span class="review-box" id="review-box"></span>
-          </div>
+          <span class="review-subject" id="review-subject"></span>
+          <span class="pp-sticky pp-sticky--tape review-box" id="review-box"></span>
           <span class="review-progress" id="review-progress"></span>
           <button class="review-close" id="review-close" aria-label="Close">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -164,15 +163,17 @@
         </div>
 
         <div class="review-stage">
-          <div class="flash-card" id="flash-card">
+          <div class="flash-card pp-receipt" id="flash-card">
             <div class="flash-card-inner">
-              <div class="flash-face flash-front">
-                <span class="flash-label">Question</span>
+              <div class="flash-face flash-front pp-receipt__paper">
+                <div class="flash-blob flash-blob--front" aria-hidden="true"></div>
+                <span class="flash-icon" id="flash-icon-front"></span>
                 <p class="flash-text" id="flash-front-text"></p>
-                <span class="flash-hint">Tap to flip</span>
+                <span class="flash-flip-hint" id="flash-flip-hint" aria-hidden="true"></span>
               </div>
-              <div class="flash-face flash-back">
-                <span class="flash-label">Answer</span>
+              <div class="flash-face flash-back pp-receipt__paper">
+                <div class="flash-blob flash-blob--back" aria-hidden="true"></div>
+                <span class="flash-icon" id="flash-icon-back"></span>
                 <p class="flash-text" id="flash-back-text"></p>
               </div>
             </div>
@@ -180,15 +181,15 @@
         </div>
 
         <div class="review-grades" id="review-grades" hidden>
-          <button class="grade-btn grade-again" data-grade="again">Again</button>
-          <button class="grade-btn grade-hard" data-grade="hard">Hard</button>
-          <button class="grade-btn grade-good" data-grade="good">Good</button>
-          <button class="grade-btn grade-easy" data-grade="easy">Easy</button>
+          <button class="grade-btn grade-again" data-grade="again"><span class="grade-icon" id="grade-icon-again"></span>Again</button>
+          <button class="grade-btn grade-hard" data-grade="hard"><span class="grade-icon" id="grade-icon-hard"></span>Hard</button>
+          <button class="grade-btn grade-good" data-grade="good"><span class="grade-icon" id="grade-icon-good"></span>Good</button>
+          <button class="grade-btn grade-easy" data-grade="easy"><span class="grade-icon" id="grade-icon-easy"></span>Easy</button>
         </div>
 
         <div class="review-done" id="review-done" hidden>
-          <p>Box cleared for now. Nice work.</p>
-          <button class="btn-ghost" id="review-done-close">Back to Shelf</button>
+          <p>Box cleared.</p>
+          <button class="btn-ghost" id="review-done-close">Back</button>
         </div>
       </div>
     </div>

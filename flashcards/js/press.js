@@ -26,7 +26,7 @@ export function initPress({ onPrinted } = {}) {
     if (!state.cls || !state.subject || !state.topic) return;
 
     runBtn.disabled = true;
-    statusEl.textContent = 'Setting the type…';
+    statusEl.textContent = 'Warming up…';
     tray.innerHTML = '';
     tray.classList.add('running');
 
@@ -38,9 +38,9 @@ export function initPress({ onPrinted } = {}) {
         count: state.count,
       });
 
-      if (!cards.length) throw new Error('The press came back empty — try a different topic.');
+      if (!cards.length) throw new Error('Empty deck — try another topic.');
 
-      statusEl.textContent = `Printing ${cards.length} card${cards.length > 1 ? 's' : ''}…`;
+      statusEl.textContent = 'Printing…';
       for (let i = 0; i < cards.length; i++) {
         stampCard(cards[i], i);
         await new Promise((r) => setTimeout(r, 140));
@@ -53,11 +53,11 @@ export function initPress({ onPrinted } = {}) {
         cards,
       });
 
-      statusEl.textContent = `Printed ${cards.length} card${cards.length > 1 ? 's' : ''} into "${state.subject}: ${state.topic}".`;
+      statusEl.textContent = `${cards.length} card${cards.length > 1 ? 's' : ''} printed.`;
       onPrinted?.(deck);
     } catch (err) {
       console.error('[Recall Press] print failed:', err);
-      statusEl.textContent = err.message || 'The press jammed — please try again.';
+      statusEl.textContent = err.message || 'Press jammed — try again.';
     } finally {
       runBtn.disabled = false;
       setTimeout(() => {
