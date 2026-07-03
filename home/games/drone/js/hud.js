@@ -94,6 +94,38 @@ export function createHud() {
   return { setScore, setTimer, setCard, tick, showEnd, hideEnd };
 }
 
+/* ── HUD show/hide toggle (persisted; the stick figures need the screen too) ─*/
+const HUD_HIDDEN_KEY = "dr-hud-hidden";
+
+export function initHudToggle() {
+  const stage = $(".drone-stage");
+  const btn = $("#dr-hud-toggle");
+  const eye = $("#dr-hud-toggle-eye");
+  const slash = $("#dr-hud-toggle-slash");
+  if (!stage || !btn) return;
+
+  function apply(hidden) {
+    stage.classList.toggle("dr-hud-hidden", hidden);
+    btn.setAttribute("aria-pressed", String(hidden));
+    btn.setAttribute("aria-label", hidden ? "Show flight HUD" : "Hide flight HUD");
+    if (eye) eye.style.display = hidden ? "none" : "";
+    if (slash) slash.style.display = hidden ? "" : "none";
+    // The compass/radar canvases are 0×0 while their panel is display:none;
+    // re-measure once they're shown again (createHud() listens for this).
+    if (!hidden) window.dispatchEvent(new Event("resize"));
+  }
+
+  let hidden = false;
+  try { hidden = localStorage.getItem(HUD_HIDDEN_KEY) === "1"; } catch (e) {}
+  apply(hidden);
+
+  btn.addEventListener("click", () => {
+    hidden = !hidden;
+    apply(hidden);
+    try { localStorage.setItem(HUD_HIDDEN_KEY, hidden ? "1" : "0"); } catch (e) {}
+  });
+}
+
 /* ── canvas helpers ────────────────────────────────────────────────────────*/
 
 function fitCanvas(cv, ctx) {
@@ -172,6 +204,7 @@ function drawRadar(ctx, cv, droneBearing) {
   const W = cv.width / dpr, H = cv.height / dpr;
   const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 4;
   ctx.clearRect(0, 0, W, H);
+  if (R <= 0) return; // canvas is mid-resize or its panel is hidden (dr-hud-hidden)
 
   // dial
   ctx.fillStyle = "rgba(10,20,30,0.55)";

@@ -68,6 +68,15 @@
           </div>
         </div>
 
+        <!-- ── HUD show/hide toggle (always visible, even when HUD is off) ─ -->
+        <button type="button" id="dr-hud-toggle" class="dr-hud-toggle" aria-pressed="false" aria-label="Hide flight HUD">
+          <svg id="dr-hud-toggle-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path id="dr-hud-toggle-eye" d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z" />
+            <circle cx="12" cy="12" r="3" />
+            <path id="dr-hud-toggle-slash" d="M3 3l18 18" style="display:none" />
+          </svg>
+        </button>
+
         <!-- ── compass ribbon (top-centre) ─────────────────────────────── -->
         <div class="dr-compass-wrap">
           <canvas id="dr-compass" class="dr-compass"></canvas>

@@ -18,7 +18,7 @@ import { createDrone } from "./drone.js";
 import { createControls } from "./controls.js";
 import { createJoystick } from "./joystick.js";
 import { createMission } from "./mission.js";
-import { createHud } from "./hud.js";
+import { createHud, initHudToggle } from "./hud.js";
 import { bearingFromTo, planarDist } from "./bearing.js";
 import { initGameViewport } from "/utils/components/game-viewport.js";
 
@@ -124,6 +124,7 @@ export async function startGame() {
   });
 
   initGameViewport({ stage: ".drone-stage", onResize: () => engine.resize() });
+  initHudToggle();
   $("#dr-end-restart")?.addEventListener("click", begin);
 
   begin();
