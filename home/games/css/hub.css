@@ -34,3 +34,21 @@
 .games-tab.is-active {
   border-color: var(--tile, var(--accent-secondary));
 }
+
+/* Games still in development: inert card, muted paper, no play link.
+   Re-states the shared .pp-receipt drop-shadow alongside grayscale since
+   `filter` isn't additive across rules — dropping it here would lose the
+   card's shadow entirely. */
+.science-card.is-locked {
+  cursor: default;
+  opacity: 0.75;
+  filter: grayscale(0.4) drop-shadow(0 7px 16px rgba(var(--shadow-color), 0.14));
+}
+
+.science-card.is-locked:hover {
+  transform: none;
+}
+
+.science-card.is-locked .read-more {
+  color: var(--text-tertiary);
+}

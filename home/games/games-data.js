@@ -4,6 +4,10 @@
 // ("2d" or "3d"); `premium` drives the badge on its card (actual access is
 // enforced by the "games-3d" feature in /utils/features.js + premium-guard.js
 // on the game's own page — this list is just what the hub renders).
+//
+// `ready: false` marks a game as still in development — its card renders
+// locked (no click-through, "Coming soon" instead of "Play now") until it's
+// flipped to true here.
 
 export const GAMES = [
   {
@@ -12,6 +16,7 @@ export const GAMES = [
     category: "Sports",
     type: "3d",
     premium: true,
+    ready: false,
     href: "/home/games/free-throw/index.html",
     desc: "Aim, shoot, and score with analog aim and a real power meter in first-person basketball.",
   },
@@ -21,7 +26,9 @@ export const GAMES = [
     category: "Shooter",
     type: "3d",
     premium: true,
+    ready: true,
     href: "/home/games/aliens/index.html",
+    image: "/home/games/aliens/thumb.jpg",
     desc: "Read the angle, aim the cannon, and fire on hidden alien saucers using angular position.",
   },
   {
@@ -30,6 +37,7 @@ export const GAMES = [
     category: "Strategy",
     type: "3d",
     premium: true,
+    ready: false,
     href: "/home/games/chess/index.html",
     desc: "Realistic 3D chess with hand-modelled wooden pieces and full legal moves, check and castling.",
   },
@@ -39,6 +47,7 @@ export const GAMES = [
     category: "Adventure",
     type: "3d",
     premium: true,
+    ready: false,
     href: "/home/games/maze/index.html",
     desc: "Walk a randomly generated maze in first person and find your way to the glowing exit.",
   },
@@ -48,6 +57,7 @@ export const GAMES = [
     category: "Simulation",
     type: "3d",
     premium: true,
+    ready: false,
     href: "/home/games/drone/index.html",
     desc: "Pilot a delivery drone by bearing — read the compass, turn to match, and drop the package.",
   },
@@ -57,6 +67,7 @@ export const GAMES = [
     category: "Puzzle",
     type: "3d",
     premium: true,
+    ready: false,
     href: "/home/games/rubiks-cube/index.html",
     desc: "Solve a realistic 3D Rubik's Cube with the keyboard, twisting faces relative to the front.",
   },
@@ -66,7 +77,9 @@ export const GAMES = [
     category: "Board Game",
     type: "2d",
     premium: false,
+    ready: true,
     href: "/home/games/snakes-ladders/index.html",
+    image: "/home/games/snakes-ladders/thumb.jpg",
     desc: "Roll the dice, climb the ladders, and dodge the snakes in a classic board game race.",
   },
   {
@@ -75,6 +88,7 @@ export const GAMES = [
     category: "Puzzle",
     type: "2d",
     premium: false,
+    ready: false,
     href: "/home/games/block/tetris.html",
     desc: "Stack falling blocks and clear the board while keeping the cleared area a prime number.",
   },
@@ -84,6 +98,7 @@ export const GAMES = [
     category: "Puzzle",
     type: "2d",
     premium: false,
+    ready: false,
     href: "/home/games/crossmath/index.html",
     desc: "Fill in the missing numbers so every row and column of the grid adds up correctly.",
   },
@@ -93,6 +108,7 @@ export const GAMES = [
     category: "Memory",
     type: "2d",
     premium: false,
+    ready: false,
     href: "/home/games/flip/index.html",
     desc: "Flip and match pairs of cards before the clock runs out in this memory challenge.",
   },
@@ -102,6 +118,7 @@ export const GAMES = [
     category: "Puzzle",
     type: "2d",
     premium: false,
+    ready: false,
     href: "/home/games/slide/game.html",
     desc: "Slide numbered tiles around the board to put them back into perfect order.",
   },
@@ -111,6 +128,7 @@ export const GAMES = [
     category: "Arcade",
     type: "2d",
     premium: false,
+    ready: false,
     href: "/home/games/flappy-bird/flappy.html",
     desc: "Solve quick sums correctly to fly the bird safely through each gap.",
   },

@@ -6,6 +6,7 @@ const I = {
   controller: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"></path><path d="M7 8h10a5 5 0 0 1 5 5.5 3 3 0 0 1-5.4 1.8L15 13H9l-1.6 2.3A3 3 0 0 1 2 13.5 5 5 0 0 1 7 8z"></path></svg>`,
   cube: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`,
   star: `<svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px;flex-shrink:0"><path d="M12 2.5l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 8.7l5.9-.9z"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
   arrow: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
 };
 
@@ -15,12 +16,22 @@ const heading = document.getElementById("gamesHeading");
 
 function renderCard(game, idx) {
   const colorIdx = idx % 6;
+  const locked = !game.ready;
+  const tag = locked ? "div" : "a";
+  const hrefAttr = locked ? "" : ` href="${game.href}"`;
+  const badge = locked
+    ? `<span class="pp-pill pp-pill--static">${I.lock}<span>Coming Soon</span></span>`
+    : game.premium
+      ? `<span class="pp-pill pp-pill--static theme-yellow">${I.star}<span>Premium</span></span>`
+      : "";
+
   return `
-    <a class="science-card pp-receipt science-card--p${colorIdx}" href="${game.href}">
+    <${tag} class="science-card pp-receipt science-card--p${colorIdx}${locked ? " is-locked" : ""}"${hrefAttr}>
       <div class="card-inner pp-receipt__paper">
+        ${game.image ? `<img class="card-featured-img" src="${game.image}" alt="${game.title}" loading="lazy" onerror="this.remove()">` : ""}
         <div class="card-badges">
           <span class="pp-sticky pp-sticky--c${colorIdx}">${game.category}</span>
-          ${game.premium ? `<span class="pp-pill pp-pill--static theme-yellow">${I.star}<span>Premium</span></span>` : ""}
+          ${badge}
         </div>
         <div class="card-meta">
           <span>${I.controller} Solo player</span>
@@ -28,9 +39,9 @@ function renderCard(game, idx) {
         </div>
         <h2 class="card-title">${game.title}</h2>
         <p class="card-excerpt">${game.desc}</p>
-        <div class="read-more">Play now ${I.arrow}</div>
+        <div class="read-more">${locked ? "Coming soon" : `Play now ${I.arrow}`}</div>
       </div>
-    </a>`;
+    </${tag}>`;
 }
 
 function render(type) {
