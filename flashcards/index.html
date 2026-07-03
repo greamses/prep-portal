@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Flashcards — Recall Press</title>
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#000000" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+  </head>
+
+  <body>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <p class="builder-note">
+        Pick a class, subject, and topic — the press will print a fresh deck
+        of AI flashcards, sorted straight into your Leitner review boxes.
+      </p>
+      <div class="builder-stats">
+        <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>Any</strong> Topic</span>
+        <span class="hero-stat" style="--tile: var(--accent-success)"><strong>AI</strong> Printed</span>
+        <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Spaced</strong> Repetition</span>
+      </div>
+    </header>
+
+    <!-- ═══ THE PRESS — setup + generation ═══ -->
+    <main class="press-section">
+      <div class="press-section-hdr">
+        <div class="setup-eyebrow">Load the Press</div>
+        <h2>Print a New Deck</h2>
+        <p class="press-section-sub">Choose what to study — we'll do the rest.</p>
+      </div>
+
+      <div class="press-rig" id="press-rig">
+        <div class="press-form">
+          <label class="press-field">
+            <span>Class</span>
+            <select id="cls-select">
+              <option value="" disabled selected>— Choose class —</option>
+              <optgroup label="Primary (Lower)">
+                <option value="Primary 1|primary-lower">Primary 1</option>
+                <option value="Primary 2|primary-lower">Primary 2</option>
+                <option value="Primary 3|primary-lower">Primary 3</option>
+              </optgroup>
+              <optgroup label="Primary (Upper)">
+                <option value="Primary 4|primary-upper">Primary 4</option>
+                <option value="Primary 5|primary-upper">Primary 5</option>
+                <option value="Primary 6|primary-upper">Primary 6</option>
+              </optgroup>
+              <optgroup label="Junior Secondary">
+                <option value="JSS 1|jss">JSS 1</option>
+                <option value="JSS 2|jss">JSS 2</option>
+                <option value="JSS 3|jss">JSS 3</option>
+              </optgroup>
+              <optgroup label="Senior Secondary">
+                <option value="SS 1|ss">SS 1</option>
+                <option value="SS 2|ss">SS 2</option>
+                <option value="SS 3|ss">SS 3</option>
+              </optgroup>
+            </select>
+          </label>
+
+          <label class="press-field" id="track-field" hidden>
+            <span>Track</span>
+            <select id="track-select">
+              <option value="" disabled selected>— Choose track —</option>
+              <option value="science">Science</option>
+              <option value="arts">Arts</option>
+              <option value="commercial">Commercial</option>
+            </select>
+          </label>
+
+          <label class="press-field">
+            <span>Subject</span>
+            <select id="subject-select" disabled>
+              <option value="" disabled selected>— Select class first —</option>
+            </select>
+          </label>
+
+          <label class="press-field">
+            <span>Topic</span>
+            <input id="topic-input" type="text" placeholder="e.g. Photosynthesis, Simultaneous Equations…" maxlength="120" />
+          </label>
+
+          <div class="press-field">
+            <span>How many cards?</span>
+            <div class="count-tiles" id="count-tiles">
+              <button type="button" class="count-tile" data-n="5">5</button>
+              <button type="button" class="count-tile active" data-n="10">10</button>
+              <button type="button" class="count-tile" data-n="15">15</button>
+              <button type="button" class="count-tile" data-n="20">20</button>
+            </div>
+          </div>
+
+          <button class="press-btn" id="run-press-btn" type="button" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="9" width="16" height="8" rx="1"/>
+              <path d="M7 9V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4"/>
+              <path d="M8 17v3h8v-3"/>
+            </svg>
+            Run the Press
+          </button>
+          <p class="press-status" id="press-status"></p>
+        </div>
+
+        <!-- Cards print into this tray, one at a time -->
+        <div class="press-tray" id="press-tray" aria-hidden="true"></div>
+      </div>
+    </main>
+
+    <!-- ═══ YOUR DECKS ═══ -->
+    <section class="decks-section">
+      <div class="press-section-hdr">
+        <div class="setup-eyebrow">Your Shelf</div>
+        <h2>Decks &amp; Review Boxes</h2>
+        <p class="press-section-sub">Cards move through five drawers as you remember them better.</p>
+      </div>
+      <div class="deck-grid" id="deck-grid">
+        <p class="deck-empty" id="deck-empty">No decks yet — print your first one above.</p>
+      </div>
+    </section>
+
+    <!-- ═══ REVIEW OVERLAY ═══ -->
+    <div class="review-bd" id="review-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="review-hdr">
+          <div class="review-id">
+            <span class="review-subject" id="review-subject"></span>
+            <span class="review-box" id="review-box"></span>
+          </div>
+          <span class="review-progress" id="review-progress"></span>
+          <button class="review-close" id="review-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="review-stage">
+          <div class="flash-card" id="flash-card">
+            <div class="flash-card-inner">
+              <div class="flash-face flash-front">
+                <span class="flash-label">Question</span>
+                <p class="flash-text" id="flash-front-text"></p>
+                <span class="flash-hint">Tap to flip</span>
+              </div>
+              <div class="flash-face flash-back">
+                <span class="flash-label">Answer</span>
+                <p class="flash-text" id="flash-back-text"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-grades" id="review-grades" hidden>
+          <button class="grade-btn grade-again" data-grade="again">Again</button>
+          <button class="grade-btn grade-hard" data-grade="hard">Hard</button>
+          <button class="grade-btn grade-good" data-grade="good">Good</button>
+          <button class="grade-btn grade-easy" data-grade="easy">Easy</button>
+        </div>
+
+        <div class="review-done" id="review-done" hidden>
+          <p>Box cleared for now. Nice work.</p>
+          <button class="btn-ghost" id="review-done-close">Back to Shelf</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

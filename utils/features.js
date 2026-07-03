@@ -54,6 +54,14 @@ export const FEATURES = [
     paths: ["/activity.html"],
   },
   {
+    id: "flashcards",
+    label: "AI Flashcards",
+    desc: "AI-printed spaced-repetition flashcard decks",
+    group: "Learning Labs",
+    default: "premium",
+    paths: ["/flashcards"],
+  },
+  {
     id: "prepbot",
     label: "PrepBot AI",
     desc: "AI study-assistant chat launcher",

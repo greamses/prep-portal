@@ -199,7 +199,7 @@ const NAV_CONFIG = [
         children: [
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
-          { text: "AI Flashcards", href: "#flashcards", description: "Remember everything fast" },
+          { text: "AI Flashcards", href: "/flashcards/index.html", description: "Remember everything fast" },
         ],
       },
     ],
