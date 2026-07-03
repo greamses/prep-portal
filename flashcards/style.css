@@ -60,6 +60,15 @@ body {
 .hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
 .hero-stat:nth-child(even) { transform: rotate(1.5deg); }
 
+.builder-library-link {
+  display: inline-block;
+  margin-top: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-secondary);
+}
+
 /* ── SECTION HEADERS (shared by press + decks) ───────── */
 .press-section-hdr,
 .decks-section .press-section-hdr {
@@ -186,6 +195,20 @@ body {
 .press-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-cta-hover); }
 .press-btn:active:not(:disabled) { transform: translateY(0); }
 .press-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.press-btn { text-decoration: none; }
+
+/* .press-btn already declares its own `display`, which otherwise wins over
+   the browser's default [hidden] rule regardless of specificity (author
+   styles always beat the user-agent stylesheet) — force it hidden here. */
+.library-new-deck[hidden] {
+  display: none !important;
+}
+.library-new-deck:not([hidden]) {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 1.75rem;
+  max-width: none;
+}
 
 .press-status {
   grid-column: 1 / -1;
@@ -194,6 +217,10 @@ body {
   color: var(--text-secondary);
   min-height: 1.2em;
   margin: 0;
+}
+.press-status a {
+  color: var(--accent-secondary);
+  font-weight: 600;
 }
 
 /* ── PRINT TRAY ───────────────────────────────────────── */

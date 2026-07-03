@@ -1,17 +1,12 @@
 /* ═══════════════════════════════════════════════════════
-   RECALL PRESS — MAIN ENTRY POINT
+   RECALL PRESS — GENERATOR ENTRY POINT
+   The topic picker + press (print flow). The deck shelf and
+   review session live on the separate library page.
 ═══════════════════════════════════════════════════════ */
-import { auth } from '/firebase-init.js';
 import { enhanceSelects } from '/utils/components/pp-select.js';
 import { initTopicPicker } from './topic-picker.js';
 import { initPress } from './press.js';
-import { initReview, renderDecks } from './review.js';
 
 initTopicPicker({});
-initPress({ onPrinted: () => renderDecks() });
-initReview();
+initPress({});
 enhanceSelects(document.querySelector('.press-form'));
-
-auth.onAuthStateChanged((user) => {
-  if (user) renderDecks();
-});

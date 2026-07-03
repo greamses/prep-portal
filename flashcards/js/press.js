@@ -53,7 +53,7 @@ export function initPress({ onPrinted } = {}) {
         cards,
       });
 
-      statusEl.textContent = `${cards.length} card${cards.length > 1 ? 's' : ''} printed.`;
+      statusEl.innerHTML = `${cards.length} card${cards.length > 1 ? 's' : ''} printed. <a href="/flashcards/library.html">View in library →</a>`;
       onPrinted?.(deck);
     } catch (err) {
       console.error('[Recall Press] print failed:', err);

@@ -17,7 +17,7 @@ const runBtn = $('run-press-btn');
 
 function populateSubjects(levelKey) {
   const list = SUBJECTS[levelKey] || [];
-  subjectSelect.innerHTML = '<option value="" disabled selected>— Select subject —</option>';
+  subjectSelect.innerHTML = '<option value="" disabled selected>Subject</option>';
   list.forEach((s) => {
     const opt = document.createElement('option');
     opt.value = s;
@@ -43,7 +43,7 @@ export function initTopicPicker({ onReady } = {}) {
     if (isSS) {
       trackSelect.value = '';
       state.cls = '';
-      subjectSelect.innerHTML = '<option value="" disabled selected>— Select track first —</option>';
+      subjectSelect.innerHTML = '<option value="" disabled selected>Subject</option>';
       subjectSelect.disabled = true;
     } else {
       state.cls = level;
