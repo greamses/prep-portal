@@ -1726,16 +1726,6 @@
   .photocard {
     width: clamp(132px, 40vw, 190px);
   }
-  /* feTurbulence/feDisplacementMap SVG filters are notoriously unstable on
-     mobile GPUs — 7 of these animating on scroll (GSAP fan-out) is a known
-     trigger for compositor tile corruption that shows up as ghosted/
-     duplicated content and scan-line banding elsewhere on the page. The
-     torn edge is cosmetic only, so drop it on small screens and keep the
-     plain rounded paper card underneath. */
-  .photocard__rip::before,
-  .photocard:nth-child(even) .photocard__rip::before {
-    filter: none;
-  }
 }
 
 /* =========================================
