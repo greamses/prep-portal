@@ -36,7 +36,15 @@ const CERT_URL =
 const PUBLIC_EXACT = new Set([
   "/", "/index.html", "/privacy.html", "/terms.html", "/subscribe.html",
 ]);
-const PUBLIC_PREFIXES = ["/blogs", "/editorials", "/utils/auth"];
+const PUBLIC_PREFIXES = [
+  "/blogs", "/editorials", "/utils/auth",
+  // SEO: these are marketing/landing + listing pages that should be crawlable
+  // and browsable without an account. Any actual paid AI action inside them
+  // (theory grading, writing grading) is separately enforced server-side in
+  // server/routes/ai.js (isPremiumUser → 402), so opening the page itself up
+  // to anonymous visitors doesn't bypass the premium gate.
+  "/exam-archive", "/theory-page", "/writing", "/prep-math",
+];
 
 function isPublic(path) {
   if (PUBLIC_EXACT.has(path)) return true;

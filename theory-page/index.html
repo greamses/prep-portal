@@ -41,8 +41,16 @@
     <!-- Loader must run synchronously in <head> to cover page render -->
     <script src="/utils/components/loader.js"></script>
 
-    <!-- Premium-only feature: gate free users (redirects to /subscribe.html#plans) -->
-    <script type="module" src="/utils/auth/premium-guard.js"></script>
+    <!-- The page itself is a public, crawlable landing/builder page (SEO).
+         The AI grading action is premium-gated server-side in
+         server/routes/ai.js (POST /api/ai/generate → 402 premium_required),
+         and the client already asks anonymous users to sign in before it
+         will call that endpoint (see main.js's _getAuthToken). -->
+
+    <meta
+      name="description"
+      content="Practice long-form theory questions across WAEC, NECO, JAMB and Cambridge subjects with instant AI-graded feedback and a model answer."
+    />
   </head>
 
   <body>

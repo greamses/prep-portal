@@ -21,6 +21,11 @@
     <link rel="stylesheet" href="./theme-import.css" />
     <link rel="stylesheet" href="./style.css" />
 
+    <meta
+      name="description"
+      content="Get instant AI feedback on your essays and compositions — grammar, structure, and rubric-based scoring for WAEC, NECO, JAMB and Cambridge writing tasks."
+    />
+
     <script type="importmap">
       {
         "imports": {
@@ -31,7 +36,11 @@
         }
       }
     </script>
-    <script type="module" src="/utils/auth/premium-guard.js"></script>
+    <!-- The page itself is a public, crawlable landing page (SEO). The AI
+         grading action is premium-gated server-side in server/routes/ai.js
+         (POST /api/ai/generate → 402 premium_required); the client already
+         throws "Please sign in" before calling it if no user is signed in
+         (see utils/ai-client.js _idToken). -->
   </head>
 
   <body>
