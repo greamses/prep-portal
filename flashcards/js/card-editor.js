@@ -6,7 +6,9 @@
    due ones — editing doesn't care about Leitner boxes). Students
    never see this; the library page is read-only practice.
 ═══════════════════════════════════════════════════════ */
-import { $, safe, pouchColorClass, pouchTagColorClass, pouchCardsHtml } from './config.js';
+import {
+  $, safe, pouchColorClass, pouchTagColorClass, pouchCardsHtml, attachSwipeNav,
+} from './config.js';
 import { listDecks, updateCard } from './deck-store.js';
 import { printCards } from './api.js';
 import { uploadCardImage, generateCardImage } from './image-upload.js';
@@ -314,6 +316,7 @@ export function initCardEditor() {
 
   editorPrev.addEventListener('click', goPrev);
   editorNext.addEventListener('click', goNext);
+  attachSwipeNav(flashCard, { onPrev: goPrev, onNext: goNext });
 
   toolEdit.addEventListener('click', toggleEdit);
   toolImage.addEventListener('click', () => toolImageInput.click());

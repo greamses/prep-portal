@@ -7,7 +7,7 @@
    already-edited cards.
 ═══════════════════════════════════════════════════════ */
 import {
-  $, safe, BOXES, MAX_BOX, pouchColorClass, pouchTagColorClass, pouchCardsHtml,
+  $, safe, BOXES, MAX_BOX, pouchColorClass, pouchTagColorClass, pouchCardsHtml, attachSwipeNav,
 } from './config.js';
 import { listDecks, dueCardsInBox, boxCounts, gradeCard } from './deck-store.js';
 import {
@@ -183,7 +183,7 @@ export function initReview() {
 
   flashCard.addEventListener('click', (e) => {
     if (!session) return;
-    if (e.target.closest('.flash-note')) return;
+    if (e.target.closest('.flash-note') || e.target.closest('.review-grades')) return;
     const isFront = !flashCard.classList.contains('flipped');
     showFace(!isFront);
     gradesEl.hidden = isFront; // reveal grading once the answer is shown
@@ -191,10 +191,36 @@ export function initReview() {
 
   reviewPrev.addEventListener('click', goPrev);
   reviewNext.addEventListener('click', goNext);
+  attachSwipeNav(flashCard, { onPrev: goPrev, onNext: goNext });
+
+  // "Good" sits on the card as the one-tap default grade (like Facebook's
+  // Like button); hovering (desktop) or long-pressing (touch) fans the other
+  // three reactions out above it instead of grading immediately.
+  let longPressTimer = null;
+  gradesEl.addEventListener('touchstart', () => {
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      gradesEl.classList.add('expanded');
+      gradesEl.dataset.suppressClick = '1';
+    }, 420);
+  }, { passive: true });
+  ['touchend', 'touchmove', 'touchcancel'].forEach((evt) => {
+    gradesEl.addEventListener(evt, () => clearTimeout(longPressTimer));
+  });
+  document.addEventListener('click', (e) => {
+    if (gradesEl.classList.contains('expanded') && !gradesEl.contains(e.target)) {
+      gradesEl.classList.remove('expanded');
+    }
+  });
 
   gradesEl.addEventListener('click', async (e) => {
     const btn = e.target.closest('.grade-btn');
     if (!btn || !session) return;
+    if (gradesEl.dataset.suppressClick === '1') {
+      delete gradesEl.dataset.suppressClick;
+      return;
+    }
+    gradesEl.classList.remove('expanded');
     const card = session.queue[session.idx];
     gradesEl.querySelectorAll('.grade-btn').forEach((b) => (b.disabled = true));
     try {
