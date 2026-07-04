@@ -191,9 +191,26 @@
       .about-values {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        align-items: stretch;
         gap: var(--gap-lg, 1.25rem);
         margin-top: 1.5rem;
       }
+
+      .about-value {
+        height: 100%;
+      }
+      .about-value .pp-receipt__paper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Rotate the same pastel set the site uses for sticky notes / subject
+         badges, so cards in a row read as distinct but still on-brand. */
+      .about-value:nth-child(4n+1) { --pp-paper: var(--badge-subject-1-bg); }
+      .about-value:nth-child(4n+2) { --pp-paper: var(--badge-subject-4-bg); }
+      .about-value:nth-child(4n+3) { --pp-paper: var(--badge-subject-3-bg); }
+      .about-value:nth-child(4n+4) { --pp-paper: var(--badge-subject-5-bg); }
 
       .about-value svg {
         width: 32px;
@@ -220,12 +237,23 @@
       .about-cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        align-items: stretch;
         gap: var(--gap-lg, 1.25rem);
         margin-top: 1.25rem;
       }
       .about-card {
+        height: 100%;
+      }
+      .about-card .pp-receipt__paper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
         padding: 1.3rem 1.4rem;
       }
+      .about-card:nth-child(4n+1) { --pp-paper: var(--badge-subject-4-bg); }
+      .about-card:nth-child(4n+2) { --pp-paper: var(--badge-subject-1-bg); }
+      .about-card:nth-child(4n+3) { --pp-paper: var(--badge-subject-5-bg); }
+      .about-card:nth-child(4n+4) { --pp-paper: var(--badge-subject-3-bg); }
       .about-card-head {
         display: flex;
         align-items: baseline;
