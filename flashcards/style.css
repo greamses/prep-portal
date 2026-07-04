@@ -218,10 +218,6 @@ body {
   min-height: 1.2em;
   margin: 0;
 }
-.press-status a {
-  color: var(--accent-secondary);
-  font-weight: 600;
-}
 
 /* ── PRINT TRAY ───────────────────────────────────────── */
 .press-tray {
@@ -299,6 +295,20 @@ body {
   font-size: 0.68rem;
   color: var(--text-tertiary);
   margin-top: 0.25rem;
+}
+
+/* Deck picker on the generator ("Editing Room") — a plain clickable card,
+   no Leitner drawers since editing doesn't care about review boxes. */
+.deck-card--edit {
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.deck-card--edit:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.deck-edit-cta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--accent-secondary);
 }
 
 .deck-drawers {
@@ -396,7 +406,32 @@ body {
    breaks backface-visibility in Chromium (the front face bleeds through
    mirrored instead of being culled).
    Portrait, like a held index card — narrower than the wrap, centred. */
-.review-stage { perspective: 1200px; margin-bottom: 1rem; }
+.review-stage { margin-bottom: 1rem; }
+.card-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  perspective: 1200px;
+}
+.card-nav-arrow {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.card-nav-arrow svg { width: 18px; height: 18px; }
+.card-nav-arrow:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.card-nav-arrow:disabled { opacity: 0.35; cursor: default; }
 .flash-card {
   position: relative;
   width: min(300px, 100%);
@@ -565,32 +600,30 @@ body {
 .tool-btn .tool-icon { display: inline-block; width: 15px; height: 15px; }
 .tool-btn .tool-icon svg { width: 100%; height: 100%; }
 
-/* Grade buttons — compact pills (not full-width blocks), colour-coded so
-   they're still readable at a glance during a fast review session. */
+/* Grade "reactions" — round colour-coded bubbles in a row, Facebook-
+   reaction-picker style, instead of labelled pill buttons. Each pops up
+   slightly larger on hover, like a reaction bar. */
 .review-grades {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
 }
 .grade-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.78rem;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 3px solid var(--surface-primary);
+  border-radius: 50%;
   color: #fff;
-  border: none;
-  border-radius: 999px;
-  padding: 0.55rem 1.1rem;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition: var(--transition-base);
 }
-.grade-icon { width: 16px; height: 16px; }
+.grade-icon { width: 24px; height: 24px; }
 .grade-icon svg { width: 100%; height: 100%; }
-.grade-btn:hover:not(:disabled) { transform: translateY(-2px); }
+.grade-btn:hover:not(:disabled) { transform: translateY(-4px) scale(1.08); }
 .grade-btn:disabled { opacity: 0.6; cursor: default; }
 .grade-again { background: var(--accent-danger); }
 .grade-hard { background: var(--accent-warning); }

@@ -86,50 +86,49 @@
         </div>
 
         <div class="review-stage">
-          <div class="flash-card pp-receipt" id="flash-card">
-            <span class="pp-sticky pp-sticky--tape flash-note" id="flash-note"></span>
-            <div class="flash-card-inner">
-              <div class="flash-face flash-front pp-receipt__paper">
-                <div class="flash-blob flash-blob--front" aria-hidden="true"></div>
-                <div class="flash-icon-wrap" id="flash-icon-wrap-front">
-                  <span class="flash-icon-tile" aria-hidden="true"></span>
-                  <span class="flash-icon" id="flash-icon-front"></span>
+          <div class="card-nav-row">
+            <button class="card-nav-arrow" id="review-prev" type="button" aria-label="Previous card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="flash-card pp-receipt" id="flash-card">
+              <span class="pp-sticky pp-sticky--tape flash-note" id="flash-note"></span>
+              <div class="flash-card-inner">
+                <div class="flash-face flash-front pp-receipt__paper">
+                  <div class="flash-blob flash-blob--front" aria-hidden="true"></div>
+                  <div class="flash-icon-wrap" id="flash-icon-wrap-front">
+                    <span class="flash-icon-tile" aria-hidden="true"></span>
+                    <span class="flash-icon" id="flash-icon-front"></span>
+                  </div>
+                  <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-front" hidden>
+                    <img class="flash-image" id="flash-image-front" alt="" />
+                  </div>
+                  <p class="flash-text" id="flash-front-text"></p>
+                  <span class="flash-flip-hint" id="flash-flip-hint" aria-hidden="true"></span>
                 </div>
-                <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-front" hidden>
-                  <img class="flash-image" id="flash-image-front" alt="" />
+                <div class="flash-face flash-back pp-receipt__paper">
+                  <div class="flash-blob flash-blob--back" aria-hidden="true"></div>
+                  <div class="flash-icon-wrap" id="flash-icon-wrap-back">
+                    <span class="flash-icon-tile" aria-hidden="true"></span>
+                    <span class="flash-icon" id="flash-icon-back"></span>
+                  </div>
+                  <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-back" hidden>
+                    <img class="flash-image" id="flash-image-back" alt="" />
+                  </div>
+                  <p class="flash-text" id="flash-back-text"></p>
                 </div>
-                <p class="flash-text" id="flash-front-text"></p>
-                <span class="flash-flip-hint" id="flash-flip-hint" aria-hidden="true"></span>
-              </div>
-              <div class="flash-face flash-back pp-receipt__paper">
-                <div class="flash-blob flash-blob--back" aria-hidden="true"></div>
-                <div class="flash-icon-wrap" id="flash-icon-wrap-back">
-                  <span class="flash-icon-tile" aria-hidden="true"></span>
-                  <span class="flash-icon" id="flash-icon-back"></span>
-                </div>
-                <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-back" hidden>
-                  <img class="flash-image" id="flash-image-back" alt="" />
-                </div>
-                <p class="flash-text" id="flash-back-text"></p>
               </div>
             </div>
-          </div>
-
-          <div class="card-toolbar" id="card-toolbar">
-            <button class="tool-btn" id="tool-edit" type="button" title="Edit text"><span class="tool-icon" id="tool-icon-edit"></span>Edit</button>
-            <button class="tool-btn" id="tool-image" type="button" title="Add image"><span class="tool-icon" id="tool-icon-image"></span>Image</button>
-            <button class="tool-btn" id="tool-generate" type="button" title="Generate an image with AI"><span class="tool-icon" id="tool-icon-generate"></span>Generate</button>
-            <button class="tool-btn" id="tool-copy-prompt" type="button" title="Copy the image prompt to use in an external AI image tool"><span class="tool-icon" id="tool-icon-copy-prompt"></span><span id="tool-copy-prompt-label">Copy Prompt</span></button>
-            <button class="tool-btn" id="tool-regen" type="button" title="Regenerate this card"><span class="tool-icon" id="tool-icon-regen"></span>Redo</button>
-            <input type="file" id="tool-image-input" accept="image/*" hidden />
+            <button class="card-nav-arrow" id="review-next" type="button" aria-label="Next card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
 
         <div class="review-grades" id="review-grades" hidden>
-          <button class="grade-btn grade-again" data-grade="again"><span class="grade-icon" id="grade-icon-again"></span>Again</button>
-          <button class="grade-btn grade-hard" data-grade="hard"><span class="grade-icon" id="grade-icon-hard"></span>Hard</button>
-          <button class="grade-btn grade-good" data-grade="good"><span class="grade-icon" id="grade-icon-good"></span>Good</button>
-          <button class="grade-btn grade-easy" data-grade="easy"><span class="grade-icon" id="grade-icon-easy"></span>Easy</button>
+          <button class="grade-btn grade-again" data-grade="again" title="Again"><span class="grade-icon" id="grade-icon-again"></span></button>
+          <button class="grade-btn grade-hard" data-grade="hard" title="Hard"><span class="grade-icon" id="grade-icon-hard"></span></button>
+          <button class="grade-btn grade-good" data-grade="good" title="Good"><span class="grade-icon" id="grade-icon-good"></span></button>
+          <button class="grade-btn grade-easy" data-grade="easy" title="Easy"><span class="grade-icon" id="grade-icon-easy"></span></button>
         </div>
 
         <div class="review-done" id="review-done" hidden>
