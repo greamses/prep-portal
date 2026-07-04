@@ -150,7 +150,7 @@ function writeModule(file, exportName, value) {
     const [cls, subject] = key.split("__");
     const arr = sortBucket(classBuckets[key]);
     writeModule(path.join(OUT_DIR, "c", `${cls}__${subject}.js`), "QUESTIONS", arr);
-    (classMap[cls] ||= []).push({ key: subject, label: subjLabel(subject), count: arr.length, topics: topicSummary(arr) });
+    (classMap[cls] ||= []).push({ key: subject, label: arr[0]?.subjectLabel || subjLabel(subject), count: arr.length, topics: topicSummary(arr) });
   }
   const classes = CLASS_ORDER.filter((c) => classMap[c]).map((c) => ({
     key: c, label: CLASS_LABELS[c],
@@ -163,7 +163,7 @@ function writeModule(file, exportName, value) {
     const [scheme, subject] = key.split("__");
     const arr = sortBucket(examBuckets[key]);
     writeModule(path.join(OUT_DIR, "e", `${scheme}__${subject}.js`), "QUESTIONS", arr);
-    (examMap[scheme] ||= []).push({ key: subject, label: subjLabel(subject), count: arr.length, topics: topicSummary(arr) });
+    (examMap[scheme] ||= []).push({ key: subject, label: arr[0]?.subjectLabel || subjLabel(subject), count: arr.length, topics: topicSummary(arr) });
   }
   const examsByRegion = { national: [], international: [] };
   for (const region of Object.keys(EXAMS)) {
