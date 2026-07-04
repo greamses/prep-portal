@@ -94,15 +94,17 @@ export async function renderEditDecks() {
     pouch.dataset.deck = d.id;
     pouch.innerHTML = `
       <span class="pp-sticky ${pouchTagColorClass(i)} pp-sticky--tape deck-pouch-tag" style="--pp-note-tilt:${tilt}deg">${safe(tag)}</span>
-      <div class="deck-pouch-neck"></div>
       ${pouchCardsHtml()}
-      <div class="deck-pouch-body">
-        <div class="deck-card-hdr">
-          <span class="deck-subject">${safe(d.subject)}</span>
-          <span class="deck-topic">${safe(d.topic)}</span>
-          <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+      <div class="deck-pouch-bag">
+        <div class="deck-pouch-neck"></div>
+        <div class="deck-pouch-body">
+          <div class="deck-card-hdr">
+            <span class="deck-subject">${safe(d.subject)}</span>
+            <span class="deck-topic">${safe(d.topic)}</span>
+            <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+          </div>
+          <div class="deck-edit-cta">Edit cards →</div>
         </div>
-        <div class="deck-edit-cta">Edit cards →</div>
       </div>`;
     editDeckGrid.appendChild(pouch);
   });

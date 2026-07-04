@@ -84,15 +84,17 @@ export async function renderDecks() {
     pouch.className = `deck-pouch ${pouchColorClass(i)}`;
     pouch.innerHTML = `
       <span class="pp-sticky ${pouchTagColorClass(i)} pp-sticky--tape deck-pouch-tag" style="--pp-note-tilt:${tilt}deg">${safe(tag)}</span>
-      <div class="deck-pouch-neck"></div>
       ${pouchCardsHtml()}
-      <div class="deck-pouch-body">
-        <div class="deck-card-hdr">
-          <span class="deck-subject">${safe(deck.subject)}</span>
-          <span class="deck-topic">${safe(deck.topic)}</span>
-          <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+      <div class="deck-pouch-bag">
+        <div class="deck-pouch-neck"></div>
+        <div class="deck-pouch-body">
+          <div class="deck-card-hdr">
+            <span class="deck-subject">${safe(deck.subject)}</span>
+            <span class="deck-topic">${safe(deck.topic)}</span>
+            <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+          </div>
+          <div class="deck-drawers">${drawerRow(deck)}</div>
         </div>
-        <div class="deck-drawers">${drawerRow(deck)}</div>
       </div>`;
     deckGrid.appendChild(pouch);
   });

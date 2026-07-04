@@ -119,9 +119,12 @@
 
 /* ── DARK THEME ─────────────────────────────────────────── */
 [data-theme="dark"] {
-  /* ── Core Palette (warm muted dark, mirrors flipbook night paper) ── */
-  --bg: #1a1814;
-  --app-bg: #14130f;
+  /* ── Core Palette (indigo-plum dark, tinted from the pouch/badge
+     palette below rather than a flat neutral black — --app-bg/--bg/
+     --surface-* are a blend of --badge-subject-2 (plum) and
+     --badge-subject-4 (steel blue), darkened to app-bg depth) ── */
+  --bg: #1b1729;
+  --app-bg: #15121f;
   --ink: #efece3;
   --accent-primary: #f0cf6e;
   --accent-secondary: #7cc0ec;
@@ -130,8 +133,8 @@
   --accent-warning: #f0b074;
   --text-secondary: #b0aba0;
   --text-tertiary: #9a9389;
-  --surface-secondary: #26231d;
-  --surface-primary: #1f1c17;
+  --surface-secondary: #2b2440;
+  --surface-primary: #221d33;
   --text-on-accent: #14130f;
 
   /* ── Border ─────────────────────────────── */
@@ -175,8 +178,8 @@
 /* ── SYSTEM DARK PREFERENCE (when no data-theme set) ────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1a1814;
-    --app-bg: #14130f;
+    --bg: #1b1729;
+    --app-bg: #15121f;
     --ink: #efece3;
     --accent-primary: #f0cf6e;
     --accent-secondary: #7cc0ec;
@@ -185,8 +188,8 @@
     --accent-warning: #f0b074;
     --text-secondary: #b0aba0;
     --text-tertiary: #9a9389;
-    --surface-secondary: #26231d;
-    --surface-primary: #1f1c17;
+    --surface-secondary: #2b2440;
+    --surface-primary: #221d33;
     --text-on-accent: #14130f;
     --border-color: #efece3;
     --border: var(--border-width) var(--border-style) var(--border-color);
