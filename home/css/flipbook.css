@@ -1397,3 +1397,16 @@ body.fb-modal-open { overflow: hidden; }
   .fb-modal__backdrop, .fb-modal__dialog { animation: none; }
   .fb-teaser__cover { transition: none; }
 }
+
+/* feTurbulence/feDisplacementMap SVG filters (the torn-paper edge) are
+   notoriously unstable on mobile GPUs — a whole grid of these compositing
+   at once is a known trigger for tile corruption that shows up as ghosted/
+   duplicated content and scan-line banding elsewhere on the page. The torn
+   edge is cosmetic only, so drop it on small screens. */
+@media (max-width: 720px) {
+  .yb-card--beneath .yb-card__body::before,
+  .yb-card--beneath:nth-child(3n + 2) .yb-card__body::before,
+  .yb-card--beneath:nth-child(3n) .yb-card__body::before {
+    filter: none;
+  }
+}
