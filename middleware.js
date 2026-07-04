@@ -34,7 +34,7 @@ const CERT_URL =
   "https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys";
 
 const PUBLIC_EXACT = new Set([
-  "/", "/index.html", "/privacy.html", "/terms.html", "/subscribe.html",
+  "/", "/index.html", "/privacy.html", "/terms.html", "/subscribe.html", "/about.html",
 ]);
 const PUBLIC_PREFIXES = [
   "/blogs", "/editorials", "/utils/auth",
