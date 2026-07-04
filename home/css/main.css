@@ -2231,6 +2231,15 @@
   overflow: hidden;
   padding: clamp(4rem, 9vw, 6.5rem) var(--padding-md);
   background: var(--bg);
+  /* Forces this section onto its own clean GPU-composited layer. Reported
+     as a mobile-only (absent on Edge) ghosted/duplicated repaint confined
+     to this section on scroll — a known compositor bug class that
+     explicit layer promotion + backface-visibility resolves. No fixed-
+     position descendants live inside this section, so this is safe. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Soft paint splash behind the cards */
@@ -2241,6 +2250,8 @@
   pointer-events: none;
   overflow: hidden;
   opacity: 0.22;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 .faq-paint svg {
   width: 100%;
@@ -2262,6 +2273,10 @@
   max-width: 600px;
   margin: 0 auto clamp(2.25rem, 5vw, 3.25rem);
   text-align: center;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .faq-sub {
   margin: 0.6rem 0 0;
@@ -2293,6 +2308,10 @@
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .faq-item--open {
   background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-secondary));
