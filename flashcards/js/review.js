@@ -197,7 +197,7 @@ async function handleImagePick(file) {
 
   toolImage.disabled = true;
   try {
-    const url = await uploadCardImage(session.deckId, card.id, side, file);
+    const url = await uploadCardImage(file);
     await updateCard(session.deckId, card.id, { [field]: url });
     card[field] = url;
     paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);
@@ -218,7 +218,7 @@ async function handleGenerate() {
   toolGenerate.disabled = true;
   try {
     const prompt = `A simple, clean educational illustration for a flashcard. Concept: ${text}. Flat, minimal, no text or labels in the image.`;
-    const url = await generateCardImage(session.deckId, card.id, side, prompt);
+    const url = await generateCardImage(prompt);
     await updateCard(session.deckId, card.id, { [field]: url });
     card[field] = url;
     paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);

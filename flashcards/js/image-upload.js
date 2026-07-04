@@ -1,15 +1,20 @@
 /* ═══════════════════════════════════════════════════════
    RECALL PRESS — CARD IMAGE UPLOAD + AI GENERATION
-   Re-encodes any picked or AI-generated image to PNG (sharper
-   for the mostly text/diagram content flashcards carry) and
-   uploads it to Firebase Storage under the signed-in user's
-   own folder.
+   Re-encodes any picked or AI-generated image to a small JPEG
+   data: URI and stores it straight on the card's frontImage/
+   backImage field in Firestore (users/{uid}/flashcardDecks/{id}).
+   No blob storage service involved on purpose — Cloud Storage
+   for Firebase now requires the Blaze billing plan, and Firestore
+   itself stays free on Spark, so images are kept small enough
+   (~15KB) to live inline instead.
 ═══════════════════════════════════════════════════════ */
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '/firebase-init.js';
 import { imageGenerate } from '/utils/ai-client.js';
 
-const MAX_DIM = 800;
+// Small enough that even a deck with images on every card face stays
+// comfortably under Firestore's 1 MiB per-document limit.
+const MAX_DIM = 240;
+const JPEG_QUALITY = 0.6;
+const MAX_DATA_URI_LENGTH = 40000; // ~40KB, generous margin over the ~15KB typical output
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -20,7 +25,7 @@ function loadImage(src) {
   });
 }
 
-function toPngBlob(img) {
+function toJpegDataUri(img) {
   let { width, height } = img;
   if (width > MAX_DIM || height > MAX_DIM) {
     const scale = MAX_DIM / Math.max(width, height);
@@ -31,54 +36,38 @@ function toPngBlob(img) {
   canvas.width = width;
   canvas.height = height;
   canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Could not convert image to PNG'))),
-      'image/png',
-    );
-  });
-}
-
-async function storeCardImage(deckId, cardId, side, blob) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Please sign in to add images.');
-  const path = `users/${user.uid}/flashcardImages/${deckId}/${cardId}-${side}.png`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, blob, { contentType: 'image/png' });
-  return getDownloadURL(storageRef);
+  const dataUri = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+  if (dataUri.length > MAX_DATA_URI_LENGTH) {
+    throw new Error('That image is too detailed to store — try a simpler picture.');
+  }
+  return dataUri;
 }
 
 /**
- * Upload a card-face image, converted to PNG. Returns the download URL.
- * @param {string} deckId
- * @param {string} cardId
- * @param {'front'|'back'} side
+ * Re-encode a picked image file to a small JPEG data: URI.
  * @param {File} file
+ * @returns {Promise<string>}
  */
-export async function uploadCardImage(deckId, cardId, side, file) {
+export async function uploadCardImage(file) {
   if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
   const url = URL.createObjectURL(file);
   try {
     const img = await loadImage(url);
-    const blob = await toPngBlob(img);
-    return storeCardImage(deckId, cardId, side, blob);
+    return toJpegDataUri(img);
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
 /**
- * Generate a simple illustration for a card face from a text prompt (via the
- * Cloudflare Workers AI proxy at /api/ai/image), then store it the same way
- * as an upload. Returns the download URL.
- * @param {string} deckId
- * @param {string} cardId
- * @param {'front'|'back'} side
+ * Generate a simple illustration from a text prompt (via the Cloudflare
+ * Workers AI proxy at /api/ai/image), re-encoded to the same small JPEG
+ * data: URI shape as an upload.
  * @param {string} prompt
+ * @returns {Promise<string>}
  */
-export async function generateCardImage(deckId, cardId, side, prompt) {
+export async function generateCardImage(prompt) {
   const dataUri = await imageGenerate({ prompt });
   const img = await loadImage(dataUri);
-  const blob = await toPngBlob(img);
-  return storeCardImage(deckId, cardId, side, blob);
+  return toJpegDataUri(img);
 }
