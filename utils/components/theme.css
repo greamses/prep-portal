@@ -379,8 +379,12 @@ html {
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
   /* Clip any decorative bleed/full-bleed elements at the document root so
-     mobile never gets a sliver of horizontal scroll (the "glitch lines"). */
-  overflow-x: clip;
+     mobile never gets a sliver of horizontal scroll (the "glitch lines").
+     Plain `hidden` on purpose, not `clip` — `overflow: clip` is newer and
+     has known mobile compositor bugs (ghosted/duplicated repaint tiles on
+     scroll) on some Android browsers; `hidden` clips the same bleed with
+     far more mature mobile support. */
+  overflow-x: hidden;
   max-width: 100%;
 }
 
@@ -396,7 +400,7 @@ body {
     background-color var(--duration-normal) var(--ease-default),
     color var(--duration-normal) var(--ease-default);
   min-height: 100vh;
-  overflow-x: clip;
+  overflow-x: hidden;
   width: 100%;
   max-width: 100%;
   position: relative;
