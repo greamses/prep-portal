@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
     <meta
       name="description"
-      content="Prep Portal is built by a team of tech educators in Nigeria, a subsidiary of Superbrains Nigeria, on a mission to make quality WAEC, NECO, JAMB and Cambridge exam prep accessible to every student."
+      content="Prep Portal is built by a team of tech educators in Nigeria, a subsidiary of Superbrains Nigeria. 20+ subjects of original CBT practice, AI-marked theory & writing feedback, virtual labs, games, and one-on-one tutoring for WAEC, NECO, JAMB, Cambridge and SAT."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://www.prepportal.com.ng/about.html" />
@@ -16,7 +16,7 @@
     <meta property="og:title" content="About Prep Portal | Built by Superbrains Nigeria" />
     <meta
       property="og:description"
-      content="Prep Portal is built by a team of tech educators in Nigeria, a subsidiary of Superbrains Nigeria, on a mission to make quality exam prep accessible to every student."
+      content="20+ subjects of original CBT practice, AI-marked theory & writing feedback, virtual labs, games, and one-on-one tutoring — built by Superbrains Nigeria."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Prep Portal" />
@@ -26,7 +26,7 @@
     <meta name="twitter:title" content="About Prep Portal | Built by Superbrains Nigeria" />
     <meta
       name="twitter:description"
-      content="Prep Portal is built by a team of tech educators in Nigeria, a subsidiary of Superbrains Nigeria."
+      content="20+ subjects of original CBT practice, AI-marked feedback, virtual labs, games, and tutoring — built by Superbrains Nigeria."
     />
     <meta name="twitter:image" content="https://www.prepportal.com.ng/og-image.png" />
 
@@ -40,7 +40,7 @@
           "name": "Prep Portal",
           "url": "https://www.prepportal.com.ng/",
           "logo": "https://www.prepportal.com.ng/logo/logo-light.svg",
-          "description": "Exam preparation hub with past papers, worked solutions, theory drills and revision kits for WAEC, NECO, JAMB, Cambridge and SAT.",
+          "description": "Exam preparation hub with past papers, worked solutions, theory drills, tutoring and revision kits for WAEC, NECO, JAMB, Cambridge and SAT.",
           "foundingLocation": "Nigeria",
           "parentOrganization": {
             "@type": "Organization",
@@ -92,7 +92,7 @@
       .about-wrap {
         position: relative;
         z-index: 1;
-        max-width: 840px;
+        max-width: 880px;
         margin: 0 auto;
         padding: clamp(2rem, 6vw, 4.5rem) 1.25rem 5rem;
       }
@@ -105,7 +105,7 @@
       .about-wrap h1 {
         font-family: var(--font-display);
         font-weight: var(--weight-black);
-        font-size: clamp(2rem, 6vw, 3rem);
+        font-size: clamp(1.9rem, 5.5vw, 2.75rem);
         line-height: var(--leading-tight);
         margin: 0 0 1rem;
         color: var(--ink);
@@ -117,32 +117,75 @@
         line-height: var(--leading-relaxed, 1.7);
         color: var(--text-secondary);
         margin: 0 0 2.5rem;
-        max-width: 62ch;
+        max-width: 65ch;
       }
 
       .about-wrap section {
-        margin: 3rem 0;
+        margin: 3.25rem 0;
       }
 
       .about-wrap h2 {
         font-family: var(--font-display);
         font-weight: var(--weight-bold);
-        font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+        font-size: clamp(1.15rem, 3vw, 1.45rem);
         margin: 0 0 1rem;
         color: var(--ink);
+      }
+
+      .about-wrap h3 {
+        font-family: var(--font-display);
+        font-weight: var(--weight-bold);
+        font-size: 1rem;
+        margin: 1.75rem 0 0.5rem;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .about-wrap h3 svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+      .about-wrap h3:first-of-type {
+        margin-top: 0.5rem;
       }
 
       .about-wrap p {
         font-family: var(--font-mono);
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         line-height: var(--leading-relaxed, 1.7);
         color: var(--ink);
         margin: 0 0 1rem;
       }
+      .about-wrap p.about-muted {
+        color: var(--text-secondary);
+      }
 
-      .about-wrap a {
+      .about-wrap ul {
+        font-family: var(--font-mono);
+        font-size: 0.92rem;
+        line-height: var(--leading-relaxed, 1.7);
+        color: var(--ink);
+        margin: 0 0 1rem;
+        padding-left: 1.25rem;
+      }
+      .about-wrap li {
+        margin-bottom: 0.3rem;
+      }
+
+      /* Anchors get the blue underline everywhere EXCEPT inside buttons —
+         buttons keep their own explicit colour (see .about-btn). */
+      .about-wrap a:not(.about-btn) {
         color: var(--accent-secondary);
         text-decoration: underline;
+      }
+
+      .about-subjects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0 1.25rem;
       }
 
       .about-values {
@@ -173,11 +216,49 @@
         margin: 0;
       }
 
-      .about-org {
+      /* Plan / package comparison cards */
+      .about-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: var(--gap-lg, 1.25rem);
+        margin-top: 1.25rem;
+      }
+      .about-card {
+        padding: 1.3rem 1.4rem;
+      }
+      .about-card-head {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-        margin: 1.5rem 0;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
+      }
+      .about-card h4 {
+        font-family: var(--font-display);
+        font-weight: var(--weight-bold);
+        font-size: 1rem;
+        margin: 0;
+        color: var(--ink);
+      }
+      .about-card .about-price {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--accent-secondary);
+        white-space: nowrap;
+      }
+      .about-card p {
+        font-size: 0.85rem;
+        margin: 0 0 0.6rem;
+        color: var(--text-secondary);
+      }
+      .about-card ul {
+        font-size: 0.82rem;
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+      .about-card li {
+        margin-bottom: 0.25rem;
       }
 
       .about-cta {
@@ -191,7 +272,8 @@
       }
 
       /* Soft, rounded pill buttons — matches the homepage .hero-btn look
-         (not the older square .pp-btn from components.css). */
+         (not the older square .pp-btn from components.css). Text is always
+         literal black on both variants, in both themes. */
       .about-btn {
         display: inline-flex;
         align-items: center;
@@ -204,6 +286,7 @@
         font-family: var(--font-display);
         font-weight: var(--weight-bold);
         font-size: 0.95rem;
+        color: #000;
         transition:
           transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
           box-shadow 0.18s ease;
@@ -211,6 +294,7 @@
       .about-btn:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
+        color: #000;
       }
       .about-btn:active {
         transform: translateY(0);
@@ -219,13 +303,11 @@
       .about-btn-primary {
         background: var(--accent-primary);
         border: 0;
-        color: var(--text-on-accent, var(--ink));
         box-shadow: var(--shadow-md);
       }
       .about-btn-secondary {
         background: var(--surface-primary);
         border: var(--border-subtle);
-        color: var(--ink);
         box-shadow: var(--shadow-sm);
       }
 
@@ -252,17 +334,20 @@
     <nav class="site-nav" data-nav="main"></nav>
 
     <main class="about-wrap">
-      <span class="about-eyebrow pp-sticky pp-sticky--c3 pp-sticky--tape" style="--pp-note-tilt:-2deg">Our story</span>
+      <span class="about-eyebrow pp-sticky pp-sticky--c3 pp-sticky--tape" style="--pp-note-tilt:-2deg">About us</span>
 
-      <h1>Built by educators who wanted better tools for their own students.</h1>
+      <h1>Everything a Nigerian student needs to prepare for an exam, in one place.</h1>
       <p class="about-lede">
         Prep Portal is developed by a team of tech educators in Nigeria — a
-        subsidiary of <strong>Superbrains Nigeria</strong> — building original,
-        exam-style practice for WAEC, NECO, JAMB and Cambridge learners.
+        subsidiary of <strong>Superbrains Nigeria</strong>. We combine an
+        original CBT question bank across 20+ subjects, AI-marked theory and
+        writing feedback, interactive labs and games, and one-on-one tutoring
+        into a single platform for WAEC, NECO, JAMB, Cambridge and SAT
+        preparation.
       </p>
 
       <section>
-        <h2>Why we built Prep Portal</h2>
+        <h2>Our story</h2>
         <p>
           Every one of us has stood in front of a classroom or tutored a
           student who was ready to give up — not because they weren't
@@ -270,8 +355,202 @@
           scattered across old photocopies, or locked behind tools that
           weren't built for how Nigerian students actually study. We built
           Prep Portal to fix that: one place with thousands of original,
-          exam-style questions, AI-marked theory and writing practice, and
-          interactive tools that make revision feel less like a chore.
+          exam-style questions, AI-marked practice, and interactive tools
+          that make revision feel less like a chore — backed, when a
+          student needs it, by a real human tutor.
+        </p>
+      </section>
+
+      <section>
+        <h2>What's on Prep Portal</h2>
+        <p class="about-muted">
+          The platform is built around five pillars: practice exams, AI-marked
+          feedback, interactive learning, original articles, and human
+          tutoring. Here's what's inside each.
+        </p>
+
+        <h3>
+          <span class="about-h-icon" data-icon="papers"></span>
+          Practice exams
+        </h3>
+        <p>
+          Our CBT engine covers <strong>20+ subjects</strong> — Mathematics,
+          English Language, Biology, Physics, Chemistry, Economics,
+          Government, Commerce, Geography, Christian and Islamic Religious
+          Studies, Literature in English, Financial Accounting, History,
+          Civic Education, Agricultural Science, Quantitative and Verbal
+          Reasoning, General Studies, Further Mathematics, ICT and Business
+          Studies — styled after the exams students actually sit:
+        </p>
+        <div class="about-subjects">
+          <span class="pp-pill pp-pill--static">Common Entrance</span>
+          <span class="pp-pill pp-pill--static">UTME</span>
+          <span class="pp-pill pp-pill--static">WASSCE</span>
+          <span class="pp-pill pp-pill--static">Post-UTME</span>
+          <span class="pp-pill pp-pill--static">SAT</span>
+          <span class="pp-pill pp-pill--static">IGCSE</span>
+          <span class="pp-pill pp-pill--static">A-Level</span>
+        </div>
+        <p>
+          Papers are auto-capped at 60 questions and marked instantly, with
+          a free mixed-difficulty Practice mode for students who just want to
+          drill a subject without picking an exam style. Every question is
+          written in-house in the style of real past papers — never copied
+          verbatim — so the content stays original while still matching what
+          students will see on exam day.
+        </p>
+
+        <h3>
+          <span class="about-h-icon" data-icon="star"></span>
+          AI-marked feedback
+        </h3>
+        <p>
+          Beyond multiple choice, Prep Portal grades the harder stuff:
+        </p>
+        <ul>
+          <li><strong>Theory Practice</strong> — long-form theory and essay questions marked by AI, with a full model answer and explanation, not just a score.</li>
+          <li><strong>Writing Evaluator</strong> — essays and compositions graded for grammar, structure and rubric criteria, with inline red-pen-style annotations.</li>
+          <li><strong>PrepBot</strong> — an AI study assistant students can chat with for explanations, hints and worked examples while they revise.</li>
+          <li><strong>AI Flashcards</strong> — auto-generated, spaced-repetition flashcard decks for quick recall practice.</li>
+        </ul>
+
+        <h3>
+          <span class="about-h-icon" data-icon="activity"></span>
+          Interactive learning
+        </h3>
+        <p>
+          For subjects that click better hands-on, we've built a set of
+          visual, interactive tools: an Algebra Lab for drag-and-drop
+          equation solving, activities for equivalent fractions, polygon
+          angles, surface area and transversals, a Cartesian Art studio for
+          coordinate-plotting, and a Graph Predictor for functions. Our
+          Virtual Lab brings 3D chemistry, physics and biology simulations
+          you can explore in first- or third-person, and a library of 2D and
+          3D games — like a bearings-teaching drone delivery game and a
+          third-person 3D maze — turn practice into play.
+        </p>
+
+        <h3>
+          <span class="about-h-icon" data-icon="book"></span>
+          Original articles
+        </h3>
+        <p>
+          Our blogs publish original science articles — Plant Facts and
+          Animal Facts collections written specifically for each class
+          level from Primary 1 through SS3 — plus quick math tricks, all
+          free to read.
+        </p>
+      </section>
+
+      <section>
+        <h2>Tutoring</h2>
+        <p>
+          When a student needs more than self-paced practice, Prep Portal
+          connects them with a real tutor, billed per hour with no long-term
+          contract. Every package includes WAEC, JAMB and Cambridge-focused
+          teaching and session notes after every class:
+        </p>
+        <div class="about-cards">
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Mathematics</h4>
+                <span class="about-price">&#8358;8,000/hr</span>
+              </div>
+              <p>Maths only — algebra, calculus &amp; statistics.</p>
+            </div>
+          </div>
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Maths + Science</h4>
+                <span class="about-price">&#8358;10,000/hr</span>
+              </div>
+              <p>Mathematics plus one of Physics, Chemistry or Biology.</p>
+            </div>
+          </div>
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Maths + English</h4>
+                <span class="about-price">&#8358;12,000/hr</span>
+              </div>
+              <p>Mathematics and English — essay, comprehension &amp; grammar. Our most popular package.</p>
+            </div>
+          </div>
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>All Subjects</h4>
+                <span class="about-price">&#8358;15,000/hr</span>
+              </div>
+              <p>Full curriculum coverage with a dedicated tutor and weekly progress reports for parents.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Plans &amp; pricing</h2>
+        <p>
+          Practice content is free to try; a subscription unlocks the full
+          question bank and AI tools.
+        </p>
+        <div class="about-cards">
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Pro</h4>
+                <span class="about-price">&#8358;10,000/mo</span>
+              </div>
+              <p>For individual learners.</p>
+              <ul>
+                <li>All math games &amp; activities</li>
+                <li>Visual learning tools</li>
+                <li>Progress tracking</li>
+                <li>5 AI PrepBot queries/day</li>
+              </ul>
+            </div>
+          </div>
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Premium</h4>
+                <span class="about-price">&#8358;30,000/mo</span>
+              </div>
+              <p>For serious students — our most popular plan.</p>
+              <ul>
+                <li>Everything in Pro</li>
+                <li>1,000+ practice questions</li>
+                <li>Unlimited AI PrepBot</li>
+                <li>All past papers (50+)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="about-card pp-receipt">
+            <div class="pp-receipt__paper">
+              <div class="about-card-head">
+                <h4>Enterprise</h4>
+                <span class="about-price">&#8358;150,000/mo</span>
+              </div>
+              <p>For schools &amp; institutions.</p>
+              <ul>
+                <li>Everything in Premium</li>
+                <li>Up to 50 student accounts</li>
+                <li>Teacher dashboard &amp; school analytics</li>
+                <li>Priority support</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Partner program</h2>
+        <p>
+          Anyone — students, parents, teachers or schools — can get a free
+          referral code and earn <strong>10% commission</strong> on every
+          subscription their referrals pay, for the first 6 months.
         </p>
       </section>
 
@@ -344,7 +623,7 @@
       const paint = document.querySelector(".about-paint");
       if (paint) paint.innerHTML = heroPaint();
 
-      document.querySelectorAll(".about-value-icon").forEach((el) => {
+      document.querySelectorAll(".about-value-icon, .about-h-icon").forEach((el) => {
         const icon = I[el.dataset.icon];
         if (icon) el.innerHTML = icon;
       });
