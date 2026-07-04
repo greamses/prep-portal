@@ -9,3 +9,4 @@ Disallow: /api/
 Disallow: /utils/auth/
 
 Sitemap: https://www.prepportal.com.ng/sitemap.xml
+Sitemap: https://www.prepportal.com.ng/sitemap-blogs.xml

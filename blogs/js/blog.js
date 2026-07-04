@@ -1,7 +1,7 @@
 // blog.js - Central dynamic blog viewer engine
 import { auth, db } from "/firebase-init.js";
 import { getList, getProfile } from "/utils/data-service.js";
-import { getSubjectData } from "/blogs/js/data.js";
+import { getSubjectData, resolveSubjectKey } from "/blogs/js/data.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -92,6 +92,7 @@ function ensureLessonAssets() {
 // ─── RUNTIME CONFIGURATION (LOADED DYNAMICALLY) ─────────────
 let COLLECTION_NAME;
 let SUBJECT_NAME;
+let SUBJECT_KEY;
 let SUBJECT_LABELS;
 let SUBJECT_STYLES;
 let CLASS_LABELS;
@@ -150,6 +151,7 @@ async function initBlog() {
 
   // All subject data now lives in one place: /blogs/js/data.js
   const subjectData = getSubjectData(subjectKey);
+  SUBJECT_KEY = resolveSubjectKey(subjectKey);
 
   // Bind parameters globally
   COLLECTION_NAME =
@@ -456,9 +458,16 @@ function renderCard(post, idx) {
 
   const colorIdx = idx % 6;
   const clsTheme = CLASS_THEME[clsCls] || "theme-yellow";
+  // A real, crawlable permalink once the post has been exported to a static
+  // page (see server/scripts/export-blog-posts.js). The click handler below
+  // still preventDefault()s so signed-in users get the instant SPA reader;
+  // crawlers and no-JS visitors follow the href to the real page.
+  const permalink = post.slug ? `/blogs/${SUBJECT_KEY}/${post.slug}/` : null;
+  const tag = permalink ? "a" : "div";
+  const hrefAttr = permalink ? ` href="${escHtml(permalink)}"` : "";
 
   return `
-    <div class="science-card pp-receipt science-card--p${colorIdx}" data-post-id="${post.id}">
+    <${tag} class="science-card pp-receipt science-card--p${colorIdx}" data-post-id="${post.id}"${hrefAttr}>
       <div class="card-inner pp-receipt__paper">
         ${cardImage ? `<img class="card-featured-img" src="${escHtml(cardImage)}" alt="${escHtml(post.title)}" loading="lazy">` : ""}
         <div class="card-badges">
@@ -477,7 +486,7 @@ function renderCard(post, idx) {
         <p class="card-excerpt">${escHtml(excerpt)}...</p>
         <div class="read-more">Open topic ${I.arrow}</div>
       </div>
-    </div>`;
+    </${tag}>`;
 }
 
 function filterPosts() {
@@ -508,7 +517,8 @@ function renderPosts() {
   }
   scienceGrid.innerHTML = f.map(renderCard).join("");
   scienceGrid.querySelectorAll(".science-card").forEach((card) => {
-    card.addEventListener("click", () => {
+    card.addEventListener("click", (e) => {
+      e.preventDefault();
       const post = allPosts.find((p) => p.id === card.dataset.postId);
       if (post) showSinglePost(post);
     });
