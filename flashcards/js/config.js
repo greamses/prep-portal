@@ -47,6 +47,25 @@ export function dueAtFor(box) {
   return Date.now() + days * 24 * 60 * 60 * 1000;
 }
 
+// ── Deck "pouch" visuals — shared between review.js (library page) and
+// card-editor.js (edit page) so the same deck renders with the same
+// colour on both. Six-colour rotation matches the sticky-note/subject-
+// badge pastel set already used elsewhere (--badge-subject-N-bg).
+const POUCH_COLOR_COUNT = 6;
+export const pouchColorClass = (i) => `deck-pouch--c${i % POUCH_COLOR_COUNT}`;
+export const pouchTagColorClass = (i) => `pp-sticky--c${i % POUCH_COLOR_COUNT}`;
+
+// 2-3 card "slivers" peeking out of the pouch opening, in the exact same
+// paper/receipt look as the real study card (.pp-receipt), just smaller —
+// so pulling a card out of its pouch feels like the same object, not a
+// different design.
+export const pouchCardsHtml = () => `
+    <div class="deck-pouch-cards" aria-hidden="true">
+      <div class="deck-pouch-card deck-pouch-card--1 pp-receipt"><div class="pp-receipt__paper"></div></div>
+      <div class="deck-pouch-card deck-pouch-card--2 pp-receipt"><div class="pp-receipt__paper"></div></div>
+      <div class="deck-pouch-card deck-pouch-card--3 pp-receipt"><div class="pp-receipt__paper"></div></div>
+    </div>`;
+
 // ── Shared mutable session state ──
 export const state = {
   cls: '',        // e.g. "jss", "ss-science"

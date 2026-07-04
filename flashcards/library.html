@@ -47,6 +47,10 @@
         <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>Spaced</strong> Repetition</span>
         <span class="hero-stat" style="--tile: var(--accent-success)"><strong>5</strong> Review Boxes</span>
       </div>
+      <div class="cards-tabs" role="tablist">
+        <a class="pp-pill cards-tab is-active" href="/flashcards/library.html" role="tab">My Decks</a>
+        <a class="pp-pill cards-tab" id="library-new-deck" href="/flashcards/index.html" role="tab" hidden>Print &amp; Edit</a>
+      </div>
     </header>
 
     <!-- ═══ YOUR DECKS ═══ -->
@@ -56,15 +60,6 @@
         <h2>Decks &amp; Review Boxes</h2>
         <p class="press-section-sub">Cards move through five drawers as you remember them better.</p>
       </div>
-
-      <a class="press-btn library-new-deck" id="library-new-deck" href="/flashcards/index.html" hidden>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="4" y="9" width="16" height="8" rx="1"/>
-          <path d="M7 9V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4"/>
-          <path d="M8 17v3h8v-3"/>
-        </svg>
-        Print a New Deck
-      </a>
 
       <div class="deck-grid" id="deck-grid">
         <p class="deck-empty" id="deck-empty">No decks yet — print your first one above.</p>

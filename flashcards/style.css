@@ -60,14 +60,23 @@ body {
 .hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
 .hero-stat:nth-child(even) { transform: rotate(1.5deg); }
 
-.builder-library-link {
-  display: inline-block;
-  margin-top: 1.1rem;
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--accent-secondary);
+/* ── PAGE TOGGLE — "My Decks" / "Print & Edit" ────────────
+   Same pattern as the games hub's .games-tabs/.games-tab: .pp-pill chips
+   layered with a tinted active border, dimmed when inactive. These are
+   real links between library.html and index.html (two separate pages),
+   not a client-side toggle. */
+.cards-tabs {
+  display: flex;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
 }
+.cards-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.cards-tab:not(.is-active) { opacity: 0.55; }
+.cards-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
 
 /* ── SECTION HEADERS (shared by press + decks) ───────── */
 .press-section-hdr,
@@ -197,17 +206,11 @@ body {
 .press-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 .press-btn { text-decoration: none; }
 
-/* .press-btn already declares its own `display`, which otherwise wins over
+/* .pp-pill already declares its own `display`, which otherwise wins over
    the browser's default [hidden] rule regardless of specificity (author
    styles always beat the user-agent stylesheet) — force it hidden here. */
-.library-new-deck[hidden] {
+#library-new-deck[hidden] {
   display: none !important;
-}
-.library-new-deck:not([hidden]) {
-  display: flex;
-  width: fit-content;
-  margin: 0 auto 1.75rem;
-  max-width: none;
 }
 
 .press-status {
@@ -267,13 +270,85 @@ body {
   padding: 2rem 0;
 }
 
-.deck-card {
-  background: var(--surface-primary);
+/* ── DECK POUCH ───────────────────────────────────────────
+   A soft drawstring pouch holding the deck's cards. Colour rotates per
+   deck (deck-pouch--c0…c5, same pastel set as sticky notes/subject
+   badges), with 2-3 card "slivers" peeking out the stitched opening in
+   the exact paper look of the real study card (.pp-receipt) and a
+   sticky-note luggage tag naming the deck. */
+.deck-pouch {
+  position: relative;
+  margin-top: 1.35rem;
+  padding: 2.1rem 1.1rem 1.1rem;
+  border-radius: 18px 18px 34px 34px;
+  background: var(--pouch-bg, var(--badge-subject-1-bg));
   border: var(--border-subtle);
-  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
-  padding: 1rem 1.1rem;
 }
+.deck-pouch--c0 { --pouch-bg: var(--badge-subject-1-bg); }
+.deck-pouch--c1 { --pouch-bg: var(--badge-subject-2-bg); }
+.deck-pouch--c2 { --pouch-bg: var(--badge-subject-3-bg); }
+.deck-pouch--c3 { --pouch-bg: var(--badge-subject-4-bg); }
+.deck-pouch--c4 { --pouch-bg: var(--badge-subject-5-bg); }
+.deck-pouch--c5 { --pouch-bg: var(--badge-subject-6-bg); }
+
+.deck-pouch-neck {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 9px;
+  border-radius: 0 0 7px 7px;
+  background-color: color-mix(in srgb, var(--ink) 10%, transparent);
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ink) 32%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+.deck-pouch-cards {
+  position: absolute;
+  top: -16px;
+  left: 0;
+  right: 0;
+  height: 36px;
+  pointer-events: none;
+}
+.deck-pouch-card {
+  position: absolute;
+  left: 50%;
+  width: 44px;
+  height: 32px;
+  margin-left: -22px;
+}
+.deck-pouch-card .pp-receipt__paper {
+  --tooth: 6px;
+  height: 100%;
+  padding: 0;
+  background: var(--surface-primary);
+}
+.deck-pouch-card--1 { transform: translateX(-13px) rotate(-9deg); z-index: 1; }
+.deck-pouch-card--2 { transform: translateX(9px) rotate(4deg);    z-index: 2; }
+.deck-pouch-card--3 { transform: translateX(-2px) rotate(-2deg);  z-index: 3; }
+
+.deck-pouch-tag {
+  position: absolute;
+  top: -14px;
+  right: 10px;
+  z-index: 4;
+  font-size: 0.7rem;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-pouch-body {
+  position: relative;
+  z-index: 1;
+}
+
 .deck-card-hdr {
   display: flex;
   flex-direction: column;
@@ -297,13 +372,13 @@ body {
   margin-top: 0.25rem;
 }
 
-/* Deck picker on the generator ("Editing Room") — a plain clickable card,
+/* Deck picker on the generator ("Editing Room") — a clickable pouch,
    no Leitner drawers since editing doesn't care about review boxes. */
-.deck-card--edit {
+.deck-pouch--edit {
   cursor: pointer;
   transition: var(--transition-base);
 }
-.deck-card--edit:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.deck-pouch--edit:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .deck-edit-cta {
   font-family: var(--font-mono);
   font-weight: 700;

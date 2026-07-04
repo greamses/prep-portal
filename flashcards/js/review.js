@@ -6,7 +6,9 @@
    (flashcards/js/card-editor.js) so students only ever see
    already-edited cards.
 ═══════════════════════════════════════════════════════ */
-import { $, safe, BOXES, MAX_BOX } from './config.js';
+import {
+  $, safe, BOXES, MAX_BOX, pouchColorClass, pouchTagColorClass, pouchCardsHtml,
+} from './config.js';
 import { listDecks, dueCardsInBox, boxCounts, gradeCard } from './deck-store.js';
 import {
   heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
@@ -72,20 +74,27 @@ function drawerRow(deck) {
 export async function renderDecks() {
   const decks = await listDecks();
   deckEmpty.style.display = decks.length ? 'none' : '';
-  deckGrid.querySelectorAll('.deck-card').forEach((el) => el.remove());
+  deckGrid.querySelectorAll('.deck-pouch').forEach((el) => el.remove());
 
-  decks.forEach((deck) => {
+  decks.forEach((deck, i) => {
     const total = (deck.cards || []).length;
-    const card = document.createElement('div');
-    card.className = 'deck-card';
-    card.innerHTML = `
-      <div class="deck-card-hdr">
-        <span class="deck-subject">${safe(deck.subject)}</span>
-        <span class="deck-topic">${safe(deck.topic)}</span>
-        <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
-      </div>
-      <div class="deck-drawers">${drawerRow(deck)}</div>`;
-    deckGrid.appendChild(card);
+    const tag = deck.topic || deck.subject || 'Deck';
+    const tilt = (i % 2 === 0 ? -1 : 1) * (2 + (i % 3));
+    const pouch = document.createElement('div');
+    pouch.className = `deck-pouch ${pouchColorClass(i)}`;
+    pouch.innerHTML = `
+      <span class="pp-sticky ${pouchTagColorClass(i)} pp-sticky--tape deck-pouch-tag" style="--pp-note-tilt:${tilt}deg">${safe(tag)}</span>
+      <div class="deck-pouch-neck"></div>
+      ${pouchCardsHtml()}
+      <div class="deck-pouch-body">
+        <div class="deck-card-hdr">
+          <span class="deck-subject">${safe(deck.subject)}</span>
+          <span class="deck-topic">${safe(deck.topic)}</span>
+          <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+        </div>
+        <div class="deck-drawers">${drawerRow(deck)}</div>
+      </div>`;
+    deckGrid.appendChild(pouch);
   });
 }
 

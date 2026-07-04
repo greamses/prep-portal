@@ -6,7 +6,7 @@
    due ones — editing doesn't care about Leitner boxes). Students
    never see this; the library page is read-only practice.
 ═══════════════════════════════════════════════════════ */
-import { $, safe } from './config.js';
+import { $, safe, pouchColorClass, pouchTagColorClass, pouchCardsHtml } from './config.js';
 import { listDecks, updateCard } from './deck-store.js';
 import { printCards } from './api.js';
 import { uploadCardImage, generateCardImage } from './image-upload.js';
@@ -81,21 +81,28 @@ let editing = false;
 export async function renderEditDecks() {
   const decks = await listDecks();
   editDeckEmpty.style.display = decks.length ? 'none' : '';
-  editDeckGrid.querySelectorAll('.deck-card').forEach((el) => el.remove());
+  editDeckGrid.querySelectorAll('.deck-pouch').forEach((el) => el.remove());
 
-  decks.forEach((d) => {
+  decks.forEach((d, i) => {
     const total = (d.cards || []).length;
-    const card = document.createElement('div');
-    card.className = 'deck-card deck-card--edit';
-    card.dataset.deck = d.id;
-    card.innerHTML = `
-      <div class="deck-card-hdr">
-        <span class="deck-subject">${safe(d.subject)}</span>
-        <span class="deck-topic">${safe(d.topic)}</span>
-        <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
-      </div>
-      <div class="deck-edit-cta">Edit cards →</div>`;
-    editDeckGrid.appendChild(card);
+    const tag = d.topic || d.subject || 'Deck';
+    const tilt = (i % 2 === 0 ? -1 : 1) * (2 + (i % 3));
+    const pouch = document.createElement('div');
+    pouch.className = `deck-pouch deck-pouch--edit ${pouchColorClass(i)}`;
+    pouch.dataset.deck = d.id;
+    pouch.innerHTML = `
+      <span class="pp-sticky ${pouchTagColorClass(i)} pp-sticky--tape deck-pouch-tag" style="--pp-note-tilt:${tilt}deg">${safe(tag)}</span>
+      <div class="deck-pouch-neck"></div>
+      ${pouchCardsHtml()}
+      <div class="deck-pouch-body">
+        <div class="deck-card-hdr">
+          <span class="deck-subject">${safe(d.subject)}</span>
+          <span class="deck-topic">${safe(d.topic)}</span>
+          <span class="deck-total">${total} card${total === 1 ? '' : 's'}</span>
+        </div>
+        <div class="deck-edit-cta">Edit cards →</div>
+      </div>`;
+    editDeckGrid.appendChild(pouch);
   });
 }
 
@@ -294,7 +301,7 @@ export function initCardEditor() {
   mountIcons();
 
   editDeckGrid.addEventListener('click', (e) => {
-    const card = e.target.closest('.deck-card--edit');
+    const card = e.target.closest('.deck-pouch--edit');
     if (!card) return;
     openEditor(card.dataset.deck);
   });
