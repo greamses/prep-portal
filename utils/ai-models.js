@@ -12,10 +12,21 @@
 
 // ── Gemini ─────────────────────────────────────────────────────────────────
 
+// NOTE ON FREE-TIER ACCESS (as of Apr 2026): Google made every Gemini
+// "Pro" model (2.5 Pro, 3 Pro, 3.1 Pro Preview, 3.5 Pro) paid-only — a
+// free API key gets 403 Forbidden from all of them. Only Flash and
+// Flash-Lite tiers remain free. Pro models are still listed/tried first
+// below for accounts with billing enabled; geminiGenerate() in
+// ai-client.js treats 403 as "unavailable, try the next model" (see
+// GEMINI_SKIP_STATUSES) so a free-tier key gracefully falls through to
+// the Flash models instead of failing outright.
 export const GEMINI_MODELS = [
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
@@ -24,30 +35,42 @@ export const GEMINI_MODELS = [
 ];
 
 export const GEMINI_MODELS_UI = [
+  { label: 'Gemini 3.1 Flash-Lite', provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent' },
   { label: 'Gemini 3.5 Flash-Lite', provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent' },
   { label: 'Gemini 3.5 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent' },
-  { label: 'Gemini 3.5 Pro',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent' },
+  { label: 'Gemini 3 Flash',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent' },
+  { label: 'Gemini 3.5 Pro',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent', badge: 'Paid tier' },
+  { label: 'Gemini 3.1 Pro',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent', badge: 'Paid tier' },
   { label: 'Gemini 3.0 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent' },
   { label: 'Gemini 2.5 Flash-Lite', provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent' },
   { label: 'Gemini 2.5 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent' },
-  { label: 'Gemini 2.5 Pro',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent' },
+  { label: 'Gemini 2.5 Pro',        provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent', badge: 'Paid tier' },
   { label: 'Gemini 2.0 Flash',      provider: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent' },
 ];
 
-export const GEMINI_SKIP_STATUSES = new Set([404, 429, 503, 529]);
+// 403 is included on purpose: it's what a free-tier key gets back from a
+// paid-only Pro model (not an invalid-key problem), so it should mean
+// "unavailable, try the next model" here — see the free-tier note above.
+export const GEMINI_SKIP_STATUSES = new Set([403, 404, 429, 503, 529]);
 
 // Same models, ordered STRONGEST-first instead of cheapest-first. Use this
 // (instead of the default GEMINI_MODELS) for one-shot, low-volume, quality-
 // sensitive jobs — e.g. crafting an image-generation prompt — where getting
 // a better result on the first try matters more than saving a few tokens.
-// Lite variants are pushed to the end since they're the weakest reasoners.
+// Paid-only Pro models lead the chain (skipped harmlessly on a free key —
+// see GEMINI_SKIP_STATUSES); Gemini 3 Flash is the best model actually
+// reachable on free tier, so it's the practical "top" pick for most
+// deployments. Lite variants are pushed to the end as the weakest reasoners.
 export const GEMINI_MODELS_QUALITY_FIRST = [
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
 ];

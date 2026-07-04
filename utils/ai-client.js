@@ -91,13 +91,17 @@ export async function geminiGenerate({
       continue;
     }
 
+    // 403 is deliberately in GEMINI_SKIP_STATUSES: a free-tier key gets 403
+    // from a paid-only Pro model, which means "try the next model," not
+    // "your key is invalid." Only 401 (genuinely unauthenticated) short-
+    // circuits immediately below.
     if (GEMINI_SKIP_STATUSES.has(res.status)) {
       lastErr = new Error(`Gemini model ${i + 1} unavailable (${res.status})`);
       continue;
     }
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      if (res.status === 401 || res.status === 403) {
+      if (res.status === 401) {
         throw new Error(direct
           ? `Invalid Gemini API key (${res.status}). Please check your key.`
           : 'No Gemini key found. Add one in Account Settings.');
@@ -193,51 +197,90 @@ export async function groqGenerate({
   throw lastErr || new Error('All Groq models are unavailable. Please try again later.');
 }
 
+// Shared instruction for both the Gemini and Groq attempts in
+// craftImagePrompt() below. Forces the model to (1) resolve the actual
+// subject/answer instead of illustrating the question text, and (2) commit
+// to concrete, specific colors/background/composition instead of the
+// generic "flat design, bold solid colors" boilerplate that a weak model
+// (or a lazy one) tends to just echo back.
+function imagePromptInstruction(text) {
+  return (
+    'You are a visual prompt engineer for a text-to-image model (FLUX / ' +
+    'Stable Diffusion style), writing prompts for flashcard icons.\n\n' +
+    `Flashcard text: "${text}"\n\n` +
+    'Step 1 (silent): work out the actual subject the icon should show — ' +
+    'if the text is a question, that is its answer (e.g. "Which planet is ' +
+    'farthest from the Sun?" → Neptune; "Which planet is largest?" → ' +
+    'Jupiter), not the question itself.\n\n' +
+    'Step 2: write ONE image-generation prompt (1-3 sentences) for a flat ' +
+    'vector icon of that specific subject. It MUST commit to concrete, ' +
+    'specific choices — not generic wording:\n' +
+    '- The subject\'s own real/distinctive colors (e.g. Neptune: deep ' +
+    'blue with icy white highlights; Jupiter: tan and cream bands with a ' +
+    'reddish-orange storm spot) — never just "bold solid colors."\n' +
+    '- A specific background (e.g. "dark navy starfield," "pale cream ' +
+    'backdrop," "soft gradient sky") — never left unstated.\n' +
+    '- A specific composition/framing (e.g. "centered, filling most of a ' +
+    'square frame," "three-quarter view," "symmetrical front view").\n\n' +
+    'Weave in naturally, without quoting them as a list: flat design, ' +
+    'bold color blocking, minimal shading, clean vector icon style, no ' +
+    'text/letters/numbers/words/labels/captions anywhere in the image.\n\n' +
+    'Every prompt you write for a different flashcard must read as ' +
+    'visibly different from the others — vary colors, background and ' +
+    'composition to fit that specific subject.\n\n' +
+    'Reply with ONLY the finished prompt sentence(s) — no preamble, no ' +
+    'quotes, no bullet points, no explanation.'
+  );
+}
+
 /**
- * Ask Gemini to write a well-structured text-to-image prompt from a short
- * piece of source text (e.g. a flashcard's front/back), instead of shipping
- * that text into a fixed template. Uses the STRONGEST-first model chain
- * (see GEMINI_MODELS_QUALITY_FIRST) since this is a one-shot, low-volume
- * call where prompt quality matters more than speed/cost.
+ * Ask an LLM to write a well-structured, subject-specific text-to-image
+ * prompt from a short piece of source text (e.g. a flashcard's front/back),
+ * instead of shipping that text into a fixed generic template.
  *
- * Falls back to `fallbackPrompt` (the caller's own template-built prompt) on
- * any failure, so image generation never breaks because prompt-crafting did.
+ * Tries Gemini first via the STRONGEST-first model chain (see
+ * GEMINI_MODELS_QUALITY_FIRST) since this is a one-shot, low-volume call
+ * where prompt quality matters more than speed/cost. If every Gemini model
+ * fails, tries Groq as a second LLM attempt before giving up. Only falls
+ * back to the caller's own plain-template `fallbackPrompt` if BOTH fail, so
+ * image generation is never blocked by this step.
  *
  * @param {string} text            The source text to build an image prompt from.
- * @param {string} fallbackPrompt  Prompt to use if the Gemini call fails.
+ * @param {string} fallbackPrompt  Prompt to use if every LLM attempt fails.
  * @returns {Promise<string>}      The crafted (or fallback) image prompt.
  */
 export async function craftImagePrompt(text, fallbackPrompt) {
+  const instruction = imagePromptInstruction(text);
+
   try {
     const data = await geminiGenerate({
       key: 'backend',
       models: GEMINI_MODELS_QUALITY_FIRST,
       body: {
-        contents: [{
-          role: 'user',
-          parts: [{
-            text:
-              'You are an expert prompt engineer for text-to-image models ' +
-              '(Stable Diffusion / FLUX style). Write ONE detailed, vivid ' +
-              'image-generation prompt for a flat vector clip-art icon that ' +
-              'represents the idea below.\n\n' +
-              'Hard requirements: flat design, bold solid colors, minimal ' +
-              'shading, icon only, no text/letters/numbers/words/labels/' +
-              'captions anywhere in the image.\n\n' +
-              `Idea: "${text}"\n\n` +
-              'Reply with ONLY the finished prompt — no preamble, no ' +
-              'quotes, no explanation.',
-          }],
-        }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 200 },
+        contents: [{ role: 'user', parts: [{ text: instruction }] }],
+        generationConfig: { temperature: 0.85, maxOutputTokens: 300 },
       },
     });
     const prompt = geminiText(data).trim().replace(/^["']|["']$/g, '');
-    return prompt || fallbackPrompt;
+    if (prompt) return prompt;
   } catch (e) {
-    console.warn('[ai-client] craftImagePrompt fell back:', e.message);
-    return fallbackPrompt;
+    console.warn('[ai-client] craftImagePrompt: Gemini unavailable, trying Groq:', e.message);
   }
+
+  try {
+    const data = await groqGenerate({
+      key: 'backend',
+      prompt: instruction,
+      temperature: 0.85,
+      maxTokens: 300,
+    });
+    const prompt = groqText(data).trim().replace(/^["']|["']$/g, '');
+    if (prompt) return prompt;
+  } catch (e) {
+    console.warn('[ai-client] craftImagePrompt: Groq also unavailable, using plain template:', e.message);
+  }
+
+  return fallbackPrompt;
 }
 
 /**
