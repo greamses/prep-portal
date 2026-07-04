@@ -307,6 +307,12 @@
   letter-spacing: var(--tracking-wide);
   white-space: nowrap;
   text-transform: uppercase;
+  /* Same mobile ghosting/duplicated-repaint bug seen on the homepage FAQ
+     cards — force a clean composited layer for each pill. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .pill-yellow {
@@ -585,6 +591,10 @@
   padding: 0.5rem 0.6rem;
   background: var(--surface-primary);
   border-radius: 12px;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* The text column must be allowed to shrink + truncate, or long emails
@@ -633,6 +643,10 @@
   padding: 0.75rem;
   background: var(--surface-primary);
   border-radius: 12px;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .db-assign-top {
