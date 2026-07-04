@@ -10,15 +10,26 @@ import { $, safe } from './config.js';
 import { listDecks, updateCard } from './deck-store.js';
 import { printCards } from './api.js';
 import { uploadCardImage, generateCardImage } from './image-upload.js';
+import { craftImagePrompt } from '/utils/ai-client.js';
 import {
   heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
   ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_COPY_PROMPT, ICON_REGEN,
 } from './icons.js';
 
-/** Shared with the "Copy Prompt" tool so a user can take the same wording
- * to an external AI image generator instead of our built-in one. */
+/** Plain-template fallback — used if Gemini prompt-crafting (below) fails,
+ * and as the base wording handed to Gemini to refine. Shared with the
+ * "Copy Prompt" tool so a user can take the same wording to an external AI
+ * image generator instead of our built-in one. */
 function buildImagePrompt(text) {
   return `Flat vector clip-art icon of: ${text}. Simple flat design, bold solid colors, minimal shading, icon only. No text, no letters, no numbers, no words, no writing, no labels, no captions anywhere in the image.`;
+}
+
+/** Let Gemini turn the card's plain text into a properly structured image
+ * prompt (better composition/detail than the fixed template alone), then
+ * hand that off to the actual image generator. Falls back to the plain
+ * template on any failure so this never blocks image generation. */
+async function buildSmartImagePrompt(text) {
+  return craftImagePrompt(text, buildImagePrompt(text));
 }
 
 const editDeckGrid = $('edit-deck-grid');
@@ -218,7 +229,7 @@ async function handleGenerate() {
 
   toolGenerate.disabled = true;
   try {
-    const url = await generateCardImage(buildImagePrompt(text));
+    const url = await generateCardImage(await buildSmartImagePrompt(text));
     await updateCard(deck.id, card.id, { [field]: url });
     card[field] = url;
     paintImage(
@@ -239,14 +250,18 @@ async function handleCopyPrompt() {
   const card = deck.cards[idx];
   const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
   const text = side === 'front' ? card.front : card.back;
+  const label = $('editor-tool-copy-prompt-label');
 
+  const prevLabel = label.textContent;
+  label.textContent = 'Thinking…';
   try {
-    await navigator.clipboard.writeText(buildImagePrompt(text));
-    const label = $('editor-tool-copy-prompt-label');
+    const prompt = await buildSmartImagePrompt(text);
+    await navigator.clipboard.writeText(prompt);
     label.textContent = 'Copied!';
-    setTimeout(() => { label.textContent = 'Copy Prompt'; }, 1500);
+    setTimeout(() => { label.textContent = prevLabel; }, 1500);
   } catch (err) {
     console.error('[Recall Press] copy prompt failed:', err);
+    label.textContent = prevLabel;
     alert('Could not copy the prompt.');
   }
 }

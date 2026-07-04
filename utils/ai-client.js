@@ -15,6 +15,7 @@
 
 import {
   GEMINI_MODELS,
+  GEMINI_MODELS_QUALITY_FIRST,
   GEMINI_SKIP_STATUSES,
   GROQ_MODELS,
 } from '/utils/ai-models.js';
@@ -190,6 +191,53 @@ export async function groqGenerate({
     return res.json();
   }
   throw lastErr || new Error('All Groq models are unavailable. Please try again later.');
+}
+
+/**
+ * Ask Gemini to write a well-structured text-to-image prompt from a short
+ * piece of source text (e.g. a flashcard's front/back), instead of shipping
+ * that text into a fixed template. Uses the STRONGEST-first model chain
+ * (see GEMINI_MODELS_QUALITY_FIRST) since this is a one-shot, low-volume
+ * call where prompt quality matters more than speed/cost.
+ *
+ * Falls back to `fallbackPrompt` (the caller's own template-built prompt) on
+ * any failure, so image generation never breaks because prompt-crafting did.
+ *
+ * @param {string} text            The source text to build an image prompt from.
+ * @param {string} fallbackPrompt  Prompt to use if the Gemini call fails.
+ * @returns {Promise<string>}      The crafted (or fallback) image prompt.
+ */
+export async function craftImagePrompt(text, fallbackPrompt) {
+  try {
+    const data = await geminiGenerate({
+      key: 'backend',
+      models: GEMINI_MODELS_QUALITY_FIRST,
+      body: {
+        contents: [{
+          role: 'user',
+          parts: [{
+            text:
+              'You are an expert prompt engineer for text-to-image models ' +
+              '(Stable Diffusion / FLUX style). Write ONE detailed, vivid ' +
+              'image-generation prompt for a flat vector clip-art icon that ' +
+              'represents the idea below.\n\n' +
+              'Hard requirements: flat design, bold solid colors, minimal ' +
+              'shading, icon only, no text/letters/numbers/words/labels/' +
+              'captions anywhere in the image.\n\n' +
+              `Idea: "${text}"\n\n` +
+              'Reply with ONLY the finished prompt — no preamble, no ' +
+              'quotes, no explanation.',
+          }],
+        }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 200 },
+      },
+    });
+    const prompt = geminiText(data).trim().replace(/^["']|["']$/g, '');
+    return prompt || fallbackPrompt;
+  } catch (e) {
+    console.warn('[ai-client] craftImagePrompt fell back:', e.message);
+    return fallbackPrompt;
+  }
 }
 
 /**

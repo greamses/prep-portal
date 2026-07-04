@@ -36,6 +36,22 @@ export const GEMINI_MODELS_UI = [
 
 export const GEMINI_SKIP_STATUSES = new Set([404, 429, 503, 529]);
 
+// Same models, ordered STRONGEST-first instead of cheapest-first. Use this
+// (instead of the default GEMINI_MODELS) for one-shot, low-volume, quality-
+// sensitive jobs — e.g. crafting an image-generation prompt — where getting
+// a better result on the first try matters more than saving a few tokens.
+// Lite variants are pushed to the end since they're the weakest reasoners.
+export const GEMINI_MODELS_QUALITY_FIRST = [
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
+];
+
 // ── Groq ───────────────────────────────────────────────────────────────────
 
 export const GROQ_MODELS = [
