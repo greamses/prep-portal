@@ -6,7 +6,7 @@
    "sticker" blob tile (iconBlob) applied by CSS, same as
    .nav-icon/.nav-icon__blob in nav.css.
 ═══════════════════════════════════════════════════════ */
-export { paintBlob, iconBlob } from '/utils/components/nav-icons.js';
+export { paintBlob, iconBlob, heroPaint } from '/utils/components/nav-icons.js';
 
 const svg = (paths) =>
   `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paths}</svg>`;
@@ -51,6 +51,15 @@ export const ICON_IMAGE = svg(
 export const ICON_GENERATE = svg(
   `<path d="M12 2.6l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z" fill="var(--accent-secondary)"/>` +
   `<path d="M18.6 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="var(--accent-warning)"/>`,
+);
+
+// Copy Prompt — a clipboard, for taking the image prompt to an external tool.
+export const ICON_COPY_PROMPT = svg(
+  `<rect x="7" y="3" width="10" height="4" rx="1" fill="var(--accent-warning)"/>` +
+  `<rect x="4.5" y="5.2" width="15" height="16" rx="2" fill="var(--accent-secondary)"/>` +
+  `<rect x="7" y="9.5" width="10" height="1.8" rx="0.9" fill="#fff" opacity="0.85"/>` +
+  `<rect x="7" y="13.2" width="10" height="1.8" rx="0.9" fill="#fff" opacity="0.85"/>` +
+  `<rect x="7" y="16.9" width="6.5" height="1.8" rx="0.9" fill="#fff" opacity="0.85"/>`,
 );
 
 // Regenerate — a retry loop (matches the flip-arrow stroke language).

@@ -216,3 +216,27 @@ export async function imageGenerate({ prompt } = {}) {
   if (!data.image) throw new Error('No image came back — try again.');
   return `data:image/jpeg;base64,${data.image}`;
 }
+
+/**
+ * Store an image (a data: URI or bare base64 string) via /api/ai/image-store,
+ * which signs and uploads it to Cloudinary server-side. Returns the delivery
+ * URL to persist (e.g. on a flashcard's frontImage/backImage field).
+ *
+ * @param {string} o.imageBase64  A data: URI or bare base64-encoded image.
+ * @returns {Promise<string>} The stored image's URL.
+ */
+export async function imageStore({ imageBase64 } = {}) {
+  const token = await _idToken();
+  const res = await fetch(`${API_BASE}/api/ai/image-store`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ imageBase64 }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Image storage ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  if (!data.url) throw new Error('No stored image URL came back — try again.');
+  return data.url;
+}

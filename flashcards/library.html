@@ -95,7 +95,9 @@
                   <span class="flash-icon-tile" aria-hidden="true"></span>
                   <span class="flash-icon" id="flash-icon-front"></span>
                 </div>
-                <img class="flash-image" id="flash-image-front" alt="" hidden />
+                <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-front" hidden>
+                  <img class="flash-image" id="flash-image-front" alt="" />
+                </div>
                 <p class="flash-text" id="flash-front-text"></p>
                 <span class="flash-flip-hint" id="flash-flip-hint" aria-hidden="true"></span>
               </div>
@@ -105,17 +107,20 @@
                   <span class="flash-icon-tile" aria-hidden="true"></span>
                   <span class="flash-icon" id="flash-icon-back"></span>
                 </div>
-                <img class="flash-image" id="flash-image-back" alt="" hidden />
+                <div class="flash-photo pp-sticky pp-sticky--tape" id="flash-photo-back" hidden>
+                  <img class="flash-image" id="flash-image-back" alt="" />
+                </div>
                 <p class="flash-text" id="flash-back-text"></p>
               </div>
             </div>
           </div>
 
           <div class="card-toolbar" id="card-toolbar">
-            <button class="tool-btn" id="tool-edit" type="button" title="Edit text"><span id="tool-icon-edit"></span>Edit</button>
-            <button class="tool-btn" id="tool-image" type="button" title="Add image"><span id="tool-icon-image"></span>Image</button>
-            <button class="tool-btn" id="tool-generate" type="button" title="Generate an image with AI"><span id="tool-icon-generate"></span>Generate</button>
-            <button class="tool-btn" id="tool-regen" type="button" title="Regenerate this card"><span id="tool-icon-regen"></span>Redo</button>
+            <button class="tool-btn" id="tool-edit" type="button" title="Edit text"><span class="tool-icon" id="tool-icon-edit"></span>Edit</button>
+            <button class="tool-btn" id="tool-image" type="button" title="Add image"><span class="tool-icon" id="tool-icon-image"></span>Image</button>
+            <button class="tool-btn" id="tool-generate" type="button" title="Generate an image with AI"><span class="tool-icon" id="tool-icon-generate"></span>Generate</button>
+            <button class="tool-btn" id="tool-copy-prompt" type="button" title="Copy the image prompt to use in an external AI image tool"><span class="tool-icon" id="tool-icon-copy-prompt"></span><span id="tool-copy-prompt-label">Copy Prompt</span></button>
+            <button class="tool-btn" id="tool-regen" type="button" title="Regenerate this card"><span class="tool-icon" id="tool-icon-regen"></span>Redo</button>
             <input type="file" id="tool-image-input" accept="image/*" hidden />
           </div>
         </div>

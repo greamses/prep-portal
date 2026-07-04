@@ -1,20 +1,19 @@
 /* ═══════════════════════════════════════════════════════
    RECALL PRESS — CARD IMAGE UPLOAD + AI GENERATION
-   Re-encodes any picked or AI-generated image to a small JPEG
-   data: URI and stores it straight on the card's frontImage/
-   backImage field in Firestore (users/{uid}/flashcardDecks/{id}).
-   No blob storage service involved on purpose — Cloud Storage
-   for Firebase now requires the Blaze billing plan, and Firestore
-   itself stays free on Spark, so images are kept small enough
-   (~15KB) to live inline instead.
+   Picked or AI-generated images are stored via /api/ai/image-store,
+   which signs and uploads them to Cloudinary (the same account the
+   homepage's real student photos already use — see home/js/reveal.js).
+   Chosen over Firebase Storage (Blaze-only as of Feb 2026) and
+   Cloudflare R2 (also gates its free tier behind a card) since
+   Cloudinary's free plan needs neither.
 ═══════════════════════════════════════════════════════ */
-import { imageGenerate } from '/utils/ai-client.js';
+import { imageGenerate, imageStore } from '/utils/ai-client.js';
 
-// Small enough that even a deck with images on every card face stays
-// comfortably under Firestore's 1 MiB per-document limit.
-const MAX_DIM = 240;
-const JPEG_QUALITY = 0.6;
-const MAX_DATA_URI_LENGTH = 40000; // ~40KB, generous margin over the ~15KB typical output
+// A light resize/re-encode for user-picked photos, just to keep uploads
+// reasonably sized — Cloudinary handles final display sizing at delivery
+// time (see the c_fill,g_auto transform server/routes/ai.js applies).
+const MAX_DIM = 1200;
+const JPEG_QUALITY = 0.85;
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -36,38 +35,36 @@ function toJpegDataUri(img) {
   canvas.width = width;
   canvas.height = height;
   canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-  const dataUri = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-  if (dataUri.length > MAX_DATA_URI_LENGTH) {
-    throw new Error('That image is too detailed to store — try a simpler picture.');
-  }
-  return dataUri;
+  return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
 }
 
 /**
- * Re-encode a picked image file to a small JPEG data: URI.
+ * Re-encode a picked image file and store it via Cloudinary. Returns the
+ * delivery URL to persist on the card.
  * @param {File} file
  * @returns {Promise<string>}
  */
 export async function uploadCardImage(file) {
   if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
   const url = URL.createObjectURL(file);
+  let dataUri;
   try {
     const img = await loadImage(url);
-    return toJpegDataUri(img);
+    dataUri = toJpegDataUri(img);
   } finally {
     URL.revokeObjectURL(url);
   }
+  return imageStore({ imageBase64: dataUri });
 }
 
 /**
  * Generate a simple illustration from a text prompt (via the Cloudflare
- * Workers AI proxy at /api/ai/image), re-encoded to the same small JPEG
- * data: URI shape as an upload.
+ * Workers AI proxy at /api/ai/image), then store it via Cloudinary the same
+ * way as an upload. Returns the delivery URL to persist on the card.
  * @param {string} prompt
  * @returns {Promise<string>}
  */
 export async function generateCardImage(prompt) {
   const dataUri = await imageGenerate({ prompt });
-  const img = await loadImage(dataUri);
-  return toJpegDataUri(img);
+  return imageStore({ imageBase64: dataUri });
 }

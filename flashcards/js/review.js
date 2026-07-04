@@ -7,10 +7,16 @@ import { listDecks, dueCardsInBox, boxCounts, gradeCard, updateCard } from './de
 import { printCards } from './api.js';
 import { uploadCardImage, generateCardImage } from './image-upload.js';
 import {
-  paintBlob, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
+  heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
   ICON_AGAIN, ICON_HARD, ICON_GOOD, ICON_EASY,
-  ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_REGEN,
+  ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_COPY_PROMPT, ICON_REGEN,
 } from './icons.js';
+
+/** Shared with the "Copy Prompt" tool so a user can take the same wording
+ * to an external AI image generator instead of our built-in one. */
+function buildImagePrompt(text) {
+  return `Flat vector clip-art icon of: ${text}. Simple flat design, bold solid colors, minimal shading, icon only. No text, no letters, no numbers, no words, no writing, no labels, no captions anywhere in the image.`;
+}
 
 const deckGrid = $('deck-grid');
 const deckEmpty = $('deck-empty');
@@ -25,6 +31,8 @@ const frontText = $('flash-front-text');
 const backText = $('flash-back-text');
 const frontImage = $('flash-image-front');
 const backImage = $('flash-image-back');
+const frontPhoto = $('flash-photo-front');
+const backPhoto = $('flash-photo-back');
 const frontIconWrap = $('flash-icon-wrap-front');
 const backIconWrap = $('flash-icon-wrap-back');
 const gradesEl = $('review-grades');
@@ -33,6 +41,7 @@ const doneCloseBtn = $('review-done-close');
 const toolEdit = $('tool-edit');
 const toolImage = $('tool-image');
 const toolGenerate = $('tool-generate');
+const toolCopyPrompt = $('tool-copy-prompt');
 const toolRegen = $('tool-regen');
 const toolImageInput = $('tool-image-input');
 const siteNav = document.querySelector('.site-nav');
@@ -48,11 +57,12 @@ function mountIcons() {
   $('tool-icon-edit').innerHTML = ICON_EDIT;
   $('tool-icon-image').innerHTML = ICON_IMAGE;
   $('tool-icon-generate').innerHTML = ICON_GENERATE;
+  $('tool-icon-copy-prompt').innerHTML = ICON_COPY_PROMPT;
   $('tool-icon-regen').innerHTML = ICON_REGEN;
   frontIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(3);
   backIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(8);
-  document.querySelector('.flash-blob--front').innerHTML = paintBlob(5);
-  document.querySelector('.flash-blob--back').innerHTML = paintBlob(12);
+  document.querySelector('.flash-blob--front').innerHTML = heroPaint();
+  document.querySelector('.flash-blob--back').innerHTML = heroPaint();
 }
 
 let session = null; // { deckId, box, queue: [cards], idx }
@@ -98,15 +108,15 @@ function showFace(front) {
   flashCard.classList.toggle('flipped', !front);
 }
 
-function paintImage(imgEl, wrapEl, url) {
+function paintImage(imgEl, photoEl, iconWrapEl, url) {
   if (url) {
     imgEl.src = url;
-    imgEl.hidden = false;
-    wrapEl.classList.add('has-image');
+    photoEl.hidden = false;
+    iconWrapEl.classList.add('has-image');
   } else {
-    imgEl.hidden = true;
     imgEl.src = '';
-    wrapEl.classList.remove('has-image');
+    photoEl.hidden = true;
+    iconWrapEl.classList.remove('has-image');
   }
 }
 
@@ -122,8 +132,8 @@ function loadCard() {
   const card = session.queue[session.idx];
   frontText.textContent = card.front;
   backText.textContent = card.back;
-  paintImage(frontImage, frontIconWrap, card.frontImage);
-  paintImage(backImage, backIconWrap, card.backImage);
+  paintImage(frontImage, frontPhoto, frontIconWrap, card.frontImage);
+  paintImage(backImage, backPhoto, backIconWrap, card.backImage);
   showFace(true);
   gradesEl.hidden = true;
   flashNote.textContent = BOXES[session.box].label;
@@ -200,7 +210,12 @@ async function handleImagePick(file) {
     const url = await uploadCardImage(file);
     await updateCard(session.deckId, card.id, { [field]: url });
     card[field] = url;
-    paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);
+    paintImage(
+      side === 'front' ? frontImage : backImage,
+      side === 'front' ? frontPhoto : backPhoto,
+      side === 'front' ? frontIconWrap : backIconWrap,
+      url,
+    );
   } catch (err) {
     console.error('[Recall Press] image upload failed:', err);
     alert(err.message || 'Could not add that image.');
@@ -217,16 +232,37 @@ async function handleGenerate() {
 
   toolGenerate.disabled = true;
   try {
-    const prompt = `A simple, clean educational illustration for a flashcard. Concept: ${text}. Flat, minimal, no text or labels in the image.`;
-    const url = await generateCardImage(prompt);
+    const url = await generateCardImage(buildImagePrompt(text));
     await updateCard(session.deckId, card.id, { [field]: url });
     card[field] = url;
-    paintImage(side === 'front' ? frontImage : backImage, side === 'front' ? frontIconWrap : backIconWrap, url);
+    paintImage(
+      side === 'front' ? frontImage : backImage,
+      side === 'front' ? frontPhoto : backPhoto,
+      side === 'front' ? frontIconWrap : backIconWrap,
+      url,
+    );
   } catch (err) {
     console.error('[Recall Press] image generation failed:', err);
     alert(err.message || 'Could not generate that image.');
   }
   toolGenerate.disabled = false;
+}
+
+async function handleCopyPrompt() {
+  if (!session) return;
+  const card = session.queue[session.idx];
+  const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
+  const text = side === 'front' ? card.front : card.back;
+
+  try {
+    await navigator.clipboard.writeText(buildImagePrompt(text));
+    const label = $('tool-copy-prompt-label');
+    label.textContent = 'Copied!';
+    setTimeout(() => { label.textContent = 'Copy Prompt'; }, 1500);
+  } catch (err) {
+    console.error('[Recall Press] copy prompt failed:', err);
+    alert('Could not copy the prompt.');
+  }
 }
 
 async function regenerateCurrentCard() {
@@ -295,6 +331,7 @@ export function initReview() {
     handleImagePick(file);
   });
   toolGenerate.addEventListener('click', handleGenerate);
+  toolCopyPrompt.addEventListener('click', handleCopyPrompt);
   toolRegen.addEventListener('click', regenerateCurrentCard);
 
   reviewClose.addEventListener('click', closeSession);

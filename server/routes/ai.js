@@ -8,6 +8,7 @@
  */
 
 const express = require("express");
+const crypto = require("crypto");
 const admin = require("firebase-admin");
 const Anthropic = require("@anthropic-ai/sdk");
 const { authenticate } = require("../middleware/auth");
@@ -742,6 +743,59 @@ module.exports = function () {
       res.status(upstream.status).json(data);
     } catch (err) {
       console.error("[/api/ai/image]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── POST /api/ai/image-store — sign + upload a card image to Cloudinary.
+  //    Same account already used for the homepage's real student photos
+  //    (home/js/reveal.js). Chosen over Firebase Storage (now Blaze-only)
+  //    and Cloudflare R2 (also gates its free tier behind a card on file) —
+  //    Cloudinary's free plan needs neither. ──────────
+  router.post("/image-store", authenticate, async (req, res) => {
+    try {
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+      if (!cloudName || !apiKey || !apiSecret) {
+        return res.status(503).json({ error: "Image storage is not configured on this server." });
+      }
+
+      const imageBase64 = req.body?.imageBase64;
+      if (!imageBase64 || typeof imageBase64 !== "string") {
+        return res.status(400).json({ error: "An image is required." });
+      }
+      const file = imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
+
+      const folder = "prep-portal/flashcards";
+      const timestamp = Math.floor(Date.now() / 1000);
+      const signString = `folder=${folder}&timestamp=${timestamp}`;
+      const signature = crypto.createHash("sha1").update(signString + apiSecret).digest("hex");
+
+      const form = new URLSearchParams();
+      form.set("file", file);
+      form.set("api_key", apiKey);
+      form.set("timestamp", String(timestamp));
+      form.set("signature", signature);
+      form.set("folder", folder);
+
+      const upstream = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form,
+      });
+      const data = await upstream.json();
+      if (!upstream.ok) {
+        console.error("[/api/ai/image-store] Cloudinary error:", data);
+        return res.status(upstream.status).json({ error: data?.error?.message || "Upload failed." });
+      }
+
+      // Deliver at a fixed small size — same on-the-fly transform pattern
+      // the homepage's Cloudinary helper uses (home/js/reveal.js).
+      const url = data.secure_url.replace("/upload/", "/upload/c_fill,g_auto,w_260,h_260/");
+      res.json({ url });
+    } catch (err) {
+      console.error("[/api/ai/image-store]", err.message);
       res.status(500).json({ error: err.message });
     }
   });
