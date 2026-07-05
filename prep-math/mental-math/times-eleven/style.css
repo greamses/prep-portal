@@ -109,31 +109,57 @@
    so it never needs a transform-origin of its own. */
 .mm-bot-eye { transform-box: fill-box; transform-origin: center; }
 
-/* Question badge — clicking it opens the real, AI-backed PrepBot chat
-   (#chat-fab from utils/prepbot/prepbot.js); everything else on this page
-   is scripted narration and never calls the model. */
-.mm-prepbot-ask {
+/* Hover menu — revealed over the avatar as a thought bubble; "Ask" opens
+   the real, AI-backed PrepBot chat (#chat-fab from utils/prepbot/prepbot.js),
+   "Sleep" stops the idle impulses, "Wiggle" fires one on demand. Bare
+   glyphs, no circular chip background. */
+.mm-prepbot-menu {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
+  bottom: calc(100% + 10px);
+  right: -8px;
+  z-index: 4;
+  display: flex;
+  gap: 0.3rem;
+  background: var(--surface-primary);
+  border-radius: 16px;
+  padding: 0.35rem 0.45rem;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(4px) scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.mm-prepbot-menu::after,
+.mm-prepbot-menu::before {
+  content: "";
+  position: absolute;
+  background: var(--surface-primary);
   border-radius: 50%;
-  border: 2px solid var(--surface-primary);
-  background: var(--accent-danger);
-  color: #fff;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.65rem;
-  line-height: 1;
+  box-shadow: var(--shadow-sm);
+}
+.mm-prepbot-menu::after { bottom: -8px; right: 18px; width: 10px; height: 10px; }
+.mm-prepbot-menu::before { bottom: -14px; right: 11px; width: 6px; height: 6px; }
+
+.mm-prepbot-avatar-wrap:hover .mm-prepbot-menu,
+.mm-prepbot-menu:hover,
+.mm-prepbot-menu:focus-within {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.mm-prepbot-menu-btn {
+  border: none;
+  background: none;
+  padding: 0.2rem;
+  cursor: pointer;
   display: grid;
   place-items: center;
-  cursor: pointer;
-  padding: 0;
   transition: transform 0.12s ease;
 }
-.mm-prepbot-ask:hover { transform: scale(1.15); }
+.mm-prepbot-menu-btn:hover { transform: scale(1.18); }
+.mm-prepbot-menu-btn svg { width: 18px; height: 18px; }
+.mm-prepbot-menu-btn.is-active svg { opacity: 0.4; }
 
 /* Multicoloured — background rotates through the same pastel palette as
    the sticky-note tiles (--bubble-bg is set per step in scene.js); the
@@ -190,6 +216,52 @@
   inset: 0;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/* Title-card reveal — see playIntro() in scene.js. Opacity/visibility are
+   driven entirely by GSAP; the CSS default just keeps it invisible and
+   non-interactive at rest. */
+.mm-tv-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--surface-secondary);
+}
+.mm-tv-intro-text { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.mm-tv-intro-big {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+  color: var(--ink);
+}
+.mm-tv-intro-small {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── Fullscreen: let the screen fill the viewport instead of staying
+   locked to its 16:9 box, since that box was sized for the half-width
+   column layout. ────────────────────────────────────────────────────── */
+.mm-tv:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 0;
+  background: var(--ink);
+}
+.mm-tv:fullscreen .mm-tv-screen {
+  flex: 1;
+  aspect-ratio: unset;
+  max-height: calc(100vh - 90px);
 }
 
 .mm-tv-step-sticker.pp-sticky {

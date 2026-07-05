@@ -75,11 +75,14 @@ export class Scrubber {
 
   togglePlay() { this.tl.paused() ? this.play() : this.pause(); }
 
+  // Returns the tweenTo tween (GSAP tweens are thenable — `await`able) so
+  // callers that need to know when the step visually lands can do so;
+  // resolves to null immediately when already at the last step.
   next() {
     const target = Math.min(this._index + 1, this.labels.length - 1);
-    if (target === this._index) return;
+    if (target === this._index) return Promise.resolve(null);
     this.tl.pause();
-    this.tl.tweenTo(this.labels[target], { duration: 0.5, ease: "power2.inOut" });
+    return this.tl.tweenTo(this.labels[target], { duration: 0.5, ease: "power2.inOut" });
   }
 
   prev() {

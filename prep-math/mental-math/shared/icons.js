@@ -35,6 +35,32 @@ export const ICON_CLOSE = svg(
   `<path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
 );
 
+export const ICON_FULLSCREEN = svg(
+  `<path d="M4 9V5.6A1.6 1.6 0 0 1 5.6 4H9M20 9V5.6A1.6 1.6 0 0 0 18.4 4H15M4 15v3.4A1.6 1.6 0 0 0 5.6 20H9M20 15v3.4a1.6 1.6 0 0 1-1.6 1.6H15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+
+// PrepBot's hover menu — no circular chip backgrounds, bare glyphs only.
+export const ICON_ASK = svg(
+  `<path d="M8.6 9.3a3.5 3.5 0 1 1 5.6 2.8c-.95.7-1.5 1.25-1.5 2.3" fill="none" stroke="var(--accent-secondary)" stroke-width="2.1" stroke-linecap="round"/>` +
+  `<circle cx="12.7" cy="17.6" r="1.15" fill="var(--accent-secondary)"/>`,
+);
+
+export const ICON_SLEEP = svg(
+  `<path d="M20 13.4A8.4 8.4 0 1 1 10.7 4.1a6.7 6.7 0 0 0 9.3 9.3z" fill="var(--accent-secondary)"/>`,
+);
+
+export const ICON_WAKE = svg(
+  `<circle cx="12" cy="12" r="4.6" fill="var(--accent-warning)"/>` +
+  `<path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.1 5.9l-1.55 1.55M7.45 16.55L5.9 18.1M18.1 18.1l-1.55-1.55M7.45 7.45L5.9 5.9" fill="none" stroke="var(--accent-warning)" stroke-width="1.8" stroke-linecap="round"/>`,
+);
+
+// "Wiggle" / manual animation trigger — a sparkle, matching prepbot.js's
+// own sparkle glyph language.
+export const ICON_WIGGLE = svg(
+  `<path d="M12 3l1.7 4.6L18 9l-4.3 1.5L12 15l-1.7-4.5L6 9l4.3-1.4z" fill="var(--accent-primary)"/>` +
+  `<circle cx="18.3" cy="17" r="1.5" fill="var(--accent-warning)"/>`,
+);
+
 // PrepBot mascot — same robot used by the site-wide chat FAB
 // (utils/prepbot/prepbot.js's PB_ICONS.robotAwake), reused here so the
 // "teacher" narrating the trick is recognizably the same character.

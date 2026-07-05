@@ -14,7 +14,10 @@
 ═══════════════════════════════════════════════════════════ */
 
 import { Scrubber } from "../shared/scrub-engine.js";
-import { ICON_PLAY, ICON_PAUSE, ICON_PREPBOT, MOUTH_SHAPES } from "../shared/icons.js";
+import {
+  ICON_PLAY, ICON_PAUSE, ICON_PREPBOT, MOUTH_SHAPES,
+  ICON_FULLSCREEN, ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
+} from "../shared/icons.js";
 
 const stage = document.getElementById("mmStage");
 const stepsPanel = document.getElementById("mmSteps");
@@ -32,6 +35,18 @@ const botAvatar = document.getElementById("mmBotAvatar");
 botAvatar.innerHTML = ICON_PREPBOT;
 const botEyes = botAvatar.querySelectorAll(".mm-bot-eye");
 const botMouth = botAvatar.querySelector(".mm-bot-mouth");
+const botAskBtn = document.getElementById("mmBotAsk");
+const botSleepBtn = document.getElementById("mmBotSleep");
+const botPokeBtn = document.getElementById("mmBotPoke");
+botAskBtn.innerHTML = ICON_ASK;
+botSleepBtn.innerHTML = ICON_SLEEP;
+botPokeBtn.innerHTML = ICON_WIGGLE;
+const introEl = document.getElementById("mmIntro");
+const introBig = document.querySelector(".mm-tv-intro-big");
+const introSmall = document.querySelector(".mm-tv-intro-small");
+const fullscreenBtn = document.getElementById("mmFullscreenBtn");
+const fullscreenIcon = document.getElementById("mmFullscreenIcon");
+fullscreenIcon.innerHTML = ICON_FULLSCREEN;
 
 // Sticky-note colour rotation (pp-sticky--c0..c5, see components.css) — one
 // colour per original digit (alternating), a shared colour for every
@@ -49,9 +64,45 @@ let gsap;
 let scrubber = null;
 let currentNarration = [];
 let typeTimer = null;
+let rhythmTimer = null;
 let lastNarratedIndex = -1;
 let isTalking = false;
+let asleep = false;
 let idleTimer = null;
+let autoPlaying = false;
+let needsIntro = true;
+let currentTalkPromise = Promise.resolve();
+let currentTalkResolve = null;
+let audioCtx = null;
+
+function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+function unlockAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  audioCtx?.resume?.();
+}
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+document.addEventListener("keydown", unlockAudio, { once: true });
+
+// A short, chirpy blip — not speech, just a rhythmic "talking" beep in the
+// same spirit as old-school dialogue-box games. Pitch wobbles a little per
+// beep so a run of them doesn't sound like a single held tone.
+function beep() {
+  if (!audioCtx || audioCtx.state !== "running") return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = 480 + Math.random() * 160;
+  gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.16, audioCtx.currentTime + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.11);
+}
 
 // ── Body vs. face are two separate animation systems ────────────────────
 // Body (squeeze-bounce / slide / spin) only ever plays between lines, as
@@ -108,7 +159,7 @@ const BODY_IMPULSES = [squeezeBounce, squeezeBounce, slideAcross, spinHop];
 function scheduleIdle() {
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    if (!isTalking) {
+    if (!isTalking && !asleep) {
       const fn = BODY_IMPULSES[Math.floor(Math.random() * BODY_IMPULSES.length)];
       fn();
     }
@@ -116,40 +167,110 @@ function scheduleIdle() {
   }, 1800 + Math.random() * 2200);
 }
 
-// Reveals `text` letter by letter (the visible "typing"); at each word
-// boundary, morphs the mouth to a new shape and gives the eyes a quick
-// blink — so the face only ever animates in sync with actual words.
+// Two independent clocks: the bubble TEXT can type out as fast as it likes
+// (pure visual reveal), while the mouth/beep "speech" runs on its own
+// natural rhythm (roughly 2 beats per word) and decides when talking is
+// actually done — it's fine for the text to finish first.
 function speakLine(text) {
   isTalking = true;
   stopBody();
   clearInterval(typeTimer);
+  clearInterval(rhythmTimer);
+  currentTalkResolve?.();
+  currentTalkPromise = new Promise((resolve) => { currentTalkResolve = resolve; });
+
   botText.textContent = "";
   botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
 
-  const wordEnds = [];
-  for (let idx = 0; idx < text.length; idx++) if (text[idx] === " ") wordEnds.push(idx);
-  wordEnds.push(text.length);
-
   let i = 0;
-  let wordCursor = 0;
-  let shapeCursor = 0;
   typeTimer = setInterval(() => {
     i += 1;
     botText.textContent = text.slice(0, i);
-    if (wordCursor < wordEnds.length && i >= wordEnds[wordCursor]) {
-      wordCursor += 1;
-      shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
-      botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
-      if (botEyes.length && wordCursor % 3 === 0) {
-        gsap.to(botEyes, { scaleY: 0.15, duration: 0.06, yoyo: true, repeat: 1 });
-      }
+    if (i >= text.length) clearInterval(typeTimer);
+  }, 16);
+
+  const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+  const beats = wordCount * 2;
+  let beat = 0;
+  let shapeCursor = 0;
+  rhythmTimer = setInterval(() => {
+    beat += 1;
+    shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
+    botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
+    beep();
+    if (botEyes.length && beat % 5 === 0) {
+      gsap.to(botEyes, { scaleY: 0.15, duration: 0.06, yoyo: true, repeat: 1 });
     }
-    if (i >= text.length) {
-      clearInterval(typeTimer);
+    if (beat >= beats) {
+      clearInterval(rhythmTimer);
       botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
       isTalking = false;
+      currentTalkResolve?.();
     }
-  }, 26);
+  }, 195);
+}
+
+function syncPlayIcon() {
+  playIcon.innerHTML = autoPlaying ? ICON_PAUSE : ICON_PLAY;
+}
+
+// Title-card reveal, played once per newly chosen number the first time
+// Play is pressed: hides the tiles, slides PrepBot in alongside "Learning /
+// with PrepBot", holds, then slides back out and reveals the tiles.
+function playIntro() {
+  return new Promise((resolve) => {
+    const screen = document.querySelector(".mm-tv-screen");
+    gsap.set(stage, { opacity: 0 });
+    gsap.set(botBubble, { opacity: 0 });
+    gsap.set(introBig, { opacity: 0, y: 16 });
+    gsap.set(introSmall, { opacity: 0, y: 16 });
+    gsap.set(introEl, { opacity: 1 });
+    introEl.style.pointerEvents = "auto";
+    gsap.set(botGroup, { x: screen.clientWidth });
+
+    gsap
+      .timeline({ onComplete: resolve })
+      .to(botGroup, { x: 0, duration: 0.7, ease: "power2.out" })
+      .to(introBig, { opacity: 1, y: 0, duration: 0.4 }, "-=0.35")
+      .to(introSmall, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
+      .to({}, { duration: 1 })
+      .to([introBig, introSmall], { opacity: 0, duration: 0.3 })
+      .to(introEl, { opacity: 0, duration: 0.3 }, "<")
+      .to(stage, { opacity: 1, duration: 0.3 }, "<")
+      .to(botBubble, { opacity: 1, duration: 0.3 }, "<")
+      .call(() => { introEl.style.pointerEvents = "none"; });
+  });
+}
+
+// Auto-advance that waits for PrepBot to actually finish narrating each
+// step before moving to the next one — Pause just stops it from starting
+// the *next* step; it always lets the current line finish first.
+async function guidedPlay() {
+  autoPlaying = true;
+  syncPlayIcon();
+
+  if (needsIntro) {
+    await playIntro();
+    needsIntro = false;
+    if (!autoPlaying) return;
+  }
+
+  if (scrubber.index >= scrubber.total) scrubber.seek(0);
+
+  while (autoPlaying && scrubber && scrubber.index < scrubber.total) {
+    await scrubber.next();
+    if (!autoPlaying) break;
+    await currentTalkPromise;
+    if (!autoPlaying) break;
+    await delay(300);
+  }
+  autoPlaying = false;
+  syncPlayIcon();
+}
+
+function stopGuidedPlay() {
+  autoPlaying = false;
+  syncPlayIcon();
 }
 
 // ── Arithmetic: split into digits, add adjacent pairs, cascade carries ──
@@ -251,7 +372,7 @@ function updateControls(index) {
   progressEl.textContent = index === 0 ? "Ready" : index === total ? "Done" : `Step ${index} of ${total}`;
   prevBtn.disabled = index === 0;
   nextBtn.disabled = index === total;
-  playIcon.innerHTML = scrubber.isPlaying ? ICON_PAUSE : ICON_PLAY;
+  syncPlayIcon();
   stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === index));
 
   const line = currentNarration[index];
@@ -312,7 +433,10 @@ async function loadScene(n) {
   const s = makeScene(n);
   if (scrubber) scrubber.destroy();
   clearInterval(typeTimer);
+  clearInterval(rhythmTimer);
   isTalking = false;
+  stopGuidedPlay();
+  needsIntro = true;
   currentNarration = buildNarration(s);
   botText.textContent = "";
   lastNarratedIndex = -1;
@@ -448,8 +572,37 @@ function setActiveChip(chip) {
 // Only this button ever reaches the model — it opens the site's real,
 // AI-backed PrepBot chat (utils/prepbot/prepbot.js). The bubble/thinking
 // narration above is scripted and free.
-document.getElementById("mmBotAsk").addEventListener("click", () => {
+botAskBtn.addEventListener("click", () => {
   document.getElementById("chat-fab")?.click();
+});
+
+botSleepBtn.addEventListener("click", () => {
+  asleep = !asleep;
+  botSleepBtn.title = asleep ? "Wake" : "Sleep";
+  botSleepBtn.innerHTML = asleep ? ICON_WAKE : ICON_SLEEP;
+  if (asleep) {
+    clearTimeout(idleTimer);
+    gsap.killTweensOf(botAvatar);
+    gsap.killTweensOf(botGroup);
+    gsap.set(botAvatar, { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
+    gsap.set(botGroup, { x: 0 });
+    if (botEyes.length) gsap.set(botEyes, { scaleY: 0.15 });
+  } else {
+    if (botEyes.length) gsap.set(botEyes, { scaleY: 1 });
+    scheduleIdle();
+  }
+});
+
+botPokeBtn.addEventListener("click", () => {
+  if (isTalking || asleep) return;
+  const fn = BODY_IMPULSES[Math.floor(Math.random() * BODY_IMPULSES.length)];
+  fn();
+});
+
+fullscreenBtn.addEventListener("click", () => {
+  const tv = document.querySelector(".mm-tv");
+  if (!document.fullscreenElement) tv.requestFullscreen?.();
+  else document.exitFullscreen?.();
 });
 
 chipsWrap.querySelectorAll(".mm-chip").forEach((chip) => {
@@ -473,22 +626,22 @@ numInput.addEventListener("keydown", (e) => {
 });
 
 playBtn.addEventListener("click", () => {
-  scrubber?.togglePlay();
-  updateControls(scrubber.index);
+  if (autoPlaying) stopGuidedPlay();
+  else guidedPlay();
 });
-prevBtn.addEventListener("click", () => scrubber?.prev());
-nextBtn.addEventListener("click", () => scrubber?.next());
+prevBtn.addEventListener("click", () => { stopGuidedPlay(); scrubber?.prev(); });
+nextBtn.addEventListener("click", () => { stopGuidedPlay(); scrubber?.next(); });
 
 document.addEventListener("keydown", (e) => {
   const tag = document.activeElement?.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA") return;
   if (!scrubber) return;
-  if (e.key === "ArrowRight") scrubber.next();
-  else if (e.key === "ArrowLeft") scrubber.prev();
+  if (e.key === "ArrowRight") { stopGuidedPlay(); scrubber.next(); }
+  else if (e.key === "ArrowLeft") { stopGuidedPlay(); scrubber.prev(); }
   else if (e.key === " ") {
     e.preventDefault();
-    scrubber.togglePlay();
-    updateControls(scrubber.index);
+    if (autoPlaying) stopGuidedPlay();
+    else guidedPlay();
   }
 });
 

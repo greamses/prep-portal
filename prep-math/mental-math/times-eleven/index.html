@@ -60,10 +60,24 @@
           <div class="mm-tv-screen">
             <span class="mm-tv-step-sticker pp-sticky pp-sticky--tape pp-sticky--c0" id="mmProgress">Ready</span>
             <div class="mm-tv-inner" id="mmStage"></div>
+
+            <!-- Title-card reveal, played once per newly chosen number before
+                 guided narration starts — see playIntro() in scene.js. -->
+            <div class="mm-tv-intro" id="mmIntro" aria-hidden="true">
+              <div class="mm-tv-intro-text">
+                <span class="mm-tv-intro-big">Learning</span>
+                <span class="mm-tv-intro-small">with PrepBot</span>
+              </div>
+            </div>
+
             <div class="mm-prepbot">
               <div class="mm-prepbot-bubble mm-prepbot-bubble--speech" id="mmBotBubble" aria-hidden="true"><p id="mmBotText"></p></div>
               <div class="mm-prepbot-avatar-wrap">
-                <button class="mm-prepbot-ask" id="mmBotAsk" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question">?</button>
+                <div class="mm-prepbot-menu" id="mmBotMenu">
+                  <button class="mm-prepbot-menu-btn" id="mmBotAsk" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>
+                  <button class="mm-prepbot-menu-btn" id="mmBotSleep" type="button" title="Sleep" aria-label="Sleep PrepBot"></button>
+                  <button class="mm-prepbot-menu-btn" id="mmBotPoke" type="button" title="Wiggle" aria-label="Wiggle PrepBot"></button>
+                </div>
                 <div class="mm-prepbot-avatar" id="mmBotAvatar" aria-hidden="true"></div>
               </div>
             </div>
@@ -81,6 +95,9 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
+            <button class="mm-tv-btn" id="mmFullscreenBtn" type="button" aria-label="Fullscreen">
+              <span id="mmFullscreenIcon"></span>
+            </button>
           </div>
         </div>
         <div class="mm-tv-stand" aria-hidden="true">
