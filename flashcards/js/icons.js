@@ -88,3 +88,9 @@ export const ICON_GOOD = svg(
 export const ICON_EASY = svg(
   `<path d="M13 2.2 4.4 13.8h5.7l-1 8 8.5-11.6h-5.7z" fill="#fff"/>`,
 );
+
+// Delete — a plain trash can (currentColor, tints danger-red on hover via CSS).
+export const ICON_DELETE = svg(
+  `<path d="M4 7h16M9 7V4.8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M6.5 7l1 12.3a2 2 0 0 0 2 1.9h5a2 2 0 0 0 2-1.9L17.5 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+);

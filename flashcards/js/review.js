@@ -9,10 +9,10 @@
 import {
   $, safe, BOXES, MAX_BOX, pouchColorClass, pouchTagColorClass, pouchCardsHtml, attachSwipeNav,
 } from './config.js';
-import { listDecks, dueCardsInBox, boxCounts, gradeCard } from './deck-store.js';
+import { listDecks, dueCardsInBox, boxCounts, gradeCard, deleteDeck } from './deck-store.js';
 import {
   heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
-  ICON_AGAIN, ICON_HARD, ICON_GOOD, ICON_EASY,
+  ICON_AGAIN, ICON_HARD, ICON_GOOD, ICON_EASY, ICON_DELETE,
 } from './icons.js';
 
 const deckGrid = $('deck-grid');
@@ -89,6 +89,7 @@ export async function renderDecks() {
       <div class="deck-pouch-bag">
         <div class="deck-pouch-neck"></div>
         <div class="deck-pouch-body">
+          <button class="deck-pouch-del" data-del-deck="${deck.id}" type="button" title="Delete this deck" aria-label="Delete this deck">${ICON_DELETE}</button>
           <div class="deck-card-hdr">
             <span class="deck-subject">${safe(deck.subject)}</span>
             <span class="deck-topic">${safe(deck.topic)}</span>
@@ -179,7 +180,23 @@ function goNext() {
 export function initReview() {
   mountIcons();
 
-  deckGrid.addEventListener('click', (e) => {
+  deckGrid.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('.deck-pouch-del');
+    if (delBtn) {
+      const pouch = delBtn.closest('.deck-pouch');
+      const tag = pouch?.querySelector('.deck-pouch-tag')?.textContent || 'this deck';
+      if (!confirm(`Delete "${tag}"? This removes every card in it — this can't be undone.`)) return;
+      delBtn.disabled = true;
+      try {
+        await deleteDeck(delBtn.dataset.delDeck);
+        renderDecks();
+      } catch (err) {
+        console.error('[Recall Press] delete deck failed:', err);
+        alert(err.message || 'Could not delete this deck.');
+        delBtn.disabled = false;
+      }
+      return;
+    }
     const btn = e.target.closest('.drawer.has-due');
     if (!btn) return;
     startSession(btn.dataset.deck, parseInt(btn.dataset.box, 10));

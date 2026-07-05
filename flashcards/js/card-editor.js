@@ -9,13 +9,13 @@
 import {
   $, safe, pouchColorClass, pouchTagColorClass, pouchCardsHtml, attachSwipeNav,
 } from './config.js';
-import { listDecks, updateCard } from './deck-store.js';
+import { listDecks, updateCard, deleteDeck, deleteCard } from './deck-store.js';
 import { printCards } from './api.js';
 import { uploadCardImage, generateCardImage } from './image-upload.js';
 import { craftImagePrompt } from '/utils/ai-client.js';
 import {
   heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP,
-  ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_COPY_PROMPT, ICON_REGEN,
+  ICON_EDIT, ICON_IMAGE, ICON_GENERATE, ICON_COPY_PROMPT, ICON_REGEN, ICON_DELETE,
 } from './icons.js';
 
 /** Plain-template fallback — used if Gemini prompt-crafting (below) fails,
@@ -29,9 +29,26 @@ function buildImagePrompt(text) {
 /** Let Gemini turn the card's plain text into a properly structured image
  * prompt (better composition/detail than the fixed template alone), then
  * hand that off to the actual image generator. Falls back to the plain
- * template on any failure so this never blocks image generation. */
-async function buildSmartImagePrompt(text) {
-  return craftImagePrompt(text, buildImagePrompt(text));
+ * template on any failure so this never blocks image generation.
+ *
+ * Generated ONCE per side and stored on the card (frontImagePrompt /
+ * backImagePrompt) — Generate and Copy Prompt both reuse that stored value
+ * instead of re-calling the AI every time. toggleEdit()/regenerateCurrentCard()
+ * clear the stored prompt for whichever side's text actually changes, so it
+ * only gets rebuilt when it would otherwise be stale. */
+async function buildSmartImagePrompt(card, side) {
+  const field = side === 'front' ? 'frontImagePrompt' : 'backImagePrompt';
+  if (card[field]) return card[field];
+
+  const text = side === 'front' ? card.front : card.back;
+  const prompt = await craftImagePrompt(text, buildImagePrompt(text));
+  card[field] = prompt;
+  try {
+    await updateCard(deck.id, card.id, { [field]: prompt });
+  } catch (err) {
+    console.warn('[Recall Press] failed to persist image prompt:', err);
+  }
+  return prompt;
 }
 
 const editDeckGrid = $('edit-deck-grid');
@@ -59,6 +76,7 @@ const toolImage = $('editor-tool-image');
 const toolGenerate = $('editor-tool-generate');
 const toolCopyPrompt = $('editor-tool-copy-prompt');
 const toolRegen = $('editor-tool-regen');
+const toolDelete = $('editor-tool-delete');
 const toolImageInput = $('editor-tool-image-input');
 const siteNav = document.querySelector('.site-nav');
 
@@ -71,6 +89,7 @@ function mountIcons() {
   $('editor-tool-icon-generate').innerHTML = ICON_GENERATE;
   $('editor-tool-icon-copy-prompt').innerHTML = ICON_COPY_PROMPT;
   $('editor-tool-icon-regen').innerHTML = ICON_REGEN;
+  $('editor-tool-icon-delete').innerHTML = ICON_DELETE;
   frontIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(3);
   backIconWrap.querySelector('.flash-icon-tile').innerHTML = iconBlob(8);
   document.querySelector('#editor-flash-card .flash-blob--front').innerHTML = heroPaint();
@@ -99,6 +118,7 @@ export async function renderEditDecks() {
       <div class="deck-pouch-bag">
         <div class="deck-pouch-neck"></div>
         <div class="deck-pouch-body">
+          <button class="deck-pouch-del" data-del-deck="${d.id}" type="button" title="Delete this deck" aria-label="Delete this deck">${ICON_DELETE}</button>
           <div class="deck-card-hdr">
             <span class="deck-subject">${safe(d.subject)}</span>
             <span class="deck-topic">${safe(d.topic)}</span>
@@ -191,11 +211,18 @@ async function toggleEdit() {
     const front = frontText.textContent.trim();
     const back = backText.textContent.trim();
     stopEditing();
-    if (front === card.front && back === card.back) return;
+    const frontChanged = front !== card.front;
+    const backChanged = back !== card.back;
+    if (!frontChanged && !backChanged) return;
+    // The text changed, so any stored image prompt for that side no longer
+    // describes the card — clear it so the next Generate/Copy Prompt rebuilds
+    // it instead of reusing stale wording.
+    const patch = { front, back };
+    if (frontChanged) patch.frontImagePrompt = null;
+    if (backChanged) patch.backImagePrompt = null;
     try {
-      await updateCard(deck.id, card.id, { front, back });
-      card.front = front;
-      card.back = back;
+      await updateCard(deck.id, card.id, patch);
+      Object.assign(card, patch);
     } catch (err) {
       console.error('[Recall Press] edit save failed:', err);
     }
@@ -238,11 +265,10 @@ async function handleGenerate() {
   const card = deck.cards[idx];
   const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
   const field = side === 'front' ? 'frontImage' : 'backImage';
-  const text = side === 'front' ? card.front : card.back;
 
   toolGenerate.disabled = true;
   try {
-    const url = await generateCardImage(await buildSmartImagePrompt(text));
+    const url = await generateCardImage(await buildSmartImagePrompt(card, side));
     await updateCard(deck.id, card.id, { [field]: url });
     card[field] = url;
     paintImage(
@@ -262,13 +288,12 @@ async function handleCopyPrompt() {
   if (!deck) return;
   const card = deck.cards[idx];
   const side = flashCard.classList.contains('flipped') ? 'back' : 'front';
-  const text = side === 'front' ? card.front : card.back;
   const label = $('editor-tool-copy-prompt-label');
 
   const prevLabel = label.textContent;
   label.textContent = 'Thinking…';
   try {
-    const prompt = await buildSmartImagePrompt(text);
+    const prompt = await buildSmartImagePrompt(card, side);
     await navigator.clipboard.writeText(prompt);
     label.textContent = 'Copied!';
     setTimeout(() => { label.textContent = prevLabel; }, 1500);
@@ -277,6 +302,29 @@ async function handleCopyPrompt() {
     label.textContent = prevLabel;
     alert('Could not copy the prompt.');
   }
+}
+
+async function deleteCurrentCard() {
+  if (!deck) return;
+  const card = deck.cards[idx];
+  if (!confirm("Delete this card? This can't be undone.")) return;
+
+  toolDelete.disabled = true;
+  try {
+    const cards = await deleteCard(deck.id, card.id);
+    deck.cards = cards || deck.cards.filter((c) => c.id !== card.id);
+    if (!deck.cards.length) {
+      toolDelete.disabled = false;
+      closeEditor();
+      return;
+    }
+    if (idx >= deck.cards.length) idx = deck.cards.length - 1;
+    loadCard();
+  } catch (err) {
+    console.error('[Recall Press] delete card failed:', err);
+    alert(err.message || 'Could not delete this card.');
+  }
+  toolDelete.disabled = false;
 }
 
 async function regenerateCurrentCard() {
@@ -291,10 +339,12 @@ async function regenerateCurrentCard() {
       count: 1,
     });
     if (!fresh) throw new Error('No replacement came back — try again.');
-    await updateCard(deck.id, card.id, {
+    const patch = {
       front: fresh.front, back: fresh.back, frontImage: null, backImage: null,
-    });
-    Object.assign(card, { front: fresh.front, back: fresh.back, frontImage: null, backImage: null });
+      frontImagePrompt: null, backImagePrompt: null,
+    };
+    await updateCard(deck.id, card.id, patch);
+    Object.assign(card, patch);
     loadCard();
   } catch (err) {
     console.error('[Recall Press] regenerate failed:', err);
@@ -306,7 +356,23 @@ async function regenerateCurrentCard() {
 export function initCardEditor() {
   mountIcons();
 
-  editDeckGrid.addEventListener('click', (e) => {
+  editDeckGrid.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('.deck-pouch-del');
+    if (delBtn) {
+      const pouch = delBtn.closest('.deck-pouch');
+      const tag = pouch?.querySelector('.deck-pouch-tag')?.textContent || 'this deck';
+      if (!confirm(`Delete "${tag}"? This removes every card in it — this can't be undone.`)) return;
+      delBtn.disabled = true;
+      try {
+        await deleteDeck(delBtn.dataset.delDeck);
+        renderEditDecks();
+      } catch (err) {
+        console.error('[Recall Press] delete deck failed:', err);
+        alert(err.message || 'Could not delete this deck.');
+        delBtn.disabled = false;
+      }
+      return;
+    }
     const card = e.target.closest('.deck-pouch--edit');
     if (!card) return;
     openEditor(card.dataset.deck);
@@ -332,6 +398,7 @@ export function initCardEditor() {
   toolGenerate.addEventListener('click', handleGenerate);
   toolCopyPrompt.addEventListener('click', handleCopyPrompt);
   toolRegen.addEventListener('click', regenerateCurrentCard);
+  toolDelete.addEventListener('click', deleteCurrentCard);
 
   editorClose.addEventListener('click', closeEditor);
   editorBd.addEventListener('click', (e) => {

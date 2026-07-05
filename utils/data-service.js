@@ -28,6 +28,7 @@
 import { auth, db } from "/firebase-init.js";
 import {
   doc,
+  deleteDoc as fsDeleteDoc,
   getDoc as fsGetDoc,
   getDocs as fsGetDocs,
   onSnapshot,
@@ -283,6 +284,14 @@ export async function updateFields(path, data) {
   reportUsage(0, 1);
   const cur = readCache(key, Infinity);
   writeCache(key, { ...(cur && typeof cur === "object" ? cur : {}), ...data });
+}
+
+/** Delete a doc outright, with the same write-through cache cleanup as saveDoc. */
+export async function removeDoc(path) {
+  if ((await quotaStatus()).writesBlocked) throw quotaError("write");
+  await fsDeleteDoc(doc(db, ...path.split("/")));
+  reportUsage(0, 1);
+  delCache("doc:" + path);
 }
 
 /** Drop a cached doc/list so the next read re-fetches (call after a known change). */

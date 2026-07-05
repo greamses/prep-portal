@@ -6,7 +6,7 @@
 ═══════════════════════════════════════════════════════ */
 import { collection } from 'firebase/firestore';
 import { auth, db } from '/firebase-init.js';
-import { getDoc, getList, saveDoc, invalidateDoc, invalidateList } from '/utils/data-service.js';
+import { getDoc, getList, saveDoc, removeDoc, invalidateDoc, invalidateList } from '/utils/data-service.js';
 import { slugify, nextBox, dueAtFor } from './config.js';
 
 function uid() {
@@ -99,6 +99,29 @@ export async function gradeCard(deckId, cardId, grade) {
     return { ...c, box, dueAt: dueAtFor(box) };
   });
 
+  await saveDoc(path, { cards, updatedAt: Date.now() }, { merge: true });
+  invalidateDoc(path);
+  invalidateList(`flashcardDecks:${id}`);
+  return cards;
+}
+
+/** Delete an entire deck (the pouch and every card in it). */
+export async function deleteDeck(deckId) {
+  const id = uid();
+  const path = `users/${id}/flashcardDecks/${deckId}`;
+  await removeDoc(path);
+  invalidateList(`flashcardDecks:${id}`);
+}
+
+/** Remove a single card from a deck. Leaves the deck (even if it ends up
+ * empty) — deleting the whole pouch is a separate, explicit action. */
+export async function deleteCard(deckId, cardId) {
+  const id = uid();
+  const path = `users/${id}/flashcardDecks/${deckId}`;
+  const deck = await getDoc(path, { force: true });
+  if (!deck) return null;
+
+  const cards = (deck.cards || []).filter((c) => c.id !== cardId);
   await saveDoc(path, { cards, updatedAt: Date.now() }, { merge: true });
   invalidateDoc(path);
   invalidateList(`flashcardDecks:${id}`);
