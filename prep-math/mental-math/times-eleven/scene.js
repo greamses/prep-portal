@@ -14,7 +14,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 import { Scrubber } from "../shared/scrub-engine.js";
-import { ICON_PLAY, ICON_PAUSE, ICON_PREPBOT } from "../shared/icons.js";
+import { ICON_PLAY, ICON_PAUSE, ICON_PREPBOT, MOUTH_SHAPES } from "../shared/icons.js";
 
 const stage = document.getElementById("mmStage");
 const stepsPanel = document.getElementById("mmSteps");
@@ -25,6 +25,7 @@ const prevBtn = document.getElementById("mmPrevBtn");
 const nextBtn = document.getElementById("mmNextBtn");
 const chipsWrap = document.getElementById("mmChips");
 const numInput = document.getElementById("mmNumInput");
+const botGroup = document.querySelector(".mm-prepbot");
 const botBubble = document.getElementById("mmBotBubble");
 const botText = document.getElementById("mmBotText");
 const botAvatar = document.getElementById("mmBotAvatar");
@@ -48,56 +49,107 @@ let gsap;
 let scrubber = null;
 let currentNarration = [];
 let typeTimer = null;
-let idleTween = null;
 let lastNarratedIndex = -1;
+let isTalking = false;
+let idleTimer = null;
 
-// Typewriter reveal for the bubble text — returns the approximate typing
-// duration (seconds) so the mouth-flap animation can be timed to match.
-function typeText(el, text, speed = 26) {
+// ── Body vs. face are two separate animation systems ────────────────────
+// Body (squeeze-bounce / slide / spin) only ever plays between lines, as
+// occasional one-shot "impulses" — never a continuous loop, and never
+// while talking. Face (eyes + mouth) only ever plays *while* talking, word
+// by word. This mirrors how the site's own prefers-reduced-motion rule
+// (theme.css) zeroes every CSS animation's duration — driving motion with
+// GSAP tweens instead means it isn't silently caught by that rule.
+
+function stopBody() {
+  gsap.killTweensOf(botAvatar);
+  gsap.killTweensOf(botGroup);
+  gsap.set(botAvatar, { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 });
+  gsap.set(botGroup, { x: 0 });
+}
+
+// "Bounce like a fluffy ball": squash in anticipation, stretch into a big
+// jump, squash again on landing, then a couple of smaller settling bounces.
+function squeezeBounce() {
+  return gsap
+    .timeline()
+    .to(botAvatar, { scaleX: 1.25, scaleY: 0.72, duration: 0.12, ease: "power1.out" })
+    .to(botAvatar, { scaleX: 0.82, scaleY: 1.3, y: -22, duration: 0.18, ease: "power2.out" })
+    .to(botAvatar, { scaleX: 1.12, scaleY: 0.9, y: 0, duration: 0.16, ease: "power1.in" })
+    .to(botAvatar, { scaleX: 0.95, scaleY: 1.08, y: -8, duration: 0.13, ease: "power2.out" })
+    .to(botAvatar, { scaleX: 1, scaleY: 1, y: 0, duration: 0.18, ease: "bounce.out" });
+}
+
+// Walks the whole avatar+bubble group from its home corner to the other
+// bottom side of the screen and back.
+function slideAcross() {
+  const screen = document.querySelector(".mm-tv-screen");
+  const travel = -(screen.clientWidth - botGroup.offsetWidth - 14);
+  if (travel >= 0) return gsap.timeline(); // screen too narrow to bother
+  return gsap
+    .timeline()
+    .to(botGroup, { x: travel, duration: 1.1, ease: "power1.inOut" })
+    .to(botGroup, { x: 0, duration: 1.1, ease: "power1.inOut", delay: 0.5 });
+}
+
+// A quick cartoon spin-hop, mixed in as a rarer third flavour of impulse.
+function spinHop() {
+  return gsap
+    .timeline()
+    .to(botAvatar, { rotation: "+=360", y: -10, duration: 0.5, ease: "back.out(2)" })
+    .to(botAvatar, { y: 0, duration: 0.25 });
+}
+
+const BODY_IMPULSES = [squeezeBounce, squeezeBounce, slideAcross, spinHop];
+
+// Idle scheduler: waits a random beat, and — only if nobody's talking —
+// fires one random impulse, then schedules the next check. Never loops
+// continuously on its own; each impulse is a short one-shot.
+function scheduleIdle() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (!isTalking) {
+      const fn = BODY_IMPULSES[Math.floor(Math.random() * BODY_IMPULSES.length)];
+      fn();
+    }
+    scheduleIdle();
+  }, 1800 + Math.random() * 2200);
+}
+
+// Reveals `text` letter by letter (the visible "typing"); at each word
+// boundary, morphs the mouth to a new shape and gives the eyes a quick
+// blink — so the face only ever animates in sync with actual words.
+function speakLine(text) {
+  isTalking = true;
+  stopBody();
   clearInterval(typeTimer);
-  el.textContent = "";
+  botText.textContent = "";
+  botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
+
+  const wordEnds = [];
+  for (let idx = 0; idx < text.length; idx++) if (text[idx] === " ") wordEnds.push(idx);
+  wordEnds.push(text.length);
+
   let i = 0;
+  let wordCursor = 0;
+  let shapeCursor = 0;
   typeTimer = setInterval(() => {
     i += 1;
-    el.textContent = text.slice(0, i);
-    if (i >= text.length) clearInterval(typeTimer);
-  }, speed);
-  return (text.length * speed) / 1000;
-}
-
-// PrepBot's idle life — a continuous playful bounce/wobble. Driven by
-// GSAP rather than CSS @keyframes: theme.css zeroes every CSS animation's
-// duration under prefers-reduced-motion (a deliberate, correct site-wide
-// accessibility rule), which would otherwise silently freeze the mascot.
-function startIdle() {
-  idleTween?.kill();
-  idleTween = gsap.to(botAvatar, {
-    y: -6,
-    rotation: 5,
-    duration: 1.1,
-    ease: "sine.inOut",
-    repeat: -1,
-    yoyo: true,
-  });
-  if (botEyes.length) {
-    gsap.to(botEyes, { scaleY: 0.15, duration: 0.08, repeat: -1, repeatDelay: 3.4, yoyo: true });
-  }
-}
-
-// A bigger "reaction" burst on every step change — a full spin + hop —
-// then hands control back to the idle bounce. Runs alongside a few mouth
-// flaps timed to roughly cover the typewriter reveal.
-function reactToNewLine(talkDuration) {
-  gsap.killTweensOf(botAvatar, "rotation,scale,y");
-  gsap
-    .timeline()
-    .to(botAvatar, { rotation: "+=360", scale: 1.3, duration: 0.5, ease: "back.out(2)" })
-    .to(botAvatar, { scale: 1, duration: 0.25 })
-    .call(startIdle);
-  if (botMouth) {
-    const flaps = Math.max(2, Math.round(talkDuration / 0.22));
-    gsap.to(botMouth, { scaleY: 1.8, duration: 0.11, repeat: flaps, yoyo: true });
-  }
+    botText.textContent = text.slice(0, i);
+    if (wordCursor < wordEnds.length && i >= wordEnds[wordCursor]) {
+      wordCursor += 1;
+      shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
+      botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
+      if (botEyes.length && wordCursor % 3 === 0) {
+        gsap.to(botEyes, { scaleY: 0.15, duration: 0.06, yoyo: true, repeat: 1 });
+      }
+    }
+    if (i >= text.length) {
+      clearInterval(typeTimer);
+      botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
+      isTalking = false;
+    }
+  }, 26);
 }
 
 // ── Arithmetic: split into digits, add adjacent pairs, cascade carries ──
@@ -208,8 +260,7 @@ function updateControls(index) {
     botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[index % BUBBLE_COLORS.length]);
     botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
     botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
-    const talkDuration = typeText(botText, line.text);
-    reactToNewLine(talkDuration);
+    speakLine(line.text);
   }
 }
 
@@ -260,6 +311,8 @@ function buildStageDOM(s) {
 async function loadScene(n) {
   const s = makeScene(n);
   if (scrubber) scrubber.destroy();
+  clearInterval(typeTimer);
+  isTalking = false;
   currentNarration = buildNarration(s);
   botText.textContent = "";
   lastNarratedIndex = -1;
@@ -442,7 +495,7 @@ document.addEventListener("keydown", (e) => {
 async function boot() {
   ({ gsap } = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"));
   await waitForMathJax();
-  startIdle();
+  scheduleIdle();
   loadScene(23);
 }
 

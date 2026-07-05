@@ -104,8 +104,10 @@
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
 }
 .mm-prepbot-avatar svg { width: 100%; height: 100%; overflow: visible; }
-.mm-bot-eye,
-.mm-bot-mouth { transform-box: fill-box; transform-origin: center; }
+/* Eyes blink via scaleY (needs a fill-box origin); the mouth "talks" by
+   swapping its `d` attribute (scene.js/MOUTH_SHAPES) instead of scaling,
+   so it never needs a transform-origin of its own. */
+.mm-bot-eye { transform-box: fill-box; transform-origin: center; }
 
 /* Question badge — clicking it opens the real, AI-backed PrepBot chat
    (#chat-fab from utils/prepbot/prepbot.js); everything else on this page

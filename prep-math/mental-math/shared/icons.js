@@ -38,6 +38,20 @@ export const ICON_CLOSE = svg(
 // PrepBot mascot — same robot used by the site-wide chat FAB
 // (utils/prepbot/prepbot.js's PB_ICONS.robotAwake), reused here so the
 // "teacher" narrating the trick is recognizably the same character.
-// Eyes/mouth carry their own classes (absent from the original) so CSS can
-// blink/talk them independently — see .mm-bot-eye/.mm-bot-mouth in style.css.
-export const ICON_PREPBOT = `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="6" r="3.2" fill="var(--accent-warning)"/><rect x="4" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="52" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="11" y="16" width="42" height="38" rx="14" fill="var(--accent-secondary)"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="var(--ink)"/><circle class="mm-bot-eye" cx="26" cy="31.5" r="3.1" fill="var(--accent-warning)"/><circle class="mm-bot-eye" cx="38" cy="31.5" r="3.1" fill="var(--accent-warning)"/><rect class="mm-bot-mouth" x="24" y="46" width="16" height="4.4" rx="2.2" fill="var(--ink)"/></svg>`;
+// Eyes carry their own class (absent from the original) so JS can blink
+// them independently. The mouth is a <path> (not the original's <rect>)
+// whose `d` is swapped between MOUTH_SHAPES (scene.js) to "talk" — scaling
+// the old rect from its own center visibly popped it away from the face
+// the moment it grew past the jaw's rounded corners; morphing a path in
+// place has no such transform-origin trap.
+export const ICON_PREPBOT = `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="6" r="3.2" fill="var(--accent-warning)"/><rect x="4" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="52" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="11" y="16" width="42" height="38" rx="14" fill="var(--accent-secondary)"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="var(--ink)"/><circle class="mm-bot-eye" cx="26" cy="31.5" r="3.1" fill="var(--accent-warning)"/><circle class="mm-bot-eye" cx="38" cy="31.5" r="3.1" fill="var(--accent-warning)"/><path class="mm-bot-mouth" d="M24 48 L40 48" stroke="var(--ink)" stroke-width="4.4" stroke-linecap="round" fill="none"/></svg>`;
+
+// Mouth shapes to cycle through while talking (index 0 = closed/resting).
+// Kept as open strokes (not filled paths) so swapping `d` never needs the
+// shape to close on itself — a flat line reads as "mouth shut" just fine.
+export const MOUTH_SHAPES = [
+  "M24 48 L40 48",
+  "M25 47 Q32 50.5 39 47",
+  "M24.5 46 Q32 53 39.5 46",
+  "M27 46.5 Q32 52 37 46.5",
+];
