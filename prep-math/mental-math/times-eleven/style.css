@@ -166,7 +166,7 @@
    tail pseudo-elements read the same variable so they always match. */
 .mm-prepbot-bubble {
   --bubble-bg: var(--surface-primary);
-  max-width: 180px;
+  max-width: 130px;
   background: var(--bubble-bg);
   color: #14130f;
   border-radius: 14px;

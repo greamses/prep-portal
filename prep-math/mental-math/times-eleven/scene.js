@@ -435,7 +435,10 @@ async function guidedPlay() {
     if (!autoPlaying) break;
     await currentTalkPromise;
     if (!autoPlaying) break;
-    await delay(300);
+    // A generous hold before the next step — kids need a moment to
+    // actually look at what just happened, not have it bulldozed by the
+    // next line starting immediately.
+    await delay(1100);
   }
   autoPlaying = false;
   syncPlayIcon();

@@ -82,14 +82,14 @@ export class Scrubber {
     const target = Math.min(this._index + 1, this.labels.length - 1);
     if (target === this._index) return Promise.resolve(null);
     this.tl.pause();
-    return this.tl.tweenTo(this.labels[target], { duration: 0.5, ease: "power2.inOut" });
+    return this.tl.tweenTo(this.labels[target], { duration: 0.75, ease: "power2.inOut" });
   }
 
   prev() {
     const target = Math.max(this._index - 1, 0);
     if (target === this._index) return;
     this.tl.pause();
-    this.tl.tweenTo(this.labels[target], { duration: 0.5, ease: "power2.inOut" });
+    this.tl.tweenTo(this.labels[target], { duration: 0.75, ease: "power2.inOut" });
   }
 
   seek(i) {
