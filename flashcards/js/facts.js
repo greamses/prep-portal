@@ -53,12 +53,10 @@ function mountIcons() {
   document.querySelector('#facts-flash-card .flash-blob--back').innerHTML = heroPaint();
 }
 
-// Both factors come from the checked set — checking only ×7 should only
-// ever drill 7×7, never pull in an unchecked number as the other factor.
 function randomFact() {
   const tables = [...selected];
   const table = tables[Math.floor(Math.random() * tables.length)];
-  const multiplier = tables[Math.floor(Math.random() * tables.length)];
+  const multiplier = 1 + Math.floor(Math.random() * 12);
   return { table, multiplier };
 }
 
