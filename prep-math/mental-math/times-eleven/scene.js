@@ -68,37 +68,17 @@ if (tvScreen) {
   tvScreen.prepend(blob);
 }
 
-// White theatre curtains, decorated with faint scattered maths doodles in our
-// own icon language (+, ×, =, sparkles) — CSS gives the panels their white
-// fabric gradient; this just fills them with the doodle print (currentColor,
-// tinted faint by CSS). Deterministic scatter so it looks hand-drawn but
-// stable across reloads.
-function curtainDoodles() {
-  const glyphs = [
-    "M-8 0 H8 M0 -8 V8",           // plus
-    "M-7 -7 L7 7 M7 -7 L-7 7",     // times
-    "M-8 -4 H8 M-8 4 H8",          // equals
-    "M0 -9 L2.4 -2.4 9 0 2.4 2.4 0 9 -2.4 2.4 -9 0 -2.4 -2.4 Z", // sparkle
-  ];
-  let seed = 7;
-  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  let out = "";
-  for (let gy = 24; gy < 400; gy += 60) {
-    for (let gx = 26; gx < 200; gx += 66) {
-      const jx = gx + (rnd() - 0.5) * 24;
-      const jy = gy + (rnd() - 0.5) * 24;
-      const rot = Math.round(rnd() * 40 - 20);
-      const scale = (0.8 + rnd() * 0.5).toFixed(2);
-      const gi = Math.floor(rnd() * glyphs.length);
-      const spark = gi === 3;
-      out +=
-        `<g transform="translate(${jx.toFixed(1)} ${jy.toFixed(1)}) rotate(${rot}) scale(${scale})">` +
-        `<path d="${glyphs[gi]}" ${spark ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"'}/></g>`;
-    }
-  }
-  return `<svg class="mm-curtain-doodles" viewBox="0 0 200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${out}</svg>`;
-}
-document.querySelectorAll(".mm-tv-curtain-panel").forEach((p) => { p.innerHTML = curtainDoodles(); });
+// White theatre curtains, decorated with a faint wash of our multicolour
+// paint blob (the same heroPaint() used on the screen) instead of a doodle
+// print — CSS gives the panels their white fabric folds; this just lays the
+// soft blob over them, kept subtle by CSS opacity.
+document.querySelectorAll(".mm-tv-curtain-panel").forEach((p) => {
+  const wrap = document.createElement("div");
+  wrap.className = "mm-curtain-blob";
+  wrap.setAttribute("aria-hidden", "true");
+  wrap.innerHTML = heroPaint();
+  p.appendChild(wrap);
+});
 
 // "Learning" spelled out as individual sticky-note letters, rotating
 // through the same pastel palette as the digit tiles.
