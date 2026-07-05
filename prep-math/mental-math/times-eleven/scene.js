@@ -306,7 +306,10 @@ function beepRhythm(text, finish) {
     rhythmTimer = setInterval(() => {
       count += 1;
       beat();
-      if (count >= beats) finish();
+      if (count >= beats) {
+        clearInterval(rhythmTimer);
+        finish();
+      }
     }, 195);
   }, 350);
 
@@ -316,8 +319,12 @@ function beepRhythm(text, finish) {
 
 // Two independent clocks: the bubble TEXT can type out as fast as it
 // likes (pure visual reveal), while the mouth/voice "speech" runs on its
-// own pace (beep rhythm or real talk, depending on voiceMode) and decides
-// when talking is actually done — it's fine for the text to finish first.
+// own pace (beep rhythm or real talk, depending on voiceMode). The line
+// only counts as "done" once BOTH have finished — typing is normally the
+// faster of the two, but a muted utterance can occasionally report onend
+// sooner than expected, and advancing on voice-done alone would cut the
+// text off mid-word (which is exactly the "next line pops in too soon"
+// bug this guards against).
 function speakLine(text) {
   isTalking = true;
   stopBody();
@@ -332,16 +339,11 @@ function speakLine(text) {
   botText.textContent = "";
   botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
 
-  let i = 0;
-  typeTimer = setInterval(() => {
-    i += 1;
-    botText.textContent = text.slice(0, i);
-    if (i >= text.length) clearInterval(typeTimer);
-  }, 16);
-
+  let typingDone = false;
+  let voiceDone = false;
   let finished = false;
   const finish = () => {
-    if (finished) return;
+    if (finished || !typingDone || !voiceDone) return;
     finished = true;
     clearInterval(rhythmTimer);
     clearTimeout(boundaryFallbackTimer);
@@ -351,8 +353,20 @@ function speakLine(text) {
     currentTalkResolve?.();
   };
 
-  if (voiceMode === "talk") talkAloud(text, finish);
-  else beepRhythm(text, finish);
+  let i = 0;
+  typeTimer = setInterval(() => {
+    i += 1;
+    botText.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(typeTimer);
+      typingDone = true;
+      finish();
+    }
+  }, 16);
+
+  const onVoiceDone = () => { voiceDone = true; finish(); };
+  if (voiceMode === "talk") talkAloud(text, onVoiceDone);
+  else beepRhythm(text, onVoiceDone);
 }
 
 function syncPlayIcon() {
@@ -740,8 +754,21 @@ function setActiveChip(chip) {
 // Only this button ever reaches the model — it opens the site's real,
 // AI-backed PrepBot chat (utils/prepbot/prepbot.js). The bubble/thinking
 // narration above is scripted and free.
+// Opens the real chat, then activates ITS mic button (utils/prepbot/
+// prepbot.js already has full speech-recognition → auto-send wiring for
+// #chat-mic) so asking a question is "click ? → speak" — no need to
+// duplicate that pipeline here. The mic button stays disabled for a beat
+// after the chat first opens (prepbot.js's own readiness check), so poll
+// briefly rather than assuming it's already enabled.
 botAskBtn.addEventListener("click", () => {
   document.getElementById("chat-fab")?.click();
+  const start = Date.now();
+  (function waitForMic() {
+    const micBtn = document.getElementById("chat-mic");
+    if (micBtn && !micBtn.disabled) { micBtn.click(); return; }
+    if (Date.now() - start > 3000) return; // give up quietly — chat is still open either way
+    setTimeout(waitForMic, 80);
+  })();
 });
 
 // Beep (default, free, silent-timing) vs Talk (actually speaks aloud —
@@ -778,10 +805,36 @@ botPokeBtn.addEventListener("click", () => {
   runImpulse(fn);
 });
 
+// The fullscreen screen can be anywhere from ~1.5x to ~5x wider than the
+// small-column version depending on monitor size, so a flat CSS scale
+// guess either does nothing or overshoots — measure the real width change
+// and scale tiles/PrepBot/sticker by that ratio instead.
+let preFullscreenWidth = 0;
 fullscreenBtn.addEventListener("click", () => {
   const tv = document.querySelector(".mm-tv");
-  if (!document.fullscreenElement) tv.requestFullscreen?.();
-  else document.exitFullscreen?.();
+  if (!document.fullscreenElement) {
+    preFullscreenWidth = document.querySelector(".mm-tv-screen").clientWidth;
+    tv.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) {
+    // Wait a frame for the fullscreen layout to actually settle before measuring.
+    requestAnimationFrame(() => {
+      const screen = document.querySelector(".mm-tv-screen");
+      const ratio = preFullscreenWidth ? screen.clientWidth / preFullscreenWidth : 1;
+      gsap.set(stage, { scale: ratio, transformOrigin: "left center" });
+      gsap.set(botGroup, { scale: ratio, transformOrigin: "bottom right" });
+      gsap.set(progressEl, { scale: Math.min(ratio, 2), transformOrigin: "top left" });
+    });
+  } else {
+    gsap.set(stage, { scale: 1 });
+    gsap.set(botGroup, { scale: 1 });
+    gsap.set(progressEl, { scale: 1 });
+  }
 });
 
 chipsWrap.querySelectorAll(".mm-chip").forEach((chip) => {
