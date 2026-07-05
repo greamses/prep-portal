@@ -1,0 +1,72 @@
+/* ═══════════════════════════════════════════════════════
+   MENTAL MATH — HUB
+═══════════════════════════════════════════════════════ */
+
+.mm-hub { max-width: 1000px; margin: 0 auto; padding: clamp(1.2rem, 4vw, 2.5rem) 1rem 3rem; }
+
+.mm-hub-head { max-width: 60ch; margin-bottom: 2rem; }
+
+.mm-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 0.4rem;
+}
+
+.mm-hub-head h1 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  color: var(--ink);
+  margin: 0 0 0.5rem;
+  line-height: 1.1;
+}
+
+.mm-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+
+.mm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.4rem;
+}
+
+.mm-card {
+  display: block;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+.mm-card:hover { transform: translateY(-4px); }
+
+.mm-card .pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 190px;
+}
+
+.mm-card-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: 1.15rem;
+  color: var(--ink);
+  margin: 0;
+}
+
+.mm-card-summary {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  flex: 1;
+  margin: 0;
+}
+
+.mm-card-cta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--ink);
+}

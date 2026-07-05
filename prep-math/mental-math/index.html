@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mental Math — PrepPortal</title>
+  <meta name="description" content="Learn mental-math shortcuts from Vedic Maths and the Trachtenberg System, animated step by step, then drill them with endless practice." />
+
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+
+  <link rel="stylesheet" href="/utils/components/theme.css" />
+  <link rel="stylesheet" href="/utils/components/nav.css" />
+  <link rel="stylesheet" href="/utils/components/components.css" />
+  <link rel="stylesheet" href="/prep-math/mental-math/hub.css" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <nav class="site-nav" data-nav="main"></nav>
+
+  <div class="mm-hub">
+    <header class="mm-hub-head">
+      <p class="mm-eyebrow">Mental Math</p>
+      <h1>Tricks that make numbers fast</h1>
+      <p class="mm-sub">Blending Vedic Maths and the Trachtenberg System — watch each trick unfold step by step, scrub back and forth until it clicks, then drill it with endless practice.</p>
+    </header>
+
+    <div id="mmGrid" class="mm-grid"></div>
+  </div>
+
+  <script src="/utils/components/nav-builder.js" type="module"></script>
+  <script type="module" src="/prep-math/mental-math/js/hub.js"></script>
+</body>
+</html>

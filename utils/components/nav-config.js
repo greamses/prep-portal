@@ -130,7 +130,7 @@ const NAV_CONFIG = [
         icon: I.math,
         description: "Numbers made easy",
         children: [
-          { text: "Math Tricks", href: "#math-tricks", description: "Quick calculation tips" },
+          { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
         ],
       },
     ],

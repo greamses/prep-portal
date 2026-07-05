@@ -1,0 +1,290 @@
+/* ═══════════════════════════════════════════════════════
+   MENTAL MATH — × 11 TRICK
+═══════════════════════════════════════════════════════ */
+
+.mm-trick-wrap { max-width: 920px; margin: 0 auto; padding: clamp(1.2rem, 4vw, 2.5rem) 1rem 3rem; }
+
+.mm-back { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); text-decoration: none; }
+.mm-back:hover { color: var(--ink); }
+
+.mm-trick-wrap h1 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  color: var(--ink);
+  margin: 0.5rem 0 0.3rem;
+}
+
+.mm-trick-sub {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  max-width: 60ch;
+  margin: 0 0 1.3rem;
+}
+
+/* ── Number picker ─────────────────────────────────────── */
+.mm-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1.2rem; }
+
+.mm-chip { cursor: pointer; border: 2px solid transparent; font: inherit; }
+.mm-chip.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
+
+.mm-num-input {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 0.45rem 0.7rem;
+  border: var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  width: 130px;
+}
+
+/* ── Stage + steps panel — 50/50 on large screens ──────── */
+.mm-stage-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .mm-stage-wrap { grid-template-columns: 1fr; }
+}
+
+.mm-tv-col { display: flex; flex-direction: column; align-items: center; }
+
+/* ── The "TV": a dark bezel around a 16:9 animation screen, with its own
+   built-in control panel along the bottom — the playback buttons live on
+   the set itself instead of floating separately below it. ─────────────── */
+.mm-tv {
+  position: relative;
+  width: 100%;
+  background: var(--ink);
+  border-radius: 22px;
+  padding: 12px 12px 0;
+  box-shadow: var(--shadow-lg);
+}
+
+.mm-tv-screen {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.28);
+}
+
+/* The actual scrollable animation surface — kept separate from
+   .mm-tv-screen so the step sticker (pinned in the screen, below) never
+   scrolls away with the tiles; scene.js only ever clears this inner div. */
+.mm-tv-inner {
+  position: absolute;
+  inset: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.mm-tv-step-sticker.pp-sticky {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.7rem 0.35rem;
+  pointer-events: none;
+}
+
+.mm-tv-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.9rem 0.75rem;
+}
+
+.mm-tv-light {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-success);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-success) 70%, transparent);
+  flex-shrink: 0;
+}
+
+.mm-tv-btns { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; margin-right: auto; }
+
+.mm-tv-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.mm-tv-btn svg { width: 15px; height: 15px; }
+.mm-tv-btn:hover { transform: translateY(-1px); }
+.mm-tv-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.mm-tv-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+.mm-tv-btn--play {
+  width: 40px;
+  height: 40px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+.mm-tv-btn--play svg,
+.mm-tv-btn--play span svg { width: 17px; height: 17px; }
+
+/* ── Stand: a thin "stem" holding the set up on a flat foot, like a
+   wine glass in silhouette. ────────────────────────────────────────── */
+.mm-tv-stand { display: flex; flex-direction: column; align-items: center; }
+.mm-tv-stand-neck {
+  width: 14px;
+  height: 26px;
+  background: var(--ink);
+  clip-path: polygon(30% 0, 70% 0, 60% 100%, 40% 100%);
+}
+.mm-tv-stand-base {
+  width: 120px;
+  height: 14px;
+  margin-top: -2px;
+  background: var(--ink);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Digit tiles: sticky notes standing in for each number on screen ──── */
+/* Anchored at the screen's literal left edge (not 50%) and positioned via
+   GSAP-animated `x` in absolute pixels — overflow-x can only ever reveal
+   content to the RIGHT of a container's origin, so anything placed with a
+   negative offset from a 50%-centered anchor (e.g. a new leading digit
+   appearing further left than everything else) would be permanently
+   unreachable once a 4-digit cascade needs more width than the screen. */
+.mm-tile.pp-sticky {
+  --tw: 56px;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: var(--tw);
+  height: var(--tw);
+  margin: calc(var(--tw) / -2) 0 0 calc(var(--tw) / -2);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+}
+.mm-tile.pp-sticky.mm-tile--md { --tw: 50px; }
+.mm-tile.pp-sticky.mm-tile--sm { --tw: 44px; }
+
+.mm-tile-digit {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: calc(var(--tw, 56px) * 0.42);
+  color: #14130f;
+  line-height: 1;
+}
+
+.mm-tile--ghost { opacity: 0; pointer-events: none; }
+.mm-tile--gap,
+.mm-tile--leading { opacity: 0; }
+
+.mm-plus-sign {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 20px;
+  margin: -10px 0 0 -10px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: var(--weight-black, 900);
+  font-size: 1.4rem;
+  color: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mm-carry-badge {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 34px;
+  height: 24px;
+  margin: -12px 0 0 -17px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #fff;
+  background: var(--accent-danger);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Auto-width (not a fixed square like the digit tiles), so centering on its
+   GSAP-driven x/y point uses xPercent/yPercent instead of a fixed margin. */
+.mm-answer-pill.pp-sticky {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  opacity: 0;
+  padding: 0.55rem 1.1rem 0.65rem;
+  white-space: nowrap;
+}
+.mm-answer-pill .mm-tile-digit { font-size: 1.6rem; }
+
+.mm-steps-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 220px;
+  padding: 0.4rem 0.6rem;
+}
+.mm-step {
+  opacity: 0;
+  transform: translateY(10px);
+  font-size: 1.05rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 10px;
+}
+.mm-step.is-current { background: color-mix(in srgb, var(--accent-primary) 18%, transparent); }
+.mm-step mjx-container { margin: 0 !important; }
+
+.mm-hint {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin: 0.6rem 0 1.6rem;
+}
+
+.mm-practice-cta {
+  display: block;
+  margin: 0 auto;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.7rem 1.6rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.mm-practice-cta:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.mm-practice-cta:active { transform: translateY(0); }
