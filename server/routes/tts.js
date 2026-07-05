@@ -153,7 +153,11 @@ module.exports = function () {
         return res.status(503).json({ error: "ElevenLabs is not configured." });
       }
 
-      const { text, voiceId = "21m00Tcm4TlvDq8ikWAM" } = req.body; // default: "Rachel"
+      // "Alice — Clear, Engaging Educator", one of ElevenLabs' default
+      // "premade" voices. Those are API-usable on every plan, including
+      // free; the old classic voices (e.g. "Rachel") were reclassified as
+      // Voice-Library voices and now 402 for free accounts via the API.
+      const { text, voiceId = "Xb7hH8MSUJpSbSDYk0k2" } = req.body;
       if (typeof text !== "string" || text.trim().length === 0) {
         return res.status(400).json({ error: "text must be a non-empty string." });
       }
