@@ -1,15 +1,25 @@
 /**
- * TTS proxy route — Google Cloud Text-to-Speech, key stays server-side.
+ * TTS proxy routes — keys stay server-side.
  *
- * POST /api/tts/synthesize
+ * POST /api/tts/synthesize  — Google Cloud Text-to-Speech
  *   Body: { text, ssml?, voice?, languageCode?, speakingRate?, pitch? }
  *   Returns: { audioContent: "<base64 MP3>", audioEncoding: "MP3" }
  *
- * Auth: credentials are read from env in this priority order —
+ * Auth: Google Cloud credentials are read from env in this priority order —
  *   1. GOOGLE_CLOUD_CREDENTIALS  (JSON string — use on Vercel)
  *   2. ./googleCloudKey.json     (local dev file, same project or separate)
  *   3. ./serviceAccountKey.json  (Firebase SA — works if TTS API is enabled
  *                                 on the same Google Cloud project)
+ *
+ * POST /api/tts/elevenlabs  — ElevenLabs premium voice
+ *   Body: { text, voiceId? }
+ *   Returns: { audioContent: "<base64 MP3>", audioEncoding: "MP3" }
+ *   Requires ELEVENLABS_API_KEY in env; 503s (client falls back to the
+ *   free Web Speech API) if unset.
+ *
+ * Both routes require a logged-in user (same `authenticate` gate) — this
+ * proxies paid, metered third-party APIs, so it's never exposed
+ * unauthenticated even on pages that are otherwise free/guest-accessible.
  */
 
 const express = require("express");
@@ -95,6 +105,56 @@ module.exports = function () {
       });
     } catch (err) {
       console.error("[/api/tts/synthesize]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── POST /api/tts/elevenlabs — premium AI voice for PrepBot's "Talk"
+  // mode (prep-math/mental-math). Behind the same login gate as the Google
+  // TTS route above, on purpose: it's a paid, metered third-party API, and
+  // this page has no other auth of its own — an unauthenticated proxy to a
+  // billed API would be an open abuse vector. Callers fall back to the
+  // free, unauthenticated Web Speech API on any failure (401, 503, network,
+  // or ELEVENLABS_API_KEY simply not being set yet). ───────────────────
+  router.post("/elevenlabs", authenticate, async (req, res) => {
+    try {
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      if (!apiKey) {
+        return res.status(503).json({ error: "ElevenLabs is not configured." });
+      }
+
+      const { text, voiceId = "21m00Tcm4TlvDq8ikWAM" } = req.body; // default: "Rachel"
+      if (typeof text !== "string" || text.trim().length === 0) {
+        return res.status(400).json({ error: "text must be a non-empty string." });
+      }
+      if (text.length > MAX_CHARS) {
+        return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
+      }
+
+      const elResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: { stability: 0.45, similarity_boost: 0.75 },
+        }),
+      });
+
+      if (!elResponse.ok) {
+        const detail = await elResponse.text().catch(() => "");
+        console.error("[/api/tts/elevenlabs]", elResponse.status, detail);
+        return res.status(502).json({ error: "ElevenLabs request failed." });
+      }
+
+      const buf = Buffer.from(await elResponse.arrayBuffer());
+      res.json({ audioContent: buf.toString("base64"), audioEncoding: "MP3" });
+    } catch (err) {
+      console.error("[/api/tts/elevenlabs]", err.message);
       res.status(500).json({ error: err.message });
     }
   });

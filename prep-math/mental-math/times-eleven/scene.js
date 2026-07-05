@@ -17,7 +17,9 @@ import { Scrubber } from "../shared/scrub-engine.js";
 import {
   ICON_PLAY, ICON_PAUSE, ICON_PREPBOT, MOUTH_SHAPES,
   ICON_FULLSCREEN, ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
+  ICON_TALK_MODE, ICON_BEEP_MODE,
 } from "../shared/icons.js";
+import { auth } from "/firebase-init.js";
 
 const stage = document.getElementById("mmStage");
 const stepsPanel = document.getElementById("mmSteps");
@@ -36,17 +38,31 @@ botAvatar.innerHTML = ICON_PREPBOT;
 const botEyes = botAvatar.querySelectorAll(".mm-bot-eye");
 const botMouth = botAvatar.querySelector(".mm-bot-mouth");
 const botAskBtn = document.getElementById("mmBotAsk");
+const botVoiceBtn = document.getElementById("mmBotVoice");
 const botSleepBtn = document.getElementById("mmBotSleep");
 const botPokeBtn = document.getElementById("mmBotPoke");
 botAskBtn.innerHTML = ICON_ASK;
 botSleepBtn.innerHTML = ICON_SLEEP;
 botPokeBtn.innerHTML = ICON_WIGGLE;
+const curtainEl = document.getElementById("mmCurtain");
+const curtainLeft = document.querySelector(".mm-tv-curtain-panel--left");
+const curtainRight = document.querySelector(".mm-tv-curtain-panel--right");
 const introEl = document.getElementById("mmIntro");
-const introBig = document.querySelector(".mm-tv-intro-big");
+const introWord = document.getElementById("mmIntroWord");
 const introSmall = document.querySelector(".mm-tv-intro-small");
 const fullscreenBtn = document.getElementById("mmFullscreenBtn");
 const fullscreenIcon = document.getElementById("mmFullscreenIcon");
 fullscreenIcon.innerHTML = ICON_FULLSCREEN;
+
+// "Learning" spelled out as individual sticky-note letters, rotating
+// through the same pastel palette as the digit tiles.
+"Learning".split("").forEach((ch, i) => {
+  const el = document.createElement("span");
+  el.className = `mm-intro-letter pp-sticky pp-sticky--c${i % 6}`;
+  el.textContent = ch;
+  introWord.appendChild(el);
+});
+const introLetters = introWord.querySelectorAll(".mm-intro-letter");
 
 // Sticky-note colour rotation (pp-sticky--c0..c5, see components.css) — one
 // colour per original digit (alternating), a shared colour for every
@@ -65,9 +81,12 @@ let scrubber = null;
 let currentNarration = [];
 let typeTimer = null;
 let rhythmTimer = null;
+let boundaryFallbackTimer = null;
+let talkSafetyTimer = null;
 let lastNarratedIndex = -1;
 let isTalking = false;
 let asleep = false;
+let voiceMode = "beep"; // 'beep' | 'talk'
 let idleTimer = null;
 let autoPlaying = false;
 let needsIntro = true;
@@ -153,6 +172,16 @@ function spinHop() {
 
 const BODY_IMPULSES = [squeezeBounce, squeezeBounce, slideAcross, spinHop];
 
+// The bubble reads oddly floating next to a bouncing/sliding character —
+// fade it out before the impulse plays and back in once it's done.
+function runImpulse(fn) {
+  return gsap
+    .timeline()
+    .to(botBubble, { opacity: 0, duration: 0.15 })
+    .add(fn())
+    .to(botBubble, { opacity: 1, duration: 0.2 });
+}
+
 // Idle scheduler: waits a random beat, and — only if nobody's talking —
 // fires one random impulse, then schedules the next check. Never loops
 // continuously on its own; each impulse is a short one-shot.
@@ -161,21 +190,142 @@ function scheduleIdle() {
   idleTimer = setTimeout(() => {
     if (!isTalking && !asleep) {
       const fn = BODY_IMPULSES[Math.floor(Math.random() * BODY_IMPULSES.length)];
-      fn();
+      runImpulse(fn);
     }
     scheduleIdle();
   }, 1800 + Math.random() * 2200);
 }
 
-// Two independent clocks: the bubble TEXT can type out as fast as it likes
-// (pure visual reveal), while the mouth/beep "speech" runs on its own
-// natural rhythm (roughly 2 beats per word) and decides when talking is
-// actually done — it's fine for the text to finish first.
+// A quick blink every few beats, shared by all three "talking" paths.
+function maybeBlink(counter) {
+  if (botEyes.length && counter % 5 === 0) {
+    gsap.to(botEyes, { scaleY: 0.15, duration: 0.06, yoyo: true, repeat: 1 });
+  }
+}
+
+// Tries the premium ElevenLabs voice (server-side proxy, login-gated —
+// see server/routes/tts.js) and returns a data: URL, or null on any
+// failure (not logged in, key unset, network error, etc.) so the caller
+// can fall back to the free Web Speech API.
+async function tryElevenLabs(text) {
+  const user = auth.currentUser;
+  if (!user) return null;
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch("/api/tts/elevenlabs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return null;
+    const { audioContent } = await res.json();
+    return audioContent ? `data:audio/mp3;base64,${audioContent}` : null;
+  } catch {
+    return null;
+  }
+}
+
+// "Talk" mode: actually speak the line aloud. Prefers ElevenLabs (nicer
+// voice); falls back to the browser's built-in Web Speech API (audible
+// this time, unlike the silent timing-only use of it in beep mode).
+async function talkAloud(text, finish) {
+  const dataUrl = await tryElevenLabs(text);
+  if (dataUrl) {
+    const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+    let shapeCursor = 0;
+    let beatCount = 0;
+    let mouthTimer = null;
+    const audioEl = new Audio(dataUrl);
+    audioEl.addEventListener("loadedmetadata", () => {
+      const stepMs = Math.max(90, (audioEl.duration * 1000) / (wordCount * 2));
+      mouthTimer = setInterval(() => {
+        beatCount += 1;
+        shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
+        botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
+        maybeBlink(beatCount);
+      }, stepMs);
+    });
+    const done = () => { clearInterval(mouthTimer); finish(); };
+    audioEl.addEventListener("ended", done);
+    audioEl.addEventListener("error", done);
+    audioEl.play().catch(done);
+    return;
+  }
+
+  if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
+    const utter = new SpeechSynthesisUtterance(text);
+    let shapeCursor = 0;
+    let beatCount = 0;
+    utter.onboundary = () => {
+      beatCount += 1;
+      shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
+      botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
+      maybeBlink(beatCount);
+    };
+    utter.onend = finish;
+    utter.onerror = finish;
+    speechSynthesis.speak(utter);
+    const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+    talkSafetyTimer = setTimeout(finish, wordCount * 500 + 1500);
+  } else {
+    finish();
+  }
+}
+
+// "Beep" mode (default): the mouth/beep rhythm is timed by *silently*
+// invoking the Web Speech API (volume 0) and reacting to its per-word
+// boundary events — an estimate of how long the line would take to say,
+// without it actually reading out. Falls back to a fixed ~2-beats/word
+// rhythm if boundary events aren't supported (common on some voices).
+function beepRhythm(text, finish) {
+  const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+  let shapeCursor = 0;
+  let beatCount = 0;
+  const beat = () => {
+    beatCount += 1;
+    shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
+    botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
+    beep();
+    maybeBlink(beatCount);
+  };
+
+  let gotBoundary = false;
+  if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.volume = 0; // timing only — beeps are the only audible thing
+    utter.onboundary = () => { gotBoundary = true; beat(); };
+    utter.onend = finish;
+    utter.onerror = finish;
+    speechSynthesis.speak(utter);
+  }
+
+  boundaryFallbackTimer = setTimeout(() => {
+    if (gotBoundary) return;
+    let count = 0;
+    const beats = wordCount * 2;
+    rhythmTimer = setInterval(() => {
+      count += 1;
+      beat();
+      if (count >= beats) finish();
+    }, 195);
+  }, 350);
+
+  const estMs = wordCount * 380 + 300;
+  talkSafetyTimer = setTimeout(finish, estMs + 500);
+}
+
+// Two independent clocks: the bubble TEXT can type out as fast as it
+// likes (pure visual reveal), while the mouth/voice "speech" runs on its
+// own pace (beep rhythm or real talk, depending on voiceMode) and decides
+// when talking is actually done — it's fine for the text to finish first.
 function speakLine(text) {
   isTalking = true;
   stopBody();
   clearInterval(typeTimer);
   clearInterval(rhythmTimer);
+  clearTimeout(boundaryFallbackTimer);
+  clearTimeout(talkSafetyTimer);
+  if (window.speechSynthesis) speechSynthesis.cancel();
   currentTalkResolve?.();
   currentTalkPromise = new Promise((resolve) => { currentTalkResolve = resolve; });
 
@@ -189,25 +339,20 @@ function speakLine(text) {
     if (i >= text.length) clearInterval(typeTimer);
   }, 16);
 
-  const wordCount = Math.max(1, text.trim().split(/\s+/).length);
-  const beats = wordCount * 2;
-  let beat = 0;
-  let shapeCursor = 0;
-  rhythmTimer = setInterval(() => {
-    beat += 1;
-    shapeCursor = 1 + (shapeCursor % (MOUTH_SHAPES.length - 1));
-    botMouth?.setAttribute("d", MOUTH_SHAPES[shapeCursor]);
-    beep();
-    if (botEyes.length && beat % 5 === 0) {
-      gsap.to(botEyes, { scaleY: 0.15, duration: 0.06, yoyo: true, repeat: 1 });
-    }
-    if (beat >= beats) {
-      clearInterval(rhythmTimer);
-      botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
-      isTalking = false;
-      currentTalkResolve?.();
-    }
-  }, 195);
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearInterval(rhythmTimer);
+    clearTimeout(boundaryFallbackTimer);
+    clearTimeout(talkSafetyTimer);
+    botMouth?.setAttribute("d", MOUTH_SHAPES[0]);
+    isTalking = false;
+    currentTalkResolve?.();
+  };
+
+  if (voiceMode === "talk") talkAloud(text, finish);
+  else beepRhythm(text, finish);
 }
 
 function syncPlayIcon() {
@@ -215,28 +360,42 @@ function syncPlayIcon() {
 }
 
 // Title-card reveal, played once per newly chosen number the first time
-// Play is pressed: hides the tiles, slides PrepBot in alongside "Learning /
-// with PrepBot", holds, then slides back out and reveals the tiles.
+// Play is pressed. Nothing else is visible until this runs: the curtain
+// is the only thing on screen (see loadScene). PrepBot steps to centre,
+// pulls the curtain open, the "Learning / with PrepBot" card appears,
+// then it all slides away to reveal the tiles.
 function playIntro() {
   return new Promise((resolve) => {
     const screen = document.querySelector(".mm-tv-screen");
+    const centerX = -(screen.clientWidth / 2 - 8 - botGroup.offsetWidth / 2);
+
     gsap.set(stage, { opacity: 0 });
+    gsap.set(progressEl, { opacity: 0 });
     gsap.set(botBubble, { opacity: 0 });
-    gsap.set(introBig, { opacity: 0, y: 16 });
-    gsap.set(introSmall, { opacity: 0, y: 16 });
-    gsap.set(introEl, { opacity: 1 });
+    gsap.set(curtainEl, { opacity: 1 });
+    gsap.set([curtainLeft, curtainRight], { x: 0 });
+    gsap.set(introLetters, { opacity: 0, y: 14, scale: 0.6 });
+    gsap.set(introSmall, { opacity: 0, y: 14 });
+    gsap.set(introEl, { opacity: 0 });
     introEl.style.pointerEvents = "auto";
-    gsap.set(botGroup, { x: screen.clientWidth });
+    gsap.set(botGroup, { x: centerX });
 
     gsap
       .timeline({ onComplete: resolve })
-      .to(botGroup, { x: 0, duration: 0.7, ease: "power2.out" })
-      .to(introBig, { opacity: 1, y: 0, duration: 0.4 }, "-=0.35")
-      .to(introSmall, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
+      .to(botAvatar, { scaleX: 1.15, scaleY: 0.9, duration: 0.15 }) // a little "grab" anticipation
+      .to(curtainLeft, { x: "-100%", duration: 0.8, ease: "power2.inOut" })
+      .to(curtainRight, { x: "100%", duration: 0.8, ease: "power2.inOut" }, "<")
+      .to(botAvatar, { scaleX: 1, scaleY: 1, duration: 0.2 }, "<")
+      .to(introEl, { opacity: 1, duration: 0.2 }, "<0.2")
+      .to(introLetters, { opacity: 1, y: 0, scale: 1, duration: 0.35, stagger: 0.06 }, "<")
+      .to(introSmall, { opacity: 1, y: 0, duration: 0.3 }, "-=0.1")
       .to({}, { duration: 1 })
-      .to([introBig, introSmall], { opacity: 0, duration: 0.3 })
+      .to([introLetters, introSmall], { opacity: 0, duration: 0.3 })
       .to(introEl, { opacity: 0, duration: 0.3 }, "<")
+      .to(curtainEl, { opacity: 0, duration: 0.3 }, "<")
+      .to(botGroup, { x: 0, duration: 0.6, ease: "power2.inOut" }, "<")
       .to(stage, { opacity: 1, duration: 0.3 }, "<")
+      .to(progressEl, { opacity: 1, duration: 0.3 }, "<")
       .to(botBubble, { opacity: 1, duration: 0.3 }, "<")
       .call(() => { introEl.style.pointerEvents = "none"; });
   });
@@ -445,6 +604,15 @@ async function loadScene(n) {
   const { originals, gaps, ghosts, plusEls, leading, chip, answer } = els;
   stage.scrollLeft = 0;
 
+  // Nothing is visible until PrepBot opens the curtain in playIntro() —
+  // needsIntro is always true at this point in loadScene, so this is the
+  // resting state for every freshly chosen number.
+  gsap.set(stage, { opacity: 0 });
+  gsap.set(progressEl, { opacity: 0 });
+  gsap.set(botBubble, { opacity: 0 });
+  gsap.set(curtainEl, { opacity: 1 });
+  gsap.set([curtainLeft, curtainRight], { x: 0 });
+
   // slotEls[0..k]: slot 0/slot k are the endpoint original tiles themselves;
   // slots 1..k-1 are the gap tiles.
   const slotEls = {};
@@ -576,6 +744,17 @@ botAskBtn.addEventListener("click", () => {
   document.getElementById("chat-fab")?.click();
 });
 
+// Beep (default, free, silent-timing) vs Talk (actually speaks aloud —
+// ElevenLabs if logged in and configured, else the free Web Speech API).
+botVoiceBtn.innerHTML = ICON_TALK_MODE;
+botVoiceBtn.title = "Switch to talking voice";
+botVoiceBtn.addEventListener("click", () => {
+  voiceMode = voiceMode === "beep" ? "talk" : "beep";
+  botVoiceBtn.innerHTML = voiceMode === "beep" ? ICON_TALK_MODE : ICON_BEEP_MODE;
+  botVoiceBtn.title = voiceMode === "beep" ? "Switch to talking voice" : "Switch to beeps";
+  if (window.speechSynthesis) speechSynthesis.cancel();
+});
+
 botSleepBtn.addEventListener("click", () => {
   asleep = !asleep;
   botSleepBtn.title = asleep ? "Wake" : "Sleep";
@@ -596,7 +775,7 @@ botSleepBtn.addEventListener("click", () => {
 botPokeBtn.addEventListener("click", () => {
   if (isTalking || asleep) return;
   const fn = BODY_IMPULSES[Math.floor(Math.random() * BODY_IMPULSES.length)];
-  fn();
+  runImpulse(fn);
 });
 
 fullscreenBtn.addEventListener("click", () => {
