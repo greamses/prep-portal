@@ -279,6 +279,8 @@ async function talkAloud(text, finish) {
 // rhythm if boundary events aren't supported (common on some voices).
 function beepRhythm(text, finish) {
   const wordCount = Math.max(1, text.trim().split(/\s+/).length);
+  const estMs = wordCount * 380 + 300;
+  const startedAt = Date.now();
   let shapeCursor = 0;
   let beatCount = 0;
   const beat = () => {
@@ -289,13 +291,24 @@ function beepRhythm(text, finish) {
     maybeBlink(beatCount);
   };
 
+  // A muted utterance has no audio to actually render, so some browsers
+  // race through it and fire onboundary/onend far faster than a real
+  // reading pace would — never let that rush the line along. Treat estMs
+  // as a floor as well as a ceiling: if the browser reports "done" early,
+  // hold until the estimated reading time has actually elapsed.
+  const finishNoEarlierThanEstimate = () => {
+    const remaining = estMs - (Date.now() - startedAt);
+    if (remaining > 0) talkSafetyTimer = setTimeout(finish, remaining);
+    else finish();
+  };
+
   let gotBoundary = false;
   if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.volume = 0; // timing only — beeps are the only audible thing
     utter.onboundary = () => { gotBoundary = true; beat(); };
-    utter.onend = finish;
-    utter.onerror = finish;
+    utter.onend = finishNoEarlierThanEstimate;
+    utter.onerror = finishNoEarlierThanEstimate;
     speechSynthesis.speak(utter);
   }
 
@@ -313,7 +326,6 @@ function beepRhythm(text, finish) {
     }, 195);
   }, 350);
 
-  const estMs = wordCount * 380 + 300;
   talkSafetyTimer = setTimeout(finish, estMs + 500);
 }
 
@@ -502,6 +514,7 @@ function buildStepTexts(s) {
   const pairs = [];
   for (let i = 1; i < s.k; i++) pairs.push(`${s.digits[i - 1]}+${s.digits[i]}=${s.raw[i]}`);
   texts.push(`\\text{Add each adjacent pair: } ${pairs.join(",\\ \\ ")}`);
+  texts.push(`\\text{They combine into: } ${s.raw.join(",\\ ")}`);
   texts.push(
     s.hasCarry
       ? `\\text{Carry left whenever a sum} \\ge 10`
@@ -520,6 +533,7 @@ function buildNarration(s) {
     { text: `Let's multiply ${s.n} by 11!`, mode: "speech" },
     { text: `First, I split ${s.n} into its digits.`, mode: "speech" },
     { text: "Now I'm adding each neighbouring pair...", mode: "thinking" },
+    { text: "Watch them slide together and combine!", mode: "thinking" },
     {
       text: s.hasCarry
         ? "Some of these are too big for one digit — carrying left!"
@@ -674,10 +688,23 @@ async function loadScene(n) {
     {
       id: "sum",
       build: (tl) => {
+        // Just the setup: the ghost copies and "+" appear over each
+        // original pair, ready to combine — the actual glide-and-merge is
+        // its own "fuse" step below, so kids get a distinct pause to read
+        // "add each pair" before watching it happen.
         for (let i = 1; i <= s.k - 1; i++) {
           const g = ghosts[i];
           tl.set([g.left.el, g.right.el], { opacity: 1 }, "<");
           tl.to(plusEls[i], { opacity: 1, duration: 0.2 }, "<");
+        }
+        tl.to(nodes[2], { opacity: 1, y: 0, duration: 0.35 }, "<");
+      },
+    },
+    {
+      id: "fuse",
+      build: (tl) => {
+        for (let i = 1; i <= s.k - 1; i++) {
+          const g = ghosts[i];
           tl.to(g.left.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, "<");
           tl.to(g.right.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, "<");
           tl.to([g.left.el, g.right.el], { opacity: 0, duration: 0.2 }, "-=0.2");
@@ -692,41 +719,55 @@ async function loadScene(n) {
           const middles = originals.slice(1, -1).map((t) => t.el);
           tl.to(middles, { opacity: 0, duration: 0.3 }, "<");
         }
-        tl.to(nodes[2], { opacity: 1, y: 0, duration: 0.35 }, "<");
+        tl.to(nodes[3], { opacity: 1, y: 0, duration: 0.35 }, "<");
       },
     },
     {
       id: "resolve",
       build: (tl) => {
         let carryIn = 0;
+        // True once a carry chip has flown to and is resting above the tile
+        // the NEXT loop pass is about to process. It stays fully visible
+        // there for a beat — "shown above the next digit" — and only once
+        // that beat is up does the digit actually change, at the same
+        // instant the chip fades, so the two read as one cause-and-effect
+        // moment instead of the chip vanishing before anything happens.
+        let chipPending = false;
         for (let i = s.k - 1; i >= 0; i--) {
           const val = s.raw[i] + carryIn;
           const digit = val % 10;
           const carryOut = val >= 10 ? 1 : 0;
+
+          if (chipPending) {
+            tl.call(() => { slotEls[i].digit.textContent = digit; }, [], "+=0.4");
+            tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
+            tl.to(slotEls[i].el, { scale: 1.2, duration: 0.12 }, "<");
+            tl.to(slotEls[i].el, { scale: 1, duration: 0.16 });
+            chipPending = false;
+          } else {
+            tl.call(() => { slotEls[i].digit.textContent = digit; });
+          }
 
           if (carryOut) {
             const fromX = slotX(s.k, i);
             const toX = i === 0 ? leadingX(s.k) : slotX(s.k, i - 1);
             tl.set(chip, { x: fromX, y: 0, opacity: 0 });
             tl.to(chip, { opacity: 1, duration: 0.15 });
-            tl.call(() => { slotEls[i].digit.textContent = digit; });
-            tl.to(chip, { x: toX, y: -40, duration: 0.5, ease: "power2.inOut" }, "<");
+            tl.to(chip, { x: toX, y: -40, duration: 0.5, ease: "power2.inOut" });
             if (i === 0) {
-              tl.call(() => { leading.digit.textContent = "1"; });
-              tl.to(leading.el, { opacity: 1, duration: 0.3 }, "<+0.1");
+              // No tile further left to defer to — this carry becomes a
+              // brand new leading digit, so hold-then-add happens here
+              // instead of at the top of a next iteration that won't exist.
+              tl.call(() => { leading.digit.textContent = "1"; }, [], "+=0.4");
+              tl.to(leading.el, { opacity: 1, duration: 0.3 }, "<");
+              tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
+            } else {
+              chipPending = true;
             }
-            tl.to(chip, { opacity: 0, duration: 0.2 }, "+=0.05");
-          } else {
-            tl.call(() => { slotEls[i].digit.textContent = digit; });
-          }
-
-          if (carryIn) {
-            tl.to(slotEls[i].el, { scale: 1.2, duration: 0.12 }, "<");
-            tl.to(slotEls[i].el, { scale: 1, duration: 0.16 });
           }
           carryIn = carryOut;
         }
-        tl.to(nodes[3], { opacity: 1, y: 0, duration: 0.35 }, "<");
+        tl.to(nodes[4], { opacity: 1, y: 0, duration: 0.35 }, "<");
       },
     },
     {
@@ -741,7 +782,7 @@ async function loadScene(n) {
         const targetScroll = Math.max(0, answerX - stage.clientWidth / 2);
         tl.to(stage, { scrollLeft: targetScroll, duration: 0.5, ease: "power2.inOut" }, "<");
         tl.to(answer.el, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, "<+0.1");
-        tl.to(nodes[4], { opacity: 1, y: 0, duration: 0.4 }, "<");
+        tl.to(nodes[5], { opacity: 1, y: 0, duration: 0.4 }, "<");
       },
     },
   ];
