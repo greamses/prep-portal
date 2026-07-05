@@ -38,7 +38,7 @@ function renderTiles() {
     const note = document.createElement('label');
     note.className = `pp-sticky pp-sticky--tape fact-note ${pouchTagColorClass(i)}`;
     note.style.setProperty('--pp-note-tilt', `${tilt}deg`);
-    note.innerHTML = `<input type="checkbox" class="fact-check" value="${n}" /><span>×${n}</span>`;
+    note.innerHTML = `<span>×${n}</span><input type="checkbox" class="fact-check" value="${n}" />`;
     tileGrid.appendChild(note);
   }
 }

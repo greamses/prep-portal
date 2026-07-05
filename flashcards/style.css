@@ -187,16 +187,22 @@ body {
    checked at once. */
 .fact-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-  gap: 0.9rem 0.7rem;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 1.1rem 0.8rem;
   margin: 0.5rem 0 1.75rem;
 }
+/* The number is the only content on the note, so it should read from
+   across the room — big and bold, with the checkbox as a small secondary
+   indicator underneath rather than competing for space beside it. */
 .fact-note {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  font-size: 1.05rem;
+  gap: 0.35rem;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
   user-select: none;
 }
@@ -209,8 +215,8 @@ body {
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
 }
 .fact-check {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: #14130f;
   cursor: pointer;
 }
