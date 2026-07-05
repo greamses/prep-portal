@@ -207,7 +207,16 @@ function maybeBlink(counter) {
 // see server/routes/tts.js) and returns a data: URL, or null on any
 // failure (not logged in, key unset, network error, etc.) so the caller
 // can fall back to the free Web Speech API.
+//
+// A non-OK HTTP response is a persistent, server-side verdict for this
+// session — not premium, key/plan can't serve the voice, TTS unconfigured,
+// etc. — so it won't change line to line. Latch it off after the first one
+// instead of hammering the endpoint (and spamming the console with the same
+// error) on every single narrated line; every caller just falls back to the
+// free Web Speech voice from then on.
+let elevenLabsAvailable = true;
 async function tryElevenLabs(text) {
+  if (!elevenLabsAvailable) return null;
   const user = auth.currentUser;
   if (!user) return null;
   try {
@@ -217,11 +226,14 @@ async function tryElevenLabs(text) {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ text }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      elevenLabsAvailable = false;
+      return null;
+    }
     const { audioContent } = await res.json();
     return audioContent ? `data:audio/mp3;base64,${audioContent}` : null;
   } catch {
-    return null;
+    return null; // transient (network) — leave the endpoint enabled to retry
   }
 }
 
@@ -692,10 +704,17 @@ async function loadScene(n) {
         // original pair, ready to combine — the actual glide-and-merge is
         // its own "fuse" step below, so kids get a distinct pause to read
         // "add each pair" before watching it happen.
+        //
+        // The FIRST insert of a step must append at the timeline end (no
+        // position param) so the step occupies its own block after the
+        // previous label. Using "<" here would anchor to the *previous
+        // step's* last tween and collapse this whole step on top of it.
+        let first = true;
         for (let i = 1; i <= s.k - 1; i++) {
           const g = ghosts[i];
-          tl.set([g.left.el, g.right.el], { opacity: 1 }, "<");
+          tl.set([g.left.el, g.right.el], { opacity: 1 }, first ? undefined : "<");
           tl.to(plusEls[i], { opacity: 1, duration: 0.2 }, "<");
+          first = false;
         }
         tl.to(nodes[2], { opacity: 1, y: 0, duration: 0.35 }, "<");
       },
@@ -703,14 +722,19 @@ async function loadScene(n) {
     {
       id: "fuse",
       build: (tl) => {
+        // First insert appends at the timeline end (see the "sum" step's
+        // note) — anchoring the glide with "<" would collapse it onto the
+        // previous step and it would never actually play.
+        let first = true;
         for (let i = 1; i <= s.k - 1; i++) {
           const g = ghosts[i];
-          tl.to(g.left.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, "<");
+          tl.to(g.left.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, first ? undefined : "<");
           tl.to(g.right.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, "<");
           tl.to([g.left.el, g.right.el], { opacity: 0, duration: 0.2 }, "-=0.2");
           tl.to(plusEls[i], { opacity: 0, duration: 0.2 }, "<");
           tl.call(() => { gaps[i].digit.textContent = s.raw[i]; });
           tl.to(gaps[i].el, { opacity: 1, scale: 1, duration: 0.4 }, "<");
+          first = false;
         }
         // Middle original tiles (feeding two gaps) are fully absorbed —
         // fade them out once their ghosts have launched. Endpoint tiles

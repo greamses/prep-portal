@@ -75,6 +75,17 @@ export class Scrubber {
 
   togglePlay() { this.tl.paused() ? this.play() : this.pause(); }
 
+  // How long a next/prev jump should take. Playing each step over its true
+  // authored timeline span (ease "none") preserves the choreography inside
+  // the step — a 0.5s carry glide stays a real 0.5s glide, a deliberate
+  // hold stays a hold — instead of being crushed into one fixed duration
+  // that made rich steps flash by too fast to follow. Clamped so a trivial
+  // step isn't instant and a very long cascade isn't tedious.
+  _jumpDuration(target) {
+    const span = Math.abs(this.tl.labels[this.labels[target]] - this.tl.time());
+    return Math.min(2.6, Math.max(0.5, span));
+  }
+
   // Returns the tweenTo tween (GSAP tweens are thenable — `await`able) so
   // callers that need to know when the step visually lands can do so;
   // resolves to null immediately when already at the last step.
@@ -82,14 +93,14 @@ export class Scrubber {
     const target = Math.min(this._index + 1, this.labels.length - 1);
     if (target === this._index) return Promise.resolve(null);
     this.tl.pause();
-    return this.tl.tweenTo(this.labels[target], { duration: 0.75, ease: "power2.inOut" });
+    return this.tl.tweenTo(this.labels[target], { duration: this._jumpDuration(target), ease: "none" });
   }
 
   prev() {
     const target = Math.max(this._index - 1, 0);
     if (target === this._index) return;
     this.tl.pause();
-    this.tl.tweenTo(this.labels[target], { duration: 0.75, ease: "power2.inOut" });
+    this.tl.tweenTo(this.labels[target], { duration: this._jumpDuration(target), ease: "none" });
   }
 
   seek(i) {
