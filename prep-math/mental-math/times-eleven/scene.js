@@ -14,7 +14,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 import { Scrubber } from "../shared/scrub-engine.js";
-import { ICON_PLAY, ICON_PAUSE } from "../shared/icons.js";
+import { ICON_PLAY, ICON_PAUSE, ICON_PREPBOT } from "../shared/icons.js";
 
 const stage = document.getElementById("mmStage");
 const stepsPanel = document.getElementById("mmSteps");
@@ -25,6 +25,10 @@ const prevBtn = document.getElementById("mmPrevBtn");
 const nextBtn = document.getElementById("mmNextBtn");
 const chipsWrap = document.getElementById("mmChips");
 const numInput = document.getElementById("mmNumInput");
+const botBubble = document.getElementById("mmBotBubble");
+const botText = document.getElementById("mmBotText");
+const botAvatar = document.getElementById("mmBotAvatar");
+botAvatar.innerHTML = ICON_PREPBOT;
 
 // Sticky-note colour rotation (pp-sticky--c0..c5, see components.css) — one
 // colour per original digit (alternating), a shared colour for every
@@ -35,6 +39,7 @@ const ANSWER_COLOR = "pp-sticky--c0";
 
 let gsap;
 let scrubber = null;
+let currentNarration = [];
 
 // ── Arithmetic: split into digits, add adjacent pairs, cascade carries ──
 function makeScene(n) {
@@ -98,6 +103,25 @@ function buildStepTexts(s) {
   return texts;
 }
 
+// PrepBot's scripted narration — plain-English lines authored per step, one
+// per the same index buildStepTexts uses. No AI call: this is the "free"
+// running commentary; the "?" badge is the only thing that opens the real,
+// AI-backed chat, and only when a student actually wants to ask something.
+function buildNarration(s) {
+  return [
+    { text: `Let's multiply ${s.n} by 11!`, mode: "speech" },
+    { text: `First, I split ${s.n} into its digits.`, mode: "speech" },
+    { text: "Now I'm adding each neighbouring pair...", mode: "thinking" },
+    {
+      text: s.hasCarry
+        ? "Some of these are too big for one digit — carrying left!"
+        : "Everything already fits neatly, no carrying needed.",
+      mode: "thinking",
+    },
+    { text: `Ta-da! ${s.n} × 11 = ${s.answer}`, mode: "speech" },
+  ];
+}
+
 function renderSteps(texts) {
   stepsPanel.innerHTML = "";
   const nodes = texts.map((tex) => {
@@ -118,6 +142,16 @@ function updateControls(index) {
   nextBtn.disabled = index === total;
   playIcon.innerHTML = scrubber.isPlaying ? ICON_PAUSE : ICON_PLAY;
   stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === index));
+
+  const line = currentNarration[index];
+  if (line && botText.textContent !== line.text) {
+    botText.textContent = line.text;
+    botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
+    botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
+    botAvatar.classList.remove("is-talking");
+    void botAvatar.offsetWidth; // restart the mouth animation even if it's already mid-cycle
+    botAvatar.classList.add("is-talking");
+  }
 }
 
 // ── Build the sticky-note tiles for one scene, fresh each time ──────────
@@ -167,6 +201,8 @@ function buildStageDOM(s) {
 async function loadScene(n) {
   const s = makeScene(n);
   if (scrubber) scrubber.destroy();
+  currentNarration = buildNarration(s);
+  botText.textContent = "";
 
   const els = buildStageDOM(s);
   const { originals, gaps, ghosts, plusEls, leading, chip, answer } = els;
@@ -295,6 +331,13 @@ async function loadScene(n) {
 function setActiveChip(chip) {
   chipsWrap.querySelectorAll(".mm-chip").forEach((c) => c.classList.toggle("active", c === chip));
 }
+
+// Only this button ever reaches the model — it opens the site's real,
+// AI-backed PrepBot chat (utils/prepbot/prepbot.js). The bubble/thinking
+// narration above is scripted and free.
+document.getElementById("mmBotAsk").addEventListener("click", () => {
+  document.getElementById("chat-fab")?.click();
+});
 
 chipsWrap.querySelectorAll(".mm-chip").forEach((chip) => {
   chip.addEventListener("click", () => {

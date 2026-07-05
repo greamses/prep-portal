@@ -76,6 +76,124 @@
   box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.28);
 }
 
+/* ── PrepBot: perched on the TV, narrating each step in scripted lines
+   (no AI calls — the text is authored per-step in scene.js). Speech
+   bubble while explaining/announcing, thinking bubble while "calculating"
+   during the sum/carry steps. ─────────────────────────────────────────── */
+.mm-prepbot {
+  position: absolute;
+  top: -30px;
+  right: 4px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.mm-prepbot-avatar-wrap { position: relative; }
+
+.mm-prepbot-avatar {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  animation: mm-bot-bounce 2.6s ease-in-out infinite;
+}
+.mm-prepbot-avatar svg { width: 100%; height: 100%; }
+.mm-bot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mm-bot-blink 4.4s ease-in-out infinite;
+}
+.mm-bot-mouth { transform-box: fill-box; transform-origin: center; }
+.mm-prepbot-avatar.is-talking .mm-bot-mouth { animation: mm-bot-talk 0.35s ease-in-out 3; }
+
+@keyframes mm-bot-bounce {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+@keyframes mm-bot-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.12); }
+}
+@keyframes mm-bot-talk {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.7); }
+}
+
+/* Question badge — clicking it opens the real, AI-backed PrepBot chat
+   (#chat-fab from utils/prepbot/prepbot.js); everything else on this page
+   is scripted narration and never calls the model. */
+.mm-prepbot-ask {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-primary);
+  background: var(--accent-danger);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.65rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  animation: mm-bot-ask-pulse 2.2s ease-in-out infinite;
+  transition: transform 0.12s ease;
+}
+.mm-prepbot-ask:hover { transform: scale(1.15); }
+@keyframes mm-bot-ask-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-danger) 55%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-danger) 0%, transparent); }
+}
+
+.mm-prepbot-bubble {
+  max-width: 180px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  pointer-events: none;
+}
+.mm-prepbot-bubble p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+/* Speech tail — a small triangle pointing down at the avatar's head */
+.mm-prepbot-bubble--speech::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  right: 16px;
+  width: 12px;
+  height: 12px;
+  background: var(--surface-primary);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* Thinking tail — a trail of shrinking circles, like a thought bubble */
+.mm-prepbot-bubble--thinking { border-radius: 20px; }
+.mm-prepbot-bubble--thinking::after,
+.mm-prepbot-bubble--thinking::before {
+  content: "";
+  position: absolute;
+  background: var(--surface-primary);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+.mm-prepbot-bubble--thinking::after { bottom: -9px; right: 20px; width: 11px; height: 11px; }
+.mm-prepbot-bubble--thinking::before { bottom: -17px; right: 12px; width: 6px; height: 6px; }
+
 /* The actual scrollable animation surface — kept separate from
    .mm-tv-screen so the step sticker (pinned in the screen, below) never
    scrolls away with the tiles; scene.js only ever clears this inner div. */
