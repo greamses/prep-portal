@@ -29,6 +29,8 @@ const botBubble = document.getElementById("mmBotBubble");
 const botText = document.getElementById("mmBotText");
 const botAvatar = document.getElementById("mmBotAvatar");
 botAvatar.innerHTML = ICON_PREPBOT;
+const botEyes = botAvatar.querySelectorAll(".mm-bot-eye");
+const botMouth = botAvatar.querySelector(".mm-bot-mouth");
 
 // Sticky-note colour rotation (pp-sticky--c0..c5, see components.css) — one
 // colour per original digit (alternating), a shared colour for every
@@ -37,9 +39,66 @@ const ORIG_COLORS = ["pp-sticky--c3", "pp-sticky--c4"];
 const GAP_COLOR = "pp-sticky--c2";
 const ANSWER_COLOR = "pp-sticky--c0";
 
+// Same pastel set as --pp-note-bg (components.css) — the bubble cycles
+// through these per step so it reads as "multicoloured" rather than a
+// single plain card.
+const BUBBLE_COLORS = ["#fff3a8", "#e8c8ff", "#c8f0c0", "#bfe3ff", "#ffd7a3", "#b8ece2"];
+
 let gsap;
 let scrubber = null;
 let currentNarration = [];
+let typeTimer = null;
+let idleTween = null;
+let lastNarratedIndex = -1;
+
+// Typewriter reveal for the bubble text — returns the approximate typing
+// duration (seconds) so the mouth-flap animation can be timed to match.
+function typeText(el, text, speed = 26) {
+  clearInterval(typeTimer);
+  el.textContent = "";
+  let i = 0;
+  typeTimer = setInterval(() => {
+    i += 1;
+    el.textContent = text.slice(0, i);
+    if (i >= text.length) clearInterval(typeTimer);
+  }, speed);
+  return (text.length * speed) / 1000;
+}
+
+// PrepBot's idle life — a continuous playful bounce/wobble. Driven by
+// GSAP rather than CSS @keyframes: theme.css zeroes every CSS animation's
+// duration under prefers-reduced-motion (a deliberate, correct site-wide
+// accessibility rule), which would otherwise silently freeze the mascot.
+function startIdle() {
+  idleTween?.kill();
+  idleTween = gsap.to(botAvatar, {
+    y: -6,
+    rotation: 5,
+    duration: 1.1,
+    ease: "sine.inOut",
+    repeat: -1,
+    yoyo: true,
+  });
+  if (botEyes.length) {
+    gsap.to(botEyes, { scaleY: 0.15, duration: 0.08, repeat: -1, repeatDelay: 3.4, yoyo: true });
+  }
+}
+
+// A bigger "reaction" burst on every step change — a full spin + hop —
+// then hands control back to the idle bounce. Runs alongside a few mouth
+// flaps timed to roughly cover the typewriter reveal.
+function reactToNewLine(talkDuration) {
+  gsap.killTweensOf(botAvatar, "rotation,scale,y");
+  gsap
+    .timeline()
+    .to(botAvatar, { rotation: "+=360", scale: 1.3, duration: 0.5, ease: "back.out(2)" })
+    .to(botAvatar, { scale: 1, duration: 0.25 })
+    .call(startIdle);
+  if (botMouth) {
+    const flaps = Math.max(2, Math.round(talkDuration / 0.22));
+    gsap.to(botMouth, { scaleY: 1.8, duration: 0.11, repeat: flaps, yoyo: true });
+  }
+}
 
 // ── Arithmetic: split into digits, add adjacent pairs, cascade carries ──
 function makeScene(n) {
@@ -144,13 +203,13 @@ function updateControls(index) {
   stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === index));
 
   const line = currentNarration[index];
-  if (line && botText.textContent !== line.text) {
-    botText.textContent = line.text;
+  if (line && index !== lastNarratedIndex) {
+    lastNarratedIndex = index;
+    botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[index % BUBBLE_COLORS.length]);
     botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
     botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
-    botAvatar.classList.remove("is-talking");
-    void botAvatar.offsetWidth; // restart the mouth animation even if it's already mid-cycle
-    botAvatar.classList.add("is-talking");
+    const talkDuration = typeText(botText, line.text);
+    reactToNewLine(talkDuration);
   }
 }
 
@@ -203,6 +262,7 @@ async function loadScene(n) {
   if (scrubber) scrubber.destroy();
   currentNarration = buildNarration(s);
   botText.textContent = "";
+  lastNarratedIndex = -1;
 
   const els = buildStageDOM(s);
   const { originals, gaps, ghosts, plusEls, leading, chip, answer } = els;
@@ -382,6 +442,7 @@ document.addEventListener("keydown", (e) => {
 async function boot() {
   ({ gsap } = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"));
   await waitForMathJax();
+  startIdle();
   loadScene(23);
 }
 

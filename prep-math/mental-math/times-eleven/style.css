@@ -76,14 +76,19 @@
   box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.28);
 }
 
-/* ── PrepBot: perched on the TV, narrating each step in scripted lines
-   (no AI calls — the text is authored per-step in scene.js). Speech
-   bubble while explaining/announcing, thinking bubble while "calculating"
-   during the sum/carry steps. ─────────────────────────────────────────── */
+/* ── PrepBot: standing inside the TV screen like a teacher in the room,
+   narrating each step in scripted lines (no AI calls — text is authored
+   per-step in scene.js). Speech bubble while explaining/announcing,
+   thinking bubble while "calculating" during the sum/carry steps.
+   Idle bounce/spin/mouth motion is driven by GSAP in scene.js, not CSS
+   @keyframes — the site respects prefers-reduced-motion by zeroing all
+   CSS animation durations sitewide (theme.css), which would silently
+   flatten a CSS-only mascot; GSAP tweens aren't caught by that rule, so
+   this is the one place motion is authored in JS instead. ─────────────── */
 .mm-prepbot {
   position: absolute;
-  top: -30px;
-  right: 4px;
+  bottom: 6px;
+  right: 8px;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -97,29 +102,10 @@
   width: 44px;
   height: 44px;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
-  animation: mm-bot-bounce 2.6s ease-in-out infinite;
 }
-.mm-prepbot-avatar svg { width: 100%; height: 100%; }
-.mm-bot-eye {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: mm-bot-blink 4.4s ease-in-out infinite;
-}
+.mm-prepbot-avatar svg { width: 100%; height: 100%; overflow: visible; }
+.mm-bot-eye,
 .mm-bot-mouth { transform-box: fill-box; transform-origin: center; }
-.mm-prepbot-avatar.is-talking .mm-bot-mouth { animation: mm-bot-talk 0.35s ease-in-out 3; }
-
-@keyframes mm-bot-bounce {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-4px) rotate(3deg); }
-}
-@keyframes mm-bot-blink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.12); }
-}
-@keyframes mm-bot-talk {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(1.7); }
-}
 
 /* Question badge — clicking it opens the real, AI-backed PrepBot chat
    (#chat-fab from utils/prepbot/prepbot.js); everything else on this page
@@ -143,19 +129,18 @@
   place-items: center;
   cursor: pointer;
   padding: 0;
-  animation: mm-bot-ask-pulse 2.2s ease-in-out infinite;
   transition: transform 0.12s ease;
 }
 .mm-prepbot-ask:hover { transform: scale(1.15); }
-@keyframes mm-bot-ask-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-danger) 55%, transparent); }
-  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-danger) 0%, transparent); }
-}
 
+/* Multicoloured — background rotates through the same pastel palette as
+   the sticky-note tiles (--bubble-bg is set per step in scene.js); the
+   tail pseudo-elements read the same variable so they always match. */
 .mm-prepbot-bubble {
+  --bubble-bg: var(--surface-primary);
   max-width: 180px;
-  background: var(--surface-primary);
-  color: var(--ink);
+  background: var(--bubble-bg);
+  color: #14130f;
   border-radius: 14px;
   padding: 0.5rem 0.75rem;
   box-shadow: var(--shadow-md);
@@ -164,8 +149,9 @@
 }
 .mm-prepbot-bubble p {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  font-size: 0.72rem;
   line-height: 1.4;
 }
 
@@ -177,7 +163,7 @@
   right: 16px;
   width: 12px;
   height: 12px;
-  background: var(--surface-primary);
+  background: var(--bubble-bg);
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
@@ -187,7 +173,7 @@
 .mm-prepbot-bubble--thinking::before {
   content: "";
   position: absolute;
-  background: var(--surface-primary);
+  background: var(--bubble-bg);
   border-radius: 50%;
   box-shadow: var(--shadow-sm);
 }
