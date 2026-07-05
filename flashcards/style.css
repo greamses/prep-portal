@@ -720,6 +720,14 @@ body {
   padding: 0.4rem 0.6rem;
   cursor: text;
 }
+
+/* A fact card only ever holds a short expression ("7 × 8") or a number
+   ("56") — nothing else on the card, so it should read big, unlike the
+   full-sentence deck flashcards sharing .flash-text elsewhere. */
+#facts-flash-card .flash-text {
+  font-size: 3rem;
+  font-weight: 700;
+}
 .flash-flip-hint {
   position: absolute;
   bottom: 0.7rem;
