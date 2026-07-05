@@ -258,7 +258,8 @@ body {
 /* .pp-pill already declares its own `display`, which otherwise wins over
    the browser's default [hidden] rule regardless of specificity (author
    styles always beat the user-agent stylesheet) — force it hidden here. */
-#library-new-deck[hidden] {
+#library-new-deck[hidden],
+#facts-new-deck[hidden] {
   display: none !important;
 }
 

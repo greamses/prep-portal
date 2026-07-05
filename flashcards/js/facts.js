@@ -5,9 +5,12 @@
    Reuses the same flip-card + swipe/keyboard paging as the
    deck review session (review.js) for a consistent feel.
 ═══════════════════════════════════════════════════════ */
+import { auth } from '/firebase-init.js';
+import { watchProfile } from '/utils/data-service.js';
 import { $, attachSwipeNav, pouchTagColorClass } from './config.js';
 import { heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP } from './icons.js';
 
+const newDeckLink = $('facts-new-deck');
 const pickerSection = $('fact-picker');
 const opToggle = $('fact-op-toggle');
 const tileGrid = $('fact-tiles');
@@ -172,3 +175,13 @@ export function initFacts() {
 }
 
 initFacts();
+
+// Only teachers/admins get the "Print & Edit" link through to the
+// generator — mirrors library.js so the tab is consistently gated
+// everywhere it appears.
+auth.onAuthStateChanged((user) => {
+  if (!user || !newDeckLink) return;
+  watchProfile(user.uid, (data) => {
+    newDeckLink.hidden = !(data?.role === 'teacher' || data?.role === 'admin');
+  });
+});
