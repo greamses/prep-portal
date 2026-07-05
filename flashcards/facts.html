@@ -39,12 +39,12 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Pick one or more times tables and drill them forever — no deck to
-        print, no boxes to track, just endless multiplication practice.
+        Pick an operation and one or more fact families, then drill them
+        forever — no deck to print, no boxes to track, just endless practice.
       </p>
       <div class="builder-stats">
         <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>Endless</strong> Practice</span>
-        <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>×1</strong>–<strong>×12</strong></span>
+        <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>1</strong>–<strong>12</strong></span>
       </div>
       <div class="cards-tabs" role="tablist">
         <a class="pp-pill cards-tab" href="/flashcards/library.html" role="tab">My Decks</a>
@@ -57,8 +57,13 @@
     <main class="press-section" id="fact-picker">
       <div class="press-section-hdr">
         <div class="setup-eyebrow">Endless Practice</div>
-        <h2>Pick Your Tables</h2>
-        <p class="press-section-sub">Select one or more times tables, then practice for as long as you like.</p>
+        <h2>Pick Your Facts</h2>
+        <p class="press-section-sub">Choose an operation and select one or more fact families.</p>
+      </div>
+
+      <div class="fact-op-toggle" id="fact-op-toggle" role="tablist">
+        <button type="button" class="pp-pill fact-op is-active" data-op="multiply" role="tab">× Multiply</button>
+        <button type="button" class="pp-pill fact-op" data-op="divide" role="tab">÷ Divide</button>
       </div>
 
       <div class="fact-tiles" id="fact-tiles"></div>

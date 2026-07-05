@@ -9,10 +9,12 @@ import { $, attachSwipeNav, pouchTagColorClass } from './config.js';
 import { heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP } from './icons.js';
 
 const pickerSection = $('fact-picker');
+const opToggle = $('fact-op-toggle');
 const tileGrid = $('fact-tiles');
 const startBtn = $('fact-start-btn');
 
 const factsBd = $('facts-bd');
+const factsSubject = $('facts-subject');
 const factsProgress = $('facts-progress');
 const factsClose = $('facts-close');
 const factsPrev = $('facts-prev');
@@ -26,11 +28,15 @@ const backIconWrap = $('facts-icon-wrap-back');
 const siteNav = document.querySelector('.site-nav');
 
 const selected = new Set();
-let queue = []; // { table, multiplier } — grows forward, never shrinks (history)
+let operation = 'multiply'; // 'multiply' | 'divide' — locked in once practice starts
+let queue = []; // { op, table, other } — grows forward, never shrinks (history)
 let idx = -1;
 
-// 12 sticky notes, one per table, colour-rotated + tilted like the deck
-// pouch tags — a checkbox in each note so more than one can stay checked.
+const opSymbol = (op) => (op === 'divide' ? '÷' : '×');
+
+// 12 sticky notes, one per fact family, colour-rotated + tilted like the
+// deck pouch tags — a checkbox in each note so more than one can stay
+// checked. Labels re-read the current operation symbol on toggle.
 function renderTiles() {
   for (let n = 1; n <= 12; n++) {
     const i = n - 1;
@@ -38,9 +44,16 @@ function renderTiles() {
     const note = document.createElement('label');
     note.className = `pp-sticky pp-sticky--tape fact-note ${pouchTagColorClass(i)}`;
     note.style.setProperty('--pp-note-tilt', `${tilt}deg`);
-    note.innerHTML = `<input type="checkbox" class="fact-check" value="${n}" /><span>×${n}</span>`;
+    note.innerHTML = `<input type="checkbox" class="fact-check" value="${n}" /><span>${n}</span>`;
     tileGrid.appendChild(note);
   }
+}
+
+function updateTileLabels() {
+  const symbol = opSymbol(operation);
+  tileGrid.querySelectorAll('.fact-note span').forEach((span, i) => {
+    span.textContent = `${symbol}${i + 1}`;
+  });
 }
 
 function mountIcons() {
@@ -53,11 +66,13 @@ function mountIcons() {
   document.querySelector('#facts-flash-card .flash-blob--back').innerHTML = heroPaint();
 }
 
+// One of the two numbers (the fact family, e.g. checking ×7) always comes
+// from the checked set; the other is free to be any number 1-12.
 function randomFact() {
   const tables = [...selected];
   const table = tables[Math.floor(Math.random() * tables.length)];
-  const multiplier = 1 + Math.floor(Math.random() * 12);
-  return { table, multiplier };
+  const other = 1 + Math.floor(Math.random() * 12);
+  return { op: operation, table, other };
 }
 
 function showFace(front) {
@@ -66,10 +81,17 @@ function showFace(front) {
 
 function loadCard() {
   const fact = queue[idx];
-  frontText.textContent = `${fact.table} × ${fact.multiplier}`;
-  backText.textContent = String(fact.table * fact.multiplier);
+  const symbol = opSymbol(fact.op);
+  if (fact.op === 'divide') {
+    const dividend = fact.table * fact.other;
+    frontText.textContent = `${dividend} ÷ ${fact.table}`;
+    backText.textContent = String(fact.other);
+  } else {
+    frontText.textContent = `${fact.table} × ${fact.other}`;
+    backText.textContent = String(fact.table * fact.other);
+  }
   showFace(true);
-  flashNote.textContent = `×${fact.table}`;
+  flashNote.textContent = `${symbol}${fact.table}`;
   factsProgress.textContent = `${idx + 1}`;
   factsPrev.disabled = idx === 0;
 }
@@ -87,6 +109,7 @@ function goNext() {
 
 function startPractice() {
   if (!selected.size) return;
+  factsSubject.textContent = operation === 'divide' ? 'Division Facts' : 'Multiplication Facts';
   queue = [];
   idx = -1;
   goNext();
@@ -106,6 +129,15 @@ function closePractice() {
 export function initFacts() {
   mountIcons();
   renderTiles();
+  updateTileLabels();
+
+  opToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.fact-op');
+    if (!btn || btn.classList.contains('is-active')) return;
+    operation = btn.dataset.op;
+    opToggle.querySelectorAll('.fact-op').forEach((b) => b.classList.toggle('is-active', b === btn));
+    updateTileLabels();
+  });
 
   tileGrid.addEventListener('change', (e) => {
     const cb = e.target.closest('.fact-check');

@@ -181,6 +181,21 @@ body {
   border-color: var(--accent-secondary);
 }
 
+/* ── FACT OPERATION TOGGLE — Multiply / Divide, same look as the page-level
+   .cards-tabs pill toggle, just single-select within the page instead of a
+   link between pages. */
+.fact-op-toggle {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.fact-op {
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.fact-op:not(.is-active) { opacity: 0.55; }
+.fact-op.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
 /* ── FACT NOTES — the ×1..×12 multi-select grid on the Facts tab. Each
    table is its own colour-rotated sticky note (same .pp-sticky component
    as the pouch tags) with a real checkbox, so more than one can stay
