@@ -184,11 +184,14 @@
    tail pseudo-elements read the same variable so they always match. */
 .mm-prepbot-bubble {
   --bubble-bg: var(--surface-primary);
-  max-width: 130px;
+  /* Narrow — at most a couple of short word-columns — with small text, so a
+     step's 4-5 explanation lines stay a compact block instead of a big card
+     that overlaps the digit tiles. */
+  max-width: 148px;
   background: var(--bubble-bg);
   color: #14130f;
-  border-radius: 14px;
-  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  padding: 0.38rem 0.55rem;
   box-shadow: var(--shadow-md);
   position: relative;
   pointer-events: none;
@@ -197,8 +200,8 @@
   margin: 0;
   font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
   font-weight: 600;
-  font-size: 0.72rem;
-  line-height: 1.4;
+  font-size: 0.58rem;
+  line-height: 1.32;
 }
 
 /* Speech tail — a small triangle pointing down at the avatar's head */
@@ -234,6 +237,10 @@
   inset: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  /* Vertical centre for the digit tiles — lifted a little above the true
+     middle so the (bottom-right) PrepBot speech bubble has room to sit
+     without overlapping the cards. Every centred element reads this. */
+  --card-cy: 41%;
 }
 
 /* Theatre curtain — the ONLY thing visible before PrepBot pulls it open
@@ -452,7 +459,7 @@
 .mm-tile.pp-sticky {
   --tw: 56px;
   position: absolute;
-  top: 50%;
+  top: var(--card-cy, 50%);
   left: 0;
   width: var(--tw);
   height: var(--tw);
@@ -479,7 +486,7 @@
 
 .mm-plus-sign {
   position: absolute;
-  top: 50%;
+  top: var(--card-cy, 50%);
   left: 0;
   width: 20px;
   margin: -10px 0 0 -10px;
@@ -494,7 +501,7 @@
 
 .mm-carry-badge {
   position: absolute;
-  top: 50%;
+  top: var(--card-cy, 50%);
   left: 0;
   width: 34px;
   height: 24px;
@@ -515,7 +522,7 @@
    GSAP-driven x/y point uses xPercent/yPercent instead of a fixed margin. */
 .mm-answer-pill.pp-sticky {
   position: absolute;
-  top: 50%;
+  top: var(--card-cy, 50%);
   left: 0;
   width: auto;
   height: auto;
