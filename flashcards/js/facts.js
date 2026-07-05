@@ -5,7 +5,7 @@
    Reuses the same flip-card + swipe/keyboard paging as the
    deck review session (review.js) for a consistent feel.
 ═══════════════════════════════════════════════════════ */
-import { $, attachSwipeNav } from './config.js';
+import { $, attachSwipeNav, pouchTagColorClass } from './config.js';
 import { heroPaint, iconBlob, ICON_QUESTION, ICON_CHECK, ICON_FLIP } from './icons.js';
 
 const pickerSection = $('fact-picker');
@@ -28,6 +28,20 @@ const siteNav = document.querySelector('.site-nav');
 const selected = new Set();
 let queue = []; // { table, multiplier } — grows forward, never shrinks (history)
 let idx = -1;
+
+// 12 sticky notes, one per table, colour-rotated + tilted like the deck
+// pouch tags — a checkbox in each note so more than one can stay checked.
+function renderTiles() {
+  for (let n = 1; n <= 12; n++) {
+    const i = n - 1;
+    const tilt = (i % 2 === 0 ? -1 : 1) * (2 + (i % 3));
+    const note = document.createElement('label');
+    note.className = `pp-sticky pp-sticky--tape fact-note ${pouchTagColorClass(i)}`;
+    note.style.setProperty('--pp-note-tilt', `${tilt}deg`);
+    note.innerHTML = `<input type="checkbox" class="fact-check" value="${n}" /><span>×${n}</span>`;
+    tileGrid.appendChild(note);
+  }
+}
 
 function mountIcons() {
   $('facts-icon-front').innerHTML = ICON_QUESTION;
@@ -91,18 +105,14 @@ function closePractice() {
 
 export function initFacts() {
   mountIcons();
+  renderTiles();
 
-  tileGrid.addEventListener('click', (e) => {
-    const btn = e.target.closest('.count-tile');
-    if (!btn) return;
-    const n = parseInt(btn.dataset.table, 10);
-    if (selected.has(n)) {
-      selected.delete(n);
-      btn.classList.remove('active');
-    } else {
-      selected.add(n);
-      btn.classList.add('active');
-    }
+  tileGrid.addEventListener('change', (e) => {
+    const cb = e.target.closest('.fact-check');
+    if (!cb) return;
+    const n = parseInt(cb.value, 10);
+    if (cb.checked) selected.add(n);
+    else selected.delete(n);
     startBtn.disabled = selected.size === 0;
   });
 

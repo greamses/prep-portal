@@ -181,17 +181,39 @@ body {
   border-color: var(--accent-secondary);
 }
 
-/* ── FACT TILES — the ×1..×12 multi-select grid on the Facts tab. Reuses
-   .count-tile's look (same tile, same active state) but wraps in a grid
-   instead of a single flex row since there are 12 of them, and more than
-   one can be active at once (multi-select, not single-select). */
+/* ── FACT NOTES — the ×1..×12 multi-select grid on the Facts tab. Each
+   table is its own colour-rotated sticky note (same .pp-sticky component
+   as the pouch tags) with a real checkbox, so more than one can stay
+   checked at once. */
 .fact-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 0.9rem 0.7rem;
+  margin: 0.5rem 0 1.75rem;
 }
-.fact-tiles .count-tile { font-size: 1rem; padding: 0.75rem 0; }
+.fact-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  cursor: pointer;
+  user-select: none;
+}
+.fact-note:hover { transform: rotate(0deg) scale(1.05); }
+.fact-note:has(.fact-check:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.fact-check {
+  width: 16px;
+  height: 16px;
+  accent-color: #14130f;
+  cursor: pointer;
+}
 
 .press-btn {
   grid-column: 1 / -1;
