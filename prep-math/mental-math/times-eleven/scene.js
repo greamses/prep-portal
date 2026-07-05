@@ -19,6 +19,7 @@ import {
   ICON_FULLSCREEN, ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
   ICON_TALK_MODE, ICON_BEEP_MODE,
 } from "../shared/icons.js";
+import { heroPaint } from "/utils/components/nav-icons.js";
 import { auth } from "/firebase-init.js";
 
 const stage = document.getElementById("mmStage");
@@ -53,6 +54,51 @@ const introSmall = document.querySelector(".mm-tv-intro-small");
 const fullscreenBtn = document.getElementById("mmFullscreenBtn");
 const fullscreenIcon = document.getElementById("mmFullscreenIcon");
 fullscreenIcon.innerHTML = ICON_FULLSCREEN;
+
+// Soft multicolour "paint blob" wash behind the tiles — the same heroPaint()
+// used for full-page backgrounds site-wide, dropped in as the screen's
+// backdrop (kept faint in CSS so digits stay legible over it). Injected as
+// the first child of the screen so it sits behind everything else.
+const tvScreen = document.querySelector(".mm-tv-screen");
+if (tvScreen) {
+  const blob = document.createElement("div");
+  blob.className = "mm-tv-blob";
+  blob.setAttribute("aria-hidden", "true");
+  blob.innerHTML = heroPaint();
+  tvScreen.prepend(blob);
+}
+
+// White theatre curtains, decorated with faint scattered maths doodles in our
+// own icon language (+, ×, =, sparkles) — CSS gives the panels their white
+// fabric gradient; this just fills them with the doodle print (currentColor,
+// tinted faint by CSS). Deterministic scatter so it looks hand-drawn but
+// stable across reloads.
+function curtainDoodles() {
+  const glyphs = [
+    "M-8 0 H8 M0 -8 V8",           // plus
+    "M-7 -7 L7 7 M7 -7 L-7 7",     // times
+    "M-8 -4 H8 M-8 4 H8",          // equals
+    "M0 -9 L2.4 -2.4 9 0 2.4 2.4 0 9 -2.4 2.4 -9 0 -2.4 -2.4 Z", // sparkle
+  ];
+  let seed = 7;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  let out = "";
+  for (let gy = 24; gy < 400; gy += 60) {
+    for (let gx = 26; gx < 200; gx += 66) {
+      const jx = gx + (rnd() - 0.5) * 24;
+      const jy = gy + (rnd() - 0.5) * 24;
+      const rot = Math.round(rnd() * 40 - 20);
+      const scale = (0.8 + rnd() * 0.5).toFixed(2);
+      const gi = Math.floor(rnd() * glyphs.length);
+      const spark = gi === 3;
+      out +=
+        `<g transform="translate(${jx.toFixed(1)} ${jy.toFixed(1)}) rotate(${rot}) scale(${scale})">` +
+        `<path d="${glyphs[gi]}" ${spark ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"'}/></g>`;
+    }
+  }
+  return `<svg class="mm-curtain-doodles" viewBox="0 0 200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${out}</svg>`;
+}
+document.querySelectorAll(".mm-tv-curtain-panel").forEach((p) => { p.innerHTML = curtainDoodles(); });
 
 // "Learning" spelled out as individual sticky-note letters, rotating
 // through the same pastel palette as the digit tiles.
@@ -90,6 +136,10 @@ let voiceMode = "beep"; // 'beep' | 'talk'
 let idleTimer = null;
 let autoPlaying = false;
 let needsIntro = true;
+// PrepBot stays completely silent (no bubble, no mouth, no beeps) until the
+// curtain is actually pulled open — nothing should "talk" behind the closed
+// curtain on page load. Flipped true once playIntro() has run.
+let sceneRevealed = false;
 let currentTalkPromise = Promise.resolve();
 let currentTalkResolve = null;
 let audioCtx = null;
@@ -451,8 +501,17 @@ async function guidedPlay() {
     needsIntro = false;
     if (!autoPlaying) return;
   }
+  sceneRevealed = true;
 
   if (scrubber.index >= scrubber.total) scrubber.seek(0);
+
+  // Opening greeting (narration[0]) once the curtain is open and we're at
+  // the resting state — the stepping loop below narrates each step itself.
+  if (scrubber.index === 0) {
+    narrate(0);
+    await currentTalkPromise;
+    if (!autoPlaying) { autoPlaying = false; syncPlayIcon(); return; }
+  }
 
   while (autoPlaying && scrubber && scrubber.index < scrubber.total) {
     await scrubber.next();
@@ -502,22 +561,39 @@ function makeScene(n) {
 // digit. Tiles shrink a little as digit count grows so 4-digit numbers
 // still fit.
 //
-// Positions are anchored from the screen's left edge (PAD), not centered on
+// Positions are anchored from the screen's left edge (PADX), not centered on
 // it — the screen scrolls (overflow-x: auto) when a scene is wider than the
 // visible area, and a browser can only ever reveal content to the RIGHT of
 // a container's origin. Centering with negative offsets would put the
 // leading-digit slot at an unreachable negative scroll position the moment
 // a 4-digit cascade needed more width than the screen.
-function tileSize(k) { return k <= 2 ? 56 : k === 3 ? 50 : 44; }
-function sizeClass(k) { return k === 3 ? "mm-tile--md" : k === 4 ? "mm-tile--sm" : ""; }
-function gapFor(k) { return tileSize(k) + 12; }
-const PAD = 32; // >= largest tileSize()/2 + a small margin
-function slotX(k, i) { return PAD + (i + 1) * gapFor(k); } // i: 0..k
-function leadingX(k) { return PAD; } // one gap further left than slot 0
+// Tile geometry is computed PER SCENE from the real screen width so a bigger
+// number just uses smaller cards instead of overflowing (or squeezing the
+// whole TV). A scene needs k+2 positions: one possible new leading digit,
+// then slots 0..k. Solving the total-width budget below for the tile edge
+// `t` (with gap = 1.2t and left pad = 0.7t) keeps everything inside the
+// screen without a horizontal scrollbar, capped so small numbers still look
+// chunky. Recomputed in loadScene(); the helpers just read the result.
+let TILE = 56;
+let GAP = TILE * 1.2;
+let PADX = TILE * 0.7;
+
+function computeLayout(k) {
+  const availW = Math.max(240, tvScreen?.clientWidth || 400);
+  // availW ≈ PADX + (k+1)·GAP + TILE/2 (half the rightmost tile) + right margin
+  //       = t·(0.7 + 1.2·(k+1) + 0.5 + 0.6)
+  const denom = 0.7 + 1.2 * (k + 1) + 1.1;
+  TILE = Math.max(26, Math.min(56, Math.floor(availW / denom)));
+  GAP = TILE * 1.2;
+  PADX = TILE * 0.7;
+}
+
+function slotX(k, i) { return PADX + (i + 1) * GAP; } // i: 0..k
+function leadingX() { return PADX; } // one gap further left than slot 0
 function origX(k, i) {
   const centerX = (slotX(k, 0) + slotX(k, k)) / 2;
-  const clusterWidth = k * tileSize(k);
-  return centerX - clusterWidth / 2 + i * tileSize(k) + tileSize(k) / 2;
+  const clusterWidth = k * TILE;
+  return centerX - clusterWidth / 2 + i * TILE + TILE / 2;
 }
 
 function buildStepTexts(s) {
@@ -577,20 +653,32 @@ function updateControls(index) {
   syncPlayIcon();
   stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === index));
 
-  const line = currentNarration[index];
-  if (line && index !== lastNarratedIndex) {
-    lastNarratedIndex = index;
-    botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[index % BUBBLE_COLORS.length]);
-    botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
-    botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
-    speakLine(line.text);
+  // Never narrate behind the closed curtain — only once the scene is revealed.
+  if (sceneRevealed && currentNarration[index] && index !== lastNarratedIndex) {
+    narrate(index);
   }
 }
 
+// Style the bubble for this line's mode/colour and speak it. Split out from
+// updateControls so guided play can fire the opening greeting (index 0)
+// itself, right after the curtain opens.
+function narrate(index) {
+  const line = currentNarration[index];
+  if (!line) return;
+  lastNarratedIndex = index;
+  botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[index % BUBBLE_COLORS.length]);
+  botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
+  botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
+  speakLine(line.text);
+}
+
 // ── Build the sticky-note tiles for one scene, fresh each time ──────────
-function makeTile(colorClass, sizeCls, extraClass) {
+// The tile edge (--tw) is set inline from the per-scene computed TILE so
+// bigger numbers get proportionally smaller cards (see computeLayout).
+function makeTile(colorClass, extraClass) {
   const el = document.createElement("div");
-  el.className = `mm-tile pp-sticky ${colorClass} ${sizeCls} ${extraClass || ""}`.trim();
+  el.className = `mm-tile pp-sticky ${colorClass} ${extraClass || ""}`.trim();
+  el.style.setProperty("--tw", `${TILE}px`);
   const digit = document.createElement("span");
   digit.className = "mm-tile-digit";
   el.appendChild(digit);
@@ -600,17 +688,16 @@ function makeTile(colorClass, sizeCls, extraClass) {
 
 function buildStageDOM(s) {
   stage.innerHTML = "";
-  const sizeCls = sizeClass(s.k);
 
-  const originals = s.digits.map((_, i) => makeTile(ORIG_COLORS[i % 2], sizeCls));
+  const originals = s.digits.map((_, i) => makeTile(ORIG_COLORS[i % 2]));
   const gaps = {};
   const ghosts = {};
   const plusEls = {};
   for (let i = 1; i <= s.k - 1; i++) {
-    gaps[i] = makeTile(GAP_COLOR, sizeCls, "mm-tile--gap");
+    gaps[i] = makeTile(GAP_COLOR, "mm-tile--gap");
     ghosts[i] = {
-      left: makeTile(ORIG_COLORS[(i - 1) % 2], sizeCls, "mm-tile--ghost"),
-      right: makeTile(ORIG_COLORS[i % 2], sizeCls, "mm-tile--ghost"),
+      left: makeTile(ORIG_COLORS[(i - 1) % 2], "mm-tile--ghost"),
+      right: makeTile(ORIG_COLORS[i % 2], "mm-tile--ghost"),
     };
     const plus = document.createElement("div");
     plus.className = "mm-plus-sign";
@@ -619,14 +706,17 @@ function buildStageDOM(s) {
     plusEls[i] = plus;
   }
 
-  const leading = makeTile(GAP_COLOR, sizeCls, "mm-tile--leading");
+  const leading = makeTile(GAP_COLOR, "mm-tile--leading");
 
   const chip = document.createElement("div");
   chip.className = "mm-carry-badge";
   chip.textContent = "+1";
   stage.appendChild(chip);
 
-  const answer = makeTile(ANSWER_COLOR, "", "mm-answer-pill pp-sticky--tape");
+  const answer = makeTile(ANSWER_COLOR, "mm-answer-pill pp-sticky--tape");
+  // A wide answer (a 4-digit number × 11 is up to 6 digits) would blow the
+  // pill out of a small-card scene — shrink the answer text for big k.
+  answer.digit.style.fontSize = s.k >= 4 ? "1.15rem" : s.k === 3 ? "1.4rem" : "1.6rem";
 
   return { originals, gaps, ghosts, plusEls, leading, chip, answer };
 }
@@ -639,10 +729,12 @@ async function loadScene(n) {
   isTalking = false;
   stopGuidedPlay();
   needsIntro = true;
+  sceneRevealed = false;
   currentNarration = buildNarration(s);
   botText.textContent = "";
   lastNarratedIndex = -1;
 
+  computeLayout(s.k); // size the cards to fit this many digits on the screen
   const els = buildStageDOM(s);
   const { originals, gaps, ghosts, plusEls, leading, chip, answer } = els;
   stage.scrollLeft = 0;
@@ -749,49 +841,49 @@ async function loadScene(n) {
     {
       id: "resolve",
       build: (tl) => {
+        // Reveal the "carry left when ≥ 10" line as the step opens (first
+        // insert appends at the timeline end and anchors the step).
+        tl.to(nodes[4], { opacity: 1, y: 0, duration: 0.35 });
+
+        // Resolve the carries right-to-left. Tiles arrive showing the raw
+        // pair-sums (e.g. "4 12 8"). A tile only sheds its extra ten at the
+        // exact instant its carry chip LANDS on the neighbour — and the
+        // neighbour ticks up at that same instant — so the board jumps
+        // straight from "4 12 8" to "5 2 8" and never flashes a
+        // half-resolved "4 2 8". Same behaviour for every number.
+        const lift = Math.round(TILE * 0.8);
         let carryIn = 0;
-        // True once a carry chip has flown to and is resting above the tile
-        // the NEXT loop pass is about to process. It stays fully visible
-        // there for a beat — "shown above the next digit" — and only once
-        // that beat is up does the digit actually change, at the same
-        // instant the chip fades, so the two read as one cause-and-effect
-        // moment instead of the chip vanishing before anything happens.
-        let chipPending = false;
         for (let i = s.k - 1; i >= 0; i--) {
           const val = s.raw[i] + carryIn;
-          const digit = val % 10;
           const carryOut = val >= 10 ? 1 : 0;
-
-          if (chipPending) {
-            tl.call(() => { slotEls[i].digit.textContent = digit; }, [], "+=0.4");
-            tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
-            tl.to(slotEls[i].el, { scale: 1.2, duration: 0.12 }, "<");
-            tl.to(slotEls[i].el, { scale: 1, duration: 0.16 });
-            chipPending = false;
-          } else {
-            tl.call(() => { slotEls[i].digit.textContent = digit; });
-          }
+          const digit = val % 10;
 
           if (carryOut) {
             const fromX = slotX(s.k, i);
-            const toX = i === 0 ? leadingX(s.k) : slotX(s.k, i - 1);
+            const toX = i === 0 ? leadingX() : slotX(s.k, i - 1);
+            // Pop the +1 chip off this tile and float it up to the neighbour.
             tl.set(chip, { x: fromX, y: 0, opacity: 0 });
             tl.to(chip, { opacity: 1, duration: 0.15 });
-            tl.to(chip, { x: toX, y: -40, duration: 0.5, ease: "power2.inOut" });
+            tl.to(chip, { x: toX, y: -lift, duration: 0.5, ease: "power2.inOut" });
+            // Rest it clearly above the destination for a beat before it lands.
+            tl.to({}, { duration: 0.35 });
+            // LAND — all at once: this tile drops to its final digit, the
+            // neighbour ticks up by one, and the chip merges in.
+            tl.call(() => { slotEls[i].digit.textContent = digit; });
             if (i === 0) {
-              // No tile further left to defer to — this carry becomes a
-              // brand new leading digit, so hold-then-add happens here
-              // instead of at the top of a next iteration that won't exist.
-              tl.call(() => { leading.digit.textContent = "1"; }, [], "+=0.4");
+              // No tile further left — the carry becomes a new leading digit.
+              tl.call(() => { leading.digit.textContent = "1"; }, [], "<");
               tl.to(leading.el, { opacity: 1, duration: 0.3 }, "<");
-              tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
             } else {
-              chipPending = true;
+              const destVal = s.raw[i - 1] + 1;
+              tl.call(() => { slotEls[i - 1].digit.textContent = destVal; }, [], "<");
+              tl.to(slotEls[i - 1].el, { scale: 1.2, duration: 0.12 }, "<");
+              tl.to(slotEls[i - 1].el, { scale: 1, duration: 0.16 });
             }
+            tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
           }
           carryIn = carryOut;
         }
-        tl.to(nodes[4], { opacity: 1, y: 0, duration: 0.35 }, "<");
       },
     },
     {
@@ -925,19 +1017,35 @@ numInput.addEventListener("keydown", (e) => {
   loadScene(n);
 });
 
+// Stepping manually must also open the curtain first (nothing is visible
+// behind it) and unmute narration — same reveal the Play button triggers.
+async function revealIfNeeded() {
+  if (needsIntro) {
+    await playIntro();
+    needsIntro = false;
+  }
+  sceneRevealed = true;
+}
+async function stepManual(dir) {
+  stopGuidedPlay();
+  await revealIfNeeded();
+  if (dir > 0) scrubber?.next();
+  else scrubber?.prev();
+}
+
 playBtn.addEventListener("click", () => {
   if (autoPlaying) stopGuidedPlay();
   else guidedPlay();
 });
-prevBtn.addEventListener("click", () => { stopGuidedPlay(); scrubber?.prev(); });
-nextBtn.addEventListener("click", () => { stopGuidedPlay(); scrubber?.next(); });
+prevBtn.addEventListener("click", () => stepManual(-1));
+nextBtn.addEventListener("click", () => stepManual(1));
 
 document.addEventListener("keydown", (e) => {
   const tag = document.activeElement?.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA") return;
   if (!scrubber) return;
-  if (e.key === "ArrowRight") { stopGuidedPlay(); scrubber.next(); }
-  else if (e.key === "ArrowLeft") { stopGuidedPlay(); scrubber.prev(); }
+  if (e.key === "ArrowRight") stepManual(1);
+  else if (e.key === "ArrowLeft") stepManual(-1);
   else if (e.key === " ") {
     e.preventDefault();
     if (autoPlaying) stopGuidedPlay();
