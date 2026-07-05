@@ -303,12 +303,17 @@ body {
 .deck-pouch--c4 { --pouch-bg: var(--badge-subject-5-bg); }
 .deck-pouch--c5 { --pouch-bg: var(--badge-subject-6-bg); }
 
+/* Pulled up above the bag's own top edge (negative top) so it overlaps the
+   base of the card slivers poking out above — the cards should read as
+   sandwiched BETWEEN the pouch's back (the bag body, which still hides
+   their lower half) and this front opening-rim, not simply hidden flush
+   behind a single solid layer. */
 .deck-pouch-neck {
   position: absolute;
-  top: 0;
+  top: -8px;
   left: 12%;
   right: 12%;
-  height: 9px;
+  height: 14px;
   border-radius: 0 0 7px 7px;
   background-color: color-mix(in srgb, var(--ink) 10%, transparent);
   background-image: repeating-linear-gradient(
@@ -570,6 +575,19 @@ body {
   font-size: 0.68rem;
   padding: 0.3rem 0.6rem;
   --pp-note-tilt: -3deg;
+}
+
+/* Opposite corner from .flash-note — names the deck's subject on the card
+   itself, mirroring the pouch's own luggage tag so the card still reads as
+   belonging to that pouch once it's pulled out and flipped up. */
+.flash-subject {
+  position: absolute;
+  z-index: 3;
+  top: -14px;
+  left: 18px;
+  font-size: 0.68rem;
+  padding: 0.3rem 0.6rem;
+  --pp-note-tilt: 3deg;
 }
 
 /* Icon tile — an organic "sticker" blob (iconBlob, same as .nav-icon) behind

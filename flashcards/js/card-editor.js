@@ -45,6 +45,7 @@ const editorPrev = $('editor-prev');
 const editorNext = $('editor-next');
 const flashCard = $('editor-flash-card');
 const flashNote = $('editor-flash-note');
+const flashSubject = $('editor-flash-subject');
 const frontText = $('editor-front-text');
 const backText = $('editor-back-text');
 const frontImage = $('editor-image-front');
@@ -155,6 +156,7 @@ export async function openEditor(deckId) {
   deck = found;
   idx = 0;
   editorSubject.textContent = `${deck.subject}: ${deck.topic}`;
+  flashSubject.textContent = deck.subject;
   editorBd.classList.add('open');
   editorBd.setAttribute('aria-hidden', 'false');
   if (siteNav) siteNav.style.display = 'none';
@@ -312,7 +314,7 @@ export function initCardEditor() {
 
   flashCard.addEventListener('click', (e) => {
     if (!deck || editing) return;
-    if (e.target.closest('.flash-note')) return;
+    if (e.target.closest('.flash-note') || e.target.closest('.flash-subject')) return;
     showFace(flashCard.classList.contains('flipped'));
   });
 

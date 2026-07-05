@@ -26,6 +26,7 @@ const reviewPrev = $('review-prev');
 const reviewNext = $('review-next');
 const flashCard = $('flash-card');
 const flashNote = $('flash-note');
+const flashSubject = $('flash-subject');
 const frontText = $('flash-front-text');
 const backText = $('flash-back-text');
 const frontImage = $('flash-image-front');
@@ -145,6 +146,7 @@ async function startSession(deckId, box) {
 
   session = { deckId, box, queue, idx: 0 };
   reviewSubject.textContent = `${deck.subject}: ${deck.topic}`;
+  flashSubject.textContent = deck.subject;
   reviewBd.querySelector('.review-stage').hidden = false;
   doneEl.hidden = true;
   reviewBd.classList.add('open');
@@ -185,7 +187,7 @@ export function initReview() {
 
   flashCard.addEventListener('click', (e) => {
     if (!session) return;
-    if (e.target.closest('.flash-note') || e.target.closest('.review-grades')) return;
+    if (e.target.closest('.flash-note') || e.target.closest('.flash-subject') || e.target.closest('.review-grades')) return;
     const isFront = !flashCard.classList.contains('flipped');
     showFace(!isFront);
     gradesEl.hidden = isFront; // reveal grading once the answer is shown
