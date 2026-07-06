@@ -57,6 +57,32 @@ module.exports = function () {
     }
   }
 
+  // ── ElevenLabs response cache ──────────────────────────────────────
+  // ElevenLabs bills per character synthesised, and this page's narration is
+  // scripted and highly repetitive (the same lines every playback, and many
+  // static lines shared across every number). Cache the finished MP3 by
+  // voice+text so a repeat is served for free instead of re-billing. This is
+  // a simple in-process LRU: it survives for the life of a warm serverless
+  // instance (which comfortably covers a student's whole session and is
+  // shared across students hitting the same instance). Bounded so a long tail
+  // of one-off custom numbers can't grow it without limit.
+  const ELEVEN_CACHE_MAX = 500;
+  const elevenCache = new Map(); // "voiceId|text" -> base64 mp3 (insertion order = LRU)
+  function cacheGet(key) {
+    if (!elevenCache.has(key)) return null;
+    const v = elevenCache.get(key);
+    elevenCache.delete(key); // re-insert to mark most-recently-used
+    elevenCache.set(key, v);
+    return v;
+  }
+  function cacheSet(key, v) {
+    if (elevenCache.has(key)) elevenCache.delete(key);
+    elevenCache.set(key, v);
+    if (elevenCache.size > ELEVEN_CACHE_MAX) {
+      elevenCache.delete(elevenCache.keys().next().value); // evict oldest
+    }
+  }
+
   // Lazily created so the server still starts even if TTS is unconfigured.
   let _client = null;
 
@@ -165,6 +191,14 @@ module.exports = function () {
         return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
       }
 
+      // Serve an already-synthesised line straight from cache — no ElevenLabs
+      // call, so no characters billed.
+      const cacheKey = `${voiceId}|${text}`;
+      const cached = cacheGet(cacheKey);
+      if (cached) {
+        return res.json({ audioContent: cached, audioEncoding: "MP3", cached: true });
+      }
+
       const elResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
         headers: {
@@ -186,7 +220,9 @@ module.exports = function () {
       }
 
       const buf = Buffer.from(await elResponse.arrayBuffer());
-      res.json({ audioContent: buf.toString("base64"), audioEncoding: "MP3" });
+      const base64 = buf.toString("base64");
+      cacheSet(cacheKey, base64); // remember it so the next identical line is free
+      res.json({ audioContent: base64, audioEncoding: "MP3" });
     } catch (err) {
       console.error("[/api/tts/elevenlabs]", err.message);
       res.status(500).json({ error: err.message });

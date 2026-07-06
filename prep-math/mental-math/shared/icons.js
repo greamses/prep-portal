@@ -76,6 +76,22 @@ export const ICON_BEEP_MODE = svg(
   `<path d="M4.2 12h2.4M17.4 12h2.4M6.9 6.2l1.7 1.7M15.4 15.9l1.7 1.7M6.9 17.8l1.7-1.7M15.4 8.1l1.7-1.7" fill="none" stroke="var(--accent-secondary)" stroke-width="1.8" stroke-linecap="round"/>`,
 );
 
+// Background-music toggle — a little beamed pair of notes. The "off" variant
+// adds a danger-coloured slash, same show-what-it-switches-to convention as
+// the other menu toggles isn't used here (this one shows current state).
+export const ICON_MUSIC = svg(
+  `<path d="M9 6.2l8-1.8v8.4" fill="none" stroke="var(--accent-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<circle cx="7" cy="15.4" r="2.5" fill="var(--accent-secondary)"/>` +
+  `<circle cx="17" cy="13.6" r="2.5" fill="var(--accent-secondary)"/>`,
+);
+
+export const ICON_MUSIC_OFF = svg(
+  `<path d="M9 6.2l8-1.8v8.4" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<circle cx="7" cy="15.4" r="2.5" fill="var(--text-tertiary)"/>` +
+  `<circle cx="17" cy="13.6" r="2.5" fill="var(--text-tertiary)"/>` +
+  `<path d="M4 4l16 16" fill="none" stroke="var(--accent-danger)" stroke-width="2" stroke-linecap="round"/>`,
+);
+
 // PrepBot mascot — same robot used by the site-wide chat FAB
 // (utils/prepbot/prepbot.js's PB_ICONS.robotAwake), reused here so the
 // "teacher" narrating the trick is recognizably the same character.

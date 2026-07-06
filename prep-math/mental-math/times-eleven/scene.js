@@ -17,7 +17,7 @@ import { Scrubber } from "../shared/scrub-engine.js";
 import {
   ICON_PLAY, ICON_PAUSE, ICON_PREPBOT, MOUTH_SHAPES,
   ICON_FULLSCREEN, ICON_ASK, ICON_SLEEP, ICON_WAKE, ICON_WIGGLE,
-  ICON_TALK_MODE, ICON_BEEP_MODE,
+  ICON_TALK_MODE, ICON_BEEP_MODE, ICON_MUSIC, ICON_MUSIC_OFF,
 } from "../shared/icons.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 import { auth } from "/firebase-init.js";
@@ -40,9 +40,11 @@ const botEyes = botAvatar.querySelectorAll(".mm-bot-eye");
 const botMouth = botAvatar.querySelector(".mm-bot-mouth");
 const botAskBtn = document.getElementById("mmBotAsk");
 const botVoiceBtn = document.getElementById("mmBotVoice");
+const botMusicBtn = document.getElementById("mmBotMusic");
 const botSleepBtn = document.getElementById("mmBotSleep");
 const botPokeBtn = document.getElementById("mmBotPoke");
 botAskBtn.innerHTML = ICON_ASK;
+botMusicBtn.innerHTML = ICON_MUSIC;
 botSleepBtn.innerHTML = ICON_SLEEP;
 botPokeBtn.innerHTML = ICON_WIGGLE;
 const curtainEl = document.getElementById("mmCurtain");
@@ -169,6 +171,105 @@ function beep() {
   osc.stop(audioCtx.currentTime + 0.11);
 }
 
+// ── Soft, generative background music (Tone.js) ─────────────────────────
+// A calm ambient pad cycling a gentle major-7th chord loop with an occasional
+// sparse bell melody over reverb — deliberately quiet so it never fights the
+// narration, and it DUCKS (drops ~4× quieter) whenever PrepBot is speaking,
+// easing back up in the pauses. Tone.js is loaded lazily on first reveal (a
+// user gesture, required to start audio); any load/parse failure is swallowed
+// so music is purely additive — voice and animation never depend on it.
+let Tone = null;
+let tonePreload = null;    // fire-and-forget import so Tone is ready by first gesture
+let music = null;          // { master, baseGain, ... } once running
+let musicOn = true;        // user toggle (menu button)
+let musicStarting = false;
+const MUSIC_BASE_GAIN = 0.32;
+
+// Load the Tone.js code early (no audio yet — importing a module needs no
+// gesture). Having it ready means ensureMusic() can call Tone.start() with no
+// network wait in between, so it still counts as happening on the click.
+function preloadTone() {
+  if (!tonePreload) {
+    tonePreload = import("https://cdn.jsdelivr.net/npm/tone@15/+esm")
+      .then((m) => { Tone = m; })
+      .catch(() => { Tone = null; });
+  }
+  return tonePreload;
+}
+
+// Must be called from a user gesture (starting audio requires one).
+async function ensureMusic() {
+  if (music || musicStarting || !musicOn) return;
+  musicStarting = true;
+  try {
+    await preloadTone();
+    if (!Tone) throw new Error("tone unavailable");
+    await Tone.start();
+
+    const master = new Tone.Gain(0).toDestination();
+    const reverb = new Tone.Reverb(7).connect(master);
+    reverb.wet.value = 0.55;
+    const pad = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: 1.4, decay: 0.6, sustain: 0.75, release: 3.5 },
+    }).connect(reverb);
+    pad.volume.value = -15;
+    const bell = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.02, decay: 0.5, sustain: 0.04, release: 1.6 },
+    }).connect(reverb);
+    bell.volume.value = -24;
+
+    const chords = [
+      ["C4", "E4", "G4", "B4"],
+      ["A3", "C4", "E4", "G4"],
+      ["F3", "A3", "C4", "E4"],
+      ["G3", "B3", "D4", "F4"],
+    ];
+    let ci = 0;
+    const chordLoop = new Tone.Loop((time) => {
+      pad.triggerAttackRelease(chords[ci % chords.length], "1m", time);
+      ci++;
+    }, "1m");
+
+    const melody = ["E5", "G5", "A5", "C6", "B5", "A5", "G5", "E5"];
+    let mi = 0;
+    const bellLoop = new Tone.Loop((time) => {
+      if (Math.random() < 0.55) bell.triggerAttackRelease(melody[mi % melody.length], "8n", time);
+      mi++;
+    }, "2n");
+
+    const transport = Tone.getTransport ? Tone.getTransport() : Tone.Transport;
+    transport.bpm.value = 60;
+    chordLoop.start(0);
+    bellLoop.start("2n");
+    transport.start();
+
+    music = { master, baseGain: MUSIC_BASE_GAIN };
+    master.gain.rampTo(MUSIC_BASE_GAIN, 3.5); // fade in gently
+  } catch (_) {
+    music = null; // no music this session; everything else keeps working
+  } finally {
+    musicStarting = false;
+  }
+}
+
+// Speaking → duck; pause/silence → ease back up. No-ops until music exists.
+function duckMusic() {
+  if (music && musicOn) music.master.gain.rampTo(music.baseGain * 0.25, 0.4);
+}
+function unduckMusic() {
+  if (music && musicOn) music.master.gain.rampTo(music.baseGain, 1.4);
+}
+
+function toggleMusic() {
+  musicOn = !musicOn;
+  botMusicBtn.innerHTML = musicOn ? ICON_MUSIC : ICON_MUSIC_OFF;
+  botMusicBtn.title = musicOn ? "Turn music off" : "Turn music on";
+  if (musicOn && !music) { ensureMusic(); return; }
+  if (music) music.master.gain.rampTo(musicOn ? music.baseGain : 0, 0.6);
+}
+
 // ── Body vs. face are two separate animation systems ────────────────────
 // Body (squeeze-bounce / slide / spin) only ever plays between lines, as
 // occasional one-shot "impulses" — never a continuous loop, and never
@@ -261,8 +362,17 @@ function maybeBlink(counter) {
 // error) on every single narrated line; every caller just falls back to the
 // free Web Speech voice from then on.
 let elevenLabsAvailable = true;
+// Per-session cache of already-synthesised lines (text → data URL). The
+// narration is scripted and REPEATS constantly — replaying the animation,
+// stepping back and forth, and the many static lines shared across every
+// number — so caching means each distinct line is only ever billed once per
+// session instead of on every playback. (The server keeps its own cache too,
+// see server/routes/tts.js, so repeats are free across sessions on a warm
+// instance.)
+const elevenLabsCache = new Map();
 async function tryElevenLabs(text) {
   if (!elevenLabsAvailable) return null;
+  if (elevenLabsCache.has(text)) return elevenLabsCache.get(text);
   const user = auth.currentUser;
   if (!user) return null;
   try {
@@ -277,7 +387,9 @@ async function tryElevenLabs(text) {
       return null;
     }
     const { audioContent } = await res.json();
-    return audioContent ? `data:audio/mp3;base64,${audioContent}` : null;
+    const url = audioContent ? `data:audio/mp3;base64,${audioContent}` : null;
+    if (url) elevenLabsCache.set(text, url); // never re-synthesise this line
+    return url;
   } catch {
     return null; // transient (network) — leave the endpoint enabled to retry
   }
@@ -856,6 +968,7 @@ function speakBubbles(lines, index) {
   let resolveDone;
   narrationDone = new Promise((r) => { resolveDone = r; });
   (async () => {
+    duckMusic(); // calm the music down for the whole spoken sequence
     for (let j = 0; j < lines.length; j++) {
       if (token !== narrationToken) break;
       const line = lines[j];
@@ -866,6 +979,9 @@ function speakBubbles(lines, index) {
       if (token !== narrationToken) break;
       if (j < lines.length - 1) await delay(220);
     }
+    // Only lift the music back if we weren't superseded by a newer sequence
+    // (which is already keeping it ducked).
+    if (token === narrationToken) unduckMusic();
     resolveDone();
   })();
 }
@@ -1037,6 +1153,8 @@ botVoiceBtn.addEventListener("click", () => {
   if (window.speechSynthesis) speechSynthesis.cancel();
 });
 
+botMusicBtn.addEventListener("click", toggleMusic);
+
 botSleepBtn.addEventListener("click", () => {
   asleep = !asleep;
   botSleepBtn.title = asleep ? "Wake" : "Sleep";
@@ -1122,6 +1240,7 @@ async function revealIfNeeded() {
   sceneRevealed = true;
 }
 async function stepManual(dir) {
+  ensureMusic(); // start the music on this gesture (before the async reveal)
   stopGuidedPlay();
   await revealIfNeeded();
   if (dir > 0) scrubber?.next();
@@ -1130,6 +1249,7 @@ async function stepManual(dir) {
 
 playBtn.addEventListener("click", () => {
   if (!firstPassDone) return; // locked until the first full manual pass
+  ensureMusic();
   if (autoPlaying) stopGuidedPlay();
   else guidedPlay();
 });
@@ -1146,6 +1266,7 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     // Before the first full pass, Play is locked — Space just steps forward.
     if (!firstPassDone) { stepManual(1); return; }
+    ensureMusic();
     if (autoPlaying) stopGuidedPlay();
     else guidedPlay();
   }
@@ -1169,6 +1290,7 @@ if (botAvatarWrap) {
 
 async function boot() {
   ({ gsap } = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"));
+  preloadTone(); // fetch the music library in the background (no audio yet)
   await waitForMathJax();
   scheduleIdle();
   loadScene(23);
