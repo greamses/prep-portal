@@ -123,6 +123,22 @@ let sceneRevealed = false;
 let currentTalkPromise = Promise.resolve();
 let currentTalkResolve = null;
 let audioCtx = null;
+// Play is dead until the learner has stepped through the whole thing once
+// with Next/Prev — it only unlocks (for replay/autoplay) after that first
+// full manual pass. Reset per scene.
+let firstPassDone = false;
+// Which MathJax panel line to highlight at each scrubber step. Many animation
+// micro-steps share one panel line (the ghost-in / plus / etc. steps carry no
+// equation of their own), so this maps step index → panel line index.
+let hlNodeIndex = [0];
+// A step now narrates SEVERAL bubbles in sequence; guided play waits on this
+// until all of a step's bubbles have been spoken. `narrationToken` cancels an
+// in-flight sequence when the step changes.
+let narrationDone = Promise.resolve();
+let narrationToken = 0;
+// Ghosts are deliberately see-through copies (the neighbour digits being
+// added), so they read as helpers, not real tiles.
+const GHOST_OPACITY = 0.5;
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -489,19 +505,20 @@ async function guidedPlay() {
   // the resting state — the stepping loop below narrates each step itself.
   if (scrubber.index === 0) {
     narrate(0);
-    await currentTalkPromise;
+    await narrationDone;
     if (!autoPlaying) { autoPlaying = false; syncPlayIcon(); return; }
   }
 
   while (autoPlaying && scrubber && scrubber.index < scrubber.total) {
     await scrubber.next();
     if (!autoPlaying) break;
-    await currentTalkPromise;
+    // Wait for ALL of this step's speech bubbles to finish, not just one.
+    await narrationDone;
     if (!autoPlaying) break;
     // A generous hold before the next step — kids need a moment to
     // actually look at what just happened, not have it bulldozed by the
     // next line starting immediately.
-    await delay(1100);
+    await delay(900);
   }
   autoPlaying = false;
   syncPlayIcon();
@@ -555,16 +572,18 @@ function makeScene(n) {
 // screen without a horizontal scrollbar, capped so small numbers still look
 // chunky. Recomputed in loadScene(); the helpers just read the result.
 let TILE = 56;
-let GAP = TILE * 1.2;
+let GAP = TILE * 1.45;
 let PADX = TILE * 0.7;
 
 function computeLayout(k) {
   const availW = Math.max(240, tvScreen?.clientWidth || 400);
   // availW ≈ PADX + (k+1)·GAP + TILE/2 (half the rightmost tile) + right margin
-  //       = t·(0.7 + 1.2·(k+1) + 0.5 + 0.6)
-  const denom = 0.7 + 1.2 * (k + 1) + 1.1;
-  TILE = Math.max(26, Math.min(56, Math.floor(availW / denom)));
-  GAP = TILE * 1.2;
+  //       = t·(0.7 + 1.45·(k+1) + 0.5 + 0.6)
+  // The 1.45 gap (was 1.2) leaves room to lay a faint "left + right" pair
+  // inside each gap without crowding the real endpoint digits.
+  const denom = 0.7 + 1.45 * (k + 1) + 1.1;
+  TILE = Math.max(24, Math.min(56, Math.floor(availW / denom)));
+  GAP = TILE * 1.45;
   PADX = TILE * 0.7;
 }
 
@@ -575,41 +594,211 @@ function origX(k, i) {
   const clusterWidth = k * TILE;
   return centerX - clusterWidth / 2 + i * TILE + TILE / 2;
 }
-
-function buildStepTexts(s) {
-  const texts = [`${s.n} \\times 11 = \\,?`];
-  texts.push(`\\text{Split } ${s.n} \\text{ into its digits: } ${s.digits.join(",\\ ")}`);
-  const pairs = [];
-  for (let i = 1; i < s.k; i++) pairs.push(`${s.digits[i - 1]}+${s.digits[i]}=${s.raw[i]}`);
-  texts.push(`\\text{Add each adjacent pair: } ${pairs.join(",\\ \\ ")}`);
-  texts.push(`\\text{They combine into: } ${s.raw.join(",\\ ")}`);
-  texts.push(
-    s.hasCarry
-      ? `\\text{Carry left whenever a sum} \\ge 10`
-      : `\\text{Every sum already fits in one digit}`
-  );
-  texts.push(`${s.n} \\times 11 = ${s.answer}`);
-  return texts;
+// Where original digit j sits once the number is "split" apart: evenly spread
+// from slot 0 to slot k, so an interior digit lands between the two gaps it
+// feeds and its ghosts have a short, sensible distance to travel into either.
+function digX(k, j) {
+  if (k <= 1) return slotX(k, 0);
+  return slotX(k, 0) + (slotX(k, k) - slotX(k, 0)) * (j / (k - 1));
 }
 
-// PrepBot's scripted narration — plain-English lines authored per step, one
-// per the same index buildStepTexts uses. No AI call: this is the "free"
-// running commentary; the "?" badge is the only thing that opens the real,
-// AI-backed chat, and only when a student actually wants to ask something.
-function buildNarration(s) {
-  return [
-    { text: `Let's multiply ${s.n} by 11!`, mode: "speech" },
-    { text: `First, I split ${s.n} into its digits.`, mode: "speech" },
-    { text: "Now I'm adding each neighbouring pair...", mode: "thinking" },
-    { text: "Watch them slide together and combine!", mode: "thinking" },
-    {
-      text: s.hasCarry
-        ? "Some of these are too big for one digit — carrying left!"
-        : "Everything already fits neatly, no carrying needed.",
-      mode: "thinking",
+// Build the full, granular step plan for a scene: one step per single idea,
+// each with its own animation (build), an optional MathJax panel line (tex),
+// and SEVERAL kid-friendly speech bubbles. No AI — scripted commentary; the
+// "?" badge is the only thing that reaches the real chat.
+//
+// Per adjacent pair we deliberately break the "add" into four separate,
+// individually-animated steps — right ghost in, left ghost in, plus sign,
+// then combine — instead of one blended motion, so a child sees each idea
+// happen on its own. Carrying is one step per hop. This repeats for every
+// pair in a multi-digit number.
+function makeStepPlan(s, els) {
+  const { originals, gaps, ghosts, plusEls, leading, chip, answer } = els;
+  const k = s.k;
+  const gx = (i) => slotX(k, i);
+  const GH = TILE * 0.62;
+  const lift = Math.round(TILE * 0.8);
+  const slotDigit = (i) => (i === 0 ? originals[0] : i === k ? originals[k - 1] : gaps[i]);
+  const steps = [];
+
+  steps.push({
+    id: "split",
+    tex: `\\text{Split } ${s.n} \\text{ into } ${s.digits.join(",\\ ")}`,
+    bubbles: [
+      { text: `To times ${s.n} by eleven, spread its digits apart.`, mode: "speech" },
+      { text: "That leaves a gap between each pair to fill in.", mode: "speech" },
+    ],
+    build: (tl, node) => {
+      tl.to(originals[0].el, { x: digX(k, 0), duration: 0.55, ease: "power2.inOut" });
+      for (let j = 1; j <= k - 1; j++)
+        tl.to(originals[j].el, { x: digX(k, j), duration: 0.55, ease: "power2.inOut" }, "<");
+      if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.35 }, "<");
     },
-    { text: `Ta-da! ${s.n} × 11 = ${s.answer}`, mode: "speech" },
-  ];
+  });
+
+  for (let i = 1; i <= k - 1; i++) {
+    const g = ghosts[i];
+    const L = s.digits[i - 1], R = s.digits[i], SUM = s.raw[i];
+
+    steps.push({
+      id: `ghostR${i}`,
+      tex: null,
+      bubbles: [
+        { text: `Bring a faint copy of the right digit, ${R}, into the gap.`, mode: "thinking" },
+        { text: "It's see-through because it's only a helper.", mode: "thinking" },
+      ],
+      build: (tl) => {
+        tl.set(g.right.el, { x: gx(i) + TILE * 1.5, y: 0, opacity: 0 });
+        tl.to(g.right.el, { x: gx(i) + GH, opacity: GHOST_OPACITY, duration: 0.5, ease: "power2.out" });
+      },
+    });
+
+    steps.push({
+      id: `ghostL${i}`,
+      tex: null,
+      bubbles: [
+        { text: `Now a faint copy of the left digit, ${L}.`, mode: "thinking" },
+        { text: "The two neighbours sit side by side.", mode: "thinking" },
+      ],
+      build: (tl) => {
+        tl.set(g.left.el, { x: gx(i) - TILE * 1.5, y: 0, opacity: 0 });
+        tl.to(g.left.el, { x: gx(i) - GH, opacity: GHOST_OPACITY, duration: 0.5, ease: "power2.out" });
+      },
+    });
+
+    steps.push({
+      id: `plus${i}`,
+      tex: null,
+      bubbles: [
+        { text: "Pop a plus sign in between them.", mode: "speech" },
+        { text: "We're going to add this pair together.", mode: "speech" },
+      ],
+      build: (tl) => {
+        tl.set(plusEls[i], { x: gx(i), opacity: 0, scale: 0.4 });
+        tl.to(plusEls[i], { opacity: 1, scale: 1, duration: 0.32, ease: "back.out(2)" });
+      },
+    });
+
+    steps.push({
+      id: `combine${i}`,
+      tex: `${L} + ${R} = ${SUM}`,
+      bubbles: [
+        { text: `Add them up: ${L} plus ${R}.`, mode: "thinking" },
+        { text: `That makes ${SUM}, and it drops into the gap.`, mode: "thinking" },
+      ],
+      build: (tl, node) => {
+        tl.to(g.left.el, { x: gx(i), duration: 0.45, ease: "power1.in" });
+        tl.to(g.right.el, { x: gx(i), duration: 0.45, ease: "power1.in" }, "<");
+        tl.to(plusEls[i], { opacity: 0, duration: 0.25 }, "<");
+        tl.to([g.left.el, g.right.el], { opacity: 0, duration: 0.25 }, "-=0.2");
+        tl.call(() => { gaps[i].digit.textContent = SUM; });
+        tl.to(gaps[i].el, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" }, "<");
+        if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.35 }, "<");
+      },
+    });
+  }
+
+  if (s.hasCarry) {
+    let carryIn = 0;
+    const hops = [];
+    for (let i = k - 1; i >= 0; i--) {
+      const val = s.raw[i] + carryIn;
+      const carryOut = val >= 10 ? 1 : 0;
+      if (carryOut) hops.push({ i, val, digit: val % 10, destVal: i > 0 ? s.raw[i - 1] + 1 : 1 });
+      carryIn = carryOut;
+    }
+    hops.forEach((h) => {
+      steps.push({
+        id: `carry${h.i}`,
+        tex: `${h.val} \\to ${h.digit}\\text{, carry }1`,
+        bubbles: [
+          { text: `${h.val} is too big for one box.`, mode: "thinking" },
+          { text: `Keep the ${h.digit}, and carry the one to the left.`, mode: "thinking" },
+        ],
+        build: (tl, node) => {
+          const fromX = gx(h.i);
+          const toX = h.i === 0 ? leadingX() : gx(h.i - 1);
+          tl.set(chip, { x: fromX, y: 0, opacity: 0 });
+          tl.to(chip, { opacity: 1, duration: 0.15 });
+          tl.to(chip, { x: toX, y: -lift, duration: 0.5, ease: "power2.inOut" });
+          tl.to({}, { duration: 0.3 });
+          tl.call(() => { slotDigit(h.i).digit.textContent = h.digit; });
+          if (h.i === 0) {
+            tl.call(() => { leading.digit.textContent = "1"; }, [], "<");
+            tl.to(leading.el, { opacity: 1, duration: 0.3 }, "<");
+          } else {
+            tl.call(() => { slotDigit(h.i - 1).digit.textContent = h.destVal; }, [], "<");
+            tl.to(slotDigit(h.i - 1).el, { scale: 1.2, duration: 0.12 }, "<");
+            tl.to(slotDigit(h.i - 1).el, { scale: 1, duration: 0.16 });
+          }
+          tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
+          if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.35 }, "<");
+        },
+      });
+    });
+  } else {
+    steps.push({
+      id: "nocarry",
+      tex: `\\text{Every sum fits — no carrying}`,
+      bubbles: [
+        { text: "Every sum fits in a single box.", mode: "speech" },
+        { text: "So there's nothing to carry this time!", mode: "speech" },
+      ],
+      build: (tl, node) => {
+        if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.35 });
+        else tl.to({}, { duration: 0.3 });
+      },
+    });
+  }
+
+  steps.push({
+    id: "reveal",
+    tex: `\\text{Read the answer off the boxes}`,
+    bubbles: [
+      { text: "Clear away the faint helper ghosts...", mode: "speech" },
+      { text: "and read the answer straight off the boxes!", mode: "speech" },
+    ],
+    build: (tl, node) => {
+      const junk = [];
+      for (let i = 1; i <= k - 1; i++) junk.push(ghosts[i].left.el, ghosts[i].right.el, plusEls[i]);
+      for (let j = 1; j <= k - 2; j++) junk.push(originals[j].el); // consumed middle digits
+      tl.to(junk, { opacity: 0, duration: 0.3 });
+      const tiles = [originals[0].el, originals[k - 1].el];
+      for (let i = 1; i <= k - 1; i++) tiles.push(gaps[i].el);
+      if (s.leadingDigit) tiles.push(leading.el);
+      tl.to(tiles, { scale: 1.12, duration: 0.16, stagger: 0.05 }, "<");
+      tl.to(tiles, { scale: 1, duration: 0.22, stagger: 0.05 });
+      if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.35 }, "<");
+    },
+  });
+
+  steps.push({
+    id: "answer",
+    tex: `${s.n} \\times 11 = ${s.answer}`,
+    bubbles: [
+      { text: `So ${s.n} times eleven is ${s.answer}.`, mode: "speech" },
+      { text: "You did it!", mode: "speech" },
+    ],
+    build: (tl, node) => {
+      const answerX = (slotX(k, 0) + slotX(k, k)) / 2;
+      const fading = [originals[0].el, originals[k - 1].el, leading.el];
+      for (let i = 1; i <= k - 1; i++) fading.push(gaps[i].el);
+      tl.to(fading, { opacity: 0, duration: 0.3 });
+      const targetScroll = Math.max(0, answerX - stage.clientWidth / 2);
+      tl.to(stage, { scrollLeft: targetScroll, duration: 0.5, ease: "power2.inOut" }, "<");
+      tl.to(answer.el, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, "<+0.1");
+      if (node) tl.to(node, { opacity: 1, y: 0, duration: 0.4 }, "<");
+    },
+  });
+
+  return {
+    steps,
+    titleTex: `${s.n} \\times 11 = \\,?`,
+    greetingBubbles: [
+      { text: `Let's multiply ${s.n} by eleven!`, mode: "speech" },
+      { text: "Tap the next arrow and follow along with me.", mode: "speech" },
+    ],
+  };
 }
 
 function renderSteps(texts) {
@@ -630,8 +819,17 @@ function updateControls(index) {
   progressEl.textContent = index === 0 ? "Ready" : index === total ? "Done" : `Step ${index} of ${total}`;
   prevBtn.disabled = index === 0;
   nextBtn.disabled = index === total;
+
+  // Play stays locked until the learner completes one full manual pass.
+  if (total > 0 && index >= total) firstPassDone = true;
+  playBtn.disabled = !firstPassDone;
   syncPlayIcon();
-  stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === index));
+
+  // Many micro-steps share one panel line — highlight the mapped line and
+  // keep it in view as the list scrolls.
+  const hl = hlNodeIndex[index] ?? 0;
+  stepsPanel.querySelectorAll(".mm-step").forEach((el, i) => el.classList.toggle("is-current", i === hl));
+  stepsPanel.querySelector(".mm-step.is-current")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 
   // Never narrate behind the closed curtain — only once the scene is revealed.
   if (sceneRevealed && currentNarration[index] && index !== lastNarratedIndex) {
@@ -639,17 +837,42 @@ function updateControls(index) {
   }
 }
 
-// Style the bubble for this line's mode/colour and speak it. Split out from
-// updateControls so guided play can fire the opening greeting (index 0)
-// itself, right after the curtain opens.
+// A step's narration is an ARRAY of bubbles, spoken one after another so a
+// child gets a fuller explanation. Split out from updateControls so guided
+// play can also fire the opening greeting (index 0) after the curtain opens,
+// and so guided play can await the whole sequence via `narrationDone`.
 function narrate(index) {
-  const line = currentNarration[index];
-  if (!line) return;
+  const lines = currentNarration[index];
+  if (!lines || !lines.length) return;
   lastNarratedIndex = index;
-  botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[index % BUBBLE_COLORS.length]);
-  botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
-  botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
-  speakLine(line.text);
+  speakBubbles(lines, index);
+}
+
+// Speak each bubble in turn, styling PrepBot's bubble per line. A fresh
+// `narrationToken` supersedes any still-running sequence (e.g. the learner
+// stepped on before the bot finished), so stale bubbles stop cleanly.
+function speakBubbles(lines, index) {
+  const token = ++narrationToken;
+  let resolveDone;
+  narrationDone = new Promise((r) => { resolveDone = r; });
+  (async () => {
+    for (let j = 0; j < lines.length; j++) {
+      if (token !== narrationToken) break;
+      const line = lines[j];
+      botBubble.style.setProperty("--bubble-bg", BUBBLE_COLORS[(index + j) % BUBBLE_COLORS.length]);
+      botBubble.classList.toggle("mm-prepbot-bubble--speech", line.mode === "speech");
+      botBubble.classList.toggle("mm-prepbot-bubble--thinking", line.mode === "thinking");
+      await speakLineAsync(line.text);
+      if (token !== narrationToken) break;
+      if (j < lines.length - 1) await delay(220);
+    }
+    resolveDone();
+  })();
+}
+
+function speakLineAsync(text) {
+  speakLine(text);
+  return currentTalkPromise;
 }
 
 // ── Build the sticky-note tiles for one scene, fresh each time ──────────
@@ -710,7 +933,7 @@ async function loadScene(n) {
   stopGuidedPlay();
   needsIntro = true;
   sceneRevealed = false;
-  currentNarration = buildNarration(s);
+  firstPassDone = false;
   botText.textContent = "";
   lastNarratedIndex = -1;
 
@@ -728,13 +951,9 @@ async function loadScene(n) {
   gsap.set(curtainEl, { opacity: 1 });
   gsap.set([curtainLeft, curtainRight], { x: 0 });
 
-  // slotEls[0..k]: slot 0/slot k are the endpoint original tiles themselves;
-  // slots 1..k-1 are the gap tiles.
-  const slotEls = {};
-  slotEls[0] = originals[0];
-  slotEls[s.k] = originals[s.k - 1];
-  for (let i = 1; i <= s.k - 1; i++) slotEls[i] = gaps[i];
-
+  // Resting state: the digits sit clustered together (the number as written),
+  // and everything computed (gaps, ghosts, plus signs, carry chip, leading
+  // digit, answer) is hidden until its own step brings it in.
   originals.forEach((t, i) => {
     t.digit.textContent = s.digits[i];
     gsap.set(t.el, { x: origX(s.k, i), y: 0, scale: 1, rotation: i % 2 === 0 ? -3 : 3, opacity: 1 });
@@ -744,144 +963,40 @@ async function loadScene(n) {
     gsap.set(gaps[i].el, { x: slotX(s.k, i), y: 0, scale: 0.6, opacity: 0, rotation: 2 });
     ghosts[i].left.digit.textContent = s.digits[i - 1];
     ghosts[i].right.digit.textContent = s.digits[i];
-    gsap.set(ghosts[i].left.el, { x: origX(s.k, i - 1), y: 0, opacity: 0, rotation: 0 });
-    gsap.set(ghosts[i].right.el, { x: origX(s.k, i), y: 0, opacity: 0, rotation: 0 });
+    gsap.set(ghosts[i].left.el, { x: digX(s.k, i - 1), y: 0, opacity: 0, rotation: 0, scale: 1 });
+    gsap.set(ghosts[i].right.el, { x: digX(s.k, i), y: 0, opacity: 0, rotation: 0, scale: 1 });
     gsap.set(plusEls[i], { x: slotX(s.k, i), y: 0, opacity: 0 });
   }
   leading.digit.textContent = "1";
-  gsap.set(leading.el, { x: leadingX(s.k), y: 0, scale: 0.6, opacity: 0, rotation: -2 });
+  gsap.set(leading.el, { x: leadingX(), y: 0, scale: 0.6, opacity: 0, rotation: -2 });
   gsap.set(chip, { x: 0, y: 0, opacity: 0 });
   answer.digit.textContent = s.answer;
   const answerX = (slotX(s.k, 0) + slotX(s.k, s.k)) / 2;
   gsap.set(answer.el, { xPercent: -50, yPercent: -50, x: answerX, y: 0, opacity: 0, scale: 0.8 });
 
-  const texts = buildStepTexts(s);
+  // Build the granular step plan (animation + panel line + multi-bubble
+  // narration) and wire it up.
+  const plan = makeStepPlan(s, els);
+  const texts = [plan.titleTex, ...plan.steps.filter((p) => p.tex).map((p) => p.tex)];
   const nodes = await renderSteps(texts);
   gsap.set(nodes[0], { opacity: 1, y: 0 });
   gsap.set(nodes.slice(1), { opacity: 0, y: 10 });
 
-  const steps = [
-    {
-      id: "split",
-      build: (tl) => {
-        tl.to(originals[0].el, { x: slotX(s.k, 0), duration: 0.6, ease: "power2.inOut" });
-        tl.to(originals[s.k - 1].el, { x: slotX(s.k, s.k), duration: 0.6, ease: "power2.inOut" }, "<");
-        tl.to(nodes[1], { opacity: 1, y: 0, duration: 0.35 }, "<");
-      },
-    },
-    {
-      id: "sum",
-      build: (tl) => {
-        // Just the setup: the ghost copies and "+" appear over each
-        // original pair, ready to combine — the actual glide-and-merge is
-        // its own "fuse" step below, so kids get a distinct pause to read
-        // "add each pair" before watching it happen.
-        //
-        // The FIRST insert of a step must append at the timeline end (no
-        // position param) so the step occupies its own block after the
-        // previous label. Using "<" here would anchor to the *previous
-        // step's* last tween and collapse this whole step on top of it.
-        let first = true;
-        for (let i = 1; i <= s.k - 1; i++) {
-          const g = ghosts[i];
-          tl.set([g.left.el, g.right.el], { opacity: 1 }, first ? undefined : "<");
-          tl.to(plusEls[i], { opacity: 1, duration: 0.2 }, "<");
-          first = false;
-        }
-        tl.to(nodes[2], { opacity: 1, y: 0, duration: 0.35 }, "<");
-      },
-    },
-    {
-      id: "fuse",
-      build: (tl) => {
-        // First insert appends at the timeline end (see the "sum" step's
-        // note) — anchoring the glide with "<" would collapse it onto the
-        // previous step and it would never actually play.
-        let first = true;
-        for (let i = 1; i <= s.k - 1; i++) {
-          const g = ghosts[i];
-          tl.to(g.left.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, first ? undefined : "<");
-          tl.to(g.right.el, { x: slotX(s.k, i), duration: 0.5, ease: "power1.in" }, "<");
-          tl.to([g.left.el, g.right.el], { opacity: 0, duration: 0.2 }, "-=0.2");
-          tl.to(plusEls[i], { opacity: 0, duration: 0.2 }, "<");
-          tl.call(() => { gaps[i].digit.textContent = s.raw[i]; });
-          tl.to(gaps[i].el, { opacity: 1, scale: 1, duration: 0.4 }, "<");
-          first = false;
-        }
-        // Middle original tiles (feeding two gaps) are fully absorbed —
-        // fade them out once their ghosts have launched. Endpoint tiles
-        // (index 0 and k-1) stay put: they ARE slot 0 / slot k.
-        if (s.k > 2) {
-          const middles = originals.slice(1, -1).map((t) => t.el);
-          tl.to(middles, { opacity: 0, duration: 0.3 }, "<");
-        }
-        tl.to(nodes[3], { opacity: 1, y: 0, duration: 0.35 }, "<");
-      },
-    },
-    {
-      id: "resolve",
-      build: (tl) => {
-        // Reveal the "carry left when ≥ 10" line as the step opens (first
-        // insert appends at the timeline end and anchors the step).
-        tl.to(nodes[4], { opacity: 1, y: 0, duration: 0.35 });
+  // Map each step to its panel line (steps without a `tex` reveal nothing),
+  // and record which line to highlight at every step index — carried forward
+  // across the text-less micro-steps (ghost-in, plus, etc.).
+  let ni = 1;
+  let lastHl = 0;
+  hlNodeIndex = [0];
+  const steps = plan.steps.map((p) => {
+    let node = null;
+    if (p.tex) { node = nodes[ni]; lastHl = ni; ni++; }
+    hlNodeIndex.push(lastHl);
+    return { id: p.id, build: (tl) => p.build(tl, node) };
+  });
 
-        // Resolve the carries right-to-left. Tiles arrive showing the raw
-        // pair-sums (e.g. "4 12 8"). A tile only sheds its extra ten at the
-        // exact instant its carry chip LANDS on the neighbour — and the
-        // neighbour ticks up at that same instant — so the board jumps
-        // straight from "4 12 8" to "5 2 8" and never flashes a
-        // half-resolved "4 2 8". Same behaviour for every number.
-        const lift = Math.round(TILE * 0.8);
-        let carryIn = 0;
-        for (let i = s.k - 1; i >= 0; i--) {
-          const val = s.raw[i] + carryIn;
-          const carryOut = val >= 10 ? 1 : 0;
-          const digit = val % 10;
-
-          if (carryOut) {
-            const fromX = slotX(s.k, i);
-            const toX = i === 0 ? leadingX() : slotX(s.k, i - 1);
-            // Pop the +1 chip off this tile and float it up to the neighbour.
-            tl.set(chip, { x: fromX, y: 0, opacity: 0 });
-            tl.to(chip, { opacity: 1, duration: 0.15 });
-            tl.to(chip, { x: toX, y: -lift, duration: 0.5, ease: "power2.inOut" });
-            // Rest it clearly above the destination for a beat before it lands.
-            tl.to({}, { duration: 0.35 });
-            // LAND — all at once: this tile drops to its final digit, the
-            // neighbour ticks up by one, and the chip merges in.
-            tl.call(() => { slotEls[i].digit.textContent = digit; });
-            if (i === 0) {
-              // No tile further left — the carry becomes a new leading digit.
-              tl.call(() => { leading.digit.textContent = "1"; }, [], "<");
-              tl.to(leading.el, { opacity: 1, duration: 0.3 }, "<");
-            } else {
-              const destVal = s.raw[i - 1] + 1;
-              tl.call(() => { slotEls[i - 1].digit.textContent = destVal; }, [], "<");
-              tl.to(slotEls[i - 1].el, { scale: 1.2, duration: 0.12 }, "<");
-              tl.to(slotEls[i - 1].el, { scale: 1, duration: 0.16 });
-            }
-            tl.to(chip, { opacity: 0, duration: 0.2 }, "<");
-          }
-          carryIn = carryOut;
-        }
-      },
-    },
-    {
-      id: "answer",
-      build: (tl) => {
-        const fading = [originals[0].el, originals[s.k - 1].el, leading.el];
-        for (let i = 1; i <= s.k - 1; i++) fading.push(gaps[i].el);
-        tl.to(fading, { opacity: 0, duration: 0.3 });
-        // The final answer is the whole point — make sure it's actually in
-        // view even if the scene is wider than the screen (a 4-digit number
-        // with a leading carry can be), instead of leaving it scrolled off.
-        const targetScroll = Math.max(0, answerX - stage.clientWidth / 2);
-        tl.to(stage, { scrollLeft: targetScroll, duration: 0.5, ease: "power2.inOut" }, "<");
-        tl.to(answer.el, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, "<+0.1");
-        tl.to(nodes[5], { opacity: 1, y: 0, duration: 0.4 }, "<");
-      },
-    },
-  ];
+  // Narration index 0 is the resting-state greeting; index j is plan step j-1.
+  currentNarration = [plan.greetingBubbles, ...plan.steps.map((p) => p.bubbles)];
 
   scrubber = new Scrubber(gsap, { steps, onIndexChange: updateControls });
   updateControls(0);
@@ -1014,6 +1129,7 @@ async function stepManual(dir) {
 }
 
 playBtn.addEventListener("click", () => {
+  if (!firstPassDone) return; // locked until the first full manual pass
   if (autoPlaying) stopGuidedPlay();
   else guidedPlay();
 });
@@ -1028,10 +1144,28 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") stepManual(-1);
   else if (e.key === " ") {
     e.preventDefault();
+    // Before the first full pass, Play is locked — Space just steps forward.
+    if (!firstPassDone) { stepManual(1); return; }
     if (autoPlaying) stopGuidedPlay();
     else guidedPlay();
   }
 });
+
+// Interacting with PrepBot (hover, or tap on touch) reveals its icon menu —
+// hide the speech bubble while that's showing so the two don't fight for the
+// same corner. A tap toggles the menu "pinned" open (works without hover).
+const botAvatarWrap = document.querySelector(".mm-prepbot-avatar-wrap");
+function hideBubble(hide) { botBubble.classList.toggle("mm-prepbot-bubble--hidden", hide); }
+if (botAvatarWrap) {
+  botAvatarWrap.addEventListener("mouseenter", () => hideBubble(true));
+  botAvatarWrap.addEventListener("mouseleave", () => {
+    if (!botAvatarWrap.classList.contains("is-menu-open")) hideBubble(false);
+  });
+  botAvatar.addEventListener("click", () => {
+    const open = botAvatarWrap.classList.toggle("is-menu-open");
+    hideBubble(open);
+  });
+}
 
 async function boot() {
   ({ gsap } = await import("https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"));

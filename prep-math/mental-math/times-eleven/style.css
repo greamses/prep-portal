@@ -159,12 +159,14 @@
 .mm-prepbot-menu::before { bottom: -14px; right: 11px; width: 6px; height: 6px; }
 
 .mm-prepbot-avatar-wrap:hover .mm-prepbot-menu,
+.mm-prepbot-avatar-wrap.is-menu-open .mm-prepbot-menu,
 .mm-prepbot-menu:hover,
 .mm-prepbot-menu:focus-within {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
 }
+.mm-prepbot-avatar { cursor: pointer; }
 
 .mm-prepbot-menu-btn {
   border: none;
@@ -202,6 +204,14 @@
   font-weight: 600;
   font-size: 0.58rem;
   line-height: 1.32;
+}
+/* Tucked away while the learner is interacting with PrepBot's icon menu
+   (hover/tap) so the bubble and menu don't overlap the same corner. */
+.mm-prepbot-bubble--hidden {
+  opacity: 0 !important;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 /* Speech tail — a small triangle pointing down at the avatar's head */
@@ -536,18 +546,25 @@
 .mm-steps-panel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0.6rem;
+  /* `safe center` centres when it fits but falls back to top-aligned when the
+     list overflows, so the first lines never get clipped out of scroll reach. */
+  justify-content: safe center;
+  gap: 0.5rem;
   min-height: 220px;
+  /* The granular breakdown can list many equations; cap the height and let
+     it scroll, with the current line auto-scrolled into view (scene.js). */
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
   padding: 0.4rem 0.6rem;
 }
 .mm-step {
   opacity: 0;
   transform: translateY(10px);
-  font-size: 1.05rem;
-  padding: 0.35rem 0.55rem;
+  font-size: 0.98rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 10px;
   overflow-x: auto; /* a very wide equation scrolls here, doesn't widen the grid */
+  flex-shrink: 0;
 }
 .mm-step.is-current { background: color-mix(in srgb, var(--accent-primary) 18%, transparent); }
 .mm-step mjx-container { margin: 0 !important; }
