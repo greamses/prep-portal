@@ -386,9 +386,15 @@ async function tryElevenLabs(text) {
       elevenLabsAvailable = false;
       return null;
     }
-    const { audioContent } = await res.json();
-    const url = audioContent ? `data:audio/mp3;base64,${audioContent}` : null;
-    if (url) elevenLabsCache.set(text, url); // never re-synthesise this line
+    const data = await res.json();
+    // Prefer a static-cache URL (served free off the CDN); else the inline
+    // base64 the server just synthesised.
+    const url = data.url
+      ? data.url
+      : data.audioContent
+        ? `data:audio/mp3;base64,${data.audioContent}`
+        : null;
+    if (url) elevenLabsCache.set(text, url); // never re-fetch this line this session
     return url;
   } catch {
     return null; // transient (network) — leave the endpoint enabled to retry

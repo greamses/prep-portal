@@ -28,9 +28,32 @@
 const express = require("express");
 const admin = require("firebase-admin");
 const textToSpeech = require("@google-cloud/text-to-speech");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 const { authenticate } = require("../middleware/auth");
 
 const MAX_CHARS = 5000;
+
+// ── Static on-disk cache for ElevenLabs audio ──────────────────────────
+// A stopgap "serve it from here" store until Google Cloud Storage is wired
+// up: synthesised lines are written as plain .mp3 files under the repo-root
+// /tts-cache/ folder, which is served statically. A committed file is then
+// served straight off the static/CDN layer for free — no ElevenLabs call and
+// no function work at all. (vercel.json bundles this folder into the function
+// via includeFiles so the route can also detect a hit.)
+//
+// Note: on a read-only serverless filesystem the WRITE below silently no-ops,
+// so prod won't self-populate — generate the library by running the server
+// with a writable disk (e.g. locally in Talk mode) and commit the .mp3s.
+const TTS_CACHE_DIR = process.env.TTS_CACHE_DIR || path.resolve(__dirname, "../../tts-cache");
+const TTS_CACHE_URL = "/tts-cache";
+try { fs.mkdirSync(TTS_CACHE_DIR, { recursive: true }); } catch (_) {}
+
+function cacheFileFor(voiceId, text) {
+  const hash = crypto.createHash("sha1").update(`${voiceId}|${text}`).digest("hex");
+  return { file: path.join(TTS_CACHE_DIR, `${hash}.mp3`), url: `${TTS_CACHE_URL}/${hash}.mp3` };
+}
 
 module.exports = function () {
   const router = express.Router();
@@ -191,12 +214,21 @@ module.exports = function () {
         return res.status(400).json({ error: `text too long (max ${MAX_CHARS} chars).` });
       }
 
-      // Serve an already-synthesised line straight from cache — no ElevenLabs
-      // call, so no characters billed.
+      const { file: cacheFile, url: cacheUrl } = cacheFileFor(voiceId, text);
+
+      // 1) Static disk hit — hand back the static URL so the browser loads it
+      // straight off the CDN/static layer. No ElevenLabs call, no bytes here.
+      try {
+        if (fs.existsSync(cacheFile)) {
+          return res.json({ url: cacheUrl, audioEncoding: "MP3", cached: "disk" });
+        }
+      } catch (_) {}
+
+      // 2) Warm-instance memory hit.
       const cacheKey = `${voiceId}|${text}`;
       const cached = cacheGet(cacheKey);
       if (cached) {
-        return res.json({ audioContent: cached, audioEncoding: "MP3", cached: true });
+        return res.json({ audioContent: cached, audioEncoding: "MP3", cached: "mem" });
       }
 
       const elResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -222,7 +254,13 @@ module.exports = function () {
       const buf = Buffer.from(await elResponse.arrayBuffer());
       const base64 = buf.toString("base64");
       cacheSet(cacheKey, base64); // remember it so the next identical line is free
-      res.json({ audioContent: base64, audioEncoding: "MP3" });
+
+      // Best-effort persist to the static folder so it can be committed and
+      // then served for free forever. No-ops on a read-only filesystem.
+      let outUrl = null;
+      try { fs.writeFileSync(cacheFile, buf); outUrl = cacheUrl; } catch (_) {}
+
+      res.json({ audioContent: base64, audioEncoding: "MP3", url: outUrl });
     } catch (err) {
       console.error("[/api/tts/elevenlabs]", err.message);
       res.status(500).json({ error: err.message });
