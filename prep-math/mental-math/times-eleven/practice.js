@@ -16,12 +16,36 @@ const answerInput = document.getElementById("mmAnswerInput");
 const checkBtn = document.getElementById("mmCheckBtn");
 const feedback = document.getElementById("mmFeedback");
 const streakEl = document.getElementById("mmStreak");
+const timerEl = document.getElementById("mmTimer");
 const problemCard = document.querySelector(".mm-problem-card");
 const siteNav = document.querySelector(".site-nav");
 
 let streak = 0;
 let answered = false;
 let autoAdvanceTimer = null;
+
+// Speed-practice stopwatch — runs for the whole session (not per-question),
+// so the student can race their own clock across a run of problems.
+let timerStart = 0;
+let timerInterval = null;
+function formatElapsed(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+function startTimer() {
+  timerStart = Date.now();
+  timerEl.textContent = `Time: ${formatElapsed(0)}`;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerEl.textContent = `Time: ${formatElapsed(Date.now() - timerStart)}`;
+  }, 250);
+}
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
 
 // Practice must drill the same variant the student is currently looking at
 // on the demo stage (scene.js keeps ?case= in the URL in sync with the
@@ -115,12 +139,14 @@ function openPractice() {
   bd.classList.add("open");
   bd.setAttribute("aria-hidden", "false");
   if (siteNav) siteNav.style.display = "none";
+  startTimer();
 }
 
 function closePractice() {
   bd.classList.remove("open");
   bd.setAttribute("aria-hidden", "true");
   if (siteNav) siteNav.style.display = "";
+  stopTimer();
 }
 
 openBtn.addEventListener("click", openPractice);

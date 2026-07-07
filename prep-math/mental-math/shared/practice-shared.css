@@ -145,3 +145,11 @@
   margin-top: 0.6rem;
   text-align: center;
 }
+
+.mm-timer {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+  text-align: center;
+}
