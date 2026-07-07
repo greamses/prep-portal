@@ -74,6 +74,7 @@ const NAV_CONFIG = [
         description: "Mixed revision bank — not exam-specific",
         children: [
           { text: "Practice questions", href: "/exam-archive/national/exams/index.html?cat=practice", description: "All subjects, mixed difficulty" },
+          { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
         ],
       },
     ],
@@ -123,14 +124,6 @@ const NAV_CONFIG = [
           { text: "Animal Biology Articles", href: "/blogs/index.html?s=animal", description: "Discover amazing creatures" },
           { text: "Plant Science Articles", href: "/blogs/index.html?s=plants", description: "Explore green wonders" },
           { text: "Human Body Facts", href: "/blogs/index.html?s=human-body", description: "Know your body" },
-        ],
-      },
-      {
-        text: "Math",
-        icon: I.math,
-        description: "Numbers made easy",
-        children: [
-          { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
         ],
       },
     ],
