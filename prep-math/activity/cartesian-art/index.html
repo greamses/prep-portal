@@ -110,6 +110,9 @@
             <button class="ca-fab" type="button" id="ca-gallery-btn" title="My Gallery" aria-label="My Gallery">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
             </button>
+            <button class="ca-fab" type="button" id="ca-prepbot-btn" title="PrepBot demo" aria-label="PrepBot demo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.4" fill="currentColor" stroke="none"/><circle cx="9.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M9 17h6"/></svg>
+            </button>
             <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
             </button>
@@ -178,6 +181,16 @@
           <button class="ca-toolrail-btn ca-toolrail-task" type="button" id="rail-task" title="Your task" aria-label="Your task" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </button>
+        </div>
+
+        <!-- ═══ PREPBOT (very basic auto-demo — narrates + drives the navigation) ═══ -->
+        <div class="ca-prepbot" id="ca-prepbot" hidden>
+          <div class="ca-prepbot-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.4" fill="currentColor" stroke="none"/><circle cx="9.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M9 17h6"/></svg>
+          </div>
+          <div class="ca-prepbot-bubble">
+            <span id="ca-prepbot-text">—</span>
+          </div>
         </div>
 
         <!-- ═══ STEER TOGGLE (separate from the rail) ═══ -->

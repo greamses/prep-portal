@@ -13,6 +13,7 @@ import { initZoom, setPanMode, zoomBy, zoomAxisBy } from "./zoom.js";
 import { initShapesDock } from "./shapes-dock.js";
 import { initTransformMode } from "./transform-mode.js";
 import { initMascot } from "./mascot.js";
+import { initPrepbot } from "./prepbot.js";
 import { initPoints } from "./points.js";
 import { initControls } from "./controls.js";
 import { initPaint } from "./paint.js";
@@ -38,6 +39,7 @@ function init() {
 
   initGrid(stage);
   initMascot();
+  initPrepbot(document);
   initPoints();
   initControls(document);
   initPaint();
