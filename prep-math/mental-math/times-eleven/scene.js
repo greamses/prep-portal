@@ -29,51 +29,61 @@ const playBtn = document.getElementById("mmPlayBtn");
 const playIcon = document.getElementById("mmPlayIcon");
 const prevBtn = document.getElementById("mmPrevBtn");
 const nextBtn = document.getElementById("mmNextBtn");
-const chipsWrap = document.getElementById("mmChips");
-const numInput = document.getElementById("mmNumInput");
+const casePills = document.getElementById("mmCasePills");
 const titleEl = document.getElementById("mmTitle");
 const subEl = document.getElementById("mmSub");
 
-// ── Hub-card deep links ─────────────────────────────────────────────
-// The Mental Math hub now shows four separate cards for this one trick
-// (2-digit vs 3-plus-digit, each split by whether a regroup/carry happens),
-// each linking here with ?case=<key> so the same engine opens pre-scoped
-// to that difficulty instead of the full mixed chip row. Visiting this page
-// with no ?case (e.g. an old bookmark) keeps the original unscoped behavior.
+// ── The 4 strict variants of this trick ─────────────────────────────
+// The Mental Math hub shows one card per variant (2-digit vs 3-plus-digit,
+// each split by whether a regroup/carry happens), linking here with
+// ?case=<key>. Each of the 4 pills below maps to exactly one variant —
+// picking a pill both loads its representative number and (via
+// history.replaceState) updates the URL, which practice.js also reads so
+// its endless-practice problems stay aligned with whichever variant is
+// currently selected. No ?case (e.g. an old bookmark) falls back to the
+// first variant.
 const CASE_INFO = {
   "2-no-regroup": {
-    n: 23, family: "2",
+    n: 23,
     title: "× 11 Trick — 2-digit, no regrouping",
     sub: "Split a 2-digit number into its digits and add them — the sum drops straight into the middle, no carrying yet.",
   },
   "2-regroup": {
-    n: 48, family: "2",
+    n: 48,
     title: "× 11 Trick — 2-digit, with regrouping",
     sub: "Same split-and-add idea, but the digits add past 9 — carry the extra 1 into the tens place.",
   },
   "3plus-no-regroup": {
-    n: 123, family: "3plus",
+    n: 123,
     title: "× 11 Trick — 3+ digit, no regrouping",
     sub: "The same trick scales to any length: add every adjacent pair of digits, still no carrying.",
   },
   "3plus-regroup": {
-    n: 999, family: "3plus",
+    n: 999,
     title: "× 11 Trick — 3+ digit, with regrouping",
     sub: "The full challenge — carries can cascade all the way down the line, even creating a new leading digit.",
   },
 };
+const DEFAULT_CASE = "2-no-regroup";
 const caseParam = new URLSearchParams(location.search).get("case");
-const activeCase = CASE_INFO[caseParam] ? caseParam : null;
+let activeCase = CASE_INFO[caseParam] ? caseParam : DEFAULT_CASE;
 
-function applyCaseFilter() {
-  if (!activeCase) return;
-  const info = CASE_INFO[activeCase];
+function setActivePill(caseKey) {
+  casePills.querySelectorAll(".mm-case-pill").forEach((p) => {
+    p.classList.toggle("active", p.dataset.case === caseKey);
+  });
+}
+
+function applyCase(caseKey) {
+  activeCase = caseKey;
+  const info = CASE_INFO[caseKey];
   document.title = `${info.title} — Mental Math — PrepPortal`;
   if (titleEl) titleEl.textContent = info.title;
   if (subEl) subEl.textContent = info.sub;
-  chipsWrap.querySelectorAll(".mm-chip").forEach((c) => {
-    c.style.display = c.dataset.family === info.family ? "" : "none";
-  });
+  setActivePill(caseKey);
+  const url = new URL(location.href);
+  url.searchParams.set("case", caseKey);
+  history.replaceState(null, "", url);
 }
 const botGroup = document.querySelector(".mm-prepbot");
 const botBubble = document.getElementById("mmBotBubble");
@@ -1168,10 +1178,6 @@ async function loadScene(n) {
   updateControls(0);
 }
 
-function setActiveChip(chip) {
-  chipsWrap.querySelectorAll(".mm-chip").forEach((c) => c.classList.toggle("active", c === chip));
-}
-
 // Only this button ever reaches the model — it opens the site's real,
 // AI-backed PrepBot chat (utils/prepbot/prepbot.js). The bubble/thinking
 // narration above is scripted and free.
@@ -1260,24 +1266,12 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
-chipsWrap.querySelectorAll(".mm-chip").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    setActiveChip(chip);
-    numInput.value = "";
-    loadScene(parseInt(chip.dataset.n, 10));
+casePills.querySelectorAll(".mm-case-pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    const caseKey = pill.dataset.case;
+    applyCase(caseKey);
+    loadScene(CASE_INFO[caseKey].n);
   });
-});
-
-numInput.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  const n = parseInt(numInput.value, 10);
-  if (!Number.isInteger(n) || n < 10 || n > 9999) {
-    numInput.style.borderColor = "var(--accent-danger)";
-    return;
-  }
-  numInput.style.borderColor = "";
-  setActiveChip(null);
-  loadScene(n);
 });
 
 // Stepping manually must also open the curtain first (nothing is visible
@@ -1343,11 +1337,8 @@ async function boot() {
   preloadTone(); // fetch the music library in the background (no audio yet)
   await waitForMathJax();
   scheduleIdle();
-  applyCaseFilter();
-  const startN = activeCase ? CASE_INFO[activeCase].n : 23;
-  const startChip = chipsWrap.querySelector(`.mm-chip[data-n="${startN}"]`);
-  if (startChip) setActiveChip(startChip);
-  loadScene(startN);
+  applyCase(activeCase);
+  loadScene(CASE_INFO[activeCase].n);
 }
 
 // The MathJax config script only sets up window.MathJax as a plain object;

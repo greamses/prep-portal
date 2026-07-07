@@ -24,22 +24,11 @@
   margin: 0 0 1.3rem;
 }
 
-/* ── Number picker ─────────────────────────────────────── */
+/* ── Case picker — the 4 strict variants of this trick ─── */
 .mm-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1.2rem; }
 
-.mm-chip { cursor: pointer; border: 2px solid transparent; font: inherit; }
-.mm-chip.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
-
-.mm-num-input {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  padding: 0.45rem 0.7rem;
-  border: var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-primary);
-  color: var(--ink);
-  width: 130px;
-}
+.mm-case-pill { cursor: pointer; border: 2px solid transparent; font: inherit; }
+.mm-case-pill.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
 
 /* ── Stage + steps panel — 50/50 on large screens ──────── */
 .mm-stage-wrap {

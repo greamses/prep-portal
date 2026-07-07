@@ -23,11 +23,43 @@ let streak = 0;
 let answered = false;
 let autoAdvanceTimer = null;
 
+// Practice must drill the same variant the student is currently looking at
+// on the demo stage (scene.js keeps ?case= in the URL in sync with the
+// active pill), so read it fresh on every generated problem rather than
+// once at load — switching pills before reopening Practice should retarget it.
+function randomInRange(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+function digitsOf(n) {
+  return String(n).split("").map(Number);
+}
+function hasRegroup(digits) {
+  for (let i = 0; i < digits.length - 1; i++) {
+    if (digits[i] + digits[i + 1] >= 10) return true;
+  }
+  return false;
+}
+const MAX_ATTEMPTS = 500;
+function randomNIn(min, max, wantRegroup) {
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const n = randomInRange(min, max);
+    if (hasRegroup(digitsOf(n)) === wantRegroup) return n;
+  }
+  return randomInRange(min, max); // fallback if the constraint proved too rare
+}
+
 function randomProblem() {
-  const k = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4 digits
-  const min = 10 ** (k - 1);
-  const max = 10 ** k - 1;
-  const n = min + Math.floor(Math.random() * (max - min + 1));
+  const caseKey = new URLSearchParams(location.search).get("case");
+  let n;
+  if (caseKey === "2-no-regroup") n = randomNIn(10, 99, false);
+  else if (caseKey === "2-regroup") n = randomNIn(10, 99, true);
+  else if (caseKey === "3plus-no-regroup" || caseKey === "3plus-regroup") {
+    const k = Math.random() < 0.5 ? 3 : 4;
+    n = randomNIn(10 ** (k - 1), 10 ** k - 1, caseKey === "3plus-regroup");
+  } else {
+    const k = 2 + Math.floor(Math.random() * 3); // unscoped fallback: 2, 3, or 4 digits
+    n = randomInRange(10 ** (k - 1), 10 ** k - 1);
+  }
   return { n, answer: n * 11 };
 }
 

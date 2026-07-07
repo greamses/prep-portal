@@ -45,14 +45,11 @@
     <h1 id="mmTitle">× 11 Trick</h1>
     <p class="mm-trick-sub" id="mmSub">Split the number into digits, add each adjacent pair, and carry left whenever a sum doesn't fit in one digit. Works for any 2- to 4-digit number. Play through the steps, or step back and forth until it clicks.</p>
 
-    <div class="mm-controls" id="mmChips">
-      <button class="pp-pill mm-chip active" data-n="23" data-family="2" data-regroup="no" type="button">23</button>
-      <button class="pp-pill mm-chip" data-n="48" data-family="2" data-regroup="yes" type="button">48</button>
-      <button class="pp-pill mm-chip" data-n="123" data-family="3plus" data-regroup="no" type="button">123</button>
-      <button class="pp-pill mm-chip" data-n="999" data-family="3plus" data-regroup="yes" type="button">999</button>
-      <button class="pp-pill mm-chip" data-n="1234" data-family="3plus" data-regroup="no" type="button">1234</button>
-      <button class="pp-pill mm-chip" data-n="9999" data-family="3plus" data-regroup="yes" type="button">9999</button>
-      <input class="mm-num-input" id="mmNumInput" type="text" inputmode="numeric" maxlength="4" placeholder="e.g. 342" aria-label="Custom 2- to 4-digit number">
+    <div class="mm-controls" id="mmCasePills">
+      <button class="pp-pill mm-case-pill active" data-case="2-no-regroup" type="button">2-digit · no regroup</button>
+      <button class="pp-pill mm-case-pill" data-case="2-regroup" type="button">2-digit · regroup</button>
+      <button class="pp-pill mm-case-pill" data-case="3plus-no-regroup" type="button">3+ digit · no regroup</button>
+      <button class="pp-pill mm-case-pill" data-case="3plus-regroup" type="button">3+ digit · regroup</button>
     </div>
 
     <div class="mm-stage-wrap">
