@@ -24,11 +24,11 @@
   margin: 0 0 1.3rem;
 }
 
-/* ── Case picker — the 4 strict variants of this trick ─── */
+/* ── Example numbers — all strictly belong to the active case ──────── */
 .mm-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1.2rem; }
 
-.mm-case-pill { cursor: pointer; border: 2px solid transparent; font: inherit; }
-.mm-case-pill.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
+.mm-example-pill { cursor: pointer; border: 2px solid transparent; font: inherit; }
+.mm-example-pill.active { background: var(--accent-secondary); border-color: var(--accent-secondary); color: var(--text-on-accent); }
 
 /* ── Stage + steps panel — 50/50 on large screens ──────── */
 .mm-stage-wrap {

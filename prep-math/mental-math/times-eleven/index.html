@@ -45,12 +45,10 @@
     <h1 id="mmTitle">× 11 Trick</h1>
     <p class="mm-trick-sub" id="mmSub">Split the number into digits, add each adjacent pair, and carry left whenever a sum doesn't fit in one digit. Works for any 2- to 4-digit number. Play through the steps, or step back and forth until it clicks.</p>
 
-    <div class="mm-controls" id="mmCasePills">
-      <button class="pp-pill mm-case-pill active" data-case="2-no-regroup" type="button">2-digit · no regroup</button>
-      <button class="pp-pill mm-case-pill" data-case="2-regroup" type="button">2-digit · regroup</button>
-      <button class="pp-pill mm-case-pill" data-case="3plus-no-regroup" type="button">3+ digit · no regroup</button>
-      <button class="pp-pill mm-case-pill" data-case="3plus-regroup" type="button">3+ digit · regroup</button>
-    </div>
+    <!-- Populated by scene.js with 4 example numbers strictly belonging to
+         the current ?case= (e.g. 2-digit/no-regroup shows only numbers like
+         11, 23, 34, 45) — not a switcher between cases. -->
+    <div class="mm-controls" id="mmExamples"></div>
 
     <div class="mm-stage-wrap">
       <div class="mm-tv-col">

@@ -29,61 +29,70 @@ const playBtn = document.getElementById("mmPlayBtn");
 const playIcon = document.getElementById("mmPlayIcon");
 const prevBtn = document.getElementById("mmPrevBtn");
 const nextBtn = document.getElementById("mmNextBtn");
-const casePills = document.getElementById("mmCasePills");
+const examplesWrap = document.getElementById("mmExamples");
 const titleEl = document.getElementById("mmTitle");
 const subEl = document.getElementById("mmSub");
 
 // ── The 4 strict variants of this trick ─────────────────────────────
 // The Mental Math hub shows one card per variant (2-digit vs 3-plus-digit,
 // each split by whether a regroup/carry happens), linking here with
-// ?case=<key>. Each of the 4 pills below maps to exactly one variant —
-// picking a pill both loads its representative number and (via
-// history.replaceState) updates the URL, which practice.js also reads so
-// its endless-practice problems stay aligned with whichever variant is
-// currently selected. No ?case (e.g. an old bookmark) falls back to the
-// first variant.
+// ?case=<key>. This page is locked to whichever variant it was opened
+// with — the pills rendered below are just alternate example numbers
+// that all strictly belong to that SAME case, not a switcher to the
+// other 3. practice.js separately reads ?case= so its endless-practice
+// problems stay aligned with it. No ?case (e.g. an old bookmark) falls
+// back to the first variant.
 const CASE_INFO = {
   "2-no-regroup": {
-    n: 23,
+    examples: [11, 23, 34, 45],
     title: "× 11 Trick — 2-digit, no regrouping",
     sub: "Split a 2-digit number into its digits and add them — the sum drops straight into the middle, no carrying yet.",
   },
   "2-regroup": {
-    n: 48,
+    examples: [29, 48, 57, 84],
     title: "× 11 Trick — 2-digit, with regrouping",
     sub: "Same split-and-add idea, but the digits add past 9 — carry the extra 1 into the tens place.",
   },
   "3plus-no-regroup": {
-    n: 123,
+    examples: [122, 213, 1022, 2103],
     title: "× 11 Trick — 3+ digit, no regrouping",
     sub: "The same trick scales to any length: add every adjacent pair of digits, still no carrying.",
   },
   "3plus-regroup": {
-    n: 999,
+    examples: [786, 999, 4999, 9999],
     title: "× 11 Trick — 3+ digit, with regrouping",
     sub: "The full challenge — carries can cascade all the way down the line, even creating a new leading digit.",
   },
 };
 const DEFAULT_CASE = "2-no-regroup";
 const caseParam = new URLSearchParams(location.search).get("case");
-let activeCase = CASE_INFO[caseParam] ? caseParam : DEFAULT_CASE;
+const activeCase = CASE_INFO[caseParam] ? caseParam : DEFAULT_CASE;
 
-function setActivePill(caseKey) {
-  casePills.querySelectorAll(".mm-case-pill").forEach((p) => {
-    p.classList.toggle("active", p.dataset.case === caseKey);
-  });
-}
-
-function applyCase(caseKey) {
-  activeCase = caseKey;
-  const info = CASE_INFO[caseKey];
+function applyCase() {
+  const info = CASE_INFO[activeCase];
   document.title = `${info.title} — Mental Math — PrepPortal`;
   if (titleEl) titleEl.textContent = info.title;
   if (subEl) subEl.textContent = info.sub;
-  setActivePill(caseKey);
-  const url = new URL(location.href);
-  url.searchParams.set("case", caseKey);
-  history.replaceState(null, "", url);
+}
+
+function setActiveExample(n) {
+  examplesWrap.querySelectorAll(".mm-example-pill").forEach((p) => {
+    p.classList.toggle("active", Number(p.dataset.n) === n);
+  });
+}
+
+function renderExamples() {
+  const { examples } = CASE_INFO[activeCase];
+  examplesWrap.innerHTML = examples
+    .map((n, i) => `<button class="pp-pill mm-example-pill${i === 0 ? " active" : ""}" data-n="${n}" type="button">${n}</button>`)
+    .join("");
+  examplesWrap.querySelectorAll(".mm-example-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const n = Number(pill.dataset.n);
+      setActiveExample(n);
+      loadScene(n);
+    });
+  });
 }
 const botGroup = document.querySelector(".mm-prepbot");
 const botBubble = document.getElementById("mmBotBubble");
@@ -1266,14 +1275,6 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
-casePills.querySelectorAll(".mm-case-pill").forEach((pill) => {
-  pill.addEventListener("click", () => {
-    const caseKey = pill.dataset.case;
-    applyCase(caseKey);
-    loadScene(CASE_INFO[caseKey].n);
-  });
-});
-
 // Stepping manually must also open the curtain first (nothing is visible
 // behind it) and unmute narration — same reveal the Play button triggers.
 async function revealIfNeeded() {
@@ -1337,8 +1338,9 @@ async function boot() {
   preloadTone(); // fetch the music library in the background (no audio yet)
   await waitForMathJax();
   scheduleIdle();
-  applyCase(activeCase);
-  loadScene(CASE_INFO[activeCase].n);
+  applyCase();
+  renderExamples();
+  loadScene(CASE_INFO[activeCase].examples[0]);
 }
 
 // The MathJax config script only sets up window.MathJax as a plain object;
