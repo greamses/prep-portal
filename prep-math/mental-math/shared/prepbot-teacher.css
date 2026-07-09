@@ -1,0 +1,146 @@
+/* ============================================================================
+   Shared PrepBot teaching mascot — widget styles
+   ----------------------------------------------------------------------------
+   The look of the narrating teacher character (avatar, hover menu, speech /
+   thinking bubble) used with shared/prepbot-teacher.js. Pages own only the
+   POSITIONING of their `.mm-prepbot` (absolute corner, z-index, etc.) — keep
+   that in the page stylesheet, everything else lives here.
+
+   Idle bounce/spin/mouth motion is driven by GSAP in prepbot-teacher.js, not
+   CSS @keyframes — the site respects prefers-reduced-motion by zeroing all
+   CSS animation durations sitewide (theme.css), which would silently flatten
+   a CSS-only mascot; GSAP tweens aren't caught by that rule, so this is the
+   one place motion is authored in JS instead.
+   ========================================================================== */
+
+.mm-prepbot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.mm-prepbot-avatar-wrap { position: relative; }
+
+.mm-prepbot-avatar {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  cursor: pointer;
+}
+.mm-prepbot-avatar svg { width: 100%; height: 100%; overflow: visible; }
+/* Eyes blink via scaleY (needs a fill-box origin); the mouth "talks" by
+   swapping its `d` attribute (prepbot-teacher.js/MOUTH_SHAPES) instead of
+   scaling, so it never needs a transform-origin of its own. */
+.mm-bot-eye { transform-box: fill-box; transform-origin: center; }
+
+/* Hover menu — revealed over the avatar as a thought bubble; "Ask" opens
+   the real, AI-backed PrepBot chat (#chat-fab from utils/prepbot/prepbot.js),
+   "Sleep" stops the idle impulses, "Wiggle" fires one on demand. Bare
+   glyphs, no circular chip background. */
+.mm-prepbot-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: -8px;
+  z-index: 4;
+  display: flex;
+  gap: 0.3rem;
+  background: var(--surface-primary);
+  border-radius: 16px;
+  padding: 0.35rem 0.45rem;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(4px) scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.mm-prepbot-menu::after,
+.mm-prepbot-menu::before {
+  content: "";
+  position: absolute;
+  background: var(--surface-primary);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+.mm-prepbot-menu::after { bottom: -8px; right: 18px; width: 10px; height: 10px; }
+.mm-prepbot-menu::before { bottom: -14px; right: 11px; width: 6px; height: 6px; }
+
+.mm-prepbot-avatar-wrap:hover .mm-prepbot-menu,
+.mm-prepbot-avatar-wrap.is-menu-open .mm-prepbot-menu,
+.mm-prepbot-menu:hover,
+.mm-prepbot-menu:focus-within {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.mm-prepbot-menu-btn {
+  border: none;
+  background: none;
+  padding: 0.2rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.12s ease;
+}
+.mm-prepbot-menu-btn:hover { transform: scale(1.18); }
+.mm-prepbot-menu-btn svg { width: 18px; height: 18px; }
+.mm-prepbot-menu-btn.is-active svg { opacity: 0.4; }
+
+/* Multicoloured — background rotates through the same pastel palette as
+   the sticky-note tiles (--bubble-bg is set per line in prepbot-teacher.js);
+   the tail pseudo-elements read the same variable so they always match. */
+.mm-prepbot-bubble {
+  --bubble-bg: var(--surface-primary);
+  /* Narrow — at most a couple of short word-columns — with small text, so a
+     step's 4-5 explanation lines stay a compact block instead of a big card
+     that overlaps the lesson content. */
+  max-width: 148px;
+  background: var(--bubble-bg);
+  color: #14130f;
+  border-radius: 12px;
+  padding: 0.38rem 0.55rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  pointer-events: none;
+}
+.mm-prepbot-bubble p {
+  margin: 0;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  font-size: 0.58rem;
+  line-height: 1.32;
+}
+/* Tucked away while the learner is interacting with PrepBot's icon menu
+   (hover/tap) so the bubble and menu don't overlap the same corner. */
+.mm-prepbot-bubble--hidden {
+  opacity: 0 !important;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Speech tail — a small triangle pointing down at the avatar's head */
+.mm-prepbot-bubble--speech::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  right: 16px;
+  width: 12px;
+  height: 12px;
+  background: var(--bubble-bg);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* Thinking tail — a trail of shrinking circles, like a thought bubble */
+.mm-prepbot-bubble--thinking { border-radius: 20px; }
+.mm-prepbot-bubble--thinking::after,
+.mm-prepbot-bubble--thinking::before {
+  content: "";
+  position: absolute;
+  background: var(--bubble-bg);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+.mm-prepbot-bubble--thinking::after { bottom: -9px; right: 20px; width: 11px; height: 11px; }
+.mm-prepbot-bubble--thinking::before { bottom: -17px; right: 12px; width: 6px; height: 6px; }
