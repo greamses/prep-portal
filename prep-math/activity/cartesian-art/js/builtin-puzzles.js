@@ -10,6 +10,7 @@
    ========================================================================== */
 
 import { colorFromWords, parseWorksheet } from "./parse.js";
+import { WORLD_CUP_WORKSHEET } from "./reference-art.js";
 
 const TAU = Math.PI * 2;
 
@@ -132,6 +133,13 @@ function buildFromWorksheet(id, title, prompt, text, difficulty = "hard") {
 
 /** The shipped hard puzzles (computed once at module load). */
 export const BUILTIN_PUZZLES = [
+  buildFromWorksheet(
+    "builtin-worldcup",
+    "World Cup Trophy",
+    "Plot the trophy: cup, base and handles, in colour.",
+    WORLD_CUP_WORKSHEET,
+    "medium"
+  ),
   buildFromWorksheet(
     "builtin-santa",
     "Santa Claus Face",

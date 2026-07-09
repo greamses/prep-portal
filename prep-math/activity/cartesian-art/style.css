@@ -1330,13 +1330,29 @@ body {
   right: 12px;
   z-index: 28;
 }
-/* Picture picker — small pills stacked above the avatar. */
-.ca-prepbot-pick {
-  display: flex;
+/* "Next" pill — shown only while Demo is set to step-through and PrepBot
+   is waiting for the learner to advance one move at a time. */
+.ca-prepbot-next { margin-bottom: 4px; }
+
+/* Mode / movement-type buttons in the settings modal: icon-over-label,
+   wider than the bare-icon .ca-tool squares elsewhere in the studio. */
+.ca-prepbot-modes,
+.ca-prepbot-movetype { width: 100%; }
+.ca-prepbot-modes .ca-tool,
+.ca-prepbot-movetype .ca-tool {
+  flex: 1;
+  width: auto;
+  height: auto;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  gap: 4px;
+  padding: 0.6rem 0.4rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.68rem;
 }
+.ca-prepbot-modes .ca-tool svg,
+.ca-prepbot-movetype .ca-tool svg { width: 22px; height: 22px; }
+.ca-prepbot-step-toggle { margin: 0.2rem 0 0.4rem; }
 
 /* ── floating mission bar ────────────────────────────────────────────────── */
 .ca-mission {

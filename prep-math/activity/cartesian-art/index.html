@@ -110,8 +110,11 @@
             <button class="ca-fab" type="button" id="ca-gallery-btn" title="My Gallery" aria-label="My Gallery">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
             </button>
-            <button class="ca-fab" type="button" id="ca-prepbot-btn" title="PrepBot demo" aria-label="PrepBot demo">
+            <button class="ca-fab" type="button" id="ca-prepbot-btn" title="PrepBot draws" aria-label="PrepBot draws">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.4" fill="currentColor" stroke="none"/><circle cx="9.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M9 17h6"/></svg>
+            </button>
+            <button class="ca-fab" type="button" id="ca-prepbot-settings-btn" title="PrepBot settings" aria-label="PrepBot settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.4-2-3.4-2.3.8a7.6 7.6 0 0 0-2.6-1.5L14 2h-4l-.5 2.4a7.6 7.6 0 0 0-2.6 1.5l-2.3-.8-2 3.4 2 1.4a7.6 7.6 0 0 0 0 3l-2 1.4 2 3.4 2.3-.8a7.6 7.6 0 0 0 2.6 1.5L10 22h4l.5-2.4a7.6 7.6 0 0 0 2.6-1.5l2.3.8 2-3.4z"/></svg>
             </button>
             <button class="ca-fab ca-admin-only" type="button" id="ca-author-btn" hidden title="Save as puzzle" aria-label="Save as puzzle">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
@@ -187,7 +190,10 @@
              navigation to draw a chosen picture point by point) ═══ -->
         <div class="mm-prepbot ca-prepbot" id="ca-prepbot" hidden>
           <div class="mm-prepbot-bubble mm-prepbot-bubble--speech" id="caBotBubble" aria-hidden="true"><p id="caBotText"></p></div>
-          <div class="ca-prepbot-pick" id="caBotPick" hidden></div>
+          <button class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-prepbot-next" id="caBotNext" type="button" hidden>
+            Next
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
           <div class="mm-prepbot-avatar-wrap">
             <div class="mm-prepbot-menu" id="caBotMenu">
               <button class="mm-prepbot-menu-btn" id="caBotAsk" type="button" title="Ask PrepBot a question" aria-label="Ask PrepBot a question"></button>
@@ -504,7 +510,7 @@
         <div class="ca-sidebar-backdrop" id="picker-backdrop"></div>
         <aside class="ca-sidebar" id="ca-picker" aria-label="Puzzles">
           <div class="ca-sidebar-head">
-            <h2>Puzzles</h2>
+            <h2 id="picker-title">Puzzles</h2>
             <div class="ca-sidebar-head-actions">
               <button class="ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent ca-admin-only" type="button" id="picker-new" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -732,6 +738,52 @@
         </div>
         <div class="ca-modal-foot">
           <span class="ca-author-status" id="ai-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PREPBOT SETTINGS ═══ -->
+    <div class="ca-overlay" id="ca-prepbot-settings">
+      <div class="ca-modal ca-prepbot-settings-modal" role="dialog" aria-label="PrepBot settings">
+        <div class="ca-modal-head">
+          <h2>PrepBot settings</h2>
+          <button class="ca-modal-close" type="button" id="prepbot-settings-close" title="Close" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="ca-modal-body">
+          <span class="ca-tf-label">How should PrepBot draw?</span>
+          <div class="ca-tool-group ca-prepbot-modes" role="group" aria-label="Mode">
+            <button type="button" class="ca-tool" data-mode="coach" title="PrepBot tells you the moves — you steer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11l4 4v10H4z"/><path d="M8 10h7M8 14h4"/></svg>
+              Coach
+            </button>
+            <button type="button" class="ca-tool" data-mode="demo" title="PrepBot narrates and draws it itself">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+              Demo
+            </button>
+            <button type="button" class="ca-tool" data-mode="quick" title="PrepBot just draws — no talking">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+              Quick Draw
+            </button>
+          </div>
+
+          <label class="ca-task-dots ca-prepbot-step-toggle" id="prepbot-step-row">
+            <input type="checkbox" id="prepbot-step-toggle" /> In Demo, step through one move at a time (instead of watching it all play out)
+          </label>
+
+          <span class="ca-tf-label">Reading the coordinates</span>
+          <div class="ca-tool-group ca-prepbot-movetype" role="group" aria-label="Movement type">
+            <button type="button" class="ca-tool" data-move="relative" title="Keep going from wherever the last point landed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><path d="M5 19 11 11"/><circle cx="11" cy="11" r="1.6" fill="currentColor" stroke="none"/><path d="M11 11 19 5"/><circle cx="19" cy="5" r="1.6" fill="currentColor" stroke="none"/></svg>
+              Relative
+            </button>
+            <button type="button" class="ca-tool" data-move="absolute" title="Return to the origin before every point">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><path d="M5 19 11 11"/><path d="M5 19 19 5" stroke-dasharray="1 3.4"/><circle cx="19" cy="5" r="1.6" fill="currentColor" stroke="none"/></svg>
+              Absolute
+            </button>
+          </div>
+          <p class="ca-export-note">Relative keeps moving on from the last point plotted. Absolute walks back to the origin (0, 0) before every single point — closer to reading raw (x, y) coordinates.</p>
         </div>
       </div>
     </div>

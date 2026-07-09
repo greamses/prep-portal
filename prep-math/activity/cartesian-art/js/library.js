@@ -25,6 +25,20 @@ const $ = (s) => document.querySelector(s);
 let editId = null;
 let admin = false;
 
+/* ── PrepBot picker mode ───────────────────────────────────────────────────
+   prepbot.js wants the SAME sidebar (all builtins + saved puzzles, real
+   thumbnails) but as a single-purpose picker: every card shows one "Draw
+   this" action instead of Play/Edit/Delete, and picking one hands the
+   normalised shapes back instead of entering puzzle-mode. */
+let prepbotPick = null; // (doc) => void, or null when picking normally
+
+/** Open the puzzles sidebar in "PrepBot" mode: cards show "Draw this" only,
+ *  and picking one calls `onPick(doc)` then closes the sidebar. */
+export function openPickerForPrepbot(onPick) {
+  prepbotPick = onPick;
+  openPicker();
+}
+
 const DIFF_TILE = {
   easy: "var(--accent-success)",
   medium: "var(--accent-warning)",
@@ -53,6 +67,9 @@ function toPuzzle(doc) {
 async function openPicker() {
   $("#ca-picker").classList.add("is-open");
   $("#picker-backdrop")?.classList.add("is-open");
+  const title = $("#picker-title");
+  if (title) title.textContent = prepbotPick ? "Pick a picture for PrepBot" : "Puzzles";
+  $("#picker-new")?.toggleAttribute("hidden", !!prepbotPick || !admin);
   const list = $("#picker-list");
   const empty = $("#picker-empty");
   list.innerHTML = `<p class="ca-modal-loading">Loading puzzles…</p>`;
@@ -76,6 +93,7 @@ async function openPicker() {
 function closePicker() {
   $("#ca-picker").classList.remove("is-open");
   $("#picker-backdrop")?.classList.remove("is-open");
+  prepbotPick = null;
 }
 
 function card(doc) {
@@ -103,6 +121,17 @@ function card(doc) {
   }
 
   const actions = wrap.querySelector(".ca-puzzle-actions");
+
+  // PrepBot picking a picture to draw: a single "Draw this" action, no
+  // Play/Edit/Delete (this isn't entering puzzle-mode).
+  if (prepbotPick) {
+    const draw = document.createElement("button");
+    draw.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent";
+    draw.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.4" fill="currentColor" stroke="none"/></svg> Draw this`;
+    draw.addEventListener("click", () => { const fn = prepbotPick; closePicker(); fn?.(doc); });
+    actions.appendChild(draw);
+    return wrap;
+  }
 
   const play = document.createElement("button");
   play.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent";
