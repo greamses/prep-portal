@@ -96,6 +96,22 @@ body {
   animation: fadeUp 0.5s var(--ease-default, ease) both;
 }
 
+/* Exams ↔ Drills cross-link — real links between two separate pages, same
+   treatment as flashcards' .cards-tabs/.cards-tab. */
+.builder-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.builder-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
 /* Sticky note — same recipe as the home-page hero sticker (tilted yellow
    paper, marker hand, a strip of tape across the top). */
 .builder-note {

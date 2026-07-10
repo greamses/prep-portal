@@ -107,6 +107,14 @@ export const SITE_PAGES = [
     blurb: "AI-marked theory & essay exam questions with model-answer guidance.",
     keywords: ["theory", "theory practice", "essay questions", "long answer", "structured answer", "mark scheme"],
   },
+  {
+    id: "drills",
+    title: "Times-Tables Drills",
+    href: "/exam-archive/national/drills/index.html",
+    category: "exams",
+    blurb: "Timed multiplayer multiplication & division drills — race friends or bots to the most correct answers.",
+    keywords: ["drills", "times tables", "multiplication drill", "division drill", "multiplayer math", "versus", "1v1", "speed math", "timed practice"],
+  },
 
   // ── Math & science activities ──────────────────────────────────────
   {

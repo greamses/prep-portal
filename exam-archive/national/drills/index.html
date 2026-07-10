@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Drills — Timed Multiplayer Times Tables | PrepPortal</title>
+    <meta
+      name="description"
+      content="Race up to 10 players (or go 1v1) in timed multiplication and division drills — type your answer, no Enter needed. Bots fill any empty seats."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#000000" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>DRILLS</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <p class="builder-note">
+        Pick a room size and a time limit — race real players or bots to see
+        who can answer the most multiplication and division questions before
+        the clock runs out.
+      </p>
+      <div class="builder-stats">
+        <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>Times</strong> Tables 1–12</span>
+        <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
+        <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Bots</strong> Fill Empty Seats</span>
+      </div>
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+      </div>
+    </header>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="drill-setup" id="drill-setup">
+      <div class="drill-section-hdr">
+        <div class="setup-eyebrow">Get Ready</div>
+        <h2>Set Up Your Drill</h2>
+        <p class="drill-section-sub">Multiplayer fills the room with bots if not enough real players join in time.</p>
+      </div>
+
+      <div class="drill-rig">
+        <div class="drill-field">
+          <span>Mode</span>
+          <div class="mode-toggle" id="drill-mode-toggle" role="tablist">
+            <button type="button" class="pp-pill drill-tile active" data-mode="multiplayer" role="tab">Multiplayer</button>
+            <button type="button" class="pp-pill drill-tile" data-mode="versus" role="tab">Versus (1v1)</button>
+          </div>
+        </div>
+
+        <div class="drill-field" id="drill-size-field">
+          <span>Room size</span>
+          <div class="tile-row" id="drill-size-row">
+            <button type="button" class="drill-tile active" data-size="5">5 players</button>
+            <button type="button" class="drill-tile" data-size="10">10 players</button>
+          </div>
+        </div>
+
+        <div class="drill-field">
+          <span>Time limit</span>
+          <div class="tile-row" id="drill-time-row">
+            <button type="button" class="drill-tile" data-time="30">30s</button>
+            <button type="button" class="drill-tile active" data-time="60">60s</button>
+            <button type="button" class="drill-tile" data-time="90">90s</button>
+            <button type="button" class="drill-tile" data-time="120">120s</button>
+          </div>
+        </div>
+
+        <button class="drill-start-btn" id="drill-start-btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="6 4 20 12 6 20 6 4" />
+          </svg>
+          Find a Room
+        </button>
+      </div>
+    </main>
+
+    <!-- ═══ LOBBY OVERLAY ═══ -->
+    <div class="review-bd" id="drill-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="drill-lobby-status" id="drill-lobby-status">Waiting for other players…</p>
+        <p class="drill-lobby-count" id="drill-lobby-count">1 / 5</p>
+        <button class="drill-cancel-btn" id="drill-lobby-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="drill-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="drill-time-remaining" id="drill-time-remaining"></p>
+        <p class="drill-countdown" id="drill-countdown" hidden></p>
+
+        <div class="drill-card pp-receipt" id="drill-card" hidden>
+          <span class="pp-sticky pp-sticky--tape drill-timer-note" id="drill-timer-note"></span>
+          <span class="pp-sticky pp-sticky--tape drill-score-note" id="drill-score-note">0 correct</span>
+          <div class="drill-card-face pp-receipt__paper">
+            <div class="drill-blob" aria-hidden="true"></div>
+            <p class="drill-text" id="drill-question-text"></p>
+            <div class="drill-answer-stage" id="drill-answer-stage">
+              <span id="drill-typed"></span><span class="drill-cursor" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <input
+          id="drill-answer-input"
+          class="drill-answer-input-hidden"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="off"
+          maxlength="4"
+          aria-label="Type your answer"
+        />
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="drill-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="drill-section-hdr">
+          <div class="setup-eyebrow">Time's Up</div>
+          <h2>Results</h2>
+        </div>
+        <ol class="drill-leaderboard" id="drill-leaderboard"></ol>
+        <button class="drill-again-btn" id="drill-again-btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint, .drill-blob").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

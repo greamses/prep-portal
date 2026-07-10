@@ -107,7 +107,7 @@ function dedupe(key, factory) {
 // gated — only ACTUAL Firestore fetches are checked + counted.
 const QAPI = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
 let _q = { at: 0, readsBlocked: false, writesBlocked: false };
-async function quotaStatus() {
+export async function quotaStatus() {
   if (Date.now() - _q.at < 60000) return _q;
   _q.at = Date.now();
   try {
@@ -117,7 +117,7 @@ async function quotaStatus() {
   return _q;
 }
 let _report = { reads: 0, writes: 0, timer: null };
-function reportUsage(reads, writes) {
+export function reportUsage(reads, writes) {
   _report.reads += reads || 0;
   _report.writes += writes || 0;
   if (_report.timer) return;

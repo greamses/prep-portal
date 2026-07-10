@@ -214,6 +214,60 @@ service cloud.firestore {
     ───────────────────────────── */
 
     /* ─────────────────────────────
+       DRILLS — timed multiplayer times-tables practice
+       Rooms are ephemeral game sessions, not user data. Questions and bot
+       scores are derived client-side from the room's `seed` (never stored),
+       so these rules only need to cover matchmaking + each player's own
+       final score, written exactly once at round end.
+    ───────────────────────────── */
+    match /drillRoomPointers/{bucketKey} {
+      // Low-sensitivity, ephemeral matchmaking pointer (roomId + expiresAt
+      // only) — worst case a bad write misdirects matchmaking for one
+      // bucket, never touches scores or player data.
+      allow read, write: if isLoggedIn();
+    }
+
+    match /drillRooms/{roomId} {
+      allow read: if isLoggedIn();
+
+      allow create: if isLoggedIn() &&
+        request.resource.data.hostUid == request.auth.uid &&
+        request.resource.data.status == 'waiting' &&
+        request.resource.data.playerCount == 1 &&
+        request.resource.data.size in [2, 5, 10] &&
+        request.resource.data.timeLimit in [30, 60, 90, 120];
+
+      allow update: if isLoggedIn() && (
+        // A join: playerCount +1, never past size, nothing else changes.
+        (resource.data.status == 'waiting' &&
+          request.resource.data.playerCount == resource.data.playerCount + 1 &&
+          request.resource.data.playerCount <= resource.data.size &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount'])) ||
+        // Activation: waiting -> active, forward only. Deliberately NOT
+        // gated to hostUid — any remaining connected member may promote an
+        // abandoned room (see matchmaking.js's abandon-fallback timer); the
+        // status precondition already guarantees only one such write wins.
+        (resource.data.status == 'waiting' &&
+          request.resource.data.status == 'active' &&
+          request.resource.data.botsNeeded == request.resource.data.size - resource.data.playerCount &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startAt', 'botsNeeded']))
+      );
+
+      allow delete: if false; // rooms simply age out (unread docs aren't billed)
+
+      match /players/{uid} {
+        allow read: if isLoggedIn();
+        allow create: if isOwner(uid) &&
+          request.resource.data.keys().hasOnly(['displayName', 'joinedAt']);
+        // Final score is written exactly once — the pre-state check blocks
+        // rewriting a doc that's already been scored.
+        allow update: if isOwner(uid) &&
+          !('score' in resource.data) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'finishedAt']);
+      }
+    }
+
+    /* ─────────────────────────────
        ADMIN OVERRIDE
     ───────────────────────────── */
     match /{document=**} {
