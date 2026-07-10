@@ -235,7 +235,11 @@ service cloud.firestore {
         request.resource.data.status == 'waiting' &&
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
-        request.resource.data.timeLimit in [30, 60, 90, 120];
+        request.resource.data.timeLimit in [30, 60, 90, 120] &&
+        request.resource.data.operation in ['multiply', 'divide', 'mixed'] &&
+        request.resource.data.tables is list &&
+        request.resource.data.tables.size() > 0 &&
+        request.resource.data.tables.size() <= 12;
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

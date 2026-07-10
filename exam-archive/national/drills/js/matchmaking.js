@@ -28,9 +28,10 @@ async function checkQuota(kind) {
   if (kind === 'write' ? s.writesBlocked : s.readsBlocked) throw quotaError(kind);
 }
 
-async function joinOrCreateRoom({ mode, size, timeLimit }) {
+async function joinOrCreateRoom({ mode, size, timeLimit, operation, tables }) {
   const user = auth.currentUser;
-  const bucketKey = `${mode}_${size}_${timeLimit}`;
+  const tablesKey = [...tables].sort((a, b) => a - b).join(',');
+  const bucketKey = `${mode}_${size}_${timeLimit}_${operation}_${tablesKey}`;
   const ptrRef = doc(db, 'drillRoomPointers', bucketKey);
   const now = Date.now();
   const displayName = user.displayName || 'Player';
@@ -56,30 +57,33 @@ async function joinOrCreateRoom({ mode, size, timeLimit }) {
       return {
         roomId: roomSnap.id, isHost: false,
         size: room.size, timeLimit: room.timeLimit, seed: room.seed,
+        operation: room.operation, tables: room.tables,
       };
     }
 
     const roomRef = doc(collection(db, 'drillRooms'));
     const seed = Math.floor(Math.random() * 2 ** 31);
     tx.set(roomRef, {
-      mode, size, timeLimit, operation: 'mixed', status: 'waiting',
+      mode, size, timeLimit, operation, tables, status: 'waiting',
       seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
       createdAt: serverTimestamp(),
     });
     tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
     tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
-    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed };
+    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, operation, tables };
   });
 
   reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
   return result;
 }
 
-// Resolves once the room is "active": { roomId, seed, timeLimit, startAt, botsNeeded }.
+// Resolves once the room is "active": { roomId, seed, timeLimit, operation, tables, startAt, botsNeeded }.
 // onWaiting(state) is called with { playerCount, size } while still in the lobby.
-export async function matchmake({ mode, size, timeLimit }, { onWaiting } = {}) {
-  const { roomId, isHost, size: roomSize, timeLimit: roomTimeLimit, seed } =
-    await joinOrCreateRoom({ mode, size, timeLimit });
+export async function matchmake({ mode, size, timeLimit, operation, tables }, { onWaiting } = {}) {
+  const {
+    roomId, isHost, size: roomSize, timeLimit: roomTimeLimit, seed,
+    operation: roomOperation, tables: roomTables,
+  } = await joinOrCreateRoom({ mode, size, timeLimit, operation, tables });
 
   return new Promise((resolve, reject) => {
     const roomRef = doc(db, 'drillRooms', roomId);
@@ -112,6 +116,7 @@ export async function matchmake({ mode, size, timeLimit }, { onWaiting } = {}) {
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit,
+        operation: roomOperation, tables: roomTables,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });
     }

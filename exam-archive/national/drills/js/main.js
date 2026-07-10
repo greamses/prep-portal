@@ -4,16 +4,17 @@
    switches between the lobby/play/results overlays.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
+import { ALL_TABLES } from './rng.js';
 import { matchmake } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
 
 const $ = (id) => document.getElementById(id);
+const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
-const sizeRow = $('drill-size-row');
-const timeRow = $('drill-time-row');
+const tablesGrid = $('drill-tables-grid');
 const startBtn = $('drill-start-btn');
 
 const lobbyBd = $('drill-lobby-bd');
@@ -25,10 +26,8 @@ const resultsBd = $('drill-results-bd');
 const leaderboardEl = $('drill-leaderboard');
 const againBtn = $('drill-again-btn');
 
-let mode = 'multiplayer';
-let size = 5;
-let timeLimit = 60;
 let cancelled = false;
+const tables = new Set(ALL_TABLES); // all checked by default
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -39,36 +38,41 @@ function getCurrentUser() {
   });
 }
 
-function setMode(next) {
-  mode = next;
-  modeToggle.querySelectorAll('.drill-tile').forEach((b) => b.classList.toggle('active', b.dataset.mode === next));
-  sizeField.hidden = mode === 'versus';
+function getMode() { return document.querySelector('input[name="drill-mode"]:checked').value; }
+function getSize() { return parseInt(document.querySelector('input[name="drill-size"]:checked').value, 10); }
+function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
+function getOperation() { return document.querySelector('input[name="drill-operation"]:checked').value; }
+
+function renderTablesGrid() {
+  tablesGrid.innerHTML = '';
+  ALL_TABLES.forEach((n, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i)}`;
+    label.innerHTML = `<input type="checkbox" value="${n}" ${tables.has(n) ? 'checked' : ''} /><span>${n}</span>`;
+    tablesGrid.appendChild(label);
+  });
 }
+renderTablesGrid();
 
-modeToggle.addEventListener('click', (e) => {
-  const btn = e.target.closest('.drill-tile');
-  if (!btn) return;
-  setMode(btn.dataset.mode);
+tablesGrid.addEventListener('change', (e) => {
+  const cb = e.target.closest('input[type="checkbox"]');
+  if (!cb) return;
+  const n = parseInt(cb.value, 10);
+  if (cb.checked) tables.add(n);
+  else tables.delete(n);
+  // Never allow an empty set — the round needs at least one fact family.
+  if (tables.size === 0) { tables.add(n); cb.checked = true; }
+  startBtn.disabled = tables.size === 0;
 });
 
-sizeRow.addEventListener('click', (e) => {
-  const btn = e.target.closest('.drill-tile');
-  if (!btn) return;
-  size = parseInt(btn.dataset.size, 10);
-  sizeRow.querySelectorAll('.drill-tile').forEach((b) => b.classList.toggle('active', b === btn));
+modeToggle.addEventListener('change', () => {
+  sizeField.hidden = getMode() === 'versus';
 });
 
-timeRow.addEventListener('click', (e) => {
-  const btn = e.target.closest('.drill-tile');
-  if (!btn) return;
-  timeLimit = parseInt(btn.dataset.time, 10);
-  timeRow.querySelectorAll('.drill-tile').forEach((b) => b.classList.toggle('active', b === btn));
-});
-
-function showLobby() {
+function showLobby(size) {
   cancelled = false;
   lobbyStatus.textContent = 'Waiting for other players…';
-  lobbyCount.textContent = `1 / ${mode === 'versus' ? 2 : size}`;
+  lobbyCount.textContent = `1 / ${size}`;
   lobbyBd.classList.add('open');
   lobbyBd.setAttribute('aria-hidden', 'false');
 }
@@ -105,12 +109,19 @@ function hideResults() {
 async function runDrill() {
   startBtn.disabled = true;
   await getCurrentUser();
-  showLobby();
+
+  const mode = getMode();
+  const size = mode === 'versus' ? 2 : getSize();
+  const timeLimit = getTimeLimit();
+  const operation = getOperation();
+  const tablesList = [...tables];
+
+  showLobby(size);
 
   let room;
   try {
     room = await matchmake(
-      { mode, size: mode === 'versus' ? 2 : size, timeLimit },
+      { mode, size, timeLimit, operation, tables: tablesList },
       {
         onWaiting: ({ playerCount, size: roomSize }) => {
           lobbyCount.textContent = `${playerCount} / ${roomSize}`;
@@ -131,6 +142,8 @@ async function runDrill() {
     seed: room.seed,
     timeLimit: room.timeLimit,
     startAt: room.startAt,
+    operation: room.operation,
+    tables: room.tables,
   });
 
   let ranked;
@@ -163,4 +176,7 @@ againBtn.addEventListener('click', hideResults);
 
 // Preselect mode from nav links like ?mode=versus
 const initialMode = new URLSearchParams(location.search).get('mode');
-if (initialMode === 'versus' || initialMode === 'multiplayer') setMode(initialMode);
+if (initialMode === 'versus' || initialMode === 'multiplayer') {
+  const radio = document.querySelector(`input[name="drill-mode"][value="${initialMode}"]`);
+  if (radio) { radio.checked = true; sizeField.hidden = initialMode === 'versus'; }
+}

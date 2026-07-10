@@ -110,18 +110,29 @@ body {
   margin: 0 auto;
   padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem);
 }
-.drill-rig {
-  background: var(--surface-primary);
-  border: var(--border-subtle);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
-  padding: clamp(1.25rem, 3vw, 2rem);
+/* ── SETTINGS RECEIPT — every selector lives on a torn paper "receipt"
+   (.pp-receipt/.pp-receipt__paper), same component as the study cards. */
+.drill-receipt { margin: 0 auto; }
+.drill-receipt-paper {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  padding: 1.8rem 1.6rem 2rem;
+}
+.drill-receipt-title {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.9rem;
+  margin: 0;
 }
 
-.drill-field { display: flex; flex-direction: column; gap: 0.5rem; }
+.drill-field { display: flex; flex-direction: column; gap: 0.6rem; }
 .drill-field > span {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -131,29 +142,41 @@ body {
   letter-spacing: var(--tracking-wider);
 }
 
-.mode-toggle, .tile-row {
+/* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
+   real radio/checkbox, same recipe as the Facts tab's fact-tiles. Native
+   input stays visible+accessible; a glow highlights the checked note. */
+.sticky-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.9rem 0.7rem;
 }
-
-.drill-tile {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  background: var(--surface-primary);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 1rem;
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.9rem 0.6rem;
+}
+.sticky-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
   cursor: pointer;
-  transition: var(--transition-base);
+  user-select: none;
 }
-.drill-tile:hover { color: var(--ink); transform: translateY(-1px); }
-.drill-tile.active {
-  color: var(--text-on-accent);
-  background: var(--accent-secondary);
-  border-color: var(--accent-secondary);
+.sticky-choice:hover { transform: rotate(0deg) scale(1.05); }
+.sticky-choice:has(input:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.sticky-choice input {
+  width: 16px;
+  height: 16px;
+  accent-color: #14130f;
+  cursor: pointer;
 }
 
 .drill-start-btn {

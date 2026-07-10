@@ -22,6 +22,7 @@ const timerNote = $('drill-timer-note');
 let active = false;
 let locked = false;
 let seed = 0;
+let questionOpts = { operation: 'mixed', tables: undefined };
 let currentIndex = 0;
 let currentQuestion = null;
 let score = 0;
@@ -34,7 +35,7 @@ function focusInput() {
 }
 
 function renderQuestion() {
-  currentQuestion = questionAt(seed, currentIndex);
+  currentQuestion = questionAt(seed, currentIndex, questionOpts);
   questionText.textContent = currentQuestion.text;
   inputEl.value = '';
   typedEl.textContent = '';
@@ -87,9 +88,10 @@ cardEl.addEventListener('click', focusInput);
 
 // Resolves with the player's final correct-answer count once the local
 // timer hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt }) {
+export function startRound({ seed: roomSeed, timeLimit, startAt, operation, tables }) {
   return new Promise((resolve) => {
     seed = roomSeed;
+    questionOpts = { operation, tables };
     score = 0;
     currentIndex = 0;
     locked = false;
