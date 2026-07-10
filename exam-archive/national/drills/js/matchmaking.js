@@ -115,7 +115,7 @@ export async function matchmake({ mode, size, timeLimit, operation, tables }, { 
       clearTimeout(abandonTimer);
       if (unsub) unsub();
       resolve({
-        roomId, seed, timeLimit: roomTimeLimit,
+        roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
         operation: roomOperation, tables: roomTables,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });

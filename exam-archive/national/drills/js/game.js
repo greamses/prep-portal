@@ -12,6 +12,7 @@ const $ = (id) => document.getElementById(id);
 const playBd = $('drill-play-bd');
 const cardEl = $('drill-card');
 const countdownEl = $('drill-countdown');
+const rosterEl = $('drill-roster');
 const timeRemainingEl = $('drill-time-remaining');
 const questionText = $('drill-question-text');
 const typedEl = $('drill-typed');
@@ -32,6 +33,20 @@ let resolveRound = null;
 
 function focusInput() {
   if (active) inputEl.focus({ preventScroll: true });
+}
+
+// The room-entry animation: everyone in the room (you, other real players,
+// bots with real names) pops in one at a time during the "get ready" beat.
+function renderRoster(roster) {
+  rosterEl.innerHTML = '';
+  roster.forEach((p, i) => {
+    const pill = document.createElement('span');
+    pill.className = `drill-roster-item${p.isSelf ? ' is-self' : ''}`;
+    pill.style.setProperty('--delay', `${i * 90}ms`);
+    pill.textContent = p.isSelf ? `${p.name} (You)` : p.name;
+    rosterEl.appendChild(pill);
+  });
+  rosterEl.hidden = false;
 }
 
 function renderQuestion() {
@@ -88,7 +103,7 @@ cardEl.addEventListener('click', focusInput);
 
 // Resolves with the player's final correct-answer count once the local
 // timer hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt, operation, tables }) {
+export function startRound({ seed: roomSeed, timeLimit, startAt, operation, tables, roster }) {
   return new Promise((resolve) => {
     seed = roomSeed;
     questionOpts = { operation, tables };
@@ -102,6 +117,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operation, tabl
     cardEl.hidden = true;
     countdownEl.hidden = false;
     timeRemainingEl.textContent = '';
+    if (roster) renderRoster(roster);
 
     playBd.classList.add('open');
     playBd.setAttribute('aria-hidden', 'false');
@@ -111,6 +127,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operation, tabl
       const msLeft = startAt - Date.now();
       if (msLeft <= 0) {
         countdownEl.hidden = true;
+        rosterEl.hidden = true;
         cardEl.hidden = false;
         endAt = startAt + timeLimit * 1000;
         renderQuestion();

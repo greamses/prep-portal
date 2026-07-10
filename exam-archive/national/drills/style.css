@@ -227,6 +227,31 @@ body {
   color: var(--ink);
   margin-bottom: 1.5rem;
 }
+
+/* Seats fill in (and gently pop) as real players join the room. */
+.drill-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.drill-seat {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+}
+.drill-seat.filled {
+  background: var(--accent-success);
+  animation: drill-seat-pop 0.35s ease;
+}
+@keyframes drill-seat-pop {
+  0% { transform: scale(0.4); opacity: 0.4; }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .drill-cancel-btn {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -353,6 +378,38 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Room-entry roster — everyone in the room (you, other real players, bots
+   with real names) pops in one at a time during the "get ready" beat. */
+.drill-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.drill-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: drill-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+.drill-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+@keyframes drill-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ── RESULTS ─────────────────────────────────────────────── */
 .drill-leaderboard {
   list-style: none;
@@ -373,9 +430,21 @@ body {
   padding: 0.65rem 0.9rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
+  opacity: 0;
+  animation: drill-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes drill-lb-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .drill-lb-row.is-self { border-color: var(--accent-secondary); }
-.drill-lb-rank { font-weight: 900; color: var(--text-tertiary); width: 1.5rem; }
+.drill-lb-row.is-winner {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 14%, var(--surface-primary));
+}
+.drill-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--text-tertiary); width: 1.5rem; }
+.drill-lb-row.is-winner .drill-lb-rank { color: var(--accent-primary); }
 .drill-lb-name { flex: 1; color: var(--ink); font-weight: 600; }
 .drill-lb-score { font-weight: 700; color: var(--accent-secondary); }
 

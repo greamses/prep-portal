@@ -8,7 +8,7 @@
 import { db, auth } from '/firebase-init.js';
 import { doc, collection, updateDoc, getDocs } from 'firebase/firestore';
 import { quotaStatus, reportUsage, quotaError } from '/utils/data-service.js';
-import { simulateBotScore } from './bots.js';
+import { simulateBotScore, botName } from './bots.js';
 
 const GRACE_MS = 1200; // lets other real players' near-simultaneous writes land
 
@@ -44,7 +44,7 @@ export async function finishRound({ roomId, seed, timeLimit, botsNeeded, myScore
   }));
 
   const bots = Array.from({ length: botsNeeded }, (_, i) => ({
-    name: `Bot ${i + 1}`,
+    name: botName(seed, i),
     score: simulateBotScore(seed, i, timeLimit),
     isBot: true,
     isSelf: false,
