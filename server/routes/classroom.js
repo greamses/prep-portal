@@ -3,7 +3,8 @@
  *
  * Server-authoritative (Admin SDK). Roster and per-student assignments are kept
  * in SUBcollections so the broad top-level Firestore read rule can't expose
- * them (see firestore.rules). Both roles need a subscription.
+ * them (see firestore.rules). Both roles are gated by the "classroom" feature
+ * (admin state + per-user overrides, lib/access; default premium).
  *
  *   POST /api/classroom/class-code   — teacher's join code (idempotent)
  *   GET  /api/classroom/roster       — teacher's students + class code
@@ -15,6 +16,7 @@
 const express = require("express");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
+const access = require("../lib/access");
 
 function makeCode() {
   const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
@@ -34,15 +36,24 @@ module.exports = function () {
     catch (_) { return {}; }
   }
   const isAdmin = (req) => !!req.user && req.user.email && req.user.email === process.env.ADMIN_EMAIL;
-  const hasSub = (req, p) => isAdmin(req) || !!(p && p.isPremium);
   const isTeacher = (req, p) => isAdmin(req) || ["teacher", "admin"].includes(p && p.role);
+
+  // Access resolved through the shared feature registry ("classroom" feature:
+  // admin state + per-user overrides via lib/access). 402 shape unchanged.
+  function deny(res, verdict) {
+    if (verdict.reason === "premium-required") {
+      return res.status(402).json({ error: "premium_required", premiumRequired: true });
+    }
+    return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
+  }
   const displayName = (req, p) => p.name || (req.user.email ? req.user.email.split("@")[0] : "User");
 
   // ── POST /class-code — the teacher's join code (idempotent) ───────
   router.post("/class-code", authenticate, async (req, res) => {
     try {
       const p = await profile(req.user.uid);
-      if (!hasSub(req, p)) return res.status(402).json({ error: "premium_required", premiumRequired: true });
+      const verdict = await access.canUse(req, "classroom");
+      if (!verdict.allowed) return deny(res, verdict);
       if (!isTeacher(req, p)) return res.status(403).json({ error: "Only teachers have a class code." });
 
       const tcRef = db().collection("teacherClass").doc(req.user.uid);
@@ -86,7 +97,8 @@ module.exports = function () {
   router.post("/join", authenticate, async (req, res) => {
     try {
       const p = await profile(req.user.uid);
-      if (!hasSub(req, p)) return res.status(402).json({ error: "premium_required", premiumRequired: true });
+      const verdict = await access.canUse(req, "classroom");
+      if (!verdict.allowed) return deny(res, verdict);
       const code = String((req.body && req.body.code) || "").trim().toUpperCase();
       if (!code) return res.status(400).json({ error: "Enter a class code." });
 

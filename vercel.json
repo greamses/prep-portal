@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/index.js": {
-      "includeFiles": "tts-cache/**"
+      "includeFiles": "{tts-cache/**,utils/features.js}"
     }
   },
   "rewrites": [

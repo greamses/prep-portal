@@ -54,6 +54,25 @@
     .st-toggle[data-on="true"]  { background: var(--accent-success); color:#fff; border-color:transparent; }
     .st-toggle:disabled { opacity:.6; cursor:default; }
 
+    /* sub-part checkboxes ("check all or some" under a feature) */
+    .st-parts { margin:.15rem 0 .55rem; padding:.55rem .75rem .6rem;
+      border:1.5px dashed color-mix(in srgb,var(--ink) 14%,transparent); border-radius:12px;
+      background: color-mix(in srgb, var(--surface-secondary) 60%, transparent); }
+    .st-parts-head { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.35rem; }
+    .st-parts-title { font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-secondary); }
+    .st-parts-all { border:none; background:none; box-shadow:none; padding:0; cursor:pointer;
+      font-family:var(--font-mono, ui-monospace, monospace); font-size:.66rem; font-weight:700;
+      color:var(--accent-secondary); text-decoration:underline; }
+    .st-part { display:flex; align-items:center; gap:.55rem; padding:.22rem 0; font-size:.74rem; cursor:pointer; }
+    .st-part input { accent-color: var(--accent-success); width:15px; height:15px; cursor:pointer; }
+    .st-part.is-off { color:var(--text-secondary); text-decoration:line-through; }
+
+    /* number inputs (AI quota) */
+    .st-num { width:9.5rem; padding:.45rem .6rem; border:2px solid color-mix(in srgb,var(--ink) 14%,transparent);
+      border-radius:10px; background:var(--surface-secondary); color:var(--ink);
+      font-family:var(--font-mono, ui-monospace, monospace); font-size:.8rem; font-weight:700; text-align:right; }
+    .st-num:focus { outline:none; border-color: var(--accent-secondary); }
+
     .st-gate { text-align:center; padding:3rem 1rem; color:var(--text-secondary); font-size:.9rem; }
     .st-msg { font-size:.72rem; min-height:1em; margin-top:1rem; text-align:right; }
     .st-msg--ok { color: var(--accent-success); } .st-msg--err { color: var(--accent-danger); }
@@ -73,10 +92,31 @@
       </div>
       <p class="st-sub">
         <a class="st-back" href="/dashboard.html">&larr; Dashboard</a> &nbsp;&bull;&nbsp;
-        Control who can use each feature across the whole site. Changes save instantly.
+        Control who can use each feature across the whole site. Changes save instantly
+        and take effect everywhere within ~5 minutes. Per-student exceptions live in
+        the dashboard's <a href="/dashboard.html">Users panel</a>.
       </p>
 
       <div id="st-features"></div>
+
+      <div class="st-card">
+        <h2>AI Quota</h2>
+        <p class="st-grouphint">Token allocations for the shared AI pool (PrepBot, theory, writing…). Display-only caps; admins are unlimited.</p>
+        <div class="st-row">
+          <div class="st-row-main">
+            <div class="st-row-label">5-hour window</div>
+            <div class="st-row-desc">Tokens per rolling 5-hour window, per student.</div>
+          </div>
+          <input class="st-num" type="number" min="1" step="1000" data-quota="windowTokens" placeholder="10000" />
+        </div>
+        <div class="st-row">
+          <div class="st-row-main">
+            <div class="st-row-label">Monthly</div>
+            <div class="st-row-desc">Tokens per calendar month (UTC), per student.</div>
+          </div>
+          <input class="st-num" type="number" min="1" step="10000" data-quota="monthTokens" placeholder="300000" />
+        </div>
+      </div>
 
       <div class="st-card">
         <h2>Content</h2>
@@ -100,7 +140,8 @@
       <p class="legend">
         <b>Off</b> — hidden/blocked for everyone. &nbsp;
         <b>Free</b> — any signed-in user. &nbsp;
-        <b>Premium</b> — paying subscribers only.
+        <b>Premium</b> — paying subscribers only. &nbsp;
+        Checkboxes pick <b>which parts</b> of a feature are included; the state above picks <b>who</b> gets them.
       </p>
       <p id="st-msg" class="st-msg"></p>
     </main>
@@ -122,7 +163,8 @@
       catch (_) { return false; }
     }
 
-    let config = { features: {}, archiveEnabled: false, hideOriginals: false };
+    let config = { features: {}, featureParts: {}, aiQuota: {}, archiveEnabled: false, hideOriginals: false };
+    const QUOTA_DEFAULTS = { windowTokens: 10000, monthTokens: 300000 };
 
     function flash(text, ok = true) {
       msg.textContent = text; msg.className = "st-msg " + (ok ? "st-msg--ok" : "st-msg--err");
@@ -155,6 +197,25 @@
           <h2>${esc(g.name)}</h2>
           ${g.items.map((f) => {
             const cur = config.features[f.id] || defaults[f.id];
+            const savedParts = config.featureParts[f.id] || {};
+            const partsHtml = (f.parts || []).length ? `
+            <div class="st-parts" data-feature="${esc(f.id)}">
+              <div class="st-parts-head">
+                <span class="st-parts-title">Included in ${esc(f.label)}</span>
+                <span>
+                  <button type="button" class="st-parts-all" data-all="true">all</button> /
+                  <button type="button" class="st-parts-all" data-all="false">none</button>
+                </span>
+              </div>
+              ${f.parts.map((p) => {
+                const on = savedParts[p.id] !== false; // absent ⇒ enabled
+                return `
+                <label class="st-part${on ? "" : " is-off"}">
+                  <input type="checkbox" data-part="${esc(p.id)}" ${on ? "checked" : ""} />
+                  <span>${esc(p.label)}</span>
+                </label>`;
+              }).join("")}
+            </div>` : "";
             return `
             <div class="st-row">
               <div class="st-row-main">
@@ -165,7 +226,7 @@
                 ${FEATURE_STATES.map((s) => `
                   <button type="button" data-state="${s}" aria-pressed="${cur === s}">${s}</button>`).join("")}
               </div>
-            </div>`;
+            </div>${partsHtml}`;
           }).join("")}
         </div>`).join("");
 
@@ -174,6 +235,47 @@
           btn.addEventListener("click", () => setFeature(seg, btn.dataset.state));
         });
       });
+
+      // Sub-part checkboxes: each change saves a one-key featureParts patch
+      // (server deep-merges + registry-validates). "all/none" saves the whole map.
+      $("st-features").querySelectorAll(".st-parts").forEach((box) => {
+        const fid = box.dataset.feature;
+        box.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+          cb.addEventListener("change", () => setParts(box, fid, { [cb.dataset.part]: cb.checked }));
+        });
+        box.querySelectorAll(".st-parts-all").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const on = btn.dataset.all === "true";
+            const patch = {};
+            box.querySelectorAll("input[type=checkbox]").forEach((cb) => { patch[cb.dataset.part] = on; });
+            setParts(box, fid, patch);
+          });
+        });
+      });
+    }
+
+    async function setParts(box, fid, patch) {
+      const inputs = [...box.querySelectorAll("input[type=checkbox]")];
+      const prev = Object.fromEntries(inputs.map((cb) => [cb.dataset.part, cb.checked]));
+      inputs.forEach((cb) => {
+        if (cb.dataset.part in patch) cb.checked = patch[cb.dataset.part];
+        cb.disabled = true;
+        cb.closest(".st-part").classList.toggle("is-off", !cb.checked);
+      });
+      try {
+        const d = await save({ featureParts: { [fid]: patch } });
+        config.featureParts = d.featureParts || config.featureParts;
+        const offCount = inputs.filter((cb) => !cb.checked).length;
+        flash(`${fid}: ${offCount ? offCount + " part(s) excluded" : "all parts included"}`);
+      } catch (e) {
+        inputs.forEach((cb) => {
+          cb.checked = prev[cb.dataset.part];
+          cb.closest(".st-part").classList.toggle("is-off", !cb.checked);
+        });
+        flash(e.message, false);
+      } finally {
+        inputs.forEach((cb) => { cb.disabled = false; });
+      }
     }
 
     async function setFeature(seg, state) {
@@ -217,12 +319,38 @@
       });
     });
 
+    // ── AI quota inputs (save on change/Enter) ──
+    function renderQuota() {
+      document.querySelectorAll(".st-num").forEach((inp) => {
+        const k = inp.dataset.quota;
+        inp.value = Number(config.aiQuota && config.aiQuota[k]) || QUOTA_DEFAULTS[k];
+      });
+    }
+    document.querySelectorAll(".st-num").forEach((inp) => {
+      inp.addEventListener("change", async () => {
+        const k = inp.dataset.quota;
+        const n = Math.floor(Number(inp.value));
+        if (!Number.isFinite(n) || n <= 0) { renderQuota(); return flash("Enter a positive number.", false); }
+        inp.disabled = true;
+        try {
+          const d = await save({ aiQuota: { [k]: n } });
+          config.aiQuota = d.aiQuota || config.aiQuota;
+          renderQuota();
+          flash(`${k} → ${n.toLocaleString()}`);
+        } catch (e) { renderQuota(); flash(e.message, false); }
+        finally { inp.disabled = false; }
+      });
+    });
+
     async function load() {
       try { config = { ...config, ...(await (await fetch(`${API}/api/config`)).json()) }; }
       catch (_) {}
       if (!config.features || typeof config.features !== "object") config.features = {};
+      if (!config.featureParts || typeof config.featureParts !== "object") config.featureParts = {};
+      if (!config.aiQuota || typeof config.aiQuota !== "object") config.aiQuota = {};
       renderFeatures();
       renderFlags();
+      renderQuota();
     }
 
     onAuthStateChanged(auth, async (user) => {

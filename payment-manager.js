@@ -378,13 +378,26 @@ export const PLANS = {
     },
 
     _setupInterceptors() {
-      // Premium content gate: gate game/activity links behind a subscription.
+      // Content-gate UX nicety: intercept clicks into gated areas and resolve
+      // access through the SAME feature registry the page guards and server
+      // use (/utils/features.js), so an admin's "free" setting or a per-user
+      // grant/block is honoured here too — this used to be a second,
+      // isPremium-only gate that silently defeated "free" settings. If the
+      // link maps to no registered feature, let the click through: the page's
+      // own premium-guard is the enforcement.
       document.addEventListener("click", async (e) => {
         const link = e.target.closest("a");
         if (!link) return;
         const href = link.getAttribute("href") || "";
         const GATED = ["/home/games/", "/prep-math/activity/", "/virtual-lab/", "/writing/"];
         if (!GATED.some((p) => href.includes(p))) return;
+
+        let mapping = null;
+        try {
+          const { featureAndPartForPath } = await import("/utils/features.js");
+          mapping = featureAndPartForPath(new URL(href, window.location.href).pathname);
+        } catch { return; } // resolver unavailable → let the page guard decide
+        if (!mapping || !mapping.featureId) return; // unregistered → page guard decides
 
         e.preventDefault();
 
@@ -396,14 +409,19 @@ export const PLANS = {
         }
 
         try {
+          const { resolveUserAccess } = await import("/utils/features.js");
           const snap = await getDoc(doc(db, "users", user.uid));
-          if (snap.exists() && snap.data().isPremium) {
+          const profile = (snap.exists() && snap.data()) || null;
+          const v = await resolveUserAccess({ ...mapping, profile });
+          if (v.allowed) {
             window.location.href = href;
-            return;
+          } else if (v.reason === "premium-required") {
+            window.location.href = "/subscribe.html#plans";
+          } else {
+            showToast("This feature is currently unavailable.", "error");
           }
-          window.location.href = "/subscribe.html#plans";
         } catch {
-          showToast("Could not verify subscription status.", "error");
+          window.location.href = href; // fail open — the page guard still runs
         }
       });
     },

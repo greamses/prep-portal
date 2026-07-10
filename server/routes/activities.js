@@ -17,6 +17,7 @@
 const express = require("express");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
+const access = require("../lib/access");
 
 const MAX_QUESTIONS = 20;
 
@@ -52,8 +53,17 @@ module.exports = function () {
     catch (_) { return {}; }
   }
   const isAdmin = (req) => !!req.user && req.user.email && req.user.email === process.env.ADMIN_EMAIL;
-  const hasSub = (req, p) => isAdmin(req) || !!(p && p.isPremium);
   const isTeacher = (req, p) => isAdmin(req) || ["teacher", "admin"].includes(p && p.role);
+
+  // Access is resolved through the shared feature registry (lib/access):
+  // "activities" feature, parts "author" (create) and "attempt" (open/submit).
+  // Denials keep the 402 shape clients already handle; off/blocked → 403.
+  function deny(res, verdict) {
+    if (verdict.reason === "premium-required") {
+      return res.status(402).json({ error: "premium_required", premiumRequired: true });
+    }
+    return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
+  }
 
   const publicActivity = (a) => ({
     id: a.id,
@@ -80,7 +90,8 @@ module.exports = function () {
   router.post("/", authenticate, async (req, res) => {
     try {
       const p = await profile(req.user.uid);
-      if (!hasSub(req, p)) return res.status(402).json({ error: "premium_required", premiumRequired: true });
+      const verdict = await access.canUse(req, "activities", "author");
+      if (!verdict.allowed) return deny(res, verdict);
       if (!isTeacher(req, p)) return res.status(403).json({ error: "Only teachers can create activities." });
 
       const b = req.body || {};
@@ -138,8 +149,8 @@ module.exports = function () {
   // ── GET /:idOrSlug — fetch an activity to answer ──────────────────
   router.get("/:idOrSlug", authenticate, async (req, res) => {
     try {
-      const p = await profile(req.user.uid);
-      if (!hasSub(req, p)) return res.status(402).json({ error: "premium_required", premiumRequired: true });
+      const verdict = await access.canUse(req, "activities", "attempt");
+      if (!verdict.allowed) return deny(res, verdict);
       const a = await findActivity(req.params.idOrSlug);
       if (!a) return res.status(404).json({ error: "Activity not found." });
       res.json({ activity: publicActivity(a) });
@@ -154,8 +165,9 @@ module.exports = function () {
   // student's own token pool); we persist the answers and the marked outcome.
   router.post("/:idOrSlug/submit", authenticate, async (req, res) => {
     try {
-      const p = await profile(req.user.uid);
-      if (!hasSub(req, p)) return res.status(402).json({ error: "premium_required", premiumRequired: true });
+      const verdict = await access.canUse(req, "activities", "attempt");
+      if (!verdict.allowed) return deny(res, verdict);
+      const p = await profile(req.user.uid); // fallback student name below
 
       const a = await findActivity(req.params.idOrSlug);
       if (!a) return res.status(404).json({ error: "Activity not found." });

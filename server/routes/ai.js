@@ -12,6 +12,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const Anthropic = require("@anthropic-ai/sdk");
 const { authenticate } = require("../middleware/auth");
+const access = require("../lib/access");
 const { GEMINI_MODELS, GROQ_DEFAULT_MODEL, CLAUDE_DEFAULT_MODEL } = require("../ai-models");
 
 const GEMINI_BASE_WHITELIST = "https://generativelanguage.googleapis.com/";
@@ -25,13 +26,13 @@ module.exports = function () {
 
   // ── Token-usage tracking (display-only) ──────
   // Two tiers, stored per-user in Firestore (aiUsage/{uid}):
-  //   • 10k per rolling 5-hour window (resets 5h after the window started)
-  //   • 300k per calendar month (resets at the UTC month boundary)
+  //   • windowTokens per rolling 5-hour window (resets 5h after the window started)
+  //   • monthTokens per calendar month (resets at the UTC month boundary)
+  // Both allocations are admin-editable (config/site.aiQuota via the Settings
+  // page) and read through lib/access (defaults 10k / 300k).
   // BYUK requests (the student's own key) are not counted here. Never blocks.
   // Admins (by ADMIN_EMAIL) are unlimited: not tracked, not shown against a cap.
-  const USAGE_ALLOCATION = 10000;
   const USAGE_WINDOW_MS = 5 * 60 * 60 * 1000;
-  const USAGE_MONTH_ALLOCATION = 300000;
   const usageDoc = (uid) => admin.firestore().collection("aiUsage").doc(uid);
   const winStart = (d) => d?.windowStart?.toMillis?.() ?? d?.windowStart ?? 0;
   const monthKey = (ms) => { const dt = new Date(ms); return `${dt.getUTCFullYear()}-${dt.getUTCMonth()}`; };
@@ -39,21 +40,22 @@ module.exports = function () {
   const isAdminEmail = (email) => !!email && email === process.env.ADMIN_EMAIL;
   const unlimitedUsage = () => ({ used: 0, allocation: null, resetAt: null, monthUsed: 0, monthAllocation: null, monthResetAt: null, unlimited: true });
 
-  function usageShape({ used, start, monthTokens, now }) {
+  function usageShape({ used, start, monthTokens, now, quota }) {
     return {
       used,
-      allocation: USAGE_ALLOCATION,
+      allocation: quota.windowTokens,
       resetAt: start + USAGE_WINDOW_MS,
       monthUsed: monthTokens,
-      monthAllocation: USAGE_MONTH_ALLOCATION,
+      monthAllocation: quota.monthTokens,
       monthResetAt: nextMonthMs(now),
     };
   }
 
   async function readUsage(uid, email) {
     if (isAdminEmail(email)) return unlimitedUsage();
+    const quota = await access.getAiQuota();
     const now = Date.now();
-    const fresh = usageShape({ used: 0, start: now, monthTokens: 0, now });
+    const fresh = usageShape({ used: 0, start: now, monthTokens: 0, now, quota });
     if (!uid) return fresh;
     try {
       const snap = await usageDoc(uid).get();
@@ -67,6 +69,7 @@ module.exports = function () {
           start: within5h ? start : now,
           monthTokens: sameMonth ? d.monthTokens || 0 : 0,
           now,
+          quota,
         });
       }
     } catch (_) {}
@@ -76,6 +79,7 @@ module.exports = function () {
   async function bumpUsage(uid, addTokens, email) {
     if (isAdminEmail(email)) return unlimitedUsage();
     if (!uid || !addTokens) return readUsage(uid);
+    const quota = await access.getAiQuota();
     const ref = usageDoc(uid);
     try {
       return await admin.firestore().runTransaction(async (tx) => {
@@ -97,7 +101,7 @@ module.exports = function () {
           monthTokens,
           monthKey: mk,
         });
-        return usageShape({ used, start, monthTokens, now });
+        return usageShape({ used, start, monthTokens, now, quota });
       });
     } catch (_) {
       return readUsage(uid);
@@ -375,50 +379,28 @@ module.exports = function () {
     res.end();
   }
 
-  // ── Premium gate: PrepBot is a paid feature ──────────────────
-  // Admins (by ADMIN_EMAIL) and users with isPremium in their Firestore profile
-  // may chat; everyone else is refused with a friendly upsell message.
-  const usersDoc = (uid) => admin.firestore().collection("users").doc(uid);
-
-  // PrepBot reads the premium flag on EVERY message. Cache the verdict per uid
-  // for a short window so a back-and-forth chat doesn't read users/{uid} each
-  // turn. In-memory only (best-effort across Fluid Compute instances); on a
-  // read error we fall back to the last known verdict, then to "not premium".
-  const PREMIUM_TTL_MS = 5 * 60 * 1000;
-  const premiumCache = new Map(); // uid -> { premium, exp }
-
-  async function isPremiumUser(req) {
-    if (!req.user) return false;
-    if (req.user.email && req.user.email === process.env.ADMIN_EMAIL) return true;
-    const uid = req.user.uid;
-    const hit = premiumCache.get(uid);
-    if (hit && hit.exp > Date.now()) return hit.premium;
-    try {
-      const snap = await usersDoc(uid).get();
-      const premium = !!(snap.exists && snap.data() && snap.data().isPremium);
-      premiumCache.set(uid, { premium, exp: Date.now() + PREMIUM_TTL_MS });
-      return premium;
-    } catch (_) {
-      return hit ? hit.premium : false;
-    }
-  }
-
   // ── POST /api/ai/chat — PrepBot ──────────────────────────────
   // Fallback chain: Groq → Claude → Gemini (each skipped if key absent).
   // Pass { stream:true } for an NDJSON token stream; otherwise a single JSON reply.
   router.post("/chat", authenticate, async (req, res) => {
-    // Premium-only. The browser also gates this, so this is the un-bypassable
-    // backstop: return the upsell as normal chat text in either response shape.
-    if (!(await isPremiumUser(req))) {
-      const text =
-        "PrepBot is a premium feature. Upgrade your plan at /subscribe.html to chat with PrepBot.";
+    // Access-gated (feature "prepbot", part "chat" — admin state + per-user
+    // overrides via lib/access). The browser also gates this, so this is the
+    // un-bypassable backstop: refusals go out as normal chat text in either
+    // response shape so the widget never breaks its streaming contract.
+    const verdict = await access.canUse(req, "prepbot", "chat");
+    if (!verdict.allowed) {
+      const premiumWall = verdict.reason === "premium-required";
+      const text = premiumWall
+        ? "PrepBot is a premium feature. Upgrade your plan at /subscribe.html to chat with PrepBot."
+        : "PrepBot is currently unavailable. Please check back later.";
+      const provider = premiumWall ? "premium_required" : "feature_disabled";
       if (req.body && req.body.stream) {
         res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
         res.write(JSON.stringify({ type: "delta", text }) + "\n");
-        res.write(JSON.stringify({ type: "done", provider: "premium_required" }) + "\n");
+        res.write(JSON.stringify({ type: "done", provider }) + "\n");
         return res.end();
       }
-      return res.json({ provider: "premium_required", premiumRequired: true, text });
+      return res.json({ provider, premiumRequired: premiumWall, text });
     }
 
     if (req.body && req.body.stream) {
@@ -543,12 +525,27 @@ module.exports = function () {
   // This is how the theory/activities AI shares the SAME token pool as PrepBot
   // instead of running on the learner's own key. Fallback: Groq → Claude → Gemini.
   router.post("/generate", authenticate, async (req, res) => {
-    if (!(await isPremiumUser(req))) {
-      return res.status(402).json({
-        provider: "premium_required",
-        premiumRequired: true,
-        text: "This is a premium feature. Upgrade your plan at /subscribe.html to use it.",
-      });
+    // The caller names which feature this generation belongs to (default
+    // "theory"); only registry entries flagged usesAiGenerate are accepted, and
+    // access is resolved per feature — so e.g. theory→free really frees this
+    // endpoint. A client could claim a sibling feature, but every consumer
+    // shares the same token pool + quota, so the claim buys nothing.
+    const feature = String((req.body && req.body.feature) || "theory");
+    const { FEATURES } = await access.registry();
+    const entry = FEATURES.find((f) => f.id === feature);
+    if (!entry || !entry.usesAiGenerate) {
+      return res.status(400).json({ error: `Unknown AI feature "${feature}".` });
+    }
+    const verdict = await access.canUse(req, feature);
+    if (!verdict.allowed) {
+      if (verdict.reason === "premium-required") {
+        return res.status(402).json({
+          provider: "premium_required",
+          premiumRequired: true,
+          text: "This is a premium feature. Upgrade your plan at /subscribe.html to use it.",
+        });
+      }
+      return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
     }
     try {
       const {

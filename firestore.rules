@@ -34,7 +34,8 @@ service cloud.firestore {
       return [
         'isPremium', 'planId', 'planName', 'planTier', 'billingCycle',
         'lastPaymentRef', 'subscriptionExpiry', 'role',
-        'referredByCode', 'referredByPartner', 'referralCyclesPaid'
+        'referredByCode', 'referredByPartner', 'referralCyclesPaid',
+        'featureOverrides'
       ];
     }
     function notTouchingProtected() {

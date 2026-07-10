@@ -15,10 +15,10 @@
  *   Body: { text, voiceId? }
  *   Returns: { audioContent: "<base64 MP3>", audioEncoding: "MP3" }
  *   Requires ELEVENLABS_API_KEY in env; 503s (client falls back to the
- *   free Web Speech API) if unset. Also requires isPremium on the caller's
- *   Firestore profile (or ADMIN_EMAIL) — 403s otherwise, same upsell-gate
- *   pattern as PrepBot chat in ai.js — since it's a paid, metered API and
- *   the "Talk" toggle it backs is otherwise open to any logged-in guest.
+ *   free Web Speech API) if unset. Access-gated as the "voice" part of the
+ *   "prepbot" feature (lib/access: admin state + per-user overrides) —
+ *   403s when denied — since it's a paid, metered API and the "Talk"
+ *   toggle it backs is otherwise open to any logged-in guest.
  *
  * Both routes require a logged-in user (same `authenticate` gate) — this
  * proxies paid, metered third-party APIs, so it's never exposed
@@ -26,12 +26,12 @@
  */
 
 const express = require("express");
-const admin = require("firebase-admin");
 const textToSpeech = require("@google-cloud/text-to-speech");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { authenticate } = require("../middleware/auth");
+const access = require("../lib/access");
 
 const MAX_CHARS = 5000;
 
@@ -57,28 +57,6 @@ function cacheFileFor(voiceId, text) {
 
 module.exports = function () {
   const router = express.Router();
-
-  // ── Premium gate for ElevenLabs only — same shape as ai.js's chat gate,
-  // with its own short-lived per-uid cache so a run of "Talk" lines
-  // doesn't read users/{uid} on every request. ───────────────────────
-  const PREMIUM_TTL_MS = 5 * 60 * 1000;
-  const premiumCache = new Map(); // uid -> { premium, exp }
-
-  async function isPremiumUser(req) {
-    if (!req.user) return false;
-    if (req.user.email && req.user.email === process.env.ADMIN_EMAIL) return true;
-    const uid = req.user.uid;
-    const hit = premiumCache.get(uid);
-    if (hit && hit.exp > Date.now()) return hit.premium;
-    try {
-      const snap = await admin.firestore().collection("users").doc(uid).get();
-      const premium = !!(snap.exists && snap.data() && snap.data().isPremium);
-      premiumCache.set(uid, { premium, exp: Date.now() + PREMIUM_TTL_MS });
-      return premium;
-    } catch (_) {
-      return hit ? hit.premium : false;
-    }
-  }
 
   // ── ElevenLabs response cache ──────────────────────────────────────
   // ElevenLabs bills per character synthesised, and this page's narration is
@@ -193,8 +171,12 @@ module.exports = function () {
   // or ELEVENLABS_API_KEY simply not being set yet). ───────────────────
   router.post("/elevenlabs", authenticate, async (req, res) => {
     try {
-      if (!(await isPremiumUser(req))) {
-        return res.status(403).json({ error: "ElevenLabs voice is a premium feature." });
+      // Gated as PrepBot's "voice" part (feature state + per-user overrides
+      // + the voice sub-checkbox in admin Settings). 403 on any denial —
+      // callers fall back to Web Speech regardless of the status code.
+      const verdict = await access.canUse(req, "prepbot", "voice");
+      if (!verdict.allowed) {
+        return res.status(403).json({ error: "ElevenLabs voice is not available on your plan.", reason: verdict.reason });
       }
 
       const apiKey = process.env.ELEVENLABS_API_KEY;

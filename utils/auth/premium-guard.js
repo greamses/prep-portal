@@ -4,9 +4,12 @@
  * Add to any page whose whole experience requires a paid plan:
  *   <script type="module" src="/utils/auth/premium-guard.js"></script>
  *
- * It verifies the signed-in user has `isPremium` (admins are flagged premium on
- * sign-up, so they pass too) by reading users/{uid} in Firestore. Free users are
- * sent to /subscribe.html#plans; logged-out users are sent to the login gate.
+ * It resolves the page's feature (and sub-part, e.g. an individual 3D game)
+ * through the shared registry (/utils/features.js): admin off/free/premium
+ * state + per-user grant/block overrides + part checkboxes, falling back to
+ * the plain `isPremium` check (admins are flagged premium on sign-up, so they
+ * pass too) for premium-state features. Free users are sent to
+ * /subscribe.html#plans; logged-out users are sent to the login gate.
  *
  * SELF-CONTAINED on purpose: it loads Firebase from full gstatic URLs (not bare
  * specifiers), so it does NOT depend on the host page having an import map. That
@@ -25,7 +28,7 @@ import {
 import {
   getFirestore, doc, getDoc,
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { featureForPath, getFeatureState } from "/utils/features.js";
+import { featureAndPartForPath, resolveUserAccess } from "/utils/features.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2N3uI_XfSIVsto2Ku1g_qSezmD3qFmbk",
@@ -81,26 +84,30 @@ function toDisabled() {
     "</div>";
 }
 
-// Cache the premium verdict locally so navigating across many premium pages in a
-// session doesn't read users/{uid} every single time. Within the TTL we trust the
-// cached verdict and skip the Firestore read entirely (the server still enforces
-// premium on the AI endpoints, so a stale "allowed" can't be abused). A short TTL
-// keeps a downgrade from lingering long.
-const PREMIUM_TTL = 10 * 60 * 1000; // 10 minutes
-function cachedVerdict(uid) {
+// Cache the user's entitlement (premium flag + per-user featureOverrides)
+// locally so navigating across many gated pages in a session doesn't read
+// users/{uid} every single time. Within the TTL we trust the cached value and
+// skip the Firestore read entirely (the server still enforces access on its
+// endpoints, so a stale "allowed" can't be abused). A short TTL keeps a
+// downgrade — or an admin's per-user grant/block — from lingering long.
+const ACCESS_TTL = 5 * 60 * 1000; // 5 minutes
+function cachedEntitlement(uid) {
   try {
-    const raw = localStorage.getItem("pp_premium:" + uid);
+    const raw = localStorage.getItem("pp_access:" + uid);
     if (!raw) return null;
-    const { t, premium } = JSON.parse(raw);
-    if (Date.now() - t > PREMIUM_TTL) return null;
-    return Boolean(premium);
+    const { t, premium, overrides } = JSON.parse(raw);
+    if (Date.now() - t > ACCESS_TTL) return null;
+    return { premium: !!premium, overrides: overrides || {} };
   } catch (e) {
     return null;
   }
 }
-function storeVerdict(uid, premium) {
+function storeEntitlement(uid, ent) {
   try {
-    localStorage.setItem("pp_premium:" + uid, JSON.stringify({ t: Date.now(), premium }));
+    localStorage.setItem(
+      "pp_access:" + uid,
+      JSON.stringify({ t: Date.now(), premium: ent.premium, overrides: ent.overrides })
+    );
   } catch (e) {}
 }
 
@@ -108,32 +115,50 @@ onAuthStateChanged(auth, async (user) => {
   clearTimeout(veilTimeout);
   if (!user) return toLogin();
 
-  // Which feature does this page belong to, and how has the admin set it?
-  //   off     → nobody gets in
-  //   free    → any signed-in user gets in (no premium needed)
-  //   premium → fall through to the premium check below
-  // A page not in the registry (or a config blip) defaults to premium, i.e. the
-  // original guard behaviour, so nothing loosens by accident.
-  const featureId = featureForPath(location.pathname);
-  if (featureId) {
-    let state = "premium";
-    try { state = await getFeatureState(featureId); } catch (_) {}
-    if (state === "off") return toDisabled();
-    if (state === "free") return reveal();
+  // Which feature (and sub-part — e.g. an individual 3D game) does this page
+  // belong to, and what's the admin's setting + this user's override for it?
+  // Resolution order (resolveAccess in /utils/features.js):
+  //   part-disabled → per-user block → per-user grant → off/free/premium.
+  const { featureId, partId } = featureAndPartForPath(location.pathname);
+
+  // The user's entitlement: cached, else one users/{uid} read.
+  let ent = cachedEntitlement(user.uid);
+  let entFresh = !!ent;
+  if (!ent) {
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const d = (snap.exists() && snap.data()) || {};
+      ent = { premium: !!d.isPremium, overrides: d.featureOverrides || {} };
+      entFresh = true;
+      storeEntitlement(user.uid, ent);
+    } catch (e) {
+      ent = null; // transient read error — decide below, failing open
+    }
   }
 
-  // Fast path: a fresh cached verdict avoids a Firestore read on every page.
-  const cached = cachedVerdict(user.uid);
-  if (cached === true) return reveal();
-  if (cached === false) return toSubscribe();
+  // A page not in the registry keeps the original guard behaviour: plain
+  // premium check, so nothing loosens by accident.
+  if (!featureId) {
+    if (!ent) return reveal(); // read error → fail open (server still gates)
+    return ent.premium ? reveal() : toSubscribe();
+  }
 
+  let verdict;
   try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    const premium = snap.exists() && !!snap.data().isPremium;
-    storeVerdict(user.uid, premium);
-    if (premium) return reveal(); // allowed
+    verdict = await resolveUserAccess({
+      featureId,
+      partId,
+      profile: ent ? { isPremium: ent.premium, featureOverrides: ent.overrides } : null,
+    });
   } catch (e) {
-    return reveal(); // transient read error → fail open (server still gates AI)
+    return reveal(); // resolver/config blew up → fail open
   }
-  toSubscribe(); // definitively not premium
+
+  if (verdict.allowed) return reveal();
+  if (verdict.reason === "premium-required") {
+    // Only send to subscribe on a DEFINITIVE "not premium"; a failed profile
+    // read fails open so a Firestore glitch never locks out a paying learner.
+    return entFresh && ent ? toSubscribe() : reveal();
+  }
+  return toDisabled(); // off / override-block / part-disabled
 });

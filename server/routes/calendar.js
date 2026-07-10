@@ -16,6 +16,7 @@
 const express = require("express");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
+const access = require("../lib/access");
 
 // Sticky-note palette (mirrors the dashboard's pp-sticky colours).
 const COLORS = ["#bfe3ff", "#c8f0c0", "#fff39a", "#ffd9a8", "#ffc9de", "#e8d5ff"];
@@ -84,6 +85,16 @@ module.exports = function () {
   // fanned out to them from their teacher's roster.
   router.get("/", authenticate, async (req, res) => {
     try {
+      // "calendar" feature gate (default: free — no live change; lets the
+      // admin switch the calendar off or premium-gate it from Settings).
+      const verdict = await access.canUse(req, "calendar");
+      if (!verdict.allowed) {
+        if (verdict.reason === "premium-required") {
+          return res.status(402).json({ error: "premium_required", premiumRequired: true });
+        }
+        return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
+      }
+
       // Resolve role with a SINGLE profile read (the super-admin needs none).
       // Previously this handler read users/{uid} 2–3× per call.
       const superAdmin = req.user?.email && req.user.email === process.env.ADMIN_EMAIL;

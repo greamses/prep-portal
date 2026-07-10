@@ -1754,34 +1754,38 @@ If (and only if) you're pointing the student to one specific page from the site 
   }
 
   /* ── 20. TOGGLE CHAT ── */
-  // PrepBot's availability is admin-controlled via the "prepbot" feature switch:
-  //   off     → launcher does nothing (feature unavailable)
-  //   free    → any signed-in user may chat
-  //   premium → only paying users  ← default
-  // Non-premium users on a premium setting are sent to subscribe; the server also
-  // enforces premium on /api/ai/chat. Premium entitlement is cached per uid.
-  let _pbPremium = { uid: null, ok: false };
+  // PrepBot's availability is resolved through the shared feature registry
+  // (/utils/features.js — feature "prepbot", part "chat"): the admin's
+  // off/free/premium state, the chat sub-checkbox, and this user's per-user
+  // grant/block override all apply, in that module's canonical order. The
+  // server enforces the same registry on /api/ai/chat. Profile is cached per
+  // uid so a back-and-forth session doesn't read users/{uid} repeatedly.
+  let _pbProfile = { uid: null, profile: null };
   // Verdict: "ok" | "login" | "subscribe" | "off".
   async function prepbotVerdict() {
     const user = auth.currentUser;
     if (!user) return "login";
-    let state = "premium";
-    try {
-      const { getFeatureState } = await import("/utils/features.js");
-      state = await getFeatureState("prepbot");
-    } catch (_) {}
-    if (state === "off") return "off";
-    if (state === "free") return "ok";
-    // premium: confirm entitlement (cached per uid).
-    if (_pbPremium.uid !== user.uid) {
-      let ok = false;
+    if (_pbProfile.uid !== user.uid) {
+      let profile = null;
       try {
         const snap = await getDoc(doc(db, "users", user.uid));
-        ok = !!(snap.exists() && snap.data().isPremium);
-      } catch (_) { ok = false; }
-      _pbPremium = { uid: user.uid, ok };
+        profile = (snap.exists() && snap.data()) || {};
+      } catch (_) { profile = null; }
+      _pbProfile = { uid: user.uid, profile };
     }
-    return _pbPremium.ok ? "ok" : "subscribe";
+    try {
+      const { resolveUserAccess } = await import("/utils/features.js");
+      const v = await resolveUserAccess({
+        featureId: "prepbot",
+        partId: "chat",
+        profile: _pbProfile.profile,
+      });
+      if (v.allowed) return "ok";
+      return v.reason === "premium-required" ? "subscribe" : "off";
+    } catch (_) {
+      // Resolver unavailable → legacy behaviour: premium flag decides.
+      return _pbProfile.profile && _pbProfile.profile.isPremium ? "ok" : "subscribe";
+    }
   }
   function goSubscribe() { window.location.href = "/subscribe.html#plans"; }
 
@@ -2096,7 +2100,7 @@ If (and only if) you're pointing the student to one specific page from the site 
   }
   updateFabVisibility();
   auth.onAuthStateChanged(() => {
-    _pbPremium = { uid: null, ok: false }; // force a fresh entitlement check
+    _pbProfile = { uid: null, profile: null }; // force a fresh entitlement check
     updateFabVisibility();
   });
 

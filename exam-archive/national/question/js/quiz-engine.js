@@ -24,12 +24,11 @@ const Quiz = (() => {
     return "short"; // subjective / short / blank / fill-in-the-blank
   }
 
-  // Written-answer questions (Short Answer / Theory) are Premium-only; free users
-  // get MCQs. Resolve once from the CACHED profile (0 extra reads when the nav
-  // already warmed it). Unknown/anonymous → not premium.
-  let _premiumVerdict = null;
-  async function isPremiumUser() {
-    if (_premiumVerdict !== null) return _premiumVerdict;
+  // Written-answer questions gate. Resolve once from the CACHED profile (0
+  // extra reads when the nav already warmed it). Unknown/anonymous → null.
+  let _profile; // undefined = not loaded; null = anonymous/error; object = profile
+  async function userProfile() {
+    if (_profile !== undefined) return _profile;
     try {
       const { auth } = await import("/firebase-init.js");
       let u = auth.currentUser;
@@ -40,30 +39,34 @@ const Quiz = (() => {
           setTimeout(() => res(auth.currentUser || null), 3000);
         });
       }
-      if (!u) return (_premiumVerdict = false);
+      if (!u) return (_profile = null);
       const { getProfile } = await import("/utils/data-service.js");
-      const p = await getProfile(u.uid);
-      _premiumVerdict = !!(p && p.isPremium);
-    } catch (_) { _premiumVerdict = false; }
-    return _premiumVerdict;
+      _profile = (await getProfile(u.uid)) || null;
+    } catch (_) { _profile = null; }
+    return _profile;
   }
 
-  // Whether written answers (Short/Theory) should be served, honouring the admin's
-  // "cbt-written" feature switch:
-  //   off     → never (everyone gets MCQs only)
-  //   free    → always (open to any user)
-  //   premium → only paying users  ← default
-  let _writtenVerdict = null;
-  async function writtenAllowed() {
-    if (_writtenVerdict !== null) return _writtenVerdict;
-    let state = "premium";
+  // Whether a written format ("short" | "theory") should be served, resolved
+  // through the shared feature registry — feature "cbt-written" with the format
+  // as its part, so the admin's off/free/premium state, the per-format
+  // checkboxes AND this user's grant/block override all apply. Cached per format.
+  const _writtenVerdict = {}; // format -> bool
+  async function writtenAllowed(format) {
+    const part = format === "theory" ? "theory" : "short";
+    if (part in _writtenVerdict) return _writtenVerdict[part];
     try {
-      const { getFeatureState } = await import("/utils/features.js");
-      state = await getFeatureState("cbt-written");
-    } catch (_) {}
-    if (state === "off") return (_writtenVerdict = false);
-    if (state === "free") return (_writtenVerdict = true);
-    return (_writtenVerdict = await isPremiumUser());
+      const { resolveUserAccess } = await import("/utils/features.js");
+      const v = await resolveUserAccess({
+        featureId: "cbt-written",
+        partId: part,
+        profile: await userProfile(),
+      });
+      return (_writtenVerdict[part] = v.allowed);
+    } catch (_) {
+      // Resolver unavailable → legacy behaviour: premium flag decides.
+      const p = await userProfile();
+      return (_writtenVerdict[part] = !!(p && p.isPremium));
+    }
   }
   let userAnswers = {};
   let submitted = false;
@@ -592,15 +595,18 @@ const Quiz = (() => {
           const top = axis === "exam" ? PAGE_CONFIG.scheme : PAGE_CONFIG.cbtClass;
           const bank = await import("/utils/cbt-bank.js");
           questions = await bank.paperQuestions(axis, top, subKey, PAGE_CONFIG.topic, PAGE_CONFIG.paper);
-          // Format filter (mcq | short | theory) + premium gate: written answers
-          // (Short Answer / Theory) are Premium-only, so free users only ever
+          // Format filter (mcq | short | theory) + access gate: each written
+          // format is a part of the "cbt-written" feature, so short and theory
+          // can be enabled independently; users without access only ever
           // receive MCQs — not even under "All".
           const want = PAGE_CONFIG.format;
-          const written = await writtenAllowed();
+          const wShort = await writtenAllowed("short");
+          const wTheory = await writtenAllowed("theory");
           questions = questions.filter((q) => {
             const f = qFormat(q);
-            if (f !== "mcq" && !written) return false; // written answers gated by admin
-            if (want && f !== want) return false;       // explicit filter
+            if (f === "short" && !wShort) return false;   // gated by admin/override
+            if (f === "theory" && !wTheory) return false; // gated by admin/override
+            if (want && f !== want) return false;          // explicit filter
             return true;
           });
         } else {

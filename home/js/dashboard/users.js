@@ -4,6 +4,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  deleteField,
 } from "firebase/firestore";
 import { getList } from "/utils/data-service.js";
 import { PERSON_SVG, fmtDate, avatarColor } from "/home/js/dashboard/utils.js";
@@ -30,6 +31,7 @@ const SVGS = {
   download: `<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
   invite: `<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`,
   emptyBox: `<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+  sliders: `<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>`,
 };
 
 import { planEmblem, planTier } from "/utils/components/plan-emblems.js";
@@ -570,6 +572,7 @@ function renderList(users) {
         <div class="user-meta-main">
           <strong class="user-name-text">${u.name || "User"}</strong>
           <span class="user-email-text">${u.email}</span>
+          ${overridesChip(u)}
         </div>
       </div>
       <div>
@@ -587,6 +590,7 @@ function renderList(users) {
       </div>
       <div class="user-joined inspect-trigger">${fmtDate(u.createdAt)}</div>
       <div class="actions-group">
+        <button class="action-btn btn-features"       data-id="${u.id}" title="Feature overrides">${SVGS.sliders}</button>
         <button class="action-btn btn-inspect"        data-id="${u.id}" title="Inspect profile">${SVGS.inspect}</button>
         <button class="action-btn btn-copy"           data-id="${u.id}" data-email="${u.email}" title="Copy email">${SVGS.copy}</button>
         <button class="action-btn btn-delete text-danger" data-id="${u.id}" title="Delete user">${SVGS.trash}</button>
@@ -618,6 +622,15 @@ function attachListEvents() {
       const row = e.target.closest(".user-row");
       const user = allUsers.find((u) => u.id === row.dataset.id);
       if (user) openInspectorModal(user);
+    };
+  });
+
+  // Per-user feature overrides
+  listEl.querySelectorAll(".btn-features").forEach((el) => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const user = allUsers.find((u) => u.id === el.dataset.id);
+      if (user) openFeaturesModal(user);
     };
   });
 
@@ -736,6 +749,9 @@ function renderBulkBar() {
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           Toggle Premium
         </button>
+        <button id="bulk-features-btn" class="bulk-btn">
+          ${SVGS.sliders} Feature Override
+        </button>
         <button id="bulk-copy-emails-btn" class="bulk-btn bulk-btn-copy">
           ${SVGS.copy} Copy Emails
         </button>
@@ -790,6 +806,8 @@ function renderBulkBar() {
       showToast("Error toggling subscriptions", "error");
     }
   };
+
+  document.getElementById("bulk-features-btn").onclick = () => openBulkFeatureModal();
 
   document.getElementById("bulk-copy-emails-btn").onclick = () => {
     const emails = [...selectedUsers]
@@ -971,6 +989,261 @@ function openInspectorModal(user) {
 
   document.getElementById("modal-copy-all-btn").onclick = () =>
     copyToClipboard(JSON.stringify(user, null, 2), "User JSON copied");
+}
+
+/* ============================================================
+   14b. PER-USER FEATURE OVERRIDES
+   ============================================================
+   Grant or block individual features (and their sub-parts) for ONE user,
+   overriding the global admin Settings. Stored on users/{uid}.featureOverrides
+   (admin-only per firestore.rules) and resolved everywhere through
+   /utils/features.js resolveAccess: part-disabled → block → grant → global.
+   The feature list and parts render straight from the shared registry, so a
+   new feature needs no changes here. Changes take effect within ~5 minutes
+   (client + server entitlement caches). */
+
+const ovCount = (u) =>
+  u.featureOverrides && typeof u.featureOverrides === "object"
+    ? Object.keys(u.featureOverrides).length
+    : 0;
+
+function overridesChip(u) {
+  const n = ovCount(u);
+  if (!n) return "";
+  return `<span class="user-overrides-chip">${n} feature override${n > 1 ? "s" : ""}</span>`;
+}
+
+// Build the featureOverrides map out of a rendered editor's DOM state.
+function collectOverridesFromDom(root, FEATURES) {
+  const map = {};
+  root.querySelectorAll(".fo-feature").forEach((box) => {
+    const fid = box.dataset.feature;
+    const feature = FEATURES.find((f) => f.id === fid);
+    const access = box.querySelector(".fo-seg button[aria-pressed='true']")?.dataset.access || "inherit";
+    const entry = {};
+    if (access === "grant" || access === "block") entry.access = access;
+    if (feature?.parts?.length) {
+      const checks = [...box.querySelectorAll(".fo-part input")];
+      if (checks.some((c) => !c.checked)) {
+        entry.parts = Object.fromEntries(checks.map((c) => [c.dataset.part, c.checked]));
+      }
+    }
+    if (Object.keys(entry).length) map[fid] = { ...entry, updatedAt: Date.now() };
+  });
+  return map;
+}
+
+// One feature's editor row (tri-state + optional part checkboxes).
+function featureEditorRow(f, ov, cfg) {
+  const access = (ov && ov.access) || "inherit";
+  const globalState = cfg.states[f.id] || f.default;
+  const globalParts = cfg.parts[f.id] || {};
+  const partsHtml = (f.parts || []).length
+    ? `<div class="fo-parts">
+        ${f.parts.map((p) => {
+          // Prefill: user's own parts if set, else the global checkbox state.
+          const on = ov && ov.parts ? ov.parts[p.id] !== false : globalParts[p.id] !== false;
+          return `<label class="fo-part"><input type="checkbox" data-part="${p.id}" ${on ? "checked" : ""}><span>${p.label}</span></label>`;
+        }).join("")}
+        <button type="button" class="fo-parts-all" data-all="true">all</button>
+        <button type="button" class="fo-parts-all" data-all="false">none</button>
+      </div>`
+    : "";
+  return `
+    <div class="fo-feature" data-feature="${f.id}">
+      <div class="fo-head">
+        <div class="fo-label">
+          <strong>${f.label}</strong>
+          <span class="fo-global">global: ${globalState}</span>
+        </div>
+        <div class="fo-seg">
+          <button type="button" data-access="inherit" aria-pressed="${access === "inherit"}">Inherit</button>
+          <button type="button" data-access="grant"   aria-pressed="${access === "grant"}">Grant</button>
+          <button type="button" data-access="block"   aria-pressed="${access === "block"}">Block</button>
+        </div>
+      </div>
+      ${partsHtml}
+    </div>`;
+}
+
+function wireFeatureEditor(root) {
+  root.querySelectorAll(".fo-seg").forEach((seg) => {
+    seg.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = () => {
+        seg.querySelectorAll("button").forEach((b) =>
+          b.setAttribute("aria-pressed", String(b === btn)),
+        );
+      };
+    });
+  });
+  root.querySelectorAll(".fo-parts-all").forEach((btn) => {
+    btn.onclick = () => {
+      btn.closest(".fo-parts").querySelectorAll("input").forEach((c) => {
+        c.checked = btn.dataset.all === "true";
+      });
+    };
+  });
+}
+
+async function openFeaturesModal(user) {
+  document.getElementById("user-features-modal")?.remove();
+
+  const { FEATURES, fetchFeatureConfig, defaultStates } = await import("/utils/features.js");
+  let cfg = { states: defaultStates(), parts: {} };
+  try { cfg = await fetchFeatureConfig(); } catch {}
+  const overrides = user.featureOverrides || {};
+
+  const modal = document.createElement("div");
+  modal.id = "user-features-modal";
+  modal.className = "brutal-modal-overlay";
+  modal.innerHTML = `
+    <div class="brutal-modal-card">
+      <div class="modal-header">
+        <h2>Feature Access — ${user.name || user.email}</h2>
+        <button class="modal-close-btn" id="fo-close-btn">${SVGS.close}</button>
+      </div>
+      <div class="modal-body">
+        <p class="fo-hint">
+          <strong>Inherit</strong> follows the global setting. <strong>Grant</strong> unlocks the
+          feature for this user (even if it's premium or switched off). <strong>Block</strong> denies
+          it (even if it's free). Unchecked parts are excluded for this user.
+          Changes take effect within ~5 minutes.
+        </p>
+        <div id="fo-list">
+          ${FEATURES.map((f) => featureEditorRow(f, overrides[f.id], cfg)).join("")}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="brutal-btn-flat" id="fo-clear-btn">Clear All Overrides</button>
+        <button class="brutal-btn-flat brutal-btn-primary" id="fo-save-btn">Save</button>
+        <button class="brutal-btn-flat" id="fo-cancel-btn">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = "hidden";
+  wireFeatureEditor(modal);
+
+  const closeModal = () => {
+    modal.remove();
+    document.body.style.overflow = "";
+  };
+  document.getElementById("fo-close-btn").onclick = closeModal;
+  document.getElementById("fo-cancel-btn").onclick = closeModal;
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+  async function persist(map) {
+    const payload = Object.keys(map).length ? map : deleteField();
+    await updateDoc(doc(db, "users", user.id), { featureOverrides: payload });
+  }
+
+  document.getElementById("fo-save-btn").onclick = async () => {
+    try {
+      const map = collectOverridesFromDom(modal, FEATURES);
+      await persist(map);
+      showToast(`Feature access saved for ${user.name || "user"}`, "success");
+      closeModal();
+      refreshUsers();
+    } catch {
+      showToast("Error saving feature access", "error");
+    }
+  };
+
+  document.getElementById("fo-clear-btn").onclick = async () => {
+    if (!confirm("Remove ALL feature overrides for this user (back to global settings)?")) return;
+    try {
+      await persist({});
+      showToast("Overrides cleared", "success");
+      closeModal();
+      refreshUsers();
+    } catch {
+      showToast("Error clearing overrides", "error");
+    }
+  };
+}
+
+// Bulk: set/clear ONE feature's override across every selected user.
+async function openBulkFeatureModal() {
+  document.getElementById("bulk-features-modal")?.remove();
+
+  const { FEATURES } = await import("/utils/features.js");
+  const modal = document.createElement("div");
+  modal.id = "bulk-features-modal";
+  modal.className = "brutal-modal-overlay";
+  modal.innerHTML = `
+    <div class="brutal-modal-card">
+      <div class="modal-header">
+        <h2>Feature Override — ${selectedUsers.size} user(s)</h2>
+        <button class="modal-close-btn" id="bfo-close-btn">${SVGS.close}</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Feature</label>
+            ${makeBrutalDropdownHTML({
+              id: "bfo-feature-drop",
+              options: FEATURES.map((f) => ({ value: f.id, label: f.label })),
+              selectedValue: FEATURES[0].id,
+            })}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Action</label>
+            ${makeBrutalDropdownHTML({
+              id: "bfo-action-drop",
+              options: [
+                { value: "grant", label: "Grant" },
+                { value: "block", label: "Block" },
+                { value: "clear", label: "Clear override (inherit)" },
+              ],
+              selectedValue: "grant",
+            })}
+          </div>
+        </div>
+        <p class="fo-hint">Applies to every selected user. Changes take effect within ~5 minutes.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="brutal-btn-flat brutal-btn-primary" id="bfo-apply-btn">Apply</button>
+        <button class="brutal-btn-flat" id="bfo-cancel-btn">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = "hidden";
+
+  const closeModal = () => {
+    modal.remove();
+    document.body.style.overflow = "";
+  };
+  document.getElementById("bfo-close-btn").onclick = closeModal;
+  document.getElementById("bfo-cancel-btn").onclick = closeModal;
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+  const picked = { feature: FEATURES[0].id, action: "grant" };
+  document.getElementById("bfo-feature-drop")?.addEventListener("change", (e) => { picked.feature = e.detail.value; });
+  document.getElementById("bfo-action-drop")?.addEventListener("change", (e) => { picked.action = e.detail.value; });
+
+  document.getElementById("bfo-apply-btn").onclick = async () => {
+    const label = FEATURES.find((f) => f.id === picked.feature)?.label || picked.feature;
+    if (!confirm(`${picked.action === "clear" ? "Clear the override for" : picked.action.toUpperCase()} "${label}" on ${selectedUsers.size} user(s)?`)) return;
+    try {
+      await Promise.all(
+        [...selectedUsers].map((id) => {
+          const u = allUsers.find((x) => x.id === id);
+          const map = { ...((u && u.featureOverrides) || {}) };
+          if (picked.action === "clear") delete map[picked.feature];
+          else map[picked.feature] = { access: picked.action, updatedAt: Date.now() };
+          const payload = Object.keys(map).length ? map : deleteField();
+          return updateDoc(doc(db, "users", id), { featureOverrides: payload });
+        }),
+      );
+      showToast(`Feature override applied to ${selectedUsers.size} user(s)`, "success");
+      selectedUsers.clear();
+      closeModal();
+      refreshUsers();
+    } catch {
+      showToast("Error applying bulk override", "error");
+    }
+  };
 }
 
 /* ============================================================
