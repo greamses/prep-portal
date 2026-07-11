@@ -13,12 +13,19 @@ import { finishRound } from './leaderboard.js';
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
+// Seeded cartoon avatars (DiceBear's open "adventurer" mascot set) — same
+// seed always draws the same face, so a bot's avatar stays consistent with
+// its real name and a real player's avatar stays consistent with their uid.
+const avatarUrl = (seed) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
+
+// Dark ink fill (not accent-primary) — the winner's note is already gold,
+// so a same-hue trophy would nearly vanish against it.
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-  <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--accent-primary)"/>
-  <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--accent-primary)" stroke-width="1.6" stroke-linecap="round"/>
-  <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--accent-primary)" stroke-width="1.6" stroke-linecap="round"/>
-  <rect x="10.5" y="12" width="3" height="4" fill="var(--accent-primary)"/>
-  <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--accent-primary)"/>
+  <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
+  <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="10.5" y="12" width="3" height="4" fill="var(--ink)"/>
+  <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
 </svg>`;
 
 const modeToggle = $('drill-mode-toggle');
@@ -115,26 +122,43 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
 }
 
 // Reveals from last place up to the winner, one row at a time, for a bit of
-// suspense — the winner's row lands last and carries a trophy.
+// suspense — each row is its own sticky note (same component as the setup
+// screen's selectors), and the winner's note is gold, upright and carries
+// a trophy instead of a rank number.
 function renderResults(ranked) {
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
   ranked.forEach((row, i) => {
     const isWinner = i === 0;
+    const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
-    li.className = `drill-lb-row${row.isSelf ? ' is-self' : ''}${isWinner ? ' is-winner' : ''}`;
+    li.className = [
+      'drill-lb-row', 'pp-sticky', 'pp-sticky--tape',
+      isWinner ? '' : stickyColor(i),
+      row.isSelf ? 'is-self' : '',
+      isWinner ? 'is-winner' : '',
+    ].filter(Boolean).join(' ');
     li.style.setProperty('--delay', `${(total - 1 - i) * 130}ms`);
+    li.style.setProperty('--pp-note-tilt', `${tilt}deg`);
+
+    const avatar = document.createElement('span');
+    avatar.className = 'drill-lb-avatar';
+    avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
+
     const rank = document.createElement('span');
     rank.className = 'drill-lb-rank';
     if (isWinner) rank.innerHTML = TROPHY_SVG;
     else rank.textContent = String(i + 1);
+
     const name = document.createElement('span');
     name.className = 'drill-lb-name';
     name.textContent = row.name;
+
     const scoreEl = document.createElement('span');
     scoreEl.className = 'drill-lb-score';
     scoreEl.textContent = String(row.score);
-    li.append(rank, name, scoreEl);
+
+    li.append(avatar, rank, name, scoreEl);
     leaderboardEl.appendChild(li);
   });
   resultsBd.classList.add('open');
@@ -198,7 +222,7 @@ async function runDrill() {
       myScore,
     });
   } catch (e) {
-    ranked = [{ name: 'You', score: myScore, isBot: false, isSelf: true }];
+    ranked = [{ name: 'You', score: myScore, isBot: false, isSelf: true, avatarSeed: auth.currentUser.uid }];
   }
 
   startBtn.disabled = false;

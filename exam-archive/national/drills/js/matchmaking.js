@@ -125,7 +125,17 @@ export async function matchmake({ mode, size, timeLimit, operation, tables }, { 
       if (!snap.metadata.fromCache) reportUsage(1, 0);
       if (!snap.exists()) return;
       const data = snap.data();
-      if (data.status === 'active') { finish(data); return; }
+      if (data.status === 'active') {
+        if (settled) return;
+        clearTimeout(hostTimer);
+        clearTimeout(abandonTimer);
+        // Flash the room as full (real players + bots) for a beat before
+        // handing off, so the lobby count visibly ticks up even when the
+        // remaining seats were filled by bots rather than real joiners.
+        if (onWaiting) onWaiting({ playerCount: data.size, size: data.size });
+        setTimeout(() => finish(data), 600);
+        return;
+      }
       if (onWaiting) onWaiting({ playerCount: data.playerCount, size: data.size });
     }, (err) => { if (!settled) { settled = true; reject(err); } });
 

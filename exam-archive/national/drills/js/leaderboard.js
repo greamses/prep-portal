@@ -41,14 +41,19 @@ export async function finishRound({ roomId, seed, timeLimit, botsNeeded, myScore
     score: d.data().score ?? 0,
     isBot: false,
     isSelf: d.id === uid,
+    avatarSeed: d.id, // stable per-account avatar, unlike name which can collide
   }));
 
-  const bots = Array.from({ length: botsNeeded }, (_, i) => ({
-    name: botName(seed, i),
-    score: simulateBotScore(seed, i, timeLimit),
-    isBot: true,
-    isSelf: false,
-  }));
+  const bots = Array.from({ length: botsNeeded }, (_, i) => {
+    const name = botName(seed, i);
+    return {
+      name,
+      score: simulateBotScore(seed, i, timeLimit),
+      isBot: true,
+      isSelf: false,
+      avatarSeed: name,
+    };
+  });
 
   return [...real, ...bots].sort((a, b) => b.score - a.score);
 }
