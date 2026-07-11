@@ -15,16 +15,30 @@ import { finishRound } from './leaderboard.js';
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
-// Seeded cartoon avatars (DiceBear's open "adventurer" mascot set) — same
-// seed always draws the same face, so a bot's avatar stays consistent with
-// its real name and a real player's avatar stays consistent with their pick.
-const avatarUrl = (seed) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
-
 // Curated seeds for the player's own avatar picker — any string works with
 // DiceBear, these are just a fun fixed set to choose between.
 const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
 const AVATAR_SEED_KEY = 'drillAvatarSeed';
 let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0];
+
+// A user-uploaded photo (resized + compressed to a small data URL, see
+// resizeAvatarFile()) — stored locally only, same as every other avatar
+// choice; avatar choice was never synced to other players in a room to
+// begin with (see leaderboard.js: other real players' rows always render
+// a uid-derived DiceBear face, not their actual pick).
+const CUSTOM_AVATAR_VALUE = 'custom';
+const CUSTOM_AVATAR_KEY = 'drillAvatarCustom';
+let customAvatarDataUrl = localStorage.getItem(CUSTOM_AVATAR_KEY) || null;
+
+// Seeded cartoon avatars (DiceBear's open "adventurer" mascot set) — same
+// seed always draws the same face, so a bot's avatar stays consistent with
+// its real name and a real player's avatar stays consistent with their
+// pick. The one exception is the "upload your own" choice, which resolves
+// to the locally-stored photo instead of a generated face.
+const avatarUrl = (seed) => {
+  if (seed === CUSTOM_AVATAR_VALUE && customAvatarDataUrl) return customAvatarDataUrl;
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
+};
 
 const NAME_KEY = 'drillGameName';
 
@@ -82,8 +96,15 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
   <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
 </svg>`;
 
+// Shown on the "upload your own" avatar tile until a photo is chosen.
+const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1-1.6A1.5 1.5 0 0 1 10.4 3.6h3.2a1.5 1.5 0 0 1 1.3.8l1 1.6h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linejoin="round"/>
+  <circle cx="12" cy="12.5" r="3.4" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/>
+</svg>`;
+
 const nameInput = $('drill-name-input');
 const avatarGrid = $('drill-avatar-grid');
+const avatarUploadInput = $('drill-avatar-upload-input');
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
 const categoryToggle = $('drill-category-toggle');
@@ -312,11 +333,46 @@ updateStartDisabled();
 updateStartLabel();
 
 // ── Avatar picker ────────────────────────────────────────────────────────
+// Downscales + crops to a centered square, then compresses to a small JPEG
+// data URL — keeps it comfortably inside localStorage limits (typically a
+// few KB) without needing any server-side upload/storage.
+function resizeAvatarFile(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const size = 160;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const crop = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - crop) / 2;
+      const sy = (img.naturalHeight - crop) / 2;
+      ctx.drawImage(img, sx, sy, crop, crop, 0, 0, size, size);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that image.')); };
+    img.src = objectUrl;
+  });
+}
+
 function renderAvatarGrid() {
   avatarGrid.innerHTML = '';
+
+  const uploadLabel = document.createElement('label');
+  uploadLabel.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice avatar-choice--upload ${stickyColor(0)}`;
+  uploadLabel.innerHTML = `
+    <input type="radio" name="drill-avatar" value="${CUSTOM_AVATAR_VALUE}" ${selectedAvatarSeed === CUSTOM_AVATAR_VALUE ? 'checked' : ''} />
+    ${customAvatarDataUrl ? `<img src="${customAvatarDataUrl}" alt="Your photo" loading="lazy" />` : UPLOAD_ICON_SVG}
+  `;
+  uploadLabel.addEventListener('click', () => avatarUploadInput.click());
+  avatarGrid.appendChild(uploadLabel);
+
   AVATAR_SEEDS.forEach((seed, i) => {
     const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice ${stickyColor(i)}`;
+    label.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice ${stickyColor(i + 1)}`;
     label.innerHTML = `<input type="radio" name="drill-avatar" value="${seed}" ${seed === selectedAvatarSeed ? 'checked' : ''} /><img src="${avatarUrl(seed)}" alt="${seed} avatar" loading="lazy" />`;
     avatarGrid.appendChild(label);
   });
@@ -328,6 +384,21 @@ avatarGrid.addEventListener('change', (e) => {
   if (!input) return;
   selectedAvatarSeed = input.value;
   localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
+});
+
+avatarUploadInput.addEventListener('change', async () => {
+  const file = avatarUploadInput.files && avatarUploadInput.files[0];
+  avatarUploadInput.value = ''; // allow re-picking the same file later
+  if (!file) return;
+  try {
+    customAvatarDataUrl = await resizeAvatarFile(file);
+    localStorage.setItem(CUSTOM_AVATAR_KEY, customAvatarDataUrl);
+    selectedAvatarSeed = CUSTOM_AVATAR_VALUE;
+    localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
+    renderAvatarGrid();
+  } catch (e) {
+    alert("Couldn't use that photo — please try a different image.");
+  }
 });
 
 // ── Lobby ────────────────────────────────────────────────────────────────
