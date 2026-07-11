@@ -19,6 +19,11 @@ body {
    guarantee the hidden attribute always wins regardless of component. */
 [hidden] { display: none !important; }
 
+/* Nav sits at z-index 9999, above every overlay on this page (they're all
+   z-index 50), so it stays visible on top of the leaderboard unless hidden
+   explicitly — toggled by main.js when the results overlay opens/closes. */
+body.drill-nav-hidden .site-nav { display: none; }
+
 .builder-paint {
   position: absolute;
   inset: 0 0 auto 0;
@@ -158,12 +163,12 @@ body {
 }
 .sticky-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 0.9rem 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 0.6rem 0.45rem;
 }
 .drill-avatar-grid {
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  max-width: 480px;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  max-width: 400px;
 }
 
 /* ── ONE STRIP — mode/size/time/operations/tables all flow together as a
@@ -178,12 +183,16 @@ body {
   justify-content: center;
 }
 .strip-group { display: contents; }
-.sticky-choice {
+/* Compound with .pp-sticky (see .drill-lb-row.pp-sticky above for why) —
+   loader.js's late-injected @import of components.css can otherwise beat
+   this page's own padding at an equal-specificity tie. */
+.pp-sticky.sticky-choice {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  font-size: 0.92rem;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.75rem 0.42rem;
   cursor: pointer;
   user-select: none;
 }
@@ -196,8 +205,8 @@ body {
     5px 8px 12px -4px rgba(20, 19, 15, 0.3);
 }
 .sticky-choice input {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   accent-color: #14130f;
   cursor: pointer;
 }
@@ -205,8 +214,8 @@ body {
 /* Avatar picker — same sticky-note selection pattern, but the picture does
    the talking so the radio input is present (for a11y/keyboard) yet
    visually hidden; the checked-glow ring is the only selection affordance. */
-.avatar-choice {
-  padding: 0.35rem;
+.pp-sticky.avatar-choice {
+  padding: 0.22rem;
   aspect-ratio: 1;
 }
 .avatar-choice input {
@@ -335,7 +344,8 @@ body {
   margin-bottom: 1.5rem;
 }
 
-/* Seats fill in (and gently pop) as real players join the room. */
+/* Seats are small sticky notes carrying an avatar — real joiners (then
+   bots, staggered in one at a time) replace the empty placeholders. */
 .drill-lobby-seats {
   display: flex;
   flex-wrap: wrap;
@@ -343,20 +353,49 @@ body {
   gap: 0.4rem;
   margin-bottom: 1rem;
 }
-.drill-seat {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--border-subtle);
+.pp-sticky.drill-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: drill-seat-pop 0.35s ease both;
 }
-.drill-seat.filled {
-  background: var(--accent-success);
-  animation: drill-seat-pop 0.35s ease;
+.drill-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+.drill-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.drill-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+.drill-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
 }
 @keyframes drill-seat-pop {
-  0% { transform: scale(0.4); opacity: 0.4; }
-  60% { transform: scale(1.25); }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
 }
 
 .drill-cancel-btn {
@@ -399,10 +438,10 @@ body {
 .drill-timer-note {
   position: absolute;
   z-index: 3;
-  top: -14px;
+  top: -12px;
   right: 18px;
-  font-size: 0.68rem;
-  padding: 0.3rem 0.6rem;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
   --pp-note-tilt: -3deg;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -410,10 +449,10 @@ body {
 .drill-score-note {
   position: absolute;
   z-index: 3;
-  top: -14px;
+  top: -12px;
   left: 18px;
-  font-size: 0.68rem;
-  padding: 0.3rem 0.6rem;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
   --pp-note-tilt: 3deg;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -437,9 +476,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.4rem;
+  min-height: 3.2rem;
   font-family: var(--font-mono);
-  font-size: 1.6rem;
+  font-size: 2.4rem;
   font-weight: 700;
   color: var(--accent-secondary);
 }
@@ -452,10 +491,10 @@ body {
 }
 .drill-cursor {
   display: inline-block;
-  width: 2px;
-  height: 1.4rem;
+  width: 3px;
+  height: 2.1rem;
   background: currentColor;
-  margin-left: 2px;
+  margin-left: 3px;
   vertical-align: -0.2em;
   animation: drill-blink 1s step-end infinite;
 }
@@ -477,12 +516,16 @@ body {
   color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
+/* Rendered inside the card face (not a standalone screen) so the card is
+   visible from the moment the round starts — countdown swaps for the
+   question the instant startAt passes. */
 .drill-countdown {
+  position: relative;
   font-family: var(--font-display);
   font-size: 4rem;
   font-weight: 900;
   color: var(--ink);
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 /* Room-entry roster — everyone in the room (you, other real players, bots
@@ -539,11 +582,11 @@ body {
 .drill-lb-row.pp-sticky {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.55rem;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  padding: 0.55rem 0.9rem 0.6rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
   opacity: 0;
   animation: drill-lb-in 0.4s ease both;
   animation-delay: var(--delay, 0ms);
@@ -564,8 +607,8 @@ body {
 
 .drill-lb-avatar {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
@@ -574,7 +617,7 @@ body {
 }
 .drill-lb-avatar img { width: 100%; height: 100%; display: block; }
 
-.drill-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.4rem; flex-shrink: 0; }
+.drill-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
 .drill-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
 .drill-lb-score { font-weight: 700; }
 
@@ -582,9 +625,9 @@ body {
 .drill-lb-row.is-winner {
   --pp-note-bg: #ffdd6b;
   box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
-  font-size: 0.92rem;
+  font-size: 0.8rem;
 }
-.drill-lb-row.is-winner .drill-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 56px; height: 56px; }
+.drill-lb-row.is-winner .drill-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
 
 .drill-again-btn {
   display: inline-flex;

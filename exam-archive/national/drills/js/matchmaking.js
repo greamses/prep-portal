@@ -92,14 +92,21 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOpera
         if (settled) return;
         clearTimeout(hostTimer);
         clearTimeout(abandonTimer);
-        // Flash the room as full (real players + bots) for a beat before
-        // handing off, so the lobby count visibly ticks up even when the
-        // remaining seats were filled by bots rather than real joiners.
-        if (onWaiting) onWaiting({ playerCount: data.size, size: data.size });
-        setTimeout(() => finish(data), 600);
+        // Bots don't land in the room all at once — give the UI a staggered
+        // window (scaled to how many seats they fill) to reveal them one at
+        // a time, like real people trickling in, before handing off.
+        const botsNeeded = data.botsNeeded || 0;
+        const revealMs = botsNeeded ? 350 + botsNeeded * 550 : 300;
+        if (onWaiting) {
+          onWaiting({
+            phase: 'activated', seed, botsNeeded, revealMs,
+            playerCount: Math.max(0, data.size - botsNeeded), size: data.size,
+          });
+        }
+        setTimeout(() => finish(data), revealMs);
         return;
       }
-      if (onWaiting) onWaiting({ playerCount: data.playerCount, size: data.size });
+      if (onWaiting) onWaiting({ phase: 'waiting', seed, playerCount: data.playerCount, size: data.size });
     }, (err) => { if (!settled) { settled = true; reject(err); } });
 
     if (isHost) {
@@ -190,10 +197,11 @@ export async function matchmake({ mode, size, timeLimit, operations, tables }, {
   });
 }
 
-// Creates a private 2-player room and returns its code immediately (before
+// Creates a private room (Versus is always size 2; Multiplayer's "Create
+// Room" path uses the chosen 5/10) and returns its code immediately (before
 // the round is ready) so the UI can display it for sharing. `roundReady`
 // resolves the same way matchmake() does, once the room goes active.
-export async function createCodeRoom({ timeLimit, operations, tables, displayName: name }, { onWaiting } = {}) {
+export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, operations, tables, displayName: name }, { onWaiting } = {}) {
   const user = auth.currentUser;
   const code = generateCode();
   const roomRef = doc(collection(db, 'drillRooms'));
@@ -203,7 +211,7 @@ export async function createCodeRoom({ timeLimit, operations, tables, displayNam
 
   await checkQuota('write');
   await setDoc(roomRef, {
-    mode: 'versus', size: 2, timeLimit, operations, tables, status: 'waiting',
+    mode, size, timeLimit, operations, tables, status: 'waiting',
     seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0, code,
     createdAt: serverTimestamp(),
   });
@@ -211,7 +219,7 @@ export async function createCodeRoom({ timeLimit, operations, tables, displayNam
   reportUsage(0, 2);
 
   const roundReady = watchRoomUntilActive({
-    roomId: roomRef.id, seed, roomSize: 2, roomTimeLimit: timeLimit,
+    roomId: roomRef.id, seed, roomSize: size, roomTimeLimit: timeLimit,
     roomOperations: operations, roomTables: tables,
     isHost: true, waitMs: CODE_WAIT_MS, onWaiting,
   });

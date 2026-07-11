@@ -33,7 +33,7 @@ export const BOT_NS = 1_000_000;
 
 export const ALL_TABLES = Array.from({ length: 12 }, (_, i) => i + 1);
 
-export const ALL_OPERATIONS = ['multiply', 'divide', 'square', 'sqrt'];
+export const ALL_OPERATIONS = ['multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot'];
 
 // Times tables 1–12 only. `tables` is the set of fact families in play — for
 // multiply/divide, one of the two operands is always drawn from it
@@ -52,6 +52,8 @@ export function questionAt(seed, index, { operations = ['multiply', 'divide'], t
 
   if (op === 'square') return { text: `${n}²`, answer: n * n };
   if (op === 'sqrt') return { text: `√${n * n}`, answer: n };
+  if (op === 'cube') return { text: `${n}³`, answer: n * n * n };
+  if (op === 'cuberoot') return { text: `∛${n * n * n}`, answer: n };
 
   const other = 1 + Math.floor(rng() * 12);
   if (op === 'divide') {

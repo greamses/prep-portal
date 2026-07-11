@@ -28,7 +28,11 @@ let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0
 
 const NAME_KEY = 'drillGameName';
 
-const OPERATION_LABELS = { multiply: '× Multiply', divide: '÷ Divide', square: 'x² Square', sqrt: '√x Root' };
+const OPERATION_LABELS = {
+  multiply: '× Multiply', divide: '÷ Divide',
+  square: 'x² Square', sqrt: '√x Root',
+  cube: 'x³ Cube', cuberoot: '∛x Cube Root',
+};
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
@@ -46,6 +50,9 @@ const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
 const operationsRow = $('drill-operations-row');
 const tablesGrid = $('drill-tables-grid');
+const mpField = $('drill-mp-field');
+const mpToggle = $('drill-mp-toggle');
+const mpCodeInput = $('drill-mp-code-input');
 const versusField = $('drill-versus-field');
 const versusToggle = $('drill-versus-toggle');
 const codeInput = $('drill-code-input');
@@ -82,6 +89,7 @@ function getMode() { return document.querySelector('input[name="drill-mode"]:che
 function getSize() { return parseInt(document.querySelector('input[name="drill-size"]:checked').value, 10); }
 function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
 function getVersusAction() { return document.querySelector('input[name="drill-versus-action"]:checked').value; }
+function getMpAction() { return document.querySelector('input[name="drill-mp-action"]:checked').value; }
 
 function updateStartDisabled() {
   startBtn.disabled = tables.size === 0 || operations.size === 0;
@@ -89,17 +97,27 @@ function updateStartDisabled() {
 
 function updateStartLabel() {
   const mode = getMode();
-  if (mode === 'multiplayer') { startLabel.textContent = 'Find a Room'; return; }
+  if (mode === 'multiplayer') {
+    const action = getMpAction();
+    startLabel.textContent = action === 'join' ? 'Join Room' : action === 'create' ? 'Create Room' : 'Find a Room';
+    return;
+  }
   startLabel.textContent = getVersusAction() === 'join' ? 'Join Room' : 'Create Room';
 }
 
 function onModeChange() {
   const mode = getMode();
   sizeField.hidden = mode === 'versus';
+  mpField.hidden = mode !== 'multiplayer';
   versusField.hidden = mode !== 'versus';
   updateStartLabel();
 }
 modeToggle.addEventListener('change', onModeChange);
+
+mpToggle.addEventListener('change', () => {
+  mpCodeInput.hidden = getMpAction() !== 'join';
+  updateStartLabel();
+});
 
 versusToggle.addEventListener('change', () => {
   codeInput.hidden = getVersusAction() !== 'join';
@@ -177,19 +195,62 @@ avatarGrid.addEventListener('change', (e) => {
 });
 
 // ── Lobby ────────────────────────────────────────────────────────────────
-// Seats fill in (and pop) as real players join — re-rendered on every
-// playerCount change from the room-doc listener.
+// Each seat is its own small sticky note carrying an avatar — filled seats
+// (you, then any other real joiners) pop in as playerCount changes; empty
+// seats stay blank placeholders until either a real player or a bot claims
+// them.
+let lobbyRevealTimers = [];
+function clearLobbyReveal() {
+  lobbyRevealTimers.forEach((t) => clearTimeout(t));
+  lobbyRevealTimers = [];
+}
+
+function seatSticker(i, avatarSeed, label) {
+  const el = document.createElement('span');
+  const empty = !avatarSeed;
+  el.className = `pp-sticky pp-sticky--tape drill-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
+  el.innerHTML = empty
+    ? '<span class="drill-lobby-seat-mark">?</span>'
+    : `<img src="${avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
+  return el;
+}
+
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    const seat = document.createElement('span');
-    seat.className = `drill-seat${i < playerCount ? ' filled' : ''}`;
-    lobbySeats.appendChild(seat);
+    if (i === 0) lobbySeats.appendChild(seatSticker(i, selectedAvatarSeed, 'You'));
+    else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
+    else lobbySeats.appendChild(seatSticker(i, null));
   }
+}
+
+// Bots don't land all at once — they claim the remaining empty seats one at
+// a time over `revealMs`, at randomized intervals, so the lobby reads like
+// people actually trickling in rather than an instant bulk-fill.
+function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
+  clearLobbyReveal();
+  if (!botsNeeded) return;
+  const realFilled = size - botsNeeded;
+  const weights = Array.from({ length: botsNeeded }, () => 0.5 + Math.random());
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+  const budget = Math.max(300, revealMs - 150);
+  let elapsed = 0;
+  weights.forEach((w, i) => {
+    elapsed += (w / weightSum) * budget;
+    const seatIndex = realFilled + i;
+    const timer = setTimeout(() => {
+      const seatEl = lobbySeats.children[seatIndex];
+      if (!seatEl) return;
+      const name = botName(seed, i);
+      seatEl.replaceWith(seatSticker(seatIndex, name, name));
+    }, elapsed);
+    lobbyRevealTimers.push(timer);
+  });
 }
 
 function showLobby(size) {
   cancelled = false;
+  clearLobbyReveal();
   lobbyCode.hidden = true;
   lobbyStatus.textContent = 'Waiting for other players…';
   lobbyCount.textContent = `1 / ${size}`;
@@ -198,6 +259,7 @@ function showLobby(size) {
   lobbyBd.setAttribute('aria-hidden', 'false');
 }
 function hideLobby() {
+  clearLobbyReveal();
   lobbyBd.classList.remove('open');
   lobbyBd.setAttribute('aria-hidden', 'true');
 }
@@ -269,6 +331,7 @@ function renderResults(ranked) {
   });
   resultsBd.classList.add('open');
   resultsBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('drill-nav-hidden');
 
   // The winner's note is revealed last (delay = (total-1)*130ms) — fire the
   // confetti right as it lands, only when the signed-in player won.
@@ -280,6 +343,7 @@ function renderResults(ranked) {
 function hideResults() {
   resultsBd.classList.remove('open');
   resultsBd.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('drill-nav-hidden');
 }
 
 // A short vanilla confetti burst — no library, just falling/rotating divs
@@ -336,6 +400,23 @@ async function playRoundAndShowResults(room, myName) {
   renderResults(ranked);
 }
 
+// Shared onWaiting handler for every matchmaking path: updates the count +
+// seat stickers while real players trickle in, then hands off to the
+// staggered bot reveal the instant the room activates.
+function makeOnWaiting(waitingStatusText) {
+  return (state) => {
+    if (state.phase === 'activated') {
+      lobbyStatus.textContent = 'Room ready!';
+      lobbyCount.textContent = `${state.size} / ${state.size}`;
+      revealBotsStaggered(state.size, state.botsNeeded, state.seed, state.revealMs);
+      return;
+    }
+    if (waitingStatusText) lobbyStatus.textContent = waitingStatusText;
+    lobbyCount.textContent = `${state.playerCount} / ${state.size}`;
+    renderLobbySeats(state.playerCount, state.size);
+  };
+}
+
 async function runMultiplayer({ timeLimit, operationsList, tablesList, myName }) {
   const size = getSize();
   showLobby(size);
@@ -343,17 +424,70 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, myName })
   try {
     room = await matchmake(
       { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
-      {
-        onWaiting: ({ playerCount, size: roomSize }) => {
-          lobbyCount.textContent = `${playerCount} / ${roomSize}`;
-          renderLobbySeats(playerCount, roomSize);
-        },
-      },
+      { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
     hideLobby();
     startBtn.disabled = false;
     alert(e && e.quotaBlocked ? e.message : "Couldn't start a room — please try again.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, myName);
+}
+
+async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, myName }) {
+  const size = getSize();
+  showLobby(size);
+  lobbyStatus.textContent = 'Creating your room…';
+  let created;
+  try {
+    created = await createCodeRoom(
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      { onWaiting: makeOnWaiting('Waiting for other players…') },
+    );
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert(e && e.quotaBlocked ? e.message : "Couldn't create a room — please try again.");
+    return;
+  }
+  showLobbyCode(created.code);
+
+  let room;
+  try {
+    room = await created.roundReady;
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert('Something went wrong waiting for other players — please try again.');
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, myName);
+}
+
+async function runMultiplayerJoin({ timeLimit, myName }) {
+  const code = (mpCodeInput.value || '').trim().toUpperCase();
+  if (code.length !== 6) {
+    alert('Enter the 6-character room code your friend shared.');
+    startBtn.disabled = false;
+    return;
+  }
+  showLobby(getSize()); // best guess until the joined room's real size arrives below
+  lobbyStatus.textContent = 'Joining room…';
+  let room;
+  try {
+    room = await joinRoomByCode(code, {
+      displayName: myName,
+      onWaiting: makeOnWaiting('Waiting for the round to start…'),
+    });
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert((e && e.message) || "Couldn't join that room.");
     return;
   }
   if (cancelled) return;
@@ -367,14 +501,8 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, myName }
   let created;
   try {
     created = await createCodeRoom(
-      { timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
-      {
-        onWaiting: ({ playerCount, size: roomSize }) => {
-          lobbyStatus.textContent = 'Waiting for your opponent…';
-          lobbyCount.textContent = `${playerCount} / ${roomSize}`;
-          renderLobbySeats(playerCount, roomSize);
-        },
-      },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
     hideLobby();
@@ -411,11 +539,7 @@ async function runVersusJoin({ timeLimit, myName }) {
   try {
     room = await joinRoomByCode(code, {
       displayName: myName,
-      onWaiting: ({ playerCount, size: roomSize }) => {
-        lobbyStatus.textContent = 'Waiting for the round to start…';
-        lobbyCount.textContent = `${playerCount} / ${roomSize}`;
-        renderLobbySeats(playerCount, roomSize);
-      },
+      onWaiting: makeOnWaiting('Waiting for the round to start…'),
     });
   } catch (e) {
     hideLobby();
@@ -443,7 +567,11 @@ async function runDrill() {
     else await runVersusCreate({ timeLimit, operationsList, tablesList, myName });
     return;
   }
-  await runMultiplayer({ timeLimit, operationsList, tablesList, myName });
+
+  const mpAction = getMpAction();
+  if (mpAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
+  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, myName });
+  else await runMultiplayer({ timeLimit, operationsList, tablesList, myName });
 }
 
 startBtn.addEventListener('click', runDrill);

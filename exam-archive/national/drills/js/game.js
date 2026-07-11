@@ -15,6 +15,7 @@ const countdownEl = $('drill-countdown');
 const rosterEl = $('drill-roster');
 const timeRemainingEl = $('drill-time-remaining');
 const questionText = $('drill-question-text');
+const answerStage = $('drill-answer-stage');
 const typedEl = $('drill-typed');
 const inputEl = $('drill-answer-input');
 const scoreNote = $('drill-score-note');
@@ -114,8 +115,10 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
 
     scoreNote.textContent = '0 correct';
     timerNote.textContent = `${timeLimit}s round`;
-    cardEl.hidden = true;
+    cardEl.hidden = false;
     countdownEl.hidden = false;
+    questionText.hidden = true;
+    answerStage.hidden = true;
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
@@ -128,7 +131,8 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
       if (msLeft <= 0) {
         countdownEl.hidden = true;
         rosterEl.hidden = true;
-        cardEl.hidden = false;
+        questionText.hidden = false;
+        answerStage.hidden = false;
         endAt = startAt + timeLimit * 1000;
         renderQuestion();
         focusInput();
