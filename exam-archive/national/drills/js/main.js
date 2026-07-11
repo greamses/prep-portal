@@ -37,7 +37,7 @@ const leaderboardEl = $('drill-leaderboard');
 const againBtn = $('drill-again-btn');
 
 let cancelled = false;
-const tables = new Set(ALL_TABLES); // all checked by default
+const tables = new Set(); // nothing checked by default — user ticks which tables to drill
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -63,6 +63,7 @@ function renderTablesGrid() {
   });
 }
 renderTablesGrid();
+startBtn.disabled = tables.size === 0; // nothing picked yet
 
 tablesGrid.addEventListener('change', (e) => {
   const cb = e.target.closest('input[type="checkbox"]');
@@ -70,8 +71,6 @@ tablesGrid.addEventListener('change', (e) => {
   const n = parseInt(cb.value, 10);
   if (cb.checked) tables.add(n);
   else tables.delete(n);
-  // Never allow an empty set — the round needs at least one fact family.
-  if (tables.size === 0) { tables.add(n); cb.checked = true; }
   startBtn.disabled = tables.size === 0;
 });
 
