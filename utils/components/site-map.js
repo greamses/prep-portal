@@ -115,6 +115,14 @@ export const SITE_PAGES = [
     blurb: "Timed multiplayer multiplication & division drills — race friends or bots to the most correct answers.",
     keywords: ["drills", "times tables", "multiplication drill", "division drill", "multiplayer math", "versus", "1v1", "speed math", "timed practice"],
   },
+  {
+    id: "puzzles",
+    title: "Puzzles — Sudoku",
+    href: "/exam-archive/national/puzzles/index.html",
+    category: "exams",
+    blurb: "Timed multiplayer Sudoku — race friends or bots to correctly fill the most cells before time runs out.",
+    keywords: ["puzzles", "sudoku", "logic puzzle", "multiplayer sudoku", "versus", "1v1", "brain teaser", "timed puzzle"],
+  },
 
   // ── Math & science activities ──────────────────────────────────────
   {

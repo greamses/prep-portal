@@ -1,0 +1,772 @@
+/* ═══════════════════════════════════════════════════════
+   PUZZLES — timed multiplayer puzzle racing (Sudoku for now)
+   Paper/soft-UI theme shared with the rest of the site (tokens from
+   theme.css). Structure mirrors exam-archive/national/drills' style.css
+   almost exactly (setup receipt, lobby stickers, awaiting/results
+   overlays, confetti) — the card + typed-answer stage is swapped for an
+   interactive grid + on-screen digit pad, the one part that's genuinely
+   puzzle-specific.
+═══════════════════════════════════════════════════════ */
+
+body {
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
+}
+
+/* Several components on this page (.puzzle-field, .puzzle-roster, ...) set
+   their own author `display` value, which otherwise beats the browser's
+   default `[hidden] { display: none }` UA rule at equal specificity —
+   guarantee the hidden attribute always wins regardless of component. */
+[hidden] { display: none !important; }
+
+/* Nav sits at z-index 9999, above every overlay on this page (they're all
+   z-index 50), so it stays visible on top of the leaderboard unless hidden
+   explicitly — toggled by main.js when the results overlay opens/closes. */
+body.puzzle-nav-hidden .site-nav { display: none; }
+
+.builder-paint {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.builder-header {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem;
+  padding: 0 1.25rem;
+  text-align: center;
+}
+.builder-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 1.25rem;
+}
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 45%, transparent);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+}
+.hero-stat strong { color: var(--ink); }
+.hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(1.5deg); }
+
+/* ── EXAM BUILDER ↔ DRILLS ↔ PUZZLES cross-link ─────────
+   Real links between separate pages, not a client-side toggle — same
+   treatment as flashcards' .cards-tabs/.cards-tab. */
+.builder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+.builder-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
+/* ── SETUP ────────────────────────────────────────────── */
+.puzzle-section-hdr {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+.setup-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+  margin-bottom: 0.4rem;
+}
+.puzzle-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
+.puzzle-section-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+}
+
+.puzzle-setup {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem);
+}
+/* ── SETTINGS RECEIPT — every selector lives on a torn paper "receipt"
+   (.pp-receipt/.pp-receipt__paper), same component as Drills. */
+.puzzle-receipt { margin: 0 auto; }
+.puzzle-receipt-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.7rem;
+  padding: 1.8rem 1.6rem 2rem;
+}
+.puzzle-receipt-title {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.9rem;
+  margin: 0;
+}
+
+.puzzle-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
+.puzzle-field > span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Every section after the first gets a torn-paper tear line above it —
+   same conic-gradient "teeth" mask as .pp-receipt__paper's own top/bottom
+   edge, just a single zigzag edge on a thin strip instead of a full lens,
+   so each section on the setup reads as its own torn-off slip. */
+.puzzle-field:not(:first-of-type) {
+  margin-top: 0.15rem;
+  padding-top: 1.3rem;
+}
+.puzzle-field:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1.6rem;
+  right: -1.6rem;
+  height: 11px;
+  --tooth: 11px;
+  background: var(--border-subtle);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+}
+
+/* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
+   real radio/checkbox, same recipe as Drills / the Facts tab's
+   fact-tiles. Native input stays visible+accessible; a glow highlights
+   the checked note. */
+.sticky-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.7rem;
+}
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 0.6rem 0.45rem;
+}
+.puzzle-avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  max-width: 400px;
+}
+
+/* ── OPTIONS STRIP — each selector group (mode, size, grid size,
+   difficulty, time) is its own labeled row, stacked with a clear gap. ── */
+.puzzle-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.strip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+.strip-group::before {
+  content: attr(data-label);
+  flex: 0 0 100%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+/* Compound with .pp-sticky — loader.js's late-injected @import of
+   components.css can otherwise beat this page's own padding at an
+   equal-specificity tie (see puzzle-lb-row.pp-sticky below for the same
+   fix applied to leaderboard rows). */
+.pp-sticky.sticky-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.75rem 0.42rem;
+  cursor: pointer;
+  user-select: none;
+}
+.sticky-choice:hover { transform: rotate(0deg) scale(1.05); }
+.sticky-choice:has(input:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.sticky-choice input {
+  width: 13px;
+  height: 13px;
+  accent-color: #14130f;
+  cursor: pointer;
+}
+
+/* Avatar picker — same sticky-note selection pattern, but the picture does
+   the talking so the radio input is present (for a11y/keyboard) yet
+   visually hidden; the checked-glow ring is the only selection affordance. */
+.pp-sticky.avatar-choice {
+  padding: 0.22rem;
+  aspect-ratio: 1;
+}
+.avatar-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* "Upload your own" tile — dashed placeholder until a photo is picked,
+   after which it looks just like any other avatar tile. */
+.avatar-choice--upload {
+  cursor: pointer;
+}
+.avatar-choice--upload:not(:has(img)) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--border-subtle);
+}
+.avatar-choice--upload svg { pointer-events: none; }
+
+.puzzle-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.puzzle-start-btn:hover { transform: translateY(-1px); }
+.puzzle-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
+.puzzle-name-input,
+.puzzle-code-input {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  max-width: 320px;
+}
+.puzzle-code-input {
+  margin-top: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+}
+.puzzle-name-input:focus,
+.puzzle-code-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* ── LOBBY CODE DISPLAY — shown only when hosting a private 1v1 room ──── */
+.puzzle-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+.puzzle-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.puzzle-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+.puzzle-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.puzzle-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+/* ── LOBBY / PLAY / RESULTS OVERLAY ─────────────────────── */
+/* `overflow-y: auto` + `margin: auto` on the child (not `align-items:
+   center` on this container) — a tall leaderboard (10 players) needs to be
+   scrollable to reach every row; `align-items: center` alone clips content
+   taller than the viewport with no way to scroll up to the hidden top. */
+.review-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+
+.puzzle-lobby-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+.puzzle-lobby-count {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+/* Seats are small sticky notes carrying an avatar — real joiners (then
+   bots, staggered in one at a time) replace the empty placeholders. */
+.puzzle-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.pp-sticky.puzzle-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: puzzle-seat-pop 0.35s ease both;
+}
+.puzzle-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+.puzzle-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.puzzle-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+.puzzle-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+@keyframes puzzle-seat-pop {
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
+}
+
+.puzzle-cancel-btn {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+/* ── PUZZLE GRID — same torn-receipt frame as Drills' card, sized to fit a
+   9x9 grid comfortably on a phone. ─────────────────────────────────── */
+.puzzle-grid-wrap {
+  position: relative;
+  width: min(360px, 100%);
+  margin: 0 auto 1rem;
+}
+.puzzle-grid-face.pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem 1rem;
+}
+.puzzle-timer-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  right: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: -3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.puzzle-score-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  left: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: 3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* Rendered inside the grid face (not a standalone screen) so the frame is
+   visible from the moment the round starts — countdown swaps for the
+   grid the instant startAt passes, same "on the card" pattern as Drills. */
+.puzzle-countdown {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+
+.sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-size, 9), 1fr);
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--border-subtle);
+  gap: 1px;
+}
+.sudoku-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(0.85rem, 3.6vw, 1.3rem);
+  color: var(--ink);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.sudoku-cell.is-given {
+  background: var(--surface-secondary, var(--app-bg));
+  color: var(--text-secondary);
+  cursor: default;
+}
+.sudoku-cell.is-editable.is-selected {
+  background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
+  box-shadow: inset 0 0 0 2px var(--accent-secondary);
+}
+.sudoku-cell.is-correct { color: var(--accent-success); }
+.sudoku-cell.box-edge-right { border-right: 2px solid var(--ink); }
+.sudoku-cell.box-edge-bottom { border-bottom: 2px solid var(--ink); }
+
+.sudoku-cell.correct-flash {
+  animation: puzzle-cell-pulse 0.4s ease;
+}
+@keyframes puzzle-cell-pulse {
+  0% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent-success) 65%, transparent); }
+  70% { box-shadow: inset 0 0 0 6px transparent; }
+  100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+
+/* ── DIGIT PAD — the primary input on mobile (no keyboard); physical
+   number keys work too (see js/game.js's keydown handler). ──────────── */
+.puzzle-digit-pad {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.puzzle-digit-btn {
+  min-width: 2.4rem;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.puzzle-digit-btn:hover { transform: translateY(-1px); }
+.puzzle-digit-btn--clear {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.puzzle-time-remaining {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+/* Room-entry roster — everyone in the room (you, other real players, bots
+   with real names) pops in one at a time during the "get ready" beat. */
+.puzzle-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.puzzle-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: puzzle-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+.puzzle-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+@keyframes puzzle-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── RESULTS — the leaderboard lives on the same receipt as the settings
+   card; each row is its own colour-rotated .pp-sticky note (tape + tilt),
+   so the "paper" motif carries all the way through to the final screen. */
+.puzzle-results-receipt { margin: 0 auto 1.25rem; }
+.puzzle-results-paper { padding: 1.6rem 1.4rem 1.8rem; }
+
+.puzzle-leaderboard {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+/* Compound with .pp-sticky (not just .puzzle-lb-row alone) so this
+   reliably outranks the shared .pp-sticky base rule regardless of
+   stylesheet load order — loader.js injects its own <style> with an
+   `@import components.css`, which can otherwise land later in the
+   cascade than this page's own stylesheet and win an equal-specificity
+   tie. */
+.puzzle-lb-row.pp-sticky {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
+  opacity: 0;
+  animation: puzzle-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes puzzle-lb-in {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--pp-note-tilt, 0deg)) scale(1); }
+}
+/* A separate keyframe (not just an overridden transform) because the base
+   entrance animation's held end-state otherwise wins the cascade over any
+   plain `transform` on .is-winner, even after the animation finishes. */
+@keyframes puzzle-lb-in-winner {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.08); }
+}
+.puzzle-lb-row.is-winner { animation-name: puzzle-lb-in-winner; }
+.puzzle-lb-row.is-self { box-shadow: 0 0 0 2px var(--accent-secondary), 0 1px 1px rgba(20, 19, 15, 0.1); }
+
+.puzzle-lb-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 2px rgba(20, 19, 15, 0.15);
+}
+.puzzle-lb-avatar img { width: 100%; height: 100%; display: block; }
+
+.puzzle-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
+.puzzle-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+.puzzle-lb-score { font-weight: 700; }
+
+/* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
+.puzzle-lb-row.is-winner {
+  --pp-note-bg: #ffdd6b;
+  box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  font-size: 0.8rem;
+}
+.puzzle-lb-row.is-winner .puzzle-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
+
+.puzzle-again-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1.4rem;
+  cursor: pointer;
+}
+
+/* ── AWAITING RESULTS — bridges the gap between the round ending and the
+   leaderboard read landing (grace delay + one getDocs) so the bare setup
+   page never shows through in between. ── */
+.puzzle-awaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.puzzle-awaiting-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.puzzle-awaiting-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: puzzle-awaiting-bounce 1s ease-in-out infinite;
+}
+.puzzle-awaiting-dots span:nth-child(2) { background: var(--accent-secondary); animation-delay: 0.15s; }
+.puzzle-awaiting-dots span:nth-child(3) { background: var(--accent-success); animation-delay: 0.3s; }
+@keyframes puzzle-awaiting-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-10px); opacity: 1; }
+}
+.puzzle-awaiting-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── CONFETTI — fired once when the signed-in player wins their round. ── */
+.puzzle-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+.puzzle-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: puzzle-confetti-fall linear forwards;
+}
+@keyframes puzzle-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
+}
