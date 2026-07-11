@@ -33,21 +33,30 @@ export const BOT_NS = 1_000_000;
 
 export const ALL_TABLES = Array.from({ length: 12 }, (_, i) => i + 1);
 
-// Times tables 1–12 only. `tables` is the set of fact families in play (one
-// of the two operands is always drawn from it, mirroring the flashcards
-// Facts picker); the other operand is free, 1–12. `operation` is
-// 'multiply' | 'divide' | 'mixed' (mixed coin-flips per question). Division
-// always divides evenly (built from a product, then presented as
-// dividend ÷ divisor) — never a non-integer result.
-export function questionAt(seed, index, { operation = 'mixed', tables = ALL_TABLES } = {}) {
+export const ALL_OPERATIONS = ['multiply', 'divide', 'square', 'sqrt'];
+
+// Times tables 1–12 only. `tables` is the set of fact families in play — for
+// multiply/divide, one of the two operands is always drawn from it
+// (mirroring the flashcards Facts picker), the other operand is free, 1–12;
+// for square/sqrt, `tables` supplies the number being squared / the root
+// being taken. `operations` is a non-empty subset of ALL_OPERATIONS — one is
+// drawn at random per question. Division always divides evenly (built from
+// a product, then presented as dividend ÷ divisor) — never a non-integer
+// result, and square root is always a perfect square for the same reason.
+export function questionAt(seed, index, { operations = ['multiply', 'divide'], tables = ALL_TABLES } = {}) {
   const rng = mulberry32(hashSeed(seed, QUESTION_NS + index));
+  const ops = operations.length ? operations : ['multiply', 'divide'];
+  const op = ops[Math.floor(rng() * ops.length)];
   const pool = tables.length ? tables : ALL_TABLES;
-  const table = pool[Math.floor(rng() * pool.length)];
+  const n = pool[Math.floor(rng() * pool.length)];
+
+  if (op === 'square') return { text: `${n}²`, answer: n * n };
+  if (op === 'sqrt') return { text: `√${n * n}`, answer: n };
+
   const other = 1 + Math.floor(rng() * 12);
-  const isDivide = operation === 'divide' ? true : operation === 'multiply' ? false : rng() < 0.5;
-  if (isDivide) {
-    const dividend = table * other;
-    return { text: `${dividend} ÷ ${table}`, answer: other };
+  if (op === 'divide') {
+    const dividend = n * other;
+    return { text: `${dividend} ÷ ${n}`, answer: other };
   }
-  return { text: `${table} × ${other}`, answer: table * other };
+  return { text: `${n} × ${other}`, answer: n * other };
 }

@@ -1,12 +1,14 @@
 /* ═══════════════════════════════════════════════════════
    DRILLS — page orchestrator
    Wires the setup form to matchmaking.js -> game.js -> leaderboard.js and
-   switches between the lobby/play/results overlays.
+   switches between the lobby/play/results overlays. Multiplayer uses
+   anonymous pool matching; Versus is always a private 1v1 via a shared
+   room code (create-and-share, or join-with-code).
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { ALL_TABLES } from './rng.js';
+import { ALL_TABLES, ALL_OPERATIONS } from './rng.js';
 import { botName } from './bots.js';
-import { matchmake } from './matchmaking.js';
+import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
 
@@ -15,7 +17,7 @@ const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
 // Seeded cartoon avatars (DiceBear's open "adventurer" mascot set) — same
 // seed always draws the same face, so a bot's avatar stays consistent with
-// its real name and a real player's avatar stays consistent with their uid.
+// its real name and a real player's avatar stays consistent with their pick.
 const avatarUrl = (seed) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
 
 // Curated seeds for the player's own avatar picker — any string works with
@@ -23,6 +25,10 @@ const avatarUrl = (seed) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${
 const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
 const AVATAR_SEED_KEY = 'drillAvatarSeed';
 let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0];
+
+const NAME_KEY = 'drillGameName';
+
+const OPERATION_LABELS = { multiply: '× Multiply', divide: '÷ Divide', square: 'x² Square', sqrt: '√x Root' };
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
@@ -34,14 +40,23 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
   <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
 </svg>`;
 
+const nameInput = $('drill-name-input');
 const avatarGrid = $('drill-avatar-grid');
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
+const operationsRow = $('drill-operations-row');
 const tablesGrid = $('drill-tables-grid');
+const versusField = $('drill-versus-field');
+const versusToggle = $('drill-versus-toggle');
+const codeInput = $('drill-code-input');
 const startBtn = $('drill-start-btn');
+const startLabel = $('drill-start-label');
 
 const lobbyBd = $('drill-lobby-bd');
 const lobbyStatus = $('drill-lobby-status');
+const lobbyCode = $('drill-lobby-code');
+const lobbyCodeText = $('drill-lobby-code-text');
+const lobbyCodeCopy = $('drill-lobby-code-copy');
 const lobbySeats = $('drill-lobby-seats');
 const lobbyCount = $('drill-lobby-count');
 const lobbyCancel = $('drill-lobby-cancel');
@@ -52,6 +67,7 @@ const againBtn = $('drill-again-btn');
 
 let cancelled = false;
 const tables = new Set(); // nothing checked by default — user ticks which tables to drill
+const operations = new Set(['multiply', 'divide']); // sensible default; square/sqrt are opt-in
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -65,8 +81,39 @@ function getCurrentUser() {
 function getMode() { return document.querySelector('input[name="drill-mode"]:checked').value; }
 function getSize() { return parseInt(document.querySelector('input[name="drill-size"]:checked').value, 10); }
 function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
-function getOperation() { return document.querySelector('input[name="drill-operation"]:checked').value; }
+function getVersusAction() { return document.querySelector('input[name="drill-versus-action"]:checked').value; }
 
+function updateStartDisabled() {
+  startBtn.disabled = tables.size === 0 || operations.size === 0;
+}
+
+function updateStartLabel() {
+  const mode = getMode();
+  if (mode === 'multiplayer') { startLabel.textContent = 'Find a Room'; return; }
+  startLabel.textContent = getVersusAction() === 'join' ? 'Join Room' : 'Create Room';
+}
+
+function onModeChange() {
+  const mode = getMode();
+  sizeField.hidden = mode === 'versus';
+  versusField.hidden = mode !== 'versus';
+  updateStartLabel();
+}
+modeToggle.addEventListener('change', onModeChange);
+
+versusToggle.addEventListener('change', () => {
+  codeInput.hidden = getVersusAction() !== 'join';
+  updateStartLabel();
+});
+
+// ── Game name ──────────────────────────────────────────────────────────
+nameInput.value = localStorage.getItem(NAME_KEY) || '';
+nameInput.addEventListener('input', () => localStorage.setItem(NAME_KEY, nameInput.value));
+getCurrentUser().then((user) => {
+  if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
+});
+
+// ── Tables (which times tables / square-root bases are in play) ────────
 function renderTablesGrid() {
   tablesGrid.innerHTML = '';
   ALL_TABLES.forEach((n, i) => {
@@ -77,7 +124,6 @@ function renderTablesGrid() {
   });
 }
 renderTablesGrid();
-startBtn.disabled = tables.size === 0; // nothing picked yet
 
 tablesGrid.addEventListener('change', (e) => {
   const cb = e.target.closest('input[type="checkbox"]');
@@ -85,13 +131,33 @@ tablesGrid.addEventListener('change', (e) => {
   const n = parseInt(cb.value, 10);
   if (cb.checked) tables.add(n);
   else tables.delete(n);
-  startBtn.disabled = tables.size === 0;
+  updateStartDisabled();
 });
 
-modeToggle.addEventListener('change', () => {
-  sizeField.hidden = getMode() === 'versus';
+// ── Operations (×, ÷, x², √x) ────────────────────────────────────────────
+function renderOperationsGrid() {
+  operationsRow.innerHTML = '';
+  ALL_OPERATIONS.forEach((op, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 6)}`;
+    label.innerHTML = `<input type="checkbox" value="${op}" ${operations.has(op) ? 'checked' : ''} /><span>${OPERATION_LABELS[op]}</span>`;
+    operationsRow.appendChild(label);
+  });
+}
+renderOperationsGrid();
+
+operationsRow.addEventListener('change', (e) => {
+  const cb = e.target.closest('input[type="checkbox"]');
+  if (!cb) return;
+  if (cb.checked) operations.add(cb.value);
+  else operations.delete(cb.value);
+  updateStartDisabled();
 });
 
+updateStartDisabled();
+updateStartLabel();
+
+// ── Avatar picker ────────────────────────────────────────────────────────
 function renderAvatarGrid() {
   avatarGrid.innerHTML = '';
   AVATAR_SEEDS.forEach((seed, i) => {
@@ -110,6 +176,7 @@ avatarGrid.addEventListener('change', (e) => {
   localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
 });
 
+// ── Lobby ────────────────────────────────────────────────────────────────
 // Seats fill in (and pop) as real players join — re-rendered on every
 // playerCount change from the room-doc listener.
 function renderLobbySeats(playerCount, size) {
@@ -123,6 +190,7 @@ function renderLobbySeats(playerCount, size) {
 
 function showLobby(size) {
   cancelled = false;
+  lobbyCode.hidden = true;
   lobbyStatus.textContent = 'Waiting for other players…';
   lobbyCount.textContent = `1 / ${size}`;
   renderLobbySeats(1, size);
@@ -133,6 +201,18 @@ function hideLobby() {
   lobbyBd.classList.remove('open');
   lobbyBd.setAttribute('aria-hidden', 'true');
 }
+function showLobbyCode(code) {
+  lobbyCode.hidden = false;
+  lobbyCodeText.textContent = code;
+}
+lobbyCodeCopy.addEventListener('click', () => {
+  const code = lobbyCodeText.textContent || '';
+  if (!code || !navigator.clipboard) return;
+  navigator.clipboard.writeText(code).then(() => {
+    lobbyCodeCopy.textContent = 'Copied!';
+    setTimeout(() => { lobbyCodeCopy.textContent = 'Copy'; }, 1500);
+  }).catch(() => {}); // clipboard permission can be denied by the browser — the code is still visible to copy by hand
+});
 
 // Builds the room-entry roster shown during the "get ready" beat: you,
 // other real players (names aren't known until the round-end read, so they
@@ -146,6 +226,7 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
   return roster;
 }
 
+// ── Results ──────────────────────────────────────────────────────────────
 // Reveals from last place up to the winner, one row at a time, for a bit of
 // suspense — each row is its own sticky note (same component as the setup
 // screen's selectors), and the winner's note is gold, upright and carries
@@ -222,45 +303,14 @@ function launchConfetti() {
   setTimeout(() => container.remove(), 3800);
 }
 
-async function runDrill() {
-  startBtn.disabled = true;
-  await getCurrentUser();
-
-  const mode = getMode();
-  const size = mode === 'versus' ? 2 : getSize();
-  const timeLimit = getTimeLimit();
-  const operation = getOperation();
-  const tablesList = [...tables];
-
-  showLobby(size);
-
-  let room;
-  try {
-    room = await matchmake(
-      { mode, size, timeLimit, operation, tables: tablesList },
-      {
-        onWaiting: ({ playerCount, size: roomSize }) => {
-          lobbyCount.textContent = `${playerCount} / ${roomSize}`;
-          renderLobbySeats(playerCount, roomSize);
-        },
-      },
-    );
-  } catch (e) {
-    hideLobby();
-    startBtn.disabled = false;
-    alert(e && e.quotaBlocked ? e.message : "Couldn't start a room — please try again.");
-    return;
-  }
-
-  if (cancelled) return;
-  hideLobby();
-
-  const roster = buildRoster(room, auth.currentUser.displayName || 'You');
+// ── Round orchestration (shared by all three matchmaking paths) ─────────
+async function playRoundAndShowResults(room, myName) {
+  const roster = buildRoster(room, myName);
   const myScore = await startRound({
     seed: room.seed,
     timeLimit: room.timeLimit,
     startAt: room.startAt,
-    operation: room.operation,
+    operations: room.operations,
     tables: room.tables,
     roster,
   });
@@ -275,7 +325,7 @@ async function runDrill() {
       myScore,
     });
   } catch (e) {
-    ranked = [{ name: 'You', score: myScore, isBot: false, isSelf: true, avatarSeed: selectedAvatarSeed }];
+    ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: selectedAvatarSeed }];
   }
   // Show the player's own chosen avatar on the leaderboard, not the
   // uid-derived one leaderboard.js falls back to.
@@ -284,6 +334,116 @@ async function runDrill() {
 
   startBtn.disabled = false;
   renderResults(ranked);
+}
+
+async function runMultiplayer({ timeLimit, operationsList, tablesList, myName }) {
+  const size = getSize();
+  showLobby(size);
+  let room;
+  try {
+    room = await matchmake(
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      {
+        onWaiting: ({ playerCount, size: roomSize }) => {
+          lobbyCount.textContent = `${playerCount} / ${roomSize}`;
+          renderLobbySeats(playerCount, roomSize);
+        },
+      },
+    );
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert(e && e.quotaBlocked ? e.message : "Couldn't start a room — please try again.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, myName);
+}
+
+async function runVersusCreate({ timeLimit, operationsList, tablesList, myName }) {
+  showLobby(2);
+  lobbyStatus.textContent = 'Creating your room…';
+  let created;
+  try {
+    created = await createCodeRoom(
+      { timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      {
+        onWaiting: ({ playerCount, size: roomSize }) => {
+          lobbyStatus.textContent = 'Waiting for your opponent…';
+          lobbyCount.textContent = `${playerCount} / ${roomSize}`;
+          renderLobbySeats(playerCount, roomSize);
+        },
+      },
+    );
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert(e && e.quotaBlocked ? e.message : "Couldn't create a room — please try again.");
+    return;
+  }
+  showLobbyCode(created.code);
+
+  let room;
+  try {
+    room = await created.roundReady;
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert("Something went wrong waiting for your opponent — please try again.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, myName);
+}
+
+async function runVersusJoin({ timeLimit, myName }) {
+  const code = (codeInput.value || '').trim().toUpperCase();
+  if (code.length !== 6) {
+    alert('Enter the 6-character room code your friend shared.');
+    startBtn.disabled = false;
+    return;
+  }
+  showLobby(2);
+  lobbyStatus.textContent = 'Joining room…';
+  let room;
+  try {
+    room = await joinRoomByCode(code, {
+      displayName: myName,
+      onWaiting: ({ playerCount, size: roomSize }) => {
+        lobbyStatus.textContent = 'Waiting for the round to start…';
+        lobbyCount.textContent = `${playerCount} / ${roomSize}`;
+        renderLobbySeats(playerCount, roomSize);
+      },
+    });
+  } catch (e) {
+    hideLobby();
+    startBtn.disabled = false;
+    alert((e && e.message) || "Couldn't join that room.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, myName);
+}
+
+async function runDrill() {
+  startBtn.disabled = true;
+  await getCurrentUser();
+
+  const mode = getMode();
+  const timeLimit = getTimeLimit();
+  const operationsList = [...operations];
+  const tablesList = [...tables];
+  const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
+
+  if (mode === 'versus') {
+    if (getVersusAction() === 'join') await runVersusJoin({ timeLimit, myName });
+    else await runVersusCreate({ timeLimit, operationsList, tablesList, myName });
+    return;
+  }
+  await runMultiplayer({ timeLimit, operationsList, tablesList, myName });
 }
 
 startBtn.addEventListener('click', runDrill);
@@ -301,5 +461,6 @@ againBtn.addEventListener('click', hideResults);
 const initialMode = new URLSearchParams(location.search).get('mode');
 if (initialMode === 'versus' || initialMode === 'multiplayer') {
   const radio = document.querySelector(`input[name="drill-mode"][value="${initialMode}"]`);
-  if (radio) { radio.checked = true; sizeField.hidden = initialMode === 'versus'; }
+  if (radio) radio.checked = true;
 }
+onModeChange();

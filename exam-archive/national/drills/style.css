@@ -13,6 +13,12 @@ body {
     radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
 }
 
+/* Several components on this page (.drill-field, .drill-roster, ...) set
+   their own author `display` value, which otherwise beats the browser's
+   default `[hidden] { display: none }` UA rule at equal specificity —
+   guarantee the hidden attribute always wins regardless of component. */
+[hidden] { display: none !important; }
+
 .builder-paint {
   position: absolute;
   inset: 0 0 auto 0;
@@ -156,9 +162,22 @@ body {
   gap: 0.9rem 0.6rem;
 }
 .drill-avatar-grid {
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  max-width: 420px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  max-width: 480px;
 }
+
+/* ── ONE STRIP — mode/size/time/operations/tables all flow together as a
+   single wrapping collage of sticky notes, no per-category sub-headers.
+   Each category stays its own DOM node (for radiogroup/group semantics and
+   JS querying) but renders as `display: contents` so it contributes no box
+   of its own — just its note children join the outer flex-wrap row. */
+.drill-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.7rem;
+  justify-content: center;
+}
+.strip-group { display: contents; }
 .sticky-choice {
   display: flex;
   align-items: center;
@@ -187,7 +206,7 @@ body {
    the talking so the radio input is present (for a11y/keyboard) yet
    visually hidden; the checked-glow ring is the only selection affordance. */
 .avatar-choice {
-  padding: 0.5rem;
+  padding: 0.35rem;
   aspect-ratio: 1;
 }
 .avatar-choice input {
@@ -223,6 +242,69 @@ body {
 }
 .drill-start-btn:hover { transform: translateY(-1px); }
 .drill-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
+.drill-name-input,
+.drill-code-input {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  max-width: 320px;
+}
+.drill-code-input {
+  margin-top: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+}
+.drill-name-input:focus,
+.drill-code-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* ── LOBBY CODE DISPLAY — shown only when hosting a private 1v1 room ──── */
+.drill-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+.drill-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.drill-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+.drill-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.drill-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
 
 /* ── LOBBY / PLAY / RESULTS OVERLAY ─────────────────────── */
 .review-bd {
@@ -482,8 +564,8 @@ body {
 
 .drill-lb-avatar {
   display: block;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
@@ -502,7 +584,7 @@ body {
   box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
   font-size: 0.92rem;
 }
-.drill-lb-row.is-winner .drill-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 38px; height: 38px; }
+.drill-lb-row.is-winner .drill-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 56px; height: 56px; }
 
 .drill-again-btn {
   display: inline-flex;

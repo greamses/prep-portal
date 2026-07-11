@@ -1,90 +1,53 @@
 /* ═══════════════════════════════════════════════════════
    DRILLS — matchmaking
-   Join-or-create a room via a single transaction on a small per-bucket
-   pointer doc (drillRoomPointers/{mode_size_timeLimit}), so two clients
-   racing to start the same kind of room land in the SAME room instead of
-   creating duplicates — Firestore's transaction retry handles the race,
-   no manual conflict resolution needed.
+   Two entry points:
+   - matchmake(): anonymous pool matching for Multiplayer, via a single
+     transaction on a small per-bucket pointer doc
+     (drillRoomPointers/{mode_size_timeLimit_operations_tables}), so two
+     clients racing to start the same kind of room land in the SAME room
+     instead of creating duplicates — Firestore's transaction retry handles
+     the race, no manual conflict resolution needed.
+   - createCodeRoom()/joinRoomByCode(): private 1v1 Versus rooms. The host
+     creates a room and gets a short shareable code; a friend joins with
+     that code instead of anonymous matching. Give this a much longer wait
+     window than the pool (CODE_WAIT_MS) since a human has to actually
+     receive and type the code — a bot still fills in if nobody shows.
 
-   After joining, every client attaches exactly one onSnapshot listener on
-   its own room doc, torn down the instant status flips to "active". The
-   host runs a short local wait for real players, then activates the room
-   (fills any remaining seats with bots); every other member also runs a
-   longer local "abandon" timer so the room still starts if the host's tab
-   closes mid-wait.
+   Both paths converge on watchRoomUntilActive(): every client attaches
+   exactly one onSnapshot listener on its own room doc, torn down the
+   instant status flips to "active". The host runs a local wait for real
+   players, then activates the room (fills any remaining seats with bots);
+   every other member also runs a longer local "abandon" timer so the room
+   still starts if the host's tab closes mid-wait.
 ═══════════════════════════════════════════════════════ */
 import { db, auth } from '/firebase-init.js';
 import {
-  doc, collection, runTransaction, onSnapshot, updateDoc, getDoc, serverTimestamp,
+  doc, collection, runTransaction, setDoc, updateDoc, getDoc,
+  onSnapshot, query, where, limit, getDocs, serverTimestamp,
 } from 'firebase/firestore';
 import { quotaStatus, reportUsage, quotaError } from '/utils/data-service.js';
 
-const WAIT_MS = 8000; // host's local "waiting for real players" window
+const WAIT_MS = 8000; // anonymous-pool host's local "waiting for real players" window
+const CODE_WAIT_MS = 90000; // code-room host's window — a friend needs time to receive + type the code
 const START_BUFFER_MS = 3000; // "get ready" beat shown to everyone after activation
-const HOST_ABANDON_MS = WAIT_MS + 4000; // every member's own fallback-promotion timer
+const ABANDON_EXTRA_MS = 4000; // added to whichever wait window applies, for every member's fallback timer
+
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L — easy to read and type
+
+function generateCode() {
+  let code = '';
+  for (let i = 0; i < 6; i++) code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  return code;
+}
 
 async function checkQuota(kind) {
   const s = await quotaStatus();
   if (kind === 'write' ? s.writesBlocked : s.readsBlocked) throw quotaError(kind);
 }
 
-async function joinOrCreateRoom({ mode, size, timeLimit, operation, tables }) {
-  const user = auth.currentUser;
-  const tablesKey = [...tables].sort((a, b) => a - b).join(',');
-  const bucketKey = `${mode}_${size}_${timeLimit}_${operation}_${tablesKey}`;
-  const ptrRef = doc(db, 'drillRoomPointers', bucketKey);
-  const now = Date.now();
-  const displayName = user.displayName || 'Player';
-
-  await checkQuota('write');
-  const result = await runTransaction(db, async (tx) => {
-    const ptrSnap = await tx.get(ptrRef);
-    let roomSnap = null;
-    if (ptrSnap.exists() && ptrSnap.data().expiresAt > now) {
-      roomSnap = await tx.get(doc(db, 'drillRooms', ptrSnap.data().roomId));
-    }
-
-    const usable = roomSnap && roomSnap.exists() &&
-      roomSnap.data().status === 'waiting' &&
-      roomSnap.data().playerCount < roomSnap.data().size;
-
-    if (usable) {
-      const room = roomSnap.data();
-      const newCount = room.playerCount + 1;
-      tx.update(roomSnap.ref, { playerCount: newCount });
-      tx.set(doc(roomSnap.ref, 'players', user.uid), { displayName, joinedAt: now });
-      if (newCount >= room.size) tx.delete(ptrRef); // free the bucket early
-      return {
-        roomId: roomSnap.id, isHost: false,
-        size: room.size, timeLimit: room.timeLimit, seed: room.seed,
-        operation: room.operation, tables: room.tables,
-      };
-    }
-
-    const roomRef = doc(collection(db, 'drillRooms'));
-    const seed = Math.floor(Math.random() * 2 ** 31);
-    tx.set(roomRef, {
-      mode, size, timeLimit, operation, tables, status: 'waiting',
-      seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
-      createdAt: serverTimestamp(),
-    });
-    tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
-    tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
-    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, operation, tables };
-  });
-
-  reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
-  return result;
-}
-
-// Resolves once the room is "active": { roomId, seed, timeLimit, operation, tables, startAt, botsNeeded }.
-// onWaiting(state) is called with { playerCount, size } while still in the lobby.
-export async function matchmake({ mode, size, timeLimit, operation, tables }, { onWaiting } = {}) {
-  const {
-    roomId, isHost, size: roomSize, timeLimit: roomTimeLimit, seed,
-    operation: roomOperation, tables: roomTables,
-  } = await joinOrCreateRoom({ mode, size, timeLimit, operation, tables });
-
+// Waits for a room to go "active" (real joins + eventual bot fill), then
+// resolves with everything game.js/leaderboard.js need to run the round.
+function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOperations, roomTables, isHost, waitMs, onWaiting }) {
   return new Promise((resolve, reject) => {
     const roomRef = doc(db, 'drillRooms', roomId);
     let settled = false;
@@ -116,7 +79,7 @@ export async function matchmake({ mode, size, timeLimit, operation, tables }, { 
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
-        operation: roomOperation, tables: roomTables,
+        operations: roomOperations, tables: roomTables,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });
     }
@@ -148,7 +111,7 @@ export async function matchmake({ mode, size, timeLimit, operation, tables }, { 
         if (!settled && snap.exists() && snap.data().status === 'waiting') {
           activate(snap.data().playerCount);
         }
-      }, WAIT_MS);
+      }, waitMs);
     }
 
     // Every member (host included) can promote an abandoned room — the
@@ -162,6 +125,130 @@ export async function matchmake({ mode, size, timeLimit, operation, tables }, { 
       if (!settled && snap.exists() && snap.data().status === 'waiting') {
         activate(snap.data().playerCount);
       }
-    }, HOST_ABANDON_MS);
+    }, waitMs + ABANDON_EXTRA_MS);
+  });
+}
+
+async function joinOrCreateRoom({ mode, size, timeLimit, operations, tables, displayName: name }) {
+  const user = auth.currentUser;
+  const opsKey = [...operations].sort().join(',');
+  const tablesKey = [...tables].sort((a, b) => a - b).join(',');
+  const bucketKey = `${mode}_${size}_${timeLimit}_${opsKey}_${tablesKey}`;
+  const ptrRef = doc(db, 'drillRoomPointers', bucketKey);
+  const now = Date.now();
+  const displayName = name || user.displayName || 'Player';
+
+  await checkQuota('write');
+  const result = await runTransaction(db, async (tx) => {
+    const ptrSnap = await tx.get(ptrRef);
+    let roomSnap = null;
+    if (ptrSnap.exists() && ptrSnap.data().expiresAt > now) {
+      roomSnap = await tx.get(doc(db, 'drillRooms', ptrSnap.data().roomId));
+    }
+
+    const usable = roomSnap && roomSnap.exists() &&
+      roomSnap.data().status === 'waiting' &&
+      roomSnap.data().playerCount < roomSnap.data().size;
+
+    if (usable) {
+      const room = roomSnap.data();
+      const newCount = room.playerCount + 1;
+      tx.update(roomSnap.ref, { playerCount: newCount });
+      tx.set(doc(roomSnap.ref, 'players', user.uid), { displayName, joinedAt: now });
+      if (newCount >= room.size) tx.delete(ptrRef); // free the bucket early
+      return {
+        roomId: roomSnap.id, isHost: false,
+        size: room.size, timeLimit: room.timeLimit, seed: room.seed,
+        operations: room.operations, tables: room.tables,
+      };
+    }
+
+    const roomRef = doc(collection(db, 'drillRooms'));
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    tx.set(roomRef, {
+      mode, size, timeLimit, operations, tables, status: 'waiting',
+      seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
+      createdAt: serverTimestamp(),
+    });
+    tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
+    tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
+    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, operations, tables };
+  });
+
+  reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
+  return result;
+}
+
+// Resolves once the room is "active": { roomId, seed, timeLimit, operations, tables, size, startAt, botsNeeded }.
+// onWaiting(state) is called with { playerCount, size } while still in the lobby.
+export async function matchmake({ mode, size, timeLimit, operations, tables }, { onWaiting } = {}) {
+  const room = await joinOrCreateRoom({ mode, size, timeLimit, operations, tables });
+  return watchRoomUntilActive({
+    roomId: room.roomId, seed: room.seed, roomSize: room.size,
+    roomTimeLimit: room.timeLimit, roomOperations: room.operations, roomTables: room.tables,
+    isHost: room.isHost, waitMs: WAIT_MS, onWaiting,
+  });
+}
+
+// Creates a private 2-player room and returns its code immediately (before
+// the round is ready) so the UI can display it for sharing. `roundReady`
+// resolves the same way matchmake() does, once the room goes active.
+export async function createCodeRoom({ timeLimit, operations, tables, displayName: name }, { onWaiting } = {}) {
+  const user = auth.currentUser;
+  const code = generateCode();
+  const roomRef = doc(collection(db, 'drillRooms'));
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  const now = Date.now();
+  const displayName = name || user.displayName || 'Player';
+
+  await checkQuota('write');
+  await setDoc(roomRef, {
+    mode: 'versus', size: 2, timeLimit, operations, tables, status: 'waiting',
+    seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0, code,
+    createdAt: serverTimestamp(),
+  });
+  await setDoc(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
+  reportUsage(0, 2);
+
+  const roundReady = watchRoomUntilActive({
+    roomId: roomRef.id, seed, roomSize: 2, roomTimeLimit: timeLimit,
+    roomOperations: operations, roomTables: tables,
+    isHost: true, waitMs: CODE_WAIT_MS, onWaiting,
+  });
+
+  return { code, roomId: roomRef.id, roundReady };
+}
+
+// Looks up a waiting room by its shared code and joins it. Throws if the
+// code doesn't match an open room.
+export async function joinRoomByCode(code, { onWaiting, displayName: name } = {}) {
+  const user = auth.currentUser;
+  const now = Date.now();
+  const displayName = name || user.displayName || 'Player';
+
+  await checkQuota('read');
+  const q = query(
+    collection(db, 'drillRooms'),
+    where('code', '==', code),
+    where('status', '==', 'waiting'),
+    limit(1),
+  );
+  const snap = await getDocs(q);
+  reportUsage(snap.size, 0);
+  if (snap.empty) throw new Error("That code doesn't match an open room — check it and try again.");
+
+  const roomDoc = snap.docs[0];
+  const room = roomDoc.data();
+  if (room.playerCount >= room.size) throw new Error('That room is already full.');
+
+  await checkQuota('write');
+  await updateDoc(roomDoc.ref, { playerCount: room.playerCount + 1 });
+  await setDoc(doc(roomDoc.ref, 'players', user.uid), { displayName, joinedAt: now });
+  reportUsage(0, 2);
+
+  return watchRoomUntilActive({
+    roomId: roomDoc.id, seed: room.seed, roomSize: room.size,
+    roomTimeLimit: room.timeLimit, roomOperations: room.operations, roomTables: room.tables,
+    isHost: false, waitMs: CODE_WAIT_MS, onWaiting,
   });
 }

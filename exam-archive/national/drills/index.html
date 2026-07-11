@@ -55,12 +55,12 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Pick a room size and a time limit — race real players or bots to see
-        who can answer the most multiplication and division questions before
-        the clock runs out.
+        Pick your options — multiply, divide, square, square root — and race
+        real players or bots to see who can answer the most before the clock
+        runs out. Versus is a private 1v1: create a room and share the code.
       </p>
       <div class="builder-stats">
-        <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>Times</strong> Tables 1–12</span>
+        <span class="hero-stat" style="--tile: var(--accent-secondary)">× ÷ x² <strong>√x</strong></span>
         <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
         <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Bots</strong> Fill Empty Seats</span>
       </div>
@@ -83,67 +83,73 @@
           <p class="drill-receipt-title">Drill Settings</p>
 
           <div class="drill-field">
+            <span>Game Name</span>
+            <input class="drill-name-input" id="drill-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          </div>
+
+          <div class="drill-field">
             <span>Your Avatar</span>
             <div class="sticky-grid drill-avatar-grid" id="drill-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
           </div>
 
           <div class="drill-field">
-            <span>Mode</span>
-            <div class="sticky-row" id="drill-mode-toggle" role="radiogroup" aria-label="Mode">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
-                <input type="radio" name="drill-mode" value="multiplayer" checked />
-                <span>Multiplayer</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
-                <input type="radio" name="drill-mode" value="versus" />
-                <span>Versus (1v1)</span>
-              </label>
+            <span>Pick your options</span>
+            <div class="drill-strip" id="drill-strip">
+              <div class="strip-group" id="drill-mode-toggle" role="radiogroup" aria-label="Mode">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
+                  <input type="radio" name="drill-mode" value="multiplayer" checked />
+                  <span>Multiplayer</span>
+                </label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
+                  <input type="radio" name="drill-mode" value="versus" />
+                  <span>Versus (1v1)</span>
+                </label>
+              </div>
+
+              <div class="strip-group" id="drill-size-field" role="radiogroup" aria-label="Room size">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
+                  <input type="radio" name="drill-size" value="5" checked />
+                  <span>5 players</span>
+                </label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
+                  <input type="radio" name="drill-size" value="10" />
+                  <span>10 players</span>
+                </label>
+              </div>
+
+              <div class="strip-group" id="drill-time-row" role="radiogroup" aria-label="Time limit">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="drill-time" value="30" /><span>30s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="drill-time" value="60" checked /><span>60s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="drill-time" value="90" /><span>90s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="drill-time" value="120" /><span>120s</span></label>
+              </div>
+
+              <div class="strip-group" id="drill-operations-row" role="group" aria-label="Operations"></div>
+
+              <div class="strip-group" id="drill-tables-grid" role="group" aria-label="Tables"></div>
             </div>
           </div>
 
-          <div class="drill-field" id="drill-size-field">
-            <span>Room size</span>
-            <div class="sticky-row" id="drill-size-row" role="radiogroup" aria-label="Room size">
+          <div class="drill-field" id="drill-versus-field" hidden>
+            <span>1v1 Room</span>
+            <div class="sticky-row" id="drill-versus-toggle" role="radiogroup" aria-label="Create or join">
               <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="drill-size" value="5" checked />
-                <span>5 players</span>
+                <input type="radio" name="drill-versus-action" value="create" checked />
+                <span>Create Room</span>
               </label>
               <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                <input type="radio" name="drill-size" value="10" />
-                <span>10 players</span>
+                <input type="radio" name="drill-versus-action" value="join" />
+                <span>Join with Code</span>
               </label>
             </div>
-          </div>
-
-          <div class="drill-field">
-            <span>Time limit</span>
-            <div class="sticky-row" id="drill-time-row" role="radiogroup" aria-label="Time limit">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="drill-time" value="30" /><span>30s</span></label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="drill-time" value="60" checked /><span>60s</span></label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="drill-time" value="90" /><span>90s</span></label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="drill-time" value="120" /><span>120s</span></label>
-            </div>
-          </div>
-
-          <div class="drill-field">
-            <span>Operation</span>
-            <div class="sticky-row" id="drill-operation-row" role="radiogroup" aria-label="Operation">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="drill-operation" value="multiply" /><span>× Multiply</span></label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="drill-operation" value="divide" /><span>÷ Divide</span></label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="drill-operation" value="mixed" checked /><span>× ÷ Mixed</span></label>
-            </div>
-          </div>
-
-          <div class="drill-field">
-            <span>Tables</span>
-            <div class="sticky-grid" id="drill-tables-grid"></div>
+            <input class="drill-code-input" id="drill-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 
           <button class="drill-start-btn" id="drill-start-btn" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="6 4 20 12 6 20 6 4" />
             </svg>
-            Find a Room
+            <span id="drill-start-label">Find a Room</span>
           </button>
         </div>
       </div>
@@ -153,6 +159,13 @@
     <div class="review-bd" id="drill-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
         <p class="drill-lobby-status" id="drill-lobby-status">Waiting for other players…</p>
+        <div class="drill-lobby-code" id="drill-lobby-code" hidden>
+          <span>Share this code with your opponent</span>
+          <div class="drill-lobby-code-value">
+            <strong id="drill-lobby-code-text"></strong>
+            <button type="button" id="drill-lobby-code-copy" title="Copy code">Copy</button>
+          </div>
+        </div>
         <div class="drill-lobby-seats" id="drill-lobby-seats"></div>
         <p class="drill-lobby-count" id="drill-lobby-count">1 / 5</p>
         <button class="drill-cancel-btn" id="drill-lobby-cancel" type="button">Cancel</button>
