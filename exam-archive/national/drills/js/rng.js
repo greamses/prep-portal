@@ -31,18 +31,26 @@ export function hashSeed(seed, ns) {
 export const QUESTION_NS = 0;
 export const BOT_NS = 1_000_000;
 
-export const ALL_TABLES = Array.from({ length: 12 }, (_, i) => i + 1);
+// Safe fallback pool if a room's `tables` ever arrives empty — full 1-100
+// range, matching the setup screen's "All" bucket.
+export const ALL_TABLES = Array.from({ length: 100 }, (_, i) => i + 1);
 
-export const ALL_OPERATIONS = ['multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot'];
+// The setup screen only shows individual number checkboxes for the 1-9
+// bucket (see main.js's RANGES/renderNumbersGrid) — everything above that
+// is drilled as a whole range, never cherry-picked number by number.
+export const UNIT_NUMBERS = Array.from({ length: 9 }, (_, i) => i + 1);
 
-// Times tables 1–12 only. `tables` is the set of fact families in play — for
-// multiply/divide, one of the two operands is always drawn from it
-// (mirroring the flashcards Facts picker), the other operand is free, 1–12;
-// for square/sqrt, `tables` supplies the number being squared / the root
-// being taken. `operations` is a non-empty subset of ALL_OPERATIONS — one is
-// drawn at random per question. Division always divides evenly (built from
-// a product, then presented as dividend ÷ divisor) — never a non-integer
-// result, and square root is always a perfect square for the same reason.
+export const ALL_OPERATIONS = ['add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot'];
+
+// `tables` is the pool a question's "base" number is drawn from — either a
+// hand-picked set of 1-9 numbers or a whole decade range (see main.js). For
+// add/multiply/divide, one operand comes from that pool, the other is free,
+// 1–12 (mirroring the flashcards Facts picker); for square/sqrt/cube/
+// cuberoot, `tables` supplies the number being raised/rooted. `operations`
+// is a non-empty subset of ALL_OPERATIONS — one is drawn at random per
+// question. Division always divides evenly (built from a product, then
+// presented as dividend ÷ divisor) — never a non-integer result, and
+// square/cube root are always a perfect power for the same reason.
 export function questionAt(seed, index, { operations = ['multiply', 'divide'], tables = ALL_TABLES } = {}) {
   const rng = mulberry32(hashSeed(seed, QUESTION_NS + index));
   const ops = operations.length ? operations : ['multiply', 'divide'];
@@ -60,5 +68,6 @@ export function questionAt(seed, index, { operations = ['multiply', 'divide'], t
     const dividend = n * other;
     return { text: `${dividend} ÷ ${n}`, answer: other };
   }
+  if (op === 'add') return { text: `${n} + ${other}`, answer: n + other };
   return { text: `${n} × ${other}`, answer: n * other };
 }

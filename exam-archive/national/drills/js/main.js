@@ -6,7 +6,7 @@
    room code (create-and-share, or join-with-code).
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { ALL_TABLES, ALL_OPERATIONS } from './rng.js';
+import { UNIT_NUMBERS } from './rng.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -29,10 +29,39 @@ let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0
 const NAME_KEY = 'drillGameName';
 
 const OPERATION_LABELS = {
-  multiply: '× Multiply', divide: '÷ Divide',
+  add: '+ Addition', multiply: '× Multiply', divide: '÷ Divide',
   square: 'x² Square', sqrt: '√x Root',
   cube: 'x³ Cube', cuberoot: '∛x Cube Root',
 };
+
+// Category filters which operations are on offer. Basic keeps the default
+// (multiply + divide ticked, addition opt-in — mirrors the old flat list's
+// defaults); Exponent starts fully opt-in, same as square/sqrt used to be.
+const CATEGORY_OPERATIONS = {
+  basic: ['add', 'multiply', 'divide'],
+  exponent: ['square', 'cube', 'sqrt', 'cuberoot'],
+};
+const CATEGORY_DEFAULT_OPS = {
+  basic: ['multiply', 'divide'],
+  exponent: [],
+};
+
+// A question's "base" number is drawn from whichever pool these describe:
+// hand-picked 1-9 numbers, or a whole decade practiced as one block ("higher
+// numbers require practice through the range", not cherry-picked).
+const RANGES = [
+  { key: 'all', label: 'All', min: 1, max: 100 },
+  { key: '1-9', label: '1–9', min: 1, max: 9 },
+  { key: '10-19', label: '10–19', min: 10, max: 19 },
+  { key: '20-29', label: '20–29', min: 20, max: 29 },
+  { key: '30-39', label: '30–39', min: 30, max: 39 },
+  { key: '40-49', label: '40–49', min: 40, max: 49 },
+  { key: '50-59', label: '50–59', min: 50, max: 59 },
+  { key: '60-69', label: '60–69', min: 60, max: 69 },
+  { key: '70-79', label: '70–79', min: 70, max: 79 },
+  { key: '80-89', label: '80–89', min: 80, max: 89 },
+  { key: '90-100', label: '90–100', min: 90, max: 100 },
+];
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
@@ -48,8 +77,11 @@ const nameInput = $('drill-name-input');
 const avatarGrid = $('drill-avatar-grid');
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
+const categoryToggle = $('drill-category-toggle');
 const operationsRow = $('drill-operations-row');
-const tablesGrid = $('drill-tables-grid');
+const rangeRow = $('drill-range-row');
+const numbersField = $('drill-numbers-field');
+const numbersGrid = $('drill-numbers-grid');
 const mpField = $('drill-mp-field');
 const mpToggle = $('drill-mp-toggle');
 const mpCodeInput = $('drill-mp-code-input');
@@ -73,8 +105,9 @@ const leaderboardEl = $('drill-leaderboard');
 const againBtn = $('drill-again-btn');
 
 let cancelled = false;
-const tables = new Set(); // nothing checked by default — user ticks which tables to drill
-const operations = new Set(['multiply', 'divide']); // sensible default; square/sqrt are opt-in
+let range = 'all';
+const tables = new Set(); // 1-9 numbers only — nothing checked by default, user ticks which to drill
+const operations = new Set(CATEGORY_DEFAULT_OPS.basic);
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -90,9 +123,23 @@ function getSize() { return parseInt(document.querySelector('input[name="drill-s
 function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
 function getVersusAction() { return document.querySelector('input[name="drill-versus-action"]:checked').value; }
 function getMpAction() { return document.querySelector('input[name="drill-mp-action"]:checked').value; }
+function getCategory() { return document.querySelector('input[name="drill-category"]:checked').value; }
+
+// Only the 1-9 bucket is fine enough to cherry-pick individual numbers from
+// (and only for Basic — Exponent "just sticks with the ranges"). Every
+// other bucket is drilled as a whole block.
+function isNumbersMode() { return getCategory() === 'basic' && range === '1-9'; }
+
+// The actual pool of "base" numbers handed to questionAt(): either the
+// hand-picked 1-9 set, or every integer in the selected decade range.
+function getTablesPool() {
+  if (isNumbersMode()) return [...tables];
+  const r = RANGES.find((x) => x.key === range) || RANGES[0];
+  return Array.from({ length: r.max - r.min + 1 }, (_, i) => r.min + i);
+}
 
 function updateStartDisabled() {
-  startBtn.disabled = tables.size === 0 || operations.size === 0;
+  startBtn.disabled = operations.size === 0 || (isNumbersMode() && tables.size === 0);
 }
 
 function updateStartLabel() {
@@ -131,19 +178,19 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Tables (which times tables / square-root bases are in play) ────────
-function renderTablesGrid() {
-  tablesGrid.innerHTML = '';
-  ALL_TABLES.forEach((n, i) => {
+// ── Numbers (1-9 only — every higher bucket is drilled as a whole range) ─
+function renderNumbersGrid() {
+  numbersGrid.innerHTML = '';
+  UNIT_NUMBERS.forEach((n, i) => {
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i)}`;
     label.innerHTML = `<input type="checkbox" value="${n}" ${tables.has(n) ? 'checked' : ''} /><span>${n}</span>`;
-    tablesGrid.appendChild(label);
+    numbersGrid.appendChild(label);
   });
 }
-renderTablesGrid();
+renderNumbersGrid();
 
-tablesGrid.addEventListener('change', (e) => {
+numbersGrid.addEventListener('change', (e) => {
   const cb = e.target.closest('input[type="checkbox"]');
   if (!cb) return;
   const n = parseInt(cb.value, 10);
@@ -152,12 +199,38 @@ tablesGrid.addEventListener('change', (e) => {
   updateStartDisabled();
 });
 
-// ── Operations (×, ÷, x², √x) ────────────────────────────────────────────
-function renderOperationsGrid() {
-  operationsRow.innerHTML = '';
-  ALL_OPERATIONS.forEach((op, i) => {
+// ── Range (All / 1-9 / decade buckets up to 100) ────────────────────────
+function renderRangeRow() {
+  rangeRow.innerHTML = '';
+  RANGES.forEach((r, i) => {
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 6)}`;
+    label.innerHTML = `<input type="radio" name="drill-range" value="${r.key}" ${r.key === range ? 'checked' : ''} /><span>${r.label}</span>`;
+    rangeRow.appendChild(label);
+  });
+}
+renderRangeRow();
+
+function updateNumbersVisibility() {
+  numbersField.hidden = !isNumbersMode();
+}
+
+rangeRow.addEventListener('change', (e) => {
+  const radio = e.target.closest('input[name="drill-range"]');
+  if (!radio) return;
+  range = radio.value;
+  updateNumbersVisibility();
+  updateStartDisabled();
+});
+
+// ── Operations — the set on offer depends on Category (Basic: add/×/÷,
+// Exponent: square/cube/√x/∛x); switching category resets to that
+// category's own sensible default rather than carrying over a stale pick. ─
+function renderOperationsGrid() {
+  operationsRow.innerHTML = '';
+  CATEGORY_OPERATIONS[getCategory()].forEach((op, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 3)}`;
     label.innerHTML = `<input type="checkbox" value="${op}" ${operations.has(op) ? 'checked' : ''} /><span>${OPERATION_LABELS[op]}</span>`;
     operationsRow.appendChild(label);
   });
@@ -172,6 +245,15 @@ operationsRow.addEventListener('change', (e) => {
   updateStartDisabled();
 });
 
+categoryToggle.addEventListener('change', () => {
+  operations.clear();
+  CATEGORY_DEFAULT_OPS[getCategory()].forEach((op) => operations.add(op));
+  renderOperationsGrid();
+  updateNumbersVisibility();
+  updateStartDisabled();
+});
+
+updateNumbersVisibility();
 updateStartDisabled();
 updateStartLabel();
 
@@ -559,7 +641,7 @@ async function runDrill() {
   const mode = getMode();
   const timeLimit = getTimeLimit();
   const operationsList = [...operations];
-  const tablesList = [...tables];
+  const tablesList = getTablesPool();
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {

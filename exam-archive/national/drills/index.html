@@ -55,13 +55,13 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Pick your options — multiply, divide, square, square root, cube, cube
-        root — and race real players or bots to see who can answer the most
-        before the clock runs out. Versus is a private 1v1: create a room and
-        share the code.
+        Basic (add, multiply, divide) or Exponent (square, cube, roots) — pick
+        a number range and race real players or bots to see who can answer
+        the most before the clock runs out. Versus is a private 1v1: create a
+        room and share the code.
       </p>
       <div class="builder-stats">
-        <span class="hero-stat" style="--tile: var(--accent-secondary)">× ÷ x² x³ <strong>√x ∛x</strong></span>
+        <span class="hero-stat" style="--tile: var(--accent-secondary)">+ × ÷ x² x³ <strong>√x ∛x</strong></span>
         <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
         <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Bots</strong> Fill Empty Seats</span>
       </div>
@@ -91,6 +91,20 @@
           <div class="drill-field">
             <span>Your Avatar</span>
             <div class="sticky-grid drill-avatar-grid" id="drill-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          </div>
+
+          <div class="drill-field">
+            <span>Category</span>
+            <div class="sticky-row" id="drill-category-toggle" role="radiogroup" aria-label="Category">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
+                <input type="radio" name="drill-category" value="basic" checked />
+                <span>Basic</span>
+              </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
+                <input type="radio" name="drill-category" value="exponent" />
+                <span>Exponent</span>
+              </label>
+            </div>
           </div>
 
           <div class="drill-field">
@@ -127,8 +141,13 @@
 
               <div class="strip-group" id="drill-operations-row" role="group" aria-label="Operations"></div>
 
-              <div class="strip-group" id="drill-tables-grid" role="group" aria-label="Tables"></div>
+              <div class="strip-group" id="drill-range-row" role="radiogroup" aria-label="Number range"></div>
             </div>
+          </div>
+
+          <div class="drill-field" id="drill-numbers-field" hidden>
+            <span>Numbers</span>
+            <div class="sticky-grid" id="drill-numbers-grid" role="group" aria-label="Numbers"></div>
           </div>
 
           <div class="drill-field" id="drill-mp-field">
