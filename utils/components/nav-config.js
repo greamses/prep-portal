@@ -75,15 +75,8 @@ const NAV_CONFIG = [
         children: [
           { text: "Practice questions", href: "/exam-archive/national/exams/index.html?cat=practice", description: "All subjects, mixed difficulty" },
           { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
-        ],
-      },
-      {
-        text: "Drills",
-        icon: I.games,
-        description: "Timed multiplayer times-tables practice",
-        children: [
-          { text: "Multiplayer (5 or 10)", href: "/exam-archive/national/drills/index.html?mode=multiplayer", description: "Race up to 10 players — bots fill empty seats" },
-          { text: "Versus (1v1)", href: "/exam-archive/national/drills/index.html?mode=versus", description: "Head-to-head speed round" },
+          { text: "Drills — Multiplayer (5 or 10)", href: "/exam-archive/national/drills/index.html?mode=multiplayer", description: "Timed times-tables race — bots fill empty seats" },
+          { text: "Drills — Versus (1v1)", href: "/exam-archive/national/drills/index.html?mode=versus", description: "Timed times-tables head-to-head" },
         ],
       },
     ],
