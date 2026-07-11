@@ -4,9 +4,9 @@
    switches between the lobby/play/results overlays. Same structure as
    Drills' js/main.js — Multiplayer uses anonymous pool matching; Versus is
    always a private 1v1 via a shared room code (create-and-share, or
-   join-with-code). Sudoku is the only puzzle for now; the "Puzzle" field
-   is a single-option radiogroup so more can be added later without
-   restructuring the page.
+   join-with-code). Sudoku and Slider are both live; the "Puzzle" field is
+   a radiogroup so more can be added later the same way — just extend
+   GRID_SIZES_BY_TYPE and let game.js dispatch on puzzleType.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import { botName } from './bots.js';
@@ -44,6 +44,16 @@ const avatarUrl = (seed) => {
 
 const NAME_KEY = 'puzzleGameName';
 
+// Grid Size options depend on which puzzle is selected — Sudoku's boxes
+// only divide evenly at 4/6/9, Slider is conventionally 3/4/5 (the classic
+// 8-/15-/24-puzzle). Difficulty (Easy/Medium/Hard) is the same three
+// labels for every puzzle type, just reinterpreted by that puzzle's own
+// generator (see sudoku.js/slider.js).
+const GRID_SIZES_BY_TYPE = {
+  sudoku: [{ value: 4, label: '4×4' }, { value: 6, label: '6×6' }, { value: 9, label: '9×9', default: true }],
+  slider: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }],
+};
+
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -63,6 +73,8 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('puzzle-name-input');
 const avatarGrid = $('puzzle-avatar-grid');
 const avatarUploadInput = $('puzzle-avatar-upload-input');
+const puzzleTypeToggle = $('puzzle-type-toggle');
+const gridSizeRow = $('puzzle-grid-size-row');
 const modeToggle = $('puzzle-mode-toggle');
 const sizeField = $('puzzle-size-field');
 const mpField = $('puzzle-mp-field');
@@ -114,8 +126,25 @@ function getSize() { return parseInt(document.querySelector('input[name="puzzle-
 function getTimeLimit() { return parseInt(document.querySelector('input[name="puzzle-time"]:checked').value, 10); }
 function getVersusAction() { return document.querySelector('input[name="puzzle-versus-action"]:checked').value; }
 function getMpAction() { return document.querySelector('input[name="puzzle-mp-action"]:checked').value; }
+function getPuzzleType() { return document.querySelector('input[name="puzzle-type"]:checked').value; }
 function getGridSize() { return parseInt(document.querySelector('input[name="puzzle-grid-size"]:checked').value, 10); }
 function getDifficulty() { return document.querySelector('input[name="puzzle-difficulty"]:checked').value; }
+
+// ── Grid Size — the options on offer depend on Puzzle (Sudoku: 4/6/9,
+// Slider: 3/4/5); switching puzzle resets to that puzzle's own default
+// rather than carrying over a stale pick from the other one. ────────────
+function renderGridSizeRow() {
+  gridSizeRow.innerHTML = '';
+  GRID_SIZES_BY_TYPE[getPuzzleType()].forEach((opt, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 4)}`;
+    label.innerHTML = `<input type="radio" name="puzzle-grid-size" value="${opt.value}" ${opt.default ? 'checked' : ''} /><span>${opt.label}</span>`;
+    gridSizeRow.appendChild(label);
+  });
+}
+renderGridSizeRow();
+
+puzzleTypeToggle.addEventListener('change', renderGridSizeRow);
 
 function updateStartLabel() {
   const mode = getMode();
@@ -400,10 +429,11 @@ function launchConfetti() {
 // ── Round orchestration (shared by all three matchmaking paths) ─────────
 async function playRoundAndShowResults(room, myName) {
   const roster = buildRoster(room, myName);
-  const { score: myScore, editableCells } = await startRound({
+  const { score: myScore, totalUnits } = await startRound({
     seed: room.seed,
     timeLimit: room.timeLimit,
     startAt: room.startAt,
+    puzzleType: room.puzzleType,
     difficulty: room.difficulty,
     gridSize: room.gridSize,
     roster,
@@ -421,7 +451,7 @@ async function playRoundAndShowResults(room, myName) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
-      editableCells,
+      totalUnits,
       myScore,
     });
   } catch (e) {
@@ -455,13 +485,13 @@ function makeOnWaiting(waitingStatusText) {
   };
 }
 
-async function runMultiplayer({ timeLimit, difficulty, gridSize, myName }) {
+async function runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
   const size = getSize();
   showLobby(size);
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, difficulty, gridSize, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -475,14 +505,14 @@ async function runMultiplayer({ timeLimit, difficulty, gridSize, myName }) {
   await playRoundAndShowResults(room, myName);
 }
 
-async function runMultiplayerCreate({ timeLimit, difficulty, gridSize, myName }) {
+async function runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
   const size = getSize();
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, difficulty, gridSize, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -533,13 +563,13 @@ async function runMultiplayerJoin({ myName }) {
   await playRoundAndShowResults(room, myName);
 }
 
-async function runVersusCreate({ timeLimit, difficulty, gridSize, myName }) {
+async function runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
   showLobby(2);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, difficulty, gridSize, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -596,20 +626,21 @@ async function runPuzzle() {
 
   const mode = getMode();
   const timeLimit = getTimeLimit();
+  const puzzleType = getPuzzleType();
   const difficulty = getDifficulty();
   const gridSize = getGridSize();
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
     if (getVersusAction() === 'join') await runVersusJoin({ myName });
-    else await runVersusCreate({ timeLimit, difficulty, gridSize, myName });
+    else await runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, myName });
     return;
   }
 
   const mpAction = getMpAction();
   if (mpAction === 'join') await runMultiplayerJoin({ myName });
-  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, difficulty, gridSize, myName });
-  else await runMultiplayer({ timeLimit, difficulty, gridSize, myName });
+  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSize, myName });
+  else await runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myName });
 }
 
 startBtn.addEventListener('click', runPuzzle);

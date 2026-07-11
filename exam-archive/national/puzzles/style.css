@@ -515,7 +515,11 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   margin: 0;
 }
 
-.sudoku-grid {
+/* Shared tile-grid layout — both Sudoku and Slider render into the same
+   #puzzle-grid container, one puzzle per round, so the structural layout
+   lives here once; .sudoku-cell/.slider-tile only differ in per-cell look. */
+.sudoku-grid,
+.slider-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-size, 9), 1fr);
   width: 100%;
@@ -526,7 +530,8 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   background: var(--border-subtle);
   gap: 1px;
 }
-.sudoku-cell {
+.sudoku-cell,
+.slider-tile {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -548,11 +553,27 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
   box-shadow: inset 0 0 0 2px var(--accent-secondary);
 }
-.sudoku-cell.is-correct { color: var(--accent-success); }
+.sudoku-cell.is-correct,
+.slider-tile.is-correct { color: var(--accent-success); }
 .sudoku-cell.box-edge-right { border-right: 2px solid var(--ink); }
 .sudoku-cell.box-edge-bottom { border-bottom: 2px solid var(--ink); }
 
-.sudoku-cell.correct-flash {
+/* Slider tiles: the blank is invisible (no number, no interaction); any
+   tile currently adjacent to it gets a subtle lift to invite a click. */
+.slider-tile.is-blank {
+  background: transparent;
+  cursor: default;
+  box-shadow: none;
+}
+.slider-tile.is-movable {
+  background: color-mix(in srgb, var(--accent-secondary) 18%, var(--surface-primary));
+}
+.slider-tile.is-movable:hover {
+  background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
+}
+
+.sudoku-cell.correct-flash,
+.slider-tile.correct-flash {
   animation: puzzle-cell-pulse 0.4s ease;
 }
 @keyframes puzzle-cell-pulse {

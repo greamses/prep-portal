@@ -20,9 +20,10 @@ async function checkQuota(kind) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Returns a ranked array: [{ name, score, isBot, isSelf }]. `editableCells`
-// caps how many correct cells a bot can ever claim (see bots.js).
-export async function finishRound({ roomId, seed, timeLimit, botsNeeded, editableCells, myScore }) {
+// Returns a ranked array: [{ name, score, isBot, isSelf }]. `totalUnits`
+// caps how many correct units (cells/tiles) a bot can ever claim (see
+// bots.js) — generic across whichever puzzle is active.
+export async function finishRound({ roomId, seed, timeLimit, botsNeeded, totalUnits, myScore }) {
   const uid = auth.currentUser.uid;
 
   await checkQuota('write');
@@ -50,7 +51,7 @@ export async function finishRound({ roomId, seed, timeLimit, botsNeeded, editabl
     const name = botName(seed, i);
     return {
       name,
-      score: simulateBotScore(seed, i, timeLimit, editableCells),
+      score: simulateBotScore(seed, i, timeLimit, totalUnits),
       isBot: true,
       isSelf: false,
       avatarSeed: name,

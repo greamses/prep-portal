@@ -1,13 +1,13 @@
 /* ═══════════════════════════════════════════════════════
    PUZZLES — matchmaking
    Same algorithm as Drills' js/matchmaking.js — only the room's config
-   shape differs (difficulty/gridSize instead of operations/tables/
-   fractionTypes) and it lives in its own puzzleRooms/puzzleRoomPointers
-   collections. Two entry points:
+   shape differs (puzzleType/difficulty/gridSize instead of operations/
+   tables/fractionTypes) and it lives in its own puzzleRooms/
+   puzzleRoomPointers collections. Two entry points:
    - matchmake(): anonymous pool matching for Multiplayer, via a single
      transaction on a small per-bucket pointer doc
-     (puzzleRoomPointers/{mode_size_timeLimit_difficulty_gridSize}), so two
-     clients racing to start the same kind of room land in the SAME room
+     (puzzleRoomPointers/{mode_size_timeLimit_puzzleType_difficulty_gridSize}),
+     so two clients racing to start the same kind of room land in the SAME room
      instead of creating duplicates — Firestore's transaction retry handles
      the race, no manual conflict resolution needed.
    - createCodeRoom()/joinRoomByCode(): private 1v1 Versus rooms (or
@@ -51,7 +51,7 @@ async function checkQuota(kind) {
 
 // Waits for a room to go "active" (real joins + eventual bot fill), then
 // resolves with everything game.js/leaderboard.js need to run the round.
-function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomDifficulty, roomGridSize, isHost, waitMs, onWaiting }) {
+function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomPuzzleType, roomDifficulty, roomGridSize, isHost, waitMs, onWaiting }) {
   return new Promise((resolve, reject) => {
     const roomRef = doc(db, 'puzzleRooms', roomId);
     let settled = false;
@@ -83,7 +83,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomDiffi
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
-        difficulty: roomDifficulty, gridSize: roomGridSize,
+        puzzleType: roomPuzzleType, difficulty: roomDifficulty, gridSize: roomGridSize,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });
     }
@@ -140,9 +140,9 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomDiffi
   });
 }
 
-async function joinOrCreateRoom({ mode, size, timeLimit, difficulty, gridSize, displayName: name }) {
+async function joinOrCreateRoom({ mode, size, timeLimit, puzzleType, difficulty, gridSize, displayName: name }) {
   const user = auth.currentUser;
-  const bucketKey = `${mode}_${size}_${timeLimit}_${difficulty}_${gridSize}`;
+  const bucketKey = `${mode}_${size}_${timeLimit}_${puzzleType}_${difficulty}_${gridSize}`;
   const ptrRef = doc(db, 'puzzleRoomPointers', bucketKey);
   const now = Date.now();
   const displayName = name || user.displayName || 'Player';
@@ -168,33 +168,33 @@ async function joinOrCreateRoom({ mode, size, timeLimit, difficulty, gridSize, d
       return {
         roomId: roomSnap.id, isHost: false,
         size: room.size, timeLimit: room.timeLimit, seed: room.seed,
-        difficulty: room.difficulty, gridSize: room.gridSize,
+        puzzleType: room.puzzleType, difficulty: room.difficulty, gridSize: room.gridSize,
       };
     }
 
     const roomRef = doc(collection(db, 'puzzleRooms'));
     const seed = Math.floor(Math.random() * 2 ** 31);
     tx.set(roomRef, {
-      mode, size, timeLimit, difficulty, gridSize, status: 'waiting',
+      mode, size, timeLimit, puzzleType, difficulty, gridSize, status: 'waiting',
       seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
       createdAt: serverTimestamp(),
     });
     tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
     tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
-    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, difficulty, gridSize };
+    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, puzzleType, difficulty, gridSize };
   });
 
   reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
   return result;
 }
 
-// Resolves once the room is "active": { roomId, seed, timeLimit, difficulty, gridSize, size, startAt, botsNeeded }.
+// Resolves once the room is "active": { roomId, seed, timeLimit, puzzleType, difficulty, gridSize, size, startAt, botsNeeded }.
 // onWaiting(state) is called with { playerCount, size } while still in the lobby.
-export async function matchmake({ mode, size, timeLimit, difficulty, gridSize }, { onWaiting } = {}) {
-  const room = await joinOrCreateRoom({ mode, size, timeLimit, difficulty, gridSize });
+export async function matchmake({ mode, size, timeLimit, puzzleType, difficulty, gridSize }, { onWaiting } = {}) {
+  const room = await joinOrCreateRoom({ mode, size, timeLimit, puzzleType, difficulty, gridSize });
   return watchRoomUntilActive({
     roomId: room.roomId, seed: room.seed, roomSize: room.size,
-    roomTimeLimit: room.timeLimit, roomDifficulty: room.difficulty, roomGridSize: room.gridSize,
+    roomTimeLimit: room.timeLimit, roomPuzzleType: room.puzzleType, roomDifficulty: room.difficulty, roomGridSize: room.gridSize,
     isHost: room.isHost, waitMs: WAIT_MS, onWaiting,
   });
 }
@@ -203,7 +203,7 @@ export async function matchmake({ mode, size, timeLimit, difficulty, gridSize },
 // Room" path uses the chosen 5/10) and returns its code immediately (before
 // the round is ready) so the UI can display it for sharing. `roundReady`
 // resolves the same way matchmake() does, once the room goes active.
-export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, difficulty, gridSize, displayName: name }, { onWaiting } = {}) {
+export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, puzzleType, difficulty, gridSize, displayName: name }, { onWaiting } = {}) {
   const user = auth.currentUser;
   const code = generateCode();
   const roomRef = doc(collection(db, 'puzzleRooms'));
@@ -213,7 +213,7 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, dif
 
   await checkQuota('write');
   await setDoc(roomRef, {
-    mode, size, timeLimit, difficulty, gridSize, status: 'waiting',
+    mode, size, timeLimit, puzzleType, difficulty, gridSize, status: 'waiting',
     seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0, code,
     createdAt: serverTimestamp(),
   });
@@ -222,7 +222,7 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, dif
 
   const roundReady = watchRoomUntilActive({
     roomId: roomRef.id, seed, roomSize: size, roomTimeLimit: timeLimit,
-    roomDifficulty: difficulty, roomGridSize: gridSize,
+    roomPuzzleType: puzzleType, roomDifficulty: difficulty, roomGridSize: gridSize,
     isHost: true, waitMs: CODE_WAIT_MS, onWaiting,
   });
 
@@ -258,7 +258,7 @@ export async function joinRoomByCode(code, { onWaiting, displayName: name } = {}
 
   return watchRoomUntilActive({
     roomId: roomDoc.id, seed: room.seed, roomSize: room.size,
-    roomTimeLimit: room.timeLimit, roomDifficulty: room.difficulty, roomGridSize: room.gridSize,
+    roomTimeLimit: room.timeLimit, roomPuzzleType: room.puzzleType, roomDifficulty: room.difficulty, roomGridSize: room.gridSize,
     isHost: false, waitMs: CODE_WAIT_MS, onWaiting,
   });
 }

@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Puzzles — Multiplayer Sudoku Race | PrepPortal</title>
+    <title>Puzzles — Multiplayer Sudoku &amp; Slider Race | PrepPortal</title>
     <meta
       name="description"
-      content="Race up to 10 players (or go 1v1) to fill the most correct Sudoku cells before time runs out. Bots fill any empty seats."
+      content="Race up to 10 players (or go 1v1) in timed Sudoku or sliding-tile puzzles — most correct cells/tiles when time runs out wins. Bots fill any empty seats."
     />
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
@@ -55,13 +55,13 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Sudoku for now, more puzzles coming — pick a grid size and
-        difficulty, then race real players or bots to correctly fill the
-        most cells before the clock runs out. Versus is a private 1v1:
-        create a room and share the code.
+        Sudoku or sliding-tile — pick a grid size and difficulty, then race
+        real players or bots to correctly place the most cells/tiles
+        before the clock runs out. Versus is a private 1v1: create a room
+        and share the code.
       </p>
       <div class="builder-stats">
-        <span class="hero-stat" style="--tile: var(--accent-secondary)">4×4 6×6 <strong>9×9</strong></span>
+        <span class="hero-stat" style="--tile: var(--accent-secondary)">Sudoku <strong>Slider</strong></span>
         <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
         <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Bots</strong> Fill Empty Seats</span>
       </div>
@@ -102,6 +102,10 @@
                 <input type="radio" name="puzzle-type" value="sudoku" checked />
                 <span>Sudoku</span>
               </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
+                <input type="radio" name="puzzle-type" value="slider" />
+                <span>Slider</span>
+              </label>
             </div>
           </div>
 
@@ -130,11 +134,7 @@
                 </label>
               </div>
 
-              <div class="strip-group" id="puzzle-grid-size-row" role="radiogroup" aria-label="Grid size" data-label="Grid Size">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="puzzle-grid-size" value="4" /><span>4×4</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="puzzle-grid-size" value="6" /><span>6×6</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="puzzle-grid-size" value="9" checked /><span>9×9</span></label>
-              </div>
+              <div class="strip-group" id="puzzle-grid-size-row" role="radiogroup" aria-label="Grid size" data-label="Grid Size"></div>
 
               <div class="strip-group" id="puzzle-difficulty-row" role="radiogroup" aria-label="Difficulty" data-label="Difficulty">
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="puzzle-difficulty" value="easy" checked /><span>Easy</span></label>

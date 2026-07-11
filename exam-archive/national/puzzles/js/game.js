@@ -1,13 +1,18 @@
 /* ═══════════════════════════════════════════════════════
-   PUZZLES — round loop (Sudoku)
+   PUZZLES — round loop
    3-2-1 "get ready" beat from a shared startAt (rendered on the grid
-   itself, same as Drills' card), then a free-form NxN grid: click a cell,
-   type a digit — physical keys or the on-screen digit pad. Score is a live
-   count of correctly-filled editable cells; a full-solve ends the round
-   early. Timing after activation is entirely local (startAt/timeLimit),
-   no further server dependency during play.
+   itself, same as Drills' card), then a free-form NxN grid whose
+   interaction depends on the active puzzle:
+     - sudoku: click a cell, type a digit — physical keys or the on-screen
+       digit pad. Score is a live count of correctly-filled editable cells.
+     - slider: click any tile adjacent to the blank (or use arrow keys) to
+       slide it. Score is a live count of tiles in their solved position.
+   Either way, a full solve ends the round early, and timing after
+   activation is entirely local (startAt/timeLimit) — no further server
+   dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
+import { generateSlider, scoreSlider, countSliderTiles, movableIndices } from './slider.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,17 +27,23 @@ const scoreNote = $('puzzle-score-note');
 const timerNote = $('puzzle-timer-note');
 
 let active = false;
-let seed = 0;
+let puzzleType = 'sudoku';
 let gridSize = 9;
-let givens = null;
-let solution = null;
-let current = null; // mutable NxN working grid
-let editableTotal = 0;
-let selected = null; // { r, c } or null
+let totalUnits = 0;
 let score = 0;
 let endAt = 0;
 let rafId = null;
 let resolveRound = null;
+
+// Sudoku-only state
+let givens = null;
+let solution = null;
+let current = null; // mutable NxN working grid
+let selected = null; // { r, c } or null
+
+// Slider-only state
+let board = null; // flat length-N² array, 0 = blank
+let solvedBoard = null;
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -53,11 +64,9 @@ function renderRoster(roster) {
   rosterEl.hidden = false;
 }
 
-function cellKey(r, c) { return `${r}_${c}`; }
-
-function buildGrid() {
-  gridEl.innerHTML = '';
-  gridEl.style.setProperty('--grid-size', gridSize);
+// ── Sudoku ───────────────────────────────────────────────────────────────
+function buildSudokuGrid() {
+  gridEl.classList.add('sudoku-grid');
   const config = gridSize === 4 ? { boxW: 2, boxH: 2 } : gridSize === 6 ? { boxW: 3, boxH: 2 } : { boxW: 3, boxH: 3 };
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
@@ -122,24 +131,103 @@ function setDigit(d) {
   }
 
   score = scoreGrid(current, solution, givens);
-  scoreNote.textContent = `${score}/${editableTotal} correct`;
-  if (score >= editableTotal) endRound(); // fully (correctly) solved — no need to wait out the clock
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  if (score >= totalUnits) endRound(); // fully (correctly) solved — no need to wait out the clock
+}
+
+// ── Slider ───────────────────────────────────────────────────────────────
+function buildSliderGrid() {
+  gridEl.classList.add('slider-grid');
+  for (let i = 0; i < board.length; i++) {
+    const isBlank = board[i] === 0;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `slider-tile${isBlank ? ' is-blank' : ''}`;
+    btn.dataset.index = String(i);
+    btn.textContent = isBlank ? '' : String(board[i]);
+    btn.disabled = isBlank;
+    gridEl.appendChild(btn);
+  }
+  updateMovableHighlights();
+}
+
+function updateMovableHighlights() {
+  const movable = new Set(movableIndices(board, gridSize));
+  gridEl.querySelectorAll('.slider-tile').forEach((el) => {
+    el.classList.toggle('is-movable', movable.has(parseInt(el.dataset.index, 10)));
+  });
+}
+
+function slideTile(fromIndex) {
+  if (!active) return;
+  const blank = board.indexOf(0);
+  if (!movableIndices(board, gridSize).includes(fromIndex)) return;
+
+  board[blank] = board[fromIndex];
+  board[fromIndex] = 0;
+
+  const blankEl = gridEl.children[blank];
+  const movedEl = gridEl.children[fromIndex];
+  blankEl.textContent = String(board[blank]);
+  blankEl.className = 'slider-tile';
+  blankEl.disabled = false;
+  movedEl.textContent = '';
+  movedEl.className = 'slider-tile is-blank';
+  movedEl.disabled = true;
+
+  const isCorrect = board[blank] === solvedBoard[blank];
+  blankEl.classList.toggle('is-correct', isCorrect);
+  if (isCorrect) {
+    blankEl.classList.add('correct-flash');
+    setTimeout(() => blankEl.classList.remove('correct-flash'), 260);
+  }
+
+  updateMovableHighlights();
+  score = scoreSlider(board, solvedBoard);
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  if (score >= totalUnits) endRound();
+}
+
+// ── Shared input dispatch ─────────────────────────────────────────────────
+function buildGrid() {
+  gridEl.innerHTML = '';
+  gridEl.classList.remove('sudoku-grid', 'slider-grid');
+  gridEl.style.setProperty('--grid-size', gridSize);
+  if (puzzleType === 'slider') buildSliderGrid();
+  else buildSudokuGrid();
 }
 
 function onGridClick(e) {
+  if (!active) return;
+  if (puzzleType === 'slider') {
+    const btn = e.target.closest('.slider-tile.is-movable');
+    if (btn) slideTile(parseInt(btn.dataset.index, 10));
+    return;
+  }
   const btn = e.target.closest('.sudoku-cell.is-editable');
-  if (!btn || !active) return;
-  selectCell(parseInt(btn.dataset.r, 10), parseInt(btn.dataset.c, 10));
+  if (btn) selectCell(parseInt(btn.dataset.r, 10), parseInt(btn.dataset.c, 10));
 }
 
 function onDigitPadClick(e) {
+  if (!active || puzzleType !== 'sudoku') return;
   const btn = e.target.closest('.puzzle-digit-btn');
-  if (!btn || !active) return;
-  setDigit(parseInt(btn.dataset.digit, 10));
+  if (btn) setDigit(parseInt(btn.dataset.digit, 10));
 }
 
 function onKeydown(e) {
-  if (!active || !selected) return;
+  if (!active) return;
+
+  if (puzzleType === 'slider') {
+    // Arrow direction = which way a tile slides (the blank moves opposite).
+    const deltaFor = { ArrowUp: gridSize, ArrowDown: -gridSize, ArrowLeft: 1, ArrowRight: -1 };
+    if (!(e.key in deltaFor)) return;
+    e.preventDefault();
+    const target = board.indexOf(0) + deltaFor[e.key];
+    if (movableIndices(board, gridSize).includes(target)) slideTile(target);
+    return;
+  }
+
+  if (!selected) return;
   if (e.key >= '1' && e.key <= '9') {
     const d = parseInt(e.key, 10);
     if (d <= gridSize) setDigit(d);
@@ -173,7 +261,7 @@ function endRound() {
   if (rafId) cancelAnimationFrame(rafId);
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
-  const result = { score, editableCells: editableTotal };
+  const result = { score, totalUnits };
   if (resolveRound) resolveRound(result);
   resolveRound = null;
 }
@@ -182,33 +270,41 @@ gridEl.addEventListener('click', onGridClick);
 digitPad.addEventListener('click', onDigitPadClick);
 document.addEventListener('keydown', onKeydown);
 
-// Resolves with { score, editableCells } once the local timer hits zero
-// (or the puzzle is fully solved early) — editableCells lets the caller
-// pass the same cap to bot simulation without regenerating the puzzle.
-export function startRound({ seed: roomSeed, timeLimit, startAt, difficulty, gridSize: size, roster }) {
+// Resolves with { score, totalUnits } once the local timer hits zero (or
+// the puzzle is fully solved early) — totalUnits lets the caller pass the
+// same cap to bot simulation without regenerating the puzzle.
+export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficulty, gridSize: size, roster }) {
   return new Promise((resolve) => {
-    seed = roomSeed;
+    puzzleType = type;
     gridSize = size;
-    const puzzle = generatePuzzle(seed, difficulty, gridSize);
-    givens = puzzle.givens;
-    solution = puzzle.solution;
-    current = givens.map((row) => row.slice());
-    editableTotal = countEditableCells(givens);
     selected = null;
     score = 0;
     resolveRound = resolve;
 
-    scoreNote.textContent = `0/${editableTotal} correct`;
+    if (puzzleType === 'slider') {
+      const puzzle = generateSlider(seed, difficulty, gridSize);
+      board = puzzle.board;
+      solvedBoard = puzzle.solved;
+      totalUnits = countSliderTiles(gridSize);
+    } else {
+      const puzzle = generatePuzzle(seed, difficulty, gridSize);
+      givens = puzzle.givens;
+      solution = puzzle.solution;
+      current = givens.map((row) => row.slice());
+      totalUnits = countEditableCells(givens);
+    }
+
+    scoreNote.textContent = `0/${totalUnits} correct`;
     timerNote.textContent = `${formatClock(timeLimit)} round`;
     gridWrap.hidden = false;
     countdownEl.hidden = false;
     gridEl.hidden = true;
-    digitPad.hidden = true;
+    digitPad.hidden = puzzleType !== 'sudoku';
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
     buildGrid();
-    renderDigitPad();
+    if (puzzleType === 'sudoku') renderDigitPad();
 
     playBd.classList.add('open');
     playBd.setAttribute('aria-hidden', 'false');
@@ -220,7 +316,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, difficulty, gri
         countdownEl.hidden = true;
         rosterEl.hidden = true;
         gridEl.hidden = false;
-        digitPad.hidden = false;
+        if (puzzleType === 'sudoku') digitPad.hidden = false;
         endAt = startAt + timeLimit * 1000;
         rafId = requestAnimationFrame(tick);
         return;
