@@ -127,7 +127,7 @@ body.drill-nav-hidden .site-nav { display: none; }
 .drill-receipt-paper {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.7rem;
   padding: 1.8rem 1.6rem 2rem;
 }
 .drill-receipt-title {
@@ -143,7 +143,7 @@ body.drill-nav-hidden .site-nav { display: none; }
   margin: 0;
 }
 
-.drill-field { display: flex; flex-direction: column; gap: 0.6rem; }
+.drill-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
 .drill-field > span {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -151,6 +151,27 @@ body.drill-nav-hidden .site-nav { display: none; }
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
+}
+
+/* Every section after the first gets a torn-paper tear line above it —
+   same conic-gradient "teeth" mask as .pp-receipt__paper's own top/bottom
+   edge, just a single zigzag edge on a thin strip instead of a full lens,
+   so each section on the setup reads as its own torn-off slip. */
+.drill-field:not(:first-of-type) {
+  margin-top: 0.15rem;
+  padding-top: 1.3rem;
+}
+.drill-field:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1.6rem;
+  right: -1.6rem;
+  height: 11px;
+  --tooth: 11px;
+  background: var(--border-subtle);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
 }
 
 /* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
@@ -171,18 +192,33 @@ body.drill-nav-hidden .site-nav { display: none; }
   max-width: 400px;
 }
 
-/* ── ONE STRIP — mode/size/time/operations/tables all flow together as a
-   single wrapping collage of sticky notes, no per-category sub-headers.
-   Each category stays its own DOM node (for radiogroup/group semantics and
-   JS querying) but renders as `display: contents` so it contributes no box
-   of its own — just its note children join the outer flex-wrap row. */
+/* ── OPTIONS STRIP — each selector group (mode, size, time, operations,
+   range) is its own labeled row, stacked with a clear gap, instead of one
+   merged wrapping collage — makes it obvious where one selector ends and
+   the next begins. */
 .drill-strip {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.strip-group {
+  display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem 0.7rem;
+  gap: 0.6rem 0.55rem;
+  align-items: center;
   justify-content: center;
 }
-.strip-group { display: contents; }
+.strip-group::before {
+  content: attr(data-label);
+  flex: 0 0 100%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  text-align: center;
+}
 /* Compound with .pp-sticky (see .drill-lb-row.pp-sticky above for why) —
    loader.js's late-injected @import of components.css can otherwise beat
    this page's own padding at an equal-specificity tie. */
