@@ -155,6 +155,10 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
   gap: 0.9rem 0.6rem;
 }
+.drill-avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  max-width: 420px;
+}
 .sticky-choice {
   display: flex;
   align-items: center;
@@ -177,6 +181,27 @@ body {
   height: 16px;
   accent-color: #14130f;
   cursor: pointer;
+}
+
+/* Avatar picker — same sticky-note selection pattern, but the picture does
+   the talking so the radio input is present (for a11y/keyboard) yet
+   visually hidden; the checked-glow ring is the only selection affordance. */
+.avatar-choice {
+  padding: 0.5rem;
+  aspect-ratio: 1;
+}
+.avatar-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .drill-start-btn {
@@ -493,4 +518,26 @@ body {
   border-radius: var(--radius-sm);
   padding: 0.8rem 1.4rem;
   cursor: pointer;
+}
+
+/* ── CONFETTI — fired once when the signed-in player wins their round. ── */
+.drill-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+.drill-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: drill-confetti-fall linear forwards;
+}
+@keyframes drill-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
 }

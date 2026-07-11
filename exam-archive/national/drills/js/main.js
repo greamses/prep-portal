@@ -18,6 +18,12 @@ const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 // its real name and a real player's avatar stays consistent with their uid.
 const avatarUrl = (seed) => `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
 
+// Curated seeds for the player's own avatar picker — any string works with
+// DiceBear, these are just a fun fixed set to choose between.
+const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
+const AVATAR_SEED_KEY = 'drillAvatarSeed';
+let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0];
+
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -28,6 +34,7 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
   <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
 </svg>`;
 
+const avatarGrid = $('drill-avatar-grid');
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
 const tablesGrid = $('drill-tables-grid');
@@ -83,6 +90,24 @@ tablesGrid.addEventListener('change', (e) => {
 
 modeToggle.addEventListener('change', () => {
   sizeField.hidden = getMode() === 'versus';
+});
+
+function renderAvatarGrid() {
+  avatarGrid.innerHTML = '';
+  AVATAR_SEEDS.forEach((seed, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice ${stickyColor(i)}`;
+    label.innerHTML = `<input type="radio" name="drill-avatar" value="${seed}" ${seed === selectedAvatarSeed ? 'checked' : ''} /><img src="${avatarUrl(seed)}" alt="${seed} avatar" loading="lazy" />`;
+    avatarGrid.appendChild(label);
+  });
+}
+renderAvatarGrid();
+
+avatarGrid.addEventListener('change', (e) => {
+  const input = e.target.closest('input[name="drill-avatar"]');
+  if (!input) return;
+  selectedAvatarSeed = input.value;
+  localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
 });
 
 // Seats fill in (and pop) as real players join — re-rendered on every
@@ -163,10 +188,38 @@ function renderResults(ranked) {
   });
   resultsBd.classList.add('open');
   resultsBd.setAttribute('aria-hidden', 'false');
+
+  // The winner's note is revealed last (delay = (total-1)*130ms) — fire the
+  // confetti right as it lands, only when the signed-in player won.
+  if (ranked[0] && ranked[0].isSelf) {
+    const winnerRevealMs = (total - 1) * 130 + 400;
+    setTimeout(launchConfetti, winnerRevealMs);
+  }
 }
 function hideResults() {
   resultsBd.classList.remove('open');
   resultsBd.setAttribute('aria-hidden', 'true');
+}
+
+// A short vanilla confetti burst — no library, just falling/rotating divs
+// — fired once when the signed-in player takes first place.
+function launchConfetti() {
+  const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
+  const container = document.createElement('div');
+  container.className = 'drill-confetti';
+  document.body.appendChild(container);
+  for (let i = 0; i < 70; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'drill-confetti-piece';
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDelay = `${Math.random() * 0.4}s`;
+    piece.style.animationDuration = `${2.2 + Math.random() * 1.2}s`;
+    piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
+    piece.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 3800);
 }
 
 async function runDrill() {
@@ -222,8 +275,12 @@ async function runDrill() {
       myScore,
     });
   } catch (e) {
-    ranked = [{ name: 'You', score: myScore, isBot: false, isSelf: true, avatarSeed: auth.currentUser.uid }];
+    ranked = [{ name: 'You', score: myScore, isBot: false, isSelf: true, avatarSeed: selectedAvatarSeed }];
   }
+  // Show the player's own chosen avatar on the leaderboard, not the
+  // uid-derived one leaderboard.js falls back to.
+  const selfRow = ranked.find((r) => r.isSelf);
+  if (selfRow) selfRow.avatarSeed = selectedAvatarSeed;
 
   startBtn.disabled = false;
   renderResults(ranked);

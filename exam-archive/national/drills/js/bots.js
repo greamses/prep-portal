@@ -29,7 +29,9 @@ export function botName(seed, botSlot) {
 
 export function simulateBotScore(seed, botSlot, timeLimitSec) {
   const rng = mulberry32(hashSeed(seed, BOT_NS + botSlot));
-  const speed = 1.8 + rng() * 3.2; // baseline seconds per question (skill)
+  // Tuned so the best bot in a typical room (9 rolls) lands ~38-49 correct
+  // over a 60s round: median ~39, p90 ~46, occasional outliers to ~52.
+  const speed = 1.15 + rng() * 2.6; // baseline seconds per question (skill)
   const errorRate = 0.02 + rng() * 0.18; // chance a question costs a fumbled retry
   let elapsed = 0;
   let correct = 0;
