@@ -55,10 +55,11 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Basic (add, multiply, divide) or Exponent (square, cube, roots) — pick
-        a number range and race real players or bots to see who can answer
-        the most before the clock runs out. Versus is a private 1v1: create a
-        room and share the code.
+        Basic (add, multiply, divide), Exponent (square, cube, roots) or
+        Fractions (like, unlike, whole vs fraction) — pick a number range and
+        race real players or bots to see who can answer the most before the
+        clock runs out. Versus is a private 1v1: create a room and share the
+        code.
       </p>
       <div class="builder-stats">
         <span class="hero-stat" style="--tile: var(--accent-secondary)">+ × ÷ x² x³ <strong>√x ∛x</strong></span>
@@ -104,6 +105,10 @@
                 <input type="radio" name="drill-category" value="exponent" />
                 <span>Exponent</span>
               </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
+                <input type="radio" name="drill-category" value="fractions" />
+                <span>Fractions</span>
+              </label>
             </div>
           </div>
 
@@ -138,6 +143,8 @@
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="drill-time" value="90" /><span>90s</span></label>
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="drill-time" value="120" /><span>120s</span></label>
               </div>
+
+              <div class="strip-group" id="drill-fraction-type-row" role="group" aria-label="Fraction type" data-label="Fraction Type" hidden></div>
 
               <div class="strip-group" id="drill-operations-row" role="group" aria-label="Operations" data-label="Operations"></div>
 
@@ -233,12 +240,23 @@
           id="drill-answer-input"
           class="drill-answer-input-hidden"
           type="text"
-          inputmode="numeric"
-          pattern="[0-9]*"
+          inputmode="text"
           autocomplete="off"
-          maxlength="4"
+          maxlength="7"
           aria-label="Type your answer"
         />
+      </div>
+    </div>
+
+    <!-- ═══ AWAITING RESULTS OVERLAY — bridges the gap between the round
+         ending and the leaderboard read landing, so the bare setup page
+         never flashes in between. ═══ -->
+    <div class="review-bd" id="drill-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="drill-awaiting">
+          <div class="drill-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="drill-awaiting-text">Tallying scores…</p>
+        </div>
       </div>
     </div>
 

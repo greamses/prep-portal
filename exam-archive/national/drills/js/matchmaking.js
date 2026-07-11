@@ -3,7 +3,7 @@
    Two entry points:
    - matchmake(): anonymous pool matching for Multiplayer, via a single
      transaction on a small per-bucket pointer doc
-     (drillRoomPointers/{mode_size_timeLimit_operations_tables}), so two
+     (drillRoomPointers/{mode_size_timeLimit_operations_tables_fractionTypes}), so two
      clients racing to start the same kind of room land in the SAME room
      instead of creating duplicates — Firestore's transaction retry handles
      the race, no manual conflict resolution needed.
@@ -47,7 +47,7 @@ async function checkQuota(kind) {
 
 // Waits for a room to go "active" (real joins + eventual bot fill), then
 // resolves with everything game.js/leaderboard.js need to run the round.
-function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOperations, roomTables, isHost, waitMs, onWaiting }) {
+function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOperations, roomTables, roomFractionTypes, isHost, waitMs, onWaiting }) {
   return new Promise((resolve, reject) => {
     const roomRef = doc(db, 'drillRooms', roomId);
     let settled = false;
@@ -79,7 +79,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOpera
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
-        operations: roomOperations, tables: roomTables,
+        operations: roomOperations, tables: roomTables, fractionTypes: roomFractionTypes,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });
     }
@@ -136,11 +136,12 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomOpera
   });
 }
 
-async function joinOrCreateRoom({ mode, size, timeLimit, operations, tables, displayName: name }) {
+async function joinOrCreateRoom({ mode, size, timeLimit, operations, tables, fractionTypes, displayName: name }) {
   const user = auth.currentUser;
   const opsKey = [...operations].sort().join(',');
   const tablesKey = [...tables].sort((a, b) => a - b).join(',');
-  const bucketKey = `${mode}_${size}_${timeLimit}_${opsKey}_${tablesKey}`;
+  const fracKey = [...fractionTypes].sort().join(',');
+  const bucketKey = `${mode}_${size}_${timeLimit}_${opsKey}_${tablesKey}_${fracKey}`;
   const ptrRef = doc(db, 'drillRoomPointers', bucketKey);
   const now = Date.now();
   const displayName = name || user.displayName || 'Player';
@@ -166,33 +167,34 @@ async function joinOrCreateRoom({ mode, size, timeLimit, operations, tables, dis
       return {
         roomId: roomSnap.id, isHost: false,
         size: room.size, timeLimit: room.timeLimit, seed: room.seed,
-        operations: room.operations, tables: room.tables,
+        operations: room.operations, tables: room.tables, fractionTypes: room.fractionTypes || [],
       };
     }
 
     const roomRef = doc(collection(db, 'drillRooms'));
     const seed = Math.floor(Math.random() * 2 ** 31);
     tx.set(roomRef, {
-      mode, size, timeLimit, operations, tables, status: 'waiting',
+      mode, size, timeLimit, operations, tables, fractionTypes, status: 'waiting',
       seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
       createdAt: serverTimestamp(),
     });
     tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
     tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
-    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, operations, tables };
+    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, operations, tables, fractionTypes };
   });
 
   reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
   return result;
 }
 
-// Resolves once the room is "active": { roomId, seed, timeLimit, operations, tables, size, startAt, botsNeeded }.
+// Resolves once the room is "active": { roomId, seed, timeLimit, operations, tables, fractionTypes, size, startAt, botsNeeded }.
 // onWaiting(state) is called with { playerCount, size } while still in the lobby.
-export async function matchmake({ mode, size, timeLimit, operations, tables }, { onWaiting } = {}) {
-  const room = await joinOrCreateRoom({ mode, size, timeLimit, operations, tables });
+export async function matchmake({ mode, size, timeLimit, operations, tables, fractionTypes = [] }, { onWaiting } = {}) {
+  const room = await joinOrCreateRoom({ mode, size, timeLimit, operations, tables, fractionTypes });
   return watchRoomUntilActive({
     roomId: room.roomId, seed: room.seed, roomSize: room.size,
     roomTimeLimit: room.timeLimit, roomOperations: room.operations, roomTables: room.tables,
+    roomFractionTypes: room.fractionTypes,
     isHost: room.isHost, waitMs: WAIT_MS, onWaiting,
   });
 }
@@ -201,7 +203,7 @@ export async function matchmake({ mode, size, timeLimit, operations, tables }, {
 // Room" path uses the chosen 5/10) and returns its code immediately (before
 // the round is ready) so the UI can display it for sharing. `roundReady`
 // resolves the same way matchmake() does, once the room goes active.
-export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, operations, tables, displayName: name }, { onWaiting } = {}) {
+export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, operations, tables, fractionTypes = [], displayName: name }, { onWaiting } = {}) {
   const user = auth.currentUser;
   const code = generateCode();
   const roomRef = doc(collection(db, 'drillRooms'));
@@ -211,7 +213,7 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, ope
 
   await checkQuota('write');
   await setDoc(roomRef, {
-    mode, size, timeLimit, operations, tables, status: 'waiting',
+    mode, size, timeLimit, operations, tables, fractionTypes, status: 'waiting',
     seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0, code,
     createdAt: serverTimestamp(),
   });
@@ -220,7 +222,7 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, ope
 
   const roundReady = watchRoomUntilActive({
     roomId: roomRef.id, seed, roomSize: size, roomTimeLimit: timeLimit,
-    roomOperations: operations, roomTables: tables,
+    roomOperations: operations, roomTables: tables, roomFractionTypes: fractionTypes,
     isHost: true, waitMs: CODE_WAIT_MS, onWaiting,
   });
 
@@ -257,6 +259,7 @@ export async function joinRoomByCode(code, { onWaiting, displayName: name } = {}
   return watchRoomUntilActive({
     roomId: roomDoc.id, seed: room.seed, roomSize: room.size,
     roomTimeLimit: room.timeLimit, roomOperations: room.operations, roomTables: room.tables,
+    roomFractionTypes: room.fractionTypes || [],
     isHost: false, waitMs: CODE_WAIT_MS, onWaiting,
   });
 }

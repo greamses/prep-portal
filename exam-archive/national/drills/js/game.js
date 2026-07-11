@@ -24,7 +24,7 @@ const timerNote = $('drill-timer-note');
 let active = false;
 let locked = false;
 let seed = 0;
-let questionOpts = { operations: ['multiply', 'divide'], tables: undefined };
+let questionOpts = { operations: ['multiply', 'divide'], tables: undefined, fractionTypes: undefined };
 let currentIndex = 0;
 let currentQuestion = null;
 let score = 0;
@@ -57,13 +57,32 @@ function renderQuestion() {
   typedEl.textContent = '';
 }
 
+// Fraction answers ("3/8") are graded as an exact string match — typed with
+// a plain "/" (display-only text uses the Unicode fraction slash instead).
+// Plain-number answers stay parseInt-tolerant (e.g. forgives a leading
+// zero), same as before fractions existed.
+function isCorrectAnswer(typed, answer) {
+  if (typeof answer === 'number') return typed !== '' && parseInt(typed, 10) === answer;
+  return typed === answer;
+}
+
+// Strip to digits + at most one "/", which can't lead — everything else a
+// plain-number question ever produces is still just digits.
+function sanitizeTyped(raw) {
+  let s = raw.replace(/[^0-9/]/g, '');
+  const slash = s.indexOf('/');
+  if (slash !== -1) s = s.slice(0, slash + 1) + s.slice(slash + 1).replace(/\//g, '');
+  if (s.startsWith('/')) s = s.slice(1);
+  return s.slice(0, 7);
+}
+
 function onInput() {
   if (!active) return;
-  const digits = inputEl.value.replace(/\D/g, '').slice(0, 4);
+  const digits = sanitizeTyped(inputEl.value);
   inputEl.value = digits;
   typedEl.textContent = digits;
   if (locked || digits === '') return;
-  if (parseInt(digits, 10) === currentQuestion.answer) {
+  if (isCorrectAnswer(digits, currentQuestion.answer)) {
     locked = true;
     score += 1;
     scoreNote.textContent = `${score} correct`;
@@ -104,10 +123,10 @@ cardEl.addEventListener('click', focusInput);
 
 // Resolves with the player's final correct-answer count once the local
 // timer hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, roster }) {
+export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, fractionTypes, roster }) {
   return new Promise((resolve) => {
     seed = roomSeed;
-    questionOpts = { operations, tables };
+    questionOpts = { operations, tables, fractionTypes };
     score = 0;
     currentIndex = 0;
     locked = false;

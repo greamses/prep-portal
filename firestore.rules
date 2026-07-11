@@ -238,10 +238,15 @@ service cloud.firestore {
         request.resource.data.timeLimit in [30, 60, 90, 120] &&
         request.resource.data.operations is list &&
         request.resource.data.operations.size() > 0 &&
-        request.resource.data.operations.hasOnly(['add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot']) &&
+        request.resource.data.operations.hasOnly([
+          'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot',
+          'fracAdd', 'fracSub', 'fracMul', 'fracDiv'
+        ]) &&
         request.resource.data.tables is list &&
         request.resource.data.tables.size() > 0 &&
-        request.resource.data.tables.size() <= 100;
+        request.resource.data.tables.size() <= 100 &&
+        request.resource.data.fractionTypes is list &&
+        request.resource.data.fractionTypes.hasOnly(['like', 'unlike', 'wholeFraction']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

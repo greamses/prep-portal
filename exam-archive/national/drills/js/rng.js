@@ -40,18 +40,103 @@ export const ALL_TABLES = Array.from({ length: 100 }, (_, i) => i + 1);
 // is drilled as a whole range, never cherry-picked number by number.
 export const UNIT_NUMBERS = Array.from({ length: 9 }, (_, i) => i + 1);
 
-export const ALL_OPERATIONS = ['add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot'];
+export const ALL_OPERATIONS = [
+  'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot',
+  'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
+];
+
+export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
+
+function gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { [a, b] = [b, a % b]; }
+  return a || 1;
+}
+
+// Canonical graded answer for a fraction: reduced, and just the whole
+// number (no "/1") when it comes out even — matches what a player would
+// actually type on a plain keyboard ("3/8", "5").
+function fracAnswer(num, den) {
+  const g = gcd(num, den);
+  const n = num / g, d = den / g;
+  return d === 1 ? String(n) : `${n}/${d}`;
+}
+// Display uses the Unicode fraction slash (⁄) purely for typesetting —
+// the graded answer above always uses a plain "/", matching what's typed.
+const fracText = (num, den) => `${num}⁄${den}`;
+
+function drawFrom(rng, pool) { return pool[Math.floor(rng() * pool.length)]; }
+
+// Two pool draws that are guaranteed different (so "unlike" denominators
+// are actually unlike) and at least `min`, with a bounded retry — pools
+// this small only show up for a hand-picked 1-9 set, and min is 2 there.
+function distinctPair(rng, pool, min) {
+  let x = Math.max(drawFrom(rng, pool), min);
+  let y = Math.max(drawFrom(rng, pool), min);
+  let guard = 0;
+  while (y === x && guard < 20) { y = Math.max(drawFrom(rng, pool), min); guard += 1; }
+  if (y === x) y += 1;
+  return [x, y];
+}
+
+// One fraction question: `type` picks the shape (same denominator, mixed
+// denominators, or a whole number paired with a fraction), `op` picks the
+// arithmetic. Every branch is built so the result never needs simplifying
+// beyond gcd-reduction and never goes negative (subtraction always takes
+// the larger operand first).
+function fractionQuestionAt(rng, pool, n, op, type) {
+  if (type === 'like') {
+    const denom = Math.max(n, 3);
+    const a = 1 + Math.floor(rng() * (denom - 1));
+    const b = 1 + Math.floor(rng() * (denom - 1));
+    if (op === 'fracAdd') return { text: `${fracText(a, denom)} + ${fracText(b, denom)}`, answer: fracAnswer(a + b, denom) };
+    if (op === 'fracSub') {
+      const hi = Math.max(a, b), lo = Math.min(a, b);
+      return { text: `${fracText(hi, denom)} − ${fracText(lo, denom)}`, answer: fracAnswer(hi - lo, denom) };
+    }
+    if (op === 'fracMul') return { text: `${fracText(a, denom)} × ${fracText(b, denom)}`, answer: fracAnswer(a * b, denom * denom) };
+    return { text: `${fracText(a, denom)} ÷ ${fracText(b, denom)}`, answer: fracAnswer(a, b) }; // shared denom cancels
+  }
+
+  if (type === 'unlike') {
+    const [x, y] = distinctPair(rng, pool, 2);
+    const a = 1 + Math.floor(rng() * (x - 1));
+    const b = 1 + Math.floor(rng() * (y - 1));
+    if (op === 'fracAdd') return { text: `${fracText(a, x)} + ${fracText(b, y)}`, answer: fracAnswer(a * y + b * x, x * y) };
+    if (op === 'fracSub') {
+      const diff = a * y - b * x;
+      return diff >= 0
+        ? { text: `${fracText(a, x)} − ${fracText(b, y)}`, answer: fracAnswer(diff, x * y) }
+        : { text: `${fracText(b, y)} − ${fracText(a, x)}`, answer: fracAnswer(-diff, x * y) };
+    }
+    if (op === 'fracMul') return { text: `${fracText(a, x)} × ${fracText(b, y)}`, answer: fracAnswer(a * b, x * y) };
+    return { text: `${fracText(a, x)} ÷ ${fracText(b, y)}`, answer: fracAnswer(a * y, x * b) };
+  }
+
+  // wholeFraction: a whole number paired with a fraction.
+  const denom = Math.max(drawFrom(rng, pool), 2);
+  const whole = Math.max(n, 1);
+  const a = 1 + Math.floor(rng() * (denom - 1));
+  if (op === 'fracAdd') return { text: `${whole} + ${fracText(a, denom)}`, answer: fracAnswer(whole * denom + a, denom) };
+  if (op === 'fracSub') return { text: `${whole} − ${fracText(a, denom)}`, answer: fracAnswer(whole * denom - a, denom) };
+  if (op === 'fracMul') return { text: `${whole} × ${fracText(a, denom)}`, answer: fracAnswer(whole * a, denom) };
+  return { text: `${whole} ÷ ${fracText(a, denom)}`, answer: fracAnswer(whole * denom, a) };
+}
+
+const FRACTION_OPS = ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'];
 
 // `tables` is the pool a question's "base" number is drawn from — either a
 // hand-picked set of 1-9 numbers or a whole decade range (see main.js). For
 // add/multiply/divide, one operand comes from that pool, the other is free,
 // 1–12 (mirroring the flashcards Facts picker); for square/sqrt/cube/
-// cuberoot, `tables` supplies the number being raised/rooted. `operations`
-// is a non-empty subset of ALL_OPERATIONS — one is drawn at random per
-// question. Division always divides evenly (built from a product, then
-// presented as dividend ÷ divisor) — never a non-integer result, and
-// square/cube root are always a perfect power for the same reason.
-export function questionAt(seed, index, { operations = ['multiply', 'divide'], tables = ALL_TABLES } = {}) {
+// cuberoot, `tables` supplies the number being raised/rooted; for the
+// fracAdd/fracSub/fracMul/fracDiv ops it supplies denominators, gated by
+// `fractionTypes` (like/unlike/wholeFraction). `operations` is a non-empty
+// subset of ALL_OPERATIONS — one is drawn at random per question. Division
+// always divides evenly (built from a product, then presented as dividend
+// ÷ divisor) — never a non-integer result, and square/cube root are always
+// a perfect power for the same reason.
+export function questionAt(seed, index, { operations = ['multiply', 'divide'], tables = ALL_TABLES, fractionTypes = ALL_FRACTION_TYPES } = {}) {
   const rng = mulberry32(hashSeed(seed, QUESTION_NS + index));
   const ops = operations.length ? operations : ['multiply', 'divide'];
   const op = ops[Math.floor(rng() * ops.length)];
@@ -62,6 +147,12 @@ export function questionAt(seed, index, { operations = ['multiply', 'divide'], t
   if (op === 'sqrt') return { text: `√${n * n}`, answer: n };
   if (op === 'cube') return { text: `${n}³`, answer: n * n * n };
   if (op === 'cuberoot') return { text: `∛${n * n * n}`, answer: n };
+
+  if (FRACTION_OPS.includes(op)) {
+    const types = fractionTypes.length ? fractionTypes : ALL_FRACTION_TYPES;
+    const type = types[Math.floor(rng() * types.length)];
+    return fractionQuestionAt(rng, pool, n, op, type);
+  }
 
   const other = 1 + Math.floor(rng() * 12);
   if (op === 'divide') {

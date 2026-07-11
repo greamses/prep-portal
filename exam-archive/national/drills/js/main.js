@@ -32,19 +32,28 @@ const OPERATION_LABELS = {
   add: '+ Addition', multiply: '× Multiply', divide: '÷ Divide',
   square: 'x² Square', sqrt: '√x Root',
   cube: 'x³ Cube', cuberoot: '∛x Cube Root',
+  fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
 // (multiply + divide ticked, addition opt-in — mirrors the old flat list's
-// defaults); Exponent starts fully opt-in, same as square/sqrt used to be.
+// defaults); Exponent and Fractions start fully opt-in, same as square/sqrt
+// used to be.
 const CATEGORY_OPERATIONS = {
   basic: ['add', 'multiply', 'divide'],
   exponent: ['square', 'cube', 'sqrt', 'cuberoot'],
+  fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
   exponent: [],
+  fractions: [],
 };
+
+// Fractions gets a second selector dimension — which shape of fraction
+// question to draw (independent of which operation is ticked above).
+const FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
+const FRACTION_TYPE_LABELS = { like: 'Like', unlike: 'Unlike', wholeFraction: 'Whole vs Fraction' };
 
 // A question's "base" number is drawn from whichever pool these describe:
 // hand-picked 1-9 numbers, or a whole decade practiced as one block ("higher
@@ -79,6 +88,7 @@ const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
 const categoryToggle = $('drill-category-toggle');
 const operationsRow = $('drill-operations-row');
+const fractionTypeRow = $('drill-fraction-type-row');
 const rangeRow = $('drill-range-row');
 const numbersField = $('drill-numbers-field');
 const numbersGrid = $('drill-numbers-grid');
@@ -100,14 +110,26 @@ const lobbySeats = $('drill-lobby-seats');
 const lobbyCount = $('drill-lobby-count');
 const lobbyCancel = $('drill-lobby-cancel');
 
+const awaitingBd = $('drill-awaiting-bd');
+
 const resultsBd = $('drill-results-bd');
 const leaderboardEl = $('drill-leaderboard');
 const againBtn = $('drill-again-btn');
+
+function showAwaiting() {
+  awaitingBd.classList.add('open');
+  awaitingBd.setAttribute('aria-hidden', 'false');
+}
+function hideAwaiting() {
+  awaitingBd.classList.remove('open');
+  awaitingBd.setAttribute('aria-hidden', 'true');
+}
 
 let cancelled = false;
 let range = 'all';
 const tables = new Set(); // 1-9 numbers only — nothing checked by default, user ticks which to drill
 const operations = new Set(CATEGORY_DEFAULT_OPS.basic);
+const fractionTypes = new Set(); // Fractions category only — opt-in, like the operations above
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -139,7 +161,9 @@ function getTablesPool() {
 }
 
 function updateStartDisabled() {
-  startBtn.disabled = operations.size === 0 || (isNumbersMode() && tables.size === 0);
+  const needsNumbers = isNumbersMode() && tables.size === 0;
+  const needsFractionType = getCategory() === 'fractions' && fractionTypes.size === 0;
+  startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType;
 }
 
 function updateStartLabel() {
@@ -224,8 +248,9 @@ rangeRow.addEventListener('change', (e) => {
 });
 
 // ── Operations — the set on offer depends on Category (Basic: add/×/÷,
-// Exponent: square/cube/√x/∛x); switching category resets to that
-// category's own sensible default rather than carrying over a stale pick. ─
+// Exponent: square/cube/√x/∛x, Fractions: +/−/×/÷); switching category
+// resets to that category's own sensible default rather than carrying over
+// a stale pick. ────────────────────────────────────────────────────────
 function renderOperationsGrid() {
   operationsRow.innerHTML = '';
   CATEGORY_OPERATIONS[getCategory()].forEach((op, i) => {
@@ -245,14 +270,43 @@ operationsRow.addEventListener('change', (e) => {
   updateStartDisabled();
 });
 
+// ── Fraction type — Fractions only, a second independent dimension
+// (which shape of fraction) alongside the operation (which arithmetic). ──
+function renderFractionTypeRow() {
+  fractionTypeRow.innerHTML = '';
+  FRACTION_TYPES.forEach((t, i) => {
+    const label = document.createElement('label');
+    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 9)}`;
+    label.innerHTML = `<input type="checkbox" value="${t}" ${fractionTypes.has(t) ? 'checked' : ''} /><span>${FRACTION_TYPE_LABELS[t]}</span>`;
+    fractionTypeRow.appendChild(label);
+  });
+}
+renderFractionTypeRow();
+
+fractionTypeRow.addEventListener('change', (e) => {
+  const cb = e.target.closest('input[type="checkbox"]');
+  if (!cb) return;
+  if (cb.checked) fractionTypes.add(cb.value);
+  else fractionTypes.delete(cb.value);
+  updateStartDisabled();
+});
+
+function updateFractionTypeVisibility() {
+  fractionTypeRow.hidden = getCategory() !== 'fractions';
+}
+
 categoryToggle.addEventListener('change', () => {
   operations.clear();
   CATEGORY_DEFAULT_OPS[getCategory()].forEach((op) => operations.add(op));
+  fractionTypes.clear();
   renderOperationsGrid();
+  renderFractionTypeRow();
+  updateFractionTypeVisibility();
   updateNumbersVisibility();
   updateStartDisabled();
 });
 
+updateFractionTypeVisibility();
 updateNumbersVisibility();
 updateStartDisabled();
 updateStartLabel();
@@ -458,8 +512,14 @@ async function playRoundAndShowResults(room, myName) {
     startAt: room.startAt,
     operations: room.operations,
     tables: room.tables,
+    fractionTypes: room.fractionTypes,
     roster,
   });
+
+  // The round overlay just closed but the leaderboard read (grace delay +
+  // one getDocs) hasn't landed yet — show a small "tallying" modal instead
+  // of letting the bare setup page show through in between.
+  showAwaiting();
 
   let ranked;
   try {
@@ -477,6 +537,8 @@ async function playRoundAndShowResults(room, myName) {
   // uid-derived one leaderboard.js falls back to.
   const selfRow = ranked.find((r) => r.isSelf);
   if (selfRow) selfRow.avatarSeed = selectedAvatarSeed;
+
+  hideAwaiting();
 
   startBtn.disabled = false;
   renderResults(ranked);
@@ -499,13 +561,13 @@ function makeOnWaiting(waitingStatusText) {
   };
 }
 
-async function runMultiplayer({ timeLimit, operationsList, tablesList, myName }) {
+async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
   const size = getSize();
   showLobby(size);
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -519,14 +581,14 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, myName })
   await playRoundAndShowResults(room, myName);
 }
 
-async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, myName }) {
+async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
   const size = getSize();
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -577,13 +639,13 @@ async function runMultiplayerJoin({ timeLimit, myName }) {
   await playRoundAndShowResults(room, myName);
 }
 
-async function runVersusCreate({ timeLimit, operationsList, tablesList, myName }) {
+async function runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
   showLobby(2);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -642,18 +704,19 @@ async function runDrill() {
   const timeLimit = getTimeLimit();
   const operationsList = [...operations];
   const tablesList = getTablesPool();
+  const fractionTypesList = getCategory() === 'fractions' ? [...fractionTypes] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
     if (getVersusAction() === 'join') await runVersusJoin({ timeLimit, myName });
-    else await runVersusCreate({ timeLimit, operationsList, tablesList, myName });
+    else await runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
     return;
   }
 
   const mpAction = getMpAction();
   if (mpAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
-  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, myName });
-  else await runMultiplayer({ timeLimit, operationsList, tablesList, myName });
+  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
+  else await runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
 }
 
 startBtn.addEventListener('click', runDrill);
