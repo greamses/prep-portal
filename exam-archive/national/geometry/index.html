@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Geometry — Timed Multiplayer Perimeter Drills | PrepPortal</title>
+    <meta
+      name="description"
+      content="Race up to 10 players (or go 1v1) finding the perimeter/circumference of a circle, semicircle, quadrant, sector, triangle, rectangle or square — pi = 22/7. Bots fill any empty seats."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>GEOMETRY</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <p class="builder-note">
+        Circle, semicircle, quadrant, sector, triangle, rectangle or square —
+        find the perimeter (or circumference) before the clock runs out.
+        Circular shapes use pi = 22/7 and can be practiced with either the
+        radius or the diameter given. Versus is a private 1v1: create a room
+        and share the code.
+      </p>
+      <div class="builder-stats">
+        <span class="hero-stat" style="--tile: var(--accent-secondary)">○ ◐ ◔ ⌔ △ ▭ □</span>
+        <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
+        <span class="hero-stat" style="--tile: var(--accent-primary)"><strong>Bots</strong> Fill Empty Seats</span>
+      </div>
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/puzzles/index.html" role="tab">Puzzles</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/geometry/index.html" role="tab">Geometry</a>
+      </div>
+    </header>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="geo-setup" id="geo-setup">
+      <div class="geo-section-hdr">
+        <div class="setup-eyebrow">Get Ready</div>
+        <h2>Set Up Your Drill</h2>
+        <p class="geo-section-sub">Multiplayer fills the room with bots if not enough real players join in time.</p>
+      </div>
+
+      <div class="geo-receipt pp-receipt" id="geo-receipt">
+        <div class="geo-receipt-paper pp-receipt__paper">
+          <p class="geo-receipt-title">Drill Settings</p>
+
+          <div class="geo-field">
+            <span>Game Name</span>
+            <input class="geo-name-input" id="geo-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          </div>
+
+          <div class="geo-field">
+            <span>Your Avatar</span>
+            <div class="sticky-grid geo-avatar-grid" id="geo-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+            <input type="file" id="geo-avatar-upload-input" accept="image/*" hidden />
+          </div>
+
+          <div class="geo-field">
+            <span>Pick your options</span>
+            <div class="geo-strip" id="geo-strip">
+              <div class="strip-group" id="geo-mode-toggle" role="radiogroup" aria-label="Mode" data-label="Mode">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
+                  <input type="radio" name="geo-mode" value="multiplayer" checked />
+                  <span>Multiplayer</span>
+                </label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
+                  <input type="radio" name="geo-mode" value="versus" />
+                  <span>Versus (1v1)</span>
+                </label>
+              </div>
+
+              <div class="strip-group" id="geo-size-field" role="radiogroup" aria-label="Room size" data-label="Room Size">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
+                  <input type="radio" name="geo-size" value="5" checked />
+                  <span>5 players</span>
+                </label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
+                  <input type="radio" name="geo-size" value="10" />
+                  <span>10 players</span>
+                </label>
+              </div>
+
+              <div class="strip-group" id="geo-time-row" role="radiogroup" aria-label="Time limit" data-label="Time Limit">
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="geo-time" value="30" /><span>30s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="geo-time" value="60" checked /><span>60s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="geo-time" value="90" /><span>90s</span></label>
+                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="geo-time" value="120" /><span>120s</span></label>
+              </div>
+
+              <div class="strip-group" id="geo-given-row" role="group" aria-label="Given" data-label="Given"></div>
+
+              <div class="strip-group" id="geo-shapes-row" role="group" aria-label="Shapes" data-label="Shapes"></div>
+            </div>
+          </div>
+
+          <div class="geo-field">
+            <span>Radius / Side (cm)</span>
+            <div class="sticky-grid" id="geo-lengths-grid" role="group" aria-label="Radius or side lengths"></div>
+          </div>
+
+          <div class="geo-field" id="geo-mp-field">
+            <span>Room</span>
+            <div class="sticky-row" id="geo-mp-toggle" role="radiogroup" aria-label="Room entry">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
+                <input type="radio" name="geo-mp-action" value="quickfill" checked />
+                <span>Quick Fill</span>
+              </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
+                <input type="radio" name="geo-mp-action" value="create" />
+                <span>Create Room</span>
+              </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4">
+                <input type="radio" name="geo-mp-action" value="join" />
+                <span>Join with Code</span>
+              </label>
+            </div>
+            <input class="geo-code-input" id="geo-mp-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+          </div>
+
+          <div class="geo-field" id="geo-versus-field" hidden>
+            <span>1v1 Room</span>
+            <div class="sticky-row" id="geo-versus-toggle" role="radiogroup" aria-label="Create or join">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
+                <input type="radio" name="geo-versus-action" value="create" checked />
+                <span>Create Room</span>
+              </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
+                <input type="radio" name="geo-versus-action" value="join" />
+                <span>Join with Code</span>
+              </label>
+            </div>
+            <input class="geo-code-input" id="geo-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+          </div>
+
+          <button class="geo-start-btn" id="geo-start-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+            <span id="geo-start-label">Find a Room</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ LOBBY OVERLAY ═══ -->
+    <div class="review-bd" id="geo-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="geo-lobby-status" id="geo-lobby-status">Waiting for other players…</p>
+        <div class="geo-lobby-code" id="geo-lobby-code" hidden>
+          <span>Share this code with your opponent</span>
+          <div class="geo-lobby-code-value">
+            <strong id="geo-lobby-code-text"></strong>
+            <button type="button" id="geo-lobby-code-copy" title="Copy code">Copy</button>
+          </div>
+        </div>
+        <div class="geo-lobby-seats" id="geo-lobby-seats"></div>
+        <p class="geo-lobby-count" id="geo-lobby-count">1 / 5</p>
+        <button class="geo-cancel-btn" id="geo-lobby-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="geo-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="geo-time-remaining" id="geo-time-remaining"></p>
+        <div class="geo-roster" id="geo-roster" hidden></div>
+
+        <div class="geo-card pp-receipt" id="geo-card" hidden>
+          <span class="pp-sticky pp-sticky--tape geo-timer-note" id="geo-timer-note"></span>
+          <span class="pp-sticky pp-sticky--tape geo-score-note" id="geo-score-note">0 correct</span>
+          <div class="geo-card-face pp-receipt__paper">
+            <p class="geo-countdown" id="geo-countdown" hidden></p>
+            <div class="geo-figure" id="geo-figure"></div>
+            <p class="geo-text" id="geo-question-text"></p>
+            <div class="geo-answer-stage" id="geo-answer-stage">
+              <span id="geo-typed"></span><span class="geo-cursor" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <input
+          id="geo-answer-input"
+          class="geo-answer-input-hidden"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          maxlength="7"
+          aria-label="Type your answer"
+        />
+      </div>
+    </div>
+
+    <!-- ═══ AWAITING RESULTS OVERLAY — bridges the gap between the round
+         ending and the leaderboard read landing, so the bare setup page
+         never flashes in between. ═══ -->
+    <div class="review-bd" id="geo-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="geo-awaiting">
+          <div class="geo-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="geo-awaiting-text">Tallying scores…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="geo-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="geo-results-receipt pp-receipt">
+          <div class="geo-results-paper pp-receipt__paper">
+            <div class="geo-section-hdr">
+              <div class="setup-eyebrow">Time's Up</div>
+              <h2>Results</h2>
+            </div>
+            <ol class="geo-leaderboard" id="geo-leaderboard"></ol>
+          </div>
+        </div>
+        <button class="geo-again-btn" id="geo-again-btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

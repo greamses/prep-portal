@@ -123,6 +123,14 @@ export const SITE_PAGES = [
     blurb: "Timed multiplayer Sudoku — race friends or bots to correctly fill the most cells before time runs out.",
     keywords: ["puzzles", "sudoku", "logic puzzle", "multiplayer sudoku", "versus", "1v1", "brain teaser", "timed puzzle"],
   },
+  {
+    id: "geometry",
+    title: "Geometry — Perimeter & Circumference",
+    href: "/exam-archive/national/geometry/index.html",
+    category: "exams",
+    blurb: "Timed multiplayer perimeter/circumference drills — circle, semicircle, quadrant, sector, triangle, rectangle, square. Pi = 22/7.",
+    keywords: ["geometry", "perimeter", "circumference", "circle", "triangle", "rectangle", "square", "sector", "multiplayer math", "versus", "1v1", "timed practice"],
+  },
 
   // ── Math & science activities ──────────────────────────────────────
   {

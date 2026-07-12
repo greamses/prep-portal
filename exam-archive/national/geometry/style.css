@@ -1,0 +1,779 @@
+/* ═══════════════════════════════════════════════════════
+   GEOMETRY — timed multiplayer perimeter/circumference practice
+   Paper/soft-UI theme shared with the rest of the site (tokens from
+   theme.css). Ported 1:1 from Drills' style.css (drill- -> geo-) — same
+   card/lobby/results shell, plus the shape-diagram classes at the bottom.
+═══════════════════════════════════════════════════════ */
+
+body {
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
+}
+
+/* Several components on this page (.geo-field, .geo-roster, ...) set their
+   own author `display` value, which otherwise beats the browser's default
+   `[hidden] { display: none }` UA rule at equal specificity — guarantee the
+   hidden attribute always wins regardless of component. */
+[hidden] { display: none !important; }
+
+/* Nav sits at z-index 9999, above every overlay on this page (they're all
+   z-index 50), so it stays visible on top of the leaderboard unless hidden
+   explicitly — toggled by main.js when the results overlay opens/closes. */
+body.geo-nav-hidden .site-nav { display: none; }
+
+.builder-paint {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.builder-header {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem;
+  padding: 0 1.25rem;
+  text-align: center;
+}
+.builder-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 1.25rem;
+}
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 45%, transparent);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+}
+.hero-stat strong { color: var(--ink); }
+.hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(1.5deg); }
+
+/* ── EXAM BUILDER ↔ DRILLS ↔ PUZZLES ↔ GEOMETRY cross-link ──────────────
+   Real links between separate pages, not a client-side toggle — same
+   treatment as flashcards' .cards-tabs/.cards-tab. */
+.builder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+.builder-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
+/* ── SETUP ────────────────────────────────────────────── */
+.geo-section-hdr {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+.geo-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
+.geo-section-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+}
+
+.geo-setup {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem);
+}
+/* ── SETTINGS RECEIPT — every selector lives on a torn paper "receipt"
+   (.pp-receipt/.pp-receipt__paper), same component as the study cards. */
+.geo-receipt { margin: 0 auto; }
+.geo-receipt-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.7rem;
+  padding: 1.8rem 1.6rem 2rem;
+}
+.geo-receipt-title {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.9rem;
+  margin: 0;
+}
+
+.geo-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
+.geo-field > span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Every section after the first gets a torn-paper tear line above it —
+   same conic-gradient "teeth" mask as .pp-receipt__paper's own top/bottom
+   edge, just a single zigzag edge on a thin strip instead of a full lens,
+   so each section on the setup reads as its own torn-off slip. */
+.geo-field:not(:first-of-type) {
+  margin-top: 0.15rem;
+  padding-top: 1.3rem;
+}
+.geo-field:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1.6rem;
+  right: -1.6rem;
+  height: 11px;
+  --tooth: 11px;
+  background: var(--border-subtle);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+}
+
+/* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
+   real radio/checkbox, same recipe as the Facts tab's fact-tiles. Native
+   input stays visible+accessible; a glow highlights the checked note. */
+.sticky-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.7rem;
+}
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 0.6rem 0.45rem;
+}
+.geo-avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  max-width: 400px;
+}
+
+/* ── OPTIONS STRIP — each selector group (mode, size, time, given, shapes)
+   is its own labeled row, stacked with a clear gap, instead of one merged
+   wrapping collage — makes it obvious where one selector ends and the next
+   begins. */
+.geo-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.strip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+.strip-group::before {
+  content: attr(data-label);
+  flex: 0 0 100%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+/* Compound with .pp-sticky (see .geo-lb-row.pp-sticky below for why) —
+   loader.js's late-injected @import of components.css can otherwise beat
+   this page's own padding at an equal-specificity tie. */
+.pp-sticky.sticky-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.75rem 0.42rem;
+  cursor: pointer;
+  user-select: none;
+}
+.sticky-choice:hover { transform: rotate(0deg) scale(1.05); }
+.sticky-choice:has(input:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.sticky-choice input {
+  width: 13px;
+  height: 13px;
+  accent-color: #14130f;
+  cursor: pointer;
+}
+
+/* Avatar picker — same sticky-note selection pattern, but the picture does
+   the talking so the radio input is present (for a11y/keyboard) yet
+   visually hidden; the checked-glow ring is the only selection affordance. */
+.pp-sticky.avatar-choice {
+  padding: 0.22rem;
+  aspect-ratio: 1;
+}
+.avatar-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* "Upload your own" tile — dashed placeholder until a photo is picked,
+   after which it looks just like any other avatar tile. */
+.avatar-choice--upload {
+  cursor: pointer;
+}
+.avatar-choice--upload:not(:has(img)) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--border-subtle);
+}
+.avatar-choice--upload svg { pointer-events: none; }
+
+.geo-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.geo-start-btn:hover { transform: translateY(-1px); }
+.geo-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
+.geo-name-input,
+.geo-code-input {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  max-width: 320px;
+}
+.geo-code-input {
+  margin-top: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+}
+.geo-name-input:focus,
+.geo-code-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* ── LOBBY CODE DISPLAY — shown only when hosting a private 1v1 room ──── */
+.geo-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+.geo-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.geo-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+.geo-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.geo-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+/* ── LOBBY / PLAY / RESULTS OVERLAY ─────────────────────── */
+/* `overflow-y: auto` + `margin: auto` on the child (not `align-items:
+   center` on this container) — a tall leaderboard (10 players) needs to be
+   scrollable to reach every row; `align-items: center` alone clips content
+   taller than the viewport with no way to scroll up to the hidden top. */
+.review-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+
+.geo-lobby-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+.geo-lobby-count {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+/* Seats are small sticky notes carrying an avatar — real joiners (then
+   bots, staggered in one at a time) replace the empty placeholders. */
+.geo-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.pp-sticky.geo-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: geo-seat-pop 0.35s ease both;
+}
+.geo-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+.geo-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.geo-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+.geo-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+@keyframes geo-seat-pop {
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
+}
+
+.geo-cancel-btn {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+/* ── GEOMETRY CARD — ported from Drills' .drill-card, no flip. Every
+   question here carries a diagram (unlike Drills, where geometry is one
+   category among several), so the card grows to fit figure + caption +
+   answer instead of a fixed 4/5 aspect ratio. ─────────────────────────── */
+.geo-card {
+  position: relative;
+  width: min(300px, 100%);
+  min-height: 400px;
+  margin: 0 auto 1.25rem;
+}
+.geo-card-face.pp-receipt__paper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.7rem;
+  padding: 1.6rem 1.4rem;
+}
+
+.geo-timer-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  right: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: -3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.geo-score-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  left: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: 3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.geo-text {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: var(--leading-snug);
+  color: var(--ink);
+  margin: 0;
+}
+
+/* The typed-answer illusion: the real <input> is kept off-screen but
+   focused, so mobile IME/numeric keyboards still work. A sibling span
+   mirrors the digits and a blinking caret sits after them. */
+.geo-answer-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.2rem;
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+}
+.geo-answer-input-hidden {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.geo-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 2.1rem;
+  background: currentColor;
+  margin-left: 3px;
+  vertical-align: -0.2em;
+  animation: geo-blink 1s step-end infinite;
+}
+@keyframes geo-blink { 50% { opacity: 0; } }
+
+.geo-card.correct-flash .geo-card-face.pp-receipt__paper {
+  animation: geo-pulse-green 0.4s ease;
+}
+@keyframes geo-pulse-green {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-success) 55%, transparent); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.geo-time-remaining {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+/* Rendered inside the card face (not a standalone screen) so the card is
+   visible from the moment the round starts — countdown swaps for the
+   question the instant startAt passes. */
+.geo-countdown {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Room-entry roster — everyone in the room (you, other real players, bots
+   with real names) pops in one at a time during the "get ready" beat. */
+.geo-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.geo-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: geo-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+.geo-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+@keyframes geo-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── RESULTS — the leaderboard lives on the same receipt as the settings
+   card; each row is its own colour-rotated .pp-sticky note (tape + tilt),
+   so the "paper" motif carries all the way through to the final screen. */
+.geo-results-receipt { margin: 0 auto 1.25rem; }
+.geo-results-paper { padding: 1.6rem 1.4rem 1.8rem; }
+
+.geo-leaderboard {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+/* Compound with .pp-sticky (not just .geo-lb-row alone) so this reliably
+   outranks the shared .pp-sticky base rule regardless of stylesheet load
+   order — loader.js injects its own <style> with an `@import
+   components.css`, which can otherwise land later in the cascade than this
+   page's own stylesheet and win an equal-specificity tie. */
+.geo-lb-row.pp-sticky {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
+  opacity: 0;
+  animation: geo-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes geo-lb-in {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--pp-note-tilt, 0deg)) scale(1); }
+}
+/* A separate keyframe (not just an overridden transform) because the base
+   entrance animation's held end-state otherwise wins the cascade over any
+   plain `transform` on .is-winner, even after the animation finishes. */
+@keyframes geo-lb-in-winner {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.08); }
+}
+.geo-lb-row.is-winner { animation-name: geo-lb-in-winner; }
+.geo-lb-row.is-self { box-shadow: 0 0 0 2px var(--accent-secondary), 0 1px 1px rgba(20, 19, 15, 0.1); }
+
+.geo-lb-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 2px rgba(20, 19, 15, 0.15);
+}
+.geo-lb-avatar img { width: 100%; height: 100%; display: block; }
+
+.geo-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
+.geo-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+.geo-lb-score { font-weight: 700; }
+
+/* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
+.geo-lb-row.is-winner {
+  --pp-note-bg: #ffdd6b;
+  box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  font-size: 0.8rem;
+}
+.geo-lb-row.is-winner .geo-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
+
+.geo-again-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1.4rem;
+  cursor: pointer;
+}
+
+/* ── AWAITING RESULTS — bridges the gap between the round ending and the
+   leaderboard read landing (grace delay + one getDocs) so the bare setup
+   page never shows through in between. ── */
+.geo-awaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.geo-awaiting-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.geo-awaiting-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: geo-awaiting-bounce 1s ease-in-out infinite;
+}
+.geo-awaiting-dots span:nth-child(2) { background: var(--accent-secondary); animation-delay: 0.15s; }
+.geo-awaiting-dots span:nth-child(3) { background: var(--accent-success); animation-delay: 0.3s; }
+@keyframes geo-awaiting-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-10px); opacity: 1; }
+}
+.geo-awaiting-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── CONFETTI — fired once when the signed-in player wins their round. ── */
+.geo-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+.geo-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: geo-confetti-fall linear forwards;
+}
+@keyframes geo-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
+}
+
+/* ── SHAPE DIAGRAM — a fixed pixel-size drawing (never scaled by the
+   question's actual radius/diameter/side value) with the given value and,
+   for sectors, the angle labeled directly on it. ──────────────────────── */
+.geo-figure {
+  position: relative;
+  width: min(150px, 65%);
+  aspect-ratio: 200 / 190;
+  margin: 0 auto;
+}
+.geo-figure svg { width: 100%; height: 100%; overflow: visible; }
+.geo-shape {
+  fill: var(--accent-secondary);
+  fill-opacity: 0.22;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.geo-refline {
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.geo-refline--dia { opacity: 0.55; }
+.geo-center { fill: var(--ink); }
+.geo-anglewedge {
+  fill: var(--accent-primary);
+  fill-opacity: 0.35;
+}
+.geo-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.geo-label--angle { font-size: 9px; }

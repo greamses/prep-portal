@@ -77,6 +77,7 @@ const NAV_CONFIG = [
           { text: "Math Tricks", href: "/prep-math/mental-math/index.html", description: "Quick calculation tips" },
           { text: "Drills", href: "/exam-archive/national/drills/index.html", description: "Timed times-tables — multiplayer or 1v1, bots fill empty seats" },
           { text: "Puzzles", href: "/exam-archive/national/puzzles/index.html", description: "Timed Sudoku race — multiplayer or 1v1, bots fill empty seats" },
+          { text: "Geometry", href: "/exam-archive/national/geometry/index.html", description: "Timed perimeter/circumference race — multiplayer or 1v1, bots fill empty seats" },
         ],
       },
     ],
