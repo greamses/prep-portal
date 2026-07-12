@@ -47,22 +47,6 @@ export const ALL_OPERATIONS = [
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
 
-// Geometry — perimeter/circumference practice. Radii are drawn only from
-// multiples of 7 so that pi = 22/7 always cancels the /7 cleanly (circle,
-// semicircle and quadrant answers land on whole numbers every time; sector
-// answers are the one case that can land on a genuine reduced fraction,
-// same "3/8"-style grading as the Fractions category already handles).
-export const GEO_OPS = ['geoCircle', 'geoSemicircle', 'geoQuadrant', 'geoSector'];
-export const GEO_GIVEN_TYPES = ['radius', 'diameter'];
-export const RADIUS_NUMBERS = Array.from({ length: 10 }, (_, i) => (i + 1) * 7); // 7..70
-
-const GEO_SHAPE = { geoCircle: 'circle', geoSemicircle: 'semicircle', geoQuadrant: 'quadrant', geoSector: 'sector' };
-const GEO_MEASURE_LABEL = { circle: 'Circumference', semicircle: 'Perimeter', quadrant: 'Perimeter', sector: 'Perimeter' };
-const GEO_SHAPE_NAME = { circle: 'Circle', semicircle: 'Semicircle', quadrant: 'Quadrant', sector: 'Sector' };
-// Curated so the diagram never lines up with the quadrant/semicircle special
-// cases — a genuinely "generic" sector every time it's drawn.
-const SECTOR_ANGLES = [30, 45, 60, 120, 135, 150, 210, 225, 240, 300, 315, 330];
-
 function gcd(a, b) {
   a = Math.abs(a); b = Math.abs(b);
   while (b) { [a, b] = [b, a % b]; }
@@ -139,38 +123,6 @@ function fractionQuestionAt(rng, pool, n, op, type) {
   return { text: `${whole} ÷ ${fracText(a, denom)}`, answer: fracAnswer(whole * denom, a) };
 }
 
-// One geometry question: `tables` supplies the radius pool (always
-// multiples of 7 — see RADIUS_NUMBERS), `given` picks whether the diagram
-// states the radius or the doubled-up diameter. Every formula is built as
-// an exact num/den pair over pi=22/7 and graded through the same
-// gcd-reduced fracAnswer() the Fractions category uses, so a sector's
-// occasional non-whole answer ("64/3") is typed and graded exactly like a
-// fraction question. `r` and `angleDeg` ride along on the returned `geo`
-// object purely for the SVG diagram — the drawing itself never scales with
-// either (see js/geo-svg.js).
-function geometryQuestionAt(rng, pool, op, givens) {
-  const shape = GEO_SHAPE[op];
-  const r = drawFrom(rng, pool);
-  const given = givens[Math.floor(rng() * givens.length)];
-  let angleDeg = null;
-  let num, den;
-  if (shape === 'circle') { num = 44 * r; den = 7; } // 2*pi*r = 2*(22/7)*r
-  else if (shape === 'semicircle') { num = 36 * r; den = 7; } // pi*r + 2r
-  else if (shape === 'quadrant') { num = 25 * r; den = 7; } // pi*r/2 + 2r
-  else {
-    angleDeg = SECTOR_ANGLES[Math.floor(rng() * SECTOR_ANGLES.length)];
-    // (angle/360)*2*pi*r + 2r, combined over a 360*7 common denominator
-    num = angleDeg * 44 * r + 2 * r * 2520;
-    den = 2520;
-  }
-  const givenValue = given === 'radius' ? r : 2 * r;
-  return {
-    text: `${GEO_MEASURE_LABEL[shape]} of the ${GEO_SHAPE_NAME[shape]}`,
-    answer: fracAnswer(num, den),
-    geo: { shape, given, givenValue, angleDeg },
-  };
-}
-
 const FRACTION_OPS = ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'];
 
 // `tables` is the pool a question's "base" number is drawn from — either a
@@ -189,12 +141,6 @@ export function questionAt(seed, index, { operations = ['multiply', 'divide'], t
   const ops = operations.length ? operations : ['multiply', 'divide'];
   const op = ops[Math.floor(rng() * ops.length)];
   const pool = tables.length ? tables : ALL_TABLES;
-
-  if (GEO_OPS.includes(op)) {
-    const givens = fractionTypes.length ? fractionTypes : GEO_GIVEN_TYPES;
-    return geometryQuestionAt(rng, pool, op, givens);
-  }
-
   const n = pool[Math.floor(rng() * pool.length)];
 
   if (op === 'square') return { text: `${n}²`, answer: n * n };

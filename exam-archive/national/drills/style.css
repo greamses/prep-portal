@@ -471,13 +471,6 @@ body.drill-nav-hidden .site-nav { display: none; }
   aspect-ratio: 4 / 5;
   margin: 0 auto 1.25rem;
 }
-/* Geometry's question is a diagram + a phrase ("Circumference of the
-   Circle"), not a short equation — the fixed 4/5 card is too tight for both
-   plus the answer stage, so it grows instead of cropping. */
-.drill-card.is-geo {
-  aspect-ratio: unset;
-  min-height: 400px;
-}
 .drill-card-face.pp-receipt__paper {
   position: absolute;
   inset: 0;
@@ -529,47 +522,6 @@ body.drill-nav-hidden .site-nav { display: none; }
   color: var(--ink);
   margin: 0;
 }
-/* Geometry's caption is a phrase, not a short equation — same slot, smaller
-   type so "Circumference of the Circle" doesn't overrun the card. */
-.drill-card.is-geo .drill-text {
-  font-size: 1.3rem;
-}
-
-/* ── Geometry diagram — a fixed pixel-size drawing (never scaled by the
-   question's actual radius/diameter) with the given value and, for
-   sectors, the angle labeled directly on it. ─────────────────────────── */
-.drill-geo-figure {
-  position: relative;
-  width: min(150px, 65%);
-  aspect-ratio: 200 / 190;
-  margin: 0 auto;
-}
-.drill-geo-figure svg { width: 100%; height: 100%; overflow: visible; }
-.geo-shape {
-  fill: var(--accent-secondary);
-  fill-opacity: 0.22;
-  stroke: var(--ink);
-  stroke-width: 3;
-  stroke-linejoin: round;
-}
-.geo-refline {
-  stroke: var(--ink);
-  stroke-width: 2;
-  stroke-dasharray: 4 3;
-}
-.geo-refline--dia { opacity: 0.55; }
-.geo-center { fill: var(--ink); }
-.geo-anglewedge {
-  fill: var(--accent-primary);
-  fill-opacity: 0.35;
-}
-.geo-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  fill: var(--ink);
-}
-.geo-label--angle { font-size: 9px; }
 
 /* The typed-answer illusion: the real <input> is kept off-screen but
    focused, so mobile IME/numeric keyboards still work. A sibling span
