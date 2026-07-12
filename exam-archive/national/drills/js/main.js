@@ -6,7 +6,7 @@
    room code (create-and-share, or join-with-code).
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { UNIT_NUMBERS } from './rng.js';
+import { UNIT_NUMBERS, GEO_OPS, GEO_GIVEN_TYPES, RADIUS_NUMBERS } from './rng.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -47,27 +47,41 @@ const OPERATION_LABELS = {
   square: 'x² Square', sqrt: '√x Root',
   cube: 'x³ Cube', cuberoot: '∛x Cube Root',
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
+  geoCircle: '○ Circle', geoSemicircle: '◐ Semicircle', geoQuadrant: '◔ Quadrant', geoSector: '⌔ Sector',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
 // (multiply + divide ticked, addition opt-in — mirrors the old flat list's
 // defaults); Exponent and Fractions start fully opt-in, same as square/sqrt
-// used to be.
+// used to be. Geometry starts with just the Circle ticked — semicircle,
+// quadrant and sector are opt-in extras on top of it.
 const CATEGORY_OPERATIONS = {
   basic: ['add', 'multiply', 'divide'],
   exponent: ['square', 'cube', 'sqrt', 'cuberoot'],
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
+  geometry: GEO_OPS,
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
   exponent: [],
   fractions: [],
+  geometry: ['geoCircle'],
 };
 
-// Fractions gets a second selector dimension — which shape of fraction
-// question to draw (independent of which operation is ticked above).
-const FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
-const FRACTION_TYPE_LABELS = { like: 'Like', unlike: 'Unlike', wholeFraction: 'Whole vs Fraction' };
+// Fractions and Geometry each get a second selector dimension, independent
+// of which operation/shape is ticked above: Fractions picks which shape of
+// fraction question to draw, Geometry picks whether the diagram states the
+// radius or the diameter. Same checkbox-row component, category-gated.
+const SECONDARY_TYPES = {
+  fractions: ['like', 'unlike', 'wholeFraction'],
+  geometry: GEO_GIVEN_TYPES,
+};
+const SECONDARY_TYPE_LABELS = {
+  like: 'Like', unlike: 'Unlike', wholeFraction: 'Whole vs Fraction',
+  radius: 'Given: Radius', diameter: 'Given: Diameter',
+};
+const SECONDARY_TYPE_FIELD_LABEL = { fractions: 'Fraction Type', geometry: 'Given' };
+const SECONDARY_TYPE_DEFAULTS = { fractions: [], geometry: ['radius'] };
 
 // A question's "base" number is drawn from whichever pool these describe:
 // hand-picked 1-9 numbers, or a whole decade practiced as one block ("higher
@@ -169,12 +183,14 @@ function getMpAction() { return document.querySelector('input[name="drill-mp-act
 function getCategory() { return document.querySelector('input[name="drill-category"]:checked').value; }
 
 // Only the 1-9 bucket is fine enough to cherry-pick individual numbers from
-// (and only for Basic — Exponent "just sticks with the ranges"). Every
-// other bucket is drilled as a whole block.
-function isNumbersMode() { return getCategory() === 'basic' && range === '1-9'; }
+// (and only for Basic — Exponent "just sticks with the ranges"). Geometry
+// has no range concept at all — its "numbers" are always the curated
+// multiples-of-7 radius pool. Every other bucket is drilled as a whole block.
+function isNumbersMode() { return getCategory() === 'geometry' || (getCategory() === 'basic' && range === '1-9'); }
+function getNumbersPool() { return getCategory() === 'geometry' ? RADIUS_NUMBERS : UNIT_NUMBERS; }
 
 // The actual pool of "base" numbers handed to questionAt(): either the
-// hand-picked 1-9 set, or every integer in the selected decade range.
+// hand-picked 1-9/radius set, or every integer in the selected decade range.
 function getTablesPool() {
   if (isNumbersMode()) return [...tables];
   const r = RANGES.find((x) => x.key === range) || RANGES[0];
@@ -183,8 +199,8 @@ function getTablesPool() {
 
 function updateStartDisabled() {
   const needsNumbers = isNumbersMode() && tables.size === 0;
-  const needsFractionType = getCategory() === 'fractions' && fractionTypes.size === 0;
-  startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType;
+  const needsSecondaryType = getCategory() in SECONDARY_TYPES && fractionTypes.size === 0;
+  startBtn.disabled = operations.size === 0 || needsNumbers || needsSecondaryType;
 }
 
 function updateStartLabel() {
@@ -223,10 +239,12 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Numbers (1-9 only — every higher bucket is drilled as a whole range) ─
+// ── Numbers (1-9 for Basic — every higher bucket is drilled as a whole
+// range instead; Geometry always shows its own multiples-of-7 radius pool) ─
+const numbersFieldLabel = numbersField.querySelector('span');
 function renderNumbersGrid() {
   numbersGrid.innerHTML = '';
-  UNIT_NUMBERS.forEach((n, i) => {
+  getNumbersPool().forEach((n, i) => {
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i)}`;
     label.innerHTML = `<input type="checkbox" value="${n}" ${tables.has(n) ? 'checked' : ''} /><span>${n}</span>`;
@@ -258,6 +276,9 @@ renderRangeRow();
 
 function updateNumbersVisibility() {
   numbersField.hidden = !isNumbersMode();
+  numbersFieldLabel.textContent = getCategory() === 'geometry' ? 'Radius (cm)' : 'Numbers';
+  // Geometry has no range concept at all — it's numbers-mode only.
+  rangeRow.hidden = getCategory() === 'geometry';
 }
 
 rangeRow.addEventListener('change', (e) => {
@@ -291,14 +312,15 @@ operationsRow.addEventListener('change', (e) => {
   updateStartDisabled();
 });
 
-// ── Fraction type — Fractions only, a second independent dimension
-// (which shape of fraction) alongside the operation (which arithmetic). ──
+// ── Secondary type — Fractions (which shape of fraction) or Geometry
+// (whether the diagram states the radius or the diameter), a second
+// independent dimension alongside the operation/shape checkboxes above. ──
 function renderFractionTypeRow() {
   fractionTypeRow.innerHTML = '';
-  FRACTION_TYPES.forEach((t, i) => {
+  (SECONDARY_TYPES[getCategory()] || []).forEach((t, i) => {
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 9)}`;
-    label.innerHTML = `<input type="checkbox" value="${t}" ${fractionTypes.has(t) ? 'checked' : ''} /><span>${FRACTION_TYPE_LABELS[t]}</span>`;
+    label.innerHTML = `<input type="checkbox" value="${t}" ${fractionTypes.has(t) ? 'checked' : ''} /><span>${SECONDARY_TYPE_LABELS[t]}</span>`;
     fractionTypeRow.appendChild(label);
   });
 }
@@ -313,15 +335,21 @@ fractionTypeRow.addEventListener('change', (e) => {
 });
 
 function updateFractionTypeVisibility() {
-  fractionTypeRow.hidden = getCategory() !== 'fractions';
+  const cat = getCategory();
+  fractionTypeRow.hidden = !(cat in SECONDARY_TYPES);
+  fractionTypeRow.dataset.label = SECONDARY_TYPE_FIELD_LABEL[cat] || 'Fraction Type';
 }
 
 categoryToggle.addEventListener('change', () => {
   operations.clear();
   CATEGORY_DEFAULT_OPS[getCategory()].forEach((op) => operations.add(op));
   fractionTypes.clear();
+  (SECONDARY_TYPE_DEFAULTS[getCategory()] || []).forEach((t) => fractionTypes.add(t));
+  tables.clear();
+  if (getCategory() === 'geometry') tables.add(7); // "let's start with radius of 7"
   renderOperationsGrid();
   renderFractionTypeRow();
+  renderNumbersGrid();
   updateFractionTypeVisibility();
   updateNumbersVisibility();
   updateStartDisabled();
@@ -775,7 +803,7 @@ async function runDrill() {
   const timeLimit = getTimeLimit();
   const operationsList = [...operations];
   const tablesList = getTablesPool();
-  const fractionTypesList = getCategory() === 'fractions' ? [...fractionTypes] : [];
+  const fractionTypesList = getCategory() in SECONDARY_TYPES ? [...fractionTypes] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {

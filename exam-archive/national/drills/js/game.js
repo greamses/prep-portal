@@ -6,6 +6,7 @@
    dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { questionAt } from './rng.js';
+import { buildShapeSvg } from './geo-svg.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,6 +15,7 @@ const cardEl = $('drill-card');
 const countdownEl = $('drill-countdown');
 const rosterEl = $('drill-roster');
 const timeRemainingEl = $('drill-time-remaining');
+const geoFigureEl = $('drill-geo-figure');
 const questionText = $('drill-question-text');
 const answerStage = $('drill-answer-stage');
 const typedEl = $('drill-typed');
@@ -55,6 +57,11 @@ function renderQuestion() {
   questionText.textContent = currentQuestion.text;
   inputEl.value = '';
   typedEl.textContent = '';
+
+  const isGeo = !!currentQuestion.geo;
+  cardEl.classList.toggle('is-geo', isGeo);
+  geoFigureEl.hidden = !isGeo;
+  geoFigureEl.innerHTML = isGeo ? buildShapeSvg(currentQuestion.geo) : '';
 }
 
 // Fraction answers ("3/8") are graded as an exact string match — typed with
@@ -135,9 +142,12 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
     scoreNote.textContent = '0 correct';
     timerNote.textContent = `${timeLimit}s round`;
     cardEl.hidden = false;
+    cardEl.classList.remove('is-geo');
     countdownEl.hidden = false;
     questionText.hidden = true;
     answerStage.hidden = true;
+    geoFigureEl.hidden = true;
+    geoFigureEl.innerHTML = '';
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 

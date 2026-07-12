@@ -55,11 +55,11 @@
     <!-- ═══ HERO ═══ -->
     <header class="builder-header">
       <p class="builder-note">
-        Basic (add, multiply, divide), Exponent (square, cube, roots) or
-        Fractions (like, unlike, whole vs fraction) — pick a number range and
-        race real players or bots to see who can answer the most before the
-        clock runs out. Versus is a private 1v1: create a room and share the
-        code.
+        Basic (add, multiply, divide), Exponent (square, cube, roots),
+        Fractions (like, unlike, whole vs fraction) or Geometry (circumference
+        and perimeter, pi = 22/7) — pick a number range and race real players
+        or bots to see who can answer the most before the clock runs out.
+        Versus is a private 1v1: create a room and share the code.
       </p>
       <div class="builder-stats">
         <span class="hero-stat" style="--tile: var(--accent-secondary)">+ × ÷ x² x³ <strong>√x ∛x</strong></span>
@@ -109,6 +109,10 @@
               <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
                 <input type="radio" name="drill-category" value="fractions" />
                 <span>Fractions</span>
+              </label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
+                <input type="radio" name="drill-category" value="geometry" />
+                <span>Geometry</span>
               </label>
             </div>
           </div>
@@ -231,6 +235,7 @@
           <div class="drill-card-face pp-receipt__paper">
             <div class="drill-blob" aria-hidden="true"></div>
             <p class="drill-countdown" id="drill-countdown" hidden></p>
+            <div class="drill-geo-figure" id="drill-geo-figure" hidden></div>
             <p class="drill-text" id="drill-question-text"></p>
             <div class="drill-answer-stage" id="drill-answer-stage">
               <span id="drill-typed"></span><span class="drill-cursor" aria-hidden="true"></span>
