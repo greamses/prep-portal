@@ -45,8 +45,8 @@ const avatarUrl = (seed) => {
 const NAME_KEY = 'geoGameName';
 
 const SHAPE_LABELS = {
-  circle: '○ Circle', semicircle: '◐ Semicircle', quadrant: '◔ Quadrant', sector: '⌔ Sector', chord: '⌒ Chord',
-  triangle: '△ Triangle', rectangle: '▭ Rectangle', square: '□ Square',
+  circle: 'Circle', semicircle: 'Semicircle', quadrant: 'Quadrant', sector: 'Sector', chord: 'Chord',
+  triangle: 'Triangle', rectangle: 'Rectangle', square: 'Square',
 };
 const GIVEN_LABELS = { radius: 'Radius', diameter: 'Diameter' };
 
