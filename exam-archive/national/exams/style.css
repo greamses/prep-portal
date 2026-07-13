@@ -927,3 +927,355 @@ body {
   .hero-stat:nth-child(odd),
   .hero-stat:nth-child(even) { transform: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   STICKY-NOTE REDESIGN
+   Matches the Drills/Puzzles/Geometry setup: chips are sticky notes, buttons
+   are sticky notes, one step on screen at a time, finished steps collapse to
+   their picks. The step logic in data.js is untouched — see js/flow.js, which
+   only decides what's showing.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── The builder becomes one column of steps, not a grid of cards ────── */
+.builder-grid {
+  display: block;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.step-card,
+.step-card.theme-yellow,
+.step-card.theme-green,
+.step-card.theme-blue,
+.step-card.theme-red {
+  display: block;
+  width: auto;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 0.5rem;
+  margin: 0 0 1.4rem;
+}
+
+/* Step heading — the same quiet eyebrow the game pages use above a selector */
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  background: none;
+  border: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  box-shadow: none;
+}
+.step-title {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.step-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0.1rem 0 0.75rem;
+}
+
+/* ── Chips are sticky notes ─────────────────────────────────────────── */
+.exam-grid,
+.year-grid,
+.chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 0.55rem; /* the row gap leaves room for each note's tape */
+  padding: 14px 8px 16px;
+  margin: -14px -8px -16px;
+}
+
+.custom-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.55rem 0.85rem 0.6rem;
+  cursor: pointer;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+/* Tape across the top, same as every other note */
+.custom-chip::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.custom-chip:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+
+/* Rotate the paper colours across each row, so a step reads as a handful of
+   notes rather than a block of one colour. */
+.exam-grid .custom-chip:nth-child(6n + 1),
+.year-grid .custom-chip:nth-child(6n + 1),
+.chips-container .custom-chip:nth-child(6n + 1) { --pp-note-bg: #fff3a8; }
+.exam-grid .custom-chip:nth-child(6n + 2),
+.year-grid .custom-chip:nth-child(6n + 2),
+.chips-container .custom-chip:nth-child(6n + 2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.6deg; }
+.exam-grid .custom-chip:nth-child(6n + 3),
+.year-grid .custom-chip:nth-child(6n + 3),
+.chips-container .custom-chip:nth-child(6n + 3) { --pp-note-bg: #c8f0c0; }
+.exam-grid .custom-chip:nth-child(6n + 4),
+.year-grid .custom-chip:nth-child(6n + 4),
+.chips-container .custom-chip:nth-child(6n + 4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.exam-grid .custom-chip:nth-child(6n + 5),
+.year-grid .custom-chip:nth-child(6n + 5),
+.chips-container .custom-chip:nth-child(6n + 5) { --pp-note-bg: #ffd7a3; }
+.exam-grid .custom-chip:nth-child(6n + 6),
+.year-grid .custom-chip:nth-child(6n + 6),
+.chips-container .custom-chip:nth-child(6n + 6) { --pp-note-bg: #b8ece2; --pp-note-tilt: -1.4deg; }
+
+/* Selected: an inked outline, so the pick is obvious without changing paper */
+.custom-chip.checked {
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+.chip-check-box {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(20, 19, 15, 0.45);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+.custom-chip.checked .chip-check-box {
+  background: #14130f;
+  border-color: #14130f;
+}
+.custom-chip.disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.5); }
+.chip-count {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: rgba(20, 19, 15, 0.62);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+}
+.custom-chip.checked .chip-count { color: rgba(20, 19, 15, 0.8); }
+.status-dot.live { flex-shrink: 0; }
+
+/* ── Category tabs are notes too ────────────────────────────────────── */
+.cat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 0.5rem;
+  padding-top: 12px;
+  border: 0;
+  background: none;
+}
+.cat-tab {
+  position: relative;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.5rem 0.9rem 0.55rem;
+  cursor: pointer;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.cat-tab::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.cat-tab:nth-child(1) { --pp-note-bg: #fff3a8; }
+.cat-tab:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.cat-tab:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.cat-tab:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.cat-tab:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.cat-tab.active {
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+
+/* ── Buttons are sticky notes, each its own colour ───────────────────── */
+.builder-cta,
+.builder-share,
+.builder-assign {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.65rem 1.15rem 0.7rem;
+  cursor: pointer;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.builder-cta::before,
+.builder-share::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 52px;
+  height: 17px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-cta { --pp-note-bg: #fff3a8; font-size: 0.95rem; padding: 0.8rem 1.4rem 0.85rem; }
+.builder-share { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.builder-assign { --pp-note-bg: #c8f0c0; --pp-note-tilt: -1.4deg; }
+.builder-cta:hover:not(:disabled),
+.builder-share:hover:not(:disabled) { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.builder-cta:active:not(:disabled),
+.builder-share:active:not(:disabled) { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(0); }
+.builder-cta:disabled,
+.builder-share:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.08);
+}
+.builder-share.copied { --pp-note-bg: #c8f0c0; }
+.builder-cta .cta-arrow,
+.builder-share svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.builder-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem 0.75rem;
+  max-width: 640px;
+  margin: 1.75rem auto 0;
+  padding-top: 6px;
+  border: 0;
+  background: none;
+}
+.builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem 0.6rem;
+}
+
+/* ── One step on screen at a time (see js/flow.js) ───────────────────── */
+.step-card.is-pending { display: none !important; }
+
+.step-card.is-done .exam-grid,
+.step-card.is-done .year-grid,
+.step-card.is-done .chips-container,
+.step-card.is-done .step-sub,
+.step-card.is-done .topic-search,
+.step-card.is-done .filter-extra,
+.step-card.is-done .cbt-format,
+.step-card.is-done .pp-carousel-nav { display: none !important; }
+
+.step-card .pp-section-recap { display: none; }
+.step-card.is-done .pp-section-recap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem 0.5rem;
+  width: auto;
+  max-width: 100%;
+  margin-top: 0.9rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.step-card.is-done .pp-section-recap:hover .pp-recap-note {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+
+/* The live search box on the Topic step */
+.topic-search {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: var(--surface-secondary);
+  border: 0;
+  border-bottom: 2px solid var(--border-subtle);
+  border-radius: 2px 2px 0 0;
+  padding: 0.55rem 0.7rem;
+  width: min(260px, 100%);
+  margin-bottom: 0.6rem;
+}
+.topic-search:focus { outline: none; border-bottom-color: var(--accent-secondary); }
+
+.setup-status {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+/* The builder sits on the same torn-paper receipt as the game pages' setup. */
+.builder-receipt {
+  max-width: 660px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.builder-receipt > .pp-receipt__paper { padding: 1.6rem 1.6rem 1.4rem; }
+.builder-receipt .builder-grid,
+.builder-receipt .builder-footer { max-width: none; margin-left: 0; margin-right: 0; }
+.builder-receipt .builder-footer { margin-top: 1.5rem; }
+
+/* The old .cat-tab.active painted an ink background over the paper — a
+   selected note keeps its colour and takes an inked outline, same as the
+   chips. */
+.cat-tab.active {
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  border: 0;
+}
