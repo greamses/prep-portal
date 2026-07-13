@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Vocab — A to Z Multiplayer Hangman | PrepPortal</title>
+    <meta
+      name="description"
+      content="Science and Maths vocabulary hangman, played A to Z. Read the clue, you're given the first letter, guess the rest — race up to 10 players or go 1v1. Bots fill any empty seats."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
+          "/exam-archive/national/vocab/js/bot-names.js": "/exam-archive/national/vocab/js/bot-names.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/bots.js": "/exam-archive/national/vocab/js/bots.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/game.js": "/exam-archive/national/vocab/js/game.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/leaderboard.js": "/exam-archive/national/vocab/js/leaderboard.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/main.js": "/exam-archive/national/vocab/js/main.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/matchmaking.js": "/exam-archive/national/vocab/js/matchmaking.js?v=42c6eaa3",
+          "/exam-archive/national/vocab/js/rng.js": "/exam-archive/national/vocab/js/rng.js?v=42c6eaa3",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=42c6eaa3",
+          "/data/vocab/index.js": "/data/vocab/index.js?v=42c6eaa3",
+          "/data/vocab/science.js": "/data/vocab/science.js?v=42c6eaa3",
+          "/data/vocab/math.js": "/data/vocab/math.js?v=42c6eaa3"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>VOCAB</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <p class="builder-note">
+        Vocabulary hangman, played straight through the alphabet. Every word
+        comes with a clue and its first letter — guess the rest before six
+        wrong letters hang you. Race real players or bots to solve the most
+        words before the clock runs out. Versus is a private 1v1: create a
+        room and share the code.
+      </p>
+      <div class="builder-stats">
+        <span class="hero-stat" style="--tile: var(--accent-secondary)"><strong>A</strong> to <strong>Z</strong> Hangman</span>
+        <span class="hero-stat" style="--tile: var(--accent-success)"><strong>Live</strong> Multiplayer</span>
+        <span class="hero-stat" style="--tile: var(--accent-primary)">Science <strong>&amp;</strong> Maths</span>
+      </div>
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/puzzles/index.html" role="tab">Puzzles</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/geometry/index.html" role="tab">Geometry</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/vocab/index.html" role="tab">Vocab</a>
+      </div>
+    </header>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="vocab-setup" id="vocab-setup">
+      <div class="vocab-section-hdr">
+        <div class="setup-eyebrow">Get Ready</div>
+        <h2>Set Up Your Hangman</h2>
+        <p class="vocab-section-sub">Multiplayer fills the room with bots if not enough real players join in time.</p>
+      </div>
+
+      <div class="vocab-receipt pp-receipt" id="vocab-receipt">
+        <div class="vocab-receipt-paper pp-receipt__paper">
+          <p class="vocab-receipt-title">Hangman Settings</p>
+
+          <div class="vocab-field" id="vocab-section-player">
+            <span>Player</span>
+            <div id="vocab-player-carousel"></div>
+          </div>
+
+          <!-- Moved into the Player carousel's slides by main.js. -->
+          <input class="vocab-name-input" id="vocab-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid vocab-avatar-grid" id="vocab-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="vocab-avatar-upload-input" accept="image/*" hidden />
+
+          <div class="vocab-field" id="vocab-section-topic">
+            <span>Choose Your Words</span>
+            <div id="vocab-topic-carousel"></div>
+          </div>
+
+          <div class="vocab-field" id="vocab-section-options">
+            <span>Game Options</span>
+            <div id="vocab-options-carousel"></div>
+          </div>
+
+          <div class="vocab-field" id="vocab-section-room">
+            <span>Room</span>
+            <div id="vocab-room-carousel"></div>
+            <input class="vocab-code-input" id="vocab-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+          </div>
+
+          <button class="vocab-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="vocab-start-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+            <span id="vocab-start-label">Find a Room</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ LOBBY OVERLAY ═══ -->
+    <div class="review-bd" id="vocab-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="vocab-lobby-status" id="vocab-lobby-status">Waiting for other players…</p>
+        <div class="vocab-lobby-code" id="vocab-lobby-code" hidden>
+          <span>Share this code with your opponent</span>
+          <div class="vocab-lobby-code-value">
+            <strong id="vocab-lobby-code-text"></strong>
+            <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="vocab-lobby-code-copy" title="Copy code">Copy</button>
+          </div>
+        </div>
+        <div class="vocab-lobby-seats" id="vocab-lobby-seats"></div>
+        <p class="vocab-lobby-count" id="vocab-lobby-count">1 / 5</p>
+        <button class="vocab-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="vocab-lobby-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="vocab-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="vocab-time-remaining" id="vocab-time-remaining"></p>
+        <div class="vocab-roster" id="vocab-roster" hidden></div>
+
+        <div class="vocab-card pp-receipt" id="vocab-card" hidden>
+          <span class="pp-sticky pp-sticky--tape vocab-timer-note" id="vocab-timer-note"></span>
+          <span class="pp-sticky pp-sticky--tape vocab-score-note" id="vocab-score-note">0 solved</span>
+          <div class="vocab-card-face pp-receipt__paper">
+            <div class="vocab-blob" aria-hidden="true"></div>
+            <p class="vocab-countdown" id="vocab-countdown" hidden></p>
+
+            <div class="vocab-board" id="vocab-board" hidden>
+              <p class="vocab-step" id="vocab-step"></p>
+
+              <!-- Every limb is drawn up front and hidden; each wrong guess
+                   shows the next one (see game.js's renderLives). -->
+              <svg class="vocab-gallows" id="vocab-gallows" viewBox="0 0 120 122" aria-hidden="true">
+                <path class="vocab-frame" d="M10 114 H50" />
+                <path class="vocab-frame" d="M22 114 V10" />
+                <path class="vocab-frame" d="M22 10 H78" />
+                <path class="vocab-frame" d="M78 10 V22" />
+                <circle data-part="head" cx="78" cy="32" r="10" />
+                <path data-part="body" d="M78 42 V72" />
+                <path data-part="arm-l" d="M78 50 L64 62" />
+                <path data-part="arm-r" d="M78 50 L92 62" />
+                <path data-part="leg-l" d="M78 72 L64 90" />
+                <path data-part="leg-r" d="M78 72 L92 90" />
+              </svg>
+
+              <p class="vocab-clue" id="vocab-clue"></p>
+              <div class="vocab-word" id="vocab-word"></div>
+              <div class="vocab-lives" id="vocab-lives" aria-label="Lives left"></div>
+              <p class="vocab-verdict" id="vocab-verdict" hidden></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="vocab-keyboard" id="vocab-keyboard" role="group" aria-label="Guess a letter" hidden></div>
+      </div>
+    </div>
+
+    <!-- ═══ AWAITING RESULTS OVERLAY — bridges the gap between the round
+         ending and the leaderboard read landing, so the bare setup page
+         never flashes in between. ═══ -->
+    <div class="review-bd" id="vocab-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="vocab-awaiting">
+          <div class="vocab-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="vocab-awaiting-text">Tallying scores…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="vocab-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="vocab-results-receipt pp-receipt">
+          <div class="vocab-results-paper pp-receipt__paper">
+            <div class="vocab-section-hdr">
+              <div class="setup-eyebrow">Time's Up</div>
+              <h2>Results</h2>
+            </div>
+            <ol class="vocab-leaderboard" id="vocab-leaderboard"></ol>
+          </div>
+        </div>
+        <button class="vocab-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="vocab-again-btn" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js?v=42c6eaa3"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint, .vocab-blob").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

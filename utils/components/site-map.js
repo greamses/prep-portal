@@ -131,6 +131,14 @@ export const SITE_PAGES = [
     blurb: "Timed multiplayer perimeter/circumference drills — circle, semicircle, quadrant, sector, triangle, rectangle, square. Pi = 22/7.",
     keywords: ["geometry", "perimeter", "circumference", "circle", "triangle", "rectangle", "square", "sector", "multiplayer math", "versus", "1v1", "timed practice"],
   },
+  {
+    id: "vocab",
+    title: "Vocab — A to Z Hangman",
+    href: "/exam-archive/national/vocab/index.html",
+    category: "exams",
+    blurb: "Science & maths vocabulary hangman played straight through the alphabet — read the clue, you get the first letter, guess the rest. Multiplayer or 1v1.",
+    keywords: ["vocab", "vocabulary", "hangman", "spelling", "word game", "definitions", "science words", "maths words", "multiplayer", "versus", "1v1", "alphabet"],
+  },
 
   // ── Math & science activities ──────────────────────────────────────
   {

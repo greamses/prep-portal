@@ -1,0 +1,967 @@
+/* ═══════════════════════════════════════════════════════
+   VOCAB — timed multiplayer times-tables practice
+   Paper/soft-UI theme shared with the rest of the site (tokens from
+   theme.css). Card look is ported from flashcards/style.css's
+   .flash-card/.pp-receipt — this card never flips, so the 3D wrapper and
+   back-face rules are dropped.
+═══════════════════════════════════════════════════════ */
+
+body {
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
+}
+
+/* Several components on this page (.vocab-field, .vocab-roster, ...) set
+   their own author `display` value, which otherwise beats the browser's
+   default `[hidden] { display: none }` UA rule at equal specificity —
+   guarantee the hidden attribute always wins regardless of component. */
+[hidden] { display: none !important; }
+
+/* Nav sits at z-index 9999, above every overlay on this page (they're all
+   z-index 50), so it stays visible on top of the leaderboard unless hidden
+   explicitly — toggled by main.js when the results overlay opens/closes. */
+body.vocab-nav-hidden .site-nav { display: none; }
+
+.builder-paint {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.builder-header {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem;
+  padding: 0 1.25rem;
+  text-align: center;
+}
+.builder-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 1.25rem;
+}
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 45%, transparent);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+}
+.hero-stat strong { color: var(--ink); }
+.hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(1.5deg); }
+
+/* ── EXAMS ↔ VOCAB cross-link ──────────────────────────
+   Real links between two separate pages, not a client-side toggle —
+   same treatment as flashcards' .cards-tabs/.cards-tab. */
+.builder-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+.builder-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
+/* ── SETUP ────────────────────────────────────────────── */
+.vocab-section-hdr {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+.setup-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+  margin-bottom: 0.4rem;
+}
+.vocab-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
+.vocab-section-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+}
+
+.vocab-setup {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem);
+}
+/* ── SETTINGS RECEIPT — every selector lives on a torn paper "receipt"
+   (.pp-receipt/.pp-receipt__paper), same component as the study cards. */
+.vocab-receipt { margin: 0 auto; }
+.vocab-receipt-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.7rem;
+  padding: 1.8rem 1.6rem 2rem;
+}
+.vocab-receipt-title {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.9rem;
+  margin: 0;
+}
+
+.vocab-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
+.vocab-field > span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Every section after the first gets a torn-paper tear line above it —
+   same conic-gradient "teeth" mask as .pp-receipt__paper's own top/bottom
+   edge, just a single zigzag edge on a thin strip instead of a full lens,
+   so each section on the setup reads as its own torn-off slip. */
+.vocab-field:not(:first-of-type) {
+  margin-top: 0.15rem;
+  padding-top: 1.3rem;
+}
+.vocab-field:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1.6rem;
+  right: -1.6rem;
+  height: 11px;
+  --tooth: 11px;
+  background: var(--border-subtle);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+}
+
+/* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
+   real radio/checkbox, same recipe as the Facts tab's fact-tiles. Native
+   input stays visible+accessible; a glow highlights the checked note. */
+.sticky-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.7rem;
+}
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 0.6rem 0.45rem;
+}
+.vocab-avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  max-width: 400px;
+}
+
+/* ── OPTIONS STRIP — each selector group (mode, size, time, operations,
+   range) is its own labeled row, stacked with a clear gap, instead of one
+   merged wrapping collage — makes it obvious where one selector ends and
+   the next begins. */
+.vocab-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.strip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+.strip-group::before {
+  content: attr(data-label);
+  flex: 0 0 100%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+/* Compound with .pp-sticky (see .vocab-lb-row.pp-sticky above for why) —
+   loader.js's late-injected @import of components.css can otherwise beat
+   this page's own padding at an equal-specificity tie. */
+.pp-sticky.sticky-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.75rem 0.42rem;
+  cursor: pointer;
+  user-select: none;
+}
+.sticky-choice:hover { transform: rotate(0deg) scale(1.05); }
+.sticky-choice:has(input:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.sticky-choice input {
+  width: 13px;
+  height: 13px;
+  accent-color: #14130f;
+  cursor: pointer;
+}
+
+/* Avatar picker — same sticky-note selection pattern, but the picture does
+   the talking so the radio input is present (for a11y/keyboard) yet
+   visually hidden; the checked-glow ring is the only selection affordance. */
+.pp-sticky.avatar-choice {
+  padding: 0.22rem;
+  aspect-ratio: 1;
+}
+.avatar-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* "Upload your own" tile — dashed placeholder until a photo is picked,
+   after which it looks just like any other avatar tile. */
+.avatar-choice--upload {
+  cursor: pointer;
+}
+.avatar-choice--upload:not(:has(img)) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--border-subtle);
+}
+.avatar-choice--upload svg { pointer-events: none; }
+
+.vocab-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.vocab-start-btn:hover { transform: translateY(-1px); }
+.vocab-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
+.vocab-name-input,
+.vocab-code-input {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  max-width: 320px;
+}
+.vocab-code-input {
+  margin-top: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+}
+.vocab-name-input:focus,
+.vocab-code-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* ── LOBBY CODE DISPLAY — shown only when hosting a private 1v1 room ──── */
+.vocab-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+.vocab-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.vocab-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+.vocab-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.vocab-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+/* ── LOBBY / PLAY / RESULTS OVERLAY ─────────────────────── */
+/* `overflow-y: auto` + `margin: auto` on the child (not `align-items:
+   center` on this container) — a tall leaderboard (10 players) needs to be
+   scrollable to reach every row; `align-items: center` alone clips content
+   taller than the viewport with no way to scroll up to the hidden top. */
+.review-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+
+.vocab-lobby-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+.vocab-lobby-count {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+/* Seats are small sticky notes carrying an avatar — real joiners (then
+   bots, staggered in one at a time) replace the empty placeholders. */
+.vocab-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.pp-sticky.vocab-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: vocab-seat-pop 0.35s ease both;
+}
+.vocab-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+.vocab-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.vocab-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+.vocab-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+@keyframes vocab-seat-pop {
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
+}
+
+.vocab-cancel-btn {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+/* ── HANGMAN CARD ─────────────────────────────────────────────────────
+   Wider and shorter than the Drills card: a gallows, a clue and a row of
+   letter slots need width, not the 4:5 flashcard portrait. */
+.vocab-card {
+  position: relative;
+  width: min(520px, 100%);
+  margin: 0 auto 1.1rem;
+}
+.vocab-card-face.pp-receipt__paper {
+  position: relative; /* the blob behind it is absolutely placed */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 1.7rem 1.4rem 1.5rem;
+  min-height: 400px;
+}
+.vocab-blob {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.vocab-blob svg { width: 100%; height: 100%; }
+
+.vocab-timer-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  right: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: -3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.vocab-score-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  left: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: 3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ── THE BOARD ───────────────────────────────────────────────────────── */
+.vocab-board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+/* Which stop on the march this is — "F · word 6 of 26". */
+.vocab-step {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* The gallows. Every limb is drawn up front and simply hidden — six wrong
+   guesses walk `is-shown` down the list, so the drawing builds itself. */
+.vocab-gallows {
+  width: 116px;
+  height: 118px;
+  flex-shrink: 0;
+}
+.vocab-gallows .vocab-frame {
+  stroke: var(--text-tertiary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+}
+.vocab-gallows [data-part] {
+  stroke: var(--ink);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.vocab-gallows [data-part].is-shown { opacity: 1; }
+
+.vocab-clue {
+  font-family: var(--font-body, inherit);
+  font-size: 0.94rem;
+  line-height: var(--leading-snug, 1.35);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  max-width: 30ch;
+  min-height: 2.6em;
+}
+
+/* The word itself: one slot per character. Only A–Z slots are guessable; a
+   hyphen is drawn in from the start (see game.js's isGuessable). */
+.vocab-word {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.4rem;
+}
+.vocab-slot {
+  display: grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 2rem;
+  padding: 0 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 3px solid var(--text-tertiary);
+}
+.vocab-slot.is-filled {
+  border-bottom-color: var(--ink);
+  animation: vocab-slot-in 0.24s var(--ease-bounce, ease);
+}
+/* A hyphen or space is scenery, not a blank to fill. */
+.vocab-slot--fixed { border-bottom-color: transparent; }
+@keyframes vocab-slot-in {
+  from { transform: translateY(5px) scale(0.85); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Six pips, one per life. They drain right-to-left as the limbs appear —
+   red here is doing its normal job (this is failure, not an option to pick). */
+.vocab-lives {
+  display: flex;
+  gap: 0.3rem;
+}
+.vocab-life {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-success);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.vocab-life.is-lost {
+  background: color-mix(in srgb, var(--accent-danger, #f07a7a) 45%, transparent);
+  transform: scale(0.75);
+}
+
+.vocab-verdict {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  margin: 0;
+  min-height: 1.3em;
+}
+.vocab-verdict.is-solved { color: var(--accent-success); }
+.vocab-verdict.is-hung { color: var(--accent-danger, #f07a7a); }
+
+.vocab-board.is-solved { animation: vocab-pulse-green 0.45s ease; }
+.vocab-board.is-hung { animation: vocab-shake 0.4s ease; }
+@keyframes vocab-pulse-green {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-success) 55%, transparent); }
+  70% { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@keyframes vocab-shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ── THE KEYBOARD ────────────────────────────────────────────────────────
+   26 sticky notes. A key you've spent stays on the board (it's a record of
+   what you've tried) but goes flat and quiet: a hit keeps its paper, a miss
+   is struck through. */
+.vocab-keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem 0.4rem;
+  padding-top: 12px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.vocab-key {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: var(--ink);
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease), opacity 0.2s ease;
+}
+.vocab-key:hover:not(:disabled) {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-3px) scale(1.06);
+}
+.vocab-key:disabled { cursor: default; }
+.vocab-key.is-hit {
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+}
+.vocab-key.is-miss {
+  opacity: 0.42;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) scale(0.9);
+}
+
+@media (max-width: 420px) {
+  .vocab-key { width: 1.85rem; height: 1.85rem; font-size: 0.82rem; }
+  .vocab-keyboard { gap: 0.8rem 0.32rem; }
+  .vocab-slot { min-width: 1.2rem; font-size: 1.1rem; }
+}
+
+.vocab-time-remaining {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+/* Rendered inside the card face (not a standalone screen) so the card is
+   visible from the moment the round starts — countdown swaps for the
+   question the instant startAt passes. */
+.vocab-countdown {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Room-entry roster — everyone in the room (you, other real players, bots
+   with real names) pops in one at a time during the "get ready" beat. */
+.vocab-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.vocab-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: vocab-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+.vocab-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+@keyframes vocab-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── RESULTS — the leaderboard lives on the same receipt as the settings
+   card; each row is its own colour-rotated .pp-sticky note (tape + tilt),
+   so the "paper" motif carries all the way through to the final screen. */
+.vocab-results-receipt { margin: 0 auto 1.25rem; }
+.vocab-results-paper { padding: 1.6rem 1.4rem 1.8rem; }
+
+.vocab-leaderboard {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+/* Compound with .pp-sticky (not just .vocab-lb-row alone) so this reliably
+   outranks the shared .pp-sticky base rule regardless of stylesheet load
+   order — loader.js injects its own <style> with an `@import
+   components.css`, which can otherwise land later in the cascade than this
+   page's own stylesheet and win an equal-specificity tie. */
+.vocab-lb-row.pp-sticky {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
+  opacity: 0;
+  animation: vocab-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes vocab-lb-in {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--pp-note-tilt, 0deg)) scale(1); }
+}
+/* A separate keyframe (not just an overridden transform) because the base
+   entrance animation's held end-state otherwise wins the cascade over any
+   plain `transform` on .is-winner, even after the animation finishes. */
+@keyframes vocab-lb-in-winner {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.08); }
+}
+.vocab-lb-row.is-winner { animation-name: vocab-lb-in-winner; }
+.vocab-lb-row.is-self { box-shadow: 0 0 0 2px var(--accent-secondary), 0 1px 1px rgba(20, 19, 15, 0.1); }
+
+.vocab-lb-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 2px rgba(20, 19, 15, 0.15);
+}
+.vocab-lb-avatar img { width: 100%; height: 100%; display: block; }
+
+.vocab-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
+.vocab-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+.vocab-lb-score { font-weight: 700; }
+
+/* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
+.vocab-lb-row.is-winner {
+  --pp-note-bg: #ffdd6b;
+  box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  font-size: 0.8rem;
+}
+.vocab-lb-row.is-winner .vocab-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
+
+.vocab-again-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1.4rem;
+  cursor: pointer;
+}
+
+/* ── AWAITING RESULTS — bridges the gap between the round ending and the
+   leaderboard read landing (grace delay + one getDocs) so the bare setup
+   page never shows through in between. ── */
+.vocab-awaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.vocab-awaiting-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.vocab-awaiting-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: vocab-awaiting-bounce 1s ease-in-out infinite;
+}
+.vocab-awaiting-dots span:nth-child(2) { background: var(--accent-secondary); animation-delay: 0.15s; }
+.vocab-awaiting-dots span:nth-child(3) { background: var(--accent-success); animation-delay: 0.3s; }
+@keyframes vocab-awaiting-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-10px); opacity: 1; }
+}
+.vocab-awaiting-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── CONFETTI — fired once when the signed-in player wins their round. ── */
+.vocab-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+.vocab-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: vocab-confetti-fall linear forwards;
+}
+@keyframes vocab-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
+}
+
+/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
+   Start / Cancel / Play Again / Copy all carry .pp-note-btn now (see
+   components.css), so the paper, tape, tilt and lift come from .pp-sticky.
+   These rules only keep the layout each button needs — anything that would
+   repaint the note (background, border, radius, font, shadow) is dropped. */
+.vocab-start-btn,
+.vocab-again-btn,
+.vocab-cancel-btn,
+.vocab-lobby-code-value button {
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.vocab-cancel-btn { color: #5a544a; }
+.vocab-lobby-code-value button { font-size: 0.72rem; padding: 0.45rem 0.8rem 0.5rem; }
+.vocab-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
+.vocab-start-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.vocab-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}
+
+/* ── The page tabs are sticky notes too ──────────────────────────────────
+   These were the last .pp-pill chrome left on the page. Same paper, tape and
+   tilt as every other control; the active one keeps its colour and takes an
+   inked outline rather than inverting to a dark chip. */
+.builder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 0.5rem;
+  padding-top: 12px;
+}
+.builder-tab.pp-pill {
+  position: relative;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.45rem 0.85rem 0.5rem;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.builder-tab.pp-pill::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-tabs .builder-tab:nth-child(1) { --pp-note-bg: #fff3a8; }
+.builder-tabs .builder-tab:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.builder-tabs .builder-tab:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.builder-tabs .builder-tab:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.builder-tab.pp-pill:hover {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  color: #14130f;
+}
+.builder-tab.pp-pill.is-active {
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}

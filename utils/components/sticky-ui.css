@@ -525,3 +525,9 @@ button.pp-btn,
 .cards-tabs,
 .sp-kindtabs,
 .topic-chips { padding-top: 12px; }
+
+/* The builder tab rows grew past four (Exam Builder / Drills / Puzzles /
+   Geometry / Vocab). Each page's own stylesheet only colours notes 1-4, so
+   the rotation continues here rather than in five copies of the same file. */
+.builder-tabs .builder-tab:nth-child(5) { --pp-note-bg: #ffd7a3; }
+.builder-tabs .builder-tab:nth-child(6) { --pp-note-bg: #b8ece2; --pp-note-tilt: -1.4deg; }

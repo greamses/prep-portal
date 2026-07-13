@@ -35,24 +35,34 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const PAGES = ['geometry', 'drills', 'puzzles'].map((name) => ({
-  name,
-  dir: join(ROOT, 'exam-archive', 'national', name),
-  urlBase: `/exam-archive/national/${name}`,
-}));
-
-// Shared modules the pages import by absolute path. Changing one of these must
-// also bust the pages, so they go into the hash and get remapped too.
+// Shared modules EVERY page imports by absolute path. Changing one of these
+// must also bust the pages, so they go into the hash and get remapped too.
 const SHARED = ['/utils/components/setup-carousel.js'];
 
+// `extra` is for absolute-path modules only one page imports — the vocab word
+// bank lives in /data, outside any page's js/ dir, but editing a word still has
+// to bust that page.
+const PAGES = [
+  { name: 'geometry' },
+  { name: 'drills' },
+  { name: 'puzzles' },
+  { name: 'vocab', extra: ['/data/vocab/index.js', '/data/vocab/science.js', '/data/vocab/math.js'] },
+].map((p) => ({
+  ...p,
+  extra: p.extra || [],
+  dir: join(ROOT, 'exam-archive', 'national', p.name),
+  urlBase: `/exam-archive/national/${p.name}`,
+}));
+
 const read = (p) => readFileSync(p, 'utf8');
+const sharedFor = (page) => [...SHARED, ...page.extra];
 
 function hashFor(page) {
   const h = createHash('sha256');
   const jsDir = join(page.dir, 'js');
   const files = readdirSync(jsDir).filter((f) => f.endsWith('.js')).sort();
   for (const f of files) h.update(read(join(jsDir, f)));
-  for (const s of SHARED) h.update(read(join(ROOT, s)));
+  for (const s of sharedFor(page)) h.update(read(join(ROOT, s)));
   return h.digest('hex').slice(0, 8);
 }
 
@@ -65,7 +75,7 @@ function buildImportMap(page, version, existing) {
     const url = `${page.urlBase}/js/${f}`;
     imports[url] = `${url}?v=${version}`;
   }
-  for (const s of SHARED) imports[s] = `${s}?v=${version}`;
+  for (const s of sharedFor(page)) imports[s] = `${s}?v=${version}`;
   return { imports };
 }
 
@@ -95,7 +105,7 @@ for (const page of PAGES) {
         const parsed = JSON.parse(body);
         // Drop previously-generated app entries so a stale version can't linger.
         for (const [k, v] of Object.entries(parsed.imports || {})) {
-          const isApp = k.startsWith(page.urlBase) || SHARED.includes(k);
+          const isApp = k.startsWith(page.urlBase) || sharedFor(page).includes(k);
           if (!isApp) existingImports[k] = v;
         }
       } catch {
