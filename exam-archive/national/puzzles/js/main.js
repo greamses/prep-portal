@@ -17,34 +17,16 @@ import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderCustomStep, renderComingSoon,
 } from '/utils/components/setup-carousel.js';
+import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
-// Curated seeds for the player's own avatar picker — any string works with
-// DiceBear, these are just a fun fixed set to choose between.
-const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
-const AVATAR_SEED_KEY = 'puzzleAvatarSeed';
-let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0];
-
-// A user-uploaded photo (resized + compressed to a small data URL, see
-// resizeAvatarFile()) — stored locally only, same as every other avatar
-// choice; avatar choice was never synced to other players in a room to
-// begin with (see leaderboard.js: other real players' rows always render
-// a uid-derived DiceBear face, not their actual pick).
-const CUSTOM_AVATAR_VALUE = 'custom';
-const CUSTOM_AVATAR_KEY = 'puzzleAvatarCustom';
-let customAvatarDataUrl = localStorage.getItem(CUSTOM_AVATAR_KEY) || null;
-
-// Seeded cartoon avatars (DiceBear's open "adventurer" mascot set) — same
-// seed always draws the same face, so a bot's avatar stays consistent with
-// its real name and a real player's avatar stays consistent with their
-// pick. The one exception is the "upload your own" choice, which resolves
-// to the locally-stored photo instead of a generated face.
-const avatarUrl = (seed) => {
-  if (seed === CUSTOM_AVATAR_VALUE && customAvatarDataUrl) return customAvatarDataUrl;
-  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
-};
+// The avatar picker (drawn faces + the player's own photos) lives in
+// /utils/components/avatar-picker.js, shared by every game — one player, one
+// face, everywhere. Avatar choice is never synced to other players in a room
+// (see leaderboard.js: other real players' rows always render a uid-derived
+// DiceBear face, not their actual pick).
 
 const NAME_KEY = 'puzzleGameName';
 
@@ -66,12 +48,6 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
   <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
   <rect x="10.5" y="12" width="3" height="4" fill="var(--ink)"/>
   <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
-</svg>`;
-
-// Shown on the "upload your own" avatar tile until a photo is chosen.
-const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1-1.6A1.5 1.5 0 0 1 10.4 3.6h3.2a1.5 1.5 0 0 1 1.3.8l1 1.6h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linejoin="round"/>
-  <circle cx="12" cy="12.5" r="3.4" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/>
 </svg>`;
 
 const nameInput = $('puzzle-name-input');
@@ -318,7 +294,7 @@ roomCarousel.start('entry');
 const flow = createSectionFlow([
   {
     el: $('puzzle-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(selectedAvatarSeed) }],
+    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
   },
   {
     el: $('puzzle-section-topic'),
@@ -355,72 +331,13 @@ getCurrentUser().then((user) => {
 });
 
 // ── Avatar picker ────────────────────────────────────────────────────────
-// Downscales + crops to a centered square, then compresses to a small JPEG
-// data URL — keeps it comfortably inside localStorage limits (typically a
-// few KB) without needing any server-side upload/storage.
-function resizeAvatarFile(file) {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const size = 160;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const crop = Math.min(img.naturalWidth, img.naturalHeight);
-      const sx = (img.naturalWidth - crop) / 2;
-      const sy = (img.naturalHeight - crop) / 2;
-      ctx.drawImage(img, sx, sy, crop, crop, 0, 0, size, size);
-      URL.revokeObjectURL(objectUrl);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that image.')); };
-    img.src = objectUrl;
-  });
-}
-
-function renderAvatarGrid() {
-  avatarGrid.innerHTML = '';
-
-  const uploadLabel = document.createElement('label');
-  uploadLabel.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice avatar-choice--upload ${stickyColor(0)}`;
-  uploadLabel.innerHTML = `
-    <input type="radio" name="puzzle-avatar" value="${CUSTOM_AVATAR_VALUE}" ${selectedAvatarSeed === CUSTOM_AVATAR_VALUE ? 'checked' : ''} />
-    ${customAvatarDataUrl ? `<img src="${customAvatarDataUrl}" alt="Your photo" loading="lazy" />` : UPLOAD_ICON_SVG}
-  `;
-  uploadLabel.addEventListener('click', () => avatarUploadInput.click());
-  avatarGrid.appendChild(uploadLabel);
-
-  AVATAR_SEEDS.forEach((seed, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice ${stickyColor(i + 1)}`;
-    label.innerHTML = `<input type="radio" name="puzzle-avatar" value="${seed}" ${seed === selectedAvatarSeed ? 'checked' : ''} /><img src="${avatarUrl(seed)}" alt="${seed} avatar" loading="lazy" />`;
-    avatarGrid.appendChild(label);
-  });
-}
-renderAvatarGrid();
-
-avatarGrid.addEventListener('change', (e) => {
-  const input = e.target.closest('input[name="puzzle-avatar"]');
-  if (!input) return;
-  selectedAvatarSeed = input.value;
-  localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
-});
-
-avatarUploadInput.addEventListener('change', async () => {
-  const file = avatarUploadInput.files && avatarUploadInput.files[0];
-  avatarUploadInput.value = ''; // allow re-picking the same file later
-  if (!file) return;
-  try {
-    customAvatarDataUrl = await resizeAvatarFile(file);
-    localStorage.setItem(CUSTOM_AVATAR_KEY, customAvatarDataUrl);
-    selectedAvatarSeed = CUSTOM_AVATAR_VALUE;
-    localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
-    renderAvatarGrid();
-  } catch (e) {
-    alert("Couldn't use that photo — please try a different image.");
-  }
+// Drawn faces plus the player's own photos, kept as a list they can pick
+// between and delete from. Shared with every other game — same module, same
+// storage, so one player wears one face everywhere.
+mountAvatarPicker({
+  grid: avatarGrid,
+  uploadInput: avatarUploadInput,
+  radioName: 'puzzle-avatar',
 });
 
 // ── Lobby ────────────────────────────────────────────────────────────────
@@ -447,7 +364,7 @@ function seatSticker(i, avatarSeed, label) {
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    if (i === 0) lobbySeats.appendChild(seatSticker(i, selectedAvatarSeed, 'You'));
+    if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
     else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
     else lobbySeats.appendChild(seatSticker(i, null));
   }
@@ -625,12 +542,12 @@ async function playRoundAndShowResults(room, myName) {
       myScore,
     });
   } catch (e) {
-    ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: selectedAvatarSeed }];
+    ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   // Show the player's own chosen avatar on the leaderboard, not the
   // uid-derived one leaderboard.js falls back to.
   const selfRow = ranked.find((r) => r.isSelf);
-  if (selfRow) selfRow.avatarSeed = selectedAvatarSeed;
+  if (selfRow) selfRow.avatarSeed = getAvatarSeed();
 
   hideAwaiting();
 
@@ -707,14 +624,17 @@ async function runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSiz
   await playRoundAndShowResults(room, myName);
 }
 
-async function runMultiplayerJoin({ myName }) {
-  const code = (codeInput.value || '').trim().toUpperCase();
+// Joining is the same act however you got here — Versus, Multiplayer or the
+// quick-join box at the top of the page. You bring a code; the host's room
+// brings everything else. `fallbackSize` only sizes the lobby's empty seats
+// until the room's real size arrives with the first snapshot.
+async function joinWithCode(code, fallbackSize, myName) {
   if (code.length !== 6) {
     alert('Enter the 6-character room code your friend shared.');
     startBtn.disabled = false;
     return;
   }
-  showLobby(roomSize); // best guess until the joined room's real size arrives below
+  showLobby(fallbackSize);
   lobbyStatus.textContent = 'Joining room…';
   let room;
   try {
@@ -731,6 +651,12 @@ async function runMultiplayerJoin({ myName }) {
   if (cancelled) return;
   hideLobby();
   await playRoundAndShowResults(room, myName);
+}
+
+const codeFromInput = () => (codeInput.value || '').trim().toUpperCase();
+
+async function runMultiplayerJoin({ myName }) {
+  await joinWithCode(codeFromInput(), roomSize, myName);
 }
 
 async function runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
@@ -765,29 +691,7 @@ async function runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, my
 }
 
 async function runVersusJoin({ myName }) {
-  const code = (codeInput.value || '').trim().toUpperCase();
-  if (code.length !== 6) {
-    alert('Enter the 6-character room code your friend shared.');
-    startBtn.disabled = false;
-    return;
-  }
-  showLobby(2);
-  lobbyStatus.textContent = 'Joining room…';
-  let room;
-  try {
-    room = await joinRoomByCode(code, {
-      displayName: myName,
-      onWaiting: makeOnWaiting('Waiting for the round to start…'),
-    });
-  } catch (e) {
-    hideLobby();
-    startBtn.disabled = false;
-    alert((e && e.message) || "Couldn't join that room.");
-    return;
-  }
-  if (cancelled) return;
-  hideLobby();
-  await playRoundAndShowResults(room, myName);
+  await joinWithCode(codeFromInput(), 2, myName);
 }
 
 async function runPuzzle() {
@@ -808,6 +712,31 @@ async function runPuzzle() {
 }
 
 startBtn.addEventListener('click', runPuzzle);
+
+/* ── Quick join ─────────────────────────────────────────────────
+   Somebody arriving with a friend's code has nothing to set up: the room's
+   content, size and clock all come from the host, and every answer they'd give
+   in the sections below would be thrown away. So the code box sits at the top
+   of the page and goes straight to the lobby, wearing the name and avatar from
+   the last game they played. */
+const quickJoinInput = $('puzzle-quickjoin-input');
+const quickJoinBtn = $('puzzle-quickjoin-btn');
+
+quickJoinInput.addEventListener('input', () => {
+  quickJoinInput.value = quickJoinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+});
+quickJoinInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); quickJoinBtn.click(); }
+});
+quickJoinBtn.addEventListener('click', async () => {
+  const code = quickJoinInput.value.trim();
+  if (code.length !== 6) { quickJoinInput.focus(); return; }
+  quickJoinBtn.disabled = true;
+  startBtn.disabled = true;
+  await getCurrentUser();
+  await joinWithCode(code, 2, myName()); // 2 only seeds the lobby; the room's real size arrives with it
+  quickJoinBtn.disabled = false;
+});
 lobbyCancel.addEventListener('click', () => {
   // v1 doesn't retract the Firestore join/room-create on cancel — the
   // abandon-fallback timers on other clients (or a solo bot-fill) resolve

@@ -31,17 +31,17 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/vocab/js/bot-names.js": "/exam-archive/national/vocab/js/bot-names.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/bots.js": "/exam-archive/national/vocab/js/bots.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/game.js": "/exam-archive/national/vocab/js/game.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/leaderboard.js": "/exam-archive/national/vocab/js/leaderboard.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/main.js": "/exam-archive/national/vocab/js/main.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/matchmaking.js": "/exam-archive/national/vocab/js/matchmaking.js?v=42c6eaa3",
-          "/exam-archive/national/vocab/js/rng.js": "/exam-archive/national/vocab/js/rng.js?v=42c6eaa3",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=42c6eaa3",
-          "/data/vocab/index.js": "/data/vocab/index.js?v=42c6eaa3",
-          "/data/vocab/science.js": "/data/vocab/science.js?v=42c6eaa3",
-          "/data/vocab/math.js": "/data/vocab/math.js?v=42c6eaa3"
+          "/exam-archive/national/vocab/js/bot-names.js": "/exam-archive/national/vocab/js/bot-names.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/bots.js": "/exam-archive/national/vocab/js/bots.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/game.js": "/exam-archive/national/vocab/js/game.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/leaderboard.js": "/exam-archive/national/vocab/js/leaderboard.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/main.js": "/exam-archive/national/vocab/js/main.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/matchmaking.js": "/exam-archive/national/vocab/js/matchmaking.js?v=2ce34531",
+          "/exam-archive/national/vocab/js/rng.js": "/exam-archive/national/vocab/js/rng.js?v=2ce34531",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=2ce34531",
+          "/data/vocab/index.js": "/data/vocab/index.js?v=2ce34531",
+          "/data/vocab/science.js": "/data/vocab/science.js?v=2ce34531",
+          "/data/vocab/math.js": "/data/vocab/math.js?v=2ce34531"
         }
       }
     </script>
@@ -93,6 +93,20 @@
         <div class="setup-eyebrow">Get Ready</div>
         <h2>Set Up Your Hangman</h2>
         <p class="vocab-section-sub">Multiplayer fills the room with bots if not enough real players join in time.</p>
+      </div>
+
+      <!-- Handed a code? None of the settings below apply to you — the host's
+           room decides all of them. Jump straight in. -->
+      <div class="quick-join pp-sticky pp-sticky--tape pp-sticky--c3" id="vocab-quickjoin">
+        <div class="quick-join-copy">
+          <strong>Got a room code?</strong>
+          <span>Skip the setup and join your friend's room.</span>
+        </div>
+        <div class="quick-join-controls">
+          <input class="quick-join-input" id="vocab-quickjoin-input" type="text" maxlength="6"
+                 placeholder="ABC123" autocomplete="off" spellcheck="false" aria-label="Room code" />
+          <button class="pp-sticky pp-note-btn quick-join-btn pp-sticky--c0" id="vocab-quickjoin-btn" type="button">Join</button>
+        </div>
       </div>
 
       <div class="vocab-receipt pp-receipt" id="vocab-receipt">
@@ -224,7 +238,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=42c6eaa3"></script>
+    <script type="module" src="./js/main.js?v=2ce34531"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

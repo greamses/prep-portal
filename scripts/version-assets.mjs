@@ -37,7 +37,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // Shared modules EVERY page imports by absolute path. Changing one of these
 // must also bust the pages, so they go into the hash and get remapped too.
-const SHARED = ['/utils/components/setup-carousel.js'];
+const SHARED = [
+  '/utils/components/setup-carousel.js',
+  '/utils/components/avatar-picker.js',
+];
 
 // `extra` is for absolute-path modules only one page imports — the vocab word
 // bank lives in /data, outside any page's js/ dir, but editing a word still has

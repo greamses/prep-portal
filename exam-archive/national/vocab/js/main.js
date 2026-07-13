@@ -16,23 +16,12 @@ import { finishRound } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep,
 } from '/utils/components/setup-carousel.js';
+import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
-const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
-const AVATAR_SEED_KEY = 'drillAvatarSeed';   // shared with Drills/Puzzles on purpose —
-const CUSTOM_AVATAR_KEY = 'drillAvatarCustom'; // one player, one face, across every game
-const CUSTOM_AVATAR_VALUE = 'custom';
 const NAME_KEY = 'drillGameName';
-
-let selectedAvatarSeed = localStorage.getItem(AVATAR_SEED_KEY) || AVATAR_SEEDS[0];
-let customAvatarDataUrl = localStorage.getItem(CUSTOM_AVATAR_KEY) || null;
-
-const avatarUrl = (seed) => {
-  if (seed === CUSTOM_AVATAR_VALUE && customAvatarDataUrl) return customAvatarDataUrl;
-  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&size=64`;
-};
 
 // A hangman word is a far slower unit than a times-table sum, so the rounds
 // run in minutes, not seconds — 60s would barely fit four words.
@@ -51,11 +40,6 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
   <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
 </svg>`;
 
-const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1-1.6A1.5 1.5 0 0 1 10.4 3.6h3.2a1.5 1.5 0 0 1 1.3.8l1 1.6h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linejoin="round"/>
-  <circle cx="12" cy="12.5" r="3.4" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/>
-</svg>`;
-
 const nameInput = $('vocab-name-input');
 const avatarGrid = $('vocab-avatar-grid');
 const avatarUploadInput = $('vocab-avatar-upload-input');
@@ -64,6 +48,8 @@ const topicMount = $('vocab-topic-carousel');
 const optionsMount = $('vocab-options-carousel');
 const roomMount = $('vocab-room-carousel');
 const codeInput = $('vocab-code-input');
+const quickJoinInput = $('vocab-quickjoin-input');
+const quickJoinBtn = $('vocab-quickjoin-btn');
 const startBtn = $('vocab-start-btn');
 const startLabel = $('vocab-start-label');
 
@@ -258,7 +244,7 @@ roomCarousel.start('entry');
 const flow = createSectionFlow([
   {
     el: $('vocab-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(selectedAvatarSeed) }],
+    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
   },
   {
     el: $('vocab-section-topic'),
@@ -290,71 +276,13 @@ const flow = createSectionFlow([
 updateStartLabel();
 
 // ── Avatar picker ────────────────────────────────────────────────────────
-// Downscales + crops to a centered square, then compresses to a small JPEG
-// data URL — comfortably inside localStorage limits, no server upload.
-function resizeAvatarFile(file) {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const size = 160;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const crop = Math.min(img.naturalWidth, img.naturalHeight);
-      const sx = (img.naturalWidth - crop) / 2;
-      const sy = (img.naturalHeight - crop) / 2;
-      ctx.drawImage(img, sx, sy, crop, crop, 0, 0, size, size);
-      URL.revokeObjectURL(objectUrl);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that image.')); };
-    img.src = objectUrl;
-  });
-}
-
-function renderAvatarGrid() {
-  avatarGrid.innerHTML = '';
-
-  const uploadLabel = document.createElement('label');
-  uploadLabel.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice avatar-choice--upload ${stickyColor(0)}`;
-  uploadLabel.innerHTML = `
-    <input type="radio" name="vocab-avatar" value="${CUSTOM_AVATAR_VALUE}" ${selectedAvatarSeed === CUSTOM_AVATAR_VALUE ? 'checked' : ''} />
-    ${customAvatarDataUrl ? `<img src="${customAvatarDataUrl}" alt="Your photo" loading="lazy" />` : UPLOAD_ICON_SVG}
-  `;
-  uploadLabel.addEventListener('click', () => avatarUploadInput.click());
-  avatarGrid.appendChild(uploadLabel);
-
-  AVATAR_SEEDS.forEach((seed, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice ${stickyColor(i + 1)}`;
-    label.innerHTML = `<input type="radio" name="vocab-avatar" value="${seed}" ${seed === selectedAvatarSeed ? 'checked' : ''} /><img src="${avatarUrl(seed)}" alt="${seed} avatar" loading="lazy" />`;
-    avatarGrid.appendChild(label);
-  });
-}
-renderAvatarGrid();
-
-avatarGrid.addEventListener('change', (e) => {
-  const input = e.target.closest('input[name="vocab-avatar"]');
-  if (!input) return;
-  selectedAvatarSeed = input.value;
-  localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
-});
-
-avatarUploadInput.addEventListener('change', async () => {
-  const file = avatarUploadInput.files && avatarUploadInput.files[0];
-  avatarUploadInput.value = ''; // allow re-picking the same file later
-  if (!file) return;
-  try {
-    customAvatarDataUrl = await resizeAvatarFile(file);
-    localStorage.setItem(CUSTOM_AVATAR_KEY, customAvatarDataUrl);
-    selectedAvatarSeed = CUSTOM_AVATAR_VALUE;
-    localStorage.setItem(AVATAR_SEED_KEY, selectedAvatarSeed);
-    renderAvatarGrid();
-  } catch (e) {
-    alert("Couldn't use that photo — please try a different image.");
-  }
+// Drawn faces plus the player's own photos, kept as a list they can pick
+// between and delete from. Shared with every other game — same module, same
+// storage, so one player wears one face everywhere.
+mountAvatarPicker({
+  grid: avatarGrid,
+  uploadInput: avatarUploadInput,
+  radioName: 'vocab-avatar',
 });
 
 // ── Lobby ────────────────────────────────────────────────────────────────
@@ -377,7 +305,7 @@ function seatSticker(i, avatarSeed, label) {
 function renderLobbySeats(playerCount, size) {
   lobbySeats.innerHTML = '';
   for (let i = 0; i < size; i++) {
-    if (i === 0) lobbySeats.appendChild(seatSticker(i, selectedAvatarSeed, 'You'));
+    if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
     else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
     else lobbySeats.appendChild(seatSticker(i, null));
   }
@@ -550,10 +478,10 @@ async function playRoundAndShowResults(room, name) {
       myScore,
     });
   } catch (e) {
-    ranked = [{ name, score: myScore, isBot: false, isSelf: true, avatarSeed: selectedAvatarSeed }];
+    ranked = [{ name, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   const selfRow = ranked.find((r) => r.isSelf);
-  if (selfRow) selfRow.avatarSeed = selectedAvatarSeed;
+  if (selfRow) selfRow.avatarSeed = getAvatarSeed();
 
   hideAwaiting();
   startBtn.disabled = false;
@@ -624,8 +552,8 @@ async function runCreate(name, size, roomMode) {
   await playRoundAndShowResults(room, name);
 }
 
-async function runJoin(name, fallbackSize) {
-  const code = (codeInput.value || '').trim().toUpperCase();
+async function runJoin(name, fallbackSize, rawCode) {
+  const code = (rawCode || '').trim().toUpperCase();
   if (code.length !== 6) {
     alert('Enter the 6-character room code your friend shared.');
     startBtn.disabled = false;
@@ -656,17 +584,42 @@ async function runVocab() {
   const name = myName();
 
   if (mode === 'versus') {
-    if (roomAction === 'join') await runJoin(name, 2);
+    if (roomAction === 'join') await runJoin(name, 2, codeInput.value);
     else await runCreate(name, 2, 'versus');
     return;
   }
 
-  if (roomAction === 'join') await runJoin(name, roomSize);
+  if (roomAction === 'join') await runJoin(name, roomSize, codeInput.value);
   else if (roomAction === 'create') await runCreate(name, roomSize, 'multiplayer');
   else await runMultiplayer(name);
 }
 
 startBtn.addEventListener('click', runVocab);
+
+/* ── Quick join ─────────────────────────────────────────────────
+   Somebody arriving with a friend's code has nothing to set up: the room's
+   subject, grade, size and clock all come from the host. Walking them through
+   four setup sections only to discard every answer is a waste of their time,
+   so the code box sits at the top of the page and skips straight to the lobby.
+   Name and avatar come from the last game they played. */
+quickJoinInput.addEventListener('input', () => {
+  quickJoinInput.value = quickJoinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+});
+quickJoinInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); quickJoinBtn.click(); }
+});
+quickJoinBtn.addEventListener('click', async () => {
+  const code = quickJoinInput.value.trim();
+  if (code.length !== 6) {
+    quickJoinInput.focus();
+    return;
+  }
+  quickJoinBtn.disabled = true;
+  startBtn.disabled = true;
+  await getCurrentUser();
+  await runJoin(myName(), 2, code); // 2 is only the lobby's guess; the room's real size arrives with it
+  quickJoinBtn.disabled = false;
+});
 lobbyCancel.addEventListener('click', () => {
   // v1 doesn't retract the Firestore join/room-create on cancel — the
   // abandon-fallback timers on other clients (or a solo bot-fill) resolve an

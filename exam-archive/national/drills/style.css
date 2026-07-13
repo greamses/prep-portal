@@ -840,3 +840,87 @@ body.drill-nav-hidden .site-nav { display: none; }
   outline-offset: -2.5px;
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
 }
+
+/* ── Quick join ─────────────────────────────────────────────────────────
+   A player arriving with a friend's code has nothing to configure — the room
+   they're joining decides the subject, the size and the clock. This sits
+   ABOVE the settings so they never have to walk through them.
+   Compounded with .pp-sticky (see .sticky-choice above for why): components.css
+   is @imported late by loader.js and would otherwise win the equal-specificity
+   tie on `display`. */
+.pp-sticky.quick-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem 1rem;
+  width: min(540px, 100%);
+  margin: 0 auto 1.4rem;
+  padding: 0.85rem 1.1rem 0.95rem;
+  --pp-note-tilt: -1deg;
+}
+.quick-join-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.quick-join-copy strong { font-size: 0.95rem; }
+.quick-join-copy span { font-size: 0.76rem; opacity: 0.7; }
+.quick-join-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.quick-join-input {
+  width: 6.4rem;
+  padding: 0.42rem 0.5rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(20, 19, 15, 0.22);
+  border-radius: 5px;
+}
+.quick-join-input::placeholder { opacity: 0.35; }
+.quick-join-btn {
+  padding: 0.44rem 1.15rem;
+  font-size: 0.85rem;
+}
+.quick-join-btn:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 520px) {
+  .pp-sticky.quick-join { justify-content: center; text-align: center; }
+  .quick-join-copy { align-items: center; }
+}
+
+/* A saved photo carries a small remove control — the picker is a LIST the
+   player curates, not a single slot that each upload silently overwrote. */
+.avatar-choice--saved { overflow: visible; }
+.avatar-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #14130f;
+  background: var(--surface-primary);
+  box-shadow: 0 1px 3px rgba(20, 19, 15, 0.35);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.avatar-choice--saved:hover .avatar-remove,
+.avatar-choice--saved:focus-within .avatar-remove { opacity: 1; }
+/* Touch devices have no hover to reveal it. */
+@media (hover: none) {
+  .avatar-remove { opacity: 1; }
+}

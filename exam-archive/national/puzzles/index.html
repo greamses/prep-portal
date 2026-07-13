@@ -31,16 +31,16 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/puzzles/js/bot-names.js": "/exam-archive/national/puzzles/js/bot-names.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=f252878a",
-          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=f252878a",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=f252878a"
+          "/exam-archive/national/puzzles/js/bot-names.js": "/exam-archive/national/puzzles/js/bot-names.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=7bf00a3b",
+          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=7bf00a3b",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=7bf00a3b"
         }
       }
     </script>
@@ -90,6 +90,20 @@
         <div class="setup-eyebrow">Get Ready</div>
         <h2>Set Up Your Puzzle</h2>
         <p class="puzzle-section-sub">Multiplayer fills the room with bots if not enough real players join in time.</p>
+      </div>
+
+      <!-- Handed a code? None of the settings below apply to you — the host's
+           room decides all of them. Jump straight in. -->
+      <div class="quick-join pp-sticky pp-sticky--tape pp-sticky--c3" id="puzzle-quickjoin">
+        <div class="quick-join-copy">
+          <strong>Got a room code?</strong>
+          <span>Skip the setup and join your friend's room.</span>
+        </div>
+        <div class="quick-join-controls">
+          <input class="quick-join-input" id="puzzle-quickjoin-input" type="text" maxlength="6"
+                 placeholder="ABC123" autocomplete="off" spellcheck="false" aria-label="Room code" />
+          <button class="pp-sticky pp-note-btn quick-join-btn pp-sticky--c0" id="puzzle-quickjoin-btn" type="button">Join</button>
+        </div>
       </div>
 
       <div class="puzzle-receipt pp-receipt" id="puzzle-receipt">
@@ -196,7 +210,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=f252878a"></script>
+    <script type="module" src="./js/main.js?v=7bf00a3b"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";
