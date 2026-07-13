@@ -25,6 +25,15 @@ if [ -f .env ]; then
   set +a
 fi
 
+# Stamp content-hash versions onto the game pages' module URLs BEFORE deploying.
+# index.html is always fresh (max-age=0) but the JS it points at can come from a
+# stale cache — new markup + old code is the worst failure mode. Versioned URLs
+# make it impossible: changed code means a changed URL, and a URL that was never
+# requested cannot be stale anywhere.
+echo "🔖 Versioning module URLs…"
+node scripts/version-assets.mjs
+
+echo ""
 echo "▲ Deploying to production…"
 vercel --prod
 
