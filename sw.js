@@ -1,4 +1,4 @@
-const CACHE_NAME = "prepportal-v5";
+const CACHE_NAME = "prepportal-v6";
 const PRECACHE_URLS = [
   "/",
   "/index.html",
@@ -62,9 +62,20 @@ self.addEventListener("fetch", (event) => {
   };
 
   if (isAppCode(request)) {
-    // Network-first: always try the network, fall back to cache when offline.
+    // Network-first. For JS/CSS, `cache: "reload"` forces a real network hit —
+    // a plain fetch(request) may still be answered from the browser's own HTTP
+    // cache, so a stale max-age entry would quietly defeat "network-first" and
+    // keep serving pre-deploy code. Navigations must reuse the original Request:
+    // a Request rebuilt from just a URL loses its `navigate` mode, the fetch
+    // fails, and we'd fall through to the offline branch and serve the *home
+    // page* in place of whatever page was actually requested.
+    const netRequest =
+      request.mode === "navigate"
+        ? request
+        : new Request(request.url, { cache: "reload", credentials: "same-origin" });
+
     event.respondWith(
-      fetch(request)
+      fetch(netRequest)
         .then(cacheFresh)
         .catch(() =>
           caches

@@ -11,6 +11,40 @@
     if (link) link.setAttribute("href", big ? "/manifest-browser.json" : "/manifest.json");
   } catch (e) {}
 
+  /* ── Service worker: register, then keep it honest ──
+     The register() call was dropped by accident in "fix: quik pwa update",
+     leaving the worker ORPHANED — still installed on every device that had
+     visited before then, still intercepting fetches and answering from its own
+     Cache Storage, but with no code left to ever update it. Installed PWAs kept
+     serving pre-deploy JS indefinitely, and no amount of CDN/cache-header work
+     could reach them.
+
+     Registering here (rather than only on the home page) means every page
+     checks for a new worker, so a CACHE_NAME bump in sw.js purges the stale
+     caches on activate. The reload-on-controllerchange is guarded: without the
+     flag, a worker claiming its clients can put the page in a reload loop. */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => reg.update())
+        .catch(() => {}); // a failed SW registration must never break the page
+    });
+
+    // Only reload when a NEW worker replaces an existing one — that's the
+    // self-heal case (the page is running code the old worker served, so it has
+    // to re-run). On a first visit there's no controller yet, and the page
+    // already has fresh code straight from the network, so claiming it must not
+    // trigger a gratuitous reload. The flag guards against a reload loop.
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloading || !hadController) return;
+      reloading = true;
+      window.location.reload();
+    });
+  }
+
   /* ── Restore the saved theme before first paint (avoids a flash) ──
      The nav theme toggle persists the choice to localStorage("pp-theme").
      Honour an explicit choice; otherwise fall back to the OS preference. */

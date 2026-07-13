@@ -820,14 +820,6 @@
     <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 
     <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          window.location.reload();
-        });
-      }
-    </script>
-
-    <script>
       // FAQ accordion
       document.querySelectorAll(".faq-q").forEach(function (btn) {
         btn.addEventListener("click", function () {
