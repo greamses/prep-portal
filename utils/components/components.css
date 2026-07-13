@@ -275,7 +275,9 @@
   cursor: not-allowed;
   transform: rotate(var(--pp-note-tilt, -2deg));
 }
-.pp-note-btn svg { flex-shrink: 0; }
+/* An unsized inline SVG stretches to fill the flex line — that's what made the
+   referral popup's CTA 108px tall. Every note button pins its icon. */
+.pp-note-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
 /* A quieter note — unbleached paper, for the "away" action (Back, Cancel). */
 .pp-note-btn--plain { --pp-note-bg: #f0ece2; color: #5a544a; }

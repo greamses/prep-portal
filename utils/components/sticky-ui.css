@@ -21,7 +21,12 @@
 .btn-ink,
 .option-btn,
 .hero-stat,
-.nav-main-label {
+.nav-main-label,
+.hero-btn,
+.section-cta,
+.pricing-cta,
+.pricing-toggle-btn,
+.footer-social-btn {
   position: relative;
   font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
   font-weight: 700;
@@ -43,7 +48,11 @@
 .btn-primary::before,
 .btn-yellow::before,
 .btn-ink::before,
-.option-btn::before {
+.option-btn::before,
+.hero-btn::before,
+.section-cta::before,
+.pricing-cta::before,
+.footer-social-btn::before {
   content: "";
   position: absolute;
   top: -9px;
@@ -61,7 +70,12 @@
 .btn-primary:hover:not(:disabled),
 .btn-yellow:hover:not(:disabled),
 .btn-ink:hover:not(:disabled),
-.option-btn:hover:not(:disabled) {
+.option-btn:hover:not(:disabled),
+.hero-btn:hover,
+.section-cta:hover,
+.pricing-cta:hover,
+.pricing-toggle-btn:hover,
+.footer-social-btn:hover {
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
 }
 .pp-note:active,
@@ -125,10 +139,13 @@ button.ghost {
   text-align: left;
   cursor: pointer;
 }
-.options-grid .option-btn:nth-child(4n + 1) { --pp-note-bg: #fff3a8; }
-.options-grid .option-btn:nth-child(4n + 2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
-.options-grid .option-btn:nth-child(4n + 3) { --pp-note-bg: #c8f0c0; --pp-note-tilt: 1.2deg; }
-.options-grid .option-btn:nth-child(4n + 4) { --pp-note-bg: #e8c8ff; }
+/* Deliberately NO green and NO red in the rotation — those two are reserved
+   for the marked answer. If an unpicked option could already be green, a
+   correct answer turning green would be far harder to spot. */
+.options-grid .option-btn:nth-child(4n + 1) { --pp-note-bg: #fff3a8; } /* yellow */
+.options-grid .option-btn:nth-child(4n + 2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; } /* blue */
+.options-grid .option-btn:nth-child(4n + 3) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.2deg; } /* purple */
+.options-grid .option-btn:nth-child(4n + 4) { --pp-note-bg: #ffd7a3; } /* orange */
 
 /* Each of these must re-assert `background`, not just the outline: the page's
    own rules paint .selected/.correct-ans/.wrong-ans a saturated blue/green/red,
@@ -146,17 +163,21 @@ button.ghost {
    and by then the round is over so nothing else is competing for attention. */
 /* Literal colours, not --pp-note-bg: the nth-child rules that rotate the paper
    are more specific than these, so a variable set here would lose and the note
-   would keep its rotation colour under a red/green outline. */
+   would keep its rotation colour under a red/green outline.
+
+   These are pitched stronger than the pastels above precisely because nothing
+   in the rotation is green or red — a marked answer is the only green or red
+   note on screen, so the verdict is unmistakable. */
 .options-grid .option-btn.correct-ans {
-  background: #c8f0c0;
-  outline: 2.5px solid #2f7a3f;
-  outline-offset: -2.5px;
+  background: #9fe39a;
+  outline: 3px solid #2f7a3f;
+  outline-offset: -3px;
   color: #14130f;
 }
 .options-grid .option-btn.wrong-ans {
-  background: #ffc9c9;
-  outline: 2.5px solid #a33;
-  outline-offset: -2.5px;
+  background: #ffb0b0;
+  outline: 3px solid #a33;
+  outline-offset: -3px;
   color: #14130f;
 }
 .option-btn:disabled { cursor: default; }
@@ -254,3 +275,59 @@ button.ghost {
 .builder-stats .hero-stat:nth-child(2) { --pp-note-bg: #c8f0c0; --pp-note-tilt: 1.5deg; }
 .builder-stats .hero-stat:nth-child(3) { --pp-note-bg: #ffd7a3; }
 .hero-stat strong { font-weight: 800; }
+
+/* ── Home page ──────────────────────────────────────────────────────────
+   The hero CTAs, the section/pricing CTAs and the footer socials were still
+   the old rounded chrome — the last non-paper buttons on the site. */
+.hero-btn,
+.section-cta,
+.pricing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  padding: 0.68rem 1.2rem 0.72rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.hero-actions { display: flex; flex-wrap: wrap; gap: 1.2rem 0.7rem; padding-top: 12px; }
+.hero-btn-primary { --pp-note-bg: #fff3a8; }
+.hero-btn-secondary { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.section-cta { --pp-note-bg: #c8f0c0; }
+.pricing-cta { --pp-note-bg: #ffd7a3; --pp-note-tilt: 1.4deg; }
+.hero-btn svg,
+.section-cta svg,
+.pricing-cta svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* The pricing monthly/yearly toggle — small paper tabs, the active one inked. */
+.pricing-toggle-btn {
+  font-size: 0.76rem;
+  padding: 0.4rem 0.8rem 0.45rem;
+  cursor: pointer;
+  --pp-note-bg: #f0ece2;
+  color: #5a544a;
+}
+.pricing-toggle-btn--active {
+  --pp-note-bg: #fff3a8;
+  color: #14130f;
+  outline: 2.5px solid var(--ink, #2a2723);
+  outline-offset: -2.5px;
+}
+
+/* Footer socials stay small square notes. */
+.footer-social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  cursor: pointer;
+}
+.footer-social-btn:nth-of-type(1) { --pp-note-bg: #fff3a8; }
+.footer-social-btn:nth-of-type(2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.footer-social-btn:nth-of-type(3) { --pp-note-bg: #e8c8ff; }
+.footer-social-btn:nth-of-type(4) { --pp-note-bg: #ffd7a3; --pp-note-tilt: 1.2deg; }
+.footer-social-btn:nth-of-type(5) { --pp-note-bg: #b8ece2; }
+.footer-social-btn svg { width: 16px; height: 16px; }

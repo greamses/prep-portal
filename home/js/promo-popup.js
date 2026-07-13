@@ -50,7 +50,10 @@
       .pp-promo__title { font-family: var(--font-display, system-ui), sans-serif; font-weight: 900;
         font-size: 1rem; margin: 0 0 .35rem; color: var(--ink, #2a2723); line-height: 1.1; }
       .pp-promo__text { font-size: .72rem; line-height: 1.5; color: var(--text-secondary, #6b655c); margin: 0 0 .8rem; }
-      .pp-promo__cta { width: 100%; box-sizing: border-box; font-size: .8rem; }`;
+      /* A note you'd stick on, not a full-width slab — it was dwarfing the card
+         it sits in now that everything around it is paper. */
+      .pp-promo__cta { display: inline-flex; width: auto; box-sizing: border-box;
+        font-size: .78rem; padding: .5rem .95rem .55rem; }`;
     document.head.appendChild(s);
   }
 
@@ -82,7 +85,7 @@
           '<div class="pp-promo__coin" aria-hidden="true">' + COIN_SVG + '</div>' +
           '<h2 class="pp-promo__title">Refer &amp; earn 10%</h2>' +
           '<p class="pp-promo__text">Invite friends. Pocket 10% of what they pay.</p>' +
-          '<a class="pp-btn pp-promo__cta" href="/partner.html">Get my code ' + ARROW_SVG + '</a>' +
+          '<a class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0 pp-promo__cta" href="/partner.html">Get my code ' + ARROW_SVG + '</a>' +
         '</div>' +
       '</div>';
     document.body.appendChild(root);
