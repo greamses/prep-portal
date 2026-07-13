@@ -821,3 +821,59 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   cursor: not-allowed;
   transform: rotate(var(--pp-note-tilt, -2deg));
 }
+
+/* ── The page tabs are sticky notes too ──────────────────────────────────
+   These were the last .pp-pill chrome left on the page. Same paper, tape and
+   tilt as every other control; the active one keeps its colour and takes an
+   inked outline rather than inverting to a dark chip. */
+.builder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 0.5rem;
+  padding-top: 12px;
+}
+.builder-tab.pp-pill {
+  position: relative;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.45rem 0.85rem 0.5rem;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.builder-tab.pp-pill::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-tabs .builder-tab:nth-child(1) { --pp-note-bg: #fff3a8; }
+.builder-tabs .builder-tab:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.builder-tabs .builder-tab:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.builder-tabs .builder-tab:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.builder-tab.pp-pill:hover {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  color: #14130f;
+}
+.builder-tab.pp-pill.is-active {
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
