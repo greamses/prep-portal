@@ -1,0 +1,256 @@
+/* =========================================================================
+   STICKY-NOTE UI — site-wide
+   -------------------------------------------------------------------------
+   The setup screens on Drills/Puzzles/Geometry/Exams are built out of paper:
+   every control is a sticky note with a strip of tape, a slight tilt and a
+   lift on hover. This sheet carries that across the rest of the learner-
+   facing site so a button is the same object everywhere.
+
+   Loaded AFTER each page's own stylesheet, so it wins without every page
+   needing !important. Deliberately NOT loaded on the 3D game HUDs, the
+   virtual-lab tool rails or the admin panels — notes would fight those UIs.
+
+   The paper itself lives in .pp-note; everything below just points a page's
+   existing button class at it.
+========================================================================= */
+
+.pp-note,
+.btn,
+.btn-primary,
+.btn-yellow,
+.btn-ink,
+.option-btn,
+.hero-stat,
+.nav-main-label {
+  position: relative;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+
+/* The strip of tape. Kept off anything that already uses ::before for an icon
+   or a caret (the nav leaves, notably). */
+.pp-note::before,
+.btn::before,
+.btn-primary::before,
+.btn-yellow::before,
+.btn-ink::before,
+.option-btn::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 48px;
+  height: 16px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+
+.pp-note:hover,
+.btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-yellow:hover:not(:disabled),
+.btn-ink:hover:not(:disabled),
+.option-btn:hover:not(:disabled) {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+.pp-note:active,
+.btn:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-yellow:active:not(:disabled),
+.btn-ink:active:not(:disabled) {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(0);
+}
+.btn:disabled,
+.btn-primary:disabled,
+.btn-yellow:disabled,
+.btn-ink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}
+
+/* ── Generic buttons ─────────────────────────────────────────────────── */
+.btn,
+.btn-primary,
+.btn-yellow,
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  padding: 0.62rem 1.15rem 0.67rem;
+  cursor: pointer;
+}
+.btn-yellow { --pp-note-bg: #fff3a8; }
+.btn-primary { --pp-note-bg: #ffd7a3; --pp-note-tilt: 1.4deg; }
+.btn-ink { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+/* The "quiet" variants stay paper rather than colour. */
+.btn-ghost,
+.btn.ghost,
+button.ghost {
+  --pp-note-bg: #f0ece2;
+  color: #5a544a;
+}
+
+/* ── Question page: the answer options ──────────────────────────────────
+   Each option is a note you stick down. Selected = the same paper with an
+   inked outline (never a colour swap — that's reserved for right/wrong, so
+   "chosen" and "correct" can't be confused). */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.15rem 0.8rem; /* the row gap leaves room for each note's tape */
+  padding-top: 12px;
+}
+.option-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem 0.95rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+.options-grid .option-btn:nth-child(4n + 1) { --pp-note-bg: #fff3a8; }
+.options-grid .option-btn:nth-child(4n + 2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.options-grid .option-btn:nth-child(4n + 3) { --pp-note-bg: #c8f0c0; --pp-note-tilt: 1.2deg; }
+.options-grid .option-btn:nth-child(4n + 4) { --pp-note-bg: #e8c8ff; }
+
+/* Each of these must re-assert `background`, not just the outline: the page's
+   own rules paint .selected/.correct-ans/.wrong-ans a saturated blue/green/red,
+   and setting only --pp-note-bg here would leave that flat colour showing
+   through. Chosen keeps its paper and takes an inked outline, so "the one I
+   picked" can never be mistaken for "the right one". */
+.option-btn.selected {
+  background: var(--pp-note-bg, #fff3a8);
+  outline: 2.5px solid var(--ink, #2a2723);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  font-weight: 700;
+}
+/* Marked answers DO swap paper — a right/wrong verdict should read instantly,
+   and by then the round is over so nothing else is competing for attention. */
+/* Literal colours, not --pp-note-bg: the nth-child rules that rotate the paper
+   are more specific than these, so a variable set here would lose and the note
+   would keep its rotation colour under a red/green outline. */
+.options-grid .option-btn.correct-ans {
+  background: #c8f0c0;
+  outline: 2.5px solid #2f7a3f;
+  outline-offset: -2.5px;
+  color: #14130f;
+}
+.options-grid .option-btn.wrong-ans {
+  background: #ffc9c9;
+  outline: 2.5px solid #a33;
+  outline-offset: -2.5px;
+  color: #14130f;
+}
+.option-btn:disabled { cursor: default; }
+.option-btn.kbd-focus {
+  outline: 2.5px dashed var(--ink, #2a2723);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+.opt-letter {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid rgba(20, 19, 15, 0.55);
+  background: rgba(255, 255, 255, 0.5);
+  color: #14130f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.option-btn.selected .opt-letter,
+.option-btn.correct-ans .opt-letter,
+.option-btn.wrong-ans .opt-letter {
+  background: #14130f;
+  border-color: #14130f;
+  color: #fff;
+}
+
+/* ── Nav ────────────────────────────────────────────────────────────────
+   The top-level menu items are notes; the dropdown leaves stay plain text so
+   a long menu doesn't turn into a wall of paper. */
+.nav-main-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.4rem 0.8rem 0.45rem;
+}
+.nav-links > li:nth-child(1) .nav-main-label { --pp-note-bg: #fff3a8; }
+.nav-links > li:nth-child(2) .nav-main-label { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.nav-links > li:nth-child(3) .nav-main-label { --pp-note-bg: #c8f0c0; }
+.nav-links > li:nth-child(4) .nav-main-label { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.nav-links > li:nth-child(5) .nav-main-label { --pp-note-bg: #ffd7a3; }
+.nav-main-label::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 38px;
+  height: 13px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+.nav-links > li:hover .nav-main-label,
+.nav-links > li.open .nav-main-label {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  outline: 2.5px solid var(--ink, #2a2723);
+  outline-offset: -2.5px;
+}
+/* The nav needs headroom now that each item carries tape above it. */
+.nav-links { padding-top: 10px; }
+
+/* ── Chips ──────────────────────────────────────────────────────────────
+   The hero stat chips sat as the last outlined pills next to a wall of
+   notes. They're labels, not buttons — same paper, no lift. */
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.75rem 0.45rem;
+  cursor: default;
+}
+.hero-stat::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 40px;
+  height: 14px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+.builder-stats { padding-top: 12px; }
+.builder-stats .hero-stat:nth-child(1) { --pp-note-bg: #bfe3ff; }
+.builder-stats .hero-stat:nth-child(2) { --pp-note-bg: #c8f0c0; --pp-note-tilt: 1.5deg; }
+.builder-stats .hero-stat:nth-child(3) { --pp-note-bg: #ffd7a3; }
+.hero-stat strong { font-weight: 800; }
