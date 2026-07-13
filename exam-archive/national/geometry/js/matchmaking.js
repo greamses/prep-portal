@@ -35,6 +35,7 @@ const WAIT_MS = 8000; // anonymous-pool host's local "waiting for real players" 
 const CODE_WAIT_MS = 90000; // code-room host's window — a friend needs time to receive + type the code
 const START_BUFFER_MS = 3000; // "get ready" beat shown to everyone after activation
 const ABANDON_EXTRA_MS = 4000; // added to whichever wait window applies, for every member's fallback timer
+const FULL_FALLBACK_MS = 1200; // a non-host's grace period before promoting a full room the host hasn't
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L — easy to read and type
 
@@ -58,6 +59,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomShape
     let unsub = null;
     let hostTimer = null;
     let abandonTimer = null;
+    let fullTimer = null;
 
     async function activate(currentPlayerCount) {
       if (settled) return;
@@ -80,6 +82,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomShape
       settled = true;
       clearTimeout(hostTimer);
       clearTimeout(abandonTimer);
+      clearTimeout(fullTimer);
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
@@ -96,6 +99,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomShape
         if (settled) return;
         clearTimeout(hostTimer);
         clearTimeout(abandonTimer);
+        clearTimeout(fullTimer);
         // Bots don't land in the room all at once — give the UI a staggered
         // window (scaled to how many seats they fill) to reveal them one at
         // a time, like real people trickling in, before handing off.
@@ -111,6 +115,17 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomShape
         return;
       }
       if (onWaiting) onWaiting({ phase: 'waiting', seed, playerCount: data.playerCount, size: data.size });
+
+      // The room is full — there is nothing left to wait FOR. Start it now
+      // instead of sitting out the rest of the host's window (8s in the pool,
+      // 90s in a code room, which is an eternity once your opponent has
+      // already arrived). The host promotes it immediately; everyone else
+      // holds back a beat and only steps in if the host's write never lands.
+      if (data.playerCount >= data.size && fullTimer === null) {
+        fullTimer = setTimeout(() => {
+          if (!settled) activate(data.playerCount);
+        }, isHost ? 0 : FULL_FALLBACK_MS);
+      }
     }, (err) => { if (!settled) { settled = true; reject(err); } });
 
     if (isHost) {
