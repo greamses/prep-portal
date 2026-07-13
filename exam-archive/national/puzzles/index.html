@@ -97,74 +97,17 @@
 
           <div class="puzzle-field">
             <span>Choose Your Puzzle</span>
-            <div id="puzzle-carousel"></div>
+            <div id="puzzle-topic-carousel"></div>
           </div>
 
           <div class="puzzle-field">
-            <span>Pick your options</span>
-            <div class="puzzle-strip" id="puzzle-strip">
-              <div class="strip-group" id="puzzle-mode-toggle" role="radiogroup" aria-label="Mode" data-label="Mode">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
-                  <input type="radio" name="puzzle-mode" value="multiplayer" checked />
-                  <span>Multiplayer</span>
-                </label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
-                  <input type="radio" name="puzzle-mode" value="versus" />
-                  <span>Versus (1v1)</span>
-                </label>
-              </div>
-
-              <div class="strip-group" id="puzzle-size-field" role="radiogroup" aria-label="Room size" data-label="Room Size">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                  <input type="radio" name="puzzle-size" value="5" checked />
-                  <span>5 players</span>
-                </label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                  <input type="radio" name="puzzle-size" value="10" />
-                  <span>10 players</span>
-                </label>
-              </div>
-
-              <div class="strip-group" id="puzzle-time-row" role="radiogroup" aria-label="Time limit" data-label="Time Limit">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="puzzle-time" value="180" /><span>3 min</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="puzzle-time" value="300" checked /><span>5 min</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="puzzle-time" value="600" /><span>10 min</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="puzzle-time" value="900" /><span>15 min</span></label>
-              </div>
-            </div>
+            <span>Game Options</span>
+            <div id="puzzle-options-carousel"></div>
           </div>
 
-          <div class="puzzle-field" id="puzzle-mp-field">
+          <div class="puzzle-field">
             <span>Room</span>
-            <div class="sticky-row" id="puzzle-mp-toggle" role="radiogroup" aria-label="Room entry">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="puzzle-mp-action" value="quickfill" checked />
-                <span>Quick Fill</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                <input type="radio" name="puzzle-mp-action" value="create" />
-                <span>Create Room</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4">
-                <input type="radio" name="puzzle-mp-action" value="join" />
-                <span>Join with Code</span>
-              </label>
-            </div>
-            <input class="puzzle-code-input" id="puzzle-mp-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
-          </div>
-
-          <div class="puzzle-field" id="puzzle-versus-field" hidden>
-            <span>1v1 Room</span>
-            <div class="sticky-row" id="puzzle-versus-toggle" role="radiogroup" aria-label="Create or join">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="puzzle-versus-action" value="create" checked />
-                <span>Create Room</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                <input type="radio" name="puzzle-versus-action" value="join" />
-                <span>Join with Code</span>
-              </label>
-            </div>
+            <div id="puzzle-room-carousel"></div>
             <input class="puzzle-code-input" id="puzzle-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 

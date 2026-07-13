@@ -99,75 +99,17 @@
 
           <div class="geo-field">
             <span>Choose Your Topic</span>
-            <div id="geo-carousel"></div>
+            <div id="geo-topic-carousel"></div>
           </div>
 
           <div class="geo-field">
-            <span>Pick your options</span>
-            <div class="geo-strip" id="geo-strip">
-              <div class="strip-group" id="geo-mode-toggle" role="radiogroup" aria-label="Mode" data-label="Mode">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
-                  <input type="radio" name="geo-mode" value="multiplayer" checked />
-                  <span>Multiplayer</span>
-                </label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
-                  <input type="radio" name="geo-mode" value="versus" />
-                  <span>Versus (1v1)</span>
-                </label>
-              </div>
-
-              <div class="strip-group" id="geo-size-field" role="radiogroup" aria-label="Room size" data-label="Room Size">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                  <input type="radio" name="geo-size" value="5" checked />
-                  <span>5 players</span>
-                </label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                  <input type="radio" name="geo-size" value="10" />
-                  <span>10 players</span>
-                </label>
-              </div>
-
-              <div class="strip-group" id="geo-time-row" role="radiogroup" aria-label="Time limit" data-label="Time Limit">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="geo-time" value="30" /><span>30s</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="geo-time" value="60" checked /><span>60s</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="geo-time" value="90" /><span>90s</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="geo-time" value="120" /><span>120s</span></label>
-              </div>
-
-            </div>
+            <span>Game Options</span>
+            <div id="geo-options-carousel"></div>
           </div>
 
-          <div class="geo-field" id="geo-mp-field">
+          <div class="geo-field">
             <span>Room</span>
-            <div class="sticky-row" id="geo-mp-toggle" role="radiogroup" aria-label="Room entry">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="geo-mp-action" value="quickfill" checked />
-                <span>Quick Fill</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                <input type="radio" name="geo-mp-action" value="create" />
-                <span>Create Room</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4">
-                <input type="radio" name="geo-mp-action" value="join" />
-                <span>Join with Code</span>
-              </label>
-            </div>
-            <input class="geo-code-input" id="geo-mp-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
-          </div>
-
-          <div class="geo-field" id="geo-versus-field" hidden>
-            <span>1v1 Room</span>
-            <div class="sticky-row" id="geo-versus-toggle" role="radiogroup" aria-label="Create or join">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="geo-versus-action" value="create" checked />
-                <span>Create Room</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3">
-                <input type="radio" name="geo-versus-action" value="join" />
-                <span>Join with Code</span>
-              </label>
-            </div>
+            <div id="geo-room-carousel"></div>
             <input class="geo-code-input" id="geo-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 

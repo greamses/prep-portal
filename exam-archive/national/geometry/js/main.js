@@ -10,7 +10,7 @@
    Limit stay a static strip beneath it.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { CIRCULAR_SHAPES, GIVEN_TYPES, LENGTH_NUMBERS } from './rng.js';
+import { CIRCULAR_SHAPES, GIVEN_TYPES, RADIUS_NUMBERS, SIDE_NUMBERS } from './rng.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -69,14 +69,9 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('geo-name-input');
 const avatarGrid = $('geo-avatar-grid');
 const avatarUploadInput = $('geo-avatar-upload-input');
-const modeToggle = $('geo-mode-toggle');
-const sizeField = $('geo-size-field');
-const carouselMount = $('geo-carousel');
-const mpField = $('geo-mp-field');
-const mpToggle = $('geo-mp-toggle');
-const mpCodeInput = $('geo-mp-code-input');
-const versusField = $('geo-versus-field');
-const versusToggle = $('geo-versus-toggle');
+const topicMount = $('geo-topic-carousel');
+const optionsMount = $('geo-options-carousel');
+const roomMount = $('geo-room-carousel');
 const codeInput = $('geo-code-input');
 const startBtn = $('geo-start-btn');
 const startLabel = $('geo-start-label');
@@ -106,14 +101,31 @@ function hideAwaiting() {
 }
 
 let cancelled = false;
-// `shapes`/`given` fill in once the carousel's topic tree lands on a real
-// leaf (e.g. Shapes → 2D → Curved Shapes) — see buildCarousel() below, which
-// resets these to that branch's full default set every time it's entered.
-// `lengths` is comprehensive from the start (every radius/side, tick-all
-// default) since the same pool applies regardless of which branch is picked.
+
+// ── Setup state ─────────────────────────────────────────────────────────
+// Owned in JS rather than read back out of `input:checked` — a carousel only
+// renders the step you're on, so a DOM-query getter would throw (or silently
+// read a stale value) for any step the player never opened. These carry the
+// defaults, and the carousels below just keep them in sync.
+let mode = 'multiplayer';
+let roomSize = 5;
+let timeLimit = 60;
+let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
+
+// `shapes`/`given`/`lengths` are filled in when the topic tree reaches a real
+// leaf — see the topic carousel below, which resets them to that branch's own
+// defaults on entry. They start empty so Start stays disabled until a topic is
+// actually chosen.
 const shapes = new Set();
 const given = new Set();
-const lengths = new Set(LENGTH_NUMBERS);
+const lengths = new Set();
+// Which pool the Lengths step is offering — the two shape families need
+// different numbers (see rng.js), so this tracks whichever branch we're in.
+let lengthPool = RADIUS_NUMBERS;
+
+function isCurvedBranch() {
+  return [...shapes].some((s) => CIRCULAR_SHAPES.includes(s));
+}
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -124,46 +136,21 @@ function getCurrentUser() {
   });
 }
 
-function getMode() { return document.querySelector('input[name="geo-mode"]:checked').value; }
-function getSize() { return parseInt(document.querySelector('input[name="geo-size"]:checked').value, 10); }
-function getTimeLimit() { return parseInt(document.querySelector('input[name="geo-time"]:checked').value, 10); }
-function getVersusAction() { return document.querySelector('input[name="geo-versus-action"]:checked').value; }
-function getMpAction() { return document.querySelector('input[name="geo-mp-action"]:checked').value; }
-
 function updateStartDisabled() {
-  // Given only matters when at least one circular shape is ticked.
-  const needsGiven = shapes.size > 0 && [...shapes].some((s) => CIRCULAR_SHAPES.includes(s)) && given.size === 0;
+  // Given is only ever asked for — and only ever required — on the curved
+  // branch; polygons label their own side lengths directly.
+  const needsGiven = isCurvedBranch() && given.size === 0;
   startBtn.disabled = shapes.size === 0 || lengths.size === 0 || needsGiven;
 }
 
 function updateStartLabel() {
-  const mode = getMode();
   if (mode === 'multiplayer') {
-    const action = getMpAction();
-    startLabel.textContent = action === 'join' ? 'Join Room' : action === 'create' ? 'Create Room' : 'Find a Room';
+    startLabel.textContent =
+      roomAction === 'join' ? 'Join Room' : roomAction === 'create' ? 'Create Room' : 'Find a Room';
     return;
   }
-  startLabel.textContent = getVersusAction() === 'join' ? 'Join Room' : 'Create Room';
+  startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
 }
-
-function onModeChange() {
-  const mode = getMode();
-  sizeField.hidden = mode === 'versus';
-  mpField.hidden = mode !== 'multiplayer';
-  versusField.hidden = mode !== 'versus';
-  updateStartLabel();
-}
-modeToggle.addEventListener('change', onModeChange);
-
-mpToggle.addEventListener('change', () => {
-  mpCodeInput.hidden = getMpAction() !== 'join';
-  updateStartLabel();
-});
-
-versusToggle.addEventListener('change', () => {
-  codeInput.hidden = getVersusAction() !== 'join';
-  updateStartLabel();
-});
 
 // ── Game name ──────────────────────────────────────────────────────────
 nameInput.value = localStorage.getItem(NAME_KEY) || '';
@@ -172,24 +159,34 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Topic carousel — Lines/Angles/Shapes → 2D/3D → Polygons/Curved Shapes
-// → (Regular: Triangles/Squares/Rectangles | Irregular: soon) or (Curved:
-// Circle/Semicircle/Quadrant/Sector/Chord-soon → Given) → Lengths. Only the
-// Shapes → 2D branch has real content today; every other branch is a
-// "coming soon" leaf so the tree is honest about what's actually gradeable
-// (see rng.js — Lines/Angles/3D/Nets/Chord have no question generator). ──
-const carousel = createCarousel(carouselMount);
+/* ── SECTION 1 — Topic ────────────────────────────────────────────────────
+   Lines/Angles/Shapes → 2D/3D → Polygons/Curved Shapes → the leaf pickers.
+   Only the Shapes → 2D branch has real content today; every other branch is a
+   "coming soon" leaf so the tree is honest about what's actually gradeable
+   (see rng.js — Lines/Angles/3D/Nets/Chord have no question generator).
+
+   The two branches genuinely need DIFFERENT settings, so neither one shows a
+   step the other's questions would ignore:
+     curved   → Given (radius/diameter) → Radius, multiples of 7 (pi = 22/7)
+     polygons → no Given at all         → Side lengths, plain 3–20
+   Entering a branch resets shapes/given/lengths to that branch's own defaults,
+   so a setting picked on one branch can never leak into the other. ────────── */
+const topic = createCarousel(topicMount);
 let regularPickEl = null;
 let curvedPickEl = null;
 let givenPickEl = null;
+let lengthsPickEl = null;
 
 function renderLengthsPick() {
-  renderMultiStep(carousel.getEl('lengths'), {
-    title: 'Radius / side lengths (cm)',
-    subtitle: 'Every question draws its numbers from whichever you tick here.',
+  const curved = isCurvedBranch();
+  renderMultiStep(lengthsPickEl, {
+    title: curved ? 'Radius (cm)' : 'Side lengths (cm)',
+    subtitle: curved
+      ? 'Multiples of 7, so pi = 22/7 always cancels cleanly.'
+      : 'Every side is drawn from whichever numbers you tick.',
     grid: true,
     colorOffset: 2,
-    options: LENGTH_NUMBERS.map((n) => ({ value: String(n), label: String(n) })),
+    options: lengthPool.map((n) => ({ value: String(n), label: String(n) })),
     isChecked: (v) => lengths.has(Number(v)),
     onToggle: (v, checked) => {
       const n = Number(v);
@@ -197,6 +194,29 @@ function renderLengthsPick() {
       updateStartDisabled();
     },
   });
+}
+
+// Switch the whole branch's settings over in one place, so nothing stale can
+// survive a hop from Curved to Polygons (or back).
+function enterBranch(kind) {
+  shapes.clear();
+  given.clear();
+  lengths.clear();
+
+  if (kind === 'curved') {
+    CIRCULAR_SHAPES.forEach((s) => shapes.add(s));
+    GIVEN_TYPES.forEach((g) => given.add(g));
+    lengthPool = RADIUS_NUMBERS;
+  } else {
+    REGULAR_SHAPES.forEach((s) => shapes.add(s));
+    lengthPool = SIDE_NUMBERS; // no Given — polygons label their sides directly
+  }
+  lengthPool.forEach((n) => lengths.add(n)); // tick-all default
+
+  if (kind === 'curved') { renderCurvedPick(); renderGivenPick(); }
+  else renderRegularPick();
+  renderLengthsPick();
+  updateStartDisabled();
 }
 
 function renderRegularPick() {
@@ -209,8 +229,8 @@ function renderRegularPick() {
       if (checked) shapes.add(v); else shapes.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Lengths →',
-    onNext: () => carousel.goTo('lengths'),
+    nextLabel: 'Next: Side Lengths →',
+    onNext: () => topic.goTo('lengths'),
   });
 }
 
@@ -228,7 +248,7 @@ function renderCurvedPick() {
       updateStartDisabled();
     },
     nextLabel: 'Next: Given →',
-    onNext: () => carousel.goTo('given'),
+    onNext: () => topic.goTo('given'),
   });
 }
 
@@ -242,12 +262,12 @@ function renderGivenPick() {
       if (checked) given.add(v); else given.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Lengths →',
-    onNext: () => carousel.goTo('lengths'),
+    nextLabel: 'Next: Radius →',
+    onNext: () => topic.goTo('lengths'),
   });
 }
 
-carousel.addSlide('topic', 'Topic', (el) => {
+topic.addSlide('topic', 'Topic', (el) => {
   renderChoiceStep(el, {
     title: 'What do you want to practice?',
     name: 'geo-topic',
@@ -257,20 +277,20 @@ carousel.addSlide('topic', 'Topic', (el) => {
       { value: 'shapes', label: 'Shapes' },
     ],
     onPick: (v) => {
-      if (v === 'lines') carousel.goTo('soon-lines');
-      else if (v === 'angles') carousel.goTo('soon-angles');
-      else carousel.goTo('shapes-dim');
+      if (v === 'lines') topic.goTo('soon-lines');
+      else if (v === 'angles') topic.goTo('soon-angles');
+      else topic.goTo('shapes-dim');
     },
   });
 });
-carousel.addSlide('soon-lines', 'Lines', (el) => renderComingSoon(el, {
+topic.addSlide('soon-lines', 'Lines', (el) => renderComingSoon(el, {
   title: 'Lines', message: 'Line practice is coming soon — go back and pick Shapes for now.',
 }));
-carousel.addSlide('soon-angles', 'Angles', (el) => renderComingSoon(el, {
+topic.addSlide('soon-angles', 'Angles', (el) => renderComingSoon(el, {
   title: 'Angles', message: 'Angle practice is coming soon — go back and pick Shapes for now.',
 }));
 
-carousel.addSlide('shapes-dim', '2D/3D', (el) => {
+topic.addSlide('shapes-dim', '2D/3D', (el) => {
   renderChoiceStep(el, {
     title: '2D or 3D shapes?',
     name: 'geo-dim',
@@ -279,14 +299,14 @@ carousel.addSlide('shapes-dim', '2D/3D', (el) => {
       { value: '2d', label: '2D Shapes' },
       { value: '3d', label: '3D Shapes' },
     ],
-    onPick: (v) => (v === '3d' ? carousel.goTo('soon-3d') : carousel.goTo('kind-2d')),
+    onPick: (v) => (v === '3d' ? topic.goTo('soon-3d') : topic.goTo('kind-2d')),
   });
 });
-carousel.addSlide('soon-3d', '3D Shapes', (el) => renderComingSoon(el, {
+topic.addSlide('soon-3d', '3D Shapes', (el) => renderComingSoon(el, {
   title: '3D Shapes', message: '3D shape practice is coming soon — go back and pick 2D Shapes for now.',
 }));
 
-carousel.addSlide('kind-2d', 'Polygons/Curved', (el) => {
+topic.addSlide('kind-2d', 'Polygons/Curved', (el) => {
   renderChoiceStep(el, {
     title: 'Polygons or curved shapes?',
     name: 'geo-kind',
@@ -296,23 +316,14 @@ carousel.addSlide('kind-2d', 'Polygons/Curved', (el) => {
       { value: 'curved', label: 'Curved Shapes' },
     ],
     onPick: (v) => {
-      if (v === 'polygons') {
-        carousel.goTo('regularity');
-        return;
-      }
-      shapes.clear();
-      CIRCULAR_SHAPES.forEach((s) => shapes.add(s));
-      given.clear();
-      GIVEN_TYPES.forEach((g) => given.add(g));
-      renderCurvedPick();
-      renderGivenPick();
-      updateStartDisabled();
-      carousel.goTo('curved-pick');
+      if (v === 'polygons') { topic.goTo('regularity'); return; }
+      enterBranch('curved');
+      topic.goTo('curved-pick');
     },
   });
 });
 
-carousel.addSlide('regularity', 'Regular/Irregular', (el) => {
+topic.addSlide('regularity', 'Regular/Irregular', (el) => {
   renderChoiceStep(el, {
     title: 'Regular or irregular polygons?',
     name: 'geo-regularity',
@@ -321,28 +332,123 @@ carousel.addSlide('regularity', 'Regular/Irregular', (el) => {
       { value: 'irregular', label: 'Irregular' },
     ],
     onPick: (v) => {
-      if (v === 'irregular') {
-        carousel.goTo('soon-irregular');
-        return;
-      }
-      shapes.clear();
-      REGULAR_SHAPES.forEach((s) => shapes.add(s));
-      renderRegularPick();
-      updateStartDisabled();
-      carousel.goTo('regular-pick');
+      if (v === 'irregular') { topic.goTo('soon-irregular'); return; }
+      enterBranch('polygons');
+      topic.goTo('regular-pick');
     },
   });
 });
-carousel.addSlide('soon-irregular', 'Irregular', (el) => renderComingSoon(el, {
+topic.addSlide('soon-irregular', 'Irregular', (el) => renderComingSoon(el, {
   title: 'Irregular Polygons', message: 'Nets of a cube/cuboid are coming soon — go back and pick Regular for now.',
 }));
 
-carousel.addSlide('regular-pick', 'Regular Shapes', (el) => { regularPickEl = el; });
-carousel.addSlide('curved-pick', 'Curved Shapes', (el) => { curvedPickEl = el; });
-carousel.addSlide('given', 'Given', (el) => { givenPickEl = el; });
-carousel.addSlide('lengths', 'Lengths', () => renderLengthsPick());
+topic.addSlide('regular-pick', 'Regular Shapes', (el) => { regularPickEl = el; });
+topic.addSlide('curved-pick', 'Curved Shapes', (el) => { curvedPickEl = el; });
+topic.addSlide('given', 'Given', (el) => { givenPickEl = el; });
+topic.addSlide('lengths', 'Lengths', (el) => { lengthsPickEl = el; });
 
-carousel.start('topic');
+topic.start('topic');
+
+/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+   Mode → Room Size → Time Limit. Room Size is skipped entirely for Versus,
+   which is always 1v1 — asking "5 or 10 players?" for a 2-player game would
+   be a setting the room ignores. ───────────────────────────────────────── */
+const options = createCarousel(optionsMount);
+
+options.addSlide('mode', 'Mode', (el) => {
+  renderChoiceStep(el, {
+    title: 'How do you want to play?',
+    name: 'geo-mode',
+    options: [
+      { value: 'multiplayer', label: 'Multiplayer', checked: true },
+      { value: 'versus', label: 'Versus (1v1)' },
+    ],
+    onPick: (v) => {
+      mode = v;
+      // Versus has no Quick Fill — a private 1v1 is always create-or-join.
+      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+      renderRoomEntry();
+      roomCarousel.start('entry');
+      codeInput.hidden = roomAction !== 'join';
+      updateStartLabel();
+      options.goTo(mode === 'versus' ? 'time' : 'size');
+    },
+  });
+});
+
+options.addSlide('size', 'Room Size', (el) => {
+  renderChoiceStep(el, {
+    title: 'How many players?',
+    name: 'geo-size',
+    colorOffset: 2,
+    options: [
+      { value: '5', label: '5 players', checked: true },
+      { value: '10', label: '10 players' },
+    ],
+    onPick: (v) => {
+      roomSize = Number(v);
+      options.goTo('time');
+    },
+  });
+});
+
+options.addSlide('time', 'Time Limit', (el) => {
+  renderChoiceStep(el, {
+    title: 'How long is the round?',
+    name: 'geo-time',
+    colorOffset: 4,
+    options: [
+      { value: '30', label: '30s' },
+      { value: '60', label: '60s', checked: true },
+      { value: '90', label: '90s' },
+      { value: '120', label: '120s' },
+    ],
+    onPick: (v) => { timeLimit = Number(v); },
+  });
+});
+
+options.start('mode');
+
+/* ── SECTION 3 — Room ─────────────────────────────────────────────────────
+   Which entry options exist depends on Mode, so this is re-rendered whenever
+   Mode changes. Picking "Join with Code" steps on to the code entry. ────── */
+const roomCarousel = createCarousel(roomMount);
+let roomEntryEl = null;
+
+function renderRoomEntry() {
+  const choices =
+    mode === 'multiplayer'
+      ? [
+          { value: 'quickfill', label: 'Quick Fill', checked: roomAction === 'quickfill' },
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ]
+      : [
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ];
+
+  renderChoiceStep(roomEntryEl, {
+    title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
+    name: 'geo-room-action',
+    colorOffset: 2,
+    options: choices,
+    onPick: (v) => {
+      roomAction = v;
+      codeInput.hidden = v !== 'join';
+      updateStartLabel();
+      if (v === 'join') roomCarousel.goTo('code');
+    },
+  });
+}
+
+roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
+roomCarousel.addSlide('code', 'Code', (el) =>
+  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+
+renderRoomEntry();
+roomCarousel.start('entry');
+
 updateStartDisabled();
 updateStartLabel();
 
@@ -627,7 +733,7 @@ function makeOnWaiting(waitingStatusText) {
 }
 
 async function runMultiplayer({ timeLimit, shapesList, givenList, lengthsList, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   let room;
   try {
@@ -647,7 +753,7 @@ async function runMultiplayer({ timeLimit, shapesList, givenList, lengthsList, m
 }
 
 async function runMultiplayerCreate({ timeLimit, shapesList, givenList, lengthsList, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
@@ -679,13 +785,13 @@ async function runMultiplayerCreate({ timeLimit, shapesList, givenList, lengthsL
 }
 
 async function runMultiplayerJoin({ myName }) {
-  const code = (mpCodeInput.value || '').trim().toUpperCase();
+  const code = (codeInput.value || '').trim().toUpperCase();
   if (code.length !== 6) {
     alert('Enter the 6-character room code your friend shared.');
     startBtn.disabled = false;
     return;
   }
-  showLobby(getSize()); // best guess until the joined room's real size arrives below
+  showLobby(roomSize); // best guess until the joined room's real size arrives below
   lobbyStatus.textContent = 'Joining room…';
   let room;
   try {
@@ -765,22 +871,21 @@ async function runGeometry() {
   startBtn.disabled = true;
   await getCurrentUser();
 
-  const mode = getMode();
-  const timeLimit = getTimeLimit();
   const shapesList = [...shapes];
-  const givenList = [...given];
+  // Given is meaningless for polygons — send it empty rather than shipping a
+  // setting the question generator will ignore.
+  const givenList = isCurvedBranch() ? [...given] : [];
   const lengthsList = [...lengths];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
-    if (getVersusAction() === 'join') await runVersusJoin({ myName });
+    if (roomAction === 'join') await runVersusJoin({ myName });
     else await runVersusCreate({ timeLimit, shapesList, givenList, lengthsList, myName });
     return;
   }
 
-  const mpAction = getMpAction();
-  if (mpAction === 'join') await runMultiplayerJoin({ myName });
-  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, shapesList, givenList, lengthsList, myName });
+  if (roomAction === 'join') await runMultiplayerJoin({ myName });
+  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, shapesList, givenList, lengthsList, myName });
   else await runMultiplayer({ timeLimit, shapesList, givenList, lengthsList, myName });
 }
 
@@ -794,8 +899,9 @@ againBtn.addEventListener('click', hideResults);
 
 // Preselect mode from nav links like ?mode=versus
 const initialMode = new URLSearchParams(location.search).get('mode');
-if (initialMode === 'versus' || initialMode === 'multiplayer') {
-  const radio = document.querySelector(`input[name="geo-mode"][value="${initialMode}"]`);
-  if (radio) radio.checked = true;
+if (initialMode === 'versus') {
+  mode = 'versus';
+  roomAction = 'create'; // Versus has no Quick Fill
+  renderRoomEntry();
+  updateStartLabel();
 }
-onModeChange();

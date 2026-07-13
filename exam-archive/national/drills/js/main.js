@@ -11,7 +11,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, renderChoiceStep, renderMultiStep } from '/utils/components/setup-carousel.js';
+import { createCarousel, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -87,6 +87,23 @@ const RANGES = [
   { key: '90-100', label: '90–100', min: 90, max: 100 },
 ];
 
+// Exponent needs its OWN, much smaller ranges. The base number is the thing
+// being cubed, so the full 1–100 set would ask for 100³ = 1,000,000 (and
+// ∛1,000,000) — not a mental-maths drill. Capping at 20 keeps cubes ≤ 8,000
+// and squares ≤ 400, which is the range these are actually practised over.
+const EXPONENT_RANGES = [
+  { key: 'all', label: 'All', min: 1, max: 20 },
+  { key: '1-9', label: '1–9', min: 1, max: 9 },
+  { key: '10-14', label: '10–14', min: 10, max: 14 },
+  { key: '15-20', label: '15–20', min: 15, max: 20 },
+];
+
+// Fractions don't use a "number range" at all — in rng.js the same pool feeds
+// the DENOMINATORS (like/unlike/wholeFraction all draw from it). A range of
+// 90–100 would generate ⁴⁷⁄₉₃ + ⁸⁸⁄₉₇, which is not a fraction drill. Small
+// denominators are the whole point, so Fractions gets this instead.
+const DENOMINATORS = Array.from({ length: 11 }, (_, i) => i + 2); // 2..12
+
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -106,14 +123,9 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('drill-name-input');
 const avatarGrid = $('drill-avatar-grid');
 const avatarUploadInput = $('drill-avatar-upload-input');
-const modeToggle = $('drill-mode-toggle');
-const sizeField = $('drill-size-field');
-const carouselMount = $('drill-carousel');
-const mpField = $('drill-mp-field');
-const mpToggle = $('drill-mp-toggle');
-const mpCodeInput = $('drill-mp-code-input');
-const versusField = $('drill-versus-field');
-const versusToggle = $('drill-versus-toggle');
+const topicMount = $('drill-topic-carousel');
+const optionsMount = $('drill-options-carousel');
+const roomMount = $('drill-room-carousel');
 const codeInput = $('drill-code-input');
 const startBtn = $('drill-start-btn');
 const startLabel = $('drill-start-label');
@@ -143,11 +155,22 @@ function hideAwaiting() {
 }
 
 let cancelled = false;
-let categoryValue = 'basic'; // set by the carousel's first slide — see buildCarousel() below
+
+// ── Setup state ─────────────────────────────────────────────────────────
+// Owned in JS, not read back out of `input:checked` — a carousel only renders
+// the step you're on, so a DOM-query getter would throw for any step the
+// player never opened.
+let mode = 'multiplayer';
+let roomSize = 5;
+let timeLimit = 60;
+let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
+
+let categoryValue = 'basic';
 let range = 'all';
-const tables = new Set(); // 1-9 numbers only — nothing checked by default, user ticks which to drill
+const tables = new Set(); // Basic + 1-9 only — the cherry-picked number set
 const operations = new Set(CATEGORY_DEFAULT_OPS.basic);
-const fractionTypes = new Set(); // Fractions category only — opt-in, like the operations above
+const fractionTypes = new Set(); // Fractions only — opt-in
+const denominators = new Set(DENOMINATORS); // Fractions only — tick-all default
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -158,59 +181,41 @@ function getCurrentUser() {
   });
 }
 
-function getMode() { return document.querySelector('input[name="drill-mode"]:checked').value; }
-function getSize() { return parseInt(document.querySelector('input[name="drill-size"]:checked').value, 10); }
-function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
-function getVersusAction() { return document.querySelector('input[name="drill-versus-action"]:checked').value; }
-function getMpAction() { return document.querySelector('input[name="drill-mp-action"]:checked').value; }
+// Which ranges are on offer depends on the category — and Fractions has no
+// range at all (see DENOMINATORS above).
+function rangesFor(cat) { return cat === 'exponent' ? EXPONENT_RANGES : RANGES; }
 
 // Only the 1-9 bucket is fine enough to cherry-pick individual numbers from
-// (and only for Basic — Exponent "just sticks with the ranges"). Every
-// other bucket is drilled as a whole block.
+// (and only for Basic — Exponent just sticks with its ranges). Every other
+// bucket is drilled as a whole block.
 function isNumbersMode() { return categoryValue === 'basic' && range === '1-9'; }
 
-// The actual pool of "base" numbers handed to questionAt(): either the
-// hand-picked 1-9 set, or every integer in the selected decade range.
+// The actual pool of "base" numbers handed to questionAt(). For Fractions
+// that pool IS the denominator set — there is no range to expand.
 function getTablesPool() {
+  if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
-  const r = RANGES.find((x) => x.key === range) || RANGES[0];
+  const list = rangesFor(categoryValue);
+  const r = list.find((x) => x.key === range) || list[0];
   return Array.from({ length: r.max - r.min + 1 }, (_, i) => r.min + i);
 }
 
 function updateStartDisabled() {
   const needsNumbers = isNumbersMode() && tables.size === 0;
-  const needsFractionType = categoryValue === 'fractions' && fractionTypes.size === 0;
-  startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType;
+  const isFractions = categoryValue === 'fractions';
+  const needsFractionType = isFractions && fractionTypes.size === 0;
+  const needsDenominators = isFractions && denominators.size === 0;
+  startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType || needsDenominators;
 }
 
 function updateStartLabel() {
-  const mode = getMode();
   if (mode === 'multiplayer') {
-    const action = getMpAction();
-    startLabel.textContent = action === 'join' ? 'Join Room' : action === 'create' ? 'Create Room' : 'Find a Room';
+    startLabel.textContent =
+      roomAction === 'join' ? 'Join Room' : roomAction === 'create' ? 'Create Room' : 'Find a Room';
     return;
   }
-  startLabel.textContent = getVersusAction() === 'join' ? 'Join Room' : 'Create Room';
+  startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
 }
-
-function onModeChange() {
-  const mode = getMode();
-  sizeField.hidden = mode === 'versus';
-  mpField.hidden = mode !== 'multiplayer';
-  versusField.hidden = mode !== 'versus';
-  updateStartLabel();
-}
-modeToggle.addEventListener('change', onModeChange);
-
-mpToggle.addEventListener('change', () => {
-  mpCodeInput.hidden = getMpAction() !== 'join';
-  updateStartLabel();
-});
-
-versusToggle.addEventListener('change', () => {
-  codeInput.hidden = getVersusAction() !== 'join';
-  updateStartLabel();
-});
 
 // ── Game name ──────────────────────────────────────────────────────────
 nameInput.value = localStorage.getItem(NAME_KEY) || '';
@@ -219,15 +224,27 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Content carousel — Category → [Fractions: Fraction Type →] Operations
-// → Number Range → [Basic + 1-9: Numbers]. Mode/Room Size/Time Limit stay a
-// static strip above this (see index.html) — only what's actually being
-// drilled goes through the step-by-step carousel. ──────────────────────
-const carousel = createCarousel(carouselMount);
+/* ── SECTION 1 — What to drill ────────────────────────────────────────────
+   Category → the settings that category actually uses. The three categories
+   genuinely need different things, so none of them shows a step whose value
+   the question generator would ignore:
+
+     Basic     → Operations → Number Range (1–100) → [1–9 only: pick numbers]
+     Exponent  → Operations → Number Range (capped at 20 — see EXPONENT_RANGES)
+     Fractions → Fraction Type → Operations → Denominators (2–12)
+
+   Fractions has NO number range on purpose: in rng.js that same pool supplies
+   the denominators, so "90–100" would mean fractions over ninety-somethings.
+   Switching category resets the whole branch, so nothing stale carries over. */
+const topic = createCarousel(topicMount);
 let operationsEl = null;
 let fractionTypeEl = null;
+let denominatorsEl = null;
+let numbersEl = null;
+let rangeEl = null;
 
 function renderOperationsPick() {
+  const isFractions = categoryValue === 'fractions';
   renderMultiStep(operationsEl, {
     title: `Which ${categoryValue} operations?`,
     colorOffset: 3,
@@ -237,8 +254,12 @@ function renderOperationsPick() {
       if (checked) operations.add(v); else operations.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Number Range →',
-    onNext: () => carousel.goTo('range'),
+    nextLabel: isFractions ? 'Next: Denominators →' : 'Next: Number Range →',
+    onNext: () => {
+      if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
+      renderRangePick();
+      topic.goTo('range');
+    },
   });
 }
 
@@ -253,15 +274,44 @@ function renderFractionTypePick() {
       updateStartDisabled();
     },
     nextLabel: 'Next: Operations →',
-    onNext: () => {
-      renderOperationsPick();
-      carousel.goTo('operations');
+    onNext: () => { renderOperationsPick(); topic.goTo('operations'); },
+  });
+}
+
+function renderDenominatorsPick() {
+  renderMultiStep(denominatorsEl, {
+    title: 'Which denominators?',
+    subtitle: 'Fractions are built from these — keep them small and they stay drillable.',
+    grid: true,
+    colorOffset: 0,
+    options: DENOMINATORS.map((n) => ({ value: String(n), label: String(n) })),
+    isChecked: (v) => denominators.has(Number(v)),
+    onToggle: (v, checked) => {
+      const n = Number(v);
+      if (checked) denominators.add(n); else denominators.delete(n);
+      updateStartDisabled();
+    },
+  });
+}
+
+function renderRangePick() {
+  const list = rangesFor(categoryValue);
+  renderChoiceStep(rangeEl, {
+    title: 'Which number range?',
+    subtitle: categoryValue === 'exponent' ? 'Capped at 20 — 100³ is not a mental-maths drill.' : undefined,
+    name: 'drill-range',
+    colorOffset: 6,
+    options: list.map((r) => ({ value: r.key, label: r.label, checked: r.key === range })),
+    onPick: (v) => {
+      range = v;
+      updateStartDisabled();
+      if (isNumbersMode()) { renderNumbersPick(); topic.goTo('numbers'); }
     },
   });
 }
 
 function renderNumbersPick() {
-  renderMultiStep(carousel.getEl('numbers'), {
+  renderMultiStep(numbersEl, {
     title: 'Which numbers (1–9)?',
     grid: true,
     colorOffset: 0,
@@ -275,7 +325,7 @@ function renderNumbersPick() {
   });
 }
 
-carousel.addSlide('category', 'Category', (el) => {
+topic.addSlide('category', 'Category', (el) => {
   renderChoiceStep(el, {
     title: 'What category?',
     name: 'drill-category',
@@ -286,44 +336,128 @@ carousel.addSlide('category', 'Category', (el) => {
     ],
     onPick: (v) => {
       categoryValue = v;
+      // Reset the whole branch — a range picked under Basic must not survive
+      // into Exponent (whose ranges only go to 20) or Fractions (no range).
       operations.clear();
       CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
       fractionTypes.clear();
+      tables.clear();
+      range = 'all';
+      denominators.clear();
+      DENOMINATORS.forEach((n) => denominators.add(n));
       updateStartDisabled();
+
       if (v === 'fractions') {
         renderFractionTypePick();
-        carousel.goTo('fraction-type');
+        topic.goTo('fraction-type');
       } else {
         renderOperationsPick();
-        carousel.goTo('operations');
+        topic.goTo('operations');
       }
     },
   });
 });
 
-carousel.addSlide('fraction-type', 'Fraction Type', (el) => { fractionTypeEl = el; });
-carousel.addSlide('operations', 'Operations', (el) => { operationsEl = el; });
+topic.addSlide('fraction-type', 'Fraction Type', (el) => { fractionTypeEl = el; });
+topic.addSlide('operations', 'Operations', (el) => { operationsEl = el; });
+topic.addSlide('range', 'Number Range', (el) => { rangeEl = el; });
+topic.addSlide('numbers', 'Numbers', (el) => { numbersEl = el; });
+topic.addSlide('denominators', 'Denominators', (el) => { denominatorsEl = el; });
 
-carousel.addSlide('range', 'Number Range', (el) => {
+topic.start('category');
+
+/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+   Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
+const options = createCarousel(optionsMount);
+
+options.addSlide('mode', 'Mode', (el) => {
   renderChoiceStep(el, {
-    title: 'Which number range?',
-    name: 'drill-range',
-    colorOffset: 6,
-    options: RANGES.map((r) => ({ value: r.key, label: r.label, checked: r.key === range })),
+    title: 'How do you want to play?',
+    name: 'drill-mode',
+    options: [
+      { value: 'multiplayer', label: 'Multiplayer', checked: true },
+      { value: 'versus', label: 'Versus (1v1)' },
+    ],
     onPick: (v) => {
-      range = v;
-      updateStartDisabled();
-      if (categoryValue === 'basic' && v === '1-9') {
-        renderNumbersPick();
-        carousel.goTo('numbers');
-      }
+      mode = v;
+      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+      renderRoomEntry();
+      roomCarousel.start('entry');
+      codeInput.hidden = roomAction !== 'join';
+      updateStartLabel();
+      options.goTo(mode === 'versus' ? 'time' : 'size');
     },
   });
 });
 
-carousel.addSlide('numbers', 'Numbers', () => renderNumbersPick());
+options.addSlide('size', 'Room Size', (el) => {
+  renderChoiceStep(el, {
+    title: 'How many players?',
+    name: 'drill-size',
+    colorOffset: 2,
+    options: [
+      { value: '5', label: '5 players', checked: true },
+      { value: '10', label: '10 players' },
+    ],
+    onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  });
+});
 
-carousel.start('category');
+options.addSlide('time', 'Time Limit', (el) => {
+  renderChoiceStep(el, {
+    title: 'How long is the round?',
+    name: 'drill-time',
+    colorOffset: 4,
+    options: [
+      { value: '30', label: '30s' },
+      { value: '60', label: '60s', checked: true },
+      { value: '90', label: '90s' },
+      { value: '120', label: '120s' },
+    ],
+    onPick: (v) => { timeLimit = Number(v); },
+  });
+});
+
+options.start('mode');
+
+/* ── SECTION 3 — Room ─────────────────────────────────────────────────── */
+const roomCarousel = createCarousel(roomMount);
+let roomEntryEl = null;
+
+function renderRoomEntry() {
+  const choices =
+    mode === 'multiplayer'
+      ? [
+          { value: 'quickfill', label: 'Quick Fill', checked: roomAction === 'quickfill' },
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ]
+      : [
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ];
+
+  renderChoiceStep(roomEntryEl, {
+    title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
+    name: 'drill-room-action',
+    colorOffset: 2,
+    options: choices,
+    onPick: (v) => {
+      roomAction = v;
+      codeInput.hidden = v !== 'join';
+      updateStartLabel();
+      if (v === 'join') roomCarousel.goTo('code');
+    },
+  });
+}
+
+roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
+roomCarousel.addSlide('code', 'Code', (el) =>
+  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+
+renderRoomEntry();
+roomCarousel.start('entry');
+
 updateStartDisabled();
 updateStartLabel();
 
@@ -628,7 +762,7 @@ function makeOnWaiting(waitingStatusText) {
 }
 
 async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   let room;
   try {
@@ -648,7 +782,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
 }
 
 async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
@@ -680,13 +814,13 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
 }
 
 async function runMultiplayerJoin({ timeLimit, myName }) {
-  const code = (mpCodeInput.value || '').trim().toUpperCase();
+  const code = (codeInput.value || '').trim().toUpperCase();
   if (code.length !== 6) {
     alert('Enter the 6-character room code your friend shared.');
     startBtn.disabled = false;
     return;
   }
-  showLobby(getSize()); // best guess until the joined room's real size arrives below
+  showLobby(roomSize); // best guess until the joined room's real size arrives below
   lobbyStatus.textContent = 'Joining room…';
   let room;
   try {
@@ -766,22 +900,19 @@ async function runDrill() {
   startBtn.disabled = true;
   await getCurrentUser();
 
-  const mode = getMode();
-  const timeLimit = getTimeLimit();
   const operationsList = [...operations];
-  const tablesList = getTablesPool();
+  const tablesList = getTablesPool(); // for Fractions this IS the denominator set
   const fractionTypesList = categoryValue === 'fractions' ? [...fractionTypes] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
-    if (getVersusAction() === 'join') await runVersusJoin({ timeLimit, myName });
+    if (roomAction === 'join') await runVersusJoin({ timeLimit, myName });
     else await runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
     return;
   }
 
-  const mpAction = getMpAction();
-  if (mpAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
-  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
+  if (roomAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
+  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
   else await runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
 }
 
@@ -798,8 +929,9 @@ againBtn.addEventListener('click', hideResults);
 
 // Preselect mode from nav links like ?mode=versus
 const initialMode = new URLSearchParams(location.search).get('mode');
-if (initialMode === 'versus' || initialMode === 'multiplayer') {
-  const radio = document.querySelector(`input[name="drill-mode"][value="${initialMode}"]`);
-  if (radio) radio.checked = true;
+if (initialMode === 'versus') {
+  mode = 'versus';
+  roomAction = 'create'; // Versus has no Quick Fill
+  renderRoomEntry();
+  updateStartLabel();
 }
-onModeChange();

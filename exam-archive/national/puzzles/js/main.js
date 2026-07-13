@@ -13,7 +13,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
+import { createCarousel, renderChoiceStep, renderComingSoon } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -74,14 +74,9 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('puzzle-name-input');
 const avatarGrid = $('puzzle-avatar-grid');
 const avatarUploadInput = $('puzzle-avatar-upload-input');
-const carouselMount = $('puzzle-carousel');
-const modeToggle = $('puzzle-mode-toggle');
-const sizeField = $('puzzle-size-field');
-const mpField = $('puzzle-mp-field');
-const mpToggle = $('puzzle-mp-toggle');
-const mpCodeInput = $('puzzle-mp-code-input');
-const versusField = $('puzzle-versus-field');
-const versusToggle = $('puzzle-versus-toggle');
+const topicMount = $('puzzle-topic-carousel');
+const optionsMount = $('puzzle-options-carousel');
+const roomMount = $('puzzle-room-carousel');
 const codeInput = $('puzzle-code-input');
 const startBtn = $('puzzle-start-btn');
 const startLabel = $('puzzle-start-label');
@@ -112,6 +107,21 @@ function hideAwaiting() {
 
 let cancelled = false;
 
+// ── Setup state ─────────────────────────────────────────────────────────
+// Owned in JS, not read back out of `input:checked` — a carousel only renders
+// the step you're on, so a DOM-query getter would throw for any step the
+// player never opened.
+let mode = 'multiplayer';
+let roomSize = 5;
+let timeLimit = 300;
+let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
+
+let puzzleType = 'sudoku';
+let gridSize = 9; // Sudoku's default — kept in step with puzzleType below
+let difficulty = 'easy';
+
+const defaultGridFor = (type) => (GRID_SIZES_BY_TYPE[type].find((o) => o.default) || GRID_SIZES_BY_TYPE[type][0]).value;
+
 function getCurrentUser() {
   return new Promise((resolve) => {
     if (auth.currentUser) { resolve(auth.currentUser); return; }
@@ -121,19 +131,22 @@ function getCurrentUser() {
   });
 }
 
-function getMode() { return document.querySelector('input[name="puzzle-mode"]:checked').value; }
-function getSize() { return parseInt(document.querySelector('input[name="puzzle-size"]:checked').value, 10); }
-function getTimeLimit() { return parseInt(document.querySelector('input[name="puzzle-time"]:checked').value, 10); }
-function getVersusAction() { return document.querySelector('input[name="puzzle-versus-action"]:checked').value; }
-function getMpAction() { return document.querySelector('input[name="puzzle-mp-action"]:checked').value; }
-function getPuzzleType() { return document.querySelector('input[name="puzzle-type"]:checked').value; }
-function getGridSize() { return parseInt(document.querySelector('input[name="puzzle-grid-size"]:checked').value, 10); }
-function getDifficulty() { return document.querySelector('input[name="puzzle-difficulty"]:checked').value; }
+function updateStartLabel() {
+  if (mode === 'multiplayer') {
+    startLabel.textContent =
+      roomAction === 'join' ? 'Join Room' : roomAction === 'create' ? 'Create Room' : 'Find a Room';
+    return;
+  }
+  startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
+}
 
-// ── Content carousel — Puzzle → Grid Size (options depend on which puzzle,
-// so this slide is rebuilt fresh each time it's entered) → Difficulty.
-// Mode/Room Size/Time Limit stay a static strip above this. ─────────────
-const carousel = createCarousel(carouselMount);
+/* ── SECTION 1 — Puzzle ───────────────────────────────────────────────────
+   Puzzle → Grid Size → Difficulty. Grid Size is genuinely puzzle-specific:
+   Sudoku's boxes only divide evenly at 4/6/9, Slider is the classic 3/4/5 —
+   so the step is rebuilt per puzzle rather than offering sizes the chosen
+   puzzle can't even use. Switching puzzle resets the grid to that puzzle's
+   own default, so a 9×9 pick can't survive into Slider. ─────────────────── */
+const topic = createCarousel(topicMount);
 let gridSizeEl = null;
 
 function renderGridSizePick() {
@@ -141,12 +154,14 @@ function renderGridSizePick() {
     title: 'Grid size?',
     name: 'puzzle-grid-size',
     colorOffset: 4,
-    options: GRID_SIZES_BY_TYPE[getPuzzleType()].map((opt) => ({ value: String(opt.value), label: opt.label, checked: !!opt.default })),
-    onPick: () => carousel.goTo('difficulty'),
+    options: GRID_SIZES_BY_TYPE[puzzleType].map((opt) => ({
+      value: String(opt.value), label: opt.label, checked: opt.value === gridSize,
+    })),
+    onPick: (v) => { gridSize = Number(v); topic.goTo('difficulty'); },
   });
 }
 
-carousel.addSlide('type', 'Puzzle', (el) => {
+topic.addSlide('type', 'Puzzle', (el) => {
   renderChoiceStep(el, {
     title: 'Which puzzle?',
     name: 'puzzle-type',
@@ -154,20 +169,19 @@ carousel.addSlide('type', 'Puzzle', (el) => {
       { value: 'sudoku', label: 'Sudoku', checked: true },
       { value: 'slider', label: 'Slider' },
     ],
-    onPick: () => {
+    onPick: (v) => {
+      puzzleType = v;
+      gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
       renderGridSizePick();
-      carousel.goTo('grid-size');
+      topic.goTo('grid-size');
     },
   });
 });
 
-// Pre-populated at load (not just after a Puzzle click) — getGridSize()
-// reads live from the DOM, and Start is clickable before the carousel is
-// ever touched, so a real default has to exist here from the start.
-carousel.addSlide('grid-size', 'Grid Size', (el) => { gridSizeEl = el; });
+topic.addSlide('grid-size', 'Grid Size', (el) => { gridSizeEl = el; });
 renderGridSizePick();
 
-carousel.addSlide('difficulty', 'Difficulty', (el) => {
+topic.addSlide('difficulty', 'Difficulty', (el) => {
   renderChoiceStep(el, {
     title: 'Difficulty?',
     name: 'puzzle-difficulty',
@@ -177,40 +191,103 @@ carousel.addSlide('difficulty', 'Difficulty', (el) => {
       { value: 'medium', label: 'Medium' },
       { value: 'hard', label: 'Hard' },
     ],
-    onPick: () => {},
+    onPick: (v) => { difficulty = v; },
   });
 });
 
-carousel.start('type');
+topic.start('type');
 
-function updateStartLabel() {
-  const mode = getMode();
-  if (mode === 'multiplayer') {
-    const action = getMpAction();
-    startLabel.textContent = action === 'join' ? 'Join Room' : action === 'create' ? 'Create Room' : 'Find a Room';
-    return;
-  }
-  startLabel.textContent = getVersusAction() === 'join' ? 'Join Room' : 'Create Room';
-}
+/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+   Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
+const options = createCarousel(optionsMount);
 
-function onModeChange() {
-  const mode = getMode();
-  sizeField.hidden = mode === 'versus';
-  mpField.hidden = mode !== 'multiplayer';
-  versusField.hidden = mode !== 'versus';
-  updateStartLabel();
-}
-modeToggle.addEventListener('change', onModeChange);
-
-mpToggle.addEventListener('change', () => {
-  mpCodeInput.hidden = getMpAction() !== 'join';
-  updateStartLabel();
+options.addSlide('mode', 'Mode', (el) => {
+  renderChoiceStep(el, {
+    title: 'How do you want to play?',
+    name: 'puzzle-mode',
+    options: [
+      { value: 'multiplayer', label: 'Multiplayer', checked: true },
+      { value: 'versus', label: 'Versus (1v1)' },
+    ],
+    onPick: (v) => {
+      mode = v;
+      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+      renderRoomEntry();
+      roomCarousel.start('entry');
+      codeInput.hidden = roomAction !== 'join';
+      updateStartLabel();
+      options.goTo(mode === 'versus' ? 'time' : 'size');
+    },
+  });
 });
 
-versusToggle.addEventListener('change', () => {
-  codeInput.hidden = getVersusAction() !== 'join';
-  updateStartLabel();
+options.addSlide('size', 'Room Size', (el) => {
+  renderChoiceStep(el, {
+    title: 'How many players?',
+    name: 'puzzle-size',
+    colorOffset: 2,
+    options: [
+      { value: '5', label: '5 players', checked: true },
+      { value: '10', label: '10 players' },
+    ],
+    onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  });
 });
+
+options.addSlide('time', 'Time Limit', (el) => {
+  renderChoiceStep(el, {
+    title: 'How long is the round?',
+    name: 'puzzle-time',
+    colorOffset: 4,
+    options: [
+      { value: '180', label: '3 min' },
+      { value: '300', label: '5 min', checked: true },
+      { value: '600', label: '10 min' },
+      { value: '900', label: '15 min' },
+    ],
+    onPick: (v) => { timeLimit = Number(v); },
+  });
+});
+
+options.start('mode');
+
+/* ── SECTION 3 — Room ─────────────────────────────────────────────────── */
+const roomCarousel = createCarousel(roomMount);
+let roomEntryEl = null;
+
+function renderRoomEntry() {
+  const choices =
+    mode === 'multiplayer'
+      ? [
+          { value: 'quickfill', label: 'Quick Fill', checked: roomAction === 'quickfill' },
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ]
+      : [
+          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+        ];
+
+  renderChoiceStep(roomEntryEl, {
+    title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
+    name: 'puzzle-room-action',
+    colorOffset: 2,
+    options: choices,
+    onPick: (v) => {
+      roomAction = v;
+      codeInput.hidden = v !== 'join';
+      updateStartLabel();
+      if (v === 'join') roomCarousel.goTo('code');
+    },
+  });
+}
+
+roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
+roomCarousel.addSlide('code', 'Code', (el) =>
+  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+
+renderRoomEntry();
+roomCarousel.start('entry');
 
 updateStartLabel();
 
@@ -523,7 +600,7 @@ function makeOnWaiting(waitingStatusText) {
 }
 
 async function runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   let room;
   try {
@@ -543,7 +620,7 @@ async function runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myN
 }
 
 async function runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSize, myName }) {
-  const size = getSize();
+  const size = roomSize;
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
@@ -575,13 +652,13 @@ async function runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSiz
 }
 
 async function runMultiplayerJoin({ myName }) {
-  const code = (mpCodeInput.value || '').trim().toUpperCase();
+  const code = (codeInput.value || '').trim().toUpperCase();
   if (code.length !== 6) {
     alert('Enter the 6-character room code your friend shared.');
     startBtn.disabled = false;
     return;
   }
-  showLobby(getSize()); // best guess until the joined room's real size arrives below
+  showLobby(roomSize); // best guess until the joined room's real size arrives below
   lobbyStatus.textContent = 'Joining room…';
   let room;
   try {
@@ -661,22 +738,16 @@ async function runPuzzle() {
   startBtn.disabled = true;
   await getCurrentUser();
 
-  const mode = getMode();
-  const timeLimit = getTimeLimit();
-  const puzzleType = getPuzzleType();
-  const difficulty = getDifficulty();
-  const gridSize = getGridSize();
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
-    if (getVersusAction() === 'join') await runVersusJoin({ myName });
+    if (roomAction === 'join') await runVersusJoin({ myName });
     else await runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, myName });
     return;
   }
 
-  const mpAction = getMpAction();
-  if (mpAction === 'join') await runMultiplayerJoin({ myName });
-  else if (mpAction === 'create') await runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSize, myName });
+  if (roomAction === 'join') await runMultiplayerJoin({ myName });
+  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSize, myName });
   else await runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myName });
 }
 
@@ -693,8 +764,9 @@ againBtn.addEventListener('click', hideResults);
 
 // Preselect mode from nav links like ?mode=versus
 const initialMode = new URLSearchParams(location.search).get('mode');
-if (initialMode === 'versus' || initialMode === 'multiplayer') {
-  const radio = document.querySelector(`input[name="puzzle-mode"][value="${initialMode}"]`);
-  if (radio) radio.checked = true;
+if (initialMode === 'versus') {
+  mode = 'versus';
+  roomAction = 'create'; // Versus has no Quick Fill
+  renderRoomEntry();
+  updateStartLabel();
 }
-onModeChange();

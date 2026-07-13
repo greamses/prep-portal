@@ -38,7 +38,22 @@ export const QUESTION_NS = 0;
 export const SHAPES = ['circle', 'semicircle', 'quadrant', 'sector', 'triangle', 'rectangle', 'square'];
 export const CIRCULAR_SHAPES = ['circle', 'semicircle', 'quadrant', 'sector'];
 export const GIVEN_TYPES = ['radius', 'diameter'];
-export const LENGTH_NUMBERS = Array.from({ length: 10 }, (_, i) => (i + 1) * 7); // 7..70
+
+// Two different length pools, because the two shape families need different
+// numbers — a room only ever draws from one of them, since the setup tree
+// makes you pick either curved shapes or polygons, never a mix.
+//
+// Curved shapes: multiples of 7 ONLY, so pi = 22/7 cancels the /7 cleanly and
+// the answer stays a whole number (or an exactly-gradeable fraction).
+export const RADIUS_NUMBERS = Array.from({ length: 10 }, (_, i) => (i + 1) * 7); // 7..70
+// Polygons: no pi, so nothing has to cancel — plain natural side lengths. A
+// triangle with sides 70/63/49 is just arbitrary; 3–20 is what a child would
+// actually be asked to add up.
+export const SIDE_NUMBERS = Array.from({ length: 18 }, (_, i) => i + 3); // 3..20
+
+// questionAt's default pool stays the radius set (its callers pass an explicit
+// `lengths` for polygons).
+export const LENGTH_NUMBERS = RADIUS_NUMBERS;
 
 const MEASURE_LABEL = { circle: 'Circumference', semicircle: 'Perimeter', quadrant: 'Perimeter', sector: 'Perimeter' };
 const SHAPE_NAME = {
