@@ -4,15 +4,20 @@
    switches between the lobby/play/results overlays. Same structure as
    Drills'/Puzzles' js/main.js — Multiplayer uses anonymous pool matching;
    Versus is always a private 1v1 via a shared room code (create-and-share,
-   or join-with-code). Unlike Drills, this whole page IS Geometry — no
-   Category selector, just Shapes/Given/Lengths straight on the setup form.
+   or join-with-code). Content selection (topic -> shapes -> given ->
+   lengths) is a step-by-step carousel (see the "Topic carousel" section
+   below and utils/components/setup-carousel.js) — Mode/Room Size/Time
+   Limit stay a static strip beneath it.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { SHAPES, CIRCULAR_SHAPES, GIVEN_TYPES, LENGTH_NUMBERS } from './rng.js';
+import { CIRCULAR_SHAPES, GIVEN_TYPES, LENGTH_NUMBERS } from './rng.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { createCarousel, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+
+const REGULAR_SHAPES = ['triangle', 'square', 'rectangle'];
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -40,10 +45,10 @@ const avatarUrl = (seed) => {
 const NAME_KEY = 'geoGameName';
 
 const SHAPE_LABELS = {
-  circle: '○ Circle', semicircle: '◐ Semicircle', quadrant: '◔ Quadrant', sector: '⌔ Sector',
+  circle: '○ Circle', semicircle: '◐ Semicircle', quadrant: '◔ Quadrant', sector: '⌔ Sector', chord: '⌒ Chord',
   triangle: '△ Triangle', rectangle: '▭ Rectangle', square: '□ Square',
 };
-const GIVEN_LABELS = { radius: 'Given: Radius', diameter: 'Given: Diameter' };
+const GIVEN_LABELS = { radius: 'Radius', diameter: 'Diameter' };
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
@@ -66,9 +71,7 @@ const avatarGrid = $('geo-avatar-grid');
 const avatarUploadInput = $('geo-avatar-upload-input');
 const modeToggle = $('geo-mode-toggle');
 const sizeField = $('geo-size-field');
-const givenRow = $('geo-given-row');
-const shapesRow = $('geo-shapes-row');
-const lengthsGrid = $('geo-lengths-grid');
+const carouselMount = $('geo-carousel');
 const mpField = $('geo-mp-field');
 const mpToggle = $('geo-mp-toggle');
 const mpCodeInput = $('geo-mp-code-input');
@@ -103,10 +106,13 @@ function hideAwaiting() {
 }
 
 let cancelled = false;
-// Comprehensive by default — every shape, both given types, every radius —
-// so a first-time player gets full-breadth practice with zero setup.
-const shapes = new Set(SHAPES);
-const given = new Set(GIVEN_TYPES);
+// `shapes`/`given` fill in once the carousel's topic tree lands on a real
+// leaf (e.g. Shapes → 2D → Curved Shapes) — see buildCarousel() below, which
+// resets these to that branch's full default set every time it's entered.
+// `lengths` is comprehensive from the start (every radius/side, tick-all
+// default) since the same pool applies regardless of which branch is picked.
+const shapes = new Set();
+const given = new Set();
 const lengths = new Set(LENGTH_NUMBERS);
 
 function getCurrentUser() {
@@ -166,67 +172,177 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Shapes ───────────────────────────────────────────────────────────────
-function renderShapesRow() {
-  shapesRow.innerHTML = '';
-  SHAPES.forEach((s, i) => {
-    const lbl = document.createElement('label');
-    lbl.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i)}`;
-    lbl.innerHTML = `<input type="checkbox" value="${s}" ${shapes.has(s) ? 'checked' : ''} /><span>${SHAPE_LABELS[s]}</span>`;
-    shapesRow.appendChild(lbl);
+// ── Topic carousel — Lines/Angles/Shapes → 2D/3D → Polygons/Curved Shapes
+// → (Regular: Triangles/Squares/Rectangles | Irregular: soon) or (Curved:
+// Circle/Semicircle/Quadrant/Sector/Chord-soon → Given) → Lengths. Only the
+// Shapes → 2D branch has real content today; every other branch is a
+// "coming soon" leaf so the tree is honest about what's actually gradeable
+// (see rng.js — Lines/Angles/3D/Nets/Chord have no question generator). ──
+const carousel = createCarousel(carouselMount);
+let regularPickEl = null;
+let curvedPickEl = null;
+let givenPickEl = null;
+
+function renderLengthsPick() {
+  renderMultiStep(carousel.getEl('lengths'), {
+    title: 'Radius / side lengths (cm)',
+    subtitle: 'Every question draws its numbers from whichever you tick here.',
+    grid: true,
+    colorOffset: 2,
+    options: LENGTH_NUMBERS.map((n) => ({ value: String(n), label: String(n) })),
+    isChecked: (v) => lengths.has(Number(v)),
+    onToggle: (v, checked) => {
+      const n = Number(v);
+      if (checked) lengths.add(n); else lengths.delete(n);
+      updateStartDisabled();
+    },
   });
 }
-renderShapesRow();
 
-shapesRow.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  if (cb.checked) shapes.add(cb.value);
-  else shapes.delete(cb.value);
-  updateStartDisabled();
-});
-
-// ── Given (radius/diameter) — only matters for the circular shapes ──────
-function renderGivenRow() {
-  givenRow.innerHTML = '';
-  GIVEN_TYPES.forEach((g, i) => {
-    const lbl = document.createElement('label');
-    lbl.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 7)}`;
-    lbl.innerHTML = `<input type="checkbox" value="${g}" ${given.has(g) ? 'checked' : ''} /><span>${GIVEN_LABELS[g]}</span>`;
-    givenRow.appendChild(lbl);
+function renderRegularPick() {
+  renderMultiStep(regularPickEl, {
+    title: 'Which regular shapes?',
+    colorOffset: 0,
+    options: REGULAR_SHAPES.map((s) => ({ value: s, label: SHAPE_LABELS[s] })),
+    isChecked: (v) => shapes.has(v),
+    onToggle: (v, checked) => {
+      if (checked) shapes.add(v); else shapes.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next: Lengths →',
+    onNext: () => carousel.goTo('lengths'),
   });
 }
-renderGivenRow();
 
-givenRow.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  if (cb.checked) given.add(cb.value);
-  else given.delete(cb.value);
-  updateStartDisabled();
-});
-
-// ── Lengths (radius for circular shapes, side length for polygons) ──────
-function renderLengthsGrid() {
-  lengthsGrid.innerHTML = '';
-  LENGTH_NUMBERS.forEach((n, i) => {
-    const lbl = document.createElement('label');
-    lbl.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 2)}`;
-    lbl.innerHTML = `<input type="checkbox" value="${n}" ${lengths.has(n) ? 'checked' : ''} /><span>${n}</span>`;
-    lengthsGrid.appendChild(lbl);
+function renderCurvedPick() {
+  renderMultiStep(curvedPickEl, {
+    title: 'Which curved shapes?',
+    colorOffset: 0,
+    options: [
+      ...CIRCULAR_SHAPES.map((s) => ({ value: s, label: SHAPE_LABELS[s] })),
+      { value: 'chord', label: SHAPE_LABELS.chord, disabled: true, note: 'soon' },
+    ],
+    isChecked: (v) => shapes.has(v),
+    onToggle: (v, checked) => {
+      if (checked) shapes.add(v); else shapes.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next: Given →',
+    onNext: () => carousel.goTo('given'),
   });
 }
-renderLengthsGrid();
 
-lengthsGrid.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  const n = parseInt(cb.value, 10);
-  if (cb.checked) lengths.add(n);
-  else lengths.delete(n);
-  updateStartDisabled();
+function renderGivenPick() {
+  renderMultiStep(givenPickEl, {
+    title: 'Given the radius, diameter, or both?',
+    colorOffset: 3,
+    options: GIVEN_TYPES.map((g) => ({ value: g, label: GIVEN_LABELS[g] })),
+    isChecked: (v) => given.has(v),
+    onToggle: (v, checked) => {
+      if (checked) given.add(v); else given.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next: Lengths →',
+    onNext: () => carousel.goTo('lengths'),
+  });
+}
+
+carousel.addSlide('topic', 'Topic', (el) => {
+  renderChoiceStep(el, {
+    title: 'What do you want to practice?',
+    name: 'geo-topic',
+    options: [
+      { value: 'lines', label: 'Lines' },
+      { value: 'angles', label: 'Angles' },
+      { value: 'shapes', label: 'Shapes' },
+    ],
+    onPick: (v) => {
+      if (v === 'lines') carousel.goTo('soon-lines');
+      else if (v === 'angles') carousel.goTo('soon-angles');
+      else carousel.goTo('shapes-dim');
+    },
+  });
+});
+carousel.addSlide('soon-lines', 'Lines', (el) => renderComingSoon(el, {
+  title: 'Lines', message: 'Line practice is coming soon — go back and pick Shapes for now.',
+}));
+carousel.addSlide('soon-angles', 'Angles', (el) => renderComingSoon(el, {
+  title: 'Angles', message: 'Angle practice is coming soon — go back and pick Shapes for now.',
+}));
+
+carousel.addSlide('shapes-dim', '2D/3D', (el) => {
+  renderChoiceStep(el, {
+    title: '2D or 3D shapes?',
+    name: 'geo-dim',
+    colorOffset: 2,
+    options: [
+      { value: '2d', label: '2D Shapes' },
+      { value: '3d', label: '3D Shapes' },
+    ],
+    onPick: (v) => (v === '3d' ? carousel.goTo('soon-3d') : carousel.goTo('kind-2d')),
+  });
+});
+carousel.addSlide('soon-3d', '3D Shapes', (el) => renderComingSoon(el, {
+  title: '3D Shapes', message: '3D shape practice is coming soon — go back and pick 2D Shapes for now.',
+}));
+
+carousel.addSlide('kind-2d', 'Polygons/Curved', (el) => {
+  renderChoiceStep(el, {
+    title: 'Polygons or curved shapes?',
+    name: 'geo-kind',
+    colorOffset: 4,
+    options: [
+      { value: 'polygons', label: 'Polygons' },
+      { value: 'curved', label: 'Curved Shapes' },
+    ],
+    onPick: (v) => {
+      if (v === 'polygons') {
+        carousel.goTo('regularity');
+        return;
+      }
+      shapes.clear();
+      CIRCULAR_SHAPES.forEach((s) => shapes.add(s));
+      given.clear();
+      GIVEN_TYPES.forEach((g) => given.add(g));
+      renderCurvedPick();
+      renderGivenPick();
+      updateStartDisabled();
+      carousel.goTo('curved-pick');
+    },
+  });
 });
 
+carousel.addSlide('regularity', 'Regular/Irregular', (el) => {
+  renderChoiceStep(el, {
+    title: 'Regular or irregular polygons?',
+    name: 'geo-regularity',
+    options: [
+      { value: 'regular', label: 'Regular' },
+      { value: 'irregular', label: 'Irregular' },
+    ],
+    onPick: (v) => {
+      if (v === 'irregular') {
+        carousel.goTo('soon-irregular');
+        return;
+      }
+      shapes.clear();
+      REGULAR_SHAPES.forEach((s) => shapes.add(s));
+      renderRegularPick();
+      updateStartDisabled();
+      carousel.goTo('regular-pick');
+    },
+  });
+});
+carousel.addSlide('soon-irregular', 'Irregular', (el) => renderComingSoon(el, {
+  title: 'Irregular Polygons', message: 'Nets of a cube/cuboid are coming soon — go back and pick Regular for now.',
+}));
+
+carousel.addSlide('regular-pick', 'Regular Shapes', (el) => { regularPickEl = el; });
+carousel.addSlide('curved-pick', 'Curved Shapes', (el) => { curvedPickEl = el; });
+carousel.addSlide('given', 'Given', (el) => { givenPickEl = el; });
+carousel.addSlide('lengths', 'Lengths', () => renderLengthsPick());
+
+carousel.start('topic');
 updateStartDisabled();
 updateStartLabel();
 

@@ -96,24 +96,6 @@
           </div>
 
           <div class="drill-field">
-            <span>Category</span>
-            <div class="sticky-row" id="drill-category-toggle" role="radiogroup" aria-label="Category">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
-                <input type="radio" name="drill-category" value="basic" checked />
-                <span>Basic</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
-                <input type="radio" name="drill-category" value="exponent" />
-                <span>Exponent</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2">
-                <input type="radio" name="drill-category" value="fractions" />
-                <span>Fractions</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="drill-field">
             <span>Pick your options</span>
             <div class="drill-strip" id="drill-strip">
               <div class="strip-group" id="drill-mode-toggle" role="radiogroup" aria-label="Mode" data-label="Mode">
@@ -144,18 +126,12 @@
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="drill-time" value="90" /><span>90s</span></label>
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="drill-time" value="120" /><span>120s</span></label>
               </div>
-
-              <div class="strip-group" id="drill-fraction-type-row" role="group" aria-label="Fraction type" data-label="Fraction Type" hidden></div>
-
-              <div class="strip-group" id="drill-operations-row" role="group" aria-label="Operations" data-label="Operations"></div>
-
-              <div class="strip-group" id="drill-range-row" role="radiogroup" aria-label="Number range" data-label="Number Range"></div>
             </div>
           </div>
 
-          <div class="drill-field" id="drill-numbers-field" hidden>
-            <span>Numbers</span>
-            <div class="sticky-grid" id="drill-numbers-grid" role="group" aria-label="Numbers"></div>
+          <div class="drill-field">
+            <span>Choose What to Drill</span>
+            <div id="drill-carousel"></div>
           </div>
 
           <div class="drill-field" id="drill-mp-field">

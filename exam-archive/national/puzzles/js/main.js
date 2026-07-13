@@ -13,6 +13,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -73,8 +74,7 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('puzzle-name-input');
 const avatarGrid = $('puzzle-avatar-grid');
 const avatarUploadInput = $('puzzle-avatar-upload-input');
-const puzzleTypeToggle = $('puzzle-type-toggle');
-const gridSizeRow = $('puzzle-grid-size-row');
+const carouselMount = $('puzzle-carousel');
 const modeToggle = $('puzzle-mode-toggle');
 const sizeField = $('puzzle-size-field');
 const mpField = $('puzzle-mp-field');
@@ -130,21 +130,58 @@ function getPuzzleType() { return document.querySelector('input[name="puzzle-typ
 function getGridSize() { return parseInt(document.querySelector('input[name="puzzle-grid-size"]:checked').value, 10); }
 function getDifficulty() { return document.querySelector('input[name="puzzle-difficulty"]:checked').value; }
 
-// ── Grid Size — the options on offer depend on Puzzle (Sudoku: 4/6/9,
-// Slider: 3/4/5); switching puzzle resets to that puzzle's own default
-// rather than carrying over a stale pick from the other one. ────────────
-function renderGridSizeRow() {
-  gridSizeRow.innerHTML = '';
-  GRID_SIZES_BY_TYPE[getPuzzleType()].forEach((opt, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 4)}`;
-    label.innerHTML = `<input type="radio" name="puzzle-grid-size" value="${opt.value}" ${opt.default ? 'checked' : ''} /><span>${opt.label}</span>`;
-    gridSizeRow.appendChild(label);
+// ── Content carousel — Puzzle → Grid Size (options depend on which puzzle,
+// so this slide is rebuilt fresh each time it's entered) → Difficulty.
+// Mode/Room Size/Time Limit stay a static strip above this. ─────────────
+const carousel = createCarousel(carouselMount);
+let gridSizeEl = null;
+
+function renderGridSizePick() {
+  renderChoiceStep(gridSizeEl, {
+    title: 'Grid size?',
+    name: 'puzzle-grid-size',
+    colorOffset: 4,
+    options: GRID_SIZES_BY_TYPE[getPuzzleType()].map((opt) => ({ value: String(opt.value), label: opt.label, checked: !!opt.default })),
+    onPick: () => carousel.goTo('difficulty'),
   });
 }
-renderGridSizeRow();
 
-puzzleTypeToggle.addEventListener('change', renderGridSizeRow);
+carousel.addSlide('type', 'Puzzle', (el) => {
+  renderChoiceStep(el, {
+    title: 'Which puzzle?',
+    name: 'puzzle-type',
+    options: [
+      { value: 'sudoku', label: 'Sudoku', checked: true },
+      { value: 'slider', label: 'Slider' },
+    ],
+    onPick: () => {
+      renderGridSizePick();
+      carousel.goTo('grid-size');
+    },
+  });
+});
+
+// Pre-populated at load (not just after a Puzzle click) — getGridSize()
+// reads live from the DOM, and Start is clickable before the carousel is
+// ever touched, so a real default has to exist here from the start.
+carousel.addSlide('grid-size', 'Grid Size', (el) => { gridSizeEl = el; });
+renderGridSizePick();
+
+carousel.addSlide('difficulty', 'Difficulty', (el) => {
+  renderChoiceStep(el, {
+    title: 'Difficulty?',
+    name: 'puzzle-difficulty',
+    colorOffset: 1,
+    options: [
+      { value: 'easy', label: 'Easy', checked: true },
+      { value: 'medium', label: 'Medium' },
+      { value: 'hard', label: 'Hard' },
+    ],
+    onPick: () => {},
+  });
+});
+
+carousel.start('type');
 
 function updateStartLabel() {
   const mode = getMode();

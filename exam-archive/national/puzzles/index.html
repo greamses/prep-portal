@@ -96,20 +96,6 @@
           </div>
 
           <div class="puzzle-field">
-            <span>Puzzle</span>
-            <div class="sticky-row" id="puzzle-type-toggle" role="radiogroup" aria-label="Puzzle type">
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0">
-                <input type="radio" name="puzzle-type" value="sudoku" checked />
-                <span>Sudoku</span>
-              </label>
-              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1">
-                <input type="radio" name="puzzle-type" value="slider" />
-                <span>Slider</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="puzzle-field">
             <span>Pick your options</span>
             <div class="puzzle-strip" id="puzzle-strip">
               <div class="strip-group" id="puzzle-mode-toggle" role="radiogroup" aria-label="Mode" data-label="Mode">
@@ -134,14 +120,6 @@
                 </label>
               </div>
 
-              <div class="strip-group" id="puzzle-grid-size-row" role="radiogroup" aria-label="Grid size" data-label="Grid Size"></div>
-
-              <div class="strip-group" id="puzzle-difficulty-row" role="radiogroup" aria-label="Difficulty" data-label="Difficulty">
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="puzzle-difficulty" value="easy" checked /><span>Easy</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="puzzle-difficulty" value="medium" /><span>Medium</span></label>
-                <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="puzzle-difficulty" value="hard" /><span>Hard</span></label>
-              </div>
-
               <div class="strip-group" id="puzzle-time-row" role="radiogroup" aria-label="Time limit" data-label="Time Limit">
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="puzzle-time" value="180" /><span>3 min</span></label>
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="puzzle-time" value="300" checked /><span>5 min</span></label>
@@ -149,6 +127,11 @@
                 <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="puzzle-time" value="900" /><span>15 min</span></label>
               </div>
             </div>
+          </div>
+
+          <div class="puzzle-field">
+            <span>Choose Your Puzzle</span>
+            <div id="puzzle-carousel"></div>
           </div>
 
           <div class="puzzle-field" id="puzzle-mp-field">

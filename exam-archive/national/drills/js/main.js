@@ -11,6 +11,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { createCarousel, renderChoiceStep, renderMultiStep } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -107,12 +108,7 @@ const avatarGrid = $('drill-avatar-grid');
 const avatarUploadInput = $('drill-avatar-upload-input');
 const modeToggle = $('drill-mode-toggle');
 const sizeField = $('drill-size-field');
-const categoryToggle = $('drill-category-toggle');
-const operationsRow = $('drill-operations-row');
-const fractionTypeRow = $('drill-fraction-type-row');
-const rangeRow = $('drill-range-row');
-const numbersField = $('drill-numbers-field');
-const numbersGrid = $('drill-numbers-grid');
+const carouselMount = $('drill-carousel');
 const mpField = $('drill-mp-field');
 const mpToggle = $('drill-mp-toggle');
 const mpCodeInput = $('drill-mp-code-input');
@@ -147,6 +143,7 @@ function hideAwaiting() {
 }
 
 let cancelled = false;
+let categoryValue = 'basic'; // set by the carousel's first slide — see buildCarousel() below
 let range = 'all';
 const tables = new Set(); // 1-9 numbers only — nothing checked by default, user ticks which to drill
 const operations = new Set(CATEGORY_DEFAULT_OPS.basic);
@@ -166,12 +163,11 @@ function getSize() { return parseInt(document.querySelector('input[name="drill-s
 function getTimeLimit() { return parseInt(document.querySelector('input[name="drill-time"]:checked').value, 10); }
 function getVersusAction() { return document.querySelector('input[name="drill-versus-action"]:checked').value; }
 function getMpAction() { return document.querySelector('input[name="drill-mp-action"]:checked').value; }
-function getCategory() { return document.querySelector('input[name="drill-category"]:checked').value; }
 
 // Only the 1-9 bucket is fine enough to cherry-pick individual numbers from
 // (and only for Basic — Exponent "just sticks with the ranges"). Every
 // other bucket is drilled as a whole block.
-function isNumbersMode() { return getCategory() === 'basic' && range === '1-9'; }
+function isNumbersMode() { return categoryValue === 'basic' && range === '1-9'; }
 
 // The actual pool of "base" numbers handed to questionAt(): either the
 // hand-picked 1-9 set, or every integer in the selected decade range.
@@ -183,7 +179,7 @@ function getTablesPool() {
 
 function updateStartDisabled() {
   const needsNumbers = isNumbersMode() && tables.size === 0;
-  const needsFractionType = getCategory() === 'fractions' && fractionTypes.size === 0;
+  const needsFractionType = categoryValue === 'fractions' && fractionTypes.size === 0;
   startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType;
 }
 
@@ -223,112 +219,111 @@ getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-// ── Numbers (1-9 only — every higher bucket is drilled as a whole range) ─
-function renderNumbersGrid() {
-  numbersGrid.innerHTML = '';
-  UNIT_NUMBERS.forEach((n, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i)}`;
-    label.innerHTML = `<input type="checkbox" value="${n}" ${tables.has(n) ? 'checked' : ''} /><span>${n}</span>`;
-    numbersGrid.appendChild(label);
+// ── Content carousel — Category → [Fractions: Fraction Type →] Operations
+// → Number Range → [Basic + 1-9: Numbers]. Mode/Room Size/Time Limit stay a
+// static strip above this (see index.html) — only what's actually being
+// drilled goes through the step-by-step carousel. ──────────────────────
+const carousel = createCarousel(carouselMount);
+let operationsEl = null;
+let fractionTypeEl = null;
+
+function renderOperationsPick() {
+  renderMultiStep(operationsEl, {
+    title: `Which ${categoryValue} operations?`,
+    colorOffset: 3,
+    options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
+    isChecked: (v) => operations.has(v),
+    onToggle: (v, checked) => {
+      if (checked) operations.add(v); else operations.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next: Number Range →',
+    onNext: () => carousel.goTo('range'),
   });
 }
-renderNumbersGrid();
 
-numbersGrid.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  const n = parseInt(cb.value, 10);
-  if (cb.checked) tables.add(n);
-  else tables.delete(n);
-  updateStartDisabled();
-});
-
-// ── Range (All / 1-9 / decade buckets up to 100) ────────────────────────
-function renderRangeRow() {
-  rangeRow.innerHTML = '';
-  RANGES.forEach((r, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 6)}`;
-    label.innerHTML = `<input type="radio" name="drill-range" value="${r.key}" ${r.key === range ? 'checked' : ''} /><span>${r.label}</span>`;
-    rangeRow.appendChild(label);
+function renderFractionTypePick() {
+  renderMultiStep(fractionTypeEl, {
+    title: 'Which fraction type?',
+    colorOffset: 9,
+    options: FRACTION_TYPES.map((t) => ({ value: t, label: FRACTION_TYPE_LABELS[t] })),
+    isChecked: (v) => fractionTypes.has(v),
+    onToggle: (v, checked) => {
+      if (checked) fractionTypes.add(v); else fractionTypes.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next: Operations →',
+    onNext: () => {
+      renderOperationsPick();
+      carousel.goTo('operations');
+    },
   });
 }
-renderRangeRow();
 
-function updateNumbersVisibility() {
-  numbersField.hidden = !isNumbersMode();
-}
-
-rangeRow.addEventListener('change', (e) => {
-  const radio = e.target.closest('input[name="drill-range"]');
-  if (!radio) return;
-  range = radio.value;
-  updateNumbersVisibility();
-  updateStartDisabled();
-});
-
-// ── Operations — the set on offer depends on Category (Basic: add/×/÷,
-// Exponent: square/cube/√x/∛x, Fractions: +/−/×/÷); switching category
-// resets to that category's own sensible default rather than carrying over
-// a stale pick. ────────────────────────────────────────────────────────
-function renderOperationsGrid() {
-  operationsRow.innerHTML = '';
-  CATEGORY_OPERATIONS[getCategory()].forEach((op, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 3)}`;
-    label.innerHTML = `<input type="checkbox" value="${op}" ${operations.has(op) ? 'checked' : ''} /><span>${OPERATION_LABELS[op]}</span>`;
-    operationsRow.appendChild(label);
+function renderNumbersPick() {
+  renderMultiStep(carousel.getEl('numbers'), {
+    title: 'Which numbers (1–9)?',
+    grid: true,
+    colorOffset: 0,
+    options: UNIT_NUMBERS.map((n) => ({ value: String(n), label: String(n) })),
+    isChecked: (v) => tables.has(Number(v)),
+    onToggle: (v, checked) => {
+      const n = Number(v);
+      if (checked) tables.add(n); else tables.delete(n);
+      updateStartDisabled();
+    },
   });
 }
-renderOperationsGrid();
 
-operationsRow.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  if (cb.checked) operations.add(cb.value);
-  else operations.delete(cb.value);
-  updateStartDisabled();
-});
-
-// ── Fraction type — Fractions only, a second independent dimension
-// (which shape of fraction) alongside the operation (which arithmetic). ──
-function renderFractionTypeRow() {
-  fractionTypeRow.innerHTML = '';
-  FRACTION_TYPES.forEach((t, i) => {
-    const label = document.createElement('label');
-    label.className = `pp-sticky pp-sticky--tape sticky-choice ${stickyColor(i + 9)}`;
-    label.innerHTML = `<input type="checkbox" value="${t}" ${fractionTypes.has(t) ? 'checked' : ''} /><span>${FRACTION_TYPE_LABELS[t]}</span>`;
-    fractionTypeRow.appendChild(label);
+carousel.addSlide('category', 'Category', (el) => {
+  renderChoiceStep(el, {
+    title: 'What category?',
+    name: 'drill-category',
+    options: [
+      { value: 'basic', label: 'Basic', checked: true },
+      { value: 'exponent', label: 'Exponent' },
+      { value: 'fractions', label: 'Fractions' },
+    ],
+    onPick: (v) => {
+      categoryValue = v;
+      operations.clear();
+      CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
+      fractionTypes.clear();
+      updateStartDisabled();
+      if (v === 'fractions') {
+        renderFractionTypePick();
+        carousel.goTo('fraction-type');
+      } else {
+        renderOperationsPick();
+        carousel.goTo('operations');
+      }
+    },
   });
-}
-renderFractionTypeRow();
-
-fractionTypeRow.addEventListener('change', (e) => {
-  const cb = e.target.closest('input[type="checkbox"]');
-  if (!cb) return;
-  if (cb.checked) fractionTypes.add(cb.value);
-  else fractionTypes.delete(cb.value);
-  updateStartDisabled();
 });
 
-function updateFractionTypeVisibility() {
-  fractionTypeRow.hidden = getCategory() !== 'fractions';
-}
+carousel.addSlide('fraction-type', 'Fraction Type', (el) => { fractionTypeEl = el; });
+carousel.addSlide('operations', 'Operations', (el) => { operationsEl = el; });
 
-categoryToggle.addEventListener('change', () => {
-  operations.clear();
-  CATEGORY_DEFAULT_OPS[getCategory()].forEach((op) => operations.add(op));
-  fractionTypes.clear();
-  renderOperationsGrid();
-  renderFractionTypeRow();
-  updateFractionTypeVisibility();
-  updateNumbersVisibility();
-  updateStartDisabled();
+carousel.addSlide('range', 'Number Range', (el) => {
+  renderChoiceStep(el, {
+    title: 'Which number range?',
+    name: 'drill-range',
+    colorOffset: 6,
+    options: RANGES.map((r) => ({ value: r.key, label: r.label, checked: r.key === range })),
+    onPick: (v) => {
+      range = v;
+      updateStartDisabled();
+      if (categoryValue === 'basic' && v === '1-9') {
+        renderNumbersPick();
+        carousel.goTo('numbers');
+      }
+    },
+  });
 });
 
-updateFractionTypeVisibility();
-updateNumbersVisibility();
+carousel.addSlide('numbers', 'Numbers', () => renderNumbersPick());
+
+carousel.start('category');
 updateStartDisabled();
 updateStartLabel();
 
@@ -775,7 +770,7 @@ async function runDrill() {
   const timeLimit = getTimeLimit();
   const operationsList = [...operations];
   const tablesList = getTablesPool();
-  const fractionTypesList = getCategory() === 'fractions' ? [...fractionTypes] : [];
+  const fractionTypesList = categoryValue === 'fractions' ? [...fractionTypes] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
