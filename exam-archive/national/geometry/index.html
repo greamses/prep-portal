@@ -95,16 +95,15 @@
         <div class="geo-receipt-paper pp-receipt__paper">
           <p class="geo-receipt-title">Drill Settings</p>
 
-          <div class="geo-field">
-            <span>Game Name</span>
-            <input class="geo-name-input" id="geo-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="geo-field" id="geo-section-player">
+            <span>Player</span>
+            <div id="geo-player-carousel"></div>
           </div>
 
-          <div class="geo-field">
-            <span>Your Avatar</span>
-            <div class="sticky-grid geo-avatar-grid" id="geo-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
-            <input type="file" id="geo-avatar-upload-input" accept="image/*" hidden />
-          </div>
+          <!-- Moved into the Player carousel's slides by main.js. -->
+          <input class="geo-name-input" id="geo-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid geo-avatar-grid" id="geo-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="geo-avatar-upload-input" accept="image/*" hidden />
 
           <div class="geo-field" id="geo-section-topic">
             <span>Choose Your Topic</span>

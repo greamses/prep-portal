@@ -11,7 +11,10 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, createSectionFlow, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import {
+  createCarousel, createSectionFlow,
+  renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
+} from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -113,6 +116,7 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('drill-name-input');
 const avatarGrid = $('drill-avatar-grid');
 const avatarUploadInput = $('drill-avatar-upload-input');
+const playerMount = $('drill-player-carousel');
 const topicMount = $('drill-topic-carousel');
 const optionsMount = $('drill-options-carousel');
 const roomMount = $('drill-room-carousel');
@@ -207,17 +211,43 @@ function updateStartLabel() {
   startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
 }
 
-// ── Game name ──────────────────────────────────────────────────────────
+// ── Game name ──────────────────────────────────
 nameInput.value = localStorage.getItem(NAME_KEY) || '';
 nameInput.addEventListener('input', () => localStorage.setItem(NAME_KEY, nameInput.value));
 getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-/* ── SECTION 1 — What to drill ────────────────────────────────────────────
+function myName() {
+  return (nameInput.value || '').trim() || (auth.currentUser && auth.currentUser.displayName) || 'Player';
+}
+
+/* ── SECTION 1 — Player ─────────────────────────────────────────
+   Name → Avatar. The name input and avatar grid are MOVED into the slides
+   rather than re-created, so all their existing wiring still applies. */
+const player = createCarousel(playerMount);
+player.addSlide('name', 'Name', () => {});
+player.addSlide('avatar', 'Avatar', () => {});
+
+renderCustomStep(player, 'name', {
+  title: 'What should we call you?',
+  content: nameInput,
+  nextLabel: 'Next',
+  onNext: () => player.goTo('avatar'),
+});
+renderCustomStep(player, 'avatar', {
+  title: 'Pick your avatar',
+  content: avatarGrid,
+  nextLabel: 'Next',
+  onNext: () => flow.next(), // last step of this section
+});
+
+player.start('name');
+
+/* ── SECTION 2 — What to drill ─────────────────────────────────
    Category → the settings that category actually uses. The three categories
-   genuinely need different things, so none of them shows a step whose value
-   the question generator would ignore:
+   need different things, so none shows a step whose value the generator would
+   ignore:
 
      Basic     → Operations → Number Range (1–100) → [1–9 only: pick numbers]
      Exponent  → Operations → Number Range (1–100)
@@ -227,15 +257,16 @@ getCurrentUser().then((user) => {
    the denominators, so "90–100" would mean fractions over ninety-somethings.
    Switching category resets the whole branch, so nothing stale carries over. */
 const topic = createCarousel(topicMount);
-let operationsEl = null;
-let fractionTypeEl = null;
-let denominatorsEl = null;
-let numbersEl = null;
-let rangeEl = null;
+topic.addSlide('category', 'Category', () => {});
+topic.addSlide('fraction-type', 'Fraction Type', () => {});
+topic.addSlide('operations', 'Operations', () => {});
+topic.addSlide('range', 'Number Range', () => {});
+topic.addSlide('numbers', 'Numbers', () => {});
+topic.addSlide('denominators', 'Denominators', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
-  renderMultiStep(operationsEl, {
+  renderMultiStep(topic, 'operations', {
     title: `Which ${categoryValue} operations?`,
     colorOffset: 3,
     options: CATEGORY_OPERATIONS[categoryValue].map((op) => ({ value: op, label: OPERATION_LABELS[op] })),
@@ -244,7 +275,7 @@ function renderOperationsPick() {
       if (checked) operations.add(v); else operations.delete(v);
       updateStartDisabled();
     },
-    nextLabel: isFractions ? 'Next: Denominators →' : 'Next: Number Range →',
+    nextLabel: 'Next',
     onNext: () => {
       if (isFractions) { renderDenominatorsPick(); topic.goTo('denominators'); return; }
       renderRangePick();
@@ -254,7 +285,7 @@ function renderOperationsPick() {
 }
 
 function renderFractionTypePick() {
-  renderMultiStep(fractionTypeEl, {
+  renderMultiStep(topic, 'fraction-type', {
     title: 'Which fraction type?',
     colorOffset: 9,
     options: FRACTION_TYPES.map((t) => ({ value: t, label: FRACTION_TYPE_LABELS[t] })),
@@ -263,13 +294,13 @@ function renderFractionTypePick() {
       if (checked) fractionTypes.add(v); else fractionTypes.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Operations →',
+    nextLabel: 'Next',
     onNext: () => { renderOperationsPick(); topic.goTo('operations'); },
   });
 }
 
 function renderDenominatorsPick() {
-  renderMultiStep(denominatorsEl, {
+  renderMultiStep(topic, 'denominators', {
     title: 'Which denominators?',
     subtitle: 'Fractions are built from these — keep them small and they stay drillable.',
     grid: true,
@@ -281,13 +312,13 @@ function renderDenominatorsPick() {
       if (checked) denominators.add(n); else denominators.delete(n);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Game Options →',
+    nextLabel: 'Next',
     onNext: () => flow.next(), // last step of this section
   });
 }
 
 function renderRangePick() {
-  renderChoiceStep(rangeEl, {
+  renderChoiceStep(topic, 'range', {
     title: 'Which number range?',
     name: 'drill-range',
     colorOffset: 6,
@@ -304,7 +335,7 @@ function renderRangePick() {
 }
 
 function renderNumbersPick() {
-  renderMultiStep(numbersEl, {
+  renderMultiStep(topic, 'numbers', {
     title: 'Which numbers (1–9)?',
     grid: true,
     colorOffset: 0,
@@ -315,109 +346,92 @@ function renderNumbersPick() {
       if (checked) tables.add(n); else tables.delete(n);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Game Options →',
+    nextLabel: 'Next',
     onNext: () => flow.next(), // last step of this section
   });
 }
 
-topic.addSlide('category', 'Category', (el) => {
-  renderChoiceStep(el, {
-    title: 'What category?',
-    name: 'drill-category',
-    options: [
-      { value: 'basic', label: 'Basic', checked: true },
-      { value: 'exponent', label: 'Exponent' },
-      { value: 'fractions', label: 'Fractions' },
-    ],
-    onPick: (v) => {
-      categoryValue = v;
-      // Reset the whole branch — a range picked under Basic must not survive
-      // into Exponent (whose ranges only go to 20) or Fractions (no range).
-      operations.clear();
-      CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
-      fractionTypes.clear();
-      tables.clear();
-      range = 'all';
-      denominators.clear();
-      DENOMINATORS.forEach((n) => denominators.add(n));
-      updateStartDisabled();
+renderChoiceStep(topic, 'category', {
+  title: 'What category?',
+  name: 'drill-category',
+  options: [
+    { value: 'basic', label: 'Basic', checked: true },
+    { value: 'exponent', label: 'Exponent' },
+    { value: 'fractions', label: 'Fractions' },
+  ],
+  onPick: (v) => {
+    categoryValue = v;
+    // Reset the whole branch — a range picked under Basic must not survive into
+    // Fractions (which has no range at all).
+    operations.clear();
+    CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
+    fractionTypes.clear();
+    tables.clear();
+    range = 'all';
+    denominators.clear();
+    DENOMINATORS.forEach((n) => denominators.add(n));
+    updateStartDisabled();
 
-      if (v === 'fractions') {
-        renderFractionTypePick();
-        topic.goTo('fraction-type');
-      } else {
-        renderOperationsPick();
-        topic.goTo('operations');
-      }
-    },
-  });
+    if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
+    else { renderOperationsPick(); topic.goTo('operations'); }
+  },
 });
-
-topic.addSlide('fraction-type', 'Fraction Type', (el) => { fractionTypeEl = el; });
-topic.addSlide('operations', 'Operations', (el) => { operationsEl = el; });
-topic.addSlide('range', 'Number Range', (el) => { rangeEl = el; });
-topic.addSlide('numbers', 'Numbers', (el) => { numbersEl = el; });
-topic.addSlide('denominators', 'Denominators', (el) => { denominatorsEl = el; });
 
 topic.start('category');
 
-/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+/* ── SECTION 3 — Game Options ─────────────────────────────────
    Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
 const options = createCarousel(optionsMount);
+options.addSlide('mode', 'Mode', () => {});
+options.addSlide('size', 'Room Size', () => {});
+options.addSlide('time', 'Time Limit', () => {});
 
-options.addSlide('mode', 'Mode', (el) => {
-  renderChoiceStep(el, {
-    title: 'How do you want to play?',
-    name: 'drill-mode',
-    options: [
-      { value: 'multiplayer', label: 'Multiplayer', checked: true },
-      { value: 'versus', label: 'Versus (1v1)' },
-    ],
-    onPick: (v) => {
-      mode = v;
-      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
-      renderRoomEntry();
-      roomCarousel.start('entry');
-      codeInput.hidden = roomAction !== 'join';
-      updateStartLabel();
-      options.goTo(mode === 'versus' ? 'time' : 'size');
-    },
-  });
+renderChoiceStep(options, 'mode', {
+  title: 'How do you want to play?',
+  name: 'drill-mode',
+  options: [
+    { value: 'multiplayer', label: 'Multiplayer', checked: true },
+    { value: 'versus', label: 'Versus (1v1)' },
+  ],
+  onPick: (v) => {
+    mode = v;
+    if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    renderRoomEntry();
+    roomCarousel.start('entry');
+    codeInput.hidden = roomAction !== 'join';
+    updateStartLabel();
+    options.goTo(mode === 'versus' ? 'time' : 'size');
+  },
 });
-
-options.addSlide('size', 'Room Size', (el) => {
-  renderChoiceStep(el, {
-    title: 'How many players?',
-    name: 'drill-size',
-    colorOffset: 2,
-    options: [
-      { value: '5', label: '5 players', checked: true },
-      { value: '10', label: '10 players' },
-    ],
-    onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
-  });
+renderChoiceStep(options, 'size', {
+  title: 'How many players?',
+  name: 'drill-size',
+  colorOffset: 2,
+  options: [
+    { value: '5', label: '5 players', checked: true },
+    { value: '10', label: '10 players' },
+  ],
+  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
 });
-
-options.addSlide('time', 'Time Limit', (el) => {
-  renderChoiceStep(el, {
-    title: 'How long is the round?',
-    name: 'drill-time',
-    colorOffset: 4,
-    options: [
-      { value: '30', label: '30s' },
-      { value: '60', label: '60s', checked: true },
-      { value: '90', label: '90s' },
-      { value: '120', label: '120s' },
-    ],
-    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
-  });
+renderChoiceStep(options, 'time', {
+  title: 'How long is the round?',
+  name: 'drill-time',
+  colorOffset: 4,
+  options: [
+    { value: '30', label: '30s' },
+    { value: '60', label: '60s', checked: true },
+    { value: '90', label: '90s' },
+    { value: '120', label: '120s' },
+  ],
+  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
 
-/* ── SECTION 3 — Room ─────────────────────────────────────────────────── */
+/* ── SECTION 4 — Room ─────────────────────────────────────── */
 const roomCarousel = createCarousel(roomMount);
-let roomEntryEl = null;
+roomCarousel.addSlide('entry', 'Room', () => {});
+roomCarousel.addSlide('code', 'Code', () => {});
 
 function renderRoomEntry() {
   const choices =
@@ -432,7 +446,7 @@ function renderRoomEntry() {
           { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
         ];
 
-  renderChoiceStep(roomEntryEl, {
+  renderChoiceStep(roomCarousel, 'entry', {
     title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
     name: 'drill-room-action',
     colorOffset: 2,
@@ -446,37 +460,52 @@ function renderRoomEntry() {
   });
 }
 
-roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
-roomCarousel.addSlide('code', 'Code', (el) =>
-  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+renderCustomStep(roomCarousel, 'code', {
+  title: 'Enter the room code',
+  subtitle: 'The 6-character code your friend shared.',
+  content: codeInput,
+});
 
 renderRoomEntry();
 roomCarousel.start('entry');
 
-/* ── One selector on screen at a time ─────────────────────────────────── */
+/* ── One selector on screen at a time ───────────────────────── */
+const opName = (o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ') || o;
 const flow = createSectionFlow([
   {
+    el: $('drill-section-player'),
+    chips: () => [{ label: myName(), avatar: avatarUrl(selectedAvatarSeed) }],
+  },
+  {
     el: $('drill-section-topic'),
-    summary: () => {
-      const ops = [...operations].map((o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ')).join(', ');
+    chips: () => {
       const cat = categoryValue[0].toUpperCase() + categoryValue.slice(1);
-      if (categoryValue === 'fractions') return `${cat} · ${ops || 'no ops'} · ${denominators.size} denominators`;
-      const r = RANGES.find((x) => x.key === range);
-      const scope = isNumbersMode() ? `${tables.size} numbers` : (r ? r.label : range);
-      return `${cat} · ${ops || 'no ops'} · ${scope}`;
+      const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
+      if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
+      else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
+      else {
+        const r = RANGES.find((x) => x.key === range);
+        out.push({ label: r ? r.label : range });
+      }
+      return out;
     },
   },
   {
     el: $('drill-section-options'),
-    summary: () =>
-      mode === 'versus' ? `Versus 1v1 · ${timeLimit}s` : `Multiplayer · ${roomSize} players · ${timeLimit}s`,
+    chips: () =>
+      mode === 'versus'
+        ? [{ label: 'Versus 1v1' }, { label: `${timeLimit}s` }]
+        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit}s` }],
   },
   {
     el: $('drill-section-room'),
-    summary: () =>
-      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    chips: () => [{
+      label: roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    }],
   },
-]);
+], {
+  onChange: (_i, isLast) => { startBtn.hidden = !isLast; },
+});
 
 updateStartDisabled();
 updateStartLabel();

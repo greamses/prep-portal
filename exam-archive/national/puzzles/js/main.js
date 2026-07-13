@@ -13,7 +13,10 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, createSectionFlow, renderChoiceStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import {
+  createCarousel, createSectionFlow,
+  renderChoiceStep, renderCustomStep, renderComingSoon,
+} from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -74,6 +77,7 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('puzzle-name-input');
 const avatarGrid = $('puzzle-avatar-grid');
 const avatarUploadInput = $('puzzle-avatar-upload-input');
+const playerMount = $('puzzle-player-carousel');
 const topicMount = $('puzzle-topic-carousel');
 const optionsMount = $('puzzle-options-carousel');
 const roomMount = $('puzzle-room-carousel');
@@ -140,17 +144,45 @@ function updateStartLabel() {
   startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
 }
 
-/* ── SECTION 1 — Puzzle ───────────────────────────────────────────────────
+function myName() {
+  return (nameInput.value || '').trim() || (auth.currentUser && auth.currentUser.displayName) || 'Player';
+}
+
+/* ── SECTION 1 — Player ─────────────────────────────────────────
+   Name → Avatar. The name input and avatar grid are MOVED into the slides
+   rather than re-created, so all their existing wiring still applies. */
+const player = createCarousel(playerMount);
+player.addSlide('name', 'Name', () => {});
+player.addSlide('avatar', 'Avatar', () => {});
+
+renderCustomStep(player, 'name', {
+  title: 'What should we call you?',
+  content: nameInput,
+  nextLabel: 'Next',
+  onNext: () => player.goTo('avatar'),
+});
+renderCustomStep(player, 'avatar', {
+  title: 'Pick your avatar',
+  content: avatarGrid,
+  nextLabel: 'Next',
+  onNext: () => flow.next(), // last step of this section
+});
+
+player.start('name');
+
+/* ── SECTION 2 — Puzzle ─────────────────────────────────────────
    Puzzle → Grid Size → Difficulty. Grid Size is genuinely puzzle-specific:
-   Sudoku's boxes only divide evenly at 4/6/9, Slider is the classic 3/4/5 —
-   so the step is rebuilt per puzzle rather than offering sizes the chosen
-   puzzle can't even use. Switching puzzle resets the grid to that puzzle's
-   own default, so a 9×9 pick can't survive into Slider. ─────────────────── */
+   Sudoku's boxes only divide evenly at 4/6/9, Slider is the classic 3/4/5 — so
+   the step is rebuilt per puzzle rather than offering sizes the chosen puzzle
+   can't use. Switching puzzle resets the grid to that puzzle's own default, so
+   a 9×9 pick can't survive into Slider. */
 const topic = createCarousel(topicMount);
-let gridSizeEl = null;
+topic.addSlide('type', 'Puzzle', () => {});
+topic.addSlide('grid-size', 'Grid Size', () => {});
+topic.addSlide('difficulty', 'Difficulty', () => {});
 
 function renderGridSizePick() {
-  renderChoiceStep(gridSizeEl, {
+  renderChoiceStep(topic, 'grid-size', {
     title: 'Grid size?',
     name: 'puzzle-grid-size',
     colorOffset: 4,
@@ -161,99 +193,90 @@ function renderGridSizePick() {
   });
 }
 
-topic.addSlide('type', 'Puzzle', (el) => {
-  renderChoiceStep(el, {
-    title: 'Which puzzle?',
-    name: 'puzzle-type',
-    options: [
-      { value: 'sudoku', label: 'Sudoku', checked: true },
-      { value: 'slider', label: 'Slider' },
-    ],
-    onPick: (v) => {
-      puzzleType = v;
-      gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
-      renderGridSizePick();
-      topic.goTo('grid-size');
-    },
-  });
+renderChoiceStep(topic, 'type', {
+  title: 'Which puzzle?',
+  name: 'puzzle-type',
+  options: [
+    { value: 'sudoku', label: 'Sudoku', checked: true },
+    { value: 'slider', label: 'Slider' },
+  ],
+  onPick: (v) => {
+    puzzleType = v;
+    gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
+    renderGridSizePick();
+    topic.goTo('grid-size');
+  },
 });
 
-topic.addSlide('grid-size', 'Grid Size', (el) => { gridSizeEl = el; });
 renderGridSizePick();
 
-topic.addSlide('difficulty', 'Difficulty', (el) => {
-  renderChoiceStep(el, {
-    title: 'Difficulty?',
-    name: 'puzzle-difficulty',
-    colorOffset: 1,
-    options: [
-      { value: 'easy', label: 'Easy', checked: true },
-      { value: 'medium', label: 'Medium' },
-      { value: 'hard', label: 'Hard' },
-    ],
-    onPick: (v) => { difficulty = v; flow.next(); }, // last step of this section
-  });
+renderChoiceStep(topic, 'difficulty', {
+  title: 'Difficulty?',
+  name: 'puzzle-difficulty',
+  colorOffset: 1,
+  options: [
+    { value: 'easy', label: 'Easy', checked: true },
+    { value: 'medium', label: 'Medium' },
+    { value: 'hard', label: 'Hard' },
+  ],
+  onPick: (v) => { difficulty = v; flow.next(); }, // last step of this section
 });
 
 topic.start('type');
 
-/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+/* ── SECTION 3 — Game Options ─────────────────────────────────
    Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
 const options = createCarousel(optionsMount);
+options.addSlide('mode', 'Mode', () => {});
+options.addSlide('size', 'Room Size', () => {});
+options.addSlide('time', 'Time Limit', () => {});
 
-options.addSlide('mode', 'Mode', (el) => {
-  renderChoiceStep(el, {
-    title: 'How do you want to play?',
-    name: 'puzzle-mode',
-    options: [
-      { value: 'multiplayer', label: 'Multiplayer', checked: true },
-      { value: 'versus', label: 'Versus (1v1)' },
-    ],
-    onPick: (v) => {
-      mode = v;
-      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
-      renderRoomEntry();
-      roomCarousel.start('entry');
-      codeInput.hidden = roomAction !== 'join';
-      updateStartLabel();
-      options.goTo(mode === 'versus' ? 'time' : 'size');
-    },
-  });
+renderChoiceStep(options, 'mode', {
+  title: 'How do you want to play?',
+  name: 'puzzle-mode',
+  options: [
+    { value: 'multiplayer', label: 'Multiplayer', checked: true },
+    { value: 'versus', label: 'Versus (1v1)' },
+  ],
+  onPick: (v) => {
+    mode = v;
+    if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    renderRoomEntry();
+    roomCarousel.start('entry');
+    codeInput.hidden = roomAction !== 'join';
+    updateStartLabel();
+    options.goTo(mode === 'versus' ? 'time' : 'size');
+  },
 });
-
-options.addSlide('size', 'Room Size', (el) => {
-  renderChoiceStep(el, {
-    title: 'How many players?',
-    name: 'puzzle-size',
-    colorOffset: 2,
-    options: [
-      { value: '5', label: '5 players', checked: true },
-      { value: '10', label: '10 players' },
-    ],
-    onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
-  });
+renderChoiceStep(options, 'size', {
+  title: 'How many players?',
+  name: 'puzzle-size',
+  colorOffset: 2,
+  options: [
+    { value: '5', label: '5 players', checked: true },
+    { value: '10', label: '10 players' },
+  ],
+  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
 });
-
-options.addSlide('time', 'Time Limit', (el) => {
-  renderChoiceStep(el, {
-    title: 'How long is the round?',
-    name: 'puzzle-time',
-    colorOffset: 4,
-    options: [
-      { value: '180', label: '3 min' },
-      { value: '300', label: '5 min', checked: true },
-      { value: '600', label: '10 min' },
-      { value: '900', label: '15 min' },
-    ],
-    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
-  });
+renderChoiceStep(options, 'time', {
+  title: 'How long is the round?',
+  name: 'puzzle-time',
+  colorOffset: 4,
+  options: [
+    { value: '180', label: '3 min' },
+    { value: '300', label: '5 min', checked: true },
+    { value: '600', label: '10 min' },
+    { value: '900', label: '15 min' },
+  ],
+  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
 
-/* ── SECTION 3 — Room ─────────────────────────────────────────────────── */
+/* ── SECTION 4 — Room ─────────────────────────────────────── */
 const roomCarousel = createCarousel(roomMount);
-let roomEntryEl = null;
+roomCarousel.addSlide('entry', 'Room', () => {});
+roomCarousel.addSlide('code', 'Code', () => {});
 
 function renderRoomEntry() {
   const choices =
@@ -268,7 +291,7 @@ function renderRoomEntry() {
           { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
         ];
 
-  renderChoiceStep(roomEntryEl, {
+  renderChoiceStep(roomCarousel, 'entry', {
     title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
     name: 'puzzle-room-action',
     colorOffset: 2,
@@ -282,38 +305,45 @@ function renderRoomEntry() {
   });
 }
 
-roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
-roomCarousel.addSlide('code', 'Code', (el) =>
-  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+renderCustomStep(roomCarousel, 'code', {
+  title: 'Enter the room code',
+  subtitle: 'The 6-character code your friend shared.',
+  content: codeInput,
+});
 
 renderRoomEntry();
 roomCarousel.start('entry');
 
-/* ── One selector on screen at a time ─────────────────────────────────── */
+/* ── One selector on screen at a time ───────────────────────── */
 const flow = createSectionFlow([
   {
+    el: $('puzzle-section-player'),
+    chips: () => [{ label: myName(), avatar: avatarUrl(selectedAvatarSeed) }],
+  },
+  {
     el: $('puzzle-section-topic'),
-    summary: () => {
-      const name = puzzleType[0].toUpperCase() + puzzleType.slice(1);
-      const diff = difficulty[0].toUpperCase() + difficulty.slice(1);
-      return `${name} · ${gridSize}×${gridSize} · ${diff}`;
-    },
+    chips: () => [
+      { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
+      { label: `${gridSize}×${gridSize}` },
+      { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
+    ],
   },
   {
     el: $('puzzle-section-options'),
-    summary: () => {
-      const mins = timeLimit / 60;
-      return mode === 'versus'
-        ? `Versus 1v1 · ${mins} min`
-        : `Multiplayer · ${roomSize} players · ${mins} min`;
-    },
+    chips: () =>
+      mode === 'versus'
+        ? [{ label: 'Versus 1v1' }, { label: `${timeLimit / 60} min` }]
+        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit / 60} min` }],
   },
   {
     el: $('puzzle-section-room'),
-    summary: () =>
-      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    chips: () => [{
+      label: roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    }],
   },
-]);
+], {
+  onChange: (_i, isLast) => { startBtn.hidden = !isLast; },
+});
 
 updateStartLabel();
 

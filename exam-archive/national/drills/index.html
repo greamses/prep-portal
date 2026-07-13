@@ -92,16 +92,15 @@
         <div class="drill-receipt-paper pp-receipt__paper">
           <p class="drill-receipt-title">Drill Settings</p>
 
-          <div class="drill-field">
-            <span>Game Name</span>
-            <input class="drill-name-input" id="drill-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="drill-field" id="drill-section-player">
+            <span>Player</span>
+            <div id="drill-player-carousel"></div>
           </div>
 
-          <div class="drill-field">
-            <span>Your Avatar</span>
-            <div class="sticky-grid drill-avatar-grid" id="drill-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
-            <input type="file" id="drill-avatar-upload-input" accept="image/*" hidden />
-          </div>
+          <!-- Moved into the Player carousel's slides by main.js. -->
+          <input class="drill-name-input" id="drill-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid drill-avatar-grid" id="drill-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="drill-avatar-upload-input" accept="image/*" hidden />
 
           <div class="drill-field" id="drill-section-topic">
             <span>Choose What to Drill</span>

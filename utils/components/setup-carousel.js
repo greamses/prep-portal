@@ -1,17 +1,19 @@
 /* ═══════════════════════════════════════════════════════
    SETUP CAROUSEL — shared step-by-step wizard for the setup screens on
-   Drills/Puzzles/Geometry. Each page keeps its own state (Sets, category
-   variables) and matchmaking wiring; this module only owns the "show one
-   step at a time, Back to revisit, auto-advance on single-choice" mechanics
-   and a few small option-list renderers built on the existing
-   .pp-sticky.sticky-choice look.
+   Drills/Puzzles/Geometry. Each page keeps its own state and matchmaking
+   wiring; this module owns "show one step at a time" and the navigation.
 
-   createCarousel(mountEl) — stack-based history (not a fixed-order strip),
-   so a branching tree (see Geometry's topic tree) works the same as a
-   plain linear sequence (Drills/Puzzles): goTo(id) pushes, back() pops.
+   Navigation lives on the CAROUSEL, not inside each slide: a nav row under
+   the stage carries a Back arrow (hidden on the first step) and a Skip/Next
+   arrow (accepts whatever is currently selected and moves on). Slides
+   register their forward action with setAction() — the render helpers below
+   do that for you.
 ═══════════════════════════════════════════════════════ */
 
 let uid = 0;
+
+const ARROW_L = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`;
+const ARROW_R = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`;
 
 export function createCarousel(mountEl) {
   mountEl.classList.add('pp-carousel');
@@ -25,14 +27,23 @@ export function createCarousel(mountEl) {
   stageEl.className = 'pp-carousel-stage';
   mountEl.appendChild(stageEl);
 
+  const navEl = document.createElement('div');
+  navEl.className = 'pp-carousel-nav';
+  mountEl.appendChild(navEl);
+
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
-  backBtn.className = 'pp-carousel-back';
-  backBtn.textContent = '← Back';
-  backBtn.hidden = true;
-  mountEl.appendChild(backBtn);
+  backBtn.className = 'pp-nav-btn pp-nav-btn--back pp-sticky pp-sticky--tape';
+  backBtn.innerHTML = `${ARROW_L}<span>Back</span>`;
+  navEl.appendChild(backBtn);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'pp-nav-btn pp-nav-btn--next pp-sticky pp-sticky--tape';
+  navEl.appendChild(nextBtn);
 
   const slides = new Map(); // id -> { el, label }
+  const actions = new Map(); // id -> { label, onNext }
   const stack = [];
 
   function render(direction) {
@@ -46,13 +57,20 @@ export function createCarousel(mountEl) {
         s.el.classList.add(direction === 'back' ? 'pp-carousel-slide--in-l' : 'pp-carousel-slide--in-r');
       }
     });
+
     crumbEl.innerHTML = stack
       .map((id, i) => {
         const label = (slides.get(id) || {}).label || '';
         return i === stack.length - 1 ? `<span class="pp-carousel-crumb-cur">${label}</span>` : `<span>${label}</span>`;
       })
       .join(' <span class="pp-carousel-crumb-sep">/</span> ');
+
     backBtn.hidden = stack.length <= 1;
+
+    const action = actions.get(currentId);
+    nextBtn.hidden = !action;
+    if (action) nextBtn.innerHTML = `<span>${action.label || 'Next'}</span>${ARROW_R}`;
+    navEl.hidden = backBtn.hidden && nextBtn.hidden;
   }
 
   function addSlide(id, label, buildFn) {
@@ -63,6 +81,19 @@ export function createCarousel(mountEl) {
     if (buildFn) buildFn(el);
     return el;
   }
+
+  // The forward action for a slide. The nav's Skip/Next arrow runs it, which
+  // is how "keep what's selected and move on" works without touching an option.
+  function setAction(id, action) {
+    if (action) actions.set(id, action);
+    else actions.delete(id);
+    if (stack[stack.length - 1] === id) render('fwd');
+  }
+
+  nextBtn.addEventListener('click', () => {
+    const action = actions.get(stack[stack.length - 1]);
+    if (action && action.onNext) action.onNext();
+  });
 
   function getEl(id) {
     const s = slides.get(id);
@@ -88,69 +119,53 @@ export function createCarousel(mountEl) {
   }
   backBtn.addEventListener('click', back);
 
-  return { addSlide, getEl, goTo, start, back, current: () => stack[stack.length - 1] };
+  return { addSlide, setAction, getEl, goTo, start, back, current: () => stack[stack.length - 1] };
 }
 
-// Single-select: clicking an option immediately calls onPick(value) — no
-// explicit "Next" needed since only one choice makes sense.
-export function renderChoiceStep(container, { title, subtitle, name, options, colorOffset = 0, onPick }) {
+/* Single-select. Picking an option advances immediately; the nav's Skip arrow
+   advances with whatever is already selected. */
+export function renderChoiceStep(carousel, id, { title, subtitle, name, options, colorOffset = 0, onPick, skipLabel }) {
+  const container = carousel.getEl(id);
   container.innerHTML = '';
-  if (title) {
-    const h = document.createElement('p');
-    h.className = 'pp-carousel-title';
-    h.textContent = title;
-    container.appendChild(h);
-  }
-  if (subtitle) {
-    const p = document.createElement('p');
-    p.className = 'pp-carousel-subtitle';
-    p.textContent = subtitle;
-    container.appendChild(p);
-  }
+  addHeading(container, title, subtitle);
+
   const wrap = document.createElement('div');
   wrap.className = 'pp-carousel-choices sticky-row';
   const groupName = name || `pp-carousel-choice-${++uid}`;
+
   options.forEach((opt, i) => {
     const disabled = !!opt.disabled;
     const label = document.createElement('label');
     label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(colorOffset + i) % 6}${disabled ? ' is-disabled' : ''}`;
     label.innerHTML = `<input type="radio" name="${groupName}" value="${opt.value}" ${opt.checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
     if (!disabled) {
-      // 'click' on the INPUT — deliberately not 'change', and deliberately not
-      // on the label:
-      //   · 'change' never fires for an already-checked radio (a pre-selected
-      //     default), which would strand you on a step whose default is the
-      //     answer you wanted.
-      //   · a listener on the LABEL fires twice, because clicking a label also
-      //     forwards a synthetic click to its control, which bubbles back up
-      //     through the label. Handlers that aren't idempotent (advancing a
-      //     step) would then skip one.
-      // A click on the input fires exactly once whether you hit the label or
-      // the radio itself.
+      // 'click' on the INPUT — deliberately not 'change' (never fires for an
+      // already-checked radio, so a pre-selected default would strand you), and
+      // deliberately not on the label (clicking a label ALSO forwards a click to
+      // its control, which bubbles back through the label — firing twice).
       label.querySelector('input').addEventListener('click', () => onPick(opt.value));
     }
     wrap.appendChild(label);
   });
   container.appendChild(wrap);
+
+  // Skip = accept the current selection and move on.
+  carousel.setAction(id, {
+    label: skipLabel || 'Skip',
+    onNext: () => {
+      const checked = wrap.querySelector('input:checked');
+      onPick(checked ? checked.value : options.find((o) => !o.disabled).value);
+    },
+  });
 }
 
-// Multi-select checkboxes. An explicit Next button (when onNext is given)
-// since — unlike a single choice — the user may want to tick more than one
-// before moving on.
-export function renderMultiStep(container, { title, subtitle, options, isChecked, onToggle, colorOffset = 0, grid = false, nextLabel, onNext }) {
+/* Multi-select. There's nothing to auto-advance on, so the nav arrow is the
+   only way forward — it doubles as the Skip (keep the ticked defaults). */
+export function renderMultiStep(carousel, id, { title, subtitle, options, isChecked, onToggle, colorOffset = 0, grid = false, nextLabel, onNext }) {
+  const container = carousel.getEl(id);
   container.innerHTML = '';
-  if (title) {
-    const h = document.createElement('p');
-    h.className = 'pp-carousel-title';
-    h.textContent = title;
-    container.appendChild(h);
-  }
-  if (subtitle) {
-    const p = document.createElement('p');
-    p.className = 'pp-carousel-subtitle';
-    p.textContent = subtitle;
-    container.appendChild(p);
-  }
+  addHeading(container, title, subtitle);
+
   const wrap = document.createElement('div');
   wrap.className = `pp-carousel-choices ${grid ? 'sticky-grid' : 'sticky-row'}`;
   options.forEach((opt, i) => {
@@ -165,40 +180,63 @@ export function renderMultiStep(container, { title, subtitle, options, isChecked
   });
   container.appendChild(wrap);
 
-  if (onNext) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pp-carousel-next-btn';
-    btn.textContent = nextLabel || 'Next →';
-    btn.addEventListener('click', onNext);
-    container.appendChild(btn);
+  carousel.setAction(id, onNext ? { label: nextLabel || 'Next', onNext } : null);
+}
+
+/* A slide holding arbitrary DOM (the name field, the avatar grid…). */
+export function renderCustomStep(carousel, id, { title, subtitle, content, nextLabel, onNext }) {
+  const container = carousel.getEl(id);
+  container.innerHTML = '';
+  addHeading(container, title, subtitle);
+  container.appendChild(content);
+  carousel.setAction(id, onNext ? { label: nextLabel || 'Next', onNext } : null);
+}
+
+export function renderComingSoon(carousel, id, { title, message }) {
+  const container = carousel.getEl(id);
+  container.innerHTML = '';
+  if (title) addHeading(container, title);
+  const p = document.createElement('p');
+  p.className = 'pp-carousel-comingsoon';
+  p.textContent = message || 'Coming soon.';
+  container.appendChild(p);
+  carousel.setAction(id, null);
+}
+
+function addHeading(container, title, subtitle) {
+  if (title) {
+    const h = document.createElement('p');
+    h.className = 'pp-carousel-title';
+    h.textContent = title;
+    container.appendChild(h);
+  }
+  if (subtitle) {
+    const p = document.createElement('p');
+    p.className = 'pp-carousel-subtitle';
+    p.textContent = subtitle;
+    container.appendChild(p);
   }
 }
 
 /* ── SECTION FLOW ────────────────────────────────────────────────────────
-   Keeps the setup screen to ONE selector on screen at a time. Each section
-   still owns its own carousel (they're independent flows, not one merged
-   sequence) — this only controls which section is *showing*:
+   Keeps the setup to ONE selector on screen. Each section still owns its own
+   carousel; this only decides which one is showing. A finished section
+   collapses to its picks rendered as sticky notes (click to reopen).
 
-     · the section you're on renders its carousel
-     · sections you've finished collapse to a one-line summary + Edit
-     · sections you haven't reached yet stay hidden
-
-   `sections` is [{ el, summary: () => string }] in order. `el` is the wrapper
-   holding that section's label + carousel mount. Call next() when a section's
-   flow reaches its last step. ─────────────────────────────────────────────── */
-export function createSectionFlow(sections) {
+   `sections` is [{ el, chips: () => [{ label, avatar? }] }] in order.
+   `onChange(activeIndex, isLast)` fires on every move — used to keep the
+   Start button hidden until the final step. ─────────────────────────────── */
+export function createSectionFlow(sections, { onChange } = {}) {
   let active = 0;
 
   sections.forEach((s, i) => {
     s.el.classList.add('pp-section');
-
-    const summary = document.createElement('button');
-    summary.type = 'button';
-    summary.className = 'pp-section-summary';
-    summary.addEventListener('click', () => { active = i; render(); });
-    s.el.appendChild(summary);
-    s.summaryEl = summary;
+    const recap = document.createElement('button');
+    recap.type = 'button';
+    recap.className = 'pp-section-recap';
+    recap.addEventListener('click', () => { active = i; render(); });
+    s.el.appendChild(recap);
+    s.recapEl = recap;
   });
 
   function render() {
@@ -207,31 +245,27 @@ export function createSectionFlow(sections) {
       s.el.classList.toggle('is-active', i === active);
       s.el.classList.toggle('is-done', done);
       s.el.classList.toggle('is-pending', i > active);
-      if (done) s.summaryEl.innerHTML = `<span>${s.summary()}</span><em>Edit</em>`;
+      if (!done) return;
+
+      s.recapEl.innerHTML = '';
+      (s.chips() || []).forEach((chip, n) => {
+        const note = document.createElement('span');
+        note.className = `pp-recap-note pp-sticky pp-sticky--tape pp-sticky--c${n % 6}`;
+        note.innerHTML = chip.avatar
+          ? `<img src="${chip.avatar}" alt="" /><span>${chip.label}</span>`
+          : `<span>${chip.label}</span>`;
+        s.recapEl.appendChild(note);
+      });
     });
+    if (onChange) onChange(active, active === sections.length - 1);
   }
 
   render();
 
   return {
-    next() {
-      if (active < sections.length - 1) { active += 1; render(); }
-    },
+    next() { if (active < sections.length - 1) { active += 1; render(); } },
     goTo(i) { active = Math.max(0, Math.min(i, sections.length - 1)); render(); },
     refresh: render,
+    isLast: () => active === sections.length - 1,
   };
-}
-
-export function renderComingSoon(container, { title, message }) {
-  container.innerHTML = '';
-  if (title) {
-    const h = document.createElement('p');
-    h.className = 'pp-carousel-title';
-    h.textContent = title;
-    container.appendChild(h);
-  }
-  const p = document.createElement('p');
-  p.className = 'pp-carousel-comingsoon';
-  p.textContent = message || 'Coming soon.';
-  container.appendChild(p);
 }

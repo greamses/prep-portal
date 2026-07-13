@@ -94,16 +94,15 @@
         <div class="puzzle-receipt-paper pp-receipt__paper">
           <p class="puzzle-receipt-title">Puzzle Settings</p>
 
-          <div class="puzzle-field">
-            <span>Game Name</span>
-            <input class="puzzle-name-input" id="puzzle-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="puzzle-field" id="puzzle-section-player">
+            <span>Player</span>
+            <div id="puzzle-player-carousel"></div>
           </div>
 
-          <div class="puzzle-field">
-            <span>Your Avatar</span>
-            <div class="sticky-grid puzzle-avatar-grid" id="puzzle-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
-            <input type="file" id="puzzle-avatar-upload-input" accept="image/*" hidden />
-          </div>
+          <!-- Moved into the Player carousel's slides by main.js. -->
+          <input class="puzzle-name-input" id="puzzle-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid puzzle-avatar-grid" id="puzzle-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="puzzle-avatar-upload-input" accept="image/*" hidden />
 
           <div class="puzzle-field" id="puzzle-section-topic">
             <span>Choose Your Puzzle</span>

@@ -15,7 +15,10 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, createSectionFlow, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import {
+  createCarousel, createSectionFlow,
+  renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
+} from '/utils/components/setup-carousel.js';
 
 const REGULAR_SHAPES = ['triangle', 'square', 'rectangle'];
 
@@ -69,6 +72,7 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 const nameInput = $('geo-name-input');
 const avatarGrid = $('geo-avatar-grid');
 const avatarUploadInput = $('geo-avatar-upload-input');
+const playerMount = $('geo-player-carousel');
 const topicMount = $('geo-topic-carousel');
 const optionsMount = $('geo-options-carousel');
 const roomMount = $('geo-room-carousel');
@@ -152,34 +156,63 @@ function updateStartLabel() {
   startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
 }
 
-// ── Game name ──────────────────────────────────────────────────────────
+// ── Game name ──────────────────────────────────
 nameInput.value = localStorage.getItem(NAME_KEY) || '';
 nameInput.addEventListener('input', () => localStorage.setItem(NAME_KEY, nameInput.value));
 getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
 });
 
-/* ── SECTION 1 — Topic ────────────────────────────────────────────────────
+function myName() {
+  return (nameInput.value || '').trim() || (auth.currentUser && auth.currentUser.displayName) || 'Player';
+}
+
+/* ── SECTION 1 — Player ─────────────────────────────────────────
+   Name → Avatar. The name input and avatar grid are MOVED into the slides
+   rather than re-created, so all their existing wiring still applies. */
+const player = createCarousel(playerMount);
+player.addSlide('name', 'Name', () => {});
+player.addSlide('avatar', 'Avatar', () => {});
+
+renderCustomStep(player, 'name', {
+  title: 'What should we call you?',
+  content: nameInput,
+  nextLabel: 'Next',
+  onNext: () => player.goTo('avatar'),
+});
+renderCustomStep(player, 'avatar', {
+  title: 'Pick your avatar',
+  content: avatarGrid,
+  nextLabel: 'Next',
+  onNext: () => flow.next(), // last step of this section
+});
+
+player.start('name');
+
+/* ── SECTION 2 — Topic ─────────────────────────────────────────
    Lines/Angles/Shapes → 2D/3D → Polygons/Curved Shapes → the leaf pickers.
    Only the Shapes → 2D branch has real content today; every other branch is a
-   "coming soon" leaf so the tree is honest about what's actually gradeable
-   (see rng.js — Lines/Angles/3D/Nets/Chord have no question generator).
+   "coming soon" leaf so the tree is honest about what's actually gradeable.
 
    The two branches genuinely need DIFFERENT settings, so neither one shows a
    step the other's questions would ignore:
      curved   → Given (radius/diameter) → Radius, multiples of 7 (pi = 22/7)
      polygons → no Given at all         → Side lengths, plain 3–20
    Entering a branch resets shapes/given/lengths to that branch's own defaults,
-   so a setting picked on one branch can never leak into the other. ────────── */
+   so a setting picked on one branch can never leak into the other. */
 const topic = createCarousel(topicMount);
-let regularPickEl = null;
-let curvedPickEl = null;
-let givenPickEl = null;
-let lengthsPickEl = null;
+['topic', 'soon-lines', 'soon-angles', 'shapes-dim', 'soon-3d', 'kind-2d',
+ 'regularity', 'soon-irregular', 'regular-pick', 'curved-pick', 'given', 'lengths']
+  .forEach((id) => topic.addSlide(id, {
+    topic: 'Topic', 'soon-lines': 'Lines', 'soon-angles': 'Angles', 'shapes-dim': '2D/3D',
+    'soon-3d': '3D Shapes', 'kind-2d': 'Polygons/Curved', regularity: 'Regular/Irregular',
+    'soon-irregular': 'Irregular', 'regular-pick': 'Regular Shapes',
+    'curved-pick': 'Curved Shapes', given: 'Given', lengths: 'Lengths',
+  }[id], () => {}));
 
 function renderLengthsPick() {
   const curved = isCurvedBranch();
-  renderMultiStep(lengthsPickEl, {
+  renderMultiStep(topic, 'lengths', {
     title: curved ? 'Radius (cm)' : 'Side lengths (cm)',
     subtitle: curved
       ? 'Multiples of 7, so pi = 22/7 always cancels cleanly.'
@@ -193,7 +226,7 @@ function renderLengthsPick() {
       if (checked) lengths.add(n); else lengths.delete(n);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Game Options →',
+    nextLabel: 'Next',
     onNext: () => flow.next(), // last step of this section
   });
 }
@@ -222,7 +255,7 @@ function enterBranch(kind) {
 }
 
 function renderRegularPick() {
-  renderMultiStep(regularPickEl, {
+  renderMultiStep(topic, 'regular-pick', {
     title: 'Which regular shapes?',
     colorOffset: 0,
     options: REGULAR_SHAPES.map((s) => ({ value: s, label: SHAPE_LABELS[s] })),
@@ -231,13 +264,13 @@ function renderRegularPick() {
       if (checked) shapes.add(v); else shapes.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Side Lengths →',
+    nextLabel: 'Next',
     onNext: () => topic.goTo('lengths'),
   });
 }
 
 function renderCurvedPick() {
-  renderMultiStep(curvedPickEl, {
+  renderMultiStep(topic, 'curved-pick', {
     title: 'Which curved shapes?',
     colorOffset: 0,
     options: [
@@ -249,13 +282,13 @@ function renderCurvedPick() {
       if (checked) shapes.add(v); else shapes.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Given →',
+    nextLabel: 'Next',
     onNext: () => topic.goTo('given'),
   });
 }
 
 function renderGivenPick() {
-  renderMultiStep(givenPickEl, {
+  renderMultiStep(topic, 'given', {
     title: 'Given the radius, diameter, or both?',
     colorOffset: 3,
     options: GIVEN_TYPES.map((g) => ({ value: g, label: GIVEN_LABELS[g] })),
@@ -264,158 +297,135 @@ function renderGivenPick() {
       if (checked) given.add(v); else given.delete(v);
       updateStartDisabled();
     },
-    nextLabel: 'Next: Radius →',
+    nextLabel: 'Next',
     onNext: () => topic.goTo('lengths'),
   });
 }
 
-topic.addSlide('topic', 'Topic', (el) => {
-  renderChoiceStep(el, {
-    title: 'What do you want to practice?',
-    name: 'geo-topic',
-    options: [
-      { value: 'lines', label: 'Lines' },
-      { value: 'angles', label: 'Angles' },
-      { value: 'shapes', label: 'Shapes' },
-    ],
-    onPick: (v) => {
-      if (v === 'lines') topic.goTo('soon-lines');
-      else if (v === 'angles') topic.goTo('soon-angles');
-      else topic.goTo('shapes-dim');
-    },
-  });
+renderChoiceStep(topic, 'topic', {
+  title: 'What do you want to practice?',
+  name: 'geo-topic',
+  options: [
+    { value: 'lines', label: 'Lines' },
+    { value: 'angles', label: 'Angles' },
+    { value: 'shapes', label: 'Shapes', checked: true },
+  ],
+  onPick: (v) => {
+    if (v === 'lines') topic.goTo('soon-lines');
+    else if (v === 'angles') topic.goTo('soon-angles');
+    else topic.goTo('shapes-dim');
+  },
 });
-topic.addSlide('soon-lines', 'Lines', (el) => renderComingSoon(el, {
+renderComingSoon(topic, 'soon-lines', {
   title: 'Lines', message: 'Line practice is coming soon — go back and pick Shapes for now.',
-}));
-topic.addSlide('soon-angles', 'Angles', (el) => renderComingSoon(el, {
+});
+renderComingSoon(topic, 'soon-angles', {
   title: 'Angles', message: 'Angle practice is coming soon — go back and pick Shapes for now.',
-}));
-
-topic.addSlide('shapes-dim', '2D/3D', (el) => {
-  renderChoiceStep(el, {
-    title: '2D or 3D shapes?',
-    name: 'geo-dim',
-    colorOffset: 2,
-    options: [
-      { value: '2d', label: '2D Shapes' },
-      { value: '3d', label: '3D Shapes' },
-    ],
-    onPick: (v) => (v === '3d' ? topic.goTo('soon-3d') : topic.goTo('kind-2d')),
-  });
 });
-topic.addSlide('soon-3d', '3D Shapes', (el) => renderComingSoon(el, {
+renderChoiceStep(topic, 'shapes-dim', {
+  title: '2D or 3D shapes?',
+  name: 'geo-dim',
+  colorOffset: 2,
+  options: [
+    { value: '2d', label: '2D Shapes', checked: true },
+    { value: '3d', label: '3D Shapes' },
+  ],
+  onPick: (v) => (v === '3d' ? topic.goTo('soon-3d') : topic.goTo('kind-2d')),
+});
+renderComingSoon(topic, 'soon-3d', {
   title: '3D Shapes', message: '3D shape practice is coming soon — go back and pick 2D Shapes for now.',
-}));
-
-topic.addSlide('kind-2d', 'Polygons/Curved', (el) => {
-  renderChoiceStep(el, {
-    title: 'Polygons or curved shapes?',
-    name: 'geo-kind',
-    colorOffset: 4,
-    options: [
-      { value: 'polygons', label: 'Polygons' },
-      { value: 'curved', label: 'Curved Shapes' },
-    ],
-    onPick: (v) => {
-      if (v === 'polygons') { topic.goTo('regularity'); return; }
-      enterBranch('curved');
-      topic.goTo('curved-pick');
-    },
-  });
 });
-
-topic.addSlide('regularity', 'Regular/Irregular', (el) => {
-  renderChoiceStep(el, {
-    title: 'Regular or irregular polygons?',
-    name: 'geo-regularity',
-    options: [
-      { value: 'regular', label: 'Regular' },
-      { value: 'irregular', label: 'Irregular' },
-    ],
-    onPick: (v) => {
-      if (v === 'irregular') { topic.goTo('soon-irregular'); return; }
-      enterBranch('polygons');
-      topic.goTo('regular-pick');
-    },
-  });
+renderChoiceStep(topic, 'kind-2d', {
+  title: 'Polygons or curved shapes?',
+  name: 'geo-kind',
+  colorOffset: 4,
+  options: [
+    { value: 'polygons', label: 'Polygons', checked: true },
+    { value: 'curved', label: 'Curved Shapes' },
+  ],
+  onPick: (v) => {
+    if (v === 'polygons') { topic.goTo('regularity'); return; }
+    enterBranch('curved');
+    topic.goTo('curved-pick');
+  },
 });
-topic.addSlide('soon-irregular', 'Irregular', (el) => renderComingSoon(el, {
+renderChoiceStep(topic, 'regularity', {
+  title: 'Regular or irregular polygons?',
+  name: 'geo-regularity',
+  options: [
+    { value: 'regular', label: 'Regular', checked: true },
+    { value: 'irregular', label: 'Irregular' },
+  ],
+  onPick: (v) => {
+    if (v === 'irregular') { topic.goTo('soon-irregular'); return; }
+    enterBranch('polygons');
+    topic.goTo('regular-pick');
+  },
+});
+renderComingSoon(topic, 'soon-irregular', {
   title: 'Irregular Polygons', message: 'Nets of a cube/cuboid are coming soon — go back and pick Regular for now.',
-}));
-
-topic.addSlide('regular-pick', 'Regular Shapes', (el) => { regularPickEl = el; });
-topic.addSlide('curved-pick', 'Curved Shapes', (el) => { curvedPickEl = el; });
-topic.addSlide('given', 'Given', (el) => { givenPickEl = el; });
-topic.addSlide('lengths', 'Lengths', (el) => { lengthsPickEl = el; });
+});
 
 topic.start('topic');
 
-/* ── SECTION 2 — Game Options ─────────────────────────────────────────────
+/* ── SECTION 3 — Game Options ─────────────────────────────────
    Mode → Room Size → Time Limit. Room Size is skipped entirely for Versus,
-   which is always 1v1 — asking "5 or 10 players?" for a 2-player game would
-   be a setting the room ignores. ───────────────────────────────────────── */
+   which is always 1v1 — asking "5 or 10 players?" for a 2-player game would be
+   a setting the room ignores. */
 const options = createCarousel(optionsMount);
+options.addSlide('mode', 'Mode', () => {});
+options.addSlide('size', 'Room Size', () => {});
+options.addSlide('time', 'Time Limit', () => {});
 
-options.addSlide('mode', 'Mode', (el) => {
-  renderChoiceStep(el, {
-    title: 'How do you want to play?',
-    name: 'geo-mode',
-    options: [
-      { value: 'multiplayer', label: 'Multiplayer', checked: true },
-      { value: 'versus', label: 'Versus (1v1)' },
-    ],
-    onPick: (v) => {
-      mode = v;
-      // Versus has no Quick Fill — a private 1v1 is always create-or-join.
-      if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
-      renderRoomEntry();
-      roomCarousel.start('entry');
-      codeInput.hidden = roomAction !== 'join';
-      updateStartLabel();
-      options.goTo(mode === 'versus' ? 'time' : 'size');
-    },
-  });
+renderChoiceStep(options, 'mode', {
+  title: 'How do you want to play?',
+  name: 'geo-mode',
+  options: [
+    { value: 'multiplayer', label: 'Multiplayer', checked: true },
+    { value: 'versus', label: 'Versus (1v1)' },
+  ],
+  onPick: (v) => {
+    mode = v;
+    // Versus has no Quick Fill — a private 1v1 is always create-or-join.
+    if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    renderRoomEntry();
+    roomCarousel.start('entry');
+    codeInput.hidden = roomAction !== 'join';
+    updateStartLabel();
+    options.goTo(mode === 'versus' ? 'time' : 'size');
+  },
 });
-
-options.addSlide('size', 'Room Size', (el) => {
-  renderChoiceStep(el, {
-    title: 'How many players?',
-    name: 'geo-size',
-    colorOffset: 2,
-    options: [
-      { value: '5', label: '5 players', checked: true },
-      { value: '10', label: '10 players' },
-    ],
-    onPick: (v) => {
-      roomSize = Number(v);
-      options.goTo('time');
-    },
-  });
+renderChoiceStep(options, 'size', {
+  title: 'How many players?',
+  name: 'geo-size',
+  colorOffset: 2,
+  options: [
+    { value: '5', label: '5 players', checked: true },
+    { value: '10', label: '10 players' },
+  ],
+  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
 });
-
-options.addSlide('time', 'Time Limit', (el) => {
-  renderChoiceStep(el, {
-    title: 'How long is the round?',
-    name: 'geo-time',
-    colorOffset: 4,
-    options: [
-      { value: '30', label: '30s' },
-      { value: '60', label: '60s', checked: true },
-      { value: '90', label: '90s' },
-      { value: '120', label: '120s' },
-    ],
-    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
-  });
+renderChoiceStep(options, 'time', {
+  title: 'How long is the round?',
+  name: 'geo-time',
+  colorOffset: 4,
+  options: [
+    { value: '30', label: '30s' },
+    { value: '60', label: '60s', checked: true },
+    { value: '90', label: '90s' },
+    { value: '120', label: '120s' },
+  ],
+  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
 
-/* ── SECTION 3 — Room ─────────────────────────────────────────────────────
+/* ── SECTION 4 — Room ───────────────────────────────────────
    Which entry options exist depends on Mode, so this is re-rendered whenever
-   Mode changes. Picking "Join with Code" steps on to the code entry. ────── */
+   Mode changes. Picking "Join with Code" steps on to the code entry. */
 const roomCarousel = createCarousel(roomMount);
-let roomEntryEl = null;
+roomCarousel.addSlide('entry', 'Room', () => {});
+roomCarousel.addSlide('code', 'Code', () => {});
 
 function renderRoomEntry() {
   const choices =
@@ -430,7 +440,7 @@ function renderRoomEntry() {
           { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
         ];
 
-  renderChoiceStep(roomEntryEl, {
+  renderChoiceStep(roomCarousel, 'entry', {
     title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
     name: 'geo-room-action',
     colorOffset: 2,
@@ -444,40 +454,51 @@ function renderRoomEntry() {
   });
 }
 
-roomCarousel.addSlide('entry', 'Room', (el) => { roomEntryEl = el; });
-roomCarousel.addSlide('code', 'Code', (el) =>
-  renderComingSoon(el, { title: 'Enter the room code', message: 'Type the 6-character code your friend shared into the box below.' }));
+renderCustomStep(roomCarousel, 'code', {
+  title: 'Enter the room code',
+  subtitle: 'The 6-character code your friend shared.',
+  content: codeInput,
+});
 
 renderRoomEntry();
 roomCarousel.start('entry');
 
-/* ── One selector on screen at a time ─────────────────────────────────────
-   The three sections stay independent carousels; this just shows one at a
-   time and collapses the finished ones to a summary you can click to reopen. */
-const SHAPE_SUMMARY = (s) => SHAPE_LABELS[s] || s;
+/* ── One selector on screen at a time ─────────────────────────────
+   The four sections stay independent carousels; this shows one at a time and
+   collapses finished ones to their picks as sticky notes. Start only appears
+   on the final section. */
 const flow = createSectionFlow([
   {
+    el: $('geo-section-player'),
+    chips: () => [{ label: myName(), avatar: avatarUrl(selectedAvatarSeed) }],
+  },
+  {
     el: $('geo-section-topic'),
-    summary: () => {
-      if (!shapes.size) return 'No topic chosen';
-      const what = [...shapes].map(SHAPE_SUMMARY).join(', ');
-      const unit = isCurvedBranch() ? 'radius' : 'sides';
-      return `${what} · ${lengths.size} ${unit}`;
+    chips: () => {
+      if (!shapes.size) return [{ label: 'No topic' }];
+      return [
+        ...[...shapes].map((s) => ({ label: SHAPE_LABELS[s] || s })),
+        { label: `${lengths.size} ${isCurvedBranch() ? 'radii' : 'sides'}` },
+      ];
     },
   },
   {
     el: $('geo-section-options'),
-    summary: () =>
+    chips: () =>
       mode === 'versus'
-        ? `Versus 1v1 · ${timeLimit}s`
-        : `Multiplayer · ${roomSize} players · ${timeLimit}s`,
+        ? [{ label: 'Versus 1v1' }, { label: `${timeLimit}s` }]
+        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit}s` }],
   },
   {
     el: $('geo-section-room'),
-    summary: () =>
-      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    chips: () => [{
+      label: roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+    }],
   },
-]);
+], {
+  // Start belongs at the end of the flow, not floating under every step.
+  onChange: (_i, isLast) => { startBtn.hidden = !isLast; },
+});
 
 updateStartDisabled();
 updateStartLabel();
