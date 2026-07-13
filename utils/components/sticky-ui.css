@@ -331,3 +331,197 @@ button.ghost {
 .footer-social-btn:nth-of-type(4) { --pp-note-bg: #ffd7a3; --pp-note-tilt: 1.2deg; }
 .footer-social-btn:nth-of-type(5) { --pp-note-bg: #b8ece2; }
 .footer-social-btn svg { width: 16px; height: 16px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DASHBOARD + SETTINGS / SETUP SURFACES
+   Each of these pages had its own button vocabulary. They all point at the
+   same paper now, so a control is the same object wherever you meet it.
+   Icon-only close buttons (×) are left alone — a note with a tape strip
+   makes no sense at 24px in the corner of a modal.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* The shared .pp-btn (partner, activity, prepbot…). Qualified with the element
+   as well as the class: on pages that pull in theory-page/style.css a more
+   specific rule was winning and leaving the button in the display font. */
+a.pp-btn,
+button.pp-btn,
+.pp-btn,
+/* Theory */
+.btn-blue,
+.autogen-all-btn,
+/* Writing */
+.topic-chip,
+.topic-refresh,
+/* Flashcards */
+.cards-tab,
+.grade-btn,
+/* Subscribe */
+.sp-billing-btn,
+.sp-kindtab,
+/* Partner */
+.pt-copy,
+/* Activity */
+.paper-video-btn,
+/* Dashboard */
+.db-action,
+.db-pill,
+.db-child-tab,
+.db-calendar-nav-btn,
+.brutal-btn-flat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.55rem 1rem 0.6rem;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.pp-btn::before,
+.btn-blue::before,
+.autogen-all-btn::before,
+.topic-chip::before,
+.topic-refresh::before,
+.cards-tab::before,
+.grade-btn::before,
+.sp-billing-btn::before,
+.sp-kindtab::before,
+.pt-copy::before,
+.paper-video-btn::before,
+.db-action::before,
+.db-pill::before,
+.db-child-tab::before,
+.db-calendar-nav-btn::before,
+.brutal-btn-flat::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+.pp-btn:hover:not(:disabled),
+.btn-blue:hover:not(:disabled),
+.autogen-all-btn:hover:not(:disabled),
+.topic-chip:hover,
+.topic-refresh:hover,
+.cards-tab:hover,
+.grade-btn:hover,
+.sp-billing-btn:hover,
+.sp-kindtab:hover,
+.pt-copy:hover,
+.paper-video-btn:hover,
+.db-action:hover,
+.db-child-tab:hover,
+.db-calendar-nav-btn:hover,
+.brutal-btn-flat:hover:not(:disabled) {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+.pp-btn:disabled,
+.btn-blue:disabled,
+.autogen-all-btn:disabled,
+.brutal-btn-flat:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}
+.pp-btn svg,
+.btn-blue svg,
+.db-action svg,
+.brutal-btn-flat svg,
+.pt-copy svg,
+.topic-refresh svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* Quiet variants stay unbleached paper rather than colour. */
+.pp-btn--ghost { --pp-note-bg: #f0ece2; color: #5a544a; }
+
+/* ── Colours per surface ─────────────────────────────────────────────── */
+.btn-blue { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.autogen-all-btn { --pp-note-bg: #e8c8ff; }
+.topic-refresh { --pp-note-bg: #b8ece2; --pp-note-tilt: 1.4deg; }
+.pt-copy { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.paper-video-btn { --pp-note-bg: #ffd7a3; }
+
+/* Selectable chips/tabs: the picked one keeps its paper and takes an inked
+   outline — the same rule the setup screens and the MCQ options follow, so
+   "selected" never means "a different colour". */
+.topic-chip { --pp-note-bg: #fff3a8; font-weight: 600; }
+.topic-chip:nth-of-type(even) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
+.topic-chip.active,
+.topic-chip.selected,
+.cards-tab.is-active,
+.cards-tab.active,
+.sp-kindtab.active,
+.sp-billing-btn.active,
+.db-child-tab.active {
+  outline: 2.5px solid var(--ink, #2a2723);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+
+.cards-tab { --pp-note-bg: #fff3a8; }
+.cards-tab:nth-of-type(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.cards-tab:nth-of-type(3) { --pp-note-bg: #c8f0c0; }
+
+.sp-kindtab { --pp-note-bg: #fff3a8; }
+.sp-kindtab:nth-of-type(2) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.4deg; }
+.sp-billing-btn { --pp-note-bg: #f0ece2; color: #5a544a; }
+.sp-billing-btn.active { --pp-note-bg: #fff3a8; color: #14130f; }
+
+/* Flashcard grading — these keep their verdict colours (like the MCQ marks),
+   because "again / hard / good / easy" IS the meaning. */
+.grade-btn { --pp-note-bg: #fff3a8; }
+.grade-again { --pp-note-bg: #ffb0b0; }
+.grade-easy { --pp-note-bg: #9fe39a; --pp-note-tilt: 1.4deg; }
+
+/* ── Dashboard ───────────────────────────────────────────────────────── */
+.db-action { --pp-note-bg: #fff3a8; }
+.db-action-grid { display: flex; flex-wrap: wrap; gap: 1.1rem 0.6rem; padding-top: 12px; }
+.db-action-grid .db-action:nth-child(6n + 2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.db-action-grid .db-action:nth-child(6n + 3) { --pp-note-bg: #c8f0c0; }
+.db-action-grid .db-action:nth-child(6n + 4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.db-action-grid .db-action:nth-child(6n + 5) { --pp-note-bg: #ffd7a3; }
+.db-action-grid .db-action:nth-child(6n + 6) { --pp-note-bg: #b8ece2; --pp-note-tilt: -1.4deg; }
+
+/* The status pills keep their traffic-light meaning — they're labels, not
+   buttons, so they take the paper but never the lift. */
+.db-pill { font-size: 0.7rem; padding: 0.35rem 0.7rem 0.4rem; cursor: default; }
+.db-pill.pill-yellow { --pp-note-bg: #fff3a8; }
+.db-pill.pill-blue { --pp-note-bg: #bfe3ff; }
+.db-pill.pill-green { --pp-note-bg: #9fe39a; }
+.db-pill.pill-red { --pp-note-bg: #ffb0b0; }
+.db-pill.pill-grey { --pp-note-bg: #f0ece2; color: #5a544a; }
+
+.db-child-tabs { display: flex; flex-wrap: wrap; gap: 1.1rem 0.55rem; padding-top: 12px; }
+.db-child-tab { --pp-note-bg: #fff3a8; }
+.db-child-tabs .db-child-tab:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.db-child-tabs .db-child-tab:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.db-child-tabs .db-child-tab:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+
+.db-calendar-nav-btn {
+  --pp-note-bg: #f0ece2;
+  color: #5a544a;
+  padding: 0.4rem 0.6rem 0.45rem;
+}
+.brutal-btn-flat { --pp-note-bg: #fff3a8; }
+
+/* Rows of notes need headroom for the tape — these containers didn't have it. */
+.cards-tabs,
+.sp-kindtabs,
+.topic-chips { padding-top: 12px; }
