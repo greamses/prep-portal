@@ -245,12 +245,45 @@
   text-align: center;
 }
 
+/* ── NOTE BUTTON ────────────────────────────────────────────────────────
+   Every button on these pages is a sticky note — the same paper, tape, tilt
+   and lift as the options you tick. Compose it:
+
+     class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2"
+
+   .pp-sticky brings the paper, shadow and tilt; this adds the button shape
+   and the pressed/disabled states. Colour it with --c0…--c5 so each button
+   reads as its own note rather than a row of identical chrome. */
+.pp-note-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #14130f;
+  padding: 0.6rem 1.15rem 0.65rem;
+}
+.pp-note-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.pp-note-btn:active { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(0); }
+.pp-note-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}
+.pp-note-btn svg { flex-shrink: 0; }
+
+/* A quieter note — unbleached paper, for the "away" action (Back, Cancel). */
+.pp-note-btn--plain { --pp-note-bg: #f0ece2; color: #5a544a; }
+
 /* ── NAV (Back / Skip) ─────────────────────────────────────────────────
    The old buttons were a chrome-y bordered rectangle and a bare text link —
    neither belonged on a page made of paper and tape. These are the same
-   sticky note as every other control here: paper, a strip of tape, a slight
-   tilt. Back is unbleached paper, Skip is the warm accent, so "keep going"
-   reads as the primary move without shouting. */
+   sticky note as every other control here. */
 .pp-carousel-nav {
   display: flex;
   align-items: center;
@@ -261,20 +294,10 @@
 .pp-carousel-nav > :only-child { margin-left: auto; } /* a lone Skip sits right */
 
 .pp-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 0;
-  cursor: pointer;
-  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
-  font-weight: 700;
   font-size: 0.82rem;
-  color: #14130f;
   padding: 0.5rem 0.9rem 0.55rem;
   --pp-note-tilt: -1.5deg;
 }
-.pp-nav-btn:hover { transform: rotate(var(--pp-note-tilt)) translateY(-2px); }
-.pp-nav-btn:active { transform: rotate(var(--pp-note-tilt)) translateY(0); }
 .pp-nav-btn[hidden] { display: none; }
 
 .pp-nav-btn--back { --pp-note-bg: #f0ece2; --pp-note-tilt: 1.5deg; color: #5a544a; }

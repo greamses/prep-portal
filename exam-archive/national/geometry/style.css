@@ -777,3 +777,33 @@ body.geo-nav-hidden .site-nav { display: none; }
   fill: var(--ink);
 }
 .geo-label--angle { font-size: 9px; }
+
+/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
+   Start / Cancel / Play Again / Copy all carry .pp-note-btn now (see
+   components.css), so the paper, tape, tilt and lift come from .pp-sticky.
+   These rules only keep the layout each button needs — anything that would
+   repaint the note (background, border, radius, font, shadow) is dropped. */
+.geo-start-btn,
+.geo-again-btn,
+.geo-cancel-btn,
+.geo-lobby-code-value button {
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.geo-cancel-btn { color: #5a544a; }
+.geo-lobby-code-value button { font-size: 0.72rem; padding: 0.45rem 0.8rem 0.5rem; }
+.geo-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
+.geo-start-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.geo-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}

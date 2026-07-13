@@ -754,3 +754,33 @@ body.drill-nav-hidden .site-nav { display: none; }
   0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
 }
+
+/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
+   Start / Cancel / Play Again / Copy all carry .pp-note-btn now (see
+   components.css), so the paper, tape, tilt and lift come from .pp-sticky.
+   These rules only keep the layout each button needs — anything that would
+   repaint the note (background, border, radius, font, shadow) is dropped. */
+.drill-start-btn,
+.drill-again-btn,
+.drill-cancel-btn,
+.drill-lobby-code-value button {
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.drill-cancel-btn { color: #5a544a; }
+.drill-lobby-code-value button { font-size: 0.72rem; padding: 0.45rem 0.8rem 0.5rem; }
+.drill-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
+.drill-start-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.drill-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}

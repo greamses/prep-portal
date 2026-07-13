@@ -33,13 +33,13 @@ export function createCarousel(mountEl) {
 
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
-  backBtn.className = 'pp-nav-btn pp-nav-btn--back pp-sticky pp-sticky--tape';
+  backBtn.className = 'pp-sticky pp-sticky--tape pp-note-btn pp-nav-btn pp-nav-btn--back';
   backBtn.innerHTML = `${ARROW_L}<span>Back</span>`;
   navEl.appendChild(backBtn);
 
   const nextBtn = document.createElement('button');
   nextBtn.type = 'button';
-  nextBtn.className = 'pp-nav-btn pp-nav-btn--next pp-sticky pp-sticky--tape';
+  nextBtn.className = 'pp-sticky pp-sticky--tape pp-note-btn pp-nav-btn pp-nav-btn--next';
   navEl.appendChild(nextBtn);
 
   const slides = new Map(); // id -> { el, label }
