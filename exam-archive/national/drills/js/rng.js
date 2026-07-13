@@ -41,7 +41,7 @@ export const ALL_TABLES = Array.from({ length: 100 }, (_, i) => i + 1);
 export const UNIT_NUMBERS = Array.from({ length: 9 }, (_, i) => i + 1);
 
 export const ALL_OPERATIONS = [
-  'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot',
+  'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
 ];
 
@@ -147,6 +147,8 @@ export function questionAt(seed, index, { operations = ['multiply', 'divide'], t
   if (op === 'sqrt') return { text: `√${n * n}`, answer: n };
   if (op === 'cube') return { text: `${n}³`, answer: n * n * n };
   if (op === 'cuberoot') return { text: `∛${n * n * n}`, answer: n };
+  if (op === 'power4') return { text: `${n}⁴`, answer: n ** 4 };
+  if (op === 'fourthroot') return { text: `⁴√${n ** 4}`, answer: n };
 
   if (FRACTION_OPS.includes(op)) {
     const types = fractionTypes.length ? fractionTypes : ALL_FRACTION_TYPES;

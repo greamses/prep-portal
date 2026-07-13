@@ -11,7 +11,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import { createCarousel, createSectionFlow, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -47,6 +47,7 @@ const OPERATION_LABELS = {
   add: '+ Addition', multiply: '× Multiply', divide: '÷ Divide',
   square: 'x² Square', sqrt: '√x Root',
   cube: 'x³ Cube', cuberoot: '∛x Cube Root',
+  power4: 'x⁴ Power 4', fourthroot: '⁴√x Fourth Root',
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
 };
 
@@ -56,7 +57,7 @@ const OPERATION_LABELS = {
 // used to be.
 const CATEGORY_OPERATIONS = {
   basic: ['add', 'multiply', 'divide'],
-  exponent: ['square', 'cube', 'sqrt', 'cuberoot'],
+  exponent: ['square', 'cube', 'power4', 'sqrt', 'cuberoot', 'fourthroot'],
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
 };
 const CATEGORY_DEFAULT_OPS = {
@@ -85,17 +86,6 @@ const RANGES = [
   { key: '70-79', label: '70–79', min: 70, max: 79 },
   { key: '80-89', label: '80–89', min: 80, max: 89 },
   { key: '90-100', label: '90–100', min: 90, max: 100 },
-];
-
-// Exponent needs its OWN, much smaller ranges. The base number is the thing
-// being cubed, so the full 1–100 set would ask for 100³ = 1,000,000 (and
-// ∛1,000,000) — not a mental-maths drill. Capping at 20 keeps cubes ≤ 8,000
-// and squares ≤ 400, which is the range these are actually practised over.
-const EXPONENT_RANGES = [
-  { key: 'all', label: 'All', min: 1, max: 20 },
-  { key: '1-9', label: '1–9', min: 1, max: 9 },
-  { key: '10-14', label: '10–14', min: 10, max: 14 },
-  { key: '15-20', label: '15–20', min: 15, max: 20 },
 ];
 
 // Fractions don't use a "number range" at all — in rng.js the same pool feeds
@@ -181,9 +171,9 @@ function getCurrentUser() {
   });
 }
 
-// Which ranges are on offer depends on the category — and Fractions has no
-// range at all (see DENOMINATORS above).
-function rangesFor(cat) { return cat === 'exponent' ? EXPONENT_RANGES : RANGES; }
+// Basic and Exponent both drill the full 1–100 range. Fractions has no range
+// at all — its pool is the denominator set (see DENOMINATORS above).
+function rangesFor() { return RANGES; }
 
 // Only the 1-9 bucket is fine enough to cherry-pick individual numbers from
 // (and only for Basic — Exponent just sticks with its ranges). Every other
@@ -230,7 +220,7 @@ getCurrentUser().then((user) => {
    the question generator would ignore:
 
      Basic     → Operations → Number Range (1–100) → [1–9 only: pick numbers]
-     Exponent  → Operations → Number Range (capped at 20 — see EXPONENT_RANGES)
+     Exponent  → Operations → Number Range (1–100)
      Fractions → Fraction Type → Operations → Denominators (2–12)
 
    Fractions has NO number range on purpose: in rng.js that same pool supplies
@@ -291,21 +281,24 @@ function renderDenominatorsPick() {
       if (checked) denominators.add(n); else denominators.delete(n);
       updateStartDisabled();
     },
+    nextLabel: 'Next: Game Options →',
+    onNext: () => flow.next(), // last step of this section
   });
 }
 
 function renderRangePick() {
-  const list = rangesFor(categoryValue);
   renderChoiceStep(rangeEl, {
     title: 'Which number range?',
-    subtitle: categoryValue === 'exponent' ? 'Capped at 20 — 100³ is not a mental-maths drill.' : undefined,
     name: 'drill-range',
     colorOffset: 6,
-    options: list.map((r) => ({ value: r.key, label: r.label, checked: r.key === range })),
+    options: rangesFor().map((r) => ({ value: r.key, label: r.label, checked: r.key === range })),
     onPick: (v) => {
       range = v;
       updateStartDisabled();
+      // 1–9 is the one bucket you can cherry-pick from; every other range is
+      // drilled whole, so the range IS the last step of this section.
       if (isNumbersMode()) { renderNumbersPick(); topic.goTo('numbers'); }
+      else flow.next();
     },
   });
 }
@@ -322,6 +315,8 @@ function renderNumbersPick() {
       if (checked) tables.add(n); else tables.delete(n);
       updateStartDisabled();
     },
+    nextLabel: 'Next: Game Options →',
+    onNext: () => flow.next(), // last step of this section
   });
 }
 
@@ -414,7 +409,7 @@ options.addSlide('time', 'Time Limit', (el) => {
       { value: '90', label: '90s' },
       { value: '120', label: '120s' },
     ],
-    onPick: (v) => { timeLimit = Number(v); },
+    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
   });
 });
 
@@ -457,6 +452,31 @@ roomCarousel.addSlide('code', 'Code', (el) =>
 
 renderRoomEntry();
 roomCarousel.start('entry');
+
+/* ── One selector on screen at a time ─────────────────────────────────── */
+const flow = createSectionFlow([
+  {
+    el: $('drill-section-topic'),
+    summary: () => {
+      const ops = [...operations].map((o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ')).join(', ');
+      const cat = categoryValue[0].toUpperCase() + categoryValue.slice(1);
+      if (categoryValue === 'fractions') return `${cat} · ${ops || 'no ops'} · ${denominators.size} denominators`;
+      const r = RANGES.find((x) => x.key === range);
+      const scope = isNumbersMode() ? `${tables.size} numbers` : (r ? r.label : range);
+      return `${cat} · ${ops || 'no ops'} · ${scope}`;
+    },
+  },
+  {
+    el: $('drill-section-options'),
+    summary: () =>
+      mode === 'versus' ? `Versus 1v1 · ${timeLimit}s` : `Multiplayer · ${roomSize} players · ${timeLimit}s`,
+  },
+  {
+    el: $('drill-section-room'),
+    summary: () =>
+      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+  },
+]);
 
 updateStartDisabled();
 updateStartLabel();

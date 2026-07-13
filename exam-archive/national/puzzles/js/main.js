@@ -13,7 +13,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, renderChoiceStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import { createCarousel, createSectionFlow, renderChoiceStep, renderComingSoon } from '/utils/components/setup-carousel.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -191,7 +191,7 @@ topic.addSlide('difficulty', 'Difficulty', (el) => {
       { value: 'medium', label: 'Medium' },
       { value: 'hard', label: 'Hard' },
     ],
-    onPick: (v) => { difficulty = v; },
+    onPick: (v) => { difficulty = v; flow.next(); }, // last step of this section
   });
 });
 
@@ -245,7 +245,7 @@ options.addSlide('time', 'Time Limit', (el) => {
       { value: '600', label: '10 min' },
       { value: '900', label: '15 min' },
     ],
-    onPick: (v) => { timeLimit = Number(v); },
+    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
   });
 });
 
@@ -288,6 +288,32 @@ roomCarousel.addSlide('code', 'Code', (el) =>
 
 renderRoomEntry();
 roomCarousel.start('entry');
+
+/* ── One selector on screen at a time ─────────────────────────────────── */
+const flow = createSectionFlow([
+  {
+    el: $('puzzle-section-topic'),
+    summary: () => {
+      const name = puzzleType[0].toUpperCase() + puzzleType.slice(1);
+      const diff = difficulty[0].toUpperCase() + difficulty.slice(1);
+      return `${name} · ${gridSize}×${gridSize} · ${diff}`;
+    },
+  },
+  {
+    el: $('puzzle-section-options'),
+    summary: () => {
+      const mins = timeLimit / 60;
+      return mode === 'versus'
+        ? `Versus 1v1 · ${mins} min`
+        : `Multiplayer · ${roomSize} players · ${mins} min`;
+    },
+  },
+  {
+    el: $('puzzle-section-room'),
+    summary: () =>
+      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+  },
+]);
 
 updateStartLabel();
 

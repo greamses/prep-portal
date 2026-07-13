@@ -184,7 +184,17 @@
 .pp-carousel-crumb-cur { color: var(--ink, #2a2723); font-weight: 700; }
 .pp-carousel-crumb-sep { opacity: 0.5; margin: 0 0.25em; }
 
-.pp-carousel-stage { position: relative; overflow: hidden; }
+/* Padded, not clipped: a sticky note's tape sits at top:-9px and its shadow
+   hangs below/right, so `overflow: hidden` sliced both off. Clip only the
+   horizontal axis (the slide-in animation travels 18px sideways), and leave
+   enough room around the notes for the tape and the drop shadow. */
+.pp-carousel-stage {
+  position: relative;
+  overflow-x: clip;
+  overflow-y: visible;
+  padding: 14px 8px 16px;
+  margin: -14px -8px -16px; /* the padding is breathing room, not layout indent */
+}
 
 .pp-carousel-slide { display: none; }
 .pp-carousel-slide.is-active { display: block; }
@@ -211,10 +221,13 @@
   color: var(--text-secondary, #6b655c);
   margin: -0.35rem 0 0.6rem;
 }
+/* Row gap is deliberately larger than the column gap — each note's tape
+   overhangs its top edge, so tight rows would have tape landing on the note
+   above. */
 .pp-carousel-choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 1rem 0.55rem;
 }
 .pp-carousel-choices .is-disabled {
   opacity: 0.45;
@@ -264,6 +277,46 @@
   padding: 0.2rem 0;
 }
 .pp-carousel-back:hover { color: var(--ink, #2a2723); text-decoration: underline; }
+
+/* ── SECTION FLOW ───────────────────────────────────────────────────────
+   One selector on screen at a time (see createSectionFlow in
+   setup-carousel.js). A finished section collapses to a summary line you can
+   click to re-open; a section you haven't reached yet isn't shown at all. */
+.pp-section > .pp-carousel { display: none; }
+.pp-section.is-active > .pp-carousel { display: block; }
+
+.pp-section.is-pending { display: none; }
+
+.pp-section-summary { display: none; }
+.pp-section.is-done > .pp-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--text-secondary, #6b655c);
+  background: var(--surface-secondary, #f4f0e8);
+  border: 0;
+  border-left: 3px solid var(--accent-success, #7cc47c);
+  border-radius: 2px;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+.pp-section.is-done > .pp-section-summary:hover { color: var(--ink, #2a2723); }
+.pp-section.is-done > .pp-section-summary em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--accent-secondary, #6fb7e8);
+  flex-shrink: 0;
+}
+.pp-section.is-done > .pp-section-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .pp-btn--ghost {
   background: var(--surface-primary, #fffdf8);
   color: var(--ink, #2a2723);

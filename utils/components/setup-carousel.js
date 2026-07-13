@@ -116,11 +116,18 @@ export function renderChoiceStep(container, { title, subtitle, name, options, co
     label.className = `pp-sticky pp-sticky--tape sticky-choice pp-sticky--c${(colorOffset + i) % 6}${disabled ? ' is-disabled' : ''}`;
     label.innerHTML = `<input type="radio" name="${groupName}" value="${opt.value}" ${opt.checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} /><span>${opt.label}${opt.note ? ` <em>(${opt.note})</em>` : ''}</span>`;
     if (!disabled) {
-      // A click on the label, not a 'change' listener on the input — a
-      // radio that's already checked (e.g. a pre-selected default) fires no
-      // 'change' event when clicked again, which would otherwise strand the
-      // carousel on a step whose default happens to be the desired answer.
-      label.addEventListener('click', () => onPick(opt.value));
+      // 'click' on the INPUT — deliberately not 'change', and deliberately not
+      // on the label:
+      //   · 'change' never fires for an already-checked radio (a pre-selected
+      //     default), which would strand you on a step whose default is the
+      //     answer you wanted.
+      //   · a listener on the LABEL fires twice, because clicking a label also
+      //     forwards a synthetic click to its control, which bubbles back up
+      //     through the label. Handlers that aren't idempotent (advancing a
+      //     step) would then skip one.
+      // A click on the input fires exactly once whether you hit the label or
+      // the radio itself.
+      label.querySelector('input').addEventListener('click', () => onPick(opt.value));
     }
     wrap.appendChild(label);
   });
@@ -166,6 +173,53 @@ export function renderMultiStep(container, { title, subtitle, options, isChecked
     btn.addEventListener('click', onNext);
     container.appendChild(btn);
   }
+}
+
+/* ── SECTION FLOW ────────────────────────────────────────────────────────
+   Keeps the setup screen to ONE selector on screen at a time. Each section
+   still owns its own carousel (they're independent flows, not one merged
+   sequence) — this only controls which section is *showing*:
+
+     · the section you're on renders its carousel
+     · sections you've finished collapse to a one-line summary + Edit
+     · sections you haven't reached yet stay hidden
+
+   `sections` is [{ el, summary: () => string }] in order. `el` is the wrapper
+   holding that section's label + carousel mount. Call next() when a section's
+   flow reaches its last step. ─────────────────────────────────────────────── */
+export function createSectionFlow(sections) {
+  let active = 0;
+
+  sections.forEach((s, i) => {
+    s.el.classList.add('pp-section');
+
+    const summary = document.createElement('button');
+    summary.type = 'button';
+    summary.className = 'pp-section-summary';
+    summary.addEventListener('click', () => { active = i; render(); });
+    s.el.appendChild(summary);
+    s.summaryEl = summary;
+  });
+
+  function render() {
+    sections.forEach((s, i) => {
+      const done = i < active;
+      s.el.classList.toggle('is-active', i === active);
+      s.el.classList.toggle('is-done', done);
+      s.el.classList.toggle('is-pending', i > active);
+      if (done) s.summaryEl.innerHTML = `<span>${s.summary()}</span><em>Edit</em>`;
+    });
+  }
+
+  render();
+
+  return {
+    next() {
+      if (active < sections.length - 1) { active += 1; render(); }
+    },
+    goTo(i) { active = Math.max(0, Math.min(i, sections.length - 1)); render(); },
+    refresh: render,
+  };
 }
 
 export function renderComingSoon(container, { title, message }) {

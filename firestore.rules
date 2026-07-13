@@ -239,7 +239,8 @@ service cloud.firestore {
         request.resource.data.operations is list &&
         request.resource.data.operations.size() > 0 &&
         request.resource.data.operations.hasOnly([
-          'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot',
+          'add', 'multiply', 'divide',
+          'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
           'fracAdd', 'fracSub', 'fracMul', 'fracDiv'
         ]) &&
         request.resource.data.tables is list &&

@@ -15,7 +15,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createCarousel, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
+import { createCarousel, createSectionFlow, renderChoiceStep, renderMultiStep, renderComingSoon } from '/utils/components/setup-carousel.js';
 
 const REGULAR_SHAPES = ['triangle', 'square', 'rectangle'];
 
@@ -193,6 +193,8 @@ function renderLengthsPick() {
       if (checked) lengths.add(n); else lengths.delete(n);
       updateStartDisabled();
     },
+    nextLabel: 'Next: Game Options →',
+    onNext: () => flow.next(), // last step of this section
   });
 }
 
@@ -403,7 +405,7 @@ options.addSlide('time', 'Time Limit', (el) => {
       { value: '90', label: '90s' },
       { value: '120', label: '120s' },
     ],
-    onPick: (v) => { timeLimit = Number(v); },
+    onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
   });
 });
 
@@ -448,6 +450,34 @@ roomCarousel.addSlide('code', 'Code', (el) =>
 
 renderRoomEntry();
 roomCarousel.start('entry');
+
+/* ── One selector on screen at a time ─────────────────────────────────────
+   The three sections stay independent carousels; this just shows one at a
+   time and collapses the finished ones to a summary you can click to reopen. */
+const SHAPE_SUMMARY = (s) => SHAPE_LABELS[s] || s;
+const flow = createSectionFlow([
+  {
+    el: $('geo-section-topic'),
+    summary: () => {
+      if (!shapes.size) return 'No topic chosen';
+      const what = [...shapes].map(SHAPE_SUMMARY).join(', ');
+      const unit = isCurvedBranch() ? 'radius' : 'sides';
+      return `${what} · ${lengths.size} ${unit}`;
+    },
+  },
+  {
+    el: $('geo-section-options'),
+    summary: () =>
+      mode === 'versus'
+        ? `Versus 1v1 · ${timeLimit}s`
+        : `Multiplayer · ${roomSize} players · ${timeLimit}s`,
+  },
+  {
+    el: $('geo-section-room'),
+    summary: () =>
+      roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+  },
+]);
 
 updateStartDisabled();
 updateStartLabel();
