@@ -39,7 +39,9 @@ export const FEATURE_STATES = ["off", "free", "premium"];
 // own `path` (e.g. each 3D game's folder) so a page can resolve to a sub-part.
 // Inline-gated features (PrepBot, CBT written answers) have no paths and are
 // looked up by id. `usesAiGenerate` marks features allowed to call
-// POST /api/ai/generate (the server validates the claimed feature against it).
+// POST /api/ai/generate (the server validates the claimed feature against it);
+// `usesImageGen` does the same for POST /api/ai/image, which draws on
+// Cloudflare's neuron allocation rather than the LLM token pool.
 export const FEATURES = [
   {
     id: "virtual-lab",
@@ -88,6 +90,7 @@ export const FEATURES = [
     default: "premium",
     paths: ["/flashcards"],
     usesAiGenerate: true,
+    usesImageGen: true, // card illustrations
   },
   {
     id: "prep-math-activities",
@@ -127,9 +130,11 @@ export const FEATURES = [
     group: "AI Assistant",
     default: "premium",
     paths: [], // inline gate (prepbot.js) + server gate (/api/ai/chat, /api/tts)
+    usesImageGen: true, // the avatar picker's "draw my character" tile
     parts: [
       { id: "chat", label: "Chat" },
       { id: "voice", label: "Voice (ElevenLabs read-aloud)" },
+      { id: "images", label: "Character images (PrepBot draws your avatar)" },
     ],
   },
   {

@@ -289,15 +289,18 @@ export async function craftImagePrompt(text, fallbackPrompt) {
  * since it's a different provider drawing on a different resource pool
  * (Cloudflare neurons, not LLM tokens) — see server/routes/ai.js.
  *
- * @param {string} o.prompt  Plain-text description of the image (max 500 chars).
+ * @param {string} o.prompt   Plain-text description of the image (max 500 chars).
+ * @param {string} o.feature  Which feature this image is for — the server gates
+ *                            on it ("flashcards" for card art, "prepbot" for the
+ *                            avatar picker's character drawings).
  * @returns {Promise<string>} A data: URI (base64 JPEG) ready for an <img src>.
  */
-export async function imageGenerate({ prompt } = {}) {
+export async function imageGenerate({ prompt, feature = 'flashcards' } = {}) {
   const token = await _idToken();
   const res = await fetch(`${API_BASE}/api/ai/image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, feature }),
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => '');

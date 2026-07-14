@@ -84,6 +84,7 @@ then "not premium") — the server is the real enforcement.
        { id: "sub-a", label: "Sub A", path: "/my-feature/sub-a" }, // path optional
      ],
      usesAiGenerate: true,         // OPTIONAL: may call POST /api/ai/generate
+     usesImageGen: true,           // OPTIONAL: may call POST /api/ai/image
    }
    ```
 2. **Page-gated?** Every page under `paths` must include
@@ -113,10 +114,10 @@ then "not premium") — the server is the real enforcement.
 | theory | premium | — | `/api/ai/generate` only — the page itself is a deliberately PUBLIC, crawlable SEO landing page (see the comment in `theory-page/index.html`); do not add a page guard there |
 | writing | premium | — | page guard (AI via proxy, see caveat) |
 | activities | premium | author, attempt | page guard + `/api/activities` |
-| flashcards | premium | — | page guard |
+| flashcards | premium | — | page guard + `/api/ai/image` (card art) |
 | prep-math-activities | premium | cartesian-art, equivalent-fractions, polygon-angles, surface-area, transversals | page guard (per sub-app) |
 | games-3d | premium | aliens, chess, free-throw, drone, maze, rubiks-cube | page guard (per game) |
-| prepbot | premium | chat, voice | inline + `/api/ai/chat`, `/api/tts/elevenlabs` |
+| prepbot | premium | chat, voice, images | inline + `/api/ai/chat`, `/api/tts/elevenlabs`, `/api/ai/image` (`images` = the avatar picker's "PrepBot draws your character" tile) |
 | cbt-written | premium | short, theory | inline (quiz-engine, per format) |
 | classroom | premium | — | `/api/classroom` |
 | calendar | free | — | `/api/calendar` (reads; writes stay admin-only) |
@@ -144,6 +145,9 @@ then "not premium") — the server is the real enforcement.
   page guard (UX) plus the shared token quota (hard resource cap).
   `/api/ai/generate` (one-shot jobs) IS feature-gated via a registry-validated
   `feature` body param (allowlist = entries with `usesAiGenerate`).
+  `/api/ai/image` works the same way (allowlist = `usesImageGen`: `flashcards`
+  for card art, `prepbot`/`images` for the avatar picker's character drawings).
+  It draws on Cloudflare's neuron allocation, NOT the LLM token pool.
 - **Firestore rules deploys are manual**: `firebase deploy --only firestore:rules`.
 - **`vercel.json` `includeFiles` must keep `utils/features.js`** or the server's
   dynamic import of the registry breaks on Vercel (verify `/api/config` on a

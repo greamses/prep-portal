@@ -13,11 +13,21 @@
    cropped to a small square JPEG in a canvas and stored as data URLs in
    localStorage. There is no server upload.
 
+   PrepBot can also DRAW a character to order: describe one, and the picture it
+   makes is saved into exactly the same list as a photo. That tile only appears
+   for players allowed the prepbot/images feature (see utils/features.js); the
+   server gates the endpoint on the same part, so hiding the tile is a courtesy,
+   not the security boundary.
+
    A "seed" is whatever identifies a face:
      - a built-in name ("Astro")   -> a DiceBear drawing
-     - "upload:<id>"               -> one of this player's own photos
+     - "upload:<id>"               -> one of this player's own pictures
      - anything else (a bot name)  -> a DiceBear drawing, so bots get a face too
 ═══════════════════════════════════════════════════════ */
+import { auth } from '/firebase-init.js';
+import { getProfile } from '/utils/data-service.js';
+import { resolveUserAccess } from '/utils/features.js';
+import { imageGenerate } from '/utils/ai-client.js';
 
 export const AVATAR_SEEDS = ['Explorer', 'Astro', 'Ranger', 'Comet', 'Nova', 'Pixel', 'Quokka', 'Robo', 'Sunny', 'Turbo', 'Breezy', 'Sparkle'];
 
@@ -40,6 +50,12 @@ const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hi
 
 const REMOVE_ICON_SVG = `<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
   <path d="M3 3 L9 9 M9 3 L3 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+</svg>`;
+
+// A pencil over a spark — "PrepBot draws this one".
+const DRAW_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  <path d="M4 20l1.2-4 9.4-9.4a2 2 0 0 1 2.8 0l0.6 0.6a2 2 0 0 1 0 2.8L8.6 19.4 4 20Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M19.2 3.2l0.7 1.6 1.6 0.7-1.6 0.7-0.7 1.6-0.7-1.6L16.9 5.5l1.6-0.7 0.7-1.6Z" fill="var(--text-tertiary)"/>
 </svg>`;
 
 // ── Store ───────────────────────────────────────────────────────────────
@@ -118,12 +134,12 @@ export function getAvatarSeed() {
   return selectedSeed;
 }
 
-// ── Photo handling ──────────────────────────────────────────────────────
-// Downscale + centre-crop to a square, then compress — a phone photo is
-// megabytes, and localStorage is not.
-function resizeAvatarFile(file) {
+// ── Picture handling ────────────────────────────────────────────────────
+// Downscale + centre-crop to a square, then compress. A phone photo is
+// megabytes and localStorage is not; a generated picture is already square but
+// still far bigger than it needs to be at 48px on screen. Both go through here.
+function squareJpeg(src) {
   return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -134,12 +150,47 @@ function resizeAvatarFile(file) {
       const sx = (img.naturalWidth - crop) / 2;
       const sy = (img.naturalHeight - crop) / 2;
       ctx.drawImage(img, sx, sy, crop, crop, 0, 0, AVATAR_PX, AVATAR_PX);
-      URL.revokeObjectURL(objectUrl);
       resolve(canvas.toDataURL('image/jpeg', 0.85));
     };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that image.')); };
-    img.src = objectUrl;
+    img.onerror = () => reject(new Error('Could not read that image.'));
+    img.src = src;
   });
+}
+
+async function resizeAvatarFile(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    return await squareJpeg(objectUrl);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+// ── PrepBot: draw me a character ────────────────────────────────────────
+// The player writes who they want to be; this wraps that in a style so what
+// comes back is a usable avatar (a centred head-and-shoulders portrait) rather
+// than a landscape or a page of text.
+const MAX_WISH = 160;
+
+function characterPrompt(wish) {
+  return [
+    `Friendly cartoon avatar portrait of ${wish}.`,
+    'Head and shoulders, centred, facing forward, big expressive eyes,',
+    'flat bold colours, soft pastel background, clean children\'s storybook',
+    'illustration style. No text, no letters, no logos, no watermark.',
+  ].join(' ');
+}
+
+async function canDrawCharacters() {
+  const user = auth.currentUser;
+  if (!user) return false;
+  try {
+    const profile = await getProfile(user.uid);
+    const verdict = await resolveUserAccess({ featureId: 'prepbot', partId: 'images', profile });
+    return !!verdict.allowed;
+  } catch {
+    return false; // no gate answer -> no tile; the server would refuse anyway
+  }
 }
 
 /**
@@ -151,6 +202,11 @@ function resizeAvatarFile(file) {
  * Returns { render, seed } — `render` re-draws (rarely needed by callers).
  */
 export function mountAvatarPicker({ grid, uploadInput, radioName, onChange }) {
+  // Starts false so the tile never flickers in for someone who can't have it;
+  // the gate is async (it needs the user's profile), so the grid re-renders if
+  // the answer comes back yes.
+  let canDraw = false;
+
   function select(seed) {
     selectedSeed = seed;
     localStorage.setItem(SEED_KEY, seed);
@@ -183,6 +239,15 @@ export function mountAvatarPicker({ grid, uploadInput, radioName, onChange }) {
     return label;
   }
 
+  // Saves a finished square JPEG into the list and wears it. Shared by the
+  // camera and by PrepBot — a drawn character is just another picture.
+  function keepPicture(url) {
+    const entry = { id: `u${Date.now().toString(36)}`, url };
+    uploads = writeUploads([entry, ...uploads]); // newest first; the oldest falls off the end
+    if (uploads.some((u) => u.id === entry.id)) select(UPLOAD_PREFIX + entry.id);
+    render();
+  }
+
   function render() {
     grid.innerHTML = '';
 
@@ -191,6 +256,15 @@ export function mountAvatarPicker({ grid, uploadInput, radioName, onChange }) {
     uploadTile.innerHTML = UPLOAD_ICON_SVG;
     uploadTile.addEventListener('click', () => uploadInput.click());
     grid.appendChild(uploadTile);
+
+    if (canDraw) {
+      const drawTile = document.createElement('label');
+      drawTile.className = `pp-sticky pp-sticky--tape sticky-choice avatar-choice avatar-choice--draw ${stickyColor(0)}`;
+      drawTile.title = 'Ask PrepBot to draw your character';
+      drawTile.innerHTML = DRAW_ICON_SVG;
+      drawTile.addEventListener('click', openDrawDialog);
+      grid.appendChild(drawTile);
+    }
 
     uploads.forEach((u, i) => {
       grid.appendChild(tile(i + 1, {
@@ -219,16 +293,94 @@ export function mountAvatarPicker({ grid, uploadInput, radioName, onChange }) {
     uploadInput.value = ''; // so the same file can be picked again later
     if (!file) return;
     try {
-      const url = await resizeAvatarFile(file);
-      const entry = { id: `u${Date.now().toString(36)}`, url };
-      uploads = writeUploads([entry, ...uploads]); // newest first; the oldest falls off the end
-      select(uploads.some((u) => u.id === entry.id) ? UPLOAD_PREFIX + entry.id : selectedSeed);
-      render();
+      keepPicture(await resizeAvatarFile(file));
     } catch {
       alert("Couldn't use that photo — please try a different image.");
     }
   });
 
+  // ── PrepBot's drawing pad ─────────────────────────────────────────────
+  // A dialog rather than an inline field: generation takes a few seconds and
+  // returns something you'll want to look at before you commit to wearing it.
+  function openDrawDialog() {
+    const bd = document.createElement('div');
+    bd.className = 'avatar-draw-bd';
+    bd.innerHTML = `
+      <div class="avatar-draw pp-sticky pp-sticky--tape pp-sticky--c2" role="dialog" aria-modal="true" aria-label="Ask PrepBot to draw your character">
+        <p class="avatar-draw-title">Who do you want to be?</p>
+        <p class="avatar-draw-sub">Describe your character and PrepBot will draw it.</p>
+        <input class="avatar-draw-input" type="text" maxlength="${MAX_WISH}"
+               placeholder="a girl astronaut with braids" aria-label="Describe your character" />
+        <div class="avatar-draw-stage" hidden><img class="avatar-draw-preview" alt="" /></div>
+        <p class="avatar-draw-status" role="status"></p>
+        <div class="avatar-draw-actions">
+          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c1 avatar-draw-cancel">Cancel</button>
+          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c0 avatar-draw-go">Draw</button>
+          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3 avatar-draw-keep" hidden>Use this</button>
+        </div>
+      </div>`;
+    document.body.appendChild(bd);
+
+    const $ = (sel) => bd.querySelector(sel);
+    const input = $('.avatar-draw-input');
+    const stage = $('.avatar-draw-stage');
+    const preview = $('.avatar-draw-preview');
+    const status = $('.avatar-draw-status');
+    const go = $('.avatar-draw-go');
+    const keep = $('.avatar-draw-keep');
+
+    let drawn = null; // the square JPEG, once we have one
+    const close = () => bd.remove();
+
+    async function draw() {
+      const wish = input.value.trim().slice(0, MAX_WISH);
+      if (!wish) { input.focus(); return; }
+      go.disabled = true;
+      keep.hidden = true;
+      status.textContent = 'PrepBot is drawing…';
+      bd.classList.add('is-busy');
+      try {
+        const raw = await imageGenerate({ prompt: characterPrompt(wish), feature: 'prepbot' });
+        drawn = await squareJpeg(raw);
+        preview.src = drawn;
+        preview.alt = wish;
+        stage.hidden = false;
+        status.textContent = 'Like it? Keep it, or draw another.';
+        keep.hidden = false;
+        go.textContent = 'Draw again';
+      } catch (e) {
+        // 402 comes back when the feature is on but the player isn't premium.
+        status.textContent = /402|premium/i.test(String(e && e.message))
+          ? 'Drawing characters is a premium feature.'
+          : "PrepBot couldn't draw that one — try describing it differently.";
+      } finally {
+        go.disabled = false;
+        bd.classList.remove('is-busy');
+      }
+    }
+
+    go.addEventListener('click', draw);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); draw(); } });
+    keep.addEventListener('click', () => { if (drawn) keepPicture(drawn); close(); });
+    $('.avatar-draw-cancel').addEventListener('click', close);
+    bd.addEventListener('click', (e) => { if (e.target === bd) close(); });
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+    });
+
+    input.focus();
+  }
+
   render();
+
+  // Ask whether this player may have PrepBot draw for them, and add the tile if
+  // so. Deliberately not awaited: the picker must be usable the instant it's
+  // mounted, gate or no gate.
+  canDrawCharacters().then((allowed) => {
+    if (!allowed) return;
+    canDraw = true;
+    render();
+  });
+
   return { render, seed: getAvatarSeed };
 }

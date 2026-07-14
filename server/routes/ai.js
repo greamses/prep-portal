@@ -724,6 +724,30 @@ module.exports = function () {
         return res.status(503).json({ error: "Image generation is not configured on this server." });
       }
 
+      // Same shape as /generate: the caller names which feature the image is
+      // for, only registry entries flagged usesImageGen are accepted, and
+      // access is resolved per feature (flashcards → card art, prepbot/images
+      // → the avatar picker's "draw my character" tile). A client could claim
+      // the sibling feature, but both draw on the same Cloudflare neuron
+      // allocation, so the claim buys nothing it couldn't already have.
+      const feature = String(req.body?.feature || "flashcards");
+      const { FEATURES } = await access.registry();
+      const entry = FEATURES.find((f) => f.id === feature);
+      if (!entry || !entry.usesImageGen) {
+        return res.status(400).json({ error: `Unknown image feature "${feature}".` });
+      }
+      const part = feature === "prepbot" ? "images" : undefined;
+      const verdict = await access.canUse(req, feature, part);
+      if (!verdict.allowed) {
+        if (verdict.reason === "premium-required") {
+          return res.status(402).json({
+            premiumRequired: true,
+            error: "This is a premium feature. Upgrade your plan at /subscribe.html to use it.",
+          });
+        }
+        return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
+      }
+
       const prompt = String(req.body?.prompt || "").trim().slice(0, 500);
       if (!prompt) return res.status(400).json({ error: "A prompt is required." });
 

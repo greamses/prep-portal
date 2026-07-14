@@ -355,3 +355,97 @@
 .pp-section.is-done > .pp-section-recap:hover .pp-recap-note {
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
 }
+
+/* ── AVATAR PICKER — PrepBot's drawing pad ──────────────────────────────
+   The "draw my character" tile (utils/components/avatar-picker.js) and the
+   dialog it opens. Lives here rather than in each game's stylesheet because
+   the picker itself is shared by all four. */
+.avatar-choice--draw:not(:has(img)) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--accent-secondary, #6fb7e8);
+}
+.avatar-choice--draw svg { pointer-events: none; }
+
+.avatar-draw-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(20, 19, 15, 0.45);
+  backdrop-filter: blur(2px);
+}
+.pp-sticky.avatar-draw {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(340px, 100%);
+  padding: 1.4rem 1.2rem 1.1rem;
+  text-align: center;
+  --pp-note-tilt: -1deg;
+}
+.avatar-draw-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.avatar-draw-sub {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+.avatar-draw-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1.5px solid rgba(20, 19, 15, 0.22);
+  border-radius: 5px;
+}
+.avatar-draw-input::placeholder { opacity: 0.4; }
+
+.avatar-draw-stage {
+  display: flex;
+  justify-content: center;
+  margin: 0.3rem 0;
+}
+.avatar-draw-preview {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 10px rgba(20, 19, 15, 0.28);
+}
+.avatar-draw-status {
+  margin: 0;
+  min-height: 1.1em;
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+/* A drawing takes a few seconds — say so, rather than just sitting there. */
+.avatar-draw-bd.is-busy .avatar-draw-status { animation: avatar-draw-pulse 1.1s ease-in-out infinite; }
+@keyframes avatar-draw-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+}
+
+.avatar-draw-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+.avatar-draw-actions .pp-note-btn {
+  padding: 0.4rem 0.95rem;
+  font-size: 0.82rem;
+}
+.avatar-draw-actions .pp-note-btn:disabled { opacity: 0.5; cursor: default; }
