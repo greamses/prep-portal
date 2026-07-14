@@ -55,8 +55,9 @@ const SHARED = [
 // round start; an import map remaps a dynamic import just like a static one, so
 // they must be listed here or a fresh page could load a stale bank.
 const VOCAB_SUBJECTS = [
-  'life-science', 'earth-science', 'physical-science', 'general-maths',
-  'biology', 'chemistry', 'physics', 'algebra', 'geometry', 'statistics',
+  'life-science', 'earth-science', 'physical-science', 'space-science',
+  'general-maths', 'biology', 'chemistry', 'physics',
+  'algebra', 'geometry', 'statistics',
 ];
 const PAGES = [
   { name: 'geometry' },
@@ -135,7 +136,12 @@ for (const page of PAGES) {
         // Drop previously-generated app entries so a stale version can't linger.
         for (const [k, v] of Object.entries(parsed.imports || {})) {
           const isApp = k.startsWith(page.urlBase) || sharedFor(page).includes(k);
-          if (!isApp) existingImports[k] = v;
+          if (isApp) continue;
+          // A local module that has since been DELETED (the old single-Science
+          // vocab bank, say) would otherwise stay pinned in the map for ever.
+          const isLocal = k.startsWith('/');
+          if (isLocal && !existsSync(join(ROOT, k.slice(1)))) continue;
+          existingImports[k] = v;
         }
       } catch {
         console.error(`  ! could not parse the import map in ${page.name}/index.html — leaving it alone`);

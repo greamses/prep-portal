@@ -33,6 +33,20 @@ fi
 echo "🔖 Versioning module URLs…"
 node scripts/version-assets.mjs
 
+# The stamping above REWRITES index.html. If those rewrites are still sitting
+# uncommitted when we deploy, production ends up serving the PREVIOUS deploy's
+# import map — new code behind old hashed URLs, one deploy behind for ever.
+# So: refuse to deploy a dirty tree, and say exactly what to do about it.
+if [ -n "$(git status --porcelain)" ]; then
+  echo ""
+  echo "✗ Working tree is dirty — commit before deploying, or production will"
+  echo "  ship the last commit's asset hashes instead of these:"
+  git status --short
+  echo ""
+  echo "   git add -A && git commit -m '…' && git push && npm run deploy"
+  exit 1
+fi
+
 echo ""
 echo "▲ Deploying to production…"
 vercel --prod
