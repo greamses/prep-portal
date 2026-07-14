@@ -11,8 +11,8 @@
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import {
-  SUBJECTS, GRADES, MODES, subjectsForGrade, topicsFor, topicMeta, loadWords,
-  gradePool, topicPool,
+  SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
+  loadWords, gradePool, topicPool,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -90,8 +90,9 @@ let timeLimit = 120;
 let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
 let grade = 5;
 let subject = 'life-science';
-let playMode = 'az';  // az | topic
-let topic = '';       // only meaningful when playMode === 'topic'
+let playMode = 'az';    // az | topic — which words the round deals
+let topic = '';         // only meaningful when playMode === 'topic'
+let spelling = 'classic'; // classic | spell — how each word is played
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -157,6 +158,7 @@ content.addSlide('grade', 'Grade', () => {});
 content.addSlide('subject', 'Subject', () => {});
 content.addSlide('play', 'Play', () => {});
 content.addSlide('topic', 'Topic', () => {});
+content.addSlide('spelling', 'Spelling', () => {});
 
 function renderGradeStep() {
   renderChoiceStep(content, 'grade', {
@@ -208,8 +210,17 @@ renderChoiceStep(content, 'play', {
   onPick: (v) => {
     playMode = v;
     if (playMode === 'topic') { renderTopicStep(); content.goTo('topic'); return; }
-    flow.next(); // A-Z has nothing left to ask — this is the section's last step
+    content.goTo('spelling'); // A-Z has no topic to pick, but still needs a way to play
   },
+});
+
+renderChoiceStep(content, 'spelling', {
+  title: 'How do you play each word?',
+  subtitle: 'Classic is hangman. A spelling bee makes you write the word out.',
+  name: 'vocab-spelling',
+  colorOffset: 5,
+  options: SPELL_MODES.map((m) => ({ value: m.key, label: m.label, checked: m.key === spelling })),
+  onPick: (v) => { spelling = v; flow.next(); }, // last step of this section
 });
 
 function renderTopicStep() {
@@ -220,7 +231,7 @@ function renderTopicStep() {
     name: 'vocab-topic',
     colorOffset: 1,
     options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === topic })),
-    onPick: (v) => { topic = v; flow.next(); }, // last step of this section
+    onPick: (v) => { topic = v; content.goTo('spelling'); },
   });
 }
 
@@ -323,10 +334,12 @@ const flow = createSectionFlow([
     el: $('vocab-section-topic'),
     chips: () => {
       const meta = playMode === 'topic' ? topicMeta(subject, topic) : null;
+      const spell = SPELL_MODES.find((m) => m.key === spelling);
       return [
         { label: `Grade ${grade}` },
         { label: SUBJECTS[subject].label },
         { label: meta ? meta.label : 'A to Z' },
+        { label: spell.label },
       ];
     },
   },
@@ -545,6 +558,8 @@ async function playRoundAndShowResults(room, name) {
     // in by code never picked one.
     mode: room.playMode,
     topic: room.topic,
+    spelling: room.spelling, // the ROOM's — a joiner never picked one
+
     roster,
   });
 
@@ -590,7 +605,7 @@ async function runMultiplayer(name) {
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size: roomSize, timeLimit, subject, grade, playMode, topic, displayName: name },
+      { mode: 'multiplayer', size: roomSize, timeLimit, subject, grade, playMode, topic, spelling, displayName: name },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -610,7 +625,7 @@ async function runCreate(name, size, roomMode) {
   let created;
   try {
     created = await createCodeRoom(
-      { mode: roomMode, size, timeLimit, subject, grade, playMode, topic, displayName: name },
+      { mode: roomMode, size, timeLimit, subject, grade, playMode, topic, spelling, displayName: name },
       { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
     );
   } catch (e) {

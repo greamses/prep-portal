@@ -316,6 +316,7 @@ service cloud.firestore {
         request.resource.data.grade >= 1 &&
         request.resource.data.grade <= 12 &&
         request.resource.data.playMode in ['az', 'topic'] &&
+        request.resource.data.spelling in ['classic', 'spell'] &&
         request.resource.data.topic is string &&
         request.resource.data.topic.size() <= 40;
 

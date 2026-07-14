@@ -50,6 +50,14 @@ export const MODES = [
   { key: 'topic', label: 'By Topic' },
 ];
 
+/* How a word is played. Classic is hangman — you READ the word out of the
+   letters you guess. A spelling bee makes you WRITE it, in order, which is what
+   a spelling test actually asks for and a much harder thing to do. */
+export const SPELL_MODES = [
+  { key: 'classic', label: 'Classic', hint: 'Guess any letter. A hit fills every place it appears.' },
+  { key: 'spell', label: 'Spelling Bee', hint: 'Type the whole word, letter by letter, in order.' },
+];
+
 const cache = new Map();
 
 /**

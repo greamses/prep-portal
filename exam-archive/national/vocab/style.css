@@ -1135,3 +1135,15 @@ body.vocab-nav-hidden .site-nav { display: none; }
 @media (max-width: 480px) {
   .vocab-dict-row { grid-template-columns: 1fr; gap: 0.1rem; }
 }
+
+/* The spelling-bee cursor: in Classic you are reading the word out of the
+   letters you guess, so there is no "next" slot. In a Spelling Bee you are
+   writing it, and you need to see where the next letter lands. */
+.vocab-slot.is-cursor {
+  border-bottom-color: var(--accent-primary);
+  animation: vocab-cursor 1s steps(2, jump-none) infinite;
+}
+@keyframes vocab-cursor {
+  0%, 100% { border-bottom-color: var(--accent-primary); }
+  50% { border-bottom-color: rgba(20, 19, 15, 0.2); }
+}

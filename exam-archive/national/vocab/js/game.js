@@ -9,10 +9,19 @@
    blank from the first guess. The clue does the rest of the work, which is why
    the clue is never allowed to contain its own word (see data/vocab).
 
+   TWO WAYS TO PLAY A WORD:
+     classic — hangman. Guess any letter; a hit fills EVERY place it appears,
+               and a letter that isn't in the word costs a limb. You are READING
+               the word.
+     spell   — a spelling bee. Type the word out in order, one letter at a time,
+               left to right. A wrong letter costs a limb and the cursor stays
+               put. You are WRITING the word, which is a harder thing, and the
+               thing a spelling test actually asks of a child.
+
    Score is words SOLVED. Timing after activation is entirely local
    (startAt/timeLimit) — no further server dependency during play.
 ═══════════════════════════════════════════════════════ */
-import { buildRound, isGuessable, hiddenLetters, MAX_WRONG } from './rng.js';
+import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import { loadWords, topicMeta } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -41,8 +50,12 @@ let seed = 0;
 let round = [];   // [{ word, clue, letter }] — the same list on every client
 let index = 0;
 let current = null;
-const revealed = new Set(); // letters shown on the board
-const guessed = new Set();  // every key already pressed this word
+let spelling = 'classic';
+// POSITIONS shown on the board, not letters. The two modes fill the board in
+// different ways — classic fills every place a letter appears, a spelling bee
+// fills the next place only — and only positions can express both.
+const revealedPos = new Set();
+const guessed = new Set(); // keys already spent on this word — classic only
 let wrong = 0;
 let score = 0;
 let endAt = 0;
@@ -79,23 +92,44 @@ function buildKeyboard() {
 
 const keyEl = (ch) => keyboardEl.querySelector(`[data-key="${ch}"]`);
 
+// The next place a speller has to fill. -1 once the word is complete.
+function nextSlot() {
+  const chars = [...current.word.toUpperCase()];
+  for (let i = 0; i < chars.length; i++) {
+    if (isGuessable(chars[i]) && !revealedPos.has(i)) return i;
+  }
+  return -1;
+}
+
 function renderWord() {
   wordEl.innerHTML = '';
-  [...current.word.toUpperCase()].forEach((ch) => {
+  const cursor = spelling === 'spell' ? nextSlot() : -1;
+  [...current.word.toUpperCase()].forEach((ch, i) => {
     const slot = document.createElement('span');
     if (!isGuessable(ch)) {
-      // Scenery ("x-ray"'s hyphen) — always shown, never guessed.
+      // Scenery ("x-ray"'s hyphen) — always shown, never typed, never guessed.
       slot.className = 'vocab-slot vocab-slot--fixed';
       slot.textContent = ch;
-    } else if (revealed.has(ch)) {
+    } else if (revealedPos.has(i)) {
       slot.className = 'vocab-slot is-filled';
       slot.textContent = ch;
     } else {
-      slot.className = 'vocab-slot';
+      // A spelling bee shows a cursor: you are writing, so you need to see where
+      // the next letter is going to land.
+      slot.className = 'vocab-slot' + (i === cursor ? ' is-cursor' : '');
       slot.textContent = '';
     }
     wordEl.appendChild(slot);
   });
+}
+
+function isSolved() {
+  return nextSlot() === -1;
+}
+
+// Scenery is never guessed, so it sits on the board from the start.
+function revealScenery() {
+  [...current.word].forEach((ch, i) => { if (!isGuessable(ch)) revealedPos.add(i); });
 }
 
 function renderLives() {
@@ -112,7 +146,7 @@ function loadWord() {
   current = round[index];
   if (!current) { finishWords(); return; }
 
-  revealed.clear();
+  revealedPos.clear();
   guessed.clear();
   wrong = 0;
 
@@ -131,6 +165,7 @@ function loadWord() {
     btn.disabled = false;
   });
 
+  revealScenery();
   renderWord();
   renderLives();
   acceptingGuesses = true;
@@ -154,7 +189,7 @@ function solve() {
 function hang() {
   acceptingGuesses = false;
   // Show what it was — a hangman you never see the answer to teaches nothing.
-  [...current.word.toUpperCase()].forEach((ch) => { if (isGuessable(ch)) revealed.add(ch); });
+  [...current.word].forEach((_, i) => revealedPos.add(i));
   renderWord();
   boardEl.classList.add('is-hung');
   showVerdict(`It was “${current.word.toUpperCase()}”`, 'hung');
@@ -188,26 +223,56 @@ function finishWords() {
 function guess(rawCh) {
   if (!active || !acceptingGuesses) return;
   const ch = rawCh.toUpperCase();
-  if (!/^[A-Z]$/.test(ch) || guessed.has(ch)) return;
+  if (!/^[A-Z]$/.test(ch)) return;
+
+  const hit = spelling === 'spell' ? spellLetter(ch) : classicLetter(ch);
+  if (hit === null) return; // key already spent (classic only)
+
+  if (hit) {
+    renderWord();
+    if (isSolved()) solve();
+    return;
+  }
+
+  wrong += 1;
+  renderWord(); // in a spelling bee a wrong letter leaves the cursor where it was
+  renderLives();
+  if (wrong >= MAX_WRONG) hang();
+}
+
+// Classic hangman: any letter, any time. A hit fills every place it appears, and
+// the key is spent either way, so the board remembers what you have tried.
+function classicLetter(ch) {
+  if (guessed.has(ch)) return null;
   guessed.add(ch);
 
-  const hit = current.word.toUpperCase().includes(ch);
+  const chars = [...current.word.toUpperCase()];
+  const hit = chars.includes(ch);
   const btn = keyEl(ch);
   if (btn) {
     btn.classList.add(hit ? 'is-hit' : 'is-miss');
     btn.disabled = true;
   }
+  if (hit) chars.forEach((c, i) => { if (c === ch) revealedPos.add(i); });
+  return hit;
+}
 
-  if (hit) {
-    revealed.add(ch);
-    renderWord();
-    if (hiddenLetters(current.word, revealed).length === 0) solve();
-    return;
+// Spelling bee: only the NEXT letter counts. Keys are never spent — a word with
+// two S's needs the S key twice, and a letter that was wrong here may be exactly
+// right two places later.
+function spellLetter(ch) {
+  const at = nextSlot();
+  if (at === -1) return false;
+  const hit = current.word.toUpperCase()[at] === ch;
+
+  const btn = keyEl(ch);
+  if (btn) {
+    // Flash the key rather than spending it.
+    btn.classList.add(hit ? 'is-hit' : 'is-miss');
+    setTimeout(() => btn.classList.remove('is-hit', 'is-miss'), 220);
   }
-
-  wrong += 1;
-  renderLives();
-  if (wrong >= MAX_WRONG) hang();
+  if (hit) revealedPos.add(at);
+  return hit;
 }
 
 function onKeyDown(e) {
@@ -241,7 +306,7 @@ buildKeyboard();
 
 // Resolves with { score, wordCount } once the local timer hits zero: how many
 // words the player solved, and how many the round held.
-export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, grade, mode, topic, roster }) {
+export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, grade, mode, topic, spelling: spellMode, roster }) {
   // The bank loads on demand, so the round's words must be in hand before the
   // countdown ends. It resolves from cache on a replay.
   const words = await loadWords(subject);
@@ -249,6 +314,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
 
   return new Promise((resolve) => {
     seed = roomSeed;
+    spelling = spellMode === 'spell' ? 'spell' : 'classic';
     index = 0;
     score = 0;
     wrong = 0;
@@ -257,7 +323,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     scoreNote.textContent = '0 solved';
     timerNote.textContent = `${Math.round(timeLimit / 60)} min round`;
     const meta = mode === 'topic' ? topicMeta(subject, topic) : null;
-    modeNote.textContent = meta ? meta.label : 'A to Z';
+    modeNote.textContent = (meta ? meta.label : 'A to Z') + ' · ' + (spelling === 'spell' ? 'Spelling Bee' : 'Classic');
     cardEl.hidden = false;
     countdownEl.hidden = false;
     boardEl.hidden = true;

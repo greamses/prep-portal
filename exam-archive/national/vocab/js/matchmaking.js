@@ -15,7 +15,7 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'vocabRooms',
   pointers: 'vocabRoomPointers',
-  contentKeys: ['subject', 'grade', 'playMode', 'topic'],
+  contentKeys: ['subject', 'grade', 'playMode', 'topic', 'spelling'],
   // Two players share a room only if they would be playing the same thing.
-  bucketOf: (c) => `${c.subject}_${c.grade}_${c.playMode}_${c.topic || 'all'}`,
+  bucketOf: (c) => `${c.subject}_${c.grade}_${c.playMode}_${c.topic || 'all'}_${c.spelling}`,
 });
