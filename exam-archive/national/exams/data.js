@@ -13,8 +13,6 @@ let activeCat = initialCat;
 // ── Shared DOM refs ─────────────────────────────────────────────────
 const beginBtn = document.getElementById("begin-btn");
 const setupStatusSpan = document.getElementById("setup-status");
-const builderNote = document.getElementById("builder-note");
-const builderStats = document.getElementById("builder-stats");
 
 function setStatus(msg, ready) {
   setupStatusSpan.textContent = msg;
@@ -41,45 +39,18 @@ function applyCat(cat) {
   history.replaceState(null, "", u);
 }
 
+// The header used to carry a blurb and a row of decorative notes per category;
+// both were scenery — the copy now lives in the page's meta description, where
+// it does some work. The CTA's wording is the only thing left that varies.
 const HEADER_CONTENT = {
-  national: {
-    note: "Pick a scheme, paper & subjects — we'll build an original practice test, marked instantly.",
-    stats: `
-      <span class="hero-stat theme-blue"><strong>UTME</strong>-style</span>
-      <span class="hero-stat theme-green"><strong>WASSCE</strong>-style</span>
-      <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
-    ctaLabel: "Start practice test",
-  },
-  competition: {
-    note: "Pick a competition, your level & round — start practising the exact paper.",
-    stats: `
-      <span class="hero-stat theme-blue"><strong>Scholastic</strong> Awards</span>
-      <span class="hero-stat theme-green"><strong>ANMC</strong> Upper Primary</span>
-      <span class="hero-stat theme-red"><strong>Olympiad</strong> Coming soon</span>`,
-    ctaLabel: "Start practice",
-  },
-  international: {
-    note: "Pick a scheme, paper & subjects — we'll build an original practice test, marked instantly.",
-    stats: `
-      <span class="hero-stat theme-blue"><strong>SAT</strong>-style</span>
-      <span class="hero-stat theme-green"><strong>IGCSE</strong>-style</span>
-      <span class="hero-stat theme-red"><strong>A-Level</strong>-style</span>`,
-    ctaLabel: "Start practice test",
-  },
-  practice: {
-    note: "Practise by class — pick your class, subject, topic & paper for an instant, marked set.",
-    stats: `
-      <span class="hero-stat theme-blue"><strong>By</strong> class</span>
-      <span class="hero-stat theme-green"><strong>By</strong> topic</span>
-      <span class="hero-stat theme-red"><strong>AI</strong> Written</span>`,
-    ctaLabel: "Start practice",
-  },
+  national: { ctaLabel: "Start practice test" },
+  competition: { ctaLabel: "Start practice" },
+  international: { ctaLabel: "Start practice test" },
+  practice: { ctaLabel: "Start practice" },
 };
 
 function updateHeaderContent(cat) {
   const h = HEADER_CONTENT[cat] || HEADER_CONTENT.national;
-  builderNote.textContent = h.note;
-  builderStats.innerHTML = h.stats;
   const ctaLabelEl = beginBtn.querySelector(".cta-label");
   if (ctaLabelEl) ctaLabelEl.textContent = h.ctaLabel;
   else beginBtn.textContent = h.ctaLabel;
