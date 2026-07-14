@@ -222,8 +222,8 @@ export const WORDS = {
       "d": "A substance that neutralises an acid, often an oxide or hydroxide."
     },
     {
-      "w": "alkali",
-      "d": "A base that dissolves in water and turns litmus blue."
+      "w": "basicity",
+      "d": "The number of hydrogen ions one particle of an acid can give away."
     },
     {
       "w": "salt",
@@ -274,8 +274,8 @@ export const WORDS = {
       "d": "The negative ion, made of oxygen and hydrogen, that alkalis release."
     },
     {
-      "w": "proton",
-      "d": "The particle an acid donates, on the Bronsted-Lowry view."
+      "w": "sour",
+      "d": "The taste of lemon juice and vinegar, which are both acidic."
     },
     {
       "w": "buffer",
@@ -438,8 +438,8 @@ export const WORDS = {
       "d": "The word for a quantity measured per unit amount of substance."
     },
     {
-      "w": "concentration",
-      "d": "The amount of solute dissolved per litre of solution."
+      "w": "dilution",
+      "d": "Adding solvent so that the same solute is spread more thinly."
     },
     {
       "w": "solute",
@@ -498,8 +498,8 @@ export const WORDS = {
       "d": "The unit that mass is usually weighed in for a school reaction."
     },
     {
-      "w": "burette",
-      "d": "The graduated tube used to run an exact volume into a flask."
+      "w": "weighing",
+      "d": "Finding the mass of a sample on an accurate laboratory scale."
     },
     {
       "w": "accuracy",
@@ -564,8 +564,8 @@ export const WORDS = {
       "d": "The thick black mixture pumped from the ground, refined into fuels."
     },
     {
-      "w": "combustion",
-      "d": "The burning of a fuel in oxygen, giving carbon dioxide and water."
+      "w": "diesel",
+      "d": "The heavier oil fuel that lorries and buses run on."
     },
     {
       "w": "functional",
@@ -601,7 +601,7 @@ export const WORDS = {
     },
     {
       "w": "refinery",
-      "d": "The plant where crude oil is separated into useful fractions."
+      "d": "The plant where crude oil is separated into its useful parts."
     }
   ],
   "electrochemistry": [
@@ -622,12 +622,12 @@ export const WORDS = {
       "d": "The negative rod, where positive ions collect their electrons."
     },
     {
-      "w": "electrolyte",
-      "d": "The molten or dissolved substance whose ions are free to move."
+      "w": "terminal",
+      "d": "The metal end of a cell where a wire is connected on."
     },
     {
-      "w": "ion",
-      "d": "The charged particle that carries the current through a liquid."
+      "w": "migration",
+      "d": "The travelling of charged particles towards the opposite rod."
     },
     {
       "w": "discharge",
@@ -662,12 +662,12 @@ export const WORDS = {
       "d": "The word for an equation showing only what happens at one rod."
     },
     {
-      "w": "oxidation",
-      "d": "The loss of electrons, which always happens at the positive rod."
+      "w": "oxidise",
+      "d": "To lose electrons, which is what happens at the positive rod."
     },
     {
-      "w": "reduction",
-      "d": "The gain of electrons, which always happens at the negative rod."
+      "w": "deposit",
+      "d": "The layer of metal that builds up on the negative rod."
     },
     {
       "w": "purification",
@@ -686,8 +686,8 @@ export const WORDS = {
       "d": "Melted, so that the ions in a solid compound are free to move."
     },
     {
-      "w": "reactivity",
-      "d": "The series that decides which ion is discharged first."
+      "w": "aluminium",
+      "d": "The light metal won from its ore by passing a huge current through it."
     },
     {
       "w": "conductor",
@@ -716,8 +716,8 @@ export const WORDS = {
       "d": "The least energy a collision must have for a reaction to occur."
     },
     {
-      "w": "catalyst",
-      "d": "Something that speeds a reaction by offering an easier path."
+      "w": "frequency",
+      "d": "How often particles meet, which sets how fast a reaction goes."
     },
     {
       "w": "enzyme",
@@ -728,8 +728,8 @@ export const WORDS = {
       "d": "Raise this and particles move faster, and collide harder and more often."
     },
     {
-      "w": "concentration",
-      "d": "Pack more particles into the same volume and the collisions grow more frequent."
+      "w": "stirring",
+      "d": "Mixing a solution so its particles meet each other more often."
     },
     {
       "w": "pressure",
@@ -740,12 +740,12 @@ export const WORDS = {
       "d": "Break a solid into powder and this is what you have increased."
     },
     {
-      "w": "exothermic",
-      "d": "The word for a change that releases heat as it goes."
+      "w": "barrier",
+      "d": "The hump of energy that a collision has to get over to react."
     },
     {
-      "w": "endothermic",
-      "d": "The word for a change that soaks heat up as it goes."
+      "w": "transition",
+      "d": "The unstable halfway arrangement at the top of the energy hump."
     },
     {
       "w": "enthalpy",
@@ -756,24 +756,24 @@ export const WORDS = {
       "d": "The diagram that plots energy as a reaction goes from start to finish."
     },
     {
-      "w": "equilibrium",
-      "d": "The balance reached when forward and backward rates match."
+      "w": "proportional",
+      "d": "The word for a rate that doubles when you double the concentration."
     },
     {
       "w": "dynamic",
       "d": "The word for a balance in which both directions are still going on."
     },
     {
-      "w": "reversible",
-      "d": "The word for a change that can go either way."
+      "w": "measurement",
+      "d": "Timing how long a cross takes to vanish, to work out a rate."
     },
     {
       "w": "shift",
       "d": "The way a balance moves to oppose a change forced upon it."
     },
     {
-      "w": "yield",
-      "d": "The share of product you finally get out of a balance."
+      "w": "graph",
+      "d": "The curve of amount against time, whose steepness gives the rate."
     },
     {
       "w": "kinetic",

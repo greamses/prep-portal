@@ -348,9 +348,12 @@ if (checkOnly) {
   let total = 0;
   for (const key of Object.keys(SUBJECTS)) {
     const byTopic = readExisting(key);
+    // One `seen` for the whole SUBJECT, not per topic: an A-Z round pools every
+    // topic a grade can see, so the same word in two topics just stacks the odds
+    // towards itself. A duplicate is a bug, and this is where it gets caught.
+    const seen = new Set();
     for (const topic of SUBJECTS[key].topics) {
       const list = byTopic[topic.key] || [];
-      const seen = new Set();
       const { rejects } = validate(list, seen);
       total += list.length;
       if (rejects.length || list.length < MIN_WORDS) {

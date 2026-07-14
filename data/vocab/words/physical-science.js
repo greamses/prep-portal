@@ -709,5 +709,597 @@ export const WORDS = {
       "w": "conveyor",
       "d": "A moving belt that carries goods along a factory floor."
     }
+  ],
+  "light": [
+    {
+      "w": "light",
+      "d": "The thing that travels from the Sun and lets your eyes see."
+    },
+    {
+      "w": "ray",
+      "d": "A single straight line showing the path that light takes."
+    },
+    {
+      "w": "beam",
+      "d": "A bundle of rays travelling together, as from a torch."
+    },
+    {
+      "w": "reflect",
+      "d": "To bounce back off a surface, as a ball bounces off a wall."
+    },
+    {
+      "w": "refract",
+      "d": "To bend as it passes from air into water or glass."
+    },
+    {
+      "w": "mirror",
+      "d": "A smooth silvered surface that bounces an image straight back."
+    },
+    {
+      "w": "lens",
+      "d": "A curved piece of glass that bends rays to a point."
+    },
+    {
+      "w": "prism",
+      "d": "A triangular block of glass that splits white light into colours."
+    },
+    {
+      "w": "spectrum",
+      "d": "The band of seven colours hidden inside white light."
+    },
+    {
+      "w": "rainbow",
+      "d": "The arc of colours in the sky after rain, made by raindrops."
+    },
+    {
+      "w": "shadow",
+      "d": "The dark shape left where an object blocks the rays."
+    },
+    {
+      "w": "eclipse",
+      "d": "What we see when one body blocks the light falling on another."
+    },
+    {
+      "w": "image",
+      "d": "The picture of an object formed by a mirror or a lens."
+    },
+    {
+      "w": "convex",
+      "d": "The word for a lens that bulges outwards and brings rays together."
+    },
+    {
+      "w": "concave",
+      "d": "The word for a lens that curves inwards and spreads rays apart."
+    },
+    {
+      "w": "focus",
+      "d": "The point where rays meet after passing through a lens."
+    },
+    {
+      "w": "shiny",
+      "d": "The word for a surface that bounces rays back cleanly."
+    },
+    {
+      "w": "dull",
+      "d": "The word for a surface that scatters rays in all directions."
+    },
+    {
+      "w": "colour",
+      "d": "What we see when an object throws back only some of the spectrum."
+    },
+    {
+      "w": "primary",
+      "d": "The word for red, green and blue, which mix to make any other shade."
+    },
+    {
+      "w": "periscope",
+      "d": "A tube with two mirrors, for seeing over the top of something."
+    },
+    {
+      "w": "laser",
+      "d": "A very narrow, very bright beam of a single colour."
+    },
+    {
+      "w": "luminous",
+      "d": "The word for an object that makes its own light, like a candle."
+    },
+    {
+      "w": "retina",
+      "d": "The screen at the back of your eye where the picture lands."
+    },
+    {
+      "w": "pupil",
+      "d": "The black hole in the middle of your eye that lets rays in."
+    }
+  ],
+  "sound": [
+    {
+      "w": "sound",
+      "d": "What your ears pick up when something shakes the air."
+    },
+    {
+      "w": "noise",
+      "d": "A loud or unpleasant thing to hear."
+    },
+    {
+      "w": "echo",
+      "d": "The repeat you hear when a shout bounces back off a cliff."
+    },
+    {
+      "w": "wave",
+      "d": "The travelling shake that carries a sound through the air."
+    },
+    {
+      "w": "pitch",
+      "d": "How high or low a note is, set by how fast the source shakes."
+    },
+    {
+      "w": "frequency",
+      "d": "The number of shakes each second, measured in hertz."
+    },
+    {
+      "w": "hertz",
+      "d": "The unit that counts how many shakes happen each second."
+    },
+    {
+      "w": "amplitude",
+      "d": "The size of a shake, which decides how loud a note is."
+    },
+    {
+      "w": "loud",
+      "d": "The word for a sound with a very big shake behind it."
+    },
+    {
+      "w": "quiet",
+      "d": "The word for a sound with only a very small shake behind it."
+    },
+    {
+      "w": "decibel",
+      "d": "The unit used to say how loud a noise is."
+    },
+    {
+      "w": "ear",
+      "d": "The organ on the side of your head, built to pick up shakes."
+    },
+    {
+      "w": "eardrum",
+      "d": "The tight skin inside your head that shakes when a noise reaches it."
+    },
+    {
+      "w": "medium",
+      "d": "The stuff a sound must travel through — air, water or a solid."
+    },
+    {
+      "w": "vacuum",
+      "d": "A space with nothing in it, where no sound can travel at all."
+    },
+    {
+      "w": "ultrasound",
+      "d": "Shakes too fast for a person to hear, used to see a baby."
+    },
+    {
+      "w": "sonar",
+      "d": "Bouncing pulses off the seabed to work out how deep it is."
+    },
+    {
+      "w": "muffle",
+      "d": "To deaden a noise by wrapping it in something soft."
+    },
+    {
+      "w": "absorption",
+      "d": "The soaking up of shakes by a soft curtain or a carpet."
+    },
+    {
+      "w": "resonance",
+      "d": "When one object shakes because another nearby is shaking too."
+    },
+    {
+      "w": "tuning",
+      "d": "Adjusting a string until it sings the note you want."
+    },
+    {
+      "w": "string",
+      "d": "The tight wire on a guitar that shakes to make its note."
+    },
+    {
+      "w": "drum",
+      "d": "The instrument whose tight skin you hit to make it shake."
+    },
+    {
+      "w": "volume",
+      "d": "How loud you have turned a radio up."
+    }
+  ],
+  "heat": [
+    {
+      "w": "heat",
+      "d": "The energy that flows from a hot thing to a cold one."
+    },
+    {
+      "w": "thermometer",
+      "d": "The instrument used to measure how hot something is."
+    },
+    {
+      "w": "celsius",
+      "d": "The scale on which water freezes at nought and boils at a hundred."
+    },
+    {
+      "w": "degree",
+      "d": "The unit marked on the scale of a thermometer."
+    },
+    {
+      "w": "conduction",
+      "d": "The passing of heat along a solid, from one particle to the next."
+    },
+    {
+      "w": "convection",
+      "d": "The carrying of heat by a current in a liquid or a gas."
+    },
+    {
+      "w": "radiation",
+      "d": "The way heat crosses empty space, as it does from the Sun."
+    },
+    {
+      "w": "boil",
+      "d": "To bubble furiously as a liquid turns to gas throughout."
+    },
+    {
+      "w": "evaporation",
+      "d": "The quiet escape of a liquid into the air from its surface."
+    },
+    {
+      "w": "condensation",
+      "d": "The misting of a cold window as a gas turns back to droplets."
+    },
+    {
+      "w": "insulation",
+      "d": "The lagging that stops heat escaping from a hot water tank."
+    },
+    {
+      "w": "lagging",
+      "d": "The jacket wrapped round a boiler to keep the warmth in."
+    },
+    {
+      "w": "expansion",
+      "d": "The swelling of a metal bar as it grows hotter."
+    },
+    {
+      "w": "contraction",
+      "d": "The shrinking of a metal bar as it cools down again."
+    },
+    {
+      "w": "thermostat",
+      "d": "The switch that turns a heater off once a room is warm enough."
+    },
+    {
+      "w": "kettle",
+      "d": "The kitchen appliance that brings water to the boil."
+    },
+    {
+      "w": "flask",
+      "d": "The silvered double-walled bottle that keeps a drink hot for hours."
+    },
+    {
+      "w": "freezing",
+      "d": "The point at which a liquid turns solid."
+    },
+    {
+      "w": "melting",
+      "d": "The point at which a solid turns runny."
+    },
+    {
+      "w": "thermal",
+      "d": "The word for anything to do with warmth, as in this kind of energy."
+    },
+    {
+      "w": "furnace",
+      "d": "A very hot chamber used to melt metal or fire clay."
+    },
+    {
+      "w": "draught",
+      "d": "The cold stream of air that sneaks under a door."
+    },
+    {
+      "w": "warmth",
+      "d": "The gentle heat you feel sitting near a fire."
+    },
+    {
+      "w": "shiver",
+      "d": "What your body does to make warmth when it gets too cold."
+    }
+  ],
+  "energy": [
+    {
+      "w": "joule",
+      "d": "The unit that energy is measured in."
+    },
+    {
+      "w": "work",
+      "d": "What is done when a force moves something along."
+    },
+    {
+      "w": "power",
+      "d": "How quickly work is done, measured in watts."
+    },
+    {
+      "w": "watt",
+      "d": "The unit that says how fast energy is being used."
+    },
+    {
+      "w": "chemical",
+      "d": "The kind of energy stored inside food, fuel and a cell."
+    },
+    {
+      "w": "nuclear",
+      "d": "The huge energy locked inside the core of an atom."
+    },
+    {
+      "w": "renewable",
+      "d": "The word for a source that will never run out, like the wind."
+    },
+    {
+      "w": "fossil",
+      "d": "The word for a fuel made from things that died long ago."
+    },
+    {
+      "w": "solar",
+      "d": "The word for energy captured straight from the Sun."
+    },
+    {
+      "w": "turbine",
+      "d": "The great bladed wheel that a wind or a jet of steam spins."
+    },
+    {
+      "w": "windmill",
+      "d": "The old machine whose sails turned to grind corn."
+    },
+    {
+      "w": "hydro",
+      "d": "The word for power made by falling water."
+    },
+    {
+      "w": "biomass",
+      "d": "Fuel made from wood, crops or waste from living things."
+    },
+    {
+      "w": "geothermal",
+      "d": "Power drawn from the heat of the rocks deep underground."
+    },
+    {
+      "w": "conservation",
+      "d": "The law that says energy can never be made or destroyed, only changed."
+    },
+    {
+      "w": "transfer",
+      "d": "The moving of energy from one store to another."
+    },
+    {
+      "w": "efficiency",
+      "d": "The share of the energy put in that does something useful."
+    },
+    {
+      "w": "wasted",
+      "d": "The word for the energy that escapes as unwanted heat and noise."
+    },
+    {
+      "w": "store",
+      "d": "A place where energy sits waiting, such as a stretched spring."
+    },
+    {
+      "w": "elasticity",
+      "d": "The springiness that lets a stretched band store energy and fling back."
+    },
+    {
+      "w": "coal",
+      "d": "The black rock, dug from the ground, that we burn in a power station."
+    },
+    {
+      "w": "generation",
+      "d": "The making of electrical power, usually by spinning a turbine."
+    },
+    {
+      "w": "sustainable",
+      "d": "The word for a way of living that does not use things up."
+    },
+    {
+      "w": "pendulum",
+      "d": "A swinging weight that trades height for speed, over and over."
+    }
+  ],
+  "atoms": [
+    {
+      "w": "proton",
+      "d": "The positively charged particle in the core of an atom."
+    },
+    {
+      "w": "neutron",
+      "d": "The particle in the core that carries no charge at all."
+    },
+    {
+      "w": "shell",
+      "d": "One of the layers around a core where electrons are found."
+    },
+    {
+      "w": "periodic",
+      "d": "The word for the great table that orders all the elements."
+    },
+    {
+      "w": "symbol",
+      "d": "The one or two letters that stand for an element, such as Na."
+    },
+    {
+      "w": "molecule",
+      "d": "Two or more atoms chemically joined together."
+    },
+    {
+      "w": "mixture",
+      "d": "Substances muddled together but not joined, and easy to part again."
+    },
+    {
+      "w": "pure",
+      "d": "The word for a substance with only one kind of thing in it."
+    },
+    {
+      "w": "impure",
+      "d": "The word for a substance with something unwanted mixed into it."
+    },
+    {
+      "w": "oxygen",
+      "d": "The gas in the air that you need in order to breathe."
+    },
+    {
+      "w": "hydrogen",
+      "d": "The lightest element of them all, and the fuel of the stars."
+    },
+    {
+      "w": "carbon",
+      "d": "The element found in coal, diamond and every living thing."
+    },
+    {
+      "w": "nitrogen",
+      "d": "The gas that makes up most of the air around you."
+    },
+    {
+      "w": "helium",
+      "d": "The very light gas that makes a party balloon float."
+    },
+    {
+      "w": "copper",
+      "d": "The reddish metal drawn into the wires in your walls."
+    },
+    {
+      "w": "aluminium",
+      "d": "The light silvery metal that drinks cans are made from."
+    },
+    {
+      "w": "alloy",
+      "d": "A metal blended with something else, as iron is blended into steel."
+    },
+    {
+      "w": "reactive",
+      "d": "The word for an element that changes very readily indeed."
+    },
+    {
+      "w": "inert",
+      "d": "The word for an element that will hardly react with anything."
+    },
+    {
+      "w": "formula",
+      "d": "The line of symbols showing what a compound is built from."
+    },
+    {
+      "w": "chromatography",
+      "d": "Separating an ink into its colours by letting it creep up paper."
+    },
+    {
+      "w": "soluble",
+      "d": "The word for a solid that will dissolve away in water."
+    },
+    {
+      "w": "insoluble",
+      "d": "The word for a solid that refuses to dissolve at all."
+    },
+    {
+      "w": "isotope",
+      "d": "An atom of one element carrying a different number of neutrons."
+    }
+  ],
+  "changes": [
+    {
+      "w": "physical",
+      "d": "The kind of change, like melting, that makes no new substance."
+    },
+    {
+      "w": "reversible",
+      "d": "The word for a change you can undo again, such as freezing."
+    },
+    {
+      "w": "irreversible",
+      "d": "The word for a change you can never undo, such as baking a cake."
+    },
+    {
+      "w": "reaction",
+      "d": "A change in which new substances are made."
+    },
+    {
+      "w": "reactant",
+      "d": "A substance you begin with, before any change has happened."
+    },
+    {
+      "w": "product",
+      "d": "A new substance made by a chemical change."
+    },
+    {
+      "w": "burning",
+      "d": "The change in which a fuel joins with oxygen and gives out heat."
+    },
+    {
+      "w": "rusting",
+      "d": "The slow, flaky, orange ruin of iron left out in the damp."
+    },
+    {
+      "w": "corrode",
+      "d": "To be slowly eaten away by air, water or acid."
+    },
+    {
+      "w": "oxidise",
+      "d": "To join with oxygen, as a metal does when it tarnishes."
+    },
+    {
+      "w": "combustion",
+      "d": "The proper name for burning a fuel in oxygen."
+    },
+    {
+      "w": "exothermic",
+      "d": "The word for a change that gives heat out."
+    },
+    {
+      "w": "endothermic",
+      "d": "The word for a change that takes heat in."
+    },
+    {
+      "w": "catalyst",
+      "d": "Something that speeds a change up but is not used up itself."
+    },
+    {
+      "w": "precipitate",
+      "d": "The cloudy solid that appears when two clear solutions meet."
+    },
+    {
+      "w": "effervesce",
+      "d": "To fizz as bubbles of gas break free."
+    },
+    {
+      "w": "acid",
+      "d": "A sour substance that turns litmus paper red."
+    },
+    {
+      "w": "alkali",
+      "d": "A soapy substance that turns litmus paper blue."
+    },
+    {
+      "w": "neutral",
+      "d": "The word for something that is neither sour nor soapy, like water."
+    },
+    {
+      "w": "indicator",
+      "d": "A dye that changes colour to reveal how sour something is."
+    },
+    {
+      "w": "litmus",
+      "d": "The paper dye used to tell an acid from an alkali."
+    },
+    {
+      "w": "salt",
+      "d": "The substance left behind when an acid is neutralised."
+    },
+    {
+      "w": "decay",
+      "d": "The rotting of dead matter, broken down by microbes."
+    },
+    {
+      "w": "distil",
+      "d": "To purify a liquid by boiling it and cooling the vapour back."
+    }
   ]
 };

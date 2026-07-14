@@ -29,9 +29,15 @@ export const AVAILABLE = {
   "physical-science": {
     "matter": 42,
     "forces": 42,
+    "light": 25,
+    "sound": 24,
+    "heat": 24,
     "electricity": 33,
     "magnetism": 29,
-    "machines": 28
+    "machines": 28,
+    "energy": 24,
+    "atoms": 24,
+    "changes": 24
   },
   "space-science": {
     "sky": 25,
