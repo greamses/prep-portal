@@ -5,27 +5,11 @@
    a room computes the same number locally, so bots are free (zero
    reads/writes) and identical on every real participant's screen.
 ═══════════════════════════════════════════════════════ */
-import { mulberry32, hashSeed, BOT_NS } from './rng.js';
-import { BOT_NAMES } from './bot-names.js';
+import { botRng, botName } from '/utils/games/bots.js';
 
-const NAME_NS = 2_000_000;
-
-// A seeded Fisher-Yates shuffle of the whole name pool, so up to 10 bots in
-// one room never collide — same seed/room -> same shuffle on every client.
-function shuffledNameIndices(seed) {
-  const order = BOT_NAMES.map((_, i) => i);
-  const rng = mulberry32(hashSeed(seed, NAME_NS));
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-}
-
-export function botName(seed, botSlot) {
-  const order = shuffledNameIndices(seed);
-  return BOT_NAMES[order[botSlot % order.length]];
-}
+// Naming is shared (bots should feel like one population of kids across every
+// game); SCORING is not — see below.
+export { botName };
 
 // Scoring here counts WORDS SOLVED, not questions answered — a hangman word
 // is a much slower unit than a times-table sum, so the numbers are small
@@ -37,7 +21,7 @@ export function botName(seed, botSlot) {
 // A-Z march, up to 50 for a topic. It caps the bot the same way it caps a
 // human: you cannot solve words that were never dealt.
 export function simulateBotScore(seed, botSlot, timeLimitSec, wordCount = 26) {
-  const rng = mulberry32(hashSeed(seed, BOT_NS + botSlot));
+  const rng = botRng(seed, botSlot);
   const secsPerWord = 8 + rng() * 12; // 8-20s to crack a word (skill)
   const failRate = 0.05 + rng() * 0.28; // chance the bot hangs on a word instead
 

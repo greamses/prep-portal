@@ -530,7 +530,9 @@ async function playRoundAndShowResults(room, name) {
     startAt: room.startAt,
     subject: room.subject,
     grade: room.grade,
-    mode: room.mode,
+    // The ROOM's play-mode, not this client's setup screen — a joiner who came
+    // in by code never picked one.
+    mode: room.playMode,
     topic: room.topic,
     roster,
   });

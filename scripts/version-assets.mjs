@@ -40,6 +40,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHARED = [
   '/utils/components/setup-carousel.js',
   '/utils/components/avatar-picker.js',
+  // The seeded-room machinery every game runs on. A stale copy of any of these
+  // against fresh page code would desync a room, so they go into the hash.
+  '/utils/games/rng.js',
+  '/utils/games/bots.js',
+  '/utils/games/bot-names.js',
+  '/utils/games/seeded-room.js',
+  '/utils/games/leaderboard.js',
 ];
 
 // `extra` is for absolute-path modules only one page imports — the vocab word
