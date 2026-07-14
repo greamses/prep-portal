@@ -15,12 +15,33 @@
    vocabulary fair (see topics.js) — so the pool at a grade is simply the union
    of the topics on offer at that grade.
 ═══════════════════════════════════════════════════════ */
-export {
-  SUBJECTS, SUBJECT_KEYS, GRADES, TARGET_WORDS,
-  subjectsForGrade, gradesForSubject, topicsFor, topicMeta,
-} from './topics.js';
+export { SUBJECTS, SUBJECT_KEYS, TARGET_WORDS, gradesForSubject, topicMeta } from './topics.js';
 
-import { topicsFor } from './topics.js';
+import {
+  SUBJECTS, GRADES as ALL_GRADES,
+  subjectsForGrade as outlinedSubjects, topicsFor as outlinedTopics,
+} from './topics.js';
+import { AVAILABLE } from './manifest.js';
+
+/* The bank ships a subject at a time, so the OUTLINE (topics.js) and what has
+   actually been written are not the same thing. Everything the setup screen sees
+   is filtered through the manifest: a subject with no words is not offered, and
+   neither is a topic too thin to play. A subject that isn't there yet is a much
+   better experience than one that deals an empty round. */
+
+/** Grades that have at least one subject with words. */
+export const GRADES = ALL_GRADES.filter((g) => subjectsForGrade(g).length > 0);
+
+/** Subjects on offer at a grade — outlined for it, AND generated. */
+export function subjectsForGrade(grade) {
+  return outlinedSubjects(grade).filter((key) => AVAILABLE[key]);
+}
+
+/** Topics on offer — outlined for the grade, AND holding enough words to play. */
+export function topicsFor(subjectKey, grade) {
+  const have = AVAILABLE[subjectKey] || {};
+  return outlinedTopics(subjectKey, grade).filter((t) => have[t.key]);
+}
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 

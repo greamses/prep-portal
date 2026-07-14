@@ -67,7 +67,13 @@ const PAGES = [
     extra: [
       '/data/vocab/index.js',
       '/data/vocab/topics.js',
-      ...VOCAB_SUBJECTS.map((s) => `/data/vocab/words/${s}.js`),
+      '/data/vocab/manifest.js',
+      // Only the subjects that have actually been generated — the bank ships a
+      // subject at a time, and hashing a file that doesn't exist would break the
+      // build.
+      ...VOCAB_SUBJECTS
+        .map((s) => `/data/vocab/words/${s}.js`)
+        .filter((rel) => existsSync(join(ROOT, rel.slice(1)))),
     ],
   },
 ].map((p) => ({
