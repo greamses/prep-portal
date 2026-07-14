@@ -44,12 +44,25 @@ const SHARED = [
 
 // `extra` is for absolute-path modules only one page imports — the vocab word
 // bank lives in /data, outside any page's js/ dir, but editing a word still has
-// to bust that page.
+// to bust that page. The per-subject word files are imported DYNAMICALLY at
+// round start; an import map remaps a dynamic import just like a static one, so
+// they must be listed here or a fresh page could load a stale bank.
+const VOCAB_SUBJECTS = [
+  'life-science', 'earth-science', 'physical-science', 'general-maths',
+  'biology', 'chemistry', 'physics', 'algebra', 'geometry', 'statistics',
+];
 const PAGES = [
   { name: 'geometry' },
   { name: 'drills' },
   { name: 'puzzles' },
-  { name: 'vocab', extra: ['/data/vocab/index.js', '/data/vocab/science.js', '/data/vocab/math.js'] },
+  {
+    name: 'vocab',
+    extra: [
+      '/data/vocab/index.js',
+      '/data/vocab/topics.js',
+      ...VOCAB_SUBJECTS.map((s) => `/data/vocab/words/${s}.js`),
+    ],
+  },
 ].map((p) => ({
   ...p,
   extra: p.extra || [],

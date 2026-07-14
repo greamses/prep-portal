@@ -32,14 +32,18 @@ export function botName(seed, botSlot) {
 // (roughly 4-9 solved in a two-minute round) and the tuning is its own.
 // A bot that runs out of lives on a word still burns the time it spent
 // there and scores nothing for it, exactly like a human.
-export function simulateBotScore(seed, botSlot, timeLimitSec, letterCount = 26) {
+//
+// `wordCount` is however many words the round actually holds — 26-ish for an
+// A-Z march, up to 50 for a topic. It caps the bot the same way it caps a
+// human: you cannot solve words that were never dealt.
+export function simulateBotScore(seed, botSlot, timeLimitSec, wordCount = 26) {
   const rng = mulberry32(hashSeed(seed, BOT_NS + botSlot));
   const secsPerWord = 8 + rng() * 12; // 8-20s to crack a word (skill)
   const failRate = 0.05 + rng() * 0.28; // chance the bot hangs on a word instead
 
   let elapsed = 0;
   let solved = 0;
-  for (let i = 0; i < letterCount; i++) {
+  for (let i = 0; i < wordCount; i++) {
     const hung = rng() < failRate;
     // A word it loses is a word it spent all six lives on — dearer than one
     // it gets.

@@ -3,12 +3,16 @@
    Wires the setup form to matchmaking.js -> game.js -> leaderboard.js and
    switches between the lobby/play/results overlays. Multiplayer uses
    anonymous pool matching; Versus is a private 1v1 via a shared room code.
-   Same shape as the Drills page — what changes is the topic section
-   (Subject -> Grade) and that a "point" here is a word solved.
+   Same shape as the Drills page — what changes is the content section
+   (Grade -> Subject -> Play mode -> Topic) and that a "point" here is a word
+   solved. Grade comes FIRST because the subjects depend on it: a Grade 3 child
+   is offered Life/Earth/Physical Science, a Grade 11 student Biology/Chemistry/
+   Physics. The two tiers never mix.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
-import { SUBJECTS, GRADES } from '/data/vocab/index.js';
-import { roundLetters } from './rng.js';
+import {
+  SUBJECTS, GRADES, MODES, subjectsForGrade, topicsFor, topicMeta, loadWords,
+} from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -77,8 +81,10 @@ let mode = 'multiplayer';
 let roomSize = 5;
 let timeLimit = 120;
 let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
-let subject = 'science';
 let grade = 5;
+let subject = 'life-science';
+let playMode = 'az';  // az | topic
+let topic = '';       // only meaningful when playMode === 'topic'
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -130,31 +136,91 @@ renderCustomStep(player, 'avatar', {
 });
 player.start('name');
 
-/* ── SECTION 2 — What to spell ─────────────────────────────────
-   Subject → Grade. The grade decides how hard the words are, not which
-   letters appear: the march always covers every letter the subject has a
-   word for (see data/vocab/index.js). */
-const topic = createCarousel(topicMount);
-topic.addSlide('subject', 'Subject', () => {});
-topic.addSlide('grade', 'Grade', () => {});
+/* ── SECTION 2 — What to play ──────────────────────────────────
+   Grade → Subject → A-Z or Topic → (Topic). Grade leads because the subject
+   list depends on it, and the two tiers never mix: pick 3 and you choose
+   between Life/Earth/Physical Science and General Maths; pick 11 and you
+   choose between Biology/Chemistry/Physics and Algebra/Geometry/Statistics.
 
-renderChoiceStep(topic, 'subject', {
-  title: 'Which subject?',
-  name: 'vocab-subject',
-  options: Object.entries(SUBJECTS).map(([key, s], i) => ({
-    value: key, label: s.label, checked: i === 0,
-  })),
-  onPick: (v) => { subject = v; topic.goTo('grade'); },
+   The steps after Grade are re-rendered whenever an earlier choice changes —
+   a carousel only builds the slide you're on, so rebuilding is how a dependent
+   step stays honest. */
+const content = createCarousel(topicMount);
+content.addSlide('grade', 'Grade', () => {});
+content.addSlide('subject', 'Subject', () => {});
+content.addSlide('play', 'Play', () => {});
+content.addSlide('topic', 'Topic', () => {});
+
+function renderGradeStep() {
+  renderChoiceStep(content, 'grade', {
+    title: 'Which grade?',
+    name: 'vocab-grade',
+    options: GRADES.map((g) => ({ value: String(g), label: `Grade ${g}`, checked: g === grade })),
+    onPick: (v) => {
+      grade = Number(v);
+      // The old subject may not exist at the new grade (Chemistry at Grade 3),
+      // so fall back to the first one that does.
+      const available = subjectsForGrade(grade);
+      if (!available.includes(subject)) subject = available[0];
+      renderSubjectStep();
+      content.goTo('subject');
+    },
+  });
+}
+
+function renderSubjectStep() {
+  const available = subjectsForGrade(grade);
+  renderChoiceStep(content, 'subject', {
+    title: `Which subject?`,
+    subtitle: grade >= 10 ? 'Senior subjects.' : 'Junior subjects.',
+    name: 'vocab-subject',
+    colorOffset: 2,
+    options: available.map((key) => ({
+      value: key, label: SUBJECTS[key].label, checked: key === subject,
+    })),
+    onPick: (v) => {
+      subject = v;
+      // Warm the bank now rather than during the 3-2-1 countdown: startAt is
+      // fixed for the whole room, so a slow fetch there would eat into this
+      // player's clock while everyone else was already guessing.
+      loadWords(subject).catch(() => {}); // a failure here just means we fetch again at kick-off
+      const topics = topicsFor(subject, grade);
+      if (!topics.some((t) => t.key === topic)) topic = topics[0] ? topics[0].key : '';
+      renderTopicStep();
+      content.goTo('play');
+    },
+  });
+}
+
+renderChoiceStep(content, 'play', {
+  title: 'How do you want the words?',
+  subtitle: 'A to Z walks the alphabet. By Topic plays one topic’s words in any order.',
+  name: 'vocab-playmode',
+  colorOffset: 4,
+  options: MODES.map((m) => ({ value: m.key, label: m.label, checked: m.key === playMode })),
+  onPick: (v) => {
+    playMode = v;
+    if (playMode === 'topic') { renderTopicStep(); content.goTo('topic'); return; }
+    flow.next(); // A-Z has nothing left to ask — this is the section's last step
+  },
 });
-renderChoiceStep(topic, 'grade', {
-  title: 'Which grade?',
-  subtitle: 'Sets how hard the words are — the alphabet march is the same either way.',
-  name: 'vocab-grade',
-  colorOffset: 3,
-  options: GRADES.map((g) => ({ value: String(g), label: `Grade ${g}`, checked: g === grade })),
-  onPick: (v) => { grade = Number(v); flow.next(); }, // last step of this section
-});
-topic.start('subject');
+
+function renderTopicStep() {
+  const topics = topicsFor(subject, grade);
+  renderChoiceStep(content, 'topic', {
+    title: 'Which topic?',
+    subtitle: `${SUBJECTS[subject].label}, Grade ${grade}.`,
+    name: 'vocab-topic',
+    colorOffset: 1,
+    options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === topic })),
+    onPick: (v) => { topic = v; flow.next(); }, // last step of this section
+  });
+}
+
+renderGradeStep();
+renderSubjectStep();
+renderTopicStep();
+content.start('grade');
 
 /* ── SECTION 3 — Game Options ─────────────────────────────────
    Mode → Room Size → Time Limit. Versus skips Room Size — it's always 1v1. */
@@ -248,11 +314,14 @@ const flow = createSectionFlow([
   },
   {
     el: $('vocab-section-topic'),
-    chips: () => [
-      { label: SUBJECTS[subject].label },
-      { label: `Grade ${grade}` },
-      { label: `${roundLetters(subject, grade).length} letters` },
-    ],
+    chips: () => {
+      const meta = playMode === 'topic' ? topicMeta(subject, topic) : null;
+      return [
+        { label: `Grade ${grade}` },
+        { label: SUBJECTS[subject].label },
+        { label: meta ? meta.label : 'A to Z' },
+      ];
+    },
   },
   {
     el: $('vocab-section-options'),
@@ -452,20 +521,21 @@ function launchConfetti() {
 // ── Round orchestration (shared by all matchmaking paths) ───────────────
 async function playRoundAndShowResults(room, name) {
   const roster = buildRoster(room, name);
-  const myScore = await startRound({
+  // startRound resolves with the score AND how many words the round actually
+  // held — the bots have to race the same number, and it's the ROOM's content
+  // that decides it, not whatever this client's setup screen happens to show.
+  const { score: myScore, wordCount } = await startRound({
     seed: room.seed,
     timeLimit: room.timeLimit,
     startAt: room.startAt,
     subject: room.subject,
     grade: room.grade,
+    mode: room.mode,
+    topic: room.topic,
     roster,
   });
 
   showAwaiting();
-
-  // The bots raced the same alphabet the player did — the room's, not the
-  // one this client's setup screen happens to be showing.
-  const letterCount = roundLetters(room.subject, room.grade).length;
 
   let ranked;
   try {
@@ -474,7 +544,7 @@ async function playRoundAndShowResults(room, name) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
-      letterCount,
+      wordCount,
       myScore,
     });
   } catch (e) {
@@ -507,7 +577,7 @@ async function runMultiplayer(name) {
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size: roomSize, timeLimit, subject, grade, displayName: name },
+      { mode: 'multiplayer', size: roomSize, timeLimit, subject, grade, playMode, topic, displayName: name },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -527,7 +597,7 @@ async function runCreate(name, size, roomMode) {
   let created;
   try {
     created = await createCodeRoom(
-      { mode: roomMode, size, timeLimit, subject, grade, displayName: name },
+      { mode: roomMode, size, timeLimit, subject, grade, playMode, topic, displayName: name },
       { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
     );
   } catch (e) {
@@ -598,7 +668,7 @@ startBtn.addEventListener('click', runVocab);
 
 /* ── Quick join ─────────────────────────────────────────────────
    Somebody arriving with a friend's code has nothing to set up: the room's
-   subject, grade, size and clock all come from the host. Walking them through
+   grade, subject, topic, size and clock all come from the host. Walking them through
    four setup sections only to discard every answer is a waste of their time,
    so the code box sits at the top of the page and skips straight to the lobby.
    Name and avatar come from the last game they played. */

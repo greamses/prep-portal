@@ -43,7 +43,7 @@ async function checkQuota(kind) {
 
 // Waits for a room to go "active" (real joins + eventual bot fill), then
 // resolves with everything game.js/leaderboard.js need to run the round.
-function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomSubject, roomGrade, isHost, waitMs, onWaiting }) {
+function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomSubject, roomGrade, roomMode, roomTopic, isHost, waitMs, onWaiting }) {
   return new Promise((resolve, reject) => {
     const roomRef = doc(db, 'vocabRooms', roomId);
     let settled = false;
@@ -77,7 +77,7 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomSubje
       if (unsub) unsub();
       resolve({
         roomId, seed, timeLimit: roomTimeLimit, size: roomSize,
-        subject: roomSubject, grade: roomGrade,
+        subject: roomSubject, grade: roomGrade, mode: roomMode, topic: roomTopic,
         startAt: data.startAt, botsNeeded: data.botsNeeded,
       });
     }
@@ -146,9 +146,12 @@ function watchRoomUntilActive({ roomId, seed, roomSize, roomTimeLimit, roomSubje
   });
 }
 
-async function joinOrCreateRoom({ mode, size, timeLimit, subject, grade, displayName: name }) {
+async function joinOrCreateRoom({ mode, size, timeLimit, subject, grade, playMode, topic, displayName: name }) {
   const user = auth.currentUser;
-  const bucketKey = `${mode}_${size}_${timeLimit}_${subject}_${grade}`;
+  // Two players only share a room if they are playing the SAME words — so the
+  // content (subject/grade/play-mode/topic) is part of the bucket, not just the
+  // room settings.
+  const bucketKey = `${mode}_${size}_${timeLimit}_${subject}_${grade}_${playMode}_${topic || 'all'}`;
   const ptrRef = doc(db, 'vocabRoomPointers', bucketKey);
   const now = Date.now();
   const displayName = name || user.displayName || 'Player';
@@ -175,19 +178,21 @@ async function joinOrCreateRoom({ mode, size, timeLimit, subject, grade, display
         roomId: roomSnap.id, isHost: false,
         size: room.size, timeLimit: room.timeLimit, seed: room.seed,
         subject: room.subject, grade: room.grade,
+        playMode: room.playMode, topic: room.topic || '',
       };
     }
 
     const roomRef = doc(collection(db, 'vocabRooms'));
     const seed = Math.floor(Math.random() * 2 ** 31);
     tx.set(roomRef, {
-      mode, size, timeLimit, subject, grade, status: 'waiting',
+      mode, size, timeLimit, subject, grade, playMode, topic: topic || '',
+      status: 'waiting',
       seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0,
       createdAt: serverTimestamp(),
     });
     tx.set(doc(roomRef, 'players', user.uid), { displayName, joinedAt: now });
     tx.set(ptrRef, { roomId: roomRef.id, expiresAt: now + WAIT_MS + 2000 });
-    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, subject, grade };
+    return { roomId: roomRef.id, isHost: true, size, timeLimit, seed, subject, grade, playMode, topic: topic || '' };
   });
 
   reportUsage(2, result.isHost ? 3 : 2); // approximate — real billing happens server-side
@@ -196,11 +201,12 @@ async function joinOrCreateRoom({ mode, size, timeLimit, subject, grade, display
 
 // Resolves once the room is "active": { roomId, seed, timeLimit, subject, grade, size, startAt, botsNeeded }.
 // onWaiting(state) is called with { playerCount, size } while still in the lobby.
-export async function matchmake({ mode, size, timeLimit, subject, grade, displayName }, { onWaiting } = {}) {
-  const room = await joinOrCreateRoom({ mode, size, timeLimit, subject, grade, displayName });
+export async function matchmake({ mode, size, timeLimit, subject, grade, playMode, topic, displayName }, { onWaiting } = {}) {
+  const room = await joinOrCreateRoom({ mode, size, timeLimit, subject, grade, playMode, topic, displayName });
   return watchRoomUntilActive({
     roomId: room.roomId, seed: room.seed, roomSize: room.size,
     roomTimeLimit: room.timeLimit, roomSubject: room.subject, roomGrade: room.grade,
+    roomMode: room.playMode, roomTopic: room.topic,
     isHost: room.isHost, waitMs: WAIT_MS, onWaiting,
   });
 }
@@ -209,7 +215,7 @@ export async function matchmake({ mode, size, timeLimit, subject, grade, display
 // Room" path uses the chosen 5/10) and returns its code immediately (before
 // the round is ready) so the UI can display it for sharing. `roundReady`
 // resolves the same way matchmake() does, once the room goes active.
-export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, subject, grade, displayName: name }, { onWaiting } = {}) {
+export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, subject, grade, playMode, topic, displayName: name }, { onWaiting } = {}) {
   const user = auth.currentUser;
   const code = generateCode();
   const roomRef = doc(collection(db, 'vocabRooms'));
@@ -219,7 +225,8 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, sub
 
   await checkQuota('write');
   await setDoc(roomRef, {
-    mode, size, timeLimit, subject, grade, status: 'waiting',
+    mode, size, timeLimit, subject, grade, playMode, topic: topic || '',
+    status: 'waiting',
     seed, hostUid: user.uid, playerCount: 1, botsNeeded: 0, code,
     createdAt: serverTimestamp(),
   });
@@ -228,7 +235,7 @@ export async function createCodeRoom({ mode = 'versus', size = 2, timeLimit, sub
 
   const roundReady = watchRoomUntilActive({
     roomId: roomRef.id, seed, roomSize: size, roomTimeLimit: timeLimit,
-    roomSubject: subject, roomGrade: grade,
+    roomSubject: subject, roomGrade: grade, roomMode: playMode, roomTopic: topic || '',
     isHost: true, waitMs: CODE_WAIT_MS, onWaiting,
   });
 
@@ -262,11 +269,13 @@ export async function joinRoomByCode(code, { onWaiting, displayName: name } = {}
   await setDoc(doc(roomDoc.ref, 'players', user.uid), { displayName, joinedAt: now });
   reportUsage(0, 2);
 
-  // The joiner plays the HOST's subject/grade, not whatever their own setup
-  // screen happened to say — a shared room is one shared board.
+  // The joiner plays the HOST's content — subject, grade, play-mode and topic —
+  // not whatever their own setup screen happened to say. A shared room is one
+  // shared board, which is exactly why joining by code needs no setup at all.
   return watchRoomUntilActive({
     roomId: roomDoc.id, seed: room.seed, roomSize: room.size,
     roomTimeLimit: room.timeLimit, roomSubject: room.subject, roomGrade: room.grade,
+    roomMode: room.playMode || 'az', roomTopic: room.topic || '',
     isHost: false, waitMs: CODE_WAIT_MS, onWaiting,
   });
 }

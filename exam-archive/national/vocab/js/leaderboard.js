@@ -20,7 +20,7 @@ async function checkQuota(kind) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Returns a ranked array: [{ name, score, isBot, isSelf, avatarSeed }]
-export async function finishRound({ roomId, seed, timeLimit, botsNeeded, letterCount, myScore }) {
+export async function finishRound({ roomId, seed, timeLimit, botsNeeded, wordCount, myScore }) {
   const uid = auth.currentUser.uid;
 
   await checkQuota('write');
@@ -48,7 +48,7 @@ export async function finishRound({ roomId, seed, timeLimit, botsNeeded, letterC
     const name = botName(seed, i);
     return {
       name,
-      score: simulateBotScore(seed, i, timeLimit, letterCount),
+      score: simulateBotScore(seed, i, timeLimit, wordCount),
       isBot: true,
       isSelf: false,
       avatarSeed: name,
