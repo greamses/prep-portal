@@ -282,10 +282,18 @@ const fileFor = (subjectKey) => path.join(OUT_DIR, `${subjectKey}.js`);
 function readExisting(subjectKey) {
   const f = fileFor(subjectKey);
   if (!fs.existsSync(f)) return {};
+  // Tolerate CRLF. Git's autocrlf rewrites these files on checkout, and a regex
+  // anchored on ";\n$" matches NOTHING against ";\r\n" — which silently dropped
+  // two whole subjects out of the manifest, with no error and no warning. A file
+  // we cannot parse is a bug, never "a subject with no words".
   const src = fs.readFileSync(f, 'utf8');
-  const m = src.match(/export const WORDS = ([\s\S]*?);\n?$/);
-  if (!m) return {};
-  try { return JSON.parse(m[1]); } catch { return {}; }
+  const m = src.match(/export const WORDS = ([\s\S]*);\s*$/);
+  if (!m) throw new Error(`could not parse ${f} — refusing to treat it as empty`);
+  try {
+    return JSON.parse(m[1]);
+  } catch (e) {
+    throw new Error(`invalid JSON in ${f}: ${e.message}`);
+  }
 }
 
 // The bank ships subject by subject. Rather than let the game offer a subject
