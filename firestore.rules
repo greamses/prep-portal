@@ -303,10 +303,21 @@ service cloud.firestore {
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
         request.resource.data.timeLimit in [60, 120, 180, 300] &&
-        request.resource.data.subject in ['science', 'math'] &&
+        // Two tiers of subject, and grades now run to 12 (see data/vocab/topics.js).
+        // The tiers are not cross-checked against the grade here: a mismatched
+        // room would simply deal a player the wrong-but-valid word list, which
+        // costs nobody anything — the rules exist to stop a client writing a
+        // room shape the game can't read, not to re-implement the curriculum.
+        request.resource.data.subject in [
+          'life-science', 'earth-science', 'physical-science', 'general-maths',
+          'biology', 'chemistry', 'physics', 'algebra', 'geometry', 'statistics'
+        ] &&
         request.resource.data.grade is int &&
         request.resource.data.grade >= 1 &&
-        request.resource.data.grade <= 9;
+        request.resource.data.grade <= 12 &&
+        request.resource.data.playMode in ['az', 'topic'] &&
+        request.resource.data.topic is string &&
+        request.resource.data.topic.size() <= 40;
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

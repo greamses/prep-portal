@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   GEOMETRY — bot name pool
+   GAMES — bot name pool (shared by Drills, Puzzles, Geometry, Vocab)
    100 common first names. Picked deterministically per room (see
    js/bots.js's botName), so bots read as real opponents rather than
    "Bot 1" / "Bot 2" placeholders.

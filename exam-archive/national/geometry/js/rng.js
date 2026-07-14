@@ -15,25 +15,12 @@
    Either way, the diagram itself never scales with the actual values (see
    js/geo-svg.js) — only the labels change.
 ═══════════════════════════════════════════════════════ */
+import { mulberry32, hashSeed, CONTENT_NS, BOT_NS } from '/utils/games/rng.js';
 
-export function mulberry32(seed) {
-  let a = seed >>> 0;
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { mulberry32, hashSeed, BOT_NS };
 
-export function hashSeed(seed, ns) {
-  let h = (seed ^ Math.imul(ns + 0x9e3779b9, 0x85ebca6b)) >>> 0;
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  return (h ^ (h >>> 16)) >>> 0;
-}
-
-export const QUESTION_NS = 0;
+// The seeded-room primitives are shared by every game (see /utils/games/rng.js):
+// one seed, one identical round on every client, with nothing synced.
 
 export const SHAPES = ['circle', 'semicircle', 'quadrant', 'sector', 'triangle', 'rectangle', 'square'];
 export const CIRCULAR_SHAPES = ['circle', 'semicircle', 'quadrant', 'sector'];
@@ -154,7 +141,7 @@ function polygonQuestion(rng, pool, shape) {
 // states — ignored for triangle/rectangle/square, which always label their
 // actual side lengths directly.
 export function questionAt(seed, index, { shapes = SHAPES, given = GIVEN_TYPES, lengths = LENGTH_NUMBERS } = {}) {
-  const rng = mulberry32(hashSeed(seed, QUESTION_NS + index));
+  const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
   const shapeList = shapes.length ? shapes : SHAPES;
   const shape = shapeList[Math.floor(rng() * shapeList.length)];
   const pool = lengths.length ? lengths : LENGTH_NUMBERS;

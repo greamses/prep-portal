@@ -1,14 +1,19 @@
 /* ═══════════════════════════════════════════════════════
-   VOCAB — the A-Z hangman round
-   A 3-2-1 "get ready" beat off the shared startAt, then a march through the
-   alphabet: for each letter, a clue and a word starting with it. The letter
-   itself is given (revealed everywhere it appears); you guess the rest one
-   letter at a time, and six wrong guesses hang you and cost you the word.
+   VOCAB — the hangman round
+   A 3-2-1 "get ready" beat off the shared startAt, then a run of words. Each
+   word arrives as a clue and a row of blanks; you guess letters one at a time,
+   and six wrong guesses hang you and cost you that word (not the round).
+
+   NO LETTER IS EVER GIVEN. In an A-Z round you know the word starts with the
+   letter you're on, and that is the only help there is — the board itself is
+   blank from the first guess. The clue does the rest of the work, which is why
+   the clue is never allowed to contain its own word (see data/vocab).
 
    Score is words SOLVED. Timing after activation is entirely local
    (startAt/timeLimit) — no further server dependency during play.
 ═══════════════════════════════════════════════════════ */
-import { wordAt, roundLetters, isGuessable, hiddenLetters, MAX_WRONG } from './rng.js';
+import { buildRound, isGuessable, hiddenLetters, MAX_WRONG } from './rng.js';
+import { loadWords, topicMeta } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -27,13 +32,13 @@ const verdictEl = $('vocab-verdict');
 const keyboardEl = $('vocab-keyboard');
 const scoreNote = $('vocab-score-note');
 const timerNote = $('vocab-timer-note');
+const modeNote = $('vocab-mode-note');
 const gallowsParts = [...document.querySelectorAll('#vocab-gallows [data-part]')];
 
 let active = false;   // the round is running (clock ticking)
 let acceptingGuesses = false; // …and the board is live (not mid-verdict, not out of words)
 let seed = 0;
-let opts = { subject: 'science', grade: 5 };
-let letters = [];
+let round = [];   // [{ word, clue, letter }] — the same list on every client
 let index = 0;
 let current = null;
 const revealed = new Set(); // letters shown on the board
@@ -104,30 +109,27 @@ function renderLives() {
 }
 
 function loadWord() {
-  current = wordAt(seed, index, opts);
-  if (!current) { finishAlphabet(); return; }
+  current = round[index];
+  if (!current) { finishWords(); return; }
 
   revealed.clear();
   guessed.clear();
   wrong = 0;
 
-  // The march's letter is the freebie — given everywhere it appears, and its
-  // key is spent before you touch the board.
-  revealed.add(current.letter);
-  guessed.add(current.letter);
-
   verdictEl.hidden = true;
   verdictEl.className = 'vocab-verdict';
   boardEl.classList.remove('is-solved', 'is-hung');
-  stepEl.textContent = `${current.letter} · word ${index + 1} of ${letters.length}`;
+  // In an A-Z round the letter labels the stop — it tells you the word begins
+  // with a D. It is NOT filled in on the board and its key is NOT spent.
+  stepEl.textContent = current.letter
+    ? `${current.letter} · word ${index + 1} of ${round.length}`
+    : `Word ${index + 1} of ${round.length}`;
   clueEl.textContent = current.clue;
 
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => {
     btn.classList.remove('is-hit', 'is-miss');
     btn.disabled = false;
   });
-  const given = keyEl(current.letter);
-  if (given) { given.classList.add('is-hit'); given.disabled = true; }
 
   renderWord();
   renderLives();
@@ -164,21 +166,20 @@ function queueNext(ms) {
   nextTimer = setTimeout(() => {
     if (!active) return;
     index += 1;
-    if (index >= letters.length) { finishAlphabet(); return; }
+    if (index >= round.length) { finishWords(); return; }
     loadWord();
   }, ms);
 }
 
-// Ran the whole alphabet before the clock did. The score is locked, but the
-// round is NOT cut short: everyone in the room finishes together, so the
-// end-of-round write/read still lands at the same moment for every player
-// (see leaderboard.js's grace window — an early exit would read the others
-// as zero).
-function finishAlphabet() {
+// Ran out of words before the clock did. The score is locked, but the round is
+// NOT cut short: everyone in the room finishes together, so the end-of-round
+// write/read still lands at the same moment for every player (see
+// leaderboard.js's grace window — an early exit would read the others as zero).
+function finishWords() {
   acceptingGuesses = false;
   boardEl.classList.remove('is-solved', 'is-hung');
-  stepEl.textContent = `${letters.length} of ${letters.length}`;
-  clueEl.textContent = 'Alphabet complete. Sit tight — the clock is still running for everyone else.';
+  stepEl.textContent = `${round.length} of ${round.length}`;
+  clueEl.textContent = 'Every word done. Sit tight — the clock is still running for everyone else.';
   wordEl.innerHTML = '';
   showVerdict(`${score} solved`, 'solved');
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => { btn.disabled = true; });
@@ -230,20 +231,24 @@ function endRound() {
   document.removeEventListener('keydown', onKeyDown);
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
-  const finalScore = score;
-  if (resolveRound) resolveRound(finalScore);
+  // The word count goes back with the score: leaderboard.js needs it to cap the
+  // bots at the same number of words the humans were actually dealt.
+  if (resolveRound) resolveRound({ score, wordCount: round.length });
   resolveRound = null;
 }
 
 buildKeyboard();
 
-// Resolves with the number of words the player solved, once the local timer
-// hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt, subject, grade, roster }) {
+// Resolves with { score, wordCount } once the local timer hits zero: how many
+// words the player solved, and how many the round held.
+export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, grade, mode, topic, roster }) {
+  // The bank loads on demand, so the round's words must be in hand before the
+  // countdown ends. It resolves from cache on a replay.
+  const words = await loadWords(subject);
+  round = buildRound({ seed: roomSeed, words, subject, grade, mode, topic });
+
   return new Promise((resolve) => {
     seed = roomSeed;
-    opts = { subject, grade };
-    letters = roundLetters(subject, grade);
     index = 0;
     score = 0;
     wrong = 0;
@@ -251,6 +256,8 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, subject, grade,
 
     scoreNote.textContent = '0 solved';
     timerNote.textContent = `${Math.round(timeLimit / 60)} min round`;
+    const meta = mode === 'topic' ? topicMeta(subject, topic) : null;
+    modeNote.textContent = meta ? meta.label : 'A to Z';
     cardEl.hidden = false;
     countdownEl.hidden = false;
     boardEl.hidden = true;

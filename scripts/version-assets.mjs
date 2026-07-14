@@ -40,16 +40,42 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHARED = [
   '/utils/components/setup-carousel.js',
   '/utils/components/avatar-picker.js',
+  // The seeded-room machinery every game runs on. A stale copy of any of these
+  // against fresh page code would desync a room, so they go into the hash.
+  '/utils/games/rng.js',
+  '/utils/games/bots.js',
+  '/utils/games/bot-names.js',
+  '/utils/games/seeded-room.js',
+  '/utils/games/leaderboard.js',
 ];
 
 // `extra` is for absolute-path modules only one page imports — the vocab word
 // bank lives in /data, outside any page's js/ dir, but editing a word still has
-// to bust that page.
+// to bust that page. The per-subject word files are imported DYNAMICALLY at
+// round start; an import map remaps a dynamic import just like a static one, so
+// they must be listed here or a fresh page could load a stale bank.
+const VOCAB_SUBJECTS = [
+  'life-science', 'earth-science', 'physical-science', 'general-maths',
+  'biology', 'chemistry', 'physics', 'algebra', 'geometry', 'statistics',
+];
 const PAGES = [
   { name: 'geometry' },
   { name: 'drills' },
   { name: 'puzzles' },
-  { name: 'vocab', extra: ['/data/vocab/index.js', '/data/vocab/science.js', '/data/vocab/math.js'] },
+  {
+    name: 'vocab',
+    extra: [
+      '/data/vocab/index.js',
+      '/data/vocab/topics.js',
+      '/data/vocab/manifest.js',
+      // Only the subjects that have actually been generated — the bank ships a
+      // subject at a time, and hashing a file that doesn't exist would break the
+      // build.
+      ...VOCAB_SUBJECTS
+        .map((s) => `/data/vocab/words/${s}.js`)
+        .filter((rel) => existsSync(join(ROOT, rel.slice(1)))),
+    ],
+  },
 ].map((p) => ({
   ...p,
   extra: p.extra || [],

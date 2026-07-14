@@ -9,28 +9,11 @@
    cell count, Slider's tile count, whatever the active puzzle counts as
    "correct" — bots don't need to know which.
 ═══════════════════════════════════════════════════════ */
-import { mulberry32, hashSeed } from './rng.js';
-import { BOT_NAMES } from './bot-names.js';
+import { botRng, botName } from '/utils/games/bots.js';
 
-const NAME_NS = 2_000_000;
-const BOT_NS = 1_000_000;
-
-// A seeded Fisher-Yates shuffle of the whole name pool, so up to 10 bots in
-// one room never collide — same seed/room -> same shuffle on every client.
-function shuffledNameIndices(seed) {
-  const order = BOT_NAMES.map((_, i) => i);
-  const rng = mulberry32(hashSeed(seed, NAME_NS));
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-}
-
-export function botName(seed, botSlot) {
-  const order = shuffledNameIndices(seed);
-  return BOT_NAMES[order[botSlot % order.length]];
-}
+// Naming is shared (bots should feel like one population of kids across every
+// game); SCORING is not — see below.
+export { botName };
 
 // Correct units (cells/tiles) achieved by the round's end. `speed` is
 // seconds-per-unit (skill), tuned for these puzzles' much slower
@@ -38,7 +21,7 @@ export function botName(seed, botSlot) {
 // correct unit every 6-12s, a weak one 15-30s, with occasional wasted time
 // on a wrong guess. Never exceeds `totalUnits`.
 export function simulateBotScore(seed, botSlot, timeLimitSec, totalUnits) {
-  const rng = mulberry32(hashSeed(seed, BOT_NS + botSlot));
+  const rng = botRng(seed, botSlot);
   const speed = 6 + rng() * 22; // baseline seconds per correct unit (skill)
   const errorRate = 0.08 + rng() * 0.3; // chance a unit costs a wasted guess
   let elapsed = 0;
