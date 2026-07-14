@@ -12,6 +12,7 @@
 import { auth } from '/firebase-init.js';
 import {
   SUBJECTS, GRADES, MODES, subjectsForGrade, topicsFor, topicMeta, loadWords,
+  gradePool, topicPool,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -56,6 +57,12 @@ const quickJoinInput = $('vocab-quickjoin-input');
 const quickJoinBtn = $('vocab-quickjoin-btn');
 const startBtn = $('vocab-start-btn');
 const startLabel = $('vocab-start-label');
+const studyBtn = $('vocab-study-btn');
+const dictBd = $('vocab-dict-bd');
+const dictTitle = $('vocab-dict-title');
+const dictSub = $('vocab-dict-sub');
+const dictList = $('vocab-dict-list');
+const dictClose = $('vocab-dict-close');
 
 const lobbyBd = $('vocab-lobby-bd');
 const lobbyStatus = $('vocab-lobby-status');
@@ -339,7 +346,10 @@ const flow = createSectionFlow([
     }],
   },
 ], {
-  onChange: (_i, isLast) => { startBtn.hidden = !isLast; },
+  onChange: (_i, isLast) => {
+    startBtn.hidden = !isLast;
+    studyBtn.hidden = !isLast; // the words are only knowable once the content is chosen
+  },
 });
 
 updateStartLabel();
@@ -412,6 +422,7 @@ function showLobby(size) {
   renderLobbySeats(1, size);
   lobbyBd.classList.add('open');
   lobbyBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('vocab-nav-hidden'); // game mode starts at the lobby
 }
 function hideLobby() {
   clearLobbyReveal();
@@ -666,6 +677,80 @@ async function runVocab() {
   else await runMultiplayer(name);
 }
 
+/* ── The dictionary ─────────────────────────────────────────────
+   Hangman on a word you have never met is a guessing game; hangman on a word
+   you read five minutes ago is vocabulary practice. So a child can read the
+   whole list first — and it is read from the SAME bank the round is dealt from,
+   never a second copy, so what you revise is exactly what you can be asked. */
+function dictEntry(word, clue) {
+  const row = document.createElement('div');
+  row.className = 'vocab-dict-row';
+  const w = document.createElement('span');
+  w.className = 'vocab-dict-word';
+  w.textContent = word;
+  const d = document.createElement('span');
+  d.className = 'vocab-dict-clue';
+  d.textContent = clue;
+  row.append(w, d);
+  return row;
+}
+
+async function openDictionary() {
+  dictList.innerHTML = '<p class="vocab-dict-loading">Fetching the words…</p>';
+  dictBd.classList.add('open');
+  dictBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('vocab-nav-hidden');
+
+  const meta = playMode === 'topic' ? topicMeta(subject, topic) : null;
+  dictTitle.textContent = meta ? meta.label : `${SUBJECTS[subject].label}, A to Z`;
+
+  let words;
+  try {
+    words = await loadWords(subject);
+  } catch {
+    dictList.innerHTML = '<p class="vocab-dict-loading">Could not fetch the words — try again.</p>';
+    return;
+  }
+
+  // Exactly the pool the round will draw from: one topic, or every topic this
+  // grade is offered.
+  const pool = playMode === 'topic'
+    ? topicPool(words, topic)
+    : gradePool(words, subject, grade);
+  const sorted = [...pool].sort((a, b) => a.w.localeCompare(b.w));
+
+  dictSub.textContent = playMode === 'topic'
+    ? `${sorted.length} words · Grade ${grade}`
+    : `${sorted.length} words across every Grade ${grade} topic — the round asks one per letter.`;
+
+  dictList.innerHTML = '';
+  let letter = '';
+  for (const entry of sorted) {
+    const first = entry.w[0].toUpperCase();
+    if (first !== letter) {
+      letter = first;
+      const head = document.createElement('p');
+      head.className = 'vocab-dict-letter';
+      head.textContent = letter;
+      dictList.appendChild(head);
+    }
+    dictList.appendChild(dictEntry(entry.w.toUpperCase(), entry.d));
+  }
+}
+
+function closeDictionary() {
+  dictBd.classList.remove('open');
+  dictBd.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('vocab-nav-hidden');
+}
+
+studyBtn.addEventListener('click', openDictionary);
+dictClose.addEventListener('click', closeDictionary);
+dictBd.addEventListener('click', (e) => { if (e.target === dictBd) closeDictionary(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && dictBd.classList.contains('open')) closeDictionary();
+});
+
 startBtn.addEventListener('click', runVocab);
 
 /* ── Quick join ─────────────────────────────────────────────────
@@ -698,6 +783,7 @@ lobbyCancel.addEventListener('click', () => {
   // orphaned room naturally, and unread docs aren't billed.
   cancelled = true;
   hideLobby();
+  document.body.classList.remove('vocab-nav-hidden'); // back out of game mode
   startBtn.disabled = false;
 });
 againBtn.addEventListener('click', hideResults);

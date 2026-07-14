@@ -308,6 +308,9 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
 
     playBd.classList.add('open');
     playBd.setAttribute('aria-hidden', 'false');
+    // Game mode: the nav goes away. A round is timed and full-screen — a stray
+    // click on the menu mid-round costs the player the round.
+    document.body.classList.add('puzzle-nav-hidden');
     active = true;
 
     (function tickCountdown() {

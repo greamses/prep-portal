@@ -10,10 +10,6 @@ export const WORDS = {
       "d": "The tiny building block of everything around us."
     },
     {
-      "w": "magnet",
-      "d": "An object that can pull certain metals towards it."
-    },
-    {
       "w": "mass",
       "d": "The amount of stuff that is inside something."
     },
@@ -224,20 +220,8 @@ export const WORDS = {
       "d": "The force that helps things move by gripping a surface."
     },
     {
-      "w": "lever",
-      "d": "A tool used to lift or move heavy objects with less force."
-    },
-    {
-      "w": "pulley",
-      "d": "A wheel with a rope or chain that helps lift heavy objects."
-    },
-    {
       "w": "roller",
       "d": "A round object that reduces friction when moving heavy things."
-    },
-    {
-      "w": "magnetism",
-      "d": "A force that can attract certain types of metals."
     },
     {
       "w": "balance",
@@ -358,6 +342,372 @@ export const WORDS = {
     {
       "w": "swerve",
       "d": "To turn or change direction suddenly."
+    }
+  ],
+  "electricity": [
+    {
+      "w": "circuit",
+      "d": "A complete loop that lets a current flow all the way round."
+    },
+    {
+      "w": "current",
+      "d": "The flow of charge moving along a wire."
+    },
+    {
+      "w": "battery",
+      "d": "A store of chemical power that pushes charge around a loop."
+    },
+    {
+      "w": "bulb",
+      "d": "The glass part of a lamp that glows when charge flows through it."
+    },
+    {
+      "w": "switch",
+      "d": "The part you flick to break or complete a loop."
+    },
+    {
+      "w": "wire",
+      "d": "A thin metal thread that carries charge from place to place."
+    },
+    {
+      "w": "conductor",
+      "d": "A material that lets charge pass through it easily, like copper."
+    },
+    {
+      "w": "insulator",
+      "d": "A material that will not let charge pass, like rubber or plastic."
+    },
+    {
+      "w": "voltage",
+      "d": "A measure of how hard a supply pushes charge round a loop."
+    },
+    {
+      "w": "resistance",
+      "d": "How strongly a material fights against the flow of charge."
+    },
+    {
+      "w": "terminal",
+      "d": "One of the two ends of a cell, where a wire is joined on."
+    },
+    {
+      "w": "plug",
+      "d": "The three-pin fitting on a lead that pushes into a wall socket."
+    },
+    {
+      "w": "socket",
+      "d": "The hole in a wall that a three-pin fitting goes into."
+    },
+    {
+      "w": "fuse",
+      "d": "A thin wire that melts and breaks the loop if too much charge flows."
+    },
+    {
+      "w": "spark",
+      "d": "A bright flash of charge jumping across a small gap."
+    },
+    {
+      "w": "shock",
+      "d": "The painful jolt you feel if charge passes through your body."
+    },
+    {
+      "w": "static",
+      "d": "The kind of charge that builds up when you rub a balloon on hair."
+    },
+    {
+      "w": "charge",
+      "d": "The tiny electrical quantity that flows along a wire."
+    },
+    {
+      "w": "generator",
+      "d": "A machine that spins in order to make a current."
+    },
+    {
+      "w": "dynamo",
+      "d": "A small spinning device on a bicycle that lights its lamp."
+    },
+    {
+      "w": "filament",
+      "d": "The tiny coiled wire inside a lamp that glows white hot."
+    },
+    {
+      "w": "series",
+      "d": "A loop where the parts are joined one after another in a single path."
+    },
+    {
+      "w": "parallel",
+      "d": "A loop split so that each part has its own separate branch."
+    },
+    {
+      "w": "electron",
+      "d": "A tiny particle with a negative charge that moves along a wire."
+    },
+    {
+      "w": "volt",
+      "d": "The unit that measures the push a supply gives to charge."
+    },
+    {
+      "w": "ampere",
+      "d": "The unit that measures how much charge flows past each second."
+    },
+    {
+      "w": "lightning",
+      "d": "A huge natural spark that jumps between a cloud and the ground."
+    },
+    {
+      "w": "cable",
+      "d": "A thick bundle of wires wrapped together in plastic."
+    },
+    {
+      "w": "torch",
+      "d": "A small hand-held lamp powered by cells."
+    },
+    {
+      "w": "appliance",
+      "d": "Any machine in a home that runs on mains power, like a kettle."
+    },
+    {
+      "w": "discharge",
+      "d": "What happens when stored charge leaks away or is used up."
+    },
+    {
+      "w": "negative",
+      "d": "The kind of charge that an electron carries."
+    },
+    {
+      "w": "positive",
+      "d": "The charge carried by a proton, the opposite of an electron."
+    }
+  ],
+  "magnetism": [
+    {
+      "w": "magnet",
+      "d": "A piece of metal that pulls iron towards it without touching it."
+    },
+    {
+      "w": "magnetism",
+      "d": "The invisible force that makes iron leap to a lump of lodestone."
+    },
+    {
+      "w": "compass",
+      "d": "A tool with a swinging needle that always points north."
+    },
+    {
+      "w": "needle",
+      "d": "The thin pointer that swings freely inside a compass."
+    },
+    {
+      "w": "pole",
+      "d": "One of the two ends of a bar magnet, where the pull is strongest."
+    },
+    {
+      "w": "north",
+      "d": "The direction a compass needle points towards."
+    },
+    {
+      "w": "south",
+      "d": "The opposite direction to the one a compass needle points."
+    },
+    {
+      "w": "iron",
+      "d": "The grey metal that a magnet pulls most strongly of all."
+    },
+    {
+      "w": "nickel",
+      "d": "A silvery metal, used in coins, that a magnet can also pull."
+    },
+    {
+      "w": "cobalt",
+      "d": "A hard bluish metal, one of the very few a magnet can pull."
+    },
+    {
+      "w": "steel",
+      "d": "A strong alloy of iron that can itself be turned into a magnet."
+    },
+    {
+      "w": "lodestone",
+      "d": "A natural rock that behaves like a magnet all on its own."
+    },
+    {
+      "w": "field",
+      "d": "The invisible region around a magnet where its pull can be felt."
+    },
+    {
+      "w": "filings",
+      "d": "Tiny scraps of iron sprinkled on paper to reveal a magnet’s pattern."
+    },
+    {
+      "w": "horseshoe",
+      "d": "A magnet bent into a U so that both poles face the same way."
+    },
+    {
+      "w": "electromagnet",
+      "d": "A magnet made by sending a current through a coil of wire."
+    },
+    {
+      "w": "coil",
+      "d": "Wire wound round and round into a tight stack of loops."
+    },
+    {
+      "w": "solenoid",
+      "d": "A long coil that acts like a bar magnet when a current flows."
+    },
+    {
+      "w": "core",
+      "d": "The iron bar put inside a coil to make its pull much stronger."
+    },
+    {
+      "w": "attraction",
+      "d": "The pulling together that happens when opposite poles meet."
+    },
+    {
+      "w": "repulsion",
+      "d": "The pushing apart that happens when two like poles meet."
+    },
+    {
+      "w": "magnetise",
+      "d": "To turn an ordinary piece of steel into something that pulls iron."
+    },
+    {
+      "w": "permanent",
+      "d": "The word for a magnet that keeps its pull for years on end."
+    },
+    {
+      "w": "temporary",
+      "d": "The word for a magnet that loses its pull once the current stops."
+    },
+    {
+      "w": "induction",
+      "d": "Making a nearby piece of iron magnetic without ever touching it."
+    },
+    {
+      "w": "domain",
+      "d": "One of the tiny regions inside iron that all line up in a magnet."
+    },
+    {
+      "w": "aurora",
+      "d": "Coloured lights in the polar sky, made by particles from the Sun."
+    },
+    {
+      "w": "navigation",
+      "d": "Finding your way at sea by using a compass."
+    },
+    {
+      "w": "levitate",
+      "d": "To float above a track, held up by a magnetic push."
+    }
+  ],
+  "machines": [
+    {
+      "w": "lever",
+      "d": "A stiff bar that turns on a pivot to lift a heavy load."
+    },
+    {
+      "w": "pulley",
+      "d": "A grooved wheel with a rope over it, used to raise a load."
+    },
+    {
+      "w": "fulcrum",
+      "d": "The fixed point that a lever turns about."
+    },
+    {
+      "w": "wedge",
+      "d": "A tool with a sharp slope that splits or holds things apart."
+    },
+    {
+      "w": "screw",
+      "d": "A slope wrapped round a shaft, used to join wood tightly."
+    },
+    {
+      "w": "axle",
+      "d": "The rod that a wheel spins around."
+    },
+    {
+      "w": "wheel",
+      "d": "A round part that turns on a rod to make loads easy to move."
+    },
+    {
+      "w": "ramp",
+      "d": "A gentle slope used to raise a load without lifting it straight up."
+    },
+    {
+      "w": "incline",
+      "d": "The proper name for a sloping surface used as a simple machine."
+    },
+    {
+      "w": "gear",
+      "d": "A toothed wheel that turns another one beside it."
+    },
+    {
+      "w": "crank",
+      "d": "A bent handle that turns round and round to drive a machine."
+    },
+    {
+      "w": "load",
+      "d": "The weight that a machine is used to move or to lift."
+    },
+    {
+      "w": "effort",
+      "d": "The push or the pull that you yourself supply to work a machine."
+    },
+    {
+      "w": "advantage",
+      "d": "How many times a machine multiplies the push you put in."
+    },
+    {
+      "w": "hinge",
+      "d": "The joint that lets a door swing open and shut."
+    },
+    {
+      "w": "winch",
+      "d": "A drum you turn to wind in a rope and haul up a load."
+    },
+    {
+      "w": "spanner",
+      "d": "A tool whose long handle helps you turn a stiff nut."
+    },
+    {
+      "w": "scissors",
+      "d": "Two blades joined at a pivot, working as a pair of levers."
+    },
+    {
+      "w": "seesaw",
+      "d": "A plank balanced on a pivot in a playground."
+    },
+    {
+      "w": "wheelbarrow",
+      "d": "A one-wheeled cart that lets you carry a heavy load with ease."
+    },
+    {
+      "w": "staircase",
+      "d": "A slope cut into steps so that you can climb it."
+    },
+    {
+      "w": "piston",
+      "d": "A plug that slides up and down inside a cylinder to push things."
+    },
+    {
+      "w": "gearbox",
+      "d": "The case of toothed wheels that changes how fast a car can go."
+    },
+    {
+      "w": "ratchet",
+      "d": "A toothed wheel with a catch, so that it can turn one way only."
+    },
+    {
+      "w": "jack",
+      "d": "A screw device that lifts a car so you can change a wheel."
+    },
+    {
+      "w": "handle",
+      "d": "The part of a tool that you hold, to turn it or to lift it."
+    },
+    {
+      "w": "shaft",
+      "d": "The straight rod that a wheel or a gear is fixed onto."
+    },
+    {
+      "w": "conveyor",
+      "d": "A moving belt that carries goods along a factory floor."
     }
   ]
 };

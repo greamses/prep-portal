@@ -4,30 +4,19 @@
    without ever offering a round it cannot deal. */
 
 export const AVAILABLE = {
-  "life-science": {
-    "plants": 50,
-    "animals": 50,
-    "human-body": 19,
-    "habitats": 27,
-    "food-chains": 14,
-    "classification": 13,
-    "cells": 14,
-    "heredity": 22,
-    "microbes": 35
-  },
-  "earth-science": {
-    "weather": 50,
-    "rocks": 50,
-    "water-cycle": 38,
-    "landforms": 14,
-    "solar-system": 27,
-    "plate-tectonics": 13,
-    "climate": 14,
-    "fossils": 12,
-    "resources": 13
-  },
   "physical-science": {
-    "matter": 43,
-    "forces": 45
+    "matter": 42,
+    "forces": 42,
+    "electricity": 33,
+    "magnetism": 29,
+    "machines": 28
+  },
+  "space-science": {
+    "sky": 25,
+    "earth-in-space": 25,
+    "planets": 24,
+    "rockets": 27,
+    "stars": 24,
+    "telescopes": 24
   }
 };

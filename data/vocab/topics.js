@@ -74,10 +74,28 @@ export const SUBJECTS = {
       T('light', 'Light and Colour', 3, 6),
       T('sound', 'Sound', 3, 6),
       T('heat', 'Heat and Temperature', 4, 7),
-      T('electricity', 'Electricity and Magnetism', 5, 8),
-      T('energy', 'Energy and Machines', 5, 8),
+      // Electricity, magnetism and machines were one lumped topic each. They are
+      // separate chapters in every syllabus and separate vocabularies — a child
+      // revising circuits should not be handed "pulley" and "compass".
+      T('electricity', 'Electricity and Circuits', 5, 8),
+      T('magnetism', 'Magnets and Magnetism', 4, 8),
+      T('machines', 'Simple Machines', 3, 7),
+      T('energy', 'Energy and its Forms', 5, 8),
       T('atoms', 'Atoms, Elements and Mixtures', 7, 9),
       T('changes', 'Physical and Chemical Change', 6, 9),
+    ],
+  },
+  'space-science': {
+    label: 'Space Science',
+    group: 'Science',
+    grades: [1, 9],
+    topics: [
+      T('sky', 'The Sun, Moon and Sky', 1, 3),
+      T('earth-in-space', 'Day, Night and the Seasons', 2, 5),
+      T('planets', 'Planets and the Solar System', 3, 6),
+      T('rockets', 'Rockets and Space Travel', 3, 7),
+      T('stars', 'Stars and Galaxies', 5, 9),
+      T('telescopes', 'Exploring Space', 5, 9),
     ],
   },
 

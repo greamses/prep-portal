@@ -267,6 +267,9 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
 
     playBd.classList.add('open');
     playBd.setAttribute('aria-hidden', 'false');
+    // Game mode: the nav goes away. A round is timed and full-screen — a stray
+    // click on the menu mid-round costs the player the round.
+    document.body.classList.add('vocab-nav-hidden');
     active = true;
 
     (function tickCountdown() {

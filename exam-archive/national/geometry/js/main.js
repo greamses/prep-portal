@@ -553,6 +553,7 @@ function showLobby(size) {
   renderLobbySeats(1, size);
   lobbyBd.classList.add('open');
   lobbyBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('geo-nav-hidden'); // game mode starts at the lobby
 }
 function hideLobby() {
   clearLobbyReveal();
@@ -878,6 +879,7 @@ quickJoinBtn.addEventListener('click', async () => {
 lobbyCancel.addEventListener('click', () => {
   cancelled = true;
   hideLobby();
+  document.body.classList.remove('geo-nav-hidden'); // back out of game mode
   startBtn.disabled = false;
 });
 againBtn.addEventListener('click', hideResults);

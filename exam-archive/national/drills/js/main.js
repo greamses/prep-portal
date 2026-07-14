@@ -559,6 +559,7 @@ function showLobby(size) {
   renderLobbySeats(1, size);
   lobbyBd.classList.add('open');
   lobbyBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('drill-nav-hidden'); // game mode starts at the lobby
 }
 function hideLobby() {
   clearLobbyReveal();
@@ -901,6 +902,7 @@ lobbyCancel.addEventListener('click', () => {
   // an orphaned room naturally, and unread docs aren't billed.
   cancelled = true;
   hideLobby();
+  document.body.classList.remove('drill-nav-hidden'); // back out of game mode
   startBtn.disabled = false;
 });
 againBtn.addEventListener('click', hideResults);

@@ -1049,3 +1049,89 @@ body.vocab-nav-hidden .site-nav { display: none; }
 @media (hover: none) {
   .avatar-remove { opacity: 1; }
 }
+
+/* ── DICTIONARY ─────────────────────────────────────────────────────────
+   The word list a child can read before playing. Same paper as everything
+   else; a scrollable column, because a Grade 6 A-Z pool runs to 200 words. */
+.vocab-study-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0 auto 0.35rem;
+  padding: 0.5rem 1.05rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.vocab-dict {
+  width: min(560px, 100%);
+  max-height: min(78vh, 720px);
+  display: flex;
+}
+.vocab-dict-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 1.5rem 1.2rem 1.2rem;
+  overflow: hidden;
+}
+.vocab-dict-title {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+.vocab-dict-sub {
+  margin: 0 0 0.5rem;
+  font-size: 0.76rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+.vocab-dict-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+.vocab-dict-loading {
+  margin: 1.5rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+.vocab-dict-letter {
+  margin: 0.7rem 0 0.25rem;
+  font-family: var(--font-display, inherit);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  border-bottom: 1.5px dashed rgba(20, 19, 15, 0.14);
+}
+.vocab-dict-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 30%) 1fr;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  align-items: baseline;
+}
+.vocab-dict-word {
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+.vocab-dict-clue {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+.vocab-dict-close {
+  align-self: center;
+  margin-top: 0.7rem;
+  padding: 0.45rem 1.2rem;
+  font-size: 0.85rem;
+}
+@media (max-width: 480px) {
+  .vocab-dict-row { grid-template-columns: 1fr; gap: 0.1rem; }
+}

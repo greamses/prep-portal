@@ -137,6 +137,17 @@
             <input class="vocab-code-input" id="vocab-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 
+          <!-- Read before you race. Hangman on a word you have never met is a
+               guessing game; hangman on a word you read five minutes ago is
+               vocabulary practice. -->
+          <button class="vocab-study-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="vocab-study-btn" type="button" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z" />
+              <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z" />
+            </svg>
+            <span>Read the words first</span>
+          </button>
+
           <button class="vocab-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="vocab-start-btn" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="6 4 20 12 6 20 6 4" />
@@ -146,6 +157,21 @@
         </div>
       </div>
     </main>
+
+    <!-- ═══ DICTIONARY ═══
+         Every word the current selection can deal, with its clue. -->
+    <div class="review-bd vocab-dict-bd" id="vocab-dict-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="vocab-dict pp-receipt">
+        <div class="vocab-dict-paper pp-receipt__paper">
+          <p class="vocab-dict-title" id="vocab-dict-title">Word list</p>
+          <p class="vocab-dict-sub" id="vocab-dict-sub"></p>
+          <div class="vocab-dict-list" id="vocab-dict-list"></div>
+          <button class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0 vocab-dict-close" id="vocab-dict-close" type="button">
+            Got it — let’s play
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="vocab-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
