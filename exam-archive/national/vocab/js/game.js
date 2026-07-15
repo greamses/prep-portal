@@ -26,6 +26,9 @@ import { loadWords, topicMeta, CATEGORY_LABELS } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+// Mirrors seeded-room.js's START_BUFFER_MS. Used only to sanity-check the
+// startAt we're handed against our own clock — never to schedule anything.
+const START_BUFFER_MS = 3000;
 
 const playBd = $('vocab-play-bd');
 const cardEl = $('vocab-card');
@@ -357,14 +360,30 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     document.body.classList.add('vocab-nav-hidden');
     active = true;
 
+    // startAt is the ACTIVATOR's local clock (their Date.now() + a "get ready"
+    // buffer), and we schedule against our OWN Date.now() — which only agrees
+    // if the two devices share a wall clock. Join-by-code is the one path that
+    // routinely puts two different phones in a room, and a phone whose clock is
+    // minutes off would compute an endAt that is ALREADY behind it: the
+    // countdown clears, tick() sees no time left, and the player is dumped onto
+    // the results screen without a single word. So trust startAt only when it
+    // lands in the plausible window (a few seconds out at most); otherwise
+    // anchor the whole round to THIS device's clock, so a skewed player still
+    // gets a full round — just offset in wall-clock from everyone else, which
+    // the leaderboard's grace window tolerates.
+    const lead = startAt - Date.now();
+    const anchorAt = (lead > -2000 && lead <= START_BUFFER_MS + 2000)
+      ? startAt
+      : Date.now() + 800;
+
     (function tickCountdown() {
-      const msLeft = startAt - Date.now();
+      const msLeft = anchorAt - Date.now();
       if (msLeft <= 0) {
         countdownEl.hidden = true;
         rosterEl.hidden = true;
         boardEl.hidden = false;
         keyboardEl.hidden = false;
-        endAt = startAt + timeLimit * 1000;
+        endAt = anchorAt + timeLimit * 1000;
         loadWord();
         document.addEventListener('keydown', onKeyDown);
         rafId = requestAnimationFrame(tick);
