@@ -484,8 +484,16 @@ function buildRoster({ size, botsNeeded, seed }, name) {
 function renderResults(ranked) {
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
+  // Competition ranking with ties: everyone ahead of you on score ranks above
+  // you, and players on the SAME score share a place. A score shared with anyone
+  // shows a tie marker instead of a number, and a tie for the top has NO winner
+  // — nobody is crowned, and no confetti flies, on a draw.
+  const topScore = total ? ranked[0].score : 0;
+  const topTie = ranked.filter((r) => r.score === topScore).length > 1;
   ranked.forEach((row, i) => {
-    const isWinner = i === 0;
+    const rankNum = 1 + ranked.filter((r) => r.score > row.score).length;
+    const tiedHere = ranked.filter((r) => r.score === row.score).length > 1;
+    const isWinner = rankNum === 1 && !topTie;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
@@ -504,7 +512,7 @@ function renderResults(ranked) {
     const rank = document.createElement('span');
     rank.className = 'vocab-lb-rank';
     if (isWinner) rank.innerHTML = TROPHY_SVG;
-    else rank.textContent = String(i + 1);
+    else rank.textContent = tiedHere ? '=' : String(rankNum);
 
     const name = document.createElement('span');
     name.className = 'vocab-lb-name';
@@ -521,7 +529,7 @@ function renderResults(ranked) {
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('vocab-nav-hidden');
 
-  if (ranked[0] && ranked[0].isSelf) {
+  if (ranked[0] && ranked[0].isSelf && !topTie) {
     setTimeout(launchConfetti, (total - 1) * 130 + 400);
   }
 }

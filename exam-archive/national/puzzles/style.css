@@ -467,6 +467,26 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   cursor: pointer;
 }
 
+/* Host-only "start now" — cut the wait short and fill empty seats with bots.
+   Hidden until a real second player is in the room. */
+.puzzle-lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+.puzzle-startnow-btn {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.4rem 0.75rem;
+  cursor: pointer;
+}
+.puzzle-startnow-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.puzzle-startnow-btn[hidden] { display: none; }
+
 /* ── PUZZLE GRID — same torn-receipt frame as Drills' card, sized to fit a
    9x9 grid comfortably on a phone. ─────────────────────────────────── */
 .puzzle-grid-wrap {

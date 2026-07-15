@@ -31,21 +31,21 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=40018a1c",
-          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=40018a1c",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=40018a1c",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=40018a1c",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=40018a1c",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=40018a1c",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=40018a1c",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=40018a1c",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=40018a1c"
+          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=09f8194a",
+          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=09f8194a",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=09f8194a",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=09f8194a",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=09f8194a",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=09f8194a",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=09f8194a",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=09f8194a",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=09f8194a"
         }
       }
     </script>
@@ -153,7 +153,10 @@
         </div>
         <div class="puzzle-lobby-seats" id="puzzle-lobby-seats"></div>
         <p class="puzzle-lobby-count" id="puzzle-lobby-count">1 / 5</p>
-        <button class="puzzle-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="puzzle-lobby-cancel" type="button">Cancel</button>
+        <div class="puzzle-lobby-actions">
+          <button class="puzzle-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="puzzle-lobby-start-now" type="button" hidden>Start now</button>
+          <button class="puzzle-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="puzzle-lobby-cancel" type="button">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -204,7 +207,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=40018a1c"></script>
+    <script type="module" src="./js/main.js?v=09f8194a"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

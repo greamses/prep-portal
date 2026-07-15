@@ -69,6 +69,7 @@ const lobbyCodeCopy = $('geo-lobby-code-copy');
 const lobbySeats = $('geo-lobby-seats');
 const lobbyCount = $('geo-lobby-count');
 const lobbyCancel = $('geo-lobby-cancel');
+const lobbyStartNow = $('geo-lobby-start-now');
 
 const awaitingBd = $('geo-awaiting-bd');
 
@@ -86,6 +87,9 @@ function hideAwaiting() {
 }
 
 let cancelled = false;
+// The host's "start now" action for the current lobby snapshot — swapped out on
+// every waiting tick so the button always promotes the latest player count.
+let startNowFn = null;
 
 // ── Setup state ─────────────────────────────────────────────────────────
 // Owned in JS rather than read back out of `input:checked` — a carousel only
@@ -547,6 +551,9 @@ function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
 function showLobby(size) {
   cancelled = false;
   clearLobbyReveal();
+  startNowFn = null;
+  lobbyStartNow.hidden = true;
+  lobbyStartNow.disabled = false;
   lobbyCode.hidden = true;
   lobbyStatus.textContent = 'Waiting for other players…';
   lobbyCount.textContent = `1 / ${size}`;
@@ -589,8 +596,16 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
 function renderResults(ranked) {
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
+  // Competition ranking with ties: everyone ahead of you on score ranks above
+  // you, and players on the SAME score share a place. A score shared with anyone
+  // shows a tie marker instead of a number, and a tie for the top has NO winner
+  // — nobody is crowned, and no confetti flies, on a draw.
+  const topScore = total ? ranked[0].score : 0;
+  const topTie = ranked.filter((r) => r.score === topScore).length > 1;
   ranked.forEach((row, i) => {
-    const isWinner = i === 0;
+    const rankNum = 1 + ranked.filter((r) => r.score > row.score).length;
+    const tiedHere = ranked.filter((r) => r.score === row.score).length > 1;
+    const isWinner = rankNum === 1 && !topTie;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
@@ -609,7 +624,7 @@ function renderResults(ranked) {
     const rank = document.createElement('span');
     rank.className = 'geo-lb-rank';
     if (isWinner) rank.innerHTML = TROPHY_SVG;
-    else rank.textContent = String(i + 1);
+    else rank.textContent = tiedHere ? '=' : String(rankNum);
 
     const name = document.createElement('span');
     name.className = 'geo-lb-name';
@@ -626,7 +641,7 @@ function renderResults(ranked) {
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('geo-nav-hidden');
 
-  if (ranked[0] && ranked[0].isSelf) {
+  if (ranked[0] && ranked[0].isSelf && !topTie) {
     const winnerRevealMs = (total - 1) * 130 + 400;
     setTimeout(launchConfetti, winnerRevealMs);
   }
@@ -695,6 +710,8 @@ async function playRoundAndShowResults(room, myName) {
 function makeOnWaiting(waitingStatusText) {
   return (state) => {
     if (state.phase === 'activated') {
+      startNowFn = null;
+      lobbyStartNow.hidden = true;
       lobbyStatus.textContent = 'Room ready!';
       lobbyCount.textContent = `${state.size} / ${state.size}`;
       revealBotsStaggered(state.size, state.botsNeeded, state.seed, state.revealMs);
@@ -703,6 +720,11 @@ function makeOnWaiting(waitingStatusText) {
     if (waitingStatusText) lobbyStatus.textContent = waitingStatusText;
     lobbyCount.textContent = `${state.playerCount} / ${state.size}`;
     renderLobbySeats(state.playerCount, state.size);
+    // Only the host is handed a startNow, and only once a real second player is
+    // here — no point offering "start now" for a room that's just you and bots
+    // (the wait fills those seats anyway). The empty seats become bots on click.
+    startNowFn = state.startNow || null;
+    lobbyStartNow.hidden = !(startNowFn && state.playerCount >= 2 && state.playerCount < state.size);
   };
 }
 
@@ -875,6 +897,13 @@ quickJoinBtn.addEventListener('click', async () => {
   await getCurrentUser();
   await joinWithCode(code, 2, myName()); // 2 only seeds the lobby; the room's real size arrives with it
   quickJoinBtn.disabled = false;
+});
+lobbyStartNow.addEventListener('click', () => {
+  if (!startNowFn) return;
+  lobbyStartNow.disabled = true;
+  lobbyStartNow.hidden = true;
+  lobbyStatus.textContent = 'Starting…';
+  startNowFn(); // promotes the room now; the onSnapshot picks up 'active' and plays
 });
 lobbyCancel.addEventListener('click', () => {
   cancelled = true;

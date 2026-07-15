@@ -12,6 +12,10 @@ import { buildShapeSvg } from './geo-svg.js';
 
 const $ = (id) => document.getElementById(id);
 
+// Mirrors seeded-room.js's START_BUFFER_MS. Used only to sanity-check the
+// startAt we're handed against our own clock — never to schedule anything.
+const START_BUFFER_MS = 3000;
+
 const playBd = $('geo-play-bd');
 const cardEl = $('geo-card');
 const countdownEl = $('geo-countdown');
@@ -152,14 +156,28 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, shapes, given, 
     document.body.classList.add('geo-nav-hidden');
     active = true;
 
+    // startAt is the ACTIVATOR's local clock (their Date.now() + a "get ready"
+    // buffer), and we schedule against our OWN Date.now() — which only agrees if
+    // the two devices share a wall clock. A phone whose clock is minutes off
+    // would compute an endAt already behind it: the countdown clears, tick()
+    // sees no time left, and the player is dumped onto the results screen
+    // without playing. So trust startAt only when it lands in the plausible
+    // window; otherwise anchor the round to THIS device's clock, so a skewed
+    // player still gets a full round — offset in wall-clock from the others,
+    // which the leaderboard's grace window tolerates.
+    const lead = startAt - Date.now();
+    const anchorAt = (lead > -2000 && lead <= START_BUFFER_MS + 2000)
+      ? startAt
+      : Date.now() + 800;
+
     (function tickCountdown() {
-      const msLeft = startAt - Date.now();
+      const msLeft = anchorAt - Date.now();
       if (msLeft <= 0) {
         countdownEl.hidden = true;
         rosterEl.hidden = true;
         questionText.hidden = false;
         answerStage.hidden = false;
-        endAt = startAt + timeLimit * 1000;
+        endAt = anchorAt + timeLimit * 1000;
         renderQuestion();
         focusInput();
         rafId = requestAnimationFrame(tick);

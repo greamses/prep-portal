@@ -464,6 +464,26 @@ body.drill-nav-hidden .site-nav { display: none; }
   cursor: pointer;
 }
 
+/* Host-only "start now" — cut the wait short and fill empty seats with bots.
+   Hidden until a real second player is in the room. */
+.drill-lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+.drill-startnow-btn {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.4rem 0.75rem;
+  cursor: pointer;
+}
+.drill-startnow-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.drill-startnow-btn[hidden] { display: none; }
+
 /* ── DRILL CARD — ported from flashcards' .flash-card, no flip ─────── */
 .drill-card {
   position: relative;
