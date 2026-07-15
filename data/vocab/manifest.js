@@ -56,5 +56,15 @@ export const AVAILABLE = {
     "organic": 24,
     "electrochemistry": 24,
     "kinetics": 24
+  },
+  "physics": {
+    "mechanics": 24,
+    "newton": 24,
+    "work-energy": 24,
+    "waves": 24,
+    "circuits": 24,
+    "magnetism": 24,
+    "thermodynamics": 24,
+    "nuclear": 24
   }
 };
