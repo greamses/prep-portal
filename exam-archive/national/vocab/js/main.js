@@ -13,6 +13,7 @@ import { auth } from '/firebase-init.js';
 import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -710,6 +711,37 @@ function dictEntry(word, clue) {
   return row;
 }
 
+// The periodic table is drawn, not listed: a real 18-column grid of sticky-note
+// cells, each hoverable for its details. This is the library view of the same
+// data the game deals one cell at a time.
+function renderPeriodicTable() {
+  dictList.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'vocab-ptable';
+  grid.style.setProperty('--cols', TABLE_COLUMNS);
+  grid.style.setProperty('--rows', TABLE_ROWS);
+  for (const el of ELEMENTS) {
+    const cell = document.createElement('span');
+    cell.className = 'vocab-el';
+    cell.dataset.cat = el.cat;
+    cell.style.gridColumn = el.x;
+    cell.style.gridRow = el.y;
+    cell.tabIndex = 0;
+    const cat = CATEGORY_LABELS[el.cat] || '';
+    const place = el.group ? `Group ${el.group} · Period ${el.period}` : `Period ${el.period}`;
+    const tip = [`${el.name} (${el.sym})`, `Atomic number ${el.z} · Mass ${el.mass}`, cat, place, el.use]
+      .filter(Boolean).join('\n');
+    cell.setAttribute('aria-label', tip.replace(/\n/g, ', '));
+    cell.innerHTML = `
+      <span class="vocab-el-z">${el.z}</span>
+      <span class="vocab-el-sym">${el.sym}</span>
+      <span class="vocab-el-name">${el.name}</span>
+      <span class="vocab-el-tip">${tip.replace(/\n/g, '<br>')}</span>`;
+    grid.appendChild(cell);
+  }
+  dictList.appendChild(grid);
+}
+
 async function openDictionary() {
   dictList.innerHTML = '<p class="vocab-dict-loading">Fetching the words…</p>';
   dictBd.classList.add('open');
@@ -718,6 +750,15 @@ async function openDictionary() {
 
   const meta = playMode === 'topic' ? topicMeta(subject, topic) : null;
   dictTitle.textContent = meta ? meta.label : `${SUBJECTS[subject].label}, A to Z`;
+
+  const dictBox = dictBd.querySelector('.vocab-dict');
+  if (playMode === 'topic' && topic === 'periodic-table') {
+    dictBox.classList.add('vocab-dict--wide'); // the table wants the room
+    dictSub.textContent = 'Hover any element for its details. The game gives you the number and the mass — you name it.';
+    renderPeriodicTable();
+    return;
+  }
+  dictBox.classList.remove('vocab-dict--wide');
 
   let words;
   try {

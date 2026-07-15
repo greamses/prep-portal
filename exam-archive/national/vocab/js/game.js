@@ -22,7 +22,7 @@
    (startAt/timeLimit) — no further server dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
-import { loadWords, topicMeta } from '/data/vocab/index.js';
+import { loadWords, topicMeta, CATEGORY_LABELS } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -127,6 +127,22 @@ function isSolved() {
   return nextSlot() === -1;
 }
 
+// A single periodic-table cell as the clue: atomic number top-left, mass below,
+// a "?" where the symbol would sit, and a hover tip with the real help.
+function renderElementClue(el) {
+  clueEl.className = 'vocab-clue vocab-clue--element';
+  const cat = CATEGORY_LABELS[el.cat] || '';
+  const place = el.group ? `Group ${el.group} · Period ${el.period}` : `Period ${el.period}`;
+  const tip = [cat, place, el.use].filter(Boolean).join(' — ');
+  clueEl.innerHTML = `
+    <span class="vocab-el-cell" data-cat="${el.cat}" tabindex="0" aria-label="Element clue: atomic number ${el.z}, mass ${el.mass}">
+      <span class="vocab-el-z">${el.z}</span>
+      <span class="vocab-el-q">?</span>
+      <span class="vocab-el-mass">${el.mass}</span>
+      <span class="vocab-el-tip" role="tooltip">${tip}</span>
+    </span>`;
+}
+
 // Scenery is never guessed, so it sits on the board from the start.
 function revealScenery() {
   [...current.word].forEach((ch, i) => { if (!isGuessable(ch)) revealedPos.add(i); });
@@ -157,8 +173,11 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `Word ${index + 1} of ${round.length}`;
-  clueEl.textContent = current.clue;
+    : `${current.element ? 'Element' : 'Word'} ${index + 1} of ${round.length}`;
+  // The periodic-table topic hands you a table cell, not a sentence: atomic
+  // number and mass showing, symbol and name blank. Hover it for a hint.
+  if (current.element) renderElementClue(current.element);
+  else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => {
     btn.classList.remove('is-hit', 'is-miss');

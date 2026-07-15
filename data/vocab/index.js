@@ -22,6 +22,14 @@ import {
   subjectsForGrade as outlinedSubjects, topicsFor as outlinedTopics,
 } from './topics.js';
 import { AVAILABLE } from './manifest.js';
+import { GAME_ELEMENTS } from './periodic-table.js';
+
+export { ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS } from './periodic-table.js';
+
+// A topic whose content is bundled scientific data (the periodic table), not a
+// generated word file. It is always available wherever its subject is, and its
+// "words" are the elements themselves — see topicPool below.
+const PERIODIC = 'periodic-table';
 
 /* The bank ships a subject at a time, so the OUTLINE (topics.js) and what has
    actually been written are not the same thing. Everything the setup screen sees
@@ -40,7 +48,10 @@ export function subjectsForGrade(grade) {
 /** Topics on offer — outlined for the grade, AND holding enough words to play. */
 export function topicsFor(subjectKey, grade) {
   const have = AVAILABLE[subjectKey] || {};
-  return outlinedTopics(subjectKey, grade).filter((t) => have[t.key]);
+  // periodic-table carries its own bundled data, so it is offered whenever its
+  // subject is; every other topic must have been generated into a word file.
+  return outlinedTopics(subjectKey, grade)
+    .filter((t) => t.key === PERIODIC ? true : have[t.key]);
 }
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -77,6 +88,9 @@ export async function loadWords(subjectKey) {
 export function gradePool(words, subjectKey, grade) {
   const pool = [];
   for (const topic of topicsFor(subjectKey, grade)) {
+    // The periodic table is a topic-only mode: its clue is a drawn cell, not a
+    // sentence, so it does not belong in a mixed A–Z alphabet.
+    if (topic.key === PERIODIC) continue;
     for (const entry of words[topic.key] || []) pool.push({ ...entry, topic: topic.key });
   }
   return pool;
@@ -84,5 +98,8 @@ export function gradePool(words, subjectKey, grade) {
 
 /** One topic's words, in file order — the round does its own seeded shuffle. */
 export function topicPool(words, topicKey) {
+  // The periodic table's "words" are the elements themselves; each carries an
+  // `element` the game renders as a sticky-note cell instead of a text clue.
+  if (topicKey === PERIODIC) return GAME_ELEMENTS.map((e) => ({ ...e, topic: PERIODIC }));
   return (words[topicKey] || []).map((entry) => ({ ...entry, topic: topicKey }));
 }

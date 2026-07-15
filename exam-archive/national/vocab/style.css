@@ -1147,3 +1147,100 @@ body.vocab-nav-hidden .site-nav { display: none; }
   0%, 100% { border-bottom-color: var(--accent-primary); }
   50% { border-bottom-color: rgba(20, 19, 15, 0.2); }
 }
+
+/* ── PERIODIC TABLE ──────────────────────────────────────────────────────
+   Two views of one dataset (data/vocab/periodic-table.js): the game shows a
+   single cell as the clue; the library draws the whole table. Category colours
+   are the same fixed pastels used across the site's sticky notes. */
+.vocab-el[data-cat="alkali"],    .vocab-el-cell[data-cat="alkali"]    { --el-bg: #ffd7a3; }
+.vocab-el[data-cat="alkaline"],  .vocab-el-cell[data-cat="alkaline"]  { --el-bg: #ffe9a8; }
+.vocab-el[data-cat="transition"],.vocab-el-cell[data-cat="transition"]{ --el-bg: #bfe3ff; }
+.vocab-el[data-cat="post"],      .vocab-el-cell[data-cat="post"]      { --el-bg: #c8f0c0; }
+.vocab-el[data-cat="metalloid"], .vocab-el-cell[data-cat="metalloid"] { --el-bg: #b8ece2; }
+.vocab-el[data-cat="nonmetal"],  .vocab-el-cell[data-cat="nonmetal"]  { --el-bg: #d7f0a8; }
+.vocab-el[data-cat="halogen"],   .vocab-el-cell[data-cat="halogen"]   { --el-bg: #f7d2e6; }
+.vocab-el[data-cat="noble"],     .vocab-el-cell[data-cat="noble"]     { --el-bg: #e8c8ff; }
+.vocab-el[data-cat="lanthanide"],.vocab-el-cell[data-cat="lanthanide"]{ --el-bg: #f6c9c0; }
+.vocab-el[data-cat="actinide"],  .vocab-el-cell[data-cat="actinide"]  { --el-bg: #f0b8c8; }
+
+/* ── The game clue: one cell, number + mass, symbol hidden ── */
+.vocab-clue--element { display: flex; justify-content: center; }
+.vocab-el-cell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: 92px;
+  height: 92px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--el-bg, #eee);
+  color: #14130f;
+  box-shadow: 0 1px 1px rgba(20,19,15,.1), 3px 5px 9px -3px rgba(20,19,15,.3);
+  cursor: help;
+}
+.vocab-el-cell .vocab-el-z { font-size: .8rem; font-weight: 700; text-align: left; }
+.vocab-el-cell .vocab-el-q {
+  align-self: center; text-align: center;
+  font-size: 2.2rem; font-weight: 800; opacity: .55;
+}
+.vocab-el-cell .vocab-el-mass { font-size: .72rem; text-align: right; opacity: .85; }
+
+/* ── The library: the full 18-column table ── */
+.vocab-ptable {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(38px, 1fr));
+  grid-auto-rows: 42px;
+  gap: 3px;
+  min-width: 720px; /* the table never squashes; it scrolls instead */
+  padding: 0.3rem 0.1rem 0.6rem;
+}
+.vocab-dict-bd .vocab-dict-list:has(.vocab-ptable) { overflow-x: auto; }
+.vocab-el {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 2px 3px;
+  border-radius: 3px;
+  background: var(--el-bg, #eee);
+  color: #14130f;
+  cursor: help;
+  line-height: 1;
+}
+.vocab-el .vocab-el-z { font-size: .5rem; font-weight: 700; }
+.vocab-el .vocab-el-sym { align-self: center; text-align: center; font-size: .82rem; font-weight: 800; }
+.vocab-el .vocab-el-name {
+  font-size: .38rem; text-align: center; text-transform: capitalize;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Shared hover tip ── */
+.vocab-el-tip, .vocab-el-cell .vocab-el-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: 220px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  background: #14130f;
+  color: #fff;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+.vocab-el:hover, .vocab-el:focus,
+.vocab-el-cell:hover, .vocab-el-cell:focus { outline: 2px solid rgba(20,19,15,.5); z-index: 6; }
+.vocab-el:hover .vocab-el-tip, .vocab-el:focus .vocab-el-tip,
+.vocab-el-cell:hover .vocab-el-tip, .vocab-el-cell:focus .vocab-el-tip { opacity: 1; }
+
+/* The periodic table needs far more width than a word list — give the dialog
+   the room on desktop; it still scrolls horizontally on a phone. */
+.vocab-dict.vocab-dict--wide { width: min(980px, 96vw); }

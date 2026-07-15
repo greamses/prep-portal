@@ -69,6 +69,7 @@ const PAGES = [
       '/data/vocab/index.js',
       '/data/vocab/topics.js',
       '/data/vocab/manifest.js',
+      '/data/vocab/periodic-table.js',
       // Only the subjects that have actually been generated — the bank ships a
       // subject at a time, and hashing a file that doesn't exist would break the
       // build.

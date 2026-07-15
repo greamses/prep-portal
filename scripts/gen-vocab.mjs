@@ -353,6 +353,7 @@ if (checkOnly) {
     // towards itself. A duplicate is a bug, and this is where it gets caught.
     const seen = new Set();
     for (const topic of SUBJECTS[key].topics) {
+      if (topic.key === 'periodic-table') continue; // bundled data, validated in data/vocab/periodic-table.js
       const list = byTopic[topic.key] || [];
       const { rejects } = validate(list, seen);
       total += list.length;

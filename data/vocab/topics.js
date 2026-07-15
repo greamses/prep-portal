@@ -128,6 +128,7 @@ export const SUBJECTS = {
       T('organic', 'Organic Chemistry', 10, 12),
       T('electrochemistry', 'Electrochemistry', 10, 12),
       T('kinetics', 'Energy and Rates of Reaction', 10, 12),
+      T('periodic-table', 'The Periodic Table', 10, 12),
     ],
   },
   physics: {
