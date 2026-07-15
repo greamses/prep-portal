@@ -124,7 +124,18 @@ export function createRoomClient({ rooms, pointers, contentKeys, bucketOf }) {
           return;
         }
 
-        if (onWaiting) onWaiting({ phase: 'waiting', seed, playerCount: data.playerCount, size: data.size });
+        if (onWaiting) {
+          onWaiting({
+            phase: 'waiting', seed, playerCount: data.playerCount, size: data.size,
+            // The host can cut the wait short and start with whoever's already
+            // here — the empty seats fill with bots. Only the host is handed
+            // this, and it promotes the snapshot's CURRENT count, so the
+            // botsNeeded it writes still equals size - playerCount (what the
+            // rules require). A stale click after activation is a no-op:
+            // activate() bails once the room has settled.
+            startNow: isHost ? () => activate(data.playerCount) : null,
+          });
+        }
 
         // The room is full — there is nothing left to wait FOR. Start it now
         // instead of sitting out the rest of the host's window (8s in the pool,

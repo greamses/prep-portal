@@ -73,6 +73,7 @@ const lobbyCodeCopy = $('vocab-lobby-code-copy');
 const lobbySeats = $('vocab-lobby-seats');
 const lobbyCount = $('vocab-lobby-count');
 const lobbyCancel = $('vocab-lobby-cancel');
+const lobbyStartNow = $('vocab-lobby-start-now');
 
 const awaitingBd = $('vocab-awaiting-bd');
 const resultsBd = $('vocab-results-bd');
@@ -80,6 +81,9 @@ const leaderboardEl = $('vocab-leaderboard');
 const againBtn = $('vocab-again-btn');
 
 let cancelled = false;
+// The host's "start now" action for the current lobby snapshot — swapped out on
+// every waiting tick so the button always promotes the latest player count.
+let startNowFn = null;
 
 // ── Setup state ─────────────────────────────────────────────────────────
 // Owned in JS, not read back out of `input:checked` — a carousel only renders
@@ -430,6 +434,9 @@ function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
 function showLobby(size) {
   cancelled = false;
   clearLobbyReveal();
+  startNowFn = null;
+  lobbyStartNow.hidden = true;
+  lobbyStartNow.disabled = false;
   lobbyCode.hidden = true;
   lobbyStatus.textContent = 'Waiting for other players…';
   lobbyCount.textContent = `1 / ${size}`;
@@ -590,6 +597,8 @@ async function playRoundAndShowResults(room, name) {
 function makeOnWaiting(waitingStatusText) {
   return (state) => {
     if (state.phase === 'activated') {
+      startNowFn = null;
+      lobbyStartNow.hidden = true;
       lobbyStatus.textContent = 'Room ready!';
       lobbyCount.textContent = `${state.size} / ${state.size}`;
       revealBotsStaggered(state.size, state.botsNeeded, state.seed, state.revealMs);
@@ -598,6 +607,11 @@ function makeOnWaiting(waitingStatusText) {
     if (waitingStatusText) lobbyStatus.textContent = waitingStatusText;
     lobbyCount.textContent = `${state.playerCount} / ${state.size}`;
     renderLobbySeats(state.playerCount, state.size);
+    // Only the host is handed a startNow, and only once a real second player is
+    // here — no point offering "start now" for a room that's just you and bots
+    // (the wait fills those seats anyway). The empty seats become bots on click.
+    startNowFn = state.startNow || null;
+    lobbyStartNow.hidden = !(startNowFn && state.playerCount >= 2 && state.playerCount < state.size);
   };
 }
 
@@ -832,6 +846,13 @@ quickJoinBtn.addEventListener('click', async () => {
   await getCurrentUser();
   await runJoin(myName(), 2, code); // 2 is only the lobby's guess; the room's real size arrives with it
   quickJoinBtn.disabled = false;
+});
+lobbyStartNow.addEventListener('click', () => {
+  if (!startNowFn) return;
+  lobbyStartNow.disabled = true;
+  lobbyStartNow.hidden = true;
+  lobbyStatus.textContent = 'Starting…';
+  startNowFn(); // promotes the room now; the onSnapshot picks up 'active' and plays
 });
 lobbyCancel.addEventListener('click', () => {
   // v1 doesn't retract the Firestore join/room-create on cancel — the

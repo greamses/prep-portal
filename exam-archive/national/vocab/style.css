@@ -464,6 +464,26 @@ body.vocab-nav-hidden .site-nav { display: none; }
   cursor: pointer;
 }
 
+/* Host-only "start now" — cut the wait short and fill empty seats with bots.
+   Hidden until a real second player is in the room. */
+.vocab-lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+.vocab-startnow-btn {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.4rem 0.75rem;
+  cursor: pointer;
+}
+.vocab-startnow-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.vocab-startnow-btn[hidden] { display: none; }
+
 /* ── HANGMAN CARD ─────────────────────────────────────────────────────
    Wider and shorter than the Drills card: a gallows, a clue and a row of
    letter slots need width, not the 4:5 flashcard portrait. */
