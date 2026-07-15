@@ -47,6 +47,16 @@ export const AVAILABLE = {
     "stars": 24,
     "telescopes": 24
   },
+  "biology": {
+    "cell-biology": 24,
+    "genetics": 24,
+    "physiology": 24,
+    "ecology": 24,
+    "evolution": 24,
+    "plant-biology": 24,
+    "microbiology": 24,
+    "homeostasis": 24
+  },
   "chemistry": {
     "atomic-structure": 26,
     "bonding": 25,
