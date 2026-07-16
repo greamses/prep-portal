@@ -158,6 +158,7 @@ export const SUBJECTS = {
     grades: [1, 12],
     topics: [
       T('world-map', 'Map of the World', 1, 12),
+      T('nigeria-map', 'Map of Nigeria', 1, 12),
     ],
   },
 

@@ -51,14 +51,27 @@ export const CONTINENTS = [
 ];
 export const CONTINENT_LABELS = Object.fromEntries(CONTINENTS.map((c) => [c.key, c.label]));
 
+/* Nigeria's six geopolitical zones — the scope keys a scoped Map-of-Nigeria
+   round rides on. Kept here (tiny) for the same reason as the continents. */
+export const ZONES = [
+  { key: 'n-central', label: 'North Central' },
+  { key: 'n-east', label: 'North East' },
+  { key: 'n-west', label: 'North West' },
+  { key: 's-east', label: 'South East' },
+  { key: 's-south', label: 'South South' },
+  { key: 's-west', label: 'South West' },
+];
+export const ZONE_LABELS = Object.fromEntries(ZONES.map((z) => [z.key, z.label]));
+
 /** topics.js's topicMeta, but scope-aware: the label says which slice. */
 export function topicMeta(subjectKey, topicKey) {
   const meta = outlinedMeta(subjectKey, baseTopic(topicKey));
   const scope = topicScope(topicKey);
   if (!meta || !scope) return meta;
-  const label = baseTopic(topicKey) === PERIODIC
+  const base = baseTopic(topicKey);
+  const label = base === PERIODIC
     ? scopeLabel(scope)
-    : (CONTINENT_LABELS[scope] || scope);
+    : (base === NIGERIA ? ZONE_LABELS[scope] : CONTINENT_LABELS[scope]) || scope;
   return { ...meta, label: `${meta.label} — ${label}` };
 }
 
@@ -68,7 +81,8 @@ export function topicMeta(subjectKey, topicKey) {
    are topic-only and stay out of the A–Z alphabet. */
 const PERIODIC = 'periodic-table';
 const WORLD = 'world-map';
-const DRAWN = new Set([PERIODIC, WORLD]);
+const NIGERIA = 'nigeria-map';
+const DRAWN = new Set([PERIODIC, WORLD, NIGERIA]);
 // A subject made ENTIRELY of bundled topics needs no entry in the generated
 // manifest to be offered.
 const BUNDLED_SUBJECTS = new Set(['geography']);

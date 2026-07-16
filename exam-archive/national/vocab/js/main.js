@@ -14,7 +14,7 @@ import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
-  CONTINENTS, CONTINENT_LABELS,
+  CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS,
   baseTopic, topicScope, inScope,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
@@ -254,10 +254,11 @@ function renderTopicStep() {
     options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === baseTopic(topic) })),
     onPick: (v) => {
       // A drawn topic can be played whole, or one slice — a group/period of
-      // the table, a continent of the map. That choice is its own step, and
-      // it lands back in `topic` as a scope suffix ('periodic-table:g17',
-      // 'world-map:africa') so the room's bucket carries it.
-      if (v === 'periodic-table' || v === 'world-map') {
+      // the table, a continent of the world, a zone of Nigeria. That choice
+      // is its own step, and it lands back in `topic` as a scope suffix
+      // ('periodic-table:g17', 'world-map:africa', 'nigeria-map:n-west') so
+      // the room's bucket carries it.
+      if (v === 'periodic-table' || v === 'world-map' || v === 'nigeria-map') {
         if (baseTopic(topic) !== v) topic = v; // keep an existing scope on re-visit
         renderScopeStep();
         content.goTo('scope');
@@ -273,23 +274,44 @@ function renderTopicStep() {
    Periodic table — a slice is a group or a period, and it quizzes EVERY
    element in it (you chose it; the library shows it), while the whole table
    sticks to the common, examinable elements.
-   World map — a slice is a continent; one step, since there are only six. */
+   Maps — a slice is a continent of the world or a geopolitical zone of
+   Nigeria; one step each, since there are only six of either. */
+function renderMapScopeStep({ base, regions, title, allLabel, subtitle }) {
+  const cur = topicScope(topic);
+  renderChoiceStep(content, 'scope', {
+    title,
+    subtitle,
+    name: `vocab-${base}-scope`,
+    colorOffset: 3,
+    options: [
+      { value: 'all', label: allLabel, checked: !cur },
+      ...regions.map((r) => ({ value: r.key, label: r.label, checked: r.key === cur })),
+    ],
+    onPick: (v) => {
+      topic = v === 'all' ? base : `${base}:${v}`;
+      content.goTo('spelling');
+    },
+  });
+}
+
 function renderScopeStep() {
   if (baseTopic(topic) === 'world-map') {
-    const cur = topicScope(topic);
-    renderChoiceStep(content, 'scope', {
+    renderMapScopeStep({
+      base: 'world-map',
+      regions: CONTINENTS,
       title: 'The whole world, or one continent?',
+      allLabel: 'Whole world',
       subtitle: 'One continent asks only its countries — study the map in the library first.',
-      name: 'vocab-map-scope',
-      colorOffset: 3,
-      options: [
-        { value: 'all', label: 'Whole world', checked: !cur },
-        ...CONTINENTS.map((c) => ({ value: c.key, label: c.label, checked: c.key === cur })),
-      ],
-      onPick: (v) => {
-        topic = v === 'all' ? 'world-map' : `world-map:${v}`;
-        content.goTo('spelling');
-      },
+    });
+    return;
+  }
+  if (baseTopic(topic) === 'nigeria-map') {
+    renderMapScopeStep({
+      base: 'nigeria-map',
+      regions: ZONES,
+      title: 'All of Nigeria, or one zone?',
+      allLabel: 'Whole country',
+      subtitle: 'One geopolitical zone asks only its states — study the map in the library first.',
     });
     return;
   }
@@ -864,29 +886,27 @@ function renderPeriodicTable(scope) {
   dictList.appendChild(grid);
 }
 
-// The world map, drawn for study: every country in place, the quizzed ones
-// hoverable for their name, continent and capital hint. One floating tip
-// follows the pointer — an SVG path can't host the sticky-note tips the
-// table's cells use.
-async function renderWorldMapLibrary(scope) {
-  dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
-  const wm = await import('/data/vocab/world-map.js');
+// A map, drawn for study: every place in position, the quizzed ones hoverable
+// for their name, region and capital hint. One floating tip follows the
+// pointer — an SVG path can't host the sticky-note tips the table's cells
+// use. Serves both maps: the world's countries and Nigeria's states.
+async function renderMapLibrary({ mod, rows, scope, regionOf, regionLabels, ariaLabel }) {
   dictList.innerHTML = '';
 
   const wrap = document.createElement('div');
   wrap.className = 'vocab-worldmap';
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', `0 0 ${wm.MAP_W} ${wm.MAP_H}`);
+  svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Map of the world — hover a country for its details');
-  for (const c of wm.COUNTRIES) {
+  svg.setAttribute('aria-label', ariaLabel);
+  for (const c of rows) {
     const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     p.setAttribute('d', c.d);
-    const out = scope && c.cont !== scope;
+    const out = scope && regionOf(c) !== scope;
     p.setAttribute('class', 'vocab-map-c' + (out ? ' is-out' : ''));
     if (c.hint) {
       p.dataset.name = c.name;
-      p.dataset.tip = [c.name, CONTINENT_LABELS[c.cont] || '', c.hint].filter(Boolean).join(' — ');
+      p.dataset.tip = [c.name, regionLabels[regionOf(c)] || '', c.hint].filter(Boolean).join(' — ');
     }
     svg.appendChild(p);
   }
@@ -925,7 +945,28 @@ async function openDictionary() {
     dictSub.textContent = scope
       ? `${CONTINENT_LABELS[scope]} stays bright — those are the countries the round will ask. Hover any country for its name and capital.`
       : 'Hover any country for its name and capital. The game lights one up — you name it.';
-    await renderWorldMapLibrary(scope);
+    dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
+    const wm = await import('/data/vocab/world-map.js');
+    await renderMapLibrary({
+      mod: wm, rows: wm.COUNTRIES, scope,
+      regionOf: (c) => c.cont, regionLabels: CONTINENT_LABELS,
+      ariaLabel: 'Map of the world — hover a country for its details',
+    });
+    return;
+  }
+  if (playMode === 'topic' && baseTopic(topic) === 'nigeria-map') {
+    dictBox.classList.add('vocab-dict--wide');
+    const scope = topicScope(topic);
+    dictSub.textContent = scope
+      ? `${ZONE_LABELS[scope]} stays bright — those are the states the round will ask. Hover any state for its name and capital.`
+      : 'Hover any state for its name and capital. The game lights one up — you name it.';
+    dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
+    const nm = await import('/data/vocab/nigeria-map.js');
+    await renderMapLibrary({
+      mod: nm, rows: nm.STATES, scope,
+      regionOf: (c) => c.zone, regionLabels: ZONE_LABELS,
+      ariaLabel: 'Map of Nigeria — hover a state for its details',
+    });
     return;
   }
   if (playMode === 'topic' && baseTopic(topic) === 'periodic-table') {

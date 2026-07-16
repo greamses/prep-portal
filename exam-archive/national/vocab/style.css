@@ -1348,7 +1348,9 @@ body.vocab-nav-hidden .site-nav { display: none; }
   width: 100%;
   max-width: 560px; /* same override as the table — the map wants the card */
 }
-.vocab-clue-map { width: 100%; height: auto; display: block; }
+/* max-height keeps the portrait Nigeria map from swallowing the card — the
+   drawing letterboxes down inside the clamped box (viewBox keeps its aspect). */
+.vocab-clue-map { width: 100%; height: auto; max-height: 360px; display: block; }
 .vocab-country-note {
   position: relative;
   display: inline-flex;

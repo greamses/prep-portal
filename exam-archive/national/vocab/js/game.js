@@ -23,7 +23,7 @@
 ═══════════════════════════════════════════════════════ */
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
-  loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS,
+  loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS,
   ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope,
 } from '/data/vocab/index.js';
 
@@ -54,8 +54,9 @@ let active = false;   // the round is running (clock ticking)
 let acceptingGuesses = false; // …and the board is live (not mid-verdict, not out of words)
 let seed = 0;
 let round = [];   // [{ word, clue, letter }] — the same list on every client
-let tableScope = ''; // '' whole table/world · 'g17' one group · 'p3' one period · 'africa' one continent
-let worldMap = null; // lazy /data/vocab/world-map.js module — world-map rounds only
+let tableScope = ''; // '' whole · 'g17' group · 'p3' period · 'africa' continent · 'n-west' zone
+let worldMap = null;   // lazy /data/vocab/world-map.js module — world-map rounds only
+let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map rounds only
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -178,46 +179,56 @@ function renderElementClue(el) {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// The WHOLE world map as the clue: every country an unlabeled shape, the one
-// being asked lit up with a locator ring on its biggest landmass (a ring,
-// because Vanuatu at world scale is three pixels). Beneath it, a note naming
-// the continent, with a hover tip carrying the capital-city hint. In a
-// one-continent round the rest of the world fades right back.
-function renderCountryClue(c) {
+// A WHOLE map as the clue: every place an unlabeled shape, the one being
+// asked lit up with a locator ring on its biggest landmass (a ring, because
+// Vanuatu at world scale is three pixels). Beneath it, a note naming the
+// region (continent / geopolitical zone), with a hover tip carrying the
+// capital-city hint. In a scoped round the rest of the map fades right back.
+// Serves both drawn maps — the world's countries and Nigeria's states.
+function renderMapClue({ mod, rows, target, regionOf, regionLabel }) {
   clueEl.className = 'vocab-clue vocab-clue--map';
   clueEl.innerHTML = '';
 
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('class', 'vocab-clue-map');
-  svg.setAttribute('viewBox', `0 0 ${worldMap.MAP_W} ${worldMap.MAP_H}`);
-  svg.setAttribute('aria-label', 'World map clue — one country is highlighted');
-  for (const row of worldMap.COUNTRIES) {
+  svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
+  svg.setAttribute('aria-label', 'Map clue — one place is highlighted');
+  for (const row of rows) {
     const p = document.createElementNS(SVG_NS, 'path');
     p.setAttribute('d', row.d);
-    const out = tableScope && row.cont !== tableScope;
+    const out = tableScope && regionOf(row) !== tableScope;
     p.setAttribute('class', 'vocab-map-c'
-      + (row.name === c.name ? ' is-target' : '')
+      + (row.name === target.name ? ' is-target' : '')
       + (out ? ' is-out' : ''));
     svg.appendChild(p);
   }
   const ring = document.createElementNS(SVG_NS, 'circle');
   ring.setAttribute('class', 'vocab-map-ring');
-  ring.setAttribute('cx', c.cx);
-  ring.setAttribute('cy', c.cy);
+  ring.setAttribute('cx', target.cx);
+  ring.setAttribute('cy', target.cy);
   ring.setAttribute('r', 16);
   svg.appendChild(ring);
 
   const detail = document.createElement('span');
   detail.className = 'vocab-country-note';
   detail.tabIndex = 0;
-  detail.setAttribute('aria-label', `Country clue: in ${CONTINENT_LABELS[c.cont] || 'the world'}`);
+  detail.setAttribute('aria-label', `Map clue: in ${regionLabel || 'the map'}`);
   detail.innerHTML = `
       <span class="vocab-country-q">?</span>
-      <span class="vocab-country-cont">${CONTINENT_LABELS[c.cont] || ''}</span>
-      <span class="vocab-el-tip" role="tooltip">${c.hint}</span>`;
+      <span class="vocab-country-cont">${regionLabel || ''}</span>
+      <span class="vocab-el-tip" role="tooltip">${target.hint}</span>`;
 
   clueEl.append(svg, detail);
 }
+
+const renderCountryClue = (c) => renderMapClue({
+  mod: worldMap, rows: worldMap.COUNTRIES, target: c,
+  regionOf: (r) => r.cont, regionLabel: CONTINENT_LABELS[c.cont],
+});
+const renderStateClue = (s) => renderMapClue({
+  mod: nigeriaMap, rows: nigeriaMap.STATES, target: s,
+  regionOf: (r) => r.zone, regionLabel: ZONE_LABELS[s.zone],
+});
 
 // Scenery is never guessed, so it sits on the board from the start.
 function revealScenery() {
@@ -249,12 +260,13 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : 'Word'} ${index + 1} of ${round.length}`;
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : 'Word'} ${index + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
-  // with the asked element lit, or the world map with the asked country lit.
+  // with the asked element lit, or a map with the asked country/state lit.
   // Hover the note beneath for a hint.
   if (current.element) renderElementClue(current.element);
   else if (current.country) renderCountryClue(current.country);
+  else if (current.state) renderStateClue(current.state);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => {
@@ -408,11 +420,14 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   // countdown ends. It resolves from cache on a replay.
   const words = await loadWords(subject);
   round = buildRound({ seed: roomSeed, words, subject, grade, mode, topic });
-  // A world-map round draws the WHOLE map every question, so the map module
-  // must be in hand before the countdown ends. It resolves from the module
-  // cache instantly — loadWords('geography') already pulled it in.
+  // A map round draws the WHOLE map every question, so the map module must
+  // be in hand before the countdown ends. It resolves from the module cache
+  // instantly — loadWords('geography') already pulled it in.
   if (mode === 'topic' && baseTopic(topic) === 'world-map') {
     worldMap = await import('/data/vocab/world-map.js');
+  }
+  if (mode === 'topic' && baseTopic(topic) === 'nigeria-map') {
+    nigeriaMap = await import('/data/vocab/nigeria-map.js');
   }
 
   return new Promise((resolve) => {

@@ -38,12 +38,12 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
       const j = Math.floor(rng() * (i + 1));
       [list[i], list[j]] = [list[j], list[i]];
     }
-    // `element` (periodic table) and `country` (world map) are present only
-    // for the drawn topics — the game renders the drawn table or map in place
-    // of a text clue.
+    // `element` (periodic table), `country` (world map) and `state` (Nigeria
+    // map) are present only for the drawn topics — the game renders the drawn
+    // table or map in place of a text clue.
     return list.map((x) => ({
       word: x.w, clue: x.d, letter: null,
-      element: x.element || null, country: x.country || null,
+      element: x.element || null, country: x.country || null, state: x.state || null,
     }));
   }
 
