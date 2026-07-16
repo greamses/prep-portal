@@ -1172,18 +1172,58 @@ body.vocab-nav-hidden .site-nav { display: none; }
    Two views of one dataset (data/vocab/periodic-table.js): the game shows a
    single cell as the clue; the library draws the whole table. Category colours
    are the same fixed pastels used across the site's sticky notes. */
-.vocab-el[data-cat="alkali"],    .vocab-el-cell[data-cat="alkali"]    { --el-bg: #ffd7a3; }
-.vocab-el[data-cat="alkaline"],  .vocab-el-cell[data-cat="alkaline"]  { --el-bg: #ffe9a8; }
-.vocab-el[data-cat="transition"],.vocab-el-cell[data-cat="transition"]{ --el-bg: #bfe3ff; }
-.vocab-el[data-cat="post"],      .vocab-el-cell[data-cat="post"]      { --el-bg: #c8f0c0; }
-.vocab-el[data-cat="metalloid"], .vocab-el-cell[data-cat="metalloid"] { --el-bg: #b8ece2; }
-.vocab-el[data-cat="nonmetal"],  .vocab-el-cell[data-cat="nonmetal"]  { --el-bg: #d7f0a8; }
-.vocab-el[data-cat="halogen"],   .vocab-el-cell[data-cat="halogen"]   { --el-bg: #f7d2e6; }
-.vocab-el[data-cat="noble"],     .vocab-el-cell[data-cat="noble"]     { --el-bg: #e8c8ff; }
-.vocab-el[data-cat="lanthanide"],.vocab-el-cell[data-cat="lanthanide"]{ --el-bg: #f6c9c0; }
-.vocab-el[data-cat="actinide"],  .vocab-el-cell[data-cat="actinide"]  { --el-bg: #f0b8c8; }
+.vocab-el[data-cat="alkali"],    .vocab-el-cell[data-cat="alkali"],    .vocab-clue-el[data-cat="alkali"]    { --el-bg: #ffd7a3; }
+.vocab-el[data-cat="alkaline"],  .vocab-el-cell[data-cat="alkaline"],  .vocab-clue-el[data-cat="alkaline"]  { --el-bg: #ffe9a8; }
+.vocab-el[data-cat="transition"],.vocab-el-cell[data-cat="transition"],.vocab-clue-el[data-cat="transition"]{ --el-bg: #bfe3ff; }
+.vocab-el[data-cat="post"],      .vocab-el-cell[data-cat="post"],      .vocab-clue-el[data-cat="post"]      { --el-bg: #c8f0c0; }
+.vocab-el[data-cat="metalloid"], .vocab-el-cell[data-cat="metalloid"], .vocab-clue-el[data-cat="metalloid"] { --el-bg: #b8ece2; }
+.vocab-el[data-cat="nonmetal"],  .vocab-el-cell[data-cat="nonmetal"],  .vocab-clue-el[data-cat="nonmetal"]  { --el-bg: #d7f0a8; }
+.vocab-el[data-cat="halogen"],   .vocab-el-cell[data-cat="halogen"],   .vocab-clue-el[data-cat="halogen"]   { --el-bg: #f7d2e6; }
+.vocab-el[data-cat="noble"],     .vocab-el-cell[data-cat="noble"],     .vocab-clue-el[data-cat="noble"]     { --el-bg: #e8c8ff; }
+.vocab-el[data-cat="lanthanide"],.vocab-el-cell[data-cat="lanthanide"],.vocab-clue-el[data-cat="lanthanide"]{ --el-bg: #f6c9c0; }
+.vocab-el[data-cat="actinide"],  .vocab-el-cell[data-cat="actinide"],  .vocab-clue-el[data-cat="actinide"]  { --el-bg: #f0b8c8; }
 
-/* ── The game clue: one cell, number + mass, symbol hidden ── */
+/* ── The game clue: the WHOLE table, identities hidden, target lit ──
+   Every element is a blank colour tile; the one being asked pulses in place,
+   and its own cell (number + mass, symbol hidden) sits beneath the map. In a
+   scoped round everything outside the chosen group/period fades right back. */
+.vocab-clue.vocab-clue--ptable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  /* Override the text clue's 30ch cap — the table wants the whole card. */
+  width: 100%;
+  max-width: 560px;
+}
+.vocab-clue-ptable {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 18), 1fr);
+  gap: 2px;
+  width: 100%;
+  padding: 4px; /* room for the target's pulse to grow without clipping */
+}
+.vocab-clue-el {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--el-bg, #eee);
+  opacity: 0.55;
+}
+.vocab-clue-el.is-out { opacity: 0.12; }
+.vocab-clue-el.is-target {
+  position: relative;
+  z-index: 2;
+  opacity: 1;
+  outline: 2px solid #14130f;
+  box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.6);
+  animation: vocab-el-target 1.2s ease-in-out infinite;
+}
+@keyframes vocab-el-target {
+  0%, 100% { transform: scale(1.35); }
+  50% { transform: scale(1.75); }
+}
+
+/* ── One element's own cell, used beneath the clue map ── */
 .vocab-clue--element { display: flex; justify-content: center; }
 .vocab-el-cell {
   position: relative;
@@ -1232,6 +1272,10 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-size: .38rem; text-align: center; text-transform: capitalize;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* Library view of a scoped round: the slice stays bright, the rest fades —
+   but any cell wakes back up on hover, so the context is still explorable. */
+.vocab-el.is-out { opacity: 0.22; }
+.vocab-el.is-out:hover, .vocab-el.is-out:focus { opacity: 1; }
 
 /* ── Shared hover tip ── */
 .vocab-el-tip, .vocab-el-cell .vocab-el-tip {

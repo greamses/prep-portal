@@ -13,7 +13,8 @@ import { auth } from '/firebase-init.js';
 import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
-  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS,
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
+  baseTopic, topicScope, inScope,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -163,6 +164,11 @@ content.addSlide('grade', 'Grade', () => {});
 content.addSlide('subject', 'Subject', () => {});
 content.addSlide('play', 'Play', () => {});
 content.addSlide('topic', 'Topic', () => {});
+// Visited only for drawn topics (the periodic table): whole table, or one
+// group/period — and if a slice, which one. The carousel's crumb trail is the
+// stack of steps actually visited, so these stay invisible everywhere else.
+content.addSlide('scope', 'Part', () => {});
+content.addSlide('scope-n', 'Which', () => {});
 content.addSlide('spelling', 'Spelling', () => {});
 
 function renderGradeStep() {
@@ -199,7 +205,9 @@ function renderSubjectStep() {
       // player's clock while everyone else was already guessing.
       loadWords(subject).catch(() => {}); // a failure here just means we fetch again at kick-off
       const topics = topicsFor(subject, grade);
-      if (!topics.some((t) => t.key === topic)) topic = topics[0] ? topics[0].key : '';
+      // Compare on the BASE key — a scoped pick ('periodic-table:g17') is
+      // still valid wherever its topic is offered.
+      if (!topics.some((t) => t.key === baseTopic(topic))) topic = topics[0] ? topics[0].key : '';
       renderTopicStep();
       content.goTo('play');
     },
@@ -235,8 +243,68 @@ function renderTopicStep() {
     subtitle: `${SUBJECTS[subject].label}, Grade ${grade}.`,
     name: 'vocab-topic',
     colorOffset: 1,
-    options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === topic })),
-    onPick: (v) => { topic = v; content.goTo('spelling'); },
+    options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === baseTopic(topic) })),
+    onPick: (v) => {
+      // The periodic table can be played whole, or one group / one period —
+      // that choice is its own step, and it lands back in `topic` as a scope
+      // suffix ('periodic-table:g17') so the room's bucket carries it.
+      if (v === 'periodic-table') {
+        if (baseTopic(topic) !== v) topic = v; // keep an existing scope on re-visit
+        renderScopeStep();
+        content.goTo('scope');
+        return;
+      }
+      topic = v;
+      content.goTo('spelling');
+    },
+  });
+}
+
+/* The periodic table's scope: whole table, or drill one slice of it. A slice
+   quizzes EVERY element in that group/period (you chose it; the library shows
+   it), while the whole table sticks to the common, examinable elements. */
+function renderScopeStep() {
+  const kind = topicScope(topic).charAt(0); // '' | 'g' | 'p'
+  renderChoiceStep(content, 'scope', {
+    title: 'The whole table, or one part?',
+    subtitle: 'A group or a period asks every element in it — study it in the library first.',
+    name: 'vocab-pt-scope',
+    colorOffset: 3,
+    options: [
+      { value: 'all', label: 'Whole table', checked: kind === '' },
+      { value: 'g', label: 'One group', checked: kind === 'g' },
+      { value: 'p', label: 'One period', checked: kind === 'p' },
+    ],
+    onPick: (v) => {
+      if (v === 'all') { topic = 'periodic-table'; content.goTo('spelling'); return; }
+      renderScopeNStep(v);
+      content.goTo('scope-n');
+    },
+  });
+}
+
+function renderScopeNStep(kind) {
+  const current = topicScope(topic);
+  const picked = current.charAt(0) === kind ? Number(current.slice(1)) : 0;
+  const options = kind === 'g'
+    ? Array.from({ length: 18 }, (_, i) => {
+        const n = i + 1;
+        const named = GROUP_NAMES[n];
+        return { value: String(n), label: named ? `Group ${n} — ${named}` : `Group ${n}`, checked: n === picked };
+      })
+    : Array.from({ length: 7 }, (_, i) => {
+        const n = i + 1;
+        return { value: String(n), label: `Period ${n}`, checked: n === picked };
+      });
+  renderChoiceStep(content, 'scope-n', {
+    title: kind === 'g' ? 'Which group?' : 'Which period?',
+    subtitle: kind === 'g'
+      ? 'A group is one column of the table — elements that behave alike.'
+      : 'A period is one row of the table, left to right.',
+    name: 'vocab-pt-scope-n',
+    colorOffset: 5,
+    options,
+    onPick: (v) => { topic = `periodic-table:${kind}${v}`; content.goTo('spelling'); },
   });
 }
 
@@ -736,7 +804,7 @@ function dictEntry(word, clue) {
 // The periodic table is drawn, not listed: a real 18-column grid of sticky-note
 // cells, each hoverable for its details. This is the library view of the same
 // data the game deals one cell at a time.
-function renderPeriodicTable() {
+function renderPeriodicTable(scope) {
   dictList.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'vocab-ptable';
@@ -744,7 +812,9 @@ function renderPeriodicTable() {
   grid.style.setProperty('--rows', TABLE_ROWS);
   for (const el of ELEMENTS) {
     const cell = document.createElement('span');
-    cell.className = 'vocab-el';
+    // In a scoped round the slice being drilled stays bright and the rest of
+    // the table fades — study exactly what you are about to be asked.
+    cell.className = 'vocab-el' + (inScope(el, scope) ? '' : ' is-out');
     cell.dataset.cat = el.cat;
     cell.style.gridColumn = el.x;
     cell.style.gridRow = el.y;
@@ -774,10 +844,13 @@ async function openDictionary() {
   dictTitle.textContent = meta ? meta.label : `${SUBJECTS[subject].label}, A to Z`;
 
   const dictBox = dictBd.querySelector('.vocab-dict');
-  if (playMode === 'topic' && topic === 'periodic-table') {
+  if (playMode === 'topic' && baseTopic(topic) === 'periodic-table') {
     dictBox.classList.add('vocab-dict--wide'); // the table wants the room
-    dictSub.textContent = 'Hover any element for its details. The game gives you the number and the mass — you name it.';
-    renderPeriodicTable();
+    const scope = topicScope(topic);
+    dictSub.textContent = scope
+      ? 'Your slice stays bright — those are the elements the round will ask. Hover any element for its details.'
+      : 'Hover any element for its details. The game gives you the number and the mass — you name it.';
+    renderPeriodicTable(scope);
     return;
   }
   dictBox.classList.remove('vocab-dict--wide');

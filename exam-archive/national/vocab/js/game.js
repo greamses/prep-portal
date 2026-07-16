@@ -22,7 +22,10 @@
    (startAt/timeLimit) — no further server dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
-import { loadWords, topicMeta, CATEGORY_LABELS } from '/data/vocab/index.js';
+import {
+  loadWords, topicMeta, CATEGORY_LABELS,
+  ELEMENTS, TABLE_COLUMNS, inScope, topicScope,
+} from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -51,6 +54,7 @@ let active = false;   // the round is running (clock ticking)
 let acceptingGuesses = false; // …and the board is live (not mid-verdict, not out of words)
 let seed = 0;
 let round = [];   // [{ word, clue, letter }] — the same list on every client
+let tableScope = ''; // '' whole table · 'g17' one group · 'p3' one period
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -130,20 +134,45 @@ function isSolved() {
   return nextSlot() === -1;
 }
 
-// A single periodic-table cell as the clue: atomic number top-left, mass below,
-// a "?" where the symbol would sit, and a hover tip with the real help.
+// The WHOLE table as the clue: every element drawn as a blank tile (identities
+// hidden, category colours kept), the one being asked lit up in place. Below
+// it, that element's own cell — atomic number top-left, mass below, a "?"
+// where the symbol would sit — with a hover tip carrying the real help. In a
+// scoped round (one group / one period) the rest of the table fades right
+// back, so the slice being drilled reads as a bright row or column.
 function renderElementClue(el) {
-  clueEl.className = 'vocab-clue vocab-clue--element';
+  clueEl.className = 'vocab-clue vocab-clue--ptable';
+  clueEl.innerHTML = '';
+
+  const grid = document.createElement('span');
+  grid.className = 'vocab-clue-ptable';
+  grid.style.setProperty('--cols', TABLE_COLUMNS);
+  for (const e of ELEMENTS) {
+    const cell = document.createElement('span');
+    cell.className = 'vocab-clue-el'
+      + (e.z === el.z ? ' is-target' : '')
+      + (inScope(e, tableScope) ? '' : ' is-out');
+    cell.dataset.cat = e.cat;
+    cell.style.gridColumn = e.x;
+    cell.style.gridRow = e.y;
+    grid.appendChild(cell);
+  }
+
   const cat = CATEGORY_LABELS[el.cat] || '';
   const place = el.group ? `Group ${el.group} · Period ${el.period}` : `Period ${el.period}`;
   const tip = [cat, place, el.use].filter(Boolean).join(' — ');
-  clueEl.innerHTML = `
-    <span class="vocab-el-cell" data-cat="${el.cat}" tabindex="0" aria-label="Element clue: atomic number ${el.z}, mass ${el.mass}">
+  const detail = document.createElement('span');
+  detail.className = 'vocab-el-cell';
+  detail.dataset.cat = el.cat;
+  detail.tabIndex = 0;
+  detail.setAttribute('aria-label', `Element clue: atomic number ${el.z}, mass ${el.mass}, ${place}`);
+  detail.innerHTML = `
       <span class="vocab-el-z">${el.z}</span>
       <span class="vocab-el-q">?</span>
       <span class="vocab-el-mass">${el.mass}</span>
-      <span class="vocab-el-tip" role="tooltip">${tip}</span>
-    </span>`;
+      <span class="vocab-el-tip" role="tooltip">${tip}</span>`;
+
+  clueEl.append(grid, detail);
 }
 
 // Scenery is never guessed, so it sits on the board from the start.
@@ -337,6 +366,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   return new Promise((resolve) => {
     seed = roomSeed;
     spelling = spellMode === 'spell' ? 'spell' : 'classic';
+    tableScope = mode === 'topic' ? topicScope(topic) : '';
     index = 0;
     score = 0;
     wrong = 0;

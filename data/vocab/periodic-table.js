@@ -217,5 +217,43 @@ export const GAME_ELEMENTS = ELEMENTS
   .filter((e) => COMMON.has(e.z))
   .map((e) => ({ w: e.name, d: e.use, element: e }));
 
+// The classroom names for the named groups — the setup step's stickers.
+export const GROUP_NAMES = {
+  1: 'Alkali metals',
+  2: 'Alkaline earth',
+  17: 'Halogens',
+  18: 'Noble gases',
+};
+
+/* ── Scoped rounds ────────────────────────────────────────────────────────
+   The topic key can carry a scope suffix — 'periodic-table:g17' is Group 17,
+   'periodic-table:p3' is Period 3. The WHOLE table quizzes only the common
+   elements ("name Z=106" is not a fair round), but a group or a period is a
+   set the player chose to drill, so it quizzes EVERY element in it — exactly
+   the column or row they can study in the library first. Periods go by the
+   drawn row, so the lanthanide/actinide strips stay out of Periods 6 and 7,
+   the same as reading a printed table. */
+export function scopedElements(scope) {
+  if (!scope) return GAME_ELEMENTS;
+  const n = Number(scope.slice(1));
+  const members = scope[0] === 'g'
+    ? ELEMENTS.filter((e) => e.group === n)
+    : ELEMENTS.filter((e) => e.y === n);
+  return members.map((e) => ({ w: e.name, d: e.use, element: e }));
+}
+
+export function scopeLabel(scope) {
+  if (!scope) return '';
+  const n = Number(scope.slice(1));
+  return scope[0] === 'g' ? `Group ${n}` : `Period ${n}`;
+}
+
+/** Is this element inside the scoped row/column? (Everything, when unscoped.) */
+export function inScope(el, scope) {
+  if (!scope) return true;
+  const n = Number(scope.slice(1));
+  return scope[0] === 'g' ? el.group === n : el.y === n;
+}
+
 export const TABLE_COLUMNS = 18;
 export const TABLE_ROWS = 9; // 7 main periods + lanthanide + actinide strips

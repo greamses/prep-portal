@@ -15,16 +15,36 @@
    vocabulary fair (see topics.js) — so the pool at a grade is simply the union
    of the topics on offer at that grade.
 ═══════════════════════════════════════════════════════ */
-export { SUBJECTS, SUBJECT_KEYS, TARGET_WORDS, gradesForSubject, topicMeta } from './topics.js';
+export { SUBJECTS, SUBJECT_KEYS, TARGET_WORDS, gradesForSubject } from './topics.js';
 
 import {
   SUBJECTS, GRADES as ALL_GRADES,
   subjectsForGrade as outlinedSubjects, topicsFor as outlinedTopics,
+  topicMeta as outlinedMeta,
 } from './topics.js';
 import { AVAILABLE } from './manifest.js';
-import { GAME_ELEMENTS } from './periodic-table.js';
+import { scopedElements, scopeLabel } from './periodic-table.js';
 
-export { ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS } from './periodic-table.js';
+export {
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, inScope,
+} from './periodic-table.js';
+
+/* ── Scoped topic keys ────────────────────────────────────────────────────
+   A drawn topic's key can carry a scope after a colon — 'periodic-table:g17'
+   is Group 17 only. The scoped key travels the whole seeded-room contract
+   untouched (bucket, room doc, joiners), so two players share a room only if
+   they are drilling the SAME slice. These two helpers keep everything else
+   honest about it. */
+export const baseTopic = (key) => (key || '').split(':')[0];
+export const topicScope = (key) => (key || '').split(':')[1] || '';
+
+/** topics.js's topicMeta, but scope-aware: the label says which slice. */
+export function topicMeta(subjectKey, topicKey) {
+  const meta = outlinedMeta(subjectKey, baseTopic(topicKey));
+  const scope = topicScope(topicKey);
+  if (!meta || !scope) return meta;
+  return { ...meta, label: `${meta.label} — ${scopeLabel(scope)}` };
+}
 
 // A topic whose content is bundled scientific data (the periodic table), not a
 // generated word file. It is always available wherever its subject is, and its
@@ -99,7 +119,10 @@ export function gradePool(words, subjectKey, grade) {
 /** One topic's words, in file order — the round does its own seeded shuffle. */
 export function topicPool(words, topicKey) {
   // The periodic table's "words" are the elements themselves; each carries an
-  // `element` the game renders as a sticky-note cell instead of a text clue.
-  if (topicKey === PERIODIC) return GAME_ELEMENTS.map((e) => ({ ...e, topic: PERIODIC }));
+  // `element` the game renders as the drawn table instead of a text clue. The
+  // scope suffix ('…:g17', '…:p3') narrows it to one group or period.
+  if (baseTopic(topicKey) === PERIODIC) {
+    return scopedElements(topicScope(topicKey)).map((e) => ({ ...e, topic: PERIODIC }));
+  }
   return (words[topicKey] || []).map((entry) => ({ ...entry, topic: topicKey }));
 }
