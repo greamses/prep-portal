@@ -642,12 +642,13 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   background-image: none !important;
 }
 
-/* ── Jigsaw look — one seeded picture cut into interlocking pieces laid on
-   a recessed board (same tray as the slider). Each piece is an inline SVG
-   whose tabs overhang its square cell (overflow visible), so neighbours
-   only line up cleanly once they're truly adjacent in the finished
-   picture. The square button is the click target; the SVG itself never
-   takes pointer events, so overhanging tabs can't steal a neighbour's tap. */
+/* ── Jigsaw look — an EMPTY frame on the board and a pile of loose pieces
+   tipped onto a "tabletop" below it, like a real puzzle. Each piece is an
+   inline SVG whose seeded tabs overhang its square hitbox (overflow
+   visible); border pieces read differently at a glance — their outer sides
+   are flat. Drag a piece over its home socket (or tap it, then tap the
+   socket) and it clicks in. The SVG never takes pointer events, so
+   overhanging tabs can't steal a neighbour's tap. */
 .jigsaw-grid {
   gap: 0;
   grid-auto-rows: 1fr;
@@ -657,7 +658,7 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   border-radius: 8px;
   overflow: visible;
 }
-.jigsaw-piece {
+.jigsaw-cell {
   position: relative;
   background: none;
   border: 0;
@@ -665,58 +666,104 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   cursor: pointer;
   overflow: visible;
 }
-.jigsaw-piece svg {
+/* Empty socket: a quiet recessed dent waiting for its piece. */
+.jigsaw-cell::after {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 28%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.jigsaw-cell.is-filled { cursor: default; }
+.jigsaw-cell.is-filled::after { content: none; }
+.jigsaw-cell svg,
+.jigsaw-loose svg {
   position: absolute;
   left: -24%;
   top: -24%;
   width: 148%;
   height: 148%;
   pointer-events: none;
-  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.3));
-  transition: transform 0.15s ease, filter 0.15s ease;
 }
-.jigsaw-piece:hover { z-index: 4; }
-.jigsaw-piece:hover svg { transform: scale(1.03); }
-/* The picked-up piece floats: raised, enlarged, and ringed in the accent. */
-.jigsaw-piece.is-selected { z-index: 6; }
-.jigsaw-piece.is-selected svg {
-  transform: scale(1.1);
-  filter: drop-shadow(0 6px 12px rgba(20, 19, 15, 0.42));
-}
-.jigsaw-piece.is-selected .jigsaw-outline {
-  stroke: var(--accent-secondary);
-  stroke-width: 4.5;
-}
-/* Mid-swap travellers glide above their neighbours (see game.js's FLIP). */
-.jigsaw-piece.is-swapping { z-index: 8; }
-/* A piece at home is locked: it settles flat into the picture — no lift,
-   no hover — leaving only a quiet seam. */
-.jigsaw-piece.is-correct { cursor: default; }
-.jigsaw-piece.is-correct svg { filter: none; transform: none; }
-.jigsaw-piece.is-correct .jigsaw-outline {
+/* A placed piece lies flat in the picture, leaving only a quiet seam. */
+.jigsaw-cell.is-filled .jigsaw-outline {
   stroke: color-mix(in srgb, var(--ink) 55%, transparent);
   stroke-width: 2;
 }
-.jigsaw-piece.correct-flash svg { animation: jigsaw-settle 0.38s ease; }
+.jigsaw-cell.correct-flash svg { animation: jigsaw-settle 0.38s ease; }
 @keyframes jigsaw-settle {
   0% { transform: scale(1.14); }
   100% { transform: scale(1); }
 }
 
-/* Goal preview + hint above the grid (slider + jigsaw rounds). */
+/* The tabletop. Sits AFTER the board in the DOM with its own z-index, so a
+   piece being dragged up onto the frame renders above it, never beneath. */
+.jigsaw-heap {
+  position: relative;
+  z-index: 5;
+  width: min(400px, 100%);
+  margin: 0 auto 1rem;
+  aspect-ratio: calc(var(--grid-size, 4) / 2.35);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.jigsaw-loose {
+  position: absolute;
+  width: calc(95% / var(--grid-size, 4));
+  aspect-ratio: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: grab;
+  overflow: visible;
+  touch-action: none; /* the drag IS the gesture — never a scroll */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.jigsaw-loose svg {
+  transform: rotate(var(--rot, 0deg));
+  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.3));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+/* Later siblings already stack above earlier ones (the heap); interaction
+   states only need to beat their neighbours, not inline styles. */
+.jigsaw-loose:hover { z-index: 60; }
+.jigsaw-loose:hover svg { transform: rotate(var(--rot, 0deg)) scale(1.06); }
+.jigsaw-loose.is-selected { z-index: 70; }
+.jigsaw-loose.is-selected svg {
+  transform: rotate(0deg) scale(1.12);
+  filter: drop-shadow(0 6px 12px rgba(20, 19, 15, 0.42));
+}
+.jigsaw-loose.is-selected .jigsaw-outline {
+  stroke: var(--accent-secondary);
+  stroke-width: 4.5;
+}
+.jigsaw-loose.is-dragging {
+  z-index: 80;
+  cursor: grabbing;
+}
+.jigsaw-loose.is-dragging svg {
+  transform: rotate(0deg) scale(1.12);
+  filter: drop-shadow(0 8px 14px rgba(20, 19, 15, 0.45));
+  transition: none; /* follow the finger exactly — no easing lag */
+}
+.jigsaw-loose.is-wrong svg { animation: jigsaw-no 0.4s ease; }
+@keyframes jigsaw-no {
+  0%, 100% { transform: rotate(var(--rot, 0deg)); }
+  25% { transform: rotate(calc(var(--rot, 0deg) - 7deg)); }
+  60% { transform: rotate(calc(var(--rot, 0deg) + 7deg)); }
+}
+
+/* Hint line above the grid (slider + jigsaw rounds). */
 .puzzle-grid-topbar {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.7rem;
-}
-.puzzle-slider-preview {
-  width: min(132px, 42%);
-  aspect-ratio: 1;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  background: var(--surface-primary);
 }
 .puzzle-grid-hint {
   margin: 0;

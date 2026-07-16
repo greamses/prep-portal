@@ -56,6 +56,7 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 const nameInput = $('puzzle-name-input');
 const avatarGrid = $('puzzle-avatar-grid');
 const avatarUploadInput = $('puzzle-avatar-upload-input');
+const photoInput = $('puzzle-photo-input');
 const playerMount = $('puzzle-player-carousel');
 const topicMount = $('puzzle-topic-carousel');
 const optionsMount = $('puzzle-options-carousel');
@@ -113,7 +114,18 @@ let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYP
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
 
+// Picture rounds (Jigsaw, Slider's Picture tiles) can use the player's own
+// photo instead of the seeded scene. The photo is downscaled to a square
+// data: URI and kept in localStorage — strictly THIS device's decoration.
+// The seed still decides the puzzle's structure, so rooms stay fair and
+// nothing is uploaded or shown to anyone else.
+const PIC_KEY = 'puzzlePictureUpload';
+let pictureSource = mem.get('pictureSource', 'scene', ['scene', 'upload']);
+if (pictureSource === 'upload' && !localStorage.getItem(PIC_KEY)) pictureSource = 'scene';
+
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
+const usesPicture = () => puzzleType === 'jigsaw' || (puzzleType === 'slider' && tileSet === 'picture');
+const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PIC_KEY) || '' : '');
 
 // What this room plays — handed to matchmaking and written into the room
 // doc. Only Slider offers a tile choice; Jigsaw is always the picture and
@@ -176,6 +188,7 @@ player.start('name');
 const topic = createCarousel(topicMount);
 topic.addSlide('type', 'Puzzle', () => {});
 topic.addSlide('tiles', 'Tiles', () => {});
+topic.addSlide('photo', 'Picture', () => {});
 topic.addSlide('grid-size', 'Grid Size', () => {});
 topic.addSlide('difficulty', 'Difficulty', () => {});
 
@@ -204,7 +217,39 @@ function renderTilesPick() {
       { value: 'fractions', label: 'Fractions', note: 'smallest to largest', checked: tileSet === 'fractions' },
       { value: 'numbers', label: 'Numbers', note: 'classic 15-puzzle', checked: tileSet === 'numbers' },
     ],
-    onPick: (v) => { tileSet = v; mem.save({ tileSet }); renderGridSizePick(); topic.goTo('grid-size'); },
+    onPick: (v) => {
+      tileSet = v;
+      mem.save({ tileSet });
+      if (v === 'picture') { renderPhotoPick(); topic.goTo('photo'); return; }
+      renderGridSizePick();
+      topic.goTo('grid-size');
+    },
+  });
+}
+
+// Picture rounds only — the seeded scene, or the player's own photo. Picking
+// "Your photo" opens the file dialog; the step advances once a photo lands
+// (or, if one is already saved, when the dialog is simply cancelled).
+function renderPhotoPick() {
+  renderChoiceStep(topic, 'photo', {
+    title: 'Which picture?',
+    name: 'puzzle-photo',
+    colorOffset: 5,
+    options: [
+      { value: 'scene', label: 'Surprise scene', note: 'drawn for you', checked: pictureSource === 'scene' },
+      {
+        value: 'upload', label: 'Your photo',
+        note: localStorage.getItem(PIC_KEY) ? 'tap to change it' : 'from your device',
+        checked: pictureSource === 'upload',
+      },
+    ],
+    onPick: (v) => {
+      if (v === 'upload') { photoInput.click(); return; }
+      pictureSource = 'scene';
+      mem.save({ pictureSource });
+      renderGridSizePick();
+      topic.goTo('grid-size');
+    },
   });
 }
 
@@ -221,12 +266,14 @@ renderChoiceStep(topic, 'type', {
     puzzleType = v;
     mem.save({ puzzleType, gridSize });
     if (v === 'slider') { renderTilesPick(); topic.goTo('tiles'); return; }
+    if (v === 'jigsaw') { renderPhotoPick(); topic.goTo('photo'); return; }
     renderGridSizePick();
     topic.goTo('grid-size');
   },
 });
 
 renderTilesPick();
+renderPhotoPick();
 renderGridSizePick();
 
 renderChoiceStep(topic, 'difficulty', {
@@ -346,6 +393,7 @@ const flow = createSectionFlow([
     chips: () => [
       { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
       ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
+      ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Scene' }] : []),
       { label: `${gridSize}×${gridSize}` },
       { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
     ],
@@ -374,6 +422,56 @@ nameInput.value = localStorage.getItem(NAME_KEY) || '';
 nameInput.addEventListener('input', () => localStorage.setItem(NAME_KEY, nameInput.value));
 getCurrentUser().then((user) => {
   if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
+});
+
+// ── Puzzle photo upload ──────────────────────────────────────────────────
+// Cover-crops the middle square, downscales and stores a JPEG data: URI —
+// small enough for localStorage (and for every jigsaw piece face, which
+// each embed the whole image), sharp enough for a 6×6 cut.
+photoInput.addEventListener('change', () => {
+  const file = photoInput.files && photoInput.files[0];
+  photoInput.value = ''; // so re-picking the same file still fires 'change'
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const S = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = S;
+    canvas.height = S;
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    canvas.getContext('2d').drawImage(
+      img,
+      (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side,
+      0, 0, S, S,
+    );
+    try {
+      localStorage.setItem(PIC_KEY, canvas.toDataURL('image/jpeg', 0.82));
+    } catch (e) {
+      alert("Couldn't save that image — try a different one.");
+      return;
+    }
+    pictureSource = 'upload';
+    mem.save({ pictureSource });
+    renderPhotoPick(); // refresh the note to "tap to change it"
+    renderGridSizePick();
+    topic.goTo('grid-size');
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    alert("Couldn't read that image — try a different one.");
+  };
+  img.src = url;
+});
+// Cancelling the dialog with a photo already saved just means "keep it".
+photoInput.addEventListener('cancel', () => {
+  if (!localStorage.getItem(PIC_KEY)) return;
+  pictureSource = 'upload';
+  mem.save({ pictureSource });
+  renderPhotoPick();
+  renderGridSizePick();
+  topic.goTo('grid-size');
 });
 
 // ── Avatar picker ────────────────────────────────────────────────────────
@@ -582,6 +680,7 @@ async function playRoundAndShowResults(room, myName) {
     difficulty: room.difficulty,
     gridSize: room.gridSize,
     tiles: room.tiles,
+    customArt: customArtUri(), // this player's own photo (local-only) for picture rounds
     roster,
   });
 

@@ -7,15 +7,16 @@
        digit pad. Score is a live count of correctly-filled editable cells.
      - slider: click any tile adjacent to the blank (or use arrow keys) to
        slide it. Score is a live count of tiles in their solved position.
-     - jigsaw: tap one piece, tap another to swap them. A piece that lands
-       on its home cell locks in; score is a live count of pieces placed.
+     - jigsaw: the frame starts empty and the loose pieces sit heaped below
+       it. Drag a piece over its home cell (or tap it, then tap the cell)
+       and it clicks in and locks; score is a live count of pieces placed.
    Either way, a full solve ends the round early, and timing after
    activation is entirely local (startAt/timeLimit) — no further server
    dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
-import { generateJigsaw, scoreJigsaw, pieceFacesSvg } from './jigsaw.js';
+import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
 import { scenePictureUri } from './art.js';
 
 const $ = (id) => document.getElementById(id);
@@ -34,8 +35,8 @@ const digitPad = $('puzzle-digit-pad');
 const scoreNote = $('puzzle-score-note');
 const timerNote = $('puzzle-timer-note');
 const topbarEl = $('puzzle-grid-topbar');
-const previewEl = $('puzzle-slider-preview');
 const hintEl = $('puzzle-grid-hint');
+const heapEl = $('puzzle-jigsaw-heap');
 
 let active = false;
 let puzzleType = 'sudoku';
@@ -57,13 +58,14 @@ let board = null; // flat length-N² array, 0 = blank
 let solvedBoard = null;
 let tileSet = 'numbers'; // numbers | fractions | picture — what the tiles wear
 let fractionValues = null; // fractions only — ascending, tile n wears [n-1]
-let artUri = ''; // picture/jigsaw — the seeded scene as a data: URI
+let artUri = ''; // picture/jigsaw — the seeded scene (or the player's own photo) as a data: URI
 
 // Jigsaw-only state
-let placement = null; // flat length-N² array — placement[cell] = piece number
 let lockedCells = null; // pre-placed anchor cells (difficulty givens)
 let pieceFaces = null; // piece number → its clipped-picture SVG face
-let jigsawSelected = -1; // cell index of the picked-up piece, or -1
+let jigsawPlaced = 0; // movable pieces delivered home so far
+let jigsawPicked = null; // tap-selected loose piece element, or null
+let jigsawDrag = null; // live pointer-drag state, or null
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -272,17 +274,16 @@ function slideTile(fromIndex) {
 }
 
 // ── Jigsaw ───────────────────────────────────────────────────────────────
-// Dresses cell `i` for the piece currently sitting on it. A piece at home
-// (a pre-placed anchor, or one the player just delivered) locks: it can't
-// be picked up again, and since every piece has exactly one home a locked
-// piece can never block another one's way.
-function paintJigsawCell(i, { flash = false } = {}) {
-  const el = gridEl.children[i];
-  const correct = placement[i] === i + 1;
-  el.className = `jigsaw-piece${correct ? ' is-correct' : ''}`;
-  el.disabled = correct;
-  el.innerHTML = pieceFaces[placement[i]];
-  if (correct && flash) {
+// The frame is a grid of empty sockets (plus any pre-placed anchors); the
+// loose pieces live in a heap element below it. A piece only goes in at its
+// own home cell — a wrong drop bounces back to the pile — so everything
+// placed is correct, and placed pieces lock for good.
+function fillJigsawCell(cell, { flash = false } = {}) {
+  const el = gridEl.children[cell];
+  el.className = 'jigsaw-cell is-filled';
+  el.disabled = true;
+  el.innerHTML = pieceFaces[cell + 1];
+  if (flash) {
     el.classList.add('correct-flash');
     setTimeout(() => el.classList.remove('correct-flash'), 380);
   }
@@ -290,65 +291,140 @@ function paintJigsawCell(i, { flash = false } = {}) {
 
 function buildJigsawGrid() {
   gridEl.classList.add('jigsaw-grid');
-  for (let i = 0; i < placement.length; i++) {
+  for (let i = 0; i < gridSize * gridSize; i++) {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.className = 'jigsaw-cell';
     btn.dataset.index = String(i);
     gridEl.appendChild(btn);
-    paintJigsawCell(i);
+    if (lockedCells[i]) fillJigsawCell(i);
   }
 }
 
-function setJigsawSelected(i) {
-  if (jigsawSelected !== -1) {
-    const prev = gridEl.children[jigsawSelected];
-    if (prev) prev.classList.remove('is-selected');
+// Tips the loose pieces onto the "tabletop" below the frame: absolutely
+// positioned at seeded scatter spots with a resting tilt, stacking in DOM
+// order like a real heap. Border pieces are spottable by their flat sides.
+function buildJigsawHeap(heap) {
+  heapEl.innerHTML = '';
+  heapEl.style.setProperty('--grid-size', gridSize);
+  heap.forEach((h) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'jigsaw-loose';
+    btn.dataset.piece = String(h.piece);
+    // x spans the width minus one piece; y stays in the upper ~60% so tilted
+    // tabs don't poke out the bottom of the tabletop.
+    btn.style.left = `${(h.x * (100 - 95 / gridSize)).toFixed(2)}%`;
+    btn.style.top = `${(h.y * 58).toFixed(2)}%`;
+    btn.style.setProperty('--rot', `${h.rot}deg`);
+    btn.innerHTML = pieceFaces[h.piece];
+    heapEl.appendChild(btn);
+  });
+}
+
+function setJigsawPicked(el) {
+  if (jigsawPicked) jigsawPicked.classList.remove('is-selected');
+  jigsawPicked = el;
+  if (el) el.classList.add('is-selected');
+}
+
+// Deliver a loose piece home: fill its cell (gliding in from wherever the
+// piece was let go), drop it from the heap, and count it.
+function placeJigsawPiece(looseEl, cell, fromRect) {
+  if (jigsawPicked === looseEl) setJigsawPicked(null);
+  looseEl.remove();
+  fillJigsawCell(cell, { flash: true });
+  const el = gridEl.children[cell];
+  if (el.animate && fromRect) {
+    const to = el.getBoundingClientRect();
+    el.animate(
+      [
+        { transform: `translate(${fromRect.left - to.left}px, ${fromRect.top - to.top}px)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      { duration: 170, easing: 'ease-out' },
+    );
   }
-  jigsawSelected = i;
-  if (i !== -1) gridEl.children[i].classList.add('is-selected');
-}
-
-// Same FLIP recipe as slideTile, for both travellers at once: each piece is
-// painted at its destination but starts translated back over the cell it
-// came from and glides home. Only transforms animate — no reflow.
-function jigsawGlide(el, from, to) {
-  if (!el.animate) return;
-  el.classList.add('is-swapping');
-  const anim = el.animate(
-    [
-      { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` },
-      { transform: 'translate(0, 0)' },
-    ],
-    { duration: 160, easing: 'ease-out' },
-  );
-  anim.onfinish = () => el.classList.remove('is-swapping');
-}
-
-function swapJigsaw(a, b) {
-  setJigsawSelected(-1);
-  const elA = gridEl.children[a];
-  const elB = gridEl.children[b];
-  const rectA = elA.getBoundingClientRect();
-  const rectB = elB.getBoundingClientRect();
-
-  [placement[a], placement[b]] = [placement[b], placement[a]];
-  paintJigsawCell(a, { flash: true });
-  paintJigsawCell(b, { flash: true });
-  jigsawGlide(elA, rectB, rectA);
-  jigsawGlide(elB, rectA, rectB);
-
-  score = scoreJigsaw(placement, lockedCells);
+  jigsawPlaced += 1;
+  score = jigsawPlaced;
   scoreNote.textContent = `${score}/${totalUnits} correct`;
   if (score >= totalUnits) endRound();
 }
 
-// First tap picks a piece up (tap it again to put it down); the second tap
-// swaps the two. Locked pieces are disabled buttons, so their clicks never
-// even arrive here.
-function onJigsawTap(i) {
-  if (jigsawSelected === i) setJigsawSelected(-1);
-  else if (jigsawSelected === -1) setJigsawSelected(i);
-  else swapJigsaw(jigsawSelected, i);
+function jigsawShake(el) {
+  el.classList.add('is-wrong');
+  setTimeout(() => el.classList.remove('is-wrong'), 420);
+}
+
+// Which frame cell (if any) a viewport point is over. At most 36 cells, and
+// only ever consulted on drop — a rect sweep is plenty.
+function jigsawCellAt(x, y) {
+  const cells = gridEl.children;
+  for (let i = 0; i < cells.length; i++) {
+    const r = cells[i].getBoundingClientRect();
+    if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return i;
+  }
+  return -1;
+}
+
+// Pointer-driven drag (mouse + touch alike, via setPointerCapture). A press
+// that never travels is a tap: it picks the piece up / puts it back down for
+// the tap-piece-then-tap-cell path (see onGridClick).
+function onHeapPointerDown(e) {
+  if (!active) return;
+  const el = e.target.closest('.jigsaw-loose');
+  if (!el) return;
+  e.preventDefault();
+  jigsawDrag = { el, piece: parseInt(el.dataset.piece, 10), sx: e.clientX, sy: e.clientY, moved: false };
+  // Capture can refuse (pointer already gone, synthetic event) — the drag
+  // still works for any pointer that stays over the heap, so never let a
+  // capture failure kill the tap path.
+  try { el.setPointerCapture(e.pointerId); } catch { /* noop */ }
+}
+
+function onHeapPointerMove(e) {
+  const d = jigsawDrag;
+  if (!d) return;
+  const dx = e.clientX - d.sx;
+  const dy = e.clientY - d.sy;
+  if (!d.moved && Math.hypot(dx, dy) > 6) {
+    d.moved = true;
+    setJigsawPicked(null);
+    d.el.classList.add('is-dragging');
+  }
+  if (d.moved) d.el.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+
+function onHeapPointerEnd(e) {
+  const d = jigsawDrag;
+  jigsawDrag = null;
+  if (!d) return;
+  if (!d.moved) {
+    // A plain tap: pick the piece up (or put it back down).
+    setJigsawPicked(jigsawPicked === d.el ? null : d.el);
+    return;
+  }
+  d.el.classList.remove('is-dragging');
+  const rect = d.el.getBoundingClientRect(); // where it was let go
+  d.el.style.transform = '';
+  const cell = e.type === 'pointercancel' ? -1 : jigsawCellAt(e.clientX, e.clientY);
+  if (cell === d.piece - 1) {
+    placeJigsawPiece(d.el, cell, rect);
+    return;
+  }
+  // Not home — glide back to its heap spot; shake only if it was actually
+  // dropped on the board (a drop back onto the pile isn't "wrong").
+  if (d.el.animate) {
+    const home = d.el.getBoundingClientRect();
+    d.el.animate(
+      [
+        { transform: `translate(${rect.left - home.left}px, ${rect.top - home.top}px)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      { duration: 220, easing: 'ease-out' },
+    );
+  }
+  if (cell !== -1) jigsawShake(d.el);
 }
 
 // ── Shared input dispatch ─────────────────────────────────────────────────
@@ -369,8 +445,14 @@ function onGridClick(e) {
     return;
   }
   if (puzzleType === 'jigsaw') {
-    const btn = e.target.closest('.jigsaw-piece');
-    if (btn && !btn.disabled) onJigsawTap(parseInt(btn.dataset.index, 10));
+    // Second half of the tap-piece-then-tap-cell path: with a loose piece
+    // picked, tapping its home socket places it; any other socket says no.
+    const btn = e.target.closest('.jigsaw-cell');
+    if (!btn || btn.disabled || !jigsawPicked) return;
+    const cell = parseInt(btn.dataset.index, 10);
+    const piece = parseInt(jigsawPicked.dataset.piece, 10);
+    if (cell === piece - 1) placeJigsawPiece(jigsawPicked, cell, jigsawPicked.getBoundingClientRect());
+    else jigsawShake(jigsawPicked);
     return;
   }
   const btn = e.target.closest('.sudoku-cell.is-editable');
@@ -441,11 +523,21 @@ function endRound() {
 gridEl.addEventListener('click', onGridClick);
 digitPad.addEventListener('click', onDigitPadClick);
 document.addEventListener('keydown', onKeydown);
+// setPointerCapture routes the whole drag to the pressed piece, and those
+// events bubble here — so one set of listeners covers every loose piece.
+heapEl.addEventListener('pointerdown', onHeapPointerDown);
+heapEl.addEventListener('pointermove', onHeapPointerMove);
+heapEl.addEventListener('pointerup', onHeapPointerEnd);
+heapEl.addEventListener('pointercancel', onHeapPointerEnd);
 
 // Resolves with { score, totalUnits } once the local timer hits zero (or
 // the puzzle is fully solved early) — totalUnits lets the caller pass the
-// same cap to bot simulation without regenerating the puzzle.
-export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficulty, gridSize: size, tiles, roster }) {
+// same cap to bot simulation without regenerating the puzzle. `customArt`
+// is the player's own uploaded photo (a data: URI) for picture rounds —
+// purely local and never synced: the seed decides the puzzle's STRUCTURE
+// (cuts, anchors, heap), so what the picture shows can differ per player
+// without touching fairness.
+export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficulty, gridSize: size, tiles, customArt, roster }) {
   return new Promise((resolve) => {
     puzzleType = type;
     gridSize = size;
@@ -462,15 +554,17 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       // none, so those rounds keep playing as plain numbers.
       tileSet = tiles || 'numbers';
       fractionValues = tileSet === 'fractions' ? generateFractionValues(seed, totalUnits) : null;
-      artUri = tileSet === 'picture' ? scenePictureUri(seed) : '';
+      artUri = tileSet === 'picture' ? (customArt || scenePictureUri(seed)) : '';
     } else if (puzzleType === 'jigsaw') {
       const puzzle = generateJigsaw(seed, difficulty, gridSize);
-      placement = puzzle.placement;
       lockedCells = puzzle.locked;
       totalUnits = puzzle.movableCount; // anchors are givens — only YOUR pieces score
-      artUri = scenePictureUri(seed);
+      artUri = customArt || scenePictureUri(seed);
       pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
-      jigsawSelected = -1;
+      jigsawPlaced = 0;
+      jigsawPicked = null;
+      jigsawDrag = null;
+      buildJigsawHeap(puzzle.heap);
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -479,21 +573,17 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       totalUnits = countEditableCells(givens);
     }
 
-    // Slider and Jigsaw rounds get a hint line, and picture rounds also show
-    // the goal picture — visible from the countdown on, so players study it
-    // before the clock starts.
+    // Slider and Jigsaw rounds get a hint line. No reference image — the
+    // pieces/tiles themselves are the only picture you get, so rebuilding
+    // it stays a genuine puzzle.
     if (puzzleType === 'slider') {
       hintEl.textContent =
         tileSet === 'picture' ? 'Rebuild the picture — slide tiles next to the gap.'
         : tileSet === 'fractions' ? 'Smallest fraction first — arrange them in order.'
         : `Put the tiles in order, 1 to ${totalUnits}.`;
-      previewEl.hidden = tileSet !== 'picture';
-      if (tileSet === 'picture') previewEl.src = artUri;
       topbarEl.hidden = false;
     } else if (puzzleType === 'jigsaw') {
-      hintEl.textContent = 'Rebuild the picture — tap two pieces to swap them.';
-      previewEl.hidden = false;
-      previewEl.src = artUri;
+      hintEl.textContent = 'Rebuild the picture — drag pieces from the pile into the frame.';
       topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;
@@ -505,6 +595,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     countdownEl.hidden = false;
     gridEl.hidden = true;
     digitPad.hidden = puzzleType !== 'sudoku';
+    heapEl.hidden = true; // jigsaw's pile appears with the grid, after the countdown
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
@@ -539,6 +630,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         rosterEl.hidden = true;
         gridEl.hidden = false;
         if (puzzleType === 'sudoku') digitPad.hidden = false;
+        if (puzzleType === 'jigsaw') heapEl.hidden = false;
         endAt = anchorAt + timeLimit * 1000;
         rafId = requestAnimationFrame(tick);
         return;

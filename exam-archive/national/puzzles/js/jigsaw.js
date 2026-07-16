@@ -1,16 +1,18 @@
 /* ═══════════════════════════════════════════════════════
    PUZZLES — seeded jigsaw generator
    One seeded picture (art.js) cut into an N×N grid of interlocking pieces.
-   The pieces stay on the board but are scrambled — tap one, tap another to
-   swap them, and a piece that lands on its home cell locks in. Every client
-   in a room shares one `seed`, so the same picture, the same tab layout and
-   the same scramble appear on every device with zero network traffic — same
-   philosophy as sudoku.js/slider.js.
+   The loose pieces start OFF the board, tipped into a heap below the empty
+   frame like a real puzzle onto a tabletop — drag one over its home cell
+   (or tap it, then tap the cell) and it clicks in and locks. Every client
+   in a room shares one `seed`, so the same picture, the same tab layout
+   and the same heap appear on every device with zero network traffic —
+   same philosophy as sudoku.js/slider.js.
 
-   Unlike the slider there is no blank and no move legality: any two loose
-   pieces can swap, so ANY permutation is solvable and no parity math is
-   needed. Difficulty is instead how much help you start with: Easy/Medium
-   pre-place (and lock) a seeded handful of anchor pieces, Hard gives none.
+   Border pieces read differently at a glance, exactly like a real jigsaw:
+   their outer sides are FLAT (tab = 0 along the frame), so corners show
+   two straight sides and edges one. Difficulty is how much help you start
+   with: Easy/Medium pre-place (and lock) a seeded handful of anchor
+   pieces in the frame, Hard gives none.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed } from './rng.js';
 
@@ -21,12 +23,10 @@ const LOCKED_FRACTION = { easy: 0.28, medium: 0.12, hard: 0 };
 
 const JIGSAW_TAB_NS = 77177;
 
-// Returns { placement, locked, movableCount }. `placement` is a flat
-// length-N² array — placement[cell] = the piece number (1..N²) sitting
-// there; piece p's home cell is p-1. `locked[cell]` marks the pre-placed
-// anchors. Every movable piece starts AWAY from home (Sattolo's algorithm
-// yields one big cycle with no fixed points), so the score starts at 0 and
-// a lucky already-solved board can't happen.
+// Returns { locked, heap, movableCount }. `locked[cell]` marks the anchors
+// pre-placed in the frame; `heap` is every other piece in seeded scatter
+// order — { piece, x, y, rot } with x/y as 0..1 fractions of the heap area
+// and a resting tilt, later pieces stacking on top of earlier ones.
 export function generateJigsaw(seed, difficulty, gridSize) {
   const rng = mulberry32(seed);
   const total = gridSize * gridSize;
@@ -41,32 +41,21 @@ export function generateJigsaw(seed, difficulty, gridSize) {
   const locked = new Array(total).fill(false);
   for (let k = 0; k < lockedCount; k++) locked[cells[k]] = true;
 
-  const movable = [];
-  for (let i = 0; i < total; i++) if (!locked[i]) movable.push(i);
-
-  // Sattolo (j < i, not j <= i): a uniformly random single-cycle permutation,
-  // guaranteeing no piece stays on its own home cell.
-  const values = movable.map((cell) => cell + 1);
-  for (let i = values.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * i);
-    [values[i], values[j]] = [values[j], values[i]];
+  const loose = [];
+  for (let i = 0; i < total; i++) if (!locked[i]) loose.push(i + 1);
+  for (let i = loose.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [loose[i], loose[j]] = [loose[j], loose[i]];
   }
 
-  const placement = Array.from({ length: total }, (_, i) => i + 1);
-  movable.forEach((cell, k) => { placement[cell] = values[k]; });
+  const heap = loose.map((piece) => ({
+    piece,
+    x: rng(),
+    y: rng(),
+    rot: Math.round((rng() * 2 - 1) * 16),
+  }));
 
-  return { placement, locked, movableCount: movable.length };
-}
-
-// How many MOVABLE pieces currently sit at home — locked anchors are the
-// puzzle's givens and never count, mirroring Sudoku's editable-cells-only
-// scoring.
-export function scoreJigsaw(placement, locked) {
-  let correct = 0;
-  for (let i = 0; i < placement.length; i++) {
-    if (!locked[i] && placement[i] === i + 1) correct += 1;
-  }
-  return correct;
+  return { locked, heap, movableCount: heap.length };
 }
 
 /* ── Piece faces ──────────────────────────────────────────────────────────
