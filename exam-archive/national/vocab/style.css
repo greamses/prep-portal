@@ -1305,6 +1305,96 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-el:hover .vocab-el-tip, .vocab-el:focus .vocab-el-tip,
 .vocab-el-cell:hover .vocab-el-tip, .vocab-el-cell:focus .vocab-el-tip { opacity: 1; }
 
-/* The periodic table needs far more width than a word list — give the dialog
-   the room on desktop; it still scrolls horizontally on a phone. */
+/* ── WORLD MAP ───────────────────────────────────────────────────────────
+   Two views of one dataset (data/vocab/world-map.js), exactly like the
+   periodic table: the game lights ONE country on the whole map; the library
+   draws the same map with every quizzed country hoverable. */
+.vocab-map-c {
+  fill: #d9d3c4;
+  stroke: #fffdf6;
+  stroke-width: 0.6;
+}
+.vocab-map-c.is-out { opacity: 0.22; }
+.vocab-map-c.is-target {
+  fill: #f4c95d;
+  stroke: #14130f;
+  stroke-width: 1.2;
+  animation: vocab-map-target 1.2s ease-in-out infinite;
+}
+@keyframes vocab-map-target {
+  0%, 100% { fill: #f4c95d; }
+  50% { fill: #f07a7a; }
+}
+/* The locator ring — Vanuatu at world scale is three pixels, so the target
+   always gets a beacon on its biggest landmass. */
+.vocab-map-ring {
+  fill: none;
+  stroke: #14130f;
+  stroke-width: 1.6;
+  pointer-events: none;
+  animation: vocab-map-ring 1.2s ease-in-out infinite;
+}
+@keyframes vocab-map-ring {
+  0%, 100% { r: 12; opacity: 0.9; }
+  50% { r: 22; opacity: 0.45; }
+}
+
+/* ── The game clue: map on top, continent note beneath ── */
+.vocab-clue.vocab-clue--map {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 560px; /* same override as the table — the map wants the card */
+}
+.vocab-clue-map { width: 100%; height: auto; display: block; }
+.vocab-country-note {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: #ffe9a8;
+  color: #14130f;
+  box-shadow: 0 1px 1px rgba(20,19,15,.1), 3px 5px 9px -3px rgba(20,19,15,.3);
+  cursor: help;
+}
+.vocab-country-note .vocab-country-q { font-size: 1.35rem; font-weight: 800; opacity: 0.55; }
+.vocab-country-note .vocab-country-cont { font-size: 0.85rem; font-weight: 700; }
+.vocab-country-note:hover .vocab-el-tip,
+.vocab-country-note:focus .vocab-el-tip { opacity: 1; }
+
+/* ── The library: the same map, hover any country for its details ── */
+.vocab-worldmap {
+  position: relative;
+  min-width: 720px; /* like the table: never squashes, scrolls instead */
+  padding: 0.3rem 0.1rem 0.6rem;
+}
+.vocab-worldmap svg { width: 100%; height: auto; display: block; }
+.vocab-worldmap .vocab-map-c[data-name] { cursor: help; }
+.vocab-worldmap .vocab-map-c[data-name]:hover { fill: #f4c95d; stroke: #14130f; }
+.vocab-worldmap .vocab-map-c.is-out:hover { opacity: 1; }
+.vocab-map-tip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -100%);
+  width: max-content;
+  max-width: 240px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  background: #14130f;
+  color: #fff;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+
+/* The periodic table and the world map need far more width than a word list —
+   give the dialog the room on desktop; it still scrolls horizontally on a
+   phone. */
 .vocab-dict.vocab-dict--wide { width: min(980px, 96vw); }
+.vocab-dict-bd .vocab-dict-list:has(.vocab-worldmap) { overflow-x: auto; }

@@ -147,6 +147,20 @@ export const SUBJECTS = {
     ],
   },
 
+  // ── Geography, all grades ────────────────────────────────────────────
+  // Bundled map data (data/vocab/world-map.js), not generated words — the
+  // countries themselves are the vocabulary, drawn on a real map. One tier
+  // never mixes with the other, but a map is fair at any age, so this
+  // subject alone spans both.
+  geography: {
+    label: 'Geography',
+    group: 'Geography',
+    grades: [1, 12],
+    topics: [
+      T('world-map', 'Map of the World', 1, 12),
+    ],
+  },
+
   // ── Maths, lower school ──────────────────────────────────────────────
   'general-maths': {
     label: 'General Maths',

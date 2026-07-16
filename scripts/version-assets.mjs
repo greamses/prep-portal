@@ -57,7 +57,7 @@ const SHARED = [
 const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
-  'algebra', 'geometry', 'statistics',
+  'algebra', 'geometry', 'statistics', 'geography',
 ];
 const PAGES = [
   { name: 'geometry' },
@@ -70,6 +70,7 @@ const PAGES = [
       '/data/vocab/topics.js',
       '/data/vocab/manifest.js',
       '/data/vocab/periodic-table.js',
+      '/data/vocab/world-map.js',
       // Only the subjects that have actually been generated — the bank ships a
       // subject at a time, and hashing a file that doesn't exist would break the
       // build.

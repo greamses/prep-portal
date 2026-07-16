@@ -38,9 +38,13 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
       const j = Math.floor(rng() * (i + 1));
       [list[i], list[j]] = [list[j], list[i]];
     }
-    // `element` is present only for the periodic-table topic — the game renders
-    // it as a sticky-note cell in place of a text clue.
-    return list.map((x) => ({ word: x.w, clue: x.d, letter: null, element: x.element || null }));
+    // `element` (periodic table) and `country` (world map) are present only
+    // for the drawn topics — the game renders the drawn table or map in place
+    // of a text clue.
+    return list.map((x) => ({
+      word: x.w, clue: x.d, letter: null,
+      element: x.element || null, country: x.country || null,
+    }));
   }
 
   // A–Z: one word per letter, from every topic this grade is offered. A letter

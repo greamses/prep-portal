@@ -38,18 +38,40 @@ export {
 export const baseTopic = (key) => (key || '').split(':')[0];
 export const topicScope = (key) => (key || '').split(':')[1] || '';
 
+/* The world map's continents — the scope keys a scoped geography round rides
+   on, kept here (tiny) so the setup screen never has to load the map data
+   just to draw its steps. */
+export const CONTINENTS = [
+  { key: 'africa', label: 'Africa' },
+  { key: 'asia', label: 'Asia' },
+  { key: 'europe', label: 'Europe' },
+  { key: 'n-america', label: 'North America' },
+  { key: 's-america', label: 'South America' },
+  { key: 'oceania', label: 'Oceania' },
+];
+export const CONTINENT_LABELS = Object.fromEntries(CONTINENTS.map((c) => [c.key, c.label]));
+
 /** topics.js's topicMeta, but scope-aware: the label says which slice. */
 export function topicMeta(subjectKey, topicKey) {
   const meta = outlinedMeta(subjectKey, baseTopic(topicKey));
   const scope = topicScope(topicKey);
   if (!meta || !scope) return meta;
-  return { ...meta, label: `${meta.label} — ${scopeLabel(scope)}` };
+  const label = baseTopic(topicKey) === PERIODIC
+    ? scopeLabel(scope)
+    : (CONTINENT_LABELS[scope] || scope);
+  return { ...meta, label: `${meta.label} — ${label}` };
 }
 
-// A topic whose content is bundled scientific data (the periodic table), not a
-// generated word file. It is always available wherever its subject is, and its
-// "words" are the elements themselves — see topicPool below.
+/* Topics whose content is bundled data (the periodic table's elements, the
+   world map's countries), not a generated word file. They are always offered
+   wherever their subject is, and their clue is DRAWN, not written — so they
+   are topic-only and stay out of the A–Z alphabet. */
 const PERIODIC = 'periodic-table';
+const WORLD = 'world-map';
+const DRAWN = new Set([PERIODIC, WORLD]);
+// A subject made ENTIRELY of bundled topics needs no entry in the generated
+// manifest to be offered.
+const BUNDLED_SUBJECTS = new Set(['geography']);
 
 /* The bank ships a subject at a time, so the OUTLINE (topics.js) and what has
    actually been written are not the same thing. Everything the setup screen sees
@@ -60,18 +82,18 @@ const PERIODIC = 'periodic-table';
 /** Grades that have at least one subject with words. */
 export const GRADES = ALL_GRADES.filter((g) => subjectsForGrade(g).length > 0);
 
-/** Subjects on offer at a grade — outlined for it, AND generated. */
+/** Subjects on offer at a grade — outlined for it, AND generated (or bundled). */
 export function subjectsForGrade(grade) {
-  return outlinedSubjects(grade).filter((key) => AVAILABLE[key]);
+  return outlinedSubjects(grade).filter((key) => AVAILABLE[key] || BUNDLED_SUBJECTS.has(key));
 }
 
 /** Topics on offer — outlined for the grade, AND holding enough words to play. */
 export function topicsFor(subjectKey, grade) {
   const have = AVAILABLE[subjectKey] || {};
-  // periodic-table carries its own bundled data, so it is offered whenever its
+  // A drawn topic carries its own bundled data, so it is offered whenever its
   // subject is; every other topic must have been generated into a word file.
   return outlinedTopics(subjectKey, grade)
-    .filter((t) => t.key === PERIODIC ? true : have[t.key]);
+    .filter((t) => DRAWN.has(t.key) ? true : have[t.key]);
 }
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -108,9 +130,9 @@ export async function loadWords(subjectKey) {
 export function gradePool(words, subjectKey, grade) {
   const pool = [];
   for (const topic of topicsFor(subjectKey, grade)) {
-    // The periodic table is a topic-only mode: its clue is a drawn cell, not a
-    // sentence, so it does not belong in a mixed A–Z alphabet.
-    if (topic.key === PERIODIC) continue;
+    // Drawn topics are topic-only modes: their clue is a drawn table or map,
+    // not a sentence, so they do not belong in a mixed A–Z alphabet.
+    if (DRAWN.has(topic.key)) continue;
     for (const entry of words[topic.key] || []) pool.push({ ...entry, topic: topic.key });
   }
   return pool;
@@ -118,11 +140,17 @@ export function gradePool(words, subjectKey, grade) {
 
 /** One topic's words, in file order — the round does its own seeded shuffle. */
 export function topicPool(words, topicKey) {
+  const base = baseTopic(topicKey);
+  const scope = topicScope(topicKey);
   // The periodic table's "words" are the elements themselves; each carries an
   // `element` the game renders as the drawn table instead of a text clue. The
   // scope suffix ('…:g17', '…:p3') narrows it to one group or period.
-  if (baseTopic(topicKey) === PERIODIC) {
-    return scopedElements(topicScope(topicKey)).map((e) => ({ ...e, topic: PERIODIC }));
+  if (base === PERIODIC) {
+    return scopedElements(scope).map((e) => ({ ...e, topic: PERIODIC }));
   }
-  return (words[topicKey] || []).map((entry) => ({ ...entry, topic: topicKey }));
+  // Any other scoped topic (the world map's continents) filters on the `s`
+  // key its entries carry — 'world-map:africa' keeps only African countries.
+  let list = words[base] || [];
+  if (scope) list = list.filter((entry) => entry.s === scope);
+  return list.map((entry) => ({ ...entry, topic: base }));
 }

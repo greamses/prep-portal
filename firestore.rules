@@ -309,8 +309,9 @@ service cloud.firestore {
         // costs nobody anything — the rules exist to stop a client writing a
         // room shape the game can't read, not to re-implement the curriculum.
         request.resource.data.subject in [
-          'life-science', 'earth-science', 'physical-science', 'general-maths',
-          'biology', 'chemistry', 'physics', 'algebra', 'geometry', 'statistics'
+          'life-science', 'earth-science', 'physical-science', 'space-science',
+          'general-maths', 'biology', 'chemistry', 'physics', 'algebra',
+          'geometry', 'statistics', 'geography'
         ] &&
         request.resource.data.grade is int &&
         request.resource.data.grade >= 1 &&

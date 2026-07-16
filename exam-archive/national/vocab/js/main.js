@@ -14,6 +14,7 @@ import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
+  CONTINENTS, CONTINENT_LABELS,
   baseTopic, topicScope, inScope,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
@@ -209,6 +210,13 @@ function renderSubjectStep() {
       // still valid wherever its topic is offered.
       if (!topics.some((t) => t.key === baseTopic(topic))) topic = topics[0] ? topics[0].key : '';
       renderTopicStep();
+      // Geography is all drawn topics (maps) — there is no A–Z alphabet to
+      // walk, so the A-Z/Topic step is skipped and the round is by topic.
+      if (subject === 'geography') {
+        playMode = 'topic';
+        content.goTo('topic');
+        return;
+      }
       content.goTo('play');
     },
   });
@@ -245,10 +253,11 @@ function renderTopicStep() {
     colorOffset: 1,
     options: topics.map((t) => ({ value: t.key, label: t.label, checked: t.key === baseTopic(topic) })),
     onPick: (v) => {
-      // The periodic table can be played whole, or one group / one period —
-      // that choice is its own step, and it lands back in `topic` as a scope
-      // suffix ('periodic-table:g17') so the room's bucket carries it.
-      if (v === 'periodic-table') {
+      // A drawn topic can be played whole, or one slice — a group/period of
+      // the table, a continent of the map. That choice is its own step, and
+      // it lands back in `topic` as a scope suffix ('periodic-table:g17',
+      // 'world-map:africa') so the room's bucket carries it.
+      if (v === 'periodic-table' || v === 'world-map') {
         if (baseTopic(topic) !== v) topic = v; // keep an existing scope on re-visit
         renderScopeStep();
         content.goTo('scope');
@@ -260,10 +269,31 @@ function renderTopicStep() {
   });
 }
 
-/* The periodic table's scope: whole table, or drill one slice of it. A slice
-   quizzes EVERY element in that group/period (you chose it; the library shows
-   it), while the whole table sticks to the common, examinable elements. */
+/* A drawn topic's scope: play it whole, or drill one slice of it.
+   Periodic table — a slice is a group or a period, and it quizzes EVERY
+   element in it (you chose it; the library shows it), while the whole table
+   sticks to the common, examinable elements.
+   World map — a slice is a continent; one step, since there are only six. */
 function renderScopeStep() {
+  if (baseTopic(topic) === 'world-map') {
+    const cur = topicScope(topic);
+    renderChoiceStep(content, 'scope', {
+      title: 'The whole world, or one continent?',
+      subtitle: 'One continent asks only its countries — study the map in the library first.',
+      name: 'vocab-map-scope',
+      colorOffset: 3,
+      options: [
+        { value: 'all', label: 'Whole world', checked: !cur },
+        ...CONTINENTS.map((c) => ({ value: c.key, label: c.label, checked: c.key === cur })),
+      ],
+      onPick: (v) => {
+        topic = v === 'all' ? 'world-map' : `world-map:${v}`;
+        content.goTo('spelling');
+      },
+    });
+    return;
+  }
+
   const kind = topicScope(topic).charAt(0); // '' | 'g' | 'p'
   renderChoiceStep(content, 'scope', {
     title: 'The whole table, or one part?',
@@ -834,6 +864,51 @@ function renderPeriodicTable(scope) {
   dictList.appendChild(grid);
 }
 
+// The world map, drawn for study: every country in place, the quizzed ones
+// hoverable for their name, continent and capital hint. One floating tip
+// follows the pointer — an SVG path can't host the sticky-note tips the
+// table's cells use.
+async function renderWorldMapLibrary(scope) {
+  dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
+  const wm = await import('/data/vocab/world-map.js');
+  dictList.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vocab-worldmap';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${wm.MAP_W} ${wm.MAP_H}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Map of the world — hover a country for its details');
+  for (const c of wm.COUNTRIES) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', c.d);
+    const out = scope && c.cont !== scope;
+    p.setAttribute('class', 'vocab-map-c' + (out ? ' is-out' : ''));
+    if (c.hint) {
+      p.dataset.name = c.name;
+      p.dataset.tip = [c.name, CONTINENT_LABELS[c.cont] || '', c.hint].filter(Boolean).join(' — ');
+    }
+    svg.appendChild(p);
+  }
+  const tip = document.createElement('span');
+  tip.className = 'vocab-map-tip';
+  tip.hidden = true;
+  wrap.append(svg, tip);
+
+  svg.addEventListener('pointermove', (e) => {
+    const path = e.target.closest('path[data-tip]');
+    if (!path) { tip.hidden = true; return; }
+    tip.textContent = path.dataset.tip;
+    const box = wrap.getBoundingClientRect();
+    tip.style.left = `${e.clientX - box.left}px`;
+    tip.style.top = `${e.clientY - box.top - 14}px`;
+    tip.hidden = false;
+  });
+  svg.addEventListener('pointerleave', () => { tip.hidden = true; });
+
+  dictList.appendChild(wrap);
+}
+
 async function openDictionary() {
   dictList.innerHTML = '<p class="vocab-dict-loading">Fetching the words…</p>';
   dictBd.classList.add('open');
@@ -844,6 +919,15 @@ async function openDictionary() {
   dictTitle.textContent = meta ? meta.label : `${SUBJECTS[subject].label}, A to Z`;
 
   const dictBox = dictBd.querySelector('.vocab-dict');
+  if (playMode === 'topic' && baseTopic(topic) === 'world-map') {
+    dictBox.classList.add('vocab-dict--wide'); // the map wants the room too
+    const scope = topicScope(topic);
+    dictSub.textContent = scope
+      ? `${CONTINENT_LABELS[scope]} stays bright — those are the countries the round will ask. Hover any country for its name and capital.`
+      : 'Hover any country for its name and capital. The game lights one up — you name it.';
+    await renderWorldMapLibrary(scope);
+    return;
+  }
   if (playMode === 'topic' && baseTopic(topic) === 'periodic-table') {
     dictBox.classList.add('vocab-dict--wide'); // the table wants the room
     const scope = topicScope(topic);
