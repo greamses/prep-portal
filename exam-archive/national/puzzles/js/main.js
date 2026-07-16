@@ -4,9 +4,9 @@
    switches between the lobby/play/results overlays. Same structure as
    Drills' js/main.js — Multiplayer uses anonymous pool matching; Versus is
    always a private 1v1 via a shared room code (create-and-share, or
-   join-with-code). Sudoku and Slider are both live; the "Puzzle" field is
-   a radiogroup so more can be added later the same way — just extend
-   GRID_SIZES_BY_TYPE and let game.js dispatch on puzzleType.
+   join-with-code). Sudoku, Slider and Jigsaw are all live; the "Puzzle"
+   field is a radiogroup so more can be added later the same way — just
+   extend GRID_SIZES_BY_TYPE and let game.js dispatch on puzzleType.
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import { botName } from './bots.js';
@@ -33,12 +33,14 @@ const NAME_KEY = 'puzzleGameName';
 
 // Grid Size options depend on which puzzle is selected — Sudoku's boxes
 // only divide evenly at 4/6/9, Slider is conventionally 3/4/5 (the classic
-// 8-/15-/24-puzzle). Difficulty (Easy/Medium/Hard) is the same three
-// labels for every puzzle type, just reinterpreted by that puzzle's own
-// generator (see sudoku.js/slider.js).
+// 8-/15-/24-puzzle), Jigsaw swaps freely so it stretches to 6×6 (36
+// pieces). Difficulty (Easy/Medium/Hard) is the same three labels for
+// every puzzle type, just reinterpreted by that puzzle's own generator
+// (see sudoku.js/slider.js/jigsaw.js).
 const GRID_SIZES_BY_TYPE = {
   sudoku: [{ value: 4, label: '4×4' }, { value: 6, label: '6×6' }, { value: 9, label: '9×9', default: true }],
   slider: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }],
+  jigsaw: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }, { value: 6, label: '6×6' }],
 };
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
@@ -106,7 +108,7 @@ let timeLimit = mem.get('timeLimit', 300, [180, 300, 600, 900]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider']);
+let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw']);
 let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
@@ -114,10 +116,11 @@ let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
 
 // What this room plays — handed to matchmaking and written into the room
-// doc. Sudoku always carries tiles:'numbers' so the bucket key stays fixed.
+// doc. Only Slider offers a tile choice; Jigsaw is always the picture and
+// Sudoku always numbers, so the bucket key stays well-formed for all three.
 const contentCfg = () => ({
   puzzleType, difficulty, gridSize,
-  tiles: puzzleType === 'slider' ? tileSet : 'numbers',
+  tiles: puzzleType === 'slider' ? tileSet : puzzleType === 'jigsaw' ? 'picture' : 'numbers',
 });
 
 function getCurrentUser() {
@@ -211,6 +214,7 @@ renderChoiceStep(topic, 'type', {
   options: [
     { value: 'sudoku', label: 'Sudoku', checked: puzzleType === 'sudoku' },
     { value: 'slider', label: 'Slider', checked: puzzleType === 'slider' },
+    { value: 'jigsaw', label: 'Jigsaw', checked: puzzleType === 'jigsaw' },
   ],
   onPick: (v) => {
     if (v !== puzzleType) gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size

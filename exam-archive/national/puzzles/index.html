@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Puzzles — Multiplayer Sudoku &amp; Slider Race | PrepPortal</title>
+    <title>Puzzles — Multiplayer Sudoku, Slider &amp; Jigsaw Race | PrepPortal</title>
     <meta
       name="description"
-      content="Race up to 10 players (or go 1v1) in timed Sudoku or sliding-tile puzzles — most correct cells/tiles when time runs out wins. Bots fill any empty seats."
+      content="Race up to 10 players (or go 1v1) in timed Sudoku, sliding-tile or jigsaw puzzles — most correct cells, tiles or pieces when time runs out wins. Bots fill any empty seats."
     />
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
@@ -31,23 +31,24 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/puzzles/js/art.js": "/exam-archive/national/puzzles/js/art.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=5cd19826",
-          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=5cd19826",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=5cd19826",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=5cd19826",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=5cd19826",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=5cd19826",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=5cd19826",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=5cd19826",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=5cd19826",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=5cd19826"
+          "/exam-archive/national/puzzles/js/art.js": "/exam-archive/national/puzzles/js/art.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/jigsaw.js": "/exam-archive/national/puzzles/js/jigsaw.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=47bc4368",
+          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=47bc4368",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=47bc4368",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=47bc4368",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=47bc4368",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=47bc4368",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=47bc4368",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=47bc4368",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=47bc4368",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=47bc4368"
         }
       }
     </script>
@@ -172,8 +173,8 @@
           <span class="pp-sticky pp-sticky--tape puzzle-timer-note" id="puzzle-timer-note"></span>
           <span class="pp-sticky pp-sticky--tape puzzle-score-note" id="puzzle-score-note">0 correct</span>
           <div class="puzzle-grid-face pp-receipt__paper">
-            <!-- Slider rounds only: the goal picture (Picture tiles) and a
-                 one-line hint. Shown from the countdown on. -->
+            <!-- Slider + Jigsaw rounds: the goal picture (picture rounds) and
+                 a one-line hint. Shown from the countdown on. -->
             <div class="puzzle-grid-topbar" id="puzzle-grid-topbar" hidden>
               <img class="puzzle-slider-preview" id="puzzle-slider-preview" alt="The finished picture" hidden />
               <p class="puzzle-grid-hint" id="puzzle-grid-hint"></p>
@@ -215,7 +216,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=5cd19826"></script>
+    <script type="module" src="./js/main.js?v=47bc4368"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

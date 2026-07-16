@@ -17,6 +17,7 @@ export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   contentKeys: ['puzzleType', 'tiles', 'difficulty', 'gridSize'],
   // Two players share a room only if they would be playing the same thing —
   // `tiles` is what the slider tiles wear (numbers/fractions/picture); Sudoku
-  // rooms always carry 'numbers' so the bucket key stays well-formed.
+  // rooms always carry 'numbers' and Jigsaw rooms always 'picture' so the
+  // bucket key stays well-formed.
   bucketOf: (c) => `${c.puzzleType}_${c.tiles}_${c.difficulty}_${c.gridSize}`,
 });

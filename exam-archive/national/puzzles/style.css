@@ -535,11 +535,12 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   margin: 0;
 }
 
-/* Shared tile-grid layout — both Sudoku and Slider render into the same
-   #puzzle-grid container, one puzzle per round, so the structural layout
-   lives here once; .sudoku-cell/.slider-tile only differ in per-cell look. */
+/* Shared tile-grid layout — Sudoku, Slider and Jigsaw all render into the
+   same #puzzle-grid container, one puzzle per round, so the structural
+   layout lives here once; the per-cell look is each puzzle's own. */
 .sudoku-grid,
-.slider-grid {
+.slider-grid,
+.jigsaw-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-size, 9), 1fr);
   width: 100%;
@@ -641,7 +642,68 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   background-image: none !important;
 }
 
-/* Goal preview + hint above the grid (slider rounds only). */
+/* ── Jigsaw look — one seeded picture cut into interlocking pieces laid on
+   a recessed board (same tray as the slider). Each piece is an inline SVG
+   whose tabs overhang its square cell (overflow visible), so neighbours
+   only line up cleanly once they're truly adjacent in the finished
+   picture. The square button is the click target; the SVG itself never
+   takes pointer events, so overhanging tabs can't steal a neighbour's tap. */
+.jigsaw-grid {
+  gap: 0;
+  grid-auto-rows: 1fr;
+  padding: clamp(10px, 3vw, 16px);
+  background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
+  border-width: 2.5px;
+  border-radius: 8px;
+  overflow: visible;
+}
+.jigsaw-piece {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  overflow: visible;
+}
+.jigsaw-piece svg {
+  position: absolute;
+  left: -24%;
+  top: -24%;
+  width: 148%;
+  height: 148%;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.3));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.jigsaw-piece:hover { z-index: 4; }
+.jigsaw-piece:hover svg { transform: scale(1.03); }
+/* The picked-up piece floats: raised, enlarged, and ringed in the accent. */
+.jigsaw-piece.is-selected { z-index: 6; }
+.jigsaw-piece.is-selected svg {
+  transform: scale(1.1);
+  filter: drop-shadow(0 6px 12px rgba(20, 19, 15, 0.42));
+}
+.jigsaw-piece.is-selected .jigsaw-outline {
+  stroke: var(--accent-secondary);
+  stroke-width: 4.5;
+}
+/* Mid-swap travellers glide above their neighbours (see game.js's FLIP). */
+.jigsaw-piece.is-swapping { z-index: 8; }
+/* A piece at home is locked: it settles flat into the picture — no lift,
+   no hover — leaving only a quiet seam. */
+.jigsaw-piece.is-correct { cursor: default; }
+.jigsaw-piece.is-correct svg { filter: none; transform: none; }
+.jigsaw-piece.is-correct .jigsaw-outline {
+  stroke: color-mix(in srgb, var(--ink) 55%, transparent);
+  stroke-width: 2;
+}
+.jigsaw-piece.correct-flash svg { animation: jigsaw-settle 0.38s ease; }
+@keyframes jigsaw-settle {
+  0% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* Goal preview + hint above the grid (slider + jigsaw rounds). */
 .puzzle-grid-topbar {
   display: flex;
   flex-direction: column;

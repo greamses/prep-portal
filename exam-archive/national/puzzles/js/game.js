@@ -7,12 +7,15 @@
        digit pad. Score is a live count of correctly-filled editable cells.
      - slider: click any tile adjacent to the blank (or use arrow keys) to
        slide it. Score is a live count of tiles in their solved position.
+     - jigsaw: tap one piece, tap another to swap them. A piece that lands
+       on its home cell locks in; score is a live count of pieces placed.
    Either way, a full solve ends the round early, and timing after
    activation is entirely local (startAt/timeLimit) — no further server
    dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
+import { generateJigsaw, scoreJigsaw, pieceFacesSvg } from './jigsaw.js';
 import { scenePictureUri } from './art.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +57,13 @@ let board = null; // flat length-N² array, 0 = blank
 let solvedBoard = null;
 let tileSet = 'numbers'; // numbers | fractions | picture — what the tiles wear
 let fractionValues = null; // fractions only — ascending, tile n wears [n-1]
-let artUri = ''; // picture only — the seeded scene as a data: URI
+let artUri = ''; // picture/jigsaw — the seeded scene as a data: URI
+
+// Jigsaw-only state
+let placement = null; // flat length-N² array — placement[cell] = piece number
+let lockedCells = null; // pre-placed anchor cells (difficulty givens)
+let pieceFaces = null; // piece number → its clipped-picture SVG face
+let jigsawSelected = -1; // cell index of the picked-up piece, or -1
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -262,12 +271,93 @@ function slideTile(fromIndex) {
   if (score >= totalUnits) endRound();
 }
 
+// ── Jigsaw ───────────────────────────────────────────────────────────────
+// Dresses cell `i` for the piece currently sitting on it. A piece at home
+// (a pre-placed anchor, or one the player just delivered) locks: it can't
+// be picked up again, and since every piece has exactly one home a locked
+// piece can never block another one's way.
+function paintJigsawCell(i, { flash = false } = {}) {
+  const el = gridEl.children[i];
+  const correct = placement[i] === i + 1;
+  el.className = `jigsaw-piece${correct ? ' is-correct' : ''}`;
+  el.disabled = correct;
+  el.innerHTML = pieceFaces[placement[i]];
+  if (correct && flash) {
+    el.classList.add('correct-flash');
+    setTimeout(() => el.classList.remove('correct-flash'), 380);
+  }
+}
+
+function buildJigsawGrid() {
+  gridEl.classList.add('jigsaw-grid');
+  for (let i = 0; i < placement.length; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.index = String(i);
+    gridEl.appendChild(btn);
+    paintJigsawCell(i);
+  }
+}
+
+function setJigsawSelected(i) {
+  if (jigsawSelected !== -1) {
+    const prev = gridEl.children[jigsawSelected];
+    if (prev) prev.classList.remove('is-selected');
+  }
+  jigsawSelected = i;
+  if (i !== -1) gridEl.children[i].classList.add('is-selected');
+}
+
+// Same FLIP recipe as slideTile, for both travellers at once: each piece is
+// painted at its destination but starts translated back over the cell it
+// came from and glides home. Only transforms animate — no reflow.
+function jigsawGlide(el, from, to) {
+  if (!el.animate) return;
+  el.classList.add('is-swapping');
+  const anim = el.animate(
+    [
+      { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` },
+      { transform: 'translate(0, 0)' },
+    ],
+    { duration: 160, easing: 'ease-out' },
+  );
+  anim.onfinish = () => el.classList.remove('is-swapping');
+}
+
+function swapJigsaw(a, b) {
+  setJigsawSelected(-1);
+  const elA = gridEl.children[a];
+  const elB = gridEl.children[b];
+  const rectA = elA.getBoundingClientRect();
+  const rectB = elB.getBoundingClientRect();
+
+  [placement[a], placement[b]] = [placement[b], placement[a]];
+  paintJigsawCell(a, { flash: true });
+  paintJigsawCell(b, { flash: true });
+  jigsawGlide(elA, rectB, rectA);
+  jigsawGlide(elB, rectA, rectB);
+
+  score = scoreJigsaw(placement, lockedCells);
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  if (score >= totalUnits) endRound();
+}
+
+// First tap picks a piece up (tap it again to put it down); the second tap
+// swaps the two. Locked pieces are disabled buttons, so their clicks never
+// even arrive here.
+function onJigsawTap(i) {
+  if (jigsawSelected === i) setJigsawSelected(-1);
+  else if (jigsawSelected === -1) setJigsawSelected(i);
+  else swapJigsaw(jigsawSelected, i);
+}
+
 // ── Shared input dispatch ─────────────────────────────────────────────────
 function buildGrid() {
   gridEl.innerHTML = '';
-  gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture');
+  gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture', 'jigsaw-grid');
   gridEl.style.setProperty('--grid-size', gridSize);
   if (puzzleType === 'slider') buildSliderGrid();
+  else if (puzzleType === 'jigsaw') buildJigsawGrid();
   else buildSudokuGrid();
 }
 
@@ -276,6 +366,11 @@ function onGridClick(e) {
   if (puzzleType === 'slider') {
     const btn = e.target.closest('.slider-tile.is-movable');
     if (btn) slideTile(parseInt(btn.dataset.index, 10));
+    return;
+  }
+  if (puzzleType === 'jigsaw') {
+    const btn = e.target.closest('.jigsaw-piece');
+    if (btn && !btn.disabled) onJigsawTap(parseInt(btn.dataset.index, 10));
     return;
   }
   const btn = e.target.closest('.sudoku-cell.is-editable');
@@ -290,6 +385,9 @@ function onDigitPadClick(e) {
 
 function onKeydown(e) {
   if (!active) return;
+  // Jigsaw pieces are plain <button>s — Tab reaches them and Enter/Space
+  // taps them natively, so it needs no bespoke key handling.
+  if (puzzleType === 'jigsaw') return;
 
   if (puzzleType === 'slider') {
     // Arrow direction = which way a tile slides (the blank moves opposite).
@@ -365,6 +463,14 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       tileSet = tiles || 'numbers';
       fractionValues = tileSet === 'fractions' ? generateFractionValues(seed, totalUnits) : null;
       artUri = tileSet === 'picture' ? scenePictureUri(seed) : '';
+    } else if (puzzleType === 'jigsaw') {
+      const puzzle = generateJigsaw(seed, difficulty, gridSize);
+      placement = puzzle.placement;
+      lockedCells = puzzle.locked;
+      totalUnits = puzzle.movableCount; // anchors are givens — only YOUR pieces score
+      artUri = scenePictureUri(seed);
+      pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
+      jigsawSelected = -1;
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -373,9 +479,9 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       totalUnits = countEditableCells(givens);
     }
 
-    // Slider rounds get a hint line, and Picture rounds also show the goal
-    // picture — visible from the countdown on, so players study it before
-    // the clock starts.
+    // Slider and Jigsaw rounds get a hint line, and picture rounds also show
+    // the goal picture — visible from the countdown on, so players study it
+    // before the clock starts.
     if (puzzleType === 'slider') {
       hintEl.textContent =
         tileSet === 'picture' ? 'Rebuild the picture — slide tiles next to the gap.'
@@ -383,6 +489,11 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         : `Put the tiles in order, 1 to ${totalUnits}.`;
       previewEl.hidden = tileSet !== 'picture';
       if (tileSet === 'picture') previewEl.src = artUri;
+      topbarEl.hidden = false;
+    } else if (puzzleType === 'jigsaw') {
+      hintEl.textContent = 'Rebuild the picture — tap two pieces to swap them.';
+      previewEl.hidden = false;
+      previewEl.src = artUri;
       topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;
