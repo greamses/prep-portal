@@ -231,8 +231,23 @@ function slideTile(fromIndex) {
 
   const blankEl = gridEl.children[blank];
   const movedEl = gridEl.children[fromIndex];
+  // Measure both cells BEFORE repainting, then FLIP: the arriving tile is
+  // painted at its destination but starts translated back over the cell it
+  // came from and slides home. The grid itself never reflows — only a
+  // transform animates, and the Web Animations API cleans up after itself.
+  const from = movedEl.getBoundingClientRect();
+  const to = blankEl.getBoundingClientRect();
   paintTile(blankEl, board[blank]);
   clearTile(movedEl);
+  if (blankEl.animate) {
+    blankEl.animate(
+      [
+        { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      { duration: 130, easing: 'ease-out' },
+    );
+  }
 
   const isCorrect = board[blank] === solvedBoard[blank];
   blankEl.classList.toggle('is-correct', isCorrect);

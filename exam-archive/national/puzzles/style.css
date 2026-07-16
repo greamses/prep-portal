@@ -578,18 +578,31 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .sudoku-cell.box-edge-right { border-right: 2px solid var(--ink); }
 .sudoku-cell.box-edge-bottom { border-bottom: 2px solid var(--ink); }
 
-/* Slider tiles: the blank is invisible (no number, no interaction); any
-   tile currently adjacent to it gets a subtle lift to invite a click. */
+/* ── Slider look — loose physical tiles in a tray (same register as the
+   standalone fraction slider): each tile is its own bordered, shadowed
+   piece sitting on a recessed tray, and the blank is a visibly EMPTY
+   socket — dashed, sunken, dimmed. No movable highlighting: the gap
+   itself says what can move. ──────────────────────────────────────── */
+.slider-grid {
+  gap: clamp(4px, 1.6vw, 8px);
+  grid-auto-rows: 1fr;
+  padding: clamp(6px, 2vw, 12px);
+  background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
+  border-width: 2.5px;
+  border-radius: 8px;
+  overflow: visible;
+}
+.slider-tile {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  /* the slide itself is a Web Animation (see game.js's slideTile) */
+}
 .slider-tile.is-blank {
-  background: transparent;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  border: 2px dashed color-mix(in srgb, var(--ink) 40%, transparent);
+  box-shadow: inset 0 2px 5px color-mix(in srgb, var(--ink) 22%, transparent);
   cursor: default;
-  box-shadow: none;
-}
-.slider-tile.is-movable {
-  background: color-mix(in srgb, var(--accent-secondary) 18%, var(--surface-primary));
-}
-.slider-tile.is-movable:hover {
-  background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
 }
 
 /* Fraction tiles — a shaded bar plus the fraction itself, same face as the
@@ -615,21 +628,17 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 }
 
 /* Picture tiles — each tile is a background-position window of one shared
-   image (set inline by game.js). The movable tint would hide behind the
-   image, so movable/correct feedback becomes an inset ring instead. */
+   image (set inline by game.js). Text color can't mark a correct placement
+   here, so it becomes an inset ring (kept alongside the tile's own shadow). */
 .slider-grid--picture .slider-tile {
   background-color: var(--surface-primary);
   background-repeat: no-repeat;
 }
 .slider-grid--picture .slider-tile.is-correct {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-success) 70%, transparent);
-}
-.slider-grid--picture .slider-tile.is-movable {
-  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 90%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-success) 70%, transparent), var(--shadow-sm);
 }
 .slider-grid--picture .slider-tile.is-blank {
   background-image: none !important;
-  background-color: transparent;
 }
 
 /* Goal preview + hint above the grid (slider rounds only). */
