@@ -14,7 +14,9 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'puzzleRooms',
   pointers: 'puzzleRoomPointers',
-  contentKeys: ['puzzleType', 'difficulty', 'gridSize'],
-  // Two players share a room only if they would be playing the same thing.
-  bucketOf: (c) => `${c.puzzleType}_${c.difficulty}_${c.gridSize}`,
+  contentKeys: ['puzzleType', 'tiles', 'difficulty', 'gridSize'],
+  // Two players share a room only if they would be playing the same thing —
+  // `tiles` is what the slider tiles wear (numbers/fractions/picture); Sudoku
+  // rooms always carry 'numbers' so the bucket key stays well-formed.
+  bucketOf: (c) => `${c.puzzleType}_${c.tiles}_${c.difficulty}_${c.gridSize}`,
 });

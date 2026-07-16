@@ -16,6 +16,7 @@ import {
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
+import { createSetupMemory } from '/utils/games/setup-memory.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -134,17 +135,34 @@ let startNowFn = null;
 // Owned in JS, not read back out of `input:checked` — a carousel only renders
 // the step you're on, so a DOM-query getter would throw for any step the
 // player never opened.
-let mode = 'multiplayer';
-let roomSize = 5;
-let timeLimit = 60;
-let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
+// Every field starts from the player's LAST game (setup-memory.js) so
+// nothing has to be re-picked visit after visit.
+const mem = createSetupMemory('drills');
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let roomSize = mem.get('roomSize', 5, [5, 10]);
+let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
+let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
+if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = 'basic';
-let range = 'all';
-const tables = new Set(); // Basic + 1-9 only — the cherry-picked number set
-const operations = new Set(CATEGORY_DEFAULT_OPS.basic);
-const fractionTypes = new Set(); // Fractions only — opt-in
-const denominators = new Set(DENOMINATORS); // Fractions only — tick-all default
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions']);
+let range = mem.get('range', 'all', RANGES.map((r) => r.key));
+// The multi-pick sets restore from saved arrays, dropping anything that's no
+// longer a valid member of its list.
+const tables = new Set(mem.get('tables', [], Array.isArray).filter((n) => UNIT_NUMBERS.includes(n))); // Basic + 1-9 only — the cherry-picked number set
+const operations = new Set(
+  mem.get('operations', CATEGORY_DEFAULT_OPS[categoryValue], Array.isArray)
+    .filter((op) => CATEGORY_OPERATIONS[categoryValue].includes(op)),
+);
+const fractionTypes = new Set(mem.get('fractionTypes', [], Array.isArray).filter((t) => FRACTION_TYPES.includes(t))); // Fractions only — opt-in
+const savedDenoms = mem.get('denominators', DENOMINATORS, Array.isArray).filter((n) => DENOMINATORS.includes(n));
+const denominators = new Set(savedDenoms.length ? savedDenoms : DENOMINATORS); // Fractions only — tick-all default
+
+// One save covers this section's whole branch — called wherever it exits.
+const saveContent = () => mem.save({
+  category: categoryValue, range,
+  tables: [...tables], operations: [...operations],
+  fractionTypes: [...fractionTypes], denominators: [...denominators],
+});
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -264,6 +282,7 @@ function renderOperationsPick() {
   });
 }
 
+
 function renderFractionTypePick() {
   renderMultiStep(topic, 'fraction-type', {
     title: 'Which fraction type?',
@@ -293,7 +312,7 @@ function renderDenominatorsPick() {
       updateStartDisabled();
     },
     nextLabel: 'Next',
-    onNext: () => flow.next(), // last step of this section
+    onNext: () => { saveContent(); flow.next(); }, // last step of this section
   });
 }
 
@@ -309,7 +328,7 @@ function renderRangePick() {
       // 1–9 is the one bucket you can cherry-pick from; every other range is
       // drilled whole, so the range IS the last step of this section.
       if (isNumbersMode()) { renderNumbersPick(); topic.goTo('numbers'); }
-      else flow.next();
+      else { saveContent(); flow.next(); }
     },
   });
 }
@@ -327,7 +346,7 @@ function renderNumbersPick() {
       updateStartDisabled();
     },
     nextLabel: 'Next',
-    onNext: () => flow.next(), // last step of this section
+    onNext: () => { saveContent(); flow.next(); }, // last step of this section
   });
 }
 
@@ -335,22 +354,25 @@ renderChoiceStep(topic, 'category', {
   title: 'What category?',
   name: 'drill-category',
   options: [
-    { value: 'basic', label: 'Basic', checked: true },
-    { value: 'exponent', label: 'Exponent' },
-    { value: 'fractions', label: 'Fractions' },
+    { value: 'basic', label: 'Basic', checked: categoryValue === 'basic' },
+    { value: 'exponent', label: 'Exponent', checked: categoryValue === 'exponent' },
+    { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
   ],
   onPick: (v) => {
-    categoryValue = v;
-    // Reset the whole branch — a range picked under Basic must not survive into
-    // Fractions (which has no range at all).
-    operations.clear();
-    CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
-    fractionTypes.clear();
-    tables.clear();
-    range = 'all';
-    denominators.clear();
-    DENOMINATORS.forEach((n) => denominators.add(n));
-    updateStartDisabled();
+    if (v !== categoryValue) {
+      // Reset the whole branch — a range picked under Basic must not survive
+      // into Fractions (which has no range at all). Re-picking the SAME
+      // category keeps the remembered picks.
+      categoryValue = v;
+      operations.clear();
+      CATEGORY_DEFAULT_OPS[v].forEach((op) => operations.add(op));
+      fractionTypes.clear();
+      tables.clear();
+      range = 'all';
+      denominators.clear();
+      DENOMINATORS.forEach((n) => denominators.add(n));
+      updateStartDisabled();
+    }
 
     if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
@@ -370,12 +392,13 @@ renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   name: 'drill-mode',
   options: [
-    { value: 'multiplayer', label: 'Multiplayer', checked: true },
-    { value: 'versus', label: 'Versus (1v1)' },
+    { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
+    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
     if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    mem.save({ mode, roomAction });
     renderRoomEntry();
     roomCarousel.start('entry');
     codeInput.hidden = roomAction !== 'join';
@@ -388,22 +411,22 @@ renderChoiceStep(options, 'size', {
   name: 'drill-size',
   colorOffset: 2,
   options: [
-    { value: '5', label: '5 players', checked: true },
-    { value: '10', label: '10 players' },
+    { value: '5', label: '5 players', checked: roomSize === 5 },
+    { value: '10', label: '10 players', checked: roomSize === 10 },
   ],
-  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
 renderChoiceStep(options, 'time', {
   title: 'How long is the round?',
   name: 'drill-time',
   colorOffset: 4,
   options: [
-    { value: '30', label: '30s' },
-    { value: '60', label: '60s', checked: true },
-    { value: '90', label: '90s' },
-    { value: '120', label: '120s' },
+    { value: '30', label: '30s', checked: timeLimit === 30 },
+    { value: '60', label: '60s', checked: timeLimit === 60 },
+    { value: '90', label: '90s', checked: timeLimit === 90 },
+    { value: '120', label: '120s', checked: timeLimit === 120 },
   ],
-  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
+  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
@@ -433,6 +456,7 @@ function renderRoomEntry() {
     options: choices,
     onPick: (v) => {
       roomAction = v;
+      mem.save({ roomAction });
       codeInput.hidden = v !== 'join';
       updateStartLabel();
       if (v === 'join') roomCarousel.goTo('code');
@@ -874,6 +898,10 @@ async function runVersusJoin({ myName }) {
 
 async function runDrill() {
   startBtn.disabled = true;
+  // The setup is proven good the moment a round starts with it — next visit
+  // jumps straight to the last section with these picks as chips.
+  saveContent();
+  mem.save({ done: true });
   await getCurrentUser();
 
   const operationsList = [...operations];
@@ -940,7 +968,14 @@ againBtn.addEventListener('click', hideResults);
 const initialMode = new URLSearchParams(location.search).get('mode');
 if (initialMode === 'versus') {
   mode = 'versus';
-  roomAction = 'create'; // Versus has no Quick Fill
+  if (roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
   renderRoomEntry();
   updateStartLabel();
+}
+
+// A returning player's whole setup is already restored — skip the wizard and
+// land on the final section, previous picks shown as chips (tap any to change).
+if (mem.isReturning()) {
+  codeInput.hidden = roomAction !== 'join';
+  flow.goTo(3);
 }

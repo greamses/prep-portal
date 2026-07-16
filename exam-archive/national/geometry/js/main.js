@@ -20,6 +20,7 @@ import {
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
+import { createSetupMemory } from '/utils/games/setup-memory.js';
 
 const REGULAR_SHAPES = ['triangle', 'square', 'rectangle'];
 
@@ -96,21 +97,47 @@ let startNowFn = null;
 // renders the step you're on, so a DOM-query getter would throw (or silently
 // read a stale value) for any step the player never opened. These carry the
 // defaults, and the carousels below just keep them in sync.
-let mode = 'multiplayer';
-let roomSize = 5;
-let timeLimit = 60;
-let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
+// Every field starts from the player's LAST game (setup-memory.js) so
+// nothing has to be re-picked visit after visit.
+const mem = createSetupMemory('geometry');
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let roomSize = mem.get('roomSize', 5, [5, 10]);
+let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
+let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
+if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
 // `shapes`/`given`/`lengths` are filled in when the topic tree reaches a real
 // leaf — see the topic carousel below, which resets them to that branch's own
 // defaults on entry. They start empty so Start stays disabled until a topic is
-// actually chosen.
+// actually chosen — unless a saved branch restores them below.
 const shapes = new Set();
 const given = new Set();
 const lengths = new Set();
 // Which pool the Lengths step is offering — the two shape families need
 // different numbers (see rng.js), so this tracks whichever branch we're in.
 let lengthPool = RADIUS_NUMBERS;
+
+// Restore the saved branch, if any — every member is re-checked against its
+// current list so a renamed shape or number silently drops out.
+const savedBranch = mem.get('branch', '', ['curved', 'polygons']);
+if (savedBranch) {
+  const shapeList = savedBranch === 'curved' ? CIRCULAR_SHAPES : REGULAR_SHAPES;
+  lengthPool = savedBranch === 'curved' ? RADIUS_NUMBERS : SIDE_NUMBERS;
+  mem.get('shapes', shapeList, Array.isArray).filter((s) => shapeList.includes(s)).forEach((s) => shapes.add(s));
+  if (savedBranch === 'curved') {
+    mem.get('given', GIVEN_TYPES, Array.isArray).filter((g) => GIVEN_TYPES.includes(g)).forEach((g) => given.add(g));
+    if (!given.size) GIVEN_TYPES.forEach((g) => given.add(g));
+  }
+  mem.get('lengths', [...lengthPool], Array.isArray).filter((n) => lengthPool.includes(n)).forEach((n) => lengths.add(n));
+  if (!shapes.size) shapeList.forEach((s) => shapes.add(s));
+  if (!lengths.size) lengthPool.forEach((n) => lengths.add(n));
+}
+
+// One save covers this section's whole branch — called wherever it exits.
+const saveContent = () => mem.save({
+  branch: [...shapes].some((s) => CIRCULAR_SHAPES.includes(s)) ? 'curved' : 'polygons',
+  shapes: [...shapes], given: [...given], lengths: [...lengths],
+});
 
 function isCurvedBranch() {
   return [...shapes].some((s) => CIRCULAR_SHAPES.includes(s));
@@ -212,26 +239,31 @@ function renderLengthsPick() {
       updateStartDisabled();
     },
     nextLabel: 'Next',
-    onNext: () => flow.next(), // last step of this section
+    onNext: () => { saveContent(); flow.next(); }, // last step of this section
   });
 }
 
 // Switch the whole branch's settings over in one place, so nothing stale can
-// survive a hop from Curved to Polygons (or back).
+// survive a hop from Curved to Polygons (or back). Re-entering the SAME
+// branch keeps the current (possibly remembered) picks.
 function enterBranch(kind) {
-  shapes.clear();
-  given.clear();
-  lengths.clear();
+  const alreadyHere = shapes.size > 0 &&
+    (kind === 'curved') === [...shapes].some((s) => CIRCULAR_SHAPES.includes(s));
+  if (!alreadyHere) {
+    shapes.clear();
+    given.clear();
+    lengths.clear();
 
-  if (kind === 'curved') {
-    CIRCULAR_SHAPES.forEach((s) => shapes.add(s));
-    GIVEN_TYPES.forEach((g) => given.add(g));
-    lengthPool = RADIUS_NUMBERS;
-  } else {
-    REGULAR_SHAPES.forEach((s) => shapes.add(s));
-    lengthPool = SIDE_NUMBERS; // no Given — polygons label their sides directly
+    if (kind === 'curved') {
+      CIRCULAR_SHAPES.forEach((s) => shapes.add(s));
+      GIVEN_TYPES.forEach((g) => given.add(g));
+      lengthPool = RADIUS_NUMBERS;
+    } else {
+      REGULAR_SHAPES.forEach((s) => shapes.add(s));
+      lengthPool = SIDE_NUMBERS; // no Given — polygons label their sides directly
+    }
+    lengthPool.forEach((n) => lengths.add(n)); // tick-all default
   }
-  lengthPool.forEach((n) => lengths.add(n)); // tick-all default
 
   if (kind === 'curved') { renderCurvedPick(); renderGivenPick(); }
   else renderRegularPick();
@@ -366,13 +398,14 @@ renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   name: 'geo-mode',
   options: [
-    { value: 'multiplayer', label: 'Multiplayer', checked: true },
-    { value: 'versus', label: 'Versus (1v1)' },
+    { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
+    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
     // Versus has no Quick Fill — a private 1v1 is always create-or-join.
     if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    mem.save({ mode, roomAction });
     renderRoomEntry();
     roomCarousel.start('entry');
     codeInput.hidden = roomAction !== 'join';
@@ -385,22 +418,22 @@ renderChoiceStep(options, 'size', {
   name: 'geo-size',
   colorOffset: 2,
   options: [
-    { value: '5', label: '5 players', checked: true },
-    { value: '10', label: '10 players' },
+    { value: '5', label: '5 players', checked: roomSize === 5 },
+    { value: '10', label: '10 players', checked: roomSize === 10 },
   ],
-  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
 renderChoiceStep(options, 'time', {
   title: 'How long is the round?',
   name: 'geo-time',
   colorOffset: 4,
   options: [
-    { value: '30', label: '30s' },
-    { value: '60', label: '60s', checked: true },
-    { value: '90', label: '90s' },
-    { value: '120', label: '120s' },
+    { value: '30', label: '30s', checked: timeLimit === 30 },
+    { value: '60', label: '60s', checked: timeLimit === 60 },
+    { value: '90', label: '90s', checked: timeLimit === 90 },
+    { value: '120', label: '120s', checked: timeLimit === 120 },
   ],
-  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
+  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
@@ -432,6 +465,7 @@ function renderRoomEntry() {
     options: choices,
     onPick: (v) => {
       roomAction = v;
+      mem.save({ roomAction });
       codeInput.hidden = v !== 'join';
       updateStartLabel();
       if (v === 'join') roomCarousel.goTo('code');
@@ -852,6 +886,10 @@ async function runVersusJoin({ myName }) {
 
 async function runGeometry() {
   startBtn.disabled = true;
+  // The setup is proven good the moment a round starts with it — next visit
+  // jumps straight to the last section with these picks as chips.
+  saveContent();
+  mem.save({ done: true });
   await getCurrentUser();
 
   const shapesList = [...shapes];
@@ -917,7 +955,16 @@ againBtn.addEventListener('click', hideResults);
 const initialMode = new URLSearchParams(location.search).get('mode');
 if (initialMode === 'versus') {
   mode = 'versus';
-  roomAction = 'create'; // Versus has no Quick Fill
+  if (roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
   renderRoomEntry();
   updateStartLabel();
+}
+
+// A returning player's whole setup is already restored — skip the wizard and
+// land on the final section, previous picks shown as chips (tap any to change).
+// Geometry only jumps when a real branch was restored; without one, Start
+// would sit disabled with nothing visibly missing.
+if (mem.isReturning() && shapes.size && lengths.size) {
+  codeInput.hidden = roomAction !== 'join';
+  flow.goTo(3);
 }

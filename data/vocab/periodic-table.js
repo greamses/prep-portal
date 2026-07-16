@@ -218,11 +218,29 @@ export const GAME_ELEMENTS = ELEMENTS
   .map((e) => ({ w: e.name, d: e.use, element: e }));
 
 // The classroom names for the named groups — the setup step's stickers.
+// Groups 3–12 are the d-block, so each carries the family name too.
 export const GROUP_NAMES = {
   1: 'Alkali metals',
   2: 'Alkaline earth',
+  3: 'Transition metals',
+  4: 'Transition metals',
+  5: 'Transition metals',
+  6: 'Transition metals',
+  7: 'Transition metals',
+  8: 'Transition metals',
+  9: 'Transition metals',
+  10: 'Transition metals',
+  11: 'Transition metals',
+  12: 'Transition metals',
   17: 'Halogens',
   18: 'Noble gases',
+};
+
+// The two strip rows under the main block, offered alongside Periods 1–7 in
+// the picker — they're drawn rows 8 and 9, not real periods.
+export const PERIOD_ROW_LABELS = {
+  8: 'Lanthanide series',
+  9: 'Actinide series',
 };
 
 /* ── Scoped rounds ────────────────────────────────────────────────────────
@@ -231,7 +249,8 @@ export const GROUP_NAMES = {
    round), but groups/periods are sets the player chose to drill, so they
    quiz EVERY element in them — exactly the columns or rows they can study in
    the library first. Periods go by the drawn row, so the lanthanide/actinide
-   strips stay out of Periods 6 and 7, the same as reading a printed table.
+   strips stay out of Periods 6 and 7, the same as reading a printed table —
+   the strips are their own picks, rows 8 and 9 (see PERIOD_ROW_LABELS).
 
    Scope formats (the checkbox picker writes masks; singles are the launch
    format and stay decodable so a mid-deploy room never breaks):
@@ -244,7 +263,7 @@ export const GROUP_NAMES = {
 export function scopeInfo(scope) {
   if (!scope) return null;
   const kind = scope[0]; // 'g' | 'p'
-  const max = kind === 'g' ? 18 : 7;
+  const max = kind === 'g' ? 18 : 9; // rows 8/9 = the lanthanide/actinide strips
   const nums = new Set();
   if (scope[1] === 'm') {
     const mask = parseInt(scope.slice(2), 16) || 0;
@@ -268,11 +287,22 @@ export function scopedElements(scope) {
 export function scopeLabel(scope) {
   const info = scopeInfo(scope);
   if (!info) return '';
-  const word = info.kind === 'g' ? 'Group' : 'Period';
   const ns = [...info.nums].sort((a, b) => a - b);
-  if (ns.length === 1) return `${word} ${ns[0]}`;
-  if (ns.length <= 3) return `${word}s ${ns.join(', ')}`;
-  return `${ns.length} ${word.toLowerCase()}s`;
+  if (info.kind === 'g') {
+    if (ns.length === 1) return `Group ${ns[0]}`;
+    if (ns.length <= 3) return `Groups ${ns.join(', ')}`;
+    return `${ns.length} groups`;
+  }
+  // Periods can mix real rows with the lanthanide/actinide strips, which have
+  // names, not numbers.
+  const periods = ns.filter((n) => n <= 7);
+  const strips = ns.filter((n) => n > 7).map((n) => PERIOD_ROW_LABELS[n].replace(' series', 's'));
+  const parts = [];
+  if (periods.length === 1) parts.push(`Period ${periods[0]}`);
+  else if (periods.length <= 3 && periods.length) parts.push(`Periods ${periods.join(', ')}`);
+  else if (periods.length) parts.push(`${periods.length} periods`);
+  parts.push(...strips);
+  return parts.length <= 2 ? parts.join(' & ') : `${ns.length} rows`;
 }
 
 /** Is this element inside the scoped rows/columns? (Everything, when unscoped.) */

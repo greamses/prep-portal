@@ -47,6 +47,7 @@ const SHARED = [
   '/utils/games/bot-names.js',
   '/utils/games/seeded-room.js',
   '/utils/games/leaderboard.js',
+  '/utils/games/setup-memory.js',
 ];
 
 // `extra` is for absolute-path modules only one page imports — the vocab word

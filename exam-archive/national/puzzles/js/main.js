@@ -18,6 +18,7 @@ import {
   renderChoiceStep, renderCustomStep, renderComingSoon,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
+import { createSetupMemory } from '/utils/games/setup-memory.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -94,17 +95,30 @@ let startNowFn = null;
 // ── Setup state ─────────────────────────────────────────────────────────
 // Owned in JS, not read back out of `input:checked` — a carousel only renders
 // the step you're on, so a DOM-query getter would throw for any step the
-// player never opened.
-let mode = 'multiplayer';
-let roomSize = 5;
-let timeLimit = 300;
-let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
-
-let puzzleType = 'sudoku';
-let gridSize = 9; // Sudoku's default — kept in step with puzzleType below
-let difficulty = 'easy';
-
+// player never opened. Every field starts from the player's LAST game
+// (setup-memory.js) so nothing has to be re-picked visit after visit.
 const defaultGridFor = (type) => (GRID_SIZES_BY_TYPE[type].find((o) => o.default) || GRID_SIZES_BY_TYPE[type][0]).value;
+
+const mem = createSetupMemory('puzzles');
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let roomSize = mem.get('roomSize', 5, [5, 10]);
+let timeLimit = mem.get('timeLimit', 300, [180, 300, 600, 900]);
+let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
+if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
+
+let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider']);
+let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
+let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
+let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
+
+const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
+
+// What this room plays — handed to matchmaking and written into the room
+// doc. Sudoku always carries tiles:'numbers' so the bucket key stays fixed.
+const contentCfg = () => ({
+  puzzleType, difficulty, gridSize,
+  tiles: puzzleType === 'slider' ? tileSet : 'numbers',
+});
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -158,6 +172,7 @@ player.start('name');
    a 9×9 pick can't survive into Slider. */
 const topic = createCarousel(topicMount);
 topic.addSlide('type', 'Puzzle', () => {});
+topic.addSlide('tiles', 'Tiles', () => {});
 topic.addSlide('grid-size', 'Grid Size', () => {});
 topic.addSlide('difficulty', 'Difficulty', () => {});
 
@@ -169,7 +184,24 @@ function renderGridSizePick() {
     options: GRID_SIZES_BY_TYPE[puzzleType].map((opt) => ({
       value: String(opt.value), label: opt.label, checked: opt.value === gridSize,
     })),
-    onPick: (v) => { gridSize = Number(v); topic.goTo('difficulty'); },
+    onPick: (v) => { gridSize = Number(v); mem.save({ gridSize }); topic.goTo('difficulty'); },
+  });
+}
+
+// Slider only — what the tiles wear. Picture splits one seeded scene across
+// the tiles; Fractions borrows the fraction slider's bar tiles (arrange
+// smallest → largest); Numbers is the classic 15-puzzle.
+function renderTilesPick() {
+  renderChoiceStep(topic, 'tiles', {
+    title: 'What kind of tiles?',
+    name: 'puzzle-tiles',
+    colorOffset: 3,
+    options: [
+      { value: 'picture', label: 'Picture', note: 'rebuild the image', checked: tileSet === 'picture' },
+      { value: 'fractions', label: 'Fractions', note: 'smallest to largest', checked: tileSet === 'fractions' },
+      { value: 'numbers', label: 'Numbers', note: 'classic 15-puzzle', checked: tileSet === 'numbers' },
+    ],
+    onPick: (v) => { tileSet = v; mem.save({ tileSet }); renderGridSizePick(); topic.goTo('grid-size'); },
   });
 }
 
@@ -177,17 +209,20 @@ renderChoiceStep(topic, 'type', {
   title: 'Which puzzle?',
   name: 'puzzle-type',
   options: [
-    { value: 'sudoku', label: 'Sudoku', checked: true },
-    { value: 'slider', label: 'Slider' },
+    { value: 'sudoku', label: 'Sudoku', checked: puzzleType === 'sudoku' },
+    { value: 'slider', label: 'Slider', checked: puzzleType === 'slider' },
   ],
   onPick: (v) => {
+    if (v !== puzzleType) gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
     puzzleType = v;
-    gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
+    mem.save({ puzzleType, gridSize });
+    if (v === 'slider') { renderTilesPick(); topic.goTo('tiles'); return; }
     renderGridSizePick();
     topic.goTo('grid-size');
   },
 });
 
+renderTilesPick();
 renderGridSizePick();
 
 renderChoiceStep(topic, 'difficulty', {
@@ -195,11 +230,11 @@ renderChoiceStep(topic, 'difficulty', {
   name: 'puzzle-difficulty',
   colorOffset: 1,
   options: [
-    { value: 'easy', label: 'Easy', checked: true },
-    { value: 'medium', label: 'Medium' },
-    { value: 'hard', label: 'Hard' },
+    { value: 'easy', label: 'Easy', checked: difficulty === 'easy' },
+    { value: 'medium', label: 'Medium', checked: difficulty === 'medium' },
+    { value: 'hard', label: 'Hard', checked: difficulty === 'hard' },
   ],
-  onPick: (v) => { difficulty = v; flow.next(); }, // last step of this section
+  onPick: (v) => { difficulty = v; mem.save({ difficulty }); flow.next(); }, // last step of this section
 });
 
 topic.start('type');
@@ -215,12 +250,13 @@ renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   name: 'puzzle-mode',
   options: [
-    { value: 'multiplayer', label: 'Multiplayer', checked: true },
-    { value: 'versus', label: 'Versus (1v1)' },
+    { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
+    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
     if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    mem.save({ mode, roomAction });
     renderRoomEntry();
     roomCarousel.start('entry');
     codeInput.hidden = roomAction !== 'join';
@@ -233,22 +269,22 @@ renderChoiceStep(options, 'size', {
   name: 'puzzle-size',
   colorOffset: 2,
   options: [
-    { value: '5', label: '5 players', checked: true },
-    { value: '10', label: '10 players' },
+    { value: '5', label: '5 players', checked: roomSize === 5 },
+    { value: '10', label: '10 players', checked: roomSize === 10 },
   ],
-  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
 renderChoiceStep(options, 'time', {
   title: 'How long is the round?',
   name: 'puzzle-time',
   colorOffset: 4,
   options: [
-    { value: '180', label: '3 min' },
-    { value: '300', label: '5 min', checked: true },
-    { value: '600', label: '10 min' },
-    { value: '900', label: '15 min' },
+    { value: '180', label: '3 min', checked: timeLimit === 180 },
+    { value: '300', label: '5 min', checked: timeLimit === 300 },
+    { value: '600', label: '10 min', checked: timeLimit === 600 },
+    { value: '900', label: '15 min', checked: timeLimit === 900 },
   ],
-  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
+  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
 });
 
 options.start('mode');
@@ -278,6 +314,7 @@ function renderRoomEntry() {
     options: choices,
     onPick: (v) => {
       roomAction = v;
+      mem.save({ roomAction });
       codeInput.hidden = v !== 'join';
       updateStartLabel();
       if (v === 'join') roomCarousel.goTo('code');
@@ -304,6 +341,7 @@ const flow = createSectionFlow([
     el: $('puzzle-section-topic'),
     chips: () => [
       { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
+      ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
       { label: `${gridSize}×${gridSize}` },
       { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
     ],
@@ -539,6 +577,7 @@ async function playRoundAndShowResults(room, myName) {
     puzzleType: room.puzzleType,
     difficulty: room.difficulty,
     gridSize: room.gridSize,
+    tiles: room.tiles,
     roster,
   });
 
@@ -601,7 +640,7 @@ async function runMultiplayer({ timeLimit, puzzleType, difficulty, gridSize, myN
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, ...contentCfg(), displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -622,7 +661,7 @@ async function runMultiplayerCreate({ timeLimit, puzzleType, difficulty, gridSiz
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, ...contentCfg(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -688,7 +727,7 @@ async function runVersusCreate({ timeLimit, puzzleType, difficulty, gridSize, my
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, puzzleType, difficulty, gridSize, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, ...contentCfg(), displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -719,6 +758,9 @@ async function runVersusJoin({ myName }) {
 
 async function runPuzzle() {
   startBtn.disabled = true;
+  // The setup is proven good the moment a round starts with it — next visit
+  // jumps straight to the last section with these picks as chips.
+  mem.save({ done: true });
   await getCurrentUser();
 
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
@@ -782,7 +824,14 @@ againBtn.addEventListener('click', hideResults);
 const initialMode = new URLSearchParams(location.search).get('mode');
 if (initialMode === 'versus') {
   mode = 'versus';
-  roomAction = 'create'; // Versus has no Quick Fill
+  if (roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
   renderRoomEntry();
   updateStartLabel();
+}
+
+// A returning player's whole setup is already restored — skip the wizard and
+// land on the final section, previous picks shown as chips (tap any to change).
+if (mem.isReturning()) {
+  codeInput.hidden = roomAction !== 'join';
+  flow.goTo(3);
 }

@@ -26,7 +26,7 @@ import { AVAILABLE } from './manifest.js';
 import { scopedElements, scopeLabel } from './periodic-table.js';
 
 export {
-  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   inScope, scopeInfo,
 } from './periodic-table.js';
 

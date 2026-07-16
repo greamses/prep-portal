@@ -13,10 +13,11 @@ import { auth } from '/firebase-init.js';
 import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
-  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS,
   baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel,
 } from '/data/vocab/index.js';
+import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -90,16 +91,27 @@ let startNowFn = null;
 // ── Setup state ─────────────────────────────────────────────────────────
 // Owned in JS, not read back out of `input:checked` — a carousel only renders
 // the step you're on, so a DOM-query getter would throw for any step the
-// player never opened.
-let mode = 'multiplayer';
-let roomSize = 5;
-let timeLimit = 120;
-let roomAction = 'quickfill'; // multiplayer: quickfill|create|join · versus: create|join
-let grade = 5;
-let subject = 'life-science';
-let playMode = 'az';    // az | topic — which words the round deals
-let topic = '';         // only meaningful when playMode === 'topic'
-let spelling = 'classic'; // classic | spell — how each word is played
+// player never opened. Every field starts from the player's LAST game
+// (setup-memory.js) so nothing has to be re-picked visit after visit.
+const mem = createSetupMemory('vocab');
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let roomSize = mem.get('roomSize', 5, [5, 10]);
+let timeLimit = mem.get('timeLimit', 120, TIME_LIMITS.map((t) => t.value));
+let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
+if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
+let grade = mem.get('grade', 5, GRADES);
+let subject = mem.get('subject', 'life-science', (s) => subjectsForGrade(grade).includes(s));
+let playMode = mem.get('playMode', 'az', ['az', 'topic']);    // az | topic — which words the round deals
+// A saved topic is only kept if it's still offered for this subject+grade
+// (the scope suffix rides along with its base).
+let topic = mem.get('topic', '', (t) => topicsFor(subject, grade).some((x) => x.key === baseTopic(t)));
+let spelling = mem.get('spelling', 'classic', SPELL_MODES.map((m) => m.key)); // classic | spell — how each word is played
+if (subject === 'geography') playMode = 'topic'; // geography is maps only — no A–Z
+if (playMode === 'topic' && !topic) {
+  const ts = topicsFor(subject, grade);
+  topic = ts[0] ? ts[0].key : '';
+  if (!topic) playMode = 'az';
+}
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -241,7 +253,12 @@ renderChoiceStep(content, 'spelling', {
   name: 'vocab-spelling',
   colorOffset: 5,
   options: SPELL_MODES.map((m) => ({ value: m.key, label: m.label, checked: m.key === spelling })),
-  onPick: (v) => { spelling = v; flow.next(); }, // last step of this section
+  onPick: (v) => {
+    spelling = v;
+    // Every path through this section ends here, so one save covers the lot.
+    mem.save({ grade, subject, playMode, topic, spelling });
+    flow.next(); // last step of this section
+  },
 });
 
 function renderTopicStep() {
@@ -344,17 +361,20 @@ function renderScopeStep() {
 function renderScopeNStep(kind) {
   const info = scopeInfo(topicScope(topic));
   const picked = new Set(info && info.kind === kind ? info.nums : []);
-  const max = kind === 'g' ? 18 : 7;
+  // Periods offer rows 8/9 too — the lanthanide/actinide strips, which have
+  // names instead of period numbers.
+  const max = kind === 'g' ? 18 : 9;
   const options = Array.from({ length: max }, (_, i) => {
     const n = i + 1;
-    const named = kind === 'g' && GROUP_NAMES[n];
-    return { value: String(n), label: named ? `Group ${n} — ${named}` : `${kind === 'g' ? 'Group' : 'Period'} ${n}` };
+    if (kind === 'p') return { value: String(n), label: PERIOD_ROW_LABELS[n] || `Period ${n}` };
+    const named = GROUP_NAMES[n];
+    return { value: String(n), label: named ? `Group ${n} — ${named}` : `Group ${n}` };
   });
   renderMultiStep(content, 'scope-n', {
     title: kind === 'g' ? 'Which groups?' : 'Which periods?',
     subtitle: kind === 'g'
       ? 'A group is one column of the table — elements that behave alike. Tick as many as you like.'
-      : 'A period is one row of the table, left to right. Tick as many as you like.',
+      : 'A period is one row of the table, left to right — the Lanthanide and Actinide series are the two strip rows beneath it. Tick as many as you like.',
     colorOffset: 5,
     grid: kind === 'g',
     options,
@@ -386,12 +406,13 @@ renderChoiceStep(options, 'mode', {
   title: 'How do you want to play?',
   name: 'vocab-mode',
   options: [
-    { value: 'multiplayer', label: 'Multiplayer', checked: true },
-    { value: 'versus', label: 'Versus (1v1)' },
+    { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
+    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
     if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    mem.save({ mode, roomAction });
     renderRoomEntry();
     roomCarousel.start('entry');
     codeInput.hidden = roomAction !== 'join';
@@ -404,17 +425,17 @@ renderChoiceStep(options, 'size', {
   name: 'vocab-size',
   colorOffset: 2,
   options: [
-    { value: '5', label: '5 players', checked: true },
-    { value: '10', label: '10 players' },
+    { value: '5', label: '5 players', checked: roomSize === 5 },
+    { value: '10', label: '10 players', checked: roomSize === 10 },
   ],
-  onPick: (v) => { roomSize = Number(v); options.goTo('time'); },
+  onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
 renderChoiceStep(options, 'time', {
   title: 'How long is the round?',
   name: 'vocab-time',
   colorOffset: 4,
-  options: TIME_LIMITS.map((t) => ({ value: String(t.value), label: t.label, checked: !!t.checked })),
-  onPick: (v) => { timeLimit = Number(v); flow.next(); }, // last step of this section
+  options: TIME_LIMITS.map((t) => ({ value: String(t.value), label: t.label, checked: t.value === timeLimit })),
+  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
 });
 options.start('mode');
 
@@ -443,6 +464,7 @@ function renderRoomEntry() {
     options: choices,
     onPick: (v) => {
       roomAction = v;
+      mem.save({ roomAction });
       codeInput.hidden = v !== 'join';
       updateStartLabel();
       if (v === 'join') roomCarousel.goTo('code');
@@ -831,6 +853,9 @@ async function runJoin(name, fallbackSize, rawCode) {
 
 async function runVocab() {
   startBtn.disabled = true;
+  // The setup is proven good the moment a round starts with it — next visit
+  // jumps straight to the last section with these picks as chips.
+  mem.save({ grade, subject, playMode, topic, spelling, done: true });
   await getCurrentUser();
   const name = myName();
 
@@ -1096,7 +1121,14 @@ againBtn.addEventListener('click', hideResults);
 // Preselect mode from nav links like ?mode=versus
 if (new URLSearchParams(location.search).get('mode') === 'versus') {
   mode = 'versus';
-  roomAction = 'create'; // Versus has no Quick Fill
+  if (roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
   renderRoomEntry();
   updateStartLabel();
+}
+
+// A returning player's whole setup is already restored — skip the wizard and
+// land on the final section, previous picks shown as chips (tap any to change).
+if (mem.isReturning()) {
+  codeInput.hidden = roomAction !== 'join';
+  flow.goTo(3);
 }

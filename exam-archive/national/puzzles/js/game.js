@@ -12,7 +12,8 @@
    dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
-import { generateSlider, scoreSlider, countSliderTiles, movableIndices } from './slider.js';
+import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
+import { scenePictureUri } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,6 +30,9 @@ const timeRemainingEl = $('puzzle-time-remaining');
 const digitPad = $('puzzle-digit-pad');
 const scoreNote = $('puzzle-score-note');
 const timerNote = $('puzzle-timer-note');
+const topbarEl = $('puzzle-grid-topbar');
+const previewEl = $('puzzle-slider-preview');
+const hintEl = $('puzzle-grid-hint');
 
 let active = false;
 let puzzleType = 'sudoku';
@@ -48,6 +52,9 @@ let selected = null; // { r, c } or null
 // Slider-only state
 let board = null; // flat length-N² array, 0 = blank
 let solvedBoard = null;
+let tileSet = 'numbers'; // numbers | fractions | picture — what the tiles wear
+let fractionValues = null; // fractions only — ascending, tile n wears [n-1]
+let artUri = ''; // picture only — the seeded scene as a data: URI
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -140,16 +147,68 @@ function setDigit(d) {
 }
 
 // ── Slider ───────────────────────────────────────────────────────────────
+// Soft pastel fills for the fraction bars — keyed off the fraction itself so
+// the same fraction is always the same color, wherever it slides.
+const FRACTION_FILLS = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#c9a3e8', '#f0a868'];
+
+function fractionTileFace({ num, den, value }) {
+  const shaded = value * 90;
+  const fill = FRACTION_FILLS[(num + den) % FRACTION_FILLS.length];
+  let splits = '';
+  const partWidth = 90 / den;
+  for (let i = 1; i < den; i++) {
+    const x = (5 + i * partWidth).toFixed(1);
+    splits += `<line x1="${x}" y1="12" x2="${x}" y2="48" stroke="var(--ink)" stroke-width="1.4"/>`;
+  }
+  return `<span class="slider-frac">
+    <svg viewBox="0 0 100 60" aria-hidden="true">
+      <rect x="5" y="12" width="90" height="36" fill="var(--surface-secondary, #efe9dc)"/>
+      <rect x="5" y="12" width="${shaded.toFixed(1)}" height="36" fill="${fill}"/>
+      ${splits}
+      <rect x="5" y="12" width="90" height="36" fill="none" stroke="var(--ink)" stroke-width="2.4"/>
+    </svg>
+    <span class="slider-frac-label">${num}/${den}</span>
+  </span>`;
+}
+
+// Dresses a tile for its number: plain digit, fraction bar, or its window of
+// the shared picture. Picture tiles all carry the WHOLE image as background —
+// background-size blows it up to the full grid and background-position pans
+// to the window this tile occupies when solved, so the "splitting" is pure
+// CSS and follows the tile wherever it slides.
+function paintTile(el, value) {
+  el.className = 'slider-tile';
+  el.disabled = false;
+  if (tileSet === 'picture') {
+    el.textContent = '';
+    const g = gridSize;
+    const p = value - 1; // solved position of this tile
+    el.style.backgroundImage = `url("${artUri}")`;
+    el.style.backgroundSize = `${g * 100}% ${g * 100}%`;
+    el.style.backgroundPosition = `${((p % g) / (g - 1)) * 100}% ${(Math.floor(p / g) / (g - 1)) * 100}%`;
+  } else if (tileSet === 'fractions') {
+    el.innerHTML = fractionTileFace(fractionValues[value - 1]);
+  } else {
+    el.textContent = String(value);
+  }
+}
+
+function clearTile(el) {
+  el.className = 'slider-tile is-blank';
+  el.disabled = true;
+  el.textContent = '';
+  el.style.backgroundImage = '';
+}
+
 function buildSliderGrid() {
   gridEl.classList.add('slider-grid');
+  if (tileSet !== 'numbers') gridEl.classList.add(`slider-grid--${tileSet}`);
   for (let i = 0; i < board.length; i++) {
-    const isBlank = board[i] === 0;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `slider-tile${isBlank ? ' is-blank' : ''}`;
     btn.dataset.index = String(i);
-    btn.textContent = isBlank ? '' : String(board[i]);
-    btn.disabled = isBlank;
+    if (board[i] === 0) clearTile(btn);
+    else paintTile(btn, board[i]);
     gridEl.appendChild(btn);
   }
   updateMovableHighlights();
@@ -172,12 +231,8 @@ function slideTile(fromIndex) {
 
   const blankEl = gridEl.children[blank];
   const movedEl = gridEl.children[fromIndex];
-  blankEl.textContent = String(board[blank]);
-  blankEl.className = 'slider-tile';
-  blankEl.disabled = false;
-  movedEl.textContent = '';
-  movedEl.className = 'slider-tile is-blank';
-  movedEl.disabled = true;
+  paintTile(blankEl, board[blank]);
+  clearTile(movedEl);
 
   const isCorrect = board[blank] === solvedBoard[blank];
   blankEl.classList.toggle('is-correct', isCorrect);
@@ -195,7 +250,7 @@ function slideTile(fromIndex) {
 // ── Shared input dispatch ─────────────────────────────────────────────────
 function buildGrid() {
   gridEl.innerHTML = '';
-  gridEl.classList.remove('sudoku-grid', 'slider-grid');
+  gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture');
   gridEl.style.setProperty('--grid-size', gridSize);
   if (puzzleType === 'slider') buildSliderGrid();
   else buildSudokuGrid();
@@ -277,7 +332,7 @@ document.addEventListener('keydown', onKeydown);
 // Resolves with { score, totalUnits } once the local timer hits zero (or
 // the puzzle is fully solved early) — totalUnits lets the caller pass the
 // same cap to bot simulation without regenerating the puzzle.
-export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficulty, gridSize: size, roster }) {
+export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficulty, gridSize: size, tiles, roster }) {
   return new Promise((resolve) => {
     puzzleType = type;
     gridSize = size;
@@ -290,12 +345,32 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       board = puzzle.board;
       solvedBoard = puzzle.solved;
       totalUnits = countSliderTiles(gridSize);
+      // `tiles` rides the room doc — a room created before this shipped has
+      // none, so those rounds keep playing as plain numbers.
+      tileSet = tiles || 'numbers';
+      fractionValues = tileSet === 'fractions' ? generateFractionValues(seed, totalUnits) : null;
+      artUri = tileSet === 'picture' ? scenePictureUri(seed) : '';
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
       solution = puzzle.solution;
       current = givens.map((row) => row.slice());
       totalUnits = countEditableCells(givens);
+    }
+
+    // Slider rounds get a hint line, and Picture rounds also show the goal
+    // picture — visible from the countdown on, so players study it before
+    // the clock starts.
+    if (puzzleType === 'slider') {
+      hintEl.textContent =
+        tileSet === 'picture' ? 'Rebuild the picture — slide tiles next to the gap.'
+        : tileSet === 'fractions' ? 'Smallest fraction first — arrange them in order.'
+        : `Put the tiles in order, 1 to ${totalUnits}.`;
+      previewEl.hidden = tileSet !== 'picture';
+      if (tileSet === 'picture') previewEl.src = artUri;
+      topbarEl.hidden = false;
+    } else {
+      topbarEl.hidden = true;
     }
 
     scoreNote.textContent = `0/${totalUnits} correct`;

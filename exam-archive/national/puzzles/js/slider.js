@@ -10,10 +10,14 @@
    starting from the solved board, so every intermediate (and final) state
    is reachable from — and therefore solvable back to — the goal.
 ═══════════════════════════════════════════════════════ */
-import { mulberry32 } from './rng.js';
+import { mulberry32, hashSeed } from './rng.js';
 
 export const SLIDER_SIZES = [3, 4, 5];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
+// What the tiles wear: plain numbers, fraction bars (mechanics borrowed from
+// the standalone fraction slider in home/games/slide), or windows of one
+// seeded picture (see art.js).
+export const TILE_SETS = ['numbers', 'fractions', 'picture'];
 // Random shuffle moves per tile — more moves scrambles the board further
 // from solved. Self-limited to what's reachable; no risk of an unsolvable
 // board since every move is a reversible slide from the goal state.
@@ -75,4 +79,35 @@ export function countSliderTiles(gridSize) {
 // Flat indices currently slidable (adjacent to the blank).
 export function movableIndices(board, gridSize) {
   return neighborsOf(board.indexOf(0), gridSize);
+}
+
+// ── Fraction tiles ────────────────────────────────────────────────────────
+// Mechanics ported from the standalone fraction slider (home/games/slide):
+// each tile carries a fraction and the goal is smallest → largest, reading
+// order. Because the values are unique and pre-sorted, "ascending order" IS
+// the solved board — tile number n simply wears fractions[n-1] — so scoring
+// and shuffling stay identical to the numbered slider.
+const FRACTION_NS = 4242;
+
+const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+
+// A seeded pick of `count` unique reduced fractions, sorted ascending.
+// Reduced-only keeps the values genuinely distinct (no 2/4 posing as 1/2),
+// and the [0.06, 0.94] clamp keeps the bars visibly partial.
+export function generateFractionValues(seed, count) {
+  const pool = [];
+  for (let den = 2; den <= 16; den++) {
+    for (let num = 1; num < den; num++) {
+      if (gcd(num, den) !== 1) continue;
+      const value = num / den;
+      if (value < 0.06 || value > 0.94) continue;
+      pool.push({ num, den, value });
+    }
+  }
+  const rng = mulberry32(hashSeed(seed, FRACTION_NS));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count).sort((a, b) => a.value - b.value);
 }
