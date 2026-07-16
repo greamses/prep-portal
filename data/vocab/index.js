@@ -26,7 +26,8 @@ import { AVAILABLE } from './manifest.js';
 import { scopedElements, scopeLabel } from './periodic-table.js';
 
 export {
-  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, inScope,
+  ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
+  inScope, scopeInfo,
 } from './periodic-table.js';
 
 /* ── Scoped topic keys ────────────────────────────────────────────────────
@@ -63,16 +64,49 @@ export const ZONES = [
 ];
 export const ZONE_LABELS = Object.fromEntries(ZONES.map((z) => [z.key, z.label]));
 
+/* A map's scope can pick SEVERAL regions. The checkbox picker writes a mask —
+   'cm<hex>' (continents) / 'zm<hex>' (zones), bit i = the i-th region in the
+   list above, so 'world-map:cm5' is Africa + Europe. Hex keeps any combo
+   under the rules' 40-char topic cap with one canonical spelling per set
+   (honest matchmaking buckets). A bare region key ('africa') is the launch
+   format and stays decodable so a mid-deploy room never breaks. */
+function regionsOf(base) {
+  return base === WORLD ? CONTINENTS : base === NIGERIA ? ZONES : null;
+}
+
+/** The scoped region keys as a Set, or null when the round is unscoped
+    (no scope, an empty mask, or a mask that covers every region). */
+export function regionSet(topicKey) {
+  const scope = topicScope(topicKey);
+  const regions = regionsOf(baseTopic(topicKey));
+  if (!scope || !regions) return null;
+  if (scope[1] === 'm') {
+    const mask = parseInt(scope.slice(2), 16) || 0;
+    const keys = regions.filter((_, i) => mask & (1 << i)).map((r) => r.key);
+    return keys.length && keys.length < regions.length ? new Set(keys) : null;
+  }
+  return regions.some((r) => r.key === scope) ? new Set([scope]) : null;
+}
+
+/** A human label for a map scope — 'Africa', 'Africa & Asia', '4 zones'. */
+export function regionSetLabel(topicKey) {
+  const set = regionSet(topicKey);
+  if (!set) return '';
+  const regions = regionsOf(baseTopic(topicKey)) || [];
+  const labels = regions.filter((r) => set.has(r.key)).map((r) => r.label);
+  if (labels.length <= 2) return labels.join(' & ');
+  const noun = baseTopic(topicKey) === NIGERIA ? 'zones' : 'continents';
+  return `${labels.length} ${noun}`;
+}
+
 /** topics.js's topicMeta, but scope-aware: the label says which slice. */
 export function topicMeta(subjectKey, topicKey) {
-  const meta = outlinedMeta(subjectKey, baseTopic(topicKey));
+  const base = baseTopic(topicKey);
+  const meta = outlinedMeta(subjectKey, base);
   const scope = topicScope(topicKey);
   if (!meta || !scope) return meta;
-  const base = baseTopic(topicKey);
-  const label = base === PERIODIC
-    ? scopeLabel(scope)
-    : (base === NIGERIA ? ZONE_LABELS[scope] : CONTINENT_LABELS[scope]) || scope;
-  return { ...meta, label: `${meta.label} — ${label}` };
+  const label = base === PERIODIC ? scopeLabel(scope) : regionSetLabel(topicKey);
+  return label ? { ...meta, label: `${meta.label} — ${label}` } : meta;
 }
 
 /* Topics whose content is bundled data (the periodic table's elements, the
@@ -162,9 +196,10 @@ export function topicPool(words, topicKey) {
   if (base === PERIODIC) {
     return scopedElements(scope).map((e) => ({ ...e, topic: PERIODIC }));
   }
-  // Any other scoped topic (the world map's continents) filters on the `s`
-  // key its entries carry — 'world-map:africa' keeps only African countries.
+  // Any other scoped topic (the maps' continents/zones) filters on the `s`
+  // key its entries carry — 'world-map:cm5' keeps Africa + Europe.
   let list = words[base] || [];
-  if (scope) list = list.filter((entry) => entry.s === scope);
+  const set = regionSet(topicKey);
+  if (set) list = list.filter((entry) => set.has(entry.s));
   return list.map((entry) => ({ ...entry, topic: base }));
 }

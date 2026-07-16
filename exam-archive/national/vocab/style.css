@@ -1277,6 +1277,13 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-el.is-out { opacity: 0.22; }
 .vocab-el.is-out:hover, .vocab-el.is-out:focus { opacity: 1; }
 
+/* Edge cells re-anchor their tip so it never clips the dialog: the first and
+   last columns pin it to their own edge instead of centring it, and the top
+   two rows open it BELOW the cell instead of above. */
+.vocab-el.vocab-tip-l .vocab-el-tip { left: 0; transform: none; }
+.vocab-el.vocab-tip-r .vocab-el-tip { left: auto; right: 0; transform: none; }
+.vocab-el.vocab-tip-b .vocab-el-tip { bottom: auto; top: calc(100% + 6px); }
+
 /* ── Shared hover tip ── */
 .vocab-el-tip, .vocab-el-cell .vocab-el-tip {
   position: absolute;

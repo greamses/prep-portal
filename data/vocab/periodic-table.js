@@ -226,33 +226,60 @@ export const GROUP_NAMES = {
 };
 
 /* ── Scoped rounds ────────────────────────────────────────────────────────
-   The topic key can carry a scope suffix — 'periodic-table:g17' is Group 17,
-   'periodic-table:p3' is Period 3. The WHOLE table quizzes only the common
-   elements ("name Z=106" is not a fair round), but a group or a period is a
-   set the player chose to drill, so it quizzes EVERY element in it — exactly
-   the column or row they can study in the library first. Periods go by the
-   drawn row, so the lanthanide/actinide strips stay out of Periods 6 and 7,
-   the same as reading a printed table. */
+   The topic key can carry a scope suffix picking groups or periods. The
+   WHOLE table quizzes only the common elements ("name Z=106" is not a fair
+   round), but groups/periods are sets the player chose to drill, so they
+   quiz EVERY element in them — exactly the columns or rows they can study in
+   the library first. Periods go by the drawn row, so the lanthanide/actinide
+   strips stay out of Periods 6 and 7, the same as reading a printed table.
+
+   Scope formats (the checkbox picker writes masks; singles are the launch
+   format and stay decodable so a mid-deploy room never breaks):
+     'gm<hex>' / 'pm<hex>'  a bitmask — bit i is Group/Period i+1, so
+                            'periodic-table:gm20001' is Groups 1 and 18.
+                            Hex keeps ANY combination under the rules' 40-char
+                            topic cap, and one canonical spelling per set
+                            keeps matchmaking buckets honest.
+     'g17' / 'p3'           legacy single group/period. */
+export function scopeInfo(scope) {
+  if (!scope) return null;
+  const kind = scope[0]; // 'g' | 'p'
+  const max = kind === 'g' ? 18 : 7;
+  const nums = new Set();
+  if (scope[1] === 'm') {
+    const mask = parseInt(scope.slice(2), 16) || 0;
+    for (let i = 0; i < max; i++) if (mask & (1 << i)) nums.add(i + 1);
+  } else {
+    const n = Number(scope.slice(1));
+    if (n >= 1 && n <= max) nums.add(n);
+  }
+  return nums.size ? { kind, nums } : null;
+}
+
 export function scopedElements(scope) {
-  if (!scope) return GAME_ELEMENTS;
-  const n = Number(scope.slice(1));
-  const members = scope[0] === 'g'
-    ? ELEMENTS.filter((e) => e.group === n)
-    : ELEMENTS.filter((e) => e.y === n);
+  const info = scopeInfo(scope);
+  if (!info) return GAME_ELEMENTS;
+  const members = info.kind === 'g'
+    ? ELEMENTS.filter((e) => info.nums.has(e.group))
+    : ELEMENTS.filter((e) => info.nums.has(e.y));
   return members.map((e) => ({ w: e.name, d: e.use, element: e }));
 }
 
 export function scopeLabel(scope) {
-  if (!scope) return '';
-  const n = Number(scope.slice(1));
-  return scope[0] === 'g' ? `Group ${n}` : `Period ${n}`;
+  const info = scopeInfo(scope);
+  if (!info) return '';
+  const word = info.kind === 'g' ? 'Group' : 'Period';
+  const ns = [...info.nums].sort((a, b) => a - b);
+  if (ns.length === 1) return `${word} ${ns[0]}`;
+  if (ns.length <= 3) return `${word}s ${ns.join(', ')}`;
+  return `${ns.length} ${word.toLowerCase()}s`;
 }
 
-/** Is this element inside the scoped row/column? (Everything, when unscoped.) */
+/** Is this element inside the scoped rows/columns? (Everything, when unscoped.) */
 export function inScope(el, scope) {
-  if (!scope) return true;
-  const n = Number(scope.slice(1));
-  return scope[0] === 'g' ? el.group === n : el.y === n;
+  const info = scopeInfo(scope);
+  if (!info) return true;
+  return info.kind === 'g' ? info.nums.has(el.group) : info.nums.has(el.y);
 }
 
 export const TABLE_COLUMNS = 18;

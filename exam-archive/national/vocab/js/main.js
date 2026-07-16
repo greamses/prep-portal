@@ -15,14 +15,14 @@ import {
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS,
-  baseTopic, topicScope, inScope,
+  baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel,
 } from '/data/vocab/index.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
 import {
-  createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep,
+  createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 
@@ -270,25 +270,31 @@ function renderTopicStep() {
   });
 }
 
-/* A drawn topic's scope: play it whole, or drill one slice of it.
-   Periodic table — a slice is a group or a period, and it quizzes EVERY
-   element in it (you chose it; the library shows it), while the whole table
+/* A drawn topic's scope: play it whole, or tick the slices to drill.
+   Periodic table — slices are groups or periods, and they quiz EVERY element
+   in them (you chose them; the library shows them), while the whole table
    sticks to the common, examinable elements.
-   Maps — a slice is a continent of the world or a geopolitical zone of
-   Nigeria; one step each, since there are only six of either. */
-function renderMapScopeStep({ base, regions, title, allLabel, subtitle }) {
-  const cur = topicScope(topic);
-  renderChoiceStep(content, 'scope', {
+   Maps — slices are continents of the world or geopolitical zones of
+   Nigeria; one checkbox step each, since there are only six of either.
+   Selections are encoded as a bitmask scope ('cm5', 'gm20001') — compact
+   enough for the rules' 40-char topic cap, and canonical, so two players
+   ticking the same combination land in the same matchmaking bucket. */
+function renderMapScopeStep({ base, regions, maskPrefix, title, subtitle }) {
+  const picked = new Set(regionSet(topic) || []);
+  renderMultiStep(content, 'scope', {
     title,
     subtitle,
-    name: `vocab-${base}-scope`,
     colorOffset: 3,
-    options: [
-      { value: 'all', label: allLabel, checked: !cur },
-      ...regions.map((r) => ({ value: r.key, label: r.label, checked: r.key === cur })),
-    ],
-    onPick: (v) => {
-      topic = v === 'all' ? base : `${base}:${v}`;
+    options: regions.map((r) => ({ value: r.key, label: r.label })),
+    isChecked: (v) => picked.has(v),
+    onToggle: (v, on) => { if (on) picked.add(v); else picked.delete(v); },
+    nextLabel: 'Next',
+    onNext: () => {
+      const mask = regions.reduce((m, r, i) => (picked.has(r.key) ? m | (1 << i) : m), 0);
+      // Nothing ticked — or everything — is just the whole map.
+      topic = (mask === 0 || picked.size === regions.length)
+        ? base
+        : `${base}:${maskPrefix}${mask.toString(16)}`;
       content.goTo('spelling');
     },
   });
@@ -299,9 +305,9 @@ function renderScopeStep() {
     renderMapScopeStep({
       base: 'world-map',
       regions: CONTINENTS,
-      title: 'The whole world, or one continent?',
-      allLabel: 'Whole world',
-      subtitle: 'One continent asks only its countries — study the map in the library first.',
+      maskPrefix: 'cm',
+      title: 'Which continents?',
+      subtitle: 'Tick the continents to be asked — none (or all) plays the whole world.',
     });
     return;
   }
@@ -309,23 +315,23 @@ function renderScopeStep() {
     renderMapScopeStep({
       base: 'nigeria-map',
       regions: ZONES,
-      title: 'All of Nigeria, or one zone?',
-      allLabel: 'Whole country',
-      subtitle: 'One geopolitical zone asks only its states — study the map in the library first.',
+      maskPrefix: 'zm',
+      title: 'Which geopolitical zones?',
+      subtitle: 'Tick the zones to be asked — none (or all) plays the whole country.',
     });
     return;
   }
 
   const kind = topicScope(topic).charAt(0); // '' | 'g' | 'p'
   renderChoiceStep(content, 'scope', {
-    title: 'The whole table, or one part?',
-    subtitle: 'A group or a period asks every element in it — study it in the library first.',
+    title: 'The whole table, or parts of it?',
+    subtitle: 'Groups and periods ask every element in them — study them in the library first.',
     name: 'vocab-pt-scope',
     colorOffset: 3,
     options: [
       { value: 'all', label: 'Whole table', checked: kind === '' },
-      { value: 'g', label: 'One group', checked: kind === 'g' },
-      { value: 'p', label: 'One period', checked: kind === 'p' },
+      { value: 'g', label: 'Pick groups', checked: kind === 'g' },
+      { value: 'p', label: 'Pick periods', checked: kind === 'p' },
     ],
     onPick: (v) => {
       if (v === 'all') { topic = 'periodic-table'; content.goTo('spelling'); return; }
@@ -336,27 +342,31 @@ function renderScopeStep() {
 }
 
 function renderScopeNStep(kind) {
-  const current = topicScope(topic);
-  const picked = current.charAt(0) === kind ? Number(current.slice(1)) : 0;
-  const options = kind === 'g'
-    ? Array.from({ length: 18 }, (_, i) => {
-        const n = i + 1;
-        const named = GROUP_NAMES[n];
-        return { value: String(n), label: named ? `Group ${n} — ${named}` : `Group ${n}`, checked: n === picked };
-      })
-    : Array.from({ length: 7 }, (_, i) => {
-        const n = i + 1;
-        return { value: String(n), label: `Period ${n}`, checked: n === picked };
-      });
-  renderChoiceStep(content, 'scope-n', {
-    title: kind === 'g' ? 'Which group?' : 'Which period?',
+  const info = scopeInfo(topicScope(topic));
+  const picked = new Set(info && info.kind === kind ? info.nums : []);
+  const max = kind === 'g' ? 18 : 7;
+  const options = Array.from({ length: max }, (_, i) => {
+    const n = i + 1;
+    const named = kind === 'g' && GROUP_NAMES[n];
+    return { value: String(n), label: named ? `Group ${n} — ${named}` : `${kind === 'g' ? 'Group' : 'Period'} ${n}` };
+  });
+  renderMultiStep(content, 'scope-n', {
+    title: kind === 'g' ? 'Which groups?' : 'Which periods?',
     subtitle: kind === 'g'
-      ? 'A group is one column of the table — elements that behave alike.'
-      : 'A period is one row of the table, left to right.',
-    name: 'vocab-pt-scope-n',
+      ? 'A group is one column of the table — elements that behave alike. Tick as many as you like.'
+      : 'A period is one row of the table, left to right. Tick as many as you like.',
     colorOffset: 5,
+    grid: kind === 'g',
     options,
-    onPick: (v) => { topic = `periodic-table:${kind}${v}`; content.goTo('spelling'); },
+    isChecked: (v) => picked.has(Number(v)),
+    onToggle: (v, on) => { if (on) picked.add(Number(v)); else picked.delete(Number(v)); },
+    nextLabel: 'Next',
+    onNext: () => {
+      const mask = [...picked].reduce((m, n) => m | (1 << (n - 1)), 0);
+      // Nothing ticked falls back to the whole table.
+      topic = mask === 0 ? 'periodic-table' : `periodic-table:${kind}m${mask.toString(16)}`;
+      content.goTo('spelling');
+    },
   });
 }
 
@@ -866,7 +876,12 @@ function renderPeriodicTable(scope) {
     const cell = document.createElement('span');
     // In a scoped round the slice being drilled stays bright and the rest of
     // the table fades — study exactly what you are about to be asked.
-    cell.className = 'vocab-el' + (inScope(el, scope) ? '' : ' is-out');
+    // Edge cells re-anchor their hover tip so it never clips the dialog:
+    // left/right columns pin it to their edge, the top rows open it below.
+    cell.className = 'vocab-el' + (inScope(el, scope) ? '' : ' is-out')
+      + (el.x <= 3 ? ' vocab-tip-l' : '')
+      + (el.x >= 16 ? ' vocab-tip-r' : '')
+      + (el.y <= 2 ? ' vocab-tip-b' : '');
     cell.dataset.cat = el.cat;
     cell.style.gridColumn = el.x;
     cell.style.gridRow = el.y;
@@ -890,7 +905,7 @@ function renderPeriodicTable(scope) {
 // for their name, region and capital hint. One floating tip follows the
 // pointer — an SVG path can't host the sticky-note tips the table's cells
 // use. Serves both maps: the world's countries and Nigeria's states.
-async function renderMapLibrary({ mod, rows, scope, regionOf, regionLabels, ariaLabel }) {
+async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLabel }) {
   dictList.innerHTML = '';
 
   const wrap = document.createElement('div');
@@ -902,7 +917,7 @@ async function renderMapLibrary({ mod, rows, scope, regionOf, regionLabels, aria
   for (const c of rows) {
     const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     p.setAttribute('d', c.d);
-    const out = scope && regionOf(c) !== scope;
+    const out = set && !set.has(regionOf(c));
     p.setAttribute('class', 'vocab-map-c' + (out ? ' is-out' : ''));
     if (c.hint) {
       p.dataset.name = c.name;
@@ -919,10 +934,17 @@ async function renderMapLibrary({ mod, rows, scope, regionOf, regionLabels, aria
     const path = e.target.closest('path[data-tip]');
     if (!path) { tip.hidden = true; return; }
     tip.textContent = path.dataset.tip;
+    tip.hidden = false; // must be visible BEFORE measuring, or offsetWidth is 0
+    // Clamp inside the map box so edge places (Alaska, New Zealand, Sokoto…)
+    // never have their tip cut off: x pins to the sides, and a pointer too
+    // near the top flips the tip below the cursor instead of above it.
     const box = wrap.getBoundingClientRect();
-    tip.style.left = `${e.clientX - box.left}px`;
-    tip.style.top = `${e.clientY - box.top - 14}px`;
-    tip.hidden = false;
+    const half = tip.offsetWidth / 2;
+    const x = Math.min(Math.max(e.clientX - box.left, half + 4), box.width - half - 4);
+    const above = e.clientY - box.top - 14 - tip.offsetHeight >= 0;
+    tip.style.left = `${x}px`;
+    tip.style.top = `${e.clientY - box.top + (above ? -14 : 20)}px`;
+    tip.style.transform = above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)';
   });
   svg.addEventListener('pointerleave', () => { tip.hidden = true; });
 
@@ -941,14 +963,14 @@ async function openDictionary() {
   const dictBox = dictBd.querySelector('.vocab-dict');
   if (playMode === 'topic' && baseTopic(topic) === 'world-map') {
     dictBox.classList.add('vocab-dict--wide'); // the map wants the room too
-    const scope = topicScope(topic);
-    dictSub.textContent = scope
-      ? `${CONTINENT_LABELS[scope]} stays bright — those are the countries the round will ask. Hover any country for its name and capital.`
+    const set = regionSet(topic);
+    dictSub.textContent = set
+      ? `${regionSetLabel(topic)} stays bright — those are the countries the round will ask. Hover any country for its name and capital.`
       : 'Hover any country for its name and capital. The game lights one up — you name it.';
     dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
     const wm = await import('/data/vocab/world-map.js');
     await renderMapLibrary({
-      mod: wm, rows: wm.COUNTRIES, scope,
+      mod: wm, rows: wm.COUNTRIES, set,
       regionOf: (c) => c.cont, regionLabels: CONTINENT_LABELS,
       ariaLabel: 'Map of the world — hover a country for its details',
     });
@@ -956,14 +978,14 @@ async function openDictionary() {
   }
   if (playMode === 'topic' && baseTopic(topic) === 'nigeria-map') {
     dictBox.classList.add('vocab-dict--wide');
-    const scope = topicScope(topic);
-    dictSub.textContent = scope
-      ? `${ZONE_LABELS[scope]} stays bright — those are the states the round will ask. Hover any state for its name and capital.`
+    const set = regionSet(topic);
+    dictSub.textContent = set
+      ? `${regionSetLabel(topic)} stays bright — those are the states the round will ask. Hover any state for its name and capital.`
       : 'Hover any state for its name and capital. The game lights one up — you name it.';
     dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the map…</p>';
     const nm = await import('/data/vocab/nigeria-map.js');
     await renderMapLibrary({
-      mod: nm, rows: nm.STATES, scope,
+      mod: nm, rows: nm.STATES, set,
       regionOf: (c) => c.zone, regionLabels: ZONE_LABELS,
       ariaLabel: 'Map of Nigeria — hover a state for its details',
     });

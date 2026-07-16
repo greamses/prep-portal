@@ -24,7 +24,7 @@
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
   loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS,
-  ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope,
+  ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet,
 } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +54,8 @@ let active = false;   // the round is running (clock ticking)
 let acceptingGuesses = false; // …and the board is live (not mid-verdict, not out of words)
 let seed = 0;
 let round = [];   // [{ word, clue, letter }] — the same list on every client
-let tableScope = ''; // '' whole · 'g17' group · 'p3' period · 'africa' continent · 'n-west' zone
+let tableScope = ''; // raw scope suffix — '' whole · 'gm20001' groups · 'p3' period …
+let mapScope = null; // decoded region keys for a scoped MAP round, else null
 let worldMap = null;   // lazy /data/vocab/world-map.js module — world-map rounds only
 let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map rounds only
 let index = 0;
@@ -196,7 +197,7 @@ function renderMapClue({ mod, rows, target, regionOf, regionLabel }) {
   for (const row of rows) {
     const p = document.createElementNS(SVG_NS, 'path');
     p.setAttribute('d', row.d);
-    const out = tableScope && regionOf(row) !== tableScope;
+    const out = mapScope && !mapScope.has(regionOf(row));
     p.setAttribute('class', 'vocab-map-c'
       + (row.name === target.name ? ' is-target' : '')
       + (out ? ' is-out' : ''));
@@ -434,6 +435,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     seed = roomSeed;
     spelling = spellMode === 'spell' ? 'spell' : 'classic';
     tableScope = mode === 'topic' ? topicScope(topic) : '';
+    mapScope = mode === 'topic' ? regionSet(topic) : null;
     index = 0;
     score = 0;
     wrong = 0;
