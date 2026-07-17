@@ -33,14 +33,14 @@ const NAME_KEY = 'puzzleGameName';
 
 // Grid Size options depend on which puzzle is selected — Sudoku's boxes
 // only divide evenly at 4/6/9, Slider is conventionally 3/4/5 (the classic
-// 8-/15-/24-puzzle), Jigsaw swaps freely so it stretches to 6×6 (36
-// pieces). Difficulty (Easy/Medium/Hard) is the same three labels for
-// every puzzle type, just reinterpreted by that puzzle's own generator
-// (see sudoku.js/slider.js/jigsaw.js).
+// 8-/15-/24-puzzle), and Jigsaw is a proper table-sized puzzle: 10×10 up to
+// 20×20 (100–400 pieces). Difficulty (Easy/Medium/Hard) is the same three
+// labels for every puzzle type, just reinterpreted by that puzzle's own
+// generator (see sudoku.js/slider.js/jigsaw.js).
 const GRID_SIZES_BY_TYPE = {
   sudoku: [{ value: 4, label: '4×4' }, { value: 6, label: '6×6' }, { value: 9, label: '9×9', default: true }],
   slider: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }],
-  jigsaw: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }, { value: 6, label: '6×6' }],
+  jigsaw: [{ value: 10, label: '10×10', default: true }, { value: 15, label: '15×15' }, { value: 20, label: '20×20' }],
 };
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
@@ -227,16 +227,19 @@ function renderTilesPick() {
   });
 }
 
-// Picture rounds only — the seeded scene, or the player's own photo. Picking
-// "Your photo" opens the file dialog; the step advances once a photo lands
-// (or, if one is already saved, when the dialog is simply cancelled).
+// Picture rounds only — a surprise picture, or the player's own photo. For
+// Jigsaw the surprise is a free online photo (photos.js); for Slider Picture
+// tiles it's the little drawn scene (art.js). Picking "Your photo" opens the
+// file dialog; the step advances once a photo lands (or, if one is already
+// saved, when the dialog is simply cancelled).
 function renderPhotoPick() {
+  const surpriseNote = puzzleType === 'jigsaw' ? 'a free photo online' : 'drawn for you';
   renderChoiceStep(topic, 'photo', {
     title: 'Which picture?',
     name: 'puzzle-photo',
     colorOffset: 5,
     options: [
-      { value: 'scene', label: 'Surprise scene', note: 'drawn for you', checked: pictureSource === 'scene' },
+      { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: pictureSource === 'scene' },
       {
         value: 'upload', label: 'Your photo',
         note: localStorage.getItem(PIC_KEY) ? 'tap to change it' : 'from your device',
@@ -393,7 +396,7 @@ const flow = createSectionFlow([
     chips: () => [
       { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
       ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
-      ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Scene' }] : []),
+      ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Surprise' }] : []),
       { label: `${gridSize}×${gridSize}` },
       { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
     ],

@@ -494,6 +494,9 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   width: min(360px, 100%);
   margin: 0 auto 1rem;
 }
+/* Jigsaw runs 100–400 pieces — give the frame every pixel available so the
+   individual cells stay large enough to drop a piece onto. */
+.puzzle-grid-wrap:has(.jigsaw-grid) { width: min(430px, 100%); }
 .puzzle-grid-face.pp-receipt__paper {
   display: flex;
   flex-direction: column;
@@ -698,20 +701,21 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 }
 
 /* The tabletop. Sits AFTER the board in the DOM with its own z-index, so a
-   piece being dragged up onto the frame renders above it, never beneath. */
+   piece being dragged up onto the frame renders above it, never beneath. A
+   square tray holds a heaped 100–400 pieces; the scatter fills it evenly. */
 .jigsaw-heap {
   position: relative;
   z-index: 5;
-  width: min(400px, 100%);
+  width: min(430px, 100%);
   margin: 0 auto 1rem;
-  aspect-ratio: calc(var(--grid-size, 4) / 2.35);
+  aspect-ratio: 1;
   border-radius: 10px;
   background: color-mix(in srgb, var(--ink) 5%, transparent);
   border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
 }
 .jigsaw-loose {
   position: absolute;
-  width: calc(95% / var(--grid-size, 4));
+  width: calc(95% / var(--grid-size, 10));
   aspect-ratio: 1;
   background: none;
   border: 0;

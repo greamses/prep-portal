@@ -17,6 +17,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
+import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
 const $ = (id) => document.getElementById(id);
@@ -304,18 +305,19 @@ function buildJigsawGrid() {
 // Tips the loose pieces onto the "tabletop" below the frame: absolutely
 // positioned at seeded scatter spots with a resting tilt, stacking in DOM
 // order like a real heap. Border pieces are spottable by their flat sides.
+// The tray is square and pieces are square, so one piece-width fraction
+// (95%/gridSize) bounds the scatter equally on both axes.
 function buildJigsawHeap(heap) {
   heapEl.innerHTML = '';
   heapEl.style.setProperty('--grid-size', gridSize);
+  const span = 100 - 95 / gridSize; // keep whole pieces inside the tray
   heap.forEach((h) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'jigsaw-loose';
     btn.dataset.piece = String(h.piece);
-    // x spans the width minus one piece; y stays in the upper ~60% so tilted
-    // tabs don't poke out the bottom of the tabletop.
-    btn.style.left = `${(h.x * (100 - 95 / gridSize)).toFixed(2)}%`;
-    btn.style.top = `${(h.y * 58).toFixed(2)}%`;
+    btn.style.left = `${(h.x * span).toFixed(2)}%`;
+    btn.style.top = `${(h.y * span).toFixed(2)}%`;
     btn.style.setProperty('--rot', `${h.rot}deg`);
     btn.innerHTML = pieceFaces[h.piece];
     heapEl.appendChild(btn);
@@ -559,7 +561,9 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       const puzzle = generateJigsaw(seed, difficulty, gridSize);
       lockedCells = puzzle.locked;
       totalUnits = puzzle.movableCount; // anchors are givens — only YOUR pieces score
-      artUri = customArt || scenePictureUri(seed);
+      // A free online photo by default (seeded, so every client agrees), or
+      // the player's own uploaded picture when they chose one.
+      artUri = customArt || photoPictureUrl(seed);
       pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
       jigsawPlaced = 0;
       jigsawPicked = null;

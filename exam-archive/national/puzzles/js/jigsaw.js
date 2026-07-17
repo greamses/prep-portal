@@ -1,12 +1,13 @@
 /* ═══════════════════════════════════════════════════════
    PUZZLES — seeded jigsaw generator
-   One seeded picture (art.js) cut into an N×N grid of interlocking pieces.
-   The loose pieces start OFF the board, tipped into a heap below the empty
-   frame like a real puzzle onto a tabletop — drag one over its home cell
-   (or tap it, then tap the cell) and it clicks in and locks. Every client
-   in a room shares one `seed`, so the same picture, the same tab layout
-   and the same heap appear on every device with zero network traffic —
-   same philosophy as sudoku.js/slider.js.
+   One seeded photo (photos.js — a free online image) cut into an N×N grid
+   of interlocking pieces. These are BIG puzzles: 10×10 up to 20×20, i.e.
+   100–400 pieces. The loose pieces start OFF the board, tipped into a heap
+   below the empty frame like a real puzzle onto a tabletop — drag one over
+   its home cell (or tap it, then tap the cell) and it clicks in and locks.
+   Every client in a room shares one `seed`, so the same picture, the same
+   tab layout and the same heap appear on every device — same philosophy as
+   sudoku.js/slider.js.
 
    Border pieces read differently at a glance, exactly like a real jigsaw:
    their outer sides are FLAT (tab = 0 along the frame), so corners show
@@ -16,7 +17,7 @@
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed } from './rng.js';
 
-export const JIGSAW_SIZES = [3, 4, 5, 6];
+export const JIGSAW_SIZES = [10, 15, 20];
 // Share of pieces already sitting at home (locked) when the round starts.
 // They score nothing — totalUnits counts only the pieces YOU place.
 const LOCKED_FRACTION = { easy: 0.28, medium: 0.12, hard: 0 };
