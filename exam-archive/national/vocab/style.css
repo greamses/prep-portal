@@ -1518,13 +1518,14 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-weight: 800;
   box-shadow: 0 1px 2px rgba(20,19,15,.18);
 }
-.vocab-sci-avatar.has-photo { background: none; overflow: hidden; }
+.vocab-sci-avatar.has-photo { background: none; }
 .vocab-sci-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center top;
   display: block;
+  border-radius: 50%; /* clip to the circle here so an admin pencil isn't cropped */
 }
 .vocab-law-by-name {
   font-family: var(--font-mono);

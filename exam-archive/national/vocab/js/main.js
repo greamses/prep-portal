@@ -26,6 +26,7 @@ import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
+import { imageOverride, attachImageAdmin } from '/utils/components/admin-images.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -920,6 +921,9 @@ const portraitCache = new Map(); // name -> Promise<url|null>
 function resolvePortrait(name) {
   if (portraitCache.has(name)) return portraitCache.get(name);
   const p = (async () => {
+    // An admin-set override wins over Wikimedia and the localStorage cache.
+    const override = await imageOverride('scientists', name);
+    if (override) return override;
     const key = 'sciPortrait:' + name;
     try {
       const cached = localStorage.getItem(key);
@@ -942,26 +946,41 @@ function resolvePortrait(name) {
   return p;
 }
 
+// Paint an avatar as either its monogram or a portrait (kept until the photo
+// loads, and restored on a broken image). Never touches the admin pencil.
+function paintAvatar(av, name, url) {
+  av.querySelectorAll('.vocab-sci-mono, .vocab-sci-photo').forEach((n) => n.remove());
+  av.classList.remove('has-photo');
+  const mono = document.createElement('span');
+  mono.className = 'vocab-sci-mono';
+  mono.textContent = scientistInitials(name);
+  av.appendChild(mono);
+  if (!url) return;
+  const img = new Image();
+  img.alt = name;
+  img.className = 'vocab-sci-photo';
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+  // Append only once it loads, so the monogram shows until then and a broken
+  // image just leaves the monogram in place.
+  img.onload = () => { mono.remove(); av.appendChild(img); av.classList.add('has-photo'); };
+  img.src = url; // valid servable URL (don't rewrite Wikimedia widths)
+}
+
 function scientistAvatar(name) {
   const av = document.createElement('span');
   av.className = 'vocab-sci-avatar';
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   av.style.setProperty('--sci-bg', AVATAR_BG[h % AVATAR_BG.length]);
-  av.textContent = scientistInitials(name);
   av.setAttribute('aria-hidden', 'true');
-  // Swap the monogram for a real portrait once (and if) one loads.
-  resolvePortrait(name).then((url) => {
-    if (!url) return;
-    const img = new Image();
-    img.alt = name;
-    img.className = 'vocab-sci-photo';
-    img.loading = 'lazy';
-    img.referrerPolicy = 'no-referrer';
-    img.onload = () => { av.textContent = ''; av.appendChild(img); av.classList.add('has-photo'); };
-    // The API's thumbnail is a valid servable size; don't rewrite the width
-    // (Wikimedia only serves specific cached sizes and 400s on others).
-    img.src = url;
+  paintAvatar(av, name, null); // monogram first
+  resolvePortrait(name).then((url) => { if (url) paintAvatar(av, name, url); });
+  // Admin-only: point this scientist at a URL or an uploaded image.
+  attachImageAdmin(av, {
+    ns: 'scientists',
+    key: name,
+    apply: (url) => { portraitCache.delete(name); paintAvatar(av, name, url); },
   });
   return av;
 }

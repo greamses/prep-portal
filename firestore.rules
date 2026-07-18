@@ -153,6 +153,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Admin-set image overrides for any image slot (scientist portraits, and
+    // any puzzle/drill/activity image). One doc per namespace, a map of
+    // slotKey -> url. Public read so everyone sees the chosen image; admin-only
+    // write. See utils/components/admin-images.js.
+    match /imageOverrides/{namespace} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Cartesian Art puzzles — coordinate-plotting "trace the picture" missions.
     // Authored by the admin (client-side, allowed by the admin override too) and
     // played by any signed-in learner, so a shared link works.

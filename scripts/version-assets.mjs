@@ -40,6 +40,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHARED = [
   '/utils/components/setup-carousel.js',
   '/utils/components/avatar-picker.js',
+  '/utils/components/admin-images.js',
   // The seeded-room machinery every game runs on. A stale copy of any of these
   // against fresh page code would desync a room, so they go into the hash.
   '/utils/games/rng.js',
