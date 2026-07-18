@@ -448,6 +448,9 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     cardEl.hidden = false;
     countdownEl.hidden = false;
     boardEl.hidden = true;
+    // The clue now lives outside the board (right column, above the letters),
+    // so it no longer hides with the board — toggle it in step with play.
+    clueEl.hidden = true;
     keyboardEl.hidden = true;
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
@@ -481,6 +484,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
         countdownEl.hidden = true;
         rosterEl.hidden = true;
         boardEl.hidden = false;
+        clueEl.hidden = false;
         keyboardEl.hidden = false;
         endAt = anchorAt + timeLimit * 1000;
         loadWord();

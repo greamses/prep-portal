@@ -709,6 +709,53 @@ body.vocab-nav-hidden .site-nav { display: none; }
   .vocab-slot { min-width: 1.2rem; font-size: 1.1rem; }
 }
 
+/* ── LANDSCAPE STAGE ─────────────────────────────────────────────────────
+   Phones keep one centred column — the card, then the clue and letters below
+   it. From 900px up the play view goes landscape: the hangman card (gallows +
+   word) sits on the left while the clue chart/map and the letter keyboard
+   share the right column, so a wide screen stops wasting its width on a tall
+   thin strip. */
+.vocab-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1.1rem;
+}
+.vocab-play-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+}
+/* The clue's own rules (.vocab-clue--ptable/-map set display:flex) out-specify
+   the [hidden] attribute, so pin the hidden state off with the id. */
+#vocab-clue[hidden] { display: none; }
+
+@media (min-width: 900px) {
+  #vocab-play-bd .review-wrap { width: min(960px, 100%); }
+  .vocab-stage {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1.8rem;
+  }
+  .vocab-card { margin: 0; flex: 0 0 auto; width: min(400px, 40vw); }
+  .vocab-play-side {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 560px;
+  }
+}
+
+@media (min-width: 1300px) {
+  #vocab-play-bd .review-wrap { width: min(1080px, 100%); }
+  .vocab-stage { gap: 2.4rem; }
+  .vocab-card { width: min(440px, 38vw); }
+  .vocab-play-side { max-width: 620px; }
+}
+
 .vocab-time-remaining {
   font-family: var(--font-mono);
   font-size: 1.1rem;
