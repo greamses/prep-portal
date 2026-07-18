@@ -1078,7 +1078,7 @@ function compoundDictCard(entry) {
 
 // Structures load lazily from PubChem the first time "Structure" is chosen, so
 // the images are never fetched unless asked for. A miss falls back to the
-// formula for that card.
+// formula for that card. Hovering a structure shows a larger view.
 function loadStructures(grid) {
   grid.querySelectorAll('.vocab-cpd-structure:not([data-loaded])').forEach((box) => {
     box.dataset.loaded = '1';
@@ -1089,7 +1089,35 @@ function loadStructures(grid) {
     img.onerror = () => box.closest('.vocab-cpd-card')?.classList.add('no-structure');
     img.src = PUBCHEM_PNG + encodeURIComponent(box.dataset.pc) + '/PNG';
     box.appendChild(img);
+    box.addEventListener('mouseenter', () => showCpdZoom(box));
+    box.addEventListener('mouseleave', hideCpdZoom);
   });
+}
+
+// A big floating preview of a structure while the pointer is over it — the card
+// thumbnails are small, so hover to read the bonds. Uses a larger PubChem image.
+let cpdZoom = null;
+function hideCpdZoom() { if (cpdZoom) { cpdZoom.remove(); cpdZoom = null; } }
+function showCpdZoom(box) {
+  hideCpdZoom();
+  const pc = box.dataset.pc;
+  if (!pc || box.closest('.vocab-cpd-card')?.classList.contains('no-structure')) return;
+  cpdZoom = document.createElement('div');
+  cpdZoom.className = 'vocab-cpd-zoom';
+  const img = new Image();
+  img.referrerPolicy = 'no-referrer';
+  img.src = `${PUBCHEM_PNG}${encodeURIComponent(pc)}/PNG?image_size=500x500`;
+  cpdZoom.appendChild(img);
+  document.body.appendChild(cpdZoom);
+  const r = box.getBoundingClientRect();
+  const zw = 260, zh = 260;
+  let left = r.right + 12;
+  if (left + zw > window.innerWidth - 8) left = r.left - zw - 12;
+  if (left < 8) left = Math.max(8, (window.innerWidth - zw) / 2);
+  let top = r.top + r.height / 2 - zh / 2;
+  top = Math.max(8, Math.min(top, window.innerHeight - zh - 8));
+  cpdZoom.style.left = `${left}px`;
+  cpdZoom.style.top = `${top}px`;
 }
 
 // MathJax loads async from the CDN; gate typesetting on it, but cap the wait so
@@ -1347,6 +1375,7 @@ async function openDictionary() {
 }
 
 function closeDictionary() {
+  hideCpdZoom();
   dictBd.classList.remove('open');
   dictBd.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('vocab-nav-hidden');

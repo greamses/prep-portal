@@ -1601,3 +1601,42 @@ body.vocab-nav-hidden .site-nav { display: none; }
 /* A compound whose PubChem structure failed keeps showing its formula. */
 .vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-headline { display: inline-block; }
 .vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-structure { display: none; }
+.vocab-cpd-structure { cursor: zoom-in; }
+
+/* Hover preview — a big floating copy of the structure (card thumbnails are
+   small). White plate so the black bonds read in either theme. */
+.vocab-cpd-zoom {
+  position: fixed;
+  z-index: 10001;
+  width: 260px;
+  pointer-events: none;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle, #ddd);
+  box-shadow: 0 16px 44px rgba(20, 19, 15, 0.35);
+}
+.vocab-cpd-zoom img { width: 100%; display: block; }
+
+/* The compound structure shown as the hangman clue (IUPAC naming rounds). */
+.vocab-clue.vocab-clue--compound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: none;
+}
+.vocab-clue-structure {
+  width: min(170px, 62vw);
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 1px 4px rgba(20, 19, 15, 0.16);
+}
+.vocab-clue-cpd-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: var(--leading-snug);
+  color: var(--ink);
+}

@@ -231,6 +231,24 @@ const renderStateClue = (s) => renderMapClue({
   regionOf: (r) => r.zone, regionLabel: ZONE_LABELS[s.zone],
 });
 
+// The IUPAC naming topics draw the compound's 2-D structure (from PubChem) above
+// the text clue (formula + hint). A missing structure just leaves the text.
+const PUBCHEM_PNG = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/';
+function renderCompoundClue(structure, text) {
+  clueEl.className = 'vocab-clue vocab-clue--compound';
+  clueEl.innerHTML = '';
+  const img = document.createElement('img');
+  img.className = 'vocab-clue-structure';
+  img.alt = 'structure';
+  img.referrerPolicy = 'no-referrer';
+  img.addEventListener('error', () => img.remove());
+  img.src = `${PUBCHEM_PNG}${encodeURIComponent(structure.pc)}/PNG`;
+  const p = document.createElement('p');
+  p.className = 'vocab-clue-cpd-text';
+  p.textContent = text;
+  clueEl.append(img, p);
+}
+
 // Scenery is never guessed, so it sits on the board from the start.
 function revealScenery() {
   [...current.word].forEach((ch, i) => { if (!isGuessable(ch)) revealedPos.add(i); });
@@ -268,6 +286,7 @@ function loadWord() {
   if (current.element) renderElementClue(current.element);
   else if (current.country) renderCountryClue(current.country);
   else if (current.state) renderStateClue(current.state);
+  else if (current.structure) renderCompoundClue(current.structure, current.clue);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => {
