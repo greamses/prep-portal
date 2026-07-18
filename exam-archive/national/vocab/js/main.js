@@ -905,6 +905,43 @@ function scientistInitials(name) {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+// Real portraits, resolved by name through Wikipedia's REST summary endpoint
+// (CORS-open, returns the current Wikimedia-hosted lead image — public domain
+// for the historical majority). Cached in localStorage so it resolves once, and
+// the monogram stands in until/unless a portrait actually loads. A few names
+// whose article title differs get an override.
+const WIKI_TITLE_FIX = {
+  'Émile Clapeyron': 'Benoît Paul Émile Clapeyron',
+  "Jacobus van 't Hoff": "Jacobus Henricus van 't Hoff",
+  'Johannes van der Waals': 'Johannes Diderik van der Waals',
+  'Cato Guldberg': 'Cato Maximilian Guldberg',
+};
+const portraitCache = new Map(); // name -> Promise<url|null>
+function resolvePortrait(name) {
+  if (portraitCache.has(name)) return portraitCache.get(name);
+  const p = (async () => {
+    const key = 'sciPortrait:' + name;
+    try {
+      const cached = localStorage.getItem(key);
+      if (cached !== null) return cached || null; // '' = looked, none found
+    } catch { /* private mode */ }
+    const title = WIKI_TITLE_FIX[name] || name;
+    try {
+      const res = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        { headers: { accept: 'application/json' } },
+      );
+      if (!res.ok) return null; // leave uncached so a title fix can help later
+      const j = await res.json();
+      const url = j.thumbnail?.source || j.originalimage?.source || '';
+      try { localStorage.setItem(key, url); } catch { /* ignore */ }
+      return url || null;
+    } catch { return null; }
+  })();
+  portraitCache.set(name, p);
+  return p;
+}
+
 function scientistAvatar(name) {
   const av = document.createElement('span');
   av.className = 'vocab-sci-avatar';
@@ -913,6 +950,19 @@ function scientistAvatar(name) {
   av.style.setProperty('--sci-bg', AVATAR_BG[h % AVATAR_BG.length]);
   av.textContent = scientistInitials(name);
   av.setAttribute('aria-hidden', 'true');
+  // Swap the monogram for a real portrait once (and if) one loads.
+  resolvePortrait(name).then((url) => {
+    if (!url) return;
+    const img = new Image();
+    img.alt = name;
+    img.className = 'vocab-sci-photo';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => { av.textContent = ''; av.appendChild(img); av.classList.add('has-photo'); };
+    // The API's thumbnail is a valid servable size; don't rewrite the width
+    // (Wikimedia only serves specific cached sizes and 400s on others).
+    img.src = url;
+  });
   return av;
 }
 
