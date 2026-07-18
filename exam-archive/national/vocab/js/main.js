@@ -1049,18 +1049,22 @@ function lawDictCard(entry, i = 0) {
 const IUPAC_TOPICS = new Set(['iupac-inorganic', 'iupac-organic']);
 
 function formulaToNode(f) {
-  const span = document.createElement('span');
-  span.className = 'vocab-cpd-headline';
+  // The formula rides on a little torn-paper receipt (on the sticky-note card).
+  const wrap = document.createElement('span');
+  wrap.className = 'vocab-cpd-formula pp-receipt';
+  const paper = document.createElement('span');
+  paper.className = 'vocab-cpd-headline pp-receipt__paper';
   for (const part of String(f).match(/\d+|\D+/g) || []) {
     if (/^\d+$/.test(part)) {
       const sub = document.createElement('sub');
       sub.textContent = part;
-      span.appendChild(sub);
+      paper.appendChild(sub);
     } else {
-      span.appendChild(document.createTextNode(part));
+      paper.appendChild(document.createTextNode(part));
     }
   }
-  return span;
+  wrap.appendChild(paper);
+  return wrap;
 }
 
 function compoundDictCard(entry, i = 0) {
@@ -1344,9 +1348,13 @@ async function openDictionary() {
     bar.setAttribute('role', 'group');
     bar.setAttribute('aria-label', 'Show formula or structure');
     const bF = document.createElement('button');
-    bF.type = 'button'; bF.className = 'vocab-cpd-tog-btn is-active'; bF.textContent = 'Formula';
+    bF.type = 'button';
+    bF.className = 'vocab-cpd-tog-btn pp-sticky pp-sticky--tape pp-sticky--c0 is-active';
+    bF.textContent = 'Formula';
     const bS = document.createElement('button');
-    bS.type = 'button'; bS.className = 'vocab-cpd-tog-btn'; bS.textContent = 'Structure';
+    bS.type = 'button';
+    bS.className = 'vocab-cpd-tog-btn pp-sticky pp-sticky--tape pp-sticky--c3';
+    bS.textContent = 'Structure';
     const setView = (structures) => {
       grid.classList.toggle('show-structures', structures);
       bF.classList.toggle('is-active', !structures);

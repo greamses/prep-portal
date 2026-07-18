@@ -1489,7 +1489,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
    light and dark themes (never the --ink token, which flips). */
 .vocab-law-card.pp-sticky {
   padding: 0;
-  border-radius: 6px;
+  border-radius: 0;
   color: #14130f;
 }
 .vocab-law-card.pp-sticky:hover { transform: rotate(0deg) translateY(-4px); z-index: 2; }
@@ -1565,16 +1565,23 @@ body.vocab-nav-hidden .site-nav { display: none; }
   color: #6a6456;
 }
 
-/* IUPAC compound card: the formula leads, big and mono, with real subscripts;
-   the IUPAC name sits beneath it. */
-.vocab-cpd-headline {
+/* IUPAC compound card: the formula leads, big and mono, with real subscripts,
+   sitting on a little torn-paper RECEIPT on the sticky-note card. */
+.vocab-cpd-formula { display: inline-block; max-width: 100%; }
+.vocab-cpd-headline.pp-receipt__paper {
+  --tooth: 7px; /* small teeth for a mini receipt */
+  display: inline-block;
+  padding: 0.5rem 1.1rem 0.55rem;
+  background: #fffdf8;
   font-family: var(--font-mono);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #14130f;
   letter-spacing: 0.01em;
   line-height: 1.2;
 }
+.vocab-cpd-headline.pp-receipt__paper::before,
+.vocab-cpd-headline.pp-receipt__paper::after { display: none; } /* no side rails on a mini receipt */
 .vocab-cpd-headline sub {
   font-size: 0.62em;
   vertical-align: -0.25em;
@@ -1585,37 +1592,28 @@ body.vocab-nav-hidden .site-nav { display: none; }
   color: #14130f;
 }
 
-/* Formula ⇄ Structure toggle for the IUPAC cards. */
+/* Formula ⇄ Structure toggle — two sticky notes (colour + tape + tilt from
+   .pp-sticky); the inactive one is dimmed. No pill container. */
 .vocab-cpd-toggle {
   display: flex;
   justify-content: center;
-  gap: 2px;
+  gap: 0.9rem;
   width: fit-content;
-  margin: 0 auto 1.2rem;
-  padding: 3px;
-  background: var(--surface-primary);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: 999px;
+  margin: 0.3rem auto 1.5rem;
 }
 .vocab-cpd-tog-btn {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: none;
-  border: 0;
-  padding: 0.4rem 1.05rem;
-  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #14130f;
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
+  opacity: 0.5;
 }
-.vocab-cpd-tog-btn.is-active {
-  background: var(--accent-secondary);
-  color: var(--text-on-accent, #14130f);
-}
+.vocab-cpd-tog-btn.is-active { opacity: 1; }
+.vocab-cpd-tog-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
 
-/* The structure (a pre-rendered SVG) sits on white so the bonds read in both
-   themes; hidden until the card is flipped to structure view. */
+/* The structure (a pre-rendered SVG) sits on a white plate so the bonds read in
+   both themes; hidden until the card is flipped to structure view. */
 .vocab-cpd-head { min-height: 1.9rem; }
 .vocab-cpd-structure {
   display: none;
@@ -1624,16 +1622,15 @@ body.vocab-nav-hidden .site-nav { display: none; }
   margin: 0.15rem auto 0;
   padding: 6px;
   background: #fff;
-  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(20, 19, 15, 0.14);
+  cursor: zoom-in;
 }
 .vocab-cpd-structure svg { width: 100%; height: auto; display: block; }
-.vocab-law-grid.show-structures .vocab-cpd-headline { display: none; }
+.vocab-law-grid.show-structures .vocab-cpd-formula { display: none; }
 .vocab-law-grid.show-structures .vocab-cpd-structure { display: block; }
 /* A compound with no rendered structure keeps showing its formula. */
-.vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-headline { display: inline-block; }
+.vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-formula { display: inline-block; }
 .vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-structure { display: none; }
-.vocab-cpd-structure { cursor: zoom-in; }
 
 /* Hover preview — a big floating copy of the structure (card thumbnails are
    small). White plate so the black bonds read in either theme. */
@@ -1643,7 +1640,6 @@ body.vocab-nav-hidden .site-nav { display: none; }
   width: 260px;
   pointer-events: none;
   background: #fff;
-  border-radius: 12px;
   padding: 10px;
   border: 1px solid var(--border-subtle, #ddd);
   box-shadow: 0 16px 44px rgba(20, 19, 15, 0.35);
