@@ -121,12 +121,46 @@ const DRAWN = new Set([PERIODIC, WORLD, NIGERIA]);
 // manifest to be offered.
 const BUNDLED_SUBJECTS = new Set(['geography']);
 
-// Subjects whose WORDS are hand-authored and ship with the app (not written by
-// gen-vocab, so never in the manifest) — their topics carry ordinary text
-// clues, so unlike DRAWN topics they still play through the normal word path,
-// but they are always offered wherever the subject is. `laws` sources its
-// words from data/laws/laws.js (the Laws study page's bank).
-const BUNDLED_WORD_SUBJECTS = new Set(['laws']);
+// ── Science-law topics, bundled into the science subjects ────────────────
+// The senior science subjects each gain two topics whose words are NOT written
+// by gen-vocab but derived at load from the shared Laws bank (data/laws/laws.js):
+//   laws            — clue = a law's statement, answer = the law's NAME.
+//   law-scientists  — clue = the statement, answer = the SURNAME it is named after.
+// They carry ordinary text clues (unlike the DRAWN table/map topics), so they
+// play the normal word path — but like DRAWN topics they are always offered
+// (no manifest entry) and stay OUT of the mixed A–Z alphabet.
+const LAW_SUBJECTS = new Set(['physics', 'chemistry', 'biology']);
+const BUNDLED_TOPICS = new Set(['laws', 'law-scientists']);
+
+const LAW_NAME = (name) => name.replace(/\s*\([^)]*\)/g, '').trim();
+// Surname = the last name token, with overrides where that would drop a particle.
+const SURNAME_FIX = {
+  'Willebrord Snellius': 'Snell',
+  'Henry Le Chatelier': 'Le Chatelier',
+  "Jacobus van 't Hoff": "van 't Hoff",
+  'Johannes van der Waals': 'van der Waals',
+};
+const LAW_SURNAME = (full) => SURNAME_FIX[full] || full.split(' ').pop();
+
+/** The two law topics for a science subject, derived from the Laws bank. Law
+    entries carry `formula`/`scientist` beyond { w, d } so the dictionary can
+    show a full card; buildRound ignores the extras. */
+async function lawTopicsFor(subjectKey) {
+  const { SUBJECTS: LAWS } = await import('/data/laws/laws.js');
+  const subj = LAWS.find((s) => s.key === subjectKey);
+  if (!subj) return {};
+  return {
+    laws: subj.laws.map((l) => ({
+      w: LAW_NAME(l.name), d: l.statement, formula: l.formula || null, scientist: l.scientist || null,
+    })),
+    'law-scientists': subj.laws
+      .filter((l) => l.scientist)
+      .map((l) => ({
+        w: LAW_SURNAME(l.scientist), d: l.statement, scientist: l.scientist,
+        law: LAW_NAME(l.name), formula: l.formula || null,
+      })),
+  };
+}
 
 /* The bank ships a subject at a time, so the OUTLINE (topics.js) and what has
    actually been written are not the same thing. Everything the setup screen sees
@@ -139,20 +173,17 @@ export const GRADES = ALL_GRADES.filter((g) => subjectsForGrade(g).length > 0);
 
 /** Subjects on offer at a grade — outlined for it, AND generated (or bundled). */
 export function subjectsForGrade(grade) {
-  return outlinedSubjects(grade).filter(
-    (key) => AVAILABLE[key] || BUNDLED_SUBJECTS.has(key) || BUNDLED_WORD_SUBJECTS.has(key),
-  );
+  return outlinedSubjects(grade).filter((key) => AVAILABLE[key] || BUNDLED_SUBJECTS.has(key));
 }
 
 /** Topics on offer — outlined for the grade, AND holding enough words to play. */
 export function topicsFor(subjectKey, grade) {
   const have = AVAILABLE[subjectKey] || {};
-  // A drawn topic carries its own bundled data, and a bundled-word subject
-  // (laws) ships all its topics' words with the app — both are offered whenever
-  // their subject is; every other topic must have been generated into a file.
-  const bundled = BUNDLED_WORD_SUBJECTS.has(subjectKey);
+  // Drawn topics (table/map) and the bundled law topics both carry their own
+  // data, so they are offered whenever their subject is; every other topic must
+  // have been generated into a word file.
   return outlinedTopics(subjectKey, grade)
-    .filter((t) => DRAWN.has(t.key) || bundled ? true : have[t.key]);
+    .filter((t) => DRAWN.has(t.key) || BUNDLED_TOPICS.has(t.key) ? true : have[t.key]);
 }
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -180,7 +211,11 @@ const cache = new Map();
  */
 export async function loadWords(subjectKey) {
   if (!cache.has(subjectKey)) {
-    cache.set(subjectKey, import(`/data/vocab/words/${subjectKey}.js`).then((m) => m.WORDS));
+    cache.set(subjectKey, (async () => {
+      const base = (await import(`/data/vocab/words/${subjectKey}.js`)).WORDS;
+      // The science subjects get their law topics merged in from the shared bank.
+      return LAW_SUBJECTS.has(subjectKey) ? { ...base, ...(await lawTopicsFor(subjectKey)) } : base;
+    })());
   }
   return cache.get(subjectKey);
 }
@@ -189,9 +224,9 @@ export async function loadWords(subjectKey) {
 export function gradePool(words, subjectKey, grade) {
   const pool = [];
   for (const topic of topicsFor(subjectKey, grade)) {
-    // Drawn topics are topic-only modes: their clue is a drawn table or map,
-    // not a sentence, so they do not belong in a mixed A–Z alphabet.
-    if (DRAWN.has(topic.key)) continue;
+    // Drawn topics (their clue is a drawn table/map) and the bundled law topics
+    // are topic-only modes — neither belongs in a mixed A–Z alphabet.
+    if (DRAWN.has(topic.key) || BUNDLED_TOPICS.has(topic.key)) continue;
     for (const entry of words[topic.key] || []) pool.push({ ...entry, topic: topic.key });
   }
   return pool;

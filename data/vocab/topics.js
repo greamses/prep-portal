@@ -113,6 +113,10 @@ export const SUBJECTS = {
       T('plant-biology', 'Plant Biology and Photosynthesis', 10, 12),
       T('microbiology', 'Microbiology and Immunity', 10, 12),
       T('homeostasis', 'Homeostasis and the Nervous System', 10, 12),
+      // Bundled from the Laws bank (data/laws/laws.js) — always offered, no
+      // manifest entry needed (see index.js's BUNDLED_TOPICS).
+      T('laws', 'Laws of Biology', 10, 12),
+      T('law-scientists', 'Biology Scientists', 10, 12),
     ],
   },
   chemistry: {
@@ -129,6 +133,8 @@ export const SUBJECTS = {
       T('electrochemistry', 'Electrochemistry', 10, 12),
       T('kinetics', 'Energy and Rates of Reaction', 10, 12),
       T('periodic-table', 'The Periodic Table', 10, 12),
+      T('laws', 'Laws of Chemistry', 10, 12),
+      T('law-scientists', 'Chemistry Scientists', 10, 12),
     ],
   },
   physics: {
@@ -144,6 +150,8 @@ export const SUBJECTS = {
       T('magnetism', 'Magnetism and Induction', 10, 12),
       T('thermodynamics', 'Heat and Thermodynamics', 10, 12),
       T('nuclear', 'Atomic and Nuclear Physics', 10, 12),
+      T('laws', 'Laws of Physics', 10, 12),
+      T('law-scientists', 'Physics Scientists', 10, 12),
     ],
   },
 
@@ -162,25 +170,6 @@ export const SUBJECTS = {
     ],
   },
 
-  // ── Science laws ─────────────────────────────────────────────────────
-  // Hand-authored words drawn straight from the Laws study page's bank
-  // (data/laws/laws.js) — the study cards are the library, this is the drill.
-  // Bundled like geography: the words ship with the app, not gen-vocab, so
-  // this subject's topics are offered wherever the subject is (see index.js's
-  // BUNDLED_WORD_SUBJECTS) without a manifest entry. Read the clue (a law's
-  // plain-language statement); guess the law's NAME, or — in the Scientists
-  // topic — who it is named after.
-  laws: {
-    label: 'Science Laws',
-    group: 'Science',
-    grades: [9, 12],
-    topics: [
-      T('physics', 'Laws of Physics', 9, 12),
-      T('chemistry', 'Laws of Chemistry', 9, 12),
-      T('biology', 'Laws of Biology', 9, 12),
-      T('scientists', 'Name the Scientist', 9, 12),
-    ],
-  },
 
   // ── Maths, lower school ──────────────────────────────────────────────
   'general-maths': {

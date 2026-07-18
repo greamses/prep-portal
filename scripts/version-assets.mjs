@@ -58,19 +58,12 @@ const SHARED = [
 const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
-  'algebra', 'geometry', 'statistics', 'geography', 'laws',
+  'algebra', 'geometry', 'statistics', 'geography',
 ];
 const PAGES = [
   { name: 'geometry' },
   { name: 'drills' },
   { name: 'puzzles' },
-  {
-    // A standalone study page — no seeded-room infra, so it opts out of the
-    // SHARED game modules and only versions its own JS + the laws bank.
-    name: 'laws',
-    shared: [],
-    extra: ['/data/laws/laws.js'],
-  },
   {
     name: 'vocab',
     extra: [

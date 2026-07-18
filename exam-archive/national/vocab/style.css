@@ -1454,3 +1454,73 @@ body.vocab-nav-hidden .site-nav { display: none; }
    phone. */
 .vocab-dict.vocab-dict--wide { width: min(980px, 96vw); }
 .vocab-dict-bd .vocab-dict-list:has(.vocab-worldmap) { overflow-x: auto; }
+
+/* ── LAW CARDS (dictionary) ───────────────────────────────────────────────
+   The retired Laws study page's cards now live in the dictionary: name (display
+   face), statement (mono body), formula (MathJax, follows --ink) and a scientist
+   byline with a monogram avatar standing in for a portrait. */
+.vocab-law-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.vocab-law-card { position: relative; }
+.vocab-law-paper.pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  height: 100%;
+  text-align: left;
+}
+.vocab-law-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: var(--leading-snug);
+  color: var(--ink);
+  margin: 0;
+}
+.vocab-law-statement {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: var(--leading-relaxed, 1.6);
+  color: var(--text-secondary);
+  margin: 0;
+}
+.vocab-law-formula {
+  color: var(--ink);
+  font-size: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.1rem 0;
+}
+.vocab-law-formula mjx-container { margin: 0 !important; }
+.vocab-law-by {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.vocab-sci-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sci-bg, #ffe9a8);
+  color: #14130f;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 1px 2px rgba(20,19,15,.18);
+}
+.vocab-law-by-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}

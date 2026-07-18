@@ -888,6 +888,100 @@ function dictEntry(word, clue) {
   return row;
 }
 
+/* ── Law cards ───────────────────────────────────────────────────────────
+   The Laws study page was retired — the dictionary IS the library now. For the
+   two law topics ('laws' / 'law-scientists') the entries carry a statement,
+   optional formula and the scientist, so each becomes a card: name, statement,
+   formula (MathJax), and a scientist byline with a monogram avatar. */
+const LAW_TOPICS = new Set(['laws', 'law-scientists']);
+
+// A monogram avatar: the scientist's initials on a colour picked deterministically
+// from the name, so the same person always looks the same. Stands in for a
+// portrait — a real photo set can be dropped in later.
+const AVATAR_BG = ['#ffd7a3', '#e8c8ff', '#c8f0c0', '#bfe3ff', '#f7d2e6', '#b8ece2', '#ffe9a8'];
+function scientistInitials(name) {
+  const parts = name.replace(/[.'']/g, '').split(/[\s-]+/).filter(Boolean);
+  const first = parts[0]?.[0] || '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+function scientistAvatar(name) {
+  const av = document.createElement('span');
+  av.className = 'vocab-sci-avatar';
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  av.style.setProperty('--sci-bg', AVATAR_BG[h % AVATAR_BG.length]);
+  av.textContent = scientistInitials(name);
+  av.setAttribute('aria-hidden', 'true');
+  return av;
+}
+
+function lawDictCard(entry) {
+  const card = document.createElement('article');
+  card.className = 'vocab-law-card pp-receipt';
+  const paper = document.createElement('div');
+  paper.className = 'vocab-law-paper pp-receipt__paper';
+
+  const name = document.createElement('h3');
+  name.className = 'vocab-law-name';
+  name.textContent = entry.law || entry.w; // law name (both topics carry it)
+  paper.appendChild(name);
+
+  const st = document.createElement('p');
+  st.className = 'vocab-law-statement';
+  st.textContent = entry.d;
+  paper.appendChild(st);
+
+  if (entry.formula) {
+    const f = document.createElement('div');
+    f.className = 'vocab-law-formula';
+    f.textContent = `\\[ ${entry.formula} \\]`;
+    paper.appendChild(f);
+  }
+
+  if (entry.scientist) {
+    const by = document.createElement('div');
+    by.className = 'vocab-law-by';
+    by.appendChild(scientistAvatar(entry.scientist));
+    const nm = document.createElement('span');
+    nm.className = 'vocab-law-by-name';
+    nm.textContent = entry.scientist;
+    by.appendChild(nm);
+    paper.appendChild(by);
+  }
+
+  card.appendChild(paper);
+  return card;
+}
+
+// MathJax loads async from the CDN; gate typesetting on it, but cap the wait so
+// a slow/blocked CDN just leaves raw TeX in the cards rather than hanging.
+let mjReady = null;
+function whenMathJax() {
+  if (mjReady) return mjReady;
+  mjReady = new Promise((resolve, reject) => {
+    let tries = 0;
+    (function check() {
+      if (window.MathJax?.startup?.promise) window.MathJax.startup.promise.then(resolve);
+      else if (tries++ > 250) reject(new Error('MathJax unavailable')); // ~10s
+      else setTimeout(check, 40);
+    })();
+  });
+  return mjReady;
+}
+async function typesetDict() {
+  try {
+    await whenMathJax();
+    await window.MathJax.typesetPromise([dictList]);
+    // Readiness race: the first pass can resolve before the TeX input jax is
+    // live and convert nothing — if so, try once more.
+    if (!dictList.querySelector('mjx-container')) {
+      await new Promise((r) => setTimeout(r, 200));
+      await window.MathJax.typesetPromise([dictList]);
+    }
+  } catch { /* cards still show; formulas stay as readable TeX */ }
+}
+
 // The periodic table is drawn, not listed: a real 18-column grid of sticky-note
 // cells, each hoverable for its details. This is the library view of the same
 // data the game deals one cell at a time.
@@ -1034,6 +1128,25 @@ async function openDictionary() {
     dictList.innerHTML = '<p class="vocab-dict-loading">Could not fetch the words — try again.</p>';
     return;
   }
+
+  // The two law topics show rich cards (name, statement, formula, scientist),
+  // sorted by the LAW name so the same law sits in the same place in both.
+  if (playMode === 'topic' && LAW_TOPICS.has(baseTopic(topic))) {
+    dictBox.classList.add('vocab-dict--wide');
+    const cards = [...topicPool(words, topic)]
+      .sort((a, b) => (a.law || a.w).localeCompare(b.law || b.w));
+    dictSub.textContent = baseTopic(topic) === 'law-scientists'
+      ? `${cards.length} laws · read the statement, then name who it's after`
+      : `${cards.length} laws · read each one, and its formula where there is one`;
+    dictList.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'vocab-law-grid';
+    for (const entry of cards) grid.appendChild(lawDictCard(entry));
+    dictList.appendChild(grid);
+    typesetDict();
+    return;
+  }
+  dictBox.classList.remove('vocab-dict--wide');
 
   // Exactly the pool the round will draw from: one topic, or every topic this
   // grade is offered.
