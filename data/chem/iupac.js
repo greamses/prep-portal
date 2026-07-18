@@ -6,8 +6,10 @@
 
    `name`  — the SYSTEMATIC IUPAC name (the hangman ANSWER; shown on the card).
              Inorganic uses the systematic stock/oxo style taught here, e.g.
-             H2SO4 → "tetraoxosulfate(VI) acid", CO2 → "carbon(IV) oxide" —
-             NOT the trivial "sulfuric acid" / "carbon dioxide".
+             H2SO4 → "tetraoxosulphate(VI) acid", CO2 → "carbon(IV) oxide" —
+             NOT the trivial "sulphuric acid" / "carbon dioxide". Displayed
+             names/hints use British 'ph' (sulphate/sulphur); the `pc` lookup
+             stays American ('sulf') because that is what PubChem resolves.
    formula — the plain formula string ("H2SO4", "CH3CH2OH"); digit runs render
              as subscripts. It is also the clue, so it must not spell the name.
    common  — the familiar / trivial name plus an everyday hint, for the clue
@@ -34,28 +36,28 @@ export const CATEGORIES = [
       { name: 'sodium hydrogentrioxocarbonate(IV)', formula: 'NaHCO3', common: 'sodium bicarbonate — baking soda', pc: 'sodium bicarbonate' },
       { name: 'carbon(IV) oxide', formula: 'CO2', common: 'carbon dioxide — the gas that puts out flames', pc: 'carbon dioxide' },
       { name: 'carbon(II) oxide', formula: 'CO', common: 'carbon monoxide — a poisonous exhaust gas', pc: 'carbon monoxide' },
-      { name: 'tetraoxosulfate(VI) acid', formula: 'H2SO4', common: 'sulfuric acid — oil of vitriol', pc: 'sulfuric acid' },
+      { name: 'tetraoxosulphate(VI) acid', formula: 'H2SO4', common: 'sulphuric acid — oil of vitriol', pc: 'sulfuric acid' },
       { name: 'trioxonitrate(V) acid', formula: 'HNO3', common: 'nitric acid — aqua fortis', pc: 'nitric acid' },
       { name: 'hydrochloric acid', formula: 'HCl', common: 'muriatic acid', pc: 'hydrochloric acid' },
       { name: 'ammonia', formula: 'NH3', common: 'a pungent alkaline gas', pc: 'ammonia' },
       { name: 'ammonium chloride', formula: 'NH4Cl', common: 'sal ammoniac', pc: 'ammonium chloride' },
       { name: 'ammonium trioxonitrate(V)', formula: 'NH4NO3', common: 'ammonium nitrate — a common fertiliser', pc: 'ammonium nitrate' },
       { name: 'iron(III) oxide', formula: 'Fe2O3', common: 'rust', pc: 'iron(III) oxide' },
-      { name: 'iron(II) sulfide', formula: 'FeS', common: 'made by heating iron with sulfur', pc: 'iron(II) sulfide' },
-      { name: 'copper(II) tetraoxosulfate(VI)', formula: 'CuSO4', common: 'copper(II) sulfate — blue vitriol', pc: 'copper(II) sulfate' },
+      { name: 'iron(II) sulphide', formula: 'FeS', common: 'made by heating iron with sulphur', pc: 'iron(II) sulfide' },
+      { name: 'copper(II) tetraoxosulphate(VI)', formula: 'CuSO4', common: 'copper(II) sulphate — blue vitriol', pc: 'copper(II) sulfate' },
       { name: 'copper(II) oxide', formula: 'CuO', common: 'the black coat on heated copper', pc: 'copper(II) oxide' },
       { name: 'zinc oxide', formula: 'ZnO', common: 'calamine', pc: 'zinc oxide' },
-      { name: 'zinc tetraoxosulfate(VI)', formula: 'ZnSO4', common: 'zinc sulfate — white vitriol', pc: 'zinc sulfate' },
+      { name: 'zinc tetraoxosulphate(VI)', formula: 'ZnSO4', common: 'zinc sulphate — white vitriol', pc: 'zinc sulfate' },
       { name: 'aluminium oxide', formula: 'Al2O3', common: 'alumina, refined from bauxite', pc: 'aluminum oxide' },
       { name: 'lead(II) oxide', formula: 'PbO', common: 'litharge', pc: 'lead(II) oxide' },
-      { name: 'sulfur(IV) oxide', formula: 'SO2', common: 'sulfur dioxide — the choking gas from burning sulfur', pc: 'sulfur dioxide' },
+      { name: 'sulphur(IV) oxide', formula: 'SO2', common: 'sulphur dioxide — the choking gas from burning sulphur', pc: 'sulfur dioxide' },
       { name: 'nitrogen(IV) oxide', formula: 'NO2', common: 'nitrogen dioxide — a brown acidic gas', pc: 'nitrogen dioxide' },
       { name: 'nitrogen(I) oxide', formula: 'N2O', common: 'nitrous oxide — laughing gas', pc: 'nitrous oxide' },
       { name: 'potassium tetraoxomanganate(VII)', formula: 'KMnO4', common: 'potassium permanganate — a purple oxidiser', pc: 'potassium permanganate' },
       { name: 'potassium heptaoxodichromate(VI)', formula: 'K2Cr2O7', common: 'potassium dichromate — an orange oxidiser', pc: 'potassium dichromate' },
       { name: 'silver trioxonitrate(V)', formula: 'AgNO3', common: 'silver nitrate — used to test for halide ions', pc: 'silver nitrate' },
-      { name: 'magnesium tetraoxosulfate(VI)', formula: 'MgSO4', common: 'magnesium sulfate — Epsom salt', pc: 'magnesium sulfate' },
-      { name: 'calcium tetraoxosulfate(VI)', formula: 'CaSO4', common: 'calcium sulfate — gypsum, or plaster of Paris', pc: 'calcium sulfate' },
+      { name: 'magnesium tetraoxosulphate(VI)', formula: 'MgSO4', common: 'magnesium sulphate — Epsom salt', pc: 'magnesium sulfate' },
+      { name: 'calcium tetraoxosulphate(VI)', formula: 'CaSO4', common: 'calcium sulphate — gypsum, or plaster of Paris', pc: 'calcium sulfate' },
       { name: 'hydrogen peroxide', formula: 'H2O2', common: 'a bleaching antiseptic', pc: 'hydrogen peroxide' },
       { name: 'water', formula: 'H2O', common: 'the universal solvent', pc: 'water' },
     ],
