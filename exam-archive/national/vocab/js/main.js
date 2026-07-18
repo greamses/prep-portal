@@ -348,11 +348,14 @@ function renderScopeStep() {
     colorOffset: 3,
     options: [
       { value: 'all', label: 'Whole table', checked: kind === '' },
+      { value: 'f20', label: 'First 20 elements', checked: kind === 'f' },
       { value: 'g', label: 'Pick groups', checked: kind === 'g' },
       { value: 'p', label: 'Pick periods', checked: kind === 'p' },
     ],
     onPick: (v) => {
       if (v === 'all') { topic = 'periodic-table'; content.goTo('spelling'); return; }
+      // The first 20 elements are a fixed set — no further sub-pick.
+      if (v === 'f20') { topic = 'periodic-table:f20'; content.goTo('spelling'); return; }
       renderScopeNStep(v);
       content.goTo('scope-n');
     },

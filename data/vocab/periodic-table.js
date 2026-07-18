@@ -262,7 +262,12 @@ export const PERIOD_ROW_LABELS = {
      'g17' / 'p3'           legacy single group/period. */
 export function scopeInfo(scope) {
   if (!scope) return null;
-  const kind = scope[0]; // 'g' | 'p'
+  const kind = scope[0]; // 'g' | 'p' | 'f'
+  // 'f20' = the first N elements by atomic number (an intro-chemistry set).
+  if (kind === 'f') {
+    const n = Number(scope.slice(1));
+    return n >= 1 ? { kind: 'f', max: n } : null;
+  }
   const max = kind === 'g' ? 18 : 9; // rows 8/9 = the lanthanide/actinide strips
   const nums = new Set();
   if (scope[1] === 'm') {
@@ -278,15 +283,18 @@ export function scopeInfo(scope) {
 export function scopedElements(scope) {
   const info = scopeInfo(scope);
   if (!info) return GAME_ELEMENTS;
-  const members = info.kind === 'g'
-    ? ELEMENTS.filter((e) => info.nums.has(e.group))
-    : ELEMENTS.filter((e) => info.nums.has(e.y));
+  const members = info.kind === 'f'
+    ? ELEMENTS.filter((e) => e.z <= info.max)
+    : info.kind === 'g'
+      ? ELEMENTS.filter((e) => info.nums.has(e.group))
+      : ELEMENTS.filter((e) => info.nums.has(e.y));
   return members.map((e) => ({ w: e.name, d: e.use, element: e }));
 }
 
 export function scopeLabel(scope) {
   const info = scopeInfo(scope);
   if (!info) return '';
+  if (info.kind === 'f') return `First ${info.max} elements`;
   const ns = [...info.nums].sort((a, b) => a - b);
   if (info.kind === 'g') {
     if (ns.length === 1) return `Group ${ns[0]}`;
@@ -309,6 +317,7 @@ export function scopeLabel(scope) {
 export function inScope(el, scope) {
   const info = scopeInfo(scope);
   if (!info) return true;
+  if (info.kind === 'f') return el.z <= info.max;
   return info.kind === 'g' ? info.nums.has(el.group) : info.nums.has(el.y);
 }
 
