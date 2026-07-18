@@ -157,10 +157,13 @@ body {
   margin: 0;
 }
 
+/* Body copy is JetBrains Mono — the display face suits the law's NAME, but
+   the sentence beneath reads better in the mono body font (matches the rest
+   of the site's card copy). */
 .law-statement {
-  font-family: var(--font-body, inherit);
-  font-size: 0.95rem;
-  line-height: var(--leading-relaxed, 1.5);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: var(--leading-relaxed, 1.6);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -197,6 +200,26 @@ body {
   --pp-note-tilt: -2deg;
 }
 .law-card .law-noformula { display: none; }
+
+/* ── SCIENTIST BYLINE — pinned to the foot of every card ── */
+.law-by {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.law-by-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--accent-secondary);
+}
+.law-by-name { letter-spacing: 0.01em; }
 
 /* ── VIEW SWITCH — flip the whole grid at once ── */
 .laws-grid.show-formulas .law-statement { display: none; }

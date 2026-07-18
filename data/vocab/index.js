@@ -121,6 +121,13 @@ const DRAWN = new Set([PERIODIC, WORLD, NIGERIA]);
 // manifest to be offered.
 const BUNDLED_SUBJECTS = new Set(['geography']);
 
+// Subjects whose WORDS are hand-authored and ship with the app (not written by
+// gen-vocab, so never in the manifest) — their topics carry ordinary text
+// clues, so unlike DRAWN topics they still play through the normal word path,
+// but they are always offered wherever the subject is. `laws` sources its
+// words from data/laws/laws.js (the Laws study page's bank).
+const BUNDLED_WORD_SUBJECTS = new Set(['laws']);
+
 /* The bank ships a subject at a time, so the OUTLINE (topics.js) and what has
    actually been written are not the same thing. Everything the setup screen sees
    is filtered through the manifest: a subject with no words is not offered, and
@@ -132,16 +139,20 @@ export const GRADES = ALL_GRADES.filter((g) => subjectsForGrade(g).length > 0);
 
 /** Subjects on offer at a grade — outlined for it, AND generated (or bundled). */
 export function subjectsForGrade(grade) {
-  return outlinedSubjects(grade).filter((key) => AVAILABLE[key] || BUNDLED_SUBJECTS.has(key));
+  return outlinedSubjects(grade).filter(
+    (key) => AVAILABLE[key] || BUNDLED_SUBJECTS.has(key) || BUNDLED_WORD_SUBJECTS.has(key),
+  );
 }
 
 /** Topics on offer — outlined for the grade, AND holding enough words to play. */
 export function topicsFor(subjectKey, grade) {
   const have = AVAILABLE[subjectKey] || {};
-  // A drawn topic carries its own bundled data, so it is offered whenever its
-  // subject is; every other topic must have been generated into a word file.
+  // A drawn topic carries its own bundled data, and a bundled-word subject
+  // (laws) ships all its topics' words with the app — both are offered whenever
+  // their subject is; every other topic must have been generated into a file.
+  const bundled = BUNDLED_WORD_SUBJECTS.has(subjectKey);
   return outlinedTopics(subjectKey, grade)
-    .filter((t) => DRAWN.has(t.key) ? true : have[t.key]);
+    .filter((t) => DRAWN.has(t.key) || bundled ? true : have[t.key]);
 }
 
 export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');

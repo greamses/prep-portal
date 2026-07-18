@@ -162,6 +162,26 @@ export const SUBJECTS = {
     ],
   },
 
+  // ── Science laws ─────────────────────────────────────────────────────
+  // Hand-authored words drawn straight from the Laws study page's bank
+  // (data/laws/laws.js) — the study cards are the library, this is the drill.
+  // Bundled like geography: the words ship with the app, not gen-vocab, so
+  // this subject's topics are offered wherever the subject is (see index.js's
+  // BUNDLED_WORD_SUBJECTS) without a manifest entry. Read the clue (a law's
+  // plain-language statement); guess the law's NAME, or — in the Scientists
+  // topic — who it is named after.
+  laws: {
+    label: 'Science Laws',
+    group: 'Science',
+    grades: [9, 12],
+    topics: [
+      T('physics', 'Laws of Physics', 9, 12),
+      T('chemistry', 'Laws of Chemistry', 9, 12),
+      T('biology', 'Laws of Biology', 9, 12),
+      T('scientists', 'Name the Scientist', 9, 12),
+    ],
+  },
+
   // ── Maths, lower school ──────────────────────────────────────────────
   'general-maths': {
     label: 'General Maths',

@@ -117,6 +117,19 @@ function renderGrid() {
       paper.appendChild(tag);
     }
 
+    // The person the law is named after — a byline pinned to the card's foot.
+    if (law.scientist) {
+      const by = document.createElement('div');
+      by.className = 'law-by';
+      by.innerHTML =
+        '<svg class="law-by-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+        'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-6.2 8-6.2s8 2.2 8 6.2" /></svg>' +
+        `<span class="law-by-name"></span>`;
+      by.querySelector('.law-by-name').textContent = law.scientist;
+      paper.appendChild(by);
+    }
+
     card.appendChild(paper);
     gridEl.appendChild(card);
   }

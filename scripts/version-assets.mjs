@@ -58,7 +58,7 @@ const SHARED = [
 const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
-  'algebra', 'geometry', 'statistics', 'geography',
+  'algebra', 'geometry', 'statistics', 'geography', 'laws',
 ];
 const PAGES = [
   { name: 'geometry' },
@@ -80,6 +80,9 @@ const PAGES = [
       '/data/vocab/periodic-table.js',
       '/data/vocab/world-map.js',
       '/data/vocab/nigeria-map.js',
+      // The Laws hangman words are derived from the shared study bank, so a
+      // stale copy of the bank against fresh page code must bust the page too.
+      '/data/laws/laws.js',
       // Only the subjects that have actually been generated — the bank ships a
       // subject at a time, and hashing a file that doesn't exist would break the
       // build.
