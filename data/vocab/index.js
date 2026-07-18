@@ -130,7 +130,31 @@ const BUNDLED_SUBJECTS = new Set(['geography']);
 // play the normal word path — but like DRAWN topics they are always offered
 // (no manifest entry) and stay OUT of the mixed A–Z alphabet.
 const LAW_SUBJECTS = new Set(['physics', 'chemistry', 'biology']);
-const BUNDLED_TOPICS = new Set(['laws', 'law-scientists']);
+// Chemistry also carries two IUPAC-naming topics from data/chem/iupac.js.
+const BUNDLED_TOPICS = new Set([
+  'laws', 'law-scientists', 'iupac-inorganic', 'iupac-organic',
+]);
+
+// A plain formula ("H2SO4") with its digit runs dropped to Unicode subscripts,
+// for the hangman clue (plain text). The dictionary renders <sub> instead.
+const SUBS = { 0: '₀', 1: '₁', 2: '₂', 3: '₃', 4: '₄', 5: '₅', 6: '₆', 7: '₇', 8: '₈', 9: '₉' };
+export const formulaSubscript = (f) => (f || '').replace(/\d/g, (d) => SUBS[d]);
+
+/** The two IUPAC topics for Chemistry, derived from the compound bank. Entries
+    carry `formula`/`common` beyond { w, d } so the dictionary can show a card;
+    the clue is the (subscripted) formula plus the everyday hint. */
+async function iupacTopicsFor() {
+  const { CATEGORIES } = await import('/data/chem/iupac.js');
+  const out = {};
+  for (const cat of CATEGORIES) {
+    out[`iupac-${cat.key}`] = cat.compounds.map((c) => ({
+      w: c.name,
+      d: `${formulaSubscript(c.formula)}${c.common ? ' · ' + c.common : ''}`,
+      formula: c.formula, common: c.common || null,
+    }));
+  }
+  return out;
+}
 
 const LAW_NAME = (name) => name.replace(/\s*\([^)]*\)/g, '').trim();
 // Surname = the last name token, with overrides where that would drop a particle.
@@ -213,8 +237,12 @@ export async function loadWords(subjectKey) {
   if (!cache.has(subjectKey)) {
     cache.set(subjectKey, (async () => {
       const base = (await import(`/data/vocab/words/${subjectKey}.js`)).WORDS;
-      // The science subjects get their law topics merged in from the shared bank.
-      return LAW_SUBJECTS.has(subjectKey) ? { ...base, ...(await lawTopicsFor(subjectKey)) } : base;
+      if (!LAW_SUBJECTS.has(subjectKey)) return base;
+      // The science subjects get their law topics merged in from the shared bank;
+      // Chemistry additionally gets the two IUPAC-naming topics.
+      const merged = { ...base, ...(await lawTopicsFor(subjectKey)) };
+      if (subjectKey === 'chemistry') Object.assign(merged, await iupacTopicsFor());
+      return merged;
     })());
   }
   return cache.get(subjectKey);

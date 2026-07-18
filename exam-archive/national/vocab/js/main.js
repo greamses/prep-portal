@@ -954,6 +954,47 @@ function lawDictCard(entry) {
   return card;
 }
 
+/* ── IUPAC compound cards ─────────────────────────────────────────────────
+   The two Chemistry "IUPAC Names" topics. A card leads with the formula (digit
+   runs dropped to <sub>, no MathJax), then the IUPAC name and an everyday hint.
+   Read the formula → name it the IUPAC way. */
+const IUPAC_TOPICS = new Set(['iupac-inorganic', 'iupac-organic']);
+
+function formulaToNode(f) {
+  const span = document.createElement('span');
+  span.className = 'vocab-cpd-headline';
+  for (const part of String(f).match(/\d+|\D+/g) || []) {
+    if (/^\d+$/.test(part)) {
+      const sub = document.createElement('sub');
+      sub.textContent = part;
+      span.appendChild(sub);
+    } else {
+      span.appendChild(document.createTextNode(part));
+    }
+  }
+  return span;
+}
+
+function compoundDictCard(entry) {
+  const card = document.createElement('article');
+  card.className = 'vocab-law-card pp-receipt';
+  const paper = document.createElement('div');
+  paper.className = 'vocab-law-paper pp-receipt__paper';
+  paper.appendChild(formulaToNode(entry.formula));
+  const name = document.createElement('h3');
+  name.className = 'vocab-law-name vocab-cpd-name';
+  name.textContent = entry.w; // the IUPAC name
+  paper.appendChild(name);
+  if (entry.common) {
+    const c = document.createElement('p');
+    c.className = 'vocab-law-statement';
+    c.textContent = entry.common;
+    paper.appendChild(c);
+  }
+  card.appendChild(paper);
+  return card;
+}
+
 // MathJax loads async from the CDN; gate typesetting on it, but cap the wait so
 // a slow/blocked CDN just leaves raw TeX in the cards rather than hanging.
 let mjReady = null;
@@ -1144,6 +1185,19 @@ async function openDictionary() {
     for (const entry of cards) grid.appendChild(lawDictCard(entry));
     dictList.appendChild(grid);
     typesetDict();
+    return;
+  }
+
+  // IUPAC naming topics — compound cards (formula → name), no MathJax needed.
+  if (playMode === 'topic' && IUPAC_TOPICS.has(baseTopic(topic))) {
+    dictBox.classList.add('vocab-dict--wide');
+    const cards = [...topicPool(words, topic)].sort((a, b) => a.w.localeCompare(b.w));
+    dictSub.textContent = `${cards.length} compounds · read the formula, then name it the IUPAC way`;
+    dictList.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'vocab-law-grid';
+    for (const entry of cards) grid.appendChild(compoundDictCard(entry));
+    dictList.appendChild(grid);
     return;
   }
   dictBox.classList.remove('vocab-dict--wide');

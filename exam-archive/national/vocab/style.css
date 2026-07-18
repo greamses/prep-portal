@@ -1524,3 +1524,23 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-weight: 600;
   color: var(--text-tertiary);
 }
+
+/* IUPAC compound card: the formula leads, big and mono, with real subscripts;
+   the IUPAC name sits beneath it. */
+.vocab-cpd-headline {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+.vocab-cpd-headline sub {
+  font-size: 0.62em;
+  vertical-align: -0.25em;
+  font-weight: 700;
+}
+.vocab-cpd-name {
+  font-size: 0.98rem;
+  color: var(--accent-secondary-ink, var(--ink));
+}

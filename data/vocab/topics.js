@@ -135,6 +135,9 @@ export const SUBJECTS = {
       T('periodic-table', 'The Periodic Table', 10, 12),
       T('laws', 'Laws of Chemistry', 10, 12),
       T('law-scientists', 'Chemistry Scientists', 10, 12),
+      // IUPAC naming — read the formula, name the compound (data/chem/iupac.js).
+      T('iupac-inorganic', 'IUPAC Names — Inorganic', 10, 12),
+      T('iupac-organic', 'IUPAC Names — Organic', 10, 12),
     ],
   },
   physics: {
