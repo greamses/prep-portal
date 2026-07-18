@@ -144,6 +144,9 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, shapes, given, 
     cardEl.hidden = false;
     countdownEl.hidden = false;
     geoFigureEl.innerHTML = '';
+    // The face goes landscape on desktop (figure | question+answer); during the
+    // countdown only the number should show, so hide the figure with the Q&A.
+    geoFigureEl.hidden = true;
     questionText.hidden = true;
     answerStage.hidden = true;
     timeRemainingEl.textContent = '';
@@ -175,6 +178,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, shapes, given, 
       if (msLeft <= 0) {
         countdownEl.hidden = true;
         rosterEl.hidden = true;
+        geoFigureEl.hidden = false;
         questionText.hidden = false;
         answerStage.hidden = false;
         endAt = anchorAt + timeLimit * 1000;

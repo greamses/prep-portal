@@ -590,6 +590,40 @@ body.geo-nav-hidden .site-nav { display: none; }
   margin: 0;
 }
 
+/* ── LANDSCAPE FACE ──────────────────────────────────────────────────────
+   The question text and its typed answer, grouped so the card face can go
+   two-column on a wide screen: the figure on the left, this stack on the
+   right. On phones the face stays a single centred column. */
+.geo-qa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  #geo-play-bd .review-wrap { width: min(720px, 100%); }
+  .geo-card { width: min(640px, 100%); }
+  .geo-card-face.pp-receipt__paper {
+    flex-direction: row;
+    gap: 1.8rem;
+  }
+  .geo-figure {
+    width: min(230px, 42%);
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  .geo-qa { flex: 1 1 auto; min-width: 0; }
+}
+
+@media (min-width: 1300px) {
+  #geo-play-bd .review-wrap { width: min(820px, 100%); }
+  .geo-card { width: min(720px, 100%); }
+  .geo-card-face.pp-receipt__paper { gap: 2.4rem; }
+  .geo-figure { width: min(270px, 42%); }
+}
+
 /* Room-entry roster — everyone in the room (you, other real players, bots
    with real names) pops in one at a time during the "get ready" beat. */
 .geo-roster {

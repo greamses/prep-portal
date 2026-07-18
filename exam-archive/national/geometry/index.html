@@ -31,21 +31,21 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/geometry/js/bots.js": "/exam-archive/national/geometry/js/bots.js?v=b5316617",
-          "/exam-archive/national/geometry/js/game.js": "/exam-archive/national/geometry/js/game.js?v=b5316617",
-          "/exam-archive/national/geometry/js/geo-svg.js": "/exam-archive/national/geometry/js/geo-svg.js?v=b5316617",
-          "/exam-archive/national/geometry/js/leaderboard.js": "/exam-archive/national/geometry/js/leaderboard.js?v=b5316617",
-          "/exam-archive/national/geometry/js/main.js": "/exam-archive/national/geometry/js/main.js?v=b5316617",
-          "/exam-archive/national/geometry/js/matchmaking.js": "/exam-archive/national/geometry/js/matchmaking.js?v=b5316617",
-          "/exam-archive/national/geometry/js/rng.js": "/exam-archive/national/geometry/js/rng.js?v=b5316617",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=b5316617",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=b5316617",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=b5316617",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=b5316617",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=b5316617",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=b5316617",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=b5316617",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=b5316617"
+          "/exam-archive/national/geometry/js/bots.js": "/exam-archive/national/geometry/js/bots.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/game.js": "/exam-archive/national/geometry/js/game.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/geo-svg.js": "/exam-archive/national/geometry/js/geo-svg.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/leaderboard.js": "/exam-archive/national/geometry/js/leaderboard.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/main.js": "/exam-archive/national/geometry/js/main.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/matchmaking.js": "/exam-archive/national/geometry/js/matchmaking.js?v=2e57b5de",
+          "/exam-archive/national/geometry/js/rng.js": "/exam-archive/national/geometry/js/rng.js?v=2e57b5de",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=2e57b5de",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=2e57b5de",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=2e57b5de",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=2e57b5de",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=2e57b5de",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=2e57b5de",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=2e57b5de",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=2e57b5de"
         }
       }
     </script>
@@ -170,12 +170,17 @@
         <div class="geo-card pp-receipt" id="geo-card" hidden>
           <span class="pp-sticky pp-sticky--tape geo-timer-note" id="geo-timer-note"></span>
           <span class="pp-sticky pp-sticky--tape geo-score-note" id="geo-score-note">0 correct</span>
+          <!-- On desktop the card face goes landscape: the figure sits on the
+               left, the question and typed answer on the right. On phones it
+               stacks back into one column (figure, then question, then answer). -->
           <div class="geo-card-face pp-receipt__paper">
             <p class="geo-countdown" id="geo-countdown" hidden></p>
             <div class="geo-figure" id="geo-figure"></div>
-            <p class="geo-text" id="geo-question-text"></p>
-            <div class="geo-answer-stage" id="geo-answer-stage">
-              <span id="geo-typed"></span><span class="geo-cursor" aria-hidden="true"></span>
+            <div class="geo-qa">
+              <p class="geo-text" id="geo-question-text"></p>
+              <div class="geo-answer-stage" id="geo-answer-stage">
+                <span id="geo-typed"></span><span class="geo-cursor" aria-hidden="true"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -220,7 +225,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=b5316617"></script>
+    <script type="module" src="./js/main.js?v=2e57b5de"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";
