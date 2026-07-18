@@ -1583,22 +1583,23 @@ body.vocab-nav-hidden .site-nav { display: none; }
   color: var(--text-on-accent, #14130f);
 }
 
-/* The structure image (PubChem) sits on white so the black lines read in both
+/* The structure (a pre-rendered SVG) sits on white so the bonds read in both
    themes; hidden until the card is flipped to structure view. */
 .vocab-cpd-head { min-height: 1.9rem; }
-.vocab-cpd-structure { display: none; }
-.vocab-cpd-structure img {
+.vocab-cpd-structure {
+  display: none;
   width: 100%;
-  max-width: 168px;
-  height: auto;
+  max-width: 240px;
+  margin: 0.15rem auto 0;
+  padding: 6px;
   background: #fff;
   border-radius: 8px;
-  padding: 4px;
   box-shadow: 0 1px 3px rgba(20, 19, 15, 0.14);
 }
+.vocab-cpd-structure svg { width: 100%; height: auto; display: block; }
 .vocab-law-grid.show-structures .vocab-cpd-headline { display: none; }
 .vocab-law-grid.show-structures .vocab-cpd-structure { display: block; }
-/* A compound whose PubChem structure failed keeps showing its formula. */
+/* A compound with no rendered structure keeps showing its formula. */
 .vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-headline { display: inline-block; }
 .vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-structure { display: none; }
 .vocab-cpd-structure { cursor: zoom-in; }
@@ -1616,7 +1617,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   border: 1px solid var(--border-subtle, #ddd);
   box-shadow: 0 16px 44px rgba(20, 19, 15, 0.35);
 }
-.vocab-cpd-zoom img { width: 100%; display: block; }
+.vocab-cpd-zoom svg { width: 100%; height: auto; display: block; }
 
 /* The compound structure shown as the hangman clue (IUPAC naming rounds). */
 .vocab-clue.vocab-clue--compound {
@@ -1627,12 +1628,13 @@ body.vocab-nav-hidden .site-nav { display: none; }
   max-width: none;
 }
 .vocab-clue-structure {
-  width: min(170px, 62vw);
+  width: min(240px, 74vw);
   background: #fff;
   border-radius: 10px;
-  padding: 6px;
+  padding: 8px;
   box-shadow: 0 1px 4px rgba(20, 19, 15, 0.16);
 }
+.vocab-clue-structure svg { width: 100%; height: auto; display: block; }
 .vocab-clue-cpd-text {
   margin: 0;
   font-family: var(--font-mono);

@@ -151,12 +151,23 @@ async function iupacTopicsFor() {
       w: c.name,
       d: `${formulaSubscript(c.formula)}${c.common ? ' · ' + c.common : ''}`,
       formula: c.formula, common: c.common || null,
-      // A PubChem-resolvable name for the 2-D structure; organic IUPAC names
-      // resolve on their own, so fall back to the compound name.
-      pc: c.pc || c.name,
+      smiles: c.smiles || null, // key into the pre-rendered structure SVGs
     }));
   }
   return out;
+}
+
+// The 2-D structures are rendered to SVG at build time (RDKit) and shipped in
+// data/chem/structures.js — no runtime library, WASM or API. Lazy-loaded the
+// first time a structure is actually shown.
+let structuresPromise = null;
+export async function structureSvg(smiles) {
+  if (!smiles) return null;
+  if (!structuresPromise) {
+    structuresPromise = import('/data/chem/structures.js').then((m) => m.STRUCTURES).catch(() => ({}));
+  }
+  const map = await structuresPromise;
+  return map[smiles] || null;
 }
 
 const LAW_NAME = (name) => name.replace(/\s*\([^)]*\)/g, '').trim();

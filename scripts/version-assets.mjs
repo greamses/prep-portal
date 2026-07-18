@@ -77,8 +77,9 @@ const PAGES = [
       // The Laws hangman words are derived from the shared study bank, so a
       // stale copy of the bank against fresh page code must bust the page too.
       '/data/laws/laws.js',
-      // Likewise the IUPAC-naming compounds.
+      // Likewise the IUPAC-naming compounds and their pre-rendered structures.
       '/data/chem/iupac.js',
+      '/data/chem/structures.js',
       // Only the subjects that have actually been generated — the bank ships a
       // subject at a time, and hashing a file that doesn't exist would break the
       // build.

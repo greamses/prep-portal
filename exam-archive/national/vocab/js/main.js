@@ -15,7 +15,7 @@ import {
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS,
-  baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel,
+  baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel, structureSvg,
 } from '/data/vocab/index.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
@@ -1044,8 +1044,6 @@ function formulaToNode(f) {
   return span;
 }
 
-const PUBCHEM_PNG = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/';
-
 function compoundDictCard(entry) {
   const card = document.createElement('article');
   card.className = 'vocab-law-card vocab-cpd-card pp-receipt';
@@ -1058,7 +1056,7 @@ function compoundDictCard(entry) {
   head.appendChild(formulaToNode(entry.formula));
   const struct = document.createElement('div');
   struct.className = 'vocab-cpd-structure';
-  struct.dataset.pc = entry.pc || entry.w; // PubChem-resolvable name
+  struct.dataset.smiles = entry.smiles || ''; // key into the pre-rendered SVGs
   head.appendChild(struct);
   paper.appendChild(head);
 
@@ -1076,38 +1074,35 @@ function compoundDictCard(entry) {
   return card;
 }
 
-// Structures load lazily from PubChem the first time "Structure" is chosen, so
-// the images are never fetched unless asked for. A miss falls back to the
-// formula for that card. Hovering a structure shows a larger view.
-function loadStructures(grid) {
-  grid.querySelectorAll('.vocab-cpd-structure:not([data-loaded])').forEach((box) => {
+// Structures are pre-rendered SVGs (data/chem/structures.js), lazy-loaded the
+// first time "Structure" is chosen. A miss falls back to the formula for that
+// card. Hovering a structure shows a larger view (the SVG scales crisply).
+async function loadStructures(grid) {
+  const boxes = [...grid.querySelectorAll('.vocab-cpd-structure:not([data-loaded])')];
+  for (const box of boxes) {
     box.dataset.loaded = '1';
-    const img = new Image();
-    img.alt = 'structure';
-    img.loading = 'lazy';
-    img.referrerPolicy = 'no-referrer';
-    img.onerror = () => box.closest('.vocab-cpd-card')?.classList.add('no-structure');
-    img.src = PUBCHEM_PNG + encodeURIComponent(box.dataset.pc) + '/PNG';
-    box.appendChild(img);
-    box.addEventListener('mouseenter', () => showCpdZoom(box));
-    box.addEventListener('mouseleave', hideCpdZoom);
-  });
+    const svg = await structureSvg(box.dataset.smiles); // first call loads the bank
+    if (svg) {
+      box.innerHTML = svg;
+      box.addEventListener('mouseenter', () => showCpdZoom(box));
+      box.addEventListener('mouseleave', hideCpdZoom);
+    } else {
+      box.closest('.vocab-cpd-card')?.classList.add('no-structure');
+    }
+  }
 }
 
 // A big floating preview of a structure while the pointer is over it — the card
-// thumbnails are small, so hover to read the bonds. Uses a larger PubChem image.
+// thumbnails are small, so hover to read the bonds. The SVG just scales up.
 let cpdZoom = null;
 function hideCpdZoom() { if (cpdZoom) { cpdZoom.remove(); cpdZoom = null; } }
 function showCpdZoom(box) {
   hideCpdZoom();
-  const pc = box.dataset.pc;
-  if (!pc || box.closest('.vocab-cpd-card')?.classList.contains('no-structure')) return;
+  const svg = box.querySelector('svg');
+  if (!svg) return;
   cpdZoom = document.createElement('div');
   cpdZoom.className = 'vocab-cpd-zoom';
-  const img = new Image();
-  img.referrerPolicy = 'no-referrer';
-  img.src = `${PUBCHEM_PNG}${encodeURIComponent(pc)}/PNG?image_size=500x500`;
-  cpdZoom.appendChild(img);
+  cpdZoom.innerHTML = box.innerHTML; // a bigger copy of the same crisp SVG
   document.body.appendChild(cpdZoom);
   const r = box.getBoundingClientRect();
   const zw = 260, zh = 260;
@@ -1314,7 +1309,7 @@ async function openDictionary() {
   }
 
   // IUPAC naming topics — compound cards (formula → name), with a Formula ⇄
-  // Structure toggle whose structures come from PubChem. No MathJax needed.
+  // Structure toggle whose structures are pre-rendered SVGs. No MathJax needed.
   if (playMode === 'topic' && IUPAC_TOPICS.has(baseTopic(topic))) {
     dictBox.classList.add('vocab-dict--wide');
     const cards = [...topicPool(words, topic)].sort((a, b) => a.w.localeCompare(b.w));
@@ -1337,7 +1332,7 @@ async function openDictionary() {
       grid.classList.toggle('show-structures', structures);
       bF.classList.toggle('is-active', !structures);
       bS.classList.toggle('is-active', structures);
-      if (structures) loadStructures(grid); // fetch PubChem images on first ask
+      if (structures) loadStructures(grid); // load the SVG bank on first ask
     };
     bF.addEventListener('click', () => setView(false));
     bS.addEventListener('click', () => setView(true));

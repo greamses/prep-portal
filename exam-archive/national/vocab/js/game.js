@@ -24,7 +24,7 @@
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
   loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS,
-  ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet,
+  ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet, structureSvg,
 } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -231,22 +231,24 @@ const renderStateClue = (s) => renderMapClue({
   regionOf: (r) => r.zone, regionLabel: ZONE_LABELS[s.zone],
 });
 
-// The IUPAC naming topics draw the compound's 2-D structure (from PubChem) above
-// the text clue (formula + hint). A missing structure just leaves the text.
-const PUBCHEM_PNG = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/';
+// The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
+// above the text clue (formula + hint). A missing structure just leaves the text.
 function renderCompoundClue(structure, text) {
   clueEl.className = 'vocab-clue vocab-clue--compound';
   clueEl.innerHTML = '';
-  const img = document.createElement('img');
-  img.className = 'vocab-clue-structure';
-  img.alt = 'structure';
-  img.referrerPolicy = 'no-referrer';
-  img.addEventListener('error', () => img.remove());
-  img.src = `${PUBCHEM_PNG}${encodeURIComponent(structure.pc)}/PNG`;
+  const box = document.createElement('div');
+  box.className = 'vocab-clue-structure';
   const p = document.createElement('p');
   p.className = 'vocab-clue-cpd-text';
   p.textContent = text;
-  clueEl.append(img, p);
+  clueEl.append(box, p);
+  // The SVG bank is lazy-loaded; drop the empty box if there's no structure.
+  const token = current;
+  structureSvg(structure.smiles).then((svg) => {
+    if (current !== token) return; // moved on to the next word
+    if (svg) box.innerHTML = svg;
+    else box.remove();
+  });
 }
 
 // Scenery is never guessed, so it sits on the board from the start.

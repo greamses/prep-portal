@@ -41,11 +41,11 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
     // `element` (periodic table), `country` (world map) and `state` (Nigeria
     // map) are present only for the drawn topics — the game renders the drawn
     // table or map in place of a text clue. `structure` (the IUPAC naming
-    // topics) carries a PubChem lookup so the game can draw the compound.
+    // topics) carries a SMILES so the game can draw the compound structure.
     return list.map((x) => ({
       word: x.w, clue: x.d, letter: null,
       element: x.element || null, country: x.country || null, state: x.state || null,
-      structure: x.pc ? { pc: x.pc, formula: x.formula || null } : null,
+      structure: x.smiles ? { smiles: x.smiles, formula: x.formula || null } : null,
     }));
   }
 
