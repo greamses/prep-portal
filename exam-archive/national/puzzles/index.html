@@ -173,24 +173,30 @@
         <p class="puzzle-time-remaining" id="puzzle-time-remaining"></p>
         <div class="puzzle-roster" id="puzzle-roster" hidden></div>
 
-        <div class="puzzle-grid-wrap pp-receipt" id="puzzle-grid-wrap" hidden>
-          <span class="pp-sticky pp-sticky--tape puzzle-timer-note" id="puzzle-timer-note"></span>
-          <span class="pp-sticky pp-sticky--tape puzzle-score-note" id="puzzle-score-note">0 correct</span>
-          <div class="puzzle-grid-face pp-receipt__paper">
-            <!-- Slider + Jigsaw rounds: a one-line hint above the grid. No
-                 reference image — the pieces themselves are the only picture
-                 you get. Shown from the countdown on. -->
-            <div class="puzzle-grid-topbar" id="puzzle-grid-topbar" hidden>
-              <p class="puzzle-grid-hint" id="puzzle-grid-hint"></p>
+        <!-- The play stage: frame + heap/digit-pad. Stacks on phones, flows
+             side-by-side (landscape) once there's desktop room — see the
+             wide-viewport rules in style.css. -->
+        <div class="puzzle-stage" id="puzzle-stage">
+          <div class="puzzle-grid-wrap pp-receipt" id="puzzle-grid-wrap" hidden>
+            <span class="pp-sticky pp-sticky--tape puzzle-timer-note" id="puzzle-timer-note"></span>
+            <span class="pp-sticky pp-sticky--tape puzzle-score-note" id="puzzle-score-note">0 correct</span>
+            <div class="puzzle-grid-face pp-receipt__paper">
+              <!-- Slider + Jigsaw rounds: a one-line hint above the grid. No
+                   reference image — the pieces themselves are the only picture
+                   you get. Shown from the countdown on. -->
+              <div class="puzzle-grid-topbar" id="puzzle-grid-topbar" hidden>
+                <p class="puzzle-grid-hint" id="puzzle-grid-hint"></p>
+              </div>
+              <p class="puzzle-countdown" id="puzzle-countdown" hidden></p>
+              <div class="sudoku-grid" id="puzzle-grid" hidden></div>
             </div>
-            <p class="puzzle-countdown" id="puzzle-countdown" hidden></p>
-            <div class="sudoku-grid" id="puzzle-grid" hidden></div>
           </div>
+          <!-- Jigsaw rounds: the loose-pieces pile. Sits below the frame on a
+               phone, beside it on desktop. Drag a piece home (or tap it, then
+               tap its socket). -->
+          <div class="jigsaw-heap" id="puzzle-jigsaw-heap" hidden></div>
+          <div class="puzzle-digit-pad" id="puzzle-digit-pad" hidden></div>
         </div>
-        <!-- Jigsaw rounds: the loose-pieces pile, tipped out below the frame.
-             Drag a piece home (or tap it, then tap its socket). -->
-        <div class="jigsaw-heap" id="puzzle-jigsaw-heap" hidden></div>
-        <div class="puzzle-digit-pad" id="puzzle-digit-pad" hidden></div>
       </div>
     </div>
 

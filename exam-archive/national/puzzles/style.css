@@ -489,6 +489,17 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 
 /* ── PUZZLE GRID — same torn-receipt frame as Drills' card, sized to fit a
    9x9 grid comfortably on a phone. ─────────────────────────────────── */
+/* The play stage holds the frame and, beside/below it, the piece heap
+   (jigsaw) or digit pad (sudoku). It stacks by default; the wide-viewport
+   block at the bottom of this file flips it to a landscape row and lets the
+   frame grow with the viewport. */
+.puzzle-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .puzzle-grid-wrap {
   position: relative;
   width: min(360px, 100%);
@@ -1164,4 +1175,44 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 /* Touch devices have no hover to reveal it. */
 @media (hover: none) {
   .avatar-remove { opacity: 1; }
+}
+
+/* ── DESKTOP / LANDSCAPE PLAY STAGE ──────────────────────────────────────
+   On a phone the frame sits atop its heap (or digit pad) in one tall column.
+   Given real width, that's wasted space and a lot of scrolling — so once the
+   viewport is wide enough, the stage becomes a landscape row: the frame on
+   one side, the pile (jigsaw) or keypad (sudoku) on the other, and BOTH grow
+   with the viewport height so a 20×20 jigsaw is actually workable. Sizes are
+   viewport-relative (min(vh, px)), so the whole stage scales fluidly rather
+   than snapping between fixed layouts. Slider has no side panel, so its row
+   is just the centred frame. */
+@media (min-width: 900px) {
+  #puzzle-play-bd .review-wrap { width: min(1180px, 95vw); }
+
+  .puzzle-stage {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  }
+
+  /* Frame grows with height; jigsaw gets the larger share (it's the puzzle
+     you're reading), capped so a short-but-wide window can't overflow. */
+  .puzzle-grid-wrap { width: min(62vh, 460px); margin: 0; flex: 0 0 auto; }
+  .puzzle-grid-wrap:has(.jigsaw-grid) { width: min(72vh, 560px); }
+
+  /* The pile sits beside the frame, sized to match its neighbour's height. */
+  .jigsaw-heap { width: min(60vh, 480px); margin: 0; flex: 0 0 auto; }
+
+  /* Sudoku's keypad becomes an upright pad on the side rather than a wide
+     strip under the grid. */
+  .puzzle-digit-pad { max-width: 216px; margin: 0; flex: 0 0 auto; }
+}
+
+/* Extra-wide desktops: let the frame and pile get bigger still. */
+@media (min-width: 1400px) {
+  #puzzle-play-bd .review-wrap { width: min(1360px, 92vw); }
+  .puzzle-grid-wrap { width: min(68vh, 540px); }
+  .puzzle-grid-wrap:has(.jigsaw-grid) { width: min(78vh, 660px); }
+  .jigsaw-heap { width: min(66vh, 560px); }
 }
