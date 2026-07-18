@@ -151,6 +151,9 @@ async function iupacTopicsFor() {
       w: c.name,
       d: `${formulaSubscript(c.formula)}${c.common ? ' · ' + c.common : ''}`,
       formula: c.formula, common: c.common || null,
+      // A PubChem-resolvable name for the 2-D structure; organic IUPAC names
+      // resolve on their own, so fall back to the compound name.
+      pc: c.pc || c.name,
     }));
   }
   return out;

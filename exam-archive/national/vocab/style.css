@@ -1552,3 +1552,51 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-size: 0.98rem;
   color: var(--accent-secondary-ink, var(--ink));
 }
+
+/* Formula ⇄ Structure toggle for the IUPAC cards. */
+.vocab-cpd-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  width: fit-content;
+  margin: 0 auto 1.2rem;
+  padding: 3px;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+}
+.vocab-cpd-tog-btn {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  padding: 0.4rem 1.05rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.vocab-cpd-tog-btn.is-active {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent, #14130f);
+}
+
+/* The structure image (PubChem) sits on white so the black lines read in both
+   themes; hidden until the card is flipped to structure view. */
+.vocab-cpd-head { min-height: 1.9rem; }
+.vocab-cpd-structure { display: none; }
+.vocab-cpd-structure img {
+  width: 100%;
+  max-width: 168px;
+  height: auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(20, 19, 15, 0.14);
+}
+.vocab-law-grid.show-structures .vocab-cpd-headline { display: none; }
+.vocab-law-grid.show-structures .vocab-cpd-structure { display: block; }
+/* A compound whose PubChem structure failed keeps showing its formula. */
+.vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-headline { display: inline-block; }
+.vocab-law-grid.show-structures .vocab-cpd-card.no-structure .vocab-cpd-structure { display: none; }

@@ -1025,12 +1025,24 @@ function formulaToNode(f) {
   return span;
 }
 
+const PUBCHEM_PNG = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/';
+
 function compoundDictCard(entry) {
   const card = document.createElement('article');
-  card.className = 'vocab-law-card pp-receipt';
+  card.className = 'vocab-law-card vocab-cpd-card pp-receipt';
   const paper = document.createElement('div');
   paper.className = 'vocab-law-paper pp-receipt__paper';
-  paper.appendChild(formulaToNode(entry.formula));
+
+  // The headline flips between the formula (equation) and a 2-D structure.
+  const head = document.createElement('div');
+  head.className = 'vocab-cpd-head';
+  head.appendChild(formulaToNode(entry.formula));
+  const struct = document.createElement('div');
+  struct.className = 'vocab-cpd-structure';
+  struct.dataset.pc = entry.pc || entry.w; // PubChem-resolvable name
+  head.appendChild(struct);
+  paper.appendChild(head);
+
   const name = document.createElement('h3');
   name.className = 'vocab-law-name vocab-cpd-name';
   name.textContent = entry.w; // the IUPAC name
@@ -1043,6 +1055,22 @@ function compoundDictCard(entry) {
   }
   card.appendChild(paper);
   return card;
+}
+
+// Structures load lazily from PubChem the first time "Structure" is chosen, so
+// the images are never fetched unless asked for. A miss falls back to the
+// formula for that card.
+function loadStructures(grid) {
+  grid.querySelectorAll('.vocab-cpd-structure:not([data-loaded])').forEach((box) => {
+    box.dataset.loaded = '1';
+    const img = new Image();
+    img.alt = 'structure';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.onerror = () => box.closest('.vocab-cpd-card')?.classList.add('no-structure');
+    img.src = PUBCHEM_PNG + encodeURIComponent(box.dataset.pc) + '/PNG';
+    box.appendChild(img);
+  });
 }
 
 // MathJax loads async from the CDN; gate typesetting on it, but cap the wait so
@@ -1238,16 +1266,37 @@ async function openDictionary() {
     return;
   }
 
-  // IUPAC naming topics — compound cards (formula → name), no MathJax needed.
+  // IUPAC naming topics — compound cards (formula → name), with a Formula ⇄
+  // Structure toggle whose structures come from PubChem. No MathJax needed.
   if (playMode === 'topic' && IUPAC_TOPICS.has(baseTopic(topic))) {
     dictBox.classList.add('vocab-dict--wide');
     const cards = [...topicPool(words, topic)].sort((a, b) => a.w.localeCompare(b.w));
     dictSub.textContent = `${cards.length} compounds · read the formula, then name it the IUPAC way`;
     dictList.innerHTML = '';
+
     const grid = document.createElement('div');
     grid.className = 'vocab-law-grid';
     for (const entry of cards) grid.appendChild(compoundDictCard(entry));
-    dictList.appendChild(grid);
+
+    const bar = document.createElement('div');
+    bar.className = 'vocab-cpd-toggle';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'Show formula or structure');
+    const bF = document.createElement('button');
+    bF.type = 'button'; bF.className = 'vocab-cpd-tog-btn is-active'; bF.textContent = 'Formula';
+    const bS = document.createElement('button');
+    bS.type = 'button'; bS.className = 'vocab-cpd-tog-btn'; bS.textContent = 'Structure';
+    const setView = (structures) => {
+      grid.classList.toggle('show-structures', structures);
+      bF.classList.toggle('is-active', !structures);
+      bS.classList.toggle('is-active', structures);
+      if (structures) loadStructures(grid); // fetch PubChem images on first ask
+    };
+    bF.addEventListener('click', () => setView(false));
+    bS.addEventListener('click', () => setView(true));
+    bar.append(bF, bS);
+
+    dictList.append(bar, grid);
     return;
   }
   dictBox.classList.remove('vocab-dict--wide');

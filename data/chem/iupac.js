@@ -1,17 +1,20 @@
 /* ── IUPAC NAMES BANK ────────────────────────────────────────────────────
-   Compounds a secondary-school chemistry student is expected to name the
-   IUPAC way, in two categories: inorganic and organic. Feeds the Vocab
-   hangman's two "IUPAC Names" topics under Chemistry AND the dictionary cards
-   (the study library). One source of truth, mirroring the laws bank.
+   Compounds a secondary-school chemistry student names the IUPAC way, in two
+   categories: inorganic and organic. Feeds the Vocab hangman's two "IUPAC
+   Names" topics under Chemistry AND the dictionary cards (with a formula ⇄
+   structure toggle drawn from PubChem). One source of truth.
 
-   Each entry:
-     name    — the IUPAC name (the hangman ANSWER; shown on the study card).
-     formula — the compound's formula as a PLAIN string ("H2SO4", "CH3CH2OH").
-               Digit runs are rendered as subscripts (no MathJax needed); the
-               formula is also the hangman clue, so it must not spell the name.
-     common  — a short trivial name / everyday hint for the clue and card. Kept
-               free of the answer's own words (a clue that names itself is no
-               puzzle — the vocab house rule).
+   `name`  — the SYSTEMATIC IUPAC name (the hangman ANSWER; shown on the card).
+             Inorganic uses the systematic stock/oxo style taught here, e.g.
+             H2SO4 → "tetraoxosulfate(VI) acid", CO2 → "carbon(IV) oxide" —
+             NOT the trivial "sulfuric acid" / "carbon dioxide".
+   formula — the plain formula string ("H2SO4", "CH3CH2OH"); digit runs render
+             as subscripts. It is also the clue, so it must not spell the name.
+   common  — the familiar / trivial name plus an everyday hint, for the clue
+             and card (the drill is "common name → systematic name").
+   pc      — a PubChem-resolvable name for the 2-D structure image (the trivial
+             name for inorganic; for organic the IUPAC name resolves, so pc is
+             omitted and the name is used).
 */
 
 export const CATEGORIES = [
@@ -19,42 +22,42 @@ export const CATEGORIES = [
     key: 'inorganic',
     label: 'Inorganic',
     compounds: [
-      { name: 'sodium chloride', formula: 'NaCl', common: 'common table salt' },
-      { name: 'potassium chloride', formula: 'KCl', common: 'a salt substitute' },
-      { name: 'calcium oxide', formula: 'CaO', common: 'quicklime' },
-      { name: 'magnesium oxide', formula: 'MgO', common: 'white ash of a burnt ribbon' },
-      { name: 'calcium hydroxide', formula: 'Ca(OH)2', common: 'slaked lime' },
-      { name: 'sodium hydroxide', formula: 'NaOH', common: 'caustic soda' },
-      { name: 'potassium hydroxide', formula: 'KOH', common: 'caustic potash' },
-      { name: 'calcium carbonate', formula: 'CaCO3', common: 'limestone and chalk' },
-      { name: 'sodium carbonate', formula: 'Na2CO3', common: 'washing soda' },
-      { name: 'sodium hydrogencarbonate', formula: 'NaHCO3', common: 'baking soda' },
-      { name: 'carbon dioxide', formula: 'CO2', common: 'the gas that puts out flames' },
-      { name: 'carbon monoxide', formula: 'CO', common: 'a poisonous exhaust gas' },
-      { name: 'sulfuric acid', formula: 'H2SO4', common: 'oil of vitriol' },
-      { name: 'nitric acid', formula: 'HNO3', common: 'aqua fortis' },
-      { name: 'hydrochloric acid', formula: 'HCl', common: 'muriatic acid' },
-      { name: 'ammonia', formula: 'NH3', common: 'a pungent alkaline gas' },
-      { name: 'ammonium chloride', formula: 'NH4Cl', common: 'sal ammoniac' },
-      { name: 'ammonium nitrate', formula: 'NH4NO3', common: 'a common fertiliser' },
-      { name: 'iron(III) oxide', formula: 'Fe2O3', common: 'rust' },
-      { name: 'iron(II) sulfide', formula: 'FeS', common: 'made by heating iron with sulfur' },
-      { name: 'copper(II) sulfate', formula: 'CuSO4', common: 'blue vitriol' },
-      { name: 'copper(II) oxide', formula: 'CuO', common: 'the black coat on heated copper' },
-      { name: 'zinc oxide', formula: 'ZnO', common: 'calamine' },
-      { name: 'zinc sulfate', formula: 'ZnSO4', common: 'white vitriol' },
-      { name: 'aluminium oxide', formula: 'Al2O3', common: 'alumina, refined from bauxite' },
-      { name: 'lead(II) oxide', formula: 'PbO', common: 'litharge' },
-      { name: 'sulfur dioxide', formula: 'SO2', common: 'the choking gas from burning sulfur' },
-      { name: 'nitrogen dioxide', formula: 'NO2', common: 'a brown acidic gas' },
-      { name: 'dinitrogen monoxide', formula: 'N2O', common: 'laughing gas' },
-      { name: 'potassium manganate(VII)', formula: 'KMnO4', common: 'a purple oxidising agent' },
-      { name: 'potassium dichromate(VI)', formula: 'K2Cr2O7', common: 'an orange oxidising agent' },
-      { name: 'silver nitrate', formula: 'AgNO3', common: 'used to test for halide ions' },
-      { name: 'magnesium sulfate', formula: 'MgSO4', common: 'Epsom salt' },
-      { name: 'calcium sulfate', formula: 'CaSO4', common: 'gypsum, or plaster of Paris' },
-      { name: 'hydrogen peroxide', formula: 'H2O2', common: 'a bleaching antiseptic' },
-      { name: 'water', formula: 'H2O', common: 'the universal solvent' },
+      { name: 'sodium chloride', formula: 'NaCl', common: 'common table salt', pc: 'sodium chloride' },
+      { name: 'potassium chloride', formula: 'KCl', common: 'a salt substitute', pc: 'potassium chloride' },
+      { name: 'calcium oxide', formula: 'CaO', common: 'quicklime', pc: 'calcium oxide' },
+      { name: 'magnesium oxide', formula: 'MgO', common: 'white ash of a burnt ribbon', pc: 'magnesium oxide' },
+      { name: 'calcium hydroxide', formula: 'Ca(OH)2', common: 'slaked lime', pc: 'calcium hydroxide' },
+      { name: 'sodium hydroxide', formula: 'NaOH', common: 'caustic soda', pc: 'sodium hydroxide' },
+      { name: 'potassium hydroxide', formula: 'KOH', common: 'caustic potash', pc: 'potassium hydroxide' },
+      { name: 'calcium trioxocarbonate(IV)', formula: 'CaCO3', common: 'calcium carbonate — limestone and chalk', pc: 'calcium carbonate' },
+      { name: 'sodium trioxocarbonate(IV)', formula: 'Na2CO3', common: 'sodium carbonate — washing soda', pc: 'sodium carbonate' },
+      { name: 'sodium hydrogentrioxocarbonate(IV)', formula: 'NaHCO3', common: 'sodium bicarbonate — baking soda', pc: 'sodium bicarbonate' },
+      { name: 'carbon(IV) oxide', formula: 'CO2', common: 'carbon dioxide — the gas that puts out flames', pc: 'carbon dioxide' },
+      { name: 'carbon(II) oxide', formula: 'CO', common: 'carbon monoxide — a poisonous exhaust gas', pc: 'carbon monoxide' },
+      { name: 'tetraoxosulfate(VI) acid', formula: 'H2SO4', common: 'sulfuric acid — oil of vitriol', pc: 'sulfuric acid' },
+      { name: 'trioxonitrate(V) acid', formula: 'HNO3', common: 'nitric acid — aqua fortis', pc: 'nitric acid' },
+      { name: 'hydrochloric acid', formula: 'HCl', common: 'muriatic acid', pc: 'hydrochloric acid' },
+      { name: 'ammonia', formula: 'NH3', common: 'a pungent alkaline gas', pc: 'ammonia' },
+      { name: 'ammonium chloride', formula: 'NH4Cl', common: 'sal ammoniac', pc: 'ammonium chloride' },
+      { name: 'ammonium trioxonitrate(V)', formula: 'NH4NO3', common: 'ammonium nitrate — a common fertiliser', pc: 'ammonium nitrate' },
+      { name: 'iron(III) oxide', formula: 'Fe2O3', common: 'rust', pc: 'iron(III) oxide' },
+      { name: 'iron(II) sulfide', formula: 'FeS', common: 'made by heating iron with sulfur', pc: 'iron(II) sulfide' },
+      { name: 'copper(II) tetraoxosulfate(VI)', formula: 'CuSO4', common: 'copper(II) sulfate — blue vitriol', pc: 'copper(II) sulfate' },
+      { name: 'copper(II) oxide', formula: 'CuO', common: 'the black coat on heated copper', pc: 'copper(II) oxide' },
+      { name: 'zinc oxide', formula: 'ZnO', common: 'calamine', pc: 'zinc oxide' },
+      { name: 'zinc tetraoxosulfate(VI)', formula: 'ZnSO4', common: 'zinc sulfate — white vitriol', pc: 'zinc sulfate' },
+      { name: 'aluminium oxide', formula: 'Al2O3', common: 'alumina, refined from bauxite', pc: 'aluminum oxide' },
+      { name: 'lead(II) oxide', formula: 'PbO', common: 'litharge', pc: 'lead(II) oxide' },
+      { name: 'sulfur(IV) oxide', formula: 'SO2', common: 'sulfur dioxide — the choking gas from burning sulfur', pc: 'sulfur dioxide' },
+      { name: 'nitrogen(IV) oxide', formula: 'NO2', common: 'nitrogen dioxide — a brown acidic gas', pc: 'nitrogen dioxide' },
+      { name: 'nitrogen(I) oxide', formula: 'N2O', common: 'nitrous oxide — laughing gas', pc: 'nitrous oxide' },
+      { name: 'potassium tetraoxomanganate(VII)', formula: 'KMnO4', common: 'potassium permanganate — a purple oxidiser', pc: 'potassium permanganate' },
+      { name: 'potassium heptaoxodichromate(VI)', formula: 'K2Cr2O7', common: 'potassium dichromate — an orange oxidiser', pc: 'potassium dichromate' },
+      { name: 'silver trioxonitrate(V)', formula: 'AgNO3', common: 'silver nitrate — used to test for halide ions', pc: 'silver nitrate' },
+      { name: 'magnesium tetraoxosulfate(VI)', formula: 'MgSO4', common: 'magnesium sulfate — Epsom salt', pc: 'magnesium sulfate' },
+      { name: 'calcium tetraoxosulfate(VI)', formula: 'CaSO4', common: 'calcium sulfate — gypsum, or plaster of Paris', pc: 'calcium sulfate' },
+      { name: 'hydrogen peroxide', formula: 'H2O2', common: 'a bleaching antiseptic', pc: 'hydrogen peroxide' },
+      { name: 'water', formula: 'H2O', common: 'the universal solvent', pc: 'water' },
     ],
   },
   {
