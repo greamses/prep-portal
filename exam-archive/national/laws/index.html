@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Laws — Practice the Laws of Physics, Chemistry & Biology | PrepPortal</title>
+    <meta
+      name="description"
+      content="A study set of the named laws and principles in Physics, Chemistry and Biology. Read each law in plain words, then flip the whole set to its formulas — rendered with MathJax — where a formula exists."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
+          "/exam-archive/national/laws/js/main.js": "/exam-archive/national/laws/js/main.js?v=236819bc",
+          "/data/laws/laws.js": "/data/laws/laws.js?v=236819bc"
+        }
+      }
+    </script>
+
+    <!-- MathJax renders a law's formula on demand (tex-svg: self-contained SVG,
+         no extra web-font fetch). We typeset ourselves once the cards exist. -->
+    <script>
+      window.MathJax = {
+        tex: { displayMath: [['\\[', '\\]']], inlineMath: [['\\(', '\\)']] },
+        svg: { fontCache: 'global', scale: 1.04 },
+        startup: { typeset: false },
+      };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>LAWS</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/puzzles/index.html" role="tab">Puzzles</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/geometry/index.html" role="tab">Geometry</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/vocab/index.html" role="tab">Vocab</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/laws/index.html" role="tab">Laws</a>
+      </div>
+    </header>
+
+    <!-- ═══ STUDY ═══ -->
+    <main class="laws-main" id="laws-main">
+      <div class="laws-section-hdr">
+        <div class="setup-eyebrow">Study</div>
+        <h2>Practice the Laws</h2>
+        <p class="laws-section-sub">
+          Read each law in plain words, then flip the whole set to its formula — where one exists.
+          Laws with no single formula stay as their statement.
+        </p>
+      </div>
+
+      <!-- Controls: pick a subject, then flip statements ⇄ formulas for all cards. -->
+      <div class="laws-controls">
+        <div class="laws-subjects" id="laws-subjects" role="tablist" aria-label="Subject"></div>
+
+        <div class="laws-view" role="group" aria-label="Show law or formula">
+          <button class="laws-view-btn is-active" id="laws-view-statements" type="button" aria-pressed="true">
+            Statements
+          </button>
+          <button class="laws-view-btn" id="laws-view-formulas" type="button" aria-pressed="false">
+            Formulas
+          </button>
+        </div>
+      </div>
+
+      <div class="laws-grid" id="laws-grid" aria-live="polite"></div>
+    </main>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js?v=236819bc"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

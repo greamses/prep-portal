@@ -65,6 +65,13 @@ const PAGES = [
   { name: 'drills' },
   { name: 'puzzles' },
   {
+    // A standalone study page — no seeded-room infra, so it opts out of the
+    // SHARED game modules and only versions its own JS + the laws bank.
+    name: 'laws',
+    shared: [],
+    extra: ['/data/laws/laws.js'],
+  },
+  {
     name: 'vocab',
     extra: [
       '/data/vocab/index.js',
@@ -89,7 +96,8 @@ const PAGES = [
 }));
 
 const read = (p) => readFileSync(p, 'utf8');
-const sharedFor = (page) => [...SHARED, ...page.extra];
+// A page may override the shared list (e.g. a study page with no game infra).
+const sharedFor = (page) => [...(page.shared ?? SHARED), ...page.extra];
 
 function hashFor(page) {
   const h = createHash('sha256');
