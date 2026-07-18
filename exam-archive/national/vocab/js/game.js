@@ -45,6 +45,7 @@ const stepEl = $('vocab-step');
 const livesEl = $('vocab-lives');
 const verdictEl = $('vocab-verdict');
 const keyboardEl = $('vocab-keyboard');
+const submitBtn = $('vocab-submit-btn');
 const scoreNote = $('vocab-score-note');
 const timerNote = $('vocab-timer-note');
 const modeNote = $('vocab-mode-note');
@@ -68,6 +69,10 @@ const revealedPos = new Set();
 const guessed = new Set(); // keys already spent on this word — classic only
 let wrong = 0;
 let score = 0;
+let wrongTotal = 0;   // wrong guesses across the WHOLE round (a ranking tiebreak)
+let playStartMs = 0;  // when the board went live (the '3-2-1' cleared)
+let finishMs = null;  // ms taken to clear every word, or null if never finished
+let timeLimitMs = 0;
 let endAt = 0;
 let rafId = null;
 let nextTimer = null;
@@ -343,12 +348,20 @@ function queueNext(ms) {
 // leaderboard.js's grace window — an early exit would read the others as zero).
 function finishWords() {
   acceptingGuesses = false;
+  finishMs = Date.now() - playStartMs; // locked in: how fast you cleared them
   boardEl.classList.remove('is-solved', 'is-hung');
   stepEl.textContent = `${round.length} of ${round.length}`;
-  clueEl.textContent = 'Every word done. Sit tight — the clock is still running for everyone else.';
+  clueEl.className = 'vocab-clue';
+  clueEl.textContent = 'Every word done — submit to lock in your time, or wait for the clock.';
   wordEl.innerHTML = '';
   showVerdict(`${score} solved`, 'solved');
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => { btn.disabled = true; });
+  // A finisher can end early: speed is a ranking tiebreak, so submitting now
+  // (rather than waiting out the clock) is how a fast player banks the win.
+  if (submitBtn) {
+    submitBtn.hidden = false;
+    submitBtn.disabled = false;
+  }
 }
 
 function guess(rawCh) {
@@ -366,6 +379,7 @@ function guess(rawCh) {
   }
 
   wrong += 1;
+  wrongTotal += 1; // counts towards the round's ranking tiebreak
   renderWord(); // in a spelling bee a wrong letter leaves the cursor where it was
   renderLives();
   if (wrong >= MAX_WRONG) hang();
@@ -427,13 +441,32 @@ function endRound() {
   document.removeEventListener('keydown', onKeyDown);
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
-  // The word count goes back with the score: leaderboard.js needs it to cap the
-  // bots at the same number of words the humans were actually dealt.
-  if (resolveRound) resolveRound({ score, wordCount: round.length });
+  if (submitBtn) submitBtn.hidden = true;
+  // Back with the score: the word count (so leaderboard.js caps bots at the words
+  // humans were dealt) plus the ranking metrics — how long it took (finishers
+  // only; the rest used the whole clock) and the round's total wrong guesses.
+  if (resolveRound) {
+    resolveRound({
+      score,
+      wordCount: round.length,
+      timeMs: finishMs != null ? finishMs : timeLimitMs,
+      wrong: wrongTotal,
+    });
+  }
   resolveRound = null;
 }
 
 buildKeyboard();
+
+// Submit is offered only once every word is cleared (see finishWords) — it ends
+// the round early with your locked-in finish time instead of waiting the clock out.
+if (submitBtn) {
+  submitBtn.addEventListener('click', () => {
+    if (!active) return;
+    submitBtn.disabled = true;
+    endRound();
+  });
+}
 
 // Resolves with { score, wordCount } once the local timer hits zero: how many
 // words the player solved, and how many the round held.
@@ -460,6 +493,9 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     index = 0;
     score = 0;
     wrong = 0;
+    wrongTotal = 0;
+    finishMs = null;
+    timeLimitMs = timeLimit * 1000;
     resolveRound = resolve;
 
     scoreNote.textContent = '0 solved';
@@ -473,6 +509,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     // so it no longer hides with the board — toggle it in step with play.
     clueEl.hidden = true;
     keyboardEl.hidden = true;
+    if (submitBtn) { submitBtn.hidden = true; submitBtn.disabled = false; }
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
@@ -508,6 +545,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
         clueEl.hidden = false;
         keyboardEl.hidden = false;
         endAt = anchorAt + timeLimit * 1000;
+        playStartMs = Date.now(); // the clock the player's speed is measured against
         loadWord();
         document.addEventListener('keydown', onKeyDown);
         rafId = requestAnimationFrame(tick);

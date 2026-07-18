@@ -303,6 +303,21 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-start-btn:hover { transform: translateY(-1px); }
 .vocab-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+/* The in-play "Submit & rank" note — appears once every word is cleared. */
+.vocab-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.3rem 0.75rem;
+  margin-top: 0.4rem;
+  cursor: pointer;
+}
+.vocab-submit-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.vocab-submit-btn:disabled { opacity: 0.55; cursor: default; }
+
 /* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
 .vocab-name-input,
 .vocab-code-input {
@@ -866,6 +881,8 @@ body.vocab-nav-hidden .site-nav { display: none; }
 
 .vocab-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
 .vocab-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+/* Finisher's completion time — the tiebreak that decides a score draw. */
+.vocab-lb-time { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
 .vocab-lb-score { font-weight: 700; }
 
 /* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */

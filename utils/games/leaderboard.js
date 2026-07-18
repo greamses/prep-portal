@@ -26,21 +26,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * @param {string} o.rooms      the game's rooms collection, e.g. "vocabRooms"
- * @param {function} o.scoreBot (seed, botSlot, args) -> that bot's final score,
- *                              where `args` is whatever finishRound was called
- *                              with (so a game can pass its own extras through,
- *                              e.g. Vocab's wordCount).
- * @returns finishRound(args) -> ranked [{ name, score, isBot, isSelf, avatarSeed }]
+ * @param {function} o.scoreBot (seed, botSlot, args) -> that bot's result, either
+ *                              a plain number (score) OR an object carrying extra
+ *                              ranking metrics, e.g. { score, timeMs, wrong }.
+ * @param {function} [o.compare] (a, b) -> sort order over the entries; defaults to
+ *                              highest score first. A game that ranks on more than
+ *                              score (Vocab: score, then speed, then wrong guesses)
+ *                              supplies its own — and passes the player's own extra
+ *                              metrics through `finishRound({ ..., myMetrics })`.
+ * @returns finishRound(args) -> ranked [{ name, score, isBot, isSelf, avatarSeed, ...metrics }]
  */
-export function createLeaderboard({ rooms, scoreBot }) {
+export function createLeaderboard({ rooms, scoreBot, compare }) {
+  const cmp = compare || ((a, b) => b.score - a.score);
   return async function finishRound(args) {
-    const { roomId, seed, botsNeeded, myScore } = args;
+    const { roomId, seed, botsNeeded, myScore, myMetrics } = args;
     const uid = auth.currentUser.uid;
 
     await checkQuota('write');
     await updateDoc(doc(db, rooms, roomId, 'players', uid), {
       score: myScore,
       finishedAt: Date.now(),
+      ...(myMetrics || {}), // e.g. { timeMs, wrong } — undefined for score-only games
     });
     reportUsage(0, 1);
 
@@ -50,25 +56,26 @@ export function createLeaderboard({ rooms, scoreBot }) {
     const snap = await getDocs(collection(db, rooms, roomId, 'players'));
     reportUsage(snap.size, 0);
 
-    const real = snap.docs.map((d) => ({
-      name: d.data().displayName || 'Player',
-      score: d.data().score ?? 0,
-      isBot: false,
-      isSelf: d.id === uid,
-      avatarSeed: d.id, // stable per-account face, unlike a name, which can collide
-    }));
-
-    const bots = Array.from({ length: botsNeeded }, (_, i) => {
-      const name = botName(seed, i);
+    const real = snap.docs.map((d) => {
+      const data = d.data();
       return {
-        name,
-        score: scoreBot(seed, i, args),
-        isBot: true,
-        isSelf: false,
-        avatarSeed: name,
+        name: data.displayName || 'Player',
+        score: data.score ?? 0,
+        timeMs: data.timeMs,
+        wrong: data.wrong,
+        isBot: false,
+        isSelf: d.id === uid,
+        avatarSeed: d.id, // stable per-account face, unlike a name, which can collide
       };
     });
 
-    return [...real, ...bots].sort((a, b) => b.score - a.score);
+    const bots = Array.from({ length: botsNeeded }, (_, i) => {
+      const name = botName(seed, i);
+      const b = scoreBot(seed, i, args);
+      const metrics = (b && typeof b === 'object') ? b : { score: b };
+      return { name, ...metrics, isBot: true, isSelf: false, avatarSeed: name };
+    });
+
+    return [...real, ...bots].sort(cmp);
   };
 }

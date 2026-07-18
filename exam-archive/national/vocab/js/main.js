@@ -21,7 +21,7 @@ import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
-import { finishRound } from './leaderboard.js';
+import { finishRound, rankVocab } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
@@ -637,19 +637,27 @@ function buildRoster({ size, botsNeeded, seed }, name) {
 }
 
 // ── Results ──────────────────────────────────────────────────────────────
-function renderResults(ranked) {
+function fmtTime(ms) {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function renderResults(ranked, wordCount) {
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
-  // Competition ranking with ties: everyone ahead of you on score ranks above
-  // you, and players on the SAME score share a place. A score shared with anyone
-  // shows a tie marker instead of a number, and a tie for the top has NO winner
-  // — nobody is crowned, and no confetti flies, on a draw.
-  const topScore = total ? ranked[0].score : 0;
-  const topTie = ranked.filter((r) => r.score === topScore).length > 1;
+  // Competition ranking over the FULL order — most correct, then fastest, then
+  // fewest wrong (see leaderboard.js's rankVocab). Players level on ALL three
+  // share a place (rare, thanks to the ms-level time tiebreak); a true tie for
+  // the top has no winner — nobody is crowned and no confetti flies on a draw.
+  const ahead = (a, b) => rankVocab(a, b) < 0;
+  const level = (a, b) => rankVocab(a, b) === 0;
+  const topTie = total ? ranked.filter((r) => level(r, ranked[0])).length > 1 : false;
   ranked.forEach((row, i) => {
-    const rankNum = 1 + ranked.filter((r) => r.score > row.score).length;
-    const tiedHere = ranked.filter((r) => r.score === row.score).length > 1;
+    const rankNum = 1 + ranked.filter((r) => ahead(r, row)).length;
+    const tiedHere = ranked.filter((r) => level(r, row)).length > 1;
     const isWinner = rankNum === 1 && !topTie;
+    // Only someone who cleared every word has a meaningful finish time to show.
+    const finished = typeof row.timeMs === 'number' && row.score === wordCount;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
@@ -673,6 +681,12 @@ function renderResults(ranked) {
     const name = document.createElement('span');
     name.className = 'vocab-lb-name';
     name.textContent = row.name;
+    if (finished) {
+      const t = document.createElement('small');
+      t.className = 'vocab-lb-time';
+      t.textContent = fmtTime(row.timeMs);
+      name.append(' ', t); // "Name  1:23"
+    }
 
     const scoreEl = document.createElement('span');
     scoreEl.className = 'vocab-lb-score';
@@ -720,7 +734,7 @@ async function playRoundAndShowResults(room, name) {
   // startRound resolves with the score AND how many words the round actually
   // held — the bots have to race the same number, and it's the ROOM's content
   // that decides it, not whatever this client's setup screen happens to show.
-  const { score: myScore, wordCount } = await startRound({
+  const { score: myScore, wordCount, timeMs, wrong } = await startRound({
     seed: room.seed,
     timeLimit: room.timeLimit,
     startAt: room.startAt,
@@ -746,16 +760,18 @@ async function playRoundAndShowResults(room, name) {
       botsNeeded: room.botsNeeded,
       wordCount,
       myScore,
+      // Ranked on speed then wrong guesses after the score (see leaderboard.js).
+      myMetrics: { timeMs, wrong },
     });
   } catch (e) {
-    ranked = [{ name, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
+    ranked = [{ name, score: myScore, timeMs, wrong, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   const selfRow = ranked.find((r) => r.isSelf);
   if (selfRow) selfRow.avatarSeed = getAvatarSeed();
 
   hideAwaiting();
   startBtn.disabled = false;
-  renderResults(ranked);
+  renderResults(ranked, wordCount);
 }
 
 function makeOnWaiting(waitingStatusText) {
