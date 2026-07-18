@@ -5,18 +5,19 @@
 
    Storage model — one Firestore doc per NAMESPACE:
        imageOverrides/{namespace} = { <slotKey>: <url>, ... }
-   so a whole namespace loads in a single read. Uploaded files go to Firebase
-   Storage at  imageOverrides/{namespace}/{slotKey}  and the download URL is
-   what gets stored. Reads are public; writes are admin-only (firestore.rules).
+   so a whole namespace loads in a single read. Only the URL is stored in
+   Firestore; the IMAGE itself lives on Cloudinary (uploaded via /api/ai/
+   image-store, the platform the rest of the site uses — see ai-client.js),
+   NOT Firebase Storage. Reads are public; writes are admin-only (firestore.rules).
 
    Use:
      import { imageOverride, attachImageAdmin } from '/utils/components/admin-images.js';
      const url = await imageOverride('scientists', name);        // read (anyone)
      attachImageAdmin(el, { ns:'scientists', key:name, apply });  // admin editor
 */
-import { auth, db, storage } from '/firebase-init.js';
+import { auth, db } from '/firebase-init.js';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { imageStore } from '/utils/ai-client.js';
 
 const ADMIN_EMAIL = 'eemadanyel@gmail.com';
 export const isImageAdmin = () => !!(auth.currentUser && auth.currentUser.email === ADMIN_EMAIL);
@@ -52,10 +53,30 @@ async function writeOverride(ns, key, url) {
   map[k] = url || '';
 }
 
-async function uploadImageFile(ns, key, file) {
-  const sRef = storageRef(storage, `imageOverrides/${ns}/${slugKey(key)}`);
-  await uploadBytes(sRef, file);
-  return getDownloadURL(sRef);
+// A light downscale/re-encode, then store on Cloudinary (Cloudinary sizes for
+// delivery). Returns the delivery URL to persist in Firestore.
+async function fileToUploadUri(file) {
+  const objUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Could not read that image'));
+      i.src = objUrl;
+    });
+    const MAX = 1024;
+    let { width: w, height: h } = img;
+    if (w > MAX || h > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', 0.85);
+  } finally {
+    URL.revokeObjectURL(objUrl);
+  }
+}
+async function uploadImageFile(file) {
+  return imageStore({ imageBase64: await fileToUploadUri(file) });
 }
 
 // ── The admin editor (a pencil + a small popover) ────────────────────────
@@ -144,10 +165,10 @@ function openEditor(anchor, { ns, key, apply }) {
     if (!f) return;
     note.textContent = 'Uploading…';
     try {
-      const url = await uploadImageFile(ns, key, f);
+      const url = await uploadImageFile(f);
       await writeOverride(ns, key, url);
       done(url);
-    } catch { fail('Upload failed — check Storage rules / admin sign-in.'); }
+    } catch { fail('Upload failed — check you are signed in as admin.'); }
   });
 }
 
