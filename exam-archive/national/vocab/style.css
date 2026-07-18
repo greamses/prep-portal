@@ -1462,15 +1462,29 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-law-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
+  gap: 1.6rem 1.3rem;
   align-items: start;
+  padding-top: 0.5rem; /* room for the tape strips on the top row */
 }
-.vocab-law-card { position: relative; }
-.vocab-law-paper.pp-receipt__paper {
+/* Dictionary cards are sticky notes (colour + tape + tilt via .pp-sticky) — the
+   note IS the paper, so drop pp-sticky's text padding and let the content
+   wrapper pad. Notes are fixed light pastels, so their text is dark in BOTH
+   light and dark themes (never the --ink token, which flips). */
+.vocab-law-card.pp-sticky {
+  padding: 0;
+  border-radius: 6px;
+  color: #14130f;
+}
+.vocab-law-card.pp-sticky:hover { transform: rotate(0deg) translateY(-4px); z-index: 2; }
+.vocab-law-grid .vocab-law-card:nth-child(4n+1) { --pp-note-tilt: -2deg; }
+.vocab-law-grid .vocab-law-card:nth-child(4n+2) { --pp-note-tilt: 1.6deg; }
+.vocab-law-grid .vocab-law-card:nth-child(4n+3) { --pp-note-tilt: -0.8deg; }
+.vocab-law-grid .vocab-law-card:nth-child(4n)   { --pp-note-tilt: 2.2deg; }
+.vocab-law-paper {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding: 1.1rem 1.2rem 1.2rem;
+  padding: 1.15rem 1.2rem 1.2rem;
   height: 100%;
   text-align: left;
 }
@@ -1479,18 +1493,18 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-size: 1rem;
   font-weight: 800;
   line-height: var(--leading-snug);
-  color: var(--ink);
+  color: #14130f;
   margin: 0;
 }
 .vocab-law-statement {
   font-family: var(--font-mono);
   font-size: 0.78rem;
   line-height: var(--leading-relaxed, 1.6);
-  color: var(--text-secondary);
+  color: #4a4638;
   margin: 0;
 }
 .vocab-law-formula {
-  color: var(--ink);
+  color: #14130f;
   font-size: 1rem;
   overflow-x: auto;
   overflow-y: hidden;
@@ -1531,7 +1545,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: #6a6456;
 }
 
 /* IUPAC compound card: the formula leads, big and mono, with real subscripts;
@@ -1540,7 +1554,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   font-family: var(--font-mono);
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--ink);
+  color: #14130f;
   letter-spacing: 0.01em;
   line-height: 1.2;
 }
@@ -1551,7 +1565,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
 }
 .vocab-cpd-name {
   font-size: 0.98rem;
-  color: var(--accent-secondary-ink, var(--ink));
+  color: #14130f;
 }
 
 /* Formula ⇄ Structure toggle for the IUPAC cards. */

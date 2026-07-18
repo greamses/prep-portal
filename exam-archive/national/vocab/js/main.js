@@ -988,11 +988,11 @@ function scientistAvatar(name) {
   return av;
 }
 
-function lawDictCard(entry) {
+function lawDictCard(entry, i = 0) {
   const card = document.createElement('article');
-  card.className = 'vocab-law-card pp-receipt';
+  card.className = `vocab-law-card pp-sticky pp-sticky--tape ${stickyColor(i)}`;
   const paper = document.createElement('div');
-  paper.className = 'vocab-law-paper pp-receipt__paper';
+  paper.className = 'vocab-law-paper';
 
   const name = document.createElement('h3');
   name.className = 'vocab-law-name';
@@ -1047,11 +1047,11 @@ function formulaToNode(f) {
   return span;
 }
 
-function compoundDictCard(entry) {
+function compoundDictCard(entry, i = 0) {
   const card = document.createElement('article');
-  card.className = 'vocab-law-card vocab-cpd-card pp-receipt';
+  card.className = `vocab-law-card vocab-cpd-card pp-sticky pp-sticky--tape ${stickyColor(i)}`;
   const paper = document.createElement('div');
-  paper.className = 'vocab-law-paper pp-receipt__paper';
+  paper.className = 'vocab-law-paper';
 
   // The headline flips between the formula (equation) and a 2-D structure.
   const head = document.createElement('div');
@@ -1305,7 +1305,7 @@ async function openDictionary() {
     dictList.innerHTML = '';
     const grid = document.createElement('div');
     grid.className = 'vocab-law-grid';
-    for (const entry of cards) grid.appendChild(lawDictCard(entry));
+    cards.forEach((entry, i) => grid.appendChild(lawDictCard(entry, i)));
     dictList.appendChild(grid);
     typesetDict();
     return;
@@ -1321,7 +1321,7 @@ async function openDictionary() {
 
     const grid = document.createElement('div');
     grid.className = 'vocab-law-grid';
-    for (const entry of cards) grid.appendChild(compoundDictCard(entry));
+    cards.forEach((entry, i) => grid.appendChild(compoundDictCard(entry, i)));
 
     const bar = document.createElement('div');
     bar.className = 'vocab-cpd-toggle';
