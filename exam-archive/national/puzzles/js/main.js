@@ -13,6 +13,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderCustomStep, renderComingSoon,
@@ -76,12 +77,14 @@ const lobbyCancel = $('puzzle-lobby-cancel');
 const lobbyStartNow = $('puzzle-lobby-start-now');
 
 const awaitingBd = $('puzzle-awaiting-bd');
+const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 
 const resultsBd = $('puzzle-results-bd');
 const leaderboardEl = $('puzzle-leaderboard');
 const againBtn = $('puzzle-again-btn');
 
 function showAwaiting() {
+  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -699,6 +702,7 @@ async function playRoundAndShowResults(room, myName) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
+      onAwaiting: awaitingProgress.onAwaiting,
       totalUnits,
       myScore,
     });

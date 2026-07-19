@@ -23,6 +23,7 @@ import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { buildRound } from './rng.js';
 import { finishRound, rankVocab } from './leaderboard.js';
+import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
@@ -87,6 +88,7 @@ const lobbyCancel = $('vocab-lobby-cancel');
 const lobbyStartNow = $('vocab-lobby-start-now');
 
 const awaitingBd = $('vocab-awaiting-bd');
+const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 const resultsBd = $('vocab-results-bd');
 const leaderboardEl = $('vocab-leaderboard');
 const againBtn = $('vocab-again-btn');
@@ -628,6 +630,7 @@ lobbyCodeCopy.addEventListener('click', () => {
 });
 
 function showAwaiting() {
+  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -766,6 +769,7 @@ async function playRoundAndShowResults(room, name) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
+      onAwaiting: awaitingProgress.onAwaiting,
       wordCount,
       myScore,
       // Ranked on speed then wrong guesses after the score (see leaderboard.js).

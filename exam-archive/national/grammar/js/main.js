@@ -21,6 +21,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound, rankGrammar } from './leaderboard.js';
+import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
@@ -91,6 +92,7 @@ const lobbyCancel = $('grammar-lobby-cancel');
 const lobbyStartNow = $('grammar-lobby-start-now');
 
 const awaitingBd = $('grammar-awaiting-bd');
+const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 const resultsBd = $('grammar-results-bd');
 const leaderboardEl = $('grammar-leaderboard');
 const breakdownEl = $('grammar-breakdown');
@@ -459,6 +461,7 @@ lobbyCodeCopy.addEventListener('click', () => {
 });
 
 function showAwaiting() {
+  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -770,6 +773,7 @@ async function playRoundAndShowResults(room, name) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
+      onAwaiting: awaitingProgress.onAwaiting,
       errorTotal: out.errorTotal,
       myScore: out.score,
       // Ranked on speed then false edits after the score (see leaderboard.js).

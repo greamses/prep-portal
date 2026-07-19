@@ -15,6 +15,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
@@ -73,12 +74,14 @@ const lobbyCancel = $('geo-lobby-cancel');
 const lobbyStartNow = $('geo-lobby-start-now');
 
 const awaitingBd = $('geo-awaiting-bd');
+const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 
 const resultsBd = $('geo-results-bd');
 const leaderboardEl = $('geo-leaderboard');
 const againBtn = $('geo-again-btn');
 
 function showAwaiting() {
+  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -727,6 +730,7 @@ async function playRoundAndShowResults(room, myName) {
       seed: room.seed,
       timeLimit: room.timeLimit,
       botsNeeded: room.botsNeeded,
+      onAwaiting: awaitingProgress.onAwaiting,
       myScore,
     });
   } catch (e) {
