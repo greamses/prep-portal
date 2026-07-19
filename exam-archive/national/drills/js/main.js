@@ -741,6 +741,8 @@ async function playRoundAndShowResults(room, myName) {
       myScore,
     });
   } catch (e) {
+    // Silent here meant a broken leaderboard looked like a working one.
+    console.error('[drills] finishRound failed — showing a local-only board:', e);
     ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   // Show the player's own chosen avatar on the leaderboard, not the

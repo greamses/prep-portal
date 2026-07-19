@@ -734,6 +734,8 @@ async function playRoundAndShowResults(room, myName) {
       myScore,
     });
   } catch (e) {
+    // Silent here meant a broken leaderboard looked like a working one.
+    console.error('[geometry] finishRound failed — showing a local-only board:', e);
     ranked = [{ name: myName, score: myScore, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   const selfRow = ranked.find((r) => r.isSelf);

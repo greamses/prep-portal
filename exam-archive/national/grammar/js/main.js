@@ -785,6 +785,8 @@ async function playRoundAndShowResults(room, name) {
       },
     });
   } catch (e) {
+    // Silent here meant a broken leaderboard looked like a working one.
+    console.error('[grammar] finishRound failed — showing a local-only board:', e);
     ranked = [{
       name, score: out.score, timeMs: out.timeMs, falseEdits: out.falseEdits,
       caught: out.caught, tagged: out.tagged,

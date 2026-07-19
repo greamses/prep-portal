@@ -776,6 +776,8 @@ async function playRoundAndShowResults(room, name) {
       myMetrics: { timeMs, wrong },
     });
   } catch (e) {
+    // Silent here meant a broken leaderboard looked like a working one.
+    console.error('[vocab] finishRound failed — showing a local-only board:', e);
     ranked = [{ name, score: myScore, timeMs, wrong, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
   }
   const selfRow = ranked.find((r) => r.isSelf);

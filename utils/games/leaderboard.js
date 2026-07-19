@@ -143,11 +143,30 @@ export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
     const uid = auth.currentUser.uid;
 
     await checkQuota('write');
-    await updateDoc(doc(db, rooms, roomId, 'players', uid), {
-      score: myScore,
-      finishedAt: Date.now(),
-      ...(myMetrics || {}), // e.g. { timeMs, wrong } — undefined for score-only games
-    });
+    const meRef = doc(db, rooms, roomId, 'players', uid);
+    const finishedAt = Date.now();
+    const core = { score: myScore, finishedAt };
+    // A single undefined value makes Firestore reject the WHOLE write before it
+    // ever leaves the client, which would cost us the score to save a tiebreak.
+    const full = { ...core };
+    for (const [k, v] of Object.entries(myMetrics || {})) {
+      if (v !== undefined) full[k] = v;
+    }
+
+    try {
+      await updateDoc(meRef, full);
+    } catch (e) {
+      // The score MUST land even if the tiebreak metrics are refused — this is
+      // the failure that looks like nothing is wrong. The player who was
+      // rejected still sees their real score (games fall back to a local,
+      // one-row board), while every opponent reads them as 0 and ranks them
+      // last. A rules deploy that predates a game's metric fields does exactly
+      // that. Losing a tiebreaker is survivable; losing the score is not.
+      console.error(
+        `[leaderboard] ${rooms}: full score write refused (${e.code || e.message}) — retrying score only`,
+      );
+      await updateDoc(meRef, core);
+    }
     reportUsage(0, 1);
 
     await checkQuota('read');
