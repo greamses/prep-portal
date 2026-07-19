@@ -768,6 +768,9 @@ async function playRoundAndShowResults(room, name) {
       roomId: room.roomId,
       seed: room.seed,
       timeLimit: room.timeLimit,
+      // Ranking waits for the ROUND's clock, not for our own submit — see
+      // deadlineFor() in /utils/games/leaderboard.js.
+      startAt: room.startAt,
       botsNeeded: room.botsNeeded,
       onAwaiting: awaitingProgress.onAwaiting,
       wordCount,

@@ -16,7 +16,34 @@ import { quotaStatus, reportUsage, quotaError } from '/utils/data-service.js';
 import { botName } from './bots.js';
 
 const GRACE_MS = 1200;    // floor: even a solo round holds a beat, so results don't snap in
-const MAX_WAIT_MS = 12000; // ceiling: a player who closed the tab must never hang everyone else
+const MAX_WAIT_MS = 12000; // how long past the round's OWN end a straggler's write is still waited for
+
+/**
+ * When the room stops being able to change — the moment nobody can still be
+ * playing — plus the window a late write needs to land.
+ *
+ * This has to be measured from the ROUND's end, not from the caller's own
+ * submit. Several games let you submit early (Grammar's Ctrl+Enter, a solved
+ * puzzle), and an early finisher who only waited a fixed spell from their own
+ * submit gave up long before the clock ran out, then ranked everyone still
+ * playing at 0 — the exact bug this whole file has been chasing.
+ *
+ * `startAt` is the ACTIVATING client's wall clock (see game.js), so a device
+ * whose clock is off would compute a nonsense deadline. Same guard the games
+ * use: trust it only while it lands in the window a real round could still be
+ * running, and otherwise fall back to waiting from now.
+ */
+function deadlineFor(startAt, timeLimit) {
+  const now = Date.now();
+  const fallback = now + MAX_WAIT_MS;
+  if (!startAt || !timeLimit) return fallback;
+
+  const endsAt = startAt + timeLimit * 1000;
+  const remaining = endsAt - now;
+  if (remaining <= 0) return fallback;                     // clock's already out
+  if (remaining > timeLimit * 1000 + 8000) return fallback; // skewed — don't trust it
+  return endsAt + MAX_WAIT_MS;
+}
 
 async function checkQuota(kind) {
   const s = await quotaStatus();
@@ -34,14 +61,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * So we watch the players collection until every real player has written a
  * `finishedAt`, and only rank once the room is genuinely complete. Two bounds
  * keep that honest: nothing resolves before GRACE_MS, and nothing waits past
- * MAX_WAIT_MS — a player who closed the tab mid-round will never write, and the
- * rest of the room must not be held hostage to them.
+ * `deadline` (see deadlineFor) — a player who closed the tab mid-round will
+ * never write, and the rest of the room must not be held hostage to them.
+ *
+ * Submitting early does NOT rank you early: the deadline is the round's own
+ * clock, so a fast finisher sits on the awaiting screen until either everyone
+ * is in or the timer everyone shares has genuinely run out.
  *
  * This replaces the old blind sleep-then-getDocs: it is ONE listener, opened
  * after the round is over and closed the moment the room is complete, and it
  * costs the same reads the single getDocs did.
  */
-function awaitAllSubmissions(playersRef, onProgress) {
+function awaitAllSubmissions(playersRef, onProgress, deadline) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let latest = null;
@@ -69,7 +100,7 @@ function awaitAllSubmissions(playersRef, onProgress) {
       clearTimeout(graceTimer);
       if (unsub) unsub();
       reject(new Error('leaderboard: no player snapshot'));
-    }, MAX_WAIT_MS);
+    }, Math.max(GRACE_MS, deadline - Date.now()));
 
     function check() {
       if (!latest) return;
@@ -139,7 +170,7 @@ export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
   const cmp = compare || ((a, b) => b.score - a.score);
   const metrics = metricKeys || ['timeMs', 'wrong'];
   return async function finishRound(args) {
-    const { roomId, seed, botsNeeded, myScore, myMetrics, onAwaiting } = args;
+    const { roomId, seed, botsNeeded, myScore, myMetrics, onAwaiting, startAt, timeLimit } = args;
     const uid = auth.currentUser.uid;
 
     await checkQuota('write');
@@ -173,7 +204,7 @@ export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
     const playersRef = collection(db, rooms, roomId, 'players');
     let snap;
     try {
-      snap = await awaitAllSubmissions(playersRef, onAwaiting);
+      snap = await awaitAllSubmissions(playersRef, onAwaiting, deadlineFor(startAt, timeLimit));
     } catch (e) {
       // The listener was refused (rules, offline). Fall back to exactly what
       // this used to do rather than dropping the whole leaderboard.
