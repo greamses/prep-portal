@@ -11,5 +11,8 @@ googleCloudKey.json
 # Local Claude Code settings — machine-specific, not for the repo
 .claude/settings.local.json
 
+# Firebase CLI debug log
+firebase-debug.log
+
 # Removed legacy template — kept deleted and ignored
 writing/activity/flip-template.html

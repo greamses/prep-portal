@@ -133,30 +133,6 @@
   }
 }
 
-/* ════════════════════════════════════════════════════
-   PAGE PLACEHOLDER
-════════════════════════════════════════════════════ */
-.ap-placeholder {
-  margin-top: 28px;
-  padding: 36px var(--padding-lg);
-  border: 2.5px dashed rgba(10, 10, 10, 0.18);
-  background: var(--off);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-widest);
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.ap-placeholder strong {
-  font-family: var(--font-display);
-  font-weight: var(--weight-black);
-  color: var(--ink);
-}
-
 .fs-overlay {
   position: fixed;
   inset: 0;
@@ -636,10 +612,6 @@
 
   .wp-modal {
     max-height: 60vh;
-  }
-
-  .ap-placeholder {
-    padding: 28px 16px;
   }
 }
 
@@ -1688,29 +1660,6 @@
   padding: 2px 6px;
   border-radius: 2px;
   opacity: 0.8;
-}
-
-/* Page placeholder */
-.ap-placeholder {
-  position: relative;
-  z-index: 1;
-  margin-top: clamp(1.2rem, 3vw, 1.8rem);
-  padding: 36px clamp(1rem, 5vw, 2.5rem);
-  border: 2.5px dashed rgba(42, 39, 35, 0.18);
-  background: var(--surface-secondary, var(--surface-primary));
-  border-radius: 0;
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  text-align: center;
-}
-.ap-placeholder strong {
-  font-family: var(--font-display);
-  font-weight: var(--weight-black);
-  color: var(--ink);
 }
 
 /* Footer — a note-button CTA, not a chrome card */

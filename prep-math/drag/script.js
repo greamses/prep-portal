@@ -36,7 +36,7 @@ const CANVAS_SETTINGS = {
     keypad_btn: false, scrub_btn: false, draw_btn: false, erase_btn: false,
     arrange_btn: false, reset_btn: true, save_btn: false, load_btn: false,
     settings_btn: true, insert_btn: true,
-    insert_menu_items: { derivation: true, function: true, textbox: true },
+    insert_menu_items: { derivation: true, function: true, textbox: true, ggb_graphing: true, ggb_geometry: true, ggb_3d: true },
     use_hold_menu: false, display_labels: false, btn_size: 'xs',
     ask_confirmation_on_closing: false, vertical_scroll: true,
 };

@@ -311,7 +311,11 @@ service cloud.firestore {
         request.resource.data.status == 'waiting' &&
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
-        request.resource.data.timeLimit in [60, 120, 180, 300] &&
+        // Derived from word count × pace (see main.js's computeTimeLimit), so
+        // an arbitrary integer — a range is the honest check, same as Grammar.
+        request.resource.data.timeLimit is int &&
+        request.resource.data.timeLimit >= 45 &&
+        request.resource.data.timeLimit <= 900 &&
         // Two tiers of subject, and grades now run to 12 (see data/vocab/topics.js).
         // The tiers are not cross-checked against the grade here: a mismatched
         // room would simply deal a player the wrong-but-valid word list, which
@@ -353,10 +357,13 @@ service cloud.firestore {
         allow create: if isOwner(uid) &&
           request.resource.data.keys().hasOnly(['displayName', 'joinedAt']);
         // Final score is written exactly once — the pre-state check blocks
-        // rewriting a doc that's already been scored.
+        // rewriting a doc that's already been scored. Ranking is score, then
+        // speed, then wrong guesses (see leaderboard.js's rankVocab), so
+        // timeMs and wrong land in the one write alongside score.
         allow update: if isOwner(uid) &&
           !('score' in resource.data) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'finishedAt']);
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['score', 'finishedAt', 'timeMs', 'wrong']);
       }
     }
 
