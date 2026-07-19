@@ -15,7 +15,6 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound } from './leaderboard.js';
-import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
@@ -74,14 +73,12 @@ const lobbyCancel = $('geo-lobby-cancel');
 const lobbyStartNow = $('geo-lobby-start-now');
 
 const awaitingBd = $('geo-awaiting-bd');
-const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 
 const resultsBd = $('geo-results-bd');
 const leaderboardEl = $('geo-leaderboard');
 const againBtn = $('geo-again-btn');
 
 function showAwaiting() {
-  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -630,19 +627,30 @@ function buildRoster({ size, botsNeeded, seed }, myName) {
 }
 
 // ── Results ──────────────────────────────────────────────────────────────
-function renderResults(ranked) {
+/* `settled` is false while the room is still finishing. The board is painted
+   live from the moment YOU submit — finishers ranked, everyone still playing
+   shown as pending — so nobody watches a spinner wondering if it broke. Until
+   it settles there is no winner, no trophy and no confetti: leading a race
+   half the room hasn't finished isn't winning it. */
+function renderResults(ranked, settled = true) {
+  // A repaint of a board that's already up must not replay the deal-in
+  // animation, or every straggler's score restarts the whole stack.
+  const repaint = resultsBd.classList.contains('open');
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
   // Competition ranking with ties: everyone ahead of you on score ranks above
   // you, and players on the SAME score share a place. A score shared with anyone
   // shows a tie marker instead of a number, and a tie for the top has NO winner
-  // — nobody is crowned, and no confetti flies, on a draw.
-  const topScore = total ? ranked[0].score : 0;
-  const topTie = ranked.filter((r) => r.score === topScore).length > 1;
+  // — nobody is crowned, and no confetti flies, on a draw. Players who haven't
+  // submitted are ranked on nothing at all — they're excluded until their
+  // score actually exists.
+  const done = ranked.filter((r) => !r.pending);
+  const topScore = done.length ? done[0].score : 0;
+  const topTie = done.filter((r) => r.score === topScore).length > 1;
   ranked.forEach((row, i) => {
-    const rankNum = 1 + ranked.filter((r) => r.score > row.score).length;
-    const tiedHere = ranked.filter((r) => r.score === row.score).length > 1;
-    const isWinner = rankNum === 1 && !topTie;
+    const rankNum = 1 + done.filter((r) => r.score > row.score).length;
+    const tiedHere = done.filter((r) => r.score === row.score).length > 1;
+    const isWinner = settled && !row.pending && rankNum === 1 && !topTie;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
@@ -650,8 +658,9 @@ function renderResults(ranked) {
       isWinner ? '' : stickyColor(i),
       row.isSelf ? 'is-self' : '',
       isWinner ? 'is-winner' : '',
+      row.pending ? 'is-pending' : '',
     ].filter(Boolean).join(' ');
-    li.style.setProperty('--delay', `${(total - 1 - i) * 130}ms`);
+    li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
     li.style.setProperty('--pp-note-tilt', `${tilt}deg`);
 
     const avatar = document.createElement('span');
@@ -660,16 +669,24 @@ function renderResults(ranked) {
 
     const rank = document.createElement('span');
     rank.className = 'geo-lb-rank';
-    if (isWinner) rank.innerHTML = TROPHY_SVG;
+    if (row.pending) rank.textContent = '·'; // no place until there's a score
+    else if (isWinner) rank.innerHTML = TROPHY_SVG;
     else rank.textContent = tiedHere ? '=' : String(rankNum);
 
     const name = document.createElement('span');
     name.className = 'geo-lb-name';
     name.textContent = row.name;
+    if (row.pending) {
+      const t = document.createElement('small');
+      t.className = 'geo-lb-pending';
+      // On the settled board they are not still playing — they never finished.
+      t.textContent = settled ? 'no score' : 'still playing…';
+      name.append(' ', t);
+    }
 
     const scoreEl = document.createElement('span');
     scoreEl.className = 'geo-lb-score';
-    scoreEl.textContent = String(row.score);
+    scoreEl.textContent = row.pending ? '–' : String(row.score);
 
     li.append(avatar, rank, name, scoreEl);
     leaderboardEl.appendChild(li);
@@ -678,8 +695,11 @@ function renderResults(ranked) {
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('geo-nav-hidden');
 
-  if (ranked[0] && ranked[0].isSelf && !topTie) {
-    const winnerRevealMs = (total - 1) * 130 + 400;
+  // Only on the settled board, so a lead held while half the room is still
+  // playing never fires it — but it must still fire on a board that was
+  // painted live, which is why this can't key off the first paint.
+  if (settled && ranked[0] && ranked[0].isSelf && !ranked[0].pending && !topTie) {
+    const winnerRevealMs = repaint ? 400 : (total - 1) * 130 + 400;
     setTimeout(launchConfetti, winnerRevealMs);
   }
 }
@@ -733,7 +753,16 @@ async function playRoundAndShowResults(room, myName) {
       // deadlineFor() in /utils/games/leaderboard.js.
       startAt: room.startAt,
       botsNeeded: room.botsNeeded,
-      onAwaiting: awaitingProgress.onAwaiting,
+      // The board goes up straight away and fills in as the room finishes,
+      // instead of holding everyone behind the awaiting overlay.
+      onUpdate: (rows) => {
+        hideAwaiting();
+        // Same avatar override the settled board applies, or your own face
+        // would swap out from under you when the last player lands.
+        const me = rows.find((r) => r.isSelf);
+        if (me) me.avatarSeed = getAvatarSeed();
+        renderResults(rows, false);
+      },
       myScore,
     });
   } catch (e) {

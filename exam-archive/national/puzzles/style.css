@@ -928,6 +928,18 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .puzzle-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
 .puzzle-lb-score { font-weight: 700; }
 
+/* Still playing: on the board, but ranked on nothing yet. Muted rather than
+   faded, because .puzzle-lb-row's deal-in animation is `both`-filled and would
+   win an opacity tie. #6a6456 is the same warm paper-ink the meta line above
+   uses — a token grey reads cold against the note stock. */
+.puzzle-lb-row.is-pending { --pp-note-bg: var(--surface-secondary); }
+.puzzle-lb-row.is-pending .puzzle-lb-rank,
+.puzzle-lb-row.is-pending .puzzle-lb-name,
+.puzzle-lb-row.is-pending .puzzle-lb-score { color: #6a6456; }
+.puzzle-lb-row.is-pending .puzzle-lb-score { font-weight: 400; }
+.puzzle-lb-pending { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+
+
 /* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
 .puzzle-lb-row.is-winner {
   --pp-note-bg: #ffdd6b;

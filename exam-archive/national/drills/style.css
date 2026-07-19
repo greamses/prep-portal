@@ -696,6 +696,18 @@ body.drill-nav-hidden .site-nav { display: none; }
 .drill-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
 .drill-lb-score { font-weight: 700; }
 
+/* Still playing: on the board, but ranked on nothing yet. Muted rather than
+   faded, because .drill-lb-row's deal-in animation is `both`-filled and would
+   win an opacity tie. #6a6456 is the same warm paper-ink the meta line above
+   uses — a token grey reads cold against the note stock. */
+.drill-lb-row.is-pending { --pp-note-bg: var(--surface-secondary); }
+.drill-lb-row.is-pending .drill-lb-rank,
+.drill-lb-row.is-pending .drill-lb-name,
+.drill-lb-row.is-pending .drill-lb-score { color: #6a6456; }
+.drill-lb-row.is-pending .drill-lb-score { font-weight: 400; }
+.drill-lb-pending { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+
+
 /* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
 .drill-lb-row.is-winner {
   --pp-note-bg: #ffdd6b;

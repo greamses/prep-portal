@@ -21,7 +21,6 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { finishRound, rankGrammar } from './leaderboard.js';
-import { createAwaitingProgress } from '/utils/games/leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
 } from '/utils/components/setup-carousel.js';
@@ -92,7 +91,6 @@ const lobbyCancel = $('grammar-lobby-cancel');
 const lobbyStartNow = $('grammar-lobby-start-now');
 
 const awaitingBd = $('grammar-awaiting-bd');
-const awaitingProgress = createAwaitingProgress(awaitingBd.querySelector('p'));
 const resultsBd = $('grammar-results-bd');
 const leaderboardEl = $('grammar-leaderboard');
 const breakdownEl = $('grammar-breakdown');
@@ -461,7 +459,6 @@ lobbyCodeCopy.addEventListener('click', () => {
 });
 
 function showAwaiting() {
-  awaitingProgress.reset();
   awaitingBd.classList.add('open');
   awaitingBd.setAttribute('aria-hidden', 'false');
 }
@@ -484,20 +481,30 @@ function fmtTime(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-function renderResults(ranked, errorTotal) {
+/* `settled` is false while the room is still finishing. The board is painted
+   live from the moment YOU submit — finishers ranked, everyone still working
+   shown as pending — so nobody watches a spinner wondering if it broke. Until
+   it settles there is no winner, no trophy and no confetti: leading a race
+   half the room hasn't finished isn't winning it. */
+function renderResults(ranked, errorTotal, settled = true) {
+  // A repaint of a board that's already up must not replay the deal-in
+  // animation, or every straggler's score restarts the whole stack.
+  const repaint = resultsBd.classList.contains('open');
   leaderboardEl.innerHTML = '';
   const total = ranked.length;
   // Competition ranking over the FULL order — score, then speed, then false
   // edits (see leaderboard.js's rankGrammar). Players level on ALL three share
   // a place; a true tie for the top has no winner — nobody is crowned and no
-  // confetti flies on a draw.
+  // confetti flies on a draw. Players who haven't submitted are ranked on
+  // nothing at all — they're excluded until their score actually exists.
   const ahead = (a, b) => rankGrammar(a, b) < 0;
   const level = (a, b) => rankGrammar(a, b) === 0;
-  const topTie = total ? ranked.filter((r) => level(r, ranked[0])).length > 1 : false;
+  const done = ranked.filter((r) => !r.pending);
+  const topTie = done.length ? done.filter((r) => level(r, done[0])).length > 1 : false;
   ranked.forEach((row, i) => {
-    const rankNum = 1 + ranked.filter((r) => ahead(r, row)).length;
-    const tiedHere = ranked.filter((r) => level(r, row)).length > 1;
-    const isWinner = rankNum === 1 && !topTie;
+    const rankNum = 1 + done.filter((r) => ahead(r, row)).length;
+    const tiedHere = done.filter((r) => level(r, row)).length > 1;
+    const isWinner = settled && !row.pending && rankNum === 1 && !topTie;
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
@@ -505,8 +512,9 @@ function renderResults(ranked, errorTotal) {
       isWinner ? '' : stickyColor(i),
       row.isSelf ? 'is-self' : '',
       isWinner ? 'is-winner' : '',
+      row.pending ? 'is-pending' : '',
     ].filter(Boolean).join(' ');
-    li.style.setProperty('--delay', `${(total - 1 - i) * 130}ms`);
+    li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
     li.style.setProperty('--pp-note-tilt', `${tilt}deg`);
 
     const avatar = document.createElement('span');
@@ -515,7 +523,8 @@ function renderResults(ranked, errorTotal) {
 
     const rank = document.createElement('span');
     rank.className = 'grammar-lb-rank';
-    if (isWinner) rank.innerHTML = TROPHY_SVG;
+    if (row.pending) rank.textContent = '·'; // no place until there's a score
+    else if (isWinner) rank.innerHTML = TROPHY_SVG;
     else rank.textContent = tiedHere ? '=' : String(rankNum);
 
     const name = document.createElement('span');
@@ -526,16 +535,21 @@ function renderResults(ranked, errorTotal) {
     // What actually separated them, spelled out: caught, named, time, and the
     // false edits that cost them the tiebreak.
     const bits = [];
-    if (typeof row.caught === 'number') bits.push(`${row.caught}/${errorTotal} caught`);
-    if (typeof row.tagged === 'number') bits.push(`${row.tagged} named`);
-    if (typeof row.timeMs === 'number') bits.push(fmtTime(row.timeMs));
-    if (row.falseEdits) bits.push(`${row.falseEdits} false`);
+    if (row.pending) {
+      // On the settled board they are not still editing — they never finished.
+      bits.push(settled ? 'no score' : 'still editing…');
+    } else {
+      if (typeof row.caught === 'number') bits.push(`${row.caught}/${errorTotal} caught`);
+      if (typeof row.tagged === 'number') bits.push(`${row.tagged} named`);
+      if (typeof row.timeMs === 'number') bits.push(fmtTime(row.timeMs));
+      if (row.falseEdits) bits.push(`${row.falseEdits} false`);
+    }
     meta.textContent = bits.join(' · ');
     name.appendChild(meta);
 
     const scoreEl = document.createElement('span');
     scoreEl.className = 'grammar-lb-score';
-    scoreEl.textContent = String(row.score);
+    scoreEl.textContent = row.pending ? '–' : String(row.score);
 
     li.append(avatar, rank, name, scoreEl);
     leaderboardEl.appendChild(li);
@@ -547,8 +561,11 @@ function renderResults(ranked, errorTotal) {
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('grammar-nav-hidden');
 
-  if (ranked[0] && ranked[0].isSelf && !topTie) {
-    setTimeout(launchConfetti, (total - 1) * 130 + 400);
+  // Only on the settled board, so a lead held while half the room is still
+  // editing never fires it — but it must still fire on a board that was
+  // painted live, which is why this can't key off the first paint.
+  if (settled && ranked[0] && ranked[0].isSelf && !ranked[0].pending && !topTie) {
+    setTimeout(launchConfetti, repaint ? 400 : (total - 1) * 130 + 400);
   }
 }
 
@@ -776,7 +793,16 @@ async function playRoundAndShowResults(room, name) {
       // deadlineFor() in /utils/games/leaderboard.js.
       startAt: room.startAt,
       botsNeeded: room.botsNeeded,
-      onAwaiting: awaitingProgress.onAwaiting,
+      // The board goes up straight away and fills in as the room finishes,
+      // instead of holding everyone behind the awaiting overlay.
+      onUpdate: (rows) => {
+        hideAwaiting();
+        // Same avatar override the settled board applies, or your own face
+        // would swap out from under you when the last player lands.
+        const me = rows.find((r) => r.isSelf);
+        if (me) me.avatarSeed = getAvatarSeed();
+        renderResults(rows, out.errorTotal, false);
+      },
       errorTotal: out.errorTotal,
       myScore: out.score,
       // Ranked on speed then false edits after the score (see leaderboard.js).

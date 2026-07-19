@@ -729,6 +729,17 @@ body.grammar-nav-hidden .site-nav { display: none; }
 .grammar-lb-time { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
 .grammar-lb-score { font-weight: 700; }
 
+/* Still playing: on the board, but ranked on nothing yet. Muted rather than
+   faded, because .grammar-lb-row's deal-in animation is `both`-filled and would
+   win an opacity tie. #6a6456 is the same warm paper-ink the meta line above
+   uses — a token grey reads cold against the note stock. */
+.grammar-lb-row.is-pending { --pp-note-bg: var(--surface-secondary); }
+.grammar-lb-row.is-pending .grammar-lb-rank,
+.grammar-lb-row.is-pending .grammar-lb-name,
+.grammar-lb-row.is-pending .grammar-lb-score { color: #6a6456; }
+.grammar-lb-row.is-pending .grammar-lb-score { font-weight: 400; }
+
+
 /* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
 .grammar-lb-row.is-winner {
   --pp-note-bg: #ffdd6b;

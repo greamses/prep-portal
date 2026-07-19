@@ -717,6 +717,18 @@ body.geo-nav-hidden .site-nav { display: none; }
 .geo-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
 .geo-lb-score { font-weight: 700; }
 
+/* Still playing: on the board, but ranked on nothing yet. Muted rather than
+   faded, because .geo-lb-row's deal-in animation is `both`-filled and would
+   win an opacity tie. #6a6456 is the same warm paper-ink the meta line above
+   uses — a token grey reads cold against the note stock. */
+.geo-lb-row.is-pending { --pp-note-bg: var(--surface-secondary); }
+.geo-lb-row.is-pending .geo-lb-rank,
+.geo-lb-row.is-pending .geo-lb-name,
+.geo-lb-row.is-pending .geo-lb-score { color: #6a6456; }
+.geo-lb-row.is-pending .geo-lb-score { font-weight: 400; }
+.geo-lb-pending { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+
+
 /* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
 .geo-lb-row.is-winner {
   --pp-note-bg: #ffdd6b;

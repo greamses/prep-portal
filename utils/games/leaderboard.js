@@ -65,8 +65,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * never write, and the rest of the room must not be held hostage to them.
  *
  * Submitting early does NOT rank you early: the deadline is the round's own
- * clock, so a fast finisher sits on the awaiting screen until either everyone
- * is in or the timer everyone shares has genuinely run out.
+ * clock, so the board doesn't settle until either everyone is in or the timer
+ * everyone shares has genuinely run out. `onProgress` fires on every change
+ * with the snapshot attached, so the caller shows a LIVE board in the
+ * meantime — finishers ranked, everyone else pending — rather than a spinner.
  *
  * This replaces the old blind sleep-then-getDocs: it is ONE listener, opened
  * after the round is over and closed the moment the room is complete, and it
@@ -88,7 +90,9 @@ function awaitAllSubmissions(playersRef, onProgress, deadline) {
       resolve(latest);
     };
 
-    const graceTimer = setTimeout(() => { graceDone = true; check(); }, GRACE_MS);
+    // Only unblocks settling — it must NOT re-emit, or the caller rebuilds a
+    // board that hasn't changed.
+    const graceTimer = setTimeout(() => { graceDone = true; check(false); }, GRACE_MS);
     const capTimer = setTimeout(() => {
       // Out of patience: rank with whoever actually submitted. A missing score
       // stays 0, which is the truth about a player who never finished.
@@ -102,11 +106,13 @@ function awaitAllSubmissions(playersRef, onProgress, deadline) {
       reject(new Error('leaderboard: no player snapshot'));
     }, Math.max(GRACE_MS, deadline - Date.now()));
 
-    function check() {
+    function check(emit = true) {
       if (!latest) return;
       const pending = latest.docs.filter((d) => !d.data().finishedAt).length;
-      if (onProgress) {
-        onProgress({ submitted: latest.size - pending, total: latest.size });
+      if (emit && onProgress) {
+        // The snapshot rides along so the caller can paint the board itself —
+        // the counts alone can't say WHO is still out.
+        onProgress({ submitted: latest.size - pending, total: latest.size, snap: latest });
       }
       if (pending === 0) done();
     }
@@ -126,30 +132,6 @@ function awaitAllSubmissions(playersRef, onProgress, deadline) {
 }
 
 /**
- * Every game's "tallying scores…" overlay is the same paragraph under the same
- * three bouncing dots, so the straggler count is written once, here, instead of
- * five times. Hand the returned callback to `finishRound({ onAwaiting })` — it
- * only speaks up while someone is genuinely still submitting, and says nothing
- * at all in a solo or bot-filled round.
- *
- * @param {HTMLElement} textEl the overlay's text paragraph
- * @returns {{ onAwaiting: function, reset: function }}
- */
-export function createAwaitingProgress(textEl) {
-  const resting = textEl ? textEl.textContent : '';
-  return {
-    reset() { if (textEl) textEl.textContent = resting; },
-    onAwaiting({ submitted, total }) {
-      if (!textEl) return;
-      const pending = total - submitted;
-      textEl.textContent = pending > 0
-        ? `Waiting for ${pending} more player${pending === 1 ? '' : 's'}…`
-        : resting;
-    },
-  };
-}
-
-/**
  * @param {string} o.rooms      the game's rooms collection, e.g. "vocabRooms"
  * @param {function} o.scoreBot (seed, botSlot, args) -> that bot's result, either
  *                              a plain number (score) OR an object carrying extra
@@ -164,13 +146,27 @@ export function createAwaitingProgress(textEl) {
  *                              A game ranking on something else (Grammar: false
  *                              edits) names its own, so `compare` is never handed
  *                              an undefined it silently sorts last.
- * @returns finishRound(args) -> ranked [{ name, score, isBot, isSelf, avatarSeed, ...metrics }]
+ * @param {function} [args.onUpdate] (ranked, { settled }) -> called on every
+ *                              change while the room finishes, so the results
+ *                              screen can be painted live. Rows carry
+ *                              `pending: true` for players still going; they
+ *                              sort last and must not be shown a score, a rank
+ *                              or a trophy. The promise then resolves with the
+ *                              settled board.
+ * @returns finishRound(args) -> ranked [{ name, score, pending, isBot, isSelf, avatarSeed, ...metrics }]
  */
 export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
-  const cmp = compare || ((a, b) => b.score - a.score);
+  const baseCmp = compare || ((a, b) => b.score - a.score);
+  // Someone still playing has no score to rank — they sit at the bottom as
+  // "pending" until they submit, rather than being ranked last on a 0 they
+  // never earned. Everything below them is the game's own order, untouched.
+  const cmp = (a, b) => (a.pending ? 1 : 0) - (b.pending ? 1 : 0) || baseCmp(a, b);
   const metrics = metricKeys || ['timeMs', 'wrong'];
   return async function finishRound(args) {
-    const { roomId, seed, botsNeeded, myScore, myMetrics, onAwaiting, startAt, timeLimit } = args;
+    const {
+      roomId, seed, botsNeeded, myScore, myMetrics,
+      onUpdate, startAt, timeLimit,
+    } = args;
     const uid = auth.currentUser.uid;
 
     await checkQuota('write');
@@ -202,39 +198,52 @@ export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
 
     await checkQuota('read');
     const playersRef = collection(db, rooms, roomId, 'players');
-    let snap;
-    try {
-      snap = await awaitAllSubmissions(playersRef, onAwaiting, deadlineFor(startAt, timeLimit));
-    } catch (e) {
-      // The listener was refused (rules, offline). Fall back to exactly what
-      // this used to do rather than dropping the whole leaderboard.
-      await sleep(GRACE_MS);
-      snap = await getDocs(playersRef);
-      reportUsage(snap.size, 0);
-    }
-
-    const real = snap.docs.map((d) => {
-      const data = d.data();
-      const row = {
-        name: data.displayName || 'Player',
-        score: data.score ?? 0,
-        isBot: false,
-        isSelf: d.id === uid,
-        avatarSeed: d.id, // stable per-account face, unlike a name, which can collide
-      };
-      // Whatever this game ranks on beyond score, straight off the doc it was
-      // written to by `myMetrics`.
-      for (const key of metrics) row[key] = data[key];
-      return row;
-    });
 
     const bots = Array.from({ length: botsNeeded }, (_, i) => {
       const name = botName(seed, i);
       const b = scoreBot(seed, i, args);
-      const metrics = (b && typeof b === 'object') ? b : { score: b };
-      return { name, ...metrics, isBot: true, isSelf: false, avatarSeed: name };
+      const botMetrics = (b && typeof b === 'object') ? b : { score: b };
+      return { name, ...botMetrics, isBot: true, isSelf: false, avatarSeed: name };
     });
 
-    return [...real, ...bots].sort(cmp);
+    // One snapshot -> one ranked board. Called on every change, so the caller
+    // can paint a live leaderboard instead of staring at a spinner.
+    const rankSnapshot = (snap) => {
+      const real = snap.docs.map((d) => {
+        const data = d.data();
+        const row = {
+          name: data.displayName || 'Player',
+          score: data.score ?? 0,
+          // Still playing: no score yet, and no business being ranked on one.
+          pending: !data.finishedAt,
+          isBot: false,
+          isSelf: d.id === uid,
+          avatarSeed: d.id, // stable per-account face, unlike a name, which can collide
+        };
+        // Whatever this game ranks on beyond score, straight off the doc it was
+        // written to by `myMetrics`.
+        for (const key of metrics) row[key] = data[key];
+        return row;
+      });
+      return [...real, ...bots].sort(cmp);
+    };
+
+    try {
+      const snap = await awaitAllSubmissions(
+        playersRef,
+        // Every change repaints the caller's board — a straggler's score drops
+        // into place the instant it lands, in front of everyone still watching.
+        (state) => { if (onUpdate) onUpdate(rankSnapshot(state.snap), { settled: false }); },
+        deadlineFor(startAt, timeLimit),
+      );
+      return rankSnapshot(snap);
+    } catch (e) {
+      // The listener was refused (rules, offline). Fall back to exactly what
+      // this used to do rather than dropping the whole leaderboard.
+      await sleep(GRACE_MS);
+      const snap = await getDocs(playersRef);
+      reportUsage(snap.size, 0);
+      return rankSnapshot(snap);
+    }
   };
 }
