@@ -1,0 +1,1415 @@
+/* ═══════════════════════════════════════════════════════
+   GRAMMAR — timed multiplayer times-tables practice
+   Paper/soft-UI theme shared with the rest of the site (tokens from
+   theme.css). Card look is ported from flashcards/style.css's
+   .flash-card/.pp-receipt — this card never flips, so the 3D wrapper and
+   back-face rules are dropped.
+═══════════════════════════════════════════════════════ */
+
+body {
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
+}
+
+/* Several components on this page (.grammar-field, .grammar-roster, ...) set
+   their own author `display` value, which otherwise beats the browser's
+   default `[hidden] { display: none }` UA rule at equal specificity —
+   guarantee the hidden attribute always wins regardless of component. */
+[hidden] { display: none !important; }
+
+/* Nav sits at z-index 9999, above every overlay on this page (they're all
+   z-index 50), so it stays visible on top of the leaderboard unless hidden
+   explicitly — toggled by main.js when the results overlay opens/closes. */
+body.grammar-nav-hidden .site-nav { display: none; }
+
+.builder-paint {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.builder-header {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem;
+  padding: 0 1.25rem;
+  text-align: center;
+}
+.builder-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-md);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 1.25rem;
+}
+.builder-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--tile, var(--accent-secondary)) 45%, transparent);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+}
+.hero-stat strong { color: var(--ink); }
+.hero-stat:nth-child(odd) { transform: rotate(-1.5deg); }
+.hero-stat:nth-child(even) { transform: rotate(1.5deg); }
+
+/* ── EXAMS ↔ GRAMMAR cross-link ──────────────────────────
+   Real links between two separate pages, not a client-side toggle —
+   same treatment as flashcards' .cards-tabs/.cards-tab. */
+.builder-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+.builder-tab {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
+/* ── SETUP ────────────────────────────────────────────── */
+.grammar-section-hdr {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+.setup-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+  margin-bottom: 0.4rem;
+}
+.grammar-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
+.grammar-section-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+}
+
+.grammar-setup {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem);
+}
+/* ── SETTINGS RECEIPT — every selector lives on a torn paper "receipt"
+   (.pp-receipt/.pp-receipt__paper), same component as the study cards. */
+.grammar-receipt { margin: 0 auto; }
+.grammar-receipt-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.7rem;
+  padding: 1.8rem 1.6rem 2rem;
+}
+.grammar-receipt-title {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 0.9rem;
+  margin: 0;
+}
+
+.grammar-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
+.grammar-field > span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Every section after the first gets a torn-paper tear line above it —
+   same conic-gradient "teeth" mask as .pp-receipt__paper's own top/bottom
+   edge, just a single zigzag edge on a thin strip instead of a full lens,
+   so each section on the setup reads as its own torn-off slip. */
+.grammar-field:not(:first-of-type) {
+  margin-top: 0.15rem;
+  padding-top: 1.3rem;
+}
+.grammar-field:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1.6rem;
+  right: -1.6rem;
+  height: 11px;
+  --tooth: 11px;
+  background: var(--border-subtle);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
+}
+
+/* ── STICKY-NOTE SELECTORS — colour-rotated .pp-sticky notes carrying a
+   real radio/checkbox, same recipe as the Facts tab's fact-tiles. Native
+   input stays visible+accessible; a glow highlights the checked note. */
+.sticky-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.7rem;
+}
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 0.6rem 0.45rem;
+}
+.grammar-avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  max-width: 400px;
+}
+
+/* ── OPTIONS STRIP — each selector group (mode, size, time, operations,
+   range) is its own labeled row, stacked with a clear gap, instead of one
+   merged wrapping collage — makes it obvious where one selector ends and
+   the next begins. */
+.grammar-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.strip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+.strip-group::before {
+  content: attr(data-label);
+  flex: 0 0 100%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+/* Compound with .pp-sticky (see .grammar-lb-row.pp-sticky above for why) —
+   loader.js's late-injected @import of components.css can otherwise beat
+   this page's own padding at an equal-specificity tie. */
+.pp-sticky.sticky-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  padding: 0.4rem 0.75rem 0.42rem;
+  cursor: pointer;
+  user-select: none;
+}
+.sticky-choice:hover { transform: rotate(0deg) scale(1.05); }
+.sticky-choice:has(input:checked) {
+  transform: rotate(0deg) scale(1.06);
+  box-shadow:
+    0 0 0 3px rgba(20, 19, 15, 0.4),
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+}
+.sticky-choice input {
+  width: 13px;
+  height: 13px;
+  accent-color: #14130f;
+  cursor: pointer;
+}
+
+/* Avatar picker — same sticky-note selection pattern, but the picture does
+   the talking so the radio input is present (for a11y/keyboard) yet
+   visually hidden; the checked-glow ring is the only selection affordance. */
+.pp-sticky.avatar-choice {
+  padding: 0.22rem;
+  aspect-ratio: 1;
+}
+.avatar-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* "Upload your own" tile — dashed placeholder until a photo is picked,
+   after which it looks just like any other avatar tile. */
+.avatar-choice--upload {
+  cursor: pointer;
+}
+.avatar-choice--upload:not(:has(img)) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--border-subtle);
+}
+.avatar-choice--upload svg { pointer-events: none; }
+
+.grammar-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+.grammar-start-btn:hover { transform: translateY(-1px); }
+.grammar-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* The in-play "Submit & rank" note — appears once every word is cleared. */
+.grammar-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.3rem 0.75rem;
+  margin-top: 0.4rem;
+  cursor: pointer;
+}
+.grammar-submit-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.grammar-submit-btn:disabled { opacity: 0.55; cursor: default; }
+
+/* ── GAME NAME + 1v1 CODE INPUTS ─────────────────────────── */
+.grammar-name-input,
+.grammar-code-input {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  max-width: 320px;
+}
+.grammar-code-input {
+  margin-top: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+}
+.grammar-name-input:focus,
+.grammar-code-input:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+}
+
+/* ── LOBBY CODE DISPLAY — shown only when hosting a private 1v1 room ──── */
+.grammar-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+.grammar-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.grammar-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+.grammar-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+.grammar-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+/* ── LOBBY / PLAY / RESULTS OVERLAY ─────────────────────── */
+/* `overflow-y: auto` + `margin: auto` on the child (not `align-items:
+   center` on this container) — a tall leaderboard (10 players) needs to be
+   scrollable to reach every row; `align-items: center` alone clips content
+   taller than the viewport with no way to scroll up to the hidden top. */
+.review-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+
+.grammar-lobby-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+.grammar-lobby-count {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+/* Seats are small sticky notes carrying an avatar — real joiners (then
+   bots, staggered in one at a time) replace the empty placeholders. */
+.grammar-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.pp-sticky.grammar-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: grammar-seat-pop 0.35s ease both;
+}
+.grammar-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+.grammar-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.grammar-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+.grammar-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+@keyframes grammar-seat-pop {
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
+}
+
+.grammar-cancel-btn {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+/* Host-only "start now" — cut the wait short and fill empty seats with bots.
+   Hidden until a real second player is in the room. */
+.grammar-lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+.grammar-startnow-btn {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 1.4rem 0.75rem;
+  cursor: pointer;
+}
+.grammar-startnow-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.grammar-startnow-btn[hidden] { display: none; }
+
+/* ── THE PASSAGE CARD ─────────────────────────────────
+   The widest card on the site, and deliberately so: this one holds a whole
+   passage of prose that has to be READ, not glanced at. Everything else in
+   the play view is small enough to sit beside it. */
+.grammar-card {
+  position: relative;
+  width: min(720px, 100%);
+  margin: 0 auto 1.1rem;
+}
+.grammar-card-face.pp-receipt__paper {
+  position: relative; /* the blob behind it is absolutely placed */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 1.7rem 1.4rem 1.5rem;
+  min-height: 400px;
+}
+.grammar-blob {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.grammar-blob svg { width: 100%; height: 100%; }
+
+.grammar-timer-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  right: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: -3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+/* How many mistakes are in there. Given away on purpose — see the notes in
+   game.js: without it, "am I finished?" has no answerable form. */
+.grammar-error-note {
+  position: absolute;
+  z-index: 3;
+  top: -12px;
+  left: 18px;
+  font-size: 0.6rem;
+  padding: 0.22rem 0.5rem;
+  --pp-note-tilt: 3deg;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ── THE BOARD ──────────────────────────────────────── */
+.grammar-board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  width: 100%;
+}
+.grammar-passage-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* ── LANDSCAPE STAGE ───────────────────────────────────
+   Phones keep one centred column — passage first, tag bar under it. From
+   900px up it goes landscape, but the split is the opposite way round to the
+   other games: the PASSAGE takes the wide left column (it is the thing being
+   read) and the CUPS bar is a narrow rail on the right, always in reach of
+   the hand that is not on the keyboard. */
+.grammar-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1.1rem;
+}
+.grammar-play-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+}
+.grammar-play-side[hidden] { display: none; }
+
+@media (min-width: 900px) {
+  #grammar-play-bd .review-wrap { width: min(1040px, 100%); }
+  .grammar-stage {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1.6rem;
+  }
+  .grammar-card { margin: 0; flex: 1 1 auto; width: auto; min-width: 0; max-width: 700px; }
+  .grammar-play-side {
+    flex: 0 0 auto;
+    width: 220px;
+    position: sticky;
+    top: 0;
+  }
+}
+
+@media (min-width: 1300px) {
+  #grammar-play-bd .review-wrap { width: min(1200px, 100%); }
+  .grammar-stage { gap: 2.2rem; }
+  .grammar-play-side { width: 250px; }
+}
+
+.grammar-time-remaining {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+/* Rendered inside the card face (not a standalone screen) so the card is
+   visible from the moment the round starts — countdown swaps for the
+   question the instant startAt passes. */
+.grammar-countdown {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Room-entry roster — everyone in the room (you, other real players, bots
+   with real names) pops in one at a time during the "get ready" beat. */
+.grammar-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.grammar-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: grammar-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+.grammar-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+@keyframes grammar-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── RESULTS — the leaderboard lives on the same receipt as the settings
+   card; each row is its own colour-rotated .pp-sticky note (tape + tilt),
+   so the "paper" motif carries all the way through to the final screen. */
+.grammar-results-receipt { margin: 0 auto 1.25rem; }
+.grammar-results-paper { padding: 1.6rem 1.4rem 1.8rem; }
+
+.grammar-leaderboard {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+/* Compound with .pp-sticky (not just .grammar-lb-row alone) so this reliably
+   outranks the shared .pp-sticky base rule regardless of stylesheet load
+   order — loader.js injects its own <style> with an `@import
+   components.css`, which can otherwise land later in the cascade than this
+   page's own stylesheet and win an equal-specificity tie. */
+.grammar-lb-row.pp-sticky {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
+  opacity: 0;
+  animation: grammar-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes grammar-lb-in {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--pp-note-tilt, 0deg)) scale(1); }
+}
+/* A separate keyframe (not just an overridden transform) because the base
+   entrance animation's held end-state otherwise wins the cascade over any
+   plain `transform` on .is-winner, even after the animation finishes. */
+@keyframes grammar-lb-in-winner {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.08); }
+}
+.grammar-lb-row.is-winner { animation-name: grammar-lb-in-winner; }
+.grammar-lb-row.is-self { box-shadow: 0 0 0 2px var(--accent-secondary), 0 1px 1px rgba(20, 19, 15, 0.1); }
+
+.grammar-lb-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 2px rgba(20, 19, 15, 0.15);
+}
+.grammar-lb-avatar img { width: 100%; height: 100%; display: block; }
+
+.grammar-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
+.grammar-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+/* Finisher's completion time — the tiebreak that decides a score draw. */
+.grammar-lb-time { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+.grammar-lb-score { font-weight: 700; }
+
+/* Winner gets the loudest note: gold paper, no tilt, bigger, glowing ring. */
+.grammar-lb-row.is-winner {
+  --pp-note-bg: #ffdd6b;
+  box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  font-size: 0.8rem;
+}
+.grammar-lb-row.is-winner .grammar-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
+
+.grammar-again-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1.4rem;
+  cursor: pointer;
+}
+
+/* ── AWAITING RESULTS — bridges the gap between the round ending and the
+   leaderboard read landing (grace delay + one getDocs) so the bare setup
+   page never shows through in between. ── */
+.grammar-awaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.grammar-awaiting-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.grammar-awaiting-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: grammar-awaiting-bounce 1s ease-in-out infinite;
+}
+.grammar-awaiting-dots span:nth-child(2) { background: var(--accent-secondary); animation-delay: 0.15s; }
+.grammar-awaiting-dots span:nth-child(3) { background: var(--accent-success); animation-delay: 0.3s; }
+@keyframes grammar-awaiting-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-10px); opacity: 1; }
+}
+.grammar-awaiting-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── CONFETTI — fired once when the signed-in player wins their round. ── */
+.grammar-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+.grammar-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: grammar-confetti-fall linear forwards;
+}
+@keyframes grammar-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
+}
+
+/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
+   Start / Cancel / Play Again / Copy all carry .pp-note-btn now (see
+   components.css), so the paper, tape, tilt and lift come from .pp-sticky.
+   These rules only keep the layout each button needs — anything that would
+   repaint the note (background, border, radius, font, shadow) is dropped. */
+.grammar-start-btn,
+.grammar-again-btn,
+.grammar-cancel-btn,
+.grammar-lobby-code-value button {
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.grammar-cancel-btn { color: #5a544a; }
+.grammar-lobby-code-value button { font-size: 0.72rem; padding: 0.45rem 0.8rem 0.5rem; }
+.grammar-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
+.grammar-start-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.grammar-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: rotate(var(--pp-note-tilt, -2deg));
+}
+
+/* ── The page tabs are sticky notes too ──────────────────────────────────
+   These were the last .pp-pill chrome left on the page. Same paper, tape and
+   tilt as every other control; the active one keeps its colour and takes an
+   inked outline rather than inverting to a dark chip. */
+.builder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 0.5rem;
+  padding-top: 12px;
+}
+.builder-tab.pp-pill {
+  position: relative;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.45rem 0.85rem 0.5rem;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.builder-tab.pp-pill::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 44px;
+  height: 15px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.builder-tabs .builder-tab:nth-child(1) { --pp-note-bg: #fff3a8; }
+.builder-tabs .builder-tab:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.builder-tabs .builder-tab:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.builder-tabs .builder-tab:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.builder-tab.pp-pill:hover {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  color: #14130f;
+}
+.builder-tab.pp-pill.is-active {
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+
+/* ── Quick join ─────────────────────────────────────────────────────────
+   A player arriving with a friend's code has nothing to configure — the room
+   they're joining decides the subject, the size and the clock. This sits
+   ABOVE the settings so they never have to walk through them.
+   Compounded with .pp-sticky (see .sticky-choice above for why): components.css
+   is @imported late by loader.js and would otherwise win the equal-specificity
+   tie on `display`. */
+.pp-sticky.quick-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem 1rem;
+  width: min(540px, 100%);
+  margin: 0 auto 1.4rem;
+  padding: 0.85rem 1.1rem 0.95rem;
+  --pp-note-tilt: -1deg;
+}
+.quick-join-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.quick-join-copy strong { font-size: 0.95rem; }
+.quick-join-copy span { font-size: 0.76rem; opacity: 0.7; }
+.quick-join-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.quick-join-input {
+  width: 6.4rem;
+  padding: 0.42rem 0.5rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(20, 19, 15, 0.22);
+  border-radius: 5px;
+}
+.quick-join-input::placeholder { opacity: 0.35; }
+.quick-join-btn {
+  padding: 0.44rem 1.15rem;
+  font-size: 0.85rem;
+}
+.quick-join-btn:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 520px) {
+  .pp-sticky.quick-join { justify-content: center; text-align: center; }
+  .quick-join-copy { align-items: center; }
+}
+
+/* A saved photo carries a small remove control — the picker is a LIST the
+   player curates, not a single slot that each upload silently overwrote. */
+.avatar-choice--saved { overflow: visible; }
+.avatar-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #14130f;
+  background: var(--surface-primary);
+  box-shadow: 0 1px 3px rgba(20, 19, 15, 0.35);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.avatar-choice--saved:hover .avatar-remove,
+.avatar-choice--saved:focus-within .avatar-remove { opacity: 1; }
+/* Touch devices have no hover to reveal it. */
+@media (hover: none) {
+  .avatar-remove { opacity: 1; }
+}
+
+/* The sticky-note paper colours, mirrored from components.css's
+   .pp-sticky--c0…c5. Declared here because the review key and the marked-up
+   passage need them as COLOUR VALUES (backgrounds, swatches) rather than as
+   note classes — .pp-sticky--cN only sets --pp-note-bg on the note itself. */
+:root {
+  --gr-note-yellow: #fff3a8;
+  --gr-note-purple: #e8c8ff;
+  --gr-note-green:  #c8f0c0;
+  --gr-note-blue:   #bfe3ff;
+  --gr-note-orange: #ffd7a3;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THE EDITING SURFACE
+   The passage reads as one paragraph but is a row of per-word contenteditable
+   spans (see js/game.js for why). Everything below exists to hide that seam:
+   the spans sit inline with normal word spacing, and the focus ring is drawn
+   on the word rather than on a box, so it feels like a caret in prose.
+   ═══════════════════════════════════════════════════════ */
+.grammar-passage {
+  width: 100%;
+  text-align: left;
+  font-size: 1.02rem;
+  line-height: 2.15;   /* generous: edited words grow a tag badge above them */
+  color: var(--text-primary);
+  padding: 0.9rem 1rem 1.2rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  max-height: min(52vh, 460px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  cursor: text;
+}
+
+/* One word. Editable, but styled as prose — no input chrome at all until the
+   player actually touches it. */
+.grammar-tok {
+  display: inline;
+  outline: none;
+  border-radius: 3px;
+  padding: 0.05em 0.12em;
+  margin: 0 -0.02em;
+  transition: background 0.14s ease, box-shadow 0.14s ease;
+}
+.grammar-tok:hover {
+  background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+}
+.grammar-tok:focus {
+  background: color-mix(in srgb, var(--accent-primary) 26%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+
+/* A word the player has changed. Marked, but NEVER graded — nothing here can
+   hint at whether the edit was right, which is the whole game. */
+.grammar-tok.is-edited {
+  background: color-mix(in srgb, var(--gr-note-purple) 22%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--gr-note-purple) 70%, transparent);
+  font-weight: 600;
+}
+
+/* The CUPS letter the player assigned, riding above the word like a
+   proof-reader's margin mark. */
+.grammar-tok.is-tagged { position: relative; }
+.grammar-tok.is-tagged::before {
+  content: attr(data-tag);
+  position: absolute;
+  top: -0.95em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.18em 0.4em;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--bg);
+  pointer-events: none;
+}
+
+/* ── THE CUPS TAG BAR ──────────────────────────────────
+   Four sticky notes. Naming the mistake is worth the same as fixing it, so
+   this is a scoring control, not a palette. */
+.grammar-tagbar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+@media (min-width: 900px) {
+  .grammar-tagbar { grid-template-columns: 1fr; }
+}
+.grammar-tagbar.is-idle { opacity: 0.55; }
+
+.grammar-tagbtn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.grammar-tagbtn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.grammar-tagbtn-key {
+  margin-right: 0.4rem;   /* .pp-sticky owns `display`, so the flex gap never lands */
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+  width: 1.35em;
+  text-align: center;
+  flex: 0 0 auto;
+}
+.grammar-tagbtn-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+/* The tag currently on the focused word. */
+.grammar-tagbtn.is-on {
+  box-shadow: 0 0 0 2.5px var(--ink);
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+
+.grammar-hint {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin: 0;
+}
+.grammar-edit-note {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* The clock turns urgent in the last thirty seconds — a proof-reader who has
+   lost track of it submits nothing at all, the worst possible outcome. */
+.grammar-time-remaining.is-urgent {
+  color: var(--accent-danger);
+  animation: grammar-pulse 1s ease-in-out infinite;
+}
+@keyframes grammar-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── RESULTS: the leaderboard row's detail line ────────
+   What actually separated them — caught, named, time, false edits. */
+.grammar-lb-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-top: 0.15rem;
+}
+
+/* ── RESULTS: your own CUPS breakdown ──────────────────
+   "You caught every capital and missed three of four usage errors" is a study
+   instruction. A leaderboard position is not. */
+.grammar-breakdown {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.grammar-breakdown-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 0.8rem;
+  color: var(--text-secondary);
+}
+.grammar-breakdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.grammar-bd-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  min-width: 72px;
+}
+.grammar-bd-key {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.grammar-bd-label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.grammar-bd-score { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; }
+.grammar-bd-tag { font-family: var(--font-mono); font-size: 0.55rem; opacity: 0.75; }
+.grammar-breakdown-note {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  margin: 0.8rem 0 0;
+}
+
+.grammar-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+.grammar-review-btn,
+.grammar-again-btn {
+  padding: 0.6rem 1.1rem;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: transform 0.14s ease;
+}
+.grammar-review-btn:hover,
+.grammar-again-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+
+/* ═══════════════════════════════════════════════════════
+   THE REVIEW — the passage again, marked
+   This is where the round teaches. A leaderboard says you came fourth; the
+   marked passage says why — the comma you never saw, the "there" you read
+   straight past, the correct word you changed anyway.
+   ═══════════════════════════════════════════════════════ */
+.grammar-review-bd .grammar-review {
+  width: min(860px, 100%);
+  max-height: 88vh;
+  overflow: hidden;
+}
+.grammar-review-paper.pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.6rem 1.5rem 1.4rem;
+  max-height: 88vh;
+}
+.grammar-review-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+.grammar-review-sub {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+.grammar-review-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.grammar-key-item { display: inline-flex; align-items: center; gap: 0.28rem; }
+.grammar-key-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.grammar-key-swatch.is-caught { background: var(--accent-success); }
+.grammar-key-swatch.is-missed { background: var(--accent-danger); }
+.grammar-key-swatch.is-wrong  { background: var(--gr-note-yellow); }
+.grammar-key-swatch.is-false  { background: var(--gr-note-orange); }
+
+.grammar-review-body {
+  text-align: left;
+  font-size: 0.98rem;
+  line-height: 2.4;
+  padding: 0.9rem 1rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.grammar-mark {
+  position: relative;
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0.05em 0.2em;
+}
+.grammar-mark.is-caught     { background: color-mix(in srgb, var(--accent-success) 30%, transparent); }
+.grammar-mark.is-missed     { background: color-mix(in srgb, var(--accent-danger) 26%, transparent); }
+.grammar-mark.is-wrong-fix  { background: color-mix(in srgb, var(--gr-note-yellow) 30%, transparent); }
+.grammar-mark.is-false-edit { background: color-mix(in srgb, var(--gr-note-orange) 34%, transparent); }
+
+.grammar-mark-good { font-weight: 700; }
+.grammar-mark-bad,
+.grammar-mark-struck { text-decoration: line-through; opacity: 0.6; }
+/* The right answer, sitting immediately after whatever went wrong. */
+.grammar-mark-fix {
+  margin-left: 0.3em;
+  font-weight: 700;
+  border-bottom: 2px solid color-mix(in srgb, var(--ink) 45%, transparent);
+}
+/* Which CUPS letter it was — lit when the player named it correctly. */
+.grammar-mark-cat {
+  position: absolute;
+  top: -0.85em;
+  right: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.14em 0.3em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  color: var(--text-primary);
+}
+.grammar-mark-cat.is-right {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.grammar-review-close {
+  align-self: center;
+  margin-top: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THE CUPS RULES CARD — read before you race
+   ═══════════════════════════════════════════════════════ */
+.grammar-rules-bd .grammar-rules {
+  width: min(820px, 100%);
+  max-height: 88vh;
+  overflow: hidden;
+}
+.grammar-rules-paper.pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.6rem 1.5rem 1.4rem;
+  max-height: 88vh;
+}
+.grammar-rules-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+.grammar-rules-sub {
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+.grammar-rules-list {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+  padding: 0.4rem 0.2rem 0.2rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+@media (min-width: 700px) {
+  .grammar-rules-list { grid-template-columns: 1fr 1fr; }
+}
+.grammar-rule-card { padding: 0; }
+/* A letter the round is not scoring is dimmed, not hidden — it is still part
+   of the checklist, just not part of this round's hunt. */
+.grammar-rule-card.is-out { opacity: 0.45; }
+.grammar-rule-paper { padding: 0.85rem 0.95rem; text-align: left; }
+.grammar-rule-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+.grammar-rule-key {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.grammar-rule-hint {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  margin: 0 0 0.55rem;
+  color: var(--text-secondary);
+}
+.grammar-rule-examples { display: flex; flex-direction: column; gap: 0.32rem; }
+.grammar-rule-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  margin: 0;
+}
+.grammar-ex-bad { text-decoration: line-through; opacity: 0.6; }
+.grammar-ex-good { font-weight: 700; }
+.grammar-rules-close {
+  align-self: center;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+/* ── Mobile: the tag bar stays reachable ──────────────────
+   On a phone the passage scrolls inside its own box and the CUPS bar sits
+   directly beneath it, so the thumb never has to travel to name a mistake. */
+@media (max-width: 899px) {
+  .grammar-passage { max-height: 46vh; font-size: 0.96rem; }
+  .grammar-play-side { position: sticky; bottom: 0; padding-bottom: 0.4rem; }
+}

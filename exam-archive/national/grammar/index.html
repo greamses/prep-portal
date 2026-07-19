@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Grammar — Multiplayer Editing with CUPS | PrepPortal</title>
+    <meta
+      name="description"
+      content="Proof-reading as a race. Edit a passage riddled with planted mistakes, name each one with CUPS — Capitalisation, Usage, Punctuation, Spelling — and submit before the clock. Up to 10 players or 1v1."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
+          "/exam-archive/national/grammar/js/bots.js": "/exam-archive/national/grammar/js/bots.js?v=c4ae2805",
+          "/exam-archive/national/grammar/js/game.js": "/exam-archive/national/grammar/js/game.js?v=c4ae2805",
+          "/exam-archive/national/grammar/js/leaderboard.js": "/exam-archive/national/grammar/js/leaderboard.js?v=c4ae2805",
+          "/exam-archive/national/grammar/js/main.js": "/exam-archive/national/grammar/js/main.js?v=c4ae2805",
+          "/exam-archive/national/grammar/js/matchmaking.js": "/exam-archive/national/grammar/js/matchmaking.js?v=c4ae2805",
+          "/exam-archive/national/grammar/js/rng.js": "/exam-archive/national/grammar/js/rng.js?v=c4ae2805",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=c4ae2805",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=c4ae2805",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=c4ae2805",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=c4ae2805",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=c4ae2805",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=c4ae2805",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=c4ae2805",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=c4ae2805",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=c4ae2805",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=c4ae2805",
+          "/data/grammar/index.js": "/data/grammar/index.js?v=c4ae2805",
+          "/data/grammar/themes.js": "/data/grammar/themes.js?v=c4ae2805",
+          "/data/grammar/cups.js": "/data/grammar/cups.js?v=c4ae2805",
+          "/data/grammar/manifest.js": "/data/grammar/manifest.js?v=c4ae2805",
+          "/data/grammar/passages/diary.js": "/data/grammar/passages/diary.js?v=c4ae2805",
+          "/data/grammar/passages/story.js": "/data/grammar/passages/story.js?v=c4ae2805",
+          "/data/grammar/passages/letter.js": "/data/grammar/passages/letter.js?v=c4ae2805",
+          "/data/grammar/passages/report.js": "/data/grammar/passages/report.js?v=c4ae2805",
+          "/data/grammar/passages/science.js": "/data/grammar/passages/science.js?v=c4ae2805"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>GRAMMAR</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/puzzles/index.html" role="tab">Puzzles</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/geometry/index.html" role="tab">Geometry</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/vocab/index.html" role="tab">Vocab</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/grammar/index.html" role="tab">Grammar</a>
+      </div>
+    </header>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="grammar-setup" id="grammar-setup">
+      <div class="grammar-section-hdr">
+        <div class="setup-eyebrow">Get Ready</div>
+        <h2>Set Up Your Edit</h2>
+        <p class="grammar-section-sub">
+          You get one passage full of planted mistakes. Fix them, name each one with CUPS, and submit before the clock runs out.
+        </p>
+      </div>
+
+      <!-- Handed a code? None of the settings below apply to you — the host's
+           room decides all of them. Jump straight in. -->
+      <div class="quick-join pp-sticky pp-sticky--tape pp-sticky--c3" id="grammar-quickjoin">
+        <div class="quick-join-copy">
+          <strong>Got a room code?</strong>
+          <span>Skip the setup and join your friend's room.</span>
+        </div>
+        <div class="quick-join-controls">
+          <input class="quick-join-input" id="grammar-quickjoin-input" type="text" maxlength="6"
+                 placeholder="ABC123" autocomplete="off" spellcheck="false" aria-label="Room code" />
+          <button class="pp-sticky pp-note-btn quick-join-btn pp-sticky--c0" id="grammar-quickjoin-btn" type="button">Join</button>
+        </div>
+      </div>
+
+      <div class="grammar-receipt pp-receipt" id="grammar-receipt">
+        <div class="grammar-receipt-paper pp-receipt__paper">
+          <p class="grammar-receipt-title">Editing Settings</p>
+
+          <div class="grammar-field" id="grammar-section-player">
+            <span>Player</span>
+            <div id="grammar-player-carousel"></div>
+          </div>
+
+          <!-- Moved into the Player carousel's slides by main.js. -->
+          <input class="grammar-name-input" id="grammar-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid grammar-avatar-grid" id="grammar-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="grammar-avatar-upload-input" accept="image/*" hidden />
+
+          <div class="grammar-field" id="grammar-section-topic">
+            <span>Choose Your Passage</span>
+            <div id="grammar-topic-carousel"></div>
+          </div>
+
+          <div class="grammar-field" id="grammar-section-options">
+            <span>Game Options</span>
+            <div id="grammar-options-carousel"></div>
+          </div>
+
+          <div class="grammar-field" id="grammar-section-room">
+            <span>Room</span>
+            <div id="grammar-room-carousel"></div>
+            <input class="grammar-code-input" id="grammar-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+          </div>
+
+          <!-- Read before you race. Hunting errors you were never taught to
+               name is a guessing game. -->
+          <button class="grammar-study-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="grammar-study-btn" type="button" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z" />
+              <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z" />
+            </svg>
+            <span>Read the CUPS rules</span>
+          </button>
+
+          <button class="grammar-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="grammar-start-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+            <span id="grammar-start-label">Find a Room</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ CUPS RULES CARD ═══
+         The checklist itself, built from the same registry the round scores
+         against. Out-of-focus letters are dimmed. -->
+    <div class="review-bd grammar-rules-bd" id="grammar-rules-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="grammar-rules pp-receipt">
+        <div class="grammar-rules-paper pp-receipt__paper">
+          <p class="grammar-rules-title">The CUPS checklist</p>
+          <p class="grammar-rules-sub">Every planted mistake is one of these four. You score for fixing it — and again for naming it.</p>
+          <div class="grammar-rules-list" id="grammar-rules-list"></div>
+          <button class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0 grammar-rules-close" id="grammar-rules-close" type="button">
+            Got it — let's edit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LOBBY OVERLAY ═══ -->
+    <div class="review-bd" id="grammar-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="grammar-lobby-status" id="grammar-lobby-status">Waiting for other players…</p>
+        <div class="grammar-lobby-code" id="grammar-lobby-code" hidden>
+          <span>Share this code with your opponent</span>
+          <div class="grammar-lobby-code-value">
+            <strong id="grammar-lobby-code-text"></strong>
+            <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="grammar-lobby-code-copy" title="Copy code">Copy</button>
+          </div>
+        </div>
+        <div class="grammar-lobby-seats" id="grammar-lobby-seats"></div>
+        <p class="grammar-lobby-count" id="grammar-lobby-count">1 / 5</p>
+        <div class="grammar-lobby-actions">
+          <button class="grammar-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="grammar-lobby-start-now" type="button" hidden>Start now</button>
+          <button class="grammar-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="grammar-lobby-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="grammar-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="grammar-time-remaining" id="grammar-time-remaining"></p>
+        <div class="grammar-roster" id="grammar-roster" hidden></div>
+
+        <!-- On desktop this goes landscape: the passage takes the left column
+             and the CUPS tag bar plus Submit sit on the right, always in
+             reach. On phones it stacks back into one column with the tag bar
+             pinned under the passage. -->
+        <div class="grammar-stage" id="grammar-stage">
+          <div class="grammar-card pp-receipt" id="grammar-card" hidden>
+            <span class="pp-sticky pp-sticky--tape grammar-timer-note" id="grammar-timer-note"></span>
+            <span class="pp-sticky pp-sticky--tape grammar-error-note" id="grammar-error-note"></span>
+            <span class="pp-sticky pp-sticky--tape grammar-mode-note pp-sticky--c2" id="grammar-mode-note"></span>
+            <div class="grammar-card-face pp-receipt__paper">
+              <div class="grammar-blob" aria-hidden="true"></div>
+              <p class="grammar-countdown" id="grammar-countdown" hidden></p>
+
+              <div class="grammar-board" id="grammar-board" hidden>
+                <h3 class="grammar-passage-title" id="grammar-passage-title"></h3>
+                <!-- The editable surface. Every word inside is its own
+                     contenteditable span (built by game.js) — see the comment
+                     at the top of that file for why it is not one blob. -->
+                <div class="grammar-passage" id="grammar-passage" role="textbox" aria-multiline="true"
+                     aria-label="The passage — click any word to correct it"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right column: the CUPS tag bar, the running counts, and Submit. -->
+          <div class="grammar-play-side" id="grammar-play-side" hidden>
+            <p class="grammar-hint" id="grammar-hint"></p>
+            <div class="grammar-tagbar" id="grammar-tagbar" role="group" aria-label="Name the mistake"></div>
+            <p class="grammar-edit-note" id="grammar-edit-note">0 edited · 0 named</p>
+            <button class="grammar-submit-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="grammar-submit-btn" type="button" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Submit &amp; rank</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AWAITING RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="grammar-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="grammar-awaiting">
+          <div class="grammar-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="grammar-awaiting-text">Marking the passages…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="grammar-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="grammar-results-receipt pp-receipt">
+          <div class="grammar-results-paper pp-receipt__paper">
+            <div class="grammar-section-hdr">
+              <div class="setup-eyebrow">Pens Down</div>
+              <h2>Results</h2>
+            </div>
+            <ol class="grammar-leaderboard" id="grammar-leaderboard"></ol>
+            <!-- Your own CUPS breakdown — the part a student can act on. -->
+            <div class="grammar-breakdown" id="grammar-breakdown" hidden></div>
+          </div>
+        </div>
+        <div class="grammar-results-actions">
+          <button class="grammar-review-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="grammar-review-btn" type="button">
+            See what you missed
+          </button>
+          <button class="grammar-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="grammar-again-btn" type="button">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ REVIEW OVERLAY ═══
+         The passage again, marked up: what you caught, what you missed, what
+         you changed that was already right. -->
+    <div class="review-bd grammar-review-bd" id="grammar-review-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="grammar-review pp-receipt">
+        <div class="grammar-review-paper pp-receipt__paper">
+          <p class="grammar-review-title" id="grammar-review-title"></p>
+          <p class="grammar-review-sub" id="grammar-review-sub"></p>
+          <div class="grammar-review-key" aria-hidden="true">
+            <span class="grammar-key-item"><i class="grammar-key-swatch is-caught"></i>caught</span>
+            <span class="grammar-key-item"><i class="grammar-key-swatch is-missed"></i>missed</span>
+            <span class="grammar-key-item"><i class="grammar-key-swatch is-wrong"></i>wrong fix</span>
+            <span class="grammar-key-item"><i class="grammar-key-swatch is-false"></i>already correct</span>
+          </div>
+          <div class="grammar-review-body" id="grammar-review-body"></div>
+          <button class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0 grammar-review-close" id="grammar-review-close" type="button">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js?v=c4ae2805"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint, .grammar-blob").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>

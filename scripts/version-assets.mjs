@@ -89,6 +89,21 @@ const PAGES = [
         .filter((rel) => existsSync(join(ROOT, rel.slice(1)))),
     ],
   },
+  {
+    name: 'grammar',
+    extra: [
+      '/data/grammar/index.js',
+      '/data/grammar/themes.js',
+      '/data/grammar/cups.js',
+      '/data/grammar/manifest.js',
+      // The passage files are imported DYNAMICALLY at round start (one module
+      // per theme), and an import map remaps a dynamic import just like a
+      // static one — so editing a passage has to bust the page here too.
+      ...['diary', 'story', 'letter', 'report', 'science']
+        .map((t) => `/data/grammar/passages/${t}.js`)
+        .filter((rel) => existsSync(join(ROOT, rel.slice(1)))),
+    ],
+  },
 ].map((p) => ({
   ...p,
   extra: p.extra || [],

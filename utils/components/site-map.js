@@ -139,6 +139,14 @@ export const SITE_PAGES = [
     blurb: "Science & maths vocabulary hangman played straight through the alphabet — read the clue, you get the first letter, guess the rest. Multiplayer or 1v1.",
     keywords: ["vocab", "vocabulary", "hangman", "spelling", "word game", "definitions", "science words", "maths words", "multiplayer", "versus", "1v1", "alphabet"],
   },
+  {
+    id: "grammar",
+    title: "Grammar — CUPS Editing Race",
+    href: "/exam-archive/national/grammar/index.html",
+    category: "exams",
+    blurb: "Proof-reading as a race: edit a passage full of planted mistakes, name each one with CUPS — Capitalisation, Usage, Punctuation, Spelling — and submit before the clock. Multiplayer or 1v1.",
+    keywords: ["grammar", "editing", "proofreading", "proof-reading", "CUPS", "capitalisation", "capitalization", "punctuation", "spelling", "usage", "comprehension", "english", "passage", "correct the errors", "multiplayer", "versus", "1v1"],
+  },
 
   // ── Math & science activities ──────────────────────────────────────
   {

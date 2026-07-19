@@ -34,10 +34,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *                              score (Vocab: score, then speed, then wrong guesses)
  *                              supplies its own — and passes the player's own extra
  *                              metrics through `finishRound({ ..., myMetrics })`.
+ * @param {string[]} [o.metricKeys] which extra fields to read back off a real
+ *                              player's doc. Defaults to Vocab's ['timeMs','wrong'].
+ *                              A game ranking on something else (Grammar: false
+ *                              edits) names its own, so `compare` is never handed
+ *                              an undefined it silently sorts last.
  * @returns finishRound(args) -> ranked [{ name, score, isBot, isSelf, avatarSeed, ...metrics }]
  */
-export function createLeaderboard({ rooms, scoreBot, compare }) {
+export function createLeaderboard({ rooms, scoreBot, compare, metricKeys }) {
   const cmp = compare || ((a, b) => b.score - a.score);
+  const metrics = metricKeys || ['timeMs', 'wrong'];
   return async function finishRound(args) {
     const { roomId, seed, botsNeeded, myScore, myMetrics } = args;
     const uid = auth.currentUser.uid;
@@ -58,15 +64,17 @@ export function createLeaderboard({ rooms, scoreBot, compare }) {
 
     const real = snap.docs.map((d) => {
       const data = d.data();
-      return {
+      const row = {
         name: data.displayName || 'Player',
         score: data.score ?? 0,
-        timeMs: data.timeMs,
-        wrong: data.wrong,
         isBot: false,
         isSelf: d.id === uid,
         avatarSeed: d.id, // stable per-account face, unlike a name, which can collide
       };
+      // Whatever this game ranks on beyond score, straight off the doc it was
+      // written to by `myMetrics`.
+      for (const key of metrics) row[key] = data[key];
+      return row;
     });
 
     const bots = Array.from({ length: botsNeeded }, (_, i) => {
