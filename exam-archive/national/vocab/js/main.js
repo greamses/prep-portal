@@ -21,6 +21,7 @@ import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
+import { buildRound } from './rng.js';
 import { finishRound, rankVocab } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
@@ -33,14 +34,20 @@ const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
 const NAME_KEY = 'drillGameName';
 
-// A hangman word is a far slower unit than a times-table sum, so the rounds
-// run in minutes, not seconds — 60s would barely fit four words.
-const TIME_LIMITS = [
-  { value: 60, label: '1 min' },
-  { value: 120, label: '2 min', checked: true },
-  { value: 180, label: '3 min' },
-  { value: 300, label: '5 min' },
+// A hangman word is a far slower unit than a times-table sum — and a flat minute
+// count is a giveaway on a 6-word group and impossible on a 65-word topic. So the
+// clock is DERIVED from how many words the round holds:
+//     timeLimit = wordCount × secondsPerWord
+// Every topic is then equally tight, and the ace bot (which finishes at 55% of
+// the clock — see bots.js) is equally hard to beat everywhere. The player picks
+// the PACE, not the minutes.
+const PACES = [
+  { value: 11, label: 'Relaxed' },
+  { value: 8, label: 'Normal', checked: true },
+  { value: 6, label: 'Fast' },
 ];
+const MIN_ROUND_SEC = 45;  // even a 3-word slice gets a usable clock
+const MAX_ROUND_SEC = 900; // …and a 100-word topic doesn't run all afternoon
 
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
@@ -97,7 +104,7 @@ let startNowFn = null;
 const mem = createSetupMemory('vocab');
 let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
 let roomSize = mem.get('roomSize', 5, [5, 10]);
-let timeLimit = mem.get('timeLimit', 120, TIME_LIMITS.map((t) => t.value));
+let pace = mem.get('pace', 8, PACES.map((p) => p.value)); // seconds per word
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 let grade = mem.get('grade', 5, GRADES);
@@ -435,11 +442,12 @@ renderChoiceStep(options, 'size', {
   onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
 });
 renderChoiceStep(options, 'time', {
-  title: 'How long is the round?',
+  title: 'How fast should the round be?',
+  subtitle: 'The clock is set from how many words your pick holds, so every topic is equally tight.',
   name: 'vocab-time',
   colorOffset: 4,
-  options: TIME_LIMITS.map((t) => ({ value: String(t.value), label: t.label, checked: t.value === timeLimit })),
-  onPick: (v) => { timeLimit = Number(v); mem.save({ timeLimit }); flow.next(); }, // last step of this section
+  options: PACES.map((p) => ({ value: String(p.value), label: p.label, checked: p.value === pace })),
+  onPick: (v) => { pace = Number(v); mem.save({ pace }); flow.next(); }, // last step of this section
 });
 options.start('mode');
 
@@ -507,10 +515,10 @@ const flow = createSectionFlow([
   {
     el: $('vocab-section-options'),
     chips: () => {
-      const t = TIME_LIMITS.find((x) => x.value === timeLimit);
+      const p = PACES.find((x) => x.value === pace) || PACES[1];
       return mode === 'versus'
-        ? [{ label: 'Versus 1v1' }, { label: t.label }]
-        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: t.label }];
+        ? [{ label: 'Versus 1v1' }, { label: `${p.label} pace` }]
+        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${p.label} pace` }];
     },
   },
   {
@@ -795,8 +803,23 @@ function makeOnWaiting(waitingStatusText) {
   };
 }
 
+/* The round's clock, derived from how many words the chosen content actually
+   holds: wordCount × pace, clamped. buildRound is the very function the round
+   uses, so the count is exact (its LENGTH doesn't depend on the seed). Decided
+   here, before the room is made, so every player in it shares one clock. */
+async function computeTimeLimit() {
+  try {
+    const words = await loadWords(subject);
+    const n = buildRound({ seed: 1, words, subject, grade, mode: playMode, topic }).length;
+    return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(n * pace)));
+  } catch {
+    return Math.round(26 * pace); // an A–Z-sized fallback
+  }
+}
+
 async function runMultiplayer(name) {
   showLobby(roomSize);
+  const timeLimit = await computeTimeLimit();
   let room;
   try {
     room = await matchmake(
@@ -817,6 +840,7 @@ async function runMultiplayer(name) {
 async function runCreate(name, size, roomMode) {
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
+  const timeLimit = await computeTimeLimit();
   let created;
   try {
     created = await createCodeRoom(
