@@ -4,7 +4,8 @@
   "description": "Root manifest. The Vercel Edge middleware is dependency-free (verifies the Firebase session cookie with the built-in Web Crypto API), so no runtime deps are needed here.",
   "scripts": {
     "deploy": "bash scripts/deploy.sh",
-    "purge": "bash scripts/purge-cache.sh"
+    "purge": "bash scripts/purge-cache.sh",
+    "check:grammar": "node scripts/check-grammar.mjs"
   },
   "dependencies": {}
 }

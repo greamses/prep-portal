@@ -47,6 +47,28 @@ export const CUPS = [
     examples: [
       ['Where is the hall', 'Where is the hall?'],
       ['That is Tolus book.', 'That is Tolu’s book.'],
+      ['We waited and the bus came.', 'We waited, and the bus came.'],
+    ],
+    /* THE COMMA RULES this bank is written and marked against. Stated here
+       because "where the comma goes" is the one CUPS letter with a genuine
+       house style, and a passage that applies it loosely marks a correct
+       reader wrong. Shown on the rules card so a player knows the standard
+       they are being held to.
+
+       Rule 1 is the one that does the work: two complete sentences joined by
+       and/but/or/so take a comma. Two verbs sharing one subject do NOT — that
+       is the distinction most often got wrong in both directions. */
+    rules: [
+      ['Comma before and / but / or / so when it joins two complete sentences.',
+       'The pitch was dry, and the ball ran quickly.'],
+      ['NO comma when the two verbs share one subject.',
+       'He moved the goats and barred the door.'],
+      ['Commas in a pair around a name or description that could be lifted out.',
+       'Our captain, Emeka, won the toss.'],
+      ['Comma before a “which” clause that adds extra information.',
+       'The roots take in water, which travels up the stem.'],
+      ['Apostrophe for possession and for missing letters.',
+       'Amaka’s hat · didn’t · o’clock'],
     ],
   },
   {

@@ -5,25 +5,57 @@
    A passage is one string. Whitespace splits it into TOKENS, and a token is
    either clean prose or a planted error written as:
 
-       {{CAT|bad|good}}
+       {{CAT|bad|good}}                one accepted correction
+       {{CAT|bad|good|also|also}}      several accepted corrections
 
-   CAT is the CUPS letter (C/U/P/S), `bad` is what the player is shown, `good`
-   is the only text that scores. Both must be a WHOLE token — punctuation and
-   quote marks travel with the word they are attached to, which is what lets
-   the play surface make each word independently editable without ever losing
-   track of which word is which (see ../index.js and the page's game.js).
+   CAT is the CUPS letter (C/U/P/S), `bad` is what the player is shown, and
+   every field after it is a correction that SCORES — the first is canonical
+   and is what the review displays. Both halves must be a WHOLE token, though
+   literal text may sit outside the braces and rides along ({{C|lagos|Lagos}}.
+   is fine). That is what lets the play surface make each word independently
+   editable without ever losing track of which word is which.
 
-   So a missing comma is not an empty insertion, it is a word that is missing
-   its comma: {{P|basket|basket,}}. A missing question mark is {{P|go.|go?}}.
+   A blank line is a real paragraph break (see ../index.js's buildPassage).
 
-   RULES FOR NEW PASSAGES
-   · Every non-marker token must already be correct. A "clean" token the player
-     edits is scored as a FALSE EDIT, so a typo you left in by accident
-     punishes the careful reader — proof-read the prose itself first.
-   · Never plant two errors that depend on each other. Each must be fixable and
-     markable on its own.
-   · `band` is [lowestGrade, highestGrade] — the reading level, not the
-     difficulty of the errors.
+   THE RULES THAT MATTER — read before adding a passage
+   · Every non-marker token must ALREADY be correct. A clean token the player
+     edits scores as a FALSE EDIT, so a comma you leave OUT punishes the reader
+     who correctly supplies it. Proof-read the prose itself first, hardest.
+   · A planted error must have exactly ONE defensible fix — or every defensible
+     fix must be listed as an alternative.
+   · Never plant an error whose "correction" is itself bad grammar. (A comma
+     joining two complete sentences is a comma splice, not a fix.)
+   · One token tests ONE rule. Never require a comma AND an apostrophe on the
+     same word — a player who supplies one correctly still scores nothing.
+   · Avoid three-item lists. An Oxford-comma writer will add a comma to a CLEAN
+     token and be charged a false edit for punctuating correctly.
+   · Each passage needs at least one error of EACH of C, U, P and S, or a
+     single-letter focus round deals a passage with nothing in it.
+   · `band` is [lowestGrade, highestGrade] — reading level, not error difficulty.
+
+   THE COMMA RULES — the house style, applied everywhere, no exceptions
+   These are the marking standard (they are also shown to players on the rules
+   card, see ../cups.js). The prose must obey them even where no error is
+   planted, because the player is being marked against them.
+     1. Comma after an introductory word, phrase or clause.
+          Last Saturday, my family went to the beach.
+          When we arrived, I ran straight to the water.
+          By midnight, the roof had been torn away.
+     2. Comma before and / but / or / so joining two COMPLETE sentences —
+        but NOT when two verbs share one subject.
+          The pitch was dry, and the ball ran quickly.   (two sentences)
+          He moved the goats and barred the door.        (one subject)
+     3. Comma pair around an appositive — a renaming that could be lifted out.
+          Our captain, Emeka, won the toss.
+     4. Comma pair around a NON-DEFINING relative clause (extra information).
+        No commas on a DEFINING one (it identifies which).
+          The roots take in water, which travels up the stem.   (non-defining)
+          Parents who wish to speak should write in.            (defining)
+     5. No serial (Oxford) comma — and no three-item lists at all, so the
+        question never arises.
+
+   `npm run check:grammar` enforces everything above that a machine can, and
+   warns on the rest. Run it on ANYTHING an AI wrote before committing it.
 ═══════════════════════════════════════════════════════ */
 
 export const PASSAGES = [
@@ -31,18 +63,18 @@ export const PASSAGES = [
     id: 'diary-beach',
     title: 'The Beach Trip',
     band: [4, 6],
-    text: `{{C|last|Last}} {{C|saturday|Saturday}} my family went to the beach in {{C|lagos|Lagos}}. We {{U|was|were}} all very {{S|exited|excited}} because we had been planning the trip for {{S|wekes|weeks}}. My mother packed rice and chicken into a big {{P|basket|basket,}} and my father carried the umbrella. When we arrived {{C|i|I}} ran straight to the water. The waves were bigger than I expected, so I stayed near my brother. We built a sandcastle and {{S|decorateed|decorated}} it with shells. Where did the afternoon {{P|go.|go?}} By five {{P|oclock|o’clock}} we were {{P|tired|tired,}} sandy and happy. It was the best day of the holiday.`,
+    text: `{{C|last|Last}} {{C|saturday|Saturday}}, my family went to the beach in {{C|lagos|Lagos}}. We {{U|was|were}} all very {{S|exited|excited}} because we had been planning the trip for {{S|wekes|weeks}}. My mother packed rice and chicken into a big {{P|basket|basket,}} and my father carried the umbrella. When we arrived, {{C|i|I}} ran straight to the water. The waves were bigger than I expected, so I stayed near my brother. We could not find {{P|Amakas|Amaka’s}} sun hat anywhere. Where did the afternoon {{P|go.|go?}} By five {{P|o’clock|o’clock,}} we were sunburnt and happy. It was the best day of the {{S|holliday|holiday}}.`,
   },
   {
     id: 'diary-match',
     title: 'Match Day',
     band: [5, 8],
-    text: `My school played {{U|it's|its}} final match against {{C|command|Command}} Secondary School on {{C|wednesday|Wednesday}}. Our {{P|captain|captain,}} Emeka, won the toss and chose to bat first. The pitch was dry and the ball moved quickly across it. By lunchtime we had scored eighty-four runs and nobody had been {{S|dismised|dismissed}}. Then {{U|there|their}} fastest bowler came on and everything changed. He took three wickets in four overs. I could hardly watch. In the {{P|end|end,}} we lost by eleven {{S|runns|runs}}, but the coach said we had played {{S|weel|well}}. {{C|there|There}} is always next term.`,
+    text: `My school played {{U|it's|its}} final match against {{C|command|Command}} Secondary School on {{C|wednesday|Wednesday}}. Our {{P|captain|captain,}} Emeka, won the toss and chose to kick towards the hill. The pitch was {{P|dry|dry,}} and the ball ran quickly across it. By half-time, we were leading by two goals, and nobody had been {{S|bookd|booked}}. Then {{U|there|their}} fastest winger came on, and everything changed. He scored twice in {{S|elleven|eleven}} minutes. I could hardly watch. We lost by a single goal, but the coach said we had played {{S|weel|well}}. {{C|there|There}} is always next term.`,
   },
   {
     id: 'diary-power-cut',
     title: 'The Power Cut',
     band: [4, 7],
-    text: `The lights went out just as we {{U|was|were}} starting our homework on {{C|tuesday|Tuesday}} evening. My sister screamed because she is {{S|afriad|afraid}} of the dark. Mummy found the {{S|lantarn|lantern}} and we sat together in the {{P|parlour|parlour.}} It was {{S|suprisingly|surprisingly}} peaceful without the television. Daddy told us a story about his village in {{C|enugu|Enugu}}. He said that when he was young {{U|their|there}} was no electricity at all. We did not believe {{P|him|him.}} Then the fan started spinning again and everyone cheered.`,
+    text: `The lights went out just as we {{U|was|were}} starting our homework on {{C|tuesday|Tuesday}} evening. My sister screamed because she is {{S|afriad|afraid}} of the dark. Mummy found the {{S|lantarn|lantern}}, and we sat together in the {{P|parlour|parlour.}} It was {{S|suprisingly|surprisingly}} peaceful without the television. Daddy told us a story about his village in {{C|enugu|Enugu}}. He said that when he was young {{U|their|there}} was no electricity at all. We {{P|didnt|didn’t}} believe him. Then the fan started spinning again, and everyone cheered.`,
   },
 ];

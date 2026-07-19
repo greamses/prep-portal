@@ -146,6 +146,16 @@ function renderPassage() {
     span.setAttribute('autocomplete', 'off');
     span.textContent = t.shown;
     passageEl.appendChild(span);
+    if (t.br) {
+      // End of an authored line — a real paragraph break. A letter whose
+      // greeting and sign-off run into the body is not a letter, and the
+      // comma after "Dear Bola" only reads as correct on its own line.
+      const gap = document.createElement('span');
+      gap.className = 'grammar-break';
+      gap.setAttribute('aria-hidden', 'true');
+      passageEl.appendChild(gap);
+      return;
+    }
     // A real space between words, outside any editable span, so the line wraps
     // naturally and no token can ever swallow its neighbour's separator.
     passageEl.appendChild(document.createTextNode(' '));

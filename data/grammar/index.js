@@ -72,14 +72,33 @@ export function passagePool(passages, grade) {
    Requiring the whole token inside the braces instead would mean repeating
    every trailing full stop and quote mark in both halves — which is exactly
    the sort of duplication that goes wrong quietly, turning a planted error
-   into ordinary prose that then punishes anyone who corrects it. */
-const MARKER = /^(.*?)\{\{([CUPS])\|([^|]*)\|([^}]*)\}\}(.*)$/;
+   into ordinary prose that then punishes anyone who corrects it.
+
+   ALTERNATIVE ANSWERS. Anything after the third field is another ACCEPTED
+   correction:
+
+       {{P|bad|good|also-good|also-good}}
+
+   The first is canonical — it is what the review shows as "the answer" — and
+   the rest score identically. This exists because English punctuation is not
+   always a single right answer, and a marker with one accepted string quietly
+   turns a defensible correction into a wrong one. If a planted error has more
+   than one legitimate fix, list them all; if you cannot list them all, it is
+   the wrong error to plant (see docs/grammar-authoring.md). */
+const MARKER = /^(.*?)\{\{([CUPS])\|([^|}]*)\|([^}]*)\}\}(.*)$/;
 
 /**
  * A passage's tokens, in order:
- *   { i, shown, answer, cat }
- * `shown` is what the player is handed, `answer` is the only text that scores,
- * and `cat` is the CUPS letter — null on a clean token, where shown === answer.
+ *   { i, shown, answer, accept, cat, br }
+ * `shown` is what the player is handed, `answer` is the canonical correction
+ * (what the review displays), `accept` is every string that scores, and `cat`
+ * is the CUPS letter — null on a clean token, where shown === answer.
+ *
+ * `br` marks the last token of a line: passages are authored as template
+ * literals, and a blank line between blocks is a real paragraph break. That is
+ * not decoration — a letter whose greeting, body and sign-off run together in
+ * one paragraph is not a letter, and the comma after "Dear Bola" only makes
+ * sense when the next line starts underneath it.
  *
  * `focus` narrows the hunt: an error outside it is handed over ALREADY FIXED
  * and marked clean, so the prose stays coherent and only the search narrows.
@@ -90,22 +109,35 @@ export function buildPassage(passage, focus = 'cups') {
   const inFocus = focusSet(focus);
   const tokens = [];
   let i = 0;
-  for (const raw of String(passage.text).trim().split(/\s+/)) {
-    const m = MARKER.exec(raw);
-    if (!m) {
-      tokens.push({ i: i++, shown: raw, answer: raw, cat: null });
-      continue;
-    }
-    const [, pre, cat, bad, good, post] = m;
-    const live = inFocus.has(cat);
-    tokens.push({
-      i: i++,
-      // out of focus → handed over already correct
-      shown: pre + (live ? bad : good) + post,
-      answer: pre + good + post,
-      cat: live ? cat : null,
+  // Every authored line is its own line on screen (runs of blank lines
+  // collapse). Single newlines have to count, not just blank ones: a letter's
+  // sign-off is "Yours faithfully," and the name UNDERNEATH it, and running
+  // those two together is precisely the layout the comma is there to serve.
+  const blocks = String(passage.text).trim().split(/\n+/);
+  blocks.forEach((block, b) => {
+    const words = block.trim().split(/\s+/).filter(Boolean);
+    words.forEach((raw, w) => {
+      const last = w === words.length - 1 && b < blocks.length - 1;
+      const m = MARKER.exec(raw);
+      if (!m) {
+        tokens.push({ i: i++, shown: raw, answer: raw, accept: [raw], cat: null, br: last });
+        return;
+      }
+      const [, pre, cat, bad, good, post] = m;
+      const live = inFocus.has(cat);
+      // The third field onwards are all accepted; the first is canonical.
+      const answers = good.split('|').map((g) => pre + g + post);
+      tokens.push({
+        i: i++,
+        // out of focus → handed over already correct
+        shown: pre + (live ? bad : good.split('|')[0]) + post,
+        answer: answers[0],
+        accept: answers,
+        cat: live ? cat : null,
+        br: last,
+      });
     });
-  }
+  });
   return tokens;
 }
 
@@ -157,7 +189,9 @@ export function scorePassage(tokens, edits, tags) {
   tokens.forEach((t) => {
     const submitted = edits[t.i] != null ? edits[t.i] : t.shown;
     const changed = !sameToken(submitted, t.shown);
-    const correct = sameToken(submitted, t.answer);
+    // ANY listed answer scores — see the MARKER notes above on why a planted
+    // error is allowed more than one legitimate correction.
+    const correct = (t.accept || [t.answer]).some((a) => sameToken(submitted, a));
     const tag = tags[t.i] || null;
 
     let outcome;

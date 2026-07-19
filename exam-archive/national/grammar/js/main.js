@@ -642,10 +642,18 @@ function renderReview() {
     + (result.falseEdits ? ` · ${result.falseEdits} false ${result.falseEdits === 1 ? 'edit' : 'edits'}` : '');
 
   reviewBody.innerHTML = '';
+  const addBreak = () => {
+    const gap = document.createElement('span');
+    gap.className = 'grammar-break';
+    gap.setAttribute('aria-hidden', 'true');
+    reviewBody.appendChild(gap);
+  };
   result.detail.forEach((d) => {
     const t = tokens[d.i];
     if (d.outcome === 'clean') {
-      reviewBody.appendChild(document.createTextNode(`${t.answer} `));
+      reviewBody.appendChild(document.createTextNode(t.answer));
+      if (t.br) addBreak();
+      else reviewBody.appendChild(document.createTextNode(' '));
       return;
     }
     const mark = document.createElement('span');
@@ -675,7 +683,8 @@ function renderReview() {
       mark.innerHTML = `<span class="grammar-mark-struck">${esc(d.submitted)}</span><span class="grammar-mark-fix">${esc(d.answer)}</span>`;
     }
     reviewBody.appendChild(mark);
-    reviewBody.appendChild(document.createTextNode(' '));
+    if (t.br) addBreak();
+    else reviewBody.appendChild(document.createTextNode(' '));
   });
 
   reviewBd.classList.add('open');

@@ -1413,3 +1413,12 @@ body.grammar-nav-hidden .site-nav { display: none; }
   .grammar-passage { max-height: 46vh; font-size: 0.96rem; }
   .grammar-play-side { position: sticky; bottom: 0; padding-bottom: 0.4rem; }
 }
+
+/* An authored line break — a real paragraph gap inside the flowing passage.
+   A span rather than a <br> so it can carry the spacing, and so the editable
+   word spans either side of it stay siblings in one inline flow. */
+.grammar-break {
+  display: block;
+  height: 0.85rem;
+  content: '';
+}
