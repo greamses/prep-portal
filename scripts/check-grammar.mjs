@@ -83,24 +83,48 @@ const FINITE_VERBS = new Set([
   'scored', 'cheered', 'changed', 'arrived', 'carried', 'follows', 'continues',
 ]);
 const CONJUNCTIONS = new Set(['and', 'but', 'or', 'so', 'yet', 'nor']);
-// Words that open an introductory phrase or clause (comma rule 1). Bare short
-// adverbs like "Then" and "Now" are left out on purpose — standard British
-// usage does not comma them, and flagging them would be noise.
-const INTRO_STARTERS = new Set([
+/* Words that open an introductory element (comma rule 1). Bare short adverbs
+   like "Then" and "Now" are left out on purpose — standard British usage does
+   not comma them, and flagging them would be noise.
+
+   Split into two kinds, because the scan for the comma has to work differently:
+
+   SUBORDINATORS open a whole CLAUSE, which has its own verb before the comma
+   ("When the nest is finished, he hangs…"). Breaking the scan at the first
+   finite verb would stop at "is" and miss the comma that is correctly there.
+
+   PREP_OPENERS open a PHRASE, which has no verb ("By midnight, the roof had
+   been torn away"). Here a finite verb means the main clause has begun without
+   a comma, so breaking on it is exactly right. */
+const SUBORDINATORS = new Set([
   'when', 'if', 'although', 'though', 'because', 'while', 'after', 'before',
   'since', 'unless', 'as', 'once', 'whenever', 'until',
+]);
+const PREP_OPENERS = new Set([
   'by', 'in', 'on', 'at', 'during', 'without', 'with', 'according', 'despite',
   'instead', 'following', 'last', 'next', 'every', 'throughout', 'apart',
 ]);
+const INTRO_STARTERS = new Set([...SUBORDINATORS, ...PREP_OPENERS]);
 
 const bare = (s) => String(s || '').replace(/[^\w’']/g, '').toLowerCase();
+
+const PRONOUNS = new Set(['he', 'she', 'it', 'we', 'they', 'i', 'you']);
+// Verb lists can never be complete, so allow one morphological fallback: a
+// word inflected like a verb (-s / -ed) sitting immediately after a PRONOUN is
+// one ("he ties", "she carried"). Restricting it to pronouns keeps the guess
+// honest — "the boys" would otherwise read as a verb.
+function isVerbAt(tokens, k) {
+  const w = bare(tokens[k].answer);
+  if (FINITE_VERBS.has(w)) return true;
+  const prev = k > 0 ? bare(tokens[k - 1].answer) : '';
+  return PRONOUNS.has(prev) && /(?:ed|es|s)$/.test(w) && w.length > 3;
+}
 
 // Does an independent clause plausibly start at token `i`?
 function looksLikeClause(tokens, i) {
   if (!tokens[i] || !SUBJECTS.has(bare(tokens[i].answer))) return false;
   for (let k = i + 1; k < Math.min(i + 6, tokens.length); k++) {
-    const w = bare(tokens[k].answer);
-    if (FINITE_VERBS.has(w)) return true;
+    if (isVerbAt(tokens, k)) return true;
     if (/[.!?]$/.test(tokens[k].answer)) return false; // sentence ended first
   }
   return false;
@@ -186,16 +210,30 @@ for (const theme of Object.keys(THEMES)) {
     let atSentenceStart = true;
     tokens.forEach((t, i) => {
       if (atSentenceStart && INTRO_STARTERS.has(bare(t.answer))) {
+        // A clause opener gets a longer, verb-tolerant scan; a phrase opener a
+        // short one that stops once the main clause has plainly started.
+        const isClause = SUBORDINATORS.has(bare(t.answer));
+        const span = isClause ? 12 : 7;
         let commaAt = -1;
-        for (let k = i; k < Math.min(i + 7, tokens.length); k++) {
+        for (let k = i; k < Math.min(i + span, tokens.length); k++) {
           // Test for the comma FIRST: the word carrying it may itself be the
           // clause's verb ("When we arrived, I ran…"), and breaking on the
           // verb before looking would miss a comma that is correctly there.
-          if (tokens[k].answer.endsWith(',')) { commaAt = k; break; }
+          if (tokens[k].answer.endsWith(',')) {
+            // …but not every comma in range is THIS one. A comma whose next
+            // word is "and"/"but" belongs to comma rule 2, joining two
+            // sentences later in the line ("When it is frightened it rolls
+            // into a ball, and even a lion…"). Accepting it would declare the
+            // missing introductory comma present. Keep looking.
+            if (CONJUNCTIONS.has(bare(tokens[k + 1] && tokens[k + 1].answer))) continue;
+            commaAt = k;
+            break;
+          }
           if (/[.!?]$/.test(tokens[k].answer)) break;
-          // A finite verb past the opener means the main clause has begun —
-          // any comma after this point belongs to something else.
-          if (k > i && FINITE_VERBS.has(bare(tokens[k].answer))) break;
+          // For a PHRASE opener only: a finite verb means the main clause has
+          // begun with no comma. A CLAUSE opener owns a verb of its own before
+          // the comma, so this test would fire on the wrong one.
+          if (!isClause && k > i && isVerbAt(tokens, k)) break;
         }
         if (commaAt === -1) {
           warn(id, `introductory element with no comma: "${tokens.slice(i, i + 7).map((x) => x.answer).join(' ')} …". House style (comma rule 1) wants one before the main clause — as written, a player who adds it is charged a FALSE EDIT.`);
@@ -225,37 +263,45 @@ for (const theme of Object.keys(THEMES)) {
       if (t.br) continue;
       const nextWord = bare(tokens[t.i + 1] && tokens[t.i + 1].answer);
       if (CONJUNCTIONS.has(nextWord)) continue; // rule 2 — legitimate
-      // A splice needs a complete sentence on BOTH sides. If nothing before
-      // this comma has a finite verb, what precedes it is an introductory
-      // phrase ("By five o'clock, we were…"), which is comma rule 1, not a
-      // splice. Walk back to the start of the sentence and look.
+      // A splice needs a complete sentence on BOTH sides. Walk back to the
+      // start of the sentence to find out what precedes this comma.
       let hasVerbBefore = false;
+      let sentStart = 0;
       for (let k = t.i; k >= 0; k--) {
-        if (k < t.i && (/[.!?]$/.test(tokens[k].answer) || tokens[k].br)) break;
-        if (FINITE_VERBS.has(bare(tokens[k].answer))) { hasVerbBefore = true; break; }
+        if (k < t.i && (/[.!?]$/.test(tokens[k].answer) || tokens[k].br)) { sentStart = k + 1; break; }
+        if (isVerbAt(tokens, k)) hasVerbBefore = true;
       }
+      // A sentence opening with a subordinator is an introductory CLAUSE
+      // ("When the nest is finished, he hangs…"). It has a verb of its own,
+      // but it is not a complete sentence — so its comma is rule 1, not a
+      // splice.
+      if (SUBORDINATORS.has(bare(tokens[sentStart].answer))) continue;
+      // Nothing with a verb before the comma means an introductory PHRASE
+      // ("By five o'clock, we were…") — rule 1 again.
       if (!hasVerbBefore) continue;
       if (looksLikeClause(tokens, t.i + 1)) {
         warn(id, `token ${t.i} "${t.shown}" → "${t.answer}" puts a comma in front of what looks like a complete sentence ("${tokens[t.i + 1].answer} …"). That is a COMMA SPLICE — the "correction" is itself an error. Use a full stop, or join the clauses with a conjunction.`);
       }
     }
 
-    // ── Oxford-comma trap on CLEAN tokens ───────────────────────────────
-    // "a, b and c": the writer who adds the serial comma to "b" is editing a
-    // clean token and is charged a false edit for punctuating correctly.
+    // ── Comma rule 5: lists take the serial comma ───────────────────────
+    // "a, b and c" must be "a, b, and c". If the passage leaves it out in
+    // CLEAN prose, the player who correctly supplies it is charged a false
+    // edit — the same trap as a missing introductory comma.
     for (let i = 0; i < tokens.length - 2; i++) {
       if (!tokens[i].answer.endsWith(',')) continue;
-      // A real list runs "a, b and c" — short, and with no OTHER comma in
-      // between. A second comma means an appositive pair ("Our captain,
-      // Emeka, won…") or a separate clause, neither of which is a list.
+      // A real list runs "a, b and c" — short, with no OTHER comma between.
+      // A second comma means an appositive pair ("Our captain, Emeka, won…")
+      // or a separate clause, neither of which is a list.
       for (let j = i + 1; j < Math.min(i + 4, tokens.length - 1); j++) {
         if (tokens[j].answer.endsWith(',') || /[.!?:;]$/.test(tokens[j].answer)) break;
         // A list's items are noun phrases. A finite verb in the span means
         // this is a predicate ("… won the toss and chose to kick"), not a list.
         if (FINITE_VERBS.has(bare(tokens[j].answer))) break;
         const w = bare(tokens[j + 1].answer);
-        if ((w === 'and' || w === 'or') && !tokens[j].cat) {
-          warn(id, `possible three-item list around "${tokens[i].answer} … ${tokens[j].answer} ${tokens[j + 1].answer}" — an Oxford-comma writer would add a comma to the CLEAN token "${tokens[j].answer}" and be charged a false edit. Prefer a two-item list.`);
+        if (w === 'and' || w === 'or') {
+          // The serial comma belongs on tokens[j] — the item before the "and".
+          warn(id, `list "${tokens[i].answer} … ${tokens[j].answer} ${tokens[j + 1].answer} …" is missing the serial comma on "${tokens[j].answer}". House style (comma rule 5) wants "${tokens[j].answer}," — as written, a player who adds it is charged a FALSE EDIT. Either punctuate it, or plant it as a P error.`);
           break;
         }
       }

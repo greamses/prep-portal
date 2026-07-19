@@ -1000,8 +1000,13 @@ body.grammar-nav-hidden .site-nav { display: none; }
 .grammar-passage {
   width: 100%;
   text-align: left;
-  font-size: 1.02rem;
-  line-height: 2.15;   /* generous: edited words grow a tag badge above them */
+  /* Monospaced on purpose. Proof-reading is character-level work — a missing
+     comma, a doubled letter, a straight quote where a curly one belongs — and
+     a proportional face hides exactly those differences. Every glyph getting
+     the same width makes punctuation visible instead of incidental. */
+  font-family: var(--font-mono);
+  font-size: 0.94rem;  /* mono runs wide; drop a step to keep the line length */
+  line-height: 2.2;    /* generous: edited words grow a tag badge above them */
   color: var(--text-primary);
   padding: 0.9rem 1rem 1.2rem;
   border-radius: 4px;
@@ -1260,8 +1265,10 @@ body.grammar-nav-hidden .site-nav { display: none; }
 
 .grammar-review-body {
   text-align: left;
-  font-size: 0.98rem;
-  line-height: 2.4;
+  /* Same face as the play surface — the review is the same text re-read. */
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 2.5;
   padding: 0.9rem 1rem;
   border-radius: 4px;
   background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
@@ -1410,7 +1417,7 @@ body.grammar-nav-hidden .site-nav { display: none; }
    On a phone the passage scrolls inside its own box and the CUPS bar sits
    directly beneath it, so the thumb never has to travel to name a mistake. */
 @media (max-width: 899px) {
-  .grammar-passage { max-height: 46vh; font-size: 0.96rem; }
+  .grammar-passage { max-height: 46vh; font-size: 0.86rem; }
   .grammar-play-side { position: sticky; bottom: 0; padding-bottom: 0.4rem; }
 }
 

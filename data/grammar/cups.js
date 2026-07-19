@@ -67,6 +67,8 @@ export const CUPS = [
        'Our captain, Emeka, won the toss.'],
       ['Comma before a “which” clause that adds extra information.',
        'The roots take in water, which travels up the stem.'],
+      ['Comma between every item in a list, including before the last “and”.',
+       'She packed rice, beans, and yams.'],
       ['Apostrophe for possession and for missing letters.',
        'Amaka’s hat · didn’t · o’clock'],
     ],

@@ -397,7 +397,8 @@ service cloud.firestore {
         request.resource.data.grade >= 1 &&
         request.resource.data.grade <= 12 &&
         request.resource.data.theme in [
-          'diary', 'story', 'letter', 'report', 'science'
+          'diary', 'story', 'letter', 'report', 'science',
+          'wildlife', 'history', 'discovery'
         ] &&
         // The CUPS focus, canonicalised client-side to a subset of "cups"
         // (see data/grammar/cups.js's focusKey). Length-checked rather than

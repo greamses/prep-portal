@@ -44,6 +44,27 @@ export const THEMES = {
     band: [8, 12],
     blurb: 'Lab reports and explanations — the register your practicals are marked in.',
   },
+  /* ── Informative writing ─────────────────────────────────────────────
+     The three below are expository rather than personal: the reader is being
+     TOLD something. That changes what the passage can teach — non-defining
+     relative clauses, serial lists, dates and proper nouns all belong here
+     far more naturally than they do in a diary entry — and it means a child
+     comes away knowing something as well as having punctuated something. */
+  'wildlife': {
+    label: 'Wildlife',
+    band: [4, 9],
+    blurb: 'Animals of Africa, written the way a good encyclopaedia would.',
+  },
+  'history': {
+    label: 'History',
+    band: [7, 12],
+    blurb: 'Short historical articles — Benin, Nok, the railways. Dates and names everywhere.',
+  },
+  'discovery': {
+    label: 'Discoveries',
+    band: [7, 12],
+    blurb: 'How things came to be known: penicillin, the shape of DNA, continental drift.',
+  },
 };
 
 export const THEME_KEYS = Object.keys(THEMES);

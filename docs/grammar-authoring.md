@@ -65,8 +65,8 @@ Each of these exists because breaking it cost a real player real points.
   complete sentences is a comma splice, not a fix.
 - **One token tests one rule.** Never require a comma *and* an apostrophe on the
   same word — a player who supplies one correctly still scores nothing.
-- **No three-item lists at all.** An Oxford-comma writer would add a comma to a
-  *clean* token and be charged a false edit for punctuating correctly.
+- **Lists take the serial comma.** A list in clean prose must already have it;
+  a missing one is a good P error.
 - **Every passage needs at least one error of each of C, U, P and S**, or a
   single-letter focus round deals a passage with nothing in it.
 - Aim for 60–110 words and 8–12 errors.
@@ -88,7 +88,11 @@ that is what the player is being marked against.
 4. **Comma pair around a non-defining relative clause.** None on a defining one.
    *The roots take in water, which travels up the stem.* (non-defining)
    *Parents who wish to speak should write in.* (defining — no commas)
-5. **No serial (Oxford) comma**, and no three-item lists, so it never arises.
+5. **Serial (Oxford) comma** — every item in a list of three or more is
+   separated, *including* the one before the final `and`.
+   *She packed rice, beans, and yams.*
+   This is a house choice and it is stated on the players' rules card, so a list
+   missing that final comma is a fair error to plant rather than a trap.
 
 Short bare adverbs (*Then*, *Now*, *Soon*) do **not** take a comma.
 
@@ -157,7 +161,7 @@ HARD RULES — breaking any of these makes the exercise mark a correct student w
    comma joining two complete sentences is a COMMA SPLICE, not a fix.
 4. One token tests ONE rule. Never require a comma AND an apostrophe on the same
    word.
-5. No three-item lists anywhere (they raise the Oxford-comma question).
+5. Every list of three or more items uses the serial comma (see comma rule 5).
 6. Every passage must contain at least one C, one U, one P and one S mistake.
 
 COMMA RULES — apply to the clean prose as well as the planted mistakes
@@ -171,7 +175,8 @@ COMMA RULES — apply to the clean prose as well as the planted mistakes
 4. Comma pair around a NON-DEFINING relative clause; none on a defining one.
      "The roots take in water, which travels up the stem."   (commas)
      "Parents who wish to speak should write in."            (no commas)
-5. No serial (Oxford) comma.
+5. Serial (Oxford) comma in every list of three or more, INCLUDING before the
+   final "and": "She packed rice, beans, and yams."
 Short bare adverbs (Then, Now, Soon) take NO comma.
 
 GOOD MISTAKES TO PLANT
@@ -199,6 +204,11 @@ export const PASSAGES = [
   },
 ];
 
-Now write N passages on the theme: <diary | story | letter | report | science>,
-for grade band <lo>-<hi>.
+Now write N passages on the theme: <diary | story | letter | report | science |
+wildlife | history | discovery>, for grade band <lo>-<hi>.
+
+For the informative themes (wildlife, history, discovery) the FACTS MUST BE
+ACCURATE — a student remembers the fact long after the punctuation. Write in the
+register of a good encyclopaedia entry, and prefer subjects with a Nigerian or
+West African connection where one exists.
 ````

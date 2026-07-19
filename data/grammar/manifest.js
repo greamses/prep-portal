@@ -9,9 +9,12 @@
    look at the band as well as the count. */
 
 export const AVAILABLE = {
-  diary: 3,
-  story: 3,
-  letter: 3,
-  report: 3,
-  science: 2,
+  diary: 5,
+  story: 5,
+  letter: 5,
+  report: 5,
+  science: 4,
+  wildlife: 3,
+  history: 3,
+  discovery: 3,
 };
