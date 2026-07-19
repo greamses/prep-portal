@@ -31,14 +31,14 @@ function ensureAlertModal() {
 </div>
 <style>
 .pp-modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(42,39,35,.38);display:flex;align-items:center;justify-content:center;padding:16px;}
-.pp-modal-box{background:var(--surface-primary,#fff);border:1.5px solid color-mix(in srgb,var(--ink,#2a2723) 12%,transparent);border-radius:20px;box-shadow:0 16px 48px rgba(42,39,35,.18);max-width:420px;width:100%;padding:0;font-family:var(--font-mono,'JetBrains Mono',monospace);overflow:hidden;}
-.pp-modal-hd{display:flex;align-items:center;gap:10px;background:var(--surface-secondary,#f4f0e8);padding:14px 20px;border-bottom:1.5px solid color-mix(in srgb,var(--ink,#2a2723) 10%,transparent);}
+.pp-modal-box{background:var(--surface-primary,#fff);border:2px solid var(--ink,#2a2723);border-radius:0;box-shadow:6px 6px 0 rgba(42,39,35,.16);max-width:420px;width:100%;padding:0;font-family:var(--font-mono,'JetBrains Mono',monospace);overflow:hidden;}
+.pp-modal-hd{display:flex;align-items:center;gap:10px;background:var(--surface-secondary,#f4f0e8);padding:14px 20px;border-bottom:2px solid var(--ink,#2a2723);}
 .pp-modal-icon{font-size:18px;line-height:1;flex-shrink:0;}
 .pp-modal-title{font-family:var(--font-display,'Unbounded',sans-serif);font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ink,#2a2723);}
 .pp-modal-body{font-size:13px;line-height:1.65;color:var(--ink,#2a2723);margin:0;padding:18px 20px 16px;word-break:break-word;}
 .pp-modal-ftr{display:flex;justify-content:flex-end;padding:0 20px 18px;}
-.pp-modal-ok-btn{font-family:var(--font-display,'Unbounded',sans-serif);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 22px;cursor:pointer;background:var(--accent-primary,#f4c95d);border:1.5px solid color-mix(in srgb,var(--ink,#2a2723) 12%,transparent);border-radius:999px;color:var(--ink,#2a2723);transition:transform .15s,box-shadow .15s;box-shadow:0 2px 6px rgba(42,39,35,.1);}
-.pp-modal-ok-btn:hover{transform:translateY(-2px);box-shadow:0 5px 14px rgba(42,39,35,.14);}
+.pp-modal-ok-btn{position:relative;font-family:"Shantell Sans","Segoe Print","Bradley Hand",cursive;font-size:0.85rem;font-weight:700;letter-spacing:0;text-transform:none;padding:0.6rem 1.15rem 0.65rem;cursor:pointer;background:var(--pp-note-bg,#fff3a8);border:0;border-radius:2px;color:#14130f;transition:transform .2s ease;box-shadow:0 1px 1px rgba(20,19,15,.1),5px 8px 12px -4px rgba(20,19,15,.3);transform:rotate(-2deg);}
+.pp-modal-ok-btn:hover{transform:rotate(-2deg) translateY(-2px);}
 .pp-modal-box.type-warn  .pp-modal-hd{border-bottom-color:color-mix(in srgb,var(--accent-primary,#f4c95d) 60%,transparent);}
 .pp-modal-box.type-error .pp-modal-hd{border-bottom-color:color-mix(in srgb,var(--accent-danger,#f07a7a) 60%,transparent);}
 .pp-modal-box.type-error .pp-modal-ok-btn{background:var(--accent-danger,#f07a7a);color:#fff;}
@@ -102,50 +102,42 @@ export function renderTopicChips(classId, topicsMap, onSelect) {
         expression: 'var(--accent-primary,   #f4c95d)',
         inequality: 'var(--accent-danger,    #f07a7a)',
     };
-    
-    // Build level-1 group chips - unified text color, colored accents only
+
+    // Build level-1 group chips as sticky notes — same paper the rest of
+    // the site's chip steps use, colour-rotated by .chips-container .custom-chip.
     container.innerHTML = `
-        <div class="topic-group-chips" id="topic-group-chips">
+        <div class="chips-container topic-group-chips" id="topic-group-chips">
             ${groups.map((g, i) => `
-                <button class="topic-chip topic-group-chip" data-group-index="${i}"
+                <button class="custom-chip topic-group-chip" type="button" data-group-index="${i}"
                         title="${g.type}"
                         data-type="${g.type}">
                     <span class="topic-type-dot" style="background:${TYPE_ACCENTS[g.type]}"></span>
-                    <span class="topic-type-text">${g.topic}</span>
+                    <span>${g.topic}</span>
                 </button>
             `).join('')}
         </div>
         <div id="subtopic-container" class="subtopic-container" style="display:none"></div>
     `;
-    
-    // Inject minimal extra styles if not already present
+
+    // Inject minimal extra styles if not already present (layout only — the
+    // note's paper/tape/colour come from .custom-chip in style.css).
     if (!document.getElementById('pp-topic-chip-styles')) {
         const s = document.createElement('style');
         s.id = 'pp-topic-chip-styles';
         s.textContent = `
             .topic-type-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-            .topic-type-text{font-weight:600;color:var(--ink,#2a2723);}
-            .topic-group-chips{display:flex;flex-wrap:wrap;gap:0.55rem;margin-bottom:1rem;}
-            .topic-group-chip{display:inline-flex;align-items:center;gap:0.45rem;padding:0.5rem 0.85rem;font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:0.72rem;font-weight:600;background:var(--surface-secondary,#f4f0e8);border:2px solid color-mix(in srgb,var(--ink,#2a2723) 15%,transparent);border-radius:999px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .15s ease;}
-            .topic-group-chip:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(42,39,35,.1);}
-            .topic-group-chip.active{background:var(--ink,#2a2723);border-color:var(--ink,#2a2723);}
-            .topic-group-chip.active .topic-type-text{color:var(--accent-primary,#f4c95d);}
-            .subtopic-container{margin-top:0.75rem;}
-            .subtopic-chips{display:flex;flex-wrap:wrap;gap:0.5rem;padding:0.5rem 0;}
-            .subtopic-chip{display:inline-flex;padding:0.45rem 0.8rem;font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:0.68rem;font-weight:600;color:var(--ink,#2a2723);background:var(--surface-secondary,#f4f0e8);border:2px solid color-mix(in srgb,var(--ink,#2a2723) 18%,transparent);border-radius:999px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .12s ease;}
-            .subtopic-chip:hover{transform:translateY(-1px);box-shadow:0 2px 5px rgba(42,39,35,.1);}
-            .subtopic-chip.active{background:var(--ink,#2a2723);color:var(--accent-primary,#f4c95d);border-color:var(--ink,#2a2723);}
-            .subtopic-group-label{font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-secondary,#6b655c);padding:0 0 0.5rem;border-bottom:1.5px dashed color-mix(in srgb,var(--ink,#2a2723) 20%,transparent);margin-bottom:0.5rem;}
+            .subtopic-container{margin-top:0.9rem;}
+            .subtopic-group-label{font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary,var(--text-secondary,#6b655c));padding:0 0 0.5rem;border-bottom:1.5px dashed color-mix(in srgb,var(--ink,#2a2723) 20%,transparent);margin-bottom:0.5rem;}
         `;
         document.head.appendChild(s);
     }
-    
+
     // Level-1 click: expand subtopics below
     container.querySelectorAll('.topic-group-chip').forEach(btn => {
         btn.addEventListener('click', () => {
-            container.querySelectorAll('.topic-group-chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            
+            container.querySelectorAll('.topic-group-chip').forEach(c => c.classList.remove('checked'));
+            btn.classList.add('checked');
+
             const idx = parseInt(btn.dataset.groupIndex, 10);
             const group = groups[idx];
             const sub = document.getElementById('subtopic-container');
@@ -154,9 +146,9 @@ export function renderTopicChips(classId, topicsMap, onSelect) {
                 <div class="subtopic-group-label" style="border-bottom-color:${TYPE_ACCENTS[group.type]}">
                     ${group.topic} — pick a subtopic
                 </div>
-                <div class="subtopic-chips">
+                <div class="chips-container subtopic-chips">
                     ${group.subtopics.map(st => `
-                        <button class="subtopic-chip" data-subtopic="${st.replace(/"/g,'&quot;')}"
+                        <button class="custom-chip subtopic-chip" type="button" data-subtopic="${st.replace(/"/g,'&quot;')}"
                                 data-topic="${group.topic.replace(/"/g,'&quot;')}"
                                 data-type="${group.type}">
                             ${st}
@@ -164,12 +156,12 @@ export function renderTopicChips(classId, topicsMap, onSelect) {
                     `).join('')}
                 </div>
             `;
-            
+
             // Level-2 click
             sub.querySelectorAll('.subtopic-chip').forEach(sc => {
                 sc.addEventListener('click', () => {
-                    sub.querySelectorAll('.subtopic-chip').forEach(c => c.classList.remove('active'));
-                    sc.classList.add('active');
+                    sub.querySelectorAll('.subtopic-chip').forEach(c => c.classList.remove('checked'));
+                    sc.classList.add('checked');
                     onSelect({
                         type: sc.dataset.type,
                         topic: sc.dataset.topic,
@@ -181,34 +173,16 @@ export function renderTopicChips(classId, topicsMap, onSelect) {
     });
 }
 
-// ─── Custom Class Dropdown ────────────────────────────────────
+// ─── Class-level chips ─────────────────────────────────────────
 
-export function initCustomDropdown(onSelect) {
-    const trigger = document.getElementById('cdd-trigger');
-    const panel = document.getElementById('cdd-panel');
-    const valueDisplay = document.getElementById('cdd-value');
-    if (!trigger) return;
-    
-    trigger.addEventListener('click', e => {
-        e.stopPropagation();
-        panel.classList.toggle('open');
-        trigger.setAttribute('aria-expanded', panel.classList.contains('open'));
-    });
-    
-    panel.querySelectorAll('.cdd-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            valueDisplay.innerText = opt.innerText;
-            panel.classList.remove('open');
-            trigger.setAttribute('aria-expanded', 'false');
-            panel.querySelectorAll('.cdd-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            onSelect(opt.dataset.value, opt.innerText);
+export function initClassChips(onSelect) {
+    document.querySelectorAll('.class-chip').forEach(chip => {
+        if (chip.disabled) return;
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.class-chip').forEach(c => c.classList.remove('checked'));
+            chip.classList.add('checked');
+            onSelect(chip.dataset.value, chip.textContent.trim());
         });
-    });
-    
-    document.addEventListener('click', () => {
-        panel.classList.remove('open');
-        trigger.setAttribute('aria-expanded', 'false');
     });
 }
 

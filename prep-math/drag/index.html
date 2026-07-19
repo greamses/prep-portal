@@ -20,6 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Shantell+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/utils/components/nav.css">
+  <link rel="stylesheet" href="/utils/components/components.css">
   <link rel="stylesheet" href="./style.css">
 
   <script type="importmap">
@@ -63,76 +64,69 @@
 
     <div id="status-bar" class="status-bar" role="status" aria-live="polite"></div>
 
-    <section class="builder-grid">
+    <div class="builder-receipt pp-receipt">
+      <div class="pp-receipt__paper">
+        <section class="builder-grid">
 
-      <!-- ── STEP 1 · Class Level ── -->
-      <div class="step-card step-card-1 theme-yellow">
-        <div class="step-label">
-          <span class="step-num">1</span>
-          <span class="step-title">Class Level</span>
-        </div>
-        <div class="class-selector" id="class-selector-root">
-          <button class="cdd-trigger" id="cdd-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Select class level">
-            <span class="cdd-value" id="cdd-value">Select Class Level</span>
-            <svg class="cdd-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-              <polyline points="3 6 9 13 15 6" />
-            </svg>
-          </button>
-          <div class="cdd-panel" id="cdd-panel" role="listbox" aria-label="Class level">
-            <div class="cdd-group">
-              <div class="cdd-group-label">Primary School</div>
-              <button class="cdd-option" role="option" data-value="p1">Primary 1</button>
-              <button class="cdd-option" role="option" data-value="p2">Primary 2</button>
-              <button class="cdd-option" role="option" data-value="p3">Primary 3</button>
-              <button class="cdd-option" role="option" data-value="p4">Primary 4</button>
-              <button class="cdd-option" role="option" data-value="p5">Primary 5</button>
-              <button class="cdd-option" role="option" data-value="p6">Primary 6</button>
+          <!-- ── STEP 1 · Class Level ── -->
+          <div class="step-card step-card-1 theme-yellow">
+            <div class="step-label">
+              <span class="step-num">1</span>
+              <span class="step-title">Class Level</span>
             </div>
-            <div class="cdd-group">
-              <div class="cdd-group-label">Junior Secondary</div>
-              <button class="cdd-option coming-soon" role="option" data-value="jss1" disabled>JSS 1</button>
-              <button class="cdd-option coming-soon" role="option" data-value="jss2" disabled>JSS 2</button>
-              <button class="cdd-option coming-soon" role="option" data-value="jss3" disabled>JSS 3</button>
+            <div class="filter-eyebrow">Primary School</div>
+            <div class="chips-container" id="class-chips-primary">
+              <button class="custom-chip class-chip" type="button" data-value="p1">Primary 1</button>
+              <button class="custom-chip class-chip" type="button" data-value="p2">Primary 2</button>
+              <button class="custom-chip class-chip" type="button" data-value="p3">Primary 3</button>
+              <button class="custom-chip class-chip" type="button" data-value="p4">Primary 4</button>
+              <button class="custom-chip class-chip" type="button" data-value="p5">Primary 5</button>
+              <button class="custom-chip class-chip" type="button" data-value="p6">Primary 6</button>
             </div>
-            <div class="cdd-group">
-              <div class="cdd-group-label">Senior Secondary</div>
-              <button class="cdd-option coming-soon" role="option" data-value="ss1" disabled>SS 1</button>
-              <button class="cdd-option coming-soon" role="option" data-value="ss2" disabled>SS 2</button>
-              <button class="cdd-option coming-soon" role="option" data-value="ss3" disabled>SS 3</button>
+            <div class="filter-eyebrow">Junior Secondary</div>
+            <div class="chips-container" id="class-chips-jss">
+              <button class="custom-chip class-chip disabled" type="button" data-value="jss1" disabled>JSS 1</button>
+              <button class="custom-chip class-chip disabled" type="button" data-value="jss2" disabled>JSS 2</button>
+              <button class="custom-chip class-chip disabled" type="button" data-value="jss3" disabled>JSS 3</button>
             </div>
+            <div class="filter-eyebrow">Senior Secondary</div>
+            <div class="chips-container" id="class-chips-ss">
+              <button class="custom-chip class-chip disabled" type="button" data-value="ss1" disabled>SS 1</button>
+              <button class="custom-chip class-chip disabled" type="button" data-value="ss2" disabled>SS 2</button>
+              <button class="custom-chip class-chip disabled" type="button" data-value="ss3" disabled>SS 3</button>
+            </div>
+            <p class="step-sub">Select your school level</p>
           </div>
+
+          <!-- ── STEP 2 · Topic ── -->
+          <div class="step-card step-card-2 theme-green">
+            <div class="step-label">
+              <span class="step-num">2</span>
+              <span class="step-title">Choose a Topic</span>
+            </div>
+            <div id="topic-container" class="topic-chips-container">
+              <div class="topic-placeholder">Select a class level first</div>
+            </div>
+            <p class="step-sub">Pick an algebra topic to practise</p>
+          </div>
+
+        </section>
+
+        <div id="page-placeholder" class="ap-placeholder">
+          Select your class level and topic, then click <strong>Generate Equation</strong> to open the equation canvas.
         </div>
-        <p class="step-sub">Select your school level</p>
+
+        <footer class="builder-footer">
+          <span class="setup-status">Mathematics &middot; Algebra Lab</span>
+          <button id="gen-btn" class="builder-cta" onclick="generateQuestion()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12" />
+            </svg>
+            Generate Equation &rarr;
+          </button>
+        </footer>
       </div>
-
-      <!-- ── STEP 2 · Topic ── -->
-      <div class="step-card step-card-2 theme-green">
-        <div class="step-label">
-          <span class="step-num">2</span>
-          <span class="step-title">Choose a Topic</span>
-        </div>
-        <div id="topic-container" class="topic-chips-container">
-          <div class="topic-placeholder">Select a class level first</div>
-        </div>
-        <p class="step-sub">Pick an algebra topic to practise</p>
-      </div>
-
-
-    </section>
-
-    <div id="page-placeholder" class="ap-placeholder">
-      Select your class level and topic, then click <strong>Generate Equation</strong> to open the equation canvas.
     </div>
-
-    <footer class="builder-footer">
-      <span class="setup-status">Mathematics &middot; Algebra Lab</span>
-      <button id="gen-btn" class="builder-cta" onclick="generateQuestion()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12" />
-        </svg>
-        Generate Equation &rarr;
-      </button>
-    </footer>
 
   </main>
 
@@ -236,6 +230,8 @@
   <script type="module" src="/utils/components/nav-builder.js"></script>
   <script type="module" src="../../theory-page/js/keys.js"></script>
   <script type="module" src="./script.js"></script>
+  <!-- Layers the one-step-at-a-time sticky-note flow over the class/topic steps. -->
+  <script type="module" src="./js/flow.js"></script>
   <script type="module">
     import { heroPaint } from "/utils/components/nav-icons.js";
     document.querySelectorAll(".builder-paint").forEach(el => (el.innerHTML = heroPaint()));

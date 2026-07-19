@@ -7,7 +7,7 @@
 import { TOPICS_BY_CLASS }                         from './modules/topics.js';
 import { generateOffline }                         from './modules/generator.js';
 import { ppAlert, showStatus, renderTopicChips,
-         initCustomDropdown }                      from './modules/ui.js';
+         initClassChips }                          from './modules/ui.js';
 
 // ─── App State ────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ window.addEventListener('resize', () => {
 // ─── DOMContentLoaded ─────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    initCustomDropdown((classId, label) => {
+    initClassChips((classId, label) => {
         appState.classId = classId;
         const el = document.getElementById('stat-class');
         if (el) el.innerText = label;
