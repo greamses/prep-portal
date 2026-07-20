@@ -14,7 +14,7 @@ import {
   SUBJECTS, GRADES, MODES, SPELL_MODES, subjectsForGrade, topicsFor, topicMeta,
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
-  CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS,
+  CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS, SYSTEMS, SYSTEM_LABELS,
   baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel, structureSvg,
 } from '/data/vocab/index.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -283,7 +283,7 @@ function renderTopicStep() {
       // is its own step, and it lands back in `topic` as a scope suffix
       // ('periodic-table:g17', 'world-map:africa', 'nigeria-map:n-west') so
       // the room's bucket carries it.
-      if (v === 'periodic-table' || v === 'world-map' || v === 'nigeria-map') {
+      if (v === 'periodic-table' || v === 'world-map' || v === 'nigeria-map' || v === 'body-map') {
         if (baseTopic(topic) !== v) topic = v; // keep an existing scope on re-visit
         renderScopeStep();
         content.goTo('scope');
@@ -343,6 +343,16 @@ function renderScopeStep() {
       maskPrefix: 'zm',
       title: 'Which geopolitical zones?',
       subtitle: 'Tick the zones to be asked — none (or all) plays the whole country.',
+    });
+    return;
+  }
+  if (baseTopic(topic) === 'body-map') {
+    renderMapScopeStep({
+      base: 'body-map',
+      regions: SYSTEMS,
+      maskPrefix: 'sm',
+      title: 'Which body systems?',
+      subtitle: 'Tick the systems to be asked — none (or all) plays the whole body.',
     });
     return;
   }
@@ -1269,11 +1279,11 @@ function renderPeriodicTable(scope) {
 // for their name, region and capital hint. One floating tip follows the
 // pointer — an SVG path can't host the sticky-note tips the table's cells
 // use. Serves both maps: the world's countries and Nigeria's states.
-async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLabel }) {
+async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLabel, mapClass = 'vocab-worldmap', credit }) {
   dictList.innerHTML = '';
 
   const wrap = document.createElement('div');
-  wrap.className = 'vocab-worldmap';
+  wrap.className = mapClass;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
   svg.setAttribute('role', 'img');
@@ -1313,6 +1323,14 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
   svg.addEventListener('pointerleave', () => { tip.hidden = true; });
 
   dictList.appendChild(wrap);
+  // CC-BY artwork (the body map) owes a visible credit; the public-domain
+  // geographic maps pass none and this is skipped.
+  if (credit) {
+    const cr = document.createElement('p');
+    cr.className = 'vocab-map-credit';
+    cr.innerHTML = credit;
+    dictList.appendChild(cr);
+  }
 }
 
 async function openDictionary() {
@@ -1352,6 +1370,23 @@ async function openDictionary() {
       mod: nm, rows: nm.STATES, set,
       regionOf: (c) => c.zone, regionLabels: ZONE_LABELS,
       ariaLabel: 'Map of Nigeria — hover a state for its details',
+    });
+    return;
+  }
+  if (playMode === 'topic' && baseTopic(topic) === 'body-map') {
+    dictBox.classList.add('vocab-dict--wide');
+    const set = regionSet(topic);
+    dictSub.textContent = set
+      ? `${regionSetLabel(topic)} stays bright — those are the organs the round will ask. Hover any organ for its name and system.`
+      : 'Hover any organ for its name and body system. The game lights one up — you name it.';
+    dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the body…</p>';
+    const bm = await import('/data/vocab/body-map.js');
+    await renderMapLibrary({
+      mod: bm, rows: bm.ORGANS, set,
+      regionOf: (c) => c.system, regionLabels: SYSTEM_LABELS,
+      ariaLabel: 'Map of the body — hover an organ for its details',
+      mapClass: 'vocab-bodymap',
+      credit: 'Anatomy © EMBL-EBI · <a href="https://github.com/ebi-gene-expression-group/anatomogram" target="_blank" rel="noopener">CC-BY-4.0</a>',
     });
     return;
   }

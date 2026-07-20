@@ -158,18 +158,20 @@ export const SUBJECTS = {
     ],
   },
 
-  // ── Geography, all grades ────────────────────────────────────────────
-  // Bundled map data (data/vocab/world-map.js), not generated words — the
-  // countries themselves are the vocabulary, drawn on a real map. One tier
-  // never mixes with the other, but a map is fair at any age, so this
-  // subject alone spans both.
+  // ── Maps, all grades ─────────────────────────────────────────────────
+  // Bundled map data (data/vocab/*-map.js), not generated words — the places
+  // (and the organs) themselves are the vocabulary, drawn on a real diagram.
+  // One tier never mixes with the other, but a map is fair at any age, so this
+  // subject alone spans both. "Map of the Body" is the same drawn-topic shape:
+  // one organ lit on a whole-body figure, name it.
   geography: {
-    label: 'Geography',
+    label: 'Maps',
     group: 'Geography',
     grades: [1, 12],
     topics: [
       T('world-map', 'Map of the World', 1, 12),
       T('nigeria-map', 'Map of Nigeria', 1, 12),
+      T('body-map', 'Map of the Body', 1, 12),
     ],
   },
 

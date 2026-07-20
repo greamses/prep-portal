@@ -6,8 +6,10 @@
    content-hashed URLs apply (see scripts/version-assets.mjs). */
 import { GAME_COUNTRIES } from '/data/vocab/world-map.js';
 import { GAME_STATES } from '/data/vocab/nigeria-map.js';
+import { GAME_ORGANS } from '/data/vocab/body-map.js';
 
 export const WORDS = {
   'world-map': GAME_COUNTRIES,
   'nigeria-map': GAME_STATES,
+  'body-map': GAME_ORGANS,
 };

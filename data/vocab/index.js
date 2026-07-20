@@ -64,14 +64,33 @@ export const ZONES = [
 ];
 export const ZONE_LABELS = Object.fromEntries(ZONES.map((z) => [z.key, z.label]));
 
+/* The body's seven systems — the scope keys a scoped Map-of-the-Body round
+   rides on. Order is LOCK-STEP with SYSTEM_KEYS in body-map.js: the mask below
+   numbers regions by position, so if these drift the bucket for 'body-map:sm5'
+   stops meaning the same thing on two clients. Kept here (tiny) for the same
+   reason as the continents and zones. */
+export const SYSTEMS = [
+  { key: 'circulatory', label: 'Circulatory' },
+  { key: 'respiratory', label: 'Respiratory' },
+  { key: 'digestive', label: 'Digestive' },
+  { key: 'nervous', label: 'Nervous' },
+  { key: 'urinary', label: 'Urinary' },
+  { key: 'endocrine', label: 'Endocrine' },
+  { key: 'lymphatic', label: 'Lymphatic' },
+];
+export const SYSTEM_LABELS = Object.fromEntries(SYSTEMS.map((s) => [s.key, s.label]));
+
 /* A map's scope can pick SEVERAL regions. The checkbox picker writes a mask —
-   'cm<hex>' (continents) / 'zm<hex>' (zones), bit i = the i-th region in the
-   list above, so 'world-map:cm5' is Africa + Europe. Hex keeps any combo
-   under the rules' 40-char topic cap with one canonical spelling per set
-   (honest matchmaking buckets). A bare region key ('africa') is the launch
-   format and stays decodable so a mid-deploy room never breaks. */
+   'cm<hex>' (continents) / 'zm<hex>' (zones) / 'sm<hex>' (body systems), bit i
+   = the i-th region in the list above, so 'world-map:cm5' is Africa + Europe.
+   Hex keeps any combo under the rules' 40-char topic cap with one canonical
+   spelling per set (honest matchmaking buckets). A bare region key ('africa')
+   is the launch format and stays decodable so a mid-deploy room never breaks. */
 function regionsOf(base) {
-  return base === WORLD ? CONTINENTS : base === NIGERIA ? ZONES : null;
+  return base === WORLD ? CONTINENTS
+    : base === NIGERIA ? ZONES
+      : base === BODY ? SYSTEMS
+        : null;
 }
 
 /** The scoped region keys as a Set, or null when the round is unscoped
@@ -95,7 +114,8 @@ export function regionSetLabel(topicKey) {
   const regions = regionsOf(baseTopic(topicKey)) || [];
   const labels = regions.filter((r) => set.has(r.key)).map((r) => r.label);
   if (labels.length <= 2) return labels.join(' & ');
-  const noun = baseTopic(topicKey) === NIGERIA ? 'zones' : 'continents';
+  const base = baseTopic(topicKey);
+  const noun = base === NIGERIA ? 'zones' : base === BODY ? 'systems' : 'continents';
   return `${labels.length} ${noun}`;
 }
 
@@ -116,7 +136,8 @@ export function topicMeta(subjectKey, topicKey) {
 const PERIODIC = 'periodic-table';
 const WORLD = 'world-map';
 const NIGERIA = 'nigeria-map';
-const DRAWN = new Set([PERIODIC, WORLD, NIGERIA]);
+const BODY = 'body-map';
+const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY]);
 // A subject made ENTIRELY of bundled topics needs no entry in the generated
 // manifest to be offered.
 const BUNDLED_SUBJECTS = new Set(['geography']);

@@ -75,6 +75,7 @@ const PAGES = [
       '/data/vocab/periodic-table.js',
       '/data/vocab/world-map.js',
       '/data/vocab/nigeria-map.js',
+      '/data/vocab/body-map.js',
       // The Laws hangman words are derived from the shared study bank, so a
       // stale copy of the bank against fresh page code must bust the page too.
       '/data/laws/laws.js',

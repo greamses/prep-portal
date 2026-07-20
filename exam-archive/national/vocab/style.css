@@ -1483,6 +1483,51 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-dict.vocab-dict--wide { width: min(980px, 96vw); }
 .vocab-dict-bd .vocab-dict-list:has(.vocab-worldmap) { overflow-x: auto; }
 
+/* ── MAP OF THE BODY ─────────────────────────────────────────────────────
+   The same two views as the geographic maps, but the anatomogram figure is
+   strongly PORTRAIT (1000×1843) where the maps are landscape — so it is sized
+   by HEIGHT, not width, or it would tower over the card and the dialog.
+
+   The artwork is CC-BY-4.0 (© EMBL-EBI), so both views carry a visible
+   credit — that is a licence obligation, not decoration. */
+
+/* Game clue: height-driven so the tall figure hugs its own width instead of
+   sitting in a wide, mostly-empty letterbox the way width:100% would force. */
+.vocab-clue-map.vocab-clue-map--tall {
+  width: auto;
+  height: min(56vh, 460px);
+  max-height: none;
+  margin: 0 auto;
+}
+
+/* Library: centre the portrait figure and cap it by height; no min-width, so
+   it never triggers the horizontal scroll the wide world map needs. */
+.vocab-bodymap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 0.3rem 0.1rem 0.6rem;
+}
+.vocab-bodymap svg {
+  height: min(72vh, 900px);
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+.vocab-bodymap .vocab-map-c[data-name] { cursor: help; }
+.vocab-bodymap .vocab-map-c[data-name]:hover { fill: #f4c95d; stroke: #14130f; }
+.vocab-bodymap .vocab-map-c.is-out:hover { opacity: 1; }
+
+/* The attribution line under either body view. */
+.vocab-map-credit {
+  margin: 0.5rem auto 0;
+  text-align: center;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.68rem;
+  opacity: 0.6;
+}
+.vocab-map-credit a { color: inherit; text-decoration: underline; }
+
 /* ── LAW CARDS (dictionary) ───────────────────────────────────────────────
    The retired Laws study page's cards now live in the dictionary: name (display
    face), statement (mono body), formula (MathJax, follows --ink) and a scientist

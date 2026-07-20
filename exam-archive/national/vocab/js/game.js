@@ -23,7 +23,7 @@
 ═══════════════════════════════════════════════════════ */
 import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
-  loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS,
+  loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS, SYSTEM_LABELS,
   ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet, structureSvg,
 } from '/data/vocab/index.js';
 
@@ -59,6 +59,7 @@ let tableScope = ''; // raw scope suffix — '' whole · 'gm20001' groups · 'p3
 let mapScope = null; // decoded region keys for a scoped MAP round, else null
 let worldMap = null;   // lazy /data/vocab/world-map.js module — world-map rounds only
 let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map rounds only
+let bodyMap = null;    // lazy /data/vocab/body-map.js module — body-map rounds only
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -191,12 +192,12 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // region (continent / geopolitical zone), with a hover tip carrying the
 // capital-city hint. In a scoped round the rest of the map fades right back.
 // Serves both drawn maps — the world's countries and Nigeria's states.
-function renderMapClue({ mod, rows, target, regionOf, regionLabel }) {
+function renderMapClue({ mod, rows, target, regionOf, regionLabel, credit }) {
   clueEl.className = 'vocab-clue vocab-clue--map';
   clueEl.innerHTML = '';
 
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('class', 'vocab-clue-map');
+  svg.setAttribute('class', 'vocab-clue-map' + (credit ? ' vocab-clue-map--tall' : ''));
   svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
   svg.setAttribute('aria-label', 'Map clue — one place is highlighted');
   for (const row of rows) {
@@ -225,6 +226,14 @@ function renderMapClue({ mod, rows, target, regionOf, regionLabel }) {
       <span class="vocab-el-tip" role="tooltip">${target.hint}</span>`;
 
   clueEl.append(svg, detail);
+  // CC-BY artwork owes a visible credit wherever it is drawn (the body map);
+  // the public-domain geographic maps pass no credit and this is skipped.
+  if (credit) {
+    const cr = document.createElement('span');
+    cr.className = 'vocab-map-credit';
+    cr.innerHTML = credit;
+    clueEl.append(cr);
+  }
 }
 
 const renderCountryClue = (c) => renderMapClue({
@@ -234,6 +243,13 @@ const renderCountryClue = (c) => renderMapClue({
 const renderStateClue = (s) => renderMapClue({
   mod: nigeriaMap, rows: nigeriaMap.STATES, target: s,
   regionOf: (r) => r.zone, regionLabel: ZONE_LABELS[s.zone],
+});
+// The anatomogram is CC-BY-4.0, so its clue carries the credit line.
+const ORGAN_CREDIT = 'Anatomy © EMBL-EBI · <a href="https://github.com/ebi-gene-expression-group/anatomogram" target="_blank" rel="noopener">CC-BY</a>';
+const renderOrganClue = (o) => renderMapClue({
+  mod: bodyMap, rows: bodyMap.ORGANS, target: o,
+  regionOf: (r) => r.system, regionLabel: SYSTEM_LABELS[o.system],
+  credit: ORGAN_CREDIT,
 });
 
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
@@ -286,13 +302,14 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : 'Word'} ${index + 1} of ${round.length}`;
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : 'Word'} ${index + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
-  // with the asked element lit, or a map with the asked country/state lit.
-  // Hover the note beneath for a hint.
+  // with the asked element lit, or a map with the asked country/state/organ
+  // lit. Hover the note beneath for a hint.
   if (current.element) renderElementClue(current.element);
   else if (current.country) renderCountryClue(current.country);
   else if (current.state) renderStateClue(current.state);
+  else if (current.organ) renderOrganClue(current.organ);
   else if (current.structure) renderCompoundClue(current.structure, current.clue);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
@@ -483,6 +500,9 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   }
   if (mode === 'topic' && baseTopic(topic) === 'nigeria-map') {
     nigeriaMap = await import('/data/vocab/nigeria-map.js');
+  }
+  if (mode === 'topic' && baseTopic(topic) === 'body-map') {
+    bodyMap = await import('/data/vocab/body-map.js');
   }
 
   return new Promise((resolve) => {
