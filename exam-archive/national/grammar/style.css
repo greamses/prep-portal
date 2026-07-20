@@ -1136,6 +1136,62 @@ body.grammar-nav-hidden .site-nav { display: none; }
   margin: 0;
 }
 
+/* ── THE PAGER ─────────────────────────────────────────
+   Back / where-you-are / Next, between the tag bar and Submit. Hidden outright
+   on a one-passage round, so a short round looks exactly as it always did.
+
+   Next is the emphasised half: it is the button the round's flow actually runs
+   on. It is deliberately NOT styled like Submit — Submit ends the round for
+   good, and the two must never be mistaken for each other at a glance under a
+   running clock. */
+.grammar-pager {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+.grammar-pager[hidden] { display: none; }
+
+.grammar-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 999px;
+  padding: 0.32rem 0.6rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.grammar-pager-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink) 34%, transparent);
+  color: var(--ink);
+}
+.grammar-pager-btn:active:not(:disabled) { transform: translateY(1px); }
+.grammar-pager-btn.is-next {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--ink) 30%, transparent);
+  background: var(--gr-note-yellow, var(--surface-secondary));
+}
+/* Disabled rather than hidden: a Next that vanishes on the last passage moves
+   the buttons under the player's finger mid-round. */
+.grammar-pager-btn:disabled { opacity: 0.35; cursor: default; }
+
+.grammar-page-note {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+
 /* The clock turns urgent in the last thirty seconds — a proof-reader who has
    lost track of it submits nothing at all, the worst possible outcome. */
 .grammar-time-remaining.is-urgent {
@@ -1287,6 +1343,32 @@ body.grammar-nav-hidden .site-nav { display: none; }
   overflow-y: auto;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Each passage's heading in a multi-passage review. Line-height is reset off
+   the body's 2.5 (which exists to give the marks room to breathe) or the
+   headings would float in the middle of nowhere. */
+.grammar-review-head {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 1.4rem 0 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.grammar-review-head:first-child { margin-top: 0; }
+.grammar-review-head-score {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-tertiary);
+  margin-top: 0.15rem;
 }
 
 .grammar-mark {

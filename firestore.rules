@@ -412,7 +412,13 @@ service cloud.firestore {
         // enumerated so adding a letter never needs a rules deploy.
         request.resource.data.focus is string &&
         request.resource.data.focus.size() >= 1 &&
-        request.resource.data.focus.size() <= 4;
+        request.resource.data.focus.size() <= 4 &&
+        // How many passages the round pages through. Bounded rather than
+        // enumerated so raising the cap client-side never needs a rules
+        // deploy; the real ceiling is timeLimit, which scales with it.
+        request.resource.data.count is int &&
+        request.resource.data.count >= 1 &&
+        request.resource.data.count <= 5;
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

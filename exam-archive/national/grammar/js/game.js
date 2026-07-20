@@ -1,8 +1,19 @@
 /* ═══════════════════════════════════════════════════════
    GRAMMAR — the editing round
 
-   A 3-2-1 "get ready" beat off the shared startAt, then ONE passage, riddled
-   with planted mistakes, that the player edits in place and submits.
+   A 3-2-1 "get ready" beat off the shared startAt, then the round's passages —
+   riddled with planted mistakes — edited in place, ONE AT A TIME, and submitted
+   together at the end.
+
+   PAGING (why the round is not one long scroll)
+   A round deals `count` passages but shows exactly one. Next moves on, Back
+   returns, and every edit and tag survives the trip because the surface is
+   rendered FROM state (each page's `edits` array), never read back off a DOM
+   that no longer exists. Handed all three at once a player skims all three for
+   the cheap spelling errors; handed one, they read it.
+
+   There is still ONE Submit, over everything dealt — see rng.js. A page the
+   player never opened is not a special case: its tokens simply score as missed.
 
    HOW THE EDITING SURFACE IS BUILT — and why it is not one contenteditable
    The passage LOOKS like a single editable paragraph, and to a player it
@@ -22,12 +33,12 @@
    ones too.
 
    Score is errors CAUGHT plus errors correctly NAMED (the C/U/P/S tag) — see
-   /data/grammar/index.js's scorePassage. Timing after activation is entirely
+   /data/grammar/index.js's scoreRound. Timing after activation is entirely
    local (startAt/timeLimit) — no further server dependency during play.
 ═══════════════════════════════════════════════════════ */
 import { buildRound, buildRoundTokens } from './rng.js';
 import {
-  loadPassages, scorePassage, sameToken,
+  loadPassages, scoreRound, sameToken,
   CUPS, themeMeta, focusLabel,
 } from '/data/grammar/index.js';
 
@@ -52,13 +63,29 @@ const editNote = $('grammar-edit-note');
 const timerNote = $('grammar-timer-note');
 const modeNote = $('grammar-mode-note');
 const hintEl = $('grammar-hint');
+const pagerEl = $('grammar-pager');
+const pageNote = $('grammar-page-note');
+const prevBtn = $('grammar-prev-btn');
+const nextBtn = $('grammar-next-btn');
 
 let active = false;    // the round is running (clock ticking)
 let editing = false;   // …and the passage is live (not counting down, not submitted)
-let tokens = [];       // [{ i, shown, answer, cat }] — identical on every client
-let passage = null;
-let activeIndex = -1;  // the token the tag buttons will act on
-const tags = [];       // index -> 'C' | 'U' | 'P' | 'S' | null
+
+/* The round's pages, in dealt order. Each is
+     { passage, tokens, tags[], edits[] }
+   where `tokens` is identical on every client (seeded), `tags` is index ->
+   'C'|'U'|'P'|'S'|null, and `edits` is index -> the string the player currently
+   has in that word.
+
+   `edits` is the load-bearing part of paging. It is kept in sync on every
+   keystroke rather than read off the DOM at the end, because the DOM for a page
+   you have navigated away from does not exist any more — the spans are replaced
+   wholesale. State is the source of truth; the spans are a view of it. */
+let pages = [];
+let pageIndex = 0;
+const visited = new Set(); // pages the player has actually opened
+
+let activeIndex = -1;  // the token on the CURRENT page that the tag buttons act on
 let errorTotal = 0;
 let playStartMs = 0;
 let submitMs = null;   // ms taken to submit, or null if the clock ran out
@@ -102,9 +129,14 @@ function buildTagbar() {
   });
 }
 
+// The page being edited right now. Everything below reads through this rather
+// than through module-level token/tag arrays — that indirection IS the paging.
+const page = () => pages[pageIndex] || { passage: null, tokens: [], tags: [], edits: [] };
+
 function applyTag(key) {
   if (!editing || activeIndex < 0) return;
-  tags[activeIndex] = tags[activeIndex] === key ? null : key;
+  const p = page();
+  p.tags[activeIndex] = p.tags[activeIndex] === key ? null : key;
   paintToken(activeIndex);
   syncTagbar();
   updateNotes();
@@ -112,7 +144,7 @@ function applyTag(key) {
 
 // The bar reflects the tag on the word the caret is in.
 function syncTagbar() {
-  const cur = activeIndex >= 0 ? tags[activeIndex] : null;
+  const cur = activeIndex >= 0 ? page().tags[activeIndex] : null;
   tagbarEl.querySelectorAll('.grammar-tagbtn').forEach((b) => {
     b.classList.toggle('is-on', b.dataset.tag === cur);
   });
@@ -127,15 +159,20 @@ const tokenEl = (i) => passageEl.querySelector(`[data-i="${i}"]`);
 function paintToken(i) {
   const el = tokenEl(i);
   if (!el) return;
-  const changed = !sameToken(el.textContent, tokens[i].shown);
+  const p = page();
+  const changed = !sameToken(el.textContent, p.tokens[i].shown);
   el.classList.toggle('is-edited', changed);
-  el.classList.toggle('is-tagged', !!tags[i]);
-  el.dataset.tag = tags[i] || '';
+  el.classList.toggle('is-tagged', !!p.tags[i]);
+  el.dataset.tag = p.tags[i] || '';
 }
 
+/* Renders the CURRENT page, from its `edits` — not from `shown`. That is what
+   makes Back non-destructive: a word you corrected on passage 1 comes back
+   corrected, still marked edited, still carrying its tag. */
 function renderPassage() {
+  const p = page();
   passageEl.innerHTML = '';
-  tokens.forEach((t, i) => {
+  p.tokens.forEach((t, i) => {
     const span = document.createElement('span');
     span.className = 'grammar-tok';
     span.dataset.i = String(i);
@@ -144,7 +181,7 @@ function renderPassage() {
     span.autocapitalize = 'off';          // a phone keyboard would fix the C errors for them
     span.autocorrect = 'off';
     span.setAttribute('autocomplete', 'off');
-    span.textContent = t.shown;
+    span.textContent = p.edits[i];
     passageEl.appendChild(span);
     if (t.br) {
       // End of an authored line — a real paragraph break. A letter whose
@@ -160,6 +197,43 @@ function renderPassage() {
     // naturally and no token can ever swallow its neighbour's separator.
     passageEl.appendChild(document.createTextNode(' '));
   });
+  // Repaint the marks — an edited/tagged word must look edited/tagged the
+  // moment it comes back, not only after it is touched again.
+  p.tokens.forEach((_t, i) => paintToken(i));
+}
+
+/* ── Paging ───────────────────────────────────────────────────────────────
+   Next/Back swap the whole surface. The clock does NOT reset, pause or branch:
+   it is one round over everything dealt, so time spent on passage 1 is time not
+   spent on passage 3, which is exactly the budgeting decision the round is
+   supposed to make the player face. */
+function showPage(i) {
+  if (!pages.length) return;
+  pageIndex = Math.max(0, Math.min(i, pages.length - 1));
+  visited.add(pageIndex);
+  const p = page();
+  titleEl.textContent = p.passage ? p.passage.title : 'Passage';
+  activeIndex = -1;
+  renderPassage();
+  syncTagbar();
+  updatePager();
+  updateNotes();
+  passageEl.scrollTop = 0;
+  if (editing) focusToken(0, false); // straight in — the clock is still running
+}
+
+function updatePager() {
+  const many = pages.length > 1;
+  if (pagerEl) pagerEl.hidden = !many;
+  if (!many) return;
+  // The per-page error count, not just the round total. Told this passage holds
+  // four and having found three, a player has a real reason to read it once
+  // more before pressing Next — which is the whole point of paging it.
+  const here = page().tokens.filter((t) => t.cat).length;
+  pageNote.textContent =
+    `Passage ${pageIndex + 1} of ${pages.length} · ${here} ${here === 1 ? 'error' : 'errors'} here`;
+  if (prevBtn) prevBtn.disabled = pageIndex === 0;
+  if (nextBtn) nextBtn.disabled = pageIndex >= pages.length - 1;
 }
 
 // Delegated from the container, and bound ONCE at module load — not per round.
@@ -181,7 +255,12 @@ function onTokenFocus(e) {
 function onTokenInput(e) {
   const el = e.target.closest('.grammar-tok');
   if (!el) return;
-  paintToken(Number(el.dataset.i));
+  const i = Number(el.dataset.i);
+  // Write through to state on every keystroke. This is the only place the DOM
+  // is read, and it has to happen HERE rather than at submit: navigate to the
+  // next passage and these spans are gone, along with anything not saved.
+  page().edits[i] = el.textContent;
+  paintToken(i);
   updateNotes();
 }
 
@@ -238,6 +317,15 @@ function onTokenKey(e) {
     applyTag(e.key.toUpperCase());
     return;
   }
+  // Ctrl/Cmd+arrow pages the round. Checked before the caret keys below, which
+  // would otherwise eat the same arrows at a word's edge.
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    e.preventDefault();
+    showPage(pageIndex + (e.key === 'ArrowRight' ? 1 : -1));
+    return;
+  }
+  if (e.ctrlKey || e.metaKey) return; // leave every other shortcut alone
+
   if (e.key === 'Enter') { e.preventDefault(); return; } // one paragraph, no newlines
   if (e.key === ' ' || e.key === 'Tab') {
     // Space moves on rather than splitting a word in two — the passage's word
@@ -260,13 +348,20 @@ function onTokenKey(e) {
    making. Told there are twelve, a player with nine found and two minutes left
    has a real choice: keep reading, or bank the time.
 
+   The counts span the WHOLE ROUND, not the page on screen, because that is the
+   scale the decision is made at — "nine of twelve, two minutes left" is only
+   answerable if the nine includes the passage you already left. The per-page
+   count lives in the pager instead (see updatePager).
+
    What is never shown is whether any individual edit was RIGHT. */
 function editCounts() {
   let edited = 0, tagged = 0;
-  tokens.forEach((t, i) => {
-    const el = tokenEl(i);
-    if (el && !sameToken(el.textContent, t.shown)) edited += 1;
-    if (tags[i]) tagged += 1;
+  // Counted from state, so pages that are not on screen still count.
+  pages.forEach((p) => {
+    p.tokens.forEach((t, i) => {
+      if (!sameToken(p.edits[i], t.shown)) edited += 1;
+      if (p.tags[i]) tagged += 1;
+    });
   });
   return { edited, tagged };
 }
@@ -295,12 +390,16 @@ function endRound() {
   if (rafId) cancelAnimationFrame(rafId);
   document.removeEventListener('keydown', onGlobalKey);
 
-  // Read the surface once, at the end. Everything before this was presentation.
-  const edits = tokens.map((t, i) => {
+  // The visible page's spans are the one place state can lag — an IME or a
+  // paste that never fired `input` would leave the last word unsaved. Sweep it
+  // in before scoring; every other page was written through as it was typed.
+  const cur = page();
+  cur.tokens.forEach((_t, i) => {
     const el = tokenEl(i);
-    return el ? el.textContent : t.shown;
+    if (el) cur.edits[i] = el.textContent;
   });
-  const result = scorePassage(tokens, edits, tags);
+
+  const result = scoreRound(pages);
 
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
@@ -316,10 +415,14 @@ function endRound() {
       caught: result.caught,
       tagged: result.tagged,
       // Carried through to the review overlay (see main.js) — the round is only
-      // worth playing if you get to see what you missed.
+      // worth playing if you get to see what you missed. Marked per passage,
+      // in dealt order, because three passages run together teaches nothing.
       result,
-      tokens,
-      passage,
+      pages: pages.map((p, i) => ({
+        passage: p.passage,
+        tokens: p.tokens,
+        result: result.pages[i],
+      })),
     });
   }
   resolveRound = null;
@@ -340,45 +443,74 @@ function doSubmit() {
   // A submit with nothing changed is almost always a misclick, not a claim that
   // the passage was already perfect — and it costs the player the whole round.
   if (edited === 0 && !window.confirm('You have not changed anything yet. Submit anyway?')) return;
+  // The failure mode paging introduces: submitting having never opened the last
+  // passage, and scoring zero on a third of the round without knowing it. Worth
+  // one interruption, since it is unrecoverable and always a mistake.
+  const unseen = pages.length - visited.size;
+  if (unseen > 0) {
+    const what = unseen === 1 ? "There is 1 passage you haven't opened yet."
+      : `There are ${unseen} passages you haven't opened yet.`;
+    if (!window.confirm(`${what} Submit anyway?`)) return;
+  }
   submitMs = Date.now() - playStartMs;
   endRound();
 }
 
 buildTagbar();
 if (submitBtn) submitBtn.addEventListener('click', doSubmit);
+if (prevBtn) prevBtn.addEventListener('click', () => showPage(pageIndex - 1));
+if (nextBtn) nextBtn.addEventListener('click', () => showPage(pageIndex + 1));
+// Keep the caret in the passage when the pager is clicked, so the tag bar still
+// applies to the word the player was on after the page swaps.
+[prevBtn, nextBtn].forEach((b) => b && b.addEventListener('mousedown', (e) => e.preventDefault()));
 
 /**
  * Resolves once the player submits or the local clock hits zero, with the
  * score, the ranking metrics, and the full per-token breakdown for the review.
  */
 export async function startRound({
-  seed, timeLimit, startAt, grade, theme, focus, roster,
+  seed, timeLimit, startAt, grade, theme, focus, count = 1, roster,
 }) {
-  // The bank loads on demand, so the round's passage must be in hand before the
-  // countdown ends. It resolves from cache on a replay.
+  // The bank loads on demand, so the round's passages must all be in hand
+  // before the countdown ends — there is no time to fetch page 2 when the
+  // player presses Next. It resolves from cache on a replay.
   const passages = await loadPassages(theme);
-  passage = buildRound({ seed, passages, grade });
-  tokens = buildRoundTokens(passage, focus);
-  errorTotal = tokens.filter((t) => t.cat).length;
+  const dealt = buildRound({ seed, passages, grade, count });
+  pages = dealt.map((p) => {
+    const toks = buildRoundTokens(p, focus);
+    return {
+      passage: p,
+      tokens: toks,
+      tags: toks.map(() => null),
+      edits: toks.map((t) => t.shown),
+    };
+  });
+  errorTotal = pages.reduce((n, p) => n + p.tokens.filter((t) => t.cat).length, 0);
 
   return new Promise((resolve) => {
     resolveRound = resolve;
-    tags.length = 0;
-    tokens.forEach(() => tags.push(null));
+    pageIndex = 0;
+    visited.clear();
     activeIndex = -1;
     submitMs = null;
     timeLimitMs = timeLimit * 1000;
 
     const meta = themeMeta(theme);
-    titleEl.textContent = passage ? passage.title : 'Passage';
-    modeNote.textContent = `${meta ? meta.label : 'Passage'} · ${focusLabel(focus)}`;
+    const many = pages.length > 1;
+    modeNote.textContent = `${meta ? meta.label : 'Passage'} · ${focusLabel(focus)}`
+      + (many ? ` · ${pages.length} passages` : '');
     timerNote.textContent = `${Math.round(timeLimit / 60)} min round`;
-    errorNote.textContent = `${errorTotal} ${errorTotal === 1 ? 'error' : 'errors'} planted`;
+    errorNote.textContent = `${errorTotal} ${errorTotal === 1 ? 'error' : 'errors'} planted`
+      + (many ? ' in all' : '');
     editNote.textContent = '0 edited · 0 named';
-    hintEl.textContent = 'Click any word to correct it, then tap C, U, P or S to name the mistake.';
+    hintEl.textContent = many
+      ? 'Click any word to correct it, then tap C, U, P or S to name the mistake. Next moves to the following passage — one Submit covers them all.'
+      : 'Click any word to correct it, then tap C, U, P or S to name the mistake.';
 
-    renderPassage();
-    syncTagbar();
+    // Page 1 up front, but `visited` is cleared again below: the countdown is
+    // still running, so nobody has actually READ it yet.
+    showPage(0);
+    visited.clear();
 
     cardEl.hidden = false;
     countdownEl.hidden = false;
@@ -421,7 +553,8 @@ export async function startRound({
         endAt = anchorAt + timeLimit * 1000;
         playStartMs = Date.now();
         editing = true;
-        focusToken(0, false); // straight into the passage — the clock is running
+        visited.add(pageIndex); // now it counts as read
+        focusToken(0, false);   // straight into the passage — the clock is running
         document.addEventListener('keydown', onGlobalKey);
         rafId = requestAnimationFrame(tick);
         return;

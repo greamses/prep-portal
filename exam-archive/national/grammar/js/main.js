@@ -53,7 +53,16 @@ const PACES = [
 ];
 const READ_SEC_PER_WORD = 0.4; // proof-reading pace, not reading pace
 const MIN_ROUND_SEC = 90;
-const MAX_ROUND_SEC = 900;
+const MAX_ROUND_SEC = 1800;
+
+/* How many passages the round deals. They are paged through one at a time (see
+   game.js), so this is a length dial, not a difficulty one — three passages is
+   the same work per passage, three times over, on a clock scaled to match.
+
+   Capped at three because the clock is: a Relaxed three-passage round is
+   already fifteen minutes, and MAX_ROUND_SEC is the real ceiling on how long a
+   child will proof-read carefully before they start guessing. */
+const PASSAGE_COUNTS = [1, 2, 3];
 
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
@@ -122,6 +131,7 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
 let grade = mem.get('grade', 6, GRADES);
 let theme = mem.get('theme', 'diary', (t) => availableThemes(grade).includes(t));
 let focus = mem.get('focus', 'cups', (f) => typeof f === 'string' && /^[cups]+$/.test(f));
+let passageCount = mem.get('count', 1, PASSAGE_COUNTS);
 if (!availableThemes(grade).includes(theme)) theme = availableThemes(grade)[0] || 'diary';
 
 function getCurrentUser() {
@@ -180,6 +190,7 @@ const content = createCarousel(topicMount);
 content.addSlide('grade', 'Grade', () => {});
 content.addSlide('theme', 'Theme', () => {});
 content.addSlide('focus', 'CUPS', () => {});
+content.addSlide('count', 'Length', () => {});
 
 function renderGradeStep() {
   renderChoiceStep(content, 'grade', {
@@ -237,6 +248,33 @@ function renderFocusStep() {
     onNext: () => {
       focus = focusKey([...picked]);
       mem.save({ grade, theme, focus });
+      renderCountStep();
+      content.goTo('count');
+    },
+  });
+}
+
+/* How many passages. They arrive one at a time with a Next button between them
+   (see game.js's paging), so this buys a longer round rather than a busier
+   screen — and the clock scales with it, so three passages is not three times
+   the hurry.
+
+   A theme narrower than the count deals short rather than repeating a passage
+   (see rng.js), which is why the subtitle promises "up to". */
+function renderCountStep() {
+  renderChoiceStep(content, 'count', {
+    title: 'How many passages?',
+    subtitle: 'They come one at a time — edit one, press Next for the following one. One Submit covers them all, and the clock grows to match.',
+    name: 'grammar-count',
+    colorOffset: 1,
+    options: PASSAGE_COUNTS.map((n) => ({
+      value: String(n),
+      label: n === 1 ? 'One passage' : `Up to ${n} passages`,
+      checked: n === passageCount,
+    })),
+    onPick: (v) => {
+      passageCount = Number(v);
+      mem.save({ grade, theme, focus, count: passageCount });
       flow.next();
     },
   });
@@ -245,6 +283,7 @@ function renderFocusStep() {
 renderGradeStep();
 renderThemeStep();
 renderFocusStep();
+renderCountStep();
 content.start('grade');
 
 /* ── SECTION 3 — Game Options ───────────────────────────────── */
@@ -345,6 +384,7 @@ const flow = createSectionFlow([
       { label: `Grade ${grade}` },
       { label: (themeMeta(theme) || {}).label || 'Passage' },
       { label: focusLabel(focus) },
+      { label: passageCount === 1 ? '1 passage' : `${passageCount} passages` },
     ],
   },
   {
@@ -655,13 +695,41 @@ const OUTCOME_LABEL = {
 
 function renderReview() {
   if (!lastReview) return;
-  const { result, tokens, passage } = lastReview;
-  reviewTitle.textContent = passage ? passage.title : 'Your passage';
+  const { result, pages } = lastReview;
+  reviewTitle.textContent = pages.length > 1
+    ? `Your ${pages.length} passages`
+    : (pages[0] && pages[0].passage ? pages[0].passage.title : 'Your passage');
   reviewSub.textContent =
     `${result.caught} of ${result.errorTotal} caught · ${result.tagged} named correctly`
     + (result.falseEdits ? ` · ${result.falseEdits} false ${result.falseEdits === 1 ? 'edit' : 'edits'}` : '');
 
   reviewBody.innerHTML = '';
+  // Each passage marked under its own heading, in the order it was dealt. A
+  // multi-passage round run together as one wall of marks is unreadable — and
+  // the point of the review is that it can be read.
+  pages.forEach((pg, n) => renderReviewPage(pg, n, pages.length));
+
+  reviewBd.classList.add('open');
+  reviewBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('grammar-nav-hidden');
+}
+
+function renderReviewPage(pg, n, total) {
+  const { tokens, passage, result } = pg;
+
+  const head = document.createElement('p');
+  head.className = 'grammar-review-head';
+  head.textContent = total > 1
+    ? `${n + 1}. ${passage ? passage.title : 'Passage'}`
+    : (passage ? passage.title : 'Passage');
+  if (total > 1) {
+    const sc = document.createElement('span');
+    sc.className = 'grammar-review-head-score';
+    sc.textContent = `${result.caught}/${result.errorTotal} caught · ${result.tagged} named`;
+    head.appendChild(sc);
+  }
+  reviewBody.appendChild(head);
+
   const addBreak = () => {
     const gap = document.createElement('span');
     gap.className = 'grammar-break';
@@ -706,10 +774,6 @@ function renderReview() {
     if (t.br) addBreak();
     else reviewBody.appendChild(document.createTextNode(' '));
   });
-
-  reviewBd.classList.add('open');
-  reviewBd.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('grammar-nav-hidden');
 }
 
 function esc(s) {
@@ -777,10 +841,13 @@ async function playRoundAndShowResults(room, name) {
     grade: room.grade,
     theme: room.theme,
     focus: room.focus,
+    // Rooms made before paging shipped carry no count — those are one-passage
+    // rounds, exactly as they were played.
+    count: room.count || 1,
     roster,
   });
 
-  lastReview = { result: out.result, tokens: out.tokens, passage: out.passage };
+  lastReview = { result: out.result, pages: out.pages };
   showAwaiting();
 
   let ranked;
@@ -851,12 +918,19 @@ function makeOnWaiting(waitingStatusText) {
 /* The round's clock. See the PACES comment at the top of this file for why it
    is averaged over the pool rather than measured on the passage the seed will
    actually pick. Decided here, before the room is made, so every player in it
-   shares one clock. */
+   shares one clock.
+
+   It scales with how many passages are dealt — and by the number ACTUALLY
+   dealt, not the number asked for, because a theme with two passages written
+   for this grade deals two however loudly the setup said three (see rng.js).
+   Paying for a third passage that never arrives would just hand that player a
+   third more time than everyone else in the room. */
 async function computeTimeLimit() {
+  const fallback = Math.round((100 * READ_SEC_PER_WORD + 10 * pace) * passageCount);
   try {
     const passages = await loadPassages(theme);
     const pool = passagePool(passages, grade);
-    if (!pool.length) return Math.round(100 * READ_SEC_PER_WORD + 10 * pace);
+    if (!pool.length) return fallback;
     let words = 0, errors = 0;
     for (const p of pool) {
       const tokens = buildPassage(p, focus);
@@ -865,10 +939,11 @@ async function computeTimeLimit() {
     }
     const avgWords = words / pool.length;
     const avgErrors = errors / pool.length;
-    const secs = avgWords * READ_SEC_PER_WORD + avgErrors * pace;
+    const dealt = Math.min(passageCount, pool.length);
+    const secs = (avgWords * READ_SEC_PER_WORD + avgErrors * pace) * dealt;
     return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(secs)));
   } catch {
-    return Math.round(100 * READ_SEC_PER_WORD + 10 * pace);
+    return fallback;
   }
 }
 
@@ -878,7 +953,7 @@ async function runMultiplayer(name) {
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size: roomSize, timeLimit, grade, theme, focus, displayName: name },
+      { mode: 'multiplayer', size: roomSize, timeLimit, grade, theme, focus, count: passageCount, displayName: name },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -899,7 +974,7 @@ async function runCreate(name, size, roomMode) {
   let created;
   try {
     created = await createCodeRoom(
-      { mode: roomMode, size, timeLimit, grade, theme, focus, displayName: name },
+      { mode: roomMode, size, timeLimit, grade, theme, focus, count: passageCount, displayName: name },
       { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
     );
   } catch (e) {
@@ -954,7 +1029,7 @@ async function runGrammar() {
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.
-  mem.save({ grade, theme, focus, done: true });
+  mem.save({ grade, theme, focus, count: passageCount, done: true });
   await getCurrentUser();
   const name = myName();
 

@@ -237,6 +237,26 @@
           <div class="grammar-play-side" id="grammar-play-side" hidden>
             <p class="grammar-hint" id="grammar-hint"></p>
             <div class="grammar-tagbar" id="grammar-tagbar" role="group" aria-label="Name the mistake"></div>
+
+            <!-- The pager. Hidden entirely on a one-passage round, so a short
+                 round looks exactly as it always did. Back/Next swap the whole
+                 editing surface; the clock keeps running across both. -->
+            <div class="grammar-pager" id="grammar-pager" role="group" aria-label="Move between passages" hidden>
+              <button class="grammar-pager-btn" id="grammar-prev-btn" type="button" aria-label="Previous passage">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                <span>Back</span>
+              </button>
+              <p class="grammar-page-note" id="grammar-page-note" aria-live="polite"></p>
+              <button class="grammar-pager-btn is-next" id="grammar-next-btn" type="button" aria-label="Next passage">
+                <span>Next</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+
             <p class="grammar-edit-note" id="grammar-edit-note">0 edited · 0 named</p>
             <button class="grammar-submit-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="grammar-submit-btn" type="button" hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">

@@ -229,3 +229,46 @@ export function scorePassage(tokens, edits, tags) {
     detail,
   };
 }
+
+/**
+ * A whole round — several passages, paged through one at a time — as one score.
+ *
+ * `pages` is [{ tokens, edits, tags }] in the order they were dealt. Each is
+ * scored on its own and the totals are summed, which is the only arrangement
+ * that keeps a multi-passage round fair: a player who catches 8 of 10 on two
+ * passages is 16 of 20, exactly as if it had been one passage of twice the
+ * length. Nothing is weighted by position, so nobody is punished for the
+ * passage they happened to be on when the clock ran out (their untouched pages
+ * simply score as missed, which is what they are).
+ *
+ * The per-page results survive on `.pages` because the review needs to show
+ * each passage marked separately — a marked-up wall of three passages run
+ * together teaches nothing.
+ */
+export function scoreRound(pages) {
+  const each = (pages || []).map((p) => scorePassage(p.tokens, p.edits, p.tags));
+  const total = {
+    score: 0, caught: 0, tagged: 0, wrongFix: 0, missed: 0,
+    falseEdits: 0, errorTotal: 0, maxScore: 0, byCat: {}, pages: each,
+  };
+  each.forEach((r) => {
+    total.score += r.score;
+    total.caught += r.caught;
+    total.tagged += r.tagged;
+    total.wrongFix += r.wrongFix;
+    total.missed += r.missed;
+    total.falseEdits += r.falseEdits;
+    total.errorTotal += r.errorTotal;
+    total.maxScore += r.maxScore;
+    // The CUPS breakdown is the one thing worth pooling across passages: "you
+    // missed three of four usage errors" is a study instruction, and splitting
+    // it per passage would leave every cell too small to read anything from.
+    Object.keys(r.byCat).forEach((k) => {
+      const c = (total.byCat[k] = total.byCat[k] || { total: 0, caught: 0, tagged: 0 });
+      c.total += r.byCat[k].total;
+      c.caught += r.byCat[k].caught;
+      c.tagged += r.byCat[k].tagged;
+    });
+  });
+  return total;
+}
