@@ -5,7 +5,8 @@
   "scripts": {
     "deploy": "bash scripts/deploy.sh",
     "purge": "bash scripts/purge-cache.sh",
-    "check:grammar": "node scripts/check-grammar.mjs"
+    "check:grammar": "node scripts/check-grammar.mjs",
+    "check:rules": "node scripts/check-rules.mjs"
   },
   "dependencies": {}
 }
