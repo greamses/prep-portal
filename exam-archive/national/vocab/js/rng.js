@@ -31,7 +31,9 @@ export const MAX_WRONG = 6; // head, body, two arms, two legs
  */
 export function buildRound({ seed, words, subject, grade, mode, topic }) {
   if (mode === 'topic') {
-    const list = topicPool(words, topic);
+    // grade is passed so a drawn topic that tiers its entries by difficulty
+    // (the body map) deals only what this grade is meant to meet.
+    const list = topicPool(words, topic, grade);
     const rng = mulberry32(hashSeed(seed, CONTENT_NS));
     // Fisher-Yates off the shared seed: same room, same order, no sync.
     for (let i = list.length - 1; i > 0; i--) {

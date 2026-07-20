@@ -54,52 +54,58 @@ const S = { CIRC: 0, RESP: 1, DIG: 2, NERV: 3, URIN: 4, ENDO: 5, LYMPH: 6 };
 const SYSTEM_KEYS = ['circulatory', 'respiratory', 'digestive', 'nervous',
   'urinary', 'endocrine', 'lymphatic'];
 
-// UBERON id -> [system, classroom name, clue]
+// UBERON id -> [system, classroom name, clue, minGrade]
+//
+// minGrade tiers the organs by difficulty (the topic is offered from Grade 3;
+// each organ is only ASKED once the room is at its grade). The everyday organs
+// a young child already names come in at 3; the fine gut/gland anatomy waits
+// for the senior-biology grades. `topicPool(…, grade)` does the filtering, so a
+// Grade 3 room and a Grade 12 room derive different pools from the one file.
 const KEEP = {
   // ── Circulatory ──
-  UBERON_0000948: [S.CIRC, 'heart', 'The muscular pump that keeps blood moving through the body.'],
-  UBERON_0000947: [S.CIRC, 'aorta', "The body's largest vessel, carrying blood out of the left ventricle."],
-  UBERON_0001637: [S.CIRC, 'artery', 'A thick-walled vessel that carries blood away from the pump.'],
-  UBERON_0001621: [S.CIRC, 'coronary artery', 'The vessel that feeds the heart muscle itself.'],
+  UBERON_0000948: [S.CIRC, 'heart', 'The muscular pump that keeps blood moving through the body.', 3],
+  UBERON_0000947: [S.CIRC, 'aorta', "The body's largest vessel, carrying blood out of the left ventricle.", 7],
+  UBERON_0001637: [S.CIRC, 'artery', 'A thick-walled vessel that carries blood away from the pump.', 6],
+  UBERON_0001621: [S.CIRC, 'coronary artery', 'The vessel that feeds the heart muscle itself.', 9],
   // ── Respiratory ──
-  UBERON_0002048: [S.RESP, 'lung', 'The spongy organ where oxygen crosses into the blood.'],
-  UBERON_0003126: [S.RESP, 'trachea', 'The windpipe — a tube held open by rings of cartilage.'],
-  UBERON_0002185: [S.RESP, 'bronchus', 'One of the two branches the windpipe splits into.'],
-  UBERON_0001103: [S.RESP, 'diaphragm', 'The sheet of muscle below the ribs that drives breathing.'],
-  UBERON_0000004: [S.RESP, 'nose', 'Where air is warmed and filtered on its way in.'],
-  UBERON_0000341: [S.RESP, 'throat', 'The passage where the food and air pathways cross.'],
+  UBERON_0002048: [S.RESP, 'lung', 'The spongy organ where oxygen crosses into the blood.', 3],
+  UBERON_0003126: [S.RESP, 'trachea', 'The windpipe — a tube held open by rings of cartilage.', 5],
+  UBERON_0002185: [S.RESP, 'bronchus', 'One of the two branches the windpipe splits into.', 7],
+  UBERON_0001103: [S.RESP, 'diaphragm', 'The sheet of muscle below the ribs that drives breathing.', 6],
+  UBERON_0000004: [S.RESP, 'nose', 'Where air is warmed and filtered on its way in.', 3],
+  UBERON_0000341: [S.RESP, 'throat', 'The passage where the food and air pathways cross.', 4],
   // ── Digestive ──
-  UBERON_0000167: [S.DIG, 'mouth', 'Where digestion begins, with chewing and saliva.'],
-  UBERON_0001723: [S.DIG, 'tongue', 'The muscle that tastes food and shapes speech.'],
-  UBERON_0001043: [S.DIG, 'oesophagus', 'The tube that carries a swallowed bite down to the stomach.'],
-  UBERON_0000945: [S.DIG, 'stomach', 'The muscular bag where food is churned with acid.'],
-  UBERON_0002114: [S.DIG, 'duodenum', 'The first C-shaped stretch of gut just past the stomach.'],
-  UBERON_0002116: [S.DIG, 'ileum', 'The last and longest stretch of the small intestine.'],
-  UBERON_0002108: [S.DIG, 'small intestine', 'The long coiled tube where most nutrients are absorbed.'],
-  UBERON_0001153: [S.DIG, 'caecum', 'The pouch at the very start of the large bowel.'],
-  UBERON_0001154: [S.DIG, 'appendix', 'A narrow dead-end tube at the start of the large bowel.'],
-  UBERON_0001155: [S.DIG, 'colon', 'The large bowel, where water is reclaimed from waste.'],
-  UBERON_0001052: [S.DIG, 'rectum', 'The final straight section, where waste waits to leave.'],
-  UBERON_0002107: [S.DIG, 'liver', 'The largest internal organ; it makes bile and cleans the blood.'],
-  UBERON_0002110: [S.DIG, 'gallbladder', 'The small sac that stores bile until a meal arrives.'],
-  UBERON_0001264: [S.DIG, 'pancreas', 'It makes insulin, and juices that break down food.'],
+  UBERON_0000167: [S.DIG, 'mouth', 'Where digestion begins, with chewing and saliva.', 3],
+  UBERON_0001723: [S.DIG, 'tongue', 'The muscle that tastes food and shapes speech.', 3],
+  UBERON_0001043: [S.DIG, 'oesophagus', 'The tube that carries a swallowed bite down to the stomach.', 6],
+  UBERON_0000945: [S.DIG, 'stomach', 'The muscular bag where food is churned with acid.', 3],
+  UBERON_0002114: [S.DIG, 'duodenum', 'The first C-shaped stretch of gut just past the stomach.', 9],
+  UBERON_0002116: [S.DIG, 'ileum', 'The last and longest stretch of the small intestine.', 9],
+  UBERON_0002108: [S.DIG, 'small intestine', 'The long coiled tube where most nutrients are absorbed.', 5],
+  UBERON_0001153: [S.DIG, 'caecum', 'The pouch at the very start of the large bowel.', 9],
+  UBERON_0001154: [S.DIG, 'appendix', 'A narrow dead-end tube at the start of the large bowel.', 7],
+  UBERON_0001155: [S.DIG, 'colon', 'The large bowel, where water is reclaimed from waste.', 5],
+  UBERON_0001052: [S.DIG, 'rectum', 'The final straight section, where waste waits to leave.', 6],
+  UBERON_0002107: [S.DIG, 'liver', 'The largest internal organ; it makes bile and cleans the blood.', 3],
+  UBERON_0002110: [S.DIG, 'gallbladder', 'The small sac that stores bile until a meal arrives.', 6],
+  UBERON_0001264: [S.DIG, 'pancreas', 'It makes insulin, and juices that break down food.', 5],
   // ── Nervous ──
-  UBERON_0000955: [S.NERV, 'brain', 'The control centre inside the skull.'],
-  UBERON_0002037: [S.NERV, 'cerebellum', 'The small folded part at the back that keeps you balanced.'],
-  UBERON_0002240: [S.NERV, 'spinal cord', 'The thick cable of tissue running down inside the backbone.'],
-  UBERON_0001021: [S.NERV, 'nerve', 'A fibre carrying signals between the brain and the body.'],
-  UBERON_0000970: [S.NERV, 'eye', 'The organ that focuses light to form an image.'],
+  UBERON_0000955: [S.NERV, 'brain', 'The control centre inside the skull.', 3],
+  UBERON_0002037: [S.NERV, 'cerebellum', 'The small folded part at the back that keeps you balanced.', 7],
+  UBERON_0002240: [S.NERV, 'spinal cord', 'The thick cable of tissue running down inside the backbone.', 5],
+  UBERON_0001021: [S.NERV, 'nerve', 'A fibre carrying signals between the brain and the body.', 6],
+  UBERON_0000970: [S.NERV, 'eye', 'The organ that focuses light to form an image.', 3],
   // ── Urinary ──
-  UBERON_0002113: [S.URIN, 'kidney', 'One of a pair of bean-shaped filters for the blood.'],
-  UBERON_0001255: [S.URIN, 'bladder', 'The stretchy bag that stores urine.'],
+  UBERON_0002113: [S.URIN, 'kidney', 'One of a pair of bean-shaped filters for the blood.', 3],
+  UBERON_0001255: [S.URIN, 'bladder', 'The stretchy bag that stores urine.', 4],
   // ── Endocrine ──
-  UBERON_0002046: [S.ENDO, 'thyroid gland', "The butterfly-shaped gland in the neck that sets the body's pace."],
-  UBERON_0002369: [S.ENDO, 'adrenal gland', 'A small cap on top of each kidney, releasing the fight-or-flight hormone.'],
-  UBERON_0000007: [S.ENDO, 'pituitary gland', 'The pea-sized master gland at the base of the brain.'],
+  UBERON_0002046: [S.ENDO, 'thyroid gland', "The butterfly-shaped gland in the neck that sets the body's pace.", 7],
+  UBERON_0002369: [S.ENDO, 'adrenal gland', 'A small cap on top of each kidney, releasing the fight-or-flight hormone.', 9],
+  UBERON_0000007: [S.ENDO, 'pituitary gland', 'The pea-sized master gland at the base of the brain.', 9],
   // ── Lymphatic ──
-  UBERON_0002106: [S.LYMPH, 'spleen', 'It filters blood and recycles worn-out red cells.'],
-  UBERON_0000029: [S.LYMPH, 'lymph node', "A small filter station on the body's drainage network."],
-  UBERON_0002372: [S.LYMPH, 'tonsil', 'A patch of guard tissue at the back of the mouth.'],
+  UBERON_0002106: [S.LYMPH, 'spleen', 'It filters blood and recycles worn-out red cells.', 5],
+  UBERON_0000029: [S.LYMPH, 'lymph node', "A small filter station on the body's drainage network.", 7],
+  UBERON_0002372: [S.LYMPH, 'tonsil', 'A patch of guard tissue at the back of the mouth.', 6],
 };
 
 /* DELIBERATELY EXCLUDED, so a future edit does not "restore" them by mistake:
@@ -340,7 +346,7 @@ const fmt = (v) => {
 };
 
 const rows = [];
-for (const [uid, [system, name, hint]] of Object.entries(KEEP)) {
+for (const [uid, [system, name, hint, minGrade]] of Object.entries(KEEP)) {
   const node = byId[uid];
   if (!node) throw new Error(`${uid} (${name}) is not in ${SRC}`);
   const raw = [];
@@ -366,7 +372,7 @@ for (const [uid, [system, name, hint]] of Object.entries(KEEP)) {
   A /= 2;
   const d = rings.map((p) => `M${p.map(([x, y]) => `${fmt(x)},${fmt(y)}`).join('L')}Z`).join('');
   rows.push({
-    uid, name, hint, system, d,
+    uid, name, hint, system, grade: minGrade, d,
     cx: Math.round((cxs / (6 * A)) * 10) / 10,
     cy: Math.round((cys / (6 * A)) * 10) / 10,
     area: rings.reduce((s, p) => s + Math.abs(signedArea(p)), 0),
@@ -381,7 +387,11 @@ for (const r of rows) {
   if (r.hint.toLowerCase().includes(r.name.toLowerCase())) fail(`clue names itself: ${r.name}`);
   if (!/^[a-z][a-z ]*$/.test(r.name)) fail(`odd name: ${r.name}`);
   if (r.cx < 0 || r.cx > W || r.cy < 0 || r.cy > H) fail(`anchor off-canvas: ${r.name}`);
+  if (!(r.grade >= 3 && r.grade <= 12)) fail(`grade out of 3–12: ${r.name} (${r.grade})`);
 }
+// The topic opens at Grade 3, so at least one organ must actually be askable
+// there — otherwise the first grade that offers it deals an empty round.
+if (!rows.some((r) => r.grade <= 3)) fail('no organ is askable at Grade 3');
 // A duplicate outline would put one picture on the board with two answers —
 // this is exactly how retina/eye and artery/blood vessel would have slipped in.
 const seen = new Map();
@@ -396,12 +406,17 @@ if (bad) { console.error(`\n${bad} problem(s) — nothing written.`); process.ex
 
 console.log(`organs baked: ${rows.length}`);
 console.log('per system:', JSON.stringify(perSystem));
+// Cumulative count askable AT each grade — this is what a room of that grade
+// actually deals, so it is the number that matters for a playable round.
+const askable = {};
+for (let g = 3; g <= 12; g++) askable[g] = rows.filter((r) => r.grade <= g).length;
+console.log('askable by grade:', JSON.stringify(askable));
 const smallest = rows.slice().sort((a, b) => a.area - b.area).slice(0, 3);
 console.log('smallest on screen:', smallest.map((r) => `${r.name} (${Math.round(r.area)}u²)`).join(', '));
 
 // ── Emit ────────────────────────────────────────────────────────────────
 const body = rows.map((r) => `  [${JSON.stringify(r.name)}, ${JSON.stringify(r.hint)}, `
-  + `${r.system}, ${r.cx}, ${r.cy}, ${JSON.stringify(r.uid)}, ${JSON.stringify(r.d)}],`).join('\n');
+  + `${r.system}, ${r.grade}, ${r.cx}, ${r.cy}, ${JSON.stringify(r.uid)}, ${JSON.stringify(r.d)}],`).join('\n');
 
 const out = `/* ═══════════════════════════════════════════════════════
    MAP OF THE BODY — 37 organs across 7 body systems, outlines from the EBI
@@ -416,11 +431,16 @@ const out = `/* ═════════════════════�
    Same drawn-topic shape as the two maps: the game lights ONE organ on the
    whole figure and you name it; a scoped round asks one body system.
 
-   Each row: [name, hint, system, cx, cy, uberon, path]. cx/cy anchor the
-   clue's locator ring on the organ's largest part. \`uberon\` is the ontology
-   id the outline came from — kept only so a future re-curation can trace a
-   row back to the source artwork. This file is LAZY-LOADED — never import it
-   statically from index.js.
+   The topic opens at Grade 3, but each organ carries its own \`grade\` — the
+   everyday organs a child already names (heart, brain, lungs…) come in at 3,
+   the fine gut/gland anatomy waits for senior biology. topicPool filters by
+   the room's grade, so one file feeds every grade a fair pool.
+
+   Each row: [name, hint, system, grade, cx, cy, uberon, path]. cx/cy anchor
+   the clue's locator ring on the organ's largest part. \`uberon\` is the
+   ontology id the outline came from — kept only so a future re-curation can
+   trace a row back to the source artwork. This file is LAZY-LOADED — never
+   import it statically from index.js.
 ═══════════════════════════════════════════════════════ */
 
 export const MAP_W = ${W};
@@ -432,14 +452,15 @@ const RAW = [
 ${body}
 ];
 
-export const ORGANS = RAW.map(([name, hint, system, cx, cy, uberon, d]) => ({
-  name, hint, system: SYSTEM_KEYS[system], cx, cy, uberon, d,
+export const ORGANS = RAW.map(([name, hint, system, grade, cx, cy, uberon, d]) => ({
+  name, hint, system: SYSTEM_KEYS[system], grade, cx, cy, uberon, d,
 }));
 
 // What the game quizzes, shaped like any other topic's words: the organ's
-// NAME is the word, its one-line description is the clue, and \`s\` is the
-// body-system scope key a scoped round filters on.
-export const GAME_ORGANS = ORGANS.map((c) => ({ w: c.name, d: c.hint, s: c.system, organ: c }));
+// NAME is the word, its one-line description is the clue, \`s\` is the body-
+// system scope key a scoped round filters on, and \`g\` is the minimum grade
+// topicPool uses to tier the organs by difficulty.
+export const GAME_ORGANS = ORGANS.map((c) => ({ w: c.name, d: c.hint, s: c.system, g: c.grade, organ: c }));
 `;
 
 fs.writeFileSync(OUT, out);

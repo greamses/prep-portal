@@ -295,8 +295,12 @@ export function gradePool(words, subjectKey, grade) {
   return pool;
 }
 
-/** One topic's words, in file order — the round does its own seeded shuffle. */
-export function topicPool(words, topicKey) {
+/** One topic's words, in file order — the round does its own seeded shuffle.
+    `grade` is optional and only bites on drawn topics whose entries carry a
+    minimum grade `g` (the body map tiers its organs by difficulty): at grade G
+    an entry with g > G is held back, so a Grade 3 room never meets the
+    duodenum. A pool with no `g` fields is unaffected. */
+export function topicPool(words, topicKey, grade = null) {
   const base = baseTopic(topicKey);
   const scope = topicScope(topicKey);
   // The periodic table's "words" are the elements themselves; each carries an
@@ -305,10 +309,12 @@ export function topicPool(words, topicKey) {
   if (base === PERIODIC) {
     return scopedElements(scope).map((e) => ({ ...e, topic: PERIODIC }));
   }
-  // Any other scoped topic (the maps' continents/zones) filters on the `s`
-  // key its entries carry — 'world-map:cm5' keeps Africa + Europe.
+  // Any other scoped topic (the maps' continents/zones/systems) filters on the
+  // `s` key its entries carry — 'world-map:cm5' keeps Africa + Europe.
   let list = words[base] || [];
   const set = regionSet(topicKey);
   if (set) list = list.filter((entry) => set.has(entry.s));
+  // Grade tiering: hold back entries whose minimum grade is above the room's.
+  if (grade != null) list = list.filter((entry) => entry.g == null || entry.g <= grade);
   return list.map((entry) => ({ ...entry, topic: base }));
 }

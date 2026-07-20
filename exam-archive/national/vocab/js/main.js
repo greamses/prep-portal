@@ -1381,8 +1381,11 @@ async function openDictionary() {
       : 'Hover any organ for its name and body system. The game lights one up — you name it.';
     dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the body…</p>';
     const bm = await import('/data/vocab/body-map.js');
+    // Study only what this grade will be asked — the organs are tiered by
+    // difficulty, so a Grade 3 body shows the ten everyday organs, not all 37.
+    const organs = bm.ORGANS.filter((o) => o.grade == null || o.grade <= grade);
     await renderMapLibrary({
-      mod: bm, rows: bm.ORGANS, set,
+      mod: bm, rows: organs, set,
       regionOf: (c) => c.system, regionLabels: SYSTEM_LABELS,
       ariaLabel: 'Map of the body — hover an organ for its details',
       mapClass: 'vocab-bodymap',
