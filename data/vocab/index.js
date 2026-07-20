@@ -137,7 +137,21 @@ const PERIODIC = 'periodic-table';
 const WORLD = 'world-map';
 const NIGERIA = 'nigeria-map';
 const BODY = 'body-map';
-const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY]);
+
+/* The single-organ maps — the whole-body map names the organs, these name the
+   PARTS inside one organ. Each is a drawn topic backed by a hand-authored
+   schematic (data/vocab/organs/<key>.js, built by scripts/gen-organ-maps.mjs).
+   Unlike the geographic maps and the body map they have NO sub-scope — an organ
+   has too few parts to slice — so a pick jumps straight past the scope step. */
+export const ORGAN_FIGURES = {
+  'heart-map': { module: '/data/vocab/organs/heart.js', label: 'The Heart' },
+  'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },
+  'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
+  'skin-map': { module: '/data/vocab/organs/skin.js', label: 'The Skin' },
+};
+export const isOrganFigure = (topicKey) => baseTopic(topicKey) in ORGAN_FIGURES;
+
+const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY, ...Object.keys(ORGAN_FIGURES)]);
 // A subject made ENTIRELY of bundled topics needs no entry in the generated
 // manifest to be offered.
 const BUNDLED_SUBJECTS = new Set(['geography']);

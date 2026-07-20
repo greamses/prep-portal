@@ -76,6 +76,11 @@ const PAGES = [
       '/data/vocab/world-map.js',
       '/data/vocab/nigeria-map.js',
       '/data/vocab/body-map.js',
+      // The single-organ maps (name the parts of one organ).
+      '/data/vocab/organs/heart.js',
+      '/data/vocab/organs/brain.js',
+      '/data/vocab/organs/ear.js',
+      '/data/vocab/organs/skin.js',
       // The Laws hangman words are derived from the shared study bank, so a
       // stale copy of the bank against fresh page code must bust the page too.
       '/data/laws/laws.js',

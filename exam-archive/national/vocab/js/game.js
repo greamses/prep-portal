@@ -25,6 +25,7 @@ import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
   loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS, SYSTEM_LABELS,
   ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet, structureSvg,
+  ORGAN_FIGURES,
 } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -60,6 +61,8 @@ let mapScope = null; // decoded region keys for a scoped MAP round, else null
 let worldMap = null;   // lazy /data/vocab/world-map.js module — world-map rounds only
 let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map rounds only
 let bodyMap = null;    // lazy /data/vocab/body-map.js module — body-map rounds only
+let figureMod = null;  // lazy single-organ module (data/vocab/organs/*) — organ-map rounds
+let figureLabel = '';  // the organ's title, shown in the clue note ('The Heart')
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -251,6 +254,12 @@ const renderOrganClue = (o) => renderMapClue({
   regionOf: (r) => r.system, regionLabel: SYSTEM_LABELS[o.system],
   credit: ORGAN_CREDIT,
 });
+// A single-organ figure: name the lit PART. No region scope, no credit (the
+// figures are hand-authored). The note carries the organ's title.
+const renderPartClue = (p) => renderMapClue({
+  mod: figureMod, rows: figureMod.PARTS, target: p,
+  regionOf: () => '', regionLabel: figureLabel,
+});
 
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
 // above the text clue (formula + hint). A missing structure just leaves the text.
@@ -302,14 +311,15 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : 'Word'} ${index + 1} of ${round.length}`;
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : 'Word'} ${index + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
-  // with the asked element lit, or a map with the asked country/state/organ
-  // lit. Hover the note beneath for a hint.
+  // with the asked element lit, or a map/figure with the asked country / state
+  // / organ / part lit. Hover the note beneath for a hint.
   if (current.element) renderElementClue(current.element);
   else if (current.country) renderCountryClue(current.country);
   else if (current.state) renderStateClue(current.state);
   else if (current.organ) renderOrganClue(current.organ);
+  else if (current.part) renderPartClue(current.part);
   else if (current.structure) renderCompoundClue(current.structure, current.clue);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
@@ -503,6 +513,14 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   }
   if (mode === 'topic' && baseTopic(topic) === 'body-map') {
     bodyMap = await import('/data/vocab/body-map.js');
+  }
+  // A single-organ map draws the whole figure every question, so its module
+  // must be in hand before the countdown ends (loadWords('geography') already
+  // pulled the GAME_PARTS in; this resolves the drawing side from cache).
+  const fig = ORGAN_FIGURES[baseTopic(topic)];
+  if (mode === 'topic' && fig) {
+    figureMod = await import(fig.module);
+    figureLabel = fig.label;
   }
 
   return new Promise((resolve) => {

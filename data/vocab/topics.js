@@ -172,6 +172,13 @@ export const SUBJECTS = {
       T('world-map', 'Map of the World', 1, 12),
       T('nigeria-map', 'Map of Nigeria', 1, 12),
       T('body-map', 'Map of the Body', 3, 12),
+      // Single-organ maps: name the PARTS of one organ. Bands reflect when each
+      // organ's inner parts are first taught (the outer ear and skin layers
+      // early; heart chambers and brain lobes a little later).
+      T('ear-map', 'The Ear', 4, 12),
+      T('skin-map', 'The Skin', 4, 12),
+      T('heart-map', 'The Heart', 5, 12),
+      T('brain-map', 'The Brain', 6, 12),
     ],
   },
 

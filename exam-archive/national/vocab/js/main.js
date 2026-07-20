@@ -15,6 +15,7 @@ import {
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS, SYSTEMS, SYSTEM_LABELS,
+  ORGAN_FIGURES,
   baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel, structureSvg,
 } from '/data/vocab/index.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -1390,6 +1391,20 @@ async function openDictionary() {
       ariaLabel: 'Map of the body — hover an organ for its details',
       mapClass: 'vocab-bodymap',
       credit: 'Anatomy © EMBL-EBI · <a href="https://github.com/ebi-gene-expression-group/anatomogram" target="_blank" rel="noopener">CC-BY-4.0</a>',
+    });
+    return;
+  }
+  const fig = ORGAN_FIGURES[baseTopic(topic)];
+  if (playMode === 'topic' && fig) {
+    dictBox.classList.add('vocab-dict--wide');
+    dictSub.textContent = `Hover any part of ${fig.label.toLowerCase()} for its name. `
+      + 'The game lights one up — you name it.';
+    dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the diagram…</p>';
+    const fm = await import(fig.module);
+    await renderMapLibrary({
+      mod: fm, rows: fm.PARTS, set: null,
+      regionOf: () => '', regionLabels: {},
+      ariaLabel: `${fig.label} — hover a part for its name`,
     });
     return;
   }

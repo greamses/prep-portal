@@ -40,14 +40,15 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
       const j = Math.floor(rng() * (i + 1));
       [list[i], list[j]] = [list[j], list[i]];
     }
-    // `element` (periodic table), `country` (world map), `state` (Nigeria map)
-    // and `organ` (body map) are present only for the drawn topics — the game
-    // renders the drawn table or map in place of a text clue. `structure` (the
-    // IUPAC naming topics) carries a SMILES so the game can draw the compound.
+    // `element` (periodic table), `country` (world map), `state` (Nigeria map),
+    // `organ` (body map) and `part` (a single-organ map) are present only for
+    // the drawn topics — the game renders the drawn table/map/figure in place
+    // of a text clue. `structure` (the IUPAC naming topics) carries a SMILES so
+    // the game can draw the compound.
     return list.map((x) => ({
       word: x.w, clue: x.d, letter: null,
       element: x.element || null, country: x.country || null, state: x.state || null,
-      organ: x.organ || null,
+      organ: x.organ || null, part: x.part || null,
       structure: x.smiles ? { smiles: x.smiles, formula: x.formula || null } : null,
     }));
   }
