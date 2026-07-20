@@ -171,7 +171,9 @@ export const SUBJECTS = {
     topics: [
       T('world-map', 'Map of the World', 1, 12),
       T('nigeria-map', 'Map of Nigeria', 1, 12),
-      T('body-map', 'Map of the Body', 1, 12),
+      // Senior only: the 37 organs run to fine gut anatomy (duodenum, ileum,
+      // caecum) that belongs in a senior-biology room, not a Grade 1 one.
+      T('body-map', 'Map of the Body', 10, 12),
     ],
   },
 
