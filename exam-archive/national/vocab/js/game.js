@@ -63,6 +63,7 @@ let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map
 let bodyMap = null;    // lazy /data/vocab/body-map.js module — body-map rounds only
 let figureMod = null;  // lazy single-organ module (data/vocab/organs/*) — organ-map rounds
 let figureLabel = '';  // the organ's title, shown in the clue note ('The Heart')
+let figureCredit = ''; // a sourced organ (the heart is CC-BY-SA) exports CREDIT; '' otherwise
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -254,11 +255,12 @@ const renderOrganClue = (o) => renderMapClue({
   regionOf: (r) => r.system, regionLabel: SYSTEM_LABELS[o.system],
   credit: ORGAN_CREDIT,
 });
-// A single-organ figure: name the lit PART. No region scope, no credit (the
-// figures are hand-authored). The note carries the organ's title.
+// A single-organ figure: name the lit PART. No region scope. Hand-authored
+// figures carry no credit; a sourced one (the heart, CC-BY-SA) does, and that
+// credit also switches the clue to the taller portrait layout.
 const renderPartClue = (p) => renderMapClue({
   mod: figureMod, rows: figureMod.PARTS, target: p,
-  regionOf: () => '', regionLabel: figureLabel,
+  regionOf: () => '', regionLabel: figureLabel, credit: figureCredit,
 });
 
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
@@ -521,6 +523,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   if (mode === 'topic' && fig) {
     figureMod = await import(fig.module);
     figureLabel = fig.label;
+    figureCredit = figureMod.CREDIT || '';
   }
 
   return new Promise((resolve) => {

@@ -1401,10 +1401,16 @@ async function openDictionary() {
       + 'The game lights one up — you name it.';
     dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the diagram…</p>';
     const fm = await import(fig.module);
+    // A sourced organ (the heart) tiers its parts by grade — study only what
+    // this grade is asked. Hand-authored organs have no grades, so all show.
+    const parts = fm.PARTS.filter((p) => p.grade == null || p.grade <= grade);
     await renderMapLibrary({
-      mod: fm, rows: fm.PARTS, set: null,
+      mod: fm, rows: parts, set: null,
       regionOf: () => '', regionLabels: {},
       ariaLabel: `${fig.label} — hover a part for its name`,
+      // A portrait figure (the heart) is sized by height, like the body map.
+      mapClass: fm.MAP_H > fm.MAP_W * 1.2 ? 'vocab-bodymap' : 'vocab-worldmap',
+      credit: fm.CREDIT,
     });
     return;
   }

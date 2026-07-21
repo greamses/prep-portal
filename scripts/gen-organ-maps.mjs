@@ -1,6 +1,10 @@
-/* Generates data/vocab/organs/{heart,brain,ear,skin}.js — the individual organ
-   maps, where the game lights ONE PART of an organ and you name it (the whole-
-   body map names the organs; these name the parts inside one).
+/* Generates data/vocab/organs/{brain,ear,skin}.js — the individual organ maps,
+   where the game lights ONE PART of an organ and you name it (the whole-body
+   map names the organs; these name the parts inside one).
+
+   The HEART is NOT here — it is sourced from a detailed Wikimedia diagram by
+   scripts/gen-heart-map.mjs (CC-BY-SA). Do not re-add it here or this generator
+   will overwrite that sourced file with a schematic.
 
    These are HAND-AUTHORED schematics, not traced from a source: clean textbook-
    style diagrams composed here from drawing primitives (blob / tube / band /
@@ -161,32 +165,7 @@ ORGANS.skin = {
 
 // ── HEART ── anterior view. Standard textbook side convention: the patient's
 //    right chambers sit on the VIEWER's left.
-ORGANS.heart = {
-  file: 'heart', label: 'The Heart', w: 1000, h: 980,
-  parts: [
-    // The great vessels emerge from the base; the chambers are drawn after, so
-    // the vessel roots tuck behind them and read as connected.
-    { name: 'superior vena cava', hint: 'The big vein bringing blood down from the head and arms.',
-      at: [372, 215], d: tube([[366, 120], [368, 230], [382, 330], [404, 404]], 36) },
-    { name: 'aorta', hint: 'The great arched vessel carrying blood out to the whole body.',
-      at: [500, 150], d: arcTube(530, 300, 152, D2R(-158), D2R(-18), 36) },
-    { name: 'pulmonary artery', hint: 'The vessel taking blood from the heart to the lungs for oxygen.',
-      at: [452, 235], d: tube([[468, 368], [452, 270], [440, 196], [414, 150]], 32) },
-    { name: 'inferior vena cava', hint: 'The big vein bringing blood up from the lower body.',
-      at: [340, 650], d: tube([[338, 700], [346, 610], [364, 556]], 34) },
-    // The four chambers TILE: neighbours share an edge (the septum down the
-    // middle, the AV groove across) so together they read as one heart, apex
-    // at the bottom formed by the left ventricle.
-    { name: 'right atrium', hint: 'The upper chamber that receives tired blood returning from the body.',
-      at: [398, 460], d: smoothClosed([[330, 405], [505, 352], [505, 560], [300, 548]]) },
-    { name: 'left atrium', hint: 'The upper chamber that receives fresh blood back from the lungs.',
-      at: [618, 462], d: smoothClosed([[505, 352], [712, 408], [716, 562], [505, 560]]) },
-    { name: 'right ventricle', hint: 'The lower chamber that pumps blood to the lungs.',
-      at: [406, 700], d: smoothClosed([[300, 548], [505, 560], [556, 838], [430, 892], [330, 768]]) },
-    { name: 'left ventricle', hint: 'The strongest chamber; it pumps blood out to the whole body.',
-      at: [642, 716], d: smoothClosed([[505, 560], [716, 562], [700, 782], [562, 912], [520, 770]]) },
-  ],
-};
+// ── HEART lives in gen-heart-map.mjs (sourced from Wikimedia), not here. ──
 
 // ── BRAIN ── left-facing lateral view: the four cerebral lobes, the cerebellum
 //    and the brain stem.
