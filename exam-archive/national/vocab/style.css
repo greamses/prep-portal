@@ -1542,6 +1542,10 @@ body.vocab-nav-hidden .site-nav { display: none; }
    target, so this dimming is scoped to the clue only — there every part shows
    at full colour for study.) */
 .vocab-clue-map.vocab-map--colored .vocab-map-c:not(.is-target) { opacity: 0.4; }
+/* A scoped body round (one system) fades the OTHER systems further still, so
+   the chosen system stands out as a bright band of its colour. Must come after
+   the dim rule above to win at equal specificity. */
+.vocab-clue-map.vocab-map--colored .vocab-map-c.is-out { opacity: 0.14; }
 .vocab-clue-map.vocab-map--colored .vocab-map-c.is-target {
   opacity: 1;
   stroke: #14130f;

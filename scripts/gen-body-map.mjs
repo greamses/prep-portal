@@ -53,6 +53,18 @@ const MIN_AREA = 1.5; // drop specks smaller than this, in final units²
 const S = { CIRC: 0, RESP: 1, DIG: 2, NERV: 3, URIN: 4, ENDO: 5, LYMPH: 6 };
 const SYSTEM_KEYS = ['circulatory', 'respiratory', 'digestive', 'nervous',
   'urinary', 'endocrine', 'lymphatic'];
+// One soft, distinct colour per system, so the whole body reads as its systems
+// at a glance (and a scoped round is a bright band of one colour). Lock-step
+// with SYSTEM_KEYS. Muted to sit inside the soft-UI theme.
+const SYSTEM_COLORS = {
+  circulatory: '#e28a8a', // soft red — blood
+  respiratory: '#8ec2e2', // soft blue — air
+  digestive: '#eab97a', // soft orange — gut
+  nervous: '#b89bd6', // soft purple — nerves
+  urinary: '#cdd579', // soft lime — kidneys
+  endocrine: '#7fc9bb', // soft teal — glands
+  lymphatic: '#e6a4c6', // soft pink — lymph
+};
 
 // UBERON id -> [system, classroom name, clue, minGrade]
 //
@@ -448,12 +460,17 @@ export const MAP_H = ${H};
 
 export const SYSTEM_KEYS = ${JSON.stringify(SYSTEM_KEYS)};
 
+// One colour per system — the renderer paints each organ its system's colour,
+// so the whole body reads as its systems. Derived at load, not stored per row.
+export const SYSTEM_COLORS = ${JSON.stringify(SYSTEM_COLORS)};
+
 const RAW = [
 ${body}
 ];
 
 export const ORGANS = RAW.map(([name, hint, system, grade, cx, cy, uberon, d]) => ({
   name, hint, system: SYSTEM_KEYS[system], grade, cx, cy, uberon, d,
+  fill: SYSTEM_COLORS[SYSTEM_KEYS[system]],
 }));
 
 // What the game quizzes, shaped like any other topic's words: the organ's

@@ -28,6 +28,10 @@ export const MAP_H = 1843;
 
 export const SYSTEM_KEYS = ["circulatory","respiratory","digestive","nervous","urinary","endocrine","lymphatic"];
 
+// One colour per system — the renderer paints each organ its system's colour,
+// so the whole body reads as its systems. Derived at load, not stored per row.
+export const SYSTEM_COLORS = {"circulatory":"#e28a8a","respiratory":"#8ec2e2","digestive":"#eab97a","nervous":"#b89bd6","urinary":"#cdd579","endocrine":"#7fc9bb","lymphatic":"#e6a4c6"};
+
 const RAW = [
   ["adrenal gland", "A small cap on top of each kidney, releasing the fight-or-flight hormone.", 5, 9, 555.8, 516, "UBERON_0002369", "M423.4,549L435.6,544.7L438.1,544.7L443.7,546.2L453.3,551.8L455.9,555.1L456.9,559.4L459.4,563.1L460.4,564.5L463.5,565.5L464,566.9L465,566.4L467,560.8L468.5,559.8L470,556.5L471.1,542.9L470,539.6L469.5,534.4L468.5,530.6L467.5,529.6L467.5,527.8L464.5,524L462.9,523L456.4,523L451.3,524.5L448.3,526.3L444.7,527.3L444.2,528.2L437.6,532.5L434.1,533.9L432.5,536.3L425.4,540.5L423.9,542.9L421.9,544.3L421.9,546.2L419.9,550.4ZM585.5,523.6L573.3,519.3L570.8,519.3L565.2,520.7L555.6,526.4L553.1,529.7L552,533.9L549.5,537.7L548.5,539.1L545.4,540.1L544.9,541.5L543.9,541L541.9,535.3L540.4,534.4L538.9,531.1L537.8,517.4L538.9,514.1L539.4,508.9L540.4,505.2L541.4,504.2L541.4,502.3L544.4,498.6L546,497.6L552.5,497.6L557.6,499L560.7,500.9L564.2,501.9L564.7,502.8L571.3,507.1L574.8,508.5L576.4,510.8L583.5,515.1L585,517.4L587,518.8L587,520.7L589,525Z"],
   ["aorta", "The body's largest vessel, carrying blood out of the left ventricle.", 0, 7, 503.5, 556.1, "UBERON_0000947", "M480.2,385.3L483.6,389.6L487.3,391.4L491,391.5L497.3,389L498.4,383.1L500,380.6L501.8,380.2L503.8,381.3L508.4,389.4L511.7,398.4L514.4,413.1L515.5,428.4L515.9,458.2L509.6,528.5L502.2,570.7L491.6,621.9L477.2,674.7L472.2,695.6L467.1,722.1L463.6,744L461.3,761.7L466.5,764.9L470.9,766L474.5,765.6L479,763.5L480.7,759L483,746.2L486.7,712.8L489.1,697.8L504.7,638.5L516,588.4L522.8,551.3L527.2,521.5L531.9,479.2L532.7,461.5L532.6,431.5L531,409.1L527.5,390.1L524.9,382.4L521.7,376.2L515.1,369L506.8,363.4L506,363L498.6,363.5L492.8,365.4L488.3,368.3L485.1,371.8L481.4,379.3L480.2,385.3Z"],
@@ -70,6 +74,7 @@ const RAW = [
 
 export const ORGANS = RAW.map(([name, hint, system, grade, cx, cy, uberon, d]) => ({
   name, hint, system: SYSTEM_KEYS[system], grade, cx, cy, uberon, d,
+  fill: SYSTEM_COLORS[SYSTEM_KEYS[system]],
 }));
 
 // What the game quizzes, shaped like any other topic's words: the organ's
