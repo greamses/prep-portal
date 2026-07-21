@@ -191,7 +191,7 @@ ORGANS.heart = {
 // ── BRAIN ── left-facing lateral view: the four cerebral lobes, the cerebellum
 //    and the brain stem.
 ORGANS.brain = {
-  file: 'brain', label: 'The Brain', w: 1000, h: 800,
+  file: 'brain', label: 'The Brain', w: 1000, h: 920,
   parts: [
     { name: 'frontal lobe', hint: 'The front of the brain — planning, deciding and voluntary movement.',
       at: [250, 300], d: smoothClosed([[150, 300], [180, 200], [280, 150], [380, 165], [400, 300], [370, 420], [250, 440], [160, 400]]) },
@@ -200,11 +200,21 @@ ORGANS.brain = {
     { name: 'occipital lobe', hint: 'The very back of the brain — where seeing is understood.',
       at: [720, 340], d: smoothClosed([[640, 200], [740, 210], [812, 300], [790, 420], [680, 450], [625, 360]]) },
     { name: 'temporal lobe', hint: 'The lower side — hearing, and the memory of words.',
-      at: [400, 500], d: smoothClosed([[250, 450], [400, 440], [520, 470], [540, 560], [430, 600], [300, 575], [240, 510]]) },
+      at: [385, 505], d: smoothClosed([[250, 450], [400, 440], [520, 470], [540, 560], [430, 600], [300, 575], [240, 510]]) },
     { name: 'cerebellum', hint: 'The folded ball at the back that keeps movement smooth and balanced.',
       at: [730, 545], d: blob(730, 540, 108, 92, { amp: 0.16, freq: 8 }) },
-    { name: 'brain stem', hint: 'The stalk joining brain to spinal cord; it runs breathing and heartbeat.',
-      at: [575, 680], d: tube([[560, 560], [566, 640], [580, 720], [590, 770]], 42) },
+    // The brain stem, drawn as its three real parts stacked top-to-bottom, then
+    // continuing as the spinal cord; the pituitary hangs from the base in front.
+    { name: 'midbrain', hint: 'The topmost stalk section, passing on reflexes of sight and sound.',
+      at: [548, 598], d: tube([[556, 556], [558, 588], [562, 622]], 34) },
+    { name: 'pons', hint: 'The rounded bulge of the stalk that helps drive breathing.',
+      at: [588, 664], d: blob(586, 664, 48, 40, { amp: 0.1, freq: 3 }) },
+    { name: 'medulla oblongata', hint: 'The lowest stalk part; it runs the heartbeat and breathing.',
+      at: [600, 736], d: tube([[588, 700], [594, 734], [600, 766]], 30) },
+    { name: 'spinal cord', hint: 'The thick cable of nerves running down from the base into the back.',
+      at: [606, 838], d: tube([[600, 766], [604, 818], [608, 882]], 22) },
+    { name: 'pituitary gland', hint: 'The pea-sized master gland below the brain, steering the other glands.',
+      at: [468, 616], d: blob(470, 614, 28, 24, { amp: 0.12, freq: 3 }) + tube([[472, 566], [471, 592]], 7) },
   ],
 };
 
