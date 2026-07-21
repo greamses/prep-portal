@@ -504,7 +504,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   round = buildRound({ seed: roomSeed, words, subject, grade, mode, topic });
   // A map round draws the WHOLE map every question, so the map module must
   // be in hand before the countdown ends. It resolves from the module cache
-  // instantly — loadWords('geography') already pulled it in.
+  // instantly — loadWords(subject) already pulled it in.
   if (mode === 'topic' && baseTopic(topic) === 'world-map') {
     worldMap = await import('/data/vocab/world-map.js');
   }
@@ -515,7 +515,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     bodyMap = await import('/data/vocab/body-map.js');
   }
   // A single-organ map draws the whole figure every question, so its module
-  // must be in hand before the countdown ends (loadWords('geography') already
+  // must be in hand before the countdown ends (loadWords(subject) already
   // pulled the GAME_PARTS in; this resolves the drawing side from cache).
   const fig = ORGAN_FIGURES[baseTopic(topic)];
   if (mode === 'topic' && fig) {

@@ -60,7 +60,7 @@ const SHARED = [
 const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
-  'algebra', 'geometry', 'statistics', 'geography',
+  'algebra', 'geometry', 'statistics', 'geography', 'human-body',
 ];
 const PAGES = [
   { name: 'geometry' },

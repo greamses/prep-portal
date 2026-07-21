@@ -158,23 +158,34 @@ export const SUBJECTS = {
     ],
   },
 
-  // ── Maps, all grades ─────────────────────────────────────────────────
-  // Bundled map data (data/vocab/*-map.js), not generated words — the places
-  // (and the organs) themselves are the vocabulary, drawn on a real diagram.
+  // ── Geography, all grades ────────────────────────────────────────────
+  // Bundled map data (data/vocab/*-map.js), not generated words — the
+  // countries and states themselves are the vocabulary, drawn on a real map.
   // One tier never mixes with the other, but a map is fair at any age, so this
-  // subject alone spans both. "Map of the Body" is the same drawn-topic shape:
-  // one organ lit on a whole-body figure, name it.
+  // subject alone spans both.
   geography: {
-    label: 'Maps',
+    label: 'Geography',
     group: 'Geography',
     grades: [1, 12],
     topics: [
       T('world-map', 'Map of the World', 1, 12),
       T('nigeria-map', 'Map of Nigeria', 1, 12),
+    ],
+  },
+
+  // ── The Human Body, grades 3–12 ──────────────────────────────────────
+  // Anatomy, not geography — kept in its own Science subject. It spans both
+  // school tiers because Biology (senior only) and Life Science (junior only)
+  // each cover just half of the 3–12 range this content needs. Every topic is
+  // a drawn diagram: the whole-body map names the ORGANS, the single-organ
+  // maps name the PARTS inside one organ. Bands reflect when each is taught —
+  // the outer ear and skin layers early, heart chambers and brain lobes later.
+  'human-body': {
+    label: 'The Human Body',
+    group: 'Science',
+    grades: [3, 12],
+    topics: [
       T('body-map', 'Map of the Body', 3, 12),
-      // Single-organ maps: name the PARTS of one organ. Bands reflect when each
-      // organ's inner parts are first taught (the outer ear and skin layers
-      // early; heart chambers and brain lobes a little later).
       T('ear-map', 'The Ear', 4, 12),
       T('skin-map', 'The Skin', 4, 12),
       T('heart-map', 'The Heart', 5, 12),

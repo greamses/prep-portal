@@ -15,7 +15,7 @@ import {
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS, SYSTEMS, SYSTEM_LABELS,
-  ORGAN_FIGURES,
+  ORGAN_FIGURES, isBundledSubject,
   baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel, structureSvg,
 } from '/data/vocab/index.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -115,7 +115,7 @@ let playMode = mem.get('playMode', 'az', ['az', 'topic']);    // az | topic — 
 // (the scope suffix rides along with its base).
 let topic = mem.get('topic', '', (t) => topicsFor(subject, grade).some((x) => x.key === baseTopic(t)));
 let spelling = mem.get('spelling', 'classic', SPELL_MODES.map((m) => m.key)); // classic | spell — how each word is played
-if (subject === 'geography') playMode = 'topic'; // geography is maps only — no A–Z
+if (isBundledSubject(subject)) playMode = 'topic'; // all-drawn subjects: no A–Z
 if (playMode === 'topic' && !topic) {
   const ts = topicsFor(subject, grade);
   topic = ts[0] ? ts[0].key : '';
@@ -231,9 +231,9 @@ function renderSubjectStep() {
       // still valid wherever its topic is offered.
       if (!topics.some((t) => t.key === baseTopic(topic))) topic = topics[0] ? topics[0].key : '';
       renderTopicStep();
-      // Geography is all drawn topics (maps) — there is no A–Z alphabet to
+      // An all-drawn subject (Geography, The Human Body) has no A–Z alphabet to
       // walk, so the A-Z/Topic step is skipped and the round is by topic.
-      if (subject === 'geography') {
+      if (isBundledSubject(subject)) {
         playMode = 'topic';
         content.goTo('topic');
         return;

@@ -152,9 +152,12 @@ export const ORGAN_FIGURES = {
 export const isOrganFigure = (topicKey) => baseTopic(topicKey) in ORGAN_FIGURES;
 
 const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY, ...Object.keys(ORGAN_FIGURES)]);
-// A subject made ENTIRELY of bundled topics needs no entry in the generated
-// manifest to be offered.
-const BUNDLED_SUBJECTS = new Set(['geography']);
+// A subject made ENTIRELY of bundled/drawn topics needs no entry in the
+// generated manifest to be offered — and, being all drawn diagrams, it has no
+// A–Z alphabet to walk, so the setup skips the A–Z/Topic step and plays by
+// topic. `isBundledSubject` is what the page checks instead of naming subjects.
+const BUNDLED_SUBJECTS = new Set(['geography', 'human-body']);
+export const isBundledSubject = (subjectKey) => BUNDLED_SUBJECTS.has(subjectKey);
 
 // ── Science-law topics, bundled into the science subjects ────────────────
 // The senior science subjects each gain two topics whose words are NOT written
