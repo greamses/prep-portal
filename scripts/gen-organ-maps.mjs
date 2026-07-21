@@ -141,61 +141,30 @@ const ORGANS = {};
 ORGANS.skin = {
   file: 'skin', label: 'The Skin', w: 1000, h: 720,
   parts: [
-    { name: 'epidermis', hint: 'The thin outer layer you can see and touch; it waterproofs the body.',
+    { name: 'epidermis', fill: '#f2caa4', hint: 'The thin outer layer you can see and touch; it waterproofs the body.',
       at: [720, 128], d: band(30, 940, 85, 178, { amp: 9, freq: 2.5 }) },
-    { name: 'dermis', hint: 'The thicker inner layer holding the hair roots, glands and blood vessels.',
+    { name: 'dermis', fill: '#e8a6a2', hint: 'The thicker inner layer holding the hair roots, glands and blood vessels.',
       at: [780, 300], d: band(30, 940, 178, 430, { amp: 5, freq: 2 }) },
-    { name: 'fatty layer', hint: 'The deepest layer, padding and insulating the body with stored fat.',
+    { name: 'fatty layer', fill: '#f4e2a0', hint: 'The deepest layer, padding and insulating the body with stored fat.',
       at: [230, 560], d: band(30, 940, 430, 655, { amp: 5, freq: 1.5 }) },
-    { name: 'hair', hint: 'The thread of dead cells that grows up out of the skin.',
+    { name: 'hair', fill: '#8a5a38', hint: 'The thread of dead cells that grows up out of the skin.',
       at: [300, 45], d: tube([[300, 12], [301, 90], [300, 190], [299, 300], [300, 360]], 8) },
-    { name: 'hair follicle', hint: 'The pocket in the skin that anchors and grows a single hair.',
+    { name: 'hair follicle', fill: '#d8b088', hint: 'The pocket in the skin that anchors and grows a single hair.',
       at: [300, 395], d: tube([[300, 96], [300, 200], [300, 320], [300, 400], [300, 415]], 26) },
-    { name: 'oil gland', hint: 'A small gland on the follicle that oils the hair and skin.',
+    { name: 'oil gland', fill: '#e6b23e', hint: 'A small gland on the follicle that oils the hair and skin.',
       at: [392, 250], d: blob(378, 250, 46, 34, { amp: 0.18, freq: 3 }) },
-    { name: 'sweat gland', hint: 'A deep coiled gland that pushes salty water up to cool you.',
+    { name: 'sweat gland', fill: '#c2a6d6', hint: 'A deep coiled gland that pushes salty water up to cool you.',
       at: [660, 585], d: blob(660, 580, 58, 46, { amp: 0.22, freq: 5 })
         + tube([[648, 545], [660, 430], [648, 300], [656, 178], [648, 90]], 8) },
-    { name: 'blood vessel', hint: 'A tube carrying blood to feed the living skin.',
+    { name: 'blood vessel', fill: '#d25454', hint: 'A tube carrying blood to feed the living skin.',
       at: [852, 470], d: tube([[820, 178], [822, 360], [826, 540], [860, 560], [872, 540], [868, 360], [864, 178]], 9) },
-    { name: 'nerve', hint: 'A fibre that carries the feeling of touch, heat and pain to the brain.',
+    { name: 'nerve', fill: '#6082c8', hint: 'A fibre that carries the feeling of touch, heat and pain to the brain.',
       at: [168, 250], d: tube([[150, 430], [158, 320], [166, 220], [170, 150]], 8) + circle(170, 145, 20) },
   ],
 };
 
-// ── HEART ── anterior view. Standard textbook side convention: the patient's
-//    right chambers sit on the VIEWER's left.
-// ── HEART lives in gen-heart-map.mjs (sourced from Wikimedia), not here. ──
-
-// ── BRAIN ── left-facing lateral view: the four cerebral lobes, the cerebellum
-//    and the brain stem.
-ORGANS.brain = {
-  file: 'brain', label: 'The Brain', w: 1000, h: 920,
-  parts: [
-    { name: 'frontal lobe', hint: 'The front of the brain — planning, deciding and voluntary movement.',
-      at: [250, 300], d: smoothClosed([[150, 300], [180, 200], [280, 150], [380, 165], [400, 300], [370, 420], [250, 440], [160, 400]]) },
-    { name: 'parietal lobe', hint: 'The upper middle — touch, temperature and body position.',
-      at: [500, 235], d: smoothClosed([[400, 210], [430, 150], [560, 135], [640, 175], [630, 300], [520, 330], [415, 300]]) },
-    { name: 'occipital lobe', hint: 'The very back of the brain — where seeing is understood.',
-      at: [720, 340], d: smoothClosed([[640, 200], [740, 210], [812, 300], [790, 420], [680, 450], [625, 360]]) },
-    { name: 'temporal lobe', hint: 'The lower side — hearing, and the memory of words.',
-      at: [385, 505], d: smoothClosed([[250, 450], [400, 440], [520, 470], [540, 560], [430, 600], [300, 575], [240, 510]]) },
-    { name: 'cerebellum', hint: 'The folded ball at the back that keeps movement smooth and balanced.',
-      at: [730, 545], d: blob(730, 540, 108, 92, { amp: 0.16, freq: 8 }) },
-    // The brain stem, drawn as its three real parts stacked top-to-bottom, then
-    // continuing as the spinal cord; the pituitary hangs from the base in front.
-    { name: 'midbrain', hint: 'The topmost stalk section, passing on reflexes of sight and sound.',
-      at: [548, 598], d: tube([[556, 556], [558, 588], [562, 622]], 34) },
-    { name: 'pons', hint: 'The rounded bulge of the stalk that helps drive breathing.',
-      at: [588, 664], d: blob(586, 664, 48, 40, { amp: 0.1, freq: 3 }) },
-    { name: 'medulla oblongata', hint: 'The lowest stalk part; it runs the heartbeat and breathing.',
-      at: [600, 736], d: tube([[588, 700], [594, 734], [600, 766]], 30) },
-    { name: 'spinal cord', hint: 'The thick cable of nerves running down from the base into the back.',
-      at: [606, 838], d: tube([[600, 766], [604, 818], [608, 882]], 22) },
-    { name: 'pituitary gland', hint: 'The pea-sized master gland below the brain, steering the other glands.',
-      at: [468, 616], d: blob(470, 614, 28, 24, { amp: 0.12, freq: 3 }) + tube([[472, 566], [471, 592]], 7) },
-  ],
-};
+// ── HEART lives in gen-heart-map.mjs, BRAIN in gen-brain-map.mjs — both are
+//    sourced from Wikimedia. Only the two hand-authored organs remain here. ──
 
 // ── EAR ── cross-section, outer ear on the left through to the nerve on the
 //    right: pinna, canal, eardrum, ossicles, semicircular canals, cochlea,
@@ -203,22 +172,22 @@ ORGANS.brain = {
 ORGANS.ear = {
   file: 'ear', label: 'The Ear', w: 1000, h: 780,
   parts: [
-    { name: 'pinna', hint: 'The flap of skin and cartilage on the head that funnels sound in.',
+    { name: 'pinna', fill: '#f0c8a8', hint: 'The flap of skin and cartilage on the head that funnels sound in.',
       at: [140, 400], d: smoothClosed([[70, 250], [180, 200], [250, 300], [235, 430], [255, 520], [150, 560], [80, 470], [95, 360]]) },
-    { name: 'ear canal', hint: 'The tube that carries sound from the outer ear to the eardrum.',
+    { name: 'ear canal', fill: '#e6b48c', hint: 'The tube that carries sound from the outer ear to the eardrum.',
       at: [360, 398], d: tube([[236, 400], [320, 398], [430, 402], [468, 405]], 42) },
-    { name: 'eardrum', hint: 'The tight membrane that vibrates when sound waves hit it.',
+    { name: 'eardrum', fill: '#efd6a0', hint: 'The tight membrane that vibrates when sound waves hit it.',
       at: [492, 405], d: poly([[478, 352], [500, 360], [502, 452], [480, 460]]) },
-    { name: 'ossicles', hint: 'The three tiniest bones in the body; they pass on the vibration.',
+    { name: 'ossicles', fill: '#f0ead6', hint: 'The three tiniest bones in the body; they pass on the vibration.',
       at: [560, 360], d: tube([[512, 388], [548, 330], [590, 348], [612, 400]], 15)
         + circle(548, 330, 20) + circle(600, 372, 18) },
-    { name: 'semicircular canals', hint: 'The three looping tubes that sense balance and turning.',
+    { name: 'semicircular canals', fill: '#8ccaca', hint: 'The three looping tubes that sense balance and turning.',
       at: [700, 250], d: arcTube(700, 250, 78, D2R(120), D2R(430), 16) },
-    { name: 'cochlea', hint: 'The coiled tube that turns vibration into nerve signals for sound.',
+    { name: 'cochlea', fill: '#e6a6b6', hint: 'The coiled tube that turns vibration into nerve signals for sound.',
       at: [700, 505], d: spiral(700, 505, 92, 2.4, 17) },
-    { name: 'Eustachian tube', hint: 'The tube linking the middle ear to the throat to balance pressure.',
+    { name: 'Eustachian tube', fill: '#ecc898', hint: 'The tube linking the middle ear to the throat to balance pressure.',
       at: [660, 620], d: tube([[588, 452], [640, 540], [720, 640], [780, 690]], 22) },
-    { name: 'auditory nerve', hint: 'The nerve carrying sound signals from the ear to the brain.',
+    { name: 'auditory nerve', fill: '#ecd45e', hint: 'The nerve carrying sound signals from the ear to the brain.',
       at: [852, 470], d: tube([[772, 500], [840, 486], [930, 470]], 20) + circle(772, 505, 22) },
   ],
 };
@@ -228,7 +197,8 @@ function emit(spec) {
   const rows = spec.parts.map((p) => {
     if (!/^[A-Za-z][A-Za-z '-]*$/.test(p.name)) throw new Error(`odd part name: ${p.name}`);
     if (p.hint.toLowerCase().includes(p.name.toLowerCase())) throw new Error(`clue names itself: ${p.name}`);
-    return `  [${JSON.stringify(p.name)}, ${JSON.stringify(p.hint)}, ${r1(p.at[0])}, ${r1(p.at[1])}, ${JSON.stringify(p.d)}],`;
+    if (!p.fill) throw new Error(`no fill colour for ${p.name}`);
+    return `  [${JSON.stringify(p.name)}, ${JSON.stringify(p.hint)}, ${JSON.stringify(p.fill)}, ${r1(p.at[0])}, ${r1(p.at[1])}, ${JSON.stringify(p.d)}],`;
   }).join('\n');
 
   // A duplicate outline would put one figure on the board with two answers.
@@ -244,8 +214,9 @@ function emit(spec) {
    drawn shape as the maps (M..L..C..Z paths in a ${spec.w}-wide box), so the
    map renderer draws it with no new code. No source artwork, so no licence.
 
-   Each row: [name, hint, cx, cy, path]. cx/cy anchor the locator ring. This
-   file is LAZY-LOADED — never import it statically from index.js.
+   Each row: [name, hint, fill, cx, cy, path]. \`fill\` is the part's natural
+   colour; cx/cy anchor the locator ring. This file is LAZY-LOADED — never
+   import it statically from index.js.
 ═══════════════════════════════════════════════════════ */
 
 export const MAP_W = ${spec.w};
@@ -255,7 +226,7 @@ const RAW = [
 ${rows}
 ];
 
-export const PARTS = RAW.map(([name, hint, cx, cy, d]) => ({ name, hint, cx, cy, d }));
+export const PARTS = RAW.map(([name, hint, fill, cx, cy, d]) => ({ name, hint, fill, cx, cy, d }));
 
 // Shaped like any other topic's words: the part's NAME is the word, its
 // description is the clue, and \`part\` carries the drawing the game lights up.

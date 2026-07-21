@@ -1528,6 +1528,47 @@ body.vocab-nav-hidden .site-nav { display: none; }
 }
 .vocab-map-credit a { color: inherit; text-decoration: underline; }
 
+/* ── COLOURED ORGAN FIGURES ──────────────────────────────────────────────
+   The organ maps (heart, brain, ear, skin) carry each part's real colour, set
+   inline so it beats the grey base fill. The geographic maps and the whole-
+   body map have no per-part colour and keep the grey-with-one-highlight look. */
+.vocab-map--colored .vocab-map-c {
+  stroke: rgba(20, 19, 15, 0.28);
+  stroke-width: 0.8;
+  transition: opacity 0.18s ease;
+}
+/* In the CLUE there is a lit part: it stays full while the rest dim back, so
+   the highlight reads without recolouring anything. (The library has no single
+   target, so this dimming is scoped to the clue only — there every part shows
+   at full colour for study.) */
+.vocab-clue-map.vocab-map--colored .vocab-map-c:not(.is-target) { opacity: 0.4; }
+.vocab-clue-map.vocab-map--colored .vocab-map-c.is-target {
+  opacity: 1;
+  stroke: #14130f;
+  stroke-width: 2.2;
+  animation: vocab-map-lit 1.2s ease-in-out infinite;
+}
+@keyframes vocab-map-lit {
+  0%, 100% { stroke-width: 2.2; }
+  50% { stroke-width: 3.6; }
+}
+/* In the coloured library, hovering a part outlines it (the yellow-fill hover
+   the grey maps use can't show over an inline colour). */
+.vocab-map--colored .vocab-map-c[data-name]:hover {
+  stroke: #14130f;
+  stroke-width: 2;
+}
+/* Sulci and outline drawn over the coloured lobes — texture, never interactive. */
+.vocab-map-decor {
+  fill: none;
+  stroke: #3a332a;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
 /* ── LAW CARDS (dictionary) ───────────────────────────────────────────────
    The retired Laws study page's cards now live in the dictionary: name (display
    face), statement (mono body), formula (MathJax, follows --ink) and a scientist

@@ -200,10 +200,16 @@ function renderMapClue({ mod, rows, target, regionOf, regionLabel, credit }) {
   clueEl.className = 'vocab-clue vocab-clue--map';
   clueEl.innerHTML = '';
 
+  // A figure whose parts carry their own `fill` (the organ maps) is drawn in
+  // its real colours: the lit part stays full, the rest dim back. The maps with
+  // no per-part colour keep the grey-with-one-highlight look.
+  const colored = rows.some((r) => r.fill);
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('class', 'vocab-clue-map' + (credit ? ' vocab-clue-map--tall' : ''));
+  svg.setAttribute('class', 'vocab-clue-map'
+    + (credit ? ' vocab-clue-map--tall' : '')
+    + (colored ? ' vocab-map--colored' : ''));
   svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
-  svg.setAttribute('aria-label', 'Map clue — one place is highlighted');
+  svg.setAttribute('aria-label', 'Diagram clue — one part is highlighted');
   for (const row of rows) {
     const p = document.createElementNS(SVG_NS, 'path');
     p.setAttribute('d', row.d);
@@ -211,7 +217,16 @@ function renderMapClue({ mod, rows, target, regionOf, regionLabel, credit }) {
     p.setAttribute('class', 'vocab-map-c'
       + (row.name === target.name ? ' is-target' : '')
       + (out ? ' is-out' : ''));
+    if (row.fill) p.style.fill = row.fill;
     svg.appendChild(p);
+  }
+  // Sulci/outline that make the flat lobe colours read as a brain — drawn over
+  // the parts, never quizzed.
+  if (mod.DECOR) {
+    const dec = document.createElementNS(SVG_NS, 'path');
+    dec.setAttribute('class', 'vocab-map-decor');
+    dec.setAttribute('d', mod.DECOR);
+    svg.appendChild(dec);
   }
   const ring = document.createElementNS(SVG_NS, 'circle');
   ring.setAttribute('class', 'vocab-map-ring');

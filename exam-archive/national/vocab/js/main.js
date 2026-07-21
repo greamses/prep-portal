@@ -1283,8 +1283,9 @@ function renderPeriodicTable(scope) {
 async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLabel, mapClass = 'vocab-worldmap', credit }) {
   dictList.innerHTML = '';
 
+  const colored = rows.some((c) => c.fill);
   const wrap = document.createElement('div');
-  wrap.className = mapClass;
+  wrap.className = mapClass + (colored ? ' vocab-map--colored' : '');
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
   svg.setAttribute('role', 'img');
@@ -1294,11 +1295,19 @@ async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLa
     p.setAttribute('d', c.d);
     const out = set && !set.has(regionOf(c));
     p.setAttribute('class', 'vocab-map-c' + (out ? ' is-out' : ''));
+    if (c.fill) p.style.fill = c.fill;
     if (c.hint) {
       p.dataset.name = c.name;
       p.dataset.tip = [c.name, regionLabels[regionOf(c)] || '', c.hint].filter(Boolean).join(' — ');
     }
     svg.appendChild(p);
+  }
+  // The brain's sulci/outline: drawn over the lobes, not hoverable.
+  if (mod.DECOR) {
+    const dec = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    dec.setAttribute('class', 'vocab-map-decor');
+    dec.setAttribute('d', mod.DECOR);
+    svg.appendChild(dec);
   }
   const tip = document.createElement('span');
   tip.className = 'vocab-map-tip';
