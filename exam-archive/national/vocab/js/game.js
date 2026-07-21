@@ -217,7 +217,9 @@ function renderMapClue({ mod, rows, target, regionOf, regionLabel, credit }) {
     p.setAttribute('class', 'vocab-map-c'
       + (row.name === target.name ? ' is-target' : '')
       + (out ? ' is-out' : ''));
-    if (row.fill) p.style.fill = row.fill;
+    // Only the focused part carries its inline colour; the rest are left for the
+    // CSS to draw as thin outlines (see .vocab-clue-map.vocab-map--colored).
+    if (row.fill && row.name === target.name) p.style.fill = row.fill;
     svg.appendChild(p);
   }
   // Sulci/outline that make the flat lobe colours read as a brain — drawn over

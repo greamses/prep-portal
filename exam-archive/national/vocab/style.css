@@ -1541,11 +1541,18 @@ body.vocab-nav-hidden .site-nav { display: none; }
    the highlight reads without recolouring anything. (The library has no single
    target, so this dimming is scoped to the clue only — there every part shows
    at full colour for study.) */
-.vocab-clue-map.vocab-map--colored .vocab-map-c:not(.is-target) { opacity: 0.4; }
-/* A scoped body round (one system) fades the OTHER systems further still, so
-   the chosen system stands out as a bright band of its colour. Must come after
-   the dim rule above to win at equal specificity. */
-.vocab-clue-map.vocab-map--colored .vocab-map-c.is-out { opacity: 0.14; }
+/* When one part is focused (the clue), every OTHER part drops to a thin outline
+   — its colour is gone, but its shape stays so the figure still reads and you
+   can see where the lit part sits. Only the focused part is filled. (The clue
+   renderer sets an inline fill on the target only, so this `fill: none` wins on
+   the rest.) The library still fills every part; the geographic maps aren't
+   coloured, so they keep their own full context. */
+.vocab-clue-map.vocab-map--colored .vocab-map-c:not(.is-target) {
+  fill: none;
+  stroke: rgba(20, 19, 15, 0.34);
+  stroke-width: 1;
+  opacity: 1;
+}
 .vocab-clue-map.vocab-map--colored .vocab-map-c.is-target {
   opacity: 1;
   stroke: #14130f;

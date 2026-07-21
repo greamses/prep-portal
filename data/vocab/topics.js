@@ -173,23 +173,26 @@ export const SUBJECTS = {
     ],
   },
 
-  // ── The Human Body, grades 3–12 ──────────────────────────────────────
-  // Anatomy, not geography — kept in its own Science subject. It spans both
-  // school tiers because Biology (senior only) and Life Science (junior only)
-  // each cover just half of the 3–12 range this content needs. Every topic is
-  // a drawn diagram: the whole-body map names the ORGANS, the single-organ
-  // maps name the PARTS inside one organ. Bands reflect when each is taught —
-  // the outer ear and skin layers early, heart chambers and brain lobes later.
+  // ── The Human Body, grades 3–9 ───────────────────────────────────────
+  // Anatomy, not geography — kept in its own Science subject. These are the 2D
+  // DRAWN diagrams, the JUNIOR tier: the whole-body map names the ORGANS, the
+  // single-organ maps name the PARTS inside one organ.
+  //
+  // Senior biology (grades 10–12) will get realistic labelled 3D MODELS of the
+  // same organs — a separate tier that narrows each organ down even further.
+  // Until the first 3D model (the heart) is built, the subject stops at grade 9
+  // so no senior room is offered an empty topic; bump the range to [3, 12] and
+  // add the T('heart-3d', …, 10, 12) row when it lands.
   'human-body': {
     label: 'The Human Body',
     group: 'Science',
-    grades: [3, 12],
+    grades: [3, 9],
     topics: [
-      T('body-map', 'Map of the Body', 3, 12),
-      T('ear-map', 'The Ear', 4, 12),
-      T('skin-map', 'The Skin', 4, 12),
-      T('heart-map', 'The Heart', 5, 12),
-      T('brain-map', 'The Brain', 6, 12),
+      T('body-map', 'Map of the Body', 3, 9),
+      T('ear-map', 'The Ear', 3, 9),
+      T('skin-map', 'The Skin', 3, 9),
+      T('heart-map', 'The Heart', 3, 9),
+      T('brain-map', 'The Brain', 3, 9),
     ],
   },
 
