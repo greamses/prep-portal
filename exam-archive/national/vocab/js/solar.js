@@ -96,30 +96,34 @@ function drawBody(defs, b, focus, reveal) {
   cp.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: b.r }));
   defs.appendChild(cp);
 
-  // Saturn's ring — behind the planet at the top, in front at the bottom.
+  // Saturn's ring — a slim band drawn as TWO half-ellipse arcs so the far
+  // (upper) half sits behind the planet and the near (lower) half in front. Two
+  // arcs (not a clipped ellipse) means the occlusion happens at the ring's own
+  // widest points, with no hard straight cut.
   let frontRing = null;
   if (b.ring) {
     const rid = `ring-${b.key}`;
     const rg = el('linearGradient', { id: rid, x1: '0', y1: '0', x2: '1', y2: '0' });
     rg.append(
       el('stop', { offset: '0', 'stop-color': '#c9b072', 'stop-opacity': '0' }),
-      el('stop', { offset: '0.18', 'stop-color': '#efdcae', 'stop-opacity': '0.9' }),
-      el('stop', { offset: '0.5', 'stop-color': '#cdb478', 'stop-opacity': '0.55' }),
-      el('stop', { offset: '0.82', 'stop-color': '#efdcae', 'stop-opacity': '0.9' }),
+      el('stop', { offset: '0.16', 'stop-color': '#efdcae', 'stop-opacity': '0.95' }),
+      el('stop', { offset: '0.5', 'stop-color': '#cdb478', 'stop-opacity': '0.6' }),
+      el('stop', { offset: '0.84', 'stop-color': '#efdcae', 'stop-opacity': '0.95' }),
       el('stop', { offset: '1', 'stop-color': '#c9b072', 'stop-opacity': '0' }),
     );
     defs.appendChild(rg);
-    const mkRing = () => el('ellipse', { cx: b.cx, cy: b.cy, rx: b.r * 2.05, ry: b.r * 0.62,
-      fill: 'none', stroke: `url(#${rid})`, 'stroke-width': b.r * 0.5,
-      transform: `rotate(-17 ${b.cx} ${b.cy})` });
-    g.appendChild(mkRing()); // back half (planet drawn over it next)
-    // Front half: the same ring, clipped to below the planet's centre.
-    const halfClip = `ringfront-${b.key}`;
-    const hc = el('clipPath', { id: halfClip });
-    hc.appendChild(el('rect', { x: b.cx - b.r * 2.4, y: b.cy, width: b.r * 4.8, height: b.r * 2 }));
-    defs.appendChild(hc);
-    frontRing = el('g', { 'clip-path': `url(#${halfClip})` });
-    frontRing.appendChild(mkRing());
+    const rx = b.r * 2.05, ry = b.r * 0.56, deg = -17, th = deg * Math.PI / 180;
+    const dx = rx * Math.cos(th), dy = rx * Math.sin(th);
+    const pR = [(b.cx + dx).toFixed(2), (b.cy + dy).toFixed(2)];
+    const pL = [(b.cx - dx).toFixed(2), (b.cy - dy).toFixed(2)];
+    const style = { fill: 'none', stroke: `url(#${rid})`, 'stroke-width': (b.r * 0.26).toFixed(2) };
+    // sweep 0 = the upper (far) half, sweep 1 = the lower (near) half.
+    const half = (sweep) => el('path', {
+      d: `M ${pR[0]} ${pR[1]} A ${rx.toFixed(2)} ${ry.toFixed(2)} ${deg} 0 ${sweep} ${pL[0]} ${pL[1]}`,
+      ...style,
+    });
+    g.appendChild(half(0)); // far half — behind the planet (drawn next)
+    frontRing = half(1);    // near half — over the planet
   }
 
   g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: gid }));
