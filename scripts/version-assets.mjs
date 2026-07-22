@@ -65,7 +65,9 @@ const VOCAB_SUBJECTS = [
 const PAGES = [
   { name: 'geometry' },
   { name: 'drills' },
-  { name: 'puzzles' },
+  // The map jigsaw draws its states from the shared Nigeria map data, so a
+  // stale copy of it against fresh page code must bust the puzzles page too.
+  { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js'] },
   {
     name: 'vocab',
     extra: [

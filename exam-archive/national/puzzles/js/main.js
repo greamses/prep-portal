@@ -112,6 +112,7 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // V
 let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw']);
 let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
+let jigsawContent = mem.get('jigsawContent', 'photo', ['photo', 'nigeria']); // jigsaw only — a photo, or the Map of Nigeria
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
 
 // Picture rounds (Jigsaw, Slider's Picture tiles) can use the player's own
@@ -124,7 +125,9 @@ let pictureSource = mem.get('pictureSource', 'scene', ['scene', 'upload']);
 if (pictureSource === 'upload' && !localStorage.getItem(PIC_KEY)) pictureSource = 'scene';
 
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
-const usesPicture = () => puzzleType === 'jigsaw' || (puzzleType === 'slider' && tileSet === 'picture');
+// The Map of Nigeria jigsaw uses no photo — its pieces are the states.
+const usesPicture = () => (puzzleType === 'jigsaw' && jigsawContent !== 'nigeria')
+  || (puzzleType === 'slider' && tileSet === 'picture');
 const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PIC_KEY) || '' : '');
 
 // What this room plays — handed to matchmaking and written into the room
@@ -132,7 +135,9 @@ const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PI
 // Sudoku always numbers, so the bucket key stays well-formed for all three.
 const contentCfg = () => ({
   puzzleType, difficulty, gridSize,
-  tiles: puzzleType === 'slider' ? tileSet : puzzleType === 'jigsaw' ? 'picture' : 'numbers',
+  tiles: puzzleType === 'slider' ? tileSet
+    : puzzleType === 'jigsaw' ? (jigsawContent === 'nigeria' ? 'nigeria' : 'photo')
+      : 'numbers',
 });
 
 function getCurrentUser() {
@@ -234,19 +239,34 @@ function renderTilesPick() {
 // saved, when the dialog is simply cancelled).
 function renderPhotoPick() {
   const surpriseNote = puzzleType === 'jigsaw' ? 'a free photo online' : 'drawn for you';
+  // Jigsaw can also be the Map of Nigeria — drag each state home. It has no
+  // photo and no grid size (always the 37 states), so picking it jumps to
+  // difficulty (how many states start already placed).
+  const mapOption = puzzleType === 'jigsaw'
+    ? [{ value: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', checked: jigsawContent === 'nigeria' }]
+    : [];
   renderChoiceStep(topic, 'photo', {
-    title: 'Which picture?',
+    title: puzzleType === 'jigsaw' ? 'What jigsaw?' : 'Which picture?',
     name: 'puzzle-photo',
     colorOffset: 5,
     options: [
-      { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: pictureSource === 'scene' },
+      { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: jigsawContent !== 'nigeria' && pictureSource === 'scene' },
       {
         value: 'upload', label: 'Your photo',
         note: localStorage.getItem(PIC_KEY) ? 'tap to change it' : 'from your device',
-        checked: pictureSource === 'upload',
+        checked: jigsawContent !== 'nigeria' && pictureSource === 'upload',
       },
+      ...mapOption,
     ],
     onPick: (v) => {
+      if (v === 'nigeria') {
+        jigsawContent = 'nigeria';
+        mem.save({ jigsawContent });
+        topic.goTo('difficulty'); // no photo, no size
+        return;
+      }
+      jigsawContent = 'photo';
+      mem.save({ jigsawContent });
       if (v === 'upload') { photoInput.click(); return; }
       pictureSource = 'scene';
       mem.save({ pictureSource });
@@ -393,13 +413,15 @@ const flow = createSectionFlow([
   },
   {
     el: $('puzzle-section-topic'),
-    chips: () => [
-      { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
-      ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
-      ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Surprise' }] : []),
-      { label: `${gridSize}×${gridSize}` },
-      { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
-    ],
+    chips: () => (puzzleType === 'jigsaw' && jigsawContent === 'nigeria')
+      ? [{ label: 'Jigsaw' }, { label: 'Map of Nigeria' }, { label: difficulty[0].toUpperCase() + difficulty.slice(1) }]
+      : [
+        { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
+        ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
+        ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Surprise' }] : []),
+        { label: `${gridSize}×${gridSize}` },
+        { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
+      ],
   },
   {
     el: $('puzzle-section-options'),

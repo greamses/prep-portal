@@ -17,6 +17,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
+import { generateMapJigsaw, mapFrameSvg, statePieceSvg, stateLabel, stateFill, measureBBoxes } from './mapjig.js';
 import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
@@ -67,6 +68,11 @@ let pieceFaces = null; // piece number → its clipped-picture SVG face
 let jigsawPlaced = 0; // movable pieces delivered home so far
 let jigsawPicked = null; // tap-selected loose piece element, or null
 let jigsawDrag = null; // live pointer-drag state, or null
+// Map jigsaw (Map of Nigeria): a jigsaw whose pieces are the 37 states. Same
+// heap/drag/lock/score flow, but the frame is a map of named slots and a piece
+// goes home into its own state's slot (found by elementFromPoint), not a grid cell.
+let mapMode = false;
+let mapBoxes = null; // each state's measured bounding box, for sizing the pieces
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -309,6 +315,7 @@ function buildJigsawGrid() {
 // (95%/gridSize) bounds the scatter equally on both axes.
 function buildJigsawHeap(heap) {
   heapEl.innerHTML = '';
+  heapEl.classList.remove('mapjig-heap');
   heapEl.style.setProperty('--grid-size', gridSize);
   const span = 100 - 95 / gridSize; // keep whole pieces inside the tray
   heap.forEach((h) => {
@@ -409,24 +416,88 @@ function onHeapPointerEnd(e) {
   d.el.classList.remove('is-dragging');
   const rect = d.el.getBoundingClientRect(); // where it was let go
   d.el.style.transform = '';
-  const cell = e.type === 'pointercancel' ? -1 : jigsawCellAt(e.clientX, e.clientY);
+  const cancelled = e.type === 'pointercancel';
+  // The map jigsaw finds home by state-slot; the photo jigsaw by grid cell.
+  if (mapMode) {
+    const st = cancelled ? -1 : mapSlotAt(e.clientX, e.clientY);
+    if (st === d.piece) { placeMapState(d.el, d.piece, rect); return; }
+    bounceLoose(d.el, rect);
+    // shake only if it was actually dropped on the map (not back on the pile)
+    const overMap = !cancelled && document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.mapjig-frame');
+    if (overMap) jigsawShake(d.el);
+    return;
+  }
+  const cell = cancelled ? -1 : jigsawCellAt(e.clientX, e.clientY);
   if (cell === d.piece - 1) {
     placeJigsawPiece(d.el, cell, rect);
     return;
   }
   // Not home — glide back to its heap spot; shake only if it was actually
   // dropped on the board (a drop back onto the pile isn't "wrong").
-  if (d.el.animate) {
-    const home = d.el.getBoundingClientRect();
-    d.el.animate(
-      [
-        { transform: `translate(${rect.left - home.left}px, ${rect.top - home.top}px)` },
-        { transform: 'translate(0, 0)' },
-      ],
-      { duration: 220, easing: 'ease-out' },
-    );
-  }
+  bounceLoose(d.el, rect);
   if (cell !== -1) jigsawShake(d.el);
+}
+
+// Glide a loose piece back to where it rests in the heap.
+function bounceLoose(el, fromRect) {
+  if (!el.animate) return;
+  const home = el.getBoundingClientRect();
+  el.animate(
+    [
+      { transform: `translate(${fromRect.left - home.left}px, ${fromRect.top - home.top}px)` },
+      { transform: 'translate(0, 0)' },
+    ],
+    { duration: 220, easing: 'ease-out' },
+  );
+}
+
+// ── Map jigsaw (Map of Nigeria) ────────────────────────────────────────────
+// The frame is the map as a tray of empty, named-on-placement slots; the pieces
+// are the 37 states, heaped below. A state goes home only into its own slot.
+function buildMapGrid() {
+  gridEl.classList.add('mapjig-grid');
+  gridEl.innerHTML = mapFrameSvg(lockedCells);
+}
+
+function buildMapHeap(heap) {
+  heapEl.innerHTML = '';
+  heapEl.classList.add('mapjig-heap');
+  heap.forEach((h) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'jigsaw-loose mapjig-loose';
+    btn.dataset.piece = String(h.piece); // the state index
+    btn.style.setProperty('--rot', `${h.rot}deg`);
+    btn.innerHTML = statePieceSvg(h.piece, mapBoxes[h.piece]);
+    heapEl.appendChild(btn);
+  });
+}
+
+// Which state's slot (if any) a viewport point is over — via elementFromPoint,
+// so irregular shapes hit-test exactly. Already-filled slots don't count.
+function mapSlotAt(x, y) {
+  const hit = document.elementFromPoint(x, y);
+  const slot = hit && hit.closest && hit.closest('.mapjig-slot');
+  if (!slot || slot.classList.contains('is-filled')) return -1;
+  return parseInt(slot.dataset.state, 10);
+}
+
+// Deliver a state home: colour its slot, reveal its name, drop it from the heap.
+function placeMapState(looseEl, stateIdx, fromRect) {
+  if (jigsawPicked === looseEl) setJigsawPicked(null);
+  const frame = gridEl.querySelector('.mapjig-frame');
+  const slot = frame && frame.querySelector(`.mapjig-slot[data-state="${stateIdx}"]`);
+  if (!slot) return;
+  slot.classList.add('is-filled');
+  slot.style.fill = stateFill(stateIdx);
+  slot.classList.add('correct-flash');
+  setTimeout(() => slot.classList.remove('correct-flash'), 380);
+  frame.querySelector('.mapjig-labels').insertAdjacentHTML('beforeend', stateLabel(stateIdx));
+  looseEl.remove();
+  jigsawPlaced += 1;
+  score = jigsawPlaced;
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  if (score >= totalUnits) endRound();
 }
 
 // ── Shared input dispatch ─────────────────────────────────────────────────
@@ -434,8 +505,9 @@ function buildGrid() {
   gridEl.innerHTML = '';
   gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture', 'jigsaw-grid');
   gridEl.style.setProperty('--grid-size', gridSize);
+  gridEl.classList.remove('mapjig-grid');
   if (puzzleType === 'slider') buildSliderGrid();
-  else if (puzzleType === 'jigsaw') buildJigsawGrid();
+  else if (puzzleType === 'jigsaw') { if (mapMode) buildMapGrid(); else buildJigsawGrid(); }
   else buildSudokuGrid();
 }
 
@@ -447,8 +519,17 @@ function onGridClick(e) {
     return;
   }
   if (puzzleType === 'jigsaw') {
-    // Second half of the tap-piece-then-tap-cell path: with a loose piece
+    // Second half of the tap-piece-then-tap-slot path: with a loose piece
     // picked, tapping its home socket places it; any other socket says no.
+    if (mapMode) {
+      const slot = e.target.closest('.mapjig-slot');
+      if (!slot || slot.classList.contains('is-filled') || !jigsawPicked) return;
+      const st = parseInt(slot.dataset.state, 10);
+      const piece = parseInt(jigsawPicked.dataset.piece, 10);
+      if (st === piece) placeMapState(jigsawPicked, piece, jigsawPicked.getBoundingClientRect());
+      else jigsawShake(jigsawPicked);
+      return;
+    }
     const btn = e.target.closest('.jigsaw-cell');
     if (!btn || btn.disabled || !jigsawPicked) return;
     const cell = parseInt(btn.dataset.index, 10);
@@ -558,17 +639,28 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       fractionValues = tileSet === 'fractions' ? generateFractionValues(seed, totalUnits) : null;
       artUri = tileSet === 'picture' ? (customArt || scenePictureUri(seed)) : '';
     } else if (puzzleType === 'jigsaw') {
-      const puzzle = generateJigsaw(seed, difficulty, gridSize);
-      lockedCells = puzzle.locked;
-      totalUnits = puzzle.movableCount; // anchors are givens — only YOUR pieces score
-      // A free online photo by default (seeded, so every client agrees), or
-      // the player's own uploaded picture when they chose one.
-      artUri = customArt || photoPictureUrl(seed);
-      pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
+      // `tiles` rides the room doc: 'nigeria' is the map jigsaw, anything else
+      // (incl. rooms made before this shipped) is the classic photo jigsaw.
+      mapMode = tiles === 'nigeria';
       jigsawPlaced = 0;
       jigsawPicked = null;
       jigsawDrag = null;
-      buildJigsawHeap(puzzle.heap);
+      if (mapMode) {
+        const puzzle = generateMapJigsaw(seed, difficulty);
+        lockedCells = puzzle.locked;
+        totalUnits = puzzle.movableCount;
+        mapBoxes = measureBBoxes();
+        buildMapHeap(puzzle.heap);
+      } else {
+        const puzzle = generateJigsaw(seed, difficulty, gridSize);
+        lockedCells = puzzle.locked;
+        totalUnits = puzzle.movableCount; // anchors are givens — only YOUR pieces score
+        // A free online photo by default (seeded, so every client agrees), or
+        // the player's own uploaded picture when they chose one.
+        artUri = customArt || photoPictureUrl(seed);
+        pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
+        buildJigsawHeap(puzzle.heap);
+      }
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -587,7 +679,9 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         : `Put the tiles in order, 1 to ${totalUnits}.`;
       topbarEl.hidden = false;
     } else if (puzzleType === 'jigsaw') {
-      hintEl.textContent = 'Rebuild the picture — drag pieces from the pile into the frame.';
+      hintEl.textContent = mapMode
+        ? 'Rebuild Nigeria — drag each state from the pile into its slot on the map.'
+        : 'Rebuild the picture — drag pieces from the pile into the frame.';
       topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;

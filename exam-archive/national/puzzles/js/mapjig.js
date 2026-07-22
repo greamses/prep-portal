@@ -23,6 +23,7 @@ export const ZONE_FILL = {
   's-east': '#8bc48a', 's-south': '#b593c9', 's-west': '#e6a0b8',
 };
 const fillOf = (s) => ZONE_FILL[s.zone] || '#cbb98f';
+export const stateFill = (i) => fillOf(STATES[i]);
 
 // Share of states pre-placed (locked) when the round starts — the easier the
 // difficulty, the more of the map is already filled in.
@@ -49,13 +50,16 @@ export function generateMapJigsaw(seed, difficulty) {
     const j = Math.floor(rng() * (i + 1));
     [loose[i], loose[j]] = [loose[j], loose[i]];
   }
-  const heap = loose.map((state) => ({ state, x: rng(), y: rng(), rot: Math.round((rng() * 2 - 1) * 12) }));
+  // `piece` carries the state index (0..36) — same shape as the photo jigsaw's
+  // heap, so the shared drag machinery reads it the same way.
+  const heap = loose.map((piece) => ({ piece, x: rng(), y: rng(), rot: Math.round((rng() * 2 - 1) * 12) }));
   return { locked, heap, movableCount: heap.length };
 }
 
-// The tray: the whole country as named, empty slots, with any pre-locked states
-// already filled. Each slot is a hittable <path data-state> so a drop can be
-// tested with elementFromPoint; the labels never block the pointer.
+// The tray: the whole country as empty slots. The drop area stays UNlabelled —
+// a state's name is revealed only once it is correctly placed (so the finished
+// map ends up labelled). Each slot is a hittable <path data-state> so a drop can
+// be tested with elementFromPoint.
 export function mapFrameSvg(locked) {
   let slots = '';
   let labels = '';
@@ -63,11 +67,17 @@ export function mapFrameSvg(locked) {
     const on = locked[i];
     slots += `<path class="mapjig-slot${on ? ' is-filled' : ''}" data-state="${i}" d="${s.d}"`
       + (on ? ` style="fill:${fillOf(s)}"` : '') + '/>';
-    labels += `<text class="mapjig-label" x="${s.cx}" y="${s.cy}">${s.name}</text>`;
+    if (on) labels += stateLabel(i); // pre-placed anchors show their name
   });
   return `<svg class="mapjig-frame" viewBox="0 0 ${MAP_W} ${MAP_H}" `
     + `preserveAspectRatio="xMidYMid meet" aria-label="Map of Nigeria — drag each state home">`
-    + slots + labels + '</svg>';
+    + `<g class="mapjig-slots">${slots}</g><g class="mapjig-labels">${labels}</g></svg>`;
+}
+
+// One state's name label, at its centroid — appended when the state is placed.
+export function stateLabel(i) {
+  const s = STATES[i];
+  return `<text class="mapjig-label" data-state="${i}" x="${s.cx}" y="${s.cy}">${s.name}</text>`;
 }
 
 // One draggable state piece: the state shown at a legible size (its own bounding

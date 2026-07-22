@@ -772,6 +772,90 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   60% { transform: rotate(calc(var(--rot, 0deg) + 7deg)); }
 }
 
+/* ── Map jigsaw (Map of Nigeria) ──────────────────────────────────────────
+   The frame is the country as a tray of empty, hittable state slots; the heap
+   below is a flex wrap of named state pieces. Reuses the .jigsaw-loose drag
+   states above (map pieces carry both classes). */
+.mapjig-grid {
+  display: block;
+  padding: clamp(8px, 2.4vw, 14px);
+  background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
+  border-width: 2.5px;
+  border-radius: 8px;
+  overflow: visible;
+}
+.mapjig-frame { width: 100%; height: auto; display: block; }
+.mapjig-slot {
+  fill: color-mix(in srgb, var(--ink) 8%, var(--app-bg));
+  stroke: color-mix(in srgb, var(--ink) 32%, transparent);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transition: fill 0.2s ease;
+}
+.mapjig-slot.is-filled { stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.6; }
+.mapjig-slot.correct-flash { animation: mapjig-flash 0.42s ease; }
+@keyframes mapjig-flash {
+  0% { stroke: var(--accent-secondary); stroke-width: 4; }
+  100% { stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.6; }
+}
+.mapjig-label {
+  font: 600 12px var(--font-mono, monospace);
+  fill: color-mix(in srgb, var(--ink) 78%, transparent);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: color-mix(in srgb, var(--app-bg) 85%, transparent);
+  stroke-width: 3px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* The pieces: a flex wrap, not the photo jigsaw's absolute scatter. */
+.jigsaw-heap.mapjig-heap {
+  aspect-ratio: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: clamp(4px, 1.4vw, 10px);
+  padding: clamp(8px, 2vw, 14px);
+  min-height: 140px;
+}
+.mapjig-loose {
+  position: relative;
+  left: auto; top: auto;
+  width: clamp(58px, 15%, 88px);
+  aspect-ratio: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.mapjig-loose .mapjig-piece-svg {
+  position: static;
+  width: 100%;
+  height: clamp(42px, 9vw, 58px);
+  transform: rotate(var(--rot, 0deg));
+  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.3));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.mapjig-loose:hover .mapjig-piece-svg { transform: rotate(var(--rot, 0deg)) scale(1.08); }
+.mapjig-loose.is-selected .mapjig-piece-svg,
+.mapjig-loose.is-dragging .mapjig-piece-svg {
+  transform: rotate(0deg) scale(1.12);
+  filter: drop-shadow(0 7px 13px rgba(20, 19, 15, 0.45));
+}
+.mapjig-loose.is-dragging .mapjig-piece-svg { transition: none; }
+.mapjig-loose.is-wrong .mapjig-piece-svg { animation: jigsaw-no 0.4s ease; }
+.mapjig-piece-name {
+  font: 600 clamp(10px, 2.4vw, 12px) var(--font-mono, monospace);
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.05;
+  pointer-events: none;
+}
+.puzzle-grid-wrap:has(.mapjig-grid) { width: min(560px, 100%); }
+
 /* Hint line above the grid (slider + jigsaw rounds). */
 .puzzle-grid-topbar {
   display: flex;
