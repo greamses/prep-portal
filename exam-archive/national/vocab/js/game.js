@@ -47,6 +47,7 @@ const livesEl = $('vocab-lives');
 const verdictEl = $('vocab-verdict');
 const keyboardEl = $('vocab-keyboard');
 const submitBtn = $('vocab-submit-btn');
+const skipBtn = $('vocab-skip-btn');
 const scoreNote = $('vocab-score-note');
 const timerNote = $('vocab-timer-note');
 const modeNote = $('vocab-mode-note');
@@ -67,6 +68,11 @@ let figureCredit = ''; // a sourced organ (the heart is CC-BY-SA) exports CREDIT
 let solarBodies = null; // lazy BODIES from /data/vocab/space/solar-system.js — solar rounds only
 let solarDraw = null;   // lazy buildSolarSvg from js/solar.js — draws the whole system
 let index = 0;
+// The words still to be RESOLVED (solved or hung), as indices into `round`, in
+// play order. Skipping moves the current word to the back so it comes round
+// again later; the round is done when this empties. Personal to each player —
+// skipping never touches the shared seed, so rooms stay in sync.
+let queue = [];
 let current = null;
 let spelling = 'classic';
 // POSITIONS shown on the board, not letters. The two modes fill the board in
@@ -347,21 +353,27 @@ function renderLives() {
 }
 
 function loadWord() {
+  if (!queue.length) { finishWords(); return; }
+  index = queue[0];
   current = round[index];
-  if (!current) { finishWords(); return; }
 
   revealedPos.clear();
   guessed.clear();
   wrong = 0;
+  // Offer the skip once a word is live — but not on the last one standing, where
+  // there is nothing to move it behind.
+  if (skipBtn) { skipBtn.hidden = false; skipBtn.disabled = queue.length <= 1; }
 
   verdictEl.hidden = true;
   verdictEl.className = 'vocab-verdict';
   boardEl.classList.remove('is-solved', 'is-hung');
+  // How many are already put to bed — the current one is the next after those.
+  const answered = round.length - queue.length;
   // In an A-Z round the letter labels the stop — it tells you the word begins
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
-    ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : current.body ? 'Body' : 'Word'} ${index + 1} of ${round.length}`;
+    ? `${current.letter} · word ${answered + 1} of ${round.length}`
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : current.body ? 'Body' : 'Word'} ${answered + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
   // with the asked element lit, or a map/figure/diagram with the asked country /
   // state / organ / part / body lit. Hover the note beneath for a hint.
@@ -393,30 +405,43 @@ function showVerdict(text, kind) {
 
 function solve() {
   acceptingGuesses = false;
+  if (skipBtn) skipBtn.disabled = true;
   score += 1;
   scoreNote.textContent = `${score} solved`;
   boardEl.classList.add('is-solved');
   showVerdict('Solved!', 'solved');
+  queue.shift(); // this word is done — drop it from the round
   queueNext(900);
 }
 
 function hang() {
   acceptingGuesses = false;
+  if (skipBtn) skipBtn.disabled = true;
   // Show what it was — a hangman you never see the answer to teaches nothing.
   [...current.word].forEach((_, i) => revealedPos.add(i));
   renderWord();
   boardEl.classList.add('is-hung');
   showVerdict(`It was “${current.word.toUpperCase()}”`, 'hung');
+  queue.shift(); // spent — drop it from the round
   queueNext(1600);
+}
+
+// Defer the current word: send it to the back of the queue and move on, so it
+// comes round again later (when it clicks). A no-op on the last word standing.
+function skip() {
+  if (!active || !acceptingGuesses || queue.length <= 1) return;
+  acceptingGuesses = false;
+  if (skipBtn) skipBtn.disabled = true;
+  clearTimeout(nextTimer);
+  queue.push(queue.shift());
+  loadWord();
 }
 
 function queueNext(ms) {
   clearTimeout(nextTimer);
   nextTimer = setTimeout(() => {
     if (!active) return;
-    index += 1;
-    if (index >= round.length) { finishWords(); return; }
-    loadWord();
+    loadWord(); // plays the new front of the queue, or finishes if it emptied
   }, ms);
 }
 
@@ -433,6 +458,7 @@ function finishWords() {
   clueEl.textContent = 'Every word done — submit to lock in your time, or wait for the clock.';
   wordEl.innerHTML = '';
   showVerdict(`${score} solved`, 'solved');
+  if (skipBtn) skipBtn.hidden = true;
   keyboardEl.querySelectorAll('.vocab-key').forEach((btn) => { btn.disabled = true; });
   // A finisher can end early: speed is a ranking tiebreak, so submitting now
   // (rather than waiting out the clock) is how a fast player banks the win.
@@ -520,6 +546,7 @@ function endRound() {
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
   if (submitBtn) submitBtn.hidden = true;
+  if (skipBtn) skipBtn.hidden = true;
   // Back with the score: the word count (so leaderboard.js caps bots at the words
   // humans were dealt) plus the ranking metrics — how long it took (finishers
   // only; the rest used the whole clock) and the round's total wrong guesses.
@@ -545,6 +572,7 @@ if (submitBtn) {
     endRound();
   });
 }
+if (skipBtn) skipBtn.addEventListener('click', skip);
 
 // Resolves with { score, wordCount } once the local timer hits zero: how many
 // words the player solved, and how many the round held.
@@ -588,6 +616,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     tableScope = mode === 'topic' ? topicScope(topic) : '';
     mapScope = mode === 'topic' ? regionSet(topic) : null;
     index = 0;
+    queue = round.map((_, i) => i); // every word, in seed order, still to resolve
     score = 0;
     wrong = 0;
     wrongTotal = 0;

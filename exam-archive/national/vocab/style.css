@@ -1488,7 +1488,6 @@ body.vocab-nav-hidden .site-nav { display: none; }
    against deep space, not the warm map paper — and it needs no credit. */
 .vocab-solar {
   background: radial-gradient(120% 90% at 12% 46%, #17223f 0%, #0a0e1c 62%);
-  border-radius: 12px;
 }
 .vocab-clue.vocab-clue--solar { max-width: 640px; }
 .vocab-clue--solar .vocab-clue-map { max-height: 320px; }
@@ -1516,10 +1515,7 @@ body.vocab-nav-hidden .site-nav { display: none; }
   stroke-width: 3px;
 }
 .vocab-solar-body[data-tip] { cursor: help; }
-.vocab-solar-study {
-  border-radius: 12px;
-  overflow: hidden;
-}
+.vocab-solar-study { overflow: hidden; }
 /* The diagram taped onto the board like a photo — a paper mount, a soft drop
    shadow, a slight tilt, and two strips of translucent tape at the top. */
 .vocab-solar-card {
@@ -1527,7 +1523,6 @@ body.vocab-nav-hidden .site-nav { display: none; }
   padding: 7px;
   width: 100%;
   background: #fbf7ec;
-  border-radius: 7px;
   box-shadow: 0 8px 20px -8px rgba(20, 19, 15, 0.45), 0 1px 2px rgba(20, 19, 15, 0.2);
   transform: rotate(-0.7deg);
 }
