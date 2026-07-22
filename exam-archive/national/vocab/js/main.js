@@ -1403,6 +1403,38 @@ async function openDictionary() {
     });
     return;
   }
+  if (playMode === 'topic' && baseTopic(topic) === 'solar-system') {
+    dictBox.classList.add('vocab-dict--wide');
+    dictSub.textContent = 'The Sun, the eight planets and the Moon — the bodies the round will ask. '
+      + 'Hover any one for its name and a hint.';
+    dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the solar system…</p>';
+    const sm = await import('/data/vocab/space/solar-system.js');
+    const { buildSolarSvg } = await import('/exam-archive/national/vocab/js/solar.js');
+    dictList.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'vocab-worldmap vocab-solar-study';
+    const svg = buildSolarSvg(sm.BODIES, { labels: true, reveal: true });
+    const tip = document.createElement('span');
+    tip.className = 'vocab-map-tip';
+    tip.hidden = true;
+    wrap.append(svg, tip);
+    svg.addEventListener('pointermove', (e) => {
+      const g = e.target.closest('[data-tip]');
+      if (!g) { tip.hidden = true; return; }
+      tip.textContent = g.dataset.tip;
+      tip.hidden = false;
+      const box = wrap.getBoundingClientRect();
+      const half = tip.offsetWidth / 2;
+      const x = Math.min(Math.max(e.clientX - box.left, half + 4), box.width - half - 4);
+      const above = e.clientY - box.top - 14 - tip.offsetHeight >= 0;
+      tip.style.left = `${x}px`;
+      tip.style.top = `${e.clientY - box.top + (above ? -14 : 20)}px`;
+      tip.style.transform = above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)';
+    });
+    svg.addEventListener('pointerleave', () => { tip.hidden = true; });
+    dictList.appendChild(wrap);
+    return;
+  }
   const fig = ORGAN_FIGURES[baseTopic(topic)];
   if (playMode === 'topic' && fig) {
     dictBox.classList.add('vocab-dict--wide');

@@ -1483,6 +1483,44 @@ body.vocab-nav-hidden .site-nav { display: none; }
 .vocab-dict.vocab-dict--wide { width: min(980px, 96vw); }
 .vocab-dict-bd .vocab-dict-list:has(.vocab-worldmap) { overflow-x: auto; }
 
+/* ── THE SOLAR SYSTEM (2D) ────────────────────────────────────────────────
+   A hand-drawn diagram (js/solar.js) rather than a sourced map, so it reads
+   against deep space, not the warm map paper — and it needs no credit. */
+.vocab-solar {
+  background: radial-gradient(120% 90% at 12% 46%, #17223f 0%, #0a0e1c 62%);
+  border-radius: 12px;
+}
+.vocab-clue.vocab-clue--solar { max-width: 640px; }
+.vocab-clue--solar .vocab-clue-map { max-height: 320px; }
+/* The locator ring that pulses on the body you have to name. */
+.vocab-solar-ring {
+  fill: none;
+  stroke: #7fd0ff;
+  stroke-width: 2.4;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgba(127, 208, 255, 0.75));
+  animation: vocab-solar-ring 1.3s ease-in-out infinite;
+}
+@keyframes vocab-solar-ring {
+  0%, 100% { opacity: 0.95; stroke-width: 2.2; }
+  50% { opacity: 0.4; stroke-width: 4.2; }
+}
+/* Study-view labels — light text with a dark halo so they read over any disc. */
+.vocab-solar-labels text {
+  fill: #d3dcf2;
+  font-family: var(--font-body, sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(6, 10, 22, 0.85);
+  stroke-width: 3px;
+}
+.vocab-solar-body[data-tip] { cursor: help; }
+.vocab-solar-study {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 /* ── MAP OF THE BODY ─────────────────────────────────────────────────────
    The same two views as the geographic maps, but the anatomogram figure is
    strongly PORTRAIT (1000×1843) where the maps are landscape — so it is sized

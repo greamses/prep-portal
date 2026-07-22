@@ -9,8 +9,11 @@
    subject — see ./human-body.js. Anatomy is not geography. */
 import { GAME_COUNTRIES } from '/data/vocab/world-map.js';
 import { GAME_STATES } from '/data/vocab/nigeria-map.js';
+import { GAME_BODIES } from '/data/vocab/space/solar-system.js';
 
 export const WORDS = {
   'world-map': GAME_COUNTRIES,
   'nigeria-map': GAME_STATES,
+  // A flat diagram of the Sun, the planets and the Moon — name the body lit.
+  'solar-system': GAME_BODIES,
 };

@@ -64,6 +64,8 @@ let bodyMap = null;    // lazy /data/vocab/body-map.js module — body-map round
 let figureMod = null;  // lazy single-organ module (data/vocab/organs/*) — organ-map rounds
 let figureLabel = '';  // the organ's title, shown in the clue note ('The Heart')
 let figureCredit = ''; // a sourced organ (the heart is CC-BY-SA) exports CREDIT; '' otherwise
+let solarBodies = null; // lazy BODIES from /data/vocab/space/solar-system.js — solar rounds only
+let solarDraw = null;   // lazy buildSolarSvg from js/solar.js — draws the whole system
 let index = 0;
 let current = null;
 let spelling = 'classic';
@@ -280,6 +282,25 @@ const renderPartClue = (p) => renderMapClue({
   regionOf: () => '', regionLabel: figureLabel, credit: figureCredit,
 });
 
+// The solar system: the whole diagram with the asked body lit and the rest
+// dimmed. Its own drawer builds the SVG (js/solar.js); we add the same hover
+// note the maps use, carrying the hint.
+function renderBodyClue(b) {
+  clueEl.className = 'vocab-clue vocab-clue--map vocab-clue--solar';
+  clueEl.innerHTML = '';
+  const svg = solarDraw(solarBodies, { focus: b.key });
+  svg.classList.add('vocab-clue-map');
+  const detail = document.createElement('span');
+  detail.className = 'vocab-country-note';
+  detail.tabIndex = 0;
+  detail.setAttribute('aria-label', 'Solar-system clue');
+  detail.innerHTML = `
+      <span class="vocab-country-q">?</span>
+      <span class="vocab-country-cont">The Solar System</span>
+      <span class="vocab-el-tip" role="tooltip">${b.hint}</span>`;
+  clueEl.append(svg, detail);
+}
+
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
 // above the text clue (formula + hint). A missing structure just leaves the text.
 function renderCompoundClue(structure, text) {
@@ -330,15 +351,16 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${index + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : 'Word'} ${index + 1} of ${round.length}`;
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : current.body ? 'Body' : 'Word'} ${index + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
-  // with the asked element lit, or a map/figure with the asked country / state
-  // / organ / part lit. Hover the note beneath for a hint.
+  // with the asked element lit, or a map/figure/diagram with the asked country /
+  // state / organ / part / body lit. Hover the note beneath for a hint.
   if (current.element) renderElementClue(current.element);
   else if (current.country) renderCountryClue(current.country);
   else if (current.state) renderStateClue(current.state);
   else if (current.organ) renderOrganClue(current.organ);
   else if (current.part) renderPartClue(current.part);
+  else if (current.body) renderBodyClue(current.body);
   else if (current.structure) renderCompoundClue(current.structure, current.clue);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
@@ -541,6 +563,12 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
     figureMod = await import(fig.module);
     figureLabel = fig.label;
     figureCredit = figureMod.CREDIT || '';
+  }
+  // The solar system draws the whole diagram every question, so its data (the
+  // bodies) and drawer must both be in hand before the countdown ends.
+  if (mode === 'topic' && baseTopic(topic) === 'solar-system') {
+    solarBodies = (await import('/data/vocab/space/solar-system.js')).BODIES;
+    solarDraw = (await import('/exam-archive/national/vocab/js/solar.js')).buildSolarSvg;
   }
 
   return new Promise((resolve) => {

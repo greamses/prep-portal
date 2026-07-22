@@ -170,6 +170,9 @@ export const SUBJECTS = {
     topics: [
       T('world-map', 'Map of the World', 1, 12),
       T('nigeria-map', 'Map of Nigeria', 1, 12),
+      // A flat diagram of the Sun, the planets and the Moon — name the body lit
+      // (data/vocab/space/solar-system.js).
+      T('solar-system', 'The Solar System', 1, 12),
     ],
   },
 

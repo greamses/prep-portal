@@ -81,6 +81,8 @@ const PAGES = [
       '/data/vocab/organs/brain.js',
       '/data/vocab/organs/ear.js',
       '/data/vocab/organs/skin.js',
+      // The 2D solar-system diagram (Geography drawn topic).
+      '/data/vocab/space/solar-system.js',
       // The Laws hangman words are derived from the shared study bank, so a
       // stale copy of the bank against fresh page code must bust the page too.
       '/data/laws/laws.js',
