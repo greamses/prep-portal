@@ -201,23 +201,60 @@ function drawMeteor(defs, g, b) {
   g.appendChild(el('circle', { cx: tx, cy: ty, r: b.r * 0.55, fill: '#fff' }));
 }
 
-function drawBody(defs, b, focus, reveal, sun) {
+function drawBody(defs, b, reveal, sun) {
   const g = el('g', { class: 'vocab-solar-body', 'data-key': b.key });
-  if (focus && b.key !== focus) g.setAttribute('opacity', '0.24');
   if (reveal) g.setAttribute('data-tip', b.hint ? `${b.name} — ${b.hint}` : b.name);
 
   if (b.type === 'sun') {
-    const hid = `glow-${b.key}`;
-    const rg = el('radialGradient', { id: hid, cx: '0.5', cy: '0.5', r: '0.5' });
-    rg.append(
-      el('stop', { offset: '0', 'stop-color': '#ffd15a', 'stop-opacity': '0.85' }),
-      el('stop', { offset: '0.55', 'stop-color': '#ff9b2e', 'stop-opacity': '0.35' }),
-      el('stop', { offset: '1', 'stop-color': '#ff8a1e', 'stop-opacity': '0' }),
+    const R = b.r;
+    // Corona — a wide, soft, centred glow (a star radiates from its middle, it
+    // is not a ball lit from one side).
+    const cid = `sun-corona-${b.key}`;
+    const cg = el('radialGradient', { id: cid, cx: '0.5', cy: '0.5', r: '0.5' });
+    cg.append(
+      el('stop', { offset: '0', 'stop-color': '#fff6c8', 'stop-opacity': '0.9' }),
+      el('stop', { offset: '0.32', 'stop-color': '#ffcf5c', 'stop-opacity': '0.5' }),
+      el('stop', { offset: '0.6', 'stop-color': '#ff9b2e', 'stop-opacity': '0.2' }),
+      el('stop', { offset: '1', 'stop-color': '#ff7d1e', 'stop-opacity': '0' }),
     );
-    defs.appendChild(rg);
-    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: b.r * 2.1, fill: `url(#${hid})`, class: 'vocab-solar-sunglow' }));
-    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: discGradient(defs, `g-${b.key}`, b.c[0], b.c[1]) }));
-    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: '#fff', opacity: '0.12' }));
+    defs.appendChild(cg);
+    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: R * 2.5, fill: `url(#${cid})`, class: 'vocab-solar-sunglow' }));
+    // Disc — a hot white core dimming to a warm orange limb (limb darkening).
+    const did = `sun-disc-${b.key}`;
+    const dg = el('radialGradient', { id: did, cx: '0.5', cy: '0.5', r: '0.5' });
+    dg.append(
+      el('stop', { offset: '0', 'stop-color': '#fffdf3' }),
+      el('stop', { offset: '0.42', 'stop-color': '#ffef9e' }),
+      el('stop', { offset: '0.75', 'stop-color': '#ffc23c' }),
+      el('stop', { offset: '0.93', 'stop-color': '#ff9526' }),
+      el('stop', { offset: '1', 'stop-color': '#ef7314' }),
+    );
+    defs.appendChild(dg);
+    const clip = `clip-${b.key}`;
+    const cp = el('clipPath', { id: clip });
+    cp.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: R }));
+    defs.appendChild(cp);
+    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: R, fill: `url(#${did})` }));
+    // Granulation — organic fractal-noise mottle, tinted warm, laid over the
+    // disc so the surface roils like plasma instead of reading as smooth paint.
+    const fid = `sun-gran-${b.key}`;
+    const f = el('filter', { id: fid, x: '-10%', y: '-10%', width: '120%', height: '120%' });
+    const turb = el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.06 0.09', numOctaves: '5', seed: '7', stitchTiles: 'stitch', result: 'n' });
+    const ct = el('feComponentTransfer', { in: 'n', result: 'n2' });
+    ct.appendChild(el('feFuncA', { type: 'gamma', amplitude: '1', exponent: '1.9', offset: '0' }));
+    const cm = el('feColorMatrix', { in: 'n2', type: 'matrix',
+      values: '0 0 0 0 1  0 0 0 0 0.46  0 0 0 0 0.06  0 0 0 1 0' });
+    f.append(turb, ct, cm);
+    defs.appendChild(f);
+    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: R, fill: '#000', 'clip-path': `url(#${clip})`,
+      filter: `url(#${fid})`, opacity: '0.5', style: 'mix-blend-mode:overlay' }));
+    // A bright, hot core.
+    const hid = `sun-core-${b.key}`;
+    const hg = el('radialGradient', { id: hid, cx: '0.5', cy: '0.5', r: '0.5' });
+    hg.append(el('stop', { offset: '0', 'stop-color': '#fffef7', 'stop-opacity': '0.7' }),
+      el('stop', { offset: '1', 'stop-color': '#fffef7', 'stop-opacity': '0' }));
+    defs.appendChild(hg);
+    g.appendChild(el('circle', { cx: b.cx, cy: b.cy, r: R * 0.62, fill: `url(#${hid})` }));
     return g;
   }
   if (b.type === 'belt') { drawBelt(g, b, sun); return g; }
@@ -276,7 +313,7 @@ const ORBITED = new Set(['rocky', 'earth', 'gas', 'ice']);
 
 export function buildSolarSvg(bodies, { focus = null, labels = false, reveal = false } = {}) {
   const svg = el('svg', { class: 'vocab-solar', viewBox: `0 0 ${MAP_W} ${MAP_H}`,
-    'aria-label': 'The solar system — one body is highlighted' });
+    preserveAspectRatio: 'xMidYMid meet', 'aria-label': 'The solar system — one body is highlighted' });
   const defs = el('defs');
   svg.appendChild(defs);
   svg.appendChild(starfield());
@@ -291,19 +328,23 @@ export function buildSolarSvg(bodies, { focus = null, labels = false, reveal = f
   }
   svg.appendChild(orbits);
 
-  // Sun last so its glow sits over the orbit lines.
+  // Every body is drawn at full strength (Sun last so its glow sits over the
+  // orbit lines); the spotlight is applied afterwards by setFocus, so the game
+  // builds this once per round and only re-focuses per word (no rebuild flicker).
   const order = [...bodies].sort((a, b) => (a.key === 'sun') - (b.key === 'sun'));
-  for (const b of order) svg.appendChild(drawBody(defs, b, focus, reveal, sun));
-
-  // The focus locator ring (a point ring makes no sense on a belt — its whole
-  // band is the answer, and dimming everything else already makes it read).
-  if (focus) {
-    const b = bodies.find((x) => x.key === focus);
-    if (b && b.type !== 'belt') {
-      svg.appendChild(el('circle', { class: 'vocab-solar-ring', cx: b.cx, cy: b.cy,
-        r: (b.r + Math.max(10, b.r * 0.5)).toFixed(1), fill: 'none' }));
-    }
+  const groups = new Map();
+  for (const b of order) {
+    const gg = drawBody(defs, b, reveal, sun);
+    groups.set(b.key, gg);
+    svg.appendChild(gg);
   }
+
+  // The locator ring — one element, repositioned onto the focused body (a point
+  // ring makes no sense on a belt: its whole band is the answer, and dimming the
+  // rest already makes it read).
+  const ring = el('circle', { class: 'vocab-solar-ring', fill: 'none', visibility: 'hidden' });
+  svg.appendChild(ring);
+
   if (labels) {
     const lg = el('g', { class: 'vocab-solar-labels' });
     for (const b of bodies) {
@@ -314,5 +355,17 @@ export function buildSolarSvg(bodies, { focus = null, labels = false, reveal = f
     }
     svg.appendChild(lg);
   }
+
+  // Spotlight one body (dim the rest, ring the target); null clears it.
+  svg.setFocus = (key) => {
+    for (const [k, gg] of groups) gg.setAttribute('opacity', !key || k === key ? '1' : '0.2');
+    const b = key ? bodies.find((x) => x.key === key) : null;
+    if (b && b.type !== 'belt') {
+      ring.setAttribute('cx', b.cx); ring.setAttribute('cy', b.cy);
+      ring.setAttribute('r', (b.r + Math.max(10, b.r * 0.5)).toFixed(1));
+      ring.setAttribute('visibility', 'visible');
+    } else ring.setAttribute('visibility', 'hidden');
+  };
+  if (focus) svg.setFocus(focus);
   return svg;
 }

@@ -282,23 +282,33 @@ const renderPartClue = (p) => renderMapClue({
   regionOf: () => '', regionLabel: figureLabel, credit: figureCredit,
 });
 
-// The solar system: the whole diagram with the asked body lit and the rest
-// dimmed. Its own drawer builds the SVG (js/solar.js); we add the same hover
-// note the maps use, carrying the hint.
+// The solar system: the whole diagram, taped onto the board like a photo, with
+// the asked body lit and the rest dimmed. The heavy SVG is built ONCE per round
+// (js/solar.js) and only re-focused per word — no rebuild flicker — so a word
+// change just moves the spotlight.
+let solarSvg = null; // the built diagram (rebuilt only when the clue box is torn down)
+let solarTip = null; // its hover-note tooltip span
 function renderBodyClue(b) {
   clueEl.className = 'vocab-clue vocab-clue--map vocab-clue--solar';
-  clueEl.innerHTML = '';
-  const svg = solarDraw(solarBodies, { focus: b.key });
-  svg.classList.add('vocab-clue-map');
-  const detail = document.createElement('span');
-  detail.className = 'vocab-country-note';
-  detail.tabIndex = 0;
-  detail.setAttribute('aria-label', 'Solar-system clue');
-  detail.innerHTML = `
-      <span class="vocab-country-q">?</span>
-      <span class="vocab-country-cont">The Solar System</span>
-      <span class="vocab-el-tip" role="tooltip">${b.hint}</span>`;
-  clueEl.append(svg, detail);
+  if (!solarSvg || solarSvg.parentNode === null || !clueEl.contains(solarSvg)) {
+    clueEl.innerHTML = '';
+    solarSvg = solarDraw(solarBodies, {});
+    solarSvg.classList.add('vocab-clue-map');
+    const card = document.createElement('div');
+    card.className = 'vocab-solar-card'; // taped-photo framing
+    card.appendChild(solarSvg);
+    const detail = document.createElement('span');
+    detail.className = 'vocab-country-note';
+    detail.tabIndex = 0;
+    detail.setAttribute('aria-label', 'Solar-system clue');
+    detail.innerHTML = '<span class="vocab-country-q">?</span>'
+      + '<span class="vocab-country-cont">The Solar System</span>'
+      + '<span class="vocab-el-tip" role="tooltip"></span>';
+    solarTip = detail.querySelector('.vocab-el-tip');
+    clueEl.append(card, detail);
+  }
+  solarTip.textContent = b.hint;
+  solarSvg.setFocus(b.key);
 }
 
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
@@ -569,6 +579,7 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   if (mode === 'topic' && baseTopic(topic) === 'solar-system') {
     solarBodies = (await import('/data/vocab/space/solar-system.js')).BODIES;
     solarDraw = (await import('/exam-archive/national/vocab/js/solar.js')).buildSolarSvg;
+    solarSvg = null; // force a fresh diagram for the new round
   }
 
   return new Promise((resolve) => {
