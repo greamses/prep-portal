@@ -33,6 +33,7 @@ const $ = (id) => document.getElementById(id);
 const START_BUFFER_MS = 3000;
 
 const playBd = $('puzzle-play-bd');
+const stageEl = $('puzzle-stage');
 const gridWrap = $('puzzle-grid-wrap');
 const gridEl = $('puzzle-grid');
 const countdownEl = $('puzzle-countdown');
@@ -485,6 +486,26 @@ function toggleMapFullscreen() {
   else if (exit) exit.call(document);
 }
 
+// Map mode moves the zone key + the two sticky notes into a LEFT sidebar (the
+// wide empty space beside the height-sized map), freeing the receipt to be just
+// the map, top-to-bottom. Off restores the notes to the receipt for the other
+// puzzles.
+let mapSide = null;
+function layoutMapSidebar(on) {
+  if (on) {
+    if (!mapSide) { mapSide = document.createElement('div'); mapSide.className = 'mapjig-side'; }
+    mapSide.innerHTML = '';
+    mapSide.append(scoreNote, timerNote);        // move the notes out of the receipt
+    mapSide.insertAdjacentHTML('beforeend', zoneLegendHtml());
+    if (mapSide.parentNode !== stageEl) stageEl.insertBefore(mapSide, gridWrap);
+  } else if (mapSide && mapSide.parentNode) {
+    const face = gridWrap.querySelector('.puzzle-grid-face'); // notes sit before it
+    gridWrap.insertBefore(scoreNote, face);
+    gridWrap.insertBefore(timerNote, face);
+    mapSide.remove();
+  }
+}
+
 // px → map units for the currently-rendered map.
 const mapScale = () => (gridEl.getBoundingClientRect().width || 1) / MAP_W;
 const mapPieceEl = (state) => gridEl.querySelector(`.mapjig-piece[data-state="${state}"]`);
@@ -695,6 +716,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     gridSize = size;
     selected = null;
     score = 0;
+    mapMode = false; // set true only by the jigsaw branch below
     resolveRound = resolve;
 
     if (puzzleType === 'slider') {
@@ -752,15 +774,14 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       topbarEl.hidden = false;
     } else if (puzzleType === 'jigsaw') {
       if (mapMode) {
-        // The header carries the zone colour key instead of a hint (the drag is
-        // obvious, and the key earns its place on the colour-by-zone map).
-        hintEl.classList.add('puzzle-grid-hint--legend');
-        hintEl.innerHTML = zoneLegendHtml();
+        // No in-receipt header — the key + notes live in the left sidebar, so
+        // the receipt is just the map, top to bottom.
+        topbarEl.hidden = true;
       } else {
         hintEl.classList.remove('puzzle-grid-hint--legend');
         hintEl.textContent = 'Rebuild the picture — drag pieces from the pile into the frame.';
+        topbarEl.hidden = false;
       }
-      topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;
     }
@@ -776,6 +797,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     if (roster) renderRoster(roster);
 
     buildGrid();
+    layoutMapSidebar(mapMode); // key + notes into the left sidebar (map) or back on the receipt
     if (puzzleType === 'sudoku') renderDigitPad();
 
     playBd.classList.add('open');
