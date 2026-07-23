@@ -841,37 +841,35 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 #puzzle-play-bd:has(.mapjig-grid) { padding: 0; overflow: hidden; align-items: stretch; }
 #puzzle-play-bd .review-wrap:has(.mapjig-grid) { width: 100%; max-width: 100vw; height: 100dvh; margin: 0; }
 #puzzle-play-bd:has(.mapjig-grid) .puzzle-time-remaining { display: none; }
-.puzzle-stage:has(.mapjig-grid) {
+.puzzle-stage:has(.mapjig-grid) { align-items: center; justify-content: center; width: 100%; height: 100dvh; }
+.puzzle-grid-wrap:has(.mapjig-grid) { width: auto; height: 100dvh; margin: 0; flex: 0 0 auto; }
+/* The receipt IS the row: sidebar (notes + key) on the left, map on the right,
+   the paper framing both. Its torn edges meet the viewport top and bottom, while
+   the map sits inside with a little paper around it. */
+.puzzle-grid-face:has(.mapjig-grid) {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: clamp(8px, 2.5vw, 32px);
-  width: 100%;
-  height: 100dvh;
-}
-.puzzle-grid-wrap:has(.mapjig-grid) { width: auto; height: 100dvh; margin: 0; flex: 0 0 auto; }
-.puzzle-grid-wrap:has(.mapjig-grid) .puzzle-grid-face {
-  align-items: center;
-  justify-content: center;
-  padding: 0;            /* receipt touches the view top and bottom */
+  gap: clamp(10px, 2vw, 28px);
+  padding: 14px clamp(12px, 1.8vw, 22px);
   height: 100%;
 }
 .mapjig-grid {
   aspect-ratio: 1000 / 812;
-  height: min(100dvh, calc(96vw * 812 / 1000));
+  height: min(calc(100dvh - 48px), calc(94vw * 812 / 1000));
   width: auto;
-  max-width: 96vw;
+  max-width: 92vw;
 }
 
-/* The left sidebar: the two sticky notes stacked, then the zone key as a
-   vertical list — laid into the empty space beside the map. */
+/* The sidebar, inside the receipt at the left: the two sticky notes stacked,
+   then the zone key as a vertical list. */
 .mapjig-side {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 10px;
   flex: 0 0 auto;
+  align-self: center;
 }
 .mapjig-side .puzzle-score-note,
 .mapjig-side .puzzle-timer-note {

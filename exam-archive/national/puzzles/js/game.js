@@ -492,16 +492,19 @@ function toggleMapFullscreen() {
 // puzzles.
 let mapSide = null;
 function layoutMapSidebar(on) {
+  const face = gridEl.parentNode; // the receipt paper (.puzzle-grid-face)
   if (on) {
     if (!mapSide) { mapSide = document.createElement('div'); mapSide.className = 'mapjig-side'; }
     mapSide.innerHTML = '';
-    mapSide.append(scoreNote, timerNote);        // move the notes out of the receipt
+    mapSide.append(scoreNote, timerNote); // move the notes into the sidebar
     mapSide.insertAdjacentHTML('beforeend', zoneLegendHtml());
-    if (mapSide.parentNode !== stageEl) stageEl.insertBefore(mapSide, gridWrap);
+    // The sidebar lives INSIDE the receipt, to the left of the map.
+    if (mapSide.parentNode !== face) face.insertBefore(mapSide, gridEl);
   } else if (mapSide && mapSide.parentNode) {
-    const face = gridWrap.querySelector('.puzzle-grid-face'); // notes sit before it
-    gridWrap.insertBefore(scoreNote, face);
-    gridWrap.insertBefore(timerNote, face);
+    // Restore the notes to the top of the grid-wrap (before the receipt).
+    const receipt = gridWrap.querySelector('.puzzle-grid-face');
+    gridWrap.insertBefore(scoreNote, receipt);
+    gridWrap.insertBefore(timerNote, receipt);
     mapSide.remove();
   }
 }
