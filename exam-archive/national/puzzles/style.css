@@ -835,12 +835,38 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   -webkit-user-select: none;
   user-select: none;
 }
-/* Map jigsaw: the score/timer sticky notes are attached ONTO the receipt paper
-   at the top (they overhang above it for the other puzzles), flanking the colour
-   key on one tidy top band — which frees the space they used to take above. */
+/* Map jigsaw: the score (left) and the live timer (right) are sticky notes
+   attached ONTO the receipt paper top, flanking the colour key on one tidy band.
+   The plain countdown line above the receipt is hidden — the right note is now
+   the timer. */
 .puzzle-grid-wrap:has(.mapjig-grid) .puzzle-score-note { top: 8px; left: 12px; }
 .puzzle-grid-wrap:has(.mapjig-grid) .puzzle-timer-note { top: 8px; right: 12px; }
 .puzzle-grid-wrap:has(.mapjig-grid) .puzzle-grid-topbar { padding-inline: clamp(76px, 13vw, 124px); }
+#puzzle-play-bd:has(.mapjig-grid) .puzzle-time-remaining { display: none; }
+
+/* Full-screen toggle in the map corner. */
+.mapjig-fs {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--app-bg) 82%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mapjig-fs:hover { background: var(--app-bg); }
+.mapjig-fs svg { width: 100%; height: 100%; }
+/* In full screen the browser chrome is gone, so 100dvh (the map's height basis)
+   grows and the map fills the screen. Keep the backdrop opaque. */
+#puzzle-play-bd:fullscreen { background: var(--app-bg); }
 
 /* The zone colour key — sits in the map header (in place of the hint), a tight
    wrapping row of swatch + name so it costs little vertical space. */

@@ -458,12 +458,31 @@ let mapOffsets = null;
 let mapSnapTol = 52;
 let mapDrag = null;
 
+const FS_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const FS_COMPRESS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+
 function buildMapGrid() {
   gridEl.classList.add('mapjig-grid');
   gridEl.innerHTML = mapFrameSvg(mapShowStates); // the guide beneath
   for (const h of mapHeap) {
     gridEl.insertAdjacentHTML('beforeend', statePieceFullSvg(h.piece, h.ox, h.oy, mapShowNames));
   }
+  // Full-screen toggle in the map's corner — full-screening the play view hides
+  // the browser chrome, so 100dvh grows and the map fills the whole screen.
+  const fs = document.createElement('button');
+  fs.type = 'button';
+  fs.className = 'mapjig-fs';
+  fs.setAttribute('aria-label', 'Toggle full screen');
+  fs.innerHTML = document.fullscreenElement ? FS_COMPRESS : FS_EXPAND;
+  fs.addEventListener('click', toggleMapFullscreen);
+  gridEl.appendChild(fs);
+}
+
+function toggleMapFullscreen() {
+  const req = playBd.requestFullscreen || playBd.webkitRequestFullscreen;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!document.fullscreenElement) { if (req) req.call(playBd); }
+  else if (exit) exit.call(document);
 }
 
 // px → map units for the currently-rendered map.
@@ -624,7 +643,11 @@ function tick() {
     endRound();
     return;
   }
-  timeRemainingEl.textContent = `${formatClock(remainingMs / 1000)} left`;
+  const label = `${formatClock(remainingMs / 1000)} left`;
+  timeRemainingEl.textContent = label;
+  // Map jigsaw shows the live countdown IN the right sticky note (its plain
+  // line above the receipt is hidden), so the top band is just the two notes.
+  if (mapMode) timerNote.textContent = label;
   rafId = requestAnimationFrame(tick);
 }
 
@@ -654,6 +677,10 @@ gridEl.addEventListener('pointerdown', onMapPointerDown);
 gridEl.addEventListener('pointermove', onMapPointerMove);
 gridEl.addEventListener('pointerup', onMapPointerEnd);
 gridEl.addEventListener('pointercancel', onMapPointerEnd);
+document.addEventListener('fullscreenchange', () => {
+  const fs = gridEl.querySelector('.mapjig-fs');
+  if (fs) fs.innerHTML = document.fullscreenElement ? FS_COMPRESS : FS_EXPAND;
+});
 
 // Resolves with { score, totalUnits } once the local timer hits zero (or
 // the puzzle is fully solved early) — totalUnits lets the caller pass the
