@@ -80,18 +80,28 @@ export function stateLabel(i) {
   return `<text class="mapjig-label" data-state="${i}" x="${s.cx}" y="${s.cy}">${s.name}</text>`;
 }
 
-// One draggable state piece: the state shown at a legible size (its own bounding
-// box as the viewBox) in its zone colour, its name beneath. `bbox` is measured
-// once in the browser (see measureBBoxes) since a path's extent isn't known
-// without laying it out.
+// A small padding (in map units) around a state's box, so the outline stroke
+// isn't clipped at the piece's edge.
+export const piecePad = (bbox) => Math.max(bbox.w, bbox.h) * 0.05 + 5;
+
+// One draggable state piece, drawn at the SAME scale as every other piece (a
+// big state makes a big piece) — the actual pixel size is set by the heap
+// builder as a fraction of the tray width, so here we only fix the viewBox and
+// let the box keep the state's true aspect ratio. `bbox` comes from measureBBoxes.
 export function statePieceSvg(i, bbox) {
   const s = STATES[i];
-  const pad = Math.max(bbox.w, bbox.h) * 0.08 + 6;
+  const pad = piecePad(bbox);
   const x = (bbox.x - pad).toFixed(1), y = (bbox.y - pad).toFixed(1);
   const w = (bbox.w + pad * 2).toFixed(1), h = (bbox.h + pad * 2).toFixed(1);
-  return `<svg class="mapjig-piece-svg" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMid meet">`
-    + `<path d="${s.d}" fill="${fillOf(s)}" stroke="var(--ink)" stroke-width="4" stroke-linejoin="round"/>`
+  return `<svg class="mapjig-piece-svg" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${w}/${h}">`
+    + `<path d="${s.d}" fill="${fillOf(s)}" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/>`
     + `</svg><span class="mapjig-piece-name">${s.name}</span>`;
+}
+
+// The width a piece should take, as a % of the tray/heap width, so all pieces
+// share ONE scale (`ratio` of their real map size). Uses the padded box width.
+export function pieceWidthPct(bbox, ratio) {
+  return ((bbox.w + 2 * piecePad(bbox)) / MAP_W) * ratio * 100;
 }
 
 // Measure every state's bounding box once, off a throwaway SVG. Returns an array

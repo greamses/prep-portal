@@ -810,51 +810,62 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   -webkit-user-select: none;
   user-select: none;
 }
-/* The pieces: a flex wrap, not the photo jigsaw's absolute scatter. */
+/* The pieces are tipped into a heap: an absolute scatter that stacks (drag one
+   aside to rummage), each sized inline to one uniform fraction of the tray. The
+   heap matches the tray width so a piece's % width is a true share of the map. */
 .jigsaw-heap.mapjig-heap {
+  position: relative;
   aspect-ratio: auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: center;
-  gap: clamp(4px, 1.4vw, 10px);
-  padding: clamp(8px, 2vw, 14px);
-  min-height: 140px;
+  width: min(1100px, 95vw);
+  height: clamp(300px, 46vh, 520px);
+  margin: 0 auto 1rem;
+  padding: 0;
+  overflow: visible;
 }
 .mapjig-loose {
-  position: relative;
-  left: auto; top: auto;
-  width: clamp(58px, 15%, 88px);
+  position: absolute;
   aspect-ratio: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  display: block;
+  /* width set inline by the heap builder — one shared scale for every piece */
 }
 .mapjig-loose .mapjig-piece-svg {
   position: static;
+  left: auto; top: auto;
   width: 100%;
-  height: clamp(42px, 9vw, 58px);
+  height: auto; /* aspect-ratio (set inline) keeps each state's true shape */
   transform: rotate(var(--rot, 0deg));
-  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.3));
+  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.32));
   transition: transform 0.15s ease, filter 0.15s ease;
 }
-.mapjig-loose:hover .mapjig-piece-svg { transform: rotate(var(--rot, 0deg)) scale(1.08); }
+.mapjig-loose:hover { z-index: 60; }
+.mapjig-loose:hover .mapjig-piece-svg { transform: rotate(var(--rot, 0deg)) scale(1.06); }
+.mapjig-loose.is-selected, .mapjig-loose.is-dragging { z-index: 80; }
 .mapjig-loose.is-selected .mapjig-piece-svg,
 .mapjig-loose.is-dragging .mapjig-piece-svg {
-  transform: rotate(0deg) scale(1.12);
+  transform: rotate(0deg) scale(1.1);
   filter: drop-shadow(0 7px 13px rgba(20, 19, 15, 0.45));
 }
 .mapjig-loose.is-dragging .mapjig-piece-svg { transition: none; }
 .mapjig-loose.is-wrong .mapjig-piece-svg { animation: jigsaw-no 0.4s ease; }
+/* The name hangs below the shape (centred, allowed to be wider than a tiny
+   state), readable once you pull the piece clear of the pile. */
 .mapjig-piece-name {
-  font: 600 clamp(10px, 2.4vw, 12px) var(--font-mono, monospace);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 1px;
+  font: 600 clamp(9px, 1.4vw, 11px) var(--font-mono, monospace);
   color: var(--ink);
-  text-align: center;
-  line-height: 1.05;
+  white-space: nowrap;
+  line-height: 1;
   pointer-events: none;
+  text-shadow: 0 1px 2px var(--app-bg), 0 0 3px var(--app-bg);
 }
-.puzzle-grid-wrap:has(.mapjig-grid) { width: min(560px, 100%); }
+/* Twice the old drop area, and — since both the tray and the pile are wide —
+   keep them STACKED even on desktop instead of the photo jigsaw's side-by-side. */
+.puzzle-grid-wrap:has(.mapjig-grid) { width: min(1100px, 95vw); }
+.puzzle-stage:has(.mapjig-grid) { flex-direction: column; }
 
 /* Hint line above the grid (slider + jigsaw rounds). */
 .puzzle-grid-topbar {

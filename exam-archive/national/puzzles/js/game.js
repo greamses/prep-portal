@@ -17,7 +17,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
-import { generateMapJigsaw, mapFrameSvg, statePieceSvg, stateLabel, stateFill, measureBBoxes } from './mapjig.js';
+import { generateMapJigsaw, mapFrameSvg, statePieceSvg, stateLabel, stateFill, measureBBoxes, pieceWidthPct } from './mapjig.js';
 import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
@@ -421,10 +421,11 @@ function onHeapPointerEnd(e) {
   if (mapMode) {
     const st = cancelled ? -1 : mapSlotAt(e.clientX, e.clientY);
     if (st === d.piece) { placeMapState(d.el, d.piece, rect); return; }
-    bounceLoose(d.el, rect);
-    // shake only if it was actually dropped on the map (not back on the pile)
-    const overMap = !cancelled && document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.mapjig-frame');
-    if (overMap) jigsawShake(d.el);
+    // Dropped on the wrong slot → shake + snap back. Dropped anywhere else (the
+    // heap) → leave it there so the player can rummage the pile.
+    const overMap = !cancelled && !!document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.mapjig-frame');
+    if (overMap) { bounceLoose(d.el, rect); jigsawShake(d.el); }
+    else relocateLoose(d.el, rect);
     return;
   }
   const cell = cancelled ? -1 : jigsawCellAt(e.clientX, e.clientY);
@@ -459,18 +460,39 @@ function buildMapGrid() {
   gridEl.innerHTML = mapFrameSvg(lockedCells);
 }
 
+// The pieces tipped into a heap: scattered, overlapping, stacking in DOM order
+// like a real pile. Every piece is one uniform fraction (MAP_PIECE_RATIO) of the
+// tray size, so the states keep their true relative sizes. You can drag a piece
+// aside to rummage — a drop that isn't on a slot just leaves it where you let go.
+const MAP_PIECE_RATIO = 0.5;
 function buildMapHeap(heap) {
   heapEl.innerHTML = '';
   heapEl.classList.add('mapjig-heap');
   heap.forEach((h) => {
+    const bb = mapBoxes[h.piece];
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'jigsaw-loose mapjig-loose';
     btn.dataset.piece = String(h.piece); // the state index
     btn.style.setProperty('--rot', `${h.rot}deg`);
-    btn.innerHTML = statePieceSvg(h.piece, mapBoxes[h.piece]);
+    btn.style.width = `${pieceWidthPct(bb, MAP_PIECE_RATIO).toFixed(2)}%`;
+    // Scatter across the tray (leaving room on the right for the widest piece).
+    btn.style.left = `${(2 + h.x * 84).toFixed(1)}%`;
+    btn.style.top = `${(3 + h.y * 82).toFixed(1)}%`;
+    btn.innerHTML = statePieceSvg(h.piece, bb);
     heapEl.appendChild(btn);
   });
+}
+
+// Rummage: leave a dragged piece where it was let go (clamped into the heap) and
+// raise it to the top of the pile, instead of snapping it back.
+function relocateLoose(el, fromRect) {
+  const hr = heapEl.getBoundingClientRect();
+  const left = Math.max(0, Math.min(((fromRect.left - hr.left) / hr.width) * 100, 94));
+  const top = Math.max(0, Math.min(((fromRect.top - hr.top) / hr.height) * 100, 92));
+  el.style.left = `${left.toFixed(1)}%`;
+  el.style.top = `${top.toFixed(1)}%`;
+  heapEl.appendChild(el); // last sibling → drawn on top
 }
 
 // Which state's slot (if any) a viewport point is over — via elementFromPoint,
