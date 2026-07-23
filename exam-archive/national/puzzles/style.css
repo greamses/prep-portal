@@ -835,6 +835,33 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   -webkit-user-select: none;
   user-select: none;
 }
+/* The zone colour key — sits in the map header (in place of the hint), a tight
+   wrapping row of swatch + name so it costs little vertical space. */
+.puzzle-grid-hint.puzzle-grid-hint--legend { display: block; padding: 0; }
+.mapjig-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px 12px;
+  width: 100%;
+}
+.mapjig-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 clamp(9px, 1.4vw, 11px) var(--font-mono, monospace);
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+  white-space: nowrap;
+}
+.mapjig-legend-item i {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  flex: 0 0 auto;
+}
+
 /* The map is the whole play area — sized by HEIGHT so the wide country fits the
    screen with no scroll, and full-bleed so it uses all of it. Height = the
    viewport minus the thin chrome (notes + hint + padding); width follows the

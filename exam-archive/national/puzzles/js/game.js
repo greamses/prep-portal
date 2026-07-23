@@ -17,7 +17,12 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
-import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W } from './mapjig.js';
+import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES } from './mapjig.js';
+
+// The zone colour key, shown in the map's header (where the hint would sit).
+const zoneLegendHtml = () => '<span class="mapjig-legend">'
+  + ZONES.map((z) => `<span class="mapjig-legend-item"><i style="background:${ZONE_FILL[z.key]}"></i>${z.label}</span>`).join('')
+  + '</span>';
 import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
@@ -697,9 +702,15 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         : `Put the tiles in order, 1 to ${totalUnits}.`;
       topbarEl.hidden = false;
     } else if (puzzleType === 'jigsaw') {
-      hintEl.textContent = mapMode
-        ? 'Rebuild Nigeria — drag each state from the pile into its slot on the map.'
-        : 'Rebuild the picture — drag pieces from the pile into the frame.';
+      if (mapMode) {
+        // The header carries the zone colour key instead of a hint (the drag is
+        // obvious, and the key earns its place on the colour-by-zone map).
+        hintEl.classList.add('puzzle-grid-hint--legend');
+        hintEl.innerHTML = zoneLegendHtml();
+      } else {
+        hintEl.classList.remove('puzzle-grid-hint--legend');
+        hintEl.textContent = 'Rebuild the picture — drag pieces from the pile into the frame.';
+      }
       topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;

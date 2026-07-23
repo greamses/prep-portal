@@ -29,6 +29,15 @@ export const ZONE_FILL = {
   'n-central': '#e7c15b', 'n-east': '#7fb3d5', 'n-west': '#e08f6a',
   's-east': '#8bc48a', 's-south': '#b593c9', 's-west': '#e6a0b8',
 };
+// The six zones in a fixed order, with their names — for the on-map colour key.
+export const ZONES = [
+  { key: 'n-central', label: 'North Central' },
+  { key: 'n-east', label: 'North East' },
+  { key: 'n-west', label: 'North West' },
+  { key: 's-east', label: 'South East' },
+  { key: 's-south', label: 'South South' },
+  { key: 's-west', label: 'South West' },
+];
 const fillOf = (s) => ZONE_FILL[s.zone] || '#cbb98f';
 export const stateFill = (i) => fillOf(STATES[i]);
 
