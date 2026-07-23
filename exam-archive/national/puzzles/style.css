@@ -835,9 +835,21 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   -webkit-user-select: none;
   user-select: none;
 }
-/* The map is the whole play area — big, and always on its own row. */
-.puzzle-grid-wrap:has(.mapjig-grid) { width: min(1100px, 96vw); }
-.puzzle-stage:has(.mapjig-grid) { flex-direction: column; }
+/* The map is the whole play area — sized by HEIGHT so the wide country fits the
+   screen with no scroll, and full-bleed so it uses all of it. Height = the
+   viewport minus the thin chrome (notes + hint + padding); width follows the
+   aspect ratio but never exceeds the screen. */
+.puzzle-stage:has(.mapjig-grid) { flex-direction: column; width: 100%; }
+#puzzle-play-bd:has(.mapjig-grid) { padding: 0.4rem; overflow: hidden; align-items: center; }
+#puzzle-play-bd .review-wrap:has(.mapjig-grid) { width: 100%; max-width: 100vw; margin: 0; }
+.puzzle-grid-wrap:has(.mapjig-grid) { width: auto; margin: 0 auto; }
+.puzzle-grid-wrap:has(.mapjig-grid) .puzzle-grid-face { align-items: center; padding: 6px; }
+.mapjig-grid {
+  aspect-ratio: 1000 / 812;
+  height: min(calc(100dvh - 118px), calc(92vw * 812 / 1000));
+  width: auto;
+  max-width: 94vw;
+}
 
 /* Hint line above the grid (slider + jigsaw rounds). */
 .puzzle-grid-topbar {
