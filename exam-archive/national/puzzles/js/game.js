@@ -565,10 +565,11 @@ function onMapPointerEnd(e) {
   const s = mapScale();
   let x = d.ox + (e.clientX - d.sx) / s;
   let y = d.oy + (e.clientY - d.sy) / s;
-  // Snap home if it landed anywhere in its own ZONE (drop-by-zone), or right on
-  // its exact spot. A drop in the wrong zone stays loose.
+  // Snap home if it landed near its exact spot (the difficulty's tolerance).
+  // Drop-by-zone (snap from anywhere in the correct zone) is a help ONLY when
+  // State maps are off — with the outlines shown, you must place it on its spot.
   const snaps = e.type !== 'pointercancel'
-    && (Math.hypot(x, y) <= mapSnapTol || pieceInOwnZone(d.state, x, y));
+    && (Math.hypot(x, y) <= mapSnapTol || (!mapShowStates && pieceInOwnZone(d.state, x, y)));
   if (snaps) {
     // Snap it home and lock it into the assembling map.
     x = 0; y = 0;
