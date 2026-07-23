@@ -835,6 +835,13 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   -webkit-user-select: none;
   user-select: none;
 }
+/* Map jigsaw: the score/timer sticky notes are attached ONTO the receipt paper
+   at the top (they overhang above it for the other puzzles), flanking the colour
+   key on one tidy top band — which frees the space they used to take above. */
+.puzzle-grid-wrap:has(.mapjig-grid) .puzzle-score-note { top: 8px; left: 12px; }
+.puzzle-grid-wrap:has(.mapjig-grid) .puzzle-timer-note { top: 8px; right: 12px; }
+.puzzle-grid-wrap:has(.mapjig-grid) .puzzle-grid-topbar { padding-inline: clamp(76px, 13vw, 124px); }
+
 /* The zone colour key — sits in the map header (in place of the hint), a tight
    wrapping row of swatch + name so it costs little vertical space. */
 .puzzle-grid-hint.puzzle-grid-hint--legend { display: block; padding: 0; }
