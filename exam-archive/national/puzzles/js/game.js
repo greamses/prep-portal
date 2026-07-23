@@ -17,7 +17,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
-import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES } from './mapjig.js';
+import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES, STATES } from './mapjig.js';
 
 // The zone colour key, shown in the map's header (where the hint would sit).
 const zoneLegendHtml = () => '<span class="mapjig-legend">'
@@ -496,6 +496,24 @@ function onMapPointerMove(e) {
   setPieceOffset(d.state, d.ox + (e.clientX - d.sx) / s, d.oy + (e.clientY - d.sy) / s);
 }
 
+// Is the piece's current position over its own ZONE's territory? (drop-by-zone)
+// Tests the state's centroid, now at (cx+ox, cy+oy) in map units, against every
+// same-zone slot in the guide via SVG isPointInFill.
+function pieceInOwnZone(state, ox, oy) {
+  const frame = gridEl.querySelector('.mapjig-frame');
+  if (!frame) return false;
+  const zone = STATES[state].zone;
+  const px = STATES[state].cx + ox, py = STATES[state].cy + oy;
+  let pt;
+  try { pt = new DOMPoint(px, py); } catch { pt = { x: px, y: py }; }
+  for (const slot of frame.querySelectorAll('.mapjig-slot')) {
+    const s = parseInt(slot.dataset.state, 10);
+    if (STATES[s].zone !== zone || !slot.isPointInFill) continue;
+    if (slot.isPointInFill(pt)) return true;
+  }
+  return false;
+}
+
 function onMapPointerEnd(e) {
   const d = mapDrag;
   mapDrag = null;
@@ -504,8 +522,12 @@ function onMapPointerEnd(e) {
   const s = mapScale();
   let x = d.ox + (e.clientX - d.sx) / s;
   let y = d.oy + (e.clientY - d.sy) / s;
-  if (e.type !== 'pointercancel' && Math.hypot(x, y) <= mapSnapTol) {
-    // Close enough — snap it home and lock it into the assembling map.
+  // Snap home if it landed anywhere in its own ZONE (drop-by-zone), or right on
+  // its exact spot. A drop in the wrong zone stays loose.
+  const snaps = e.type !== 'pointercancel'
+    && (Math.hypot(x, y) <= mapSnapTol || pieceInOwnZone(d.state, x, y));
+  if (snaps) {
+    // Snap it home and lock it into the assembling map.
     x = 0; y = 0;
     setPieceOffset(d.state, 0, 0);
     d.sv.classList.add('is-done');
