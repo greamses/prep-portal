@@ -17,7 +17,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
-import { generateMapJigsaw, mapFrameSvg, statePieceSvg, stateLabel, stateFill, measureBBoxes, pieceWidthPct } from './mapjig.js';
+import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W } from './mapjig.js';
 import { photoPictureUrl } from './photos.js';
 import { scenePictureUri } from './art.js';
 
@@ -71,8 +71,10 @@ let jigsawDrag = null; // live pointer-drag state, or null
 // Map jigsaw (Map of Nigeria): a jigsaw whose pieces are the 37 states. Same
 // heap/drag/lock/score flow, but the frame is a map of named slots and a piece
 // goes home into its own state's slot (found by elementFromPoint), not a grid cell.
-let mapMode = false;
-let mapBoxes = null; // each state's measured bounding box, for sizing the pieces
+let mapMode = false;      // this jigsaw is the Map of Nigeria (assemble on the map)
+let mapShowStates = true; // State-maps toggle: draw the internal state outlines as a guide
+let mapShowNames = true;  // draw each piece's state name
+let mapHeap = null;       // the poured pieces [{ piece, ox, oy }]
 
 function formatClock(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -417,17 +419,6 @@ function onHeapPointerEnd(e) {
   const rect = d.el.getBoundingClientRect(); // where it was let go
   d.el.style.transform = '';
   const cancelled = e.type === 'pointercancel';
-  // The map jigsaw finds home by state-slot; the photo jigsaw by grid cell.
-  if (mapMode) {
-    const st = cancelled ? -1 : mapSlotAt(e.clientX, e.clientY);
-    if (st === d.piece) { placeMapState(d.el, d.piece, rect); return; }
-    // Dropped on the wrong slot → shake + snap back. Dropped anywhere else (the
-    // heap) → leave it there so the player can rummage the pile.
-    const overMap = !cancelled && !!document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.mapjig-frame');
-    if (overMap) { bounceLoose(d.el, rect); jigsawShake(d.el); }
-    else relocateLoose(d.el, rect);
-    return;
-  }
   const cell = cancelled ? -1 : jigsawCellAt(e.clientX, e.clientY);
   if (cell === d.piece - 1) {
     placeJigsawPiece(d.el, cell, rect);
@@ -452,74 +443,78 @@ function bounceLoose(el, fromRect) {
   );
 }
 
-// ── Map jigsaw (Map of Nigeria) ────────────────────────────────────────────
-// The frame is the map as a tray of empty, named-on-placement slots; the pieces
-// are the 37 states, heaped below. A state goes home only into its own slot.
+// ── Map jigsaw (Map of Nigeria) — assemble on the map ──────────────────────
+// No separate pile: the 37 states are poured onto the map, full size, as
+// overlapping pieces you drag to where they belong. Each piece is the whole-map
+// coordinate system showing just its state (mapjig.js), so at offset (0,0) it
+// sits exactly home. Drag freely; a piece SNAPS + locks when it lands within the
+// difficulty's tolerance of home. `mapOffsets[state] = {x, y}` (map units).
+let mapOffsets = null;
+let mapSnapTol = 52;
+let mapDrag = null;
+
 function buildMapGrid() {
   gridEl.classList.add('mapjig-grid');
-  gridEl.innerHTML = mapFrameSvg(lockedCells);
+  gridEl.innerHTML = mapFrameSvg(mapShowStates); // the guide beneath
+  for (const h of mapHeap) {
+    gridEl.insertAdjacentHTML('beforeend', statePieceFullSvg(h.piece, h.ox, h.oy, mapShowNames));
+  }
 }
 
-// The pieces tipped into a heap: scattered, overlapping, stacking in DOM order
-// like a real pile. Every piece is one uniform fraction (MAP_PIECE_RATIO) of the
-// tray size, so the states keep their true relative sizes. You can drag a piece
-// aside to rummage — a drop that isn't on a slot just leaves it where you let go.
-const MAP_PIECE_RATIO = 0.5;
-function buildMapHeap(heap) {
-  heapEl.innerHTML = '';
-  heapEl.classList.add('mapjig-heap');
-  heap.forEach((h) => {
-    const bb = mapBoxes[h.piece];
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'jigsaw-loose mapjig-loose';
-    btn.dataset.piece = String(h.piece); // the state index
-    btn.style.setProperty('--rot', `${h.rot}deg`);
-    btn.style.width = `${pieceWidthPct(bb, MAP_PIECE_RATIO).toFixed(2)}%`;
-    // Scatter across the tray (leaving room on the right for the widest piece).
-    btn.style.left = `${(2 + h.x * 84).toFixed(1)}%`;
-    btn.style.top = `${(3 + h.y * 82).toFixed(1)}%`;
-    btn.innerHTML = statePieceSvg(h.piece, bb);
-    heapEl.appendChild(btn);
-  });
+// px → map units for the currently-rendered map.
+const mapScale = () => (gridEl.getBoundingClientRect().width || 1) / MAP_W;
+const mapPieceEl = (state) => gridEl.querySelector(`.mapjig-piece[data-state="${state}"]`);
+const setPieceOffset = (state, x, y) => {
+  const g = mapPieceEl(state)?.querySelector('.mapjig-pg');
+  if (g) g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+};
+
+function onMapPointerDown(e) {
+  if (!active || !mapMode) return;
+  const path = e.target.closest('.mapjig-ppath');
+  if (!path) return;
+  const sv = path.closest('.mapjig-piece');
+  if (!sv || sv.classList.contains('is-done')) return;
+  e.preventDefault();
+  const state = parseInt(sv.dataset.state, 10);
+  const o = mapOffsets[state];
+  mapDrag = { sv, state, sx: e.clientX, sy: e.clientY, ox: o.x, oy: o.y };
+  sv.classList.add('is-dragging');
+  gridEl.appendChild(sv); // raise to the top of the pile
+  try { sv.setPointerCapture(e.pointerId); } catch { /* noop */ }
 }
 
-// Rummage: leave a dragged piece where it was let go (clamped into the heap) and
-// raise it to the top of the pile, instead of snapping it back.
-function relocateLoose(el, fromRect) {
-  const hr = heapEl.getBoundingClientRect();
-  const left = Math.max(0, Math.min(((fromRect.left - hr.left) / hr.width) * 100, 94));
-  const top = Math.max(0, Math.min(((fromRect.top - hr.top) / hr.height) * 100, 92));
-  el.style.left = `${left.toFixed(1)}%`;
-  el.style.top = `${top.toFixed(1)}%`;
-  heapEl.appendChild(el); // last sibling → drawn on top
+function onMapPointerMove(e) {
+  const d = mapDrag;
+  if (!d) return;
+  const s = mapScale();
+  setPieceOffset(d.state, d.ox + (e.clientX - d.sx) / s, d.oy + (e.clientY - d.sy) / s);
 }
 
-// Which state's slot (if any) a viewport point is over — via elementFromPoint,
-// so irregular shapes hit-test exactly. Already-filled slots don't count.
-function mapSlotAt(x, y) {
-  const hit = document.elementFromPoint(x, y);
-  const slot = hit && hit.closest && hit.closest('.mapjig-slot');
-  if (!slot || slot.classList.contains('is-filled')) return -1;
-  return parseInt(slot.dataset.state, 10);
-}
-
-// Deliver a state home: colour its slot, reveal its name, drop it from the heap.
-function placeMapState(looseEl, stateIdx, fromRect) {
-  if (jigsawPicked === looseEl) setJigsawPicked(null);
-  const frame = gridEl.querySelector('.mapjig-frame');
-  const slot = frame && frame.querySelector(`.mapjig-slot[data-state="${stateIdx}"]`);
-  if (!slot) return;
-  slot.classList.add('is-filled');
-  slot.style.fill = stateFill(stateIdx);
-  slot.classList.add('correct-flash');
-  setTimeout(() => slot.classList.remove('correct-flash'), 380);
-  frame.querySelector('.mapjig-labels').insertAdjacentHTML('beforeend', stateLabel(stateIdx));
-  looseEl.remove();
-  jigsawPlaced += 1;
-  score = jigsawPlaced;
-  scoreNote.textContent = `${score}/${totalUnits} correct`;
-  if (score >= totalUnits) endRound();
+function onMapPointerEnd(e) {
+  const d = mapDrag;
+  mapDrag = null;
+  if (!d) return;
+  d.sv.classList.remove('is-dragging');
+  const s = mapScale();
+  let x = d.ox + (e.clientX - d.sx) / s;
+  let y = d.oy + (e.clientY - d.sy) / s;
+  if (e.type !== 'pointercancel' && Math.hypot(x, y) <= mapSnapTol) {
+    // Close enough — snap it home and lock it into the assembling map.
+    x = 0; y = 0;
+    setPieceOffset(d.state, 0, 0);
+    d.sv.classList.add('is-done');
+    const path = d.sv.querySelector('.mapjig-ppath');
+    if (path) { path.classList.add('correct-flash'); setTimeout(() => path.classList.remove('correct-flash'), 380); }
+    jigsawPlaced += 1;
+    score = jigsawPlaced;
+    scoreNote.textContent = `${score}/${totalUnits} correct`;
+    if (score >= totalUnits) endRound();
+  } else {
+    // Free placement — leave it wherever it was let go (nothing returns to a pile).
+    setPieceOffset(d.state, x, y);
+  }
+  mapOffsets[d.state] = { x, y };
 }
 
 // ── Shared input dispatch ─────────────────────────────────────────────────
@@ -541,17 +536,9 @@ function onGridClick(e) {
     return;
   }
   if (puzzleType === 'jigsaw') {
-    // Second half of the tap-piece-then-tap-slot path: with a loose piece
+    if (mapMode) return; // the map jigsaw is drag-only (pointer handlers on the grid)
+    // Second half of the tap-piece-then-tap-cell path: with a loose piece
     // picked, tapping its home socket places it; any other socket says no.
-    if (mapMode) {
-      const slot = e.target.closest('.mapjig-slot');
-      if (!slot || slot.classList.contains('is-filled') || !jigsawPicked) return;
-      const st = parseInt(slot.dataset.state, 10);
-      const piece = parseInt(jigsawPicked.dataset.piece, 10);
-      if (st === piece) placeMapState(jigsawPicked, piece, jigsawPicked.getBoundingClientRect());
-      else jigsawShake(jigsawPicked);
-      return;
-    }
     const btn = e.target.closest('.jigsaw-cell');
     if (!btn || btn.disabled || !jigsawPicked) return;
     const cell = parseInt(btn.dataset.index, 10);
@@ -635,6 +622,12 @@ heapEl.addEventListener('pointermove', onHeapPointerMove);
 heapEl.addEventListener('pointerup', onHeapPointerEnd);
 heapEl.addEventListener('pointercancel', onHeapPointerEnd);
 
+// The map jigsaw is assembled ON the grid — drag pieces straight on the map.
+gridEl.addEventListener('pointerdown', onMapPointerDown);
+gridEl.addEventListener('pointermove', onMapPointerMove);
+gridEl.addEventListener('pointerup', onMapPointerEnd);
+gridEl.addEventListener('pointercancel', onMapPointerEnd);
+
 // Resolves with { score, totalUnits } once the local timer hits zero (or
 // the puzzle is fully solved early) — totalUnits lets the caller pass the
 // same cap to bot simulation without regenerating the puzzle. `customArt`
@@ -661,18 +654,21 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       fractionValues = tileSet === 'fractions' ? generateFractionValues(seed, totalUnits) : null;
       artUri = tileSet === 'picture' ? (customArt || scenePictureUri(seed)) : '';
     } else if (puzzleType === 'jigsaw') {
-      // `tiles` rides the room doc: 'nigeria' is the map jigsaw, anything else
-      // (incl. rooms made before this shipped) is the classic photo jigsaw.
-      mapMode = tiles === 'nigeria';
+      // `tiles` rides the room doc: 'nigeria' is the map jigsaw with its state
+      // outlines shown, 'nigeria-blank' hides them (State-maps off); anything
+      // else (incl. rooms made before this shipped) is the classic photo jigsaw.
+      mapMode = tiles === 'nigeria' || tiles === 'nigeria-blank';
       jigsawPlaced = 0;
       jigsawPicked = null;
       jigsawDrag = null;
       if (mapMode) {
-        const puzzle = generateMapJigsaw(seed, difficulty);
-        lockedCells = puzzle.locked;
+        mapShowStates = tiles !== 'nigeria-blank';
+        mapSnapTol = SNAP_TOLERANCE[difficulty] ?? SNAP_TOLERANCE.medium;
+        const puzzle = generateMapJigsaw(seed); // nothing pre-placed
+        mapHeap = puzzle.heap;
+        mapOffsets = {};
+        for (const h of mapHeap) mapOffsets[h.piece] = { x: h.ox, y: h.oy };
         totalUnits = puzzle.movableCount;
-        mapBoxes = measureBBoxes();
-        buildMapHeap(puzzle.heap);
       } else {
         const puzzle = generateJigsaw(seed, difficulty, gridSize);
         lockedCells = puzzle.locked;
@@ -750,7 +746,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         rosterEl.hidden = true;
         gridEl.hidden = false;
         if (puzzleType === 'sudoku') digitPad.hidden = false;
-        if (puzzleType === 'jigsaw') heapEl.hidden = false;
+        if (puzzleType === 'jigsaw' && !mapMode) heapEl.hidden = false; // map mode has no pile
         endAt = anchorAt + timeLimit * 1000;
         rafId = requestAnimationFrame(tick);
         return;

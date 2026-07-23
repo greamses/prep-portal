@@ -112,7 +112,10 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // V
 let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw']);
 let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
-let jigsawContent = mem.get('jigsawContent', 'photo', ['photo', 'nigeria']); // jigsaw only — a photo, or the Map of Nigeria
+// jigsaw only — a photo, or the Map of Nigeria (with its state outlines shown
+// as a guide, or blank for a pure classic assemble).
+let jigsawContent = mem.get('jigsawContent', 'photo', ['photo', 'nigeria', 'nigeria-blank']);
+const isNigeriaJig = () => jigsawContent === 'nigeria' || jigsawContent === 'nigeria-blank';
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
 
 // Picture rounds (Jigsaw, Slider's Picture tiles) can use the player's own
@@ -126,7 +129,7 @@ if (pictureSource === 'upload' && !localStorage.getItem(PIC_KEY)) pictureSource 
 
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
 // The Map of Nigeria jigsaw uses no photo — its pieces are the states.
-const usesPicture = () => (puzzleType === 'jigsaw' && jigsawContent !== 'nigeria')
+const usesPicture = () => (puzzleType === 'jigsaw' && !isNigeriaJig())
   || (puzzleType === 'slider' && tileSet === 'picture');
 const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PIC_KEY) || '' : '');
 
@@ -136,7 +139,7 @@ const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PI
 const contentCfg = () => ({
   puzzleType, difficulty, gridSize,
   tiles: puzzleType === 'slider' ? tileSet
-    : puzzleType === 'jigsaw' ? (jigsawContent === 'nigeria' ? 'nigeria' : 'photo')
+    : puzzleType === 'jigsaw' ? (isNigeriaJig() ? jigsawContent : 'photo')
       : 'numbers',
 });
 
@@ -194,8 +197,28 @@ const topic = createCarousel(topicMount);
 topic.addSlide('type', 'Puzzle', () => {});
 topic.addSlide('tiles', 'Tiles', () => {});
 topic.addSlide('photo', 'Picture', () => {});
+topic.addSlide('state-maps', 'State maps', () => {}); // Map-of-Nigeria jigsaw only
 topic.addSlide('grid-size', 'Grid Size', () => {});
 topic.addSlide('difficulty', 'Difficulty', () => {});
+
+// Map-of-Nigeria jigsaw only: show the internal state outlines as a guide, or a
+// blank country for a pure classic assemble. Rides the room doc via `tiles`.
+function renderStateMapsPick() {
+  renderChoiceStep(topic, 'state-maps', {
+    title: 'Show the state maps?',
+    name: 'puzzle-state-maps',
+    colorOffset: 2,
+    options: [
+      { value: 'nigeria', label: 'State maps on', note: 'outlines guide you', checked: jigsawContent !== 'nigeria-blank' },
+      { value: 'nigeria-blank', label: 'State maps off', note: 'place by shape', checked: jigsawContent === 'nigeria-blank' },
+    ],
+    onPick: (v) => {
+      jigsawContent = v;
+      mem.save({ jigsawContent });
+      topic.goTo('difficulty'); // no grid size — always the 37 states
+    },
+  });
+}
 
 function renderGridSizePick() {
   renderChoiceStep(topic, 'grid-size', {
@@ -243,7 +266,7 @@ function renderPhotoPick() {
   // photo and no grid size (always the 37 states), so picking it jumps to
   // difficulty (how many states start already placed).
   const mapOption = puzzleType === 'jigsaw'
-    ? [{ value: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', checked: jigsawContent === 'nigeria' }]
+    ? [{ value: 'nigeria', label: 'Map of Nigeria', note: 'drag the states home', checked: isNigeriaJig() }]
     : [];
   renderChoiceStep(topic, 'photo', {
     title: puzzleType === 'jigsaw' ? 'What jigsaw?' : 'Which picture?',
@@ -260,9 +283,10 @@ function renderPhotoPick() {
     ],
     onPick: (v) => {
       if (v === 'nigeria') {
-        jigsawContent = 'nigeria';
+        if (!isNigeriaJig()) jigsawContent = 'nigeria'; // keep an existing on/off choice
         mem.save({ jigsawContent });
-        topic.goTo('difficulty'); // no photo, no size
+        renderStateMapsPick();
+        topic.goTo('state-maps'); // then difficulty — no photo, no size
         return;
       }
       jigsawContent = 'photo';
@@ -297,6 +321,7 @@ renderChoiceStep(topic, 'type', {
 
 renderTilesPick();
 renderPhotoPick();
+renderStateMapsPick();
 renderGridSizePick();
 
 renderChoiceStep(topic, 'difficulty', {
@@ -413,8 +438,8 @@ const flow = createSectionFlow([
   },
   {
     el: $('puzzle-section-topic'),
-    chips: () => (puzzleType === 'jigsaw' && jigsawContent === 'nigeria')
-      ? [{ label: 'Jigsaw' }, { label: 'Map of Nigeria' }, { label: difficulty[0].toUpperCase() + difficulty.slice(1) }]
+    chips: () => (puzzleType === 'jigsaw' && isNigeriaJig())
+      ? [{ label: 'Jigsaw' }, { label: 'Map of Nigeria' }, { label: jigsawContent === 'nigeria-blank' ? 'Maps off' : 'Maps on' }, { label: difficulty[0].toUpperCase() + difficulty.slice(1) }]
       : [
         { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
         ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),

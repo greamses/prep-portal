@@ -772,99 +772,71 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   60% { transform: rotate(calc(var(--rot, 0deg) + 7deg)); }
 }
 
-/* ── Map jigsaw (Map of Nigeria) ──────────────────────────────────────────
-   The frame is the country as a tray of empty, hittable state slots; the heap
-   below is a flex wrap of named state pieces. Reuses the .jigsaw-loose drag
-   states above (map pieces carry both classes). */
+/* ── Map jigsaw (Map of Nigeria) — assemble on the map ────────────────────
+   One zone: the whole map is the play area. A faint guide sits beneath, and the
+   37 state pieces are poured on top (each a full-map SVG showing just its state,
+   layered inset:0 and offset by its <g>). You drag pieces straight on the map;
+   they snap + lock when near home. No separate pile. */
 .mapjig-grid {
-  display: block;
-  padding: clamp(8px, 2.4vw, 14px);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 812;
   background: color-mix(in srgb, var(--ink) 7%, var(--surface-secondary, var(--app-bg)));
   border-width: 2.5px;
   border-radius: 8px;
-  overflow: visible;
+  overflow: hidden;
+  touch-action: none; /* dragging a piece must never scroll the page */
 }
-.mapjig-frame { width: 100%; height: auto; display: block; }
+/* The guide + every piece fill the grid and share the map's viewBox, so a piece
+   at offset (0,0) lands exactly on its slot. */
+.mapjig-frame,
+.mapjig-piece {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.mapjig-frame { pointer-events: none; }
 .mapjig-slot {
-  fill: color-mix(in srgb, var(--ink) 8%, var(--app-bg));
-  stroke: color-mix(in srgb, var(--ink) 32%, transparent);
-  stroke-width: 1.2;
+  fill: color-mix(in srgb, var(--ink) 9%, var(--app-bg));
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 1.1;
   stroke-linejoin: round;
-  transition: fill 0.2s ease;
 }
-.mapjig-slot.is-filled { stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.6; }
-.mapjig-slot.correct-flash { animation: mapjig-flash 0.42s ease; }
+/* State maps OFF: one quiet silhouette, no internal seams. */
+.mapjig-slot.is-blank { fill: color-mix(in srgb, var(--ink) 11%, var(--app-bg)); stroke: none; }
+/* A poured piece: the SVG ignores the pointer (its huge transparent area must
+   not block pieces beneath) — only the state shape and its name are grabbable. */
+.mapjig-piece { pointer-events: none; overflow: visible; z-index: 1; }
+.mapjig-piece.is-dragging { z-index: 3; }
+.mapjig-piece.is-done { z-index: 0; } /* locked pieces sink under the loose ones */
+.mapjig-ppath {
+  pointer-events: visiblePainted;
+  cursor: grab;
+  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.32));
+  transition: filter 0.15s ease;
+}
+.mapjig-piece.is-dragging .mapjig-ppath { cursor: grabbing; filter: drop-shadow(0 7px 13px rgba(20, 19, 15, 0.45)); }
+.mapjig-piece.is-done .mapjig-ppath { cursor: default; filter: none; }
+.mapjig-ppath.correct-flash { animation: mapjig-flash 0.42s ease; }
 @keyframes mapjig-flash {
-  0% { stroke: var(--accent-secondary); stroke-width: 4; }
-  100% { stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.6; }
+  0% { stroke: var(--accent-secondary); stroke-width: 6; }
+  100% { stroke: var(--ink); stroke-width: 2.5; }
 }
-.mapjig-label {
-  font: 600 12px var(--font-mono, monospace);
-  fill: color-mix(in srgb, var(--ink) 78%, transparent);
+.mapjig-pname {
+  font: 600 13px var(--font-mono, monospace);
+  fill: var(--ink);
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
   paint-order: stroke;
-  stroke: color-mix(in srgb, var(--app-bg) 85%, transparent);
-  stroke-width: 3px;
+  stroke: color-mix(in srgb, var(--app-bg) 80%, transparent);
+  stroke-width: 3.5px;
   -webkit-user-select: none;
   user-select: none;
 }
-/* The pieces are tipped into a heap: an absolute scatter that stacks (drag one
-   aside to rummage), each sized inline to one uniform fraction of the tray. The
-   heap matches the tray width so a piece's % width is a true share of the map. */
-.jigsaw-heap.mapjig-heap {
-  position: relative;
-  aspect-ratio: auto;
-  width: min(1100px, 95vw);
-  height: clamp(300px, 46vh, 520px);
-  margin: 0 auto 1rem;
-  padding: 0;
-  overflow: visible;
-}
-.mapjig-loose {
-  position: absolute;
-  aspect-ratio: auto;
-  display: block;
-  /* width set inline by the heap builder — one shared scale for every piece */
-}
-.mapjig-loose .mapjig-piece-svg {
-  position: static;
-  left: auto; top: auto;
-  width: 100%;
-  height: auto; /* aspect-ratio (set inline) keeps each state's true shape */
-  transform: rotate(var(--rot, 0deg));
-  filter: drop-shadow(1px 2px 2px rgba(20, 19, 15, 0.32));
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-.mapjig-loose:hover { z-index: 60; }
-.mapjig-loose:hover .mapjig-piece-svg { transform: rotate(var(--rot, 0deg)) scale(1.06); }
-.mapjig-loose.is-selected, .mapjig-loose.is-dragging { z-index: 80; }
-.mapjig-loose.is-selected .mapjig-piece-svg,
-.mapjig-loose.is-dragging .mapjig-piece-svg {
-  transform: rotate(0deg) scale(1.1);
-  filter: drop-shadow(0 7px 13px rgba(20, 19, 15, 0.45));
-}
-.mapjig-loose.is-dragging .mapjig-piece-svg { transition: none; }
-.mapjig-loose.is-wrong .mapjig-piece-svg { animation: jigsaw-no 0.4s ease; }
-/* The name hangs below the shape (centred, allowed to be wider than a tiny
-   state), readable once you pull the piece clear of the pile. */
-.mapjig-piece-name {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 1px;
-  font: 600 clamp(9px, 1.4vw, 11px) var(--font-mono, monospace);
-  color: var(--ink);
-  white-space: nowrap;
-  line-height: 1;
-  pointer-events: none;
-  text-shadow: 0 1px 2px var(--app-bg), 0 0 3px var(--app-bg);
-}
-/* Twice the old drop area, and — since both the tray and the pile are wide —
-   keep them STACKED even on desktop instead of the photo jigsaw's side-by-side. */
-.puzzle-grid-wrap:has(.mapjig-grid) { width: min(1100px, 95vw); }
+/* The map is the whole play area — big, and always on its own row. */
+.puzzle-grid-wrap:has(.mapjig-grid) { width: min(1100px, 96vw); }
 .puzzle-stage:has(.mapjig-grid) { flex-direction: column; }
 
 /* Hint line above the grid (slider + jigsaw rounds). */
