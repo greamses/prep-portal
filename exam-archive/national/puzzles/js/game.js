@@ -931,6 +931,29 @@ function onTangramPointerMove(e) {
   d.el.setAttribute('transform', tanTransform(d.piece));
 }
 
+// Does this piece belong where it now is? Checked after a turn as well as
+// after a move: a piece can be sitting exactly on its slot and merely facing
+// the wrong way, and turning it right is then the move that solves it — if
+// only a drag could snap, that piece would have to be nudged off its own slot
+// and dragged back to lock.
+function tanTrySnap(piece, el) {
+  const slotIndex = tangramSlotFor(piece, tanSlots, tanTol);
+  if (slotIndex === -1) return false;
+
+  const slot = tanSlots[slotIndex];
+  slot.filled = true;
+  piece.placed = true;
+  piece.x = slot.x;
+  piece.y = slot.y;
+  piece.deg = slot.deg;
+  el.setAttribute('transform', tanTransform(slot));
+  el.classList.add('is-placed', 'correct-flash');
+  setTimeout(() => el.classList.remove('correct-flash'), 380);
+  tanPlaced += 1;
+  tanUpdateScore();
+  return true;
+}
+
 function onTangramPointerEnd(e) {
   const d = tanDrag;
   tanDrag = null;
@@ -951,25 +974,14 @@ function onTangramPointerEnd(e) {
     d.piece.x += before[0] - after[0];
     d.piece.y += before[1] - after[1];
     d.el.setAttribute('transform', tanTransform(d.piece));
+    tanTrySnap(d.piece, d.el); // turning it right can BE the solving move
     return;
   }
   if (e.type === 'pointercancel') return;
 
-  const slotIndex = tangramSlotFor(d.piece, tanSlots, tanTol);
-  if (slotIndex === -1) return; // left wherever it was dropped — nothing is punished
-
-  const slot = tanSlots[slotIndex];
-  slot.filled = true;
-  d.piece.placed = true;
-  d.piece.x = slot.x;
-  d.piece.y = slot.y;
-  d.piece.deg = slot.deg;
-  d.el.setAttribute('transform', tanTransform(slot));
-  d.el.classList.add('is-placed');
-  d.el.classList.add('correct-flash');
-  setTimeout(() => d.el.classList.remove('correct-flash'), 380);
-  tanPlaced += 1;
-  tanUpdateScore();
+  // Left wherever it was dropped if it doesn't belong there — nothing is
+  // punished for a wrong guess.
+  tanTrySnap(d.piece, d.el);
 }
 
 // ── Shared input dispatch ─────────────────────────────────────────────────

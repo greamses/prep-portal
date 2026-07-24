@@ -128,6 +128,27 @@ const RAW_FIGURES = [
     ],
   },
   {
+    key: 'cat',
+    label: 'Cat',
+    hint: 'Sitting up, tail in the air.',
+    // The one figure here that is not solver output — a picture cannot be
+    // asked for as an outline, so this was built piece by piece and then put
+    // through the same verifier (right seven shapes, no overlap, connected)
+    // and drawn to look at, which is the only test for "does it read as a
+    // cat". Two small triangles make the ears, the square is the head, the
+    // large pair is the body, the parallelogram is the tail and the medium
+    // triangle the haunch.
+    pieces: [
+      { piece: 'small', deg: 270, x: 2, y: 10 },  // left ear
+      { piece: 'small', deg: 90, x: 6, y: 6 },    // right ear
+      { piece: 'square', deg: 0, x: 2, y: 8 },    // head
+      { piece: 'large', deg: 90, x: 6, y: 10 },   // body, left
+      { piece: 'large', deg: 270, x: 6, y: 18 },  // body, right
+      { piece: 'para', deg: 90, x: 10, y: 8 },    // tail
+      { piece: 'medium', deg: 180, x: 10, y: 18 }, // haunch
+    ],
+  },
+  {
     key: 'parallelogram',
     label: 'Parallelogram',
     hint: 'A square that has been pushed over.',

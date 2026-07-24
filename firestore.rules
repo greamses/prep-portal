@@ -510,7 +510,7 @@ service cloud.firestore {
         (!('tiles' in request.resource.data) ||
           request.resource.data.tiles in [
             'numbers', 'fractions', 'picture', 'photo', 'nigeria', 'nigeria-blank',
-            'square', 'triangle', 'rectangle', 'parallelogram'
+            'square', 'triangle', 'rectangle', 'parallelogram', 'cat'
           ]);
 
       allow update: if isLoggedIn() && (
