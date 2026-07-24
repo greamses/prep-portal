@@ -493,7 +493,21 @@ service cloud.firestore {
         // Slider is the classic 3/4/5, Jigsaw is table-sized at 10/15/20
         // (100–400 pieces), and Shikaku cuts rectangles out of 5/7/10. See
         // main.js's GRID_SIZES_BY_TYPE.
-        request.resource.data.gridSize in [3, 4, 5, 6, 7, 9, 10, 15, 20];
+        request.resource.data.gridSize in [3, 4, 5, 6, 7, 9, 10, 15, 20] &&
+        // What the room is playing WITH: Slider's tile set (numbers /
+        // fractions / picture), or what the Jigsaw is a jigsaw OF (a photo,
+        // or the Map of Nigeria with its state outlines shown or hidden).
+        // Sudoku and Shikaku always send 'numbers'. Deliberately not tied to
+        // puzzleType — a mismatch is harmless (each puzzle reads the field
+        // only if it means something to it) and cross-checking it here would
+        // mean updating two places for every new tile set.
+        //
+        // Optional only because it postdates the collection: a room doc
+        // written by JS from before `tiles` existed carries none, and
+        // game.js already reads a missing one as 'numbers'. Present-but-junk
+        // is still refused.
+        (!('tiles' in request.resource.data) ||
+          request.resource.data.tiles in ['numbers', 'fractions', 'picture', 'photo', 'nigeria', 'nigeria-blank']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.
