@@ -719,7 +719,9 @@ function renderRevealBtn() {
   if (puzzleType !== 'shikaku') { revealBtn.hidden = true; return; }
   revealBtn.hidden = false;
   const done = shikakuPlaced.length >= totalUnits;
-  revealBtn.disabled = shikakuHintsLeft <= 0 || done;
+  // Also dead through the 3-2-1, where there is no grid to reveal onto yet —
+  // re-rendered when the countdown hands over, so it wakes up with the puzzle.
+  revealBtn.disabled = shikakuHintsLeft <= 0 || done || gridEl.hidden;
   const label = shikakuHintsLeft > 0 ? `Reveal a box (${shikakuHintsLeft})` : 'No reveals left';
   revealBtn.innerHTML = `${BULB_SVG}<span>${label}</span>`;
 }
@@ -1124,6 +1126,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         countdownEl.hidden = true;
         rosterEl.hidden = true;
         gridEl.hidden = false;
+        renderRevealBtn(); // the grid exists now — Shikaku's hint goes live
         if (puzzleType === 'sudoku') digitPad.hidden = false;
         if (puzzleType === 'jigsaw' && !mapMode) heapEl.hidden = false; // map mode has no pile
         endAt = anchorAt + timeLimit * 1000;
