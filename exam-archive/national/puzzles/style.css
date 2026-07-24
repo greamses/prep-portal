@@ -627,25 +627,35 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   background: color-mix(in srgb, var(--claim-fill, var(--accent-primary)) 42%, var(--surface-primary));
   cursor: pointer;
 }
-.shikaku-cell.is-claimed.edge-top { box-shadow: inset 0 2px 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-bottom { box-shadow: inset 0 -2px 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-left { box-shadow: inset 2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-right { box-shadow: inset -2px 0 0 0 var(--ink); }
+/* A revealed rectangle is a GIVEN, and has to look like one — the same
+   quieter register Sudoku's givens use, so at a glance the board says which
+   rectangles you found and which you were handed. It doesn't score and can't
+   be taken back, hence the default cursor. */
+.shikaku-cell.is-claimed.is-hinted {
+  --claim-ink: var(--text-tertiary, var(--text-secondary));
+  background: color-mix(in srgb, var(--claim-fill, var(--accent-primary)) 17%, var(--surface-secondary, var(--app-bg)));
+  color: var(--text-secondary);
+  cursor: default;
+}
+.shikaku-cell.is-claimed.edge-top { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-bottom { box-shadow: inset 0 -2px 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-left { box-shadow: inset 2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-right { box-shadow: inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
 /* A cell can sit on two, three or four edges at once (a 1×1 is on all
    four), and box-shadow doesn't merge across rules — so every combination
    that can occur is spelled out. */
-.shikaku-cell.is-claimed.edge-top.edge-bottom { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-left.edge-right { box-shadow: inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-top.edge-left { box-shadow: inset 0 2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-top.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-bottom.edge-left { box-shadow: inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-bottom.edge-right { box-shadow: inset 0 -2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-top.edge-left.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-bottom.edge-left.edge-right { box-shadow: inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-left { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
-.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 0 -2px 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-left.edge-right { box-shadow: inset 2px 0 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-top.edge-left { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-top.edge-right { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-bottom.edge-left { box-shadow: inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-bottom.edge-right { box-shadow: inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-top.edge-left.edge-right { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-bottom.edge-left.edge-right { box-shadow: inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-left { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-right { box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink)); }
 .shikaku-cell.is-claimed.edge-top.edge-bottom.edge-left.edge-right {
-  box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink);
+  box-shadow: inset 0 2px 0 0 var(--claim-ink, var(--ink)), inset 0 -2px 0 0 var(--claim-ink, var(--ink)), inset 2px 0 0 0 var(--claim-ink, var(--ink)), inset -2px 0 0 0 var(--claim-ink, var(--ink));
 }
 
 /* The ghost box that follows the drag. Grid-positioned like a real claim, so
@@ -1019,6 +1029,26 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   color: var(--text-secondary);
   text-align: center;
 }
+
+/* Shikaku's "Reveal a box" — a sticky note button, same component as every
+   other button on the page. Deliberately small and quiet: it is the way out
+   of being stuck, not the way to play. */
+.pp-sticky.puzzle-reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  padding: 0.3rem 0.7rem 0.32rem;
+  --pp-note-tilt: -2deg;
+}
+.pp-sticky.puzzle-reveal-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Nothing left in the stored partition that fits around what's on the board
+   — the player found a different (still legal) dissection. Refuse visibly
+   rather than spend a hint on nothing. */
+.pp-sticky.puzzle-reveal-btn.is-refused { animation: shikaku-refuse 0.4s ease; }
 
 .sudoku-cell.correct-flash,
 .slider-tile.correct-flash {

@@ -49,6 +49,7 @@ const scoreNote = $('puzzle-score-note');
 const timerNote = $('puzzle-timer-note');
 const topbarEl = $('puzzle-grid-topbar');
 const hintEl = $('puzzle-grid-hint');
+const revealBtn = $('puzzle-reveal-btn');
 const heapEl = $('puzzle-jigsaw-heap');
 
 let active = false;
@@ -581,7 +582,9 @@ function onMapPointerEnd(e) {
 // takes it back, because a Shikaku is solved by trying an arrangement,
 // seeing what it strands, and undoing it.
 let shikakuClues = null;   // [{ r, c, area }] — what the player is given
-let shikakuPlaced = [];    // [{ r, c, w, h, clue }] — rectangles standing now
+let shikakuPlaced = [];    // [{ r, c, w, h, clue, hinted }] — standing now
+let shikakuSolution = null; // the partition the clues were cut from — only the reveal reads it
+let shikakuHintsLeft = 0;  // reveals remaining this round
 let shikakuAnchor = null;  // first corner of a tap-tap claim, or null
 let shikakuDrag = null;    // live drag state, or null
 let shikakuPreview = null; // the single ghost rectangle shown while dragging
@@ -630,13 +633,14 @@ const hidePreview = () => { if (shikakuPreview) shikakuPreview.hidden = true; };
 // overlay: the number stays crisp in its cell instead of sitting under a
 // translucent sheet, and the border classes draw the outline around the
 // region exactly the way it would be pencilled on paper.
-function paintShikakuRect(rect, clueIndex, { flash = false } = {}) {
+function paintShikakuRect(rect, clueIndex, { flash = false, hinted = false } = {}) {
   const fill = SHIKAKU_FILLS[clueIndex % SHIKAKU_FILLS.length];
   for (let r = rect.r; r < rect.r + rect.h; r++) {
     for (let c = rect.c; c < rect.c + rect.w; c++) {
       const el = cellAtIndex(r, c);
       if (!el) continue;
       el.classList.add('is-claimed');
+      el.classList.toggle('is-hinted', hinted);
       el.style.setProperty('--claim-fill', fill);
       el.classList.toggle('edge-top', r === rect.r);
       el.classList.toggle('edge-bottom', r === rect.r + rect.h - 1);
@@ -655,7 +659,7 @@ function unpaintShikakuRect(rect) {
     for (let c = rect.c; c < rect.c + rect.w; c++) {
       const el = cellAtIndex(r, c);
       if (!el) continue;
-      el.classList.remove('is-claimed', 'edge-top', 'edge-bottom', 'edge-left', 'edge-right');
+      el.classList.remove('is-claimed', 'is-hinted', 'edge-top', 'edge-bottom', 'edge-left', 'edge-right');
       el.style.removeProperty('--claim-fill');
     }
   }
@@ -673,9 +677,15 @@ function setShikakuAnchor(cell) {
   }
 }
 
+// A revealed rectangle sits on the board but earns nothing — same rule as the
+// jigsaw's pre-placed anchors, where only YOUR pieces score. So the board can
+// be finished while the score is short of totalUnits, and "am I done?" has to
+// ask how many rectangles are standing, not how many points they are worth.
 function updateShikakuScore() {
-  score = shikakuPlaced.length;
+  score = shikakuPlaced.filter((p) => !p.hinted).length;
   scoreNote.textContent = `${score}/${totalUnits} correct`;
+  renderRevealBtn();
+  if (shikakuPlaced.length >= totalUnits) endRound(); // every number boxed
 }
 
 function shikakuRejected(rect) {
@@ -686,10 +696,65 @@ function shikakuRejected(rect) {
 function claimShikakuRect(rect) {
   const verdict = validatePlacement(rect, shikakuClues, shikakuPlaced);
   if (!verdict.ok) { shikakuRejected(rect); return; }
-  shikakuPlaced.push({ ...rect, clue: verdict.clue });
+  shikakuPlaced.push({ ...rect, clue: verdict.clue, hinted: false });
   paintShikakuRect(rect, verdict.clue, { flash: true });
   updateShikakuScore();
-  if (score >= totalUnits) endRound(); // every number boxed — the grid is cut
+}
+
+/* ── The reveal ──────────────────────────────────────────────────────────
+   One rectangle, handed over. It is drawn from the stored partition (the
+   only thing that reads it), lands as a given — dimmed, unremovable, worth
+   no points — and the round's allowance is a few of them, scaled to how many
+   rectangles the puzzle has. Being stuck on a Shikaku is being stuck
+   completely: there is no partial progress to make while you stare at it,
+   which is exactly when a timed round stops teaching anything. */
+const shikakuHintAllowance = (clueCount) => Math.max(1, Math.floor(clueCount / 4));
+
+const BULB_SVG = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M9 18h6M10 21h4"/>
+  <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.7v.4h5.2v-.4c0-.7.3-1.3.9-1.7A6 6 0 0 0 12 3z"/>
+</svg>`;
+
+function renderRevealBtn() {
+  if (puzzleType !== 'shikaku') { revealBtn.hidden = true; return; }
+  revealBtn.hidden = false;
+  const done = shikakuPlaced.length >= totalUnits;
+  revealBtn.disabled = shikakuHintsLeft <= 0 || done;
+  const label = shikakuHintsLeft > 0 ? `Reveal a box (${shikakuHintsLeft})` : 'No reveals left';
+  revealBtn.innerHTML = `${BULB_SVG}<span>${label}</span>`;
+}
+
+// Every cell of `rect` still unclaimed. A rectangle from the stored partition
+// can genuinely be blocked: the player may have found a different-but-legal
+// dissection, which the rules accept and which this one would now overlap.
+const rectIsClear = (rect) => !shikakuPlaced.some((p) => !(
+  rect.r >= p.r + p.h || p.r >= rect.r + rect.h
+  || rect.c >= p.c + p.w || p.c >= rect.c + rect.w
+));
+
+function revealShikakuRect() {
+  if (!active || puzzleType !== 'shikaku' || gridEl.hidden) return;
+  if (shikakuHintsLeft <= 0) return;
+
+  // The smallest rectangle still free: the easiest one to check against its
+  // number, so the hint reads as a worked example rather than a gift.
+  const free = shikakuSolution
+    .filter(rectIsClear)
+    .sort((a, b) => (a.w * a.h) - (b.w * b.h) || (a.r - b.r) || (a.c - b.c));
+  if (!free.length) {
+    // Nothing from the stored partition fits around what's already down —
+    // the board is a valid but different dissection. Say so by refusing,
+    // rather than silently spending a hint.
+    revealBtn.classList.add('is-refused');
+    setTimeout(() => revealBtn.classList.remove('is-refused'), 420);
+    return;
+  }
+
+  const rect = free[0];
+  shikakuHintsLeft -= 1;
+  shikakuPlaced.push({ ...rect, hinted: true });
+  paintShikakuRect(rect, rect.clue, { flash: true, hinted: true });
+  updateShikakuScore();
 }
 
 const placedIndexAt = (r, c) => shikakuPlaced.findIndex((p) => rectContains(p, r, c));
@@ -719,11 +784,13 @@ function onShikakuPointerDown(e) {
   const start = { r: Math.floor(i / gridSize), c: i % gridSize };
 
   // Pressing on a rectangle already standing takes it back, so a wrong turn
-  // is one tap to undo rather than a lost round.
+  // is one tap to undo rather than a lost round. A REVEALED one stays put:
+  // taking it back and redrawing it by hand would turn a spent hint into a
+  // point, which is the whole thing the reveal is not allowed to be.
   const standing = placedIndexAt(start.r, start.c);
   if (standing !== -1) {
     setShikakuAnchor(null);
-    releaseShikakuRect(standing);
+    if (!shikakuPlaced[standing].hinted) releaseShikakuRect(standing);
     return;
   }
 
@@ -773,7 +840,11 @@ function onShikakuKeyActivate(cellEl) {
   const i = parseInt(cellEl.dataset.index, 10);
   const cell = { r: Math.floor(i / gridSize), c: i % gridSize };
   const standing = placedIndexAt(cell.r, cell.c);
-  if (standing !== -1) { setShikakuAnchor(null); releaseShikakuRect(standing); return; }
+  if (standing !== -1) {
+    setShikakuAnchor(null);
+    if (!shikakuPlaced[standing].hinted) releaseShikakuRect(standing);
+    return;
+  }
   shikakuTap(cell);
 }
 
@@ -903,6 +974,8 @@ gridEl.addEventListener('pointercancel', onMapPointerEnd);
 
 // Shikaku is dragged on the grid too — its handlers stand down for every
 // other puzzle, so both sets can share the one element.
+revealBtn.addEventListener('click', revealShikakuRect);
+
 gridEl.addEventListener('pointerdown', onShikakuPointerDown);
 gridEl.addEventListener('pointermove', onShikakuPointerMove);
 gridEl.addEventListener('pointerup', onShikakuPointerEnd);
@@ -967,10 +1040,12 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     } else if (puzzleType === 'shikaku') {
       const puzzle = generateShikaku(seed, difficulty, gridSize);
       shikakuClues = puzzle.clues;
+      shikakuSolution = puzzle.solution;
       shikakuPlaced = [];
       shikakuAnchor = null;
       shikakuDrag = null;
       totalUnits = puzzle.clues.length; // one rectangle per number
+      shikakuHintsLeft = shikakuHintAllowance(totalUnits);
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -1005,6 +1080,8 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     } else {
       topbarEl.hidden = true;
     }
+
+    renderRevealBtn(); // shikaku only — hidden for every other puzzle
 
     scoreNote.textContent = `0/${totalUnits} correct`;
     timerNote.textContent = `${formatClock(timeLimit)} round`;
