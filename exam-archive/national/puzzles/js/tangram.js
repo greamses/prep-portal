@@ -149,6 +149,26 @@ const RAW_FIGURES = [
     ],
   },
   {
+    key: 'boat',
+    label: 'Boat',
+    hint: 'A sail, a mast and a hull.',
+    // Also not straight solver output, but not hand-built either: the hull is
+    // solved. Asking the solver to tile a hull-shaped trapezoid — vertical
+    // bow, slanted stern — with a CHOSEN SUBSET of the pieces found the two
+    // large triangles plus the medium, which is the part that kept coming out
+    // wrong by hand. The two small triangles and the square tile the sail
+    // triangle exactly, and the parallelogram is the mast.
+    pieces: [
+      { piece: 'medium', deg: 0, x: 0, y: 10 },   // hull, bow
+      { piece: 'large', deg: 0, x: 4, y: 10 },    // hull
+      { piece: 'large', deg: 180, x: 8, y: 14 },  // hull
+      { piece: 'small', deg: 180, x: 6, y: 10 },  // sail, left
+      { piece: 'square', deg: 0, x: 4, y: 6 },    // sail, middle
+      { piece: 'small', deg: 180, x: 10, y: 10 }, // sail, right
+      { piece: 'para', deg: 90, x: 8, y: 2 },     // mast
+    ],
+  },
+  {
     key: 'parallelogram',
     label: 'Parallelogram',
     hint: 'A square that has been pushed over.',
