@@ -259,9 +259,14 @@ service cloud.firestore {
         request.resource.data.fractionTypes is list &&
         request.resource.data.fractionTypes.hasOnly(['like', 'unlike', 'wholeFraction']) &&
         // Chemistry (operation 'rmm'): which sets of the compound bank are in
-        // play. Empty for every other category, never absent.
-        request.resource.data.compounds is list &&
-        request.resource.data.compounds.hasOnly(['inorganic', 'organic']);
+        // play — empty for every other category. Optional ONLY because a tab
+        // left open across this rule's deploy is running the JS from before
+        // the field existed, and a hard `is list` would refuse that player a
+        // room of ANY category. Present-but-wrong is still rejected.
+        (!('compounds' in request.resource.data) || (
+          request.resource.data.compounds is list &&
+          request.resource.data.compounds.hasOnly(['inorganic', 'organic'])
+        ));
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.
