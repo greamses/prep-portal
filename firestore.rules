@@ -487,12 +487,13 @@ service cloud.firestore {
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
         request.resource.data.timeLimit in [180, 300, 600, 900] &&
-        request.resource.data.puzzleType in ['sudoku', 'slider', 'jigsaw'] &&
+        request.resource.data.puzzleType in ['sudoku', 'slider', 'jigsaw', 'shikaku'] &&
         request.resource.data.difficulty in ['easy', 'medium', 'hard'] &&
         // Each puzzle divides differently: Sudoku's boxes only work at 4/6/9,
-        // Slider is the classic 3/4/5, and Jigsaw is table-sized at 10/15/20
-        // (100–400 pieces). See main.js's GRID_SIZES_BY_TYPE.
-        request.resource.data.gridSize in [3, 4, 5, 6, 9, 10, 15, 20];
+        // Slider is the classic 3/4/5, Jigsaw is table-sized at 10/15/20
+        // (100–400 pieces), and Shikaku cuts rectangles out of 5/7/10. See
+        // main.js's GRID_SIZES_BY_TYPE.
+        request.resource.data.gridSize in [3, 4, 5, 6, 7, 9, 10, 15, 20];
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

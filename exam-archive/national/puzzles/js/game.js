@@ -10,6 +10,10 @@
      - jigsaw: the frame starts empty and the loose pieces sit heaped below
        it. Drag a piece over its home cell (or tap it, then tap the cell)
        and it clicks in and locks; score is a live count of pieces placed.
+     - shikaku: drag a box across the grid (or tap two opposite corners) to
+       claim a rectangle. It sticks if it holds exactly one number and has
+       that many cells; tap a claimed one to take it back. Score is a live
+       count of rectangles standing.
    Either way, a full solve ends the round early, and timing after
    activation is entirely local (startAt/timeLimit) — no further server
    dependency during play.
@@ -17,6 +21,7 @@
 import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
+import { generateShikaku, rectFromCorners, rectContains, validatePlacement } from './shikaku.js';
 import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES } from './mapjig.js';
 
 // The zone colour key, shown in the map's header (where the hint would sit).
@@ -568,19 +573,231 @@ function onMapPointerEnd(e) {
   mapOffsets[d.state] = { x, y };
 }
 
+// ── Shikaku ──────────────────────────────────────────────────────────────
+// Claim rectangles out of a bare numbered grid. A claim sticks only if it
+// obeys the rules — exactly one number inside, exactly that many cells, no
+// overlap with a rectangle already standing — so a wrong drag costs nothing
+// but the drag. Unlike the jigsaw, a claim is NOT permanent: tapping one
+// takes it back, because a Shikaku is solved by trying an arrangement,
+// seeing what it strands, and undoing it.
+let shikakuClues = null;   // [{ r, c, area }] — what the player is given
+let shikakuPlaced = [];    // [{ r, c, w, h, clue }] — rectangles standing now
+let shikakuAnchor = null;  // first corner of a tap-tap claim, or null
+let shikakuDrag = null;    // live drag state, or null
+let shikakuPreview = null; // the single ghost rectangle shown while dragging
+
+// Soft fills, keyed to the clue so a rectangle keeps its colour if you take
+// it back and re-claim it.
+const SHIKAKU_FILLS = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#c9a3e8', '#f0a868', '#8fd0c4', '#e8a0c8'];
+
+const shikakuCells = () => gridEl.querySelectorAll('.shikaku-cell');
+const cellAtIndex = (r, c) => gridEl.querySelector(`.shikaku-cell[data-index="${r * gridSize + c}"]`);
+
+function buildShikakuGrid() {
+  gridEl.classList.add('shikaku-grid');
+  const clueAt = new Map();
+  shikakuClues.forEach((cl, i) => clueAt.set(cl.r * gridSize + cl.c, { ...cl, i }));
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'shikaku-cell';
+    btn.dataset.index = String(i);
+    const clue = clueAt.get(i);
+    if (clue) {
+      btn.classList.add('is-clue');
+      btn.textContent = String(clue.area);
+    }
+    gridEl.appendChild(btn);
+  }
+
+  // One ghost rectangle, reused for every drag — grid-positioned like the
+  // real ones, so it lands exactly where the claim would.
+  shikakuPreview = document.createElement('div');
+  shikakuPreview.className = 'shikaku-preview';
+  shikakuPreview.hidden = true;
+  gridEl.appendChild(shikakuPreview);
+}
+
+function showPreview(rect, state) {
+  shikakuPreview.hidden = false;
+  shikakuPreview.className = `shikaku-preview is-${state}`;
+  shikakuPreview.style.gridArea = `${rect.r + 1} / ${rect.c + 1} / span ${rect.h} / span ${rect.w}`;
+}
+const hidePreview = () => { if (shikakuPreview) shikakuPreview.hidden = true; };
+
+// A claimed rectangle is painted onto its own cells rather than as a floating
+// overlay: the number stays crisp in its cell instead of sitting under a
+// translucent sheet, and the border classes draw the outline around the
+// region exactly the way it would be pencilled on paper.
+function paintShikakuRect(rect, clueIndex, { flash = false } = {}) {
+  const fill = SHIKAKU_FILLS[clueIndex % SHIKAKU_FILLS.length];
+  for (let r = rect.r; r < rect.r + rect.h; r++) {
+    for (let c = rect.c; c < rect.c + rect.w; c++) {
+      const el = cellAtIndex(r, c);
+      if (!el) continue;
+      el.classList.add('is-claimed');
+      el.style.setProperty('--claim-fill', fill);
+      el.classList.toggle('edge-top', r === rect.r);
+      el.classList.toggle('edge-bottom', r === rect.r + rect.h - 1);
+      el.classList.toggle('edge-left', c === rect.c);
+      el.classList.toggle('edge-right', c === rect.c + rect.w - 1);
+      if (flash) {
+        el.classList.add('correct-flash');
+        setTimeout(() => el.classList.remove('correct-flash'), 320);
+      }
+    }
+  }
+}
+
+function unpaintShikakuRect(rect) {
+  for (let r = rect.r; r < rect.r + rect.h; r++) {
+    for (let c = rect.c; c < rect.c + rect.w; c++) {
+      const el = cellAtIndex(r, c);
+      if (!el) continue;
+      el.classList.remove('is-claimed', 'edge-top', 'edge-bottom', 'edge-left', 'edge-right');
+      el.style.removeProperty('--claim-fill');
+    }
+  }
+}
+
+function setShikakuAnchor(cell) {
+  if (shikakuAnchor) {
+    const prev = cellAtIndex(shikakuAnchor.r, shikakuAnchor.c);
+    if (prev) prev.classList.remove('is-anchor');
+  }
+  shikakuAnchor = cell;
+  if (cell) {
+    const el = cellAtIndex(cell.r, cell.c);
+    if (el) el.classList.add('is-anchor');
+  }
+}
+
+function updateShikakuScore() {
+  score = shikakuPlaced.length;
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+}
+
+function shikakuRejected(rect) {
+  showPreview(rect, 'bad');
+  setTimeout(hidePreview, 380);
+}
+
+function claimShikakuRect(rect) {
+  const verdict = validatePlacement(rect, shikakuClues, shikakuPlaced);
+  if (!verdict.ok) { shikakuRejected(rect); return; }
+  shikakuPlaced.push({ ...rect, clue: verdict.clue });
+  paintShikakuRect(rect, verdict.clue, { flash: true });
+  updateShikakuScore();
+  if (score >= totalUnits) endRound(); // every number boxed — the grid is cut
+}
+
+const placedIndexAt = (r, c) => shikakuPlaced.findIndex((p) => rectContains(p, r, c));
+
+function releaseShikakuRect(index) {
+  const [rect] = shikakuPlaced.splice(index, 1);
+  unpaintShikakuRect(rect);
+  updateShikakuScore();
+}
+
+// The cell under a viewport point. The preview is pointer-events:none, so a
+// hit test never comes back holding the ghost instead of the grid.
+function shikakuCellAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const cell = el && el.closest ? el.closest('.shikaku-cell') : null;
+  if (!cell || !gridEl.contains(cell)) return null;
+  const i = parseInt(cell.dataset.index, 10);
+  return { r: Math.floor(i / gridSize), c: i % gridSize };
+}
+
+function onShikakuPointerDown(e) {
+  if (!active || puzzleType !== 'shikaku') return;
+  const cellEl = e.target.closest && e.target.closest('.shikaku-cell');
+  if (!cellEl) return;
+  e.preventDefault();
+  const i = parseInt(cellEl.dataset.index, 10);
+  const start = { r: Math.floor(i / gridSize), c: i % gridSize };
+
+  // Pressing on a rectangle already standing takes it back, so a wrong turn
+  // is one tap to undo rather than a lost round.
+  const standing = placedIndexAt(start.r, start.c);
+  if (standing !== -1) {
+    setShikakuAnchor(null);
+    releaseShikakuRect(standing);
+    return;
+  }
+
+  shikakuDrag = { anchor: start, cur: start, moved: false };
+  showPreview(rectFromCorners(start, start), 'live');
+  try { gridEl.setPointerCapture(e.pointerId); } catch { /* noop */ }
+}
+
+function onShikakuPointerMove(e) {
+  const d = shikakuDrag;
+  if (!d) return;
+  const cell = shikakuCellAt(e.clientX, e.clientY);
+  if (!cell || (cell.r === d.cur.r && cell.c === d.cur.c)) return;
+  d.cur = cell;
+  d.moved = true;
+  showPreview(rectFromCorners(d.anchor, d.cur), 'live');
+}
+
+function onShikakuPointerEnd(e) {
+  const d = shikakuDrag;
+  shikakuDrag = null;
+  if (!d) return;
+  hidePreview();
+  if (e.type === 'pointercancel') { setShikakuAnchor(null); return; }
+
+  if (d.moved) {
+    setShikakuAnchor(null);
+    claimShikakuRect(rectFromCorners(d.anchor, d.cur));
+    return;
+  }
+  shikakuTap(d.anchor);
+}
+
+// The two-tap path, for a corner that's awkward to drag to on a phone: tap
+// one corner, then the other. Also what a keyboard Enter on a cell does.
+function shikakuTap(cell) {
+  if (!shikakuAnchor) { setShikakuAnchor(cell); return; }
+  const rect = rectFromCorners(shikakuAnchor, cell);
+  setShikakuAnchor(null);
+  claimShikakuRect(rect);
+}
+
+// Enter/Space on a focused cell arrives as a click with no pointer behind it
+// (detail 0) — the only route into the puzzle that the pointer handlers above
+// never see, so it does the release-or-tap decision itself.
+function onShikakuKeyActivate(cellEl) {
+  const i = parseInt(cellEl.dataset.index, 10);
+  const cell = { r: Math.floor(i / gridSize), c: i % gridSize };
+  const standing = placedIndexAt(cell.r, cell.c);
+  if (standing !== -1) { setShikakuAnchor(null); releaseShikakuRect(standing); return; }
+  shikakuTap(cell);
+}
+
 // ── Shared input dispatch ─────────────────────────────────────────────────
 function buildGrid() {
   gridEl.innerHTML = '';
   gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture', 'jigsaw-grid');
   gridEl.style.setProperty('--grid-size', gridSize);
-  gridEl.classList.remove('mapjig-grid');
+  gridEl.classList.remove('mapjig-grid', 'shikaku-grid');
   if (puzzleType === 'slider') buildSliderGrid();
   else if (puzzleType === 'jigsaw') { if (mapMode) buildMapGrid(); else buildJigsawGrid(); }
+  else if (puzzleType === 'shikaku') buildShikakuGrid();
   else buildSudokuGrid();
 }
 
 function onGridClick(e) {
   if (!active) return;
+  if (puzzleType === 'shikaku') {
+    // Mouse/touch claims are already resolved by the pointer handlers; only a
+    // keyboard activation (detail 0) still needs serving here.
+    const btn = e.detail === 0 && e.target.closest('.shikaku-cell');
+    if (btn) onShikakuKeyActivate(btn);
+    return;
+  }
   if (puzzleType === 'slider') {
     const btn = e.target.closest('.slider-tile.is-movable');
     if (btn) slideTile(parseInt(btn.dataset.index, 10));
@@ -611,8 +828,9 @@ function onDigitPadClick(e) {
 function onKeydown(e) {
   if (!active) return;
   // Jigsaw pieces are plain <button>s — Tab reaches them and Enter/Space
-  // taps them natively, so it needs no bespoke key handling.
-  if (puzzleType === 'jigsaw') return;
+  // taps them natively, so it needs no bespoke key handling. Shikaku's cells
+  // are buttons too, and Enter/Space on two of them is the tap-tap claim.
+  if (puzzleType === 'jigsaw' || puzzleType === 'shikaku') return;
 
   if (puzzleType === 'slider') {
     // Arrow direction = which way a tile slides (the blank moves opposite).
@@ -682,6 +900,13 @@ gridEl.addEventListener('pointerdown', onMapPointerDown);
 gridEl.addEventListener('pointermove', onMapPointerMove);
 gridEl.addEventListener('pointerup', onMapPointerEnd);
 gridEl.addEventListener('pointercancel', onMapPointerEnd);
+
+// Shikaku is dragged on the grid too — its handlers stand down for every
+// other puzzle, so both sets can share the one element.
+gridEl.addEventListener('pointerdown', onShikakuPointerDown);
+gridEl.addEventListener('pointermove', onShikakuPointerMove);
+gridEl.addEventListener('pointerup', onShikakuPointerEnd);
+gridEl.addEventListener('pointercancel', onShikakuPointerEnd);
 document.addEventListener('fullscreenchange', () => {
   const fs = gridEl.querySelector('.mapjig-fs');
   if (fs) fs.innerHTML = document.fullscreenElement ? FS_COMPRESS : FS_EXPAND;
@@ -739,6 +964,13 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
         buildJigsawHeap(puzzle.heap);
       }
+    } else if (puzzleType === 'shikaku') {
+      const puzzle = generateShikaku(seed, difficulty, gridSize);
+      shikakuClues = puzzle.clues;
+      shikakuPlaced = [];
+      shikakuAnchor = null;
+      shikakuDrag = null;
+      totalUnits = puzzle.clues.length; // one rectangle per number
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -766,6 +998,10 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         hintEl.textContent = 'Rebuild the picture — drag pieces from the pile into the frame.';
         topbarEl.hidden = false;
       }
+    } else if (puzzleType === 'shikaku') {
+      hintEl.classList.remove('puzzle-grid-hint--legend');
+      hintEl.textContent = 'Cut the grid into boxes — one number each, and that many squares.';
+      topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;
     }

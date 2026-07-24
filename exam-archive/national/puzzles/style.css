@@ -554,7 +554,8 @@ body.puzzle-nav-hidden .site-nav { display: none; }
    layout lives here once; the per-cell look is each puzzle's own. */
 .sudoku-grid,
 .slider-grid,
-.jigsaw-grid {
+.jigsaw-grid,
+.shikaku-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-size, 9), 1fr);
   width: 100%;
@@ -592,6 +593,89 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .slider-tile.is-correct { color: var(--accent-success); }
 .sudoku-cell.box-edge-right { border-right: 2px solid var(--ink); }
 .sudoku-cell.box-edge-bottom { border-bottom: 2px solid var(--ink); }
+
+/* ── Shikaku look — a pencilled grid you box up. A claimed rectangle is
+   painted onto its own cells (not floated over them) so the clue number
+   stays crisp, and the ink edges are drawn only on the region's outside,
+   which is exactly how it reads on paper. ─────────────────────────────── */
+.shikaku-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(0.7rem, 3vw, 1.15rem);
+  color: var(--text-secondary);
+  border: none;
+  padding: 0;
+  cursor: crosshair;
+  /* The drag is ours — let the browser not decide it was a scroll or a
+     text selection halfway through drawing a box. */
+  touch-action: none;
+  user-select: none;
+}
+.shikaku-cell.is-clue {
+  color: var(--ink);
+  font-size: clamp(0.85rem, 3.6vw, 1.35rem);
+}
+.shikaku-cell.is-anchor {
+  background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
+  box-shadow: inset 0 0 0 2px var(--accent-secondary);
+}
+.shikaku-cell.is-claimed {
+  background: color-mix(in srgb, var(--claim-fill, var(--accent-primary)) 42%, var(--surface-primary));
+  cursor: pointer;
+}
+.shikaku-cell.is-claimed.edge-top { box-shadow: inset 0 2px 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-bottom { box-shadow: inset 0 -2px 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-left { box-shadow: inset 2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-right { box-shadow: inset -2px 0 0 0 var(--ink); }
+/* A cell can sit on two, three or four edges at once (a 1×1 is on all
+   four), and box-shadow doesn't merge across rules — so every combination
+   that can occur is spelled out. */
+.shikaku-cell.is-claimed.edge-top.edge-bottom { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-left.edge-right { box-shadow: inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-left { box-shadow: inset 0 2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-bottom.edge-left { box-shadow: inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-bottom.edge-right { box-shadow: inset 0 -2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-left.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-bottom.edge-left.edge-right { box-shadow: inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-left { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-right { box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset -2px 0 0 0 var(--ink); }
+.shikaku-cell.is-claimed.edge-top.edge-bottom.edge-left.edge-right {
+  box-shadow: inset 0 2px 0 0 var(--ink), inset 0 -2px 0 0 var(--ink), inset 2px 0 0 0 var(--ink), inset -2px 0 0 0 var(--ink);
+}
+
+/* The ghost box that follows the drag. Grid-positioned like a real claim, so
+   what you see is exactly where it would land.
+
+   ABSOLUTE, and not negotiably: the cells are auto-placed, and an in-flow
+   grid item with an explicit grid-area is placed FIRST — so an in-flow
+   preview shoved every cell along by its own size as it grew, and the drag
+   then hit-tested against cells that had moved out from under the cursor.
+   Out of flow, it still snaps to the same grid lines but moves nothing. */
+.shikaku-grid { position: relative; }
+.shikaku-preview {
+  position: absolute;
+  grid-area: 1 / 1 / span 1 / span 1;
+  pointer-events: none;
+  z-index: 4;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+  box-shadow: inset 0 0 0 2.5px var(--accent-secondary);
+}
+.shikaku-preview.is-bad {
+  background: color-mix(in srgb, var(--accent-danger, #f07a7a) 24%, transparent);
+  box-shadow: inset 0 0 0 2.5px var(--accent-danger, #f07a7a);
+  animation: shikaku-refuse 0.36s ease;
+}
+@keyframes shikaku-refuse {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
 
 /* ── Slider look — loose physical tiles in a tray (same register as the
    standalone fraction slider): each tile is its own bordered, shadowed
@@ -944,6 +1028,15 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   0% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--accent-success) 65%, transparent); }
   70% { box-shadow: inset 0 0 0 6px transparent; }
   100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+
+/* Shikaku claims flash WITHOUT touching box-shadow — that property is
+   already carrying the rectangle's ink edges, and animating it would rub
+   them out for the length of the animation. */
+.shikaku-cell.correct-flash { animation: shikaku-claim 0.34s ease; }
+@keyframes shikaku-claim {
+  0% { filter: brightness(1.45); transform: scale(0.93); }
+  100% { filter: none; transform: scale(1); }
 }
 
 /* ── DIGIT PAD — the primary input on mobile (no keyboard); physical
