@@ -14,6 +14,10 @@
        claim a rectangle. It sticks if it holds exactly one number and has
        that many cells; tap a claimed one to take it back. Score is a live
        count of rectangles standing.
+     - tangram: seven loose pieces and a silhouette. Drag a piece onto the
+       shape; a press that doesn't travel turns it a quarter-turn instead. A
+       piece locks when it is near enough to a slot of its own KIND facing
+       the same way. Score is a live count of pieces placed.
    Either way, a full solve ends the round early, and timing after
    activation is entirely local (startAt/timeLimit) — no further server
    dependency during play.
@@ -22,6 +26,10 @@ import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
 import { generateShikaku, rectFromCorners, rectContains, validatePlacement } from './shikaku.js';
+import {
+  PIECES as TAN_PIECES, BOARD as TAN_BOARD, SNAP_TOLERANCE as TAN_SNAP,
+  layoutRound as tangramLayout, slotFor as tangramSlotFor, placementCentre, pointsAttr,
+} from './tangram.js';
 import { generateMapJigsaw, mapFrameSvg, statePieceFullSvg, SNAP_TOLERANCE, MAP_W, ZONE_FILL, ZONES } from './mapjig.js';
 
 // The zone colour key, shown in the map's header (where the hint would sit).
@@ -850,20 +858,136 @@ function onShikakuKeyActivate(cellEl) {
   shikakuTap(cell);
 }
 
+// ── Tangram ──────────────────────────────────────────────────────────────
+// Seven pieces, one silhouette. Drag a piece onto the shape; a press that
+// never travels turns it a quarter-turn instead. A piece locks when it is
+// near enough to a slot of its own KIND, facing the same way — so the two
+// large triangles are interchangeable, as they are in the box.
+let tanSlots = null;   // the solution: where each piece belongs
+let tanPieces = null;  // the loose pieces: where each one currently is
+let tanTol = 1.2;      // how near "near enough" is, per difficulty
+let tanDrag = null;
+let tanPlaced = 0;
+// Easy draws the silhouette's internal seams. Carried as its own flag because
+// `difficulty` is a startRound PARAMETER — a module-level variable of that
+// name is shadowed inside startRound and would never be set.
+let tanGuided = false;
+const tanSvg = () => gridEl.querySelector('.tangram-svg');
+
+// Board units per pixel, for turning a pointer movement into a piece
+// movement. Read live: the board resizes with the viewport.
+const tanScale = () => (tanSvg()?.getBoundingClientRect().width || 1) / TAN_BOARD;
+const tanTransform = (p) => `translate(${p.x} ${p.y}) rotate(${p.deg})`;
+const tanPieceEl = (id) => gridEl.querySelector(`.tangram-piece[data-id="${id}"]`);
+
+function buildTangramGrid(guided) {
+  gridEl.classList.add('tangram-grid');
+  const shape = tanSlots
+    .map((s) => `<polygon points="${pointsAttr(TAN_PIECES[s.piece])}" transform="${tanTransform(s)}"/>`)
+    .join('');
+  // The silhouette is the solution's own pieces, drawn as one flat fill with
+  // no internal edges — which is exactly what a tangram silhouette IS. On
+  // Easy the internal edges come back, and the puzzle becomes a tracing.
+  const pieces = tanPieces
+    .map((p) => `<g class="tangram-piece" data-id="${p.id}" data-kind="${p.piece}" transform="${tanTransform(p)}">
+        <polygon points="${pointsAttr(TAN_PIECES[p.piece])}"/>
+      </g>`)
+    .join('');
+  gridEl.innerHTML = `<svg class="tangram-svg" viewBox="0 0 ${TAN_BOARD} ${TAN_BOARD}" aria-label="Tangram board">
+      <g class="tangram-figure${guided ? ' is-guided' : ''}">${shape}</g>
+      <g class="tangram-loose">${pieces}</g>
+    </svg>`;
+}
+
+function tanUpdateScore() {
+  score = tanPlaced;
+  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  if (score >= totalUnits) endRound();
+}
+
+function onTangramPointerDown(e) {
+  if (!active || puzzleType !== 'tangram') return;
+  const el = e.target.closest && e.target.closest('.tangram-piece');
+  if (!el || el.classList.contains('is-placed')) return;
+  e.preventDefault();
+  const id = parseInt(el.dataset.id, 10);
+  const piece = tanPieces.find((p) => p.id === id);
+  tanDrag = { el, piece, sx: e.clientX, sy: e.clientY, ox: piece.x, oy: piece.y, moved: false };
+  el.classList.add('is-dragging');
+  el.parentNode.appendChild(el); // a piece being moved belongs on top of the pile
+  try { el.setPointerCapture(e.pointerId); } catch { /* noop */ }
+}
+
+function onTangramPointerMove(e) {
+  const d = tanDrag;
+  if (!d) return;
+  const dx = e.clientX - d.sx;
+  const dy = e.clientY - d.sy;
+  if (!d.moved && Math.hypot(dx, dy) > 4) d.moved = true;
+  if (!d.moved) return;
+  const s = tanScale();
+  d.piece.x = d.ox + dx / s;
+  d.piece.y = d.oy + dy / s;
+  d.el.setAttribute('transform', tanTransform(d.piece));
+}
+
+function onTangramPointerEnd(e) {
+  const d = tanDrag;
+  tanDrag = null;
+  if (!d) return;
+  d.el.classList.remove('is-dragging');
+
+  if (!d.moved) {
+    // A tap turns the piece a quarter-turn. Quarter, not eighth: every
+    // figure is built from quarter-turns, so 45-degree steps would only add
+    // four orientations that can never be right.
+    //
+    // Turned about its CENTRE. The transform rotates about the piece's local
+    // origin — a corner — so turning one on the spot flung it a piece-width
+    // across the board, and a piece near an edge could swing clean off it.
+    const before = placementCentre(d.piece);
+    d.piece.deg = (d.piece.deg + 90) % 360;
+    const after = placementCentre(d.piece);
+    d.piece.x += before[0] - after[0];
+    d.piece.y += before[1] - after[1];
+    d.el.setAttribute('transform', tanTransform(d.piece));
+    return;
+  }
+  if (e.type === 'pointercancel') return;
+
+  const slotIndex = tangramSlotFor(d.piece, tanSlots, tanTol);
+  if (slotIndex === -1) return; // left wherever it was dropped — nothing is punished
+
+  const slot = tanSlots[slotIndex];
+  slot.filled = true;
+  d.piece.placed = true;
+  d.piece.x = slot.x;
+  d.piece.y = slot.y;
+  d.piece.deg = slot.deg;
+  d.el.setAttribute('transform', tanTransform(slot));
+  d.el.classList.add('is-placed');
+  d.el.classList.add('correct-flash');
+  setTimeout(() => d.el.classList.remove('correct-flash'), 380);
+  tanPlaced += 1;
+  tanUpdateScore();
+}
+
 // ── Shared input dispatch ─────────────────────────────────────────────────
 function buildGrid() {
   gridEl.innerHTML = '';
   gridEl.classList.remove('sudoku-grid', 'slider-grid', 'slider-grid--fractions', 'slider-grid--picture', 'jigsaw-grid');
   gridEl.style.setProperty('--grid-size', gridSize);
-  gridEl.classList.remove('mapjig-grid', 'shikaku-grid');
+  gridEl.classList.remove('mapjig-grid', 'shikaku-grid', 'tangram-grid');
   if (puzzleType === 'slider') buildSliderGrid();
   else if (puzzleType === 'jigsaw') { if (mapMode) buildMapGrid(); else buildJigsawGrid(); }
   else if (puzzleType === 'shikaku') buildShikakuGrid();
+  else if (puzzleType === 'tangram') buildTangramGrid(tanGuided);
   else buildSudokuGrid();
 }
 
 function onGridClick(e) {
   if (!active) return;
+  if (puzzleType === 'tangram') return; // pieces are dragged, not clicked
   if (puzzleType === 'shikaku') {
     // Mouse/touch claims are already resolved by the pointer handlers; only a
     // keyboard activation (detail 0) still needs serving here.
@@ -903,7 +1027,7 @@ function onKeydown(e) {
   // Jigsaw pieces are plain <button>s — Tab reaches them and Enter/Space
   // taps them natively, so it needs no bespoke key handling. Shikaku's cells
   // are buttons too, and Enter/Space on two of them is the tap-tap claim.
-  if (puzzleType === 'jigsaw' || puzzleType === 'shikaku') return;
+  if (puzzleType === 'jigsaw' || puzzleType === 'shikaku' || puzzleType === 'tangram') return;
 
   if (puzzleType === 'slider') {
     // Arrow direction = which way a tile slides (the blank moves opposite).
@@ -982,6 +1106,12 @@ gridEl.addEventListener('pointerdown', onShikakuPointerDown);
 gridEl.addEventListener('pointermove', onShikakuPointerMove);
 gridEl.addEventListener('pointerup', onShikakuPointerEnd);
 gridEl.addEventListener('pointercancel', onShikakuPointerEnd);
+
+// Tangram pieces are dragged on the same board.
+gridEl.addEventListener('pointerdown', onTangramPointerDown);
+gridEl.addEventListener('pointermove', onTangramPointerMove);
+gridEl.addEventListener('pointerup', onTangramPointerEnd);
+gridEl.addEventListener('pointercancel', onTangramPointerEnd);
 document.addEventListener('fullscreenchange', () => {
   const fs = gridEl.querySelector('.mapjig-fs');
   if (fs) fs.innerHTML = document.fullscreenElement ? FS_COMPRESS : FS_EXPAND;
@@ -1039,6 +1169,17 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         pieceFaces = pieceFacesSvg(seed, gridSize, artUri);
         buildJigsawHeap(puzzle.heap);
       }
+    } else if (puzzleType === 'tangram') {
+      // `tiles` rides the room doc for this puzzle too — here it names the
+      // figure (square / triangle / rectangle / parallelogram).
+      const round = tangramLayout(seed, tiles);
+      tanSlots = round.slots.map((s) => ({ ...s, filled: false }));
+      tanPieces = round.pieces;
+      tanTol = TAN_SNAP[difficulty] ?? TAN_SNAP.medium;
+      tanGuided = difficulty === 'easy';
+      tanPlaced = 0;
+      tanDrag = null;
+      totalUnits = tanSlots.length; // all seven pieces
     } else if (puzzleType === 'shikaku') {
       const puzzle = generateShikaku(seed, difficulty, gridSize);
       shikakuClues = puzzle.clues;
@@ -1078,6 +1219,10 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     } else if (puzzleType === 'shikaku') {
       hintEl.classList.remove('puzzle-grid-hint--legend');
       hintEl.textContent = 'Cut the grid into boxes — one number each, and that many squares.';
+      topbarEl.hidden = false;
+    } else if (puzzleType === 'tangram') {
+      hintEl.classList.remove('puzzle-grid-hint--legend');
+      hintEl.textContent = 'Fill the shape with all seven pieces — drag to move, tap to turn.';
       topbarEl.hidden = false;
     } else {
       topbarEl.hidden = true;

@@ -19,6 +19,7 @@ import {
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
+import { FIGURES, FIGURE_KEYS } from './tangram.js';
 
 const $ = (id) => document.getElementById(id);
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
@@ -44,6 +45,9 @@ const GRID_SIZES_BY_TYPE = {
   slider: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }],
   jigsaw: [{ value: 10, label: '10×10', default: true }, { value: 15, label: '15×15' }, { value: 20, label: '20×20' }],
   shikaku: [{ value: 5, label: '5×5' }, { value: 7, label: '7×7', default: true }, { value: 10, label: '10×10' }],
+  // Tangram has no grid at all — always the same seven pieces on the same
+  // board. The single value exists only because every room doc carries one.
+  tangram: [{ value: 7, label: 'Seven pieces', default: true }],
 };
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
@@ -112,7 +116,7 @@ let timeLimit = mem.get('timeLimit', 300, [180, 300, 600, 900]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw', 'shikaku']);
+let puzzleType = mem.get('puzzleType', 'sudoku', ['sudoku', 'slider', 'jigsaw', 'shikaku', 'tangram']);
 let gridSize = mem.get('gridSize', defaultGridFor(puzzleType), GRID_SIZES_BY_TYPE[puzzleType].map((o) => o.value));
 let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture']); // slider only — what the tiles wear
 // jigsaw only — a photo, or the Map of Nigeria (with its state outlines shown
@@ -120,6 +124,9 @@ let tileSet = mem.get('tileSet', 'picture', ['numbers', 'fractions', 'picture'])
 let jigsawContent = mem.get('jigsawContent', 'photo', ['photo', 'nigeria', 'nigeria-blank']);
 const isNigeriaJig = () => jigsawContent === 'nigeria' || jigsawContent === 'nigeria-blank';
 let difficulty = mem.get('difficulty', 'easy', ['easy', 'medium', 'hard']);
+// tangram only — which silhouette to fill. Rides the room doc via `tiles`,
+// the same way the Map-of-Nigeria jigsaw carries its variant.
+let tangramFigure = mem.get('tangramFigure', 'square', FIGURE_KEYS);
 
 // Picture rounds (Jigsaw, Slider's Picture tiles) can use the player's own
 // photo instead of the seeded scene. The photo is downscaled to a square
@@ -144,7 +151,8 @@ const contentCfg = () => ({
   puzzleType, difficulty, gridSize,
   tiles: puzzleType === 'slider' ? tileSet
     : puzzleType === 'jigsaw' ? (isNigeriaJig() ? jigsawContent : 'photo')
-      : 'numbers',
+      : puzzleType === 'tangram' ? tangramFigure
+        : 'numbers',
 });
 
 function getCurrentUser() {
@@ -202,6 +210,7 @@ topic.addSlide('type', 'Puzzle', () => {});
 topic.addSlide('tiles', 'Tiles', () => {});
 topic.addSlide('photo', 'Picture', () => {});
 topic.addSlide('state-maps', 'State maps', () => {}); // Map-of-Nigeria jigsaw only
+topic.addSlide('figure', 'Shape', () => {}); // tangram only
 topic.addSlide('grid-size', 'Grid Size', () => {});
 topic.addSlide('difficulty', 'Difficulty', () => {});
 
@@ -220,6 +229,24 @@ function renderStateMapsPick() {
       jigsawContent = v;
       mem.save({ jigsawContent });
       topic.goTo('difficulty'); // no grid size — always the 37 states
+    },
+  });
+}
+
+// Tangram only — which silhouette to build. Every figure is a verified
+// seven-piece dissection (see js/tangram.js), so any of them is solvable.
+function renderFigurePick() {
+  renderChoiceStep(topic, 'figure', {
+    title: 'Which shape?',
+    name: 'puzzle-figure',
+    colorOffset: 3,
+    options: FIGURES.map((f) => ({
+      value: f.key, label: f.label, note: f.hint, checked: f.key === tangramFigure,
+    })),
+    onPick: (v) => {
+      tangramFigure = v;
+      mem.save({ tangramFigure });
+      topic.goTo('difficulty'); // no grid size — the board never changes
     },
   });
 }
@@ -312,6 +339,7 @@ renderChoiceStep(topic, 'type', {
     { value: 'slider', label: 'Slider', checked: puzzleType === 'slider' },
     { value: 'jigsaw', label: 'Jigsaw', checked: puzzleType === 'jigsaw' },
     { value: 'shikaku', label: 'Shikaku', checked: puzzleType === 'shikaku' },
+    { value: 'tangram', label: 'Tangram', checked: puzzleType === 'tangram' },
   ],
   onPick: (v) => {
     if (v !== puzzleType) gridSize = defaultGridFor(v); // a Sudoku 9×9 is not a valid Slider size
@@ -319,6 +347,7 @@ renderChoiceStep(topic, 'type', {
     mem.save({ puzzleType, gridSize });
     if (v === 'slider') { renderTilesPick(); topic.goTo('tiles'); return; }
     if (v === 'jigsaw') { renderPhotoPick(); topic.goTo('photo'); return; }
+    if (v === 'tangram') { renderFigurePick(); topic.goTo('figure'); return; }
     renderGridSizePick();
     topic.goTo('grid-size');
   },
@@ -326,6 +355,7 @@ renderChoiceStep(topic, 'type', {
 
 renderTilesPick();
 renderPhotoPick();
+renderFigurePick();
 renderStateMapsPick();
 renderGridSizePick();
 
@@ -448,6 +478,8 @@ const flow = createSectionFlow([
       : [
         { label: puzzleType[0].toUpperCase() + puzzleType.slice(1) },
         ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
+        ...(puzzleType === 'tangram'
+          ? [{ label: (FIGURES.find((f) => f.key === tangramFigure) || FIGURES[0]).label }] : []),
         ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Surprise' }] : []),
         { label: `${gridSize}×${gridSize}` },
         { label: difficulty[0].toUpperCase() + difficulty.slice(1) },

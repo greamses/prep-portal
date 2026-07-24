@@ -487,7 +487,7 @@ service cloud.firestore {
         request.resource.data.playerCount == 1 &&
         request.resource.data.size in [2, 5, 10] &&
         request.resource.data.timeLimit in [180, 300, 600, 900] &&
-        request.resource.data.puzzleType in ['sudoku', 'slider', 'jigsaw', 'shikaku'] &&
+        request.resource.data.puzzleType in ['sudoku', 'slider', 'jigsaw', 'shikaku', 'tangram'] &&
         request.resource.data.difficulty in ['easy', 'medium', 'hard'] &&
         // Each puzzle divides differently: Sudoku's boxes only work at 4/6/9,
         // Slider is the classic 3/4/5, Jigsaw is table-sized at 10/15/20
@@ -495,8 +495,9 @@ service cloud.firestore {
         // main.js's GRID_SIZES_BY_TYPE.
         request.resource.data.gridSize in [3, 4, 5, 6, 7, 9, 10, 15, 20] &&
         // What the room is playing WITH: Slider's tile set (numbers /
-        // fractions / picture), or what the Jigsaw is a jigsaw OF (a photo,
-        // or the Map of Nigeria with its state outlines shown or hidden).
+        // fractions / picture), what the Jigsaw is a jigsaw OF (a photo, or
+        // the Map of Nigeria with its state outlines shown or hidden), or
+        // which silhouette the Tangram is filling.
         // Sudoku and Shikaku always send 'numbers'. Deliberately not tied to
         // puzzleType — a mismatch is harmless (each puzzle reads the field
         // only if it means something to it) and cross-checking it here would
@@ -507,7 +508,10 @@ service cloud.firestore {
         // game.js already reads a missing one as 'numbers'. Present-but-junk
         // is still refused.
         (!('tiles' in request.resource.data) ||
-          request.resource.data.tiles in ['numbers', 'fractions', 'picture', 'photo', 'nigeria', 'nigeria-blank']);
+          request.resource.data.tiles in [
+            'numbers', 'fractions', 'picture', 'photo', 'nigeria', 'nigeria-blank',
+            'square', 'triangle', 'rectangle', 'parallelogram'
+          ]);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.
