@@ -64,7 +64,12 @@ const VOCAB_SUBJECTS = [
 ];
 const PAGES = [
   { name: 'geometry' },
-  { name: 'drills' },
+  // The Chemistry category's questions come from the shared compound bank, so
+  // editing a formula (or an atomic mass) must bust the drills page too.
+  {
+    name: 'drills',
+    extra: ['/data/chem/rmm.js', '/data/chem/masses.js', '/data/chem/iupac.js'],
+  },
   // The map jigsaw draws its states from the shared Nigeria map data, so a
   // stale copy of it against fresh page code must bust the puzzles page too.
   { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js'] },

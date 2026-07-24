@@ -7,6 +7,7 @@
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import { UNIT_NUMBERS } from './rng.js';
+import { COMPOUND_SETS, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
@@ -35,21 +36,25 @@ const OPERATION_LABELS = {
   cube: 'x³ Cube', cuberoot: '∛x Cube Root',
   power4: 'x⁴ Power 4', fourthroot: '⁴√x Fourth Root',
   fracAdd: '+ Addition', fracSub: '− Subtraction', fracMul: '× Multiplication', fracDiv: '÷ Division',
+  rmm: 'Σ Molecular Mass',
 };
 
 // Category filters which operations are on offer. Basic keeps the default
 // (multiply + divide ticked, addition opt-in — mirrors the old flat list's
 // defaults); Exponent and Fractions start fully opt-in, same as square/sqrt
-// used to be.
+// used to be. Chemistry has exactly one thing to do — find the relative
+// molecular mass — so it is ticked for the player and its step is skipped.
 const CATEGORY_OPERATIONS = {
   basic: ['add', 'multiply', 'divide'],
   exponent: ['square', 'cube', 'power4', 'sqrt', 'cuberoot', 'fourthroot'],
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
+  chemistry: ['rmm'],
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
   exponent: [],
   fractions: [],
+  chemistry: ['rmm'],
 };
 
 // Fractions gets a second selector dimension — which shape of fraction
@@ -79,6 +84,11 @@ const RANGES = [
 // 90–100 would generate ⁴⁷⁄₉₃ + ⁸⁸⁄₉₇, which is not a fraction drill. Small
 // denominators are the whole point, so Fractions gets this instead.
 const DENOMINATORS = Array.from({ length: 11 }, (_, i) => i + 2); // 2..12
+
+// Chemistry has no number pool at all — a question is a compound drawn from
+// the shared bank (/data/chem/rmm.js, the same compounds Vocab names), so the
+// only thing to pick is which sets of it are in play.
+const COMPOUND_SET_LABELS = Object.fromEntries(COMPOUND_SETS.map((s) => [s.key, s.label]));
 
 // Dark ink fill (not accent-primary) — the winner's note is already gold,
 // so a same-hue trophy would nearly vanish against it.
@@ -144,7 +154,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // The multi-pick sets restore from saved arrays, dropping anything that's no
 // longer a valid member of its list.
@@ -156,12 +166,18 @@ const operations = new Set(
 const fractionTypes = new Set(mem.get('fractionTypes', [], Array.isArray).filter((t) => FRACTION_TYPES.includes(t))); // Fractions only — opt-in
 const savedDenoms = mem.get('denominators', DENOMINATORS, Array.isArray).filter((n) => DENOMINATORS.includes(n));
 const denominators = new Set(savedDenoms.length ? savedDenoms : DENOMINATORS); // Fractions only — tick-all default
+const savedSets = mem.get('compounds', ALL_COMPOUND_SETS, Array.isArray).filter((k) => ALL_COMPOUND_SETS.includes(k));
+const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // Chemistry only — tick-all default
+// Chemistry's single operation is never offered as a step, so a remembered
+// setup that somehow lost it would leave the player unable to start.
+if (categoryValue === 'chemistry') operations.add('rmm');
 
 // One save covers this section's whole branch — called wherever it exits.
 const saveContent = () => mem.save({
   category: categoryValue, range,
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
+  compounds: [...compounds],
 });
 
 function getCurrentUser() {
@@ -183,8 +199,11 @@ function rangesFor() { return RANGES; }
 function isNumbersMode() { return categoryValue === 'basic' && range === '1-9'; }
 
 // The actual pool of "base" numbers handed to questionAt(). For Fractions
-// that pool IS the denominator set — there is no range to expand.
+// that pool IS the denominator set — there is no range to expand. Chemistry
+// draws from the compound bank instead and never touches this pool, but the
+// room doc's `tables` still has to be a non-empty list of numbers.
 function getTablesPool() {
+  if (categoryValue === 'chemistry') return [1];
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
   const list = rangesFor(categoryValue);
@@ -197,7 +216,9 @@ function updateStartDisabled() {
   const isFractions = categoryValue === 'fractions';
   const needsFractionType = isFractions && fractionTypes.size === 0;
   const needsDenominators = isFractions && denominators.size === 0;
-  startBtn.disabled = operations.size === 0 || needsNumbers || needsFractionType || needsDenominators;
+  const needsCompounds = categoryValue === 'chemistry' && compounds.size === 0;
+  startBtn.disabled = operations.size === 0
+    || needsNumbers || needsFractionType || needsDenominators || needsCompounds;
 }
 
 function updateStartLabel() {
@@ -250,9 +271,12 @@ player.start('name');
      Basic     → Operations → Number Range (1–100) → [1–9 only: pick numbers]
      Exponent  → Operations → Number Range (1–100)
      Fractions → Fraction Type → Operations → Denominators (2–12)
+     Chemistry → Compounds (inorganic / organic)
 
    Fractions has NO number range on purpose: in rng.js that same pool supplies
    the denominators, so "90–100" would mean fractions over ninety-somethings.
+   Chemistry has neither range nor operations step: there is one thing to work
+   out (the relative molecular mass) and the numbers are the compound's own.
    Switching category resets the whole branch, so nothing stale carries over. */
 const topic = createCarousel(topicMount);
 topic.addSlide('category', 'Category', () => {});
@@ -261,6 +285,7 @@ topic.addSlide('operations', 'Operations', () => {});
 topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
+topic.addSlide('compounds', 'Compounds', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
@@ -316,6 +341,25 @@ function renderDenominatorsPick() {
   });
 }
 
+function renderCompoundsPick() {
+  renderMultiStep(topic, 'compounds', {
+    title: 'Which compounds?',
+    subtitle: 'You are given the atomic masses under each formula — the drill is adding them up.',
+    colorOffset: 9,
+    options: COMPOUND_SETS.map((s) => ({
+      value: s.key,
+      label: `${s.label} · ${s.compounds.length}`,
+    })),
+    isChecked: (v) => compounds.has(v),
+    onToggle: (v, checked) => {
+      if (checked) compounds.add(v); else compounds.delete(v);
+      updateStartDisabled();
+    },
+    nextLabel: 'Next',
+    onNext: () => { saveContent(); flow.next(); }, // last step of this section
+  });
+}
+
 function renderRangePick() {
   renderChoiceStep(topic, 'range', {
     title: 'Which number range?',
@@ -357,6 +401,7 @@ renderChoiceStep(topic, 'category', {
     { value: 'basic', label: 'Basic', checked: categoryValue === 'basic' },
     { value: 'exponent', label: 'Exponent', checked: categoryValue === 'exponent' },
     { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
+    { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
   ],
   onPick: (v) => {
     if (v !== categoryValue) {
@@ -371,10 +416,13 @@ renderChoiceStep(topic, 'category', {
       range = 'all';
       denominators.clear();
       DENOMINATORS.forEach((n) => denominators.add(n));
+      compounds.clear();
+      ALL_COMPOUND_SETS.forEach((k) => compounds.add(k));
       updateStartDisabled();
     }
 
-    if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
+    if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
+    else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
   },
 });
@@ -484,6 +532,14 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = categoryValue[0].toUpperCase() + categoryValue.slice(1);
+      // Chemistry's one operation IS the category — "Chemistry · Molecular
+      // Mass · Inorganic" says it without repeating itself.
+      if (categoryValue === 'chemistry') {
+        return [
+          { label: cat }, { label: opName('rmm') },
+          ...[...compounds].map((k) => ({ label: COMPOUND_SET_LABELS[k] })),
+        ];
+      }
       const out = [{ label: cat }, ...[...operations].map((o) => ({ label: opName(o) }))];
       if (categoryValue === 'fractions') out.push({ label: `${denominators.size} denominators` });
       else if (isNumbersMode()) out.push({ label: `${tables.size} numbers` });
@@ -742,6 +798,7 @@ async function playRoundAndShowResults(room, myName) {
     operations: room.operations,
     tables: room.tables,
     fractionTypes: room.fractionTypes,
+    compounds: room.compounds,
     roster,
   });
 
@@ -760,6 +817,9 @@ async function playRoundAndShowResults(room, myName) {
       // deadlineFor() in /utils/games/leaderboard.js.
       startAt: room.startAt,
       botsNeeded: room.botsNeeded,
+      // A bot's pace depends on what the room is drilling — see js/bots.js.
+      // Read off the ROOM, so a joiner scores the host's bots the same way.
+      operations: room.operations,
       // The board goes up straight away and fills in as the room finishes,
       // instead of holding everyone behind the awaiting overlay.
       onUpdate: (rows) => {
@@ -812,13 +872,13 @@ function makeOnWaiting(waitingStatusText) {
   };
 }
 
-async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
+async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName }) {
   const size = roomSize;
   showLobby(size);
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -832,14 +892,14 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   await playRoundAndShowResults(room, myName);
 }
 
-async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
+async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName }) {
   const size = roomSize;
   showLobby(size);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -899,13 +959,13 @@ async function runMultiplayerJoin({ myName }) {
   await joinWithCode(codeFromInput(), roomSize, myName);
 }
 
-async function runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName }) {
+async function runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName }) {
   showLobby(2);
   lobbyStatus.textContent = 'Creating your room…';
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {
@@ -945,17 +1005,18 @@ async function runDrill() {
   const operationsList = [...operations];
   const tablesList = getTablesPool(); // for Fractions this IS the denominator set
   const fractionTypesList = categoryValue === 'fractions' ? [...fractionTypes] : [];
+  const compoundsList = categoryValue === 'chemistry' ? [...compounds] : [];
   const myName = (nameInput.value || '').trim() || auth.currentUser.displayName || 'Player';
 
   if (mode === 'versus') {
     if (roomAction === 'join') await runVersusJoin({ timeLimit, myName });
-    else await runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
+    else await runVersusCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
     return;
   }
 
   if (roomAction === 'join') await runMultiplayerJoin({ timeLimit, myName });
-  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
-  else await runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, myName });
+  else if (roomAction === 'create') await runMultiplayerCreate({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
+  else await runMultiplayer({ timeLimit, operationsList, tablesList, fractionTypesList, compoundsList, myName });
 }
 
 startBtn.addEventListener('click', runDrill);

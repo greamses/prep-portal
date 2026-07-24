@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Drills — Timed Multiplayer Times Tables | PrepPortal</title>
+    <title>Drills — Timed Multiplayer Times Tables &amp; Molecular Mass | PrepPortal</title>
     <meta
       name="description"
-      content="Race up to 10 players (or go 1v1) in timed multiplication and division drills — type your answer, no Enter needed. Bots fill any empty seats."
+      content="Race up to 10 players (or go 1v1) in timed drills — times tables, powers, fractions, or the relative molecular mass of chemistry compounds. Type your answer, no Enter needed. Bots fill any empty seats."
     />
 
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
@@ -31,22 +31,25 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=d3bb35f4",
-          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=d3bb35f4",
-          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=d3bb35f4",
-          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=d3bb35f4",
-          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=d3bb35f4",
-          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=d3bb35f4",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=d3bb35f4",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=d3bb35f4",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=d3bb35f4",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=d3bb35f4",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=d3bb35f4",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=d3bb35f4",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=d3bb35f4",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=d3bb35f4",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=d3bb35f4",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=d3bb35f4"
+          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=d66f6b11",
+          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=d66f6b11",
+          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=d66f6b11",
+          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=d66f6b11",
+          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=d66f6b11",
+          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=d66f6b11",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=d66f6b11",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=d66f6b11",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=d66f6b11",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=d66f6b11",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=d66f6b11",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=d66f6b11",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=d66f6b11",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=d66f6b11",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=d66f6b11",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=d66f6b11",
+          "/data/chem/rmm.js": "/data/chem/rmm.js?v=d66f6b11",
+          "/data/chem/masses.js": "/data/chem/masses.js?v=d66f6b11",
+          "/data/chem/iupac.js": "/data/chem/iupac.js?v=d66f6b11"
         }
       }
     </script>
@@ -174,6 +177,7 @@
             <div class="drill-blob" aria-hidden="true"></div>
             <p class="drill-countdown" id="drill-countdown" hidden></p>
             <p class="drill-text" id="drill-question-text"></p>
+            <p class="drill-hint" id="drill-question-hint" hidden></p>
             <div class="drill-answer-stage" id="drill-answer-stage">
               <span id="drill-typed"></span><span class="drill-cursor" aria-hidden="true"></span>
             </div>
@@ -220,7 +224,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=d3bb35f4"></script>
+    <script type="module" src="./js/main.js?v=d66f6b11"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

@@ -7,18 +7,20 @@
    copied into all four, which is how one bug came to need four identical fixes.
 
    What is left here is the only part that is really this game's:
-   Drills: which operations, which tables, and (for Fractions) which kinds.
+   Drills: which operations, which tables, and (for Fractions/Chemistry)
+   which kinds of question and which compounds.
 ═══════════════════════════════════════════════════════ */
 import { createRoomClient } from '/utils/games/seeded-room.js';
 
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'drillRooms',
   pointers: 'drillRoomPointers',
-  contentKeys: ['operations', 'tables', 'fractionTypes'],
+  contentKeys: ['operations', 'tables', 'fractionTypes', 'compounds'],
   // Two players share a room only if they would be playing the same thing.
   bucketOf: (c) => [
     [...c.operations].sort().join(','),
     [...c.tables].sort((a, b) => a - b).join(','),
     [...(c.fractionTypes || [])].sort().join(','),
+    [...(c.compounds || [])].sort().join(','),
   ].join('_'),
 });

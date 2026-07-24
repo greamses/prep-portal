@@ -6,8 +6,10 @@
    the same primitives.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS, BOT_NS } from '/utils/games/rng.js';
+import { compoundsFor, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
 
 export { mulberry32, hashSeed, BOT_NS };
+export { ALL_COMPOUND_SETS };
 
 // The seeded-room primitives are shared by every game (see /utils/games/rng.js):
 // one seed, one identical round on every client, with nothing synced.
@@ -24,6 +26,7 @@ export const UNIT_NUMBERS = Array.from({ length: 9 }, (_, i) => i + 1);
 export const ALL_OPERATIONS = [
   'add', 'multiply', 'divide', 'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
   'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
+  'rmm',
 ];
 
 export const ALL_FRACTION_TYPES = ['like', 'unlike', 'wholeFraction'];
@@ -106,6 +109,17 @@ function fractionQuestionAt(rng, pool, n, op, type) {
 
 const FRACTION_OPS = ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'];
 
+// Chemistry: "what is the relative molecular mass of this?" The formula is
+// the question, and the masses it needs ride along as a hint — exactly the
+// bracket a WAEC/NECO paper prints under the question, because the drill is
+// the ADDING UP, not remembering that Cu is 63.5. `compounds` names which
+// sets of the bank (inorganic/organic) are in play.
+function rmmQuestionAt(rng, compounds) {
+  const pool = compoundsFor(compounds);
+  const c = pool[Math.floor(rng() * pool.length)];
+  return { text: c.display, hint: `Relative molecular mass · ${c.hint}`, answer: c.mass };
+}
+
 // `tables` is the pool a question's "base" number is drawn from — either a
 // hand-picked set of 1-9 numbers or a whole decade range (see main.js). For
 // add/multiply/divide, one operand comes from that pool, the other is free,
@@ -116,13 +130,21 @@ const FRACTION_OPS = ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'];
 // subset of ALL_OPERATIONS — one is drawn at random per question. Division
 // always divides evenly (built from a product, then presented as dividend
 // ÷ divisor) — never a non-integer result, and square/cube root are always
-// a perfect power for the same reason.
-export function questionAt(seed, index, { operations = ['multiply', 'divide'], tables = ALL_TABLES, fractionTypes = ALL_FRACTION_TYPES } = {}) {
+// a perfect power for the same reason. The `rmm` op ignores `tables`
+// entirely — its pool is the compound bank, picked by `compounds`.
+export function questionAt(seed, index, {
+  operations = ['multiply', 'divide'],
+  tables = ALL_TABLES,
+  fractionTypes = ALL_FRACTION_TYPES,
+  compounds = ALL_COMPOUND_SETS,
+} = {}) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
   const ops = operations.length ? operations : ['multiply', 'divide'];
   const op = ops[Math.floor(rng() * ops.length)];
   const pool = tables.length ? tables : ALL_TABLES;
   const n = pool[Math.floor(rng() * pool.length)];
+
+  if (op === 'rmm') return rmmQuestionAt(rng, compounds);
 
   if (op === 'square') return { text: `${n}²`, answer: n * n };
   if (op === 'sqrt') return { text: `√${n * n}`, answer: n };

@@ -7,9 +7,11 @@
    (see js/bots.js).
 ═══════════════════════════════════════════════════════ */
 import { createLeaderboard } from '/utils/games/leaderboard.js';
-import { simulateBotScore } from './bots.js';
+import { simulateBotScore, botPaceFor } from './bots.js';
 
 export const finishRound = createLeaderboard({
   rooms: 'drillRooms',
-  scoreBot: (seed, slot, a) => simulateBotScore(seed, slot, a.timeLimit),
+  // `a.operations` is the ROOM's content (main.js passes it through), so a bot
+  // is slowed to the pace of what this room is actually drilling.
+  scoreBot: (seed, slot, a) => simulateBotScore(seed, slot, a.timeLimit, botPaceFor(a.operations)),
 });

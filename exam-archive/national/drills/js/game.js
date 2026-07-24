@@ -19,6 +19,7 @@ const countdownEl = $('drill-countdown');
 const rosterEl = $('drill-roster');
 const timeRemainingEl = $('drill-time-remaining');
 const questionText = $('drill-question-text');
+const questionHint = $('drill-question-hint');
 const answerStage = $('drill-answer-stage');
 const typedEl = $('drill-typed');
 const inputEl = $('drill-answer-input');
@@ -28,7 +29,7 @@ const timerNote = $('drill-timer-note');
 let active = false;
 let locked = false;
 let seed = 0;
-let questionOpts = { operations: ['multiply', 'divide'], tables: undefined, fractionTypes: undefined };
+let questionOpts = { operations: ['multiply', 'divide'], tables: undefined, fractionTypes: undefined, compounds: undefined };
 let currentIndex = 0;
 let currentQuestion = null;
 let score = 0;
@@ -57,26 +58,40 @@ function renderRoster(roster) {
 function renderQuestion() {
   currentQuestion = questionAt(seed, currentIndex, questionOpts);
   questionText.textContent = currentQuestion.text;
+  // A chemical formula is far longer than "7 × 8" — step the display size
+  // down so C₆H₅CH₃ and CH₃CH₂CH₂CH₂OH still fit the card on a phone.
+  questionText.classList.toggle('is-long', currentQuestion.text.length > 7);
+  questionText.classList.toggle('is-longest', currentQuestion.text.length > 12);
+  // Chemistry rides with the mass bracket the exam paper would print; every
+  // other question type has no hint and the line collapses.
+  questionHint.textContent = currentQuestion.hint || '';
+  questionHint.hidden = !currentQuestion.hint;
   inputEl.value = '';
   typedEl.textContent = '';
 }
 
 // Fraction answers ("3/8") are graded as an exact string match — typed with
 // a plain "/" (display-only text uses the Unicode fraction slash instead).
-// Plain-number answers stay parseInt-tolerant (e.g. forgives a leading
-// zero), same as before fractions existed.
+// Plain-number answers stay parse-tolerant (e.g. forgives a leading zero),
+// same as before fractions existed — but parseFloat, not parseInt, because
+// a relative molecular mass is often a half (NaCl = 58.5, Cl being 35.5).
 function isCorrectAnswer(typed, answer) {
-  if (typeof answer === 'number') return typed !== '' && parseInt(typed, 10) === answer;
+  if (typeof answer === 'number') {
+    const n = parseFloat(typed);
+    return Number.isFinite(n) && Math.abs(n - answer) < 1e-9;
+  }
   return typed === answer;
 }
 
-// Strip to digits + at most one "/", which can't lead — everything else a
-// plain-number question ever produces is still just digits.
+// Strip to digits plus at most one "/" and at most one "." — neither of
+// which can lead. Everything else a question ever answers with is digits.
 function sanitizeTyped(raw) {
-  let s = raw.replace(/[^0-9/]/g, '');
-  const slash = s.indexOf('/');
-  if (slash !== -1) s = s.slice(0, slash + 1) + s.slice(slash + 1).replace(/\//g, '');
-  if (s.startsWith('/')) s = s.slice(1);
+  let s = raw.replace(/[^0-9/.]/g, '');
+  for (const mark of ['/', '.']) {
+    const at = s.indexOf(mark);
+    if (at !== -1) s = s.slice(0, at + 1) + s.slice(at + 1).split(mark).join('');
+  }
+  if (s.startsWith('/') || s.startsWith('.')) s = s.slice(1);
   return s.slice(0, 7);
 }
 
@@ -127,10 +142,10 @@ cardEl.addEventListener('click', focusInput);
 
 // Resolves with the player's final correct-answer count once the local
 // timer hits zero.
-export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, fractionTypes, roster }) {
+export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tables, fractionTypes, compounds, roster }) {
   return new Promise((resolve) => {
     seed = roomSeed;
-    questionOpts = { operations, tables, fractionTypes };
+    questionOpts = { operations, tables, fractionTypes, compounds };
     score = 0;
     currentIndex = 0;
     locked = false;
@@ -141,6 +156,7 @@ export function startRound({ seed: roomSeed, timeLimit, startAt, operations, tab
     cardEl.hidden = false;
     countdownEl.hidden = false;
     questionText.hidden = true;
+    questionHint.hidden = true;
     answerStage.hidden = true;
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);

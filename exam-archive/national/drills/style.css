@@ -542,6 +542,23 @@ body.drill-nav-hidden .site-nav { display: none; }
   color: var(--ink);
   margin: 0;
 }
+/* A chemical formula is a whole word wide where "7 × 8" is three glyphs —
+   the display size steps down with its length so it never runs off the card. */
+.drill-text.is-long { font-size: 2.3rem; }
+.drill-text.is-longest { font-size: 1.7rem; letter-spacing: -0.01em; }
+
+/* The mass bracket under a chemistry formula ("H = 1, S = 32, O = 16") —
+   deliberately quiet: it's the data you work FROM, not the question. */
+.drill-hint {
+  position: relative;
+  max-width: 26ch;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  color: var(--text-secondary);
+  margin: -0.5rem 0 0;
+}
 
 /* The typed-answer illusion: the real <input> is kept off-screen but
    focused, so mobile IME/numeric keyboards still work. A sibling span

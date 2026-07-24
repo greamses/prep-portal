@@ -250,13 +250,18 @@ service cloud.firestore {
         request.resource.data.operations.hasOnly([
           'add', 'multiply', 'divide',
           'square', 'sqrt', 'cube', 'cuberoot', 'power4', 'fourthroot',
-          'fracAdd', 'fracSub', 'fracMul', 'fracDiv'
+          'fracAdd', 'fracSub', 'fracMul', 'fracDiv',
+          'rmm'
         ]) &&
         request.resource.data.tables is list &&
         request.resource.data.tables.size() > 0 &&
         request.resource.data.tables.size() <= 100 &&
         request.resource.data.fractionTypes is list &&
-        request.resource.data.fractionTypes.hasOnly(['like', 'unlike', 'wholeFraction']);
+        request.resource.data.fractionTypes.hasOnly(['like', 'unlike', 'wholeFraction']) &&
+        // Chemistry (operation 'rmm'): which sets of the compound bank are in
+        // play. Empty for every other category, never absent.
+        request.resource.data.compounds is list &&
+        request.resource.data.compounds.hasOnly(['inorganic', 'organic']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.
