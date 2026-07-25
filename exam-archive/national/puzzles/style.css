@@ -583,6 +583,11 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .shikaku-grid {
   background: color-mix(in srgb, var(--ink) 32%, var(--surface-primary));
   gap: 1.5px;
+  /* Force every row to an equal share, or a row holding a clue number sizes
+     to its text and grows taller than an empty one — so the "squares" come
+     out as uneven rectangles. The columns are already even 1fr; this makes
+     the rows match, and aspect-ratio:1 keeps each cell square. */
+  grid-auto-rows: 1fr;
 }
 .sudoku-cell,
 .slider-tile {
