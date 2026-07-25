@@ -1632,6 +1632,31 @@ body.grammar-nav-hidden .site-nav { display: none; }
   opacity: 0.4;
   font-weight: 400;
 }
+
+/* Hover card — the word's meaning and an example sentence. Floats over the
+   page (position: fixed, positioned by upgrade.js), and ignores the pointer. */
+.grammar-up-tip {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--surface-primary);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: var(--shadow-md, 0 6px 18px rgb(0 0 0 / 0.18));
+}
+.grammar-up-tip[hidden] { display: none; }
+.grammar-up-tip-word {
+  font-family: 'JetBrains Mono', var(--font-mono), monospace;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.grammar-up-tip-mean { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+.grammar-up-tip-ex { font-size: 0.78rem; color: var(--ink); font-style: italic; line-height: 1.4; }
 .grammar-up-filled-note {
   margin: 0;
   font-family: var(--font-mono);

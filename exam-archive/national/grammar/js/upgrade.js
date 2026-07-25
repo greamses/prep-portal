@@ -86,9 +86,12 @@ function renderRoster(roster) {
 // "in hand" (picked); the next slot tapped takes it. Tapping it again drops it.
 // Just the words — the definitions live in the study card ("Read the word
 // bank"), so the in-round bank is one sticky note of the twenty words.
+let wordInfo = {};       // word → { use, ex } for the hover tooltip
 function renderPalette() {
   paletteEl.innerHTML = '';
+  wordInfo = {};
   set.words.forEach((word) => {
+    wordInfo[word.w] = { use: word.use, ex: word.ex };
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'grammar-up-w';
@@ -100,6 +103,34 @@ function renderPalette() {
   });
   refreshUsed();
 }
+
+/* Hover a word to see its meaning and an example sentence — the reference the
+   round no longer prints beside every word. A single floating card, positioned
+   under the hovered chip (flipped above if it would fall off the bottom). */
+let tipEl = null;
+function showTip(chip) {
+  const info = wordInfo[chip.dataset.word];
+  if (!info) return;
+  if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'grammar-up-tip'; document.body.appendChild(tipEl); }
+  tipEl.innerHTML = `<span class="grammar-up-tip-word">${escapeHtml(chip.dataset.word)}</span>`
+    + `<span class="grammar-up-tip-mean">${escapeHtml(info.use)}</span>`
+    + `<span class="grammar-up-tip-ex">${escapeHtml(info.ex)}</span>`;
+  tipEl.hidden = false;
+  const r = chip.getBoundingClientRect();
+  const tw = Math.min(280, window.innerWidth - 16);
+  tipEl.style.width = `${tw}px`;
+  let left = Math.min(r.left, window.innerWidth - tw - 8);
+  left = Math.max(8, left);
+  tipEl.style.left = `${left}px`;
+  // Below the chip, or above it if there is no room below.
+  const below = r.bottom + 8;
+  if (below + tipEl.offsetHeight > window.innerHeight - 8) {
+    tipEl.style.top = `${Math.max(8, r.top - tipEl.offsetHeight - 8)}px`;
+  } else {
+    tipEl.style.top = `${below}px`;
+  }
+}
+function hideTip() { if (tipEl) tipEl.hidden = true; }
 
 function pickWord(w) {
   if (!editing) return;
@@ -274,6 +305,7 @@ function endRound() {
 
   const result = scoreUpgrade(slots, slots.map((s) => answers[s.idx] || ''));
 
+  hideTip();
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
   upBoard.hidden = true;
@@ -314,6 +346,12 @@ sheetEl && sheetEl.addEventListener('click', onSheetClick);
 sheetEl && sheetEl.addEventListener('input', onSheetInput);
 sheetEl && sheetEl.addEventListener('keydown', onSheetKey);
 submitBtn && submitBtn.addEventListener('click', doSubmit);
+// Hover a bank word for its meaning + example (delegated, bound once).
+if (paletteEl) {
+  paletteEl.addEventListener('mouseover', (e) => { const c = e.target.closest('.grammar-up-w'); if (c) showTip(c); });
+  paletteEl.addEventListener('mouseout', (e) => { if (e.target.closest('.grammar-up-w')) hideTip(); });
+  paletteEl.addEventListener('scroll', hideTip);
+}
 // The word bank is always open now — it is a single sticky note of the words,
 // small enough to leave on screen — so the old collapse toggle is hidden.
 if (bankToggle) bankToggle.hidden = true;
