@@ -1237,7 +1237,9 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
     }
 
     scoreNote.textContent = puzzleType === 'shikaku' ? '0 correct' : `0/${totalUnits} correct`;
-    timerNote.textContent = `${formatClock(timeLimit)} round`;
+    // The timer note starts at the full clock and counts down (see tick()) —
+    // the note itself IS the running timer, not a static "N:NN round" label.
+    timerNote.textContent = formatClock(timeLimit);
     gridWrap.hidden = false;
     countdownEl.hidden = false;
     gridEl.hidden = true;
