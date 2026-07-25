@@ -572,10 +572,16 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 }
 /* Shikaku shows its GRID LINES plainly — the gap between cells is inked in, so
    every square is clearly divided and the player can see exactly what a drag
-   sweeps across. (On the other puzzles the faint 1px gap is enough; here the
-   whole game is choosing which squares belong together.) */
+   sweeps across. (On the other puzzles the faint gap is enough; here the whole
+   game is choosing which squares belong together.)
+
+   The colour is mixed against --surface-primary, NOT --border-subtle: that
+   token is a full `1px solid rgba(...)` BORDER shorthand, not a colour, so
+   feeding it to color-mix (or `background:`) is invalid and silently leaves
+   the gap transparent — which is why the lines weren't showing. --ink flips
+   in dark mode, so this stays visible on both themes. */
 .shikaku-grid {
-  background: color-mix(in srgb, var(--ink) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--ink) 32%, var(--surface-primary));
   gap: 1.5px;
 }
 .sudoku-cell,
