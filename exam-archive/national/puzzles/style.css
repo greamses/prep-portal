@@ -743,33 +743,60 @@ body.puzzle-nav-hidden .site-nav { display: none; }
   100% { filter: none; }
 }
 
-/* The ghost box that follows the drag. Grid-positioned like a real claim, so
-   what you see is exactly where it would land.
-
-   ABSOLUTE, and not negotiably: the cells are auto-placed, and an in-flow
-   grid item with an explicit grid-area is placed FIRST — so an in-flow
-   preview shoved every cell along by its own size as it grew, and the drag
-   then hit-tested against cells that had moved out from under the cursor.
-   Out of flow, it still snaps to the same grid lines but moves nothing. */
 .shikaku-grid { position: relative; }
-.shikaku-preview {
-  position: absolute;
-  grid-area: 1 / 1 / span 1 / span 1;
-  pointer-events: none;
-  z-index: 4;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
-  box-shadow: inset 0 0 0 2.5px var(--accent-secondary);
+/* The live drag highlight is painted onto the cells the box would cover, not
+   a floating overlay — the earlier grid-area overlay didn't track the drag on
+   desktop, and lighting the real cells is both robust and exactly what the
+   player is drawing. */
+.shikaku-cell.is-previewing {
+  background: color-mix(in srgb, var(--accent-secondary) 34%, var(--surface-primary));
+  box-shadow: inset 0 0 0 1.5px var(--accent-secondary);
 }
-.shikaku-preview.is-bad {
-  background: color-mix(in srgb, var(--accent-danger, #f07a7a) 24%, transparent);
-  box-shadow: inset 0 0 0 2.5px var(--accent-danger, #f07a7a);
-  animation: shikaku-refuse 0.36s ease;
+.shikaku-cell.is-preview-bad {
+  background: color-mix(in srgb, var(--accent-danger, #f07a7a) 30%, var(--surface-primary));
+  box-shadow: inset 0 0 0 1.5px var(--accent-danger, #f07a7a);
 }
 @keyframes shikaku-refuse {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-3px); }
   75% { transform: translateX(3px); }
+}
+
+/* "Show boxes" guide — the solution's rectangle outlines, dashed, on the bare
+   cells, drawn only where the player hasn't already boxed something. A trace-
+   able hint for someone who can't see where the boxes go; off is the real
+   puzzle. Quieter than a claimed edge so the two never look alike. */
+.shikaku-cell.is-guide.guide-top { box-shadow: inset 0 2px 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-bottom { box-shadow: inset 0 -2px 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-left { box-shadow: inset 2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-right { box-shadow: inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-bottom { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 0 -2px 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-left.guide-right { box-shadow: inset 2px 0 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-left { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-right { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-bottom.guide-left { box-shadow: inset 0 -2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-bottom.guide-right { box-shadow: inset 0 -2px 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-left.guide-right { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-bottom.guide-left.guide-right { box-shadow: inset 0 -2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-bottom.guide-left { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 0 -2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-bottom.guide-right { box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 0 -2px 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink); }
+.shikaku-cell.is-guide.guide-top.guide-bottom.guide-left.guide-right {
+  box-shadow: inset 0 2px 0 0 var(--guide-ink), inset 0 -2px 0 0 var(--guide-ink), inset 2px 0 0 0 var(--guide-ink), inset -2px 0 0 0 var(--guide-ink);
+}
+.shikaku-grid { --guide-ink: color-mix(in srgb, var(--accent-secondary) 55%, transparent); }
+
+/* The Show/Hide-boxes toggle sits beside Reveal; when on it wears the accent
+   so its state is obvious at a glance. */
+.pp-sticky.puzzle-boxes-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  padding: 0.3rem 0.7rem 0.32rem;
+  --pp-note-tilt: 2deg;
+}
+.pp-sticky.puzzle-boxes-btn.is-on {
+  background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
 }
 
 /* ── Slider look — loose physical tiles in a tray (same register as the

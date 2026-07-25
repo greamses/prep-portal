@@ -39,13 +39,17 @@ export const GRID_SIZES = [5, 7, 10, 15, 20];
    leave a 5×5 with three rectangles in it. */
 const DIFFICULTY = {
   5: { easy: [2, 4, 0.62], medium: [3, 6, 0.55], hard: [4, 8, 0.5] },
-  7: { easy: [3, 6, 0.6], medium: [4, 9, 0.5], hard: [5, 12, 0.45] },
-  10: { easy: [4, 8, 0.55], medium: [5, 12, 0.45], hard: [6, 16, 0.4] },
-  // The big boards keep the pieces growing with the grid. Left at 10's
-  // settings a 20x20 would carry seventy-odd clues, which is not a harder
-  // puzzle so much as a longer one.
-  15: { easy: [5, 10, 0.5], medium: [6, 14, 0.45], hard: [8, 18, 0.4] },
-  20: { easy: [6, 14, 0.45], medium: [8, 18, 0.4], hard: [10, 24, 0.35] },
+  // 7x7 is only 49 cells — it stays the small, quick board. Pieces mostly
+  // above 20 here would mean two rectangles and no puzzle.
+  7: { easy: [4, 8, 0.55], medium: [5, 10, 0.5], hard: [6, 14, 0.45] },
+  // On the big boards the pieces are BIG — most rectangles run above ~20
+  // cells (measured: 15x15 and 20x20 sit at 90-100% over 20). A large grid
+  // diced into little pieces is just a longer version of the same puzzle;
+  // large pieces are what make it a different, chunkier one, and each clue
+  // then has many possible shapes to reason between.
+  10: { easy: [16, 28, 0.5], medium: [18, 34, 0.45], hard: [22, 42, 0.4] },
+  15: { easy: [18, 34, 0.5], medium: [22, 44, 0.45], hard: [28, 56, 0.4] },
+  20: { easy: [22, 44, 0.5], medium: [26, 56, 0.45], hard: [32, 72, 0.4] },
 };
 const settingsFor = (size, difficulty) => {
   const bySize = DIFFICULTY[size] || DIFFICULTY[7];
