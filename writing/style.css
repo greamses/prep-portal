@@ -1430,7 +1430,11 @@ details.rubric-wrap[open] summary::after {
    may add a border or a radius to either.
    ═══════════════════════════════════════════════════════════════════════════ */
 .topic-box.pp-receipt {
-  --pp-paper: var(--surface-secondary);
+  /* Tinted paper rather than plain: the prompt is the one thing on this page
+     the student has to come back to, and a muted wash lifts it off the white
+     picker without turning it into a coloured card. Mixed from the accent so
+     it stays muted in dark, where both tokens flip. */
+  --pp-paper: color-mix(in srgb, var(--accent-secondary) 15%, var(--surface-secondary));
   margin: 0 clamp(18px, 4vw, 28px);
   animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
@@ -1454,7 +1458,9 @@ details.rubric-wrap[open] summary::after {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: var(--tracking-ultra);
-  color: var(--text-tertiary);
+  /* --text-secondary, not tertiary: tertiary is pitched for white paper and
+     goes faint on the tinted slip. */
+  color: var(--text-secondary);
 }
 /* .topic-refresh is a sticky note too (sticky-ui.css) — leave its paper alone;
    it only needs headroom for its tape strip. */
