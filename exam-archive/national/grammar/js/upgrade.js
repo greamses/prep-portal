@@ -171,6 +171,22 @@ function paintSlot(i, el = slotEl(i)) {
   el.style.width = `${Math.max(6, (el.value || el.placeholder).length + 2)}ch`;
 }
 
+// A word lives in ONE slot only. When it is placed into slot `keep`, clear it
+// out of any OTHER slot that held it — so a word is used once, never twice
+// (dropping or typing it somewhere new MOVES it rather than duplicating).
+function evictDuplicates(keep) {
+  const w = normWord(answers[keep]);
+  if (!w) return;
+  slots.forEach((s) => {
+    if (s.idx === keep) return;
+    if (normWord(answers[s.idx]) === w) {
+      answers[s.idx] = '';
+      const other = slotEl(s.idx);
+      if (other) { other.value = ''; paintSlot(s.idx, other); }
+    }
+  });
+}
+
 function onSheetClick(e) {
   const el = e.target.closest('.grammar-up-slot');
   if (!el || !editing) return;
@@ -180,6 +196,7 @@ function onSheetClick(e) {
     const i = Number(el.dataset.i);
     el.value = picked;
     answers[i] = picked;
+    evictDuplicates(i);
     paintSlot(i, el);
     updateNotes();
     refreshUsed();
@@ -193,6 +210,7 @@ function onSheetInput(e) {
   if (!el) return;
   const i = Number(el.dataset.i);
   answers[i] = el.value;
+  evictDuplicates(i);
   paintSlot(i, el);
   updateNotes();
   refreshUsed();
