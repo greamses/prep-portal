@@ -26,6 +26,7 @@ import { generatePuzzle, scoreGrid, countEditableCells } from './sudoku.js';
 import { generateSlider, scoreSlider, countSliderTiles, movableIndices, generateFractionValues } from './slider.js';
 import { generateJigsaw, pieceFacesSvg } from './jigsaw.js';
 import { generateShikaku, rectFromCorners, rectContains, validatePlacement } from './shikaku.js';
+import { hashSeed } from './rng.js';
 import {
   PIECES as TAN_PIECES, BOARD as TAN_BOARD, SNAP_TOLERANCE as TAN_SNAP,
   layoutRound as tangramLayout, slotFor as tangramSlotFor, placementCentre, pointsAttr,
@@ -596,6 +597,17 @@ let shikakuHintsLeft = 0;  // reveals remaining this round
 let shikakuAnchor = null;  // first corner of a tap-tap claim, or null
 let shikakuDrag = null;    // live drag state, or null
 let shikakuPreview = null; // the single ghost rectangle shown while dragging
+/* A Shikaku round does not stop at one grid. Finish the board and the next
+   one is dealt on the spot, and the score carries — the round ends when the
+   clock does. On the big boards that is the only sane shape for it: a 20x20
+   can outlast a round, while a 5x5 would otherwise hand back most of the
+   time unused. Every board is derived from the room's seed, so all the
+   players in a room get the same sequence of grids. */
+let shikakuBoard = 0;        // which grid of the round this is
+let shikakuBoardTotal = 0;   // rectangles in the CURRENT grid
+let shikakuCarried = 0;      // points banked from grids already finished
+let shikakuRoundSeed = 0;
+let shikakuDifficulty = 'medium';
 
 // Soft fills, keyed to the clue so a rectangle keeps its colour if you take
 // it back and re-claim it.
@@ -605,7 +617,11 @@ const shikakuCells = () => gridEl.querySelectorAll('.shikaku-cell');
 const cellAtIndex = (r, c) => gridEl.querySelector(`.shikaku-cell[data-index="${r * gridSize + c}"]`);
 
 function buildShikakuGrid() {
+  // Cleared here, not only via buildGrid(): a new board is dealt mid-round by
+  // calling this straight, so it must wipe the finished grid itself.
+  gridEl.innerHTML = '';
   gridEl.classList.add('shikaku-grid');
+  gridEl.dataset.size = String(gridSize); // drives the per-size clue sizing
   const clueAt = new Map();
   shikakuClues.forEach((cl, i) => clueAt.set(cl.r * gridSize + cl.c, { ...cl, i }));
 
@@ -690,10 +706,48 @@ function setShikakuAnchor(cell) {
 // be finished while the score is short of totalUnits, and "am I done?" has to
 // ask how many rectangles are standing, not how many points they are worth.
 function updateShikakuScore() {
-  score = shikakuPlaced.filter((p) => !p.hinted).length;
-  scoreNote.textContent = `${score}/${totalUnits} correct`;
+  score = shikakuCarried + shikakuPlaced.filter((p) => !p.hinted).length;
+  scoreNote.textContent = `${score} correct`;
   renderRevealBtn();
-  if (shikakuPlaced.length >= totalUnits) endRound(); // every number boxed
+  // Every number on THIS grid is boxed — bank it and deal another.
+  if (shikakuPlaced.length >= shikakuBoardTotal) finishShikakuBoard();
+}
+
+// Deals grid `index` of the round. Derived from the room's seed so that every
+// player works the same grids in the same order.
+function dealShikakuBoard(index) {
+  const puzzle = generateShikaku(hashSeed(shikakuRoundSeed, 9100 + index), shikakuDifficulty, gridSize);
+  shikakuBoard = index;
+  shikakuClues = puzzle.clues;
+  shikakuSolution = puzzle.solution;
+  shikakuPlaced = [];
+  shikakuAnchor = null;
+  shikakuDrag = null;
+  shikakuBoardTotal = puzzle.clues.length;
+}
+
+function finishShikakuBoard() {
+  shikakuCarried = score;
+  gridEl.classList.add('is-solved');
+  // A beat to see the finished grid before it is replaced — without it the
+  // board appears to blink and the player never sees what they built.
+  setTimeout(() => {
+    if (!active || puzzleType !== 'shikaku') return;
+    gridEl.classList.remove('is-solved');
+    dealShikakuBoard(shikakuBoard + 1);
+    buildShikakuGrid();
+    setShikakuHint();
+    renderRevealBtn();
+  }, 700);
+}
+
+// The instructions, which have to say HOW: a player who taps a cell gets one
+// highlighted square and no way to guess that the gesture is a drag.
+function setShikakuHint() {
+  hintEl.classList.remove('puzzle-grid-hint--legend');
+  hintEl.textContent = shikakuBoard === 0
+    ? 'Drag across a block of squares to box it — one number per box, and that many squares.'
+    : `Grid ${shikakuBoard + 1} — drag across a block of squares to box it.`;
 }
 
 function shikakuRejected(rect) {
@@ -726,7 +780,7 @@ const BULB_SVG = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" st
 function renderRevealBtn() {
   if (puzzleType !== 'shikaku') { revealBtn.hidden = true; return; }
   revealBtn.hidden = false;
-  const done = shikakuPlaced.length >= totalUnits;
+  const done = shikakuPlaced.length >= shikakuBoardTotal;
   // Also dead through the 3-2-1, where there is no grid to reveal onto yet —
   // re-rendered when the countdown hands over, so it wakes up with the puzzle.
   revealBtn.disabled = shikakuHintsLeft <= 0 || done || gridEl.hidden;
@@ -1193,14 +1247,15 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
       tanDrag = null;
       totalUnits = tanSlots.length; // all seven pieces
     } else if (puzzleType === 'shikaku') {
-      const puzzle = generateShikaku(seed, difficulty, gridSize);
-      shikakuClues = puzzle.clues;
-      shikakuSolution = puzzle.solution;
-      shikakuPlaced = [];
-      shikakuAnchor = null;
-      shikakuDrag = null;
-      totalUnits = puzzle.clues.length; // one rectangle per number
-      shikakuHintsLeft = shikakuHintAllowance(totalUnits);
+      shikakuRoundSeed = seed;
+      shikakuDifficulty = difficulty;
+      shikakuCarried = 0;
+      dealShikakuBoard(0);
+      shikakuHintsLeft = shikakuHintAllowance(shikakuBoardTotal);
+      // Play runs until the clock stops, so there is no fixed total to reach.
+      // This number only caps the bot simulation (js/bots.js), which must not
+      // be held to one grid's worth either.
+      totalUnits = 9999;
     } else {
       const puzzle = generatePuzzle(seed, difficulty, gridSize);
       givens = puzzle.givens;
@@ -1229,8 +1284,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
         topbarEl.hidden = false;
       }
     } else if (puzzleType === 'shikaku') {
-      hintEl.classList.remove('puzzle-grid-hint--legend');
-      hintEl.textContent = 'Cut the grid into boxes — one number each, and that many squares.';
+      setShikakuHint();
       topbarEl.hidden = false;
     } else if (puzzleType === 'tangram') {
       hintEl.classList.remove('puzzle-grid-hint--legend');
@@ -1242,7 +1296,7 @@ export function startRound({ seed, timeLimit, startAt, puzzleType: type, difficu
 
     renderRevealBtn(); // shikaku only — hidden for every other puzzle
 
-    scoreNote.textContent = `0/${totalUnits} correct`;
+    scoreNote.textContent = puzzleType === 'shikaku' ? '0 correct' : `0/${totalUnits} correct`;
     timerNote.textContent = `${formatClock(timeLimit)} round`;
     gridWrap.hidden = false;
     countdownEl.hidden = false;

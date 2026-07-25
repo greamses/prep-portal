@@ -21,7 +21,7 @@
 
 import { mulberry32, hashSeed } from './rng.js';
 
-export const GRID_SIZES = [5, 7, 10];
+export const GRID_SIZES = [5, 7, 10, 15, 20];
 
 /* Difficulty is the size of the pieces: [minArea, maxArea, stopChance].
    Small rectangles mean many clues, each tightly constrained — you can nearly
@@ -41,11 +41,28 @@ const DIFFICULTY = {
   5: { easy: [2, 4, 0.62], medium: [3, 6, 0.55], hard: [4, 8, 0.5] },
   7: { easy: [3, 6, 0.6], medium: [4, 9, 0.5], hard: [5, 12, 0.45] },
   10: { easy: [4, 8, 0.55], medium: [5, 12, 0.45], hard: [6, 16, 0.4] },
+  // The big boards keep the pieces growing with the grid. Left at 10's
+  // settings a 20x20 would carry seventy-odd clues, which is not a harder
+  // puzzle so much as a longer one.
+  15: { easy: [5, 10, 0.5], medium: [6, 14, 0.45], hard: [8, 18, 0.4] },
+  20: { easy: [6, 14, 0.45], medium: [8, 18, 0.4], hard: [10, 24, 0.35] },
 };
 const settingsFor = (size, difficulty) => {
   const bySize = DIFFICULTY[size] || DIFFICULTY[7];
   return bySize[difficulty] || bySize.medium;
 };
+
+/* Above this size the uniqueness search is switched off, and that is a
+   measurement rather than a preference: at 15x15 NONE of a sample of eight
+   candidates came back uniquely solvable, and the check itself ran to most of
+   a second each time; at 20x20 it did not finish at all. Re-rolling twenty
+   times for something that never happens would simply stall the round.
+
+   It costs nothing real. A drawn rectangle is graded against the RULES, not
+   against the stored partition (see validatePlacement), so a board with more
+   than one legal dissection still scores every one of them — the player
+   cannot tell, and cannot be marked wrong for finding the other answer. */
+const UNIQUE_UP_TO = 10;
 
 /* ── Partition ───────────────────────────────────────────────────────────
    Guillotine splitting: cut the grid in two, then cut the halves, until the
@@ -195,6 +212,10 @@ export function countSolutions(clues, size, limit = 2) {
  */
 export function generateShikaku(seed, difficulty, size) {
   const [minArea, maxArea, stopChance] = settingsFor(size, difficulty);
+
+  if (size > UNIQUE_UP_TO) {
+    return { ...buildCandidate(hashSeed(seed, 4400), size, minArea, maxArea, stopChance), size };
+  }
 
   let fallback = null;
   // Re-roll until the clues have exactly one answer — measured at ~4 tries on

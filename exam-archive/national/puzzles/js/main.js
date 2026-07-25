@@ -44,7 +44,10 @@ const GRID_SIZES_BY_TYPE = {
   sudoku: [{ value: 4, label: '4×4' }, { value: 6, label: '6×6' }, { value: 9, label: '9×9', default: true }],
   slider: [{ value: 3, label: '3×3' }, { value: 4, label: '4×4', default: true }, { value: 5, label: '5×5' }],
   jigsaw: [{ value: 10, label: '10×10', default: true }, { value: 15, label: '15×15' }, { value: 20, label: '20×20' }],
-  shikaku: [{ value: 5, label: '5×5' }, { value: 7, label: '7×7', default: true }, { value: 10, label: '10×10' }],
+  shikaku: [
+    { value: 7, label: '7×7', default: true }, { value: 10, label: '10×10' },
+    { value: 15, label: '15×15' }, { value: 20, label: '20×20' },
+  ],
   // Tangram has no grid at all — always the same seven pieces on the same
   // board. The single value exists only because every room doc carries one.
   tangram: [{ value: 7, label: 'Seven pieces', default: true }],
