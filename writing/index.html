@@ -12,11 +12,6 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Serif+Display&family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
-
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="./theme-import.css" />
     <link rel="stylesheet" href="./style.css" />
@@ -80,20 +75,23 @@
           </div>
         </div>
 
-        <!-- Topic display -->
-        <div class="topic-box" id="topic-box">
-          <div class="topic-header">
-            <div class="topic-label">Your Writing Prompt</div>
-            <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-            </button>
-          </div>
-          <div class="topic-body">
-            <div class="topic-text" id="topic-display">Select a writing type above to generate a prompt.</div>
+        <!-- Topic display — the shared torn-paper receipt card
+             (.pp-receipt + .pp-receipt__paper, utils/components/components.css) -->
+        <div class="topic-box pp-receipt" id="topic-box">
+          <div class="topic-paper pp-receipt__paper">
+            <div class="topic-header">
+              <div class="topic-label">Your Writing Prompt</div>
+              <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+              </button>
+            </div>
+            <div class="topic-body">
+              <div class="topic-text" id="topic-display">Select a writing type above to generate a prompt.</div>
+            </div>
           </div>
         </div>
 
@@ -130,10 +128,16 @@
           <!-- WRITE PHASE -->
           <div id="editor-section">
             <p class="sec-label">Your Essay</p>
-            <textarea
-              id="writing-area"
-              placeholder="Write your essay or story here. Aim for clear grammar, rich vocabulary, and good structure!"
-            ></textarea>
+            <!-- The writing surface is the same torn-paper receipt as the
+                 prompt card; the textarea is the ruled sheet inside it. -->
+            <div class="write-receipt pp-receipt">
+              <div class="write-paper pp-receipt__paper">
+                <textarea
+                  id="writing-area"
+                  placeholder="Write your essay or story here. Aim for clear grammar, rich vocabulary, and good structure!"
+                ></textarea>
+              </div>
+            </div>
           </div>
 
           <!-- RESULTS PHASE -->
@@ -361,7 +365,12 @@
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="new-topic-btn" type="button">← Change Topic</button>
             <button class="btn btn-primary" id="submit-btn" type="button" disabled>
-              <i class="fas fa-spell-check"></i> Submit &amp; Grade
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 15h7" />
+                <path d="M4.5 11 7 4.5 9.5 11" />
+                <path d="m13 15.5 2.5 2.5 5.5-6" />
+              </svg>
+              Submit &amp; Grade
             </button>
           </div>
           <div class="mftr-inner" id="ftr-results" style="display: none">

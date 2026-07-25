@@ -1,1 +1,4 @@
 @import url("../utils/components/theme.css");
+/* Shared components — .pp-receipt (the torn-paper card) is used for the
+   prompt card and the writing surface. */
+@import url("../utils/components/components.css");
