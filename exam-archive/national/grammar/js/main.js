@@ -16,10 +16,12 @@ import {
   CUPS, CUPS_KEYS, CUPS_LABEL, focusKey, focusSet, focusLabel,
   loadPassages, passagePool, buildPassage,
 } from '/data/grammar/index.js';
+import { SETS, setMeta, setsForGrade } from '/data/grammar/substitution.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
+import { startUpgradeRound } from './upgrade.js';
 import { finishRound, rankGrammar } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
@@ -64,6 +66,13 @@ const MAX_ROUND_SEC = 1800;
    child will proof-read carefully before they start guessing. */
 const PASSAGE_COUNTS = [1, 2, 3];
 
+/* Word Upgrade shares the "Length" dial (count 1/2/3) but spends it on
+   SENTENCES rather than passages — there is only ever one worksheet, so paging
+   would be pointless. The clock scales with the sentence count the same way it
+   scales with words for proof-reading. */
+const UPGRADE_SENTENCES = { 1: 6, 2: 8, 3: 10 };
+const UPGRADE_SEC_PER_SENTENCE = 8; // read + choose, before the pace term
+
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
   <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
@@ -85,6 +94,7 @@ const quickJoinBtn = $('grammar-quickjoin-btn');
 const startBtn = $('grammar-start-btn');
 const startLabel = $('grammar-start-label');
 const studyBtn = $('grammar-study-btn');
+const studyLabel = $('grammar-study-label');
 const rulesBd = $('grammar-rules-bd');
 const rulesList = $('grammar-rules-list');
 const rulesClose = $('grammar-rules-close');
@@ -128,11 +138,19 @@ let roomSize = mem.get('roomSize', 5, [5, 10]);
 let pace = mem.get('pace', 16, PACES.map((p) => p.value));
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']);
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+let activity = mem.get('activity', 'proofread', ['proofread', 'upgrade']);
 let grade = mem.get('grade', 6, GRADES);
 let theme = mem.get('theme', 'diary', (t) => availableThemes(grade).includes(t));
 let focus = mem.get('focus', 'cups', (f) => typeof f === 'string' && /^[cups]+$/.test(f));
+let wordset = mem.get('wordset', 'said', (w) => SETS.some((s) => s.key === w));
 let passageCount = mem.get('count', 1, PASSAGE_COUNTS);
 if (!availableThemes(grade).includes(theme)) theme = availableThemes(grade)[0] || 'diary';
+// A word set the new grade isn't written for falls back to the first that is.
+function fixWordset() {
+  const ok = setsForGrade(grade);
+  if (!ok.some((s) => s.key === wordset)) wordset = (ok[0] || SETS[0]).key;
+}
+fixWordset();
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -187,10 +205,33 @@ player.start('name');
    it. The focus step is last because it narrows what you hunt for, and that
    only makes sense once you know what you are reading. */
 const content = createCarousel(topicMount);
+content.addSlide('activity', 'Activity', () => {});
 content.addSlide('grade', 'Grade', () => {});
 content.addSlide('theme', 'Theme', () => {});
 content.addSlide('focus', 'CUPS', () => {});
+content.addSlide('wordset', 'Words', () => {});
 content.addSlide('count', 'Length', () => {});
+
+/* The two activities. Proof-reading is the CUPS editing game; Word Upgrade is
+   the substitution game — swap a tired word for a vivid one. The choice comes
+   first because it decides which steps follow: proof-reading needs a theme and
+   a CUPS focus, Word Upgrade needs a word set, and neither wants the other's. */
+function renderActivityStep() {
+  renderChoiceStep(content, 'activity', {
+    title: 'What do you want to play?',
+    name: 'grammar-activity',
+    options: [
+      { value: 'proofread', label: 'Proof-reading', note: 'Hunt the mistakes in a passage — the CUPS checklist.', checked: activity === 'proofread' },
+      { value: 'upgrade', label: 'Word Upgrade', note: 'Swap a tired word (“said”, “walked”) for a vivid one.', checked: activity === 'upgrade' },
+    ],
+    onPick: (v) => {
+      activity = v;
+      mem.save({ activity });
+      renderGradeStep();
+      content.goTo('grade');
+    },
+  });
+}
 
 function renderGradeStep() {
   renderChoiceStep(content, 'grade', {
@@ -199,12 +240,38 @@ function renderGradeStep() {
     options: GRADES.map((g) => ({ value: String(g), label: `Grade ${g}`, checked: g === grade })),
     onPick: (v) => {
       grade = Number(v);
+      if (activity === 'upgrade') {
+        fixWordset();
+        renderWordsetStep();
+        content.goTo('wordset');
+        return;
+      }
       // The old theme may not be written for the new grade (a lab report at
       // Grade 4), so fall back to the first one that is.
       const available = availableThemes(grade);
       if (!available.includes(theme)) theme = available[0];
       renderThemeStep();
       content.goTo('theme');
+    },
+  });
+}
+
+/* Word Upgrade only — which tired word to practise. One set per round: its
+   twenty vivid words are the palette, so mixing sets would mean a palette that
+   half-fits every sentence. */
+function renderWordsetStep() {
+  const sets = setsForGrade(grade);
+  renderChoiceStep(content, 'wordset', {
+    title: 'Which word to upgrade?',
+    subtitle: 'You get twenty vivid words to read, then sentences to fix.',
+    name: 'grammar-wordset',
+    colorOffset: 2,
+    options: sets.map((s) => ({ value: s.key, label: s.label, note: s.blurb, checked: s.key === wordset })),
+    onPick: (v) => {
+      wordset = v;
+      mem.save({ activity, grade, wordset });
+      renderCountStep();
+      content.goTo('count');
     },
   });
 }
@@ -262,29 +329,36 @@ function renderFocusStep() {
    A theme narrower than the count deals short rather than repeating a passage
    (see rng.js), which is why the subtitle promises "up to". */
 function renderCountStep() {
+  const upgrade = activity === 'upgrade';
   renderChoiceStep(content, 'count', {
-    title: 'How many passages?',
-    subtitle: 'They come one at a time — edit one, press Next for the following one. One Submit covers them all, and the clock grows to match.',
+    title: upgrade ? 'How long a worksheet?' : 'How many passages?',
+    subtitle: upgrade
+      ? 'More sentences, more to upgrade — the clock grows to match.'
+      : 'They come one at a time — edit one, press Next for the following one. One Submit covers them all, and the clock grows to match.',
     name: 'grammar-count',
     colorOffset: 1,
     options: PASSAGE_COUNTS.map((n) => ({
       value: String(n),
-      label: n === 1 ? 'One passage' : `Up to ${n} passages`,
+      label: upgrade
+        ? `${UPGRADE_SENTENCES[n]} sentences`
+        : (n === 1 ? 'One passage' : `Up to ${n} passages`),
       checked: n === passageCount,
     })),
     onPick: (v) => {
       passageCount = Number(v);
-      mem.save({ grade, theme, focus, count: passageCount });
+      mem.save({ activity, grade, theme, focus, wordset, count: passageCount });
       flow.next();
     },
   });
 }
 
+renderActivityStep();
 renderGradeStep();
 renderThemeStep();
 renderFocusStep();
+renderWordsetStep();
 renderCountStep();
-content.start('grade');
+content.start('activity');
 
 /* ── SECTION 3 — Game Options ───────────────────────────────── */
 const options = createCarousel(optionsMount);
@@ -380,12 +454,20 @@ const flow = createSectionFlow([
   },
   {
     el: $('grammar-section-topic'),
-    chips: () => [
-      { label: `Grade ${grade}` },
-      { label: (themeMeta(theme) || {}).label || 'Passage' },
-      { label: focusLabel(focus) },
-      { label: passageCount === 1 ? '1 passage' : `${passageCount} passages` },
-    ],
+    chips: () => (activity === 'upgrade'
+      ? [
+          { label: 'Word Upgrade' },
+          { label: `Grade ${grade}` },
+          { label: (setMeta(wordset) || {}).label || 'Words' },
+          { label: `${UPGRADE_SENTENCES[passageCount]} sentences` },
+        ]
+      : [
+          { label: 'Proof-reading' },
+          { label: `Grade ${grade}` },
+          { label: (themeMeta(theme) || {}).label || 'Passage' },
+          { label: focusLabel(focus) },
+          { label: passageCount === 1 ? '1 passage' : `${passageCount} passages` },
+        ]),
   },
   {
     el: $('grammar-section-options'),
@@ -406,6 +488,8 @@ const flow = createSectionFlow([
   onChange: (_i, isLast) => {
     startBtn.hidden = !isLast;
     studyBtn.hidden = !isLast;
+    // The study card is CUPS rules for proof-reading, the word bank for Upgrade.
+    if (studyLabel) studyLabel.textContent = activity === 'upgrade' ? 'Read the word bank' : 'Read the CUPS rules';
   },
 });
 
@@ -580,7 +664,7 @@ function renderResults(ranked, errorTotal, settled = true) {
       bits.push(settled ? 'no score' : 'still editing…');
     } else {
       if (typeof row.caught === 'number') bits.push(`${row.caught}/${errorTotal} caught`);
-      if (typeof row.tagged === 'number') bits.push(`${row.tagged} named`);
+      if (typeof row.tagged === 'number') bits.push(`${row.tagged} ${lastReview && lastReview.activity === 'upgrade' ? 'best' : 'named'}`);
       if (typeof row.timeMs === 'number') bits.push(fmtTime(row.timeMs));
       if (row.falseEdits) bits.push(`${row.falseEdits} false`);
     }
@@ -695,6 +779,7 @@ const OUTCOME_LABEL = {
 
 function renderReview() {
   if (!lastReview) return;
+  if (lastReview.activity === 'upgrade') { renderUpgradeReview(); return; }
   const { result, pages } = lastReview;
   reviewTitle.textContent = pages.length > 1
     ? `Your ${pages.length} passages`
@@ -776,6 +861,58 @@ function renderReviewPage(pg, n, total) {
   });
 }
 
+/* The Word Upgrade review: every sentence with the word the player chose,
+   marked, and the BEST word plus WHY beside it. Four outcomes, same colours as
+   the proof-reading review:
+     caught (best)   your word, in the good ink, with a ★
+     caught          your word — fine, but not the sharpest; the best beside it
+     wrong-fix       your word, struck through, with the best beside it
+     missed          the tired word, with the best beside it */
+function renderUpgradeReview() {
+  const { result, pages } = lastReview;
+  const pg = pages[0];
+  reviewTitle.textContent = pg.set ? pg.set.label : 'Word Upgrade';
+  reviewSub.textContent =
+    `${result.caught} of ${result.errorTotal} upgraded · ${result.tagged} best choices`
+    + (result.falseEdits ? ` · ${result.falseEdits} that didn’t fit` : '');
+
+  reviewBody.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'grammar-up-review';
+  pg.items.forEach((it, i) => {
+    const d = result.detail[i];
+    const p = it.parsed;
+    const row = document.createElement('div');
+    const cls = d.outcome === 'caught' ? (d.best ? 'is-best' : 'is-ok') : `is-${d.outcome}`;
+    row.className = `grammar-up-rev-row ${cls}`;
+
+    const sentence = document.createElement('p');
+    sentence.className = 'grammar-up-rev-sentence';
+    // The chosen word shown IN the sentence, marked by outcome.
+    const chosen = (d.submitted || '').trim();
+    let mid;
+    if (d.outcome === 'caught') mid = `<span class="grammar-mark-good">${esc(chosen)}</span>${d.best ? ' <span class="grammar-up-star">★</span>' : ''}`;
+    else if (d.outcome === 'missed') mid = `<span class="grammar-mark-bad">${esc(p.dull)}</span>`;
+    else mid = `<span class="grammar-mark-struck">${esc(chosen)}</span>`;
+    sentence.innerHTML = `${esc(p.before)}${mid}${esc(p.after)}`;
+    row.appendChild(sentence);
+
+    // The teaching line: the best word and the reason — unless they nailed it.
+    if (!(d.outcome === 'caught' && d.best)) {
+      const why = document.createElement('p');
+      why.className = 'grammar-up-rev-why';
+      why.innerHTML = `<strong>${esc(p.best)}</strong> — ${esc(p.why)}`;
+      row.appendChild(why);
+    }
+    list.appendChild(row);
+  });
+  reviewBody.appendChild(list);
+
+  reviewBd.classList.add('open');
+  reviewBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('grammar-nav-hidden');
+}
+
 function esc(s) {
   const d = document.createElement('span');
   d.textContent = s == null ? '' : s;
@@ -793,6 +930,7 @@ function hideReview() {
    Built from the same registry the round scores against, so what you revise is
    exactly what you can be asked. */
 function renderRules() {
+  if (activity === 'upgrade') { renderWordbankCard(); return; }
   rulesList.innerHTML = '';
   const inFocus = focusSet(focus);
   CUPS.forEach((c, i) => {
@@ -817,6 +955,30 @@ function renderRules() {
   });
 }
 
+/* The word bank as a study card — the twenty vivid words with their use-cases,
+   the same reference the round hands you. Read before you race. */
+function renderWordbankCard() {
+  rulesList.innerHTML = '';
+  const s = setMeta(wordset) || SETS[0];
+  const card = document.createElement('article');
+  card.className = 'grammar-rule-card grammar-wordbank-card pp-sticky pp-sticky--tape pp-sticky--c2';
+  const paper = document.createElement('div');
+  paper.className = 'grammar-rule-paper';
+  paper.innerHTML = `<h3 class="grammar-rule-name">${s.label}</h3>
+    <p class="grammar-rule-hint">Twenty vivid words to swap in for “${esc(s.dull)}”. Learn the shade of meaning — that is the whole game.</p>`;
+  const grid = document.createElement('div');
+  grid.className = 'grammar-wordbank-grid';
+  s.words.forEach((w) => {
+    const cell = document.createElement('p');
+    cell.className = 'grammar-wordbank-cell';
+    cell.innerHTML = `<strong>${esc(w.w)}</strong><span>${esc(w.use)}</span>`;
+    grid.appendChild(cell);
+  });
+  paper.appendChild(grid);
+  card.appendChild(paper);
+  rulesList.appendChild(card);
+}
+
 function openRules() {
   renderRules();
   rulesBd.classList.add('open');
@@ -833,21 +995,32 @@ function closeRules() {
 async function playRoundAndShowResults(room, name) {
   const roster = buildRoster(room, name);
   // The ROOM's settings, never this client's setup screen — a joiner who came
-  // in by code never picked any of them.
-  const out = await startRound({
-    seed: room.seed,
-    timeLimit: room.timeLimit,
-    startAt: room.startAt,
-    grade: room.grade,
-    theme: room.theme,
-    focus: room.focus,
-    // Rooms made before paging shipped carry no count — those are one-passage
-    // rounds, exactly as they were played.
-    count: room.count || 1,
-    roster,
-  });
+  // in by code never picked any of them. A room with no `activity` predates
+  // Word Upgrade and is a proof-reading round, exactly as it was played.
+  const roomActivity = room.activity || 'proofread';
+  const out = roomActivity === 'upgrade'
+    ? await startUpgradeRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        wordset: room.wordset,
+        count: UPGRADE_SENTENCES[room.count || 2] || 8,
+        roster,
+      })
+    : await startRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        grade: room.grade,
+        theme: room.theme,
+        focus: room.focus,
+        // Rooms made before paging shipped carry no count — those are
+        // one-passage rounds, exactly as they were played.
+        count: room.count || 1,
+        roster,
+      });
 
-  lastReview = { result: out.result, pages: out.pages };
+  lastReview = { activity: roomActivity, result: out.result, pages: out.pages };
   showAwaiting();
 
   let ranked;
@@ -926,6 +1099,13 @@ function makeOnWaiting(waitingStatusText) {
    Paying for a third passage that never arrives would just hand that player a
    third more time than everyone else in the room. */
 async function computeTimeLimit() {
+  // Word Upgrade is seed-free to size: a fixed sentence count, each worth a
+  // read-and-choose beat plus the pace term. No bank fetch needed.
+  if (activity === 'upgrade') {
+    const n = UPGRADE_SENTENCES[passageCount] || 8;
+    const secs = n * (UPGRADE_SEC_PER_SENTENCE + pace);
+    return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(secs)));
+  }
   const fallback = Math.round((100 * READ_SEC_PER_WORD + 10 * pace) * passageCount);
   try {
     const passages = await loadPassages(theme);
@@ -953,7 +1133,7 @@ async function runMultiplayer(name) {
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size: roomSize, timeLimit, grade, theme, focus, count: passageCount, displayName: name },
+      { mode: 'multiplayer', size: roomSize, timeLimit, activity, grade, theme, focus, wordset, count: passageCount, displayName: name },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -974,7 +1154,7 @@ async function runCreate(name, size, roomMode) {
   let created;
   try {
     created = await createCodeRoom(
-      { mode: roomMode, size, timeLimit, grade, theme, focus, count: passageCount, displayName: name },
+      { mode: roomMode, size, timeLimit, activity, grade, theme, focus, wordset, count: passageCount, displayName: name },
       { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
     );
   } catch (e) {
@@ -1029,7 +1209,7 @@ async function runGrammar() {
   startBtn.disabled = true;
   // The setup is proven good the moment a round starts with it — next visit
   // jumps straight to the last section with these picks as chips.
-  mem.save({ grade, theme, focus, count: passageCount, done: true });
+  mem.save({ activity, grade, theme, focus, wordset, count: passageCount, done: true });
   await getCurrentUser();
   const name = myName();
 

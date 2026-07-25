@@ -21,6 +21,19 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'grammarRooms',
   pointers: 'grammarRoomPointers',
-  contentKeys: ['grade', 'theme', 'focus', 'count'],
-  bucketOf: (c) => `${c.grade}_${c.theme}_${c.focus || 'cups'}_${c.count || 1}`,
+  // `activity` splits the two games: proof-reading (CUPS, uses theme+focus) and
+  // Word Upgrade (substitution, uses wordset). The unused field of each rides
+  // along empty — a room's whole content still has to match for two players to
+  // share it, and a Word-Upgrade round and a CUPS round are plainly not the
+  // same game. Rooms made before this shipped carry no `activity`; the bucket
+  // reads that as 'proofread', which is exactly what they were.
+  contentKeys: ['activity', 'grade', 'theme', 'focus', 'wordset', 'count'],
+  bucketOf: (c) => [
+    c.activity || 'proofread',
+    c.grade,
+    c.theme || '-',
+    c.focus || 'cups',
+    c.wordset || '-',
+    c.count || 1,
+  ].join('_'),
 });

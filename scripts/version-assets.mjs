@@ -111,6 +111,8 @@ const PAGES = [
       '/data/grammar/themes.js',
       '/data/grammar/cups.js',
       '/data/grammar/manifest.js',
+      // The Word Upgrade bank — imported statically by main.js/upgrade.js.
+      '/data/grammar/substitution.js',
       // The passage files are imported DYNAMICALLY at round start (one module
       // per theme), and an import map remaps a dynamic import just like a
       // static one — so editing a passage has to bust the page here too.

@@ -1522,3 +1522,166 @@ body.grammar-nav-hidden .site-nav { display: none; }
   height: 0.85rem;
   content: '';
 }
+
+/* ═══ WORD UPGRADE (the substitution activity) ═══════════════════════════
+   Shares the play overlay's stage: the worksheet sits in the card (left) and
+   the word bank + Submit take the right column, exactly where the CUPS tag bar
+   sits for proof-reading. */
+.grammar-up-board[hidden],
+.grammar-up-side[hidden] { display: none; }
+
+.grammar-up-board { width: 100%; }
+.grammar-up-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 0.2rem 0.1rem;
+  text-align: left;
+}
+.grammar-up-line {
+  font-family: var(--font-body, inherit);
+  font-size: 1rem;
+  line-height: 1.9;
+  color: var(--ink);
+  margin: 0;
+}
+/* The slot: an inline blank the tired word is typed over. Underlined like a
+   fill-in-the-blank, and it turns green-ink once it holds a real word. */
+.grammar-up-slot {
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  background: color-mix(in srgb, var(--accent-secondary) 8%, transparent);
+  border: none;
+  border-bottom: 2px solid var(--accent-secondary);
+  border-radius: 4px 4px 0 0;
+  padding: 0 0.3em;
+  margin: 0 0.15em;
+  text-align: center;
+  min-width: 5ch;
+}
+.grammar-up-slot::placeholder { color: var(--text-tertiary, var(--text-secondary)); font-weight: 400; font-style: italic; }
+.grammar-up-slot:focus { outline: none; background: color-mix(in srgb, var(--accent-secondary) 18%, transparent); }
+.grammar-up-slot.is-filled {
+  color: var(--accent-success);
+  border-bottom-color: var(--accent-success);
+  background: color-mix(in srgb, var(--accent-success) 10%, transparent);
+}
+/* With a word "in hand" from the bank, the empty slots invite a drop. */
+.grammar-up-sheet.is-armed .grammar-up-slot:not(.is-filled) {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  cursor: copy;
+}
+
+/* Right column — mirrors .grammar-play-side. */
+.grammar-up-side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  width: 100%;
+}
+.grammar-up-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.grammar-up-bank-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-secondary);
+  background: none;
+  border: 1.5px dashed var(--border-strong, var(--accent-secondary));
+  border-radius: var(--radius-sm, 8px);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+.grammar-up-bank-toggle svg { transition: transform 0.2s ease; }
+.grammar-up-side:not(.bank-open) .grammar-up-bank-toggle svg { transform: rotate(-90deg); }
+.grammar-up-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.grammar-up-side:not(.bank-open) .grammar-up-palette { display: none; }
+/* One vivid word + its use-case. Tapping arms it (see upgrade.js). */
+.grammar-up-word {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle-color, color-mix(in srgb, var(--ink) 14%, transparent));
+  border-radius: var(--radius-sm, 8px);
+  cursor: pointer;
+}
+.grammar-up-word-w { font-weight: 700; color: var(--ink); font-size: 0.9rem; }
+.grammar-up-word-use { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; }
+.grammar-up-word.is-picked {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 16%, var(--surface-primary));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 45%, transparent);
+}
+.grammar-up-word:hover { border-color: var(--accent-secondary); }
+.grammar-up-filled-note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .grammar-up-side { flex: 0 0 auto; width: 240px; position: sticky; top: 0; }
+}
+@media (min-width: 1300px) {
+  .grammar-up-side { width: 270px; }
+}
+@media (max-width: 899px) {
+  .grammar-up-sheet { max-height: 44vh; }
+  .grammar-up-palette { max-height: 30vh; }
+}
+
+/* ── The Word Upgrade review ─────────────────────────────────────────── */
+.grammar-up-review { display: flex; flex-direction: column; gap: 0.9rem; }
+.grammar-up-rev-row {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm, 8px);
+  border-left: 4px solid var(--border-subtle-color, color-mix(in srgb, var(--ink) 20%, transparent));
+  background: var(--surface-primary);
+}
+.grammar-up-rev-row.is-best { border-left-color: var(--accent-success); }
+.grammar-up-rev-row.is-ok { border-left-color: var(--accent-secondary); }
+.grammar-up-rev-row.is-wrong-fix { border-left-color: var(--accent-danger, #f07a7a); }
+.grammar-up-rev-row.is-missed { border-left-color: var(--text-tertiary, var(--text-secondary)); }
+.grammar-up-rev-sentence { margin: 0 0 0.3rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink); }
+.grammar-up-rev-why { margin: 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+.grammar-up-rev-why strong { color: var(--accent-success); }
+.grammar-up-star { color: var(--accent-primary); font-size: 1.05em; }
+
+/* The word bank study card — a two-column grid of word + use-case. */
+.grammar-wordbank-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem 1rem;
+  margin-top: 0.6rem;
+}
+@media (min-width: 620px) { .grammar-wordbank-grid { grid-template-columns: 1fr 1fr; } }
+.grammar-wordbank-cell { margin: 0; font-size: 0.82rem; line-height: 1.4; }
+.grammar-wordbank-cell strong { color: var(--ink); }
+.grammar-wordbank-cell span { color: var(--text-secondary); display: block; }

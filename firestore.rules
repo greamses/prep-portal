@@ -428,7 +428,17 @@ service cloud.firestore {
         // deploy; the real ceiling is timeLimit, which scales with it.
         request.resource.data.count is int &&
         request.resource.data.count >= 1 &&
-        request.resource.data.count <= 5;
+        request.resource.data.count <= 5 &&
+        // Which game: proof-reading (CUPS) or Word Upgrade (substitution).
+        // Optional only because rooms predating Word Upgrade carry no
+        // `activity` — every new room sends it; present-but-wrong is refused.
+        (!('activity' in request.resource.data) ||
+          request.resource.data.activity in ['proofread', 'upgrade']) &&
+        // The Word Upgrade set — which tired word is being practised. Optional
+        // the same way; theme/focus still ride along on an upgrade round with
+        // their harmless defaults, so those checks above stay satisfied.
+        (!('wordset' in request.resource.data) ||
+          request.resource.data.wordset in ['said', 'walked', 'looked', 'adjectives']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.
