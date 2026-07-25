@@ -1532,20 +1532,26 @@ body.grammar-nav-hidden .site-nav { display: none; }
 
 .grammar-up-board { width: 100%; }
 .grammar-up-sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
   max-height: 52vh;
   overflow-y: auto;
-  padding: 0.2rem 0.1rem;
+  padding: 0.2rem 0.4rem;
   text-align: left;
 }
-.grammar-up-line {
+.grammar-up-title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+/* The passage flows as one block; `pre-wrap` keeps the authored paragraph
+   breaks, and only the slot inputs inside it are editable. */
+.grammar-up-passage {
+  white-space: pre-wrap;
   font-family: var(--font-body, inherit);
   font-size: 1rem;
-  line-height: 1.9;
+  line-height: 2.1;
   color: var(--ink);
-  margin: 0;
 }
 /* The slot: an inline blank the tired word is typed over. Underlined like a
    fill-in-the-blank, and it turns green-ink once it holds a real word. */
@@ -1657,22 +1663,54 @@ body.grammar-nav-hidden .site-nav { display: none; }
   .grammar-up-palette { max-height: 30vh; }
 }
 
-/* ── The Word Upgrade review ─────────────────────────────────────────── */
-.grammar-up-review { display: flex; flex-direction: column; gap: 0.9rem; }
-.grammar-up-rev-row {
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm, 8px);
-  border-left: 4px solid var(--border-subtle-color, color-mix(in srgb, var(--ink) 20%, transparent));
-  background: var(--surface-primary);
+/* ── The Word Upgrade review — the passage, marked in place ──────────── */
+.grammar-up-review-passage {
+  white-space: pre-wrap;
+  font-family: var(--font-body, inherit);
+  font-size: 1rem;
+  line-height: 2.2;
+  color: var(--ink);
 }
-.grammar-up-rev-row.is-best { border-left-color: var(--accent-success); }
-.grammar-up-rev-row.is-ok { border-left-color: var(--accent-secondary); }
-.grammar-up-rev-row.is-wrong-fix { border-left-color: var(--accent-danger, #f07a7a); }
-.grammar-up-rev-row.is-missed { border-left-color: var(--text-tertiary, var(--text-secondary)); }
-.grammar-up-rev-sentence { margin: 0 0 0.3rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink); }
-.grammar-up-rev-why { margin: 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+/* Each slot's mark: the word you chose, with the best beside it where you did
+   not land it — same colour language as the proof-reading review. */
+.grammar-up-mark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  padding: 0 0.15em;
+  border-radius: 4px;
+}
+.grammar-up-mark.is-best { background: color-mix(in srgb, var(--accent-success) 16%, transparent); }
+.grammar-up-mark.is-ok { background: color-mix(in srgb, var(--accent-secondary) 14%, transparent); }
+.grammar-up-mark.is-wrong-fix { background: color-mix(in srgb, var(--accent-danger, #f07a7a) 14%, transparent); }
+.grammar-up-mark.is-missed { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.grammar-up-mark .grammar-mark-fix {
+  font-weight: 700;
+  color: var(--accent-success);
+  font-size: 0.92em;
+}
+.grammar-up-mark .grammar-mark-fix::before { content: '→ '; color: var(--text-tertiary, var(--text-secondary)); font-weight: 400; }
+.grammar-up-star { color: var(--accent-primary); font-size: 0.95em; }
+
+.grammar-up-review-why {
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border-subtle-color, color-mix(in srgb, var(--ink) 18%, transparent));
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grammar-up-review-why-head {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-secondary);
+}
+.grammar-up-rev-why { margin: 0; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.55; }
 .grammar-up-rev-why strong { color: var(--accent-success); }
-.grammar-up-star { color: var(--accent-primary); font-size: 1.05em; }
 
 /* The word bank study card — a two-column grid of word + use-case. */
 .grammar-wordbank-grid {

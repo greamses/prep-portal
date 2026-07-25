@@ -438,7 +438,7 @@ service cloud.firestore {
         // the same way; theme/focus still ride along on an upgrade round with
         // their harmless defaults, so those checks above stay satisfied.
         (!('wordset' in request.resource.data) ||
-          request.resource.data.wordset in ['said', 'walked', 'looked', 'adjectives']);
+          request.resource.data.wordset in ['said', 'walked', 'ran', 'looked', 'adjectives']);
 
       allow update: if isLoggedIn() && (
         // A join: playerCount +1, never past size, nothing else changes.

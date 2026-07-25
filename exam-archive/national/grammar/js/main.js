@@ -66,12 +66,8 @@ const MAX_ROUND_SEC = 1800;
    child will proof-read carefully before they start guessing. */
 const PASSAGE_COUNTS = [1, 2, 3];
 
-/* Word Upgrade shares the "Length" dial (count 1/2/3) but spends it on
-   SENTENCES rather than passages — there is only ever one worksheet, so paging
-   would be pointless. The clock scales with the sentence count the same way it
-   scales with words for proof-reading. */
-const UPGRADE_SENTENCES = { 1: 6, 2: 8, 3: 10 };
-const UPGRADE_SEC_PER_SENTENCE = 8; // read + choose, before the pace term
+// The number of appearances a Word Upgrade set's passage holds — its "length".
+const upgradeCount = (key) => ((setMeta(key) || {}).passage || { answers: [] }).answers.length;
 
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
@@ -270,8 +266,8 @@ function renderWordsetStep() {
     onPick: (v) => {
       wordset = v;
       mem.save({ activity, grade, wordset });
-      renderCountStep();
-      content.goTo('count');
+      // Word Upgrade is one passage per round — no length step to show.
+      flow.next();
     },
   });
 }
@@ -329,19 +325,14 @@ function renderFocusStep() {
    A theme narrower than the count deals short rather than repeating a passage
    (see rng.js), which is why the subtitle promises "up to". */
 function renderCountStep() {
-  const upgrade = activity === 'upgrade';
   renderChoiceStep(content, 'count', {
-    title: upgrade ? 'How long a worksheet?' : 'How many passages?',
-    subtitle: upgrade
-      ? 'More sentences, more to upgrade — the clock grows to match.'
-      : 'They come one at a time — edit one, press Next for the following one. One Submit covers them all, and the clock grows to match.',
+    title: 'How many passages?',
+    subtitle: 'They come one at a time — edit one, press Next for the following one. One Submit covers them all, and the clock grows to match.',
     name: 'grammar-count',
     colorOffset: 1,
     options: PASSAGE_COUNTS.map((n) => ({
       value: String(n),
-      label: upgrade
-        ? `${UPGRADE_SENTENCES[n]} sentences`
-        : (n === 1 ? 'One passage' : `Up to ${n} passages`),
+      label: n === 1 ? 'One passage' : `Up to ${n} passages`,
       checked: n === passageCount,
     })),
     onPick: (v) => {
@@ -459,7 +450,7 @@ const flow = createSectionFlow([
           { label: 'Word Upgrade' },
           { label: `Grade ${grade}` },
           { label: (setMeta(wordset) || {}).label || 'Words' },
-          { label: `${UPGRADE_SENTENCES[passageCount]} sentences` },
+          { label: `${upgradeCount(wordset)} to upgrade` },
         ]
       : [
           { label: 'Proof-reading' },
@@ -871,42 +862,59 @@ function renderReviewPage(pg, n, total) {
 function renderUpgradeReview() {
   const { result, pages } = lastReview;
   const pg = pages[0];
-  reviewTitle.textContent = pg.set ? pg.set.label : 'Word Upgrade';
+  reviewTitle.textContent = (pg.parsed && pg.parsed.title) || (pg.set ? pg.set.label : 'Word Upgrade');
   reviewSub.textContent =
     `${result.caught} of ${result.errorTotal} upgraded · ${result.tagged} best choices`
     + (result.falseEdits ? ` · ${result.falseEdits} that didn’t fit` : '');
 
   reviewBody.innerHTML = '';
-  const list = document.createElement('div');
-  list.className = 'grammar-up-review';
-  pg.items.forEach((it, i) => {
-    const d = result.detail[i];
-    const p = it.parsed;
-    const row = document.createElement('div');
-    const cls = d.outcome === 'caught' ? (d.best ? 'is-best' : 'is-ok') : `is-${d.outcome}`;
-    row.className = `grammar-up-rev-row ${cls}`;
-
-    const sentence = document.createElement('p');
-    sentence.className = 'grammar-up-rev-sentence';
-    // The chosen word shown IN the sentence, marked by outcome.
+  // The whole passage, marked in place — every slot shows what you chose, with
+  // the best word beside it where you did not land it. Hovering a mark shows
+  // WHY that word is the best fit here.
+  const body = document.createElement('div');
+  body.className = 'grammar-up-review-passage';
+  const notNailed = [];
+  pg.parsed.parts.forEach((part) => {
+    if (part.type === 'text') { body.appendChild(document.createTextNode(part.s)); return; }
+    const d = result.detail[part.idx];
     const chosen = (d.submitted || '').trim();
-    let mid;
-    if (d.outcome === 'caught') mid = `<span class="grammar-mark-good">${esc(chosen)}</span>${d.best ? ' <span class="grammar-up-star">★</span>' : ''}`;
-    else if (d.outcome === 'missed') mid = `<span class="grammar-mark-bad">${esc(p.dull)}</span>`;
-    else mid = `<span class="grammar-mark-struck">${esc(chosen)}</span>`;
-    sentence.innerHTML = `${esc(p.before)}${mid}${esc(p.after)}`;
-    row.appendChild(sentence);
-
-    // The teaching line: the best word and the reason — unless they nailed it.
-    if (!(d.outcome === 'caught' && d.best)) {
-      const why = document.createElement('p');
-      why.className = 'grammar-up-rev-why';
-      why.innerHTML = `<strong>${esc(p.best)}</strong> — ${esc(p.why)}`;
-      row.appendChild(why);
+    const mark = document.createElement('span');
+    const cls = d.outcome === 'caught' ? (d.best ? 'is-best' : 'is-ok') : `is-${d.outcome}`;
+    mark.className = `grammar-up-mark ${cls}`;
+    mark.title = part.why || '';
+    if (d.outcome === 'caught' && d.best) {
+      mark.innerHTML = `<span class="grammar-mark-good">${esc(chosen)}</span><span class="grammar-up-star">★</span>`;
+    } else if (d.outcome === 'caught') {
+      mark.innerHTML = `<span class="grammar-mark-good">${esc(chosen)}</span><span class="grammar-mark-fix">${esc(part.best)}</span>`;
+      notNailed.push(part);
+    } else if (d.outcome === 'missed') {
+      mark.innerHTML = `<span class="grammar-mark-bad">${esc(part.dull)}</span><span class="grammar-mark-fix">${esc(part.best)}</span>`;
+      notNailed.push(part);
+    } else {
+      mark.innerHTML = `<span class="grammar-mark-struck">${esc(chosen)}</span><span class="grammar-mark-fix">${esc(part.best)}</span>`;
+      notNailed.push(part);
     }
-    list.appendChild(row);
+    body.appendChild(mark);
   });
-  reviewBody.appendChild(list);
+  reviewBody.appendChild(body);
+
+  // A short "why" list under the passage for the ones you did not nail — the
+  // teaching, without twenty explanation lines when you got them all right.
+  if (notNailed.length) {
+    const why = document.createElement('div');
+    why.className = 'grammar-up-review-why';
+    const h = document.createElement('p');
+    h.className = 'grammar-up-review-why-head';
+    h.textContent = 'The sharpest choices you could still make:';
+    why.appendChild(h);
+    notNailed.forEach((part) => {
+      const row = document.createElement('p');
+      row.className = 'grammar-up-rev-why';
+      row.innerHTML = `<strong>${esc(part.best)}</strong> — ${esc(part.why)}`;
+      why.appendChild(row);
+    });
+    reviewBody.appendChild(why);
+  }
 
   reviewBd.classList.add('open');
   reviewBd.setAttribute('aria-hidden', 'false');
@@ -1004,7 +1012,6 @@ async function playRoundAndShowResults(room, name) {
         timeLimit: room.timeLimit,
         startAt: room.startAt,
         wordset: room.wordset,
-        count: UPGRADE_SENTENCES[room.count || 2] || 8,
         roster,
       })
     : await startRound({
@@ -1099,11 +1106,14 @@ function makeOnWaiting(waitingStatusText) {
    Paying for a third passage that never arrives would just hand that player a
    third more time than everyone else in the room. */
 async function computeTimeLimit() {
-  // Word Upgrade is seed-free to size: a fixed sentence count, each worth a
-  // read-and-choose beat plus the pace term. No bank fetch needed.
+  // Word Upgrade is seed-free to size: one passage, so the clock is its word
+  // count (reading) plus its appearance count times the pace (upgrading). No
+  // bank fetch — the set is already loaded.
   if (activity === 'upgrade') {
-    const n = UPGRADE_SENTENCES[passageCount] || 8;
-    const secs = n * (UPGRADE_SEC_PER_SENTENCE + pace);
+    const s = setMeta(wordset) || SETS[0];
+    const words = s.passage.text.replace(/[{}]/g, '').trim().split(/\s+/).length;
+    const slots = s.passage.answers.length;
+    const secs = words * READ_SEC_PER_WORD + slots * pace;
     return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(secs)));
   }
   const fallback = Math.round((100 * READ_SEC_PER_WORD + 10 * pace) * passageCount);

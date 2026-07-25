@@ -18,9 +18,8 @@
    the single BEST word is the bonus "tagged", a wrong guess is a "falseEdit",
    the tired word left alone is a miss (see data/grammar/substitution.js).
 ═══════════════════════════════════════════════════════ */
-import { mulberry32, hashSeed, BOT_NS } from './rng.js';
-import { CONTENT_NS } from '/utils/games/rng.js';
-import { SETS, setMeta, parseSentence, scoreUpgrade, normWord } from '/data/grammar/substitution.js';
+import { BOT_NS } from './rng.js';
+import { SETS, setMeta, parsePassage, slotsOf, scoreUpgrade, normWord } from '/data/grammar/substitution.js';
 
 export { BOT_NS };
 
@@ -51,7 +50,9 @@ const submitBtn = $('grammar-up-submit-btn');
 
 let active = false;
 let editing = false;
-let items = [];          // [{ parsed, answer }]
+let parsed = null;       // the parsed passage { title, parts, count }
+let slots = [];          // the scorable appearances, in order (index === slot.idx)
+let answers = [];        // answers[slotIdx] → the word the player has typed
 let picked = null;       // the palette word currently "in hand", or null
 let set = null;
 let playStartMs = 0;
@@ -61,18 +62,11 @@ let endAt = 0;
 let rafId = null;
 let resolveRound = null;
 
-// ── The seeded draw ────────────────────────────────────────────────────────
-// `count` sentences from the set's bank, drawn without replacement, seeded so
-// every client in the room works the same worksheet in the same order.
-export function buildUpgradeItems({ seed, setKey, count = 8 }) {
+// The set's passage, parsed. There is one passage per set, so the seed is not
+// used to pick between them — every client works the identical passage anyway.
+export function buildUpgradePassage(setKey) {
   const s = setMeta(setKey) || SETS[0];
-  const rng = mulberry32(hashSeed(seed, CONTENT_NS));
-  const deck = s.sentences.slice();
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  return deck.slice(0, Math.max(1, Math.min(count, deck.length))).map((sent) => parseSentence(sent));
+  return { set: s, parsed: parsePassage(s) };
 }
 
 function renderRoster(roster) {
@@ -115,45 +109,51 @@ function pickWord(w) {
   sheetEl.classList.toggle('is-armed', !!picked);
 }
 
-// ── The worksheet ──────────────────────────────────────────────────────────
-function renderSheet() {
+// ── The passage ─────────────────────────────────────────────────────────────
+// The whole passage as flowing prose, with an inline input at each appearance
+// of the tired word. `white-space: pre-wrap` on the container keeps the
+// authored paragraph breaks (see the CSS). The plain prose is NOT editable —
+// only the slots are — so the passage reads as writing being improved in place.
+function renderPassage() {
   sheetEl.innerHTML = '';
-  items.forEach((it, i) => {
-    const row = document.createElement('p');
-    row.className = 'grammar-up-line';
-    row.appendChild(document.createTextNode(`${i + 1}. `));
-    row.appendChild(document.createTextNode(it.parsed.before));
+  const title = document.createElement('p');
+  title.className = 'grammar-up-title';
+  title.textContent = parsed.title;
+  sheetEl.appendChild(title);
 
+  const body = document.createElement('div');
+  body.className = 'grammar-up-passage';
+  parsed.parts.forEach((part) => {
+    if (part.type === 'text') {
+      body.appendChild(document.createTextNode(part.s));
+      return;
+    }
     const slot = document.createElement('input');
     slot.type = 'text';
     slot.className = 'grammar-up-slot';
-    slot.dataset.i = String(i);
-    slot.value = it.answer || '';
-    slot.placeholder = it.parsed.dull; // the tired word, shown as the prompt
+    slot.dataset.i = String(part.idx);
+    slot.value = answers[part.idx] || '';
+    slot.placeholder = part.dull;   // the tired word, shown as the prompt
     slot.spellcheck = false;
     slot.autocapitalize = 'off';
     slot.setAttribute('autocomplete', 'off');
-    slot.size = Math.max(6, it.parsed.dull.length + 2);
-    row.appendChild(slot);
-
-    row.appendChild(document.createTextNode(it.parsed.after));
-    sheetEl.appendChild(row);
-    paintSlot(i);
+    slot.style.width = `${Math.max(6, part.dull.length + 2)}ch`;
+    body.appendChild(slot);
+    paintSlot(part.idx, slot);
   });
+  sheetEl.appendChild(body);
 }
 
 const slotEl = (i) => sheetEl.querySelector(`.grammar-up-slot[data-i="${i}"]`);
+const slotDull = (i) => normWord(String(slots.find((s) => s.idx === i).dull).split(' ')[0]);
 
 // A slot's only tell is whether it has been filled with something other than
 // the tired word — never whether the choice was RIGHT (that is the game).
-function paintSlot(i) {
-  const el = slotEl(i);
+function paintSlot(i, el = slotEl(i)) {
   if (!el) return;
   const a = normWord(el.value);
-  const dull = normWord(items[i].parsed.dull.split(' ')[0]);
-  el.classList.toggle('is-filled', a !== '' && a !== dull);
-  // The box grows to fit a long word like "outstanding".
-  el.size = Math.max(6, (el.value || el.placeholder).length + 2);
+  el.classList.toggle('is-filled', a !== '' && a !== slotDull(i));
+  el.style.width = `${Math.max(6, (el.value || el.placeholder).length + 2)}ch`;
 }
 
 function onSheetClick(e) {
@@ -164,8 +164,8 @@ function onSheetClick(e) {
   if (picked) {
     const i = Number(el.dataset.i);
     el.value = picked;
-    items[i].answer = picked;
-    paintSlot(i);
+    answers[i] = picked;
+    paintSlot(i, el);
     updateNotes();
     pickWord(picked); // clears the hand
     focusNextEmpty(i);
@@ -176,8 +176,8 @@ function onSheetInput(e) {
   const el = e.target.closest('.grammar-up-slot');
   if (!el) return;
   const i = Number(el.dataset.i);
-  items[i].answer = el.value;
-  paintSlot(i);
+  answers[i] = el.value;
+  paintSlot(i, el);
   updateNotes();
 }
 
@@ -191,22 +191,26 @@ function onSheetKey(e) {
 }
 
 function focusNextEmpty(from) {
-  for (let k = 1; k <= items.length; k++) {
-    const i = (from + k) % items.length;
-    const a = normWord(items[i].answer);
-    const dull = normWord(items[i].parsed.dull.split(' ')[0]);
-    if (a === '' || a === dull) { const el = slotEl(i); if (el) { el.focus(); el.select(); } return; }
+  const order = slots.map((s) => s.idx);
+  const pos = order.indexOf(from);
+  for (let k = 1; k <= order.length; k++) {
+    const i = order[(pos + k) % order.length];
+    const a = normWord(answers[i]);
+    if (a === '' || a === slotDull(i)) { const el = slotEl(i); if (el) { el.focus(); el.select(); } return; }
   }
 }
 
-function updateNotes() {
-  let filled = 0;
-  items.forEach((it) => {
-    const a = normWord(it.answer);
-    const dull = normWord(it.parsed.dull.split(' ')[0]);
-    if (a !== '' && a !== dull) filled += 1;
+function filledCount() {
+  let n = 0;
+  slots.forEach((s) => {
+    const a = normWord(answers[s.idx]);
+    if (a !== '' && a !== normWord(String(s.dull).split(' ')[0])) n += 1;
   });
-  filledNote.textContent = `${filled} of ${items.length} upgraded`;
+  return n;
+}
+
+function updateNotes() {
+  filledNote.textContent = `${filledCount()} of ${slots.length} upgraded`;
 }
 
 function escapeHtml(s) {
@@ -233,8 +237,7 @@ function endRound() {
   if (rafId) cancelAnimationFrame(rafId);
   document.removeEventListener('keydown', onGlobalKey);
 
-  const answers = items.map((it) => it.answer || '');
-  const result = scoreUpgrade(items, answers);
+  const result = scoreUpgrade(slots, slots.map((s) => answers[s.idx] || ''));
 
   playBd.classList.remove('open');
   playBd.setAttribute('aria-hidden', 'true');
@@ -249,10 +252,10 @@ function endRound() {
       falseEdits: result.falseEdits,
       caught: result.caught,
       tagged: result.tagged,
-      // The review overlay reads these — one "page" holding every sentence.
+      // The review overlay reads these — the whole passage, marked.
       activity: 'upgrade',
       result,
-      pages: [{ set, items, result }],
+      pages: [{ set, parsed, result }],
     });
   }
   resolveRound = null;
@@ -265,14 +268,9 @@ function onGlobalKey(e) {
 
 function doSubmit() {
   if (!active || !editing) return;
-  let filled = 0;
-  items.forEach((it) => {
-    const a = normWord(it.answer);
-    const dull = normWord(it.parsed.dull.split(' ')[0]);
-    if (a !== '' && a !== dull) filled += 1;
-  });
+  const filled = filledCount();
   if (filled === 0 && !window.confirm('You have not upgraded any word yet. Submit anyway?')) return;
-  if (filled < items.length && !window.confirm(`You have left ${items.length - filled} of ${items.length} unchanged. Submit anyway?`)) return;
+  if (filled < slots.length && !window.confirm(`You have left ${slots.length - filled} of ${slots.length} unchanged. Submit anyway?`)) return;
   submitMs = Date.now() - playStartMs;
   endRound();
 }
@@ -290,9 +288,12 @@ bankToggle && bankToggle.addEventListener('click', () => {
  * Resolves once the player submits or the local clock hits zero, with the same
  * metric shape proof-reading's startRound returns.
  */
-export function startUpgradeRound({ seed, timeLimit, startAt, wordset, count = 8, roster }) {
-  set = setMeta(wordset) || SETS[0];
-  items = buildUpgradeItems({ seed, setKey: set.key, count }).map((parsed) => ({ parsed, answer: '' }));
+export function startUpgradeRound({ seed, timeLimit, startAt, wordset, roster }) {
+  const built = buildUpgradePassage(wordset);
+  set = built.set;
+  parsed = built.parsed;
+  slots = slotsOf(parsed);
+  answers = new Array(slots.length).fill('');
 
   return new Promise((resolve) => {
     resolveRound = resolve;
@@ -302,12 +303,12 @@ export function startUpgradeRound({ seed, timeLimit, startAt, wordset, count = 8
 
     modeNote.textContent = `Word Upgrade · ${set.label}`;
     timerNote.textContent = `${Math.round(timeLimit / 60)} min round`;
-    errorNote.textContent = `${items.length} to upgrade`;
-    filledNote.textContent = `0 of ${items.length} upgraded`;
-    hintEl.textContent = 'Swap each tired word for the most vivid one that fits — type it, or tap a word from the bank then tap the box.';
+    errorNote.textContent = `${slots.length} to upgrade`;
+    filledNote.textContent = `0 of ${slots.length} upgraded`;
+    hintEl.textContent = 'Read the passage, then swap each tired word for the most vivid one that fits — type it, or tap a word from the bank then tap the box.';
 
     renderPalette();
-    renderSheet();
+    renderPassage();
     upSide.classList.add('bank-open'); // the bank is open to start, so the words are read first
     if (bankToggle) bankToggle.setAttribute('aria-expanded', 'true');
 
