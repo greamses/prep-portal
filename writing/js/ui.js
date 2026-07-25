@@ -4,6 +4,9 @@
 
 import { $, currentTopic, currentWritingType } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
+import { FAMILIES, getForm, formLabel } from './forms.js';
+import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
+import { youtubeSearch } from '/utils/ai-client.js';
 
 // ── Accordion Factory ──────────────────────────────────
 export function makeAccordion({ id, title, bodyHtml, startOpen = false, extraClass = '', count = null }) {
@@ -101,47 +104,90 @@ export function initColorKeyAccordion(container) {
   }));
 }
 
-// ── Landing Type Picker ────────────────────────────────
-export function initTypePicker({ onGenerated } = {}) {
-  const row = $('type-chip-row');
+// ── Landing Setup — the shared step carousel ───────────
+// Step 1 picks the family, step 2 the form inside it, and picking a form
+// generates the prompt. "Narrative" alone is not a thing you can be marked
+// on, which is why there is a second step at all — see js/forms.js.
+let pickedFamily = null;
+let pickedForm = null;
+
+export function initSetup({ onGenerated } = {}) {
+  const mount = $('writing-setup');
   const beginBtn = $('begin-writing-btn');
   const refreshBtn = $('topic-refresh-btn');
-  if (!row) return;
+  if (!mount) return;
 
-  function generate(type, chipEl) {
-    row.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('checked'));
-    chipEl?.classList.add('checked');
-    row.querySelectorAll('.topic-chip').forEach(c => c.disabled = true);
-    if (beginBtn) beginBtn.disabled = true;
+  const carousel = createCarousel(mount);
+  carousel.addSlide('family', 'Form');
+  carousel.addSlide('style', 'Style');
 
-    fetchGeneratedTopic(type, {
-      onStart: () => {
-        const topicDisplay = $('topic-display');
-        if (topicDisplay) topicDisplay.textContent = `Generating a ${type} prompt...`;
-      },
-      onSuccess: () => {
-        row.querySelectorAll('.topic-chip').forEach(c => c.disabled = false);
-        syncTopicDisplay();
-        if (beginBtn) beginBtn.disabled = false;
-        if (refreshBtn) refreshBtn.style.display = '';
-        onGenerated?.(type);
-      },
-      onError: () => {
-        row.querySelectorAll('.topic-chip').forEach(c => c.disabled = false);
-        const topicDisplay = $('topic-display');
-        if (topicDisplay) topicDisplay.textContent = 'Error generating topic. Please try again.';
-      }
+  function showFamilyStep() {
+    renderChoiceStep(carousel, 'family', {
+      title: 'What kind of writing?',
+      subtitle: 'Four families. Each one is marked differently.',
+      name: 'writing-family',
+      options: FAMILIES.map((f) => ({
+        value: f.id,
+        label: f.label,
+        note: f.blurb,
+        checked: f.id === pickedFamily,
+      })),
+      onPick: (famId) => { pickedFamily = famId; showStyleStep(); carousel.goTo('style'); },
     });
   }
 
-  row.querySelectorAll('.topic-chip').forEach(chip => {
-    chip.addEventListener('click', () => generate(chip.dataset.type, chip));
-  });
+  function showStyleStep() {
+    const fam = FAMILIES.find((f) => f.id === pickedFamily) || FAMILIES[0];
+    renderChoiceStep(carousel, 'style', {
+      title: `${fam.label} — which form?`,
+      subtitle: 'Pick one and we\'ll write you a prompt for it.',
+      name: 'writing-form',
+      colorOffset: 2,
+      options: fam.forms.map((f) => ({
+        value: f.id,
+        label: f.label,
+        note: f.blurb,
+        checked: f.id === pickedForm,
+      })),
+      skipLabel: 'Use this',
+      onPick: (formId) => generate(formId),
+    });
+  }
 
-  refreshBtn?.addEventListener('click', () => {
-    const active = row.querySelector('.topic-chip.checked') || row.querySelector('.topic-chip');
-    if (active) generate(active.dataset.type, active);
-  });
+  function generate(formId) {
+    pickedForm = formId;
+    const form = getForm(formId);
+    if (beginBtn) beginBtn.disabled = true;
+    if (refreshBtn) refreshBtn.disabled = true;
+
+    fetchGeneratedTopic(formId, {
+      onStart: () => {
+        const topicDisplay = $('topic-display');
+        if (topicDisplay) {
+          topicDisplay.textContent = `Writing you a ${(form ? form.label : 'writing').toLowerCase()} prompt…`;
+        }
+      },
+      onSuccess: () => {
+        syncTopicDisplay();
+        if (beginBtn) beginBtn.disabled = false;
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.style.display = ''; }
+        onGenerated?.(formId);
+      },
+      onError: () => {
+        if (refreshBtn) refreshBtn.disabled = false;
+        const topicDisplay = $('topic-display');
+        if (topicDisplay) topicDisplay.textContent = 'Could not write a prompt just then. Try again.';
+      },
+    });
+  }
+
+  showFamilyStep();
+  showStyleStep();
+  carousel.start('family');
+
+  // Another prompt for the SAME form — the point of the refresh is to reroll
+  // the topic, not to send you back through the picker.
+  refreshBtn?.addEventListener('click', () => { if (pickedForm) generate(pickedForm); });
 }
 
 // ── Sync Topic Display ─────────────────────────────────
@@ -149,7 +195,129 @@ export function syncTopicDisplay() {
   const topicDisplay = $('topic-display');
   if (topicDisplay && currentTopic) topicDisplay.textContent = currentTopic;
   const mhdrType = $('mhdr-type');
-  if (mhdrType) mhdrType.textContent = currentWritingType.toUpperCase();
+  if (mhdrType) mhdrType.textContent = formLabel(currentWritingType).toUpperCase();
+}
+
+/* ═══════════════════════════════════════════════════════
+   THE LESSON — you read (or watch) the form before you write it.
+
+   The gate is deliberately mild: reaching the end of the lesson unlocks the
+   writing, and so does playing a video. It is a speed bump against opening a
+   form you have never been taught and losing the marks that the form itself
+   carries — not a test.
+   ═══════════════════════════════════════════════════════ */
+let hasRead = false;
+let hasWatched = false;
+let endObserver = null;
+
+const li = (items) => items.map((t) => `<li>${esc(t)}</li>`).join('');
+const esc = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export function renderLesson(formId) {
+  const form = getForm(formId);
+  const paper = $('lesson-paper');
+  if (!form || !paper) return;
+
+  hasRead = false;
+  hasWatched = false;
+  const videoWrap = $('lesson-video');
+  if (videoWrap) { videoWrap.hidden = true; videoWrap.innerHTML = ''; }
+
+  paper.innerHTML = `
+    <p class="lesson-eyebrow">${esc(form.label)}</p>
+    <h3 class="lesson-title">${esc(form.blurb)}</h3>
+    <p class="lesson-what">${esc(form.lesson.what)}</p>
+    <p class="lesson-head">How it is shaped</p>
+    <ol class="lesson-list">${li(form.lesson.shape)}</ol>
+    <p class="lesson-head">What marks it out</p>
+    <ul class="lesson-list lesson-list--plain">${li(form.lesson.moves)}</ul>
+    <p class="lesson-head">A model</p>
+    <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
+    <p class="lesson-prompt-label">Your prompt</p>
+    <p class="lesson-prompt">${esc(currentTopic)}</p>`;
+
+  syncGate();
+
+  // "Read" = the foot of the lesson has actually been on screen. An
+  // IntersectionObserver rather than a scroll handler, because on a tall
+  // desktop screen the whole lesson can be visible without any scrolling at
+  // all — and that still counts as having reached the end.
+  const end = $('lesson-end');
+  const root = $('modal-body');
+  if (endObserver) endObserver.disconnect();
+  if (end && root && 'IntersectionObserver' in window) {
+    endObserver = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { hasRead = true; syncGate(); }
+    }, { root, threshold: 0.9 });
+    endObserver.observe(end);
+  } else {
+    hasRead = true; // no observer support — never trap the student
+    syncGate();
+  }
+}
+
+function syncGate() {
+  const btn = $('start-writing-btn');
+  const gate = $('lesson-gate');
+  const open = hasRead || hasWatched;
+  if (btn) btn.disabled = !open;
+  if (gate) {
+    gate.textContent = open
+      ? (hasWatched ? 'Video watched — off you go' : 'Read — off you go')
+      : 'Read to the end to start writing';
+    gate.classList.toggle('is-open', open);
+  }
+}
+
+/* The video is a bonus path, not the main one: the search runs through the
+   backend proxy and quietly returns nothing when the server has no YouTube
+   key or the visitor is signed out (see utils/ai-client.js). So the button
+   says what happened rather than throwing. */
+export async function loadLessonVideo() {
+  const form = getForm(currentWritingType);
+  const wrap = $('lesson-video');
+  const btn = $('lesson-video-btn');
+  if (!form || !wrap) return;
+
+  if (!wrap.hidden) { wrap.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+
+  wrap.hidden = false;
+  wrap.innerHTML = '<p class="lesson-video-note">Looking for a lesson video…</p>';
+  if (btn) btn.disabled = true;
+
+  const results = await youtubeSearch(form.video, { maxResults: 3 });
+  if (btn) btn.disabled = false;
+
+  if (!results.length) {
+    wrap.innerHTML = `<p class="lesson-video-note">No video available right now — the lesson above covers it. (Sign in for videos.)</p>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <p class="lesson-video-note">Pick one — playing it unlocks the writing too.</p>
+    <div class="lesson-video-row">
+      ${results.map((v) => `
+        <button class="lesson-video-card" type="button" data-id="${v.videoId}">
+          <img src="${v.thumb}" alt="" loading="lazy" />
+          <span class="lesson-video-title">${esc(v.title)}</span>
+          <span class="lesson-video-chan">${esc(v.channel)}</span>
+        </button>`).join('')}
+    </div>`;
+
+  wrap.querySelectorAll('.lesson-video-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      wrap.innerHTML = `
+        <div class="lesson-video-stage">
+          <iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=1"
+                  title="Lesson video" frameborder="0" allowfullscreen
+                  allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
+        </div>`;
+      hasWatched = true;
+      syncGate();
+    });
+  });
 }
 
 // ── Modal ──────────────────────────────────────────────
@@ -157,11 +325,12 @@ export function openWritingModal() {
   const modal = $('modal');
   if (!modal) return;
   syncTopicDisplay();
-  showPhase('write');
+  renderLesson(currentWritingType);
+  showPhase('learn');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => $('writing-area')?.focus(), 260);
+  $('modal-body')?.scrollTo({ top: 0 });
 }
 
 export function closeWritingModal() {
@@ -172,27 +341,30 @@ export function closeWritingModal() {
   document.body.style.overflow = '';
 }
 
+// Three phases now: learn → write → results.
 export function showPhase(phase) {
+  const lessonSec = $('lesson-section');
   const editorSec = $('editor-section');
   const resultsSec = $('results-section');
+  const ftrLearn = $('ftr-learn');
   const ftrWrite = $('ftr-write');
   const ftrResults = $('ftr-results');
   const mhdrPhase = $('mhdr-phase');
 
-  if (phase === 'write') {
-    if (editorSec) editorSec.style.display = 'block';
-    resultsSec?.classList.remove('active');
-    if (ftrWrite) ftrWrite.style.display = 'flex';
-    if (ftrResults) ftrResults.style.display = 'none';
-    if (mhdrPhase) mhdrPhase.textContent = 'Write';
-  } else {
-    if (editorSec) editorSec.style.display = 'none';
-    resultsSec?.classList.add('active');
-    if (ftrWrite) ftrWrite.style.display = 'none';
-    if (ftrResults) ftrResults.style.display = 'flex';
-    if (mhdrPhase) mhdrPhase.textContent = 'Results';
-    $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
+  const show = (el, on, mode = 'block') => { if (el) el.style.display = on ? mode : 'none'; };
+
+  show(lessonSec, phase === 'learn');
+  show(editorSec, phase === 'write');
+  resultsSec?.classList.toggle('active', phase === 'results');
+
+  show(ftrLearn, phase === 'learn', 'flex');
+  show(ftrWrite, phase === 'write', 'flex');
+  show(ftrResults, phase === 'results', 'flex');
+
+  if (mhdrPhase) {
+    mhdrPhase.textContent = phase === 'learn' ? 'Learn' : phase === 'write' ? 'Write' : 'Results';
   }
+  if (phase !== 'learn') $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Inject Rewrite Styles ──────────────────────────────

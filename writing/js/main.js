@@ -7,8 +7,9 @@ import { gradeEssay } from './api.js';
 import { initPopover, setupPopoverListeners } from './popover.js';
 import { initRender, renderResults, clearResultsAccordions, resetParagraphState } from './render.js';
 import {
-  initTypePicker, initColorKeyAccordion, syncTopicDisplay,
-  openWritingModal, closeWritingModal, showPhase, injectRewriteStyles
+  initSetup, initColorKeyAccordion, syncTopicDisplay,
+  openWritingModal, closeWritingModal, showPhase, injectRewriteStyles,
+  loadLessonVideo
 } from './ui.js';
 
 // ── DOM Refs ───────────────────────────────────────────
@@ -85,8 +86,13 @@ elRetryBtn?.addEventListener('click', () => {
   elTextarea.focus();
 });
 
-// ── Begin Writing (landing → modal) ────────────────────
+// ── Landing → the lesson, and only then the sheet ──────
 $('begin-writing-btn')?.addEventListener('click', () => openWritingModal());
+$('lesson-video-btn')?.addEventListener('click', () => loadLessonVideo());
+$('start-writing-btn')?.addEventListener('click', () => {
+  showPhase('write');
+  setTimeout(() => elTextarea.focus(), 120);
+});
 
 // ── Change Topic (modal → landing) ─────────────────────
 $('new-topic-btn')?.addEventListener('click', () => closeWritingModal());
@@ -94,8 +100,10 @@ $('new-topic-results-btn')?.addEventListener('click', () => closeWritingModal())
 
 // ── Modal Close ────────────────────────────────────────
 $('modal-close')?.addEventListener('click', () => closeWritingModal());
+// Click-outside closes while learning or writing, but never on the results —
+// a stray click must not throw away marking the student just waited for.
 elModal?.addEventListener('click', e => {
-  if (e.target === elModal && elEditorSec.style.display !== 'none') closeWritingModal();
+  if (e.target === elModal && !elResultsSec.classList.contains('active')) closeWritingModal();
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && elModal?.classList.contains('open')) closeWritingModal();
@@ -105,5 +113,5 @@ document.addEventListener('keydown', e => {
 window.addEventListener('DOMContentLoaded', () => {
   injectRewriteStyles();
   initColorKeyAccordion(elResultsSec);
-  initTypePicker();
+  initSetup();
 });

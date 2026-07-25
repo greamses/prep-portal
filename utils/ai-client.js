@@ -334,3 +334,46 @@ export async function imageStore({ imageBase64 } = {}) {
   if (!data.url) throw new Error('No stored image URL came back — try again.');
   return data.url;
 }
+
+/**
+ * Search YouTube through the backend proxy (/api/ai/youtube — the API key
+ * lives on the server and is never exposed here).
+ *
+ * Deliberately soft: a missing YouTube key, a signed-out visitor or an API
+ * hiccup all resolve to an EMPTY ARRAY rather than throwing, because every
+ * caller so far treats video as an enhancement on top of something that has
+ * to work without it. Only pass a query you would type into the search box.
+ *
+ * @param {string} query
+ * @param {number} [o.maxResults=4]
+ * @returns {Promise<Array<{videoId:string,title:string,channel:string,thumb:string}>>}
+ */
+export async function youtubeSearch(query, { maxResults = 4 } = {}) {
+  if (!query) return [];
+  try {
+    const token = await _idToken();
+    const params = new URLSearchParams({
+      part: 'snippet',
+      type: 'video',
+      safeSearch: 'strict',
+      maxResults: String(maxResults),
+      q: query,
+    });
+    const res = await fetch(`${API_BASE}/api/ai/youtube?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || [])
+      .filter((it) => it?.id?.videoId)
+      .map((it) => ({
+        videoId: it.id.videoId,
+        title: it.snippet?.title || '',
+        channel: it.snippet?.channelTitle || '',
+        thumb: it.snippet?.thumbnails?.medium?.url
+          || `https://i.ytimg.com/vi/${it.id.videoId}/hqdefault.jpg`,
+      }));
+  } catch {
+    return [];
+  }
+}

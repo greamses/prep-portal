@@ -53,26 +53,25 @@
     <main class="setup-section">
       <div class="setup-section-hdr">
         <div class="setup-eyebrow">Get Started</div>
-        <h2>Choose Your Writing Type</h2>
+        <h2>Choose Your Writing Form</h2>
         <p class="setup-section-sub">
-          Pick a genre and we'll generate an original prompt just for you.
+          Pick the family, then the exact form. We'll teach it, then set you an
+          original prompt to write.
         </p>
       </div>
 
       <div class="topic-picker" id="type-picker">
         <div class="topic-picker-hdr">
           <div>
-            <span class="topic-picker-title">Writing Type</span>
-            <span class="topic-picker-sub">Select one to generate a prompt</span>
+            <span class="topic-picker-title">Writing Form</span>
+            <span class="topic-picker-sub">Family first, then the exact form you want to practise</span>
           </div>
         </div>
         <div class="topic-groups">
-          <div class="topic-chips" id="type-chip-row">
-            <button class="topic-chip" type="button" data-type="narrative"><span>Narrative</span></button>
-            <button class="topic-chip" type="button" data-type="descriptive"><span>Descriptive</span></button>
-            <button class="topic-chip" type="button" data-type="argumentative"><span>Argumentative</span></button>
-            <button class="topic-chip" type="button" data-type="expository"><span>Expository</span></button>
-          </div>
+          <!-- The shared step wizard (utils/components/setup-carousel.js), same
+               component the Drills/Puzzles/Geometry setups use: step 1 is the
+               family, step 2 the form inside it. Built in js/ui.js. -->
+          <div id="writing-setup"></div>
         </div>
 
         <!-- Topic display — the shared torn-paper receipt card
@@ -96,7 +95,7 @@
         </div>
 
         <div class="topic-actions">
-          <button class="btn btn-primary" id="begin-writing-btn" type="button" disabled>Begin Writing →</button>
+          <button class="btn btn-primary" id="begin-writing-btn" type="button" disabled>Learn the Form →</button>
         </div>
       </div>
     </main>
@@ -125,8 +124,22 @@
         </div>
 
         <div class="modal-body" id="modal-body">
+          <!-- LEARN PHASE — nobody writes a form they have not been taught.
+               The lesson (js/forms.js) is rendered into the receipt below, and
+               Start Writing stays locked until it has been read to the end or
+               a video has been watched. -->
+          <div id="lesson-section">
+            <p class="sec-label">Before you write</p>
+            <div class="lesson-receipt pp-receipt">
+              <div class="lesson-paper pp-receipt__paper" id="lesson-paper"></div>
+            </div>
+            <!-- Filled on demand from /api/ai/youtube (js/ui.js) -->
+            <div class="lesson-video" id="lesson-video" hidden></div>
+            <div class="lesson-end" id="lesson-end" aria-hidden="true"></div>
+          </div>
+
           <!-- WRITE PHASE -->
-          <div id="editor-section">
+          <div id="editor-section"
             <p class="sec-label">Your Essay</p>
             <!-- The writing surface is the same torn-paper receipt as the
                  prompt card; the textarea is the ruled sheet inside it. -->
@@ -360,7 +373,19 @@
         </div>
 
         <div class="modal-ftr">
-          <div class="mftr-inner" id="ftr-write">
+          <div class="mftr-inner" id="ftr-learn">
+            <div class="mftr-wc" id="lesson-gate">Read to the end to start writing</div>
+            <div class="mftr-space"></div>
+            <button class="btn btn-ghost" id="lesson-video-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="5" width="19" height="14" rx="2" />
+                <path d="M10 9.5v5l4.5-2.5z" />
+              </svg>
+              Watch a video
+            </button>
+            <button class="btn btn-primary" id="start-writing-btn" type="button" disabled>Start Writing →</button>
+          </div>
+          <div class="mftr-inner" id="ftr-write" style="display: none">
             <div class="mftr-wc">Words: <span id="word-count">0</span></div>
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="new-topic-btn" type="button">← Change Topic</button>

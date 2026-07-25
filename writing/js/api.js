@@ -6,6 +6,7 @@ import {
   currentWritingType, setCurrentWritingType,
   currentTopic, setCurrentTopic,
 } from './config.js';
+import { getForm, familyOf, formLabel } from './forms.js';
 import { geminiGenerate, groqGenerate, groqText } from '/utils/ai-client.js';
 
 // ── Gemini call — delegates to the shared AI client (backend proxy) ──
@@ -198,7 +199,7 @@ ACTIVELY MARK common misspellings:
   Word confusions: alot→a lot, aswell→as well, untill→until
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${getSubstitutionGuidelines(currentWritingType)}
+${getSubstitutionGuidelines(familyOf(currentWritingType))}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SUBSTITUTION RULES:
@@ -257,53 +258,49 @@ Preserve paragraph breaks as \\n\\n. Escape all JSON strings.`;
 }
 
 // ── Topic Generation ───────────────────────────────────
-const FALLBACK_TOPICS = {
-  narrative: [
-    "Write a story about a student who finds a forgotten letter inside an old textbook.",
-    "Write a story about the day a normal journey to school became unforgettable.",
-    "Write a story about someone who had to make a brave choice when nobody else would help.",
-    "Write a story that begins with: The classroom went completely silent."
-  ],
-  descriptive: [
-    "Describe a busy market just before a heavy rain begins.",
-    "Describe an abandoned building that seems to hold many memories.",
-    "Describe your school compound early in the morning before lessons begin.",
-    "Describe a festival scene using sounds, colours, smells, and movement."
-  ],
-  argumentative: [
-    "Should students be allowed to use mobile phones in school? Give reasons for your view.",
-    "Do exams truly measure intelligence? Write an essay arguing your position.",
-    "Should every secondary school student learn a practical skill before graduation?",
-    "Is social media more helpful than harmful to teenagers?"
-  ],
-  expository: [
-    "Explain how students can manage their time better during exam preparation.",
-    "Explain the importance of reading in improving writing skills.",
-    "Explain three ways young people can contribute positively to their community.",
-    "Explain how peer pressure can affect a student's choices."
-  ],
-  general: [
-    "Write about a challenge you faced and what it taught you.",
-    "Write about the kind of future you want and the habits that can help you reach it.",
-    "Write about a person who has influenced your education.",
-    "Write about an event that changed the way you see responsibility."
-  ]
-};
+const GENERIC_FALLBACKS = [
+  "Write about a challenge you faced and what it taught you.",
+  "Write about the kind of future you want and the habits that can help you reach it.",
+  "Write about a person who changed how you think about something.",
+  "Write about an event that changed the way you see responsibility.",
+];
 
-function fallbackTopicFor(type) {
-  const key = String(type || 'general').toLowerCase().split(/\s+/)[0];
-  const topics = FALLBACK_TOPICS[key] || FALLBACK_TOPICS.general;
+function fallbackTopicFor(formId) {
+  const form = getForm(formId);
+  const topics = (form && form.fallbacks && form.fallbacks.length) ? form.fallbacks : GENERIC_FALLBACKS;
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
-export async function fetchGeneratedTopic(type, callbacks = {}) {
+export async function fetchGeneratedTopic(formId, callbacks = {}) {
   const { onStart, onSuccess, onError } = callbacks;
-  
-  setCurrentWritingType(type);
+
+  setCurrentWritingType(formId);
   onStart?.();
-  
+
+  const form = getForm(formId);
+  // The form's own `ask` is what makes a news-report prompt different from a
+  // short-story prompt — without it the model returns the same four "write
+  // about a memorable day" topics whatever you picked.
+  const ask = form
+    ? form.ask
+    : 'a piece of writing suitable for a secondary-school student';
+
   try {
-    const prompt = `Generate ONE original, age-appropriate ${type} writing topic for a Nigerian secondary school student (SS1–SS2, age 13–15). Engaging, specific, achievable in 200–500 words. Return ONLY the topic text — no quotes, no label, no explanation.`;
+    // Culture-neutral on purpose: this page is used well outside one country,
+    // and a prompt that assumes local places, money or institutions is simply
+    // unanswerable for half the students who get it.
+    const prompt = `Generate ONE original writing prompt for a secondary-school student (age 13–16) anywhere in the world.
+
+FORM: ${form ? form.label : 'General'} — ${ask}.
+
+Rules:
+• The prompt must suit that form specifically, and could not be answered well in any other form.
+• Keep it universal. Do NOT tie it to any single country, region or culture: no place names, no currencies, no national institutions, exams, holidays or public figures. A student in any country should be able to answer it from ordinary life.
+• Be specific rather than broad — one situation, not a theme.
+• It must be answerable in 200–500 words.
+• Plain, direct English.
+
+Return ONLY the prompt text — no quotes, no label, no explanation.`;
     const result = await generateTextWithFallback({
       geminiBody: {
         contents: [{ parts: [{ text: prompt }] }],
@@ -323,13 +320,13 @@ export async function fetchGeneratedTopic(type, callbacks = {}) {
     
     const text = (result.text || "").trim()
       .replace(/^["']+|["']+$/g, '');
-    const topic = text || "Write about a memorable experience and what you learned from it.";
+    const topic = text || fallbackTopicFor(formId);
     setCurrentTopic(topic);
     onSuccess?.(topic);
     
   } catch (err) {
     console.error(err);
-    const topic = fallbackTopicFor(type);
+    const topic = fallbackTopicFor(formId);
     setCurrentTopic(topic);
     onSuccess?.(topic);
   }
@@ -338,7 +335,9 @@ export async function fetchGeneratedTopic(type, callbacks = {}) {
 // ── Essay Grading ──────────────────────────────────────
 export async function gradeEssay(userText) {
   const system = getSystemPrompt();
-  const prompt = `WRITING TYPE: ${currentWritingType.toUpperCase()}\nTOPIC: ${currentTopic}\n\nSTUDENT ESSAY:\n${userText}`;
+  // The examiner is told the FORM — a news report is marked on things a short
+  // story is not — while the red-pen substitution style keys off its family.
+  const prompt = `WRITING FORM: ${formLabel(currentWritingType)}\nFAMILY: ${familyOf(currentWritingType)}\nTOPIC: ${currentTopic}\n\nSTUDENT ESSAY:\n${userText}`;
   const { text } = await gradeWithFallback({
     geminiBody: {
       systemInstruction: { parts: [{ text: system }] },
