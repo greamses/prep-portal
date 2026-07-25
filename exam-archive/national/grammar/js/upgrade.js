@@ -84,29 +84,44 @@ function renderRoster(roster) {
 // ── The word bank ──────────────────────────────────────────────────────────
 // Twenty vivid words, each with its use-case to READ. Tapping a word puts it
 // "in hand" (picked); the next slot tapped takes it. Tapping it again drops it.
+// Just the words — the definitions live in the study card ("Read the word
+// bank"), so the in-round bank is one sticky note of the twenty words.
 function renderPalette() {
   paletteEl.innerHTML = '';
   set.words.forEach((word) => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'grammar-up-word';
+    chip.className = 'grammar-up-w';
     chip.dataset.word = word.w;
-    chip.innerHTML = `<span class="grammar-up-word-w">${word.w}</span><span class="grammar-up-word-use">${escapeHtml(word.use)}</span>`;
+    chip.textContent = word.w;
     chip.addEventListener('mousedown', (e) => e.preventDefault());
     chip.addEventListener('click', () => pickWord(word.w));
     paletteEl.appendChild(chip);
   });
+  refreshUsed();
 }
 
 function pickWord(w) {
   if (!editing) return;
   picked = picked === w ? null : w;
-  paletteEl.querySelectorAll('.grammar-up-word').forEach((el) => {
+  paletteEl.querySelectorAll('.grammar-up-w').forEach((el) => {
     el.classList.toggle('is-picked', el.dataset.word === picked);
   });
   // With a word in hand the sheet invites a slot; without one, the slots are
   // just type-in boxes.
   sheetEl.classList.toggle('is-armed', !!picked);
+}
+
+// A word is struck through once it is standing in a slot, and un-struck the
+// moment it is deleted from the last slot that held it — a word can be used in
+// more than one place (a passage may want "whispered" twice), so it stays
+// struck while ANY slot still carries it.
+function refreshUsed() {
+  const used = new Set();
+  slots.forEach((s) => { const a = normWord(answers[s.idx]); if (a) used.add(a); });
+  paletteEl.querySelectorAll('.grammar-up-w').forEach((el) => {
+    el.classList.toggle('is-used', used.has(normWord(el.dataset.word)));
+  });
 }
 
 // ── The passage ─────────────────────────────────────────────────────────────
@@ -167,6 +182,7 @@ function onSheetClick(e) {
     answers[i] = picked;
     paintSlot(i, el);
     updateNotes();
+    refreshUsed();
     pickWord(picked); // clears the hand
     focusNextEmpty(i);
   }
@@ -179,6 +195,7 @@ function onSheetInput(e) {
   answers[i] = el.value;
   paintSlot(i, el);
   updateNotes();
+  refreshUsed();
 }
 
 function onSheetKey(e) {
@@ -279,10 +296,9 @@ sheetEl && sheetEl.addEventListener('click', onSheetClick);
 sheetEl && sheetEl.addEventListener('input', onSheetInput);
 sheetEl && sheetEl.addEventListener('keydown', onSheetKey);
 submitBtn && submitBtn.addEventListener('click', doSubmit);
-bankToggle && bankToggle.addEventListener('click', () => {
-  const open = upSide.classList.toggle('bank-open');
-  bankToggle.setAttribute('aria-expanded', String(open));
-});
+// The word bank is always open now — it is a single sticky note of the words,
+// small enough to leave on screen — so the old collapse toggle is hidden.
+if (bankToggle) bankToggle.hidden = true;
 
 /**
  * Resolves once the player submits or the local clock hits zero, with the same
@@ -309,8 +325,6 @@ export function startUpgradeRound({ seed, timeLimit, startAt, wordset, roster })
 
     renderPalette();
     renderPassage();
-    upSide.classList.add('bank-open'); // the bank is open to start, so the words are read first
-    if (bankToggle) bankToggle.setAttribute('aria-expanded', 'true');
 
     // Show the shell; hide proof-reading's board/side, show ours.
     cardEl.hidden = false;

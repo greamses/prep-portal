@@ -1545,12 +1545,13 @@ body.grammar-nav-hidden .site-nav { display: none; }
   color: var(--ink);
 }
 /* The passage flows as one block; `pre-wrap` keeps the authored paragraph
-   breaks, and only the slot inputs inside it are editable. */
+   breaks, and only the slot inputs inside it are editable. Set in JetBrains
+   Mono so every word sits on an even rhythm and the slots line up cleanly. */
 .grammar-up-passage {
   white-space: pre-wrap;
-  font-family: var(--font-body, inherit);
-  font-size: 1rem;
-  line-height: 2.1;
+  font-family: 'JetBrains Mono', var(--font-mono), monospace;
+  font-size: 0.9rem;
+  line-height: 2.2;
   color: var(--ink);
 }
 /* The slot: an inline blank the tired word is typed over. Underlined like a
@@ -1596,54 +1597,41 @@ body.grammar-nav-hidden .site-nav { display: none; }
   color: var(--text-secondary);
   text-align: center;
 }
-.grammar-up-bank-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-  color: var(--text-secondary);
-  background: none;
-  border: 1.5px dashed var(--border-strong, var(--accent-secondary));
-  border-radius: var(--radius-sm, 8px);
-  padding: 0.4rem 0.6rem;
-  cursor: pointer;
-}
-.grammar-up-bank-toggle svg { transition: transform 0.2s ease; }
-.grammar-up-side:not(.bank-open) .grammar-up-bank-toggle svg { transform: rotate(-90deg); }
+/* The word bank is one sticky note holding all twenty words — no definitions
+   (those live in the "Read the word bank" study card). Tapping a word arms it
+   (see upgrade.js); a word is struck through once it stands in a slot. */
 .grammar-up-palette {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 40vh;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  max-height: 42vh;
   overflow-y: auto;
-  padding-right: 2px;
+  padding: 0.9rem 0.9rem 1rem;
 }
-.grammar-up-side:not(.bank-open) .grammar-up-palette { display: none; }
-/* One vivid word + its use-case. Tapping arms it (see upgrade.js). */
-.grammar-up-word {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  text-align: left;
-  padding: 0.4rem 0.6rem;
-  background: var(--surface-primary);
-  border: 1.5px solid var(--border-subtle-color, color-mix(in srgb, var(--ink) 14%, transparent));
-  border-radius: var(--radius-sm, 8px);
+.grammar-up-w {
+  font-family: 'JetBrains Mono', var(--font-mono), monospace;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
   cursor: pointer;
+  transition: opacity 0.12s ease;
 }
-.grammar-up-word-w { font-weight: 700; color: var(--ink); font-size: 0.9rem; }
-.grammar-up-word-use { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.35; }
-.grammar-up-word.is-picked {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 16%, var(--surface-primary));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 45%, transparent);
+.grammar-up-w:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.grammar-up-w.is-picked {
+  background: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 55%, transparent);
 }
-.grammar-up-word:hover { border-color: var(--accent-secondary); }
+/* Used — struck through and dimmed. Un-struck the moment it leaves its slot. */
+.grammar-up-w.is-used {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  opacity: 0.4;
+  font-weight: 400;
+}
 .grammar-up-filled-note {
   margin: 0;
   font-family: var(--font-mono);
