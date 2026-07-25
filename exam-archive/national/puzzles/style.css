@@ -798,6 +798,41 @@ body.puzzle-nav-hidden .site-nav { display: none; }
 .pp-sticky.puzzle-boxes-btn.is-on {
   background: color-mix(in srgb, var(--accent-secondary) 30%, var(--surface-primary));
 }
+.pp-sticky.puzzle-areas-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  padding: 0.3rem 0.7rem 0.32rem;
+  --pp-note-tilt: -2deg;
+}
+.pp-sticky.puzzle-areas-btn.is-on {
+  background: color-mix(in srgb, var(--accent-primary) 34%, var(--surface-primary));
+}
+
+/* "Show areas" overlay — each box's area floated at its top edge. The layer
+   sits over the grid and ignores the pointer, so it never blocks a drag. */
+.shikaku-areas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.shikaku-area-label {
+  position: absolute;
+  transform: translate(-50%, -2px);
+  padding: 0 0.28em;
+  font-family: var(--font-mono);
+  font-size: clamp(0.5rem, 2vw, 0.82rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-on-accent, #fff);
+  background: color-mix(in srgb, var(--accent-primary) 88%, var(--ink));
+  border-radius: 0 0 5px 5px;
+  white-space: nowrap;
+}
+.shikaku-grid[data-size="15"] .shikaku-area-label,
+.shikaku-grid[data-size="20"] .shikaku-area-label { font-size: clamp(0.42rem, 1.5vw, 0.62rem); }
 
 /* ── Slider look — loose physical tiles in a tray (same register as the
    standalone fraction slider): each tile is its own bordered, shadowed
