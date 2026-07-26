@@ -269,3 +269,21 @@ export function createSectionFlow(sections, { onChange } = {}) {
     isLast: () => active === sections.length - 1,
   };
 }
+
+/* ── STANDARD RECAP CHIPS ─────────────────────────────────────────────────
+   The Player, Options and Room sections are the same in every game — only the
+   values differ. These builders keep the labels and layout in ONE place so the
+   setup screens can never drift apart. Each returns the chip array that
+   createSectionFlow expects; the game passes its own live values, and only the
+   clock chip's wording is game-specific (seconds vs minutes vs a named pace),
+   so it is handed in ready-made as `timeLabel`. */
+export const playerChips = (name, avatar) => [{ label: name, avatar }];
+
+export const optionsChips = ({ mode, roomSize, timeLabel }) =>
+  mode === 'versus'
+    ? [{ label: 'Versus' }, { label: timeLabel }]
+    : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: timeLabel }];
+
+export const roomChips = (roomAction) => [{
+  label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
+}];

@@ -18,6 +18,7 @@ import { finishRound } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
+  playerChips, optionsChips, roomChips,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -489,7 +490,7 @@ roomCarousel.start('entry');
 const flow = createSectionFlow([
   {
     el: $('geo-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
+    chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())),
   },
   {
     el: $('geo-section-topic'),
@@ -503,16 +504,11 @@ const flow = createSectionFlow([
   },
   {
     el: $('geo-section-options'),
-    chips: () =>
-      mode === 'versus'
-        ? [{ label: 'Versus' }, { label: `${timeLimit}s` }]
-        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit}s` }],
+    chips: () => optionsChips({ mode, roomSize, timeLabel: `${timeLimit}s` }),
   },
   {
     el: $('geo-section-room'),
-    chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
-    }],
+    chips: () => roomChips(roomAction),
   },
 ], {
   // Start belongs at the end of the flow, not floating under every step.

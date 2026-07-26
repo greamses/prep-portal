@@ -16,6 +16,7 @@ import { finishRound } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderCustomStep, renderComingSoon,
+  playerChips, optionsChips, roomChips,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -472,7 +473,7 @@ roomCarousel.start('entry');
 const flow = createSectionFlow([
   {
     el: $('puzzle-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
+    chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())),
   },
   {
     el: $('puzzle-section-topic'),
@@ -490,16 +491,11 @@ const flow = createSectionFlow([
   },
   {
     el: $('puzzle-section-options'),
-    chips: () =>
-      mode === 'versus'
-        ? [{ label: 'Versus' }, { label: `${timeLimit / 60} min` }]
-        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit / 60} min` }],
+    chips: () => optionsChips({ mode, roomSize, timeLabel: `${timeLimit / 60} min` }),
   },
   {
     el: $('puzzle-section-room'),
-    chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
-    }],
+    chips: () => roomChips(roomAction),
   },
 ], {
   onChange: (_i, isLast) => { startBtn.hidden = !isLast; },

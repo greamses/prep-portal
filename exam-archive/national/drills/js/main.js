@@ -15,6 +15,7 @@ import { finishRound } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow,
   renderChoiceStep, renderMultiStep, renderCustomStep, renderComingSoon,
+  playerChips, optionsChips, roomChips,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -526,7 +527,7 @@ const opName = (o) => (OPERATION_LABELS[o] || o).split(' ').slice(1).join(' ') |
 const flow = createSectionFlow([
   {
     el: $('drill-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
+    chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())),
   },
   {
     el: $('drill-section-topic'),
@@ -552,16 +553,11 @@ const flow = createSectionFlow([
   },
   {
     el: $('drill-section-options'),
-    chips: () =>
-      mode === 'versus'
-        ? [{ label: 'Versus' }, { label: `${timeLimit}s` }]
-        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit}s` }],
+    chips: () => optionsChips({ mode, roomSize, timeLabel: `${timeLimit}s` }),
   },
   {
     el: $('drill-section-room'),
-    chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
-    }],
+    chips: () => roomChips(roomAction),
   },
 ], {
   onChange: (_i, isLast) => { startBtn.hidden = !isLast; },

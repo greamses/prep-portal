@@ -26,6 +26,7 @@ import { buildRound } from './rng.js';
 import { finishRound, rankVocab } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
+  playerChips, optionsChips, roomChips,
 } from '/utils/components/setup-carousel.js';
 import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
 import { imageOverride, attachImageAdmin } from '/utils/components/admin-images.js';
@@ -508,7 +509,7 @@ roomCarousel.start('entry');
 const flow = createSectionFlow([
   {
     el: $('vocab-section-player'),
-    chips: () => [{ label: myName(), avatar: avatarUrl(getAvatarSeed()) }],
+    chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())),
   },
   {
     el: $('vocab-section-topic'),
@@ -527,16 +528,12 @@ const flow = createSectionFlow([
     el: $('vocab-section-options'),
     chips: () => {
       const p = PACES.find((x) => x.value === pace) || PACES[1];
-      return mode === 'versus'
-        ? [{ label: 'Versus' }, { label: `${p.label} pace` }]
-        : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${p.label} pace` }];
+      return optionsChips({ mode, roomSize, timeLabel: `${p.label} pace` });
     },
   },
   {
     el: $('vocab-section-room'),
-    chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
-    }],
+    chips: () => roomChips(roomAction),
   },
 ], {
   onChange: (_i, isLast) => {
