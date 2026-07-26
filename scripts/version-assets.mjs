@@ -73,6 +73,9 @@ const PAGES = [
   // The map jigsaw draws its states from the shared Nigeria map data, so a
   // stale copy of it against fresh page code must bust the puzzles page too.
   { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js'] },
+  // The Planner brief is generated from the shared event pool, so editing it
+  // must bust the page too.
+  { name: 'planner', extra: ['/data/planner/scenarios.js'] },
   {
     name: 'vocab',
     extra: [

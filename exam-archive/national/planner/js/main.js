@@ -1,0 +1,648 @@
+/* ═══════════════════════════════════════════════════════
+   PLANNER — page orchestrator
+
+   Wires the setup form to matchmaking.js -> game.js -> leaderboard.js and
+   switches between the lobby / play / results / review overlays. Same shape as
+   the other games' pages — what changes is the content section (just a
+   Difficulty pick) and that a "point" here is an event placed in the right slot
+   OR given the right time. See js/game.js for the round itself.
+═══════════════════════════════════════════════════════ */
+import { auth } from '/firebase-init.js';
+import { eventCount, DIFFICULTY_KEYS } from '/data/planner/scenarios.js';
+import { createSetupMemory } from '/utils/games/setup-memory.js';
+import { botName } from './bots.js';
+import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
+import { startPlanRound } from './game.js';
+import { finishRound } from './leaderboard.js';
+import {
+  createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep,
+  playerChips, optionsChips, roomChips,
+} from '/utils/components/setup-carousel.js';
+import { avatarUrl, getAvatarSeed, mountAvatarPicker } from '/utils/components/avatar-picker.js';
+
+const $ = (id) => document.getElementById(id);
+const stickyColor = (i) => `pp-sticky--c${i % 6}`;
+const NAME_KEY = 'drillGameName';
+
+/* The clock is derived, not typed: reading the clues scales with how many there
+   are, and working out each event's time scales with the event count. */
+const PACES = [
+  { value: 45, label: 'Relaxed' },
+  { value: 32, label: 'Normal', checked: true },
+  { value: 22, label: 'Fast' },
+];
+const READ_PER_CLUE = 6; // seconds a clue takes to read
+const MIN_ROUND_SEC = 90;
+const MAX_ROUND_SEC = 900;
+
+const DIFF_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+  <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
+  <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="10.5" y="12" width="3" height="4" fill="var(--ink)"/>
+  <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
+</svg>`;
+
+const nameInput = $('planner-name-input');
+const avatarGrid = $('planner-avatar-grid');
+const avatarUploadInput = $('planner-avatar-upload-input');
+const playerMount = $('planner-player-carousel');
+const topicMount = $('planner-topic-carousel');
+const optionsMount = $('planner-options-carousel');
+const roomMount = $('planner-room-carousel');
+const codeInput = $('planner-code-input');
+const quickJoinInput = $('planner-quickjoin-input');
+const quickJoinBtn = $('planner-quickjoin-btn');
+const startBtn = $('planner-start-btn');
+const startLabel = $('planner-start-label');
+
+const lobbyBd = $('planner-lobby-bd');
+const lobbyStatus = $('planner-lobby-status');
+const lobbyCode = $('planner-lobby-code');
+const lobbyCodeText = $('planner-lobby-code-text');
+const lobbyCodeCopy = $('planner-lobby-code-copy');
+const lobbySeats = $('planner-lobby-seats');
+const lobbyCount = $('planner-lobby-count');
+const lobbyCancel = $('planner-lobby-cancel');
+const lobbyStartNow = $('planner-lobby-start-now');
+
+const awaitingBd = $('planner-awaiting-bd');
+const resultsBd = $('planner-results-bd');
+const leaderboardEl = $('planner-leaderboard');
+const breakdownEl = $('planner-breakdown');
+const reviewBtn = $('planner-review-btn');
+const againBtn = $('planner-again-btn');
+
+const reviewBd = $('planner-review-bd');
+const reviewTitle = $('planner-review-title');
+const reviewSub = $('planner-review-sub');
+const reviewBody = $('planner-review-body');
+const reviewClose = $('planner-review-close');
+
+let cancelled = false;
+let startNowFn = null;
+let lastReview = null;
+
+// ── Setup state ──────────────────────────────────────────────────────────
+const mem = createSetupMemory('planner');
+let mode = mem.get('mode', 'multiplayer', ['multiplayer', 'versus']);
+let roomSize = mem.get('roomSize', 5, [5, 10]);
+let pace = mem.get('pace', 32, PACES.map((p) => p.value));
+let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']);
+if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+let difficulty = mem.get('difficulty', 'medium', DIFFICULTY_KEYS);
+
+function getCurrentUser() {
+  return new Promise((resolve) => {
+    if (auth.currentUser) { resolve(auth.currentUser); return; }
+    const unsub = auth.onAuthStateChanged((user) => { if (user) { unsub(); resolve(user); } });
+  });
+}
+
+function updateStartLabel() {
+  if (mode === 'multiplayer') {
+    startLabel.textContent =
+      roomAction === 'join' ? 'Join Room' : roomAction === 'create' ? 'Create Room' : 'Find a Room';
+    return;
+  }
+  startLabel.textContent = roomAction === 'join' ? 'Join Room' : 'Create Room';
+}
+
+// ── Game name ──────────────────────────────────
+nameInput.value = localStorage.getItem(NAME_KEY) || '';
+nameInput.addEventListener('input', () => localStorage.setItem(NAME_KEY, nameInput.value));
+getCurrentUser().then((user) => { if (!nameInput.value && user.displayName) nameInput.value = user.displayName; });
+function myName() {
+  return (nameInput.value || '').trim() || (auth.currentUser && auth.currentUser.displayName) || 'Player';
+}
+
+/* ── SECTION 1 — Player ───────────────────────────────────────── */
+const player = createCarousel(playerMount);
+player.addSlide('name', 'Name', () => {});
+player.addSlide('avatar', 'Avatar', () => {});
+renderCustomStep(player, 'name', {
+  title: 'What should we call you?', content: nameInput, nextLabel: 'Next',
+  onNext: () => player.goTo('avatar'),
+});
+renderCustomStep(player, 'avatar', {
+  title: 'Pick your avatar', content: avatarGrid, nextLabel: 'Next',
+  onNext: () => flow.next(),
+});
+player.start('name');
+
+/* ── SECTION 2 — Difficulty ───────────────────────────────────── */
+const content = createCarousel(topicMount);
+content.addSlide('difficulty', 'Difficulty', () => {});
+renderChoiceStep(content, 'difficulty', {
+  title: 'How big a day to plan?',
+  subtitle: 'More events means a longer chain of clues to work through — the clock grows to match.',
+  name: 'planner-difficulty',
+  options: DIFFICULTY_KEYS.map((k) => ({
+    value: k, label: `${DIFF_LABEL[k]} · ${eventCount(k)} events`, checked: k === difficulty,
+  })),
+  onPick: (v) => { difficulty = v; mem.save({ difficulty }); flow.next(); },
+});
+content.start('difficulty');
+
+/* ── SECTION 3 — Game Options ───────────────────────────────── */
+const options = createCarousel(optionsMount);
+options.addSlide('mode', 'Mode', () => {});
+options.addSlide('size', 'Room Size', () => {});
+options.addSlide('time', 'Time Limit', () => {});
+renderChoiceStep(options, 'mode', {
+  title: 'How do you want to play?',
+  name: 'planner-mode',
+  options: [
+    { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
+    { value: 'versus', label: 'Versus', checked: mode === 'versus' },
+  ],
+  onPick: (v) => {
+    mode = v;
+    if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
+    mem.save({ mode, roomAction });
+    renderRoomEntry();
+    roomCarousel.start('entry');
+    codeInput.hidden = roomAction !== 'join';
+    updateStartLabel();
+    options.goTo(mode === 'versus' ? 'time' : 'size');
+  },
+});
+renderChoiceStep(options, 'size', {
+  title: 'How many players?',
+  name: 'planner-size', colorOffset: 2,
+  options: [
+    { value: '5', label: '5 players', checked: roomSize === 5 },
+    { value: '10', label: '10 players', checked: roomSize === 10 },
+  ],
+  onPick: (v) => { roomSize = Number(v); mem.save({ roomSize }); options.goTo('time'); },
+});
+renderChoiceStep(options, 'time', {
+  title: 'How long on the clock?',
+  subtitle: 'Set from the number of events and clues, so every difficulty is equally tight.',
+  name: 'planner-time', colorOffset: 4,
+  options: PACES.map((p) => ({ value: String(p.value), label: p.label, checked: p.value === pace })),
+  onPick: (v) => { pace = Number(v); mem.save({ pace }); flow.next(); },
+});
+options.start('mode');
+
+/* ── SECTION 4 — Room ─────────────────────────────────────── */
+const roomCarousel = createCarousel(roomMount);
+roomCarousel.addSlide('entry', 'Room', () => {});
+roomCarousel.addSlide('code', 'Code', () => {});
+function renderRoomEntry() {
+  const choices = mode === 'multiplayer'
+    ? [
+        { value: 'quickfill', label: 'Quickfill', checked: roomAction === 'quickfill' },
+        { value: 'create', label: 'Create', checked: roomAction === 'create' },
+        { value: 'join', label: 'Join', checked: roomAction === 'join' },
+      ]
+    : [
+        { value: 'create', label: 'Create', checked: roomAction === 'create' },
+        { value: 'join', label: 'Join', checked: roomAction === 'join' },
+      ];
+  renderChoiceStep(roomCarousel, 'entry', {
+    title: mode === 'multiplayer' ? 'How do you want to join?' : 'Create or join the 1v1?',
+    name: 'planner-room-action', colorOffset: 2, options: choices,
+    onPick: (v) => {
+      roomAction = v;
+      mem.save({ roomAction });
+      codeInput.hidden = v !== 'join';
+      updateStartLabel();
+      if (v === 'join') roomCarousel.goTo('code');
+    },
+  });
+}
+renderCustomStep(roomCarousel, 'code', {
+  title: 'Enter the room code',
+  subtitle: 'The 6-character code your friend shared.',
+  content: codeInput,
+});
+renderRoomEntry();
+roomCarousel.start('entry');
+
+/* ── One selector on screen at a time ───────────────────────── */
+const flow = createSectionFlow([
+  { el: $('planner-section-player'), chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())) },
+  {
+    el: $('planner-section-topic'),
+    chips: () => [{ label: DIFF_LABEL[difficulty] }, { label: `${eventCount(difficulty)} events` }],
+  },
+  {
+    el: $('planner-section-options'),
+    chips: () => {
+      const p = PACES.find((x) => x.value === pace) || PACES[1];
+      return optionsChips({ mode, roomSize, timeLabel: `${p.label} clock` });
+    },
+  },
+  { el: $('planner-section-room'), chips: () => roomChips(roomAction) },
+], {
+  onChange: (_i, isLast) => { startBtn.hidden = !isLast; },
+});
+
+updateStartLabel();
+mountAvatarPicker({ grid: avatarGrid, uploadInput: avatarUploadInput, radioName: 'planner-avatar' });
+
+// ── Lobby ────────────────────────────────────────────────────────────────
+let lobbyRevealTimers = [];
+function clearLobbyReveal() { lobbyRevealTimers.forEach((t) => clearTimeout(t)); lobbyRevealTimers = []; }
+function seatSticker(i, avatarSeed, label) {
+  const s = document.createElement('span');
+  const empty = !avatarSeed;
+  s.className = `pp-sticky pp-sticky--tape planner-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
+  s.innerHTML = empty
+    ? '<span class="planner-lobby-seat-mark">?</span>'
+    : `<img src="${avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
+  return s;
+}
+function renderLobbySeats(playerCount, size) {
+  lobbySeats.innerHTML = '';
+  for (let i = 0; i < size; i++) {
+    if (i === 0) lobbySeats.appendChild(seatSticker(i, getAvatarSeed(), 'You'));
+    else if (i < playerCount) lobbySeats.appendChild(seatSticker(i, `Guest${i}`, 'Player'));
+    else lobbySeats.appendChild(seatSticker(i, null));
+  }
+}
+function revealBotsStaggered(size, botsNeeded, seed, revealMs) {
+  clearLobbyReveal();
+  if (!botsNeeded) return;
+  const realFilled = size - botsNeeded;
+  const weights = Array.from({ length: botsNeeded }, () => 0.5 + Math.random());
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+  const budget = Math.max(300, revealMs - 150);
+  let elapsed = 0;
+  weights.forEach((w, i) => {
+    elapsed += (w / weightSum) * budget;
+    const seatIndex = realFilled + i;
+    lobbyRevealTimers.push(setTimeout(() => {
+      const seatEl = lobbySeats.children[seatIndex];
+      if (!seatEl) return;
+      const name = botName(seed, i);
+      seatEl.replaceWith(seatSticker(seatIndex, name, name));
+    }, elapsed));
+  });
+}
+function showLobby(size) {
+  cancelled = false;
+  clearLobbyReveal();
+  startNowFn = null;
+  lobbyStartNow.hidden = true;
+  lobbyStartNow.disabled = false;
+  lobbyCode.hidden = true;
+  lobbyStatus.textContent = 'Waiting for other players…';
+  lobbyCount.textContent = `1 / ${size}`;
+  renderLobbySeats(1, size);
+  lobbyBd.classList.add('open');
+  lobbyBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('planner-nav-hidden');
+}
+function hideLobby() {
+  clearLobbyReveal();
+  lobbyBd.classList.remove('open');
+  lobbyBd.setAttribute('aria-hidden', 'true');
+}
+function showLobbyCode(code) { lobbyCode.hidden = false; lobbyCodeText.textContent = code; }
+lobbyCodeCopy.addEventListener('click', () => {
+  const code = lobbyCodeText.textContent || '';
+  if (!code || !navigator.clipboard) return;
+  navigator.clipboard.writeText(code).then(() => {
+    lobbyCodeCopy.textContent = 'Copied!';
+    setTimeout(() => { lobbyCodeCopy.textContent = 'Copy'; }, 1500);
+  }).catch(() => {});
+});
+
+function showAwaiting() { awaitingBd.classList.add('open'); awaitingBd.setAttribute('aria-hidden', 'false'); }
+function hideAwaiting() { awaitingBd.classList.remove('open'); awaitingBd.setAttribute('aria-hidden', 'true'); }
+
+function buildRoster({ size, botsNeeded, seed }, name) {
+  const realOthers = Math.max(0, size - botsNeeded - 1);
+  const roster = [{ name, isSelf: true }];
+  for (let i = 0; i < realOthers; i++) roster.push({ name: 'Player', isSelf: false });
+  for (let i = 0; i < botsNeeded; i++) roster.push({ name: botName(seed, i), isSelf: false });
+  return roster;
+}
+
+// ── Results ──────────────────────────────────────────────────────────────
+function fmtTime(ms) {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function renderResults(ranked, settled = true) {
+  const repaint = resultsBd.classList.contains('open');
+  leaderboardEl.innerHTML = '';
+  const total = ranked.length;
+  const done = ranked.filter((r) => !r.pending);
+  const topScore = done.length ? Math.max(...done.map((r) => r.score)) : 0;
+  const topTie = done.filter((r) => r.score === topScore).length > 1;
+  // Rank by score desc; players still working sit at the back with no place.
+  const sorted = ranked.slice().sort((a, b) => ((a.pending ? 1 : 0) - (b.pending ? 1 : 0)) || (b.score - a.score));
+  sorted.forEach((row, i) => {
+    const rankNum = 1 + done.filter((r) => r.score > row.score).length;
+    const isWinner = settled && !row.pending && row.score === topScore && !topTie;
+    const li = document.createElement('li');
+    li.className = [
+      'planner-lb-row', 'pp-sticky', 'pp-sticky--tape',
+      isWinner ? '' : stickyColor(i),
+      row.isSelf ? 'is-self' : '', isWinner ? 'is-winner' : '', row.pending ? 'is-pending' : '',
+    ].filter(Boolean).join(' ');
+    li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
+
+    const avatar = document.createElement('span');
+    avatar.className = 'planner-lb-avatar';
+    avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
+    const rank = document.createElement('span');
+    rank.className = 'planner-lb-rank';
+    if (row.pending) rank.textContent = '·';
+    else if (isWinner) rank.innerHTML = TROPHY_SVG;
+    else rank.textContent = String(rankNum);
+    const name = document.createElement('span');
+    name.className = 'planner-lb-name';
+    name.textContent = row.name;
+    const meta = document.createElement('small');
+    meta.className = 'planner-lb-meta';
+    meta.textContent = row.pending ? (settled ? 'no score' : 'still planning…') : `${row.score} points`;
+    name.appendChild(meta);
+    const scoreEl = document.createElement('span');
+    scoreEl.className = 'planner-lb-score';
+    scoreEl.textContent = row.pending ? '–' : String(row.score);
+    li.append(avatar, rank, name, scoreEl);
+    leaderboardEl.appendChild(li);
+  });
+
+  renderBreakdown();
+  resultsBd.classList.add('open');
+  resultsBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('planner-nav-hidden');
+
+  if (settled && sorted[0] && sorted[0].isSelf && !sorted[0].pending && !topTie) {
+    setTimeout(launchConfetti, repaint ? 400 : (total - 1) * 130 + 400);
+  }
+}
+
+function renderBreakdown() {
+  breakdownEl.innerHTML = '';
+  if (!lastReview) { breakdownEl.hidden = true; return; }
+  const { sequenceCorrect, timeCorrect, N } = lastReview;
+  const p = document.createElement('p');
+  p.className = 'planner-breakdown-title';
+  p.textContent = 'How you did';
+  breakdownEl.appendChild(p);
+  const row = document.createElement('div');
+  row.className = 'planner-breakdown-row';
+  [['Sequence', sequenceCorrect], ['Timing', timeCorrect]].forEach(([label, val], i) => {
+    const cell = document.createElement('span');
+    cell.className = `pp-sticky pp-sticky--tape planner-bd-cell ${stickyColor(i + 1)}`;
+    cell.innerHTML = `<span class="planner-bd-label">${label}</span><span class="planner-bd-score">${val}/${N}</span>`;
+    row.appendChild(cell);
+  });
+  breakdownEl.appendChild(row);
+  breakdownEl.hidden = false;
+}
+
+function hideResults() {
+  resultsBd.classList.remove('open');
+  resultsBd.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('planner-nav-hidden');
+}
+
+function launchConfetti() {
+  const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
+  const container = document.createElement('div');
+  container.className = 'planner-confetti';
+  document.body.appendChild(container);
+  for (let i = 0; i < 70; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'planner-confetti-piece';
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDelay = `${Math.random() * 0.4}s`;
+    piece.style.animationDuration = `${2.2 + Math.random() * 1.2}s`;
+    piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
+    piece.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 3800);
+}
+
+// ── Review — the correct schedule vs what you set ─────────────────────────
+function renderReview() {
+  if (!lastReview) return;
+  const { review, sequenceCorrect, timeCorrect, N } = lastReview;
+  reviewTitle.textContent = 'The correct schedule';
+  reviewSub.textContent = `${sequenceCorrect}/${N} in order · ${timeCorrect}/${N} on time`;
+  reviewBody.innerHTML = '';
+  const table = document.createElement('table');
+  table.className = 'planner-review-table';
+  const rows = review.slice().sort((a, b) => a.trueRank - b.trueRank);
+  rows.forEach((r) => {
+    const tr = document.createElement('tr');
+    const seqOk = r.placedRank === r.trueRank;
+    const timeOk = r.chosenTime === r.trueTime;
+    tr.innerHTML =
+      `<td class="planner-rev-time">${fmtClock(r.trueTime)}</td>` +
+      `<td class="planner-rev-name">${esc(r.name)}</td>` +
+      `<td class="planner-rev-mark is-${seqOk ? 'ok' : 'no'}">${seqOk ? 'in order' : 'out of order'}</td>` +
+      `<td class="planner-rev-mark is-${timeOk ? 'ok' : 'no'}">${timeOk ? 'on time' : (r.chosenTime != null ? `you: ${fmtClock(r.chosenTime)}` : 'no time set')}</td>`;
+    reviewBody.appendChild(tr);
+  });
+  reviewBd.classList.add('open');
+  reviewBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('planner-nav-hidden');
+}
+function fmtClock(min) {
+  if (min == null) return '—';
+  const h24 = Math.floor(min / 60); const m = min % 60; const ap = h24 < 12 ? 'AM' : 'PM';
+  let h = h24 % 12; if (h === 0) h = 12;
+  return `${h}:${String(m).padStart(2, '0')} ${ap}`;
+}
+function esc(s) { const d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+function hideReview() { reviewBd.classList.remove('open'); reviewBd.setAttribute('aria-hidden', 'true'); }
+
+// ── Round orchestration ───────────────────────────────────────────────────
+async function playRoundAndShowResults(room, name) {
+  const roster = buildRoster(room, name);
+  const out = await startPlanRound({
+    seed: room.seed, timeLimit: room.timeLimit, startAt: room.startAt,
+    difficulty: room.difficulty || 'medium', roster,
+  });
+  lastReview = out;
+  showAwaiting();
+
+  let ranked;
+  try {
+    ranked = await finishRound({
+      roomId: room.roomId, seed: room.seed, timeLimit: room.timeLimit, startAt: room.startAt,
+      botsNeeded: room.botsNeeded, difficulty: room.difficulty,
+      onUpdate: (rows) => {
+        hideAwaiting();
+        const me = rows.find((r) => r.isSelf);
+        if (me) me.avatarSeed = getAvatarSeed();
+        renderResults(rows, false);
+      },
+      myScore: out.score,
+    });
+  } catch (e) {
+    console.error('[planner] finishRound failed — local-only board:', e);
+    ranked = [{ name, score: out.score, isBot: false, isSelf: true, avatarSeed: getAvatarSeed() }];
+  }
+  const selfRow = ranked.find((r) => r.isSelf);
+  if (selfRow) selfRow.avatarSeed = getAvatarSeed();
+  hideAwaiting();
+  startBtn.disabled = false;
+  renderResults(ranked);
+}
+
+function makeOnWaiting(waitingStatusText) {
+  return (state) => {
+    if (state.phase === 'activated') {
+      startNowFn = null;
+      lobbyStartNow.hidden = true;
+      lobbyStatus.textContent = 'Room ready!';
+      lobbyCount.textContent = `${state.size} / ${state.size}`;
+      revealBotsStaggered(state.size, state.botsNeeded, state.seed, state.revealMs);
+      return;
+    }
+    if (waitingStatusText) lobbyStatus.textContent = waitingStatusText;
+    lobbyCount.textContent = `${state.playerCount} / ${state.size}`;
+    renderLobbySeats(state.playerCount, state.size);
+    startNowFn = state.startNow || null;
+    lobbyStartNow.hidden = !(startNowFn && state.playerCount >= 2 && state.playerCount < state.size);
+  };
+}
+
+function computeTimeLimit() {
+  const N = eventCount(difficulty);
+  const secs = N * pace + (N + 1) * READ_PER_CLUE;
+  return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(secs)));
+}
+
+async function runMultiplayer(name) {
+  showLobby(roomSize);
+  const timeLimit = computeTimeLimit();
+  let room;
+  try {
+    room = await matchmake(
+      { mode: 'multiplayer', size: roomSize, timeLimit, difficulty, displayName: name },
+      { onWaiting: makeOnWaiting() },
+    );
+  } catch (e) {
+    hideLobby(); startBtn.disabled = false;
+    alert(e && e.quotaBlocked ? e.message : "Couldn't start a room — please try again.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, name);
+}
+
+async function runCreate(name, size, roomMode) {
+  showLobby(size);
+  lobbyStatus.textContent = 'Creating your room…';
+  const timeLimit = computeTimeLimit();
+  let created;
+  try {
+    created = await createCodeRoom(
+      { mode: roomMode, size, timeLimit, difficulty, displayName: name },
+      { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
+    );
+  } catch (e) {
+    hideLobby(); startBtn.disabled = false;
+    alert(e && e.quotaBlocked ? e.message : "Couldn't create a room — please try again.");
+    return;
+  }
+  showLobbyCode(created.code);
+  let room;
+  try { room = await created.roundReady; } catch (e) {
+    hideLobby(); startBtn.disabled = false;
+    alert('Something went wrong waiting for other players — please try again.');
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, name);
+}
+
+async function runJoin(name, fallbackSize, rawCode) {
+  const code = (rawCode || '').trim().toUpperCase();
+  if (code.length !== 6) { alert('Enter the 6-character room code your friend shared.'); startBtn.disabled = false; return; }
+  showLobby(fallbackSize);
+  lobbyStatus.textContent = 'Joining room…';
+  let room;
+  try {
+    room = await joinRoomByCode(code, { displayName: name, onWaiting: makeOnWaiting('Waiting for the round to start…') });
+  } catch (e) {
+    hideLobby(); startBtn.disabled = false;
+    alert((e && e.message) || "Couldn't join that room.");
+    return;
+  }
+  if (cancelled) return;
+  hideLobby();
+  await playRoundAndShowResults(room, name);
+}
+
+async function runPlanner() {
+  startBtn.disabled = true;
+  mem.save({ difficulty, done: true });
+  await getCurrentUser();
+  const name = myName();
+  if (mode === 'versus') {
+    if (roomAction === 'join') await runJoin(name, 2, codeInput.value);
+    else await runCreate(name, 2, 'versus');
+    return;
+  }
+  if (roomAction === 'join') await runJoin(name, roomSize, codeInput.value);
+  else if (roomAction === 'create') await runCreate(name, roomSize, 'multiplayer');
+  else await runMultiplayer(name);
+}
+
+// ── Wiring ───────────────────────────────────────────────────────────────
+reviewBtn.addEventListener('click', renderReview);
+reviewClose.addEventListener('click', hideReview);
+reviewBd.addEventListener('click', (e) => { if (e.target === reviewBd) hideReview(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (reviewBd.classList.contains('open')) hideReview();
+});
+startBtn.addEventListener('click', runPlanner);
+
+quickJoinInput.addEventListener('input', () => {
+  quickJoinInput.value = quickJoinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+});
+quickJoinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); quickJoinBtn.click(); } });
+quickJoinBtn.addEventListener('click', async () => {
+  const code = quickJoinInput.value.trim();
+  if (code.length !== 6) { quickJoinInput.focus(); return; }
+  quickJoinBtn.disabled = true;
+  startBtn.disabled = true;
+  await getCurrentUser();
+  await runJoin(myName(), 2, code);
+  quickJoinBtn.disabled = false;
+});
+lobbyStartNow.addEventListener('click', () => {
+  if (!startNowFn) return;
+  lobbyStartNow.disabled = true;
+  lobbyStartNow.hidden = true;
+  lobbyStatus.textContent = 'Starting…';
+  startNowFn();
+});
+lobbyCancel.addEventListener('click', () => {
+  cancelled = true;
+  hideLobby();
+  document.body.classList.remove('planner-nav-hidden');
+  startBtn.disabled = false;
+});
+againBtn.addEventListener('click', hideResults);
+
+if (new URLSearchParams(location.search).get('mode') === 'versus') {
+  mode = 'versus';
+  if (roomAction === 'quickfill') roomAction = 'create';
+  renderRoomEntry();
+  updateStartLabel();
+}
+
+if (mem.isReturning()) {
+  codeInput.hidden = roomAction !== 'join';
+  flow.goTo(3);
+}

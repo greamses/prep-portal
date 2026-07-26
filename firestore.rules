@@ -386,6 +386,57 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       PLANNER — timed multiplayer event scheduling
+       Same shape as VOCAB/GRAMMAR above, but a room is described only by its
+       difficulty; the brief (events, hidden schedule, clues) is derived
+       client-side from the room's `seed` + difficulty against /data/planner, so
+       nothing about it — or the player's schedule — is ever stored. The clock is
+       DERIVED (event count × pace + clues × reading), so a range is the honest
+       check, same as Vocab/Grammar.
+    ───────────────────────────── */
+    match /plannerRoomPointers/{bucketKey} {
+      allow read, write: if isLoggedIn();
+    }
+
+    match /plannerRooms/{roomId} {
+      allow read: if isLoggedIn();
+
+      allow create: if isLoggedIn() &&
+        request.resource.data.hostUid == request.auth.uid &&
+        request.resource.data.status == 'waiting' &&
+        request.resource.data.playerCount == 1 &&
+        request.resource.data.size in [2, 5, 10] &&
+        request.resource.data.timeLimit is int &&
+        request.resource.data.timeLimit >= 45 &&
+        request.resource.data.timeLimit <= 900 &&
+        request.resource.data.difficulty in ['easy', 'medium', 'hard'];
+
+      allow update: if isLoggedIn() && (
+        (resource.data.status == 'waiting' &&
+          request.resource.data.playerCount == resource.data.playerCount + 1 &&
+          request.resource.data.playerCount <= resource.data.size &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount'])) ||
+        (resource.data.status == 'waiting' &&
+          request.resource.data.status == 'active' &&
+          request.resource.data.botsNeeded == request.resource.data.size - resource.data.playerCount &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startAt', 'botsNeeded']))
+      );
+
+      allow delete: if false; // rooms simply age out (unread docs aren't billed)
+
+      match /players/{uid} {
+        allow read: if isLoggedIn();
+        allow create: if isOwner(uid) &&
+          request.resource.data.keys().hasOnly(['displayName', 'joinedAt']);
+        // Final score written exactly once (score = correct slots + correct
+        // times). The pre-state check blocks rewriting a scored doc.
+        allow update: if isOwner(uid) &&
+          !('score' in resource.data) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'finishedAt']);
+      }
+    }
+
+    /* ─────────────────────────────
        GRAMMAR — timed multiplayer passage editing (CUPS)
        Same shape as VOCAB above, but a room is described by grade + passage
        theme + which CUPS letters are being scored. The passage itself is

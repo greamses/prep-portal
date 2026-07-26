@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════════════════════
+   PLANNER — event-scheduling game
+   Paper/soft-UI theme shared with the rest of the site (tokens from theme.css).
+   Overlay + setup chrome mirrors the other exam-archive games; the play surface
+   (clue receipt + schedule table + draggable event notes) is this game's own.
+═══════════════════════════════════════════════════════ */
+body {
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
+}
+[hidden] { display: none !important; }
+body.planner-nav-hidden .site-nav { display: none; }
+
+.builder-paint { position: absolute; inset: 0 0 auto 0; height: 640px; pointer-events: none; z-index: 0; opacity: 0.5; }
+
+/* ── HERO / TABS ─────────────────────────────────────── */
+.builder-header {
+  position: relative; z-index: 1; max-width: 760px;
+  margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem; padding: 0 1.25rem; text-align: center;
+}
+.builder-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin: 1rem 0 0; }
+.builder-tab { text-decoration: none; cursor: pointer; border: 2px solid transparent; }
+.builder-tab:not(.is-active) { opacity: 0.55; }
+.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
+
+/* ── SETUP ───────────────────────────────────────────── */
+.planner-section-hdr { text-align: center; max-width: 620px; margin: 0 auto 1.75rem; position: relative; z-index: 1; }
+.setup-eyebrow {
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--accent-secondary); margin-bottom: 0.4rem;
+}
+.planner-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
+.planner-section-sub { font-family: var(--font-mono); font-size: var(--text-mono-sm); color: var(--text-secondary); }
+
+.planner-setup { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem); }
+.planner-receipt { margin: 0 auto; }
+.planner-receipt-paper { display: flex; flex-direction: column; gap: 1.7rem; }
+.planner-receipt-title {
+  font-family: var(--font-display); font-size: 1.15rem; text-align: center; color: var(--ink);
+  margin: 0; padding-bottom: 0.3rem;
+}
+.planner-field { display: flex; flex-direction: column; gap: 0.6rem; }
+.planner-field > span {
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: var(--tracking-wide); color: var(--text-secondary);
+}
+.planner-name-input {
+  width: 100%; font-family: var(--font-mono); font-size: 0.95rem; padding: 0.7rem 0.9rem;
+  border: var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-primary); color: var(--ink);
+}
+.planner-code-input {
+  width: 100%; font-family: var(--font-mono); font-size: 1rem; letter-spacing: 0.2em; text-align: center;
+  text-transform: uppercase; padding: 0.6rem; border: var(--border-subtle); border-radius: var(--radius-sm);
+  background: var(--surface-primary); color: var(--ink);
+}
+.planner-start-btn, .planner-study-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  align-self: center; padding: 0.7rem 1.5rem; font-weight: 700; cursor: pointer;
+}
+
+/* ── QUICK JOIN ──────────────────────────────────────── */
+.pp-sticky.quick-join {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  max-width: 640px; margin: 0 auto 1.5rem; padding: 0.9rem 1.2rem; position: relative; z-index: 1;
+}
+.quick-join-copy { display: flex; flex-direction: column; gap: 0.15rem; }
+.quick-join-copy strong { font-size: 0.95rem; }
+.quick-join-copy span { font-size: 0.76rem; opacity: 0.7; }
+.quick-join-controls { display: flex; gap: 0.5rem; }
+.quick-join-input {
+  width: 7rem; font-family: var(--font-mono); text-transform: uppercase; text-align: center; letter-spacing: 0.15em;
+  padding: 0.5rem; border: var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-primary); color: var(--ink);
+}
+.quick-join-btn { padding: 0.5rem 1rem; cursor: pointer; }
+@media (max-width: 560px) {
+  .pp-sticky.quick-join { flex-direction: column; text-align: center; }
+  .quick-join-copy { align-items: center; }
+}
+
+/* ── OVERLAYS ────────────────────────────────────────── */
+.review-bd {
+  position: fixed; inset: 0; z-index: 50; display: none; padding: 1.25rem;
+  background: color-mix(in srgb, var(--app-bg) 82%, transparent); backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+#planner-play-bd .review-wrap { width: min(1080px, 100%); }
+
+/* ── LOBBY ───────────────────────────────────────────── */
+.planner-lobby-status { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
+.planner-lobby-code { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.planner-lobby-code > span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); }
+.planner-lobby-code-value { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; }
+.planner-lobby-code-value strong { font-family: var(--font-mono); font-size: 1.4rem; letter-spacing: 0.2em; color: var(--ink); }
+.planner-lobby-seats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; }
+.planner-lobby-seat {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 0.2rem; width: 68px; padding: 0.5rem 0.3rem; font-size: 0.65rem;
+}
+.planner-lobby-seat img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.planner-lobby-seat.is-empty { opacity: 0.5; }
+.planner-lobby-seat-mark { font-size: 1.4rem; font-weight: 800; color: var(--text-secondary); }
+.planner-lobby-count { font-family: var(--font-mono); font-weight: 700; color: var(--ink); margin-bottom: 1rem; }
+.planner-lobby-actions { display: flex; gap: 0.6rem; justify-content: center; }
+.planner-lobby-actions button { padding: 0.55rem 1.1rem; cursor: pointer; }
+
+/* ── PLAY: countdown / roster / timer ────────────────── */
+.planner-time-remaining { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.75rem; }
+.planner-countdown { font-family: var(--font-display); font-size: 4rem; font-weight: 900; color: var(--ink); margin: 2rem 0; }
+.planner-roster { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 1.25rem; }
+.planner-roster-item {
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);
+  background: var(--surface-primary); border: var(--border-subtle); border-radius: 999px; padding: 0.3rem 0.7rem;
+  animation: planner-pop 0.4s ease both; animation-delay: var(--delay, 0ms);
+}
+.planner-roster-item.is-self { color: var(--accent-secondary); border-color: var(--accent-secondary); }
+@keyframes planner-pop { from { opacity: 0; transform: translateY(10px) scale(0.85); } to { opacity: 1; transform: none; } }
+
+/* ── PLAY: the stage (request + schedule) ────────────── */
+.planner-stage { display: flex; gap: 1.25rem; align-items: flex-start; text-align: left; }
+.planner-request { flex: 1 1 44%; min-width: 0; }
+.planner-request-paper { display: flex; flex-direction: column; gap: 0.5rem; position: relative; }
+.planner-note-tag { position: absolute; top: -12px; right: 16px; font-size: 0.6rem; padding: 0.22rem 0.5rem; }
+.planner-request-title { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); margin: 0.4rem 0 0; }
+.planner-request-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin: 0 0 0.4rem; }
+.planner-clues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.planner-clue {
+  font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.4; color: var(--ink);
+  padding: 0.4rem 0.6rem 0.4rem 1.4rem; position: relative;
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
+}
+.planner-clue::before { content: "•"; position: absolute; left: 0.5rem; color: var(--accent-secondary); font-weight: 800; }
+
+.planner-side { flex: 1 1 56%; min-width: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+.planner-schedule { width: 100%; border-collapse: collapse; font-family: var(--font-mono); }
+.planner-row > td { padding: 0.25rem 0.35rem; vertical-align: middle; }
+.planner-row-num {
+  width: 1.8rem; text-align: center; font-weight: 800; color: var(--text-secondary);
+}
+.planner-slot-cell { width: 55%; }
+.planner-slot {
+  min-height: 2.4rem; display: flex; align-items: center; border-radius: var(--radius-sm);
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  background: color-mix(in srgb, var(--surface-primary) 60%, transparent); padding: 0.2rem;
+}
+.planner-slot.is-drop-hover { border-color: var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 14%, transparent); }
+.planner-time-cell { width: 40%; }
+.planner-time-select, .planner-time-cell .pp-select { width: 100%; }
+
+/* Event sticky notes */
+.planner-note {
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; color: var(--ink);
+  padding: 0.4rem 0.6rem; min-height: 2rem; width: 100%; cursor: grab; touch-action: none; user-select: none;
+}
+.planner-slot .planner-note { width: 100%; }
+.planner-note.is-dragging { opacity: 0.35; }
+.planner-note--ghost { position: fixed; z-index: 200; pointer-events: none; opacity: 0.92; box-shadow: var(--shadow-lg); }
+
+.planner-bank {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 3rem; padding: 0.6rem;
+  border-radius: var(--radius-md); border: 1.5px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  background: color-mix(in srgb, var(--surface-primary) 50%, transparent);
+}
+.planner-bank.is-drop-hover { border-color: var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 12%, transparent); }
+.planner-bank .planner-note { width: auto; }
+.planner-bank-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); margin: 0.2rem 0 -0.4rem; }
+.planner-progress { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); text-align: center; margin: 0; }
+.planner-submit-btn { align-self: center; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; font-weight: 700; cursor: pointer; }
+
+@media (max-width: 820px) {
+  .planner-stage { flex-direction: column; }
+  .planner-request, .planner-side { flex: 1 1 auto; width: 100%; }
+}
+
+/* ── AWAITING ────────────────────────────────────────── */
+.planner-awaiting { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.planner-awaiting-dots { display: flex; gap: 0.4rem; }
+.planner-awaiting-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-secondary); animation: planner-bounce 1s infinite ease-in-out; }
+.planner-awaiting-dots span:nth-child(2) { animation-delay: 0.15s; }
+.planner-awaiting-dots span:nth-child(3) { animation-delay: 0.3s; }
+.planner-awaiting-text { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); }
+@keyframes planner-bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+/* ── RESULTS ─────────────────────────────────────────── */
+#planner-results-bd .review-wrap { width: min(520px, 100%); }
+.planner-results-paper { text-align: left; }
+.planner-leaderboard { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.planner-lb-row { display: grid; grid-template-columns: auto 2rem 1fr auto; align-items: center; gap: 0.7rem; padding: 0.55rem 0.8rem; animation: planner-deal 0.4s ease both; animation-delay: var(--delay, 0ms); }
+.planner-lb-row.is-self { outline: 2px solid var(--accent-secondary); }
+.planner-lb-avatar img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; display: block; }
+.planner-lb-rank { font-family: var(--font-display); font-weight: 900; text-align: center; color: var(--ink); }
+.planner-lb-name { display: flex; flex-direction: column; font-weight: 700; color: var(--ink); }
+.planner-lb-meta { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500; color: var(--text-secondary); }
+.planner-lb-score { font-family: var(--font-display); font-size: 1.3rem; font-weight: 900; color: var(--ink); }
+.planner-lb-row.is-pending { opacity: 0.6; }
+@keyframes planner-deal { from { opacity: 0; transform: translateY(14px) rotate(-2deg); } to { opacity: 1; transform: none; } }
+
+.planner-breakdown { margin-top: 1.2rem; }
+.planner-breakdown-title { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 0.5rem; }
+.planner-breakdown-row { display: flex; gap: 0.6rem; }
+.planner-bd-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.5rem; }
+.planner-bd-label { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--ink); }
+.planner-bd-score { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; color: var(--ink); }
+.planner-results-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.25rem; flex-wrap: wrap; }
+.planner-results-actions button { padding: 0.6rem 1.2rem; cursor: pointer; }
+
+/* ── REVIEW ──────────────────────────────────────────── */
+#planner-review-bd { align-items: flex-start; }
+.planner-review { width: min(560px, 100%); margin: auto; }
+.planner-review-paper { text-align: left; }
+.planner-review-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); margin: 0 0 0.2rem; }
+.planner-review-sub { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); margin: 0 0 0.9rem; }
+.planner-review-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.82rem; }
+.planner-review-table td { padding: 0.4rem 0.5rem; border-bottom: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent); }
+.planner-rev-time { font-weight: 700; color: var(--ink); white-space: nowrap; }
+.planner-rev-name { color: var(--ink); }
+.planner-rev-mark { font-size: 0.72rem; white-space: nowrap; }
+.planner-rev-mark.is-ok { color: var(--accent-success); }
+.planner-rev-mark.is-no { color: var(--accent-danger, #f07a7a); }
+.planner-review-close { display: block; margin: 1.1rem auto 0; padding: 0.55rem 1.3rem; cursor: pointer; }
+
+/* ── CONFETTI ────────────────────────────────────────── */
+.planner-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.planner-confetti-piece { position: absolute; top: -12px; width: 10px; height: 14px; border-radius: 2px; animation: planner-fall linear forwards; }
+@keyframes planner-fall { to { transform: translate(var(--drift, 0), 105vh) rotate(var(--rot, 360deg)); opacity: 0.9; } }

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Planner — Multiplayer Event Scheduling | PrepPortal</title>
+    <meta
+      name="description"
+      content="Plan a day's events as a race. Read the request, work each event's exact time out from the clues, then drag them into order and set the clock — before time runs out. Up to 10 players or 1v1."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/select.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
+          "/exam-archive/national/planner/js/bots.js": "/exam-archive/national/planner/js/bots.js?v=37c6b665",
+          "/exam-archive/national/planner/js/game.js": "/exam-archive/national/planner/js/game.js?v=37c6b665",
+          "/exam-archive/national/planner/js/leaderboard.js": "/exam-archive/national/planner/js/leaderboard.js?v=37c6b665",
+          "/exam-archive/national/planner/js/main.js": "/exam-archive/national/planner/js/main.js?v=37c6b665",
+          "/exam-archive/national/planner/js/matchmaking.js": "/exam-archive/national/planner/js/matchmaking.js?v=37c6b665",
+          "/exam-archive/national/planner/js/rng.js": "/exam-archive/national/planner/js/rng.js?v=37c6b665",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=37c6b665",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=37c6b665",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=37c6b665",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=37c6b665",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=37c6b665",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=37c6b665",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=37c6b665",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=37c6b665",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=37c6b665",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=37c6b665",
+          "/data/planner/scenarios.js": "/data/planner/scenarios.js?v=37c6b665"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>PLANNER</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="builder-header">
+      <div class="builder-tabs" role="tablist">
+        <a class="pp-pill builder-tab" href="/exam-archive/national/exams/index.html" role="tab">Exam Builder</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/drills/index.html" role="tab">Drills</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/puzzles/index.html" role="tab">Puzzles</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/geometry/index.html" role="tab">Geometry</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/vocab/index.html" role="tab">Vocab</a>
+        <a class="pp-pill builder-tab" href="/exam-archive/national/grammar/index.html" role="tab">Grammar</a>
+        <a class="pp-pill builder-tab is-active" href="/exam-archive/national/planner/index.html" role="tab">Planner</a>
+      </div>
+    </header>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="planner-setup" id="planner-setup">
+      <div class="planner-section-hdr">
+        <div class="setup-eyebrow">Get Ready</div>
+        <h2>Set Up Your Plan</h2>
+        <p class="planner-section-sub">
+          You get an event request with the times hidden in clues. Work each one out, drag the events into order, and set the clock — before time runs out.
+        </p>
+      </div>
+
+      <div class="quick-join pp-sticky pp-sticky--tape pp-sticky--c3" id="planner-quickjoin">
+        <div class="quick-join-copy">
+          <strong>Got a room code?</strong>
+          <span>Skip the setup and join your friend's room.</span>
+        </div>
+        <div class="quick-join-controls">
+          <input class="quick-join-input" id="planner-quickjoin-input" type="text" maxlength="6"
+                 placeholder="ABC123" autocomplete="off" spellcheck="false" aria-label="Room code" />
+          <button class="pp-sticky pp-note-btn quick-join-btn pp-sticky--c0" id="planner-quickjoin-btn" type="button">Join</button>
+        </div>
+      </div>
+
+      <div class="planner-receipt pp-receipt" id="planner-receipt">
+        <div class="planner-receipt-paper pp-receipt__paper">
+          <p class="planner-receipt-title">Planner Settings</p>
+
+          <div class="planner-field" id="planner-section-player">
+            <span>Player</span>
+            <div id="planner-player-carousel"></div>
+          </div>
+
+          <input class="planner-name-input" id="planner-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid planner-avatar-grid" id="planner-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input type="file" id="planner-avatar-upload-input" accept="image/*" hidden />
+
+          <div class="planner-field" id="planner-section-topic">
+            <span>How Much to Plan</span>
+            <div id="planner-topic-carousel"></div>
+          </div>
+
+          <div class="planner-field" id="planner-section-options">
+            <span>Game Options</span>
+            <div id="planner-options-carousel"></div>
+          </div>
+
+          <div class="planner-field" id="planner-section-room">
+            <span>Room</span>
+            <div id="planner-room-carousel"></div>
+            <input class="planner-code-input" id="planner-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+          </div>
+
+          <button class="planner-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="planner-start-btn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+            <span id="planner-start-label">Find a Room</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ LOBBY OVERLAY ═══ -->
+    <div class="review-bd" id="planner-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="planner-lobby-status" id="planner-lobby-status">Waiting for other players…</p>
+        <div class="planner-lobby-code" id="planner-lobby-code" hidden>
+          <span>Share this code with your opponent</span>
+          <div class="planner-lobby-code-value">
+            <strong id="planner-lobby-code-text"></strong>
+            <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="planner-lobby-code-copy" title="Copy code">Copy</button>
+          </div>
+        </div>
+        <div class="planner-lobby-seats" id="planner-lobby-seats"></div>
+        <p class="planner-lobby-count" id="planner-lobby-count">1 / 5</p>
+        <div class="planner-lobby-actions">
+          <button class="planner-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="planner-lobby-start-now" type="button" hidden>Start now</button>
+          <button class="planner-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="planner-lobby-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="planner-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <p class="planner-time-remaining" id="planner-time-remaining"></p>
+        <div class="planner-roster" id="planner-roster" hidden></div>
+        <p class="planner-countdown" id="planner-countdown" hidden></p>
+        <!-- The request (clues) + the schedule table + event bank are built here
+             by js/game.js when the round starts. -->
+        <div class="planner-stage" id="planner-stage" hidden></div>
+      </div>
+    </div>
+
+    <!-- ═══ AWAITING RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="planner-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="planner-awaiting">
+          <div class="planner-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="planner-awaiting-text">Checking the schedules…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS OVERLAY ═══ -->
+    <div class="review-bd" id="planner-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="planner-results-receipt pp-receipt">
+          <div class="planner-results-paper pp-receipt__paper">
+            <div class="planner-section-hdr">
+              <div class="setup-eyebrow">Time's Up</div>
+              <h2>Results</h2>
+            </div>
+            <ol class="planner-leaderboard" id="planner-leaderboard"></ol>
+            <div class="planner-breakdown" id="planner-breakdown" hidden></div>
+          </div>
+        </div>
+        <div class="planner-results-actions">
+          <button class="planner-review-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="planner-review-btn" type="button">
+            See the correct schedule
+          </button>
+          <button class="planner-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="planner-again-btn" type="button">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ REVIEW OVERLAY ═══ -->
+    <div class="review-bd planner-review-bd" id="planner-review-bd" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="planner-review pp-receipt">
+        <div class="planner-review-paper pp-receipt__paper">
+          <p class="planner-review-title" id="planner-review-title"></p>
+          <p class="planner-review-sub" id="planner-review-sub"></p>
+          <table class="planner-review-table"><tbody id="planner-review-body"></tbody></table>
+          <button class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0 planner-review-close" id="planner-review-close" type="button">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+    <script type="module" src="./js/main.js?v=37c6b665"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
+</html>
