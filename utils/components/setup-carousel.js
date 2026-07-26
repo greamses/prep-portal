@@ -240,6 +240,10 @@ export function createSectionFlow(sections, { onChange } = {}) {
   });
 
   function render() {
+    // One running colour index across EVERY recap note, not reset per section,
+    // so the finished sections read as one continuous rainbow rather than each
+    // restarting at c0.
+    let colour = 0;
     sections.forEach((s, i) => {
       const done = i < active;
       s.el.classList.toggle('is-active', i === active);
@@ -248,9 +252,10 @@ export function createSectionFlow(sections, { onChange } = {}) {
       if (!done) return;
 
       s.recapEl.innerHTML = '';
-      (s.chips() || []).forEach((chip, n) => {
+      (s.chips() || []).forEach((chip) => {
         const note = document.createElement('span');
-        note.className = `pp-recap-note pp-sticky pp-sticky--tape pp-sticky--c${n % 6}`;
+        note.className = `pp-recap-note pp-sticky pp-sticky--tape pp-sticky--c${colour % 6}`;
+        colour += 1;
         note.innerHTML = chip.avatar
           ? `<img src="${chip.avatar}" alt="" /><span>${chip.label}</span>`
           : `<span>${chip.label}</span>`;
