@@ -28,7 +28,7 @@ export {
   GRADES, THEMES, THEME_KEYS, themesForGrade, themeMeta,
 } from './themes.js';
 export {
-  CUPS, CUPS_KEYS, CUPS_LABEL, CUPS_SHORT, focusKey, focusSet, focusLabel, focusInitials,
+  CUPS, CUPS_KEYS, CUPS_LABEL, CUPS_SHORT, focusKey, focusSet, focusLabel,
 } from './cups.js';
 
 import { THEMES, THEME_KEYS } from './themes.js';

@@ -121,10 +121,3 @@ export function focusLabel(key) {
   const names = CUPS.filter((c) => set.has(c.key)).map((c) => c.short);
   return names.length === 1 ? `${names[0]} only` : names.join(' & ');
 }
-
-/** The picked letters as compact initials — "CUP", or "CUPS" for all four.
-    For the setup recap chip, where the full "Capitals & Usage & …" runs long. */
-export function focusInitials(key) {
-  const set = focusSet(key);
-  return CUPS_KEYS.filter((k) => set.has(k)).join('');
-}

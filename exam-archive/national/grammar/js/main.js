@@ -12,8 +12,8 @@
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import {
-  GRADES, THEMES, themeMeta, availableThemes,
-  CUPS, CUPS_KEYS, CUPS_LABEL, focusKey, focusSet, focusInitials,
+  GRADES, THEMES, availableThemes,
+  CUPS, CUPS_KEYS, CUPS_LABEL, focusKey, focusSet,
   loadPassages, passagePool, buildPassage,
 } from '/data/grammar/index.js';
 import { SETS, setMeta, setsForGrade } from '/data/grammar/substitution.js';
@@ -65,9 +65,6 @@ const MAX_ROUND_SEC = 1800;
    already fifteen minutes, and MAX_ROUND_SEC is the real ceiling on how long a
    child will proof-read carefully before they start guessing. */
 const PASSAGE_COUNTS = [1, 2, 3];
-
-// The number of appearances a Word Upgrade set's passage holds — its "length".
-const upgradeCount = (key) => ((setMeta(key) || {}).passage || { answers: [] }).answers.length;
 
 const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
@@ -217,7 +214,7 @@ function renderActivityStep() {
     title: 'What do you want to play?',
     name: 'grammar-activity',
     options: [
-      { value: 'proofread', label: 'Proof-reading', note: 'Hunt the mistakes in a passage — the CUPS checklist.', checked: activity === 'proofread' },
+      { value: 'proofread', label: 'Proofread', note: 'Hunt the mistakes in a passage — the CUPS checklist.', checked: activity === 'proofread' },
       { value: 'upgrade', label: 'Upgrade', note: 'Swap a tired word (“said”, “walked”) for a vivid one.', checked: activity === 'upgrade' },
     ],
     onPick: (v) => {
@@ -445,20 +442,7 @@ const flow = createSectionFlow([
   },
   {
     el: $('grammar-section-topic'),
-    chips: () => (activity === 'upgrade'
-      ? [
-          { label: 'Upgrade' },
-          { label: `Grade ${grade}` },
-          { label: (setMeta(wordset) || {}).label || 'Words' },
-          { label: `${upgradeCount(wordset)} to upgrade` },
-        ]
-      : [
-          { label: 'Proof-reading' },
-          { label: `Grade ${grade}` },
-          { label: (themeMeta(theme) || {}).label || 'Passage' },
-          { label: focusInitials(focus) },
-          { label: passageCount === 1 ? '1 passage' : `${passageCount} passages` },
-        ]),
+    chips: () => [{ label: activity === 'upgrade' ? 'Upgrade' : 'Proofread' }],
   },
   {
     el: $('grammar-section-options'),
