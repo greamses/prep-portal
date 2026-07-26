@@ -214,8 +214,8 @@ function renderActivityStep() {
     title: 'What do you want to play?',
     name: 'grammar-activity',
     options: [
-      { value: 'proofread', label: 'Proofread', note: 'Hunt the mistakes in a passage — the CUPS checklist.', checked: activity === 'proofread' },
-      { value: 'upgrade', label: 'Upgrade', note: 'Swap a tired word (“said”, “walked”) for a vivid one.', checked: activity === 'upgrade' },
+      { value: 'proofread', label: 'Proofread', checked: activity === 'proofread' },
+      { value: 'upgrade', label: 'Upgrade', checked: activity === 'upgrade' },
     ],
     onPick: (v) => {
       activity = v;
