@@ -141,6 +141,7 @@ let scoreNote = null;
 let timerNote = null;
 let countdownEl = null;
 let tableWrap = null;
+let paperEl = null; // the receipt paper the table is printed on
 
 function ensureMount() {
   if (headEl) return;
@@ -156,8 +157,16 @@ function ensureMount() {
   countdownEl.className = 'drill-countdown';
   countdownEl.hidden = true;
 
+  // The grid is a single ruled table printed on receipt paper (the same torn
+  // cream stock the card and leaderboard use), not a scatter of loose chips.
   tableWrap = document.createElement('div');
   tableWrap.className = 'drill-grid-scroll';
+  const receipt = document.createElement('div');
+  receipt.className = 'pp-receipt drill-grid-receipt';
+  paperEl = document.createElement('div');
+  paperEl.className = 'pp-receipt__paper drill-grid-paper';
+  receipt.appendChild(paperEl);
+  tableWrap.appendChild(receipt);
 
   gridStage.append(headEl, countdownEl, tableWrap);
 }
@@ -252,8 +261,8 @@ function renderTable(grid) {
   });
   table.appendChild(tbody);
 
-  tableWrap.innerHTML = '';
-  tableWrap.appendChild(table);
+  paperEl.innerHTML = '';
+  paperEl.appendChild(table);
   remaining = inputs.length;
 }
 
@@ -313,7 +322,7 @@ export function startGridRound({ seed, timeLimit, startAt, blanks, roster }) {
     timerNote.textContent = `${timeLimit}s round`;
     scoreNote.textContent = '0 correct';
     countdownEl.hidden = false;
-    tableWrap.innerHTML = '';
+    paperEl.innerHTML = '';
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
