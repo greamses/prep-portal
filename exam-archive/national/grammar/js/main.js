@@ -218,7 +218,7 @@ function renderActivityStep() {
     name: 'grammar-activity',
     options: [
       { value: 'proofread', label: 'Proof-reading', note: 'Hunt the mistakes in a passage — the CUPS checklist.', checked: activity === 'proofread' },
-      { value: 'upgrade', label: 'Word Upgrade', note: 'Swap a tired word (“said”, “walked”) for a vivid one.', checked: activity === 'upgrade' },
+      { value: 'upgrade', label: 'Upgrade', note: 'Swap a tired word (“said”, “walked”) for a vivid one.', checked: activity === 'upgrade' },
     ],
     onPick: (v) => {
       activity = v;
@@ -332,7 +332,7 @@ function renderCountStep() {
     colorOffset: 1,
     options: PASSAGE_COUNTS.map((n) => ({
       value: String(n),
-      label: n === 1 ? 'One passage' : `Up to ${n} passages`,
+      label: ['One', 'Two', 'Three'][n - 1] || String(n),
       checked: n === passageCount,
     })),
     onPick: (v) => {
@@ -362,7 +362,7 @@ renderChoiceStep(options, 'mode', {
   name: 'grammar-mode',
   options: [
     { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
-    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
+    { value: 'versus', label: 'Versus', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
@@ -404,13 +404,13 @@ function renderRoomEntry() {
   const choices =
     mode === 'multiplayer'
       ? [
-          { value: 'quickfill', label: 'Quick Fill', checked: roomAction === 'quickfill' },
-          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
-          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+          { value: 'quickfill', label: 'Quickfill', checked: roomAction === 'quickfill' },
+          { value: 'create', label: 'Create', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join', checked: roomAction === 'join' },
         ]
       : [
-          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
-          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+          { value: 'create', label: 'Create', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join', checked: roomAction === 'join' },
         ];
 
   renderChoiceStep(roomCarousel, 'entry', {
@@ -447,7 +447,7 @@ const flow = createSectionFlow([
     el: $('grammar-section-topic'),
     chips: () => (activity === 'upgrade'
       ? [
-          { label: 'Word Upgrade' },
+          { label: 'Upgrade' },
           { label: `Grade ${grade}` },
           { label: (setMeta(wordset) || {}).label || 'Words' },
           { label: `${upgradeCount(wordset)} to upgrade` },
@@ -465,14 +465,14 @@ const flow = createSectionFlow([
     chips: () => {
       const p = PACES.find((x) => x.value === pace) || PACES[1];
       return mode === 'versus'
-        ? [{ label: 'Versus 1v1' }, { label: `${p.label} clock` }]
+        ? [{ label: 'Versus' }, { label: `${p.label} clock` }]
         : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${p.label} clock` }];
     },
   },
   {
     el: $('grammar-section-room'),
     chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
     }],
   },
 ], {

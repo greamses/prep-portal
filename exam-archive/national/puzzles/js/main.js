@@ -388,7 +388,7 @@ renderChoiceStep(options, 'mode', {
   name: 'puzzle-mode',
   options: [
     { value: 'multiplayer', label: 'Multiplayer', checked: mode === 'multiplayer' },
-    { value: 'versus', label: 'Versus (1v1)', checked: mode === 'versus' },
+    { value: 'versus', label: 'Versus', checked: mode === 'versus' },
   ],
   onPick: (v) => {
     mode = v;
@@ -435,13 +435,13 @@ function renderRoomEntry() {
   const choices =
     mode === 'multiplayer'
       ? [
-          { value: 'quickfill', label: 'Quick Fill', checked: roomAction === 'quickfill' },
-          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
-          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+          { value: 'quickfill', label: 'Quickfill', checked: roomAction === 'quickfill' },
+          { value: 'create', label: 'Create', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join', checked: roomAction === 'join' },
         ]
       : [
-          { value: 'create', label: 'Create Room', checked: roomAction === 'create' },
-          { value: 'join', label: 'Join with Code', checked: roomAction === 'join' },
+          { value: 'create', label: 'Create', checked: roomAction === 'create' },
+          { value: 'join', label: 'Join', checked: roomAction === 'join' },
         ];
 
   renderChoiceStep(roomCarousel, 'entry', {
@@ -492,13 +492,13 @@ const flow = createSectionFlow([
     el: $('puzzle-section-options'),
     chips: () =>
       mode === 'versus'
-        ? [{ label: 'Versus 1v1' }, { label: `${timeLimit / 60} min` }]
+        ? [{ label: 'Versus' }, { label: `${timeLimit / 60} min` }]
         : [{ label: 'Multiplayer' }, { label: `${roomSize} players` }, { label: `${timeLimit / 60} min` }],
   },
   {
     el: $('puzzle-section-room'),
     chips: () => [{
-      label: roomAction === 'quickfill' ? 'Quick Fill' : roomAction === 'create' ? 'Create Room' : 'Join with Code',
+      label: roomAction === 'quickfill' ? 'Quickfill' : roomAction === 'create' ? 'Create' : 'Join',
     }],
   },
 ], {
