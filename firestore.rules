@@ -267,13 +267,12 @@ service cloud.firestore {
           request.resource.data.compounds is list &&
           request.resource.data.compounds.hasOnly(['inorganic', 'organic'])
         )) &&
-        // Tables (grid filler): which play surface and the grid's dials. All
-        // optional for the same reason as `compounds` — a tab open across this
-        // deploy predates the fields — but present-but-wrong is still rejected.
+        // Tables (grid filler): which play surface and how blank each 5×5 grid
+        // is. Both optional for the same reason as `compounds` — a tab open
+        // across this deploy predates the fields — but present-but-wrong is
+        // still rejected.
         (!('activity' in request.resource.data) ||
           request.resource.data.activity in ['drill', 'grid']) &&
-        (!('gridSize' in request.resource.data) ||
-          request.resource.data.gridSize in [5, 9, 12]) &&
         (!('gridBlanks' in request.resource.data) ||
           request.resource.data.gridBlanks in ['light', 'heavy']);
 

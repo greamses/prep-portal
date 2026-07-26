@@ -163,8 +163,9 @@ if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // V
 
 let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'timestable']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
-// Tables (grid filler) only — the grid's size and how much of it is blank.
-let gridSize = mem.get('gridSize', 9, [5, 9, 12]);
+// Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
+// always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
+// next, so there is no size dial.
 let gridBlanks = mem.get('gridBlanks', 'light', ['light', 'heavy']);
 // The multi-pick sets restore from saved arrays, dropping anything that's no
 // longer a valid member of its list.
@@ -188,7 +189,7 @@ const saveContent = () => mem.save({
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
-  gridSize, gridBlanks,
+  gridBlanks,
 });
 
 // Which play surface the room runs — 'grid' for Tables, 'drill' for everything
@@ -306,7 +307,6 @@ topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
 topic.addSlide('compounds', 'Compounds', () => {});
-topic.addSlide('grid-size', 'Grid', () => {});
 topic.addSlide('grid-blanks', 'Blanks', () => {});
 
 function renderOperationsPick() {
@@ -382,27 +382,14 @@ function renderCompoundsPick() {
   });
 }
 
-/* Tables (grid filler) — two steps: how big the grid is, then how much of it
-   (cells AND some header labels) is blank. Both always have a value, so the
-   section is never in an unstartable state. */
-function renderGridSizeStep() {
-  renderChoiceStep(topic, 'grid-size', {
-    title: 'How big a grid?',
-    subtitle: 'A multiplication grid with shuffled headers — fill the blanks, and work out the missing labels too.',
-    name: 'drill-grid-size',
-    colorOffset: 4,
-    options: [5, 9, 12].map((n) => ({ value: String(n), label: `${n}×${n}`, checked: n === gridSize })),
-    onPick: (v) => {
-      gridSize = Number(v);
-      renderGridBlanksStep();
-      topic.goTo('grid-blanks');
-    },
-  });
-}
-
+/* Tables (grid filler) — one step: how much of each 5×5 grid is blank (cells
+   AND some header labels). Always has a value, so the section is never in an
+   unstartable state. The grid itself is always 5×5 with a fresh mix of 1..12
+   tables, dealt one after another until the clock runs out. */
 function renderGridBlanksStep() {
   renderChoiceStep(topic, 'grid-blanks', {
     title: 'How much is blank?',
+    subtitle: 'A 5×5 grid with shuffled headers — fill the blanks and work out the missing labels; a fresh grid follows each one.',
     name: 'drill-grid-blanks',
     colorOffset: 7,
     options: [
@@ -479,7 +466,7 @@ renderChoiceStep(topic, 'category', {
       updateStartDisabled();
     }
 
-    if (v === 'timestable') { renderGridSizeStep(); topic.goTo('grid-size'); }
+    if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
     else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
     else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
@@ -595,7 +582,7 @@ const flow = createSectionFlow([
       if (categoryValue === 'timestable') {
         return [
           { label: 'Tables' },
-          { label: `${gridSize}×${gridSize}` },
+          { label: '5×5' },
           { label: gridBlanks === 'heavy' ? 'Heavy' : 'Light' },
         ];
       }
@@ -861,7 +848,6 @@ async function playRoundAndShowResults(room, myName) {
         seed: room.seed,
         timeLimit: room.timeLimit,
         startAt: room.startAt,
-        size: room.gridSize,
         blanks: room.gridBlanks,
         roster,
       })
@@ -894,10 +880,9 @@ async function playRoundAndShowResults(room, myName) {
       // A bot's pace depends on what the room is drilling — see js/bots.js.
       // Read off the ROOM, so a joiner scores the host's bots the same way.
       operations: room.operations,
-      // Grid rooms score bots differently (cells filled, capped at the grid's
-      // blank count) — leaderboard.js branches on these.
+      // Grid rooms score bots on cells filled (a cell is a times-table
+      // product) — leaderboard.js branches on activity.
       activity: room.activity,
-      gridSize: room.gridSize,
       gridBlanks: room.gridBlanks,
       // The board goes up straight away and fills in as the room finishes,
       // instead of holding everyone behind the awaiting overlay.
@@ -957,7 +942,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -978,7 +963,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -1044,7 +1029,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {

@@ -1,44 +1,46 @@
 /* ═══════════════════════════════════════════════════════
    DRILLS — Times-Table Filler (grid) activity
 
-   A multiplication grid with missing cells AND missing row/column header
-   labels. The player fills the blanks against the same shared clock as the
-   arithmetic drill; the score is the number of blanks filled correctly.
+   A 5×5 multiplication grid with missing cells AND missing row/column header
+   labels. The headers are a mix of factors from 1..12 (shuffled, so position
+   gives no hint), and some are blank — you work the missing label out from the
+   products. Fill a grid and a FRESH 5×5 takes its place, on and on until the
+   clock runs out; the score is the total number of blanks filled correctly.
+
+   Streaming (rather than one finite grid) is deliberate: it means there is no
+   ceiling on a fast player OR a bot, so the round scores exactly like the
+   arithmetic card — a filled cell is just a times-table product — with no cap
+   anywhere. Grids are generated on demand by index, like rng.js's questionAt.
 
    Two halves live here:
-     · the SEEDED GENERATOR (buildGrid/gridSpec/totalBlanks) — pure and
-       deterministic, so every client in a room draws the identical grid with
-       zero network traffic, exactly like rng.js's questionAt. bots.js reads
-       totalBlanks() to cap a bot at the grid's blank count.
+     · the SEEDED GENERATOR (gridAt/gridSpec) — pure and deterministic, so every
+       client in a room draws the identical grid stream with zero network.
      · the ROUND RUNNER (startGridRound) — the play surface, structured like
        game.js's startRound: a 3-2-1 beat from the shared startAt, then a live
-       grid where a cell locks green the moment its value is right.
+       grid where a cell locks green the moment its value is right, and the whole
+       grid gives way to the next once every blank is filled.
 
-   Headers are a SHUFFLED selection of factors from 1..12 (position gives no
-   hint), and the blanks are chosen so the grid is always solvable: every blank
-   header is anchored by a shown cell in column/row 0 whose crossing header is
-   shown, so no deduction ever chains.
+   Blanks are chosen so each grid is always solvable: header 0 on each axis is
+   never blanked, and every blank header is anchored by a shown cell in row/
+   column 0 whose crossing header is shown — so no deduction ever chains.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
 
 const $ = (id) => document.getElementById(id);
 const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see game.js's note
 
-const FACTOR_MAX = 12; // headers are drawn from 1..12
+const SIZE = 5; // always a 5×5 grid
+const FACTOR_MAX = 12; // headers mix factors 1..12
 const BLANK_FRACTION = { light: 0.4, heavy: 0.6 };
 
 /* ── GENERATOR ──────────────────────────────────────────────────────────── */
 
-// The number of blanks is a FIXED function of (size, blanks) — no seed — so a
-// bot can be capped at it and every client agrees on it without regenerating.
-export function gridSpec(size, blanks) {
-  const fillable = size * size + 2 * size; // interior products + both header rows
+// How many of a grid's 35 fillable positions (25 products + 10 headers) are
+// blank, by density. Fixed formula, no seed.
+export function gridSpec(blanks) {
+  const fillable = SIZE * SIZE + 2 * SIZE;
   const fraction = BLANK_FRACTION[blanks] || BLANK_FRACTION.light;
   return { fillable, blankCount: Math.round(fraction * fillable) };
-}
-
-export function totalBlanks(size, blanks) {
-  return gridSpec(size, blanks).blankCount;
 }
 
 function shuffled(list, rng) {
@@ -50,37 +52,39 @@ function shuffled(list, rng) {
   return a;
 }
 
-/* Build the whole grid + which positions are blank. Solvable by construction:
-   header 0 on each axis is never blanked, and every blanked header reserves a
-   shown anchor cell in column/row 0, so it is directly deducible. */
-export function buildGrid(seed, size, blanks) {
-  const rng = mulberry32(hashSeed(seed, CONTENT_NS));
+// The index-th 5×5 grid of the room's stream — deterministic per (seed, index),
+// exactly like rng.js's questionAt(seed, i). Each grid re-mixes its 1..12
+// headers, so the stream never repeats and a fast player never runs out.
+// Solvable by construction: header 0 on each axis is never blanked, and every
+// blanked header reserves a shown anchor cell in column/row 0.
+export function gridAt(seed, index, blanks) {
+  const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
   const FACTORS = Array.from({ length: FACTOR_MAX }, (_, i) => i + 1);
   // Rows and columns are independent axes — each an own shuffle of 1..12.
-  const cols = shuffled(FACTORS, rng).slice(0, size);
-  const rows = shuffled(FACTORS, rng).slice(0, size);
+  const cols = shuffled(FACTORS, rng).slice(0, SIZE);
+  const rows = shuffled(FACTORS, rng).slice(0, SIZE);
   const cells = rows.map((r) => cols.map((c) => r * c));
 
-  const { blankCount } = gridSpec(size, blanks);
+  const { blankCount } = gridSpec(blanks);
   const blankRow = new Set(); // row-header indices that are blank
   const blankCol = new Set(); // col-header indices that are blank
   const blankCell = new Set(); // interior "r,c"
   const reserved = new Set(); // interior "r,c" that must stay shown (anchors)
 
-  // How many of the blanks are header labels — proportional to the header share
-  // of the grid, but always at least one (missing labels are the point), and
-  // never index 0 on either axis (that keeps an anchoring header shown).
+  // Some of the blanks are header labels — proportional to the header share of
+  // the grid, but always at least one (missing labels are the point), and never
+  // index 0 on either axis (that keeps an anchoring header shown).
   const headerSlots = shuffled(
     [
-      ...Array.from({ length: size - 1 }, (_, i) => ({ type: 'row', i: i + 1 })),
-      ...Array.from({ length: size - 1 }, (_, i) => ({ type: 'col', i: i + 1 })),
+      ...Array.from({ length: SIZE - 1 }, (_, i) => ({ type: 'row', i: i + 1 })),
+      ...Array.from({ length: SIZE - 1 }, (_, i) => ({ type: 'col', i: i + 1 })),
     ],
     rng,
   );
   const headerTarget = Math.max(
     1,
     Math.min(
-      Math.round(blankCount * (2 * size) / (size * size + 2 * size)),
+      Math.round(blankCount * (2 * SIZE) / (SIZE * SIZE + 2 * SIZE)),
       headerSlots.length,
     ),
   );
@@ -97,14 +101,13 @@ export function buildGrid(seed, size, blanks) {
 
   // Fill the rest of the blank budget from interior cells that aren't anchors.
   const interior = [];
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
       if (!reserved.has(`${r},${c}`)) interior.push(`${r},${c}`);
     }
   }
-  const shuffledInterior = shuffled(interior, rng);
   let need = blankCount - blankRow.size - blankCol.size;
-  for (const key of shuffledInterior) {
+  for (const key of shuffled(interior, rng)) {
     if (need <= 0) break;
     blankCell.add(key);
     need -= 1;
@@ -126,7 +129,11 @@ let score = 0;
 let endAt = 0;
 let rafId = null;
 let resolveRound = null;
-let inputs = []; // ordered live blank inputs, DOM order
+let inputs = []; // ordered live blank inputs of the CURRENT grid, DOM order
+let remaining = 0; // unlocked inputs left in the current grid
+let curSeed = 0;
+let curBlanks = 'light';
+let gridIndex = 0;
 
 // Mount elements built once and reused across rounds.
 let headEl = null;
@@ -175,12 +182,15 @@ function onCellInput(input) {
   if (!active || input.readOnly) return;
   const v = sanitize(input.value);
   input.value = v;
-  if (v === '' ) return;
+  if (v === '') return;
   if (Number(v) === Number(input.dataset.answer)) {
     input.readOnly = true;
     input.classList.add('is-correct');
     score += 1;
+    remaining -= 1;
     scoreNote.textContent = `${score} correct`;
+    // Grid finished — deal the next 5×5 and keep the run going.
+    if (remaining <= 0) { nextGrid(); return; }
     focusNextFrom(input);
   }
 }
@@ -200,7 +210,7 @@ function focusFirst() {
 
 // Build the <table>: corner "×", a shuffled header row/column (blanks are
 // inputs), and the product body (blanks are inputs). Fixed cells show their
-// number. `inputs` is (re)collected in DOM order for tab/auto-advance.
+// number. `inputs`/`remaining` are (re)set for the freshly dealt grid.
 function renderTable(grid) {
   const { rows, cols, cells, blankRow, blankCol, blankCell } = grid;
   inputs = [];
@@ -244,6 +254,13 @@ function renderTable(grid) {
 
   tableWrap.innerHTML = '';
   tableWrap.appendChild(table);
+  remaining = inputs.length;
+}
+
+function nextGrid() {
+  gridIndex += 1;
+  renderTable(gridAt(curSeed, gridIndex, curBlanks));
+  focusFirst();
 }
 
 function renderRoster(roster) {
@@ -279,12 +296,16 @@ function endRound() {
 
 // Resolves with the player's correct-cell count once the local timer hits zero.
 // Same shape/contract as game.js's startRound so main.js can dispatch on it.
-export function startGridRound({ seed, timeLimit, startAt, size, blanks, roster }) {
+export function startGridRound({ seed, timeLimit, startAt, blanks, roster }) {
   return new Promise((resolve) => {
     ensureMount();
     score = 0;
+    gridIndex = 0;
+    curSeed = seed;
+    curBlanks = blanks;
     resolveRound = resolve;
     inputs = [];
+    remaining = 0;
 
     // Card is the arithmetic surface; hide it, show the grid.
     cardEl.hidden = true;
@@ -312,7 +333,7 @@ export function startGridRound({ seed, timeLimit, startAt, size, blanks, roster 
       if (msLeft <= 0) {
         countdownEl.hidden = true;
         rosterEl.hidden = true;
-        renderTable(buildGrid(seed, size, blanks));
+        renderTable(gridAt(seed, 0, blanks));
         endAt = anchorAt + timeLimit * 1000;
         focusFirst();
         rafId = requestAnimationFrame(tick);

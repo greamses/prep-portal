@@ -15,13 +15,13 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'drillRooms',
   pointers: 'drillRoomPointers',
-  contentKeys: ['operations', 'tables', 'fractionTypes', 'compounds', 'activity', 'gridSize', 'gridBlanks'],
+  contentKeys: ['operations', 'tables', 'fractionTypes', 'compounds', 'activity', 'gridBlanks'],
   // Two players share a room only if they would be playing the same thing. The
-  // grid activity buckets purely on its own dials (its operations/tables are
+  // grid activity buckets purely on its own dial (its operations/tables are
   // placeholders); the arithmetic bucket is left byte-for-byte as it was, so
   // existing drill matchmaking is undisturbed — 'grid_…' can't collide with it.
   bucketOf: (c) => {
-    if (c.activity === 'grid') return `grid_${c.gridSize}_${c.gridBlanks}`;
+    if (c.activity === 'grid') return `grid_${c.gridBlanks}`;
     return [
       [...c.operations].sort().join(','),
       [...c.tables].sort((a, b) => a - b).join(','),
