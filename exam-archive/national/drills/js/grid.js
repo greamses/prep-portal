@@ -1,28 +1,28 @@
 /* ═══════════════════════════════════════════════════════
    DRILLS — Times-Table Filler (grid) activity
 
-   A 5×5 multiplication grid with missing cells AND missing row/column header
-   labels. The headers are a mix of factors from 2..12 (shuffled, so position
-   gives no hint), and some are blank — you work the missing label out from the
-   products. Fill a grid and a FRESH 5×5 takes its place, on and on until the
-   clock runs out; the score is the total number of blanks filled correctly.
+   A 5×5 multiplication grid where every product (multiple) is GIVEN and the
+   row/column table numbers (headers) are the blanks — you guess each table
+   number from the multiples in its line. Headers are a mix of factors 2..12
+   (shuffled, so position gives no hint). Fill a grid's table numbers and a
+   FRESH 5×5 takes its place, on and on until the clock runs out; the score is
+   the total number of table numbers guessed correctly.
 
    Streaming (rather than one finite grid) is deliberate: it means there is no
    ceiling on a fast player OR a bot, so the round scores exactly like the
-   arithmetic card — a filled cell is just a times-table product — with no cap
-   anywhere. Grids are generated on demand by index, like rng.js's questionAt.
+   arithmetic card — deducing a header is one division — with no cap anywhere.
+   Grids are generated on demand by index, like rng.js's questionAt.
 
    Two halves live here:
      · the SEEDED GENERATOR (gridAt/gridSpec) — pure and deterministic, so every
        client in a room draws the identical grid stream with zero network.
      · the ROUND RUNNER (startGridRound) — the play surface, structured like
        game.js's startRound: a 3-2-1 beat from the shared startAt, then a live
-       grid where a cell locks green the moment its value is right, and the whole
-       grid gives way to the next once every blank is filled.
+       grid where a header locks green the moment its value is right, and the
+       whole grid gives way to the next once every table number is filled.
 
-   Blanks are chosen so each grid is always solvable: header 0 on each axis is
-   never blanked, and every blank header is anchored by a shown cell in row/
-   column 0 whose crossing header is shown — so no deduction ever chains.
+   Solvable by construction: header 0 on each axis is never blanked, so with the
+   products all given every other header is uniquely deducible.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
 
@@ -32,16 +32,17 @@ const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see game.js's note
 const SIZE = 5; // always a 5×5 grid
 const FACTOR_MIN = 2; // skip the ×1 table — multiplying by one is no drill
 const FACTOR_MAX = 12; // headers mix factors 2..12
-const BLANK_FRACTION = { light: 0.4, heavy: 0.6 };
 
 /* ── GENERATOR ──────────────────────────────────────────────────────────── */
 
-// How many of a grid's 35 fillable positions (25 products + 10 headers) are
-// blank, by density. Fixed formula, no seed.
+// The blanks are the TABLE NUMBERS (headers) — every product is given, and the
+// player guesses each header from the multiples in its line. Header 0 on each
+// axis stays shown, so 2×(SIZE-1) headers can be blanked; density picks how
+// many. Fixed formula, no seed.
 export function gridSpec(blanks) {
-  const fillable = SIZE * SIZE + 2 * SIZE;
-  const fraction = BLANK_FRACTION[blanks] || BLANK_FRACTION.light;
-  return { fillable, blankCount: Math.round(fraction * fillable) };
+  const blankable = 2 * (SIZE - 1);
+  const blankCount = blanks === 'heavy' ? blankable : Math.round(blankable * 0.5);
+  return { blankable, blankCount };
 }
 
 function shuffled(list, rng) {
@@ -55,9 +56,10 @@ function shuffled(list, rng) {
 
 // The index-th 5×5 grid of the room's stream — deterministic per (seed, index),
 // exactly like rng.js's questionAt(seed, i). Each grid re-mixes its 2..12
-// headers, so the stream never repeats and a fast player never runs out.
-// Solvable by construction: header 0 on each axis is never blanked, and every
-// blanked header reserves a shown anchor cell in column/row 0.
+// headers, so the stream never repeats and a fast player never runs out. Every
+// product is shown; the blanks are the table numbers (headers). Solvable by
+// construction: header 0 on each axis is never blanked, so with the given
+// products every other header is uniquely deducible.
 export function gridAt(seed, index, blanks) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
   const FACTORS = Array.from({ length: FACTOR_MAX - FACTOR_MIN + 1 }, (_, i) => i + FACTOR_MIN);
@@ -67,14 +69,14 @@ export function gridAt(seed, index, blanks) {
   const cells = rows.map((r) => cols.map((c) => r * c));
 
   const { blankCount } = gridSpec(blanks);
-  const blankRow = new Set(); // row-header indices that are blank
-  const blankCol = new Set(); // col-header indices that are blank
-  const blankCell = new Set(); // interior "r,c"
-  const reserved = new Set(); // interior "r,c" that must stay shown (anchors)
+  const blankRow = new Set(); // row-header table numbers to guess
+  const blankCol = new Set(); // col-header table numbers to guess
+  const blankCell = new Set(); // none — every multiple is given
 
-  // Some of the blanks are header labels — proportional to the header share of
-  // the grid, but always at least one (missing labels are the point), and never
-  // index 0 on either axis (that keeps an anchoring header shown).
+  // Blank the table numbers (headers), never index 0 on either axis. Keeping one
+  // shown header per axis makes every other header uniquely deducible from the
+  // given products: cells[r][0] / cols[0] for a row, cells[0][c] / rows[0] for a
+  // column — and the other cells in the line confirm it.
   const headerSlots = shuffled(
     [
       ...Array.from({ length: SIZE - 1 }, (_, i) => ({ type: 'row', i: i + 1 })),
@@ -82,36 +84,10 @@ export function gridAt(seed, index, blanks) {
     ],
     rng,
   );
-  const headerTarget = Math.max(
-    1,
-    Math.min(
-      Math.round(blankCount * (2 * SIZE) / (SIZE * SIZE + 2 * SIZE)),
-      headerSlots.length,
-    ),
-  );
   for (const h of headerSlots) {
-    if (blankRow.size + blankCol.size >= headerTarget) break;
-    if (h.type === 'row') {
-      blankRow.add(h.i);
-      reserved.add(`${h.i},0`); // anchor: cell in column 0 (col header 0 is shown)
-    } else {
-      blankCol.add(h.i);
-      reserved.add(`0,${h.i}`); // anchor: cell in row 0 (row header 0 is shown)
-    }
-  }
-
-  // Fill the rest of the blank budget from interior cells that aren't anchors.
-  const interior = [];
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      if (!reserved.has(`${r},${c}`)) interior.push(`${r},${c}`);
-    }
-  }
-  let need = blankCount - blankRow.size - blankCol.size;
-  for (const key of shuffled(interior, rng)) {
-    if (need <= 0) break;
-    blankCell.add(key);
-    need -= 1;
+    if (blankRow.size + blankCol.size >= blankCount) break;
+    if (h.type === 'row') blankRow.add(h.i);
+    else blankCol.add(h.i);
   }
 
   return { rows, cols, cells, blankRow, blankCol, blankCell };

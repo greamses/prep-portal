@@ -389,7 +389,7 @@ function renderCompoundsPick() {
 function renderGridBlanksStep() {
   renderChoiceStep(topic, 'grid-blanks', {
     title: 'How much is blank?',
-    subtitle: 'A 5×5 grid with shuffled headers — fill the blanks and work out the missing labels; a fresh grid follows each one.',
+    subtitle: 'A 5×5 grid of multiples — guess the missing table numbers from them; a fresh grid follows each one.',
     name: 'drill-grid-blanks',
     colorOffset: 7,
     options: [
