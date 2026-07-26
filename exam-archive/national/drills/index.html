@@ -31,25 +31,26 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=a613f0b3",
-          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=a613f0b3",
-          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=a613f0b3",
-          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=a613f0b3",
-          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=a613f0b3",
-          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=a613f0b3",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=a613f0b3",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=a613f0b3",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=a613f0b3",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=a613f0b3",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=a613f0b3",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=a613f0b3",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=a613f0b3",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=a613f0b3",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=a613f0b3",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=a613f0b3",
-          "/data/chem/rmm.js": "/data/chem/rmm.js?v=a613f0b3",
-          "/data/chem/masses.js": "/data/chem/masses.js?v=a613f0b3",
-          "/data/chem/iupac.js": "/data/chem/iupac.js?v=a613f0b3"
+          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=928a76ef",
+          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=928a76ef",
+          "/exam-archive/national/drills/js/grid.js": "/exam-archive/national/drills/js/grid.js?v=928a76ef",
+          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=928a76ef",
+          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=928a76ef",
+          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=928a76ef",
+          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=928a76ef",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=928a76ef",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=928a76ef",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=928a76ef",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=928a76ef",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=928a76ef",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=928a76ef",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=928a76ef",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=928a76ef",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=928a76ef",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=928a76ef",
+          "/data/chem/rmm.js": "/data/chem/rmm.js?v=928a76ef",
+          "/data/chem/masses.js": "/data/chem/masses.js?v=928a76ef",
+          "/data/chem/iupac.js": "/data/chem/iupac.js?v=928a76ef"
         }
       }
     </script>
@@ -183,6 +184,12 @@
             </div>
           </div>
         </div>
+
+        <!-- Times-Table filler surface — built by js/grid.js when the room's
+             activity is 'grid'. Shares the overlay chrome (roster + time
+             remaining) with the arithmetic card above. -->
+        <div class="drill-grid" id="drill-grid" hidden></div>
+
         <input
           id="drill-answer-input"
           class="drill-answer-input-hidden"
@@ -224,7 +231,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=a613f0b3"></script>
+    <script type="module" src="./js/main.js?v=928a76ef"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

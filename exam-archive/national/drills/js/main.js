@@ -11,6 +11,7 @@ import { COMPOUND_SETS, ALL_COMPOUND_SETS } from '/data/chem/rmm.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
+import { startGridRound } from './grid.js';
 import { finishRound } from './leaderboard.js';
 import {
   createCarousel, createSectionFlow,
@@ -50,12 +51,17 @@ const CATEGORY_OPERATIONS = {
   exponent: ['square', 'cube', 'power4', 'sqrt', 'cuberoot', 'fourthroot'],
   fractions: ['fracAdd', 'fracSub', 'fracMul', 'fracDiv'],
   chemistry: ['rmm'],
+  // Tables (the grid filler) has no operations step — 'multiply' is a harmless
+  // placeholder so the room doc still carries a valid, non-empty operations
+  // list; the grid round ignores it entirely (see js/grid.js).
+  timestable: ['multiply'],
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
   exponent: [],
   fractions: [],
   chemistry: ['rmm'],
+  timestable: ['multiply'],
 };
 
 // Fractions gets a second selector dimension — which shape of fraction
@@ -155,8 +161,11 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'timestable']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
+// Tables (grid filler) only — the grid's size and how much of it is blank.
+let gridSize = mem.get('gridSize', 9, [5, 9, 12]);
+let gridBlanks = mem.get('gridBlanks', 'light', ['light', 'heavy']);
 // The multi-pick sets restore from saved arrays, dropping anything that's no
 // longer a valid member of its list.
 const tables = new Set(mem.get('tables', [], Array.isArray).filter((n) => UNIT_NUMBERS.includes(n))); // Basic + 1-9 only — the cherry-picked number set
@@ -179,7 +188,12 @@ const saveContent = () => mem.save({
   tables: [...tables], operations: [...operations],
   fractionTypes: [...fractionTypes], denominators: [...denominators],
   compounds: [...compounds],
+  gridSize, gridBlanks,
 });
+
+// Which play surface the room runs — 'grid' for Tables, 'drill' for everything
+// else. Written to the room doc so a code-joiner plays the host's surface.
+const gameActivity = () => (categoryValue === 'timestable' ? 'grid' : 'drill');
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -204,6 +218,9 @@ function isNumbersMode() { return categoryValue === 'basic' && range === '1-9'; 
 // draws from the compound bank instead and never touches this pool, but the
 // room doc's `tables` still has to be a non-empty list of numbers.
 function getTablesPool() {
+  // Tables (grid filler) doesn't draw from a number pool, but the room doc's
+  // `tables` still has to be a non-empty list — a single placeholder does it.
+  if (categoryValue === 'timestable') return [1];
   if (categoryValue === 'chemistry') return [1];
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
@@ -213,6 +230,8 @@ function getTablesPool() {
 }
 
 function updateStartDisabled() {
+  // Tables always has a valid setup (size + blanks both default to a value).
+  if (categoryValue === 'timestable') { startBtn.disabled = false; return; }
   const needsNumbers = isNumbersMode() && tables.size === 0;
   const isFractions = categoryValue === 'fractions';
   const needsFractionType = isFractions && fractionTypes.size === 0;
@@ -287,6 +306,8 @@ topic.addSlide('range', 'Number Range', () => {});
 topic.addSlide('numbers', 'Numbers', () => {});
 topic.addSlide('denominators', 'Denominators', () => {});
 topic.addSlide('compounds', 'Compounds', () => {});
+topic.addSlide('grid-size', 'Grid', () => {});
+topic.addSlide('grid-blanks', 'Blanks', () => {});
 
 function renderOperationsPick() {
   const isFractions = categoryValue === 'fractions';
@@ -361,6 +382,41 @@ function renderCompoundsPick() {
   });
 }
 
+/* Tables (grid filler) — two steps: how big the grid is, then how much of it
+   (cells AND some header labels) is blank. Both always have a value, so the
+   section is never in an unstartable state. */
+function renderGridSizeStep() {
+  renderChoiceStep(topic, 'grid-size', {
+    title: 'How big a grid?',
+    subtitle: 'A multiplication grid with shuffled headers — fill the blanks, and work out the missing labels too.',
+    name: 'drill-grid-size',
+    colorOffset: 4,
+    options: [5, 9, 12].map((n) => ({ value: String(n), label: `${n}×${n}`, checked: n === gridSize })),
+    onPick: (v) => {
+      gridSize = Number(v);
+      renderGridBlanksStep();
+      topic.goTo('grid-blanks');
+    },
+  });
+}
+
+function renderGridBlanksStep() {
+  renderChoiceStep(topic, 'grid-blanks', {
+    title: 'How much is blank?',
+    name: 'drill-grid-blanks',
+    colorOffset: 7,
+    options: [
+      { value: 'light', label: 'Light', checked: gridBlanks === 'light' },
+      { value: 'heavy', label: 'Heavy', checked: gridBlanks === 'heavy' },
+    ],
+    onPick: (v) => {
+      gridBlanks = v;
+      saveContent();
+      flow.next(); // last step of this section
+    },
+  });
+}
+
 function renderRangePick() {
   renderChoiceStep(topic, 'range', {
     title: 'Which number range?',
@@ -403,6 +459,7 @@ renderChoiceStep(topic, 'category', {
     { value: 'exponent', label: 'Exponent', checked: categoryValue === 'exponent' },
     { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
     { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
+    { value: 'timestable', label: 'Tables', checked: categoryValue === 'timestable' },
   ],
   onPick: (v) => {
     if (v !== categoryValue) {
@@ -422,7 +479,8 @@ renderChoiceStep(topic, 'category', {
       updateStartDisabled();
     }
 
-    if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
+    if (v === 'timestable') { renderGridSizeStep(); topic.goTo('grid-size'); }
+    else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
     else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
   },
@@ -533,6 +591,14 @@ const flow = createSectionFlow([
     el: $('drill-section-topic'),
     chips: () => {
       const cat = categoryValue[0].toUpperCase() + categoryValue.slice(1);
+      // Tables (grid filler) recaps its two dials: size and blank density.
+      if (categoryValue === 'timestable') {
+        return [
+          { label: 'Tables' },
+          { label: `${gridSize}×${gridSize}` },
+          { label: gridBlanks === 'heavy' ? 'Heavy' : 'Light' },
+        ];
+      }
       // Chemistry's one operation IS the category — "Chemistry · Molecular
       // Mass · Inorganic" says it without repeating itself.
       if (categoryValue === 'chemistry') {
@@ -787,16 +853,28 @@ function launchConfetti() {
 // ── Round orchestration (shared by all three matchmaking paths) ─────────
 async function playRoundAndShowResults(room, myName) {
   const roster = buildRoster(room, myName);
-  const myScore = await startRound({
-    seed: room.seed,
-    timeLimit: room.timeLimit,
-    startAt: room.startAt,
-    operations: room.operations,
-    tables: room.tables,
-    fractionTypes: room.fractionTypes,
-    compounds: room.compounds,
-    roster,
-  });
+  // The ROOM decides which surface plays — a grid room predates nothing here,
+  // but a joiner who came by code never touched this client's setup, so read it
+  // off the room (mirrors the Grammar page's proofread/upgrade dispatch).
+  const myScore = room.activity === 'grid'
+    ? await startGridRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        size: room.gridSize,
+        blanks: room.gridBlanks,
+        roster,
+      })
+    : await startRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        operations: room.operations,
+        tables: room.tables,
+        fractionTypes: room.fractionTypes,
+        compounds: room.compounds,
+        roster,
+      });
 
   // The round overlay just closed but the leaderboard read (grace delay +
   // one getDocs) hasn't landed yet — show a small "tallying" modal instead
@@ -816,6 +894,11 @@ async function playRoundAndShowResults(room, myName) {
       // A bot's pace depends on what the room is drilling — see js/bots.js.
       // Read off the ROOM, so a joiner scores the host's bots the same way.
       operations: room.operations,
+      // Grid rooms score bots differently (cells filled, capped at the grid's
+      // blank count) — leaderboard.js branches on these.
+      activity: room.activity,
+      gridSize: room.gridSize,
+      gridBlanks: room.gridBlanks,
       // The board goes up straight away and fills in as the room finishes,
       // instead of holding everyone behind the awaiting overlay.
       onUpdate: (rows) => {
@@ -874,7 +957,7 @@ async function runMultiplayer({ timeLimit, operationsList, tablesList, fractionT
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -895,7 +978,7 @@ async function runMultiplayerCreate({ timeLimit, operationsList, tablesList, fra
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
+      { mode: 'multiplayer', size, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for other players…') },
     );
   } catch (e) {
@@ -961,7 +1044,7 @@ async function runVersusCreate({ timeLimit, operationsList, tablesList, fraction
   let created;
   try {
     created = await createCodeRoom(
-      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, displayName: myName },
+      { mode: 'versus', size: 2, timeLimit, operations: operationsList, tables: tablesList, fractionTypes: fractionTypesList, compounds: compoundsList, activity: gameActivity(), gridSize, gridBlanks, displayName: myName },
       { onWaiting: makeOnWaiting('Waiting for your opponent…') },
     );
   } catch (e) {

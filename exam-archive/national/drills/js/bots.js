@@ -6,6 +6,7 @@
    and identical across every real participant's screen.
 ═══════════════════════════════════════════════════════ */
 import { botRng, botName } from '/utils/games/bots.js';
+import { totalBlanks } from './grid.js';
 
 // Naming is shared (bots should feel like one population of kids across every
 // game); SCORING is not — see below.
@@ -20,6 +21,14 @@ const RMM_PACE = 5;
 
 export function botPaceFor(operations) {
   return (operations || []).includes('rmm') ? RMM_PACE : 1;
+}
+
+// The Tables (grid) activity: a filled cell is a times-table product, so a bot
+// works at plain arithmetic pace — but it can never score more than the grid
+// actually leaves blank, so cap it there. totalBlanks() is the same fixed
+// formula every client agrees on (see js/grid.js), so this stays deterministic.
+export function simulateGridScore(seed, botSlot, timeLimitSec, size, blanks) {
+  return Math.min(simulateBotScore(seed, botSlot, timeLimitSec, 1), totalBlanks(size, blanks));
 }
 
 export function simulateBotScore(seed, botSlot, timeLimitSec, pace = 1) {
