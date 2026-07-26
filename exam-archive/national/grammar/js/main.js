@@ -13,7 +13,7 @@
 import { auth } from '/firebase-init.js';
 import {
   GRADES, THEMES, themeMeta, availableThemes,
-  CUPS, CUPS_KEYS, CUPS_LABEL, focusKey, focusSet, focusLabel,
+  CUPS, CUPS_KEYS, CUPS_LABEL, focusKey, focusSet, focusInitials,
   loadPassages, passagePool, buildPassage,
 } from '/data/grammar/index.js';
 import { SETS, setMeta, setsForGrade } from '/data/grammar/substitution.js';
@@ -456,7 +456,7 @@ const flow = createSectionFlow([
           { label: 'Proof-reading' },
           { label: `Grade ${grade}` },
           { label: (themeMeta(theme) || {}).label || 'Passage' },
-          { label: focusLabel(focus) },
+          { label: focusInitials(focus) },
           { label: passageCount === 1 ? '1 passage' : `${passageCount} passages` },
         ]),
   },

@@ -114,10 +114,17 @@ export function focusSet(key) {
   return new Set(picked.length ? picked : CUPS_KEYS);
 }
 
-/** "Punctuation & Spelling" — for the recap chip and the results card. */
+/** "Punctuation & Spelling" — for the play-screen note and the results card. */
 export function focusLabel(key) {
   const set = focusSet(key);
   if (set.size === CUPS_KEYS.length) return 'Full CUPS';
   const names = CUPS.filter((c) => set.has(c.key)).map((c) => c.short);
   return names.length === 1 ? `${names[0]} only` : names.join(' & ');
+}
+
+/** The picked letters as compact initials — "CUP", or "CUPS" for all four.
+    For the setup recap chip, where the full "Capitals & Usage & …" runs long. */
+export function focusInitials(key) {
+  const set = focusSet(key);
+  return CUPS_KEYS.filter((k) => set.has(k)).join('');
 }
