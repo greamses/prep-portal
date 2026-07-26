@@ -2,7 +2,7 @@
    DRILLS — Times-Table Filler (grid) activity
 
    A 5×5 multiplication grid with missing cells AND missing row/column header
-   labels. The headers are a mix of factors from 1..12 (shuffled, so position
+   labels. The headers are a mix of factors from 2..12 (shuffled, so position
    gives no hint), and some are blank — you work the missing label out from the
    products. Fill a grid and a FRESH 5×5 takes its place, on and on until the
    clock runs out; the score is the total number of blanks filled correctly.
@@ -30,7 +30,8 @@ const $ = (id) => document.getElementById(id);
 const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see game.js's note
 
 const SIZE = 5; // always a 5×5 grid
-const FACTOR_MAX = 12; // headers mix factors 1..12
+const FACTOR_MIN = 2; // skip the ×1 table — multiplying by one is no drill
+const FACTOR_MAX = 12; // headers mix factors 2..12
 const BLANK_FRACTION = { light: 0.4, heavy: 0.6 };
 
 /* ── GENERATOR ──────────────────────────────────────────────────────────── */
@@ -53,14 +54,14 @@ function shuffled(list, rng) {
 }
 
 // The index-th 5×5 grid of the room's stream — deterministic per (seed, index),
-// exactly like rng.js's questionAt(seed, i). Each grid re-mixes its 1..12
+// exactly like rng.js's questionAt(seed, i). Each grid re-mixes its 2..12
 // headers, so the stream never repeats and a fast player never runs out.
 // Solvable by construction: header 0 on each axis is never blanked, and every
 // blanked header reserves a shown anchor cell in column/row 0.
 export function gridAt(seed, index, blanks) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
-  const FACTORS = Array.from({ length: FACTOR_MAX }, (_, i) => i + 1);
-  // Rows and columns are independent axes — each an own shuffle of 1..12.
+  const FACTORS = Array.from({ length: FACTOR_MAX - FACTOR_MIN + 1 }, (_, i) => i + FACTOR_MIN);
+  // Rows and columns are independent axes — each an own shuffle of 2..12.
   const cols = shuffled(FACTORS, rng).slice(0, SIZE);
   const rows = shuffled(FACTORS, rng).slice(0, SIZE);
   const cells = rows.map((r) => cols.map((c) => r * c));
@@ -142,6 +143,8 @@ let timerNote = null;
 let countdownEl = null;
 let tableWrap = null;
 let paperEl = null; // the receipt paper the table is printed on
+let tableHost = null; // where the <table> is (re)injected each grid
+let activeInput = null; // the blank cell the numpad types into
 
 function ensureMount() {
   if (headEl) return;
@@ -159,16 +162,53 @@ function ensureMount() {
 
   // The grid is a single ruled table printed on receipt paper (the same torn
   // cream stock the card and leaderboard use), not a scatter of loose chips.
+  // A sticky-paper numpad sits on the left of the same receipt — it types into
+  // whichever blank cell is focused (and fills the space beside the small grid).
   tableWrap = document.createElement('div');
   tableWrap.className = 'drill-grid-scroll';
   const receipt = document.createElement('div');
   receipt.className = 'pp-receipt drill-grid-receipt';
   paperEl = document.createElement('div');
   paperEl.className = 'pp-receipt__paper drill-grid-paper';
+  const layout = document.createElement('div');
+  layout.className = 'drill-grid-layout';
+  tableHost = document.createElement('div');
+  tableHost.className = 'drill-grid-host';
+  layout.append(buildNumpad(), tableHost);
+  paperEl.appendChild(layout);
   receipt.appendChild(paperEl);
   tableWrap.appendChild(receipt);
 
   gridStage.append(headEl, countdownEl, tableWrap);
+}
+
+// A calculator-style pad of sticky-note keys. Pressing one types into the
+// focused blank cell; mousedown is swallowed so the cell keeps focus.
+function buildNumpad() {
+  const pad = document.createElement('div');
+  pad.className = 'drill-numpad';
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'back', '0'].forEach((ch, i) => {
+    const key = document.createElement('button');
+    key.type = 'button';
+    key.className = `pp-sticky pp-note-btn drill-numpad-key pp-sticky--c${i % 6}`;
+    if (ch === 'back') key.classList.add('drill-numpad-back');
+    key.textContent = ch === 'back' ? '⌫' : ch;
+    key.setAttribute('aria-label', ch === 'back' ? 'Delete' : ch);
+    key.addEventListener('mousedown', (e) => e.preventDefault()); // keep cell focus
+    key.addEventListener('click', () => pressKey(ch));
+    pad.appendChild(key);
+  });
+  return pad;
+}
+
+function pressKey(ch) {
+  if (!active) return;
+  let inp = activeInput;
+  // Nothing focused (or the last one just locked/advanced) — grab the next blank.
+  if (!inp || inp.readOnly || !inp.isConnected) { focusFirst(); inp = activeInput; }
+  if (!inp) return;
+  inp.value = ch === 'back' ? inp.value.slice(0, -1) : sanitize(inp.value + ch);
+  onCellInput(inp);
 }
 
 function sanitize(raw) {
@@ -184,6 +224,7 @@ function makeInput(correct) {
   input.setAttribute('aria-label', 'Fill in');
   input.dataset.answer = String(correct);
   input.addEventListener('input', () => onCellInput(input));
+  input.addEventListener('focus', () => { activeInput = input; });
   return input;
 }
 
@@ -261,8 +302,8 @@ function renderTable(grid) {
   });
   table.appendChild(tbody);
 
-  paperEl.innerHTML = '';
-  paperEl.appendChild(table);
+  tableHost.innerHTML = '';
+  tableHost.appendChild(table);
   remaining = inputs.length;
 }
 
@@ -315,6 +356,7 @@ export function startGridRound({ seed, timeLimit, startAt, blanks, roster }) {
     resolveRound = resolve;
     inputs = [];
     remaining = 0;
+    activeInput = null;
 
     // Card is the arithmetic surface; hide it, show the grid.
     cardEl.hidden = true;
@@ -322,7 +364,7 @@ export function startGridRound({ seed, timeLimit, startAt, blanks, roster }) {
     timerNote.textContent = `${timeLimit}s round`;
     scoreNote.textContent = '0 correct';
     countdownEl.hidden = false;
-    paperEl.innerHTML = '';
+    tableHost.innerHTML = '';
     timeRemainingEl.textContent = '';
     if (roster) renderRoster(roster);
 
