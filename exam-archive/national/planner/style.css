@@ -100,18 +100,20 @@ body.planner-nav-hidden .site-nav { display: none; }
 .planner-week { border-collapse: collapse; font-family: var(--font-mono); }
 .planner-week th, .planner-week td { border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
 .planner-week-corner { background: transparent; border: 0 !important; }
-/* Header — an ordinal + the time input the player sets, per column. */
+/* Header — an ordinal + the time input the player sets, per column. Keep the
+   <th> a table cell (NOT display:flex, or the header row collapses into a
+   column) and just stack its children as blocks. */
 .planner-week-colh {
   padding: 0.3rem 0.34rem; min-width: 6rem; text-align: center;
   vertical-align: bottom;
 }
-.planner-week--build .planner-week-colh { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; }
 .planner-colh-ord {
+  display: block; margin-bottom: 0.2rem;
   font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wider);
   color: var(--text-tertiary);
 }
 .planner-col-time, .planner-day-label {
-  width: 100%; font-family: var(--font-mono); color: var(--ink);
+  display: block; width: 100%; font-family: var(--font-mono); color: var(--ink);
   background: color-mix(in srgb, var(--surface-primary) 70%, transparent);
   border: 1.5px solid color-mix(in srgb, var(--ink) 20%, transparent);
   border-radius: var(--radius-sm); padding: 0.2rem 0.26rem; touch-action: auto;
