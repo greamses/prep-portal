@@ -1,0 +1,441 @@
+/* ============================================================================
+   SHARED GAME OVERLAYS  —  utils/components/game-overlays.css
+   ----------------------------------------------------------------------------
+   The waiting room (lobby seats/code, roster intro, countdown, "awaiting other
+   players") and the results screen (leaderboard rows, results receipt, metric
+   breakdown, confetti) shared by every exam-archive game. Previously each game
+   carried its own prefixed copy (.grammar-lb-row, .drill-lb-row, …) and Planner
+   had drifted to a different look; now all six use these .pp-* classes.
+
+   The per-game REVIEW overlay stays in each game's style.css — its content is
+   game-specific. Breakdown / lb-meta / lb-time rules are only emitted by games
+   that have sub-metrics (Grammar, Planner); harmless where unused.
+
+   Behaviour: rows/seats/roster are built in each game's js with these class
+   names; element IDs stay per-game (JS binds by id). Load AFTER components.css.
+   ========================================================================== */
+
+/* ── OVERLAY CONTAINER — every game overlay (lobby, awaiting, results, review)
+   is a full-screen backdrop that centres its slip. Per-overlay width lives in
+   each game's own `#<id> .review-wrap` override. */
+.review-bd {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.review-bd.open { display: flex; }
+.review-wrap { width: min(420px, 100%); text-align: center; margin: auto 0; }
+
+.pp-lobby-code {
+  font-family: var(--font-mono);
+  margin-bottom: 1rem;
+}
+
+.pp-lobby-code > span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.pp-lobby-code-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-primary);
+  border: 1.5px solid var(--accent-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+}
+
+.pp-lobby-code-value strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+
+.pp-lobby-code-value button {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.pp-lobby-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.pp-lobby-count {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+.pp-lobby-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.pp-sticky.pp-lobby-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 52px;
+  padding: 0.3rem 0.3rem 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-align: center;
+  animation: pp-seat-pop 0.35s ease both;
+}
+
+.pp-lobby-seat img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+
+.pp-lobby-seat span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.pp-lobby-seat.is-empty {
+  --pp-note-bg: transparent;
+  box-shadow: none;
+  opacity: 0.4;
+  border: 1.5px dashed var(--border-subtle);
+}
+
+.pp-lobby-seat-mark {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+
+@keyframes pp-seat-pop {
+  0% { transform: scale(0.4) rotate(var(--pp-note-tilt, -2deg)); opacity: 0.4; }
+  60% { transform: scale(1.15) rotate(var(--pp-note-tilt, -2deg)); }
+  100% { transform: scale(1) rotate(var(--pp-note-tilt, -2deg)); opacity: 1; }
+}
+
+.pp-lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.pp-time-remaining {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.pp-countdown {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+
+.pp-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.pp-roster-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  animation: pp-roster-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+
+.pp-roster-item.is-self {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+@keyframes pp-roster-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pp-results-receipt { margin: 0 auto 1.25rem; }
+
+.pp-results-paper { padding: 1.6rem 1.4rem 1.8rem; }
+
+.pp-leaderboard {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.pp-lb-row.pp-sticky {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 0.4rem 0.7rem 0.45rem;
+  opacity: 0;
+  animation: pp-lb-in 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes pp-lb-in {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--pp-note-tilt, 0deg)) scale(1); }
+}
+
+@keyframes pp-lb-in-winner {
+  from { opacity: 0; transform: translateY(12px) rotate(0deg) scale(1); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.08); }
+}
+
+.pp-lb-row.is-winner { animation-name: pp-lb-in-winner; }
+
+.pp-lb-row.is-self { box-shadow: 0 0 0 2px var(--accent-secondary), 0 1px 1px rgba(20, 19, 15, 0.1); }
+
+.pp-lb-avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-primary);
+  box-shadow: 0 0 0 2px rgba(20, 19, 15, 0.15);
+}
+
+.pp-lb-avatar img { width: 100%; height: 100%; display: block; }
+
+.pp-lb-rank { display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--ink); width: 1.2rem; flex-shrink: 0; }
+
+.pp-lb-name { flex: 1; color: var(--ink); font-weight: 700; }
+
+.pp-lb-time { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+
+.pp-lb-score { font-weight: 700; }
+
+.pp-lb-row.is-pending { --pp-note-bg: var(--surface-secondary); }
+
+.pp-lb-row.is-pending .pp-lb-rank,
+.pp-lb-row.is-pending .pp-lb-name,
+.pp-lb-row.is-pending .pp-lb-score { color: #6a6456; }
+
+.pp-lb-row.is-pending .pp-lb-score { font-weight: 400; }
+
+.pp-lb-row.is-winner {
+  --pp-note-bg: #ffdd6b;
+  box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 14px -4px color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  font-size: 0.8rem;
+}
+
+.pp-lb-row.is-winner .pp-lb-avatar { box-shadow: 0 0 0 3px var(--accent-primary); width: 42px; height: 42px; }
+
+.pp-awaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pp-awaiting-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pp-awaiting-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: pp-awaiting-bounce 1s ease-in-out infinite;
+}
+
+.pp-awaiting-dots span:nth-child(2) { background: var(--accent-secondary); animation-delay: 0.15s; }
+
+.pp-awaiting-dots span:nth-child(3) { background: var(--accent-success); animation-delay: 0.3s; }
+
+@keyframes pp-awaiting-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+  40% { transform: translateY(-10px); opacity: 1; }
+}
+
+.pp-awaiting-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.pp-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.pp-confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: pp-confetti-fall linear forwards;
+}
+
+@keyframes pp-confetti-fall {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--rot, 360deg)); opacity: 0.4; }
+}
+
+.pp-start-btn,
+.pp-again-btn,
+.pp-cancel-btn,
+.pp-lobby-code-value button {
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+
+.pp-lobby-code-value button { font-size: 0.72rem; padding: 0.45rem 0.8rem 0.5rem; }
+
+.pp-time-remaining.is-urgent {
+  color: var(--accent-danger);
+  animation: pp-pulse 1s ease-in-out infinite;
+}
+
+.pp-lb-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-top: 0.15rem;
+}
+
+.pp-breakdown {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.pp-breakdown-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 0.8rem;
+  color: var(--text-secondary);
+}
+
+.pp-breakdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.pp-bd-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  min-width: 72px;
+}
+
+.pp-bd-key {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pp-bd-label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.pp-bd-score { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; }
+
+.pp-bd-tag { font-family: var(--font-mono); font-size: 0.55rem; opacity: 0.75; }
+
+.pp-breakdown-note {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  margin: 0.8rem 0 0;
+}
+
+.pp-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+/* The "thinking…" tag on a bot row that has not reported yet. */
+.pp-lb-pending { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #6a6456; }
+
+/* The clock turns urgent in the final seconds. */
+@keyframes pp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

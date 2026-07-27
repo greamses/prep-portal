@@ -584,9 +584,9 @@ function clearLobbyReveal() {
 function seatSticker(i, avatarSeed, label) {
   const el = document.createElement('span');
   const empty = !avatarSeed;
-  el.className = `pp-sticky pp-sticky--tape puzzle-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
+  el.className = `pp-sticky pp-sticky--tape pp-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
   el.innerHTML = empty
-    ? '<span class="puzzle-lobby-seat-mark">?</span>'
+    ? '<span class="pp-lobby-seat-mark">?</span>'
     : `<img src="${avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
   return el;
 }
@@ -700,7 +700,7 @@ function renderResults(ranked, settled = true) {
     const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
     const li = document.createElement('li');
     li.className = [
-      'puzzle-lb-row', 'pp-sticky', 'pp-sticky--tape',
+      'pp-lb-row', 'pp-sticky', 'pp-sticky--tape',
       isWinner ? '' : stickyColor(i),
       row.isSelf ? 'is-self' : '',
       isWinner ? 'is-winner' : '',
@@ -710,28 +710,28 @@ function renderResults(ranked, settled = true) {
     li.style.setProperty('--pp-note-tilt', `${tilt}deg`);
 
     const avatar = document.createElement('span');
-    avatar.className = 'puzzle-lb-avatar';
+    avatar.className = 'pp-lb-avatar';
     avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
 
     const rank = document.createElement('span');
-    rank.className = 'puzzle-lb-rank';
+    rank.className = 'pp-lb-rank';
     if (row.pending) rank.textContent = '·'; // no place until there's a score
     else if (isWinner) rank.innerHTML = TROPHY_SVG;
     else rank.textContent = tiedHere ? '=' : String(rankNum);
 
     const name = document.createElement('span');
-    name.className = 'puzzle-lb-name';
+    name.className = 'pp-lb-name';
     name.textContent = row.name;
     if (row.pending) {
       const t = document.createElement('small');
-      t.className = 'puzzle-lb-pending';
+      t.className = 'pp-lb-pending';
       // On the settled board they are not still playing — they never finished.
       t.textContent = settled ? 'no score' : 'still playing…';
       name.append(' ', t);
     }
 
     const scoreEl = document.createElement('span');
-    scoreEl.className = 'puzzle-lb-score';
+    scoreEl.className = 'pp-lb-score';
     scoreEl.textContent = row.pending ? '–' : String(row.score);
 
     li.append(avatar, rank, name, scoreEl);
@@ -762,11 +762,11 @@ function hideResults() {
 function launchConfetti() {
   const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
   const container = document.createElement('div');
-  container.className = 'puzzle-confetti';
+  container.className = 'pp-confetti';
   document.body.appendChild(container);
   for (let i = 0; i < 70; i++) {
     const piece = document.createElement('span');
-    piece.className = 'puzzle-confetti-piece';
+    piece.className = 'pp-confetti-piece';
     piece.style.left = `${Math.random() * 100}%`;
     piece.style.background = colors[i % colors.length];
     piece.style.animationDelay = `${Math.random() * 0.4}s`;

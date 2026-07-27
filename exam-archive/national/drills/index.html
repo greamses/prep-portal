@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -33,26 +34,26 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=2de81b64",
-          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=2de81b64",
-          "/exam-archive/national/drills/js/grid.js": "/exam-archive/national/drills/js/grid.js?v=2de81b64",
-          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=2de81b64",
-          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=2de81b64",
-          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=2de81b64",
-          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=2de81b64",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=2de81b64",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=2de81b64",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=2de81b64",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=2de81b64",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=2de81b64",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=2de81b64",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=2de81b64",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=2de81b64",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=2de81b64",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=2de81b64",
-          "/data/chem/rmm.js": "/data/chem/rmm.js?v=2de81b64",
-          "/data/chem/masses.js": "/data/chem/masses.js?v=2de81b64",
-          "/data/chem/iupac.js": "/data/chem/iupac.js?v=2de81b64"
+          "/exam-archive/national/drills/js/bots.js": "/exam-archive/national/drills/js/bots.js?v=b3294023",
+          "/exam-archive/national/drills/js/game.js": "/exam-archive/national/drills/js/game.js?v=b3294023",
+          "/exam-archive/national/drills/js/grid.js": "/exam-archive/national/drills/js/grid.js?v=b3294023",
+          "/exam-archive/national/drills/js/leaderboard.js": "/exam-archive/national/drills/js/leaderboard.js?v=b3294023",
+          "/exam-archive/national/drills/js/main.js": "/exam-archive/national/drills/js/main.js?v=b3294023",
+          "/exam-archive/national/drills/js/matchmaking.js": "/exam-archive/national/drills/js/matchmaking.js?v=b3294023",
+          "/exam-archive/national/drills/js/rng.js": "/exam-archive/national/drills/js/rng.js?v=b3294023",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=b3294023",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=b3294023",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=b3294023",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=b3294023",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=b3294023",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=b3294023",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=b3294023",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=b3294023",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=b3294023",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=b3294023",
+          "/data/chem/rmm.js": "/data/chem/rmm.js?v=b3294023",
+          "/data/chem/masses.js": "/data/chem/masses.js?v=b3294023",
+          "/data/chem/iupac.js": "/data/chem/iupac.js?v=b3294023"
         }
       }
     </script>
@@ -151,17 +152,17 @@
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="drill-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="drill-lobby-status" id="drill-lobby-status">Waiting for other players…</p>
-        <div class="drill-lobby-code" id="drill-lobby-code" hidden>
+        <p class="pp-lobby-status" id="drill-lobby-status">Waiting for other players…</p>
+        <div class="pp-lobby-code" id="drill-lobby-code" hidden>
           <span>Share this code with your opponent</span>
-          <div class="drill-lobby-code-value">
+          <div class="pp-lobby-code-value">
             <strong id="drill-lobby-code-text"></strong>
             <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="drill-lobby-code-copy" title="Copy code">Copy</button>
           </div>
         </div>
-        <div class="drill-lobby-seats" id="drill-lobby-seats"></div>
-        <p class="drill-lobby-count" id="drill-lobby-count">1 / 5</p>
-        <div class="drill-lobby-actions">
+        <div class="pp-lobby-seats" id="drill-lobby-seats"></div>
+        <p class="pp-lobby-count" id="drill-lobby-count">1 / 5</p>
+        <div class="pp-lobby-actions">
           <button class="drill-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="drill-lobby-start-now" type="button" hidden>Start now</button>
           <button class="drill-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="drill-lobby-cancel" type="button">Cancel</button>
         </div>
@@ -171,15 +172,15 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="drill-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="drill-time-remaining" id="drill-time-remaining"></p>
-        <div class="drill-roster" id="drill-roster" hidden></div>
+        <p class="pp-time-remaining" id="drill-time-remaining"></p>
+        <div class="pp-roster" id="drill-roster" hidden></div>
 
         <div class="drill-card pp-receipt" id="drill-card" hidden>
           <span class="pp-sticky pp-sticky--tape drill-timer-note" id="drill-timer-note"></span>
           <span class="pp-sticky pp-sticky--tape drill-score-note" id="drill-score-note">0 correct</span>
           <div class="drill-card-face pp-receipt__paper">
             <div class="drill-blob" aria-hidden="true"></div>
-            <p class="drill-countdown" id="drill-countdown" hidden></p>
+            <p class="pp-countdown" id="drill-countdown" hidden></p>
             <p class="drill-text" id="drill-question-text"></p>
             <p class="drill-hint" id="drill-question-hint" hidden></p>
             <div class="drill-answer-stage" id="drill-answer-stage">
@@ -210,9 +211,9 @@
          never flashes in between. ═══ -->
     <div class="review-bd" id="drill-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="drill-awaiting">
-          <div class="drill-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="drill-awaiting-text">Tallying scores…</p>
+        <div class="pp-awaiting">
+          <div class="pp-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="pp-awaiting-text">Tallying scores…</p>
         </div>
       </div>
     </div>
@@ -220,13 +221,13 @@
     <!-- ═══ RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="drill-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="drill-results-receipt pp-receipt">
-          <div class="drill-results-paper pp-receipt__paper">
+        <div class="pp-results-receipt pp-receipt">
+          <div class="pp-results-paper pp-receipt__paper">
             <div class="drill-section-hdr">
               <div class="setup-eyebrow">Time's Up</div>
               <h2>Results</h2>
             </div>
-            <ol class="drill-leaderboard" id="drill-leaderboard"></ol>
+            <ol class="pp-leaderboard" id="drill-leaderboard"></ol>
           </div>
         </div>
         <button class="drill-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="drill-again-btn" type="button">Play Again</button>
@@ -234,7 +235,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=2de81b64"></script>
+    <script type="module" src="./js/main.js?v=b3294023"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

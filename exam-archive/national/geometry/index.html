@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -33,23 +34,23 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/geometry/js/bots.js": "/exam-archive/national/geometry/js/bots.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/game.js": "/exam-archive/national/geometry/js/game.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/geo-svg.js": "/exam-archive/national/geometry/js/geo-svg.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/leaderboard.js": "/exam-archive/national/geometry/js/leaderboard.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/main.js": "/exam-archive/national/geometry/js/main.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/matchmaking.js": "/exam-archive/national/geometry/js/matchmaking.js?v=b4e0f873",
-          "/exam-archive/national/geometry/js/rng.js": "/exam-archive/national/geometry/js/rng.js?v=b4e0f873",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=b4e0f873",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=b4e0f873",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=b4e0f873",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=b4e0f873",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=b4e0f873",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=b4e0f873",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=b4e0f873",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=b4e0f873",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=b4e0f873",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=b4e0f873"
+          "/exam-archive/national/geometry/js/bots.js": "/exam-archive/national/geometry/js/bots.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/game.js": "/exam-archive/national/geometry/js/game.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/geo-svg.js": "/exam-archive/national/geometry/js/geo-svg.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/leaderboard.js": "/exam-archive/national/geometry/js/leaderboard.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/main.js": "/exam-archive/national/geometry/js/main.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/matchmaking.js": "/exam-archive/national/geometry/js/matchmaking.js?v=f5e1e6a0",
+          "/exam-archive/national/geometry/js/rng.js": "/exam-archive/national/geometry/js/rng.js?v=f5e1e6a0",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=f5e1e6a0",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=f5e1e6a0",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=f5e1e6a0",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=f5e1e6a0",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=f5e1e6a0",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=f5e1e6a0",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=f5e1e6a0",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=f5e1e6a0",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=f5e1e6a0",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=f5e1e6a0"
         }
       }
     </script>
@@ -150,17 +151,17 @@
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="geo-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="geo-lobby-status" id="geo-lobby-status">Waiting for other players…</p>
-        <div class="geo-lobby-code" id="geo-lobby-code" hidden>
+        <p class="pp-lobby-status" id="geo-lobby-status">Waiting for other players…</p>
+        <div class="pp-lobby-code" id="geo-lobby-code" hidden>
           <span>Share this code with your opponent</span>
-          <div class="geo-lobby-code-value">
+          <div class="pp-lobby-code-value">
             <strong id="geo-lobby-code-text"></strong>
             <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="geo-lobby-code-copy" title="Copy code">Copy</button>
           </div>
         </div>
-        <div class="geo-lobby-seats" id="geo-lobby-seats"></div>
-        <p class="geo-lobby-count" id="geo-lobby-count">1 / 5</p>
-        <div class="geo-lobby-actions">
+        <div class="pp-lobby-seats" id="geo-lobby-seats"></div>
+        <p class="pp-lobby-count" id="geo-lobby-count">1 / 5</p>
+        <div class="pp-lobby-actions">
           <button class="geo-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="geo-lobby-start-now" type="button" hidden>Start now</button>
           <button class="geo-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="geo-lobby-cancel" type="button">Cancel</button>
         </div>
@@ -170,8 +171,8 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="geo-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="geo-time-remaining" id="geo-time-remaining"></p>
-        <div class="geo-roster" id="geo-roster" hidden></div>
+        <p class="pp-time-remaining" id="geo-time-remaining"></p>
+        <div class="pp-roster" id="geo-roster" hidden></div>
 
         <div class="geo-card pp-receipt" id="geo-card" hidden>
           <span class="pp-sticky pp-sticky--tape geo-timer-note" id="geo-timer-note"></span>
@@ -180,7 +181,7 @@
                left, the question and typed answer on the right. On phones it
                stacks back into one column (figure, then question, then answer). -->
           <div class="geo-card-face pp-receipt__paper">
-            <p class="geo-countdown" id="geo-countdown" hidden></p>
+            <p class="pp-countdown" id="geo-countdown" hidden></p>
             <div class="geo-figure" id="geo-figure"></div>
             <div class="geo-qa">
               <p class="geo-text" id="geo-question-text"></p>
@@ -207,9 +208,9 @@
          never flashes in between. ═══ -->
     <div class="review-bd" id="geo-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="geo-awaiting">
-          <div class="geo-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="geo-awaiting-text">Tallying scores…</p>
+        <div class="pp-awaiting">
+          <div class="pp-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="pp-awaiting-text">Tallying scores…</p>
         </div>
       </div>
     </div>
@@ -217,13 +218,13 @@
     <!-- ═══ RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="geo-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="geo-results-receipt pp-receipt">
-          <div class="geo-results-paper pp-receipt__paper">
+        <div class="pp-results-receipt pp-receipt">
+          <div class="pp-results-paper pp-receipt__paper">
             <div class="geo-section-hdr">
               <div class="setup-eyebrow">Time's Up</div>
               <h2>Results</h2>
             </div>
-            <ol class="geo-leaderboard" id="geo-leaderboard"></ol>
+            <ol class="pp-leaderboard" id="geo-leaderboard"></ol>
           </div>
         </div>
         <button class="geo-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="geo-again-btn" type="button">Play Again</button>
@@ -231,7 +232,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=b4e0f873"></script>
+    <script type="module" src="./js/main.js?v=f5e1e6a0"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

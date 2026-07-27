@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -33,31 +34,31 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/puzzles/js/art.js": "/exam-archive/national/puzzles/js/art.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/jigsaw.js": "/exam-archive/national/puzzles/js/jigsaw.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/mapjig.js": "/exam-archive/national/puzzles/js/mapjig.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/photos.js": "/exam-archive/national/puzzles/js/photos.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/shikaku.js": "/exam-archive/national/puzzles/js/shikaku.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=0251f008",
-          "/exam-archive/national/puzzles/js/tangram.js": "/exam-archive/national/puzzles/js/tangram.js?v=0251f008",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=0251f008",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=0251f008",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=0251f008",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=0251f008",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=0251f008",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=0251f008",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=0251f008",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=0251f008",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=0251f008",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=0251f008",
-          "/data/vocab/nigeria-map.js": "/data/vocab/nigeria-map.js?v=0251f008"
+          "/exam-archive/national/puzzles/js/art.js": "/exam-archive/national/puzzles/js/art.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/bots.js": "/exam-archive/national/puzzles/js/bots.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/game.js": "/exam-archive/national/puzzles/js/game.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/jigsaw.js": "/exam-archive/national/puzzles/js/jigsaw.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/leaderboard.js": "/exam-archive/national/puzzles/js/leaderboard.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/main.js": "/exam-archive/national/puzzles/js/main.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/mapjig.js": "/exam-archive/national/puzzles/js/mapjig.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/matchmaking.js": "/exam-archive/national/puzzles/js/matchmaking.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/photos.js": "/exam-archive/national/puzzles/js/photos.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/rng.js": "/exam-archive/national/puzzles/js/rng.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/shikaku.js": "/exam-archive/national/puzzles/js/shikaku.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/slider.js": "/exam-archive/national/puzzles/js/slider.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/sudoku.js": "/exam-archive/national/puzzles/js/sudoku.js?v=42dcd6a1",
+          "/exam-archive/national/puzzles/js/tangram.js": "/exam-archive/national/puzzles/js/tangram.js?v=42dcd6a1",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=42dcd6a1",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=42dcd6a1",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=42dcd6a1",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=42dcd6a1",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=42dcd6a1",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=42dcd6a1",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=42dcd6a1",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=42dcd6a1",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=42dcd6a1",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=42dcd6a1",
+          "/data/vocab/nigeria-map.js": "/data/vocab/nigeria-map.js?v=42dcd6a1"
         }
       }
     </script>
@@ -160,17 +161,17 @@
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="puzzle-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="puzzle-lobby-status" id="puzzle-lobby-status">Waiting for other players…</p>
-        <div class="puzzle-lobby-code" id="puzzle-lobby-code" hidden>
+        <p class="pp-lobby-status" id="puzzle-lobby-status">Waiting for other players…</p>
+        <div class="pp-lobby-code" id="puzzle-lobby-code" hidden>
           <span>Share this code with your opponent</span>
-          <div class="puzzle-lobby-code-value">
+          <div class="pp-lobby-code-value">
             <strong id="puzzle-lobby-code-text"></strong>
             <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="puzzle-lobby-code-copy" title="Copy code">Copy</button>
           </div>
         </div>
-        <div class="puzzle-lobby-seats" id="puzzle-lobby-seats"></div>
-        <p class="puzzle-lobby-count" id="puzzle-lobby-count">1 / 5</p>
-        <div class="puzzle-lobby-actions">
+        <div class="pp-lobby-seats" id="puzzle-lobby-seats"></div>
+        <p class="pp-lobby-count" id="puzzle-lobby-count">1 / 5</p>
+        <div class="pp-lobby-actions">
           <button class="puzzle-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="puzzle-lobby-start-now" type="button" hidden>Start now</button>
           <button class="puzzle-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="puzzle-lobby-cancel" type="button">Cancel</button>
         </div>
@@ -180,8 +181,8 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="puzzle-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="puzzle-time-remaining" id="puzzle-time-remaining"></p>
-        <div class="puzzle-roster" id="puzzle-roster" hidden></div>
+        <p class="pp-time-remaining" id="puzzle-time-remaining"></p>
+        <div class="pp-roster" id="puzzle-roster" hidden></div>
 
         <!-- The play stage: frame + heap/digit-pad. Stacks on phones, flows
              side-by-side (landscape) once there's desktop room — see the
@@ -197,7 +198,7 @@
               <div class="puzzle-grid-topbar" id="puzzle-grid-topbar" hidden>
                 <p class="puzzle-grid-hint" id="puzzle-grid-hint"></p>
               </div>
-              <p class="puzzle-countdown" id="puzzle-countdown" hidden></p>
+              <p class="pp-countdown" id="puzzle-countdown" hidden></p>
               <div class="sudoku-grid" id="puzzle-grid" hidden></div>
             </div>
           </div>
@@ -215,9 +216,9 @@
          never flashes in between. ═══ -->
     <div class="review-bd" id="puzzle-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="puzzle-awaiting">
-          <div class="puzzle-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="puzzle-awaiting-text">Tallying scores…</p>
+        <div class="pp-awaiting">
+          <div class="pp-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="pp-awaiting-text">Tallying scores…</p>
         </div>
       </div>
     </div>
@@ -225,13 +226,13 @@
     <!-- ═══ RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="puzzle-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="puzzle-results-receipt pp-receipt">
-          <div class="puzzle-results-paper pp-receipt__paper">
+        <div class="pp-results-receipt pp-receipt">
+          <div class="pp-results-paper pp-receipt__paper">
             <div class="puzzle-section-hdr">
               <div class="setup-eyebrow">Time's Up</div>
               <h2>Results</h2>
             </div>
-            <ol class="puzzle-leaderboard" id="puzzle-leaderboard"></ol>
+            <ol class="pp-leaderboard" id="puzzle-leaderboard"></ol>
           </div>
         </div>
         <button class="puzzle-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="puzzle-again-btn" type="button">Play Again</button>
@@ -239,7 +240,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=0251f008"></script>
+    <script type="module" src="./js/main.js?v=42dcd6a1"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

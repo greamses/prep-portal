@@ -225,7 +225,7 @@ function grade() {
 function renderRoster(roster) {
   rosterEl.innerHTML = '';
   roster.forEach((p, i) => {
-    const pill = el('span', `planner-roster-item${p.isSelf ? ' is-self' : ''}`, p.isSelf ? `${p.name} (You)` : p.name);
+    const pill = el('span', `pp-roster-item${p.isSelf ? ' is-self' : ''}`, p.isSelf ? `${p.name} (You)` : p.name);
     pill.style.setProperty('--delay', `${i * 90}ms`);
     rosterEl.append(pill);
   });

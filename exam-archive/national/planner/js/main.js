@@ -250,9 +250,9 @@ function clearLobbyReveal() { lobbyRevealTimers.forEach((t) => clearTimeout(t));
 function seatSticker(i, avatarSeed, label) {
   const s = document.createElement('span');
   const empty = !avatarSeed;
-  s.className = `pp-sticky pp-sticky--tape planner-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
+  s.className = `pp-sticky pp-sticky--tape pp-lobby-seat ${empty ? 'is-empty' : stickyColor(i)}`;
   s.innerHTML = empty
-    ? '<span class="planner-lobby-seat-mark">?</span>'
+    ? '<span class="pp-lobby-seat-mark">?</span>'
     : `<img src="${avatarUrl(avatarSeed)}" alt="" loading="lazy" /><span>${label}</span>`;
   return s;
 }
@@ -343,29 +343,29 @@ function renderResults(ranked, settled = true) {
     const isWinner = settled && !row.pending && row.score === topScore && !topTie;
     const li = document.createElement('li');
     li.className = [
-      'planner-lb-row', 'pp-sticky', 'pp-sticky--tape',
+      'pp-lb-row', 'pp-sticky', 'pp-sticky--tape',
       isWinner ? '' : stickyColor(i),
       row.isSelf ? 'is-self' : '', isWinner ? 'is-winner' : '', row.pending ? 'is-pending' : '',
     ].filter(Boolean).join(' ');
     li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
 
     const avatar = document.createElement('span');
-    avatar.className = 'planner-lb-avatar';
+    avatar.className = 'pp-lb-avatar';
     avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
     const rank = document.createElement('span');
-    rank.className = 'planner-lb-rank';
+    rank.className = 'pp-lb-rank';
     if (row.pending) rank.textContent = '·';
     else if (isWinner) rank.innerHTML = TROPHY_SVG;
     else rank.textContent = String(rankNum);
     const name = document.createElement('span');
-    name.className = 'planner-lb-name';
+    name.className = 'pp-lb-name';
     name.textContent = row.name;
     const meta = document.createElement('small');
-    meta.className = 'planner-lb-meta';
+    meta.className = 'pp-lb-meta';
     meta.textContent = row.pending ? (settled ? 'no score' : 'still planning…') : `${row.score} points`;
     name.appendChild(meta);
     const scoreEl = document.createElement('span');
-    scoreEl.className = 'planner-lb-score';
+    scoreEl.className = 'pp-lb-score';
     scoreEl.textContent = row.pending ? '–' : String(row.score);
     li.append(avatar, rank, name, scoreEl);
     leaderboardEl.appendChild(li);
@@ -386,15 +386,15 @@ function renderBreakdown() {
   if (!lastReview) { breakdownEl.hidden = true; return; }
   const { sequenceCorrect, timeCorrect, N } = lastReview;
   const p = document.createElement('p');
-  p.className = 'planner-breakdown-title';
+  p.className = 'pp-breakdown-title';
   p.textContent = 'How you did';
   breakdownEl.appendChild(p);
   const row = document.createElement('div');
-  row.className = 'planner-breakdown-row';
+  row.className = 'pp-breakdown-row';
   [['Sequence', sequenceCorrect], ['Timing', timeCorrect]].forEach(([label, val], i) => {
     const cell = document.createElement('span');
-    cell.className = `pp-sticky pp-sticky--tape planner-bd-cell ${stickyColor(i + 1)}`;
-    cell.innerHTML = `<span class="planner-bd-label">${label}</span><span class="planner-bd-score">${val}/${N}</span>`;
+    cell.className = `pp-sticky pp-sticky--tape pp-bd-cell ${stickyColor(i + 1)}`;
+    cell.innerHTML = `<span class="pp-bd-label">${label}</span><span class="pp-bd-score">${val}/${N}</span>`;
     row.appendChild(cell);
   });
   breakdownEl.appendChild(row);
@@ -410,11 +410,11 @@ function hideResults() {
 function launchConfetti() {
   const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
   const container = document.createElement('div');
-  container.className = 'planner-confetti';
+  container.className = 'pp-confetti';
   document.body.appendChild(container);
   for (let i = 0; i < 70; i++) {
     const piece = document.createElement('span');
-    piece.className = 'planner-confetti-piece';
+    piece.className = 'pp-confetti-piece';
     piece.style.left = `${Math.random() * 100}%`;
     piece.style.background = colors[i % colors.length];
     piece.style.animationDelay = `${Math.random() * 0.4}s`;

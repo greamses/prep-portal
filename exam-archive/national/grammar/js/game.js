@@ -100,7 +100,7 @@ function renderRoster(roster) {
   rosterEl.innerHTML = '';
   roster.forEach((p, i) => {
     const pill = document.createElement('span');
-    pill.className = `grammar-roster-item${p.isSelf ? ' is-self' : ''}`;
+    pill.className = `pp-roster-item${p.isSelf ? ' is-self' : ''}`;
     pill.style.setProperty('--delay', `${i * 90}ms`);
     pill.textContent = p.isSelf ? `${p.name} (You)` : p.name;
     rosterEl.appendChild(pill);

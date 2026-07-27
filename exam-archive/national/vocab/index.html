@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -33,47 +34,47 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/vocab/js/bots.js": "/exam-archive/national/vocab/js/bots.js?v=5824de53",
-          "/exam-archive/national/vocab/js/game.js": "/exam-archive/national/vocab/js/game.js?v=5824de53",
-          "/exam-archive/national/vocab/js/leaderboard.js": "/exam-archive/national/vocab/js/leaderboard.js?v=5824de53",
-          "/exam-archive/national/vocab/js/main.js": "/exam-archive/national/vocab/js/main.js?v=5824de53",
-          "/exam-archive/national/vocab/js/matchmaking.js": "/exam-archive/national/vocab/js/matchmaking.js?v=5824de53",
-          "/exam-archive/national/vocab/js/rng.js": "/exam-archive/national/vocab/js/rng.js?v=5824de53",
-          "/exam-archive/national/vocab/js/solar.js": "/exam-archive/national/vocab/js/solar.js?v=5824de53",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=5824de53",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=5824de53",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=5824de53",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=5824de53",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=5824de53",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=5824de53",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=5824de53",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=5824de53",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=5824de53",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=5824de53",
-          "/data/vocab/index.js": "/data/vocab/index.js?v=5824de53",
-          "/data/vocab/topics.js": "/data/vocab/topics.js?v=5824de53",
-          "/data/vocab/manifest.js": "/data/vocab/manifest.js?v=5824de53",
-          "/data/vocab/periodic-table.js": "/data/vocab/periodic-table.js?v=5824de53",
-          "/data/vocab/world-map.js": "/data/vocab/world-map.js?v=5824de53",
-          "/data/vocab/nigeria-map.js": "/data/vocab/nigeria-map.js?v=5824de53",
-          "/data/vocab/body-map.js": "/data/vocab/body-map.js?v=5824de53",
-          "/data/vocab/organs/heart.js": "/data/vocab/organs/heart.js?v=5824de53",
-          "/data/vocab/organs/brain.js": "/data/vocab/organs/brain.js?v=5824de53",
-          "/data/vocab/organs/ear.js": "/data/vocab/organs/ear.js?v=5824de53",
-          "/data/vocab/organs/skin.js": "/data/vocab/organs/skin.js?v=5824de53",
-          "/data/vocab/space/solar-system.js": "/data/vocab/space/solar-system.js?v=5824de53",
-          "/data/laws/laws.js": "/data/laws/laws.js?v=5824de53",
-          "/data/chem/iupac.js": "/data/chem/iupac.js?v=5824de53",
-          "/data/chem/structures.js": "/data/chem/structures.js?v=5824de53",
-          "/data/vocab/words/life-science.js": "/data/vocab/words/life-science.js?v=5824de53",
-          "/data/vocab/words/earth-science.js": "/data/vocab/words/earth-science.js?v=5824de53",
-          "/data/vocab/words/physical-science.js": "/data/vocab/words/physical-science.js?v=5824de53",
-          "/data/vocab/words/space-science.js": "/data/vocab/words/space-science.js?v=5824de53",
-          "/data/vocab/words/biology.js": "/data/vocab/words/biology.js?v=5824de53",
-          "/data/vocab/words/chemistry.js": "/data/vocab/words/chemistry.js?v=5824de53",
-          "/data/vocab/words/physics.js": "/data/vocab/words/physics.js?v=5824de53",
-          "/data/vocab/words/geography.js": "/data/vocab/words/geography.js?v=5824de53",
-          "/data/vocab/words/human-body.js": "/data/vocab/words/human-body.js?v=5824de53"
+          "/exam-archive/national/vocab/js/bots.js": "/exam-archive/national/vocab/js/bots.js?v=036dc627",
+          "/exam-archive/national/vocab/js/game.js": "/exam-archive/national/vocab/js/game.js?v=036dc627",
+          "/exam-archive/national/vocab/js/leaderboard.js": "/exam-archive/national/vocab/js/leaderboard.js?v=036dc627",
+          "/exam-archive/national/vocab/js/main.js": "/exam-archive/national/vocab/js/main.js?v=036dc627",
+          "/exam-archive/national/vocab/js/matchmaking.js": "/exam-archive/national/vocab/js/matchmaking.js?v=036dc627",
+          "/exam-archive/national/vocab/js/rng.js": "/exam-archive/national/vocab/js/rng.js?v=036dc627",
+          "/exam-archive/national/vocab/js/solar.js": "/exam-archive/national/vocab/js/solar.js?v=036dc627",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=036dc627",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=036dc627",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=036dc627",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=036dc627",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=036dc627",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=036dc627",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=036dc627",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=036dc627",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=036dc627",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=036dc627",
+          "/data/vocab/index.js": "/data/vocab/index.js?v=036dc627",
+          "/data/vocab/topics.js": "/data/vocab/topics.js?v=036dc627",
+          "/data/vocab/manifest.js": "/data/vocab/manifest.js?v=036dc627",
+          "/data/vocab/periodic-table.js": "/data/vocab/periodic-table.js?v=036dc627",
+          "/data/vocab/world-map.js": "/data/vocab/world-map.js?v=036dc627",
+          "/data/vocab/nigeria-map.js": "/data/vocab/nigeria-map.js?v=036dc627",
+          "/data/vocab/body-map.js": "/data/vocab/body-map.js?v=036dc627",
+          "/data/vocab/organs/heart.js": "/data/vocab/organs/heart.js?v=036dc627",
+          "/data/vocab/organs/brain.js": "/data/vocab/organs/brain.js?v=036dc627",
+          "/data/vocab/organs/ear.js": "/data/vocab/organs/ear.js?v=036dc627",
+          "/data/vocab/organs/skin.js": "/data/vocab/organs/skin.js?v=036dc627",
+          "/data/vocab/space/solar-system.js": "/data/vocab/space/solar-system.js?v=036dc627",
+          "/data/laws/laws.js": "/data/laws/laws.js?v=036dc627",
+          "/data/chem/iupac.js": "/data/chem/iupac.js?v=036dc627",
+          "/data/chem/structures.js": "/data/chem/structures.js?v=036dc627",
+          "/data/vocab/words/life-science.js": "/data/vocab/words/life-science.js?v=036dc627",
+          "/data/vocab/words/earth-science.js": "/data/vocab/words/earth-science.js?v=036dc627",
+          "/data/vocab/words/physical-science.js": "/data/vocab/words/physical-science.js?v=036dc627",
+          "/data/vocab/words/space-science.js": "/data/vocab/words/space-science.js?v=036dc627",
+          "/data/vocab/words/biology.js": "/data/vocab/words/biology.js?v=036dc627",
+          "/data/vocab/words/chemistry.js": "/data/vocab/words/chemistry.js?v=036dc627",
+          "/data/vocab/words/physics.js": "/data/vocab/words/physics.js?v=036dc627",
+          "/data/vocab/words/geography.js": "/data/vocab/words/geography.js?v=036dc627",
+          "/data/vocab/words/human-body.js": "/data/vocab/words/human-body.js?v=036dc627"
         }
       }
     </script>
@@ -212,17 +213,17 @@
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="vocab-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="vocab-lobby-status" id="vocab-lobby-status">Waiting for other players…</p>
-        <div class="vocab-lobby-code" id="vocab-lobby-code" hidden>
+        <p class="pp-lobby-status" id="vocab-lobby-status">Waiting for other players…</p>
+        <div class="pp-lobby-code" id="vocab-lobby-code" hidden>
           <span>Share this code with your opponent</span>
-          <div class="vocab-lobby-code-value">
+          <div class="pp-lobby-code-value">
             <strong id="vocab-lobby-code-text"></strong>
             <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="vocab-lobby-code-copy" title="Copy code">Copy</button>
           </div>
         </div>
-        <div class="vocab-lobby-seats" id="vocab-lobby-seats"></div>
-        <p class="vocab-lobby-count" id="vocab-lobby-count">1 / 5</p>
-        <div class="vocab-lobby-actions">
+        <div class="pp-lobby-seats" id="vocab-lobby-seats"></div>
+        <p class="pp-lobby-count" id="vocab-lobby-count">1 / 5</p>
+        <div class="pp-lobby-actions">
           <button class="vocab-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="vocab-lobby-start-now" type="button" hidden>Start now</button>
           <button class="vocab-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="vocab-lobby-cancel" type="button">Cancel</button>
         </div>
@@ -232,8 +233,8 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="vocab-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="vocab-time-remaining" id="vocab-time-remaining"></p>
-        <div class="vocab-roster" id="vocab-roster" hidden></div>
+        <p class="pp-time-remaining" id="vocab-time-remaining"></p>
+        <div class="pp-roster" id="vocab-roster" hidden></div>
 
         <!-- On desktop this goes landscape: the hangman card (gallows + word)
              sits on the left, the clue chart/map and the letters share the
@@ -246,7 +247,7 @@
             <span class="pp-sticky pp-sticky--tape vocab-mode-note pp-sticky--c2" id="vocab-mode-note"></span>
             <div class="vocab-card-face pp-receipt__paper">
               <div class="vocab-blob" aria-hidden="true"></div>
-              <p class="vocab-countdown" id="vocab-countdown" hidden></p>
+              <p class="pp-countdown" id="vocab-countdown" hidden></p>
 
               <div class="vocab-board" id="vocab-board" hidden>
                 <p class="vocab-step" id="vocab-step"></p>
@@ -305,9 +306,9 @@
          never flashes in between. ═══ -->
     <div class="review-bd" id="vocab-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="vocab-awaiting">
-          <div class="vocab-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="vocab-awaiting-text">Tallying scores…</p>
+        <div class="pp-awaiting">
+          <div class="pp-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="pp-awaiting-text">Tallying scores…</p>
         </div>
       </div>
     </div>
@@ -315,13 +316,13 @@
     <!-- ═══ RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="vocab-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="vocab-results-receipt pp-receipt">
-          <div class="vocab-results-paper pp-receipt__paper">
+        <div class="pp-results-receipt pp-receipt">
+          <div class="pp-results-paper pp-receipt__paper">
             <div class="vocab-section-hdr">
               <div class="setup-eyebrow">Time's Up</div>
               <h2>Results</h2>
             </div>
-            <ol class="vocab-leaderboard" id="vocab-leaderboard"></ol>
+            <ol class="pp-leaderboard" id="vocab-leaderboard"></ol>
           </div>
         </div>
         <button class="vocab-again-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c2" id="vocab-again-btn" type="button">Play Again</button>
@@ -329,7 +330,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=5824de53"></script>
+    <script type="module" src="./js/main.js?v=036dc627"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

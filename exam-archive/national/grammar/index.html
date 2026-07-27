@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -33,36 +34,36 @@
           "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
           "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
           "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js",
-          "/exam-archive/national/grammar/js/bots.js": "/exam-archive/national/grammar/js/bots.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/game.js": "/exam-archive/national/grammar/js/game.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/leaderboard.js": "/exam-archive/national/grammar/js/leaderboard.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/main.js": "/exam-archive/national/grammar/js/main.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/matchmaking.js": "/exam-archive/national/grammar/js/matchmaking.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/rng.js": "/exam-archive/national/grammar/js/rng.js?v=342c21d5",
-          "/exam-archive/national/grammar/js/upgrade.js": "/exam-archive/national/grammar/js/upgrade.js?v=342c21d5",
-          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=342c21d5",
-          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=342c21d5",
-          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=342c21d5",
-          "/utils/ai-client.js": "/utils/ai-client.js?v=342c21d5",
-          "/utils/games/rng.js": "/utils/games/rng.js?v=342c21d5",
-          "/utils/games/bots.js": "/utils/games/bots.js?v=342c21d5",
-          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=342c21d5",
-          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=342c21d5",
-          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=342c21d5",
-          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=342c21d5",
-          "/data/grammar/index.js": "/data/grammar/index.js?v=342c21d5",
-          "/data/grammar/themes.js": "/data/grammar/themes.js?v=342c21d5",
-          "/data/grammar/cups.js": "/data/grammar/cups.js?v=342c21d5",
-          "/data/grammar/manifest.js": "/data/grammar/manifest.js?v=342c21d5",
-          "/data/grammar/substitution.js": "/data/grammar/substitution.js?v=342c21d5",
-          "/data/grammar/passages/diary.js": "/data/grammar/passages/diary.js?v=342c21d5",
-          "/data/grammar/passages/story.js": "/data/grammar/passages/story.js?v=342c21d5",
-          "/data/grammar/passages/letter.js": "/data/grammar/passages/letter.js?v=342c21d5",
-          "/data/grammar/passages/report.js": "/data/grammar/passages/report.js?v=342c21d5",
-          "/data/grammar/passages/science.js": "/data/grammar/passages/science.js?v=342c21d5",
-          "/data/grammar/passages/wildlife.js": "/data/grammar/passages/wildlife.js?v=342c21d5",
-          "/data/grammar/passages/history.js": "/data/grammar/passages/history.js?v=342c21d5",
-          "/data/grammar/passages/discovery.js": "/data/grammar/passages/discovery.js?v=342c21d5"
+          "/exam-archive/national/grammar/js/bots.js": "/exam-archive/national/grammar/js/bots.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/game.js": "/exam-archive/national/grammar/js/game.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/leaderboard.js": "/exam-archive/national/grammar/js/leaderboard.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/main.js": "/exam-archive/national/grammar/js/main.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/matchmaking.js": "/exam-archive/national/grammar/js/matchmaking.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/rng.js": "/exam-archive/national/grammar/js/rng.js?v=ee4f185d",
+          "/exam-archive/national/grammar/js/upgrade.js": "/exam-archive/national/grammar/js/upgrade.js?v=ee4f185d",
+          "/utils/components/setup-carousel.js": "/utils/components/setup-carousel.js?v=ee4f185d",
+          "/utils/components/avatar-picker.js": "/utils/components/avatar-picker.js?v=ee4f185d",
+          "/utils/components/admin-images.js": "/utils/components/admin-images.js?v=ee4f185d",
+          "/utils/ai-client.js": "/utils/ai-client.js?v=ee4f185d",
+          "/utils/games/rng.js": "/utils/games/rng.js?v=ee4f185d",
+          "/utils/games/bots.js": "/utils/games/bots.js?v=ee4f185d",
+          "/utils/games/bot-names.js": "/utils/games/bot-names.js?v=ee4f185d",
+          "/utils/games/seeded-room.js": "/utils/games/seeded-room.js?v=ee4f185d",
+          "/utils/games/leaderboard.js": "/utils/games/leaderboard.js?v=ee4f185d",
+          "/utils/games/setup-memory.js": "/utils/games/setup-memory.js?v=ee4f185d",
+          "/data/grammar/index.js": "/data/grammar/index.js?v=ee4f185d",
+          "/data/grammar/themes.js": "/data/grammar/themes.js?v=ee4f185d",
+          "/data/grammar/cups.js": "/data/grammar/cups.js?v=ee4f185d",
+          "/data/grammar/manifest.js": "/data/grammar/manifest.js?v=ee4f185d",
+          "/data/grammar/substitution.js": "/data/grammar/substitution.js?v=ee4f185d",
+          "/data/grammar/passages/diary.js": "/data/grammar/passages/diary.js?v=ee4f185d",
+          "/data/grammar/passages/story.js": "/data/grammar/passages/story.js?v=ee4f185d",
+          "/data/grammar/passages/letter.js": "/data/grammar/passages/letter.js?v=ee4f185d",
+          "/data/grammar/passages/report.js": "/data/grammar/passages/report.js?v=ee4f185d",
+          "/data/grammar/passages/science.js": "/data/grammar/passages/science.js?v=ee4f185d",
+          "/data/grammar/passages/wildlife.js": "/data/grammar/passages/wildlife.js?v=ee4f185d",
+          "/data/grammar/passages/history.js": "/data/grammar/passages/history.js?v=ee4f185d",
+          "/data/grammar/passages/discovery.js": "/data/grammar/passages/discovery.js?v=ee4f185d"
         }
       }
     </script>
@@ -191,17 +192,17 @@
     <!-- ═══ LOBBY OVERLAY ═══ -->
     <div class="review-bd" id="grammar-lobby-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="grammar-lobby-status" id="grammar-lobby-status">Waiting for other players…</p>
-        <div class="grammar-lobby-code" id="grammar-lobby-code" hidden>
+        <p class="pp-lobby-status" id="grammar-lobby-status">Waiting for other players…</p>
+        <div class="pp-lobby-code" id="grammar-lobby-code" hidden>
           <span>Share this code with your opponent</span>
-          <div class="grammar-lobby-code-value">
+          <div class="pp-lobby-code-value">
             <strong id="grammar-lobby-code-text"></strong>
             <button type="button" class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="grammar-lobby-code-copy" title="Copy code">Copy</button>
           </div>
         </div>
-        <div class="grammar-lobby-seats" id="grammar-lobby-seats"></div>
-        <p class="grammar-lobby-count" id="grammar-lobby-count">1 / 5</p>
-        <div class="grammar-lobby-actions">
+        <div class="pp-lobby-seats" id="grammar-lobby-seats"></div>
+        <p class="pp-lobby-count" id="grammar-lobby-count">1 / 5</p>
+        <div class="pp-lobby-actions">
           <button class="grammar-startnow-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="grammar-lobby-start-now" type="button" hidden>Start now</button>
           <button class="grammar-cancel-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" id="grammar-lobby-cancel" type="button">Cancel</button>
         </div>
@@ -211,8 +212,8 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="grammar-play-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <p class="grammar-time-remaining" id="grammar-time-remaining"></p>
-        <div class="grammar-roster" id="grammar-roster" hidden></div>
+        <p class="pp-time-remaining" id="grammar-time-remaining"></p>
+        <div class="pp-roster" id="grammar-roster" hidden></div>
 
         <!-- On desktop this goes landscape: the passage takes the left column
              and the CUPS tag bar plus Submit sit on the right, always in
@@ -225,7 +226,7 @@
             <span class="pp-sticky pp-sticky--tape grammar-mode-note pp-sticky--c2" id="grammar-mode-note"></span>
             <div class="grammar-card-face pp-receipt__paper">
               <div class="grammar-blob" aria-hidden="true"></div>
-              <p class="grammar-countdown" id="grammar-countdown" hidden></p>
+              <p class="pp-countdown" id="grammar-countdown" hidden></p>
 
               <div class="grammar-board" id="grammar-board" hidden>
                 <h3 class="grammar-passage-title" id="grammar-passage-title"></h3>
@@ -298,9 +299,9 @@
     <!-- ═══ AWAITING RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="grammar-awaiting-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="grammar-awaiting">
-          <div class="grammar-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <p class="grammar-awaiting-text">Marking the passages…</p>
+        <div class="pp-awaiting">
+          <div class="pp-awaiting-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="pp-awaiting-text">Marking the passages…</p>
         </div>
       </div>
     </div>
@@ -308,18 +309,18 @@
     <!-- ═══ RESULTS OVERLAY ═══ -->
     <div class="review-bd" id="grammar-results-bd" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="grammar-results-receipt pp-receipt">
-          <div class="grammar-results-paper pp-receipt__paper">
+        <div class="pp-results-receipt pp-receipt">
+          <div class="pp-results-paper pp-receipt__paper">
             <div class="grammar-section-hdr">
               <div class="setup-eyebrow">Pens Down</div>
               <h2>Results</h2>
             </div>
-            <ol class="grammar-leaderboard" id="grammar-leaderboard"></ol>
+            <ol class="pp-leaderboard" id="grammar-leaderboard"></ol>
             <!-- Your own CUPS breakdown — the part a student can act on. -->
-            <div class="grammar-breakdown" id="grammar-breakdown" hidden></div>
+            <div class="pp-breakdown" id="grammar-breakdown" hidden></div>
           </div>
         </div>
-        <div class="grammar-results-actions">
+        <div class="pp-results-actions">
           <button class="grammar-review-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="grammar-review-btn" type="button">
             See what you missed
           </button>
@@ -351,7 +352,7 @@
     </div>
 
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js?v=342c21d5"></script>
+    <script type="module" src="./js/main.js?v=ee4f185d"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";
