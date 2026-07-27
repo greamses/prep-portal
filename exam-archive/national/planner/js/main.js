@@ -9,7 +9,7 @@
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import { eventCount, DIFFICULTY_KEYS } from '/data/planner/scenarios.js';
-import { weekCellCount } from '/data/planner/routines.js';
+import { weekCellCount, weekScored } from '/data/planner/routines.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -365,16 +365,13 @@ function renderBreakdown() {
   breakdownEl.innerHTML = '';
   if (!lastReview) { breakdownEl.hidden = true; return; }
   if (lastReview.format === 'week') {
-    const { cellsCorrect, cellCount, review } = lastReview;
-    const dayGroups = {};
-    review.forEach((r) => { (dayGroups[r.dayIndex] = dayGroups[r.dayIndex] || []).push(r); });
-    const daysCleared = Object.values(dayGroups).filter((cs) => cs.every((c) => c.chosen === c.trueTime)).length;
+    const { timesCorrect, timeCount, placesCorrect, cellCount } = lastReview;
     const p = document.createElement('p');
     p.className = 'pp-breakdown-title'; p.textContent = 'How you did';
     breakdownEl.appendChild(p);
     const row = document.createElement('div');
     row.className = 'pp-breakdown-row';
-    [['On time', `${cellsCorrect}/${cellCount}`], ['Days cleared', `${daysCleared}/${Object.keys(dayGroups).length}`]]
+    [['Placements', `${placesCorrect}/${cellCount}`], ['Times', `${timesCorrect}/${timeCount}`]]
       .forEach(([label, val], i) => {
         const cell = document.createElement('span');
         cell.className = `pp-sticky pp-sticky--tape pp-bd-cell ${stickyColor(i + 1)}`;
@@ -434,41 +431,49 @@ function renderReview() {
   reviewBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('planner-nav-hidden');
 }
-// The correct Mon–Sat timetable, each cell marked right/wrong against what you typed.
+// The correct Mon–Fri timetable — the column times across the top and each cell's
+// subject, both marked against what you set.
 function renderWeekReview() {
-  const { review, cellsCorrect, cellCount, periods } = lastReview;
+  const { timeReview, placeReview, periods, timesCorrect, timeCount, placesCorrect, cellCount } = lastReview;
   const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
   reviewTitle.textContent = 'The correct timetable';
-  reviewSub.textContent = `${cellsCorrect}/${cellCount} cells on time`;
+  reviewSub.textContent = `${placesCorrect}/${cellCount} placed · ${timesCorrect}/${timeCount} times`;
   reviewBody.innerHTML = '';
   const scroll = document.createElement('div');
   scroll.className = 'planner-week-scroll';
   const table = document.createElement('table');
   table.className = 'planner-week planner-week--review';
-  const thead = document.createElement('tr');
-  thead.className = 'planner-week-row';
-  thead.innerHTML = '<th class="planner-week-corner"></th>'
-    + Array.from({ length: periods }, (_, p) => `<th class="planner-week-colh">${ORD[p] || '#' + (p + 1)}</th>`).join('');
-  const head = document.createElement('thead'); head.appendChild(thead); table.appendChild(head);
+
+  let head = '<th class="planner-week-corner"></th>';
+  for (let c = 0; c < periods; c++) {
+    const t = timeReview.find((x) => x.col === c) || {};
+    const ok = t.chosen === t.trueTime;
+    head += `<th class="planner-week-colh is-rev is-${ok ? 'ok' : 'no'}">`
+      + `<span class="planner-colh-ord">${ORD[c] || '#' + (c + 1)}</span>`
+      + `<span class="planner-rev-time">${fmtClock(t.trueTime)}</span>`
+      + (ok ? '' : `<span class="planner-rev-you">${t.chosen != null ? 'you: ' + fmtClock(t.chosen) : '—'}</span>`)
+      + '</th>';
+  }
+  const thead = document.createElement('thead');
+  const htr = document.createElement('tr'); htr.className = 'planner-week-row'; htr.innerHTML = head;
+  thead.appendChild(htr); table.appendChild(thead);
+
   const byDay = {};
-  review.forEach((r) => { (byDay[r.dayIndex] = byDay[r.dayIndex] || []).push(r); });
+  placeReview.forEach((r) => { (byDay[r.day] = byDay[r.day] || []).push(r); });
   const tbody = document.createElement('tbody');
   Object.keys(byDay).map(Number).sort((a, b) => a - b).forEach((di) => {
-    const cells = byDay[di].slice().sort((a, b) => a.period - b.period);
-    const tr = document.createElement('tr');
-    tr.className = 'planner-week-row';
-    let html = `<th class="planner-week-day">${esc(cells[0].day.slice(0, 3))}</th>`;
-    for (let p = 0; p < periods; p++) {
-      const c = cells.find((x) => x.period === p);
-      if (!c) { html += '<td class="planner-week-cell is-off"></td>'; continue; }
-      const ok = c.chosen === c.trueTime;
+    const cells = byDay[di].slice().sort((a, b) => a.col - b.col);
+    let html = `<th class="planner-week-day">${esc(cells[0].name.slice(0, 3))}</th>`;
+    for (let c = 0; c < periods; c++) {
+      const cell = cells.find((x) => x.col === c);
+      if (!cell) { html += '<td class="planner-week-cell is-off"></td>'; continue; }
+      const ok = cell.placed === cell.subject;
       html += `<td class="planner-week-cell is-rev is-${ok ? 'ok' : 'no'}">`
-        + `<span class="planner-cell-act">${esc(c.activity)}</span>`
-        + `<span class="planner-rev-time">${fmtClock(c.trueTime)}</span>`
-        + (ok ? '' : `<span class="planner-rev-you">${c.chosen != null ? 'you: ' + fmtClock(c.chosen) : '—'}</span>`)
+        + `<span class="planner-cell-act">${esc(cell.subject)}</span>`
+        + (ok ? '' : `<span class="planner-rev-you">${cell.placed != null ? 'you: ' + esc(cell.placed) : '—'}</span>`)
         + '</td>';
     }
-    tr.innerHTML = html;
+    const tr = document.createElement('tr'); tr.className = 'planner-week-row'; tr.innerHTML = html;
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -543,9 +548,9 @@ function makeOnWaiting(waitingStatusText) {
 function computeTimeLimit() {
   let secs;
   if (format === 'week') {
-    // ~6 clued rules to read once, then a quicker fill per cell (columns repeat).
-    const cells = weekCellCount(difficulty);
-    secs = cells * (pace * 0.5) + 7 * READ_PER_CLUE + 20;
+    // ~6 clued rules to read, then set each column time + place each cell.
+    const items = weekScored(difficulty);
+    secs = items * (pace * 0.5) + 6 * READ_PER_CLUE + 30;
   } else {
     const N = eventCount(difficulty);
     secs = N * pace + (N + 1) * READ_PER_CLUE;

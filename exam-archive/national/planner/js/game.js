@@ -115,11 +115,11 @@ function buildEventStage() {
   refreshProgress();
 }
 
-// The weekly-routine stage: clues on the left; on the right a Mon–Sat timetable
-// of empty slots + a bank of colour-rotated subject notes. The player drags a
-// note into each slot and sets its start time in the input BENEATH the note.
-// Only the times are scored (deduced from the clues); placement is the player's
-// own week-building, so the bank order can differ per client harmlessly.
+// The weekly-routine stage: a Mon–Fri TIMETABLE the player rebuilds from clues.
+// The time is set once per COLUMN in the header row; the days are typed down the
+// left; the subject stickers are dragged from the bank into the cells. Both the
+// column times and the placements are scored. A subject's colour is fixed (all
+// "Maths" notes share a colour) so the bank reads as a palette.
 function buildWeekStage() {
   stageEl.innerHTML = '';
 
@@ -128,7 +128,7 @@ function buildWeekStage() {
   timerNote = el('span', 'pp-sticky pp-sticky--tape planner-note-tag');
   rpaper.append(timerNote);
   rpaper.append(el('p', 'planner-request-title', brief.theme.name));
-  rpaper.append(el('p', 'planner-request-sub', `Drag each ${brief.theme.unit} into your week, then work out its start time from the clues and set it beneath.`));
+  rpaper.append(el('p', 'planner-request-sub', `From the clues: set each column’s time across the top, then drag every ${brief.theme.unit} into its cell.`));
   const clues = el('ul', 'planner-clues');
   brief.clues.forEach((c) => clues.append(el('li', 'planner-clue', c)));
   rpaper.append(clues);
@@ -136,25 +136,42 @@ function buildWeekStage() {
 
   const side = el('div', 'planner-side');
   const scroll = el('div', 'planner-week-scroll');
-  const table = el('table', 'planner-week');
+  const table = el('table', 'planner-week planner-week--build');
 
+  // Header — an ordinal + a time input the player sets, per column.
   const thead = document.createElement('thead');
-  const htr = el('tr');
+  const htr = el('tr', 'planner-week-row');
   htr.append(el('th', 'planner-week-corner', ''));
-  for (let p = 0; p < brief.periods; p++) htr.append(el('th', 'planner-week-colh', ORD[p] || `#${p + 1}`));
+  for (let c = 0; c < brief.periods; c++) {
+    const th = el('th', 'planner-week-colh');
+    th.append(el('span', 'planner-colh-ord', ORD[c] || `#${c + 1}`));
+    const ti = document.createElement('input');
+    ti.type = 'time';
+    ti.className = 'planner-col-time';
+    ti.dataset.col = String(c);
+    ti.addEventListener('input', refreshWeekProgress);
+    th.append(ti);
+    htr.append(th);
+  }
   thead.append(htr);
   table.append(thead);
 
+  // Body — a typed day label + a drop cell per column.
   const tbody = document.createElement('tbody');
   brief.grid.forEach((row) => {
     const tr = el('tr', 'planner-week-row');
-    tr.append(el('th', 'planner-week-day', row.day.slice(0, 3)));
-    for (let p = 0; p < brief.periods; p++) {
-      const cell = row.cells[p];
+    const dth = el('th', 'planner-week-day');
+    const di = document.createElement('input');
+    di.type = 'text';
+    di.className = 'planner-day-label';
+    di.value = row.name.slice(0, 3);
+    di.setAttribute('aria-label', `Day ${row.day + 1}`);
+    dth.append(di);
+    tr.append(dth);
+    for (let c = 0; c < brief.periods; c++) {
       const td = el('td', 'planner-week-cell');
-      if (!cell) { td.classList.add('is-off'); tr.append(td); continue; }
       const drop = el('div', 'planner-week-drop');
-      drop.dataset.drop = `cell:${row.dayIndex}:${p}`;
+      drop.dataset.drop = `cell:${row.day}:${c}`;
       td.append(drop);
       tr.append(td);
     }
@@ -163,13 +180,16 @@ function buildWeekStage() {
   table.append(tbody);
   scroll.append(table);
 
+  // Bank — the exact multiset of the week's subjects, coloured by subject.
+  const colourOf = {};
+  brief.subjects.forEach((s, i) => { colourOf[s] = i % 6; });
+  const all = [];
+  brief.grid.forEach((row) => row.cells.forEach((c) => all.push(c.subject)));
   const bank = el('div', 'planner-bank planner-week-bank');
   bank.dataset.drop = 'bank';
-  const subjects = [];
-  brief.grid.forEach((row) => row.cells.forEach((c) => subjects.push(c.activity)));
-  shuffleLocal(subjects).forEach((name, i) => bank.append(makeWeekNote(name, i)));
+  shuffleLocal(all).forEach((s) => bank.append(makeWeekNote(s, colourOf[s])));
 
-  const bankLabel = el('p', 'planner-bank-label', `${brief.theme.unit === 'period' ? 'Subjects' : 'Items'} — drag each into a slot`);
+  const bankLabel = el('p', 'planner-bank-label', `${brief.theme.unit === 'period' ? 'Subjects' : 'Items'} — drag each into its cell`);
   progressEl = el('p', 'planner-progress');
   submitBtn = el('button', 'planner-submit-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1');
   submitBtn.type = 'button';
@@ -181,8 +201,8 @@ function buildWeekStage() {
   refreshWeekProgress();
 }
 
-// Bank ORDER only — never affects grading (times are seeded, placement isn't
-// scored), so a local shuffle that differs per client is harmless.
+// Bank ORDER only — placement is scored but the shuffle just sets the pile order,
+// which the seeded answer doesn't depend on, so a per-client shuffle is harmless.
 function shuffleLocal(list) {
   const a = list.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -192,22 +212,10 @@ function shuffleLocal(list) {
   return a;
 }
 
-// Each subject note carries its OWN time setter beneath the label, so the time
-// travels with the note when it's dragged into a slot. Grabbing the input to set
-// a time must NOT start a drag — only the note body drags.
-function makeWeekNote(name, i) {
-  const note = el('div', `planner-note planner-note--timed pp-sticky pp-sticky--tape pp-sticky--c${i % 6}`);
-  note.dataset.act = name;
-  note.append(el('span', 'planner-note-label', name));
-  const inp = document.createElement('input');
-  inp.type = 'time';
-  inp.className = 'planner-cell-time';
-  inp.addEventListener('input', refreshWeekProgress);
-  note.append(inp);
-  note.addEventListener('pointerdown', (ev) => {
-    if (ev.target.closest('.planner-cell-time')) return; // let the picker work
-    startDrag(ev, note);
-  });
+function makeWeekNote(subject, colour) {
+  const note = el('div', `planner-note pp-sticky pp-sticky--tape pp-sticky--c${colour}`, subject);
+  note.dataset.subject = subject;
+  note.addEventListener('pointerdown', (ev) => startDrag(ev, note));
   return note;
 }
 
@@ -215,14 +223,9 @@ function refreshWeekProgress() {
   if (!progressEl) return;
   let placed = 0;
   let timed = 0;
-  stageEl.querySelectorAll('.planner-week-drop').forEach((drop) => {
-    const note = drop.querySelector('.planner-note');
-    if (!note) return;
-    placed += 1;
-    const inp = note.querySelector('.planner-cell-time');
-    if (inp && inp.value) timed += 1;
-  });
-  progressEl.textContent = `${placed} of ${brief.cellCount} placed · ${timed} timed`;
+  stageEl.querySelectorAll('.planner-week-drop').forEach((d) => { if (d.querySelector('.planner-note')) placed += 1; });
+  stageEl.querySelectorAll('.planner-col-time').forEach((i) => { if (i.value) timed += 1; });
+  progressEl.textContent = `${placed}/${brief.cellCount} placed · ${timed}/${brief.periods} times set`;
   if (submitBtn) submitBtn.hidden = false;
 }
 
@@ -326,23 +329,33 @@ function grade() {
   return currentFormat === 'week' ? gradeWeek() : gradeEvents();
 }
 
-// Weekly routine: a point for every cell whose typed time matches the true one.
+// Weekly timetable: a point for every column time set right AND every cell whose
+// dragged-in subject matches the true one.
 function gradeWeek() {
-  let cellsCorrect = 0;
-  const review = [];
+  let timesCorrect = 0;
+  let placesCorrect = 0;
+  const timeReview = [];
+  for (let c = 0; c < brief.periods; c++) {
+    const ti = stageEl.querySelector(`.planner-col-time[data-col="${c}"]`);
+    const chosen = ti ? fromInputValue(ti.value) : null;
+    if (chosen != null && chosen === brief.answerTime[c]) timesCorrect += 1;
+    timeReview.push({ col: c, chosen, trueTime: brief.answerTime[c] });
+  }
+  const placeReview = [];
   brief.grid.forEach((row) => {
     row.cells.forEach((c) => {
-      const drop = stageEl.querySelector(`.planner-week-drop[data-drop="cell:${row.dayIndex}:${c.period}"]`);
+      const drop = stageEl.querySelector(`.planner-week-drop[data-drop="cell:${row.day}:${c.col}"]`);
       const note = drop && drop.querySelector('.planner-note');
-      const inp = note && note.querySelector('.planner-cell-time');
-      const chosen = inp ? fromInputValue(inp.value) : null;
-      if (chosen != null && chosen === c.time) cellsCorrect += 1;
-      review.push({ dayIndex: row.dayIndex, day: row.day, period: c.period, activity: c.activity, trueTime: c.time, chosen, placed: note ? note.dataset.act : null });
+      const placed = note ? note.dataset.subject : null;
+      if (placed != null && placed === c.subject) placesCorrect += 1;
+      placeReview.push({ day: row.day, name: row.name, col: c.col, subject: c.subject, placed });
     });
   });
   return {
-    format: 'week', score: cellsCorrect, cellsCorrect, cellCount: brief.cellCount,
-    N: brief.cellCount, periods: brief.periods, theme: brief.theme, review,
+    format: 'week', score: timesCorrect + placesCorrect,
+    timesCorrect, placesCorrect, timeCount: brief.periods, cellCount: brief.cellCount,
+    N: brief.periods + brief.cellCount, periods: brief.periods, theme: brief.theme,
+    timeReview, placeReview, answerTime: brief.answerTime,
   };
 }
 

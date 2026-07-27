@@ -100,59 +100,58 @@ body.planner-nav-hidden .site-nav { display: none; }
 .planner-week { border-collapse: collapse; font-family: var(--font-mono); }
 .planner-week th, .planner-week td { border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
 .planner-week-corner { background: transparent; border: 0 !important; }
+/* Header — an ordinal + the time input the player sets, per column. */
 .planner-week-colh {
-  font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wider);
-  color: var(--text-tertiary); padding: 0.3rem 0.4rem; text-align: center; white-space: nowrap;
+  padding: 0.3rem 0.34rem; min-width: 6rem; text-align: center;
+  vertical-align: bottom;
 }
+.planner-week--build .planner-week-colh { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; }
+.planner-colh-ord {
+  font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+}
+.planner-col-time, .planner-day-label {
+  width: 100%; font-family: var(--font-mono); color: var(--ink);
+  background: color-mix(in srgb, var(--surface-primary) 70%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: var(--radius-sm); padding: 0.2rem 0.26rem; touch-action: auto;
+}
+.planner-col-time { font-size: 0.72rem; }
+.planner-col-time:focus, .planner-day-label:focus { outline: none; border-color: var(--accent-secondary); }
+
+/* Left column — the typed day label. */
 .planner-week-day {
-  font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;
-  padding: 0.35rem 0.6rem; text-align: left; white-space: nowrap;
+  padding: 0.3rem 0.35rem; text-align: center; white-space: nowrap;
   background: color-mix(in srgb, var(--surface-primary) 55%, transparent); position: sticky; left: 0;
 }
-.planner-week-cell { padding: 0.3rem 0.35rem; vertical-align: top; min-width: 6rem; }
+.planner-day-label {
+  max-width: 3.6rem; font-size: 0.64rem; font-weight: 800; text-transform: uppercase; text-align: center;
+}
+.planner-week-cell { padding: 0.3rem 0.35rem; vertical-align: middle; min-width: 6rem; }
 .planner-week-cell.is-off { background: color-mix(in srgb, var(--ink) 5%, transparent); }
 
-/* Each cell is a drop slot with the time input BENEATH the note it holds. */
+/* Each cell is a drop slot holding one subject sticker. */
 .planner-week-drop {
-  min-height: 1.9rem; display: flex; align-items: center; justify-content: center;
-  margin-bottom: 0.25rem; padding: 0.12rem; border-radius: var(--radius-sm);
+  min-height: 2.1rem; display: flex; align-items: center; justify-content: center;
+  padding: 0.14rem; border-radius: var(--radius-sm);
   border: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent);
   background: color-mix(in srgb, var(--surface-primary) 55%, transparent);
 }
 .planner-week-drop.is-drop-hover { border-color: var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 14%, transparent); }
+.planner-week-drop .planner-note { width: 100%; min-height: auto; font-size: 0.68rem; padding: 0.34rem 0.3rem; }
 .planner-week-bank { margin-top: 0.1rem; }
-
-/* A timed note carries its subject label + its own time setter, stacked, so the
-   time travels with the note. In a slot it fills the cell width. */
-.planner-note--timed {
-  display: flex; flex-direction: column; align-items: stretch; gap: 0.24rem;
-  min-width: 5.6rem; min-height: auto; padding: 0.34rem 0.36rem;
-}
-.planner-week-drop .planner-note--timed { width: 100%; }
-.planner-note-label {
-  font-size: 0.68rem; font-weight: 700; text-align: center;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.planner-note--timed .planner-cell-time {
-  width: 100%; font-size: 0.72rem; padding: 0.18rem 0.24rem; touch-action: auto;
-}
 
 .planner-cell-act {
   display: block; font-size: 0.72rem; font-weight: 700; color: var(--ink);
-  margin-bottom: 0.22rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.planner-cell-time {
-  width: 100%; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink);
-  background: color-mix(in srgb, var(--surface-primary) 70%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--ink) 20%, transparent);
-  border-radius: var(--radius-sm); padding: 0.22rem 0.3rem;
-}
-.planner-cell-time:focus { outline: none; border-color: var(--accent-secondary); }
 
 /* Review variant — read-only; each cell is tinted by whether you timed it right. */
 .planner-week--review .planner-week-cell { min-width: 6.4rem; }
-.planner-week-cell.is-rev.is-ok { background: color-mix(in srgb, var(--accent-success) 16%, transparent); }
-.planner-week-cell.is-rev.is-no { background: color-mix(in srgb, var(--accent-danger, #f07a7a) 15%, transparent); }
+.planner-week-cell.is-rev.is-ok,
+.planner-week-colh.is-rev.is-ok { background: color-mix(in srgb, var(--accent-success) 16%, transparent); }
+.planner-week-cell.is-rev.is-no,
+.planner-week-colh.is-rev.is-no { background: color-mix(in srgb, var(--accent-danger, #f07a7a) 15%, transparent); }
 .planner-rev-time { display: block; font-size: 0.8rem; font-weight: 800; color: var(--ink); }
 .planner-rev-you { display: block; font-size: 0.62rem; color: var(--accent-danger, #c0392b); margin-top: 0.1rem; }
 

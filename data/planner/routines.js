@@ -1,69 +1,55 @@
 /* ═══════════════════════════════════════════════════════
-   PLANNER — the weekly-routine bank
+   PLANNER — the weekly-routine bank (timetable construction)
 
-   The Planner's WEEKLY-ROUTINE format briefs a player to fill a Monday–Saturday
-   timetable: every cell holds an activity, and the player types the start time
-   into each one, deduced from a handful of clued rules (see js/week.js). This
-   file is the pure content it draws from — a couple of culture-neutral themes and
-   the difficulty dials (how many periods a day runs). The GENERATION lives in
-   js/week.js, seeded so every client in a room derives the identical timetable.
+   The Planner's WEEKLY-ROUTINE format briefs a player to BUILD a Monday–Friday
+   timetable from clues: set each column's start time across the top, and drag the
+   subject stickers into the right cells. Both the times and the placements are
+   scored, so the clues must pin the whole grid.
 
-   Keep themes generic and worldwide-readable. Adding a theme or an activity just
-   widens the variety; the timetable maths doesn't care what the cells are called.
+   To stay uniquely solvable from a few rules, the timetable is UNIFORM per column
+   (the same subject sits in a period every day) with two clued exceptions: the two
+   "core" subjects each take a weekly DOUBLE period on a named day, shifting that
+   day's later periods along. This file is the pure content — themes (core + filler
+   subjects) and the difficulty dials. The generation lives in js/week.js.
 ═══════════════════════════════════════════════════════ */
 
-// A theme names the columns' "unit" (period / block) and supplies the pool of
-// activity labels that fill the grid. Repeats across the week are fine and read
-// as realistic (a subject recurs; a routine task recurs).
+// `core` are the two subjects that lead every day (early) and each take a weekly
+// double; `fillers` supply the rest of the columns. Keep worldwide-readable.
 export const THEMES = [
   {
-    id: 'school',
-    name: 'School week',
-    unit: 'period',
-    firstLabel: 'the first bell',
-    activities: [
-      'Maths', 'English', 'Science', 'Geography', 'History', 'Reading',
-      'Spelling', 'Art', 'Music', 'P.E.', 'Computing', 'Library',
-      'Project', 'Study Hall', 'Handwriting', 'Nature', 'Drama',
-    ],
+    id: 'school', name: 'School week', unit: 'period', firstLabel: 'the first bell',
+    core: ['Maths', 'English'],
+    fillers: ['Science', 'Geography', 'History', 'Art', 'Music', 'P.E.', 'Computing', 'Reading', 'Nature', 'Drama'],
   },
   {
-    id: 'office',
-    name: 'Office week',
-    unit: 'block',
-    firstLabel: 'the doors opening',
-    activities: [
-      'Stand-up', 'Client Calls', 'Planning', 'Review', 'Design', 'Reports',
-      'Support', 'Testing', 'Admin', 'Research', 'One-to-ones', 'Backlog',
-      'Emails', 'Deep Work', 'Wrap-up', 'Handover', 'Training',
-    ],
-  },
-  {
-    id: 'clinic',
-    name: 'Clinic week',
-    unit: 'session',
-    firstLabel: 'the front desk opening',
-    activities: [
-      'Check-in', 'Consults', 'Rounds', 'Dressings', 'Paperwork', 'Follow-ups',
-      'Vaccinations', 'Screening', 'Referrals', 'Restock', 'Records', 'Triage',
-      'Home Visits', 'Lab Drop', 'Debrief', 'Cleaning', 'Handover',
-    ],
+    id: 'academy', name: 'Academy week', unit: 'block', firstLabel: 'the first block',
+    core: ['Reading', 'Numeracy'],
+    fillers: ['Science', 'Coding', 'Robotics', 'Design', 'Debate', 'Music', 'Fitness', 'Language', 'Ethics'],
   },
 ];
 
-// The dials, by difficulty. `periods` is how many timed cells a weekday runs;
-// `satPeriods` is Saturday's shorter day; `wednesdayShift` toggles the midweek
-// delay exception. Cell counts (Mon–Fri full + Sat): easy 22, medium 28, hard 33.
+// `periods` = columns per day; `doubles` = how many core subjects take a weekly
+// double (1 = just the first core, 2 = both). Days are always Mon–Fri.
 export const WEEK_DIFFICULTY = {
-  easy: { periods: 4, satPeriods: 2, wednesdayShift: false },
-  medium: { periods: 5, satPeriods: 3, wednesdayShift: true },
-  hard: { periods: 6, satPeriods: 3, wednesdayShift: true },
+  easy: { periods: 4, doubles: 1 },
+  medium: { periods: 5, doubles: 2 },
+  hard: { periods: 6, doubles: 2 },
 };
 
+export const WEEK_DAYS = 5; // Monday–Friday
 export const WEEK_DIFFICULTY_KEYS = ['easy', 'medium', 'hard'];
 
-/** Total fillable cells for a difficulty — Monday–Friday full + Saturday. */
+/** Placement cells (days × periods). */
 export function weekCellCount(difficulty) {
   const d = WEEK_DIFFICULTY[difficulty] || WEEK_DIFFICULTY.medium;
-  return d.periods * 5 + d.satPeriods;
+  return WEEK_DAYS * d.periods;
+}
+/** Column times to set (one per period). */
+export function weekTimeCount(difficulty) {
+  const d = WEEK_DIFFICULTY[difficulty] || WEEK_DIFFICULTY.medium;
+  return d.periods;
+}
+/** Total scored items — placements + column times. */
+export function weekScored(difficulty) {
+  return weekCellCount(difficulty) + weekTimeCount(difficulty);
 }
