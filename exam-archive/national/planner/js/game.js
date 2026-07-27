@@ -156,12 +156,6 @@ function buildWeekStage() {
       const drop = el('div', 'planner-week-drop');
       drop.dataset.drop = `cell:${row.dayIndex}:${p}`;
       td.append(drop);
-      const inp = document.createElement('input');
-      inp.type = 'time';
-      inp.className = 'planner-cell-time';
-      inp.dataset.key = `${row.dayIndex}:${p}`;
-      inp.addEventListener('input', refreshWeekProgress);
-      td.append(inp);
       tr.append(td);
     }
     tbody.append(tr);
@@ -198,10 +192,22 @@ function shuffleLocal(list) {
   return a;
 }
 
+// Each subject note carries its OWN time setter beneath the label, so the time
+// travels with the note when it's dragged into a slot. Grabbing the input to set
+// a time must NOT start a drag — only the note body drags.
 function makeWeekNote(name, i) {
-  const note = el('div', `planner-note pp-sticky pp-sticky--tape pp-sticky--c${i % 6}`, name);
+  const note = el('div', `planner-note planner-note--timed pp-sticky pp-sticky--tape pp-sticky--c${i % 6}`);
   note.dataset.act = name;
-  note.addEventListener('pointerdown', (ev) => startDrag(ev, note));
+  note.append(el('span', 'planner-note-label', name));
+  const inp = document.createElement('input');
+  inp.type = 'time';
+  inp.className = 'planner-cell-time';
+  inp.addEventListener('input', refreshWeekProgress);
+  note.append(inp);
+  note.addEventListener('pointerdown', (ev) => {
+    if (ev.target.closest('.planner-cell-time')) return; // let the picker work
+    startDrag(ev, note);
+  });
   return note;
 }
 
@@ -209,13 +215,12 @@ function refreshWeekProgress() {
   if (!progressEl) return;
   let placed = 0;
   let timed = 0;
-  stageEl.querySelectorAll('.planner-week-cell').forEach((td) => {
-    const drop = td.querySelector('.planner-week-drop');
-    if (!drop) return;
-    const hasNote = !!drop.querySelector('.planner-note');
-    const inp = td.querySelector('.planner-cell-time');
-    if (hasNote) placed += 1;
-    if (hasNote && inp && inp.value) timed += 1;
+  stageEl.querySelectorAll('.planner-week-drop').forEach((drop) => {
+    const note = drop.querySelector('.planner-note');
+    if (!note) return;
+    placed += 1;
+    const inp = note.querySelector('.planner-cell-time');
+    if (inp && inp.value) timed += 1;
   });
   progressEl.textContent = `${placed} of ${brief.cellCount} placed · ${timed} timed`;
   if (submitBtn) submitBtn.hidden = false;
@@ -327,10 +332,12 @@ function gradeWeek() {
   const review = [];
   brief.grid.forEach((row) => {
     row.cells.forEach((c) => {
-      const inp = stageEl.querySelector(`.planner-cell-time[data-key="${row.dayIndex}:${c.period}"]`);
+      const drop = stageEl.querySelector(`.planner-week-drop[data-drop="cell:${row.dayIndex}:${c.period}"]`);
+      const note = drop && drop.querySelector('.planner-note');
+      const inp = note && note.querySelector('.planner-cell-time');
       const chosen = inp ? fromInputValue(inp.value) : null;
       if (chosen != null && chosen === c.time) cellsCorrect += 1;
-      review.push({ dayIndex: row.dayIndex, day: row.day, period: c.period, activity: c.activity, trueTime: c.time, chosen });
+      review.push({ dayIndex: row.dayIndex, day: row.day, period: c.period, activity: c.activity, trueTime: c.time, chosen, placed: note ? note.dataset.act : null });
     });
   });
   return {

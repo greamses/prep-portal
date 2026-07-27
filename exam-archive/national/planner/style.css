@@ -120,8 +120,22 @@ body.planner-nav-hidden .site-nav { display: none; }
   background: color-mix(in srgb, var(--surface-primary) 55%, transparent);
 }
 .planner-week-drop.is-drop-hover { border-color: var(--accent-secondary); background: color-mix(in srgb, var(--accent-secondary) 14%, transparent); }
-.planner-week-drop .planner-note { width: 100%; min-height: auto; font-size: 0.66rem; padding: 0.3rem 0.3rem; }
 .planner-week-bank { margin-top: 0.1rem; }
+
+/* A timed note carries its subject label + its own time setter, stacked, so the
+   time travels with the note. In a slot it fills the cell width. */
+.planner-note--timed {
+  display: flex; flex-direction: column; align-items: stretch; gap: 0.24rem;
+  min-width: 5.6rem; min-height: auto; padding: 0.34rem 0.36rem;
+}
+.planner-week-drop .planner-note--timed { width: 100%; }
+.planner-note-label {
+  font-size: 0.68rem; font-weight: 700; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.planner-note--timed .planner-cell-time {
+  width: 100%; font-size: 0.72rem; padding: 0.18rem 0.24rem; touch-action: auto;
+}
 
 .planner-cell-act {
   display: block; font-size: 0.72rem; font-weight: 700; color: var(--ink);
