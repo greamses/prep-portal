@@ -15,6 +15,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startPlanRound } from './game.js';
 import { finishRound } from './leaderboard.js';
+import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep,
   playerChips, optionsChips, roomChips,
@@ -37,14 +38,6 @@ const MIN_ROUND_SEC = 90;
 const MAX_ROUND_SEC = 900;
 
 const DIFF_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
-
-const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-  <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
-  <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
-  <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
-  <rect x="10.5" y="12" width="3" height="4" fill="var(--ink)"/>
-  <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
-</svg>`;
 
 const nameInput = $('planner-name-input');
 const avatarGrid = $('planner-avatar-grid');
@@ -357,54 +350,15 @@ function fmtTime(ms) {
 
 function renderResults(ranked, settled = true) {
   const repaint = resultsBd.classList.contains('open');
-  leaderboardEl.innerHTML = '';
-  const total = ranked.length;
-  const done = ranked.filter((r) => !r.pending);
-  const topScore = done.length ? Math.max(...done.map((r) => r.score)) : 0;
-  const topTie = done.filter((r) => r.score === topScore).length > 1;
-  // Rank by score desc; players still working sit at the back with no place.
-  const sorted = ranked.slice().sort((a, b) => ((a.pending ? 1 : 0) - (b.pending ? 1 : 0)) || (b.score - a.score));
-  sorted.forEach((row, i) => {
-    const rankNum = 1 + done.filter((r) => r.score > row.score).length;
-    const isWinner = settled && !row.pending && row.score === topScore && !topTie;
-    const li = document.createElement('li');
-    li.className = [
-      'pp-lb-row', 'pp-sticky', 'pp-sticky--tape',
-      isWinner ? '' : stickyColor(i),
-      row.isSelf ? 'is-self' : '', isWinner ? 'is-winner' : '', row.pending ? 'is-pending' : '',
-    ].filter(Boolean).join(' ');
-    li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
-
-    const avatar = document.createElement('span');
-    avatar.className = 'pp-lb-avatar';
-    avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
-    const rank = document.createElement('span');
-    rank.className = 'pp-lb-rank';
-    if (row.pending) rank.textContent = '·';
-    else if (isWinner) rank.innerHTML = TROPHY_SVG;
-    else rank.textContent = String(rankNum);
-    const name = document.createElement('span');
-    name.className = 'pp-lb-name';
-    name.textContent = row.name;
-    const meta = document.createElement('small');
-    meta.className = 'pp-lb-meta';
-    meta.textContent = row.pending ? (settled ? 'no score' : 'still planning…') : `${row.score} points`;
-    name.appendChild(meta);
-    const scoreEl = document.createElement('span');
-    scoreEl.className = 'pp-lb-score';
-    scoreEl.textContent = row.pending ? '–' : String(row.score);
-    li.append(avatar, rank, name, scoreEl);
-    leaderboardEl.appendChild(li);
+  renderLeaderboard(leaderboardEl, ranked, {
+    settled, repaint,
+    meta: (row) => `${row.score} points`,
+    pendingLabel: (s) => (s ? 'no score' : 'still planning…'),
   });
-
   renderBreakdown();
   resultsBd.classList.add('open');
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('planner-nav-hidden');
-
-  if (settled && sorted[0] && sorted[0].isSelf && !sorted[0].pending && !topTie) {
-    setTimeout(launchConfetti, repaint ? 400 : (total - 1) * 130 + 400);
-  }
 }
 
 function renderBreakdown() {
@@ -452,25 +406,6 @@ function hideResults() {
   resultsBd.classList.remove('open');
   resultsBd.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('planner-nav-hidden');
-}
-
-function launchConfetti() {
-  const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
-  const container = document.createElement('div');
-  container.className = 'pp-confetti';
-  document.body.appendChild(container);
-  for (let i = 0; i < 70; i++) {
-    const piece = document.createElement('span');
-    piece.className = 'pp-confetti-piece';
-    piece.style.left = `${Math.random() * 100}%`;
-    piece.style.background = colors[i % colors.length];
-    piece.style.animationDelay = `${Math.random() * 0.4}s`;
-    piece.style.animationDuration = `${2.2 + Math.random() * 1.2}s`;
-    piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
-    piece.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
-    container.appendChild(piece);
-  }
-  setTimeout(() => container.remove(), 3800);
 }
 
 // ── Review — the correct schedule vs what you set ─────────────────────────

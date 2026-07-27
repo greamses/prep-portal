@@ -49,6 +49,7 @@ const SHARED = [
   '/utils/games/bot-names.js',
   '/utils/games/seeded-room.js',
   '/utils/games/leaderboard.js',
+  '/utils/games/leaderboard-view.js',
   '/utils/games/setup-memory.js',
 ];
 

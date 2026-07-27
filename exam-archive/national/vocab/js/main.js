@@ -24,6 +24,7 @@ import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { buildRound } from './rng.js';
 import { finishRound, rankVocab } from './leaderboard.js';
+import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
   createCarousel, createSectionFlow, renderChoiceStep, renderCustomStep, renderMultiStep,
   playerChips, optionsChips, roomChips,
@@ -50,14 +51,6 @@ const PACES = [
 ];
 const MIN_ROUND_SEC = 45;  // even a 3-word slice gets a usable clock
 const MAX_ROUND_SEC = 900; // …and a 100-word topic doesn't run all afternoon
-
-const TROPHY_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-  <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z" fill="var(--ink)"/>
-  <path d="M7 5H4a3 3 0 0 0 3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
-  <path d="M17 5h3a3 3 0 0 1-3 3" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
-  <rect x="10.5" y="12" width="3" height="4" fill="var(--ink)"/>
-  <rect x="8" y="16.4" width="8" height="2.4" rx="1" fill="var(--ink)"/>
-</svg>`;
 
 const nameInput = $('vocab-name-input');
 const avatarGrid = $('vocab-avatar-grid');
@@ -664,106 +657,21 @@ function fmtTime(ms) {
    it settles there is no winner, no trophy and no confetti: leading a race
    half the room hasn't finished isn't winning it. */
 function renderResults(ranked, wordCount, settled = true) {
-  // A repaint of a board that's already up must not replay the deal-in
-  // animation, or every straggler's score restarts the whole stack.
   const repaint = resultsBd.classList.contains('open');
-  leaderboardEl.innerHTML = '';
-  const total = ranked.length;
-  // Competition ranking over the FULL order — most correct, then fastest, then
-  // fewest wrong (see leaderboard.js's rankVocab). Players level on ALL three
-  // share a place (rare, thanks to the ms-level time tiebreak); a true tie for
-  // the top has no winner — nobody is crowned and no confetti flies on a draw.
-  // Players who haven't submitted are ranked on nothing at all — they're
-  // excluded until their score actually exists.
-  const ahead = (a, b) => rankVocab(a, b) < 0;
-  const level = (a, b) => rankVocab(a, b) === 0;
-  const done = ranked.filter((r) => !r.pending);
-  const topTie = done.length ? done.filter((r) => level(r, done[0])).length > 1 : false;
-  ranked.forEach((row, i) => {
-    const rankNum = 1 + done.filter((r) => ahead(r, row)).length;
-    const tiedHere = done.filter((r) => level(r, row)).length > 1;
-    const isWinner = settled && !row.pending && rankNum === 1 && !topTie;
-    // Only someone who cleared every word has a meaningful finish time to show.
-    const finished = !row.pending && typeof row.timeMs === 'number' && row.score === wordCount;
-    const tilt = (i % 2 === 0 ? -1 : 1) * (1.5 + (i % 3));
-    const li = document.createElement('li');
-    li.className = [
-      'pp-lb-row', 'pp-sticky', 'pp-sticky--tape',
-      isWinner ? '' : stickyColor(i),
-      row.isSelf ? 'is-self' : '',
-      isWinner ? 'is-winner' : '',
-      row.pending ? 'is-pending' : '',
-    ].filter(Boolean).join(' ');
-    li.style.setProperty('--delay', repaint ? '0ms' : `${(total - 1 - i) * 130}ms`);
-    li.style.setProperty('--pp-note-tilt', `${tilt}deg`);
-
-    const avatar = document.createElement('span');
-    avatar.className = 'pp-lb-avatar';
-    avatar.innerHTML = `<img src="${avatarUrl(row.avatarSeed || row.name)}" alt="" loading="lazy" />`;
-
-    const rank = document.createElement('span');
-    rank.className = 'pp-lb-rank';
-    if (row.pending) rank.textContent = '·'; // no place until there's a score
-    else if (isWinner) rank.innerHTML = TROPHY_SVG;
-    else rank.textContent = tiedHere ? '=' : String(rankNum);
-
-    const name = document.createElement('span');
-    name.className = 'pp-lb-name';
-    name.textContent = row.name;
-    if (finished) {
-      const t = document.createElement('small');
-      t.className = 'pp-lb-time';
-      t.textContent = fmtTime(row.timeMs);
-      name.append(' ', t); // "Name  1:23"
-    } else if (row.pending) {
-      const t = document.createElement('small');
-      t.className = 'pp-lb-time';
-      // On the settled board they are not still playing — they never finished.
-      t.textContent = settled ? 'no score' : 'still playing…';
-      name.append(' ', t);
-    }
-
-    const scoreEl = document.createElement('span');
-    scoreEl.className = 'pp-lb-score';
-    scoreEl.textContent = row.pending ? '–' : String(row.score);
-
-    li.append(avatar, rank, name, scoreEl);
-    leaderboardEl.appendChild(li);
+  renderLeaderboard(leaderboardEl, ranked, {
+    settled, repaint,
+    meta: (row) => (typeof row.timeMs === 'number' ? fmtTime(row.timeMs) : null),
+    pendingLabel: (s) => (s ? 'no score' : 'still playing…'),
+    metaClass: 'pp-lb-time',
   });
   resultsBd.classList.add('open');
   resultsBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('vocab-nav-hidden');
-
-  // Only on the settled board, so a lead held while half the room is still
-  // playing never fires it — but it must still fire on a board that was
-  // painted live, which is why this can't key off the first paint.
-  if (settled && ranked[0] && ranked[0].isSelf && !ranked[0].pending && !topTie) {
-    setTimeout(launchConfetti, repaint ? 400 : (total - 1) * 130 + 400);
-  }
 }
 function hideResults() {
   resultsBd.classList.remove('open');
   resultsBd.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('vocab-nav-hidden');
-}
-
-function launchConfetti() {
-  const colors = ['#f4c95d', '#6fb7e8', '#7cc47c', '#f07a7a', '#e8c8ff', '#ffd7a3'];
-  const container = document.createElement('div');
-  container.className = 'pp-confetti';
-  document.body.appendChild(container);
-  for (let i = 0; i < 70; i++) {
-    const piece = document.createElement('span');
-    piece.className = 'pp-confetti-piece';
-    piece.style.left = `${Math.random() * 100}%`;
-    piece.style.background = colors[i % colors.length];
-    piece.style.animationDelay = `${Math.random() * 0.4}s`;
-    piece.style.animationDuration = `${2.2 + Math.random() * 1.2}s`;
-    piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
-    piece.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
-    container.appendChild(piece);
-  }
-  setTimeout(() => container.remove(), 3800);
 }
 
 // ── Round orchestration (shared by all matchmaking paths) ───────────────
