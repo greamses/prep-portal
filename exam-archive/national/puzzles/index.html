@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="/utils/components/theme.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-tabs.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -91,7 +93,7 @@
     </header>
 
     <!-- ═══ SETUP ═══ -->
-    <main class="puzzle-setup" id="puzzle-setup">
+    <main class="pp-setup" id="puzzle-setup">
       <div class="puzzle-section-hdr">
         <div class="setup-eyebrow">Get Ready</div>
         <h2>Set Up Your Puzzle</h2>
@@ -112,37 +114,37 @@
         </div>
       </div>
 
-      <div class="puzzle-receipt pp-receipt" id="puzzle-receipt">
-        <div class="puzzle-receipt-paper pp-receipt__paper">
-          <p class="puzzle-receipt-title">Puzzle Settings</p>
+      <div class="pp-setup__receipt pp-receipt" id="puzzle-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Puzzle Settings</p>
 
-          <div class="puzzle-field" id="puzzle-section-player">
+          <div class="pp-setup-field" id="puzzle-section-player">
             <span>Player</span>
             <div id="puzzle-player-carousel"></div>
           </div>
 
           <!-- Moved into the Player carousel's slides by main.js. -->
-          <input class="puzzle-name-input" id="puzzle-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
-          <div class="sticky-grid puzzle-avatar-grid" id="puzzle-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input class="pp-setup-input" id="puzzle-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid pp-setup__avatars" id="puzzle-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
           <input type="file" id="puzzle-avatar-upload-input" accept="image/*" hidden />
           <!-- Picture rounds (Jigsaw / Slider picture tiles): optional own-photo
                upload, downscaled and kept locally — never synced to a room. -->
           <input type="file" id="puzzle-photo-input" accept="image/*" hidden />
 
-          <div class="puzzle-field" id="puzzle-section-topic">
+          <div class="pp-setup-field" id="puzzle-section-topic">
             <span>Choose Your Puzzle</span>
             <div id="puzzle-topic-carousel"></div>
           </div>
 
-          <div class="puzzle-field" id="puzzle-section-options">
+          <div class="pp-setup-field" id="puzzle-section-options">
             <span>Game Options</span>
             <div id="puzzle-options-carousel"></div>
           </div>
 
-          <div class="puzzle-field" id="puzzle-section-room">
+          <div class="pp-setup-field" id="puzzle-section-room">
             <span>Room</span>
             <div id="puzzle-room-carousel"></div>
-            <input class="puzzle-code-input" id="puzzle-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+            <input class="pp-setup-code" id="puzzle-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 
           <button class="puzzle-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" id="puzzle-start-btn" type="button">

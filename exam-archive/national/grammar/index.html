@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="/utils/components/theme.css" />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-tabs.css" />
     <link rel="stylesheet" href="./style.css" />
 
     <script type="importmap">
@@ -97,7 +99,7 @@
     </header>
 
     <!-- ═══ SETUP ═══ -->
-    <main class="grammar-setup" id="grammar-setup">
+    <main class="pp-setup" id="grammar-setup">
       <div class="grammar-section-hdr">
         <div class="setup-eyebrow">Get Ready</div>
         <h2>Set Up Your Edit</h2>
@@ -120,34 +122,34 @@
         </div>
       </div>
 
-      <div class="grammar-receipt pp-receipt" id="grammar-receipt">
-        <div class="grammar-receipt-paper pp-receipt__paper">
-          <p class="grammar-receipt-title">Editing Settings</p>
+      <div class="pp-setup__receipt pp-receipt" id="grammar-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Editing Settings</p>
 
-          <div class="grammar-field" id="grammar-section-player">
+          <div class="pp-setup-field" id="grammar-section-player">
             <span>Player</span>
             <div id="grammar-player-carousel"></div>
           </div>
 
           <!-- Moved into the Player carousel's slides by main.js. -->
-          <input class="grammar-name-input" id="grammar-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
-          <div class="sticky-grid grammar-avatar-grid" id="grammar-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
+          <input class="pp-setup-input" id="grammar-name-input" type="text" maxlength="20" placeholder="What should we call you?" />
+          <div class="sticky-grid pp-setup__avatars" id="grammar-avatar-grid" role="radiogroup" aria-label="Avatar"></div>
           <input type="file" id="grammar-avatar-upload-input" accept="image/*" hidden />
 
-          <div class="grammar-field" id="grammar-section-topic">
+          <div class="pp-setup-field" id="grammar-section-topic">
             <span>Choose Your Passage</span>
             <div id="grammar-topic-carousel"></div>
           </div>
 
-          <div class="grammar-field" id="grammar-section-options">
+          <div class="pp-setup-field" id="grammar-section-options">
             <span>Game Options</span>
             <div id="grammar-options-carousel"></div>
           </div>
 
-          <div class="grammar-field" id="grammar-section-room">
+          <div class="pp-setup-field" id="grammar-section-room">
             <span>Room</span>
             <div id="grammar-room-carousel"></div>
-            <input class="grammar-code-input" id="grammar-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
+            <input class="pp-setup-code" id="grammar-code-input" type="text" maxlength="6" placeholder="Enter code" hidden />
           </div>
 
           <!-- Read before you race. Hunting errors you were never taught to

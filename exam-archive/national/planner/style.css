@@ -20,10 +20,6 @@ body.planner-nav-hidden .site-nav { display: none; }
   position: relative; z-index: 1; max-width: 760px;
   margin: clamp(5.5rem, 9vw, 7.5rem) auto 2rem; padding: 0 1.25rem; text-align: center;
 }
-.builder-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin: 1rem 0 0; }
-.builder-tab { text-decoration: none; cursor: pointer; border: 2px solid transparent; }
-.builder-tab:not(.is-active) { opacity: 0.55; }
-.builder-tab.is-active { border-color: var(--tile, var(--accent-secondary)); }
 
 /* ── SETUP ───────────────────────────────────────────── */
 .planner-section-hdr { text-align: center; max-width: 620px; margin: 0 auto 1.75rem; position: relative; z-index: 1; }
@@ -34,42 +30,6 @@ body.planner-nav-hidden .site-nav { display: none; }
 .planner-section-hdr h2 { font-size: var(--text-h2); margin-bottom: 0.4rem; }
 .planner-section-sub { font-family: var(--font-mono); font-size: var(--text-mono-sm); color: var(--text-secondary); }
 
-.planner-setup { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; padding: 0 1.25rem clamp(3rem, 6vw, 4.5rem); }
-
-/* Settings receipt — matches the other games' setup exactly (torn-paper receipt,
-   mono uppercase title, section tear-lines). */
-.planner-receipt { margin: 0 auto; }
-.planner-receipt-paper { display: flex; flex-direction: column; gap: 1.7rem; padding: 1.8rem 1.6rem 2rem; }
-.planner-receipt-title {
-  text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
-  letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--text-tertiary);
-  border-bottom: 1px dashed var(--border-subtle); padding-bottom: 0.9rem; margin: 0;
-}
-
-.planner-field { display: flex; flex-direction: column; gap: 0.6rem; position: relative; }
-.planner-field > span {
-  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: var(--tracking-wider);
-}
-/* Every section after the first gets a torn-paper zigzag tear line above it. */
-.planner-field:not(:first-of-type) { margin-top: 0.15rem; padding-top: 1.3rem; }
-.planner-field:not(:first-of-type)::before {
-  content: ""; position: absolute; top: 0; left: -1.6rem; right: -1.6rem; height: 11px; --tooth: 11px;
-  background: var(--border-subtle);
-  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
-  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x;
-}
-
-.sticky-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 0.6rem 0.45rem; }
-.planner-avatar-grid { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); max-width: 400px; }
-
-.planner-name-input,
-.planner-code-input {
-  font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink); background: var(--surface-primary);
-  border: 1.5px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; width: 100%; max-width: 320px;
-}
-.planner-code-input { margin-top: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; text-align: center; }
-
 .planner-start-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; color: var(--text-on-accent);
@@ -78,29 +38,6 @@ body.planner-nav-hidden .site-nav { display: none; }
 }
 .planner-start-btn:hover { transform: translateY(-1px); }
 .planner-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-/* ── QUICK JOIN (matches the other games') ───────────── */
-.pp-sticky.quick-join {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: 0.7rem 1rem; width: min(540px, 100%); margin: 0 auto 1.4rem; padding: 0.85rem 1.1rem 0.95rem;
-  position: relative; z-index: 1; --pp-note-tilt: -1deg;
-}
-.quick-join-copy { display: flex; flex-direction: column; gap: 0.05rem; }
-.quick-join-copy strong { font-size: 0.95rem; }
-.quick-join-copy span { font-size: 0.76rem; opacity: 0.7; }
-.quick-join-controls { display: flex; align-items: center; gap: 0.5rem; }
-.quick-join-input {
-  width: 6.4rem; padding: 0.42rem 0.5rem; font: inherit; font-size: 0.95rem; font-weight: 700;
-  letter-spacing: 0.14em; text-align: center; text-transform: uppercase; color: inherit;
-  background: rgba(255, 255, 255, 0.6); border: 1.5px solid rgba(20, 19, 15, 0.22); border-radius: 5px;
-}
-.quick-join-input::placeholder { opacity: 0.35; }
-.quick-join-btn { padding: 0.44rem 1.15rem; font-size: 0.85rem; }
-.quick-join-btn:disabled { opacity: 0.5; cursor: default; }
-@media (max-width: 520px) {
-  .pp-sticky.quick-join { justify-content: center; text-align: center; }
-  .quick-join-copy { align-items: center; }
-}
 
 /* ── OVERLAYS ────────────────────────────────────────── */
 .review-bd {
