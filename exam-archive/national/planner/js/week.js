@@ -1,24 +1,23 @@
 /* ═══════════════════════════════════════════════════════
-   PLANNER — weekly-routine generation (timetable construction)
+   PLANNER — weekly-routine generation (rule-based timetable)
 
-   weekAt(seed, difficulty) builds a Monday–Friday timetable the player rebuilds
-   from clues: the column start times (set across the top) and the subject in every
-   cell (dragged in from a palette). Seeded off the shared room seed via
-   /utils/games/rng.js, so every client in a room derives the identical timetable.
+   weekAt(seed, difficulty) builds a Monday–Friday timetable brief: the columns
+   (subject periods + two breaks), the exact column start times, ONE valid
+   reference arrangement (to seed the sticker bank and the review), and the RULES
+   the player's timetable must obey. Seeded off the shared room seed so every
+   client derives the identical brief.
 
-   Uniqueness is by CONSTRUCTION. The base timetable is UNIFORM per column — the
-   same subject in a period every day — pinned by one ordering rule. The only
-   day-to-day variation is the weekly DOUBLES: each core subject takes a double
-   period on a named day, shifting that day's later periods one along (the last
-   filler drops off). Every one of those is spelled out as a clue, so the whole
-   grid + the column times resolve uniquely from the anchor and the rules.
+   Scoring is rule-based (NOT an exact hidden grid): the column times are exact
+   and deducible from the cadence, but placement is graded against the rules —
+   the 3 cores lead every day (any order), and every other subject appears ≥ twice.
+   That's why "any core may start" and "at least twice" work: many timetables are
+   valid, and the reference is just one of them.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
 import { THEMES, WEEK_DIFFICULTY, WEEK_DAYS } from '/data/planner/routines.js';
 
 export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_AFTER = 2; // the morning break falls after the 2nd period (1-indexed)
-const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
+const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 function shuffled(list, rng) {
   const a = list.slice();
@@ -26,14 +25,12 @@ function shuffled(list, rng) {
   return a;
 }
 
-// minutes-since-midnight → "8:50 AM"
 export function fmtClock(min) {
   if (min == null) return '—';
   const h24 = Math.floor(min / 60), m = min % 60, ap = h24 < 12 ? 'AM' : 'PM';
   let h = h24 % 12; if (h === 0) h = 12;
   return `${h}:${String(m).padStart(2, '0')} ${ap}`;
 }
-// minutes → "08:50" (24h, for <input type="time">) and back.
 export function toInputValue(min) {
   return min == null ? '' : `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 }
@@ -42,7 +39,6 @@ export function fromInputValue(v) {
   const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim());
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
-
 function listWords(arr) {
   if (arr.length <= 1) return arr[0] || '';
   return `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`;
@@ -52,59 +48,89 @@ export function weekAt(seed, difficulty) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS));
   const d = WEEK_DIFFICULTY[difficulty] || WEEK_DIFFICULTY.medium;
   const theme = THEMES[Math.floor(rng() * THEMES.length)];
-  const P = d.periods;
-  const [coreA, coreB] = theme.core;
+  const cores = theme.cores.slice(); // 3
+  const others = shuffled(theme.others, rng).slice(0, d.others);
 
-  // Base timetable, uniform per column: coreA, coreB, then fillers.
-  const fillers = shuffled(theme.fillers, rng).slice(0, P - 2);
-  const base = [coreA, coreB, ...fillers]; // length P
+  // ── Columns: 3 core periods, short break, some others, lunch, the rest. ──
+  const firstHalf = Math.ceil(d.otherCols / 2);
+  const secondHalf = d.otherCols - firstHalf;
+  const columns = [];
+  let subjOrd = 0;
+  for (let i = 0; i < 3; i++) columns.push({ kind: 'subject', role: 'core', ord: ++subjOrd });
+  columns.push({ kind: 'break', brk: 'short', label: 'Break' });
+  for (let i = 0; i < firstHalf; i++) columns.push({ kind: 'subject', role: 'other', ord: ++subjOrd });
+  columns.push({ kind: 'break', brk: 'long', label: 'Lunch' });
+  for (let i = 0; i < secondHalf; i++) columns.push({ kind: 'subject', role: 'other', ord: ++subjOrd });
+  const subjectCols = columns.map((c, i) => (c.kind === 'subject' ? i : -1)).filter((i) => i >= 0);
+  const coreCols = subjectCols.slice(0, 3);
+  const otherCols = subjectCols.slice(3);
 
-  // Uniform column start times: anchor + cadence (lesson + change-over, one break).
+  // ── Exact column start times: walk lesson + change-over, break durations. ──
   const anchor = 8 * 60 + (rng() < 0.5 ? 0 : 30);
   const lesson = rng() < 0.5 ? 40 : 45;
   const change = rng() < 0.5 ? 5 : 10;
-  const brk = rng() < 0.5 ? 15 : 20;
+  const shortBrk = rng() < 0.5 ? 15 : 20;
+  const longBrk = rng() < 0.5 ? 40 : 45;
   const times = [anchor];
-  for (let p = 1; p < P; p++) times.push(times[p - 1] + (p === BREAK_AFTER ? lesson + brk : lesson + change));
+  for (let i = 1; i < columns.length; i++) {
+    const prev = columns[i - 1];
+    const prevDur = prev.kind === 'break' ? (prev.brk === 'short' ? shortBrk : longBrk) : lesson;
+    const gap = (prev.kind === 'subject' && columns[i].kind === 'subject') ? change : 0;
+    times.push(times[i - 1] + prevDur + gap);
+  }
+  const answerTime = {};
+  times.forEach((t, i) => { answerTime[i] = t; });
 
-  // Weekly doubles on distinct days: coreA over cols 0–1, coreB over cols 1–2.
-  const dayOrder = shuffled([0, 1, 2, 3, 4], rng);
-  const dayA = dayOrder[0];
-  const dayB = d.doubles >= 2 ? dayOrder[1] : -1;
+  // ── One valid reference arrangement (seeds the bank + the review). Cores fill
+  //    the 3 core columns each day (rotated for variety); others fill the other
+  //    columns so each appears at least twice. ──
+  const otherSlots = otherCols.length * WEEK_DAYS;
+  const bag = [];
+  others.forEach((s) => { bag.push(s, s); }); // two of each first
+  let k = 0;
+  while (bag.length < otherSlots) { bag.push(others[k % others.length]); k += 1; }
+  const otherFill = shuffled(bag, rng); // length === otherSlots
 
   const grid = DAYS.map((name, day) => {
-    let row;
-    if (day === dayA) row = [coreA, coreA, ...base.slice(1, P - 1)]; // coreA doubles cols 0–1
-    else if (day === dayB) row = [base[0], coreB, coreB, ...base.slice(2, P - 1)]; // coreB doubles cols 1–2
-    else row = base.slice();
-    return { day, name, cells: row.map((subject, col) => ({ col, subject })) };
+    const cells = [];
+    const dayCores = [];
+    for (let i = 0; i < 3; i++) dayCores.push(cores[(i + day) % 3]); // rotate the order
+    columns.forEach((col, ci) => {
+      if (col.kind === 'break') { cells.push({ col: ci, kind: 'break', label: col.label }); return; }
+      let subject;
+      if (col.role === 'core') subject = dayCores[coreCols.indexOf(ci)];
+      else subject = otherFill[otherCols.indexOf(ci) * WEEK_DAYS + day];
+      cells.push({ col: ci, kind: 'subject', role: col.role, subject });
+    });
+    return { day, name, cells };
   });
 
-  const answerPlace = {}; // "day:col" -> subject
-  grid.forEach((r) => r.cells.forEach((c) => { answerPlace[`${r.day}:${c.col}`] = c.subject; }));
-  const answerTime = {}; // col -> minutes
-  times.forEach((t, col) => { answerTime[col] = t; });
+  // sticker bank = the reference multiset of subjects, coloured per subject.
+  const palette = [...cores, ...others];
+  const bank = [];
+  grid.forEach((row) => row.cells.forEach((c) => { if (c.kind === 'subject') bank.push(c.subject); }));
 
+  // ── Clues ──
   const u = theme.unit;
+  const shortCol = columns.findIndex((c) => c.brk === 'short');
+  const lunchCol = columns.findIndex((c) => c.brk === 'long');
   const clues = [];
-  clues.push(`On weekdays ${theme.firstLabel} is at ${fmtClock(anchor)} — the ${ORD[1]} ${u} of the day.`);
-  clues.push(`Each ${u} runs ${lesson} minutes with ${change} to change over, and a ${brk}-minute break follows the ${ORD[BREAK_AFTER]} ${u}.`);
-  clues.push(`Every day opens with ${coreA} then ${coreB}, followed by ${listWords(fillers)} in that order.`);
-  clues.push(`${coreA} and ${coreB} run every single day.`);
-  clues.push(`Once a week ${coreA} takes a double — on ${DAYS[dayA]} it fills the ${ORD[1]} and ${ORD[2]} ${u}s, pushing the rest of that day one later.`);
-  if (dayB >= 0) clues.push(`Once a week ${coreB} takes a double — on ${DAYS[dayB]} it fills the ${ORD[2]} and ${ORD[3]} ${u}s.`);
+  clues.push(`On weekdays ${theme.firstLabel} is at ${fmtClock(anchor)}. Each ${u} runs ${lesson} minutes with ${change} to change over.`);
+  clues.push(`There are two breaks: a ${shortBrk}-minute one after the ${ORD[3]} ${u}, and a ${longBrk}-minute lunch after the ${ORD[3 + firstHalf]} ${u}.`);
+  clues.push(`${listWords(cores)} lead every day — any of the three may start, but all three come before anything else.`);
+  clues.push(`The rest of the week is ${listWords(others)}; every one of them appears at least twice across the week.`);
 
   return {
     format: 'week',
     theme: { name: theme.name, unit: theme.unit },
     days: DAYS,
-    periods: P,
-    subjects: base.slice(), // the palette — every distinct subject in the week
-    grid,
+    columns, // {kind, role/brk, ord/label}
+    subjectCols, coreCols, otherCols,
+    cores, others, palette,
+    grid, bank,
     clues,
-    answerPlace,
     answerTime,
-    cellCount: WEEK_DAYS * P,
-    timeCount: P,
+    colCount: columns.length,
+    cellCount: WEEK_DAYS * subjectCols.length,
   };
 }

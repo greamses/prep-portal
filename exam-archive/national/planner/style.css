@@ -104,7 +104,7 @@ body.planner-nav-hidden .site-nav { display: none; }
    <th> a table cell (NOT display:flex, or the header row collapses into a
    column) and just stack its children as blocks. */
 .planner-week-colh {
-  padding: 0.3rem 0.34rem; min-width: 6rem; text-align: center;
+  padding: 0.3rem 0.3rem; min-width: 5.2rem; text-align: center;
   vertical-align: bottom;
 }
 .planner-colh-ord {
@@ -129,8 +129,24 @@ body.planner-nav-hidden .site-nav { display: none; }
 .planner-day-label {
   max-width: 3.6rem; font-size: 0.64rem; font-weight: 800; text-transform: uppercase; text-align: center;
 }
-.planner-week-cell { padding: 0.3rem 0.35rem; vertical-align: middle; min-width: 6rem; }
+.planner-week-cell { padding: 0.3rem 0.3rem; vertical-align: middle; min-width: 5.2rem; }
 .planner-week-cell.is-off { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+
+/* The build timetable is wide (up to 8 columns) — give it the full stage width
+   with the clue receipt stacked above it, rather than squeezed side-by-side. */
+.planner-stage:has(.planner-week--build) { flex-direction: column; }
+.planner-stage:has(.planner-week--build) .planner-request,
+.planner-stage:has(.planner-week--build) .planner-side { flex: 1 1 auto; width: 100%; }
+
+/* Break columns — a fixed short break / lunch, not a drop slot. */
+.planner-week-colh.is-break, .planner-week-cell.is-break {
+  min-width: 3rem; background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.planner-break-label {
+  display: block; font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary); text-align: center;
+}
 
 /* Each cell is a drop slot holding one subject sticker. */
 .planner-week-drop {

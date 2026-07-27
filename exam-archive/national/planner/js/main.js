@@ -365,13 +365,13 @@ function renderBreakdown() {
   breakdownEl.innerHTML = '';
   if (!lastReview) { breakdownEl.hidden = true; return; }
   if (lastReview.format === 'week') {
-    const { timesCorrect, timeCount, placesCorrect, cellCount } = lastReview;
+    const { timesCorrect, timeCount, coreDays, dayCount, othersOk, otherCount } = lastReview;
     const p = document.createElement('p');
     p.className = 'pp-breakdown-title'; p.textContent = 'How you did';
     breakdownEl.appendChild(p);
     const row = document.createElement('div');
     row.className = 'pp-breakdown-row';
-    [['Placements', `${placesCorrect}/${cellCount}`], ['Times', `${timesCorrect}/${timeCount}`]]
+    [['Times', `${timesCorrect}/${timeCount}`], ['Cores lead', `${coreDays}/${dayCount}`], ['Others ×2', `${othersOk}/${otherCount}`]]
       .forEach(([label, val], i) => {
         const cell = document.createElement('span');
         cell.className = `pp-sticky pp-sticky--tape pp-bd-cell ${stickyColor(i + 1)}`;
@@ -431,13 +431,13 @@ function renderReview() {
   reviewBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('planner-nav-hidden');
 }
-// The correct Mon–Fri timetable — the column times across the top and each cell's
-// subject, both marked against what you set.
+// One valid Mon–Fri timetable — the column times marked against what you set, the
+// day rows marked by whether YOUR week led with the three cores, and a rule tally.
 function renderWeekReview() {
-  const { timeReview, placeReview, periods, timesCorrect, timeCount, placesCorrect, cellCount } = lastReview;
+  const { timeReview, columns, grid, dayReview, timesCorrect, timeCount, coreDays, dayCount, othersOk, otherCount } = lastReview;
   const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
-  reviewTitle.textContent = 'The correct timetable';
-  reviewSub.textContent = `${placesCorrect}/${cellCount} placed · ${timesCorrect}/${timeCount} times`;
+  reviewTitle.textContent = 'One correct timetable';
+  reviewSub.textContent = `Cores led ${coreDays}/${dayCount} · each other ≥2× ${othersOk}/${otherCount} · times ${timesCorrect}/${timeCount}`;
   reviewBody.innerHTML = '';
   const scroll = document.createElement('div');
   scroll.className = 'planner-week-scroll';
@@ -445,34 +445,27 @@ function renderWeekReview() {
   table.className = 'planner-week planner-week--review';
 
   let head = '<th class="planner-week-corner"></th>';
-  for (let c = 0; c < periods; c++) {
+  columns.forEach((col, c) => {
     const t = timeReview.find((x) => x.col === c) || {};
     const ok = t.chosen === t.trueTime;
-    head += `<th class="planner-week-colh is-rev is-${ok ? 'ok' : 'no'}">`
-      + `<span class="planner-colh-ord">${ORD[c] || '#' + (c + 1)}</span>`
+    head += `<th class="planner-week-colh is-rev is-${ok ? 'ok' : 'no'}${col.kind === 'break' ? ' is-break' : ''}">`
+      + `<span class="planner-colh-ord">${col.kind === 'break' ? esc(col.label) : (ORD[col.ord - 1] || '#' + col.ord)}</span>`
       + `<span class="planner-rev-time">${fmtClock(t.trueTime)}</span>`
       + (ok ? '' : `<span class="planner-rev-you">${t.chosen != null ? 'you: ' + fmtClock(t.chosen) : '—'}</span>`)
       + '</th>';
-  }
+  });
   const thead = document.createElement('thead');
   const htr = document.createElement('tr'); htr.className = 'planner-week-row'; htr.innerHTML = head;
   thead.appendChild(htr); table.appendChild(thead);
 
-  const byDay = {};
-  placeReview.forEach((r) => { (byDay[r.day] = byDay[r.day] || []).push(r); });
   const tbody = document.createElement('tbody');
-  Object.keys(byDay).map(Number).sort((a, b) => a - b).forEach((di) => {
-    const cells = byDay[di].slice().sort((a, b) => a.col - b.col);
-    let html = `<th class="planner-week-day">${esc(cells[0].name.slice(0, 3))}</th>`;
-    for (let c = 0; c < periods; c++) {
-      const cell = cells.find((x) => x.col === c);
-      if (!cell) { html += '<td class="planner-week-cell is-off"></td>'; continue; }
-      const ok = cell.placed === cell.subject;
-      html += `<td class="planner-week-cell is-rev is-${ok ? 'ok' : 'no'}">`
-        + `<span class="planner-cell-act">${esc(cell.subject)}</span>`
-        + (ok ? '' : `<span class="planner-rev-you">${cell.placed != null ? 'you: ' + esc(cell.placed) : '—'}</span>`)
-        + '</td>';
-    }
+  grid.forEach((row, di) => {
+    const dOk = dayReview[di] ? dayReview[di].ok : true;
+    let html = `<th class="planner-week-day is-rev is-${dOk ? 'ok' : 'no'}">${esc(row.name.slice(0, 3))}</th>`;
+    row.cells.forEach((cell) => {
+      if (cell.kind === 'break') { html += `<td class="planner-week-cell is-break"><span class="planner-break-label">${esc(cell.label)}</span></td>`; return; }
+      html += `<td class="planner-week-cell"><span class="planner-cell-act">${esc(cell.subject)}</span></td>`;
+    });
     const tr = document.createElement('tr'); tr.className = 'planner-week-row'; tr.innerHTML = html;
     tbody.appendChild(tr);
   });
