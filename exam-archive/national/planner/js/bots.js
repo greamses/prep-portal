@@ -13,11 +13,22 @@
 ═══════════════════════════════════════════════════════ */
 import { botRng, botName } from '/utils/games/bots.js';
 import { eventCount } from '/data/planner/scenarios.js';
+import { weekCellCount } from '/data/planner/routines.js';
 
 export { botName };
 
-export function simulateBotScore(seed, botSlot, timeLimitSec, difficulty) {
+export function simulateBotScore(seed, botSlot, timeLimitSec, difficulty, format) {
   const rng = botRng(seed, botSlot);
+
+  // Weekly routine: one point per correctly-timed cell, out of the grid's cell
+  // count. A bot deduces the cadence to some skill, scaled by the clock.
+  if (format === 'week') {
+    const max = weekCellCount(difficulty);
+    const skill = 0.4 + rng() * 0.55; // 0.40–0.95
+    const pace = 0.8 + rng() * 0.45;
+    return Math.max(0, Math.min(max, Math.round(max * Math.min(1, skill * pace))));
+  }
+
   const N = eventCount(difficulty);
   const max = 2 * N;
   // Skill: the fraction of the brief this bot would finish given ample time.

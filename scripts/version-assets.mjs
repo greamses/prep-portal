@@ -75,7 +75,7 @@ const PAGES = [
   { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js'] },
   // The Planner brief is generated from the shared event pool, so editing it
   // must bust the page too.
-  { name: 'planner', extra: ['/data/planner/scenarios.js'] },
+  { name: 'planner', extra: ['/data/planner/scenarios.js', '/data/planner/routines.js'] },
   {
     name: 'vocab',
     extra: [

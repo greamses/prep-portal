@@ -12,7 +12,10 @@
    during play. Same shell/contract as game.js in the other games.
 ═══════════════════════════════════════════════════════ */
 import { planAt, fmtTime } from './rng.js';
+import { weekAt, fromInputValue } from './week.js';
 import { enhanceSelect } from '/utils/components/pp-select.js';
+
+const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 const $ = (id) => document.getElementById(id);
 const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see the other game.js's note
@@ -27,7 +30,8 @@ let active = false;
 let endAt = 0;
 let rafId = null;
 let resolveRound = null;
-let brief = null; // the current planAt() result
+let brief = null; // the current planAt()/weekAt() result
+let currentFormat = 'events'; // 'events' | 'week'
 let slotSelects = []; // per-row time <select> (index = row)
 let submitBtn = null;
 let progressEl = null;
@@ -42,6 +46,11 @@ const el = (tag, cls, text) => {
 
 // ── Build ──────────────────────────────────────────────────────────────────
 function buildStage() {
+  if (currentFormat === 'week') { buildWeekStage(); return; }
+  buildEventStage();
+}
+
+function buildEventStage() {
   stageEl.innerHTML = '';
   slotSelects = [];
 
@@ -104,6 +113,74 @@ function buildStage() {
   // Enhance the time dropdowns into the app's custom select.
   slotSelects.forEach((s) => enhanceSelect(s, { className: 'pp-select--sm' }));
   refreshProgress();
+}
+
+// The weekly-routine stage: clues on the left, a Mon–Sat timetable on the right
+// whose every cell holds an activity and an <input type="time"> the player fills.
+function buildWeekStage() {
+  stageEl.innerHTML = '';
+
+  const request = el('div', 'planner-request pp-receipt');
+  const rpaper = el('div', 'planner-request-paper pp-receipt__paper');
+  timerNote = el('span', 'pp-sticky pp-sticky--tape planner-note-tag');
+  rpaper.append(timerNote);
+  rpaper.append(el('p', 'planner-request-title', brief.theme.name));
+  rpaper.append(el('p', 'planner-request-sub', `Work out the start time of every ${brief.theme.unit} from the clues, then type it into each cell.`));
+  const clues = el('ul', 'planner-clues');
+  brief.clues.forEach((c) => clues.append(el('li', 'planner-clue', c)));
+  rpaper.append(clues);
+  request.append(rpaper);
+
+  const side = el('div', 'planner-side');
+  const scroll = el('div', 'planner-week-scroll');
+  const table = el('table', 'planner-week');
+
+  const thead = document.createElement('thead');
+  const htr = el('tr');
+  htr.append(el('th', 'planner-week-corner', ''));
+  for (let p = 0; p < brief.periods; p++) htr.append(el('th', 'planner-week-colh', ORD[p] || `#${p + 1}`));
+  thead.append(htr);
+  table.append(thead);
+
+  const tbody = document.createElement('tbody');
+  brief.grid.forEach((row) => {
+    const tr = el('tr', 'planner-week-row');
+    tr.append(el('th', 'planner-week-day', row.day.slice(0, 3)));
+    for (let p = 0; p < brief.periods; p++) {
+      const cell = row.cells[p];
+      const td = el('td', 'planner-week-cell');
+      if (!cell) { td.classList.add('is-off'); tr.append(td); continue; }
+      td.append(el('span', 'planner-cell-act', cell.activity));
+      const inp = document.createElement('input');
+      inp.type = 'time';
+      inp.className = 'planner-cell-time';
+      inp.dataset.key = `${row.dayIndex}:${p}`;
+      inp.addEventListener('input', refreshWeekProgress);
+      td.append(inp);
+      tr.append(td);
+    }
+    tbody.append(tr);
+  });
+  table.append(tbody);
+  scroll.append(table);
+
+  progressEl = el('p', 'planner-progress');
+  submitBtn = el('button', 'planner-submit-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1');
+  submitBtn.type = 'button';
+  submitBtn.textContent = 'Submit & rank';
+  submitBtn.addEventListener('click', () => endRound());
+
+  side.append(scroll, progressEl, submitBtn);
+  stageEl.append(request, side);
+  refreshWeekProgress();
+}
+
+function refreshWeekProgress() {
+  if (!progressEl) return;
+  let filled = 0;
+  stageEl.querySelectorAll('.planner-cell-time').forEach((i) => { if (i.value) filled += 1; });
+  progressEl.textContent = `${filled} of ${brief.cellCount} filled`;
+  if (submitBtn) submitBtn.hidden = false;
 }
 
 function makeNote(id, name) {
@@ -196,6 +273,28 @@ function refreshProgress() {
 
 // ── Grade ───────────────────────────────────────────────────────────────────
 function grade() {
+  return currentFormat === 'week' ? gradeWeek() : gradeEvents();
+}
+
+// Weekly routine: a point for every cell whose typed time matches the true one.
+function gradeWeek() {
+  let cellsCorrect = 0;
+  const review = [];
+  brief.grid.forEach((row) => {
+    row.cells.forEach((c) => {
+      const inp = stageEl.querySelector(`.planner-cell-time[data-key="${row.dayIndex}:${c.period}"]`);
+      const chosen = inp ? fromInputValue(inp.value) : null;
+      if (chosen != null && chosen === c.time) cellsCorrect += 1;
+      review.push({ dayIndex: row.dayIndex, day: row.day, period: c.period, activity: c.activity, trueTime: c.time, chosen });
+    });
+  });
+  return {
+    format: 'week', score: cellsCorrect, cellsCorrect, cellCount: brief.cellCount,
+    N: brief.cellCount, periods: brief.periods, theme: brief.theme, review,
+  };
+}
+
+function gradeEvents() {
   let sequenceCorrect = 0;
   let timeCorrect = 0;
   const review = brief.order.map((e) => ({
@@ -254,9 +353,10 @@ function endRound() {
 
 // Resolves with { score, sequenceCorrect, timeCorrect, N, review } once the
 // player submits or the local timer hits zero.
-export function startPlanRound({ seed, timeLimit, startAt, difficulty, roster }) {
+export function startPlanRound({ seed, timeLimit, startAt, difficulty, roster, format }) {
   return new Promise((resolve) => {
-    brief = planAt(seed, difficulty);
+    currentFormat = format === 'week' ? 'week' : 'events';
+    brief = currentFormat === 'week' ? weekAt(seed, difficulty) : planAt(seed, difficulty);
     resolveRound = resolve;
 
     stageEl.hidden = true;

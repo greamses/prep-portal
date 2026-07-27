@@ -9,6 +9,7 @@
 ═══════════════════════════════════════════════════════ */
 import { auth } from '/firebase-init.js';
 import { eventCount, DIFFICULTY_KEYS } from '/data/planner/scenarios.js';
+import { weekCellCount } from '/data/planner/routines.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
 import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
@@ -93,6 +94,11 @@ let pace = mem.get('pace', 32, PACES.map((p) => p.value));
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']);
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create';
 let difficulty = mem.get('difficulty', 'medium', DIFFICULTY_KEYS);
+let format = mem.get('format', 'events', ['events', 'week']);
+
+// Content count + word, per format (events schedule N events; a week times N cells).
+const contentCount = (f, k) => (f === 'week' ? weekCellCount(k) : eventCount(k));
+const countWord = (f) => (f === 'week' ? 'activities' : 'events');
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -132,19 +138,35 @@ renderCustomStep(player, 'avatar', {
 });
 player.start('name');
 
-/* ── SECTION 2 — Difficulty ───────────────────────────────────── */
+/* ── SECTION 2 — Format + Difficulty ──────────────────────────── */
 const content = createCarousel(topicMount);
+content.addSlide('format', 'Planner', () => {});
 content.addSlide('difficulty', 'Difficulty', () => {});
-renderChoiceStep(content, 'difficulty', {
-  title: 'How big a day to plan?',
-  subtitle: 'More events means a longer chain of clues to work through — the clock grows to match.',
-  name: 'planner-difficulty',
-  options: DIFFICULTY_KEYS.map((k) => ({
-    value: k, label: `${DIFF_LABEL[k]} · ${eventCount(k)} events`, checked: k === difficulty,
-  })),
-  onPick: (v) => { difficulty = v; mem.save({ difficulty }); flow.next(); },
+function renderDifficultyStep() {
+  renderChoiceStep(content, 'difficulty', {
+    title: format === 'week' ? 'How full a week?' : 'How big a day to plan?',
+    subtitle: format === 'week'
+      ? 'More activities means more of the timetable to time — the clock grows to match.'
+      : 'More events means a longer chain of clues to work through — the clock grows to match.',
+    name: 'planner-difficulty', colorOffset: 2,
+    options: DIFFICULTY_KEYS.map((k) => ({
+      value: k, label: `${DIFF_LABEL[k]} · ${contentCount(format, k)} ${countWord(format)}`, checked: k === difficulty,
+    })),
+    onPick: (v) => { difficulty = v; mem.save({ difficulty }); flow.next(); },
+  });
+}
+renderChoiceStep(content, 'format', {
+  title: 'Which planner?',
+  subtitle: 'Schedule one day’s events, or fill in a whole week’s routine.',
+  name: 'planner-format',
+  options: [
+    { value: 'events', label: 'Events', checked: format === 'events' },
+    { value: 'week', label: 'Weekly routine', checked: format === 'week' },
+  ],
+  onPick: (v) => { format = v; mem.save({ format }); renderDifficultyStep(); content.goTo('difficulty'); },
 });
-content.start('difficulty');
+renderDifficultyStep();
+content.start('format');
 
 /* ── SECTION 3 — Game Options ───────────────────────────────── */
 const options = createCarousel(optionsMount);
@@ -227,7 +249,11 @@ const flow = createSectionFlow([
   { el: $('planner-section-player'), chips: () => playerChips(myName(), avatarUrl(getAvatarSeed())) },
   {
     el: $('planner-section-topic'),
-    chips: () => [{ label: DIFF_LABEL[difficulty] }, { label: `${eventCount(difficulty)} events` }],
+    chips: () => [
+      { label: format === 'week' ? 'Weekly routine' : 'Events' },
+      { label: DIFF_LABEL[difficulty] },
+      { label: `${contentCount(format, difficulty)} ${countWord(format)}` },
+    ],
   },
   {
     el: $('planner-section-options'),
@@ -384,6 +410,27 @@ function renderResults(ranked, settled = true) {
 function renderBreakdown() {
   breakdownEl.innerHTML = '';
   if (!lastReview) { breakdownEl.hidden = true; return; }
+  if (lastReview.format === 'week') {
+    const { cellsCorrect, cellCount, review } = lastReview;
+    const dayGroups = {};
+    review.forEach((r) => { (dayGroups[r.dayIndex] = dayGroups[r.dayIndex] || []).push(r); });
+    const daysCleared = Object.values(dayGroups).filter((cs) => cs.every((c) => c.chosen === c.trueTime)).length;
+    const p = document.createElement('p');
+    p.className = 'pp-breakdown-title'; p.textContent = 'How you did';
+    breakdownEl.appendChild(p);
+    const row = document.createElement('div');
+    row.className = 'pp-breakdown-row';
+    [['On time', `${cellsCorrect}/${cellCount}`], ['Days cleared', `${daysCleared}/${Object.keys(dayGroups).length}`]]
+      .forEach(([label, val], i) => {
+        const cell = document.createElement('span');
+        cell.className = `pp-sticky pp-sticky--tape pp-bd-cell ${stickyColor(i + 1)}`;
+        cell.innerHTML = `<span class="pp-bd-label">${label}</span><span class="pp-bd-score">${val}</span>`;
+        row.appendChild(cell);
+      });
+    breakdownEl.appendChild(row);
+    breakdownEl.hidden = false;
+    return;
+  }
   const { sequenceCorrect, timeCorrect, N } = lastReview;
   const p = document.createElement('p');
   p.className = 'pp-breakdown-title';
@@ -429,6 +476,7 @@ function launchConfetti() {
 // ── Review — the correct schedule vs what you set ─────────────────────────
 function renderReview() {
   if (!lastReview) return;
+  if (lastReview.format === 'week') { renderWeekReview(); return; }
   const { review, sequenceCorrect, timeCorrect, N } = lastReview;
   reviewTitle.textContent = 'The correct schedule';
   reviewSub.textContent = `${sequenceCorrect}/${N} in order · ${timeCorrect}/${N} on time`;
@@ -451,6 +499,51 @@ function renderReview() {
   reviewBd.setAttribute('aria-hidden', 'false');
   document.body.classList.add('planner-nav-hidden');
 }
+// The correct Mon–Sat timetable, each cell marked right/wrong against what you typed.
+function renderWeekReview() {
+  const { review, cellsCorrect, cellCount, periods } = lastReview;
+  const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+  reviewTitle.textContent = 'The correct timetable';
+  reviewSub.textContent = `${cellsCorrect}/${cellCount} cells on time`;
+  reviewBody.innerHTML = '';
+  const scroll = document.createElement('div');
+  scroll.className = 'planner-week-scroll';
+  const table = document.createElement('table');
+  table.className = 'planner-week planner-week--review';
+  const thead = document.createElement('tr');
+  thead.className = 'planner-week-row';
+  thead.innerHTML = '<th class="planner-week-corner"></th>'
+    + Array.from({ length: periods }, (_, p) => `<th class="planner-week-colh">${ORD[p] || '#' + (p + 1)}</th>`).join('');
+  const head = document.createElement('thead'); head.appendChild(thead); table.appendChild(head);
+  const byDay = {};
+  review.forEach((r) => { (byDay[r.dayIndex] = byDay[r.dayIndex] || []).push(r); });
+  const tbody = document.createElement('tbody');
+  Object.keys(byDay).map(Number).sort((a, b) => a - b).forEach((di) => {
+    const cells = byDay[di].slice().sort((a, b) => a.period - b.period);
+    const tr = document.createElement('tr');
+    tr.className = 'planner-week-row';
+    let html = `<th class="planner-week-day">${esc(cells[0].day.slice(0, 3))}</th>`;
+    for (let p = 0; p < periods; p++) {
+      const c = cells.find((x) => x.period === p);
+      if (!c) { html += '<td class="planner-week-cell is-off"></td>'; continue; }
+      const ok = c.chosen === c.trueTime;
+      html += `<td class="planner-week-cell is-rev is-${ok ? 'ok' : 'no'}">`
+        + `<span class="planner-cell-act">${esc(c.activity)}</span>`
+        + `<span class="planner-rev-time">${fmtClock(c.trueTime)}</span>`
+        + (ok ? '' : `<span class="planner-rev-you">${c.chosen != null ? 'you: ' + fmtClock(c.chosen) : '—'}</span>`)
+        + '</td>';
+    }
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  scroll.appendChild(table);
+  reviewBody.appendChild(scroll);
+  reviewBd.classList.add('open');
+  reviewBd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('planner-nav-hidden');
+}
+
 function fmtClock(min) {
   if (min == null) return '—';
   const h24 = Math.floor(min / 60); const m = min % 60; const ap = h24 < 12 ? 'AM' : 'PM';
@@ -465,7 +558,7 @@ async function playRoundAndShowResults(room, name) {
   const roster = buildRoster(room, name);
   const out = await startPlanRound({
     seed: room.seed, timeLimit: room.timeLimit, startAt: room.startAt,
-    difficulty: room.difficulty || 'medium', roster,
+    difficulty: room.difficulty || 'medium', format: room.format || 'events', roster,
   });
   lastReview = out;
   showAwaiting();
@@ -474,7 +567,7 @@ async function playRoundAndShowResults(room, name) {
   try {
     ranked = await finishRound({
       roomId: room.roomId, seed: room.seed, timeLimit: room.timeLimit, startAt: room.startAt,
-      botsNeeded: room.botsNeeded, difficulty: room.difficulty,
+      botsNeeded: room.botsNeeded, difficulty: room.difficulty, format: room.format,
       onUpdate: (rows) => {
         hideAwaiting();
         const me = rows.find((r) => r.isSelf);
@@ -513,8 +606,15 @@ function makeOnWaiting(waitingStatusText) {
 }
 
 function computeTimeLimit() {
-  const N = eventCount(difficulty);
-  const secs = N * pace + (N + 1) * READ_PER_CLUE;
+  let secs;
+  if (format === 'week') {
+    // ~6 clued rules to read once, then a quicker fill per cell (columns repeat).
+    const cells = weekCellCount(difficulty);
+    secs = cells * (pace * 0.5) + 7 * READ_PER_CLUE + 20;
+  } else {
+    const N = eventCount(difficulty);
+    secs = N * pace + (N + 1) * READ_PER_CLUE;
+  }
   return Math.max(MIN_ROUND_SEC, Math.min(MAX_ROUND_SEC, Math.round(secs)));
 }
 
@@ -524,7 +624,7 @@ async function runMultiplayer(name) {
   let room;
   try {
     room = await matchmake(
-      { mode: 'multiplayer', size: roomSize, timeLimit, difficulty, displayName: name },
+      { mode: 'multiplayer', size: roomSize, timeLimit, difficulty, format, displayName: name },
       { onWaiting: makeOnWaiting() },
     );
   } catch (e) {
@@ -544,7 +644,7 @@ async function runCreate(name, size, roomMode) {
   let created;
   try {
     created = await createCodeRoom(
-      { mode: roomMode, size, timeLimit, difficulty, displayName: name },
+      { mode: roomMode, size, timeLimit, difficulty, format, displayName: name },
       { onWaiting: makeOnWaiting(roomMode === 'versus' ? 'Waiting for your opponent…' : 'Waiting for other players…') },
     );
   } catch (e) {
@@ -584,7 +684,7 @@ async function runJoin(name, fallbackSize, rawCode) {
 
 async function runPlanner() {
   startBtn.disabled = true;
-  mem.save({ difficulty, done: true });
+  mem.save({ difficulty, format, done: true });
   await getCurrentUser();
   const name = myName();
   if (mode === 'versus') {

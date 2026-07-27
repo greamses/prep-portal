@@ -11,7 +11,9 @@ import { createRoomClient } from '/utils/games/seeded-room.js';
 export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   rooms: 'plannerRooms',
   pointers: 'plannerRoomPointers',
-  contentKeys: ['difficulty'],
-  // Two players share a room only if they'd be scheduling the same-sized brief.
-  bucketOf: (c) => c.difficulty,
+  // `format` picks the game (events / weekly routine); `difficulty` its size.
+  contentKeys: ['format', 'difficulty'],
+  // Two players share a room only if they'd be solving the same brief — same
+  // format AND same difficulty. (`format` defaults to events for old rooms.)
+  bucketOf: (c) => `${c.format || 'events'}:${c.difficulty}`,
 });

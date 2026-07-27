@@ -10,7 +10,7 @@ import { simulateBotScore } from './bots.js';
 
 export const finishRound = createLeaderboard({
   rooms: 'plannerRooms',
-  // `a.difficulty` is the ROOM's content (main.js passes it through), so a
-  // joiner scores the host's bots on the same brief size.
-  scoreBot: (seed, slot, a) => simulateBotScore(seed, slot, a.timeLimit, a.difficulty),
+  // `a.difficulty`/`a.format` are the ROOM's content (main.js passes them
+  // through), so a joiner scores the host's bots on the same brief.
+  scoreBot: (seed, slot, a) => simulateBotScore(seed, slot, a.timeLimit, a.difficulty, a.format),
 });
