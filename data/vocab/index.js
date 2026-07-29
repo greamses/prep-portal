@@ -146,6 +146,7 @@ const BODY = 'body-map';
 export const ORGAN_FIGURES = {
   'heart-map': { module: '/data/vocab/organs/heart.js', label: 'The Heart' },
   'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },
+  'brain-section': { module: '/data/vocab/organs/brain-section.js', label: 'Inside the Brain' },
   'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
   'skin-map': { module: '/data/vocab/organs/skin.js', label: 'The Skin' },
 };

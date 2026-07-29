@@ -90,6 +90,7 @@ const PAGES = [
       // The single-organ maps (name the parts of one organ).
       '/data/vocab/organs/heart.js',
       '/data/vocab/organs/brain.js',
+      '/data/vocab/organs/brain-section.js',
       '/data/vocab/organs/ear.js',
       '/data/vocab/organs/skin.js',
       // The 2D solar-system diagram (Geography drawn topic).

@@ -196,6 +196,7 @@ export const SUBJECTS = {
       T('skin-map', 'The Skin', 3, 9),
       T('heart-map', 'The Heart', 3, 9),
       T('brain-map', 'The Brain', 3, 9),
+      T('brain-section', 'Inside the Brain', 5, 9),
     ],
   },
 
