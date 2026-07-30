@@ -281,9 +281,9 @@ const renderOrganClue = (o) => renderMapClue({
   credit: ORGAN_CREDIT,
 });
 // A single figure (one organ, one cell): name the lit PART. No region scope.
-// A composed figure (the cells) carries no credit; a traced one (the heart,
-// CC-BY-SA) does, and that credit also switches the clue to the taller
-// portrait layout.
+// A figure carries a CREDIT when it is sourced (the heart, the ear, both
+// cells), and that credit also switches the clue to the taller portrait
+// layout.
 const renderPartClue = (p) => {
   if (figureMod.RICH) { renderRichClue(p); return; }
   renderMapClue({

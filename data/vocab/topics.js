@@ -201,12 +201,12 @@ export const SUBJECTS = {
 
   // ── The Cell, grades 5–12 ────────────────────────────────────────────
   // The other half of the drawn-diagram anatomy: where The Human Body zooms
-  // OUT to organs, this zooms in past them. Two figures, both composed rather
-  // than traced (scripts/gen-cell-maps.mjs), and both tier their parts by
-  // grade — a Grade 5 plant cell is the wall, the vacuole and the chloroplasts;
-  // the same drawing at Grade 11 adds the tonoplast and the plasmodesmata. That
-  // tiering is why one subject can span both school tiers where the others
-  // can't.
+  // OUT to organs, this zooms in past them. Two shaded schoolbook cutaways by
+  // LadyofHats, public domain, baked by scripts/gen-cell-maps.mjs, and both tier
+  // their parts by grade — a Grade 5 plant cell is the wall, the vacuole and the
+  // chloroplasts; the same drawing at Grade 11 adds the tonoplast and the
+  // plasmodesmata. That tiering is why one subject can span both school tiers
+  // where the others can't.
   cells: {
     label: 'The Cell',
     group: 'Science',

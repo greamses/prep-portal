@@ -140,11 +140,10 @@ const BODY = 'body-map';
 
 /* The single-FIGURE topics — where the whole-body map names the organs, each of
    these names the PARTS inside one thing: one organ, or one cell. Each is a
-   drawn topic backed by a module of its own, either traced from Wikimedia
-   (the organs) or composed from maths (the cells) and baked by its own
-   scripts/gen-*.mjs. Unlike the geographic maps and the body map they have NO
-   sub-scope — one figure has too few parts to slice — so a pick jumps straight
-   past the scope step. */
+   drawn topic backed by a module of its own, sourced from Wikimedia and baked
+   by its own scripts/gen-*.mjs. Unlike the geographic maps and the body map
+   they have NO sub-scope — one figure has too few parts to slice — so a pick
+   jumps straight past the scope step. */
 export const PART_FIGURES = {
   'heart-map': { module: '/data/vocab/organs/heart.js', label: 'The Heart' },
   'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },

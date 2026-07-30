@@ -2,7 +2,8 @@
    the parts of the cell themselves are the words. This shim gives the subject
    the same WORDS shape loadWords() hands every other subject.
 
-   Two drawn topics, both figures composed by scripts/gen-cell-maps.mjs:
+   Two drawn topics, both figures baked by scripts/gen-cell-maps.mjs from the
+   public-domain Wikimedia cutaways:
      plant-cell    the boxy walled cell — name the PART (../cells/plant-cell.js)
      animal-cell   the soft blob cell   — name the PART (../cells/animal-cell.js)
 
