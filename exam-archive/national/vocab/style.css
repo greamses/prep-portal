@@ -897,6 +897,35 @@ body.vocab-nav-hidden .site-nav { display: none; }
    the card's own surface colour so it reads as "the rest fades back" in both
    light and dark themes. ── */
 .vocab-rich-scrim { fill: var(--surface-primary); opacity: 0.82; pointer-events: none; }
+/* The cells point at a part with an ARROW instead, so the whole drawing stays
+   lit — a cutaway this detailed is easier to read whole than through a hole.
+   Colours are fixed rather than themed: the artwork underneath is a light-toned
+   illustration in either theme, so a dark point on a cream halo always reads.
+   The nudge travels along the arrow's own heading (--ax/--ay, set inline). */
+.vocab-arrow { pointer-events: none; animation: vocab-arrow-nudge 1.25s ease-in-out infinite; }
+.vocab-arrow-halo {
+  fill: none;
+  stroke: #fffdf6;
+  stroke-width: 13;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+.vocab-arrow-ink {
+  fill: none;
+  stroke: #14130f;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vocab-arrow-ink.is-head { fill: #14130f; }
+@keyframes vocab-arrow-nudge {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(calc(var(--ax) * 9px), calc(var(--ay) * 9px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vocab-arrow { animation: none; }
+}
 .vocab-map--rich .vocab-rich-art { pointer-events: none; }
 /* In the study library the whole figure is shown bright — no scrim. */
 .vocab-map--rich.is-library .vocab-rich-scrim { display: none; }

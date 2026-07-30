@@ -292,10 +292,31 @@ const renderPartClue = (p) => {
   });
 };
 
-// A RICH figure (the ear) keeps its original shading — the whole artwork is
-// drawn as-is (figureMod.SVG) and the quizzed part is spotlit by dimming
-// everything except an elliptical hole over it. No per-part paths, so this can't
-// mislabel: the spotlight just points at the real art.
+/* An arrow flown in at the part, over the untouched artwork — the pointer a
+   labelled diagram would use, minus the label. Drawn twice: a pale halo
+   underneath so it reads over any colour in the drawing, then the ink on top.
+   `--ax/--ay` is the unit heading, which the CSS nudges it along. */
+function arrowMarkup({ x1, y1, x2, y2 }) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const L = Math.hypot(dx, dy) || 1;
+  const ux = dx / L, uy = dy / L;
+  const HEAD = 26, HALF = 11;
+  // Shaft stops short of the head so the ink doesn't thicken the point.
+  const sx = x2 - ux * HEAD * 0.9, sy = y2 - uy * HEAD * 0.9;
+  const bx = x2 - ux * HEAD, by = y2 - uy * HEAD;
+  const shaft = `M${x1},${y1}L${sx},${sy}`;
+  const head = `M${x2},${y2}L${bx - uy * HALF},${by + ux * HALF}L${bx + uy * HALF},${by - ux * HALF}Z`;
+  return `<g class="vocab-arrow" style="--ax:${ux.toFixed(3)};--ay:${uy.toFixed(3)}">`
+    + `<path class="vocab-arrow-halo" d="${shaft}"/><path class="vocab-arrow-halo" d="${head}"/>`
+    + `<path class="vocab-arrow-ink" d="${shaft}"/><path class="vocab-arrow-ink is-head" d="${head}"/>`
+    + '</g>';
+}
+
+// A RICH figure keeps its original shading — the whole artwork is drawn as-is
+// (figureMod.SVG) and the quizzed part is picked out WITHOUT redrawing it: an
+// arrow at it where the figure gives one (the cells), otherwise a spotlight
+// that dims everything else (the ear). No per-part paths either way, so this
+// can't mislabel — both just point at the real art.
 function renderRichClue(p) {
   clueEl.className = 'vocab-clue vocab-clue--map';
   clueEl.innerHTML = '';
@@ -304,17 +325,21 @@ function renderRichClue(p) {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('class', 'vocab-clue-map vocab-clue-map--tall vocab-map--rich');
   svg.setAttribute('viewBox', `0 0 ${m.MAP_W} ${m.MAP_H}`);
-  svg.setAttribute('aria-label', 'Diagram clue — one part is highlighted');
-  // A mask that is opaque everywhere except an elliptical hole over the part;
-  // the dimming scrim wears it, so only the part stays bright.
-  svg.innerHTML =
-    `<defs><mask id="vocab-rich-spot">`
-    + `<rect x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" fill="#fff"/>`
-    + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse cx="${s.cx}" cy="${s.cy}" rx="${s.rx}" ry="${s.ry}" fill="#000"/></g>`
-    + `</mask></defs>`
-    + `<g class="vocab-rich-art">${m.SVG}</g>`
-    + `<rect class="vocab-rich-scrim" x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" mask="url(#vocab-rich-spot)"/>`
-    + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse class="vocab-map-ring" cx="${s.cx}" cy="${s.cy}" rx="${s.rx + 3}" ry="${s.ry + 3}"/></g>`;
+  svg.setAttribute('aria-label', 'Diagram clue — one part is pointed out');
+  if (p.arrow) {
+    svg.innerHTML = `<g class="vocab-rich-art">${m.SVG}</g>${arrowMarkup(p.arrow)}`;
+  } else {
+    // A mask that is opaque everywhere except an elliptical hole over the part;
+    // the dimming scrim wears it, so only the part stays bright.
+    svg.innerHTML =
+      `<defs><mask id="vocab-rich-spot">`
+      + `<rect x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" fill="#fff"/>`
+      + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse cx="${s.cx}" cy="${s.cy}" rx="${s.rx}" ry="${s.ry}" fill="#000"/></g>`
+      + `</mask></defs>`
+      + `<g class="vocab-rich-art">${m.SVG}</g>`
+      + `<rect class="vocab-rich-scrim" x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" mask="url(#vocab-rich-spot)"/>`
+      + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse class="vocab-map-ring" cx="${s.cx}" cy="${s.cy}" rx="${s.rx + 3}" ry="${s.ry + 3}"/></g>`;
+  }
 
   const detail = document.createElement('span');
   detail.className = 'vocab-country-note';

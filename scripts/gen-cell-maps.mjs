@@ -68,15 +68,14 @@ const PLANT = {
     ['mitochondrion', 'The bean-shaped powerhouse that releases energy from food.', 5, 251, 264, 26, 16, -20],
     ['peroxisome', 'The small bubble that breaks down poisons the cell has made.', 11, 264, 291, 12, 12, 0],
     ['nucleus', "The control room that stores the cell's instructions.", 5, 388, 272, 50, 45, 0],
-    ['nucleolus', 'The dark spot deep inside the control room where ribosomes are made.', 5, 390, 277, 24, 21, 0],
-    ['nuclear envelope', 'The double skin around the control room.', 9, 405, 282, 16, 14, 0],
+    ['nucleolus', 'The dark spot deep inside the control room where ribosomes are made.', 5, 390, 277, 24, 21, 0, [270, 95]],
     ['nuclear pore', 'One of the tiny holes that let messages out of the control room.', 11, 345, 252, 14, 12, 0],
     ['rough endoplasmic reticulum', 'The folded sheets studded with grains that build proteins.', 9, 352, 290, 26, 20, -20],
     ['smooth endoplasmic reticulum', 'The smooth tubes that make fats and store them.', 10, 412, 215, 32, 26, 0],
     ['ribosome', 'A tiny grain where proteins are put together.', 7, 430, 248, 14, 18, 0],
     ['Golgi apparatus', 'The stack of sacs that packages and posts what the cell makes.', 7, 313, 303, 24, 22, 0],
     ['vesicle', 'A small bubble pinched off to carry goods around the cell.', 9, 287, 313, 14, 12, 0],
-    ['plasmodesma', 'A tiny channel through the wall that links one cell to the next.', 10, 340, 112, 28, 14, 0],
+    ['plasmodesma', 'A tiny channel through the wall that links one cell to the next.', 10, 340, 112, 28, 14, 0, [0, 95]],
   ],
 };
 
@@ -97,9 +96,8 @@ const ANIMAL = {
     ['cytoplasm', 'The jelly that fills the cell and holds everything in place.', 5, 150, 270, 26, 22, 0],
     ['nucleus', "The control room that stores the cell's instructions.", 5, 240, 152, 55, 46, 0],
     ['nucleolus', 'The dark spot deep inside the control room where ribosomes are made.', 5, 218, 152, 18, 15, 0],
-    ['nuclear envelope', 'The double skin around the control room.', 9, 192, 150, 14, 18, 0],
-    ['nuclear pore', 'One of the tiny holes that let messages out of the control room.', 11, 244, 121, 12, 10, 0],
-    ['chromatin', 'The tangled threads that carry the instructions themselves.', 10, 252, 168, 20, 16, 0],
+    ['nuclear envelope', 'The double skin around the control room.', 9, 192, 150, 14, 18, 0, [0, 85]],
+    ['chromatin', 'The tangled threads that carry the instructions themselves.', 10, 252, 168, 20, 16, 0, [180, 85]],
     ['mitochondrion', 'The bean-shaped powerhouse that releases energy from food.', 5, 392, 150, 40, 26, -10],
     ['ribosome', 'A tiny grain where proteins are put together.', 7, 172, 163, 14, 14, 0],
     ['rough endoplasmic reticulum', 'The folded sheets studded with grains that build proteins.', 9, 280, 160, 22, 34, 10],
@@ -109,7 +107,7 @@ const ANIMAL = {
     ['peroxisome', 'The small bubble that breaks down poisons the cell has made.', 11, 320, 118, 12, 12, 0],
     ['centrosome', 'The pair of tiny barrels that pull the cell apart when it divides.', 10, 315, 207, 20, 22, 0],
     ['secretory vesicle', 'The bubble that carries goods to the surface and empties them out.', 9, 362, 236, 16, 14, 0],
-    ['flagellum', 'The long whip the cell lashes to swim.', 5, 120, 398, 55, 20, 5],
+    ['flagellum', 'The long whip the cell lashes to swim.', 5, 120, 398, 55, 20, 5, [45, 85]],
     ['microtubule', 'A stiff hollow rod that acts as a rail inside the cell.', 11, 348, 125, 12, 22, 5],
     ['cytoskeleton', 'The fine threads that criss-cross the cell and hold its shape.', 10, 185, 247, 26, 18, 0],
   ],
@@ -126,7 +124,13 @@ function strip(raw) {
     .replace(/<switch[\s\S]*?<\/switch>/g, '')
     .replace(/<text[\s\S]*?<\/text>/g, '')
     .replace(/<(line|polyline|circle|path)\b[^>]*\bclass="leader"[^>]*(?:\/>|>[\s\S]*?<\/\1>)/g, '')
-    .replace(/<metadata[\s\S]*?<\/metadata>/g, '');
+    .replace(/<metadata[\s\S]*?<\/metadata>/g, '')
+    // Editor leftovers (Inkscape/sodipodi). Harmless in the game, where the
+    // markup is parsed as HTML, but they are undeclared namespace prefixes and
+    // make the standalone tracer reference below a hard XML parse error.
+    .replace(/<sodipodi:namedview[\s\S]*?(?:\/>|<\/sodipodi:namedview>)/g, '')
+    .replace(/<inkscape:perspective[\s\S]*?(?:\/>|<\/inkscape:perspective>)/g, '')
+    .replace(/\s(?:sodipodi|inkscape):[\w-]+="[^"]*"/g, '');
 }
 
 const F = (n) => Math.round(n * 100) / 100;
@@ -159,9 +163,49 @@ function bake(fig) {
   if (/<text|class="leader"/.test(inner)) throw new Error(`${fig.out}: a label survived the strip`);
   if (new RegExp(`url\\(#(?!${fig.ns}-)[\\w.:-]+\\)`).test(inner)) throw new Error(`${fig.out}: an id escaped namespacing`);
 
-  const rows = fig.parts.map(([name, hint, grade, cx, cy, rx, ry, rot]) => {
+  /* The pointer. The clue draws an ARROW at the part rather than dimming the
+     rest of the figure — a diagram this detailed reads better whole. The arrow
+     flies IN from the open space outside the part, i.e. along the line from the
+     figure's centre outwards, so it never crosses the middle of the drawing;
+     `aim` overrides that heading (degrees, 0 = flying east, 90 = flying south)
+     wherever the default would come in over something else, and the second
+     number lengthens or shortens the shaft.
+
+     Its tip stops just clear of the part's own ellipse, so the arrow points at
+     the thing without covering it. */
+  const CX = OUT_W / 2, CY = MAP_H / 2;
+  const arrowFor = ([, , , cx, cy, rx, ry, rot, aim]) => {
     const [X, Y] = map(cx, cy);
-    return `  ["${esc(name)}", "${esc(hint)}", ${grade}, ${X}, ${Y}, ${F(rx * s)}, ${F(ry * s)}, ${rot}],`;
+    const RX = rx * s, RY = ry * s;
+    let [deg, len] = Array.isArray(aim) ? aim : [aim, null];
+    if (deg == null) deg = (Math.atan2(CY - Y, CX - X) * 180) / Math.PI; // fly inwards
+    len = len || 82;
+    const t = (deg * Math.PI) / 180;
+    const ux = Math.cos(t), uy = Math.sin(t);
+    // Clearance: the ellipse's own radius along the arrow's heading, +4.
+    const a = ((deg - rot) * Math.PI) / 180;
+    const clear = (RX * RY) / Math.hypot(RY * Math.cos(a), RX * Math.sin(a)) + 4;
+    // Clamped into the box: a part near an edge with a wide ellipse (the
+    // flagellum) would otherwise put its own tip outside the frame.
+    const clamp = (v, hi) => Math.max(10, Math.min(hi - 10, v));
+    const tip = [clamp(X - ux * clear, OUT_W), clamp(Y - uy * clear, MAP_H)];
+    // Shorten rather than run off the edge of the box.
+    const room = (px, py, dx, dy) => {
+      let k = len;
+      if (dx) k = Math.min(k, dx < 0 ? (px - 8) / -dx : (OUT_W - 8 - px) / dx);
+      if (dy) k = Math.min(k, dy < 0 ? (py - 8) / -dy : (MAP_H - 8 - py) / dy);
+      return Math.max(34, k);
+    };
+    const back = room(tip[0], tip[1], -ux, -uy);
+    return { x1: F(tip[0] - ux * back), y1: F(tip[1] - uy * back), x2: F(tip[0]), y2: F(tip[1]) };
+  };
+
+  const rows = fig.parts.map((p) => {
+    const [name, hint, grade, cx, cy, rx, ry, rot] = p;
+    const [X, Y] = map(cx, cy);
+    const a = arrowFor(p);
+    return `  ["${esc(name)}", "${esc(hint)}", ${grade}, ${X}, ${Y}, ${F(rx * s)}, ${F(ry * s)}, ${rot}, `
+      + `[${a.x1}, ${a.y1}, ${a.x2}, ${a.y2}]],`;
   }).join('\n');
 
   const src = `/* ═══════════════════════════════════════════════════════
@@ -173,13 +217,15 @@ function bake(fig) {
    no licence to carry forward and no share-alike. The CREDIT below is shown
    in-game as a courtesy.
 
-   It is a shaded illustration, not flat regions, so it is a RICH figure like
-   the ear: the whole artwork is embedded as \`SVG\` and a part is quizzed by
-   dimming everything except an elliptical spotlight over it. No per-part paths,
-   so the clue can't mislabel — it points at art that is already correct.
+   It is a shaded illustration, not flat regions, so it is a RICH figure: the
+   whole artwork is embedded as \`SVG\` and stays fully lit, and the quizzed part
+   is picked out by an ARROW flown in at it (\`arrow\`, tail → tip). No per-part
+   paths, so the clue can't mislabel — it points at art that is already correct.
+   \`spot\` is kept too: the study view hangs each part's hover tip on it.
 
-   Each row: [name, hint, grade, spotlight cx, cy, rx, ry, rot], refitted from
-   the source's own coordinates to this 1000-wide box. \`grade\` tiers the parts
+   Each row: [name, hint, grade, spot cx, cy, rx, ry, rot, arrow], refitted from
+   the source's own coordinates to this 1000-wide box; \`arrow\` is
+   [tailX, tailY, tipX, tipY]. \`grade\` tiers the parts
    by difficulty and topicPool filters on it. Adapted: labels and leader lines
    dropped, ids namespaced ("${fig.ns}-…"), cropped to the artwork.
 
@@ -198,8 +244,9 @@ const RAW = [
 ${rows}
 ];
 
-export const PARTS = RAW.map(([name, hint, grade, cx, cy, rx, ry, rot]) =>
-  ({ name, hint, grade, cx, cy, spot: { cx, cy, rx, ry, rot } }));
+export const PARTS = RAW.map(([name, hint, grade, cx, cy, rx, ry, rot, a]) =>
+  ({ name, hint, grade, cx, cy, spot: { cx, cy, rx, ry, rot },
+    arrow: { x1: a[0], y1: a[1], x2: a[2], y2: a[3] } }));
 
 // Same shape every topic's words take: the part NAME is the word, its
 // description the clue, \`g\` tiers it by grade, and \`part\` carries the
@@ -208,6 +255,18 @@ export const GAME_PARTS = PARTS.map((c) => ({ w: c.name, d: c.hint, g: c.grade, 
 `;
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(join(OUT_DIR, fig.out), src);
+
+  /* The same cropped artwork as a standalone SVG, for tools/organ-tracer. Load
+     it there as the reference and every path you trace comes out in THIS box's
+     coordinates — so traced regions drop straight onto the baked figure with no
+     refitting. That is the road to per-part regions (hover/light a real shape)
+     if the arrows ever stop being enough. */
+  const refDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'tools', 'organ-tracer', 'refs');
+  mkdirSync(refDir, { recursive: true });
+  writeFileSync(join(refDir, fig.out.replace(/\.js$/, '.svg')),
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" `
+    + `width="${OUT_W}" height="${MAP_H}" viewBox="0 0 ${OUT_W} ${MAP_H}">${svg}</svg>\n`);
+
   console.log(`${fig.out}: ${fig.parts.length} parts, ${OUT_W}×${MAP_H}, ${(src.length / 1024).toFixed(1)} KB`);
 }
 
