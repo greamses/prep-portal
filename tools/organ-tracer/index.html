@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Organ tracer — draw diagram parts as SVG</title>
+<style>
+  :root { --ink:#14130f; --line:#d8d2c4; --panel:#faf7f0; --accent:#0055ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; color:var(--ink); background:#efeadf; height:100vh; display:flex; }
+  #side { width:340px; min-width:340px; background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:14px; }
+  #stage { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:16px; background:#e7e1d5; }
+  h1 { font-size:15px; margin:0 0 4px; }
+  .muted { color:#7a7266; font-size:12px; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:12px 0; padding:10px; }
+  legend { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#7a7266; padding:0 6px; }
+  label { display:block; font-size:12px; margin:6px 0 2px; }
+  input[type=text], input[type=number], textarea, select { width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font:inherit; font-size:13px; }
+  textarea { font-family:ui-monospace, monospace; font-size:11px; }
+  button { font:inherit; font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
+  button:hover { background:#f0ece3; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { color:#c0392b; }
+  .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .row > * { flex:0 0 auto; }
+  #parts { list-style:none; margin:8px 0 0; padding:0; }
+  #parts li { display:flex; align-items:center; gap:6px; padding:5px 6px; border-radius:6px; cursor:pointer; font-size:13px; }
+  #parts li.active { background:#e8efff; outline:1px solid var(--accent); }
+  #parts .sw { width:14px; height:14px; border-radius:3px; border:1px solid #0003; flex:0 0 auto; }
+  #parts .nm { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #parts .cnt { color:#7a7266; font-size:11px; }
+  svg { background:#fff; box-shadow:0 2px 12px #0002; touch-action:none; }
+  .handle { fill:#fff; stroke:var(--accent); stroke-width:1.4; cursor:grab; }
+  .handle.first { fill:var(--accent); }
+  .seg { fill:none; stroke:var(--accent); stroke-width:1.2; stroke-dasharray:4 3; }
+  kbd { background:#eee; border:1px solid #ccc; border-radius:4px; padding:0 4px; font-size:11px; }
+  .hintbox { font-size:11px; color:#7a7266; line-height:1.5; }
+</style>
+</head>
+<body>
+<div id="side">
+  <h1>Organ tracer</h1>
+  <div class="muted">Trace each part over a reference image; export the ready <code>&lt;key&gt;.js</code> for <code>data/vocab/organs/</code>.</div>
+
+  <fieldset>
+    <legend>Reference</legend>
+    <input type="file" id="imgFile" accept="image/*,.svg" />
+    <label>Background opacity <span id="opVal">0.55</span></label>
+    <input type="range" id="opacity" min="0" max="1" step="0.05" value="0.55" style="width:100%" />
+    <label>Zoom <span id="zVal">100%</span></label>
+    <input type="range" id="zoom" min="0.3" max="3" step="0.1" value="1" style="width:100%" />
+    <div class="muted" id="dims">no image loaded</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Parts</legend>
+    <div class="row">
+      <button id="addPart">+ Add part</button>
+      <button id="dupPart">Duplicate</button>
+      <button id="delPart" class="danger">Delete</button>
+    </div>
+    <ul id="parts"></ul>
+  </fieldset>
+
+  <fieldset id="partFs">
+    <legend>Selected part</legend>
+    <label>Name</label><input type="text" id="pName" placeholder="e.g. cochlea" />
+    <label>Hint (clue shown to the student — must not contain the name)</label>
+    <textarea id="pHint" rows="2" placeholder="e.g. The coiled tube that turns vibration into signals."></textarea>
+    <div class="row" style="margin-top:6px">
+      <div style="flex:1"><label>Fill</label><input type="color" id="pFill" value="#f2a6c0" style="width:100%; height:32px; padding:2px" /></div>
+      <div style="width:96px"><label>Grade (opt.)</label><input type="number" id="pGrade" min="1" max="12" placeholder="—" /></div>
+    </div>
+    <label style="margin-top:8px"><input type="checkbox" id="pDecor" /> DECOR (context outline, never quizzed)</label>
+    <label style="margin-top:6px"><input type="checkbox" id="pSmooth" checked /> Smooth curves</label>
+    <div class="row" style="margin-top:8px">
+      <button id="newShape">New sub-shape</button>
+      <button id="closeShape">Close shape</button>
+      <button id="undoPt">Undo point</button>
+    </div>
+    <div class="hintbox" style="margin-top:8px">
+      Click on the canvas to lay points. <kbd>Enter</kbd> / double-click closes the shape.
+      Drag a dot to adjust. <kbd>Backspace</kbd> removes the last point. Right-click a dot deletes it.
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Export</legend>
+    <label>Module key (file name)</label><input type="text" id="modKey" value="ear" />
+    <label>Credit (optional — keep if you traced a CC-BY diagram)</label>
+    <input type="text" id="modCredit" placeholder='Ear © Author · <a href="…">CC BY 4.0</a>, adapted' />
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="genBtn">Generate .js</button>
+      <button id="dlJs">Download .js</button>
+      <button id="dlJson">Save JSON</button>
+      <button id="loadJsonBtn">Load JSON</button>
+      <input type="file" id="jsonFile" accept=".json" hidden />
+    </div>
+    <textarea id="out" rows="10" style="margin-top:8px" placeholder="Generated module appears here — Copy into data/vocab/organs/&lt;key&gt;.js"></textarea>
+    <button id="copyOut" style="margin-top:4px">Copy</button>
+  </fieldset>
+</div>
+
+<div id="stage">
+  <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<script>
+const SVGNS = 'http://www.w3.org/2000/svg';
+const $ = (id) => document.getElementById(id);
+const canvas = $('canvas');
+
+const state = {
+  W: 1000, H: 700, img: null,          // reference
+  parts: [], activeId: null, nextId: 1,
+  dragging: null,                      // {partIdx, subIdx, ptIdx}
+};
+
+// ── model helpers ──────────────────────────────────────────────────────────
+function activePart() { return state.parts.find((p) => p.id === state.activeId) || null; }
+function openSub(part) {
+  // the last subpath that is still open (not closed), or null
+  const s = part.subs[part.subs.length - 1];
+  return s && !s.closed ? s : null;
+}
+function newPart(seed = {}) {
+  const id = state.nextId++;
+  const p = { id, name: seed.name || `part ${id}`, hint: seed.hint || '', fill: seed.fill || randColor(),
+    grade: seed.grade ?? null, decor: seed.decor || false, smooth: seed.smooth ?? true,
+    subs: seed.subs ? JSON.parse(JSON.stringify(seed.subs)) : [] };
+  state.parts.push(p); state.activeId = id; renderParts(); syncForm(); draw(); save();
+  return p;
+}
+function randColor() {
+  const h = Math.floor(Math.random() * 360);
+  return hslToHex(h, 55, 78);
+}
+function hslToHex(h, s, l) {
+  s/=100; l/=100; const k=(n)=>(n+h/30)%12; const a=s*Math.min(l,1-l);
+  const f=(n)=>{ const c=l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); return Math.round(255*c).toString(16).padStart(2,'0'); };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// ── geometry: point list → path string ──────────────────────────────────────
+function subPath(pts, closed, smooth) {
+  if (pts.length < 2) return pts.length ? `M${r(pts[0][0])},${r(pts[0][1])}` : '';
+  if (!smooth) return `M${pts.map((p) => `${r(p[0])},${r(p[1])}`).join('L')}${closed ? 'Z' : ''}`;
+  // Catmull-Rom → cubic Bézier
+  const n = pts.length; const g = (i) => pts[closed ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i))];
+  let d = `M${r(pts[0][0])},${r(pts[0][1])}`;
+  const last = closed ? n : n - 1;
+  for (let i = 0; i < last; i++) {
+    const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2);
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C${r(c1x)},${r(c1y)} ${r(c2x)},${r(c2y)} ${r(p2[0])},${r(p2[1])}`;
+  }
+  return d + (closed ? 'Z' : '');
+}
+function partPath(part) { return part.subs.map((s) => subPath(s.pts, s.closed, part.smooth)).join(''); }
+const r = (v) => Math.round(v * 10) / 10;
+
+// centroid (area-weighted) of the largest closed sub, else average of points
+function centroid(part) {
+  let best = null, bestA = -1;
+  for (const s of part.subs) {
+    if (s.pts.length < 3) continue;
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0; i < s.pts.length; i++) {
+      const [x0, y0] = s.pts[i], [x1, y1] = s.pts[(i + 1) % s.pts.length];
+      const cr = x0 * y1 - x1 * y0; A += cr; cx += (x0 + x1) * cr; cy += (y0 + y1) * cr;
+    }
+    A = Math.abs(A / 2);
+    if (A > bestA) { bestA = A; best = A > 1 ? [cx / (6 * (A || 1)) * (cx < 0 ? -1 : 1), cy / (6 * (A || 1))] : s.pts[0]; }
+  }
+  if (best) {
+    // recompute cleanly (signed)
+    const s = part.subs.reduce((m, s) => (s.pts.length >= 3 ? s : m), part.subs[0]);
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0; i < s.pts.length; i++) { const [x0, y0] = s.pts[i], [x1, y1] = s.pts[(i + 1) % s.pts.length]; const cr = x0 * y1 - x1 * y0; A += cr; cx += (x0 + x1) * cr; cy += (y0 + y1) * cr; }
+    A /= 2; if (Math.abs(A) > 1) return [cx / (6 * A), cy / (6 * A)];
+  }
+  const all = part.subs.flatMap((s) => s.pts); if (!all.length) return [state.W / 2, state.H / 2];
+  return [all.reduce((a, p) => a + p[0], 0) / all.length, all.reduce((a, p) => a + p[1], 0) / all.length];
+}
+
+// ── canvas coords ────────────────────────────────────────────────────────────
+function toSvg(evt) {
+  const pt = canvas.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  const m = canvas.getScreenCTM().inverse(); const p = pt.matrixTransform(m);
+  return [p.x, p.y];
+}
+
+// ── drawing ──────────────────────────────────────────────────────────────────
+function draw() {
+  canvas.setAttribute('viewBox', `0 0 ${state.W} ${state.H}`);
+  applyZoom();
+  canvas.innerHTML = '';
+  if (state.img) {
+    const im = document.createElementNS(SVGNS, 'image');
+    im.setAttribute('href', state.img); im.setAttribute('x', 0); im.setAttribute('y', 0);
+    im.setAttribute('width', state.W); im.setAttribute('height', state.H);
+    im.setAttribute('opacity', $('opacity').value); im.setAttribute('preserveAspectRatio', 'none');
+    canvas.appendChild(im);
+  }
+  for (const part of state.parts) {
+    const active = part.id === state.activeId;
+    const d = partPath(part);
+    if (d) {
+      const path = document.createElementNS(SVGNS, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', part.decor ? 'none' : part.fill);
+      path.setAttribute('fill-opacity', active ? 0.7 : 0.45);
+      path.setAttribute('stroke', active ? 'var(--accent)' : '#0006');
+      path.setAttribute('stroke-width', part.decor ? 2 : (active ? 1.6 : 0.8));
+      canvas.appendChild(path);
+    }
+    if (active) {
+      part.subs.forEach((s, si) => s.pts.forEach((pt, pi) => {
+        const c = document.createElementNS(SVGNS, 'circle');
+        c.setAttribute('cx', pt[0]); c.setAttribute('cy', pt[1]); c.setAttribute('r', 4 / zoom());
+        c.setAttribute('class', 'handle' + (pi === 0 ? ' first' : ''));
+        c.dataset.si = si; c.dataset.pi = pi;
+        canvas.appendChild(c);
+      }));
+    }
+  }
+}
+function zoom() { return parseFloat($('zoom').value); }
+function applyZoom() {
+  const z = zoom();
+  canvas.setAttribute('width', state.W * z / 1);
+  canvas.setAttribute('height', state.H * z / 1);
+}
+
+// ── interactions ─────────────────────────────────────────────────────────────
+canvas.addEventListener('pointerdown', (e) => {
+  const part = activePart(); if (!part) return;
+  const hit = e.target.closest('.handle');
+  if (hit) {
+    if (e.button === 2) { // right-click delete vertex
+      e.preventDefault();
+      const si = +hit.dataset.si, pi = +hit.dataset.pi;
+      part.subs[si].pts.splice(pi, 1);
+      if (!part.subs[si].pts.length) part.subs.splice(si, 1);
+      draw(); save(); return;
+    }
+    state.dragging = { si: +hit.dataset.si, pi: +hit.dataset.pi };
+    canvas.setPointerCapture(e.pointerId); return;
+  }
+  if (e.button !== 0) return;
+  const [x, y] = toSvg(e);
+  let sub = openSub(part);
+  if (!sub) { sub = { pts: [], closed: false }; part.subs.push(sub); }
+  sub.pts.push([x, y]);
+  draw(); save();
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!state.dragging) return;
+  const part = activePart(); const [x, y] = toSvg(e);
+  part.subs[state.dragging.si].pts[state.dragging.pi] = [x, y];
+  draw();
+});
+canvas.addEventListener('pointerup', (e) => { if (state.dragging) { state.dragging = null; save(); } });
+canvas.addEventListener('dblclick', (e) => { e.preventDefault(); closeShape(); });
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'Enter') { e.preventDefault(); closeShape(); }
+  if (e.key === 'Backspace') { e.preventDefault(); undoPoint(); }
+});
+function closeShape() { const p = activePart(); const s = p && openSub(p); if (s && s.pts.length >= 3) { s.closed = true; draw(); save(); } }
+function undoPoint() { const p = activePart(); const s = p && openSub(p); if (s && s.pts.length) { s.pts.pop(); if (!s.pts.length) p.subs.pop(); draw(); save(); } }
+
+$('newShape').onclick = () => { const p = activePart(); if (!p) return; const s = openSub(p); if (s) s.closed = true; draw(); };
+$('closeShape').onclick = closeShape;
+$('undoPt').onclick = undoPoint;
+
+// ── parts list + form ────────────────────────────────────────────────────────
+function renderParts() {
+  const ul = $('parts'); ul.innerHTML = '';
+  state.parts.forEach((p) => {
+    const li = document.createElement('li');
+    if (p.id === state.activeId) li.className = 'active';
+    li.innerHTML = `<span class="sw" style="background:${p.decor ? '#fff' : p.fill}"></span><span class="nm">${p.name || '(unnamed)'}</span><span class="cnt">${p.subs.reduce((a, s) => a + s.pts.length, 0)}pt</span>`;
+    li.onclick = () => { state.activeId = p.id; renderParts(); syncForm(); draw(); };
+    ul.appendChild(li);
+  });
+}
+function syncForm() {
+  const p = activePart();
+  $('partFs').style.opacity = p ? 1 : 0.4;
+  if (!p) return;
+  $('pName').value = p.name; $('pHint').value = p.hint; $('pFill').value = p.fill;
+  $('pGrade').value = p.grade ?? ''; $('pDecor').checked = p.decor; $('pSmooth').checked = p.smooth;
+}
+$('pName').oninput = (e) => { const p = activePart(); if (p) { p.name = e.target.value; renderParts(); save(); } };
+$('pHint').oninput = (e) => { const p = activePart(); if (p) { p.hint = e.target.value; save(); } };
+$('pFill').oninput = (e) => { const p = activePart(); if (p) { p.fill = e.target.value; renderParts(); draw(); save(); } };
+$('pGrade').oninput = (e) => { const p = activePart(); if (p) { p.grade = e.target.value ? +e.target.value : null; save(); } };
+$('pDecor').onchange = (e) => { const p = activePart(); if (p) { p.decor = e.target.checked; renderParts(); draw(); save(); } };
+$('pSmooth').onchange = (e) => { const p = activePart(); if (p) { p.smooth = e.target.checked; draw(); save(); } };
+
+$('addPart').onclick = () => newPart();
+$('dupPart').onclick = () => { const p = activePart(); if (p) newPart({ name: p.name + ' copy', hint: p.hint, fill: p.fill, grade: p.grade, decor: p.decor, smooth: p.smooth, subs: p.subs }); };
+$('delPart').onclick = () => { const p = activePart(); if (!p) return; state.parts = state.parts.filter((x) => x !== p); state.activeId = state.parts.length ? state.parts[0].id : null; renderParts(); syncForm(); draw(); save(); };
+
+// ── reference load ───────────────────────────────────────────────────────────
+$('imgFile').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const url = rd.result;
+    const probe = new Image();
+    probe.onload = () => {
+      state.W = probe.naturalWidth || 1000; state.H = probe.naturalHeight || 700; state.img = url;
+      $('dims').textContent = `${state.W} × ${state.H}px`;
+      draw(); save();
+    };
+    // SVG without intrinsic size still loads; fall back to 1000×700
+    probe.onerror = () => { state.img = url; draw(); save(); };
+    probe.src = url;
+  };
+  rd.readAsDataURL(f);
+};
+$('opacity').oninput = (e) => { $('opVal').textContent = e.target.value; draw(); };
+$('zoom').oninput = (e) => { $('zVal').textContent = Math.round(e.target.value * 100) + '%'; draw(); };
+
+// ── export ───────────────────────────────────────────────────────────────────
+function esc(s) { return JSON.stringify(s == null ? '' : s); }
+function buildModule() {
+  const key = $('modKey').value.trim() || 'organ';
+  const credit = $('modCredit').value.trim();
+  const label = key.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const quiz = state.parts.filter((p) => !p.decor && p.name.trim() && p.subs.some((s) => s.pts.length >= 3));
+  const decor = state.parts.filter((p) => p.decor).map((p) => partPath(p)).join('');
+  const useGrade = quiz.some((p) => p.grade != null);
+  const rows = quiz.map((p) => {
+    const [cx, cy] = centroid(p);
+    const bad = p.hint.toLowerCase().includes(p.name.toLowerCase());
+    const fields = useGrade
+      ? [esc(p.name), esc(p.hint), (p.grade ?? 'null'), esc(p.fill), r(cx), r(cy), esc(partPath(p))]
+      : [esc(p.name), esc(p.hint), esc(p.fill), r(cx), r(cy), esc(partPath(p))];
+    return `  [${fields.join(', ')}],${bad ? '  // ⚠ hint contains the name' : ''}`;
+  }).join('\n');
+  const mapRe = useGrade
+    ? `RAW.map(([name, hint, grade, fill, cx, cy, d]) => ({ name, hint, grade, fill, cx, cy, d }))`
+    : `RAW.map(([name, hint, fill, cx, cy, d]) => ({ name, hint, fill, cx, cy, d }))`;
+  const gameRe = useGrade
+    ? `PARTS.map((c) => ({ w: c.name, d: c.hint, g: c.grade, part: c }))`
+    : `PARTS.map((c) => ({ w: c.name, d: c.hint, part: c }))`;
+  return `/* ${label} — traced with tools/organ-tracer. Each part is a solid region drawn
+   over a reference image; the game lights ONE part and you name it. Same shape as
+   the other organ maps, so the map renderer draws it with no new code.
+   Each row: [name, hint,${useGrade ? ' grade,' : ''} fill, cx, cy, path]. LAZY-LOADED — never import statically. */
+
+export const MAP_W = ${Math.round(state.W)};
+export const MAP_H = ${Math.round(state.H)};${credit ? `\nexport const CREDIT = ${esc(credit)};` : ''}${decor ? `\nexport const DECOR = ${esc(decor)};` : ''}
+
+const RAW = [
+${rows}
+];
+
+export const PARTS = ${mapRe};
+
+export const GAME_PARTS = ${gameRe};
+`;
+}
+$('genBtn').onclick = () => { $('out').value = buildModule(); };
+$('copyOut').onclick = () => { $('out').select(); navigator.clipboard?.writeText($('out').value); };
+$('dlJs').onclick = () => download(`${($('modKey').value || 'organ')}.js`, buildModule(), 'text/javascript');
+$('dlJson').onclick = () => download(`${($('modKey').value || 'organ')}.trace.json`, JSON.stringify(serialize()), 'application/json');
+$('loadJsonBtn').onclick = () => $('jsonFile').click();
+$('jsonFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { restore(JSON.parse(rd.result)); } catch (err) { alert('Bad JSON: ' + err.message); } }; rd.readAsText(f); };
+function download(name, text, type) { const b = new Blob([text], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); }
+
+// ── persistence ──────────────────────────────────────────────────────────────
+function serialize() { return { W: state.W, H: state.H, img: state.img, parts: state.parts, nextId: state.nextId, key: $('modKey').value, credit: $('modCredit').value }; }
+function restore(d) {
+  state.W = d.W || 1000; state.H = d.H || 700; state.img = d.img || null;
+  state.parts = d.parts || []; state.nextId = d.nextId || (state.parts.length + 1);
+  state.activeId = state.parts.length ? state.parts[0].id : null;
+  if (d.key) $('modKey').value = d.key; if (d.credit) $('modCredit').value = d.credit;
+  $('dims').textContent = state.img ? `${state.W} × ${state.H}px` : 'no image loaded';
+  renderParts(); syncForm(); draw();
+}
+function save() { try { localStorage.setItem('organ-tracer', JSON.stringify(serialize())); } catch (e) { /* quota (big image) — ignore */ } }
+function load() { try { const d = localStorage.getItem('organ-tracer'); if (d) restore(JSON.parse(d)); } catch (e) {} }
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+load();
+if (!state.parts.length) newPart({ name: '', fill: '#f2a6c0' });
+renderParts(); syncForm(); draw();
+</script>
+</body>
+</html>
