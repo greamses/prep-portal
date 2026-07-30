@@ -15,7 +15,7 @@ import {
   loadWords, gradePool, topicPool,
   ELEMENTS, CATEGORY_LABELS, TABLE_COLUMNS, TABLE_ROWS, GROUP_NAMES, PERIOD_ROW_LABELS,
   CONTINENTS, CONTINENT_LABELS, ZONES, ZONE_LABELS, SYSTEMS, SYSTEM_LABELS,
-  ORGAN_FIGURES, isBundledSubject,
+  PART_FIGURES, isBundledSubject,
   baseTopic, topicScope, inScope, scopeInfo, regionSet, regionSetLabel, structureSvg,
 } from '/data/vocab/index.js';
 import { createSetupMemory } from '/utils/games/setup-memory.js';
@@ -1391,15 +1391,15 @@ async function openDictionary() {
     dictList.appendChild(wrap);
     return;
   }
-  const fig = ORGAN_FIGURES[baseTopic(topic)];
+  const fig = PART_FIGURES[baseTopic(topic)];
   if (playMode === 'topic' && fig) {
     dictBox.classList.add('vocab-dict--wide');
     dictSub.textContent = `Hover any part of ${fig.label.toLowerCase()} for its name. `
       + 'The game lights one up — you name it.';
     dictList.innerHTML = '<p class="vocab-dict-loading">Drawing the diagram…</p>';
     const fm = await import(fig.module);
-    // A sourced organ (the heart) tiers its parts by grade — study only what
-    // this grade is asked. Hand-authored organs have no grades, so all show.
+    // A tiered figure (the heart, both cells) grades its parts — study only what
+    // this grade is asked. The untiered figures have no grades, so all show.
     const parts = fm.PARTS.filter((p) => p.grade == null || p.grade <= grade);
     await renderMapLibrary({
       mod: fm, rows: parts, set: null,

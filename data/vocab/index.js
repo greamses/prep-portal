@@ -138,29 +138,32 @@ const WORLD = 'world-map';
 const NIGERIA = 'nigeria-map';
 const BODY = 'body-map';
 
-/* The single-organ maps — the whole-body map names the organs, these name the
-   PARTS inside one organ. Each is a drawn topic backed by a figure in
-   data/vocab/organs/<key>.js (sourced from Wikimedia and baked by its own
-   scripts/gen-*.mjs). Unlike the geographic maps and the body map they have NO
-   sub-scope — an organ has too few parts to slice — so a pick jumps straight
+/* The single-FIGURE topics — where the whole-body map names the organs, each of
+   these names the PARTS inside one thing: one organ, or one cell. Each is a
+   drawn topic backed by a module of its own, either traced from Wikimedia
+   (the organs) or composed from maths (the cells) and baked by its own
+   scripts/gen-*.mjs. Unlike the geographic maps and the body map they have NO
+   sub-scope — one figure has too few parts to slice — so a pick jumps straight
    past the scope step. */
-export const ORGAN_FIGURES = {
+export const PART_FIGURES = {
   'heart-map': { module: '/data/vocab/organs/heart.js', label: 'The Heart' },
   'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },
   'brain-section': { module: '/data/vocab/organs/brain-section.js', label: 'Inside the Brain' },
   'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
+  'plant-cell': { module: '/data/vocab/cells/plant-cell.js', label: 'The Plant Cell' },
+  'animal-cell': { module: '/data/vocab/cells/animal-cell.js', label: 'The Animal Cell' },
 };
-export const isOrganFigure = (topicKey) => baseTopic(topicKey) in ORGAN_FIGURES;
+export const isPartFigure = (topicKey) => baseTopic(topicKey) in PART_FIGURES;
 
 // The solar system — a Geography drawn topic (topic-only, always offered), drawn
 // as a flat SVG diagram. game.js checks for this key to pick the solar clue path.
 export const SOLAR_SYSTEM = 'solar-system';
-const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY, SOLAR_SYSTEM, ...Object.keys(ORGAN_FIGURES)]);
+const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY, SOLAR_SYSTEM, ...Object.keys(PART_FIGURES)]);
 // A subject made ENTIRELY of bundled/drawn topics needs no entry in the
 // generated manifest to be offered — and, being all drawn diagrams, it has no
 // A–Z alphabet to walk, so the setup skips the A–Z/Topic step and plays by
 // topic. `isBundledSubject` is what the page checks instead of naming subjects.
-const BUNDLED_SUBJECTS = new Set(['geography', 'human-body']);
+const BUNDLED_SUBJECTS = new Set(['geography', 'human-body', 'cells']);
 export const isBundledSubject = (subjectKey) => BUNDLED_SUBJECTS.has(subjectKey);
 
 // ── Science-law topics, bundled into the science subjects ────────────────

@@ -25,7 +25,7 @@ import { buildRound, isGuessable, MAX_WRONG } from './rng.js';
 import {
   loadWords, topicMeta, CATEGORY_LABELS, CONTINENT_LABELS, ZONE_LABELS, SYSTEM_LABELS,
   ELEMENTS, TABLE_COLUMNS, inScope, baseTopic, topicScope, regionSet, structureSvg,
-  ORGAN_FIGURES,
+  PART_FIGURES,
 } from '/data/vocab/index.js';
 
 const $ = (id) => document.getElementById(id);
@@ -62,9 +62,9 @@ let mapScope = null; // decoded region keys for a scoped MAP round, else null
 let worldMap = null;   // lazy /data/vocab/world-map.js module — world-map rounds only
 let nigeriaMap = null; // lazy /data/vocab/nigeria-map.js module — nigeria-map rounds only
 let bodyMap = null;    // lazy /data/vocab/body-map.js module — body-map rounds only
-let figureMod = null;  // lazy single-organ module (data/vocab/organs/*) — organ-map rounds
-let figureLabel = '';  // the organ's title, shown in the clue note ('The Heart')
-let figureCredit = ''; // a sourced organ (the heart is CC-BY-SA) exports CREDIT; '' otherwise
+let figureMod = null;  // lazy single-figure module (data/vocab/{organs,cells}/*) — part rounds
+let figureLabel = '';  // the figure's title, shown in the clue note ('The Heart')
+let figureCredit = ''; // a sourced figure (the heart is CC-BY-SA) exports CREDIT; '' otherwise
 let solarBodies = null; // lazy BODIES from /data/vocab/space/solar-system.js — solar rounds only
 let solarDraw = null;   // lazy buildSolarSvg from js/solar.js — draws the whole system
 let index = 0;
@@ -280,9 +280,10 @@ const renderOrganClue = (o) => renderMapClue({
   regionOf: (r) => r.system, regionLabel: SYSTEM_LABELS[o.system],
   credit: ORGAN_CREDIT,
 });
-// A single-organ figure: name the lit PART. No region scope. Hand-authored
-// figures carry no credit; a sourced one (the heart, CC-BY-SA) does, and that
-// credit also switches the clue to the taller portrait layout.
+// A single figure (one organ, one cell): name the lit PART. No region scope.
+// A composed figure (the cells) carries no credit; a traced one (the heart,
+// CC-BY-SA) does, and that credit also switches the clue to the taller
+// portrait layout.
 const renderPartClue = (p) => {
   if (figureMod.RICH) { renderRichClue(p); return; }
   renderMapClue({
@@ -637,10 +638,10 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   if (mode === 'topic' && baseTopic(topic) === 'body-map') {
     bodyMap = await import('/data/vocab/body-map.js');
   }
-  // A single-organ map draws the whole figure every question, so its module
+  // A single-figure topic draws the whole figure every question, so its module
   // must be in hand before the countdown ends (loadWords(subject) already
   // pulled the GAME_PARTS in; this resolves the drawing side from cache).
-  const fig = ORGAN_FIGURES[baseTopic(topic)];
+  const fig = PART_FIGURES[baseTopic(topic)];
   if (mode === 'topic' && fig) {
     figureMod = await import(fig.module);
     figureLabel = fig.label;

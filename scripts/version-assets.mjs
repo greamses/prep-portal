@@ -61,7 +61,7 @@ const SHARED = [
 const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
-  'algebra', 'geometry', 'statistics', 'geography', 'human-body',
+  'algebra', 'geometry', 'statistics', 'geography', 'human-body', 'cells',
 ];
 const PAGES = [
   { name: 'geometry' },
@@ -92,6 +92,9 @@ const PAGES = [
       '/data/vocab/organs/brain.js',
       '/data/vocab/organs/brain-section.js',
       '/data/vocab/organs/ear.js',
+      // The two cell diagrams (name the parts of one cell).
+      '/data/vocab/cells/plant-cell.js',
+      '/data/vocab/cells/animal-cell.js',
       // The 2D solar-system diagram (Geography drawn topic).
       '/data/vocab/space/solar-system.js',
       // The Laws hangman words are derived from the shared study bank, so a
