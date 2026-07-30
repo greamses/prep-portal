@@ -193,11 +193,9 @@ export const SUBJECTS = {
     topics: [
       T('body-map', 'Map of the Body', 3, 9),
       T('ear-map', 'The Ear', 3, 9),
-      T('skin-map', 'The Skin', 3, 9),
       T('heart-map', 'The Heart', 3, 9),
       T('brain-map', 'The Brain', 3, 9),
       T('brain-section', 'Inside the Brain', 5, 9),
-      T('brain-limbic', 'The Limbic System', 6, 9),
     ],
   },
 

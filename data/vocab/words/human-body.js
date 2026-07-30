@@ -11,13 +11,13 @@
 import { GAME_ORGANS } from '/data/vocab/body-map.js';
 import { GAME_PARTS as HEART_PARTS } from '/data/vocab/organs/heart.js';
 import { GAME_PARTS as BRAIN_PARTS } from '/data/vocab/organs/brain.js';
+import { GAME_PARTS as BRAIN_SECTION_PARTS } from '/data/vocab/organs/brain-section.js';
 import { GAME_PARTS as EAR_PARTS } from '/data/vocab/organs/ear.js';
-import { GAME_PARTS as SKIN_PARTS } from '/data/vocab/organs/skin.js';
 
 export const WORDS = {
   'body-map': GAME_ORGANS,
   'heart-map': HEART_PARTS,
   'brain-map': BRAIN_PARTS,
+  'brain-section': BRAIN_SECTION_PARTS,
   'ear-map': EAR_PARTS,
-  'skin-map': SKIN_PARTS,
 };

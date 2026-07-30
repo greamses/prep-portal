@@ -139,17 +139,16 @@ const NIGERIA = 'nigeria-map';
 const BODY = 'body-map';
 
 /* The single-organ maps — the whole-body map names the organs, these name the
-   PARTS inside one organ. Each is a drawn topic backed by a hand-authored
-   schematic (data/vocab/organs/<key>.js, built by scripts/gen-organ-maps.mjs).
-   Unlike the geographic maps and the body map they have NO sub-scope — an organ
-   has too few parts to slice — so a pick jumps straight past the scope step. */
+   PARTS inside one organ. Each is a drawn topic backed by a figure in
+   data/vocab/organs/<key>.js (sourced from Wikimedia and baked by its own
+   scripts/gen-*.mjs). Unlike the geographic maps and the body map they have NO
+   sub-scope — an organ has too few parts to slice — so a pick jumps straight
+   past the scope step. */
 export const ORGAN_FIGURES = {
   'heart-map': { module: '/data/vocab/organs/heart.js', label: 'The Heart' },
   'brain-map': { module: '/data/vocab/organs/brain.js', label: 'The Brain' },
   'brain-section': { module: '/data/vocab/organs/brain-section.js', label: 'Inside the Brain' },
-  'brain-limbic': { module: '/data/vocab/organs/brain-limbic.js', label: 'The Limbic System' },
   'ear-map': { module: '/data/vocab/organs/ear.js', label: 'The Ear' },
-  'skin-map': { module: '/data/vocab/organs/skin.js', label: 'The Skin' },
 };
 export const isOrganFigure = (topicKey) => baseTopic(topicKey) in ORGAN_FIGURES;
 
