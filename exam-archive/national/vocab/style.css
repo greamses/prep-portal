@@ -892,6 +892,18 @@ body.vocab-nav-hidden .site-nav { display: none; }
   50% { r: 22; opacity: 0.45; }
 }
 
+/* ── RICH figure (the ear): the shaded artwork is kept whole; the quizzed part
+   is spotlit by a dimming scrim with an elliptical hole over it. The scrim wears
+   the card's own surface colour so it reads as "the rest fades back" in both
+   light and dark themes. ── */
+.vocab-rich-scrim { fill: var(--surface-primary); opacity: 0.82; pointer-events: none; }
+.vocab-map--rich .vocab-rich-art { pointer-events: none; }
+/* In the study library the whole figure is shown bright — no scrim. */
+.vocab-map--rich.is-library .vocab-rich-scrim { display: none; }
+/* Invisible hover targets in the library; a faint tint on hover. */
+.vocab-rich-hit { fill: transparent; cursor: help; }
+.vocab-rich-hit:hover { fill: rgba(0, 85, 255, 0.12); }
+
 /* ── The game clue: map on top, continent note beneath ── */
 .vocab-clue.vocab-clue--map {
   display: flex;

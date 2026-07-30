@@ -283,10 +283,54 @@ const renderOrganClue = (o) => renderMapClue({
 // A single-organ figure: name the lit PART. No region scope. Hand-authored
 // figures carry no credit; a sourced one (the heart, CC-BY-SA) does, and that
 // credit also switches the clue to the taller portrait layout.
-const renderPartClue = (p) => renderMapClue({
-  mod: figureMod, rows: figureMod.PARTS, target: p,
-  regionOf: () => '', regionLabel: figureLabel, credit: figureCredit,
-});
+const renderPartClue = (p) => {
+  if (figureMod.RICH) { renderRichClue(p); return; }
+  renderMapClue({
+    mod: figureMod, rows: figureMod.PARTS, target: p,
+    regionOf: () => '', regionLabel: figureLabel, credit: figureCredit,
+  });
+};
+
+// A RICH figure (the ear) keeps its original shading — the whole artwork is
+// drawn as-is (figureMod.SVG) and the quizzed part is spotlit by dimming
+// everything except an elliptical hole over it. No per-part paths, so this can't
+// mislabel: the spotlight just points at the real art.
+function renderRichClue(p) {
+  clueEl.className = 'vocab-clue vocab-clue--map';
+  clueEl.innerHTML = '';
+  const m = figureMod;
+  const s = p.spot;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'vocab-clue-map vocab-clue-map--tall vocab-map--rich');
+  svg.setAttribute('viewBox', `0 0 ${m.MAP_W} ${m.MAP_H}`);
+  svg.setAttribute('aria-label', 'Diagram clue — one part is highlighted');
+  // A mask that is opaque everywhere except an elliptical hole over the part;
+  // the dimming scrim wears it, so only the part stays bright.
+  svg.innerHTML =
+    `<defs><mask id="vocab-rich-spot">`
+    + `<rect x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" fill="#fff"/>`
+    + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse cx="${s.cx}" cy="${s.cy}" rx="${s.rx}" ry="${s.ry}" fill="#000"/></g>`
+    + `</mask></defs>`
+    + `<g class="vocab-rich-art">${m.SVG}</g>`
+    + `<rect class="vocab-rich-scrim" x="0" y="0" width="${m.MAP_W}" height="${m.MAP_H}" mask="url(#vocab-rich-spot)"/>`
+    + `<g transform="rotate(${s.rot} ${s.cx} ${s.cy})"><ellipse class="vocab-map-ring" cx="${s.cx}" cy="${s.cy}" rx="${s.rx + 3}" ry="${s.ry + 3}"/></g>`;
+
+  const detail = document.createElement('span');
+  detail.className = 'vocab-country-note';
+  detail.tabIndex = 0;
+  detail.setAttribute('aria-label', `Diagram clue: ${figureLabel || ''}`);
+  detail.innerHTML = `
+      <span class="vocab-country-q">?</span>
+      <span class="vocab-country-cont">${figureLabel || ''}</span>
+      <span class="vocab-el-tip" role="tooltip">${p.hint}</span>`;
+  clueEl.append(svg, detail);
+  if (figureCredit) {
+    const cr = document.createElement('span');
+    cr.className = 'vocab-map-credit';
+    cr.innerHTML = figureCredit;
+    clueEl.append(cr);
+  }
+}
 
 // The solar system: the whole diagram, taped onto the board like a photo, with
 // the asked body lit and the rest dimmed. The heavy SVG is built ONCE per round

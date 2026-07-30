@@ -1188,6 +1188,57 @@ function renderPeriodicTable(scope) {
 async function renderMapLibrary({ mod, rows, set, regionOf, regionLabels, ariaLabel, mapClass = 'vocab-worldmap', credit }) {
   dictList.innerHTML = '';
 
+  // A RICH figure (the ear): show the whole shaded artwork bright, with an
+  // invisible hit-ellipse over each part carrying its hover tip.
+  if (mod.RICH) {
+    const wrap = document.createElement('div');
+    wrap.className = `${mapClass} vocab-map--rich is-library`;
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${mod.MAP_W} ${mod.MAP_H}`);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', ariaLabel);
+    const art = document.createElementNS(NS, 'g');
+    art.setAttribute('class', 'vocab-rich-art');
+    art.innerHTML = mod.SVG;
+    svg.appendChild(art);
+    for (const c of rows) {
+      const s = c.part ? c.part.spot : c.spot;
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('transform', `rotate(${s.rot} ${s.cx} ${s.cy})`);
+      const el = document.createElementNS(NS, 'ellipse');
+      el.setAttribute('class', 'vocab-rich-hit');
+      el.setAttribute('cx', s.cx); el.setAttribute('cy', s.cy);
+      el.setAttribute('rx', s.rx); el.setAttribute('ry', s.ry);
+      el.dataset.tip = [c.name, c.hint].filter(Boolean).join(' — ');
+      g.appendChild(el);
+      svg.appendChild(g);
+    }
+    const tip = document.createElement('span');
+    tip.className = 'vocab-map-tip'; tip.hidden = true;
+    wrap.append(svg, tip);
+    svg.addEventListener('pointermove', (e) => {
+      const hit = e.target.closest('[data-tip]');
+      if (!hit) { tip.hidden = true; return; }
+      tip.textContent = hit.dataset.tip; tip.hidden = false;
+      const box = wrap.getBoundingClientRect();
+      const half = tip.offsetWidth / 2;
+      const x = Math.min(Math.max(e.clientX - box.left, half + 4), box.width - half - 4);
+      const above = e.clientY - box.top - 14 - tip.offsetHeight >= 0;
+      tip.style.left = `${x}px`;
+      tip.style.top = `${e.clientY - box.top + (above ? -14 : 20)}px`;
+      tip.style.transform = above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)';
+    });
+    svg.addEventListener('pointerleave', () => { tip.hidden = true; });
+    dictList.appendChild(wrap);
+    if (credit) {
+      const cr = document.createElement('p');
+      cr.className = 'vocab-map-credit'; cr.innerHTML = credit;
+      dictList.appendChild(cr);
+    }
+    return;
+  }
+
   const colored = rows.some((c) => c.fill);
   const wrap = document.createElement('div');
   wrap.className = mapClass + (colored ? ' vocab-map--colored' : '');
