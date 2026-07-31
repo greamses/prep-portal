@@ -49,6 +49,10 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
       word: x.w, clue: x.d, letter: null,
       element: x.element || null, country: x.country || null, state: x.state || null,
       organ: x.organ || null, part: x.part || null, body: x.body || null,
+      // `leader` is a sourced PORTRAIT (data/vocab/history/leaders.js), and
+      // `digits` says this word's answer is a number, not a word — the years
+      // topic, and the only place the 0-9 keys appear.
+      leader: x.leader || null, digits: !!x.digits,
       structure: x.smiles ? { smiles: x.smiles, formula: x.formula || null } : null,
     }));
   }
@@ -76,9 +80,16 @@ export function buildRound({ seed, words, subject, grade, mode, topic }) {
 
 // Only A–Z is guessable. A hyphen ("x-axis") is scenery: shown from the start,
 // never guessed, never counted towards solving the word.
-export const isGuessable = (ch) => /[a-z]/i.test(ch);
+//
+// EXCEPT in the Years-in-Office topic, where the answer IS a number: pass
+// digits=true and 0-9 join the alphabet, so "1985-1993" is eight things to
+// guess with the hyphen still scenery. It stays opt-in per word rather than
+// global, because everywhere else a digit is decoration — "propan-2-ol" is not
+// meant to make you guess the 2.
+export const isGuessable = (ch, digits = false) =>
+  (digits ? /[a-z0-9]/i : /[a-z]/i).test(ch);
 
 // The letters still hidden on the board. A word is solved when this is empty.
-export function hiddenLetters(word, revealed) {
-  return [...word.toUpperCase()].filter((ch) => isGuessable(ch) && !revealed.has(ch));
+export function hiddenLetters(word, revealed, digits = false) {
+  return [...word.toUpperCase()].filter((ch) => isGuessable(ch, digits) && !revealed.has(ch));
 }

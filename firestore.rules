@@ -342,7 +342,8 @@ service cloud.firestore {
         request.resource.data.subject in [
           'life-science', 'earth-science', 'physical-science', 'space-science',
           'general-maths', 'biology', 'chemistry', 'physics', 'algebra',
-          'geometry', 'statistics', 'geography', 'human-body', 'cells'
+          'geometry', 'statistics', 'geography', 'human-body', 'cells',
+          'nigeria-leaders'
         ] &&
         request.resource.data.grade is int &&
         request.resource.data.grade >= 1 &&

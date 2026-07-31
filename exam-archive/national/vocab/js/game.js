@@ -30,6 +30,8 @@ import {
 
 const $ = (id) => document.getElementById(id);
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+// Only the Years-in-Office topic ever shows these (see buildKeyboard).
+const DIGITS = '0123456789'.split('');
 // Mirrors seeded-room.js's START_BUFFER_MS. Used only to sanity-check the
 // startAt we're handed against our own clock — never to schedule anything.
 const START_BUFFER_MS = 3000;
@@ -105,9 +107,13 @@ function renderRoster(roster) {
   rosterEl.hidden = false;
 }
 
-function buildKeyboard() {
+/* The letter keys. A round whose answers are NUMBERS (Years in Office) is dealt
+   0-9 INSTEAD of A-Z, not as well as: the answer holds no letters, so twenty-six
+   dead keys would be twenty-six ways to waste a life. */
+function buildKeyboard(digits = false) {
   keyboardEl.innerHTML = '';
-  ALPHABET.forEach((ch, i) => {
+  keyboardEl.classList.toggle('vocab-keyboard--digits', digits);
+  (digits ? DIGITS : ALPHABET).forEach((ch, i) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `pp-sticky pp-sticky--tape vocab-key pp-sticky--c${i % 6}`;
@@ -120,11 +126,15 @@ function buildKeyboard() {
 
 const keyEl = (ch) => keyboardEl.querySelector(`[data-key="${ch}"]`);
 
+// What counts as a thing to guess in THIS word. Everywhere but the Years topic
+// that is A-Z; there it is 0-9, with the hyphen in "1985-1993" still scenery.
+const canGuess = (ch) => isGuessable(ch, !!(current && current.digits));
+
 // The next place a speller has to fill. -1 once the word is complete.
 function nextSlot() {
   const chars = [...current.word.toUpperCase()];
   for (let i = 0; i < chars.length; i++) {
-    if (isGuessable(chars[i]) && !revealedPos.has(i)) return i;
+    if (canGuess(chars[i]) && !revealedPos.has(i)) return i;
   }
   return -1;
 }
@@ -134,7 +144,7 @@ function renderWord() {
   const cursor = spelling === 'spell' ? nextSlot() : -1;
   [...current.word.toUpperCase()].forEach((ch, i) => {
     const slot = document.createElement('span');
-    if (!isGuessable(ch)) {
+    if (!canGuess(ch)) {
       // Scenery ("x-ray"'s hyphen) — always shown, never typed, never guessed.
       slot.className = 'vocab-slot vocab-slot--fixed';
       slot.textContent = ch;
@@ -387,6 +397,52 @@ function renderBodyClue(b) {
   solarSvg.setFocus(b.key);
 }
 
+/* A PORTRAIT as the clue — the one drawn topic whose picture is a photograph
+   (Nigeria's heads of state, data/vocab/history/leaders.js). Framed like a
+   photo on the wall, with the caption beneath: blank when the NAME is what you
+   have to spell, the leader's name when the YEARS are. The licence line under
+   it is an obligation on the CC-BY-SA portraits, so it is never optional.
+
+   Sani Abacha has no freely-licensed photograph anywhere on Commons (see the
+   data module), so a leader with no image gets a written card in the same frame
+   rather than being dropped from the country's history. */
+function renderLeaderClue(l) {
+  clueEl.className = 'vocab-clue vocab-clue--map vocab-clue--leader';
+  clueEl.innerHTML = '';
+
+  const frame = document.createElement('div');
+  frame.className = 'vocab-leader-frame';
+  if (l.img) {
+    const img = document.createElement('img');
+    img.className = 'vocab-leader-photo';
+    img.src = l.img;
+    img.alt = 'Portrait clue — a Nigerian head of state';
+    img.loading = 'eager';
+    frame.appendChild(img);
+  } else {
+    frame.classList.add('is-nophoto');
+    frame.innerHTML = '<span class="vocab-leader-nophoto">No free portrait of this leader exists,'
+      + ' so here is the description instead.</span>';
+  }
+
+  const detail = document.createElement('span');
+  detail.className = 'vocab-country-note';
+  detail.tabIndex = 0;
+  detail.setAttribute('aria-label', `Portrait clue: ${l.label || 'a Nigerian leader'}`);
+  detail.innerHTML = `
+      <span class="vocab-country-q">?</span>
+      <span class="vocab-country-cont">${l.label || 'Nigerian Leaders'}</span>
+      <span class="vocab-el-tip" role="tooltip">${l.hint}</span>`;
+
+  clueEl.append(frame, detail);
+  if (l.credit) {
+    const cr = document.createElement('span');
+    cr.className = 'vocab-map-credit';
+    cr.innerHTML = l.credit;
+    clueEl.append(cr);
+  }
+}
+
 // The IUPAC naming topics draw the compound's 2-D structure (a pre-rendered SVG)
 // above the text clue (formula + hint). A missing structure just leaves the text.
 function renderCompoundClue(structure, text) {
@@ -409,7 +465,7 @@ function renderCompoundClue(structure, text) {
 
 // Scenery is never guessed, so it sits on the board from the start.
 function revealScenery() {
-  [...current.word].forEach((ch, i) => { if (!isGuessable(ch)) revealedPos.add(i); });
+  [...current.word].forEach((ch, i) => { if (!canGuess(ch)) revealedPos.add(i); });
 }
 
 function renderLives() {
@@ -443,7 +499,7 @@ function loadWord() {
   // with a D. It is NOT filled in on the board and its key is NOT spent.
   stepEl.textContent = current.letter
     ? `${current.letter} · word ${answered + 1} of ${round.length}`
-    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : current.body ? 'Body' : 'Word'} ${answered + 1} of ${round.length}`;
+    : `${current.element ? 'Element' : current.country ? 'Country' : current.state ? 'State' : current.organ ? 'Organ' : current.part ? 'Part' : current.body ? 'Body' : current.leader ? (current.digits ? 'Term' : 'Leader') : 'Word'} ${answered + 1} of ${round.length}`;
   // The drawn topics hand you a picture, not a sentence: the periodic table
   // with the asked element lit, or a map/figure/diagram with the asked country /
   // state / organ / part / body lit. Hover the note beneath for a hint.
@@ -453,6 +509,7 @@ function loadWord() {
   else if (current.organ) renderOrganClue(current.organ);
   else if (current.part) renderPartClue(current.part);
   else if (current.body) renderBodyClue(current.body);
+  else if (current.leader) renderLeaderClue(current.leader);
   else if (current.structure) renderCompoundClue(current.structure, current.clue);
   else { clueEl.className = 'vocab-clue'; clueEl.textContent = current.clue; }
 
@@ -541,7 +598,7 @@ function finishWords() {
 function guess(rawCh) {
   if (!active || !acceptingGuesses) return;
   const ch = rawCh.toUpperCase();
-  if (!/^[A-Z]$/.test(ch)) return;
+  if (!(current && current.digits ? /^[A-Z0-9]$/ : /^[A-Z]$/).test(ch)) return;
 
   const hit = spelling === 'spell' ? spellLetter(ch) : classicLetter(ch);
   if (hit === null) return; // key already spent (classic only)
@@ -596,7 +653,7 @@ function spellLetter(ch) {
 
 function onKeyDown(e) {
   if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); guess(e.key); }
+  if (/^[a-z0-9]$/i.test(e.key)) { e.preventDefault(); guess(e.key); }
 }
 
 function tick() {
@@ -683,6 +740,9 @@ export async function startRound({ seed: roomSeed, timeLimit, startAt, subject, 
   return new Promise((resolve) => {
     seed = roomSeed;
     spelling = spellMode === 'spell' ? 'spell' : 'classic';
+    // A round is one topic, so the keys it needs are fixed for the whole round:
+    // 0-9 for Years in Office, A-Z for everything else.
+    buildKeyboard(round.some((r) => r.digits));
     tableScope = mode === 'topic' ? topicScope(topic) : '';
     mapScope = mode === 'topic' ? regionSet(topic) : null;
     index = 0;

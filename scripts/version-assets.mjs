@@ -62,6 +62,7 @@ const VOCAB_SUBJECTS = [
   'life-science', 'earth-science', 'physical-science', 'space-science',
   'general-maths', 'biology', 'chemistry', 'physics',
   'algebra', 'geometry', 'statistics', 'geography', 'human-body', 'cells',
+  'nigeria-leaders',
 ];
 const PAGES = [
   { name: 'geometry' },
@@ -73,7 +74,9 @@ const PAGES = [
   },
   // The map jigsaw draws its states from the shared Nigeria map data, so a
   // stale copy of it against fresh page code must bust the puzzles page too.
-  { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js'] },
+  // Picture rounds can wear the Vocab game's Nigerian-leader portraits, so the
+  // leader bank must bust this page too.
+  { name: 'puzzles', extra: ['/data/vocab/nigeria-map.js', '/data/vocab/history/leaders.js'] },
   // The Planner brief is generated from the shared event pool, so editing it
   // must bust the page too.
   { name: 'planner', extra: ['/data/planner/scenarios.js', '/data/planner/routines.js'] },
@@ -97,6 +100,8 @@ const PAGES = [
       '/data/vocab/cells/animal-cell.js',
       // The 2D solar-system diagram (Geography drawn topic).
       '/data/vocab/space/solar-system.js',
+      // The heads-of-state portrait bank (the two Nigerian Leaders topics).
+      '/data/vocab/history/leaders.js',
       // The Laws hangman words are derived from the shared study bank, so a
       // stale copy of the bank against fresh page code must bust the page too.
       '/data/laws/laws.js',

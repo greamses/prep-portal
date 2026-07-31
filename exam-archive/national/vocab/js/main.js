@@ -1420,6 +1420,37 @@ async function openDictionary() {
     renderPeriodicTable(scope);
     return;
   }
+  // Nigerian Leaders: the study panel is the wall of portraits itself — every
+  // head of state, in order, with the name and the years the game will ask for.
+  // A leader with no free portrait (Sani Abacha) still gets a card.
+  if (playMode === 'topic' && (baseTopic(topic) === 'leader-name' || baseTopic(topic) === 'leader-dates')) {
+    dictBox.classList.add('vocab-dict--wide');
+    dictSub.textContent = baseTopic(topic) === 'leader-dates'
+      ? 'Every head of state since independence. The game shows the face and the name — you type the years.'
+      : 'Every head of state since independence. The game shows the face alone — you spell the name.';
+    dictList.innerHTML = '<p class="vocab-dict-loading">Hanging the portraits…</p>';
+    const { LEADERS } = await import('/data/vocab/history/leaders.js');
+    const shown = LEADERS.filter((l) => l.g == null || l.g <= grade);
+    const wall = document.createElement('div');
+    wall.className = 'vocab-leader-wall';
+    for (const l of shown) {
+      const card = document.createElement('figure');
+      card.className = 'vocab-leader-card';
+      const years = l.terms.map((t) => t.years).join(' · ');
+      card.innerHTML = (l.img
+        ? `<div class="vocab-leader-frame"><img class="vocab-leader-photo" src="${l.img}" alt="${l.name}"></div>`
+        : '<div class="vocab-leader-frame is-nophoto"><span class="vocab-leader-nophoto">No free portrait</span></div>')
+        + `<figcaption><b>${l.name}</b><span>${years}</span></figcaption>`;
+      wall.appendChild(card);
+    }
+    dictList.innerHTML = '';
+    dictList.appendChild(wall);
+    const cr = document.createElement('p');
+    cr.className = 'vocab-map-credit';
+    cr.innerHTML = 'Portraits from Wikimedia Commons — public domain, CC0 or CC BY-SA; each is credited under its own clue in the game.';
+    dictList.appendChild(cr);
+    return;
+  }
   dictBox.classList.remove('vocab-dict--wide');
 
   let words;

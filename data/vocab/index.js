@@ -157,12 +157,26 @@ export const isPartFigure = (topicKey) => baseTopic(topicKey) in PART_FIGURES;
 // The solar system — a Geography drawn topic (topic-only, always offered), drawn
 // as a flat SVG diagram. game.js checks for this key to pick the solar clue path.
 export const SOLAR_SYSTEM = 'solar-system';
-const DRAWN = new Set([PERIODIC, WORLD, NIGERIA, BODY, SOLAR_SYSTEM, ...Object.keys(PART_FIGURES)]);
+
+/* The two Nigerian-Leaders topics — drawn topics whose picture is a sourced
+   PHOTOGRAPH rather than an SVG (data/vocab/history/leaders.js). Same contract
+   as the rest: always offered, topic-only, out of the A–Z alphabet.
+   `leader-dates` is the one topic in the game whose answers are digits, which
+   is why it is named here rather than sniffed at — see game.js's keyboard and
+   rng.js's isGuessable. */
+export const LEADER_NAME = 'leader-name';
+export const LEADER_DATES = 'leader-dates';
+export const isLeaderTopic = (key) => baseTopic(key) === LEADER_NAME || baseTopic(key) === LEADER_DATES;
+
+const DRAWN = new Set([
+  PERIODIC, WORLD, NIGERIA, BODY, SOLAR_SYSTEM, LEADER_NAME, LEADER_DATES,
+  ...Object.keys(PART_FIGURES),
+]);
 // A subject made ENTIRELY of bundled/drawn topics needs no entry in the
 // generated manifest to be offered — and, being all drawn diagrams, it has no
 // A–Z alphabet to walk, so the setup skips the A–Z/Topic step and plays by
 // topic. `isBundledSubject` is what the page checks instead of naming subjects.
-const BUNDLED_SUBJECTS = new Set(['geography', 'human-body', 'cells']);
+const BUNDLED_SUBJECTS = new Set(['geography', 'human-body', 'cells', 'nigeria-leaders']);
 export const isBundledSubject = (subjectKey) => BUNDLED_SUBJECTS.has(subjectKey);
 
 // ── Science-law topics, bundled into the science subjects ────────────────

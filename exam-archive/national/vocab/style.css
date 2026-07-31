@@ -1347,3 +1347,86 @@ body.vocab-nav-hidden .site-nav { display: none; }
   line-height: var(--leading-snug);
   color: var(--ink);
 }
+
+/* ── NIGERIAN LEADERS ─────────────────────────────────────────────────────
+   The only clue in the game that is a PHOTOGRAPH. It hangs like a framed
+   portrait on a wall — a deep cream mat, a thin dark rebate, one soft shadow
+   — because a school-hall portrait is exactly what these pictures are. Every
+   frame carries its licence line beneath it (.vocab-map-credit), which for the
+   CC-BY-SA portraits is an obligation, not decoration. */
+.vocab-clue--leader { max-width: 420px; }
+.vocab-leader-frame {
+  position: relative;
+  padding: 10px;
+  background: #fbf7ec;
+  border: 1px solid rgba(20, 19, 15, 0.18);
+  box-shadow: 0 10px 24px -10px rgba(20, 19, 15, 0.5), 0 1px 2px rgba(20, 19, 15, 0.2);
+  transform: rotate(-0.6deg);
+  max-width: 300px;
+}
+/* Portraits arrive at every shape from a square illustration to a tall 3:4
+   photo, so the frame fixes the aperture and the picture fills it. Faces sit
+   high in a portrait, so the crop is pulled up rather than centred. */
+.vocab-leader-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: 50% 28%;
+  background: #e7e0cf;
+}
+/* Sani Abacha has no freely-licensed portrait anywhere on Wikimedia, so his
+   card is written instead of shown — same frame, no photo. */
+.vocab-leader-frame.is-nophoto {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  width: 300px;
+}
+.vocab-leader-nophoto {
+  padding: 1.2rem;
+  text-align: center;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #14130f;
+  opacity: 0.7;
+}
+@media (max-width: 520px) {
+  .vocab-leader-frame,
+  .vocab-leader-frame.is-nophoto { max-width: 220px; width: 220px; }
+}
+
+/* Years in Office is dealt 0-9 instead of A-Z — ten keys, so they get the
+   room the twenty-six could never have. */
+.vocab-keyboard--digits { max-width: 252px; } /* wraps 5 + 5, not 7 + 3 */
+.vocab-keyboard--digits .vocab-key { width: 2.6rem; height: 2.6rem; font-size: 1.05rem; }
+
+/* The study panel for Nigerian Leaders: the whole wall of portraits at once,
+   each with the name and the years — both answers, which is the point of a
+   study panel. Same frame as the clue, just smaller. */
+.vocab-leader-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.15rem 0.9rem;
+  padding: 0.4rem 0.2rem 0.6rem;
+}
+.vocab-leader-card { margin: 0; }
+.vocab-leader-card .vocab-leader-frame {
+  max-width: none;
+  width: 100%;
+  padding: 6px;
+  transform: rotate(-0.6deg);
+}
+.vocab-leader-card .vocab-leader-frame.is-nophoto { width: 100%; }
+.vocab-leader-card figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-top: 0.55rem;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+}
+.vocab-leader-card figcaption span { opacity: 0.62; font-variant-numeric: tabular-nums; }

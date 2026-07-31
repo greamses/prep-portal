@@ -128,15 +128,30 @@ let tangramFigure = mem.get('tangramFigure', 'square', FIGURE_KEYS);
 // data: URI and kept in localStorage — strictly THIS device's decoration.
 // The seed still decides the puzzle's structure, so rooms stay fair and
 // nothing is uploaded or shown to anyone else.
+// A third source needs no upload at all: the Nigerian-leader portraits the
+// Vocab game quizzes (data/vocab/history/leaders.js), picked off the room seed
+// and square-cropped in the page (see js/photos.js). It rides the same local
+// `customArt` channel as an upload — the seed decides the puzzle's STRUCTURE,
+// so the picture never has to touch the room doc to stay fair.
 const PIC_KEY = 'puzzlePictureUpload';
-let pictureSource = mem.get('pictureSource', 'scene', ['scene', 'upload']);
+let pictureSource = mem.get('pictureSource', 'scene', ['scene', 'upload', 'leaders']);
 if (pictureSource === 'upload' && !localStorage.getItem(PIC_KEY)) pictureSource = 'scene';
 
 const TILE_SET_LABELS = { numbers: 'Numbers', fractions: 'Fractions', picture: 'Picture' };
 // The Map of Nigeria jigsaw uses no photo — its pieces are the states.
 const usesPicture = () => (puzzleType === 'jigsaw' && !isNigeriaJig())
   || (puzzleType === 'slider' && tileSet === 'picture');
-const customArtUri = () => (pictureSource === 'upload' ? localStorage.getItem(PIC_KEY) || '' : '');
+// This player's picture for a picture round, as a square data: URI — their own
+// upload, or a seeded Nigerian-leader portrait. '' means "use the round's own
+// default" (the drawn scene for Slider, a free online photo for Jigsaw).
+const customArtUri = async (seed) => {
+  if (pictureSource === 'upload') return localStorage.getItem(PIC_KEY) || '';
+  if (pictureSource === 'leaders') {
+    const { leaderPictureUri } = await import('./photos.js');
+    return leaderPictureUri(seed);
+  }
+  return '';
+};
 
 // What this room plays — handed to matchmaking and written into the room
 // doc. Only Slider offers a tile choice; Jigsaw is always the picture, and
@@ -301,6 +316,11 @@ function renderPhotoPick() {
     options: [
       { value: 'scene', label: 'Surprise picture', note: surpriseNote, checked: jigsawContent !== 'nigeria' && pictureSource === 'scene' },
       {
+        value: 'leaders', label: 'Nigerian leaders',
+        note: 'a head of state',
+        checked: jigsawContent !== 'nigeria' && pictureSource === 'leaders',
+      },
+      {
         value: 'upload', label: 'Your photo',
         note: localStorage.getItem(PIC_KEY) ? 'tap to change it' : 'from your device',
         checked: jigsawContent !== 'nigeria' && pictureSource === 'upload',
@@ -318,7 +338,7 @@ function renderPhotoPick() {
       jigsawContent = 'photo';
       mem.save({ jigsawContent });
       if (v === 'upload') { photoInput.click(); return; }
-      pictureSource = 'scene';
+      pictureSource = v === 'leaders' ? 'leaders' : 'scene';
       mem.save({ pictureSource });
       renderGridSizePick();
       topic.goTo('grid-size');
@@ -475,7 +495,9 @@ const flow = createSectionFlow([
         ...(puzzleType === 'slider' ? [{ label: TILE_SET_LABELS[tileSet] }] : []),
         ...(puzzleType === 'tangram'
           ? [{ label: (FIGURES.find((f) => f.key === tangramFigure) || FIGURES[0]).label }] : []),
-        ...(usesPicture() ? [{ label: pictureSource === 'upload' ? 'My Photo' : 'Surprise' }] : []),
+        ...(usesPicture()
+          ? [{ label: pictureSource === 'upload' ? 'My Photo' : pictureSource === 'leaders' ? 'Leaders' : 'Surprise' }]
+          : []),
         { label: `${gridSize}×${gridSize}` },
         { label: difficulty[0].toUpperCase() + difficulty.slice(1) },
       ],
@@ -697,7 +719,9 @@ async function playRoundAndShowResults(room, myName) {
     difficulty: room.difficulty,
     gridSize: room.gridSize,
     tiles: room.tiles,
-    customArt: customArtUri(), // this player's own photo (local-only) for picture rounds
+    // This player's picture for a picture round — their own photo, or a seeded
+    // Nigerian-leader portrait. Local-only: the seed still fixes the puzzle.
+    customArt: await customArtUri(room.seed),
     roster,
   });
 

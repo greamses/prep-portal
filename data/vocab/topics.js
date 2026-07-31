@@ -217,6 +217,22 @@ export const SUBJECTS = {
     ],
   },
 
+  // ── Nigerian Leaders, grades 4–12 ────────────────────────────────────
+  // History, and the only subject whose clue is a PHOTOGRAPH: every head of
+  // state since independence, shown as a portrait sourced from Wikimedia
+  // (data/vocab/history/leaders.js). Two ways to be asked the same face —
+  // spell the surname, or type the years in office (the one topic in the game
+  // whose answers are digits). Grade 4 meets the leaders every child can name;
+  // the short-lived and interim ones are held back to grade 8.
+  'nigeria-leaders': {
+    label: 'Nigerian Leaders',
+    group: 'History',
+    grades: [4, 12],
+    topics: [
+      T('leader-name', 'Name the Leader', 4, 12),
+      T('leader-dates', 'Years in Office', 4, 12),
+    ],
+  },
 
   // ── Maths, lower school ──────────────────────────────────────────────
   'general-maths': {
