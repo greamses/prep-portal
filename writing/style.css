@@ -1576,6 +1576,18 @@ details.rubric-wrap[open] summary::after {
 /* display:inline-block above outranks the UA [hidden] rule — say it again. */
 .topic-own-flag[hidden] { display: none; }
 
+/* "Link copied" — lives in the label line so the Share note is next to the
+   thing it describes, and takes itself away after a couple of seconds. */
+.topic-share-msg {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide, 0.06em);
+  color: var(--accent-success);
+  animation: fadeUp 0.25s ease both;
+}
+
 .topic-actions {
   display: flex;
   justify-content: center;

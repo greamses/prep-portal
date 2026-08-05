@@ -6,7 +6,7 @@ import { $, currentTopic, currentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
 import { FAMILIES, getForm, formLabel, isSummaryForm } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
-import { initOwnTask, releaseCustomPrompt } from './own-task.js';
+import { initOwnTask, releaseCustomPrompt, canShareTask } from './own-task.js';
 import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
 
@@ -217,6 +217,10 @@ export function syncTopicDisplay() {
   }
   const flag = $('topic-own-flag');
   if (flag) flag.hidden = !customTask.usePrompt;
+  // Nothing to share until there is a task; a summary can never be shared as a
+  // link (see canShareTask), so the button leaves rather than lying.
+  const shareBtn = $('topic-share-btn');
+  if (shareBtn) shareBtn.style.display = canShareTask() ? '' : 'none';
   const hasForm = !!getForm(currentWritingType);
   const mhdrType = $('mhdr-type');
   if (mhdrType) mhdrType.textContent = hasForm ? formLabel(currentWritingType).toUpperCase() : 'YOUR OWN TASK';

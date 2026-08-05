@@ -82,7 +82,17 @@
               <div class="topic-label">
                 Your Writing Prompt
                 <span class="topic-own-flag" id="topic-own-flag" hidden>your own</span>
+                <span class="topic-share-msg" id="topic-share-msg" role="status" aria-live="polite" style="display: none"></span>
               </div>
+              <!-- Copies ?prompt=&video=&form= — one task for a whole class
+                   without anybody retyping it (js/own-task.js). -->
+              <button class="topic-share" id="topic-share-btn" type="button" title="Copy a link to this task" style="display: none">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                Share
+              </button>
               <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="23 4 23 10 17 10" />

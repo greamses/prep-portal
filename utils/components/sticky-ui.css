@@ -352,6 +352,7 @@ button.pp-btn,
 /* Writing */
 .topic-chip,
 .topic-refresh,
+.topic-share,
 /* Flashcards */
 .cards-tab,
 .grade-btn,
@@ -394,6 +395,7 @@ button.pp-btn,
 .autogen-all-btn::before,
 .topic-chip::before,
 .topic-refresh::before,
+.topic-share::before,
 .cards-tab::before,
 .grade-btn::before,
 .sp-billing-btn::before,
@@ -421,6 +423,7 @@ button.pp-btn,
 .autogen-all-btn:hover:not(:disabled),
 .topic-chip:hover,
 .topic-refresh:hover,
+.topic-share:hover,
 .cards-tab:hover,
 .grade-btn:hover,
 .sp-billing-btn:hover,
@@ -446,7 +449,8 @@ button.pp-btn,
 .db-action svg,
 .brutal-btn-flat svg,
 .pt-copy svg,
-.topic-refresh svg { width: 15px; height: 15px; flex-shrink: 0; }
+.topic-refresh svg,
+.topic-share svg { width: 15px; height: 15px; flex-shrink: 0; }
 
 /* Quiet variants stay unbleached paper rather than colour. */
 .pp-btn--ghost { --pp-note-bg: #f0ece2; color: #5a544a; }
@@ -455,6 +459,7 @@ button.pp-btn,
 .btn-blue { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
 .autogen-all-btn { --pp-note-bg: #e8c8ff; }
 .topic-refresh { --pp-note-bg: #b8ece2; --pp-note-tilt: 1.4deg; }
+.topic-share { --pp-note-bg: #ffe0b8; --pp-note-tilt: -1.6deg; }
 .pt-copy { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
 .paper-video-btn { --pp-note-bg: #ffd7a3; }
 
