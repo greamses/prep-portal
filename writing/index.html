@@ -79,7 +79,10 @@
         <div class="topic-box pp-receipt" id="topic-box">
           <div class="topic-paper pp-receipt__paper">
             <div class="topic-header">
-              <div class="topic-label">Your Writing Prompt</div>
+              <div class="topic-label">
+                Your Writing Prompt
+                <span class="topic-own-flag" id="topic-own-flag" hidden>your own</span>
+              </div>
               <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="23 4 23 10 17 10" />
@@ -90,6 +93,36 @@
             </div>
             <div class="topic-body">
               <div class="topic-text" id="topic-display">Select a writing type above to generate a prompt.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ YOUR OWN TASK — a prompt you were set, a video you were sent.
+             Overrides the generated prompt (js/own-task.js); the video plays
+             in the Learn phase in place of the searched one. ═══ -->
+        <div class="own-box" id="own-box">
+          <button class="own-toggle" id="own-toggle" type="button" aria-expanded="false" aria-controls="own-panel">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Use my own prompt or video</span>
+          </button>
+
+          <div class="own-panel" id="own-panel" hidden>
+            <label class="own-label" for="own-prompt">Your writing prompt</label>
+            <textarea class="own-field own-field--area" id="own-prompt" rows="3"
+              placeholder="Paste or type the prompt you have been set…"></textarea>
+
+            <label class="own-label" for="own-video">Lesson video — YouTube link</label>
+            <input class="own-field" id="own-video" type="url" inputmode="url" autocomplete="off"
+              placeholder="https://www.youtube.com/watch?v=…" />
+
+            <p class="own-note" id="own-note"></p>
+
+            <div class="own-actions">
+              <button class="btn btn-primary" id="own-apply" type="button">Use these</button>
+              <button class="btn btn-ghost" id="own-clear" type="button">Clear</button>
             </div>
           </div>
         </div>

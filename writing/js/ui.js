@@ -2,9 +2,10 @@
    PREPBOT — UI UTILITIES
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, currentWritingType } from './config.js';
+import { $, currentTopic, currentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
 import { FAMILIES, getForm, formLabel } from './forms.js';
+import { initOwnTask, releaseCustomPrompt } from './own-task.js';
 import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
 
@@ -157,6 +158,8 @@ export function initSetup({ onGenerated } = {}) {
   function generate(formId) {
     pickedForm = formId;
     const form = getForm(formId);
+    // Last action wins: asking for a prompt means you want the generated one.
+    releaseCustomPrompt();
     if (beginBtn) beginBtn.disabled = true;
     if (refreshBtn) refreshBtn.disabled = true;
 
@@ -188,14 +191,33 @@ export function initSetup({ onGenerated } = {}) {
   // Another prompt for the SAME form — the point of the refresh is to reroll
   // the topic, not to send you back through the picker.
   refreshBtn?.addEventListener('click', () => { if (pickedForm) generate(pickedForm); });
+
+  // Their own prompt/video. It needs no form: a task you were set is already
+  // a task, so the Learn phase falls back to the prompt on its own.
+  initOwnTask({
+    onChange: () => {
+      syncTopicDisplay();
+      if (beginBtn) beginBtn.disabled = !currentTopic;
+    },
+  });
 }
 
 // ── Sync Topic Display ─────────────────────────────────
 export function syncTopicDisplay() {
   const topicDisplay = $('topic-display');
-  if (topicDisplay && currentTopic) topicDisplay.textContent = currentTopic;
+  if (topicDisplay) {
+    topicDisplay.textContent = currentTopic
+      || 'Select a writing type above to generate a prompt.';
+  }
+  const flag = $('topic-own-flag');
+  if (flag) flag.hidden = !customTask.usePrompt;
+  const hasForm = !!getForm(currentWritingType);
   const mhdrType = $('mhdr-type');
-  if (mhdrType) mhdrType.textContent = formLabel(currentWritingType).toUpperCase();
+  if (mhdrType) mhdrType.textContent = hasForm ? formLabel(currentWritingType).toUpperCase() : 'YOUR OWN TASK';
+  // Nothing is being taught when the task is their own, so don't promise it —
+  // but with nothing set at all, the button is still the front door to a form.
+  const beginBtn = $('begin-writing-btn');
+  if (beginBtn) beginBtn.textContent = (hasForm || !currentTopic) ? 'Learn the Form →' : 'Read the Task →';
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -208,6 +230,7 @@ export function syncTopicDisplay() {
    ═══════════════════════════════════════════════════════ */
 let hasRead = false;
 let hasWatched = false;
+let hasLesson = true;   // false for a task the student brought themselves
 let endObserver = null;
 
 const li = (items) => items.map((t) => `<li>${esc(t)}</li>`).join('');
@@ -217,12 +240,36 @@ const esc = (s) => String(s)
 export function renderLesson(formId) {
   const form = getForm(formId);
   const paper = $('lesson-paper');
-  if (!form || !paper) return;
+  if (!paper) return;
 
   hasRead = false;
   hasWatched = false;
+  hasLesson = !!form;
   const videoWrap = $('lesson-video');
   if (videoWrap) { videoWrap.hidden = true; videoWrap.innerHTML = ''; }
+
+  // A line pointing at the video only when there is one waiting — the footer
+  // button looks the same either way, so the lesson has to say it is loaded.
+  const videoLine = customTask.videoId
+    ? '<p class="lesson-own-video">A video has been added to this task — “Watch a video” below plays it.</p>'
+    : '';
+
+  // No registry form means the task came from the student (js/own-task.js).
+  // There is no form lesson to teach, so the receipt is just the task — and
+  // the gate opens straight away rather than asking them to read nothing.
+  if (!form) {
+    paper.innerHTML = `
+      <p class="lesson-eyebrow">Your own task</p>
+      <h3 class="lesson-title">Your prompt, in your words</h3>
+      <p class="lesson-what">This prompt is one you set yourself, so there is no form lesson to read first. It will still be marked on grammar, vocabulary, structure and content.</p>
+      ${videoLine}
+      <p class="lesson-prompt-label">Your prompt</p>
+      <p class="lesson-prompt">${esc(currentTopic)}</p>`;
+    if (endObserver) endObserver.disconnect();
+    hasRead = true;
+    syncGate();
+    return;
+  }
 
   paper.innerHTML = `
     <p class="lesson-eyebrow">${esc(form.label)}</p>
@@ -234,6 +281,7 @@ export function renderLesson(formId) {
     <ul class="lesson-list lesson-list--plain">${li(form.lesson.moves)}</ul>
     <p class="lesson-head">A model</p>
     <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
+    ${videoLine}
     <p class="lesson-prompt-label">Your prompt</p>
     <p class="lesson-prompt">${esc(currentTopic)}</p>`;
 
@@ -264,7 +312,7 @@ function syncGate() {
   if (btn) btn.disabled = !open;
   if (gate) {
     gate.textContent = open
-      ? (hasWatched ? 'Video watched — off you go' : 'Read — off you go')
+      ? (hasWatched ? 'Video watched — off you go' : hasLesson ? 'Read — off you go' : 'Your own task — off you go')
       : 'Read to the end to start writing';
     gate.classList.toggle('is-open', open);
   }
@@ -278,11 +326,24 @@ export async function loadLessonVideo() {
   const form = getForm(currentWritingType);
   const wrap = $('lesson-video');
   const btn = $('lesson-video-btn');
-  if (!form || !wrap) return;
+  if (!wrap) return;
 
   if (!wrap.hidden) { wrap.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
   wrap.hidden = false;
+
+  // Their own video wins outright — if a student has been sent a video, no
+  // search result is a better answer than the one they were sent.
+  if (customTask.videoId) {
+    playVideo(wrap, customTask.videoId, customTask.videoStart);
+    return;
+  }
+
+  if (!form) {
+    wrap.innerHTML = '<p class="lesson-video-note">No video added. Paste a YouTube link on the setup page to use your own.</p>';
+    return;
+  }
+
   wrap.innerHTML = '<p class="lesson-video-note">Looking for a lesson video…</p>';
   if (btn) btn.disabled = true;
 
@@ -306,18 +367,21 @@ export async function loadLessonVideo() {
     </div>`;
 
   wrap.querySelectorAll('.lesson-video-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const id = card.dataset.id;
-      wrap.innerHTML = `
-        <div class="lesson-video-stage">
-          <iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=1"
-                  title="Lesson video" frameborder="0" allowfullscreen
-                  allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
-        </div>`;
-      hasWatched = true;
-      syncGate();
-    });
+    card.addEventListener('click', () => playVideo(wrap, card.dataset.id, 0));
   });
+}
+
+// One embed path for both the searched video and the student's own one.
+function playVideo(wrap, videoId, start = 0) {
+  const params = `rel=0&modestbranding=1&autoplay=1${start ? `&start=${start}` : ''}`;
+  wrap.innerHTML = `
+    <div class="lesson-video-stage">
+      <iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params}"
+              title="Lesson video" frameborder="0" allowfullscreen
+              allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
+    </div>`;
+  hasWatched = true;
+  syncGate();
 }
 
 // ── Modal ──────────────────────────────────────────────

@@ -1474,6 +1474,108 @@ details.rubric-wrap[open] summary::after {
   align-items: center;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   YOUR OWN TASK — the paste-your-own-prompt-and-video drawer under the slip.
+   Deliberately quieter than the picker above it: it is the second path, not a
+   rival to it, so it is a dashed folder rather than another paper card. The
+   buttons inside are the page's sticky notes (sticky-ui.css) — untouched here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.own-box {
+  margin: 14px clamp(18px, 4vw, 28px) 0;
+  border: 1px dashed color-mix(in srgb, var(--ink) 26%, transparent);
+  background: color-mix(in srgb, var(--ink) 2.5%, transparent);
+}
+.own-box.is-open {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--ink) 20%, transparent);
+}
+.own-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide, 0.06em);
+  color: var(--text-secondary);
+  transition: color 0.16s ease;
+}
+.own-toggle:hover { color: var(--ink); }
+.own-toggle svg { flex-shrink: 0; transition: transform 0.22s var(--ease-bounce, ease); }
+.own-box.is-open .own-toggle { color: var(--ink); }
+.own-box.is-open .own-toggle svg { transform: rotate(135deg); }
+
+.own-panel {
+  padding: 4px 14px 16px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.own-label {
+  display: block;
+  margin: 14px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+}
+.own-field {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  transition: box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.own-field:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.own-field--area { resize: vertical; min-height: 76px; }
+
+.own-note {
+  min-height: 16px;
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.own-note.is-bad { color: var(--accent-danger); }
+
+.own-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* The badge on the prompt slip that says whose prompt you are looking at. */
+.topic-own-flag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: color-mix(in srgb, var(--accent-secondary) 22%, var(--surface-primary));
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-wide, 0.06em);
+  color: var(--ink);
+  vertical-align: middle;
+}
+/* display:inline-block above outranks the UA [hidden] rule — say it again. */
+.topic-own-flag[hidden] { display: none; }
+
 .topic-actions {
   display: flex;
   justify-content: center;
@@ -1874,6 +1976,18 @@ details.rubric-wrap summary { min-height: 48px; }
 }
 
 /* ── The video path ── */
+/* Only shown when a video has actually been added to the task, so it can say
+   so plainly instead of advertising a button that may find nothing. */
+.lesson-own-video {
+  margin: 16px 0 0;
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
+  border-left: 3px solid var(--accent-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
 .lesson-video { margin-top: clamp(14px, 3vw, 20px); }
 .lesson-video-note {
   font-family: var(--font-mono);

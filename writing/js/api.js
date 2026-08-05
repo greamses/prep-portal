@@ -4,7 +4,7 @@
 
 import {
   currentWritingType, setCurrentWritingType,
-  currentTopic, setCurrentTopic,
+  currentTopic, setCurrentTopic, setGeneratedTopic,
 } from './config.js';
 import { getForm, familyOf, formLabel } from './forms.js';
 import { geminiGenerate, groqGenerate, groqText } from '/utils/ai-client.js';
@@ -322,12 +322,14 @@ Return ONLY the prompt text — no quotes, no label, no explanation.`;
       .replace(/^["']+|["']+$/g, '');
     const topic = text || fallbackTopicFor(formId);
     setCurrentTopic(topic);
+    setGeneratedTopic(topic);
     onSuccess?.(topic);
-    
+
   } catch (err) {
     console.error(err);
     const topic = fallbackTopicFor(formId);
     setCurrentTopic(topic);
+    setGeneratedTopic(topic);
     onSuccess?.(topic);
   }
 }

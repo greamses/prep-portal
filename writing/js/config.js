@@ -86,12 +86,27 @@ export const ERROR_ACTIONS = {
 // ── Shared Mutable State ────────────────────────────────
 export let geminiModelIdx = 0;
 export let currentTopic = "";
+// The last prompt the generator produced, kept apart from currentTopic so that
+// clearing a custom task can fall back to it instead of leaving the student's
+// own prompt on a slip that no longer claims to be theirs.
+export let generatedTopic = "";
 export let currentWritingType = 'general';
 export let commentCounter = 0;
 export let commentStore = {};
 
+// A task the student brought themselves — a prompt they were set and/or a
+// YouTube lesson their teacher sent. `usePrompt` is what decides whether the
+// receipt is showing their prompt or a generated one; the video is kept
+// either way, because a custom video over a generated prompt is a real case.
+// Wired in js/own-task.js.
+export let customTask = { prompt: '', video: '', videoId: '', videoStart: 0, usePrompt: false };
+
 export const setGeminiModelIdx = (val) => { geminiModelIdx = val; };
 export const setCurrentTopic = (val) => { currentTopic = val; };
+export const setGeneratedTopic = (val) => { generatedTopic = val; };
+export const setCustomTask = (val) => {
+  customTask = { prompt: '', video: '', videoId: '', videoStart: 0, usePrompt: false, ...(val || {}) };
+};
 export const setCurrentWritingType = (val) => { currentWritingType = val; };
 export const setCommentCounter = (val) => { commentCounter = val; };
 export const resetCommentStore = () => { commentStore = {}; };
