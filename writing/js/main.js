@@ -11,6 +11,10 @@ import {
   openWritingModal, closeWritingModal, showPhase, injectRewriteStyles,
   loadLessonVideo
 } from './ui.js';
+import {
+  isSummaryMode, buildOrganizer, buildSheetAids, assembleParagraph,
+  getPlan, organizerProgress, resetOrganizer
+} from './summary.js';
 
 // ── DOM Refs ───────────────────────────────────────────
 const elTextarea = $('writing-area');
@@ -43,6 +47,73 @@ elTextarea.addEventListener('input', () => {
   elSubmitBtn.disabled = words < 20;
 });
 
+/* ═══════════════════════════════════════════════════════
+   SUMMARY — the organiser step (js/summary.js)
+
+   The boxes are only ever poured onto the sheet by an explicit press of the
+   assemble button, which is what makes going back to the organiser safe: a
+   draft the student has since edited by hand is never silently overwritten,
+   and when one exists the button says "Rebuild" and offers the way back that
+   keeps it instead.
+   ═══════════════════════════════════════════════════════ */
+let lastAssembled = '';
+
+const draftIsEdited = () => {
+  const draft = elTextarea.value.trim();
+  return !!draft && draft !== lastAssembled.trim();
+};
+
+function syncOrganizeFooter() {
+  const btn = $('to-paragraph-btn');
+  const label = $('to-paragraph-label');
+  const tally = $('organize-tally');
+  const keepBtn = $('keep-paragraph-btn');
+  const { filled, total, complete } = organizerProgress();
+  const edited = draftIsEdited();
+
+  if (btn) {
+    btn.disabled = !complete;
+    // The warning lives on the button rather than in the tally: three notes and
+    // a sentence do not fit on one footer row, and the pair of buttons already
+    // says what the choice is.
+    btn.title = edited
+      ? 'Replaces the paragraph on your sheet with a fresh build from these boxes'
+      : '';
+  }
+  if (label) label.textContent = edited ? 'Rebuild the paragraph →' : 'Turn into a paragraph →';
+  if (keepBtn) keepBtn.style.display = edited ? '' : 'none';
+  if (tally) {
+    tally.textContent = complete
+      ? `All ${total} paragraphs covered`
+      : `${filled} of ${total} paragraphs covered`;
+    tally.classList.toggle('is-open', complete && !edited);
+  }
+}
+
+function openOrganizer() {
+  buildOrganizer({ onChange: syncOrganizeFooter });
+  syncOrganizeFooter();
+  showPhase('organize');
+}
+
+function openSheet({ rebuild }) {
+  if (rebuild) {
+    lastAssembled = assembleParagraph();
+    elTextarea.value = lastAssembled;
+    elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  buildSheetAids();
+  const back = $('back-to-organizer-btn');
+  if (back) back.style.display = '';
+  showPhase('write');
+  setTimeout(() => elTextarea.focus(), 120);
+}
+
+$('to-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: true }));
+$('keep-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: false }));
+$('back-to-organizer-btn')?.addEventListener('click', () => openOrganizer());
+$('organize-topic-btn')?.addEventListener('click', () => closeWritingModal());
+
 // ── Submit ─────────────────────────────────────────────
 elSubmitBtn.addEventListener('click', async () => {
   const userText = elTextarea.value.trim();
@@ -51,7 +122,9 @@ elSubmitBtn.addEventListener('click', async () => {
   elLoading.classList.add('active');
 
   try {
-    const data = await gradeEssay(userText);
+    // The plan is only sent for a summary, and only as a coverage check — the
+    // paragraph is still what gets marked (js/api.js).
+    const data = await gradeEssay(userText, isSummaryMode() ? { plan: getPlan() } : {});
     renderResults(data, userText);
     showPhase('results');
   } catch (err) {
@@ -65,10 +138,14 @@ elSubmitBtn.addEventListener('click', async () => {
 
 // ── Retry ──────────────────────────────────────────────
 elRetryBtn?.addEventListener('click', () => {
-  showPhase('write');
   elTextarea.value = '';
   elWordCount.textContent = '0';
   elSubmitBtn.disabled = true;
+  lastAssembled = '';
+
+  // A second attempt at a summary starts where the thinking was done — the
+  // organiser, with the sentences they already worked out still in it.
+  if (isSummaryMode()) openOrganizer(); else showPhase('write');
 
   setCommentCounter(0);
   resetCommentStore();
@@ -83,13 +160,16 @@ elRetryBtn?.addEventListener('click', () => {
   syncTopicDisplay();
 
   $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
-  elTextarea.focus();
+  if (!isSummaryMode()) elTextarea.focus();
 });
 
 // ── Landing → the lesson, and only then the sheet ──────
 $('begin-writing-btn')?.addEventListener('click', () => openWritingModal());
 $('lesson-video-btn')?.addEventListener('click', () => loadLessonVideo());
+// A summary is planned before it is written, so the lesson opens the organiser
+// rather than a blank sheet; every other form goes straight to the paper.
 $('start-writing-btn')?.addEventListener('click', () => {
+  if (isSummaryMode()) { openOrganizer(); return; }
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
 });
@@ -113,5 +193,22 @@ document.addEventListener('keydown', e => {
 window.addEventListener('DOMContentLoaded', () => {
   injectRewriteStyles();
   initColorKeyAccordion(elResultsSec);
-  initSetup();
+  // A new passage (or a form that has none) invalidates the boxes — the
+  // organiser would otherwise offer sentences written about something else,
+  // and the sheet would still be carrying the paragraph they assembled from
+  // them. Only an UNEDITED assembly is cleared: anything the student has since
+  // typed themselves is theirs, and a new prompt is not a reason to bin it.
+  initSetup({
+    onGenerated: () => {
+      if (lastAssembled && elTextarea.value.trim() === lastAssembled.trim()) {
+        elTextarea.value = '';
+        elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      resetOrganizer();
+      lastAssembled = '';
+      buildSheetAids();
+      const back = $('back-to-organizer-btn');
+      if (back) back.style.display = 'none';
+    },
+  });
 });

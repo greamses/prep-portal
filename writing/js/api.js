@@ -5,8 +5,11 @@
 import {
   currentWritingType, setCurrentWritingType,
   currentTopic, setCurrentTopic, setGeneratedTopic,
+  currentPassage, setCurrentPassage,
 } from './config.js';
-import { getForm, familyOf, formLabel } from './forms.js';
+import { getForm, familyOf, formLabel, isSummaryForm } from './forms.js';
+import { fallbackPassageFor } from './passages.js';
+import { isSummaryMode } from './summary.js';
 import { geminiGenerate, groqGenerate, groqText } from '/utils/ai-client.js';
 
 // ── Gemini call — delegates to the shared AI client (backend proxy) ──
@@ -114,6 +117,17 @@ SUBSTITUTION STYLE — EXPOSITORY / INFORMATIVE writing:
     • Version 1 uses an active voice topic sentence + supporting clause.
     • Version 2 uses a definition or classification structure for the same idea.`,
     
+    summary: `
+SUBSTITUTION STYLE — SUMMARY writing:
+  Word subs (<sub>): Target words LIFTED from the passage and words that are longer than they need to be.
+    • Any content word carried over from the source is the first priority — offer 3 genuine paraphrases, never a synonym of a synonym that changes the meaning.
+    • Replace narrative flourish with neutral reporting diction: hurried → went; insists → argues; wonderful → effective.
+    • Replace vague attributions with precise ones: it says → the passage explains / the writer argues / the author concedes.
+  Sentence rewrites (<sent>): Rewrite for compression and for joining.
+    • Version 1 says the same thing in fewer words.
+    • Version 2 links the sentence to the one before it with a connective (however, as a result, in addition), so the paragraph reads as continuous writing rather than a list.
+    • NEVER rewrite in a way that adds information the passage did not contain.`,
+
     general: `
 SUBSTITUTION STYLE — GENERAL:
   Word subs (<sub>): Replace any weak, vague, or overused word with 3 stronger alternatives.
@@ -124,14 +138,26 @@ SUBSTITUTION STYLE — GENERAL:
   return guides[type] || guides.general;
 }
 
-// ── System Prompt ───────────────────────────────────────
-function getSystemPrompt() {
-  return `You are an uncompromising secondary-school English examiner marking with a red pen. Find and mark real errors. Also give positive credit where writing is genuinely strong.
+/* ── The examiner, in two moods ──────────────────────────
+   ONE marker, one JSON contract, one results renderer. A summary is not a
+   different product — it is the same red pen with a different rubric, so
+   everything that does not change (the detection rules, the annotation tags,
+   the JSON shape) is written once and the summary branch only swaps what a
+   summary is actually marked on. */
+function getSystemPrompt({ summary = false } = {}) {
+  const offTopic = summary
+    ? `Before marking anything, decide: is this a genuine attempt to SUMMARISE the given passage?
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OFF-TOPIC DETECTION — CHECK THIS FIRST:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Before marking anything, decide: does this essay address the assigned TOPIC?
+Mark offTopic: true if ANY of these apply:
+  • The response is about something the passage does not discuss.
+  • The response is the student's OWN opinion of the subject rather than an account of what the passage said.
+  • The response is a bare copy of the passage or of one of its paragraphs, reproduced with almost no compression.
+  • The response is under ~30 meaningful words, or is random/incoherent text.
+
+Mark offTopic: false (proceed to mark normally) if:
+  • The response summarises the passage, even partially, clumsily or in too many words.
+  • The student missed some paragraphs but genuinely summarised others.`
+    : `Before marking anything, decide: does this essay address the assigned TOPIC?
 
 Mark offTopic: true if ANY of these apply:
   • The essay is about a completely different subject.
@@ -141,7 +167,74 @@ Mark offTopic: true if ANY of these apply:
 
 Mark offTopic: false (proceed to mark normally) if:
   • The essay attempts the topic, even loosely, imperfectly, or creatively.
-  • The student drifts off-topic in one section but the main thrust addresses the prompt.
+  • The student drifts off-topic in one section but the main thrust addresses the prompt.`;
+
+  const calibration = summary
+    ? `CALIBRATION:
+  Coverage & Accuracy /30: the passage has N paragraphs and the summary should carry the main point of EACH.
+    30=every paragraph represented and nothing misreported, 24-26=one minor point thinned or blurred,
+    18-22=one paragraph missing OR one point misrepresented, 12-16=two or more paragraphs missing,
+    6-10=only the opening of the passage survives. Deduct hard for anything ADDED that the passage never said.
+  Own Words /25: 23-25=fully reworded, 18-22=one or two short phrases carried over, 12-16=several lifted phrases,
+    6-10=largely stitched together from the passage's own sentences. A run of 6+ consecutive words from the source is lifting.
+  Cohesion as One Paragraph /25: 23-25=one flowing paragraph, ordered as the passage was, properly linked,
+    18-22=ordered and linked but slightly listy, 12-16=a string of unconnected sentences,
+    6-10=out of order, or broken into several paragraphs when one was asked for.
+  Grammar & Mechanics /20: 20=zero errors, 16-18=2-3 minor slips, 12-15=4-7 mixed errors, 6-11=8+ errors.
+
+MARK DOWN, do not reward: adding an opinion of the passage, adding facts from your own knowledge,
+quoting the passage, keeping its examples or statistics, or writing longer than about a third of the original.`
+    : `CALIBRATION:
+  Grammar & Mechanics /30: 30=zero errors, 24-26=2-3 minor slips, 18-22=4-7 mixed errors, 12-16=8-12 clear mechanical weaknesses, 6-10=13+ errors.
+  Vocabulary & Style /25: 23-25=varied/precise/sophisticated, 18-22=generally good, 12-16=frequent vague diction, 6-10=very limited.
+  Structure & Coherence /25: 23-25=clear intro/body/conclusion, 18-22=mostly organised, 12-16=partial structure, 6-10=little organisation.
+  Creativity & Content /20: 18-20=genuinely original/rich detail, 13-17=interesting but uneven, 8-12=generic, 3-7=very thin.`;
+
+  const rubricJson = summary
+    ? `    { "category": "Coverage & Accuracy", "score": 0, "outOf": 30, "feedback": "" },
+    { "category": "Own Words", "score": 0, "outOf": 25, "feedback": "" },
+    { "category": "Cohesion as One Paragraph", "score": 0, "outOf": 25, "feedback": "" },
+    { "category": "Grammar & Mechanics", "score": 0, "outOf": 20, "feedback": "" }`
+    : `    { "category": "Grammar & Mechanics", "score": 0, "outOf": 30, "feedback": "" },
+    { "category": "Vocabulary & Style", "score": 0, "outOf": 25, "feedback": "" },
+    { "category": "Structure & Coherence", "score": 0, "outOf": 25, "feedback": "" },
+    { "category": "Creativity & Content", "score": 0, "outOf": 20, "feedback": "" }`;
+
+  // The one mark that only exists in a summary: words carried over from the
+  // source. It is the characteristic failure of the form, so it gets a red-pen
+  // code of its own rather than being buried in a margin comment.
+  const summaryMarks = summary
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUMMARY-SPECIFIC MARKING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You are given the SOURCE PASSAGE, numbered by paragraph, and the student's one-paragraph summary.
+
+STEP 1 — LIFTING. Compare the summary against the passage word by word. Mark EVERY run of 6 or more
+consecutive words taken from the passage with <mark type="lift" fix="a paraphrase of that run" loss="-3">.
+Do not mark ordinary unavoidable wording (names, technical terms, "the writer", short common phrases).
+
+STEP 2 — COVERAGE. Work through the passage paragraph by paragraph and decide whether each one's main
+point is present. In the "Coverage & Accuracy" feedback, name the paragraph numbers that are MISSING and
+the paragraph numbers that are MISREPORTED, in plain words the student can act on.
+
+STEP 3 — INTRUSION. Mark anything the student has added that the passage does not contain — an opinion,
+a judgement, an example of their own — with <mark type="del" loss="-2">, and say so in a margin comment.
+
+STEP 4 — ORDER. If the points appear in a different order from the passage, say so in the
+"Cohesion as One Paragraph" feedback and give the correct order.
+
+Use <good reason="..."> generously on well-compressed sentences: a point of a whole paragraph carried
+accurately in one clause of the student's own is the hardest thing to do in this form.
+`
+    : '';
+
+  return `You are an uncompromising secondary-school English examiner marking with a red pen. Find and mark real errors. Also give positive credit where writing is genuinely strong.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OFF-TOPIC DETECTION — CHECK THIS FIRST:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${offTopic}
 
 When offTopic is true:
   • Set all rubric scores to 0.
@@ -150,14 +243,11 @@ When offTopic is true:
   • Provide a brief offTopicReason (1–2 plain sentences explaining why).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CALIBRATION:
-  Grammar & Mechanics /30: 30=zero errors, 24-26=2-3 minor slips, 18-22=4-7 mixed errors, 12-16=8-12 clear mechanical weaknesses, 6-10=13+ errors.
-  Vocabulary & Style /25: 23-25=varied/precise/sophisticated, 18-22=generally good, 12-16=frequent vague diction, 6-10=very limited.
-  Structure & Coherence /25: 23-25=clear intro/body/conclusion, 18-22=mostly organised, 12-16=partial structure, 6-10=little organisation.
-  Creativity & Content /20: 18-20=genuinely original/rich detail, 13-17=interesting but uneven, 8-12=generic, 3-7=very thin.
+${calibration}
 
 TOTAL BANDS: 85-95 near-perfect | 70-84 good | 55-69 average | 40-54 weak | 0-39 very weak.
 NEVER exceed 95. When in doubt, choose the LOWER score.
+${summaryMarks}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VERB TENSE — DETECTION RULES:
@@ -214,10 +304,7 @@ RESPOND ONLY WITH VALID JSON. No markdown.
   "offTopicReason": "",
   "totalScore": 0,
   "rubric": [
-    { "category": "Grammar & Mechanics", "score": 0, "outOf": 30, "feedback": "" },
-    { "category": "Vocabulary & Style", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Structure & Coherence", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Creativity & Content", "score": 0, "outOf": 20, "feedback": "" }
+${rubricJson}
   ],
   "annotatedText": "",
   "suggestions": [],
@@ -246,14 +333,14 @@ ANNOTATION TAGS:
 19. <mark type="cs" loss="-3">clause, clause</mark>
 20. <mark type="wo" fix="correct order" loss="-2">I yesterday went</mark>
 21. <mark type="par" fix="parallel form" loss="-2">running, to jump, swim</mark>
-
+${summary ? '22. <mark type="lift" fix="say this in your own words" loss="-3">six or more words copied from the passage</mark>\n' : ''}
 HIGHLIGHTS: <hl cat="grammar|vocab|structure|style|good">text</hl>
 POSITIVE: <good reason="...">phrase</good>
 COMMENTS: <comment text="..."> </comment>
 SUBS: <sub opts="opt1, opt2, opt3">word</sub>
 SENTENCE: <sent opts="Version 1.|||Version 2.">sentence</sent>
 
-Always include fix="..." on types 3,4,7,8,11,12,13,14,15,16,18,20,21.
+Always include fix="..." on types 3,4,7,8,11,12,13,14,15,16,18,20,21${summary ? ',22' : ''}.
 Preserve paragraph breaks as \\n\\n. Escape all JSON strings.`;
 }
 
@@ -271,10 +358,117 @@ function fallbackTopicFor(formId) {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
-export async function fetchGeneratedTopic(formId, callbacks = {}) {
+/* ── The passage a summary is written from ───────────────
+   A summary form has no prompt to generate: the task IS the passage, and the
+   graphic organiser needs it paragraph by paragraph rather than as one blob,
+   so this returns { title, paragraphs[] } and keeps the split the model made
+   instead of guessing at one later. FIVE paragraphs is the floor — the
+   organiser puts one box under each. */
+const MIN_PARAS = 5;
+const MAX_PARAS = 7;
+
+// Models sometimes emit a raw newline or tab inside a JSON string, which is
+// illegal JSON and throws before we ever see the passage. Same scrub the essay
+// grader has always done, hoisted so both callers share it.
+const stripControl = (s) => String(s).replace(/[\u0000-\u0009\u000B-\u001F]+/g, ' ');
+
+function normalisePassage(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const paragraphs = (Array.isArray(raw.paragraphs) ? raw.paragraphs : [])
+    .map((p) => String(p || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  if (paragraphs.length < MIN_PARAS) return null;
+  return {
+    title: String(raw.title || 'Reading Passage').replace(/^["']+|["']+$/g, '').trim(),
+    paragraphs: paragraphs.slice(0, MAX_PARAS),
+  };
+}
+
+// What the receipt on the landing page says once a passage is loaded. It is
+// also what the examiner is shown as the TOPIC, so it has to state the task.
+export function summaryTaskLine(passage) {
+  return `Read the passage “${passage.title}” (${passage.paragraphs.length} paragraphs) and summarise it in ONE paragraph, in your own words.`;
+}
+
+export async function fetchGeneratedPassage(formId, callbacks = {}) {
   const { onStart, onSuccess, onError } = callbacks;
 
   setCurrentWritingType(formId);
+  onStart?.();
+
+  const form = getForm(formId);
+  const ask = form ? form.ask : 'an informational passage suitable for a secondary-school student';
+
+  const prompt = `Write ONE original reading passage for a secondary-school student (age 13–16) anywhere in the world, to be summarised.
+
+PASSAGE TYPE: ${form ? form.label : 'Informational'} — ${ask}.
+
+Rules:
+• Exactly ${MIN_PARAS} or 6 paragraphs. Never fewer than ${MIN_PARAS}.
+• Each paragraph must carry exactly ONE main point, developed with detail, so that a student can reduce it to a single sentence. Never put two equally important points in one paragraph.
+• 55–85 words per paragraph. The whole passage should read as continuous prose, not as notes.
+• Keep it universal. Do NOT tie it to any single country, region or culture: no place names, no currencies, no national institutions, exams, holidays or public figures.
+• Original writing only — never reproduce an existing published text.
+• Plain, direct English a 13-year-old can read without a dictionary. No subheadings, no bullet points, no questions at the end.
+• Give it a short factual title of 2–6 words.
+
+Return ONLY valid JSON, no markdown:
+{"title":"...","paragraphs":["...","...","...","...","..."]}`;
+
+  try {
+    const result = await generateTextWithFallback({
+      geminiBody: {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.9,
+          maxOutputTokens: 2400,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      },
+      groqPrompt: prompt,
+      json: true,
+      temperature: 0.9,
+      maxTokens: 2400,
+    });
+
+    const raw = String(result.text || '');
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    let parsed = null;
+    if (start !== -1 && end !== -1) {
+      try { parsed = JSON.parse(stripControl(raw.substring(start, end + 1))); }
+      catch { parsed = null; }
+    }
+
+    // A short or unparseable passage is worse than no passage at all — the
+    // organiser would build four boxes and the lesson would have lied. Fall
+    // through to a passage we wrote ourselves instead.
+    const passage = normalisePassage(parsed) || fallbackPassageFor(formId);
+    setCurrentPassage(passage);
+    setCurrentTopic(summaryTaskLine(passage));
+    setGeneratedTopic(currentTopic);
+    onSuccess?.(passage);
+  } catch (err) {
+    console.error(err);
+    const passage = fallbackPassageFor(formId);
+    setCurrentPassage(passage);
+    setCurrentTopic(summaryTaskLine(passage));
+    setGeneratedTopic(currentTopic);
+    onSuccess?.(passage);
+  }
+}
+
+export async function fetchGeneratedTopic(formId, callbacks = {}) {
+  const { onStart, onSuccess, onError } = callbacks;
+
+  // Summary forms are handed a passage, not a question. Routing it here means
+  // every caller (the picker, the reroll button) gets the right thing without
+  // having to know which family it is looking at.
+  if (isSummaryForm(formId)) return fetchGeneratedPassage(formId, callbacks);
+
+  setCurrentWritingType(formId);
+  setCurrentPassage(null);
   onStart?.();
 
   const form = getForm(formId);
@@ -335,11 +529,41 @@ Return ONLY the prompt text — no quotes, no label, no explanation.`;
 }
 
 // ── Essay Grading ──────────────────────────────────────
-export async function gradeEssay(userText) {
-  const system = getSystemPrompt();
-  // The examiner is told the FORM — a news report is marked on things a short
-  // story is not — while the red-pen substitution style keys off its family.
-  const prompt = `WRITING FORM: ${formLabel(currentWritingType)}\nFAMILY: ${familyOf(currentWritingType)}\nTOPIC: ${currentTopic}\n\nSTUDENT ESSAY:\n${userText}`;
+/* One entry point for both. A summary hands the same examiner the source
+   passage (numbered, because coverage feedback has to be able to say "you
+   missed paragraph 4") and, if the student used the organiser, the sentence
+   they wrote for each paragraph — which turns "is anything missing?" from a
+   judgement into a check. */
+export async function gradeEssay(userText, { plan = null } = {}) {
+  const summary = isSummaryMode();
+  const system = getSystemPrompt({ summary });
+
+  let prompt;
+  if (summary) {
+    const source = currentPassage.paragraphs
+      .map((p, i) => `[Paragraph ${i + 1}] ${p}`).join('\n\n');
+    const planned = (plan || []).filter((r) => r && r.sentence);
+    const planBlock = planned.length
+      ? `\n\nTHE STUDENT'S PLAN — the sentence they wrote for each paragraph in the organiser:\n${
+          planned.map((r) => `[${r.label}] ${r.sentence}`).join('\n')
+        }\nUse this only to check coverage. Mark the SUMMARY PARAGRAPH below, not the plan.`
+      : '';
+    prompt = `TASK: Summary — the student read the passage below and reduced it to ONE paragraph.
+PASSAGE TYPE: ${formLabel(currentWritingType)}
+PASSAGE TITLE: ${currentPassage.title}
+PARAGRAPHS IN THE PASSAGE: ${currentPassage.paragraphs.length}
+
+SOURCE PASSAGE:
+${source}${planBlock}
+
+STUDENT SUMMARY PARAGRAPH:
+${userText}`;
+  } else {
+    // The examiner is told the FORM — a news report is marked on things a short
+    // story is not — while the red-pen substitution style keys off its family.
+    prompt = `WRITING FORM: ${formLabel(currentWritingType)}\nFAMILY: ${familyOf(currentWritingType)}\nTOPIC: ${currentTopic}\n\nSTUDENT ESSAY:\n${userText}`;
+  }
+
   const { text } = await gradeWithFallback({
     geminiBody: {
       systemInstruction: { parts: [{ text: system }] },

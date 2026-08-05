@@ -54,6 +54,9 @@ export const ERROR_TYPES = {
   cs: { name: 'Comma Splice', desc: 'Two independent clauses joined only by a comma. Use a semicolon, a conjunction, or two separate sentences.' },
   wo: { name: 'Word Order Error', desc: 'The words are not in the standard English grammatical order for this phrase or clause.' },
   par: { name: 'Faulty Parallel Structure', desc: 'All items in a list must be in the same grammatical form (e.g. all gerunds or all infinitives).' },
+  // Summary only — the characteristic failure of the form, so it gets its own
+  // red-pen code rather than being hidden inside a margin comment.
+  lift: { name: 'Lifted from the Passage', desc: 'Six or more words copied straight from the passage. A summary must be in your own words — rewrite this in a way that keeps the meaning but not the wording.' },
 };
 
 // Which action buttons to show per error type: d=delete, m=move, c=custom
@@ -79,6 +82,7 @@ export const ERROR_ACTIONS = {
   frag: { d: false, m: false, c: true },
   punct: { d: false, m: false, c: true },
   par: { d: false, m: false, c: true },
+  lift: { d: false, m: false, c: true },
   word: { d: false, m: false, c: true },
   sent: { d: false, m: true, c: true },
 };
@@ -91,6 +95,10 @@ export let currentTopic = "";
 // own prompt on a slip that no longer claims to be theirs.
 export let generatedTopic = "";
 export let currentWritingType = 'general';
+// The passage a SUMMARY is written from: { title, paragraphs: [...] }. Null for
+// every other family — which is also how the rest of the page asks "are we in
+// summary mode?" without importing the form registry everywhere.
+export let currentPassage = null;
 export let commentCounter = 0;
 export let commentStore = {};
 
@@ -108,5 +116,6 @@ export const setCustomTask = (val) => {
   customTask = { prompt: '', video: '', videoId: '', videoStart: 0, usePrompt: false, ...(val || {}) };
 };
 export const setCurrentWritingType = (val) => { currentWritingType = val; };
+export const setCurrentPassage = (val) => { currentPassage = val || null; };
 export const setCommentCounter = (val) => { commentCounter = val; };
 export const resetCommentStore = () => { commentStore = {}; };

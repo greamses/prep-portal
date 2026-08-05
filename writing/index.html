@@ -171,9 +171,19 @@
             <div class="lesson-end" id="lesson-end" aria-hidden="true"></div>
           </div>
 
+          <!-- ORGANISE PHASE — summary forms only (js/summary.js).
+               One card per paragraph of the passage: the paragraph on one
+               side, a one-sentence box on the other. "Turn into a paragraph"
+               assembles the boxes onto the sheet below; coming back here
+               changes nothing that was written. -->
+          <div id="summary-section" style="display: none"></div>
+
           <!-- WRITE PHASE -->
-          <div id="editor-section"
-            <p class="sec-label">Your Essay</p>
+          <div id="editor-section">
+            <p class="sec-label" id="editor-label">Your Essay</p>
+            <!-- Summary only: the passage again (collapsed) and the linking
+                 words, filled by js/summary.js. Hidden for every other form. -->
+            <div id="summary-aids" hidden></div>
             <!-- The writing surface is the same torn-paper receipt as the
                  prompt card; the textarea is the ruled sheet inside it. -->
             <div class="write-receipt pp-receipt">
@@ -418,9 +428,27 @@
             </button>
             <button class="btn btn-primary" id="start-writing-btn" type="button" disabled>Start Writing →</button>
           </div>
+          <!-- Summary only — the organiser's own footer. -->
+          <div class="mftr-inner" id="ftr-organize" style="display: none">
+            <div class="mftr-wc" id="organize-tally">0 of 0 paragraphs</div>
+            <div class="mftr-space"></div>
+            <button class="btn btn-ghost" id="organize-topic-btn" type="button">← Change Passage</button>
+            <!-- Only appears once a draft on the sheet has been edited by hand:
+                 the way back that does not touch what they wrote. -->
+            <button class="btn btn-ghost" id="keep-paragraph-btn" type="button" style="display: none">Keep my draft →</button>
+            <button class="btn btn-primary" id="to-paragraph-btn" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 6h10" />
+                <path d="M4 12h16" />
+                <path d="M4 18h13" />
+              </svg>
+              <span id="to-paragraph-label">Turn into a paragraph →</span>
+            </button>
+          </div>
           <div class="mftr-inner" id="ftr-write" style="display: none">
             <div class="mftr-wc">Words: <span id="word-count">0</span></div>
             <div class="mftr-space"></div>
+            <button class="btn btn-ghost" id="back-to-organizer-btn" type="button" style="display: none">← Back to the Organiser</button>
             <button class="btn btn-ghost" id="new-topic-btn" type="button">← Change Topic</button>
             <button class="btn btn-primary" id="submit-btn" type="button" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

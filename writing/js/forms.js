@@ -13,6 +13,14 @@
      • the video search uses the form's `video` query
      • the red-pen substitution style is chosen by the form's FAMILY
 
+   One family breaks the pattern on purpose. A SUMMARY has no prompt: the task
+   is a passage, so those forms carry `kind: 'summary'` and their `ask`
+   describes the PASSAGE to be written rather than the question to be set.
+   Everything that has to behave differently keys off that one flag — the
+   generator writes a passage, the Learn phase prints it, the write phase
+   opens the graphic organiser (js/summary.js) instead of a blank sheet, and
+   the examiner marks coverage instead of creativity.
+
    Prompts are deliberately culture-neutral. A student in Lagos, Leeds or
    Lahore should be able to answer any of them without needing local
    knowledge, so nothing here names a country, a currency or an institution.
@@ -582,6 +590,123 @@ export const FAMILIES = [
       },
     ],
   },
+
+  /* ── SUMMARY ─────────────────────────────────────────────────────────────
+     The odd family out: you are given a passage, not a question. What you are
+     marked on is whether every paragraph of the source survived into one
+     paragraph of your own, in your own words and in the right order — which
+     is exactly what the graphic organiser (js/summary.js) walks you through,
+     one box per paragraph.
+
+     The forms are the KINDS OF PASSAGE, because summarising them is not the
+     same job: a narrative is reduced by picking events, an argument by
+     picking claims, and a discussion by keeping both sides in balance. Every
+     form here sets `kind: 'summary'` and no `fallbacks` — a summary cannot
+     fall back to a one-line prompt, so the offline passages live in
+     js/passages.js instead. ──────────────────────────────────────────────── */
+  {
+    id: 'summary',
+    label: 'Summary',
+    blurb: 'Reading a passage and boiling it down',
+    forms: [
+      {
+        id: 'summary-informational',
+        label: 'Informational Passage',
+        blurb: 'Facts about one subject, reduced to what matters',
+        kind: 'summary',
+        ask: 'an informational passage explaining one subject a teenager can follow without special knowledge — how something works, why something happens, or what something is made of',
+        video: 'how to write a summary of a passage',
+        lesson: {
+          what: 'A summary re-tells someone else\'s writing in far fewer words, keeping every main point and adding nothing of your own. The test is simple: a reader who has never seen the passage should be able to read your paragraph and know what it said. Your opinion of it is not part of the job.',
+          shape: [
+            'Read the whole passage once before you write anything. You cannot tell what matters until you have seen the end.',
+            'Take each paragraph in turn and find its ONE main point — the thing the rest of that paragraph exists to support.',
+            'Write that point as a single sentence in your own words. That is the box for that paragraph.',
+            'Join the sentences into ONE paragraph, in the same order as the passage, adding linking words so it reads as continuous writing.',
+          ],
+          moves: [
+            'Your own words, always. Copying a phrase of six or seven words from the passage is lifting, and it is marked as such.',
+            'Cut examples, statistics and repetition — a summary keeps the point, not the evidence for it.',
+            'Never add an opinion, a judgement or a fact the passage did not contain.',
+            'Aim for about a third of the original length, and stop. Length is not a virtue here.',
+          ],
+          model: 'The writer explains that sleep is far from idle time. The brain uses the night to sort what it has taken in, strengthening useful memories and discarding the rest, and it also flushes out the waste that builds up while a person is awake.',
+        },
+      },
+      {
+        id: 'summary-narrative',
+        label: 'Narrative Passage',
+        blurb: 'An account of events, reduced to what actually happened',
+        kind: 'summary',
+        ask: 'a narrative passage — a first-person account of one ordinary but eventful episode, told in order, with something learned or changed by the end',
+        video: 'how to summarise a story in your own words',
+        lesson: {
+          what: 'Summarising a story means keeping the spine and losing the flesh. Events, in order, with the reason each one led to the next — and none of the description, dialogue or atmosphere that made the original worth reading. A summary of a story is not a shorter story; it is an account of one.',
+          shape: [
+            'Read to the end first. In a narrative the last paragraph often changes what the earlier ones were about.',
+            'For each paragraph, ask what CHANGED in it. That change is your sentence.',
+            'Keep the order of events exactly as the passage had it, even if you find a neater order.',
+            'Join the sentences into one paragraph, using time links — then, once, by the time, afterwards.',
+          ],
+          moves: [
+            'Past tense, third person: "the writer walked home", not "I walked home".',
+            'Drop the dialogue. If a line of speech mattered, report what it did, not what it said.',
+            'Keep the ending, including what the narrator understood. It is the point of the whole passage.',
+            'No dramatic language of your own. A summary reports the story; it does not perform it.',
+          ],
+          model: 'When the rain flooded the road, the writer and their brother set off home on foot rather than wait. Finding the junction blocked, they took a longer route along higher ground, and only from there did the writer see how far the water had spread.',
+        },
+      },
+      {
+        id: 'summary-argument',
+        label: 'Argument Passage',
+        blurb: 'One writer\'s case, summed up without taking sides',
+        kind: 'summary',
+        ask: 'an argumentative passage in which one writer argues a clear position on a debatable everyday issue, gives separate reasons in separate paragraphs, and concedes one point to the other side',
+        video: 'how to summarise an argument text',
+        lesson: {
+          what: 'Summarising an argument means reporting what somebody claims and why, without joining in. The hardest part is staying out of it: your paragraph must be just as accurate whether you agree with the writer or think they are completely wrong.',
+          shape: [
+            'Find the writer\'s position first — usually in the opening paragraph — and make it your first sentence.',
+            'Then one sentence per paragraph, each carrying that paragraph\'s reason.',
+            'Include the concession. A summary that drops the point the writer conceded has misrepresented them.',
+            'Join it all into one paragraph using logical links — because, however, admittedly, therefore.',
+          ],
+          moves: [
+            'Attribute everything: the writer argues, the passage claims, the author concedes. Never state their claims as facts.',
+            'Report the reasoning, not the examples used to illustrate it.',
+            'Do not add a counter-argument of your own, however obvious it seems.',
+            'Keep the writer\'s strength of feeling out of it — "insists" and "admits" are already judgements.',
+          ],
+          model: 'The writer argues that homework should be set far less often. Much of what is set, they claim, is new work rather than practice, and it is done in conditions that differ so widely between homes that it cannot be marked fairly. They concede that some tasks need more quiet than a lesson allows.',
+        },
+      },
+      {
+        id: 'summary-discussion',
+        label: 'Discussion Passage',
+        blurb: 'Two sides weighed — report both fairly',
+        kind: 'summary',
+        ask: 'a balanced discussion passage setting out both sides of an everyday question a teenager would recognise, giving each side its own paragraphs and reaching a measured close rather than a verdict',
+        video: 'how to summarise a discussion text both sides',
+        lesson: {
+          what: 'A discussion passage puts two cases and does not pick one. Summarising it means keeping the balance: if your paragraph makes one side sound stronger than the passage made it, you have summarised badly even if every sentence in it is true.',
+          shape: [
+            'Open by naming the question being discussed, not by answering it.',
+            'One sentence per paragraph, keeping each side\'s points on that side.',
+            'Give the two sides roughly equal space, as the passage did.',
+            'Close with where the passage left it — the common ground, or the fact that it reached no verdict.',
+          ],
+          moves: [
+            'Balancing links do the work: on one hand, others argue, by contrast, both sides accept.',
+            'Never let your own view show. Nobody reading your summary should be able to guess it.',
+            'Watch the verbs — "points out" agrees with a side, "claims" doubts it. Use neutral ones.',
+            'If the passage ends undecided, say so. Inventing a conclusion is a common way to lose marks here.',
+          ],
+          model: 'The passage sets out the disagreement over phones in school. Those against them point to lost attention and to bullying that now follows students home, while those in favour argue that the phone is an ordinary working tool and that banning it teaches nobody to manage it. Both sides, the writer notes, agree more than they admit.',
+        },
+      },
+    ],
+  },
 ];
 
 /* ── Lookups ───────────────────────────────────────────── */
@@ -597,6 +722,11 @@ FAMILIES.forEach((fam) => {
 
 export const getForm = (id) => FORM_INDEX.get(id) || null;
 export const getFamily = (id) => FAMILIES.find((f) => f.id === id) || null;
+
+/* The one branch in the whole page: a summary is given a passage instead of a
+   prompt, so the generator, the Learn phase, the write phase and the examiner
+   all ask this rather than testing the family id by hand. */
+export const isSummaryForm = (id) => (FORM_INDEX.get(id) || {}).kind === 'summary';
 
 /* The red-pen substitution guidelines (js/api.js) are written per FAMILY —
    a news report and a short story want the same kind of verb suggestions

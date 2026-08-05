@@ -2051,3 +2051,349 @@ details.rubric-wrap summary { min-height: 48px; }
 
 /* The gate's own line in the footer, next to Start Writing. */
 #lesson-gate.is-open { color: var(--accent-success); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUMMARY — the passage, the graphic organiser, and the aids that follow the
+   student onto the sheet. (js/summary.js)
+
+   The organiser has to LOOK like an organiser rather than like a form:
+   numbered boxes, one per paragraph of the source, joined top to bottom by a
+   visible line so the eye can see the passage funnelling into one paragraph
+   at the foot. That flow is the teaching point, so the connectors are drawn
+   rather than implied.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The passage itself — printed in the lesson, and again (collapsed) above
+   the sheet. Generously leaded: it is the one thing on this page that is meant
+   to be READ rather than scanned. ── */
+.passage {
+  margin-top: 18px;
+  padding: 16px clamp(14px, 3vw, 20px) 18px;
+  background: color-mix(in srgb, var(--accent-secondary) 7%, var(--surface-primary));
+  border-left: 3px solid var(--accent-secondary);
+}
+.passage-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+  margin: 0 0 6px;
+}
+.passage-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: clamp(16px, 2.8vw, 20px);
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+.passage-para {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+  padding-left: 30px;
+}
+.passage-para:last-child { margin-bottom: 0; }
+/* The paragraph number is the hinge between the passage and the organiser —
+   box 3 is for paragraph 3, and both wear the same numeral. */
+.passage-num {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+}
+
+/* ── The organiser ── */
+#summary-section { padding: 0; }
+
+.org-intro {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+  padding: 10px 13px;
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.org-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* The connector: a dashed hairline with a chevron sitting on it, drawn between
+   every card so the column reads as one flow and not a stack of boxes. */
+.org-arrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  color: var(--accent-secondary);
+}
+.org-arrow svg { width: 18px; height: 18px; stroke-width: 3; }
+.org-arrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent-secondary) 55%, transparent) 0 5px,
+    transparent 5px 9px
+  );
+}
+/* The chevron sits ON the line, so it carries the modal body's own colour
+   behind it to break the dashes cleanly. */
+.org-arrow svg {
+  position: relative;
+  background: var(--app-bg);
+  padding: 3px 1px;
+}
+
+.org-card {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.18s ease;
+}
+.org-card:focus-within { box-shadow: var(--shadow-md); }
+
+.org-card__hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink) 20%, transparent);
+}
+.org-num {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+}
+.org-num--idea {
+  width: auto;
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: var(--tracking-ultra);
+  text-transform: uppercase;
+  background: var(--accent-primary);
+}
+.org-card__ttl {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+}
+.org-card__ttl em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-ultra);
+  margin-left: 6px;
+}
+
+/* Source on the left, the student's sentence on the right, from the width at
+   which both stay readable — reading the paragraph and answering it should not
+   require scrolling between the two. Stacked below that width. */
+.org-card__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+@media (min-width: 900px) {
+  .org-card__body { grid-template-columns: 1.05fr 1fr; gap: 20px; }
+}
+.org-card__body--idea { grid-template-columns: 1fr; }
+
+.org-src {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.org-in { display: flex; flex-direction: column; gap: 6px; }
+
+/* The box is a small sheet of the same ruled paper as the essay surface, so
+   writing in it feels like writing rather than like filling in a field. */
+.org-field {
+  --write-line: 1.9em;
+  --write-rule: 1.35em;
+  font-size: clamp(16px, 2.4vw, 19px);
+  line-height: var(--write-line);
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--write-rule) - 1.5px),
+    var(--ruled) calc(var(--write-rule) - 1.5px),
+    var(--ruled) var(--write-rule),
+    transparent var(--write-rule),
+    transparent var(--write-line)
+  );
+  background-attachment: local;
+  caret-color: var(--accent-secondary);
+  min-height: calc(3 * var(--write-line));
+}
+.org-card--idea .org-field { min-height: calc(2 * var(--write-line)); }
+.org-field:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-secondary) 40%, transparent);
+  outline-offset: 4px;
+}
+
+/* The coach's line under each box. Advice only — nothing here blocks anyone. */
+.org-meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+.org-meta.is-ok { color: var(--accent-success); }
+.org-meta.is-bad { color: var(--accent-danger); }
+
+/* The foot of the funnel: what the boxes currently add up to. */
+.org-foot {
+  padding: 14px 16px 16px;
+  background: color-mix(in srgb, var(--accent-primary) 12%, var(--surface-primary));
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.org-foot__hdr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+.org-preview {
+  font-family: "Caveat", cursive;
+  font-weight: 600;
+  font-size: clamp(17px, 2.6vw, 20px);
+  line-height: 1.65;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.org-preview.is-empty { color: var(--text-tertiary); font-style: italic; }
+.org-foot__meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.org-foot__meta.is-ok { color: var(--accent-success); }
+
+#organize-tally.is-open { color: var(--accent-success); }
+
+/* ── On the sheet: the source again, and the linking words ── */
+#summary-aids { margin-bottom: 18px; }
+
+.sum-source {
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+.sum-source > summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--ink);
+}
+.sum-source .passage { margin: 0 14px 14px; }
+
+.sum-linkers { margin-bottom: 6px; }
+.sum-linkers__lbl {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+/* Sticky notes — paper, tape, tilt and font all come from components.css, so
+   only the size and the tape's headroom are ours (see the carousel note). */
+.sum-linkers__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 0.6rem;
+  padding-top: 10px;
+}
+.sum-linker {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.7rem 0.4rem;
+  cursor: pointer;
+}
+
+/* ── The one red-pen mark that exists only in a summary ── */
+.doodle-lift {
+  text-decoration: underline double #be123c;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.doodle-lift::before {
+  content: "lifted";
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #be123c;
+  font-family: "Caveat", cursive;
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@media (max-width: 560px) {
+  .org-card__body { padding: 12px; }
+  .org-src { max-height: 170px; }
+}

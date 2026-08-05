@@ -4,7 +4,8 @@
 
 import { $, currentTopic, currentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
-import { FAMILIES, getForm, formLabel } from './forms.js';
+import { FAMILIES, getForm, formLabel, isSummaryForm } from './forms.js';
+import { isSummaryMode, passageHtml } from './summary.js';
 import { initOwnTask, releaseCustomPrompt } from './own-task.js';
 import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
@@ -62,6 +63,7 @@ function buildColorKeyHtml() {
     { code: 'cs', name: 'Comma Splice', color: '#b91c1c', loss: '-3' },
     { code: 'wo', name: 'Word Order Error', color: '#6366f1', loss: '-2' },
     { code: 'par', name: 'Faulty Parallel Structure', color: '#059669', loss: '-2' },
+    { code: 'lift', name: 'Lifted from the Passage', color: '#be123c', loss: '-3' },
   ];
 
   const highlights = [
@@ -167,7 +169,11 @@ export function initSetup({ onGenerated } = {}) {
       onStart: () => {
         const topicDisplay = $('topic-display');
         if (topicDisplay) {
-          topicDisplay.textContent = `Writing you a ${(form ? form.label : 'writing').toLowerCase()} prompt…`;
+          // A summary form is having a whole passage written for it, which takes
+          // noticeably longer than a one-line prompt — so it says so.
+          topicDisplay.textContent = isSummaryForm(formId)
+            ? `Writing you a ${(form ? form.label : 'reading').toLowerCase()} to summarise…`
+            : `Writing you a ${(form ? form.label : 'writing').toLowerCase()} prompt…`;
         }
       },
       onSuccess: () => {
@@ -217,7 +223,11 @@ export function syncTopicDisplay() {
   // Nothing is being taught when the task is their own, so don't promise it —
   // but with nothing set at all, the button is still the front door to a form.
   const beginBtn = $('begin-writing-btn');
-  if (beginBtn) beginBtn.textContent = (hasForm || !currentTopic) ? 'Learn the Form →' : 'Read the Task →';
+  if (beginBtn) {
+    beginBtn.textContent = isSummaryMode() ? 'Read the Passage →'
+      : (hasForm || !currentTopic) ? 'Learn the Form →'
+      : 'Read the Task →';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -271,6 +281,17 @@ export function renderLesson(formId) {
     return;
   }
 
+  // For a summary the passage IS the task, so it is printed here rather than
+  // named — and because the gate watches the foot of this receipt, scrolling
+  // past the whole passage is what unlocks the organiser. That is the reading
+  // step, and it enforces itself.
+  const task = isSummaryMode()
+    ? `<p class="lesson-prompt-label">Your task</p>
+       <p class="lesson-prompt">${esc(currentTopic)}</p>
+       ${passageHtml()}`
+    : `<p class="lesson-prompt-label">Your prompt</p>
+       <p class="lesson-prompt">${esc(currentTopic)}</p>`;
+
   paper.innerHTML = `
     <p class="lesson-eyebrow">${esc(form.label)}</p>
     <h3 class="lesson-title">${esc(form.blurb)}</h3>
@@ -282,8 +303,7 @@ export function renderLesson(formId) {
     <p class="lesson-head">A model</p>
     <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
     ${videoLine}
-    <p class="lesson-prompt-label">Your prompt</p>
-    <p class="lesson-prompt">${esc(currentTopic)}</p>`;
+    ${task}`;
 
   syncGate();
 
@@ -405,12 +425,17 @@ export function closeWritingModal() {
   document.body.style.overflow = '';
 }
 
-// Three phases now: learn → write → results.
+/* Phases: learn → write → results, with 'organise' sitting between learn and
+   write for summaries only. It is a step of the same writing phase rather than
+   a fourth stage — the sheet it feeds is the same sheet, and everything after
+   the assemble button is identical for every form. */
 export function showPhase(phase) {
   const lessonSec = $('lesson-section');
+  const summarySec = $('summary-section');
   const editorSec = $('editor-section');
   const resultsSec = $('results-section');
   const ftrLearn = $('ftr-learn');
+  const ftrOrganize = $('ftr-organize');
   const ftrWrite = $('ftr-write');
   const ftrResults = $('ftr-results');
   const mhdrPhase = $('mhdr-phase');
@@ -418,16 +443,25 @@ export function showPhase(phase) {
   const show = (el, on, mode = 'block') => { if (el) el.style.display = on ? mode : 'none'; };
 
   show(lessonSec, phase === 'learn');
+  show(summarySec, phase === 'organize');
   show(editorSec, phase === 'write');
   resultsSec?.classList.toggle('active', phase === 'results');
 
   show(ftrLearn, phase === 'learn', 'flex');
+  show(ftrOrganize, phase === 'organize', 'flex');
   show(ftrWrite, phase === 'write', 'flex');
   show(ftrResults, phase === 'results', 'flex');
 
   if (mhdrPhase) {
-    mhdrPhase.textContent = phase === 'learn' ? 'Learn' : phase === 'write' ? 'Write' : 'Results';
+    mhdrPhase.textContent = phase === 'learn' ? 'Learn'
+      : phase === 'organize' ? 'Organise'
+      : phase === 'write' ? 'Write'
+      : 'Results';
   }
+  // The sheet is titled by what is on it — a summary paragraph is not an essay.
+  const editorLabel = $('editor-label');
+  if (editorLabel) editorLabel.textContent = isSummaryMode() ? 'Your Summary Paragraph' : 'Your Essay';
+
   if (phase !== 'learn') $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
