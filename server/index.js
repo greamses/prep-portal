@@ -99,6 +99,7 @@ app.use("/api/admin",   quota.guard, require("./routes/admin")(db, auth));
 app.use("/api/magazine", require("./routes/magazine")(db));
 app.use("/api/youtube",  require("./routes/youtube")());
 app.use("/api/grammar",  require("./routes/grammar")());
+app.use("/api/writing",  quota.guard, require("./routes/writing")());
 
 // Health check
 app.get("/health", (_, res) => res.json({ status: "ok" }));

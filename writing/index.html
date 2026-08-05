@@ -55,8 +55,9 @@
         <div class="setup-eyebrow">Get Started</div>
         <h2>Choose Your Writing Form</h2>
         <p class="setup-section-sub">
-          Pick the family, then the exact form. We'll teach it, then set you an
-          original prompt to write.
+          Pick the family, then the exact form — that comes first either way.
+          We'll teach it, then set you an original prompt, or you can paste in
+          the one you were given.
         </p>
       </div>
 
@@ -109,17 +110,24 @@
 
         <!-- ═══ YOUR OWN TASK — a prompt you were set, a video you were sent.
              Overrides the generated prompt (js/own-task.js); the video plays
-             in the Learn phase in place of the searched one. ═══ -->
-        <div class="own-box" id="own-box">
+             in the Learn phase in place of the searched one. Locked until a
+             form is picked above: a prompt is marked by its form, and it is
+             filed in the library under it too (js/library.js). ═══ -->
+        <div class="own-box is-locked" id="own-box">
           <button class="own-toggle" id="own-toggle" type="button" aria-expanded="false" aria-controls="own-panel">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            <span>Use my own prompt or video</span>
+            <span id="own-toggle-label">Pick a writing form first to use your own prompt</span>
           </button>
 
           <div class="own-panel" id="own-panel" hidden>
+            <p class="own-lock" id="own-lock">
+              Choose the family and the form above first. Every prompt is taught,
+              marked and filed by its form — so we need to know which one yours is.
+            </p>
+
             <label class="own-label" for="own-prompt">Your writing prompt</label>
             <textarea class="own-field own-field--area" id="own-prompt" rows="3"
               placeholder="Paste or type the prompt you have been set…"></textarea>
@@ -134,6 +142,10 @@
               <button class="btn btn-primary" id="own-apply" type="button">Use these</button>
               <button class="btn btn-ghost" id="own-clear" type="button">Clear</button>
             </div>
+
+            <!-- Prompts already filed under this form — yours, plus any that
+                 have been published to everyone. Built in js/own-task.js. -->
+            <div class="own-shelf" id="own-shelf" hidden></div>
           </div>
         </div>
 

@@ -6,6 +6,11 @@
    told you to watch. Either half works alone — a prompt with no video, or a
    video over a generated prompt.
 
+   THE FORM COMES FIRST. This box stays shut until a writing form has been
+   picked above, for both our sake and theirs: a prompt is marked by its form,
+   and a prompt with no form has no shelf in the library to be filed on
+   (js/library.js). So the order is always family → form → your prompt.
+
    The rule everywhere is LAST ACTION WINS: applying your own prompt replaces
    the generated one, and generating a new one (picking a form, or the reroll
    button) hands the receipt back to the generator. The typed text is never
@@ -21,7 +26,8 @@ import {
   $, customTask, setCustomTask, setCurrentTopic, generatedTopic,
   currentTopic, currentWritingType, setCurrentWritingType,
 } from './config.js';
-import { getForm, isSummaryForm } from './forms.js';
+import { getForm, isSummaryForm, familyOf, formLabel } from './forms.js';
+import { savePrompt, listPrompts } from './library.js';
 
 const STORE_KEY = 'pp-writing-own-task';
 // A prompt is a sentence or two. Anything past this is someone pasting an
@@ -70,10 +76,13 @@ function parseStart(t) {
 }
 
 // ── Persistence — a set task should survive a reload ───
+// The form travels with it: coming back to a saved prompt without the form it
+// was written for would put it back on the page uncategorised.
 function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
       prompt: customTask.prompt, video: customTask.video, usePrompt: customTask.usePrompt,
+      form: getForm(currentWritingType) ? currentWritingType : '',
     }));
   } catch { /* private mode — the task just won't outlive the tab */ }
 }
@@ -83,15 +92,20 @@ function load() {
 }
 
 // ── Wiring ─────────────────────────────────────────────
-export function initOwnTask({ onChange } = {}) {
+let syncLockFn = null;
+
+export function initOwnTask({ onChange, onFormRestored } = {}) {
   const box = $('own-box');
   const toggle = $('own-toggle');
+  const toggleLabel = $('own-toggle-label');
   const panel = $('own-panel');
+  const lockEl = $('own-lock');
   const promptEl = $('own-prompt');
   const videoEl = $('own-video');
   const noteEl = $('own-note');
   const applyBtn = $('own-apply');
   const clearBtn = $('own-clear');
+  const shelfEl = $('own-shelf');
   if (!box || !panel || !promptEl || !videoEl) return;
 
   const setOpen = (open) => {
@@ -105,9 +119,83 @@ export function initOwnTask({ onChange } = {}) {
     noteEl.classList.toggle('is-bad', !!(msg && bad));
   };
 
+  /* ── The lock ──────────────────────────────────────────
+     No form, no prompt. The box still opens when it is locked — being told
+     why is more use than a dead button — but the fields stay out of reach
+     until the picker above has been answered.
+
+     A task that is already in play unlocks it too, because by then the
+     question has been answered: an old shared link that carries a prompt but
+     no form is still a task somebody was set, and refusing to show it would
+     help nobody. The lock guards TYPING a prompt, not holding one. */
+  const isLocked = () => !getForm(currentWritingType) && !customTask.usePrompt;
+
+  function syncLock() {
+    const locked = isLocked();
+    box.classList.toggle('is-locked', locked);
+    if (lockEl) lockEl.hidden = !locked;
+    [promptEl, videoEl, applyBtn, clearBtn].forEach((el) => { if (el) el.disabled = locked; });
+    if (toggleLabel) {
+      toggleLabel.textContent = locked
+        ? 'Pick a writing form first to use your own prompt'
+        : getForm(currentWritingType)
+          ? `Use my own prompt or video — ${formLabel(currentWritingType)}`
+          : 'Use my own prompt or video';
+    }
+    if (locked) { if (shelfEl) { shelfEl.hidden = true; shelfEl.innerHTML = ''; } }
+    else renderShelf();
+  }
+  // Picking a form upstairs is what unlocks this box, so the lock has to be
+  // re-checkable from outside as well as from in here.
+  syncLockFn = syncLock;
+
+  /* ── The shelf ─────────────────────────────────────────
+     Prompts already filed under this form — the caller's own, plus any that
+     have been published to everyone. Clicking one drops it into the box; it
+     still has to be applied, so nothing changes behind the student's back. */
+  let shelfForm = null;
+  async function renderShelf() {
+    if (!shelfEl) return;
+    const form = currentWritingType;
+    if (shelfForm === form) return;      // already showing this form's shelf
+    shelfForm = form;
+    shelfEl.hidden = true;
+    shelfEl.innerHTML = '';
+
+    const prompts = await listPrompts(form);
+    if (shelfForm !== form || !prompts.length) return;   // form moved on, or bare shelf
+
+    shelfEl.innerHTML = `
+      <p class="own-shelf-label">Already in the library for this form</p>
+      <div class="own-shelf-row">
+        ${prompts.map((p) => `
+          <button class="own-shelf-item" type="button" data-prompt="${attr(p.prompt)}" data-video="${attr(p.video)}">
+            ${esc(p.prompt)}
+          </button>`).join('')}
+      </div>`;
+    shelfEl.hidden = false;
+
+    shelfEl.querySelectorAll('.own-shelf-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        promptEl.value = btn.dataset.prompt || '';
+        if (btn.dataset.video && !videoEl.value.trim()) videoEl.value = btn.dataset.video;
+        note('Taken from the library — press "Use these" to set it.');
+        promptEl.focus();
+      });
+    });
+  }
+
   toggle?.addEventListener('click', () => setOpen(panel.hidden));
 
-  function apply({ silent = false, shared = false, startFallback = 0 } = {}) {
+  function apply({ silent = false, shared = false, startFallback = 0, file = false } = {}) {
+    // Only a hand-typed prompt is gated — a restore or a shared link is a task
+    // that was already set, arriving a second time.
+    if (!silent && !shared && isLocked()) {
+      setOpen(true);
+      note('Choose the family and the form above first — a prompt is marked, and filed, by its form.', true);
+      return false;
+    }
+
     const prompt = promptEl.value.trim().slice(0, MAX_PROMPT);
     const video = videoEl.value.trim();
 
@@ -120,6 +208,19 @@ export function initOwnTask({ onChange } = {}) {
     if (!prompt && !parsed) {
       note('Add a prompt, a video link, or both.', true);
       return false;
+    }
+
+    // Every prompt somebody types goes on the shelf for its form. Fire and
+    // forget — a busy library must never hold up the writing.
+    if (file && prompt) {
+      savePrompt({
+        prompt,
+        form: currentWritingType,
+        formLabel: formLabel(currentWritingType),
+        family: familyOf(currentWritingType),
+        videoId: parsed ? parsed.videoId : '',
+        videoStart: parsed ? parsed.start : 0,
+      }).then((ok) => { if (ok) { shelfForm = null; renderShelf(); } });
     }
 
     setCustomTask({
@@ -141,11 +242,14 @@ export function initOwnTask({ onChange } = {}) {
         : prompt ? 'Using your prompt.'
         : 'Using your video — the prompt above stays as it is.'
     );
+    syncLock();
     onChange?.();
     return true;
   }
 
-  applyBtn?.addEventListener('click', () => apply());
+  // Only a prompt somebody actually typed is filed — a restore or a shared
+  // link is the same prompt arriving a second time, not a new one.
+  applyBtn?.addEventListener('click', () => apply({ file: true }));
 
   clearBtn?.addEventListener('click', () => {
     const wasUsingOwn = customTask.usePrompt;
@@ -159,6 +263,7 @@ export function initOwnTask({ onChange } = {}) {
     note(generatedTopic || !wasUsingOwn
       ? 'Cleared. Back to the generated prompt.'
       : 'Cleared. Pick a form above to be set a prompt.');
+    syncLock();
     onChange?.();
   });
 
@@ -181,13 +286,22 @@ export function initOwnTask({ onChange } = {}) {
 
   // ── What the page opens with ─────────────────────────
   // A link beats storage: someone who follows a shared task means to do THAT
-  // task, not the one they left half-finished yesterday.
+  // task, not the one they left half-finished yesterday. Either way the FORM
+  // is restored first, so the box is already unlocked by the time the prompt
+  // lands in it and the picker above shows what it is set to.
+  const restoreForm = (formId) => {
+    if (!getForm(formId)) return;
+    setCurrentWritingType(formId);
+    onFormRestored?.(formId);
+  };
+
   const shared = readSharedTask();
   if (shared) {
     promptEl.value = shared.prompt;
     videoEl.value = shared.video;
-    if (shared.form) setCurrentWritingType(shared.form);
+    restoreForm(shared.form);
     setOpen(true);
+    syncLock();
     apply({ shared: true, startFallback: shared.start });
     return;
   }
@@ -198,11 +312,26 @@ export function initOwnTask({ onChange } = {}) {
   if (saved && (saved.prompt || saved.video)) {
     promptEl.value = saved.prompt || '';
     videoEl.value = saved.video || '';
+    restoreForm(saved.form);
     setOpen(true);
+    syncLock();
     if (saved.usePrompt && saved.prompt) apply({ silent: true });
     else if (saved.video) apply({ silent: true });
+    return;
   }
+
+  syncLock();
 }
+
+/* Called by the setup carousel the moment a form is chosen — that is the event
+   that unlocks the box, and there is no other way in. */
+export function refreshOwnTaskLock() {
+  syncLockFn?.();
+}
+
+const esc = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const attr = (s) => esc(s).replace(/"/g, '&quot;');
 
 /* ── Sharing ────────────────────────────────────────────
    The link carries the prompt as plain readable text on purpose: a teacher

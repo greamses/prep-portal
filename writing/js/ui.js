@@ -4,9 +4,9 @@
 
 import { $, currentTopic, currentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
-import { FAMILIES, getForm, formLabel, isSummaryForm } from './forms.js';
+import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
-import { initOwnTask, releaseCustomPrompt, canShareTask } from './own-task.js';
+import { initOwnTask, releaseCustomPrompt, canShareTask, refreshOwnTaskLock } from './own-task.js';
 import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
 
@@ -167,6 +167,9 @@ export function initSetup({ onGenerated } = {}) {
 
     fetchGeneratedTopic(formId, {
       onStart: () => {
+        // The form is now set, which is what lets the student type their own
+        // prompt at all — and what tells the library where to file it.
+        refreshOwnTaskLock();
         const topicDisplay = $('topic-display');
         if (topicDisplay) {
           // A summary form is having a whole passage written for it, which takes
@@ -198,12 +201,24 @@ export function initSetup({ onGenerated } = {}) {
   // the topic, not to send you back through the picker.
   refreshBtn?.addEventListener('click', () => { if (pickedForm) generate(pickedForm); });
 
-  // Their own prompt/video. It needs no form: a task you were set is already
-  // a task, so the Learn phase falls back to the prompt on its own.
+  // Their own prompt/video. The form comes FIRST — the box above is locked
+  // until one is picked — so a brought-in task is taught, marked and filed
+  // under exactly the same form a generated one would be.
   initOwnTask({
     onChange: () => {
       syncTopicDisplay();
       if (beginBtn) beginBtn.disabled = !currentTopic;
+    },
+    // A saved or shared task carries its form. Put the picker where that form
+    // is, so the page they come back to is the page they left.
+    onFormRestored: (formId) => {
+      pickedForm = formId;
+      pickedFamily = familyOf(formId);
+      showFamilyStep();
+      showStyleStep();
+      carousel.start('family');
+      carousel.goTo('style');
+      if (refreshBtn) refreshBtn.style.display = '';
     },
   });
 }

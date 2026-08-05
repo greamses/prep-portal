@@ -1561,6 +1561,71 @@ details.rubric-wrap[open] summary::after {
   margin-top: 12px;
 }
 
+/* ── Locked until a form is picked ──────────────────────
+   The drawer still opens while it is locked — being told why is more use
+   than a dead button — but nothing inside it can be used yet. */
+.own-box.is-locked { border-style: dotted; opacity: 0.9; }
+.own-box.is-locked .own-toggle { color: var(--text-tertiary); }
+.own-lock {
+  margin: 12px 0 2px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--accent-warning, var(--accent-secondary)) 16%, var(--surface-primary));
+  border: 1px dashed color-mix(in srgb, var(--ink) 28%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.own-lock[hidden] { display: none; }
+.own-box.is-locked .own-label,
+.own-box.is-locked .own-field { opacity: 0.5; }
+.own-field:disabled { cursor: not-allowed; }
+
+/* ── The shelf — prompts already filed under this form ──
+   Torn slips of paper, small enough that eight of them do not out-shout the
+   box they sit under. Clicking one only fills the field; setting it is still
+   a deliberate press of "Use these". */
+.own-shelf { margin-top: 16px; }
+.own-shelf[hidden] { display: none; }
+.own-shelf-label {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+}
+.own-shelf-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.own-shelf-item {
+  max-width: 100%;
+  padding: 8px 11px;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--text-secondary);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+  /* A prompt is a sentence or two; on the shelf it gets two lines and a
+     tail-off, because the point here is recognising it, not reading it. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.own-shelf-item:hover {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
 /* The badge on the prompt slip that says whose prompt you are looking at. */
 .topic-own-flag {
   display: inline-block;
