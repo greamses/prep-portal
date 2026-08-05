@@ -2,12 +2,12 @@
    PREPBOT — UI UTILITIES
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, currentWritingType, customTask } from './config.js';
+import { $, currentTopic, currentWritingType, setCurrentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic } from './api.js';
 import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
-import { initOwnTask, releaseCustomPrompt, canShareTask, refreshOwnTaskLock } from './own-task.js';
-import { createCarousel, renderChoiceStep } from '/utils/components/setup-carousel.js';
+import { initOwnTask, releaseCustomPrompt, canShareTask, ownTaskEls } from './own-task.js';
+import { createCarousel, renderChoiceStep, renderCustomStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
 
 // ── Accordion Factory ──────────────────────────────────
@@ -107,12 +107,22 @@ export function initColorKeyAccordion(container) {
   }));
 }
 
-// ── Landing Setup — the shared step carousel ───────────
-// Step 1 picks the family, step 2 the form inside it, and picking a form
-// generates the prompt. "Narrative" alone is not a thing you can be marked
-// on, which is why there is a second step at all — see js/forms.js.
+/* ── Landing setup — the shared step carousel ───────────
+   Three questions, in this order and no other:
+
+     1. which FAMILY of writing      ("Narrative" alone is not a thing you can
+     2. which FORM inside it          be marked on — see js/forms.js)
+     3. where the PROMPT comes from  — we write you one, you paste the one you
+                                       were set, or you take one off the shelf
+
+   Step 3 is the point of the ordering. A prompt is taught, marked and filed by
+   its form, so it cannot be asked for until the form is settled — which is why
+   the "your own prompt" box does not exist on the page until you get here. It
+   is staged in the HTML and MOVED into the last two slides (js/own-task.js).
+   ─────────────────────────────────────────────────────── */
 let pickedFamily = null;
 let pickedForm = null;
+let pickedSource = null;
 
 export function initSetup({ onGenerated } = {}) {
   const mount = $('writing-setup');
@@ -123,6 +133,9 @@ export function initSetup({ onGenerated } = {}) {
   const carousel = createCarousel(mount);
   carousel.addSlide('family', 'Form');
   carousel.addSlide('style', 'Style');
+  carousel.addSlide('source', 'Prompt');
+  carousel.addSlide('own', 'Your task');
+  carousel.addSlide('shelf', 'Library');
 
   function showFamilyStep() {
     renderChoiceStep(carousel, 'family', {
@@ -143,7 +156,7 @@ export function initSetup({ onGenerated } = {}) {
     const fam = FAMILIES.find((f) => f.id === pickedFamily) || FAMILIES[0];
     renderChoiceStep(carousel, 'style', {
       title: `${fam.label} — which form?`,
-      subtitle: 'Pick one and we\'ll write you a prompt for it.',
+      subtitle: 'Pick one, then say where the prompt should come from.',
       name: 'writing-form',
       colorOffset: 2,
       options: fam.forms.map((f) => ({
@@ -153,8 +166,63 @@ export function initSetup({ onGenerated } = {}) {
         checked: f.id === pickedForm,
       })),
       skipLabel: 'Use this',
-      onPick: (formId) => generate(formId),
+      onPick: (formId) => {
+        // Picking a form no longer writes a prompt on its own — that is now one
+        // of three answers to the last question, not the only one.
+        pickedForm = formId;
+        setCurrentWritingType(formId);
+        showSourceStep();
+        carousel.goTo('source');
+      },
     });
+  }
+
+  // ── Step 3 — where the prompt comes from ─────────────
+  function showSourceStep() {
+    const label = formLabel(pickedForm);
+    renderChoiceStep(carousel, 'source', {
+      title: `${label} — where is the prompt coming from?`,
+      subtitle: 'Ours, yours, or one already on the shelf. You can come back and swap.',
+      name: 'writing-source',
+      colorOffset: 4,
+      options: [
+        { value: 'generate', label: 'Write me one', note: `an original ${label.toLowerCase()} prompt`, checked: pickedSource === 'generate' },
+        { value: 'own', label: 'I have my own', note: 'paste the prompt you were set', checked: pickedSource === 'own' },
+        { value: 'library', label: 'From the library', note: `prompts kept under ${label}`, checked: pickedSource === 'library' },
+      ],
+      skipLabel: 'Use this',
+      onPick: (src) => {
+        pickedSource = src;
+        if (src === 'generate') { generate(pickedForm); return; }
+        if (src === 'own') { showOwnStep(); carousel.goTo('own'); return; }
+        showShelfStep();
+        carousel.goTo('shelf');
+      },
+    });
+  }
+
+  // The last two slides are not built from options — they hold the real
+  // elements, moved here from the page so every id and listener survives.
+  function showOwnStep() {
+    const els = ownTaskEls();
+    if (!els) return;
+    renderCustomStep(carousel, 'own', {
+      title: 'Your own task',
+      subtitle: `It will be taught and marked as ${formLabel(pickedForm)} — and kept in the library under it.`,
+      content: els.panel,
+    });
+    els.focusPrompt();
+  }
+
+  function showShelfStep() {
+    const els = ownTaskEls();
+    if (!els || !els.shelf) return;
+    renderCustomStep(carousel, 'shelf', {
+      title: 'On the shelf',
+      subtitle: 'Prompts already filed under this form — yours, and any we have published.',
+      content: els.shelf,
+    });
+    els.refreshShelf();
   }
 
   function generate(formId) {
@@ -167,9 +235,6 @@ export function initSetup({ onGenerated } = {}) {
 
     fetchGeneratedTopic(formId, {
       onStart: () => {
-        // The form is now set, which is what lets the student type their own
-        // prompt at all — and what tells the library where to file it.
-        refreshOwnTaskLock();
         const topicDisplay = $('topic-display');
         if (topicDisplay) {
           // A summary form is having a whole passage written for it, which takes
@@ -201,24 +266,36 @@ export function initSetup({ onGenerated } = {}) {
   // the topic, not to send you back through the picker.
   refreshBtn?.addEventListener('click', () => { if (pickedForm) generate(pickedForm); });
 
-  // Their own prompt/video. The form comes FIRST — the box above is locked
-  // until one is picked — so a brought-in task is taught, marked and filed
-  // under exactly the same form a generated one would be.
+  // Their own prompt/video. The panel and the shelf are wired here and then
+  // handed to the last two slides above — there is no other door into them.
   initOwnTask({
     onChange: () => {
       syncTopicDisplay();
       if (beginBtn) beginBtn.disabled = !currentTopic;
     },
-    // A saved or shared task carries its form. Put the picker where that form
-    // is, so the page they come back to is the page they left.
+    // A saved or shared task carries its form, so the whole walk can be
+    // replayed: family → form → "I have my own" → the box holding it.
     onFormRestored: (formId) => {
-      pickedForm = formId;
-      pickedFamily = familyOf(formId);
-      showFamilyStep();
-      showStyleStep();
+      if (getForm(formId)) {
+        pickedForm = formId;
+        pickedFamily = familyOf(formId);
+        pickedSource = 'own';
+        showFamilyStep();
+        showStyleStep();
+        showSourceStep();
+      }
+      showOwnStep();
       carousel.start('family');
-      carousel.goTo('style');
-      if (refreshBtn) refreshBtn.style.display = '';
+      if (getForm(formId)) { carousel.goTo('style'); carousel.goTo('source'); }
+      carousel.goTo('own');
+    },
+    // A slip taken off the shelf is already applied; land them on the box so
+    // they can see what they picked, edit it, or clear it. The shelf is stepped
+    // out of rather than stacked on — the two are siblings, not a sequence.
+    onLibraryPick: () => {
+      showOwnStep();
+      if (carousel.current() === 'shelf') carousel.back();
+      carousel.goTo('own');
     },
   });
 }
@@ -228,7 +305,7 @@ export function syncTopicDisplay() {
   const topicDisplay = $('topic-display');
   if (topicDisplay) {
     topicDisplay.textContent = currentTopic
-      || 'Select a writing type above to generate a prompt.';
+      || 'Pick a form above, then say where the prompt should come from.';
   }
   const flag = $('topic-own-flag');
   if (flag) flag.hidden = !customTask.usePrompt;
