@@ -170,31 +170,40 @@ Mark offTopic: false (proceed to mark normally) if:
   • The student drifts off-topic in one section but the main thrust addresses the prompt.`;
 
   const calibration = summary
-    ? `CALIBRATION:
-  Coverage & Accuracy /30: the passage has N paragraphs and the summary should carry the main point of EACH.
-    30=every paragraph represented and nothing misreported, 24-26=one minor point thinned or blurred,
-    18-22=one paragraph missing OR one point misrepresented, 12-16=two or more paragraphs missing,
-    6-10=only the opening of the passage survives. Deduct hard for anything ADDED that the passage never said.
-  Own Words /25: 23-25=fully reworded, 18-22=one or two short phrases carried over, 12-16=several lifted phrases,
-    6-10=largely stitched together from the passage's own sentences. A run of 6+ consecutive words from the source is lifting.
-  Cohesion as One Paragraph /25: 23-25=one flowing paragraph, ordered as the passage was, properly linked,
-    18-22=ordered and linked but slightly listy, 12-16=a string of unconnected sentences,
-    6-10=out of order, or broken into several paragraphs when one was asked for.
-  Grammar & Mechanics /20: 20=zero errors, 16-18=2-3 minor slips, 12-15=4-7 mixed errors, 6-11=8+ errors.
+    ? `CALIBRATION — READ THIS CAREFULLY, A SUMMARY IS SCORED DIFFERENTLY:
 
-MARK DOWN, do not reward: adding an opinion of the passage, adding facts from your own knowledge,
-quoting the passage, keeping its examples or statistics, or writing longer than about a third of the original.`
+  THE SCORE COMES FROM GRAMMAR AND MECHANICS ALONE. A summary starts at 100 and
+  loses marks ONLY for the grammatical and mechanical errors you actually mark up
+  in annotatedText — spelling, punctuation, agreement, tense, articles, prepositions,
+  fragments, run-ons, comma splices, word order, capitalisation. Nothing else.
+  A summary with flawless grammar scores 100 even if its coverage is thin.
+
+  Coverage & Accuracy, Own Words and Cohesion are NOT SCORED. Set their "score" and
+  "outOf" to 0 and put your judgement in their "feedback" — that is where the student
+  learns what they missed, what they lifted and what order to put it in. Say it fully
+  and plainly there; it costs them no marks, so be direct rather than harsh.
+
+  Grammar & Mechanics: set "outOf" to 100 and "score" to 100 minus the total of the
+  loss values on the grammatical/mechanical marks you made. Do NOT deduct for lifting,
+  for missed paragraphs, for intrusions or for order — mark and explain those, but
+  never let them touch the number.
+
+STILL MARK, and still say so in the feedback (they just do not cost marks): adding an opinion
+of the passage, adding facts of your own, quoting, keeping its examples or statistics, or
+writing longer than about a third of the original.`
     : `CALIBRATION:
   Grammar & Mechanics /30: 30=zero errors, 24-26=2-3 minor slips, 18-22=4-7 mixed errors, 12-16=8-12 clear mechanical weaknesses, 6-10=13+ errors.
   Vocabulary & Style /25: 23-25=varied/precise/sophisticated, 18-22=generally good, 12-16=frequent vague diction, 6-10=very limited.
   Structure & Coherence /25: 23-25=clear intro/body/conclusion, 18-22=mostly organised, 12-16=partial structure, 6-10=little organisation.
   Creativity & Content /20: 18-20=genuinely original/rich detail, 13-17=interesting but uneven, 8-12=generic, 3-7=very thin.`;
 
+  // outOf 0 = a category that is COMMENTED ON but not scored; js/render.js
+  // renders those as a note rather than a mark out of something.
   const rubricJson = summary
-    ? `    { "category": "Coverage & Accuracy", "score": 0, "outOf": 30, "feedback": "" },
-    { "category": "Own Words", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Cohesion as One Paragraph", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Grammar & Mechanics", "score": 0, "outOf": 20, "feedback": "" }`
+    ? `    { "category": "Coverage & Accuracy", "score": 0, "outOf": 0, "feedback": "" },
+    { "category": "Own Words", "score": 0, "outOf": 0, "feedback": "" },
+    { "category": "Cohesion as One Paragraph", "score": 0, "outOf": 0, "feedback": "" },
+    { "category": "Grammar & Mechanics", "score": 0, "outOf": 100, "feedback": "" }`
     : `    { "category": "Grammar & Mechanics", "score": 0, "outOf": 30, "feedback": "" },
     { "category": "Vocabulary & Style", "score": 0, "outOf": 25, "feedback": "" },
     { "category": "Structure & Coherence", "score": 0, "outOf": 25, "feedback": "" },
@@ -245,8 +254,13 @@ When offTopic is true:
 
 ${calibration}
 
-TOTAL BANDS: 85-95 near-perfect | 70-84 good | 55-69 average | 40-54 weak | 0-39 very weak.
-NEVER exceed 95. When in doubt, choose the LOWER score.
+${summary
+  ? `TOTAL: totalScore = the Grammar & Mechanics score, i.e. 100 minus the grammatical and
+mechanical losses you marked. A clean summary scores 100 — there is no ceiling here and no
+band table to squeeze it into. Do not average anything, and do not let the unscored
+categories pull it down.`
+  : `TOTAL BANDS: 85-95 near-perfect | 70-84 good | 55-69 average | 40-54 weak | 0-39 very weak.
+NEVER exceed 95. When in doubt, choose the LOWER score.`}
 ${summaryMarks}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

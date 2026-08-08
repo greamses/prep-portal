@@ -41,37 +41,42 @@ export function makeAccordion({ id, title, bodyHtml, startOpen = false, extraCla
 
 // ── Color Key HTML ─────────────────────────────────────
 function buildColorKeyHtml() {
+  /* The key has to be painted in the SAME ink as the marks on the paper. It was
+     written in a hardcoded palette (#dc2626, #7c3aed, #0055ff…) from before the
+     site went to soft paper, so the legend showed hard tailwind red beside a
+     mark that is actually a soft --red — a key that disagrees with the thing it
+     is a key to. Tokens now, so the two can never drift again. */
   const marks = [
-    { code: 'del', name: 'Delete Word', color: '#dc2626', loss: '-2' },
-    { code: 'ins', name: 'Insert Missing Word', color: '#16a34a', loss: '-2' },
-    { code: 'cap', name: 'Capitalise', color: '#ea580c', loss: '-2' },
-    { code: 'lc', name: 'Make Lowercase', color: '#0284c7', loss: '-2' },
-    { code: 'trans', name: 'Transpose / Swap', color: '#7c3aed', loss: '-2' },
-    { code: 'para', name: 'New Paragraph', color: '#0a0a0a', loss: '-2' },
-    { code: 'spell', name: 'Spell Out Abbreviation', color: '#666', loss: '-1' },
-    { code: 'sp', name: 'Misspelling', color: '#dc2626', loss: '-2' },
-    { code: 'run', name: 'Run-on Sentence', color: '#b91c1c', loss: '-3' },
-    { code: 'frag', name: 'Sentence Fragment', color: '#dc2626', loss: '-3' },
-    { code: 'punct', name: 'Wrong Punctuation', color: '#dc2626', loss: '-2' },
-    { code: 'ww', name: 'Wrong Word', color: '#dc2626', loss: '-2' },
-    { code: 'agr', name: 'Subject-Verb Agreement', color: '#ea580c', loss: '-3' },
-    { code: 'vt', name: 'Wrong Verb Tense', color: '#7c3aed', loss: '-2' },
-    { code: 'art', name: 'Article Error', color: '#0284c7', loss: '-2' },
-    { code: 'prep', name: 'Wrong Preposition', color: '#db2777', loss: '-2' },
-    { code: 'rep', name: 'Unnecessary Repetition', color: '#b45309', loss: '-1' },
-    { code: 'ref', name: 'Unclear Pronoun Reference', color: '#0f766e', loss: '-2' },
-    { code: 'cs', name: 'Comma Splice', color: '#b91c1c', loss: '-3' },
-    { code: 'wo', name: 'Word Order Error', color: '#6366f1', loss: '-2' },
-    { code: 'par', name: 'Faulty Parallel Structure', color: '#059669', loss: '-2' },
-    { code: 'lift', name: 'Lifted from the Passage', color: '#be123c', loss: '-3' },
+    { code: 'del', name: 'Delete Word', color: 'var(--red)', loss: '-2' },
+    { code: 'ins', name: 'Insert Missing Word', color: 'var(--green)', loss: '-2' },
+    { code: 'cap', name: 'Capitalise', color: 'var(--amber)', loss: '-2' },
+    { code: 'lc', name: 'Make Lowercase', color: 'var(--blue)', loss: '-2' },
+    { code: 'trans', name: 'Transpose / Swap', color: 'var(--blue)', loss: '-2' },
+    { code: 'para', name: 'New Paragraph', color: 'var(--ink)', loss: '-2' },
+    { code: 'spell', name: 'Spell Out Abbreviation', color: 'var(--muted)', loss: '-1' },
+    { code: 'sp', name: 'Misspelling', color: 'var(--red)', loss: '-2' },
+    { code: 'run', name: 'Run-on Sentence', color: 'var(--red)', loss: '-3' },
+    { code: 'frag', name: 'Sentence Fragment', color: 'var(--red)', loss: '-3' },
+    { code: 'punct', name: 'Wrong Punctuation', color: 'var(--red)', loss: '-2' },
+    { code: 'ww', name: 'Wrong Word', color: 'var(--red)', loss: '-2' },
+    { code: 'agr', name: 'Subject-Verb Agreement', color: 'var(--amber)', loss: '-3' },
+    { code: 'vt', name: 'Wrong Verb Tense', color: 'var(--amber)', loss: '-2' },
+    { code: 'art', name: 'Article Error', color: 'var(--blue)', loss: '-2' },
+    { code: 'prep', name: 'Wrong Preposition', color: 'var(--blue)', loss: '-2' },
+    { code: 'rep', name: 'Unnecessary Repetition', color: 'var(--amber)', loss: '-1' },
+    { code: 'ref', name: 'Unclear Pronoun Reference', color: 'var(--green)', loss: '-2' },
+    { code: 'cs', name: 'Comma Splice', color: 'var(--red)', loss: '-3' },
+    { code: 'wo', name: 'Word Order Error', color: 'var(--blue)', loss: '-2' },
+    { code: 'par', name: 'Faulty Parallel Structure', color: 'var(--green)', loss: '-2' },
+    { code: 'lift', name: 'Lifted from the Passage', color: 'var(--red)', loss: '-3' },
   ];
 
   const highlights = [
-    { name: 'Grammar Cluster', bg: 'rgba(253,224,71,.55)' },
-    { name: 'Vocabulary Issue', bg: 'rgba(96,165,250,.3)' },
-    { name: 'Structure Issue', bg: 'rgba(251,146,60,.3)' },
-    { name: 'Style Issue', bg: 'rgba(196,181,253,.45)' },
-    { name: 'Good Writing', bg: 'rgba(74,222,128,.3)' },
+    { name: 'Grammar Cluster', bg: 'color-mix(in srgb, var(--yellow) 55%, transparent)' },
+    { name: 'Vocabulary Issue', bg: 'color-mix(in srgb, var(--blue) 30%, transparent)' },
+    { name: 'Structure Issue', bg: 'color-mix(in srgb, var(--amber) 30%, transparent)' },
+    { name: 'Style Issue', bg: 'color-mix(in srgb, var(--accent-tertiary, var(--blue)) 45%, transparent)' },
+    { name: 'Good Writing', bg: 'color-mix(in srgb, var(--green) 30%, transparent)' },
   ];
 
   return `
@@ -123,6 +128,9 @@ export function initColorKeyAccordion(container) {
 let pickedFamily = null;
 let pickedForm = null;
 let pickedSource = null;
+// Sharing belongs to the library — the Share button stays away until somebody
+// has been there. See syncTopicDisplay().
+let libraryVisited = false;
 
 export function initSetup({ onGenerated } = {}) {
   const mount = $('writing-setup');
@@ -217,6 +225,8 @@ export function initSetup({ onGenerated } = {}) {
   function showShelfStep() {
     const els = ownTaskEls();
     if (!els || !els.shelf) return;
+    libraryVisited = true;
+    syncTopicDisplay();
     renderCustomStep(carousel, 'shelf', {
       title: 'On the shelf',
       subtitle: 'Prompts already filed under this form — yours, and any we have published.',
@@ -309,10 +319,12 @@ export function syncTopicDisplay() {
   }
   const flag = $('topic-own-flag');
   if (flag) flag.hidden = !customTask.usePrompt;
-  // Nothing to share until there is a task; a summary can never be shared as a
-  // link (see canShareTask), so the button leaves rather than lying.
+  /* Sharing is a LIBRARY action. Setting yourself a task is the common case and
+     it needs no share button in the way — the prompt is filed either way. So the
+     button only appears once somebody has actually been to the library, which is
+     where handing a task to somebody else belongs. */
   const shareBtn = $('topic-share-btn');
-  if (shareBtn) shareBtn.style.display = canShareTask() ? '' : 'none';
+  if (shareBtn) shareBtn.style.display = (libraryVisited && canShareTask()) ? '' : 'none';
   const hasForm = !!getForm(currentWritingType);
   const mhdrType = $('mhdr-type');
   if (mhdrType) mhdrType.textContent = hasForm ? formLabel(currentWritingType).toUpperCase() : 'YOUR OWN TASK';
@@ -561,32 +573,11 @@ export function showPhase(phase) {
   if (phase !== 'learn') $('modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Inject Rewrite Styles ──────────────────────────────
-export function injectRewriteStyles() {
-  if (document.getElementById('rewrite-injected-css')) return;
-  const s = document.createElement('style');
-  s.id = 'rewrite-injected-css';
-  s.textContent = `
-    .score-stamp.rewrite-stamp {
-      background: #0a0a0a; color: #fff;
-      font-size: clamp(1.4rem, 5vw, 2rem);
-      letter-spacing: .04em; padding: .4em .7em;
-    }
-    .rewrite-stamp-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    #rewrite-info-btn {
-      width: 26px; height: 26px; border-radius: 50%;
-      border: 2px solid #0a0a0a; background: #fff; color: #0a0a0a;
-      font-weight: 800; font-size: .85rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; box-shadow: 2px 2px 0 #0a0a0a;
-      transition: background .15s, color .15s;
-    }
-    #rewrite-info-btn:hover { background: #0a0a0a; color: #fff; }
-    #rewrite-info-note {
-      margin-top: 10px; padding: 12px 14px; background: #fffbe6;
-      border: 2px solid #0a0a0a; box-shadow: 3px 3px 0 #0a0a0a;
-      font-size: .875rem; line-height: 1.5; max-width: 480px;
-    }
-  `;
-  document.head.appendChild(s);
-}
+/* ── Rewrite styles ────────────────────────────────────
+   These are in style.css now, in the page's own tokens. They were injected
+   here as a hardcoded block — 2px solid #0a0a0a with a hard offset shadow,
+   the brutalist look the site left behind — and being injected at runtime it
+   outranked the stylesheet, so the REWRITE stamp stayed black-on-white long
+   after everything around it had gone to soft paper. Kept as a no-op because
+   main.js calls it on load. */
+export function injectRewriteStyles() { /* see style.css → REWRITE STAMP */ }

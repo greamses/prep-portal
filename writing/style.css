@@ -455,6 +455,21 @@ details.rubric-wrap[open] summary::after {
   align-self: center;
 }
 
+/* A category that is commented on but deliberately NOT marked — every summary
+   category except grammar. Quiet, so the eye goes to the note, not to a number
+   that isn't there. */
+.rubric-score--note {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+}
+.rubric-row--note {
+  background: color-mix(in srgb, var(--ink) 2.5%, transparent);
+}
+
 .rubric-fb {
   grid-column: 1 / -1;
   font-family: "JetBrains Mono", monospace;
@@ -569,10 +584,19 @@ details.rubric-wrap[open] summary::after {
 /* ════════════════════════════════════════════════════
    SCORE STAMP — larger, rotated, dramatic
 ════════════════════════════════════════════════════ */
+/* The stamp gets its own band above the paper. It used to be absolutely
+   positioned inside .annotated-paper, which put a 48px number straight over
+   the sentences its own marks were pointing at. */
+.stamp-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 clamp(6px, 2vw, 18px) 6px;
+}
+
 .score-stamp {
-  position: absolute;
-  top: clamp(14px, 3vw, 28px);
-  right: clamp(14px, 3vw, 28px);
   font-family: "Unbounded", sans-serif;
   font-weight: 900;
   font-size: clamp(24px, 5vw, 48px);
@@ -595,6 +619,56 @@ details.rubric-wrap[open] summary::after {
 .score-stamp.avg {
   border-color: var(--amber);
   color: var(--amber);
+}
+
+/* ── REWRITE STAMP ─────────────────────────────────────
+   Moved out of a runtime-injected <style> in js/ui.js, where it was hardcoded
+   black-on-white with a hard offset shadow and therefore immune to the theme. */
+.score-stamp.rewrite-stamp {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--text-on-accent, var(--surface-primary));
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  letter-spacing: 0.04em;
+  padding: 0.4em 0.7em;
+}
+.rewrite-stamp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#rewrite-info-btn {
+  width: 26px;
+  height: 26px;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+#rewrite-info-btn:hover {
+  background: var(--ink);
+  color: var(--text-on-accent, var(--surface-primary));
+}
+#rewrite-info-note {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--accent-primary) 18%, var(--surface-primary));
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 480px;
 }
 
 /* ════════════════════════════════════════════════════
@@ -2414,7 +2488,7 @@ details.rubric-wrap summary { min-height: 48px; }
 
 /* ── The one red-pen mark that exists only in a summary ── */
 .doodle-lift {
-  text-decoration: underline double #be123c;
+  text-decoration: underline double var(--red);
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
@@ -2424,7 +2498,7 @@ details.rubric-wrap summary { min-height: 48px; }
   bottom: calc(100% + 3px);
   left: 50%;
   transform: translateX(-50%);
-  color: #be123c;
+  color: var(--red);
   font-family: "Caveat", cursive;
   font-size: 0.85em;
   font-weight: 700;

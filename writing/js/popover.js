@@ -84,8 +84,8 @@ function applyOpt(chosen) {
   activeEl.querySelector('.deduction')?.remove();
   activeEl.textContent = chosen;
   activeEl.style.textDecoration = 'none';
-  activeEl.style.background = 'rgba(74,222,128,.25)';
-  activeEl.style.color = 'var(--green,#00a550)';
+  activeEl.style.background = 'color-mix(in srgb, var(--green) 25%, transparent)';
+  activeEl.style.color = 'var(--green)';
   activeEl.style.fontWeight = '600';
   activeEl.style.outline = 'none';
   activeEl.style.borderBottom = 'none';
@@ -196,9 +196,11 @@ export function openAnnotationPopover(el) {
     if (tmp) {
       const s = getComputedStyle(tmp);
       return s.borderBottomColor !== 'rgba(0, 0, 0, 0)' ? s.borderBottomColor
-        : s.outlineColor !== 'rgba(0, 0, 0, 0)' ? s.outlineColor : '#0a0a0a';
+        : s.outlineColor !== 'rgba(0, 0, 0, 0)' ? s.outlineColor : 'var(--ink)';
     }
-    return type ? '#0a0a0a' : (dataType === 'sent' ? '#e67e00' : '#0055ff');
+    // Theme tokens, not the old hardcoded ink/orange/blue — a badge painted
+    // #0055ff on soft paper is exactly the sort of thing that "dips in".
+    return type ? 'var(--ink)' : (dataType === 'sent' ? 'var(--amber)' : 'var(--blue)');
   })();
   
   const redPenHtml = buildRedPenHtml(el.textContent, fix, optsStr, dataType, type);

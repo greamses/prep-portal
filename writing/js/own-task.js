@@ -25,9 +25,10 @@
 import {
   $, customTask, setCustomTask, setCurrentTopic, generatedTopic,
   currentTopic, currentWritingType, setCurrentWritingType,
+  currentPassage, setCurrentPassage,
 } from './config.js';
 import { getForm, isSummaryForm, familyOf, formLabel } from './forms.js';
-import { savePrompt, listPrompts } from './library.js';
+import { savePrompt, listPrompts, fetchTask } from './library.js';
 
 const STORE_KEY = 'pp-writing-own-task';
 // A prompt is a sentence or two. Anything past this is someone pasting an
@@ -258,16 +259,24 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
   // ── Copy a link to this task ─────────────────────────
   const shareBtn = $('topic-share-btn');
   shareBtn?.addEventListener('click', async () => {
-    const url = buildShareUrl();
-    if (!url) return;
-    const copied = await copyText(url);
-    if (copied) {
-      flashShared('Link copied');
-    } else {
-      // Clipboard refused (permissions, or an insecure context) — then the
-      // link has to be visible somewhere it can be selected by hand.
-      note(`Copy this link: ${url}`);
-      flashShared('Link below');
+    shareBtn.disabled = true;
+    try {
+      const url = await buildShareUrl();
+      if (!url) {
+        flashShared('Nothing to share');
+        return;
+      }
+      const copied = await copyText(url);
+      if (copied) {
+        flashShared('Link copied');
+      } else {
+        // Clipboard refused (permissions, or an insecure context) — then the
+        // link has to be visible somewhere it can be selected by hand.
+        note(`Copy this link: ${url}`);
+        flashShared('Link below');
+      }
+    } finally {
+      shareBtn.disabled = false;
     }
   });
 
@@ -284,6 +293,55 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
     apply(applyOpts);
   };
 
+  // A ?task=<id> link is a summary (or any task filed by reference): the passage
+  // has to come back from the library before anything can be applied, so this
+  // one path is async. The saved task is NOT restored underneath it — a followed
+  // link means that task, and swapping it out mid-fetch would be a flicker and a
+  // lie about what they opened.
+  const sharedId = readSharedTaskId();
+  if (sharedId) {
+    note('Opening the task you were sent…');
+    fetchTask(sharedId).then((task) => {
+      if (!task) {
+        note('That shared task could not be found. It may have been removed.', true);
+        return;
+      }
+      const video = task.videoId ? `https://youtu.be/${task.videoId}` : '';
+
+      /* A passage arrives as a PASSAGE, not as a custom prompt. isSummaryMode()
+         is `!customTask.usePrompt && currentPassage`, so pushing a summary
+         through apply() — which sets usePrompt — would hand the receiver a
+         blank essay sheet instead of the organiser, with the passage sitting
+         there unused. So this path sets the task directly and leaves the
+         custom-prompt claim alone; only the video rides along. */
+      if (task.passage) {
+        if (getForm(task.form)) setCurrentWritingType(task.form);
+        setCurrentPassage(task.passage);
+        setCurrentTopic(task.prompt || '');
+        videoEl.value = video;
+        const parsed = video ? parseYouTube(video) : null;
+        if (parsed) {
+          setCustomTask({
+            video,
+            videoId: parsed.videoId,
+            videoStart: parsed.start || task.videoStart || 0,
+            usePrompt: false,
+          });
+        }
+        onFormRestored?.(task.form || '');
+        note('This reading was shared with you — press Start when you are ready.');
+        onChange?.();
+        return;
+      }
+
+      restore(
+        { prompt: task.prompt, video, form: task.form },
+        { shared: true, startFallback: task.videoStart || 0 },
+      );
+    });
+    return;
+  }
+
   const shared = readSharedTask();
   if (shared) {
     restore(shared, { shared: true, startFallback: shared.start });
@@ -292,6 +350,12 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
 
   const saved = load();
   if (saved && (saved.prompt || saved.video)) restore(saved, { silent: true });
+}
+
+/** The id on a ?task= link, or ''. Ids are hashes, so the shape is checkable. */
+export function readSharedTaskId() {
+  const id = (new URLSearchParams(location.search).get('task') || '').trim();
+  return /^[a-z0-9_-]{3,120}$/i.test(id) ? id : '';
 }
 
 /* The panel and the shelf, for js/ui.js to hang on the setup carousel. */
@@ -321,9 +385,30 @@ export function readSharedTask() {
   };
 }
 
-export function buildShareUrl() {
+/* A SUMMARY's task is a whole reading, which will not go in a query string. So
+   that one shares by REFERENCE: the passage is filed in the library and the link
+   carries ?task=<id>. Everything else still shares by value, because a readable
+   ?prompt= is worth keeping — a teacher can see what they are sending, and edit
+   it in the address bar without any encoding ceremony. */
+export async function buildShareUrl() {
   if (!canShareTask()) return '';
   const url = new URL(location.origin + location.pathname);
+
+  if (needsPassageShare()) {
+    const id = await savePrompt({
+      prompt: currentTopic,
+      form: currentWritingType,
+      formLabel: formLabel(currentWritingType),
+      family: familyOf(currentWritingType),
+      passage: currentPassage,
+      videoId: customTask.videoId,
+      videoStart: customTask.videoStart,
+    });
+    if (!id || id === true) return '';   // could not file it — no link to give
+    url.searchParams.set('task', id);
+    return url.toString();
+  }
+
   url.searchParams.set('prompt', currentTopic);
   // The id rather than the pasted address: it is 11 characters instead of
   // sixty, and parseYouTube takes a bare id back.
@@ -335,12 +420,15 @@ export function buildShareUrl() {
   return url.toString();
 }
 
-/* A summary is set from a whole generated PASSAGE, not a prompt line, and a
-   passage does not fit in a query string — so that one form is not shareable
-   and says so rather than sending a link that arrives empty. */
+// A summary whose task is the generated passage rather than a typed prompt.
+const needsPassageShare = () =>
+  isSummaryForm(currentWritingType) && !customTask.usePrompt && !!currentPassage;
+
 export function canShareTask() {
   if (!currentTopic) return false;
-  if (isSummaryForm(currentWritingType) && !customTask.usePrompt) return false;
+  // A summary is shareable now — but only once it actually has a passage to
+  // file. Before that there is nothing on the other end of the link.
+  if (isSummaryForm(currentWritingType) && !customTask.usePrompt) return !!currentPassage;
   return true;
 }
 

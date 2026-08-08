@@ -43,6 +43,22 @@ function hash(str) {
 // keep their own copy (and their own count).
 const normalise = (s) => String(s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
+/* A SUMMARY's task is a whole passage, not a line, so it can never travel in a
+   query string the way a prompt does. Filing it here is what makes a summary
+   shareable at all: the link carries ?task=<id> and the passage is fetched back.
+   Capped hard — this is a school reading passage, not a document store. */
+const MAX_PARAS = 12;
+const MAX_PARA = 1200;
+function cleanPassage(p) {
+  if (!p || typeof p !== "object") return null;
+  const paragraphs = (Array.isArray(p.paragraphs) ? p.paragraphs : [])
+    .map((s) => String(s || "").trim().slice(0, MAX_PARA))
+    .filter(Boolean)
+    .slice(0, MAX_PARAS);
+  if (!paragraphs.length) return null;
+  return { title: String(p.title || "").slice(0, 200), paragraphs };
+}
+
 module.exports = function () {
   const router = express.Router();
   const db = () => admin.firestore();
@@ -81,8 +97,14 @@ module.exports = function () {
       // which is exactly why the picker now comes first.
       if (!/^[a-z0-9-]+$/.test(form)) return res.status(400).json({ error: "a writing form is required" });
 
+      const passage = cleanPassage(b.passage);
+
       const uid = req.user.uid;
-      const id = `${hash(uid)}_${form}_${hash(normalise(prompt))}`;
+      // The passage joins the key: two summaries can share the same task line
+      // ("Summarise the passage below…") over completely different readings, and
+      // keying on the line alone would file the second one on top of the first.
+      const key = normalise(prompt) + (passage ? `|${normalise(passage.title)}|${passage.paragraphs.length}` : "");
+      const id = `${hash(uid)}_${form}_${hash(key)}`;
       const ref = col().doc(id);
       const existing = await ref.get();
       const prev = existing.exists ? existing.data() || {} : null;
@@ -103,6 +125,7 @@ module.exports = function () {
           family,
           videoId: videoId || (prev && prev.videoId) || "",
           videoStart: videoStart || (prev && prev.videoStart) || 0,
+          passage: passage || (prev && prev.passage) || null,
           ownerUid: uid,
           ownerEmail: req.user.email || null,
           published: prev ? !!prev.published : false,
@@ -150,6 +173,33 @@ module.exports = function () {
       res.json({ prompts });
     } catch (err) {
       console.error("[/api/writing/prompts GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /* ── One filed task, by id ────────────────────────────────────────────────
+     What a ?task=<id> share link resolves against. Deliberately UNauthenticated:
+     a task is handed to a class, and a student following the link has usually
+     not signed in yet — a 401 here would make the link useless to exactly the
+     people it was sent to. Only the task itself comes back, never who filed it. */
+  router.get("/task/:id", async (req, res) => {
+    try {
+      const id = String(req.params.id || "").slice(0, 120);
+      if (!/^[a-z0-9_-]+$/i.test(id)) return res.status(400).json({ error: "bad id" });
+      const snap = await col().doc(id).get();
+      if (!snap.exists) return res.status(404).json({ error: "No such task." });
+      const d = snap.data() || {};
+      res.json({
+        found: true,
+        id,
+        prompt: d.prompt || "",
+        form: d.form || "",
+        videoId: d.videoId || "",
+        videoStart: d.videoStart || 0,
+        passage: d.passage || null,
+      });
+    } catch (err) {
+      console.error("[/api/writing/task GET]", err.message);
       res.status(500).json({ error: err.message });
     }
   });

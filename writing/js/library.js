@@ -26,18 +26,34 @@ async function token() {
   try { return await user.getIdToken(); } catch { return null; }
 }
 
-/** File one prompt under its form. Resolves false when it could not be saved. */
-export async function savePrompt({ prompt, form, formLabel, family, videoId, videoStart } = {}) {
+/* File one task under its form. Resolves the filed id, or false.
+   `passage` is how a SUMMARY becomes shareable: its task is a whole reading,
+   which cannot travel in a query string, so it is filed and the link points
+   at it by id. */
+export async function savePrompt({ prompt, form, formLabel, family, videoId, videoStart, passage } = {}) {
   const t = await token();
   if (!t || !prompt || !form) return false;
   try {
     const res = await fetch(`${API_BASE}/api/writing/prompts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-      body: JSON.stringify({ prompt, form, formLabel, family, videoId, videoStart }),
+      body: JSON.stringify({ prompt, form, formLabel, family, videoId, videoStart, passage }),
     });
-    return res.ok;
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => ({}));
+    return data.id || true;
   } catch { return false; }
+}
+
+/** Fetch one filed task by id — what a ?task=<id> share link resolves against. */
+export async function fetchTask(id) {
+  if (!id) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/writing/task/${encodeURIComponent(id)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.found ? data : null;
+  } catch { return null; }
 }
 
 /* The prompts already on the shelf for a form — yours, plus any published.

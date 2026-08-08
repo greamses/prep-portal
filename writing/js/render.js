@@ -8,6 +8,35 @@ import {
 } from './config.js';
 import { attachAnnotationListeners, showComment } from './popover.js';
 import { makeAccordion } from './ui.js';
+import { isSummaryMode } from './summary.js';
+
+/* ── A summary is scored on grammar and mechanics ALONE ──
+   Its other three categories are commented on and deliberately not marked, so
+   the number comes straight off the red pen: 100, less the losses on the
+   grammatical/mechanical marks actually made. Computed here rather than taken
+   on trust from the model, because "add up your own deductions" is exactly the
+   arithmetic a language model is worst at — and a rubric that quietly capped
+   every summary in the seventies is what sent us looking.
+
+   `lift` is the one mark that never costs anything: carrying six words out of
+   the passage is a summary-craft failure, not a mechanical error. It is still
+   marked, still explained, just not charged for. */
+const UNCHARGED_MARKS = new Set(['lift']);
+
+export function grammarScoreFrom(annotatedText) {
+  let deducted = 0;
+  let counted = 0;
+  // Attribute order varies (fix= may precede loss=), so scan opening tags and
+  // pull each attribute out on its own rather than assuming a fixed shape.
+  for (const tag of String(annotatedText || '').match(/<mark\b[^>]*>/gi) || []) {
+    const type = (tag.match(/type=['"]([^'"]+)['"]/i) || [])[1] || '';
+    const loss = parseInt((tag.match(/loss=['"]\s*(-?\d+)/i) || [])[1] || '0', 10);
+    if (!loss || UNCHARGED_MARKS.has(type)) continue;
+    deducted += Math.abs(loss);
+    counted += 1;
+  }
+  return { score: Math.max(0, Math.min(100, 100 - deducted)), deducted, counted };
+}
 
 // Module state
 let paragraphChunks = [];
@@ -232,18 +261,47 @@ export function renderResults(data, originalText) {
   document.getElementById('rewrite-info-btn')?.remove();
   document.getElementById('rewrite-info-note')?.remove();
   
-  const score = Math.min(100, Math.max(0, data.totalScore || 0));
+  const summaryMode = isSummaryMode();
+  const marks = summaryMode ? grammarScoreFrom(data.annotatedText) : null;
+
+  const score = summaryMode
+    ? marks.score
+    : Math.min(100, Math.max(0, data.totalScore || 0));
   elStamp.textContent = `${score}%`;
   elStamp.className = `score-stamp${score < 55 ? ' fail' : score < 70 ? ' avg' : ''}`;
-  
+
+  // In summary mode the marked category is re-stated from what the pen actually
+  // found, so the number on the stamp and the number in the rubric can never
+  // disagree, and the feedback says where it went.
+  const rubric = (data.rubric || []).map((item) => {
+    if (!summaryMode || item.outOf !== 100) return item;
+    const detail = marks.counted
+      ? `${marks.counted} grammatical or mechanical error${marks.counted === 1 ? '' : 's'} marked, costing ${marks.deducted}.`
+      : 'No grammatical or mechanical errors found.';
+    return { ...item, score: marks.score, feedback: `${detail} ${item.feedback || ''}`.trim() };
+  });
+
   elRubric.innerHTML = '';
   const frag = document.createDocumentFragment();
-  (data.rubric || []).forEach((item, i) => {
-    const pct = Math.round((item.score / item.outOf) * 100);
-    const col = pct >= 70 ? 'var(--green,#00a550)' : pct >= 50 ? 'var(--amber,#e67e00)' : 'var(--red,#ff2200)';
+  rubric.forEach((item, i) => {
     const row = document.createElement('div');
-    row.className = 'rubric-row';
     row.style.animationDelay = `${i * 0.06}s`;
+
+    // outOf 0 = commented on, not marked (every summary category except grammar).
+    // It gets no score, no bar and says so, rather than showing a bogus "0 / 0".
+    if (!item.outOf) {
+      row.className = 'rubric-row rubric-row--note';
+      row.innerHTML = `
+        <div class="rubric-cat">${safe(item.category)}</div>
+        <div class="rubric-score rubric-score--note">not marked</div>
+        <p class="rubric-fb">${safe(item.feedback)}</p>`;
+      frag.appendChild(row);
+      return;
+    }
+
+    const pct = Math.round((item.score / item.outOf) * 100);
+    const col = pct >= 70 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    row.className = 'rubric-row';
     row.innerHTML = `
       <div class="rubric-cat">${safe(item.category)}</div>
       <div class="rubric-score" style="color:${col}">${item.score} / ${item.outOf}</div>

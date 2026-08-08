@@ -210,9 +210,11 @@
 
           <!-- RESULTS PHASE -->
           <div id="results-section" class="results-section">
-            <!-- Rubric -->
-            <details class="rubric-wrap">
-              <summary>View Grading Rubric</summary>
+            <!-- Rubric — OPEN by default. This is the marking: every category's
+                 feedback lives in here, and folded away behind "view" it read as
+                 though the examiner had said nothing at all. -->
+            <details class="rubric-wrap" id="rubric-wrap" open>
+              <summary>Your Marks &amp; Feedback</summary>
               <div class="rubric-content" id="rubric-content"></div>
             </details>
 
@@ -402,9 +404,13 @@
               </div>
             </div>
 
-            <!-- Annotated Paper -->
-            <div class="annotated-paper" id="annotated-paper">
+            <!-- Annotated Paper. The stamp sits in a band ABOVE the paper rather
+                 than absolutely on top of it — stamped over the writing it was
+                 covering the very sentences the marks refer to. -->
+            <div class="stamp-row" id="stamp-row">
               <div class="score-stamp" id="score-stamp">0%</div>
+            </div>
+            <div class="annotated-paper" id="annotated-paper">
               <div id="annotated-text"></div>
             </div>
           </div>
