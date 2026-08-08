@@ -40,17 +40,25 @@ export async function savePrompt({ prompt, form, formLabel, family, videoId, vid
   } catch { return false; }
 }
 
-/** The prompts already on the shelf for a form — yours, plus any published. */
+/* The prompts already on the shelf for a form — yours, plus any published.
+   Reports WHY it has nothing rather than just handing back an empty list: an
+   empty shelf and an unreachable one look identical to the caller otherwise,
+   and telling somebody "nothing is filed here yet" when their connection just
+   dropped is a lie the page would then act on. */
 export async function listPrompts(form, { limit = 8 } = {}) {
   const t = await token();
-  if (!t || !form) return [];
+  if (!t) return { ok: false, reason: 'signed-out' };
+  if (!form) return { ok: false, reason: 'no-form' };
   try {
     const res = await fetch(
       `${API_BASE}/api/writing/prompts?form=${encodeURIComponent(form)}&limit=${limit}`,
       { headers: { Authorization: `Bearer ${t}` } },
     );
-    if (!res.ok) return [];
+    if (!res.ok) return { ok: false, reason: 'unreachable' };
     const data = await res.json();
-    return Array.isArray(data.prompts) ? data.prompts : [];
-  } catch { return []; }
+    return { ok: true, prompts: Array.isArray(data.prompts) ? data.prompts : [] };
+  } catch {
+    // fetch itself threw — offline, DNS, a dropped socket.
+    return { ok: false, reason: 'unreachable' };
+  }
 }

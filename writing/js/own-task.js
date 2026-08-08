@@ -127,17 +127,34 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
     shelfForm = form;
     shelfEl.innerHTML = '<p class="own-shelf-label">Looking on the shelf…</p>';
 
-    const prompts = await listPrompts(form);
+    const result = await listPrompts(form);
     if (shelfForm !== form) return;             // they moved on while we asked
 
-    if (!prompts.length) {
+    // An empty shelf and a shelf we could not reach are different things, and
+    // saying the wrong one sends somebody off to retype a prompt they already
+    // have filed. Only the first is an invitation.
+    if (!result.ok || !result.prompts.length) {
+      const label = esc(formLabel(form));
+      const msg = result.ok
+        ? `Nothing filed under ${label} yet. Paste one in and it will be the first —
+           every prompt typed here is kept under the form it was set for.`
+        : result.reason === 'signed-out'
+          ? 'Sign in to keep your prompts and to see the ones already on the shelf.'
+          : `Could not reach the library just then — you may be offline. Your own
+             prompt still works; paste it in and it will be filed when you are back.`;
       shelfEl.innerHTML = `
-        <p class="own-shelf-empty">
-          Nothing filed under ${esc(formLabel(form))} yet. Paste one in and it will be
-          the first — every prompt typed here is kept under the form it was set for.
-        </p>`;
+        <p class="own-shelf-empty">${msg}</p>
+        ${result.ok || result.reason === 'signed-out' ? '' : `
+          <div class="own-shelf-row">
+            <button class="pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" type="button" id="own-shelf-retry">
+              Try again
+            </button>
+          </div>`}`;
+      shelfEl.querySelector('#own-shelf-retry')
+        ?.addEventListener('click', () => renderShelf({ force: true }));
       return;
     }
+    const prompts = result.prompts;
 
     // Sticky notes, like every other choice on this carousel — see
     // [[ui-reuse-shared-components]]: a slip you pick is a note, not a card.
