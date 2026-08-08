@@ -1608,6 +1608,131 @@ details.rubric-wrap[open] summary::after {
   margin-top: 12px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ASSIGN — the teacher's class/student picker (js/assign.js). A torn-paper
+   receipt like everything else on this page, not a generic dialog.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.assign-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 4vw, 32px);
+}
+.assign-bd {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.assign-card {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+}
+.assign-paper { padding: clamp(18px, 4vw, 28px); }
+
+.assign-eyebrow {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+}
+.assign-task {
+  margin: 0 0 18px;
+  font-family: var(--font-display, var(--font-body));
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.assign-who {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.assign-mode {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: var(--border-subtle);
+  background: var(--surface-primary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+}
+.assign-mode:has(input:checked) {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.assign-mode:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+.assign-mode input { accent-color: var(--ink); cursor: pointer; }
+.assign-mode em { font-style: normal; color: var(--text-tertiary); }
+
+.assign-list {
+  margin-top: 10px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px dashed color-mix(in srgb, var(--ink) 26%, transparent);
+}
+.assign-list[hidden] { display: none; }
+.assign-student {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 9px 12px;
+  cursor: pointer;
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.assign-student:last-child { border-bottom: 0; }
+.assign-student:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.assign-student input { accent-color: var(--ink); cursor: pointer; }
+.assign-student-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+}
+.assign-student-mail {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+.assign-empty {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.assign-msg {
+  min-height: 16px;
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.assign-msg.is-bad { color: var(--accent-danger); }
+.assign-msg.is-ok { color: var(--accent-success); }
+
+.assign-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 /* ── The shelf — prompts already filed under this form ──
    Torn slips of paper. Picking one sets it and hands back to the box, so the
    slip has to read like something you can choose at a glance: two lines and a

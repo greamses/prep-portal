@@ -10,7 +10,13 @@
  *   GET  /api/classroom/roster       — teacher's students + class code
  *   POST /api/classroom/join         — student joins a class via { code }
  *   POST /api/classroom/assign       — teacher assigns an activity to students
+ *   POST /api/classroom/assign-cbt   — …a built CBT practice test (by URL)
+ *   POST /api/classroom/assign-writing — …a writing task (by library id)
  *   GET  /api/classroom/assignments  — student's "assigned to me" list
+ *
+ * Every assign route takes { all: true } for the whole class or
+ * { studentUids: [...] } for named students, resolved by one helper that
+ * intersects the list with the teacher's own roster.
  */
 
 const express = require("express");
@@ -47,6 +53,19 @@ module.exports = function () {
     return res.status(403).json({ error: "feature_disabled", reason: verdict.reason });
   }
   const displayName = (req, p) => p.name || (req.user.email ? req.user.email.split("@")[0] : "User");
+
+  /* Who an assignment goes to: the whole class, or the named students.
+     Named uids are INTERSECTED with the teacher's own roster — the list arrives
+     from the browser, and without this a teacher could post any uid at all and
+     drop an assignment into a stranger's list. Assigning to "all" reads the
+     same roster, so the two paths can never disagree about who is in the class. */
+  async function resolveTargets(req, b) {
+    const roster = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
+    const inClass = new Set(roster.docs.map((d) => d.id));
+    if (b.all) return [...inClass];
+    if (!Array.isArray(b.studentUids)) return [];
+    return b.studentUids.slice(0, 300).map(String).filter((uid) => inClass.has(uid));
+  }
 
   // ── POST /class-code — the teacher's join code (idempotent) ───────
   router.post("/class-code", authenticate, async (req, res) => {
@@ -133,13 +152,7 @@ module.exports = function () {
       const act = { id: actSnap.id, ...actSnap.data() };
       if (act.ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "Not your activity." });
 
-      let targets = [];
-      if (b.all) {
-        const r = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
-        targets = r.docs.map((d) => d.id);
-      } else if (Array.isArray(b.studentUids)) {
-        targets = b.studentUids.slice(0, 300).map(String);
-      }
+      const targets = await resolveTargets(req, b);
       if (!targets.length) return res.status(400).json({ error: "No students to assign — add students to your class first." });
 
       const batch = db().batch();
@@ -182,13 +195,7 @@ module.exports = function () {
       const title = String(b.title || "").trim().slice(0, 140) || "Practice test";
       const subject = String(b.subject || "").trim().slice(0, 80) || null;
 
-      let targets = [];
-      if (b.all) {
-        const r = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
-        targets = r.docs.map((d) => d.id);
-      } else if (Array.isArray(b.studentUids)) {
-        targets = b.studentUids.slice(0, 300).map(String);
-      }
+      const targets = await resolveTargets(req, b);
       if (!targets.length) return res.status(400).json({ error: "No students to assign — add students to your class first." });
 
       // Stable doc id from the URL so the same config doesn't pile up duplicates.
@@ -214,6 +221,63 @@ module.exports = function () {
       res.json({ ok: true, assigned: targets.length });
     } catch (e) {
       console.error("[/api/classroom/assign-cbt]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ── POST /assign-writing — a task from the writing library ───────
+     { taskId, all?:bool, studentUids?:[] }. The task is already a stored doc
+     (writingLibrary, see routes/writing.js), so unlike a CBT there is something
+     real to point at: the assignment carries /writing/?task=<id>, which is the
+     same link the Share button hands out. Only the owner of the task may set it
+     — a library id is guessable enough that anyone could otherwise assign
+     somebody else's prompt to their own class. */
+  router.post("/assign-writing", authenticate, async (req, res) => {
+    try {
+      const p = await profile(req.user.uid);
+      if (!isTeacher(req, p)) return res.status(403).json({ error: "Teachers only." });
+      const b = req.body || {};
+
+      const taskId = String(b.taskId || "").trim().slice(0, 120);
+      if (!/^[a-z0-9_-]+$/i.test(taskId)) return res.status(400).json({ error: "Not a valid task." });
+
+      const snap = await db().collection("writingLibrary").doc(taskId).get();
+      if (!snap.exists) return res.status(404).json({ error: "Task not found." });
+      const task = snap.data() || {};
+      if (task.ownerUid !== req.user.uid && !isAdmin(req)) {
+        return res.status(403).json({ error: "Not your task." });
+      }
+
+      const targets = await resolveTargets(req, b);
+      if (!targets.length) {
+        return res.status(400).json({ error: "No students to assign — add students to your class first." });
+      }
+
+      // The prompt is the title; a summary's task line is generic, so the
+      // passage title is what tells one apart from another in a list.
+      const title = (task.passage && task.passage.title)
+        ? `Summary: ${task.passage.title}`
+        : String(task.prompt || "Writing task").slice(0, 140);
+
+      const batch = db().batch();
+      for (const uid of targets) {
+        const ref = db().collection("studentAssignments").doc(uid).collection("items").doc(`writing_${taskId}`);
+        batch.set(ref, {
+          kind: "writing",
+          writingUrl: `/writing/index.html?task=${encodeURIComponent(taskId)}`,
+          taskId,
+          activityTitle: title,
+          subject: task.formLabel || "English",
+          teacherUid: req.user.uid,
+          teacherName: displayName(req, p),
+          status: "assigned",
+          assignedAt: stamp(),
+        }, { merge: true });
+      }
+      await batch.commit();
+      res.json({ ok: true, assigned: targets.length });
+    } catch (e) {
+      console.error("[/api/classroom/assign-writing]", e.message);
       res.status(500).json({ error: e.message });
     }
   });

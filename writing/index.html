@@ -94,6 +94,17 @@
                 </svg>
                 Share
               </button>
+              <!-- Teachers only: puts this task in a student's own "assigned to
+                   me" list rather than handing out a link (js/assign.js). The
+                   roster call behind it is a teachers-only endpoint. -->
+              <button class="topic-assign" id="topic-assign-btn" type="button" title="Assign this task to your class" style="display: none">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M19 8v6M22 11h-6" />
+                </svg>
+                Assign
+              </button>
               <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="23 4 23 10 17 10" />

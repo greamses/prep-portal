@@ -7,6 +7,7 @@ import { fetchGeneratedTopic } from './api.js';
 import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
 import { initOwnTask, releaseCustomPrompt, canShareTask, ownTaskEls } from './own-task.js';
+import { initAssign, syncAssignBtn } from './assign.js';
 import { createCarousel, renderChoiceStep, renderCustomStep } from '/utils/components/setup-carousel.js';
 import { youtubeSearch } from '/utils/ai-client.js';
 
@@ -272,6 +273,10 @@ export function initSetup({ onGenerated } = {}) {
   showStyleStep();
   carousel.start('family');
 
+  // Teachers get an Assign button on the slip. Resolves quietly to nothing for
+  // everybody else — the roster endpoint behind it is teachers-only.
+  initAssign();
+
   // Another prompt for the SAME form — the point of the refresh is to reroll
   // the topic, not to send you back through the picker.
   refreshBtn?.addEventListener('click', () => { if (pickedForm) generate(pickedForm); });
@@ -325,6 +330,9 @@ export function syncTopicDisplay() {
      where handing a task to somebody else belongs. */
   const shareBtn = $('topic-share-btn');
   if (shareBtn) shareBtn.style.display = (libraryVisited && canShareTask()) ? '' : 'none';
+  // Assigning is a teacher's action and is NOT gated on the library — a teacher
+  // setting a task for a class is the point of the page, not a library errand.
+  syncAssignBtn();
   const hasForm = !!getForm(currentWritingType);
   const mhdrType = $('mhdr-type');
   if (mhdrType) mhdrType.textContent = hasForm ? formLabel(currentWritingType).toUpperCase() : 'YOUR OWN TASK';
