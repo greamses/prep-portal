@@ -217,6 +217,10 @@
                 ></textarea>
               </div>
             </div>
+            <!-- The gate: length, paragraphs and sentences, ticking off as the
+                 student writes. Filled by js/rules.js; Submit stays disabled
+                 until every row is met. -->
+            <div class="wrules" id="write-rules"></div>
           </div>
 
           <!-- RESULTS PHASE -->
@@ -476,6 +480,7 @@
           </div>
           <div class="mftr-inner" id="ftr-write" style="display: none">
             <div class="mftr-wc">Words: <span id="word-count">0</span></div>
+            <div class="mftr-gate" id="rules-gate"></div>
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="back-to-organizer-btn" type="button" style="display: none">← Back to the Organiser</button>
             <button class="btn btn-ghost" id="new-topic-btn" type="button">← Change Topic</button>

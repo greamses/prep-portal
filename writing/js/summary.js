@@ -23,6 +23,7 @@
 ═══════════════════════════════════════════════════════ */
 
 import { $, currentPassage, customTask, safe } from './config.js';
+import { MIN_WORDS, MIN_SENTENCE_WORDS, lockWriting } from './rules.js';
 
 // One sentence per source paragraph, plus [0] for the optional opening line.
 // Kept here rather than in config because nothing outside this step needs it —
@@ -134,8 +135,11 @@ export function assembleParagraph() {
 export function lengthTarget() {
   const src = (currentPassage?.paragraphs || []).reduce((n, p) => n + wordCount(p), 0);
   const mid = Math.round(src / 3);
-  const lo = Math.max(50, Math.round((mid * 0.75) / 5) * 5);
-  const hi = Math.round((mid * 1.25) / 5) * 5;
+  // A third of a short passage can land under the sheet's own word floor
+  // (js/rules.js), and an aim the gate will refuse is not an aim. So the floor
+  // wins, and the top of the range is opened enough to leave room to reach it.
+  const lo = Math.max(MIN_WORDS + 5, Math.round((mid * 0.75) / 5) * 5);
+  const hi = Math.max(Math.round((mid * 1.25) / 5) * 5, lo + 30);
   return { src, lo, hi };
 }
 
@@ -220,6 +224,10 @@ export function buildOrganizer({ onChange } = {}) {
 
   const idea = host.querySelector('#org-idea');
   idea.value = ideaSentence;
+  // The boxes are a writing surface too, so the clipboard is shut here for the
+  // same reason it is shut on the sheet — and here it also closes the shortest
+  // route to lifting, which is to paste the paragraph and trim it.
+  lockWriting(idea);
   idea.addEventListener('input', () => {
     ideaSentence = idea.value;
     refreshMeta('idea', ideaSentence, null);
@@ -230,6 +238,7 @@ export function buildOrganizer({ onChange } = {}) {
   host.querySelectorAll('.org-field[data-i]').forEach((field) => {
     const i = Number(field.dataset.i);
     field.value = sentences[i] || '';
+    lockWriting(field);
     field.addEventListener('input', () => {
       sentences[i] = field.value;
       refreshMeta(i, field.value, currentPassage.paragraphs[i]);
@@ -261,6 +270,9 @@ function refreshMeta(id, value, source) {
 
   const s = sentenceCount(value);
   if (s > 1) { notes.push(`${s} sentences — this box wants one`); bad = true; }
+  // The same floor the sheet will hold them to, said here while it is still
+  // one box rather than after the paragraph has been assembled from six.
+  else if (n < MIN_SENTENCE_WORDS) { notes.push(`under ${MIN_SENTENCE_WORDS} words — every sentence needs at least that`); bad = true; }
 
   if (source && longestSharedRun(value, source) >= 6) {
     notes.push('this looks copied from the passage — say it your own way');

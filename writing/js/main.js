@@ -15,6 +15,7 @@ import {
   isSummaryMode, buildOrganizer, buildSheetAids, assembleParagraph,
   getPlan, organizerProgress, resetOrganizer
 } from './summary.js';
+import { checkDraft, renderRules, lockWriting } from './rules.js';
 
 // ── DOM Refs ───────────────────────────────────────────
 const elTextarea = $('writing-area');
@@ -40,12 +41,29 @@ initRender(elRubric, elAnnotated, elStamp, elLoading, elEditorSec, elResultsSec)
 initPopover(elPopover, elCommentPop, elAnnotated);
 setupPopoverListeners();
 
-// ── Word Count ─────────────────────────────────────────
-elTextarea.addEventListener('input', () => {
-  const words = elTextarea.value.trim() ? elTextarea.value.trim().split(/\s+/).length : 0;
-  elWordCount.textContent = words;
-  elSubmitBtn.disabled = words < 20;
-});
+/* ── The gate ───────────────────────────────────────────
+   Words, paragraphs and sentences (js/rules.js). The old gate was "twenty
+   words and you may submit", which let a student spend a marking on three
+   lines; the checklist under the sheet now says exactly what is still missing
+   and Submit stays disabled until none of it is. The sheet is also locked
+   against the clipboard — nothing pasted in, nothing copied out. */
+const elRules = $('write-rules');
+const elGate = $('rules-gate');
+
+function syncRules() {
+  const result = checkDraft(elTextarea.value, { summary: isSummaryMode() });
+  elWordCount.textContent = result.words;
+  renderRules(elRules, result);
+  if (elGate) {
+    elGate.textContent = result.ok ? 'Rules met' : `${result.broken} rule${result.broken === 1 ? '' : 's'} to go`;
+    elGate.classList.toggle('is-open', result.ok);
+  }
+  elSubmitBtn.disabled = !result.ok;
+  return result;
+}
+
+elTextarea.addEventListener('input', syncRules);
+lockWriting(elTextarea);
 
 /* ═══════════════════════════════════════════════════════
    SUMMARY — the organiser step (js/summary.js)
@@ -105,6 +123,7 @@ function openSheet({ rebuild }) {
   buildSheetAids();
   const back = $('back-to-organizer-btn');
   if (back) back.style.display = '';
+  syncRules();
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
 }
@@ -118,6 +137,9 @@ $('organize-topic-btn')?.addEventListener('click', () => closeWritingModal());
 elSubmitBtn.addEventListener('click', async () => {
   const userText = elTextarea.value.trim();
   if (!userText) return;
+  // The button is disabled while a rule is unmet, so this only catches the
+  // paths that bypass it — but a marking is expensive and the check is free.
+  if (!syncRules().ok) { elRules?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
 
   elLoading.classList.add('active');
 
@@ -139,8 +161,7 @@ elSubmitBtn.addEventListener('click', async () => {
 // ── Retry ──────────────────────────────────────────────
 elRetryBtn?.addEventListener('click', () => {
   elTextarea.value = '';
-  elWordCount.textContent = '0';
-  elSubmitBtn.disabled = true;
+  syncRules();
   lastAssembled = '';
 
   // A second attempt at a summary starts where the thinking was done — the
@@ -170,6 +191,7 @@ $('lesson-video-btn')?.addEventListener('click', () => loadLessonVideo());
 // rather than a blank sheet; every other form goes straight to the paper.
 $('start-writing-btn')?.addEventListener('click', () => {
   if (isSummaryMode()) { openOrganizer(); return; }
+  syncRules();
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
 });
@@ -193,6 +215,7 @@ document.addEventListener('keydown', e => {
 window.addEventListener('DOMContentLoaded', () => {
   injectRewriteStyles();
   initColorKeyAccordion(elResultsSec);
+  syncRules();
   // A new passage (or a form that has none) invalidates the boxes — the
   // organiser would otherwise offer sentences written about something else,
   // and the sheet would still be carrying the paragraph they assembled from

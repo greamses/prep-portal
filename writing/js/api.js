@@ -238,7 +238,30 @@ accurately in one clause of the student's own is the hardest thing to do in this
 `
     : '';
 
+  /* The sheet would not let the student submit until the piece met these
+     (js/rules.js). Telling the examiner keeps the two from contradicting each
+     other in both directions: it must not demand a sixth paragraph of a
+     narrative that is exempt, and it must not be impressed by a fifth
+     sentence that is filler. */
+  const houseRules = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE RULES THE SHEET ENFORCED BEFORE THIS REACHED YOU:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • more than 150 words
+  • at least 5 paragraphs — NARRATIVE forms and summaries are exempt from this
+  • at least 5 sentences in every paragraph after the introduction
+  • at least 7 words in every sentence
+
+Do not congratulate the student for meeting them; they had no choice. Do not
+demand a paragraph count of a form that is exempt. DO judge whether the
+sentences and paragraphs earn their place — a paragraph padded to five with
+filler, or a sentence stretched to seven words with "in my own opinion I think
+that", is weaker than an honest short one, and Structure & Coherence and
+Vocabulary & Style are where you say so.
+`;
+
   return `You are an uncompromising secondary-school English examiner marking with a red pen. Find and mark real errors. Also give positive credit where writing is genuinely strong.
+${houseRules}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OFF-TOPIC DETECTION — CHECK THIS FIRST:
