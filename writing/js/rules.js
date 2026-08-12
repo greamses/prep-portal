@@ -37,6 +37,7 @@
 
 import { currentWritingType } from './config.js';
 import { familyOf } from './forms.js';
+import { showTip } from './tip.js';
 
 export const MIN_WORDS = 150;              // strictly MORE than this
 export const MIN_PARAGRAPHS = 5;
@@ -228,13 +229,22 @@ export function justClosedSentence(text, { grew = true } = {}) {
   // An abbreviation is not the end of a sentence, and "..." is one mark.
   if (ABBR.test(t.trimEnd())) return null;
 
-  const sentences = splitSentences(splitParagraphs(t).pop() || '');
+  // The last paragraph is where the caret is, by definition — the terminator
+  // was just typed at the very end of the text.
+  const paraStart = t.lastIndexOf('\n') + 1;
+  const para = t.slice(paraStart);
+  const sentences = splitSentences(para);
   const last = sentences[sentences.length - 1];
   if (!last) return null;
 
   const n = wordCount(last);
   if (n >= MIN_SENTENCE_WORDS) return null;
-  return { text: last, words: n, need: MIN_SENTENCE_WORDS };
+
+  // Character offsets too, so the warning can be a tooltip pointing AT the
+  // sentence rather than a line of text somewhere else on the page.
+  const at = para.lastIndexOf(last);
+  const start = at === -1 ? paraStart : paraStart + at;
+  return { text: last, words: n, need: MIN_SENTENCE_WORDS, start, end: start + last.length };
 }
 
 /* ── The checklist under the sheet ──────────────────────── */
@@ -247,18 +257,13 @@ const OPEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/* The checklist is redrawn on EVERY keystroke, so the flash line cannot live
-   inside what gets redrawn — a message about the sentence you just closed
-   would be destroyed by the next character you typed, which is one character
-   later. The note is created once and kept; only the body is replaced. */
+/* Redrawn on every keystroke. Transient messages are NOT in here — they are
+   tooltips over the text they are about (js/tip.js), which is also what keeps
+   them alive: anything rendered into this panel was destroyed by the next
+   character typed, one character later. */
 export function renderRules(host, result) {
   if (!host) return;
-  let body = host.querySelector('.wrules__body');
-  if (!body) {
-    host.innerHTML = '<div class="wrules__body"></div><p class="wrules__note" id="wrules-note" hidden></p>';
-    body = host.querySelector('.wrules__body');
-  }
-  body.innerHTML = `
+  host.innerHTML = `
     <p class="wrules__hdr">
       The rules of the sheet
       <span class="wrules__tally${result.ok ? ' is-ok' : ''}">
@@ -290,20 +295,24 @@ const BLOCK_MSG = {
   drop: 'Dragging text in is off on this sheet.',
 };
 
-function flash(kind) {
-  say(BLOCK_MSG[kind] || BLOCK_MSG.paste, 2600);
+function flash(el, kind) {
+  // At the caret: the clipboard acted where the caret is, so that is where
+  // the answer belongs.
+  const at = el?.selectionStart ?? 0;
+  say(BLOCK_MSG[kind] || BLOCK_MSG.paste, { el, start: at, end: at, ms: 2800 });
 }
 
-/* One line, under the checklist, for anything that has to be said the instant
-   it happens rather than tallied — a blocked paste, or a sentence that was
-   just closed two words short. */
-export function say(message, ms = 3200) {
-  const note = document.getElementById('wrules-note');
-  if (!note) return;
-  note.textContent = message;
-  note.hidden = false;
-  clearTimeout(say.t);
-  say.t = setTimeout(() => { note.hidden = true; }, ms);
+/* Anything that has to be said the instant it happens rather than tallied —
+   a blocked paste, a sentence closed two words short. It is a TOOLTIP
+   pointing at the characters concerned (js/tip.js): a message in a panel
+   underneath makes the reader go and find what it is about.
+
+   Falls back to nothing rather than to a panel. Every caller has an element
+   and an offset, because every one of these messages is about a place in the
+   text; if one ever is not, it does not belong here. */
+export function say(message, { el, start = 0, end = start, ms = 3600 } = {}) {
+  if (!el) return;
+  showTip({ el, start, end, html: `<span class="pptip__note">${message}</span>`, kind: 'warn', ms });
 }
 
 export function lockWriting(el) {
@@ -311,9 +320,9 @@ export function lockWriting(el) {
   el.dataset.ppLocked = '1';
 
   ['copy', 'cut', 'paste'].forEach((type) => {
-    el.addEventListener(type, (e) => { e.preventDefault(); flash(type); });
+    el.addEventListener(type, (e) => { e.preventDefault(); flash(el, type); });
   });
-  el.addEventListener('drop', (e) => { e.preventDefault(); flash('drop'); });
+  el.addEventListener('drop', (e) => { e.preventDefault(); flash(el, 'drop'); });
   el.addEventListener('dragstart', (e) => e.preventDefault());
   // Without this the browser shows a "you may drop here" cursor over a target
   // that will refuse the drop, which reads as the page being broken.

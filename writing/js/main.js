@@ -81,13 +81,13 @@ elTextarea.addEventListener('input', () => {
   syncRules();
   const short = justClosedSentence(elTextarea.value, { grew });
   if (short) {
-    say(`That sentence has ${short.words} word${short.words === 1 ? '' : 's'} — every sentence needs ${short.need}. Say more about it, or join it to the one before.`);
-    elRules?.classList.add('is-nagging');
-    clearTimeout(nagTimer);
-    nagTimer = setTimeout(() => elRules?.classList.remove('is-nagging'), 1200);
+    // Pointed AT the sentence, not written in a panel underneath it.
+    say(
+      `${short.words} word${short.words === 1 ? '' : 's'} — a sentence needs ${short.need}. Say more, or join it to the one before.`,
+      { el: elTextarea, start: short.start, end: short.end },
+    );
   }
 });
-let nagTimer = null;
 lockWriting(elTextarea);
 // Highlight a word or a sentence on the sheet and be offered better ones
 // (js/improve.js). Spends writing credits; never touches the marking.

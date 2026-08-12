@@ -7,19 +7,16 @@
    student actually wants it — mid-draft, on whatever they have just
    highlighted, before anything has been marked.
 
-   WHY A BAR AND NOT A POPOVER AT THE CARET. A <textarea> has no selection
-   geometry: there is no Range to measure, and the usual workaround (a mirror
-   div rendered behind the field with identical metrics) breaks on every soft
-   wrap, every font fallback and every resize. The bar appears immediately
-   under whichever field the selection is in, which is one line away from the
-   highlight, always in the right place, and works the same on a phone.
+   IT IS A TOOLTIP, pointing at the words it is about — see js/tip.js for how
+   a <textarea> is made to give up the geometry it does not have. A panel
+   underneath would make the reader find the thing it refers to; a tooltip
+   sits over it.
 
    HOW IT SURVIVES BEING CLICKED. Selecting text and then clicking a button
    normally destroys the selection, which is the whole input to this feature.
-   The bar takes `mousedown` and preventDefault()s it, so the click never
-   moves focus out of the textarea and `selectionStart/End` are still there
-   when the handler runs. The offsets are also captured the moment the
-   selection is made, so even a stolen focus cannot lose them.
+   The tooltip takes `mousedown` and preventDefault()s it (js/tip.js), so the
+   click never moves focus out of the textarea. The offsets are also captured
+   the moment the selection is made, so even a stolen focus cannot lose them.
 
    IT SPENDS CREDITS (js/credits.js) and it never touches the marking — see
    that file's header. Replacing a word is the student's edit, made by the
@@ -30,10 +27,8 @@ import { currentTopic } from './config.js';
 import { fetchReplacements } from './api.js';
 import { COST, spend, canAfford, creditState } from './credits.js';
 import { splitSentences } from './rules.js';
+import { showTip, hideTip, tipEl, tipIsMenu } from './tip.js';
 
-// One bar for the whole page: only one field can hold a selection at a time,
-// so it is built once and moved to whichever field has it.
-let bar = null;
 let target = null;          // the textarea the selection is in
 let range = null;           // { start, end } captured when the selection was made
 let busy = false;
@@ -48,25 +43,7 @@ const SWAP = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke
   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>`;
 
-function ensureBar() {
-  if (bar) return bar;
-  bar = document.createElement('div');
-  bar.className = 'wsel';
-  bar.hidden = true;
-  // THE line that makes the whole thing work: the click must not take focus
-  // off the textarea, or the selection it is about to act on is gone.
-  bar.addEventListener('mousedown', (e) => e.preventDefault());
-  return bar;
-}
-
-/* `is-open` is what stops a new selection yanking the bar out from under
-   somebody reading their options, so hiding MUST clear it — leaving it on a
-   detached bar makes the whole feature work exactly once per page. */
-const hide = () => {
-  if (bar) { bar.hidden = true; bar.className = 'wsel'; bar.innerHTML = ''; bar.remove(); }
-  target = null;
-  range = null;
-};
+const hide = () => { hideTip(); target = null; range = null; };
 
 /* What is selected, and is it worth offering anything for? A single letter is
    not a word and half a page is not a sentence, so both ends are refused
@@ -117,35 +94,29 @@ function sentenceAround(el, start) {
   return para.slice(0, 300);
 }
 
+/* The first thing you see: a small offer, pointing at what you highlighted.
+   It says the price before it is spent, never after. */
 function paintIdle(sel) {
   const cost = COST[sel.kind];
   const { balance, unlimited, loaded } = creditState();
   const broke = loaded && !unlimited && balance !== null && balance < cost;
-  const label = sel.kind === 'word' ? 'word' : 'sentence';
 
-  bar.className = 'wsel';
-  bar.innerHTML = `
-    <span class="wsel__kind">${label}</span>
-    <span class="wsel__txt">${esc(sel.text.length > 64 ? `${sel.text.slice(0, 64)}…` : sel.text)}</span>
-    <span class="wsel__space"></span>
-    ${broke
-      ? '<span class="wsel__note">No credits left — this costs you no marks.</span>'
-      : `<button type="button" class="wsel__go">${SWAP}<span>${sel.kind === 'word' ? 'Better word' : 'Rewrite it'}</span>
-           <em>${cost} credit${cost === 1 ? '' : 's'}</em></button>`}`;
+  const html = broke
+    ? '<span class="pptip__note">No suggestion credits left — and that costs you no marks.</span>'
+    : `<button type="button" class="pptip__go">${SWAP}<span>${sel.kind === 'word' ? 'Better word' : 'Rewrite it'}</span>
+         <em>${cost} credit${cost === 1 ? '' : 's'}</em></button>`;
 
-  bar.querySelector('.wsel__go')?.addEventListener('click', () => run(sel));
+  const el = showTip({
+    el: target, start: sel.start, end: sel.end, html,
+    kind: 'menu',
+    onGone: () => { target = null; range = null; },
+  });
+  el?.querySelector('.pptip__go')?.addEventListener('click', () => run(sel));
 }
 
-/* Show the bar under the field holding the selection. It is inserted into the
-   DOM next to that field rather than positioned over the page, so it moves
-   with the layout and never floats over the wrong thing. */
 function show(el, sel) {
-  ensureBar();
   target = el;
   range = { start: sel.start, end: sel.end, text: sel.text, kind: sel.kind };
-  const host = el.closest('[data-improve-host]') || el.parentElement;
-  if (host && bar.parentElement !== host) host.appendChild(bar);
-  bar.hidden = false;
   paintIdle(sel);
 }
 
@@ -154,18 +125,23 @@ async function run(sel) {
   if (!canAfford(sel.kind)) { paintIdle(sel); return; }
 
   busy = true;
-  bar.innerHTML = `<span class="wsel__kind">${sel.kind === 'word' ? 'word' : 'sentence'}</span>
-    <span class="wsel__wait">Looking for a better one…</span>`;
+  const say = (html, kind = 'menu') => showTip({
+    el: target, start: sel.start, end: sel.end, html, kind,
+    ms: kind === 'warn' ? 4000 : 0,
+    onGone: () => { target = null; range = null; },
+  });
+
+  say('<span class="pptip__wait">Looking for a better one…</span>');
 
   // Reserved before the call, not after — two clicks on a slow connection
   // would otherwise both pass the affordability check. See js/credits.js.
   const paid = await spend(sel.kind);
   if (!paid.ok) {
     busy = false;
-    bar.innerHTML = `<span class="wsel__note is-bad">${
-      paid.out ? 'That is the last of your suggestion credits — and it costs you nothing in marks.'
+    say(`<span class="pptip__note is-bad">${
+      paid.out ? 'That was the last of your suggestion credits — it costs you nothing in marks.'
       : paid.signedOut ? 'Sign in to use suggestions.'
-      : 'Could not reach the suggester just then.'}</span>`;
+      : 'Could not reach the suggester just then.'}</span>`, 'warn');
     return;
   }
 
@@ -178,29 +154,35 @@ async function run(sel) {
   busy = false;
 
   if (!options.length) {
-    bar.innerHTML = '<span class="wsel__note is-bad">Nothing better came back for that one. Try highlighting a bit more.</span>';
+    say('<span class="pptip__note is-bad">Nothing better came back. Try highlighting a bit more.</span>', 'warn');
     return;
   }
   paintOptions(sel, options);
 }
 
 function paintOptions(sel, options) {
-  bar.className = 'wsel is-open';
-  bar.innerHTML = `
-    <div class="wsel__row">
-      <span class="wsel__kind">${sel.kind === 'word' ? 'instead of' : 'instead of'}</span>
-      <span class="wsel__txt">${esc(sel.text.length > 64 ? `${sel.text.slice(0, 64)}…` : sel.text)}</span>
-      <span class="wsel__space"></span>
-      <button type="button" class="wsel__x" aria-label="Close">×</button>
-    </div>
-    <div class="wsel__opts">
+  const shown = sel.text.length > 38 ? `${sel.text.slice(0, 38)}…` : sel.text;
+  const html = `
+    <p class="pptip__hdr">
+      <span class="pptip__lbl">instead of</span>
+      <span class="pptip__was">${esc(shown)}</span>
+      <button type="button" class="pptip__x" aria-label="Close">×</button>
+    </p>
+    <div class="pptip__opts">
       ${options.map((o, i) => `
-        <button type="button" class="wsel__opt" data-i="${i}">${esc(o)}</button>`).join('')}
+        <button type="button" class="pptip__opt" data-i="${i}">${esc(o)}</button>`).join('')}
     </div>
-    <p class="wsel__foot">Pick one and it replaces what you highlighted. None of this changes how the piece is marked.</p>`;
+    <p class="pptip__foot">Pick one to swap it in. None of this changes your marks.</p>`;
 
-  bar.querySelector('.wsel__x')?.addEventListener('click', hide);
-  bar.querySelectorAll('.wsel__opt').forEach((btn) => {
+  const el = showTip({
+    el: target, start: sel.start, end: sel.end, html,
+    kind: 'menu',
+    onGone: () => { target = null; range = null; },
+  });
+  if (!el) return;
+
+  el.querySelector('.pptip__x')?.addEventListener('click', hide);
+  el.querySelectorAll('.pptip__opt').forEach((btn) => {
     btn.addEventListener('click', () => applyReplacement(options[Number(btn.dataset.i)]));
   });
 }
@@ -211,34 +193,48 @@ function paintOptions(sel, options) {
    it. The caret is left holding the replacement so it can be typed over. */
 function applyReplacement(text) {
   if (!target || !range) return;
+  /* Everything needed is copied out FIRST. Dispatching `input` runs this
+     module's own listener synchronously, which calls hide() and nulls both
+     `target` and `range` — reading them back afterwards throws, and the caret
+     is left wherever the browser put it. */
   const el = target;
-  const before = el.value.slice(0, range.start);
+  const at = range.start;
+  const before = el.value.slice(0, at);
   const after = el.value.slice(range.end);
+
   el.value = before + text + after;
   el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.focus();
-  el.setSelectionRange(range.start, range.start + text.length);
   hide();
+  el.focus();
+  /* Caret AFTER the new words, not around them. Leaving them selected fires
+     `select`, which opens a fresh tooltip on the word that was just chosen —
+     which reads as the tool refusing the choice. Collapsed, the student is
+     simply back where they were, ready to keep writing. */
+  el.setSelectionRange(at + text.length, at + text.length);
 }
 
 /* ── Wiring ────────────────────────────────────────────
-   Attach to any writing surface: the sheet and every planner box. The host is
-   the element the bar is dropped into, marked in the DOM with
-   data-improve-host so this module never has to know either layout. */
+   Attach to any writing surface: the sheet and every planner box. The tooltip
+   is a single shared element (js/tip.js) that points at whichever field holds
+   the selection, so nothing here needs to know either layout. */
 export function attachImprove(el) {
   if (!el || el.dataset.ppImprove) return;
   el.dataset.ppImprove = '1';
 
+  /* A call in flight is the only thing that must not be interrupted. A NEW
+     selection made while options are on screen should replace them — that is
+     a student moving on to the next word — and a click inside the tooltip
+     never reaches here, because js/tip.js swallows its mousedown. */
   const check = () => {
-    // Never yank the bar out from under a student reading their options.
-    if (busy || bar?.classList.contains('is-open')) return;
+    if (busy) return;
     const sel = readSelection(el);
-    if (sel) show(el, sel); else if (target === el) hide();
+    if (sel) show(el, sel);
+    else if (target === el) hide();
   };
 
   el.addEventListener('mouseup', check);
   el.addEventListener('keyup', (e) => { if (e.shiftKey || e.key === 'Shift' || e.ctrlKey || e.metaKey) check(); });
   el.addEventListener('select', check);
-  // Typing over a selection ends it, and the bar must go with it.
-  el.addEventListener('input', () => { if (!busy && !bar?.classList.contains('is-open') && target === el) hide(); });
+  // Typing over a selection ends it, and the tooltip goes with it.
+  el.addEventListener('input', () => { if (!busy && target === el) hide(); });
 }

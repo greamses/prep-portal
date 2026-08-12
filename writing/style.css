@@ -3098,146 +3098,7 @@ details.rubric-wrap summary { min-height: 48px; }
 
 #plan-tally.is-open { color: var(--accent-success); }
 
-/* A short sentence is called out the instant its full stop is typed
-   (js/rules.js justClosedSentence). The checklist flicks to say the line
-   underneath it has changed — without this the message can appear below the
-   fold and never be seen. */
-.wrules.is-nagging {
-  border-color: var(--accent-danger);
-  animation: wrulesNag 0.34s ease;
-}
-@keyframes wrulesNag {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .wrules.is-nagging { animation: none; }
-}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   THE HIGHLIGHT BAR — replacements for what you have selected. (js/improve.js)
-
-   Sits under the field the selection is in rather than floating over the
-   caret: a <textarea> has no selection geometry, and every mirror-div trick
-   for faking one breaks on the first soft wrap. One line away from the
-   highlight, always in the right place, and identical on a phone.
-════════════════════════════════════════════════════════════════════════════ */
-.wsel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  margin-top: 10px;
-  padding: 9px 12px 10px;
-  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--surface-primary));
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-sm);
-  animation: wselIn 0.18s ease;
-}
-@keyframes wselIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .wsel { animation: none; } }
-
-.wsel.is-open { display: block; }
-.wsel__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.wsel__space { flex: 1; }
-
-.wsel__kind {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-ultra);
-  color: var(--text-tertiary);
-}
-.wsel__txt {
-  font-family: "Caveat", cursive;
-  font-weight: 700;
-  font-size: 17px;
-  line-height: 1.3;
-  color: var(--ink);
-}
-.wsel__txt::before, .wsel__txt::after { content: "\201C"; opacity: 0.45; }
-.wsel__txt::after { content: "\201D"; }
-
-.wsel__go {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 11px 7px;
-  background: var(--surface-primary);
-  border: 1px solid color-mix(in srgb, var(--ink) 32%, transparent);
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--ink);
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-.wsel__go:hover { border-color: var(--accent-secondary); background: var(--surface-secondary, var(--surface-primary)); }
-/* The price, said before it is spent — never after. */
-.wsel__go em {
-  font-style: normal;
-  font-size: 9.5px;
-  padding: 1px 5px 2px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
-  color: #14130f;
-}
-
-.wsel__opts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-.wsel__opt {
-  flex: 0 1 auto;
-  max-width: 100%;
-  text-align: left;
-  padding: 8px 12px 9px;
-  background: var(--surface-primary);
-  border: 1px dashed color-mix(in srgb, var(--ink) 30%, transparent);
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink);
-  cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.12s ease;
-}
-.wsel__opt:hover {
-  border-style: solid;
-  border-color: var(--accent-secondary);
-  transform: translateY(-1px);
-}
-
-.wsel__x {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: 0;
-  font-size: 19px;
-  line-height: 1;
-  color: var(--text-tertiary);
-  cursor: pointer;
-}
-.wsel__x:hover { color: var(--ink); }
-
-.wsel__wait, .wsel__note, .wsel__foot {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.55;
-  color: var(--text-tertiary);
-  margin: 0;
-}
-.wsel__foot { margin-top: 9px; font-style: italic; }
-.wsel__note.is-bad { color: var(--accent-danger); }
 
 /* ── The suggestion budget ─────────────────────────────
    A counter beside a school task reads as a penalty until somebody says it is
@@ -3263,4 +3124,169 @@ details.rubric-wrap summary { min-height: 48px; }
   border-radius: 2px;
   background: color-mix(in srgb, var(--accent-primary) 50%, transparent);
   color: #14130f;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOLTIPS OVER THE WRITING — warnings, and replacements. (js/tip.js)
+
+   Everything this page says about a specific stretch of text is said next to
+   that text. Two moods share one element: a WARNING, which points and fades
+   and cannot be clicked, and a MENU, which waits to be used.
+
+   position:fixed and body-mounted, so it escapes the modal's overflow and
+   follows the sheet as it scrolls inside the dialog. The arm (the little
+   pointer) is placed by --tip-arm from JS, because after the tooltip has been
+   nudged away from the window edge its centre is no longer over the words.
+════════════════════════════════════════════════════════════════════════════ */
+.pptip {
+  position: fixed;
+  /* Body-mounted, so it is a SIBLING of the modal rather than inside it and
+     must out-rank it: .modal-bd is 10000 (itself raised above the 9999
+     .site-nav), and the results-phase popovers already sit at 10050 on the
+     same reasoning. Anything lower renders behind the sheet and the textarea
+     swallows every click. */
+  z-index: 10060;
+  max-width: min(340px, calc(100vw - 24px));
+  padding: 9px 12px 10px;
+  background: var(--surface-primary);
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 2px;
+  box-shadow: 0 6px 20px -6px rgba(20, 19, 15, 0.4), 0 2px 5px -2px rgba(20, 19, 15, 0.25);
+  animation: pptipIn 0.14s ease;
+}
+@keyframes pptipIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pptip { animation: none; } }
+
+/* The arm: a rotated square sharing the tooltip's border, with the two edges
+   that face inward covered by the body's own background. */
+.pptip::after {
+  content: "";
+  position: absolute;
+  left: var(--tip-arm, 18px);
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  background: var(--surface-primary);
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  transform: rotate(45deg);
+}
+.pptip.is-above::after { bottom: -5.5px; border-top: 0; border-left: 0; }
+.pptip.is-below::after { top: -5.5px; border-bottom: 0; border-right: 0; }
+
+/* A warning points and goes. It is never in the way of the caret, because it
+   cannot be clicked at all. */
+.pptip--warn {
+  background: color-mix(in srgb, var(--accent-danger) 16%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-danger) 55%, transparent);
+}
+.pptip--warn::after {
+  background: color-mix(in srgb, var(--accent-danger) 16%, var(--surface-primary));
+  border-color: color-mix(in srgb, var(--accent-danger) 55%, transparent);
+}
+
+.pptip__note,
+.pptip__wait {
+  display: block;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.pptip__wait { color: var(--text-tertiary); }
+.pptip__note.is-bad { color: var(--accent-danger); }
+
+/* ── The menu mood ─────────────────────────────────── */
+.pptip__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px 5px;
+  margin: -2px;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pptip__go:hover { color: var(--accent-secondary); }
+/* The price, said before it is spent — never after. */
+.pptip__go em {
+  font-style: normal;
+  font-size: 9.5px;
+  padding: 1px 5px 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  color: #14130f;
+}
+
+.pptip__hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0 0 8px;
+}
+.pptip__lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+}
+.pptip__was {
+  flex: 1;
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--accent-danger) 70%, transparent);
+}
+.pptip__x {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.pptip__x:hover { color: var(--ink); }
+
+.pptip__opts { display: grid; gap: 5px; }
+.pptip__opt {
+  text-align: left;
+  padding: 7px 10px 8px;
+  background: var(--surface-primary);
+  border: 1px dashed color-mix(in srgb, var(--ink) 28%, transparent);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pptip__opt:hover {
+  border-style: solid;
+  border-color: var(--accent-secondary);
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
+}
+
+.pptip__foot {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--text-tertiary);
 }
