@@ -23,7 +23,7 @@
 ═══════════════════════════════════════════════════════ */
 
 import { $, currentPassage, customTask, safe } from './config.js';
-import { MIN_WORDS, MIN_SENTENCE_WORDS, lockWriting } from './rules.js';
+import { MIN_SENTENCE_WORDS, lockWriting } from './rules.js';
 
 // One sentence per source paragraph, plus [0] for the optional opening line.
 // Kept here rather than in config because nothing outside this step needs it —
@@ -135,11 +135,11 @@ export function assembleParagraph() {
 export function lengthTarget() {
   const src = (currentPassage?.paragraphs || []).reduce((n, p) => n + wordCount(p), 0);
   const mid = Math.round(src / 3);
-  // A third of a short passage can land under the sheet's own word floor
-  // (js/rules.js), and an aim the gate will refuse is not an aim. So the floor
-  // wins, and the top of the range is opened enough to leave room to reach it.
-  const lo = Math.max(MIN_WORDS + 5, Math.round((mid * 0.75) / 5) * 5);
-  const hi = Math.max(Math.round((mid * 1.25) / 5) * 5, lo + 30);
+  // Untouched by the sheet's word floor on purpose: a summary is exempt from
+  // it (js/rules.js), because the one form whose whole skill is compression
+  // must not be sent away to pad.
+  const lo = Math.max(50, Math.round((mid * 0.75) / 5) * 5);
+  const hi = Math.round((mid * 1.25) / 5) * 5;
   return { src, lo, hi };
 }
 

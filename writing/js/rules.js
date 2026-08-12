@@ -11,13 +11,21 @@
 
    The four rules:
 
-     WORDS       more than 150, always, whatever the form.
+     WORDS       more than 150 — except a SUMMARY, where length is not a
+                 virtue: the target is about a third of its own passage, and
+                 a floor that outran that third would be telling the student
+                 to pad the one form whose whole skill is compression.
      PARAGRAPHS  at least 5 — except NARRATIVE, which is paced by its story
                  rather than by a plan, and except a SUMMARY, which is one
                  paragraph by definition and could not obey the rule at all.
      SENTENCES   at least 5 per paragraph, except the introduction, which is
                  allowed to be short because its job is to open, not to argue.
      LENGTH      at least 7 words in every sentence.
+
+   So a summary is held only to its sentences — which is right. What keeps it
+   from being three words long is its own machinery: the organiser will not
+   open the sheet until every source paragraph has a box, and the examiner
+   marks anything under ~30 meaningful words as off-topic (js/api.js).
 
    Two things are deliberately NOT counted. A line with no full stop and ten
    words or fewer is a HEADING, not a paragraph — a headline, a diary date, a
@@ -81,12 +89,14 @@ export function splitParagraphs(text) {
 export function rulesFor({ summary = false, formId = currentWritingType } = {}) {
   const exemptParagraphs = summary || familyOf(formId) === 'narrative';
   return {
-    minWords: MIN_WORDS,
+    minWords: summary ? 0 : MIN_WORDS,
     minParagraphs: exemptParagraphs ? 0 : MIN_PARAGRAPHS,
     minSentences: MIN_SENTENCES,
     minSentenceWords: MIN_SENTENCE_WORDS,
-    // Why the paragraph rule is missing, in the student's words. A rule that
-    // silently disappears reads as a bug.
+    // Why a rule is missing, in the student's words. A rule that silently
+    // disappears reads as a bug — and the summary's word note has to point at
+    // the number that DOES govern it, or the row is just an absence.
+    wordNote: 'A summary is about a third of its passage — the organiser says what to aim for.',
     paragraphNote: summary
       ? 'A summary is one paragraph, so there is no paragraph count to meet.'
       : exemptParagraphs
@@ -109,14 +119,24 @@ export function checkDraft(text, { summary = false, formId = currentWritingType 
 
   const rows = [];
 
-  rows.push({
-    id: 'words',
-    label: `More than ${R.minWords} words`,
-    ok: words > R.minWords,
-    detail: words
-      ? (words > R.minWords ? `${plural(words, 'word', 'words')}` : `${plural(words, 'word', 'words')} — ${R.minWords + 1 - words} to go`)
-      : 'nothing written yet',
-  });
+  if (R.minWords) {
+    rows.push({
+      id: 'words',
+      label: `More than ${R.minWords} words`,
+      ok: words > R.minWords,
+      detail: words
+        ? (words > R.minWords ? `${plural(words, 'word', 'words')}` : `${plural(words, 'word', 'words')} — ${R.minWords + 1 - words} to go`)
+        : 'nothing written yet',
+    });
+  } else {
+    rows.push({
+      id: 'words',
+      label: 'Length',
+      ok: true,
+      exempt: true,
+      detail: words ? `${R.wordNote} ${plural(words, 'word', 'words')} so far.` : R.wordNote,
+    });
+  }
 
   if (R.minParagraphs) {
     rows.push({
@@ -173,8 +193,12 @@ export function checkDraft(text, { summary = false, formId = currentWritingType 
       : (words ? 'no short sentences' : 'nothing written yet'),
   });
 
+  /* A summary exempt from both counts can hold an empty sheet with nothing
+     unmet on it, which would leave the tally saying "all met" over a disabled
+     Submit. An empty sheet is its own state and is reported as one. */
   const broken = rows.filter((r) => !r.ok);
   return {
+    empty: words === 0,
     ok: broken.length === 0 && words > 0,
     words,
     paragraphs: paragraphs.length,
@@ -199,7 +223,7 @@ export function renderRules(host, result) {
     <p class="wrules__hdr">
       The rules of the sheet
       <span class="wrules__tally${result.ok ? ' is-ok' : ''}">
-        ${result.ok ? 'all met' : `${result.broken} still to meet`}
+        ${result.ok ? 'all met' : result.empty ? 'nothing written yet' : `${result.broken} still to meet`}
       </span>
     </p>
     <ul class="wrules__list">

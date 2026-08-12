@@ -247,13 +247,16 @@ accurately in one clause of the student's own is the hardest thing to do in this
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 THE RULES THE SHEET ENFORCED BEFORE THIS REACHED YOU:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • more than 150 words
+  • more than 150 words — SUMMARIES are exempt: a summary is about a third of
+    its passage, and length is not a virtue in it
   • at least 5 paragraphs — NARRATIVE forms and summaries are exempt from this
   • at least 5 sentences in every paragraph after the introduction
   • at least 7 words in every sentence
 
 Do not congratulate the student for meeting them; they had no choice. Do not
-demand a paragraph count of a form that is exempt. DO judge whether the
+demand a word or paragraph count of a form that is exempt — a short, tight
+summary is the form done WELL and must never be marked down for its length.
+DO judge whether the
 sentences and paragraphs earn their place — a paragraph padded to five with
 filler, or a sentence stretched to seven words with "in my own opinion I think
 that", is weaker than an honest short one, and Structure & Coherence and

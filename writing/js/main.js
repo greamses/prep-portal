@@ -55,7 +55,9 @@ function syncRules() {
   elWordCount.textContent = result.words;
   renderRules(elRules, result);
   if (elGate) {
-    elGate.textContent = result.ok ? 'Rules met' : `${result.broken} rule${result.broken === 1 ? '' : 's'} to go`;
+    elGate.textContent = result.ok ? 'Rules met'
+      : result.empty ? 'Nothing written yet'
+      : `${result.broken} rule${result.broken === 1 ? '' : 's'} to go`;
     elGate.classList.toggle('is-open', result.ok);
   }
   elSubmitBtn.disabled = !result.ok;
