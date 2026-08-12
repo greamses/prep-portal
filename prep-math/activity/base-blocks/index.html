@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Base Blocks</title>
+    <meta
+      name="description"
+      content="A 3D base-ten blocks counter. Build units, rods, flats and cubes, split them apart, trade them back together, size your own blocks and switch the number base to see how grouping changes."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "base-blocks" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/game-viewport.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Blocks</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="bb-paint" aria-hidden="true"></div>
+
+    <main class="bb-page">
+      <!-- ═══ HERO ═══ -->
+      <header class="bb-hero">
+        <span class="bb-eyebrow bb-eyebrow--note">
+          <span data-icon="base"></span>
+          Mathematics · Place value
+        </span>
+
+        <h1 class="bb-title">Base <em>Blocks</em>.</h1>
+
+        <p class="bb-lead">
+          The counting blocks, in three dimensions. Put units, rods, flats and
+          cubes on the paper mat, cut a big one into its parts, trade a handful
+          of small ones back into a big one, and watch the place-value board
+          read the mat back to you as a number.
+        </p>
+
+        <ul class="bb-features">
+          <li><span data-icon="split"></span>Split a block into its parts</li>
+          <li><span data-icon="merge"></span>Trade alike blocks back together</li>
+          <li><span data-icon="ruler"></span>Size your own length, width and height</li>
+          <li><span data-icon="base"></span>Work in any base from two to twelve</li>
+          <li><span data-icon="brush"></span>Highlight blocks to sort the mat</li>
+        </ul>
+      </header>
+
+      <!-- ═══ STUDIO ═══ -->
+      <section class="bb-studio" aria-label="Block mat">
+        <div class="bb-frame">
+          <div class="bb-stage" data-game-stage>
+            <canvas id="bb-canvas" touch-action="none"></canvas>
+            <div class="bb-marquee" id="bb-marquee" hidden></div>
+
+            <!-- ── running total + base ─────────────────────────────────── -->
+            <div class="bb-top">
+              <div class="bb-count">
+                <b id="bb-count-n">0</b>
+                <span id="bb-count-sub">units on the mat</span>
+              </div>
+              <div class="bb-top__right">
+                <button
+                  class="bb-chip"
+                  id="bb-base-btn"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                >
+                  <span data-icon="base"></span>
+                  <span id="bb-base-label">Base ten</span>
+                </button>
+                <button
+                  class="bb-chip"
+                  id="bb-board-btn"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="bb-board"
+                >
+                  <span data-icon="rows"></span>
+                  <span>Place value</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- ── tools ────────────────────────────────────────────────── -->
+            <div class="bb-rail" role="toolbar" aria-label="Block tools">
+              <button class="bb-tool" type="button" data-act="split"
+                      aria-label="Split the picked blocks (S)" title="Split (S)">
+                <span data-icon="split"></span><em>Split</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="merge"
+                      aria-label="Merge the picked blocks (M)" title="Merge (M)">
+                <span data-icon="merge"></span><em>Merge</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="break"
+                      aria-label="Break the picked blocks into unit cubes (B)" title="Break to units (B)">
+                <span data-icon="crumbs"></span><em>To units</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="match"
+                      aria-label="Pick every block the same size as this one" title="Match every block this size">
+                <span data-icon="match"></span><em>Match</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="lasso" aria-pressed="false"
+                      aria-label="Box pick: drag on the paper to sweep up blocks" title="Box pick">
+                <span data-icon="lasso"></span><em>Box pick</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="tidy"
+                      aria-label="Tidy the mat into rows (T)" title="Tidy up (T)">
+                <span data-icon="rows"></span><em>Tidy</em>
+              </button>
+              <button class="bb-tool" type="button" data-act="undo"
+                      aria-label="Undo the last change (Ctrl+Z)" title="Undo (Ctrl+Z)">
+                <span data-icon="undo"></span><em>Undo</em>
+              </button>
+              <button class="bb-tool bb-tool--danger" type="button" data-act="delete"
+                      aria-label="Remove the picked blocks (Delete)" title="Remove (Del)">
+                <span data-icon="trash"></span><em>Remove</em>
+              </button>
+            </div>
+
+            <!-- ── add a block · highlight ──────────────────────────────── -->
+            <div class="bb-dock">
+              <div class="bb-dock__group" role="group" aria-label="Add a block">
+                <span class="bb-dock__label">Add</span>
+                <button class="bb-piece" type="button" data-place="unit">
+                  <i class="bb-piece__swatch bb-swatch--unit"></i>
+                  <span>Unit</span><em data-size="unit">1</em>
+                </button>
+                <button class="bb-piece" type="button" data-place="rod">
+                  <i class="bb-piece__swatch bb-swatch--rod"></i>
+                  <span>Rod</span><em data-size="rod">10</em>
+                </button>
+                <button class="bb-piece" type="button" data-place="flat">
+                  <i class="bb-piece__swatch bb-swatch--flat"></i>
+                  <span>Flat</span><em data-size="flat">100</em>
+                </button>
+                <button class="bb-piece" type="button" data-place="cube">
+                  <i class="bb-piece__swatch bb-swatch--cube"></i>
+                  <span>Cube</span><em data-size="cube">1000</em>
+                </button>
+                <button
+                  class="bb-piece bb-piece--own"
+                  type="button"
+                  id="bb-own-btn"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                >
+                  <i class="bb-piece__swatch bb-swatch--custom"></i>
+                  <span>Own size</span><em data-size="own">3×2×2</em>
+                </button>
+              </div>
+
+              <div class="bb-dock__group bb-dock__group--tags" role="group" aria-label="Highlight">
+                <span class="bb-dock__label">Highlight</span>
+                <span class="bb-tagdots" id="bb-tagdots"></span>
+                <button class="bb-tagclear" type="button" data-tag="none" title="Clear highlight">
+                  <span data-icon="eraser"></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- ── base popover ─────────────────────────────────────────── -->
+            <div class="bb-pop" id="bb-pop-base" role="dialog" aria-label="Working base" hidden>
+              <div class="bb-pop__head">
+                <span class="bb-eyebrow">Working base</span>
+                <button class="bb-pop__x" type="button" data-close><span data-icon="close"></span></button>
+              </div>
+              <div class="bb-bases" id="bb-bases"></div>
+              <p class="bb-pop__note" id="bb-base-note"></p>
+              <label class="bb-switch">
+                <input type="checkbox" id="bb-strict" checked />
+                <span>
+                  <b>Trade rules</b> — only exactly <em id="bb-strict-n">10</em> alike blocks
+                  may be merged. Turn this off to join any blocks that match.
+                </span>
+              </label>
+            </div>
+
+            <!-- ── own-size popover ─────────────────────────────────────── -->
+            <div class="bb-pop bb-pop--own" id="bb-pop-own" role="dialog" aria-label="Build your own block" hidden>
+              <div class="bb-pop__head">
+                <span class="bb-eyebrow">Build your own block</span>
+                <button class="bb-pop__x" type="button" data-close><span data-icon="close"></span></button>
+              </div>
+              <div class="bb-dims">
+                <label class="bb-dim">
+                  <span>Length</span>
+                  <span class="bb-step">
+                    <button type="button" data-step="-1" data-dim="l" aria-label="Shorter">–</button>
+                    <input type="number" id="bb-dim-l" min="1" max="20" value="3" inputmode="numeric" />
+                    <button type="button" data-step="1" data-dim="l" aria-label="Longer">+</button>
+                  </span>
+                </label>
+                <label class="bb-dim">
+                  <span>Width</span>
+                  <span class="bb-step">
+                    <button type="button" data-step="-1" data-dim="w" aria-label="Narrower">–</button>
+                    <input type="number" id="bb-dim-w" min="1" max="20" value="2" inputmode="numeric" />
+                    <button type="button" data-step="1" data-dim="w" aria-label="Wider">+</button>
+                  </span>
+                </label>
+                <label class="bb-dim">
+                  <span>Height</span>
+                  <span class="bb-step">
+                    <button type="button" data-step="-1" data-dim="h" aria-label="Lower">–</button>
+                    <input type="number" id="bb-dim-h" min="1" max="20" value="2" inputmode="numeric" />
+                    <button type="button" data-step="1" data-dim="h" aria-label="Taller">+</button>
+                  </span>
+                </label>
+              </div>
+              <p class="bb-dims__out" id="bb-dims-out"></p>
+              <button class="pp-btn" type="button" id="bb-add-own">
+                Put it on the mat <span data-icon="plus"></span>
+              </button>
+            </div>
+
+            <!-- ── place-value board ────────────────────────────────────── -->
+            <aside class="bb-board" id="bb-board" aria-label="Place-value board" hidden>
+              <div class="bb-board__head">
+                <span class="bb-eyebrow">The mat, read as a number</span>
+                <button class="bb-pop__x" type="button" data-close-board>
+                  <span data-icon="close"></span>
+                </button>
+              </div>
+              <div id="bb-board-body"></div>
+            </aside>
+
+            <p class="bb-toast" id="bb-toast" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ HOW IT WORKS ═══ -->
+      <section class="bb-notes" aria-label="How it works">
+        <article class="pp-receipt">
+          <span class="pp-sticky pp-sticky--c3 pp-sticky--tape bb-notes__tag" style="--pp-note-tilt: -3deg">Split</span>
+          <div class="pp-receipt__paper">
+            <h2>Cutting a block down</h2>
+            <p>
+              A split cuts a block across its longest side. When that side divides
+              by the working base you get exactly <b>base</b> equal pieces — a cube
+              falls into flats, a flat into rods, a rod into units. When it does
+              not divide, the block falls into slices one unit thick. Double-tap a
+              block on the mat to split it where it lies.
+            </p>
+          </div>
+        </article>
+
+        <article class="pp-receipt">
+          <span class="pp-sticky pp-sticky--c2 pp-sticky--tape bb-notes__tag" style="--pp-note-tilt: 2deg">Merge</span>
+          <div class="pp-receipt__paper">
+            <h2>Trading back up</h2>
+            <p>
+              A merge is the trade going the other way. Pick blocks that are
+              exactly alike and join them along their shortest side, so units make
+              a rod, rods make a flat and flats make a cube. With <b>trade rules</b>
+              on you may only merge exactly as many blocks as the base — ten in base
+              ten, five in base five. Turn the rules off to join any number of
+              matching blocks.
+            </p>
+          </div>
+        </article>
+
+        <article class="pp-receipt">
+          <span class="pp-sticky pp-sticky--c0 pp-sticky--tape bb-notes__tag" style="--pp-note-tilt: -2deg">Bases</span>
+          <div class="pp-receipt__paper">
+            <h2>Changing the base</h2>
+            <p>
+              The base decides the grouping, and nothing else. In base five a rod
+              is five units, a flat is five rods and a cube is five flats — and the
+              bold lines on the paper mat regroup to match. The board keeps the
+              running total in units and writes the same total in the base you are
+              working in.
+            </p>
+          </div>
+        </article>
+
+        <article class="pp-receipt">
+          <span class="pp-sticky pp-sticky--c1 pp-sticky--tape bb-notes__tag" style="--pp-note-tilt: 3deg">Sorting</span>
+          <div class="pp-receipt__paper">
+            <h2>Own sizes and highlights</h2>
+            <p>
+              Set a length, width and height of your own to build any cuboid — good
+              for volume, factors and arrays. Highlight blocks in one of six
+              colours to keep sets apart; the board totals each colour on its own,
+              and <b>Tidy</b> lays the mat out in rows, one row per colour.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <section class="bb-keys" aria-label="Keyboard shortcuts">
+        <span class="bb-eyebrow">Keys</span>
+        <ul>
+          <li><kbd>S</kbd> split</li>
+          <li><kbd>M</kbd> merge</li>
+          <li><kbd>B</kbd> break to units</li>
+          <li><kbd>T</kbd> tidy</li>
+          <li><kbd>A</kbd> select all</li>
+          <li><kbd>Esc</kbd> deselect</li>
+          <li><kbd>1</kbd>–<kbd>6</kbd> highlight</li>
+          <li><kbd>0</kbd> clear highlight</li>
+          <li><kbd>Del</kbd> remove</li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".bb-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

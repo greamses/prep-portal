@@ -7,7 +7,7 @@
    ========================================================================== */
 
 export const CFG = {
-  mat: 48, // the mat is mat × mat unit cells
+  mat: 56, // the mat is mat × mat unit cells
   inset: 0.08, // shrink each block a hair so touching blocks still read apart
   gap: 1, // cells left between blocks when the mat is laid out
 
@@ -21,7 +21,7 @@ export const CFG = {
 
   undoDepth: 40,
 
-  camera: { alpha: -Math.PI / 2.15, beta: 0.95, radius: 34, min: 6, max: 110 },
+  camera: { alpha: -Math.PI / 2.15, beta: 0.66, radius: 42, min: 6, max: 130 },
   anim: 260, // ms for a split/merge/tidy move
 };
 

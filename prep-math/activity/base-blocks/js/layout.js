@@ -87,6 +87,7 @@ export function tidy(blocks) {
 
   const pad = CFG.gap;
   let x = 0, z = 0, rowW = 0, tag = sorted.length ? sorted[0].tag : null;
+  let usedX = 0, usedZ = 0;
   const out = [];
 
   for (const b of sorted) {
@@ -98,24 +99,22 @@ export function tidy(blocks) {
       z += rowW + pad;
       x = 0; rowW = 0;
     }
-    if (z + b.w > N) return false; // out of paper
+    if (b.l > N || z + b.w > N) return false; // out of paper
     out.push({ id: b.id, x, z });
     x += b.l + pad;
     rowW = Math.max(rowW, b.w);
+    usedX = Math.max(usedX, x - pad);
+    usedZ = Math.max(usedZ, z + rowW);
   }
+
+  // sit the whole arrangement in the middle of the mat, not in a corner
+  const dx = Math.max(0, Math.floor((N - usedX) / 2));
+  const dz = Math.max(0, Math.floor((N - usedZ) / 2));
 
   const byId = new Map(out.map((o) => [o.id, o]));
   for (const b of blocks) {
     const o = byId.get(b.id);
-    if (o) { b.x = o.x; b.z = o.z; }
+    if (o) { b.x = o.x + dx; b.z = o.z + dz; }
   }
   return true;
-}
-
-/** Clamp a dragged block so it stays on the paper. */
-export function clampCell(x, z, l, w) {
-  return {
-    x: Math.max(0, Math.min(N - l, Math.round(x))),
-    z: Math.max(0, Math.min(N - w, Math.round(z))),
-  };
 }

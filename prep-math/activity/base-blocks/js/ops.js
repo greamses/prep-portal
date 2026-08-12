@@ -11,7 +11,7 @@
    ========================================================================== */
 
 import { CFG, placeDims, placeOf, baseWord } from "./config.js";
-import { store, snapshot, say, nextId, selected, blockById } from "./state.js";
+import { store, snapshot, say, nextId, selected } from "./state.js";
 import { occupancy, findSpot, mark, tidy as tidyLayout } from "./layout.js";
 
 const MAX_SIDE = 64;
@@ -47,6 +47,33 @@ export function splitPlan(b, base) {
 
 /* ── adding ───────────────────────────────────────────────────────────────── */
 
+/**
+ * Give every piece a home. Pieces are laid beside the block they came from, but
+ * a mat that has grown patchy can refuse a big one — in that case the whole mat
+ * is tidied into rows and the layout is taken from there. Returns false only
+ * when even the tidy layout will not hold them, and then nothing has moved.
+ */
+function seat(kept, fresh) {
+  const grid = occupancy(kept);
+  const homeless = [];
+  for (const f of fresh) {
+    const spot = findSpot(grid, f.l, f.w, f.near || null);
+    if (spot) { f.x = spot.x; f.z = spot.z; mark(grid, spot.x, spot.z, f.l, f.w); }
+    else homeless.push(f);
+  }
+  fresh.forEach((f) => delete f.near);
+  if (!homeless.length) return true;
+
+  const all = kept.concat(fresh);
+  const before = all.map((b) => ({ b, x: b.x, z: b.z }));
+  if (tidyLayout(all)) {
+    say("The mat was getting crowded, so the pieces have been tidied into rows.");
+    return true;
+  }
+  before.forEach((s) => { s.b.x = s.x; s.b.z = s.z; });
+  return false;
+}
+
 function room(extra) {
   if (store.blocks.length + extra <= CFG.maxBlocks) return true;
   say(`The mat only holds ${CFG.maxBlocks} pieces. Merge or clear a few first.`, "warn");
@@ -56,10 +83,11 @@ function room(extra) {
 /** Put a new l×w×h block on the mat. Returns the block, or null if there is no room. */
 export function addBlock(l, w, h, opts = {}) {
   if (!room(1)) return null;
-  const grid = occupancy(store.blocks);
-  const spot = findSpot(grid, l, w, opts.near || null);
-  if (!spot) { say("No clear space left on the mat — tidy up or clear some pieces.", "warn"); return null; }
-  const b = { id: nextId(), l, w, h, x: spot.x, z: spot.z, tag: opts.tag ?? null };
+  const b = { id: nextId(), l, w, h, x: 0, z: 0, tag: opts.tag ?? null, near: opts.near || null };
+  if (!seat(store.blocks, [b])) {
+    say("No clear space left on the mat — merge or clear some pieces first.", "warn");
+    return null;
+  }
   store.blocks.push(b);
   return b;
 }
@@ -108,21 +136,24 @@ export function splitSelected() {
 
   snapshot();
   const keep = new Set(splittable.map((b) => b.id));
-  const grid = occupancy(store.blocks, keep);
+  const kept = store.blocks.filter((b) => !keep.has(b.id));
   const fresh = [];
 
   for (const { b, plan } of plans) {
     const dims = { l: b.l, w: b.w, h: b.h };
     dims[plan.axis] = plan.size;
     for (let i = 0; i < plan.n; i++) {
-      const spot = findSpot(grid, dims.l, dims.w, { x: b.x, z: b.z });
-      if (!spot) { say("Not enough room to lay the pieces out — tidy up first.", "warn"); break; }
-      mark(grid, spot.x, spot.z, dims.l, dims.w);
-      fresh.push({ id: nextId(), ...dims, x: spot.x, z: spot.z, tag: b.tag });
+      fresh.push({ id: nextId(), ...dims, x: 0, z: 0, tag: b.tag, near: { x: b.x, z: b.z } });
     }
   }
 
-  store.blocks = store.blocks.filter((b) => !keep.has(b.id)).concat(fresh);
+  if (!seat(kept, fresh)) {
+    store.history.pop();
+    say("Not enough room to lay all the pieces out — clear a few blocks first.", "warn");
+    return false;
+  }
+
+  store.blocks = kept.concat(fresh);
   store.selection = new Set(fresh.map((b) => b.id));
 
   const first = plans[0];
@@ -152,17 +183,19 @@ export function breakToUnits() {
 
   snapshot();
   const keep = new Set(sel.map((b) => b.id));
-  const grid = occupancy(store.blocks, keep);
+  const kept = store.blocks.filter((b) => !keep.has(b.id));
   const fresh = [];
   for (const b of sel) {
     for (let i = 0; i < b.l * b.w * b.h; i++) {
-      const spot = findSpot(grid, 1, 1, { x: b.x, z: b.z });
-      if (!spot) break;
-      mark(grid, spot.x, spot.z, 1, 1);
-      fresh.push({ id: nextId(), l: 1, w: 1, h: 1, x: spot.x, z: spot.z, tag: b.tag });
+      fresh.push({ id: nextId(), l: 1, w: 1, h: 1, x: 0, z: 0, tag: b.tag, near: { x: b.x, z: b.z } });
     }
   }
-  store.blocks = store.blocks.filter((b) => !keep.has(b.id)).concat(fresh);
+  if (!seat(kept, fresh)) {
+    store.history.pop();
+    say("Not enough room for all those unit cubes — clear a few blocks first.", "warn");
+    return false;
+  }
+  store.blocks = kept.concat(fresh);
   store.selection = new Set(fresh.map((b) => b.id));
   say(`Broken into ${fresh.length} unit cubes.`, "ok");
   return true;
@@ -196,14 +229,18 @@ export function mergeSelected() {
 
   snapshot();
   const keep = new Set(sel.map((b) => b.id));
-  const grid = occupancy(store.blocks, keep);
+  const kept = store.blocks.filter((b) => !keep.has(b.id));
   const anchor = sel.reduce((m, b) => (b.z < m.z || (b.z === m.z && b.x < m.x) ? b : m), sel[0]);
-  const spot = findSpot(grid, check.dims.l, check.dims.w, { x: anchor.x, z: anchor.z });
-  if (!spot) { say("No clear space for the joined block — tidy up first.", "warn"); return false; }
-
   const tag = sel.every((b) => b.tag === sel[0].tag) ? sel[0].tag : null;
-  const merged = { id: nextId(), ...check.dims, x: spot.x, z: spot.z, tag };
-  store.blocks = store.blocks.filter((b) => !keep.has(b.id)).concat([merged]);
+  const merged = { id: nextId(), ...check.dims, x: 0, z: 0, tag, near: { x: anchor.x, z: anchor.z } };
+
+  if (!seat(kept, [merged])) {
+    store.history.pop();
+    say("No clear space for the joined block — clear a few pieces first.", "warn");
+    return false;
+  }
+
+  store.blocks = kept.concat([merged]);
   store.selection = new Set([merged.id]);
 
   const from = placeOf(check.from, store.base);
@@ -282,13 +319,5 @@ export function setBase(base) {
   snapshot();
   store.base = b;
   say(`Working in base ${baseWord(b)} — ${b} of a piece now trade for the next one up.`, "ok");
-  return true;
-}
-
-/** Move a block (used by dragging); returns true when the move was legal. */
-export function moveBlock(id, x, z) {
-  const b = blockById(id);
-  if (!b) return false;
-  b.x = x; b.z = z;
   return true;
 }

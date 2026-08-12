@@ -68,6 +68,15 @@ function materialFor(scene, hex) {
   return m;
 }
 
+/** Babylon wants a plain #rrggbb; tokens may arrive short or with alpha. */
+function norm(hex) {
+  const h = String(hex || "").trim();
+  if (/^#[0-9a-f]{3}$/i.test(h)) return "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+  if (/^#[0-9a-f]{6}$/i.test(h)) return h;
+  if (/^#[0-9a-f]{8}$/i.test(h)) return h.slice(0, 7);
+  return "#f4c95d";
+}
+
 /** Forget the cached materials (called when the theme flips). */
 export function clearMaterials() {
   matCache.forEach((m) => m.dispose());

@@ -115,7 +115,7 @@ then "not premium") — the server is the real enforcement.
 | writing | premium | — | page guard (AI via proxy, see caveat) |
 | activities | premium | author, attempt | page guard + `/api/activities` |
 | flashcards | premium | — | page guard + `/api/ai/image` (card art) |
-| prep-math-activities | premium | cartesian-art, equivalent-fractions, polygon-angles, surface-area, transversals | page guard (per sub-app) |
+| prep-math-activities | premium | base-blocks, cartesian-art, equivalent-fractions, polygon-angles, surface-area, transversals | page guard (per sub-app) |
 | games-3d | premium | aliens, chess, free-throw, drone, maze, rubiks-cube | page guard (per game) |
 | prepbot | premium | chat, voice, images | inline + `/api/ai/chat`, `/api/tts/elevenlabs`, `/api/ai/image` (`images` = the avatar picker's "PrepBot draws your character" tile) |
 | cbt-written | premium | short, theory | inline (quiz-engine, per format) |

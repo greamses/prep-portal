@@ -43,13 +43,15 @@ export function createScene(engine, canvas) {
   camera.inertia = 0.72;
   camera.attachControl(canvas, true);
 
+  // kept deliberately dim: the blocks are pale pastels, and a hot key light
+  // blows their top faces out to white (worst in the dark theme)
   const hemi = new BJS.HemisphericLight("hemi", new BJS.Vector3(0.2, 1, 0.1), scene);
-  hemi.intensity = 0.78;
-  hemi.groundColor = new BJS.Color3(0.62, 0.6, 0.56);
+  hemi.intensity = 0.62;
+  hemi.groundColor = new BJS.Color3(0.85, 0.83, 0.8);
 
   const sun = new BJS.DirectionalLight("sun", new BJS.Vector3(-0.45, -1, -0.35), scene);
   sun.position = new BJS.Vector3(30, 46, 26);
-  sun.intensity = 1.15;
+  sun.intensity = 0.45;
   sun.shadowMinZ = 4;
   sun.shadowMaxZ = 140;
 
@@ -57,6 +59,20 @@ export function createScene(engine, canvas) {
   shadows.useBlurExponentialShadowMap = true;
   shadows.blurKernel = 28;
   shadows.darkness = 0.55;
+
+  // ── the desk the mat lies on (so the camera never sees past the world) ────
+  const desk = BJS.MeshBuilder.CreateGround(
+    "desk",
+    { width: CFG.mat * 3, height: CFG.mat * 3, subdivisions: 1 },
+    scene
+  );
+  desk.position.y = -0.03;
+  desk.isPickable = false;
+  const deskMat = new BJS.StandardMaterial("deskMat", scene);
+  deskMat.specularColor = new BJS.Color3(0, 0, 0);
+  deskMat.diffuseColor = new BJS.Color3(0, 0, 0);
+  deskMat.disableLighting = true; // painted flat in the page colour, so the far
+  desk.material = deskMat; //        edge of the world never shows as a seam
 
   // ── the mat ───────────────────────────────────────────────────────────────
   const mat = BJS.MeshBuilder.CreateGround(
@@ -86,13 +102,21 @@ export function createScene(engine, canvas) {
     shadows,
     mat,
     matMat,
+    desk,
+    deskMat,
     highlight,
     matTexture: null,
     base: CFG.defaultBase,
   };
 
+  paintDesk(ctx);
   paintMat(ctx, CFG.defaultBase);
   return ctx;
+}
+
+function paintDesk(ctx) {
+  const BJS = B();
+  ctx.deskMat.emissiveColor = BJS.Color3.FromHexString(norm(cssVar("--app-bg", "#f0ece3")));
 }
 
 /** Redraw the squared paper so its bold lines group in the given base. */
@@ -142,10 +166,49 @@ export function paintMat(ctx, base) {
   ctx.matMat.diffuseColor = new BJS.Color3(1, 1, 1);
 }
 
+/** Swing the camera out until every block on the mat is in shot. */
+export function fitView(ctx, blocks) {
+  const BJS = B();
+  const half = CFG.mat / 2;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, top = 2;
+  for (const b of blocks) {
+    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + b.l);
+    z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + b.w);
+    top = Math.max(top, b.h);
+  }
+  if (!blocks.length) { x0 = z0 = 0; x1 = z1 = CFG.mat; }
+
+  const span = Math.max(x1 - x0, z1 - z0, 8);
+  const radius = Math.max(
+    CFG.camera.min,
+    Math.min(CFG.camera.max, span / (2 * Math.tan(ctx.camera.fov / 2)) + span * 0.12)
+  );
+
+  // Looking at the mat obliquely, whatever the camera aims at lands LOW in the
+  // frame — the near half of the ground eats the bottom of the picture. Pulling
+  // the aim point back towards the camera lifts the blocks into the middle.
+  const a = ctx.camera.alpha;
+  const lean = span * 0.3;
+  const target = new BJS.Vector3(
+    (x0 + x1) / 2 - half + Math.cos(a) * lean,
+    top / 2,
+    (z0 + z1) / 2 - half + Math.sin(a) * lean
+  );
+
+  const fps = 60, frames = 26;
+  const ease = new BJS.CubicEase();
+  ease.setEasingMode(BJS.EasingFunction.EASINGMODE_EASEINOUT);
+  BJS.Animation.CreateAndStartAnimation("fitT", ctx.camera, "target", fps, frames,
+    ctx.camera.target.clone(), target, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
+  BJS.Animation.CreateAndStartAnimation("fitR", ctx.camera, "radius", fps, frames,
+    ctx.camera.radius, radius, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
+}
+
 /** Re-read the theme tokens after a light/dark switch. */
 export function retheme(ctx) {
   const BJS = B();
   ctx.scene.clearColor = BJS.Color4.FromHexString(hexA(cssVar("--app-bg", "#f0ece3")));
+  paintDesk(ctx);
   paintMat(ctx, ctx.base);
 }
 
@@ -155,6 +218,10 @@ export function retheme(ctx) {
 function hexA(hex) {
   const h = hex.trim();
   return h.length === 7 ? h + "ff" : h.length === 4 ? expand(h) + "ff" : h;
+}
+function norm(hex) {
+  const h = hex.trim();
+  return h.length === 4 ? expand(h) : h.slice(0, 7);
 }
 function expand(h) {
   return "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];

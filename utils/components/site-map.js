@@ -164,6 +164,7 @@ export const SITE_PAGES = [
   { id: "surface-area", title: "Surface Area", href: "/prep-math/activity/surface-area/index.html", category: "math", blurb: "Calculate surface area on 3D shapes.", keywords: ["surface area", "3d shapes", "volume"] },
   { id: "transversals", title: "Transversals", href: "/prep-math/activity/transversals/index.html", category: "math", blurb: "Learn parallel lines and angles.", keywords: ["transversals", "parallel lines"] },
   { id: "cartesian-art", title: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", category: "math", blurb: "Plot points on a coordinate plane to draw, then paint, a picture.", keywords: ["cartesian art", "coordinate plane", "plotting points", "graph art"] },
+  { id: "base-blocks", title: "Base Blocks", href: "/prep-math/activity/base-blocks/index.html", category: "math", blurb: "3D place-value blocks — split, trade and count in any base.", keywords: ["base blocks", "base ten blocks", "base 10 blocks", "dienes blocks", "place value", "number bases", "counting blocks", "manipulatives"] },
   { id: "graphing", title: "Function Grapher", href: "/prep-math/graphing/index.html", category: "math", blurb: "Interactive function grapher and calculator.", keywords: ["graphing", "grapher", "plot a function", "graphing calculator"] },
   { id: "manim-lab", title: "Manim Lab", href: "/prep-math/manim-lab/index.html", category: "math", blurb: "Animated math concept explainer videos.", keywords: ["manim", "animation", "explainer video"] },
   {

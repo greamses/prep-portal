@@ -1,0 +1,28 @@
+/* ============================================================================
+   Base Blocks — our own inline SVG glyphs (no icon fonts, no emoji)
+   ========================================================================== */
+
+const line = (d, extra = "") =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+
+export const ICON = {
+  split: line(`<rect x="2.5" y="6" width="7" height="12" rx="1"/><rect x="14.5" y="6" width="7" height="12" rx="1"/><path d="M12 3.5v17" stroke-dasharray="2 2.4"/>`),
+  merge: line(`<rect x="2.5" y="6" width="6" height="12" rx="1"/><rect x="15.5" y="6" width="6" height="12" rx="1"/><path d="M10.4 12h3.2M12.4 10.2 14.2 12l-1.8 1.8"/>`),
+  crumbs: line(`<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/>`),
+  rows: line(`<rect x="3" y="4" width="18" height="4.2" rx="1"/><rect x="3" y="10" width="12" height="4.2" rx="1"/><rect x="3" y="16" width="7" height="4.2" rx="1"/>`),
+  trash: line(`<path d="M4 6.5h16M9.5 6.5V4.2h5v2.3M6.5 6.5 7.4 20h9.2l.9-13.5M10.2 10v6.4M13.8 10v6.4"/>`),
+  undo: line(`<path d="M4 9.5h9.5a5.5 5.5 0 0 1 0 11H8M4 9.5 8 5.6M4 9.5l4 4"/>`),
+  lasso: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5" stroke-dasharray="3 2.6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>`),
+  match: line(`<rect x="2.5" y="7" width="7.5" height="10" rx="1"/><rect x="14" y="7" width="7.5" height="10" rx="1"/><path d="M11.4 10.4h1.2M11.4 13.6h1.2"/>`),
+  plus: line(`<path d="M12 5v14M5 12h14"/>`),
+  eraser: line(`<path d="M4 20h16M6.6 16.8 15 8.4a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8l-4 4H8.2z"/>`),
+  brush: line(`<path d="M6.5 14.5 14 7a2.6 2.6 0 0 1 3.7 3.7l-7.5 7.5-4.4 1.1z"/><path d="M12.4 8.6l3 3"/>`),
+  base: line(`<path d="M4 19V9.5M4 19h16M9.5 19V6M15 19v-8.5M20.5 19V4"/>`),
+  ruler: line(`<rect x="2.5" y="8" width="19" height="8" rx="1.2"/><path d="M6.5 8v3M10 8v4.4M13.5 8v3M17 8v4.4"/>`),
+  expand: line(`<path d="M4 9V5.2a1 1 0 0 1 1-1H9M20 9V5.2a1 1 0 0 0-1-1H15M4 15v3.8a1 1 0 0 0 1 1H9M20 15v3.8a1 1 0 0 1-1 1H15"/>`),
+  fit: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><rect x="8.6" y="8.6" width="6.8" height="6.8" rx="1"/>`),
+  chevron: line(`<path d="m8 5 7 7-7 7"/>`),
+  close: line(`<path d="M6 6l12 12M18 6 6 18"/>`),
+  info: line(`<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.9"/>`),
+  check: line(`<path d="m5 12.5 4.6 4.6L19 7.8"/>`),
+};
