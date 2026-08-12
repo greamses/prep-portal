@@ -19,6 +19,8 @@ import { checkDraft, renderRules, lockWriting, justClosedSentence, say } from '.
 import {
   hasPlanner, buildPlanner, assemblePlan, plannerProgress, resetPlanner
 } from './planner.js';
+import { attachImprove } from './improve.js';
+import { loadCredits, renderCreditBadge } from './credits.js';
 
 // ── DOM Refs ───────────────────────────────────────────
 const elTextarea = $('writing-area');
@@ -87,6 +89,9 @@ elTextarea.addEventListener('input', () => {
 });
 let nagTimer = null;
 lockWriting(elTextarea);
+// Highlight a word or a sentence on the sheet and be offered better ones
+// (js/improve.js). Spends writing credits; never touches the marking.
+attachImprove(elTextarea);
 
 /* ═══════════════════════════════════════════════════════
    SUMMARY — the organiser step (js/summary.js)
@@ -303,6 +308,9 @@ window.addEventListener('DOMContentLoaded', () => {
   injectRewriteStyles();
   initColorKeyAccordion(elResultsSec);
   syncRules();
+  // The suggestion budget (js/credits.js). Read once; the badge follows it.
+  renderCreditBadge($('write-credits'));
+  loadCredits();
   // A new passage (or a form that has none) invalidates the boxes — the
   // organiser would otherwise offer sentences written about something else,
   // and the sheet would still be carrying the paragraph they assembled from

@@ -216,14 +216,21 @@
             <div id="summary-aids" hidden></div>
             <!-- The writing surface is the same torn-paper receipt as the
                  prompt card; the textarea is the ruled sheet inside it. -->
-            <div class="write-receipt pp-receipt">
-              <div class="write-paper pp-receipt__paper">
-                <textarea
-                  id="writing-area"
-                  placeholder="Write your essay or story here. Aim for clear grammar, rich vocabulary, and good structure!"
-                ></textarea>
+            <!-- Highlight a word or a sentence and the bar for replacing it
+                 appears here, under the paper (js/improve.js). A textarea has
+                 no selection geometry to hang a popover on, so the bar is a
+                 sibling of the sheet rather than an overlay. -->
+            <div data-improve-host>
+              <div class="write-receipt pp-receipt">
+                <div class="write-paper pp-receipt__paper">
+                  <textarea
+                    id="writing-area"
+                    placeholder="Write your essay or story here. Aim for clear grammar, rich vocabulary, and good structure! Highlight any word or sentence for a better one."
+                  ></textarea>
+                </div>
               </div>
             </div>
+            <p class="wcredits" id="write-credits" hidden></p>
             <!-- The gate: length, paragraphs and sentences, ticking off as the
                  student writes. Filled by js/rules.js; Submit stays disabled
                  until every row is met. -->

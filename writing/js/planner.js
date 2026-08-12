@@ -33,6 +33,8 @@ import { $, currentTopic, currentWritingType, safe } from './config.js';
 import { getMnemonic, keyColorClass } from './forms.js';
 import { suggestForMove } from './api.js';
 import { checkDraft, lockWriting, MIN_SENTENCE_WORDS, splitSentences } from './rules.js';
+import { attachImprove } from './improve.js';
+import { COST, spend, canAfford, renderCreditBadge } from './credits.js';
 
 // One box per mnemonic key. Kept here rather than in config because nothing
 // outside this step needs it — what leaves is the assembled piece.
@@ -110,6 +112,7 @@ export function buildPlanner({ onChange } = {}) {
       lesson. Write them in any order you like; they go onto the sheet top to bottom.
       A box can hold more than one paragraph, and most pieces need at least one that does.
     </p>
+    <p class="wcredits" id="plan-credits" hidden></p>
 
     <div class="org-flow plan-flow">
       ${mn.keys.map((k, i) => `
@@ -119,10 +122,11 @@ export function buildPlanner({ onChange } = {}) {
             <span class="plan-num pp-sticky ${keyColorClass(i)}">${safe(k.k)}</span>
             <span class="org-card__ttl">${safe(k.name)}<em>${safe(k.what)}</em></span>
             <button type="button" class="plan-tipbtn" data-tip="${i}"
-              aria-label="Suggestions for ${safe(k.name)}">${BULB}<span>Ideas</span></button>
+              aria-label="Suggestions for ${safe(k.name)}">${BULB}<span>Ideas</span>
+              <em>${COST.ideas}</em></button>
           </div>
           <div class="org-card__body plan-card__body">
-            <div class="org-in">
+            <div class="org-in" data-improve-host>
               <textarea class="org-field plan-field" data-i="${i}" rows="5"
                 placeholder="${safe(k.what)}"></textarea>
               <div class="org-meta" data-meta="${i}"></div>
@@ -145,6 +149,9 @@ export function buildPlanner({ onChange } = {}) {
     // The clipboard is shut here for the same reason it is shut on the sheet
     // (js/rules.js) — this IS the sheet, one box at a time.
     lockWriting(field);
+    // …and highlighting a word here offers replacements exactly as it does
+    // there, because it is the same writing (js/improve.js).
+    attachImprove(field);
     field.addEventListener('input', () => {
       boxes[i] = field.value;
       refreshMeta(i);
@@ -162,6 +169,7 @@ export function buildPlanner({ onChange } = {}) {
   // not silently throw away three suggestions and bill for them again.
   tips.forEach((list, i) => paintTips(i, list));
 
+  renderCreditBadge($('plan-credits'));
   refreshFoot();
 }
 
@@ -225,14 +233,33 @@ async function loadTips(i) {
   const btn = document.querySelector(`.plan-tipbtn[data-tip="${i}"]`);
   if (!box) return;
 
-  // Already have them? Second press folds them away again.
+  // Already have them? Second press folds them away again — and re-opening
+  // what has already been paid for must never be charged twice.
   if (tips.has(i) && !box.hidden) { box.hidden = true; btn?.classList.remove('is-on'); return; }
   if (tips.has(i)) { paintTips(i, tips.get(i)); return; }
+
+  if (!canAfford('ideas')) {
+    box.hidden = false;
+    box.innerHTML = '<p class="plan-tips__wait is-bad">No suggestion credits left — and that costs you nothing in marks. Keep writing.</p>';
+    return;
+  }
 
   pending.add(i);
   btn?.classList.add('is-on');
   box.hidden = false;
   box.innerHTML = '<p class="plan-tips__wait">Thinking of three things you could add…</p>';
+
+  // Reserved before the call (js/credits.js) so two clicks cannot both pass
+  // the affordability check on a slow connection.
+  const paid = await spend('ideas');
+  if (!paid.ok) {
+    pending.delete(i);
+    box.innerHTML = `<p class="plan-tips__wait is-bad">${
+      paid.out ? 'That was the last of your suggestion credits — it costs you nothing in marks.'
+      : paid.signedOut ? 'Sign in to use suggestions.'
+      : 'Could not reach the suggester just then.'}</p>`;
+    return;
+  }
 
   const list = await suggestForMove(currentWritingType, i, {
     topic: currentTopic,
@@ -241,7 +268,7 @@ async function loadTips(i) {
   pending.delete(i);
 
   if (!list.length) {
-    box.innerHTML = '<p class="plan-tips__wait is-bad">No suggestions just now — try again in a moment. (Sign in for these.)</p>';
+    box.innerHTML = '<p class="plan-tips__wait is-bad">No suggestions just now — try again in a moment.</p>';
     return;
   }
   tips.set(i, list);

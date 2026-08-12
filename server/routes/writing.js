@@ -204,6 +204,95 @@ module.exports = function () {
     }
   });
 
+  /* ── Writing-suggestion credits ────────────────────────────────────────
+     A student gets a fixed budget of help WHILE WRITING — the planner's
+     per-box ideas, and the word and sentence replacements offered on a
+     highlight. The point of the budget is not cost: it is that unlimited
+     rewriting turns the exercise into a conversation with a machine, and the
+     sheet stops being the student's. A thousand is enough that nobody
+     reaches it in an honest session and small enough that leaning on it runs
+     out.
+
+     Why the count lives HERE and not in the browser: a "max" enforced in
+     localStorage is a max until somebody opens devtools, and this one is
+     spent by the same student it limits. The decrement is a transaction, so
+     two tabs cannot both spend the last credit.
+
+     It has NOTHING to do with marking. The examiner is never told what was
+     spent, no score depends on it, and running out costs no marks — it
+     simply stops the suggestions. That is deliberate: help taken while
+     drafting is drafting, and we do not punish a student for using a tool we
+     put on the page.
+
+     Separate from aiUsage/{uid} in routes/ai.js on purpose. That is a
+     display-only token meter across the whole site that never blocks; this
+     is a hard, countable allowance for one feature.
+
+       GET  /api/writing/credits        — { balance, allocation, spent }
+       POST /api/writing/credits/spend  — { cost } → the new balance, or 402
+     ──────────────────────────────────────────────────────────────────── */
+  const CREDIT_ALLOWANCE = 1000;
+  const MAX_SPEND = 10;   // one action can never cost more than this
+  const creditDoc = (uid) => db().collection("writingCredits").doc(uid);
+  const creditShape = (spent, unlimited) => ({
+    spent,
+    allocation: unlimited ? null : CREDIT_ALLOWANCE,
+    balance: unlimited ? null : Math.max(0, CREDIT_ALLOWANCE - spent),
+    unlimited: !!unlimited,
+  });
+
+  router.get("/credits", authenticate, async (req, res) => {
+    try {
+      if (isAdmin(req)) return res.json(creditShape(0, true));
+      const snap = await creditDoc(req.user.uid).get();
+      const spent = snap.exists ? Number(snap.data().spent) || 0 : 0;
+      res.json(creditShape(spent, false));
+    } catch (err) {
+      console.error("[/api/writing/credits GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.post("/credits/spend", authenticate, async (req, res) => {
+    try {
+      if (isAdmin(req)) return res.json(creditShape(0, true));
+
+      const asked = Math.floor(Number((req.body || {}).cost));
+      const cost = Number.isFinite(asked) ? Math.min(MAX_SPEND, Math.max(1, asked)) : 1;
+      const ref = creditDoc(req.user.uid);
+
+      // A transaction, not an increment: the balance has to be CHECKED and
+      // decremented together, or the last credit gets spent twice by two tabs.
+      const spent = await db().runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const now = snap.exists ? Number(snap.data().spent) || 0 : 0;
+        if (now + cost > CREDIT_ALLOWANCE) {
+          const e = new Error("out_of_credits");
+          e.balance = Math.max(0, CREDIT_ALLOWANCE - now);
+          throw e;
+        }
+        tx.set(ref, {
+          spent: now + cost,
+          ownerEmail: req.user.email || null,
+          updatedAt: stamp(),
+        }, { merge: true });
+        return now + cost;
+      });
+
+      res.json(creditShape(spent, false));
+    } catch (err) {
+      if (err.message === "out_of_credits") {
+        return res.status(402).json({
+          error: "out_of_credits",
+          balance: err.balance ?? 0,
+          allocation: CREDIT_ALLOWANCE,
+        });
+      }
+      console.error("[/api/writing/credits spend]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── Admin: put one in front of everybody (or take it back) ───────────────
   router.post("/prompts/:id/publish", authenticate, async (req, res) => {
     try {

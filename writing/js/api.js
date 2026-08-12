@@ -875,6 +875,77 @@ Return ONLY valid JSON: {"tips":["...","...","..."]}`;
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   REPLACEMENTS ON A HIGHLIGHT — the red pen, before the marking.
+
+   The results page already offers these: a blue underline under a weak word
+   opens three alternatives, an amber one under a flat sentence opens two
+   rewrites (the <sub> and <sent> tags). But that is AFTER the marking, on a
+   piece that has already been scored, which is the wrong end of the lesson —
+   the student who wanted a better word wanted it while they were reaching
+   for one.
+
+   So the same two offers are made on a highlight in the draft, and they are
+   generated with the SAME family guidelines the examiner uses
+   (getSubstitutionGuidelines) — a narrative gets vivid verbs, an argument
+   gets precision, a summary gets paraphrase. A student who is coached toward
+   one thing while writing and marked against another has been set up.
+
+   Groq, like the planner's suggestions: the student has a word selected and
+   a cursor waiting. Never returns the original, never returns fewer options
+   than it promised — a menu with one item on it is not a choice.
+═══════════════════════════════════════════════════════ */
+export async function fetchReplacements({ kind, selection, sentence = '', topic = '' } = {}) {
+  const sel = String(selection || '').trim();
+  if (!sel) return [];
+
+  const family = familyOf(currentWritingType);
+  const word = kind === 'word';
+  const n = word ? 3 : 2;
+
+  const prompt = `A secondary-school student (age 13–16) is writing ${formLabel(currentWritingType)}${topic ? ` on this task: "${topic}"` : ''}.
+
+They have highlighted ${word ? 'this WORD or PHRASE' : 'this SENTENCE'} in their own draft and want a better version:
+
+"${sel}"
+
+${sentence && word ? `THE SENTENCE IT SITS IN (for context — do not rewrite it):\n"${sentence}"\n` : ''}
+${getSubstitutionGuidelines(family)}
+
+Give exactly ${n} replacement${n === 1 ? '' : 's'}. Rules:
+• ${word
+    ? 'Each must fit the sentence grammatically exactly where the highlighted words are — same part of speech, same number and tense. It has to drop straight in.'
+    : 'Each must say what their sentence says, better. Do not add facts they did not write, and do not change their meaning or their opinion.'}
+• NEVER return the original, and never a trivial variation of it.
+• Keep the student's own voice. These must sound like a 14-year-old wrote them on a good day, not like an adult wrote them.
+• ${word ? 'No explanations, just the replacement words.' : 'No explanations, just the rewritten sentences.'}
+
+Return ONLY valid JSON: {"options":[${Array(n).fill('"..."').join(',')}]}`;
+
+  try {
+    const data = await groqGenerate({
+      prompt,
+      json: true,
+      temperature: 0.8,
+      maxTokens: 500,
+      key: 'backend',
+    });
+    const raw = groqText(data) || '';
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end === -1) return [];
+    const parsed = JSON.parse(stripControl(raw.substring(start, end + 1)));
+    const same = (a, b) => a.toLowerCase().replace(/[^a-z0-9]/g, '') === b.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (Array.isArray(parsed.options) ? parsed.options : [])
+      .map((o) => String(o || '').replace(/\s+/g, ' ').trim().replace(/^["']+|["']+$/g, ''))
+      .filter((o) => o && !same(o, sel))
+      .slice(0, n);
+  } catch (err) {
+    console.warn('[Writing] replacements unavailable:', err.message);
+    return [];
+  }
+}
+
 // ── Essay Grading ──────────────────────────────────────
 /* One entry point for both. A summary hands the same examiner the source
    passage (numbered, because coverage feedback has to be able to say "you
