@@ -207,6 +207,36 @@ export function checkDraft(text, { summary = false, formId = currentWritingType 
   };
 }
 
+/* ── The sentence you just finished ─────────────────────
+   The checklist is a summary and summaries are read late: a student who
+   writes eleven short sentences finds out about all eleven at the end, by
+   which time fixing them is a rewrite. So the moment a full stop is typed,
+   the sentence it closed is measured and said out loud.
+
+   The trigger is the terminator, not the keystroke. Deleting back past a full
+   stop must not scold anybody, and neither must moving the caret, so the
+   caller passes whether the text GREW — anything else is not somebody
+   finishing a sentence. Returns null when there is nothing to say, which is
+   almost always; this runs on every keypress. */
+export function justClosedSentence(text, { grew = true } = {}) {
+  if (!grew) return null;
+  const t = String(text || '');
+  // A terminator, optionally behind a closing quote or bracket, at the very
+  // end of what has been typed. Trailing spaces are fine — the student has
+  // finished the sentence and moved on.
+  if (!/[.!?…]["'”’)\]]*\s*$/.test(t)) return null;
+  // An abbreviation is not the end of a sentence, and "..." is one mark.
+  if (ABBR.test(t.trimEnd())) return null;
+
+  const sentences = splitSentences(splitParagraphs(t).pop() || '');
+  const last = sentences[sentences.length - 1];
+  if (!last) return null;
+
+  const n = wordCount(last);
+  if (n >= MIN_SENTENCE_WORDS) return null;
+  return { text: last, words: n, need: MIN_SENTENCE_WORDS };
+}
+
 /* ── The checklist under the sheet ──────────────────────── */
 
 const TICK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -217,9 +247,18 @@ const OPEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/* The checklist is redrawn on EVERY keystroke, so the flash line cannot live
+   inside what gets redrawn — a message about the sentence you just closed
+   would be destroyed by the next character you typed, which is one character
+   later. The note is created once and kept; only the body is replaced. */
 export function renderRules(host, result) {
   if (!host) return;
-  host.innerHTML = `
+  let body = host.querySelector('.wrules__body');
+  if (!body) {
+    host.innerHTML = '<div class="wrules__body"></div><p class="wrules__note" id="wrules-note" hidden></p>';
+    body = host.querySelector('.wrules__body');
+  }
+  body.innerHTML = `
     <p class="wrules__hdr">
       The rules of the sheet
       <span class="wrules__tally${result.ok ? ' is-ok' : ''}">
@@ -235,8 +274,7 @@ export function renderRules(host, result) {
             ${r.detail ? `<span class="wrule__detail">${esc(r.detail)}</span>` : ''}
           </span>
         </li>`).join('')}
-    </ul>
-    <p class="wrules__note" id="wrules-note" hidden></p>`;
+    </ul>`;
 }
 
 /* ── The lock ───────────────────────────────────────────
@@ -253,12 +291,19 @@ const BLOCK_MSG = {
 };
 
 function flash(kind) {
+  say(BLOCK_MSG[kind] || BLOCK_MSG.paste, 2600);
+}
+
+/* One line, under the checklist, for anything that has to be said the instant
+   it happens rather than tallied — a blocked paste, or a sentence that was
+   just closed two words short. */
+export function say(message, ms = 3200) {
   const note = document.getElementById('wrules-note');
   if (!note) return;
-  note.textContent = BLOCK_MSG[kind] || BLOCK_MSG.paste;
+  note.textContent = message;
   note.hidden = false;
-  clearTimeout(flash.t);
-  flash.t = setTimeout(() => { note.hidden = true; }, 2600);
+  clearTimeout(say.t);
+  say.t = setTimeout(() => { note.hidden = true; }, ms);
 }
 
 export function lockWriting(el) {

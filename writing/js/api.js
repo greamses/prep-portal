@@ -808,6 +808,73 @@ YOUR PREVIOUS ATTEMPT FAILED RULE 1: ${summary
   return model;
 }
 
+/* ═══════════════════════════════════════════════════════
+   PARAGRAPH SUGGESTIONS — Groq, because this one has to be fast.
+
+   Every other call on this page can take four seconds: you press a button and
+   you wait for a prompt, a passage, a model, a marking. This one is different
+   — the student is mid-paragraph with a cursor blinking, and a suggestion
+   that arrives after they have moved on is worse than none. So it goes
+   STRAIGHT to Groq rather than through the Gemini-then-Groq ladder the rest
+   of the file uses, and it asks for very little: three lines, no preamble.
+
+   What it must never do is write the paragraph. A suggestion here is a
+   QUESTION or a MISSING DETAIL — "what did the room smell like?", "name the
+   figure you are claiming" — because a student who is handed sentences stops
+   writing and starts accepting. The prompt says so in as many words, and the
+   suggestions are rendered as prompts to answer, not text to insert: there is
+   deliberately no button that puts one on the page.
+═══════════════════════════════════════════════════════ */
+export async function suggestForMove(formId, keyIndex, { topic = '', draft = '' } = {}) {
+  const mn = getMnemonic(formId);
+  const form = getForm(formId);
+  const key = mn?.keys[keyIndex];
+  if (!key || !form) return [];
+
+  const written = draft.trim();
+  const state = written
+    ? `WHAT THEY HAVE WRITTEN IN THIS BOX SO FAR:\n"${written.slice(0, 900)}"`
+    : 'THIS BOX IS STILL EMPTY.';
+
+  const prompt = `You are helping a secondary-school student (age 13–16) write ONE part of a piece of writing.
+
+FORM: ${form.label}
+THEIR TASK: ${topic || '(not set)'}
+THE PART THEY ARE ON: "${key.k} — ${key.name}" — ${key.what}
+
+${state}
+
+Give exactly 3 suggestions for what to ADD to this part. Rules:
+• Each one must be specific to THEIR task above, not general writing advice. "Add more detail" is useless; "say what the queue smelt like at that hour" is not.
+• Phrase each as a question they can answer or a detail they are missing — NEVER as a sentence they could copy into their writing. You are not writing this for them.
+• ${written ? 'Do not repeat what they have already written. Suggest what is MISSING from it.' : 'They have not started, so suggest the three things this part most needs.'}
+• Under 18 words each. Plain English.
+
+Return ONLY valid JSON: {"tips":["...","...","..."]}`;
+
+  try {
+    const data = await groqGenerate({
+      prompt,
+      json: true,
+      temperature: 0.75,
+      maxTokens: 400,
+      key: 'backend',
+    });
+    const raw = groqText(data) || '';
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end === -1) return [];
+    const parsed = JSON.parse(stripControl(raw.substring(start, end + 1)));
+    return (Array.isArray(parsed.tips) ? parsed.tips : [])
+      .map((t) => String(t || '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  } catch (err) {
+    console.warn('[Writing] suggestions unavailable:', err.message);
+    return [];
+  }
+}
+
 // ── Essay Grading ──────────────────────────────────────
 /* One entry point for both. A summary hands the same examiner the source
    passage (numbered, because coverage feedback has to be able to say "you

@@ -201,6 +201,13 @@
                changes nothing that was written. -->
           <div id="summary-section" style="display: none"></div>
 
+          <!-- PLAN PHASE — every other form (js/planner.js).
+               The same idea one step earlier: a box per move of the form's
+               mnemonic, in the tile colours the lesson's wall chart used, with
+               per-box suggestions from Groq. Never a gate — "Straight to the
+               sheet" is always in the footer. -->
+          <div id="plan-section" style="display: none"></div>
+
           <!-- WRITE PHASE -->
           <div id="editor-section">
             <p class="sec-label" id="editor-label">Your Essay</p>
@@ -476,6 +483,22 @@
                 <path d="M4 18h13" />
               </svg>
               <span id="to-paragraph-label">Turn into a paragraph →</span>
+            </button>
+          </div>
+          <!-- Every other form — the planner's footer. -->
+          <div class="mftr-inner" id="ftr-plan" style="display: none">
+            <div class="mftr-wc" id="plan-tally">0 of 0 boxes</div>
+            <div class="mftr-space"></div>
+            <button class="btn btn-ghost" id="plan-skip-btn" type="button">Straight to the sheet →</button>
+            <!-- Only appears once a draft on the sheet has been edited by hand. -->
+            <button class="btn btn-ghost" id="plan-keep-btn" type="button" style="display: none">Keep my draft →</button>
+            <button class="btn btn-primary" id="plan-to-sheet-btn" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 6h10" />
+                <path d="M4 12h16" />
+                <path d="M4 18h13" />
+              </svg>
+              <span id="plan-to-sheet-label">Put it on the sheet →</span>
             </button>
           </div>
           <div class="mftr-inner" id="ftr-write" style="display: none">

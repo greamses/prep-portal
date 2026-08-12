@@ -4,7 +4,7 @@
 
 import { $, currentTopic, currentWritingType, setCurrentWritingType, customTask } from './config.js';
 import { fetchGeneratedTopic, fetchModelText, videoQueryFor } from './api.js';
-import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf, getMnemonic } from './forms.js';
+import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf, getMnemonic, keyColorClass } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
 import { initOwnTask, releaseCustomPrompt, canShareTask, ownTaskEls } from './own-task.js';
 import { initAssign, syncAssignBtn } from './assign.js';
@@ -368,11 +368,9 @@ const esc = (s) => String(s)
    sticky-note palette — fixed light pastels with dark ink, so the chart reads
    the same in either theme and looks like paper pinned to a wall rather than
    like chrome. See [[ui-reuse-shared-components]]: this is .pp-sticky, not a
-   new card. The tile colour is also the colour the matching block of the
-   model text is tagged with further down the lesson, which is the whole
-   point — the chart and the example are one lesson, not two. */
-export const keyColorClass = (i) => `pp-sticky--c${i % 6}`;
-
+   new card. `keyColorClass` lives in forms.js because THREE views paint the
+   same four steps and they all have to agree: this chart, the blocks of the
+   model text below it, and the boxes of the planner the student writes in. */
 function mnemonicChartHtml(formId) {
   const mn = getMnemonic(formId);
   if (!mn) return '';
@@ -682,17 +680,21 @@ export function closeWritingModal() {
   document.body.style.overflow = '';
 }
 
-/* Phases: learn → write → results, with 'organise' sitting between learn and
-   write for summaries only. It is a step of the same writing phase rather than
-   a fourth stage — the sheet it feeds is the same sheet, and everything after
-   the assemble button is identical for every form. */
+/* Phases: learn → write → results, with a planning step in between. Which
+   planning step depends on the form — 'organise' is the summary's own
+   graphic organiser (js/summary.js), 'plan' is the mnemonic planner every
+   other form gets (js/planner.js) — but they are the same stage of the same
+   journey and both feed the same sheet. Everything after the assemble button
+   is identical for every form. */
 export function showPhase(phase) {
   const lessonSec = $('lesson-section');
   const summarySec = $('summary-section');
+  const planSec = $('plan-section');
   const editorSec = $('editor-section');
   const resultsSec = $('results-section');
   const ftrLearn = $('ftr-learn');
   const ftrOrganize = $('ftr-organize');
+  const ftrPlan = $('ftr-plan');
   const ftrWrite = $('ftr-write');
   const ftrResults = $('ftr-results');
   const mhdrPhase = $('mhdr-phase');
@@ -701,17 +703,20 @@ export function showPhase(phase) {
 
   show(lessonSec, phase === 'learn');
   show(summarySec, phase === 'organize');
+  show(planSec, phase === 'plan');
   show(editorSec, phase === 'write');
   resultsSec?.classList.toggle('active', phase === 'results');
 
   show(ftrLearn, phase === 'learn', 'flex');
   show(ftrOrganize, phase === 'organize', 'flex');
+  show(ftrPlan, phase === 'plan', 'flex');
   show(ftrWrite, phase === 'write', 'flex');
   show(ftrResults, phase === 'results', 'flex');
 
   if (mhdrPhase) {
     mhdrPhase.textContent = phase === 'learn' ? 'Learn'
       : phase === 'organize' ? 'Organise'
+      : phase === 'plan' ? 'Plan'
       : phase === 'write' ? 'Write'
       : 'Results';
   }

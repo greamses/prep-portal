@@ -15,7 +15,10 @@ import {
   isSummaryMode, buildOrganizer, buildSheetAids, assembleParagraph,
   getPlan, organizerProgress, resetOrganizer
 } from './summary.js';
-import { checkDraft, renderRules, lockWriting } from './rules.js';
+import { checkDraft, renderRules, lockWriting, justClosedSentence, say } from './rules.js';
+import {
+  hasPlanner, buildPlanner, assemblePlan, plannerProgress, resetPlanner
+} from './planner.js';
 
 // ── DOM Refs ───────────────────────────────────────────
 const elTextarea = $('writing-area');
@@ -64,7 +67,25 @@ function syncRules() {
   return result;
 }
 
-elTextarea.addEventListener('input', syncRules);
+/* The short-sentence rule is told to the student the moment they close a
+   sentence, not at the end when it is eleven sentences and a rewrite. Only on
+   GROWTH — deleting back past a full stop is not somebody finishing one — and
+   only when the sentence is actually short, which is rare enough that this is
+   silent nearly every keystroke. */
+let lastLen = 0;
+elTextarea.addEventListener('input', () => {
+  const grew = elTextarea.value.length > lastLen;
+  lastLen = elTextarea.value.length;
+  syncRules();
+  const short = justClosedSentence(elTextarea.value, { grew });
+  if (short) {
+    say(`That sentence has ${short.words} word${short.words === 1 ? '' : 's'} — every sentence needs ${short.need}. Say more about it, or join it to the one before.`);
+    elRules?.classList.add('is-nagging');
+    clearTimeout(nagTimer);
+    nagTimer = setTimeout(() => elRules?.classList.remove('is-nagging'), 1200);
+  }
+});
+let nagTimer = null;
 lockWriting(elTextarea);
 
 /* ═══════════════════════════════════════════════════════
@@ -116,24 +137,82 @@ function openOrganizer() {
   showPhase('organize');
 }
 
-function openSheet({ rebuild }) {
+const openSheet = ({ rebuild }) => toSheet({ rebuild, text: assembleParagraph() });
+
+$('to-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: true }));
+$('keep-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: false }));
+$('organize-topic-btn')?.addEventListener('click', () => closeWritingModal());
+
+/* ═══════════════════════════════════════════════════════
+   THE PLAN — the mnemonic planner (js/planner.js)
+
+   Same contract as the summary organiser above, and deliberately the same
+   code shape: the boxes are only ever poured onto the sheet by an explicit
+   press, so coming back to the plan can never overwrite a draft the student
+   has since edited by hand. The one difference is that this step may always
+   be skipped — see the header of planner.js for why a summary's organiser
+   cannot be.
+   ═══════════════════════════════════════════════════════ */
+function syncPlanFooter() {
+  const btn = $('plan-to-sheet-btn');
+  const label = $('plan-to-sheet-label');
+  const tally = $('plan-tally');
+  const keepBtn = $('plan-keep-btn');
+  const skipBtn = $('plan-skip-btn');
+  const { filled, total, complete } = plannerProgress();
+  const edited = draftIsEdited();
+
+  if (btn) {
+    btn.disabled = !filled;
+    btn.title = edited
+      ? 'Replaces what is on your sheet with a fresh build from these boxes'
+      : '';
+  }
+  if (label) label.textContent = edited ? 'Rebuild the sheet →' : 'Put it on the sheet →';
+  if (keepBtn) keepBtn.style.display = edited ? '' : 'none';
+  // Once anything is on the sheet, "straight to the sheet" is the same door as
+  // "keep my draft" and two of them is one too many.
+  if (skipBtn) skipBtn.style.display = edited ? 'none' : '';
+  if (tally) {
+    tally.textContent = complete
+      ? `All ${total} boxes filled`
+      : `${filled} of ${total} boxes filled`;
+    tally.classList.toggle('is-open', complete && !edited);
+  }
+}
+
+function openPlanner() {
+  buildPlanner({ onChange: syncPlanFooter });
+  syncPlanFooter();
+  showPhase('plan');
+}
+
+/* The one door from a planning step onto the sheet, whichever step it was.
+   Both organisers assemble into the same textarea and everything downstream
+   is identical, so the only thing that differs is which one built the text
+   and which one the back button returns to. */
+function toSheet({ rebuild, text }) {
   if (rebuild) {
-    lastAssembled = assembleParagraph();
+    lastAssembled = text;
     elTextarea.value = lastAssembled;
     elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
   }
   buildSheetAids();
   const back = $('back-to-organizer-btn');
-  if (back) back.style.display = '';
+  if (back) { back.style.display = ''; back.textContent = isSummaryMode() ? '← Back to the Organiser' : '← Back to the Plan'; }
   syncRules();
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
 }
 
-$('to-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: true }));
-$('keep-paragraph-btn')?.addEventListener('click', () => openSheet({ rebuild: false }));
-$('back-to-organizer-btn')?.addEventListener('click', () => openOrganizer());
-$('organize-topic-btn')?.addEventListener('click', () => closeWritingModal());
+$('plan-to-sheet-btn')?.addEventListener('click', () => toSheet({ rebuild: true, text: assemblePlan() }));
+$('plan-keep-btn')?.addEventListener('click', () => toSheet({ rebuild: false }));
+$('plan-skip-btn')?.addEventListener('click', () => toSheet({ rebuild: false }));
+
+// One back button, two planning steps.
+$('back-to-organizer-btn')?.addEventListener('click', () => {
+  if (isSummaryMode()) openOrganizer(); else openPlanner();
+});
 
 // ── Submit ─────────────────────────────────────────────
 elSubmitBtn.addEventListener('click', async () => {
@@ -166,9 +245,11 @@ elRetryBtn?.addEventListener('click', () => {
   syncRules();
   lastAssembled = '';
 
-  // A second attempt at a summary starts where the thinking was done — the
-  // organiser, with the sentences they already worked out still in it.
-  if (isSummaryMode()) openOrganizer(); else showPhase('write');
+  // A second attempt starts where the thinking was done — the planning step,
+  // with everything they already worked out still in it.
+  if (isSummaryMode()) openOrganizer();
+  else if (hasPlanner()) openPlanner();
+  else showPhase('write');
 
   setCommentCounter(0);
   resetCommentStore();
@@ -193,6 +274,10 @@ $('lesson-video-btn')?.addEventListener('click', () => loadLessonVideo());
 // rather than a blank sheet; every other form goes straight to the paper.
 $('start-writing-btn')?.addEventListener('click', () => {
   if (isSummaryMode()) { openOrganizer(); return; }
+  // Every form with a mnemonic gets planned before it is written; a task the
+  // student brought themselves has no form and so no plan, and goes straight
+  // to the paper as it always did.
+  if (hasPlanner()) { openPlanner(); return; }
   syncRules();
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
@@ -230,6 +315,7 @@ window.addEventListener('DOMContentLoaded', () => {
         elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
       }
       resetOrganizer();
+      resetPlanner();
       lastAssembled = '';
       buildSheetAids();
       const back = $('back-to-organizer-btn');

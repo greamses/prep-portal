@@ -981,3 +981,11 @@ export const formLabel = (id) => (FORM_INDEX.get(id) || {}).label || 'General';
 /* The wall chart for a form, or null for a task the student brought
    themselves — there is no form, so there is no word to remember it by. */
 export const getMnemonic = (id) => MNEMONICS[id] || null;
+
+/* ONE colour per mnemonic key, and everything that shows that key uses it:
+   the wall-chart tile in the lesson, the block of the model text making that
+   move, and the box in the planner where the student makes it themselves.
+   Three views of the same four steps, so the colour has to be decided here
+   rather than three times. The shared sticky palette — fixed light pastels
+   with dark ink, identical in both themes. */
+export const keyColorClass = (i) => `pp-sticky--c${i % 6}`;

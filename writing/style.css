@@ -2902,9 +2902,14 @@ details.rubric-wrap summary { min-height: 48px; }
 }
 .lmodel__chipn { font-size: 11px; line-height: 1.3; }
 
+/* JetBrains Mono, explicitly (--font-mono). A model is something to be READ
+   AGAINST your own writing — a fixed pitch makes the sentence lengths and the
+   paragraph blocks comparable by eye, which handwriting-face Caveat does not.
+   13.5px because mono runs wide at the same nominal size. */
 .lmodel__text p {
-  font-size: 14.5px;
-  line-height: 1.72;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.75;
   color: var(--text-primary);
   margin: 0 0 10px;
 }
@@ -2927,4 +2932,185 @@ details.rubric-wrap summary { min-height: 48px; }
   .lmodel__part { grid-template-columns: 1fr; gap: 9px; }
   .lmodel__chip { justify-self: start; }
   .mchart__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE PLANNER — one box per move of the form's mnemonic. (js/planner.js)
+
+   Reuses the summary organiser's furniture wholesale (.org-flow, .org-card,
+   .org-meta, .org-foot) because it IS that idea applied to another form, and
+   two funnels that look different would read as two features. Only what
+   genuinely differs is styled here: the letter tile instead of a number, and
+   the suggestions drawer.
+════════════════════════════════════════════════════════════════════════════ */
+.plan-card__hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+/* The mnemonic letter, in the same tile colour the lesson's wall chart and
+   the model text used for this move. Three views, one palette. */
+.plan-num {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 19px;
+  line-height: 1;
+  transform: rotate(-2deg);
+}
+.plan-card__hdr .org-card__ttl { flex: 1; }
+.plan-card__hdr .org-card__ttl em {
+  display: block;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+}
+.plan-card__body { display: block; }
+.plan-field { min-height: calc(5 * var(--write-line)); }
+
+/* Suggestions. The button is quiet until the card is hovered or focused —
+   it is help, and help that shouts is in the way. It stays fully visible on
+   touch, where there is no hover to reveal it with. */
+.plan-tipbtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 6px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--ink) 26%, transparent);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--duration-smooth, 0.2s) ease, color 0.2s ease, border-color 0.2s ease;
+}
+.org-card:hover .plan-tipbtn,
+.org-card:focus-within .plan-tipbtn,
+.plan-tipbtn:focus-visible { opacity: 1; }
+.plan-tipbtn:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+.plan-tipbtn.is-on {
+  opacity: 1;
+  color: var(--ink);
+  border-style: solid;
+  border-color: var(--accent-secondary);
+}
+@media (hover: none) {
+  .plan-tipbtn { opacity: 1; }
+}
+
+.plan-tips {
+  margin-top: 10px;
+  padding: 11px 13px 12px;
+  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-primary));
+  border: var(--border-subtle);
+}
+.plan-tips__hdr,
+.plan-tips__foot {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+.plan-tips__hdr { font-weight: var(--weight-bold); margin-bottom: 8px; }
+.plan-tips__foot {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 10px;
+  margin-top: 9px;
+  font-style: italic;
+}
+.plan-tips__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+.plan-tips__list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+.plan-tips__list li::before {
+  content: "?";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent-secondary);
+}
+.plan-tips__wait {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.plan-tips__wait.is-bad { color: var(--accent-danger); }
+
+/* The foot runs the SHEET's rules, so the plan and the paper never disagree. */
+.plan-foot__rules {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.plan-rule {
+  position: relative;
+  padding-left: 16px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.plan-rule::before {
+  content: "○";
+  position: absolute;
+  left: 0;
+  color: var(--text-tertiary);
+}
+.plan-rule.is-ok, .plan-rule.is-exempt { color: var(--text-tertiary); }
+.plan-rule.is-ok::before, .plan-rule.is-exempt::before { content: "✓"; color: var(--accent-success); }
+.plan-rule em { font-style: normal; color: var(--ink); }
+
+#plan-tally.is-open { color: var(--accent-success); }
+
+/* A short sentence is called out the instant its full stop is typed
+   (js/rules.js justClosedSentence). The checklist flicks to say the line
+   underneath it has changed — without this the message can appear below the
+   fold and never be seen. */
+.wrules.is-nagging {
+  border-color: var(--accent-danger);
+  animation: wrulesNag 0.34s ease;
+}
+@keyframes wrulesNag {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wrules.is-nagging { animation: none; }
 }
