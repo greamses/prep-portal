@@ -3,8 +3,8 @@
 ═══════════════════════════════════════════════════════ */
 
 import { $, currentTopic, currentWritingType, setCurrentWritingType, customTask } from './config.js';
-import { fetchGeneratedTopic } from './api.js';
-import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf } from './forms.js';
+import { fetchGeneratedTopic, fetchModelText, videoQueryFor } from './api.js';
+import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf, getMnemonic } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
 import { initOwnTask, releaseCustomPrompt, canShareTask, ownTaskEls } from './own-task.js';
 import { initAssign, syncAssignBtn } from './assign.js';
@@ -363,6 +363,37 @@ const li = (items) => items.map((t) => `<li>${esc(t)}</li>`).join('');
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/* ── The wall chart ────────────────────────────────────
+   One tile per letter of the form's mnemonic (js/forms.js), in the shared
+   sticky-note palette — fixed light pastels with dark ink, so the chart reads
+   the same in either theme and looks like paper pinned to a wall rather than
+   like chrome. See [[ui-reuse-shared-components]]: this is .pp-sticky, not a
+   new card. The tile colour is also the colour the matching block of the
+   model text is tagged with further down the lesson, which is the whole
+   point — the chart and the example are one lesson, not two. */
+export const keyColorClass = (i) => `pp-sticky--c${i % 6}`;
+
+function mnemonicChartHtml(formId) {
+  const mn = getMnemonic(formId);
+  if (!mn) return '';
+  return `
+    <div class="mchart">
+      <p class="mchart__hdr">
+        <span class="mchart__word">${mn.word.split('').map((c, i) =>
+          `<span class="mchart__wl ${keyColorClass(i)}">${esc(c)}</span>`).join('')}</span>
+        <span class="mchart__gloss">${esc(mn.gloss)}</span>
+      </p>
+      <div class="mchart__grid">
+        ${mn.keys.map((k, i) => `
+          <div class="mchart__tile pp-sticky ${keyColorClass(i)}" style="--pp-note-tilt:${(i % 2 ? 1 : -1) * (0.8 + (i % 3) * 0.5)}deg">
+            <span class="mchart__k">${esc(k.k)}</span>
+            <span class="mchart__name">${esc(k.name)}</span>
+            <span class="mchart__what">${esc(k.what)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
 export function renderLesson(formId) {
   const form = getForm(formId);
   const paper = $('lesson-paper');
@@ -408,19 +439,25 @@ export function renderLesson(formId) {
     : `<p class="lesson-prompt-label">Your prompt</p>
        <p class="lesson-prompt">${esc(currentTopic)}</p>`;
 
+  /* The chart comes BEFORE the shape list on purpose. The list is the
+     explanation and the chart is the thing to remember; a student who reads
+     only the first screen should leave with the word. */
   paper.innerHTML = `
     <p class="lesson-eyebrow">${esc(form.label)}</p>
     <h3 class="lesson-title">${esc(form.blurb)}</h3>
     <p class="lesson-what">${esc(form.lesson.what)}</p>
+    <p class="lesson-head">Remember it as</p>
+    ${mnemonicChartHtml(formId)}
     <p class="lesson-head">How it is shaped</p>
     <ol class="lesson-list">${li(form.lesson.shape)}</ol>
     <p class="lesson-head">What marks it out</p>
     <ul class="lesson-list lesson-list--plain">${li(form.lesson.moves)}</ul>
     <p class="lesson-head">A model</p>
-    <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
+    <div id="lesson-model-zone">${modelStubHtml(form)}</div>
     ${videoLine}
     ${task}`;
 
+  $('lesson-model-btn')?.addEventListener('click', () => loadModelText());
   syncGate();
 
   // "Read" = the foot of the lesson has actually been on screen. An
@@ -438,6 +475,101 @@ export function renderLesson(formId) {
   } else {
     hasRead = true; // no observer support — never trap the student
     syncGate();
+  }
+}
+
+/* ── The model text ────────────────────────────────────
+   What sits under "A model" before anybody asks for one: the hand-written
+   extract from the registry, plus the offer of a whole piece. The extract is
+   not thrown away when the AI writes one — it is the fallback for a student
+   who is signed out or over quota, and it costs nothing to leave in place
+   until the real thing arrives.
+
+   The generated piece is only ever a NEIGHBOURING task (js/api.js), and the
+   task it answers is printed at the top of it so a student can see that for
+   themselves. Every block is tagged with the letter of the mnemonic it
+   demonstrates, in the tile's own colour — the chart above says what the move
+   is, and the model shows the paragraph doing it. */
+function modelStubHtml(form) {
+  return `
+    <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
+    <div class="lmodel__ask">
+      <button class="btn btn-ghost lmodel__btn" id="lesson-model-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 5h11" /><path d="M4 10h16" /><path d="M4 15h9" />
+          <path d="m15.5 20 5-5" /><path d="M18 17.5 20.5 20" />
+        </svg>
+        Write me a full model
+      </button>
+      <span class="lmodel__note">On a different task in the same form — never on your own prompt.</span>
+    </div>`;
+}
+
+function modelHtml(model, mn) {
+  /* Tiles are matched to blocks by POSITION, not by letter: OTTO, MOOD and
+     ADDS repeat a letter, so `k` alone could not say which tile a block
+     belongs to. The parse (js/api.js normaliseModel) already guarantees the
+     blocks arrive in the mnemonic's order and one per key. */
+  const source = model.source.length
+    ? `<div class="lmodel__source">
+         <p class="lmodel__srclbl">The passage it summarises</p>
+         ${model.source.map((p, i) => `<p class="lmodel__srcp"><span class="passage-num">${i + 1}</span>${esc(p)}</p>`).join('')}
+       </div>`
+    : '';
+
+  return `
+    <div class="lmodel">
+      <p class="lmodel__tasklbl">A different task, in the same form</p>
+      <p class="lmodel__task">${esc(model.task)}</p>
+      ${source}
+      ${model.parts.map((p, i) => `
+        <div class="lmodel__part">
+          <span class="lmodel__chip pp-sticky ${keyColorClass(i)}" title="${esc(mn.keys[i].name)}">
+            <span class="lmodel__chipk">${esc(mn.keys[i].k)}</span>
+            <span class="lmodel__chipn">${esc(mn.keys[i].name)}</span>
+          </span>
+          <div class="lmodel__text">
+            ${p.text.split(/\n{2,}/).map((par) => `<p>${esc(par)}</p>`).join('')}
+          </div>
+        </div>`).join('')}
+      <p class="lmodel__foot">Every block is one move of <strong>${esc(mn.word)}</strong>, in order. Your own piece should make the same moves about something else entirely.</p>
+    </div>`;
+}
+
+let modelLoading = false;
+
+export async function loadModelText() {
+  const zone = $('lesson-model-zone');
+  const mn = getMnemonic(currentWritingType);
+  const form = getForm(currentWritingType);
+  if (!zone || !mn || !form || modelLoading) return;
+
+  modelLoading = true;
+  const btn = $('lesson-model-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Writing you one…'; }
+
+  try {
+    const model = await fetchModelText(currentWritingType, { topic: currentTopic });
+    if (model) {
+      zone.innerHTML = modelHtml(model, mn);
+      // The model can be long, and it sits above the prompt at the foot of the
+      // lesson — bring its top into view rather than leaving the student
+      // wherever the button used to be.
+      zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      throw new Error('unusable model');
+    }
+  } catch (err) {
+    console.warn('[Writing] model text unavailable:', err.message);
+    zone.innerHTML = modelStubHtml(form);
+    const note = zone.querySelector('.lmodel__note');
+    if (note) {
+      note.textContent = 'Could not write one just then — the extract above still shows the voice. Try again in a moment.';
+      note.classList.add('is-bad');
+    }
+    $('lesson-model-btn')?.addEventListener('click', () => loadModelText());
+  } finally {
+    modelLoading = false;
   }
 }
 
@@ -483,7 +615,16 @@ export async function loadLessonVideo() {
   wrap.innerHTML = '<p class="lesson-video-note">Looking for a lesson video…</p>';
   if (btn) btn.disabled = true;
 
-  const results = await youtubeSearch(form.video, { maxResults: 3 });
+  /* The search is built from the FORM and the PROMPT together (js/api.js
+     videoQueryFor) — a news report on a flooded road and one on a school
+     competition do not want the same lesson. But a narrower search is only
+     better when it returns something, so a miss falls back to the form's own
+     query rather than telling the student there is no video. */
+  const narrow = videoQueryFor(currentWritingType, currentTopic);
+  let results = await youtubeSearch(narrow, { maxResults: 3 });
+  if (!results.length && narrow !== form.video) {
+    results = await youtubeSearch(form.video, { maxResults: 3 });
+  }
   if (btn) btn.disabled = false;
 
   if (!results.length) {

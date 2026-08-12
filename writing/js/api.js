@@ -7,7 +7,7 @@ import {
   currentTopic, setCurrentTopic, setGeneratedTopic,
   currentPassage, setCurrentPassage,
 } from './config.js';
-import { getForm, familyOf, formLabel, isSummaryForm } from './forms.js';
+import { getForm, familyOf, formLabel, isSummaryForm, getMnemonic } from './forms.js';
 import { fallbackPassageFor } from './passages.js';
 import { isSummaryMode } from './summary.js';
 import { geminiGenerate, groqGenerate, groqText } from '/utils/ai-client.js';
@@ -566,6 +566,246 @@ Return ONLY the prompt text — no quotes, no label, no explanation.`;
     setGeneratedTopic(topic);
     onSuccess?.(topic);
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   THE VIDEO QUERY — the form AND the prompt, not the form alone.
+
+   Every student given a news report used to be sent the same search, because
+   the query was a fixed string on the form. But the prompt is half of what a
+   student wants a video about: somebody writing a news report on a flooded
+   road and somebody writing one on a school competition are not looking for
+   the same lesson. So the form's seed query is enriched with the few words in
+   the prompt that actually carry it.
+
+   Stopwords here are not the usual list — they are the words a WRITING PROMPT
+   is made of. "Write", "describe", "paragraph", "essay" and "student" appear
+   in almost every prompt on this page, so they identify nothing and would
+   only dilute the search. The caller (js/ui.js) searches the enriched query
+   first and falls back to the bare form query if it finds nothing, because a
+   narrower search is only better when it returns something.
+═══════════════════════════════════════════════════════ */
+const PROMPT_STOPWORDS = new Set(`
+a an and are as at be been being but by can could do does for from had has have
+how i if in into is it its may might must not of on one or should so some such
+than that the their them then there these they this those to too two up upon us
+use used very was we were what when where which while who whom why will with
+would you your yours anybody anyone anything everything nobody nothing someone
+something write writing written wrote written essay paragraph paragraphs piece
+prompt topic task question answer word words line lines about tell telling told
+say saying said give giving given make making made take taking taken put using
+describe description explain explanation argue argument report letter story
+narrative account passage summary summarise summarize review speech article
+diary entry read reader readers student students school teacher class year old
+own real true clear good better best whole full single first second third last
+least most many much more less own way ways thing things time times day days
+`.trim().split(/\s+/));
+
+export function videoQueryFor(formId, topic) {
+  const form = getForm(formId);
+  const seed = form ? form.video : 'how to write an essay for students';
+  // Words already in the seed add nothing — "instructions procedural text" +
+  // "instructions" is a longer query for the same search.
+  const seen = new Set(seed.toLowerCase().split(/\W+/));
+  const keys = String(topic || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'-]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !PROMPT_STOPWORDS.has(w) && !seen.has(w));
+
+  // Distinct words, longest first — the long ones are the specific ones — and
+  // never more than three, because a six-word tail matches nothing on YouTube.
+  const picked = [...new Set(keys)].sort((a, b) => b.length - a.length).slice(0, 3);
+  return picked.length ? `${seed} ${picked.join(' ')}` : seed;
+}
+
+/* ═══════════════════════════════════════════════════════
+   THE MODEL TEXT — a full piece in the form, on a NEIGHBOURING subject.
+
+   The forms registry carries a `model`, but it is three sentences: enough to
+   show a voice, not enough to show a shape. A student who has never seen a
+   whole news report cannot be taught one by an extract of its second
+   paragraph. So this writes a complete one — and writes it to the same house
+   rules the student's own sheet will enforce (js/rules.js), so the model is
+   an example of a piece that would be accepted rather than a piece that would
+   not.
+
+   THE ONE HARD RULE: it must not answer the student's own prompt. A model
+   that answers the question in front of them is not a model, it is the
+   homework, and it would be copied. So the generator is made to invent a
+   NEIGHBOURING task — same form, same kind of situation, different subject —
+   and to print that task above the piece, so the student can see for
+   themselves that it is a different question.
+
+   Each block of the model is tagged with the letter of the mnemonic it
+   demonstrates (js/forms.js MNEMONICS), which is what turns it from a good
+   piece of writing into a taught one: the chart says "C — Claim, stated
+   plainly", and the model shows the paragraph where that is being done.
+═══════════════════════════════════════════════════════ */
+const modelCache = new Map();
+
+/* "Do not answer their prompt" is an instruction, and an instruction is not a
+   guarantee — a model that quietly answers the question in front of the
+   student is the homework, and it would be copied. So the invented task is
+   CHECKED against theirs rather than trusted: five or more consecutive words
+   in common means the generator has drifted back onto the topic. Five is
+   lower than the six the lifting mark uses (js/summary.js), because here a
+   false positive costs one retry and a false negative costs the exercise. */
+const RETOPIC_RUN = 5;
+
+function longestSharedRun(a, b) {
+  const clean = (s) => String(s).toLowerCase().replace(/[^a-z0-9\s']/g, ' ').split(/\s+/).filter(Boolean);
+  const A = clean(a);
+  const B = clean(b);
+  if (!A.length || !B.length) return 0;
+  let best = 0;
+  let prev = new Array(B.length + 1).fill(0);
+  for (let i = 1; i <= A.length; i += 1) {
+    const cur = new Array(B.length + 1).fill(0);
+    for (let j = 1; j <= B.length; j += 1) {
+      if (A[i - 1] === B[j - 1]) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > best) best = cur[j];
+      }
+    }
+    prev = cur;
+  }
+  return best;
+}
+
+function normaliseModel(raw, mn) {
+  if (!raw || typeof raw !== 'object') return null;
+  const want = mn.keys.map((k) => k.k);
+  const parts = (Array.isArray(raw.parts) ? raw.parts : [])
+    .map((p) => ({
+      k: String(p?.k || '').trim().toUpperCase().slice(0, 1),
+      text: String(p?.text || '').replace(/[ \t]+/g, ' ').trim(),
+    }))
+    .filter((p) => p.text);
+  if (!parts.length) return null;
+
+  /* Every key must be demonstrated, in the mnemonic's own order. A model that
+     silently skips a step teaches the step is optional, and a chart with a
+     tile nothing points at is worse than no chart — so a broken tagging falls
+     back to the hand-written extract rather than being shown half-labelled. */
+  const got = parts.map((p) => p.k);
+  const covered = want.every((k, i) => got[i] === k);
+  if (!covered || got.length !== want.length) return null;
+
+  const source = (Array.isArray(raw.source) ? raw.source : [])
+    .map((p) => String(p || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  return {
+    task: String(raw.task || '').replace(/^["']+|["']+$/g, '').trim(),
+    source,
+    parts,
+  };
+}
+
+export async function fetchModelText(formId, { topic = '' } = {}) {
+  const mn = getMnemonic(formId);
+  const form = getForm(formId);
+  if (!mn || !form) return null;
+
+  const cacheKey = `${formId}::${topic}`;
+  if (modelCache.has(cacheKey)) return modelCache.get(cacheKey);
+
+  const summary = isSummaryForm(formId);
+  const chart = mn.keys.map((k) => `  ${k.k} = ${k.name} — ${k.what}`).join('\n');
+  const keyList = mn.keys.map((k) => k.k).join(', ');
+
+  // The house rules, so the model is a piece the sheet would actually accept.
+  // A summary is exempt from both counts (js/rules.js) and must stay short.
+  const houseRules = summary
+    ? `• ONE paragraph only. Aim for 90–140 words — a summary is about a third of its source, and length is not a virtue in it.
+• Every sentence at least 7 words long.`
+    : `• More than 150 words in total; 220–320 is the right size.
+• ${familyOf(formId) === 'narrative' ? 'Paragraph it as the story needs — no fixed count.' : 'At least 5 paragraphs.'}
+• At least 5 sentences in every paragraph after the introduction.
+• Every sentence at least 7 words long. No one-word or two-word sentences.`;
+
+  const sourceRule = summary
+    ? `\nBecause this is a SUMMARY, also invent the short passage being summarised and return it as "source": an array of exactly 3 paragraphs, 45–60 words each, one main point in each. The model summary must cover all three, in order, in the student's own words. The "task" is the instruction to summarise that passage.`
+    : '';
+
+  const prompt = `Write ONE complete MODEL answer that a secondary-school student (age 13–16) can learn the FORM from.
+
+FORM: ${form.label} — ${form.ask}
+
+THE STUDENT'S OWN PROMPT (for context only):
+"${topic || '(none set yet)'}"
+
+RULE 1 — DO NOT ANSWER THAT PROMPT. Invent a DIFFERENT task in the same form: the same kind of situation, a clearly different subject, so that nothing in your model can be copied into their answer. It must be near enough that the moves transfer and far enough that the content does not. Put your invented task in "task".
+
+RULE 2 — TAG THE MOVES. The form is taught by this mnemonic:
+
+${mn.word}
+${chart}
+
+Split your model into exactly ${mn.keys.length} parts, one per letter, IN THIS ORDER: ${keyList}. Each part is the stretch of writing where that move is being made. A part may be more than one paragraph — separate paragraphs inside a part with \\n\\n. Do not label anything inside the text itself; the tag is the "k" field and nothing else.
+
+RULE 3 — IT MUST OBEY THE RULES THE STUDENT IS HELD TO:
+${houseRules}
+
+RULE 4 — Keep it universal. No country, currency, national institution, exam, holiday or public figure. Plain, direct English a 13-year-old can read.${sourceRule}
+
+Return ONLY valid JSON, no markdown:
+{"task":"...",${summary ? '"source":["...","...","..."],' : ''}"parts":[${mn.keys.map((k) => `{"k":"${k.k}","text":"..."}`).join(',')}]}`;
+
+  async function attempt(extra) {
+    const result = await generateTextWithFallback({
+      geminiBody: {
+        contents: [{ parts: [{ text: prompt + extra }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.85,
+          maxOutputTokens: 3000,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      },
+      groqPrompt: prompt + extra,
+      json: true,
+      temperature: 0.85,
+      maxTokens: 3000,
+    });
+
+    const raw = String(result.text || '');
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end === -1) return null;
+    let parsed = null;
+    try { parsed = JSON.parse(stripControl(raw.substring(start, end + 1))); }
+    catch { return null; }
+    return normaliseModel(parsed, mn);
+  }
+
+  /* What must differ is not the same thing for every form. A summary's task
+     line is boilerplate — "Read the passage X and summarise it in ONE
+     paragraph, in your own words" (summaryTaskLine) — so comparing task
+     against task would flag every summary ever generated and no student would
+     ever see a model. For a summary the thing that must be new is the
+     PASSAGE; for everything else it is the question. */
+  const against = summary
+    ? (currentPassage?.paragraphs || []).join(' ')
+    : topic;
+  const subjectOf = (m) => (summary ? m.source.join(' ') : m.task);
+  const tooClose = (m) => !!against && longestSharedRun(subjectOf(m), against) >= RETOPIC_RUN;
+
+  let model = await attempt('');
+  // One retry, and only when it drifted back onto their topic. A second miss
+  // falls back to the hand-written extract rather than billing a third call.
+  if (model && tooClose(model)) {
+    model = await attempt(`
+
+YOUR PREVIOUS ATTEMPT FAILED RULE 1: ${summary
+  ? 'the passage you invented was the student\'s own passage rewritten. Invent a passage on a COMPLETELY DIFFERENT SUBJECT'
+  : 'the task you invented was the student\'s own prompt in different words. Invent a task about a DIFFERENT SUBJECT ENTIRELY'} — same form, same kind of situation, nothing in common with what they were given.`);
+    if (model && tooClose(model)) return null;
+  }
+
+  if (model) modelCache.set(cacheKey, model);
+  return model;
 }
 
 // ── Essay Grading ──────────────────────────────────────

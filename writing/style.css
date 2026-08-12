@@ -2746,3 +2746,185 @@ details.rubric-wrap summary { min-height: 48px; }
   .wrules { padding: 12px 13px 14px; }
   .wrule__detail { font-size: 14px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE WALL CHART — the form's mnemonic, pinned above the lesson.
+   (js/forms.js MNEMONICS → js/ui.js mnemonicChartHtml)
+
+   Real paper: the shared .pp-sticky pastels, which are fixed light colours
+   with dark ink, so the chart reads identically in both themes and looks
+   pinned up rather than rendered. Each tile keeps its colour when the model
+   text below is tagged with it — the chart and the example are one lesson.
+════════════════════════════════════════════════════════════════════════════ */
+.mchart { margin: 6px 0 22px; }
+
+.mchart__hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.mchart__word { display: inline-flex; gap: 5px; }
+.mchart__wl {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 19px;
+  line-height: 1;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.12), 3px 4px 8px -3px rgba(20, 19, 15, 0.3);
+  transform: rotate(-1.5deg);
+}
+.mchart__wl:nth-child(even) { transform: rotate(1.8deg); }
+.mchart__gloss {
+  flex: 1 1 220px;
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.mchart__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px 14px;
+}
+/* .pp-sticky is inline-block by default; a chart tile is a column. */
+.mchart__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 13px 14px;
+  text-align: left;
+}
+.mchart__k {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 26px;
+  line-height: 1;
+}
+.mchart__name {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.mchart__what { font-size: 12.5px; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE MODEL TEXT — a whole piece, tagged move by move.
+   (js/api.js fetchModelText → js/ui.js modelHtml)
+════════════════════════════════════════════════════════════════════════════ */
+.lmodel__ask {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.lmodel__note {
+  flex: 1 1 200px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+.lmodel__note.is-bad { color: var(--accent-danger); }
+
+.lmodel { margin-top: 6px; }
+.lmodel__tasklbl,
+.lmodel__srclbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-ultra);
+  color: var(--text-tertiary);
+  margin: 0 0 6px;
+}
+.lmodel__task {
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: clamp(17px, 2.6vw, 20px);
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0 0 18px;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent-primary);
+}
+.lmodel__source {
+  padding: 12px 14px;
+  margin: 0 0 18px;
+  background: color-mix(in srgb, var(--ink) 4%, var(--surface-primary));
+  border: var(--border-subtle);
+}
+.lmodel__srcp {
+  position: relative;
+  padding-left: 26px;
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--text-secondary);
+}
+.lmodel__srcp:last-child { margin-bottom: 0; }
+
+/* One move of the mnemonic: its tile in the margin, the writing beside it. */
+.lmodel__part {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
+}
+.lmodel__part:first-of-type { border-top: 0; padding-top: 0; }
+
+.lmodel__chip {
+  align-self: start;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 7px 10px 8px;
+  transform: rotate(-1.2deg);
+}
+.lmodel__chipk {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 18px;
+  line-height: 1;
+}
+.lmodel__chipn { font-size: 11px; line-height: 1.3; }
+
+.lmodel__text p {
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+.lmodel__text p:last-child { margin-bottom: 0; }
+
+.lmodel__foot {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+.lmodel__foot strong { color: var(--ink); }
+
+/* Narrow: the tile goes above the writing rather than beside it, because a
+   128px margin column on a phone leaves the prose in a gutter. */
+@media (max-width: 620px) {
+  .lmodel__part { grid-template-columns: 1fr; gap: 9px; }
+  .lmodel__chip { justify-self: start; }
+  .mchart__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 12px; }
+}

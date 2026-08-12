@@ -709,6 +709,249 @@ export const FAMILIES = [
   },
 ];
 
+/* ═══════════════════════════════════════════════════════
+   THE MNEMONICS — one word per form, painted as a wall chart.
+
+   Every form above already carries a `shape`: four steps, in order, that make
+   it the form it is. A student who has read them once remembers about two, so
+   each form is also given a WORD whose letters are those same four steps —
+   SLOW for a personal narrative, CASE for an opinion essay, BOIL for a
+   summary. Nothing new is being taught here: `keys[i]` is `shape[i]` said
+   short enough to fit on a tile, which is the point. The chart is the version
+   a student can carry into an exam hall; the shape list underneath is the
+   version that explains it.
+
+   They live in one table rather than inside each form because that is how you
+   check them — a wall of twenty-three words, read down in one go, is the only
+   way to notice that two forms have quietly been given the same one, or that
+   a letter has been made to stand for something nobody would ever recall.
+
+   RULE FOR ADDING ONE: the word must be about the writing (SLOW is the advice
+   a narrative needs; TURN is what a short story does), the letters must be in
+   the order the steps happen, and there must be exactly as many keys as the
+   form has `shape` entries. A mnemonic whose order is not the writing's order
+   is worse than none — it teaches the student to produce the parts in the
+   wrong sequence.
+═══════════════════════════════════════════════════════ */
+export const MNEMONICS = {
+  /* ── Narrative ─────────────────────────────────────── */
+  'personal-narrative': {
+    word: 'SLOW', gloss: 'and it is also the advice — a narrative that hurries has nothing in it',
+    keys: [
+      { k: 'S', name: 'Start inside it', what: 'Open on a sound, an action, a line of speech. Never "I am going to tell you about".' },
+      { k: 'L', name: 'Line it up', what: 'In the order it happened, past tense, as "I".' },
+      { k: 'O', name: 'One moment', what: 'The moment that matters most gets the most words.' },
+      { k: 'W', name: 'What you learned', what: 'Close on what you understood that you did not understand before.' },
+    ],
+  },
+  recount: {
+    word: 'OTTO', gloss: 'a record, not a story — it starts by orienting and ends by reporting',
+    keys: [
+      { k: 'O', name: 'Orientation', what: 'Who was involved, where, when, and why it was happening.' },
+      { k: 'T', name: 'Then, in order', what: 'Strict time order, usually one paragraph per stage.' },
+      { k: 'T', name: 'Time words', what: 'At first, shortly afterwards, by midday, finally.' },
+      { k: 'O', name: 'Outcome', what: 'How it finished, or what it achieved.' },
+    ],
+  },
+  'news-report': {
+    word: 'HELP', gloss: 'a reader who stops after the first paragraph must still have the story',
+    keys: [
+      { k: 'H', name: 'Headline', what: 'Short, present tense, factual. Not a joke and not a riddle.' },
+      { k: 'E', name: 'Essentials first', what: 'Who, what, where and when — in the opening paragraph.' },
+      { k: 'L', name: 'Later, the rest', what: 'How and why, in order of importance. Least important last.' },
+      { k: 'P', name: 'People quoted', what: 'At least one named witness or official, and say who they are.' },
+    ],
+  },
+  'short-story': {
+    word: 'TURN', gloss: 'the turn is the whole story — everything before it is the run-up',
+    keys: [
+      { k: 'T', name: 'Trouble early', what: 'The first paragraph already has something wrong in it.' },
+      { k: 'U', name: 'Uphill', what: 'Each scene makes the problem harder, not just longer.' },
+      { k: 'R', name: 'Reversal', what: 'One turn: the character chooses, discovers or loses something.' },
+      { k: 'N', name: 'Now stop', what: 'End soon after the turn. Do not tidy everything away.' },
+    ],
+  },
+  'diary-entry': {
+    word: 'DEAR', gloss: 'written to yourself, on the day, before you know how it turns out',
+    keys: [
+      { k: 'D', name: 'Date it', what: 'Then start wherever your mind starts — often mid-thought.' },
+      { k: 'E', name: 'Events', what: 'What happened, as you keep going back over it.' },
+      { k: 'A', name: 'Argue with yourself', what: 'Move between the events and what you make of them.' },
+      { k: 'R', name: 'Rest unresolved', what: 'End on what you will do tomorrow, or cannot yet decide.' },
+    ],
+  },
+
+  /* ── Descriptive ───────────────────────────────────── */
+  'place-description': {
+    word: 'PATH', gloss: 'a description is a route through a place, not a list of what is in it',
+    keys: [
+      { k: 'P', name: 'Place and time', what: 'The same street at dawn and at dusk are two different pieces.' },
+      { k: 'A', name: 'A route through', what: 'Near to far, outside to inside, top to bottom — deliberately.' },
+      { k: 'T', name: 'Take a sense each', what: 'Lead each paragraph with a different sense, so it is not all sight.' },
+      { k: 'H', name: 'Hold one back', what: 'Finish on the detail that says most about the place.' },
+    ],
+  },
+  'person-description': {
+    word: 'FACE', gloss: 'character is shown in evidence, never in adjectives',
+    keys: [
+      { k: 'F', name: 'First image', what: 'The habit, posture or way of arriving that fixes them.' },
+      { k: 'A', name: 'And their manner', what: 'How they speak, and what they do while speaking.' },
+      { k: 'C', name: 'Company', what: 'How other people behave around them. That is where character shows.' },
+      { k: 'E', name: 'Evidence', what: 'One moment that proves what you have been implying.' },
+    ],
+  },
+  'object-description': {
+    word: 'WORN', gloss: 'anything that has been used carries a record of the using',
+    keys: [
+      { k: 'W', name: 'What it is', what: 'Plainly: its size in the hand, its weight.' },
+      { k: 'O', name: 'Outside', what: 'Colour, marks, repairs, what has worn away.' },
+      { k: 'R', name: 'Regular use', what: 'Who handles it, how, and how often.' },
+      { k: 'N', name: 'Now what it means', what: 'What it means to whoever keeps it.' },
+    ],
+  },
+  atmosphere: {
+    word: 'MOOD', gloss: 'the subject is not a thing but a mood, and mood is movement and sound',
+    keys: [
+      { k: 'M', name: 'Mass first', what: 'How many, how close, which way it is all going.' },
+      { k: 'O', name: 'One or two faces', what: 'A crowd is only felt through the people in it.' },
+      { k: 'O', name: 'Off the pace', what: 'Short sentences as it tightens, longer as it eases.' },
+      { k: 'D', name: 'Done', what: 'End as the scene breaks or settles.' },
+    ],
+  },
+
+  /* ── Argumentative ─────────────────────────────────── */
+  'opinion-essay': {
+    word: 'CASE', gloss: 'an argument that answers nobody is a speech to people who agree already',
+    keys: [
+      { k: 'C', name: 'Claim', what: 'State your position plainly in the introduction. No suspense.' },
+      { k: 'A', name: 'A reason each', what: 'One per paragraph: claim, evidence, then why it matters.' },
+      { k: 'S', name: 'Someone disagrees', what: 'Give the other side its best argument, then answer it.' },
+      { k: 'E', name: 'End by weighing', what: 'Not by repeating. Given all that, the position still holds.' },
+    ],
+  },
+  'persuasive-speech': {
+    word: 'ASKS', gloss: 'a speech is written for the ear and asks for one thing',
+    keys: [
+      { k: 'A', name: 'Address them', what: 'Greet the audience and name what you want, in the first few lines.' },
+      { k: 'S', name: 'Say your reasons', what: 'Two or three, each with something concrete they recognise.' },
+      { k: 'K', name: 'Knock down the objection', what: 'The one they are already thinking of.' },
+      { k: 'S', name: 'Sign off with the action', what: 'One thing, stated plainly enough to be repeated.' },
+    ],
+  },
+  'letter-to-editor': {
+    word: 'NAIL', gloss: 'a public argument in very little space — it must land before the eye moves on',
+    keys: [
+      { k: 'N', name: 'Name what you answer', what: 'The report, decision or letter — and your position on it.' },
+      { k: 'A', name: 'Argue twice', what: 'Two short paragraphs. There is no room for a third.' },
+      { k: 'I', name: 'I grant you one thing', what: 'A concession, handled in a clause rather than a paragraph.' },
+      { k: 'L', name: 'Lay out what you want', what: 'Say what should be done, then sign off formally.' },
+    ],
+  },
+  review: {
+    word: 'VIEW', gloss: 'a review is an argument whose claim is a verdict',
+    keys: [
+      { k: 'V', name: 'Verdict early', what: 'Say what it is and what you think. Withholding wastes the reader.' },
+      { k: 'I', name: 'In brief', what: 'Describe only enough for the judgement to make sense.' },
+      { k: 'E', name: 'Evidence', what: 'Every judgement paid for with a specific moment.' },
+      { k: 'W', name: 'Who it is for', what: 'End with the recommendation, and be specific about the reader.' },
+    ],
+  },
+
+  /* ── Expository ────────────────────────────────────── */
+  explanation: {
+    word: 'WHYS', gloss: 'ordered by the logic of the thing, not by what you remember first',
+    keys: [
+      { k: 'W', name: 'What you are explaining', what: 'And why it is worth understanding.' },
+      { k: 'H', name: 'How it happens', what: 'The chain in order, each step caused by the one before it.' },
+      { k: 'Y', name: 'Your terms defined', what: 'The moment you first use them.' },
+      { k: 'S', name: 'So what', what: 'Close on the effect, not on a summary of your own essay.' },
+    ],
+  },
+  'how-to': {
+    word: 'STEP', gloss: 'tested by use — could a stranger follow it and succeed?',
+    keys: [
+      { k: 'S', name: 'Say the goal', what: 'And what it takes: materials, time, anything needed beforehand.' },
+      { k: 'T', name: 'Take one action per step', what: 'Numbered, imperative: fold, measure, wait.' },
+      { k: 'E', name: 'Explain where it goes wrong', what: 'At the step where it goes wrong, not at the end.' },
+      { k: 'P', name: 'Prove it worked', what: 'Say how the reader knows they have succeeded.' },
+    ],
+  },
+  'compare-contrast': {
+    word: 'PAIR', gloss: 'one set of criteria applied twice — not two descriptions side by side',
+    keys: [
+      { k: 'P', name: 'Pair them', what: 'Name the two, and why comparing them is worth doing.' },
+      { k: 'A', name: 'Agree the criteria', what: 'Three is usually right. Say what they are.' },
+      { k: 'I', name: 'In one paragraph each', what: 'Both subjects together, criterion by criterion.' },
+      { k: 'R', name: 'Reach a judgement', what: 'Which, for whom, under what conditions.' },
+    ],
+  },
+  report: {
+    word: 'FACT', gloss: 'written for somebody who has to decide something',
+    keys: [
+      { k: 'F', name: 'For whom', what: 'Title, and a line saying who it is for and what it covers.' },
+      { k: 'A', name: 'Aim', what: 'Why the report was written and what it examined.' },
+      { k: 'C', name: 'Come to the findings', what: 'Under headings, in order of importance. Facts, not opinions.' },
+      { k: 'T', name: 'Then recommend', what: 'Numbered actions, each tracing back to a finding you reported.' },
+    ],
+  },
+  'formal-letter': {
+    word: 'ADDS', gloss: 'the form is fixed, and getting it wrong costs marks before the argument is read',
+    keys: [
+      { k: 'A', name: 'Addresses and date', what: 'Yours, then the date, then the recipient\'s — each on its own lines.' },
+      { k: 'D', name: 'Dear —', what: 'Sir/Madam if unnamed, Mr/Ms [Name] if named.' },
+      { k: 'D', name: 'Detail', what: 'Purpose, then evidence, then exactly what you want done.' },
+      { k: 'S', name: 'Sign off to match', what: 'Yours faithfully for Sir/Madam, Yours sincerely for a name.' },
+    ],
+  },
+  article: {
+    word: 'HOOK', gloss: 'informative like an explanation, but it reads like somebody chose to write it',
+    keys: [
+      { k: 'H', name: 'Hook', what: 'A scene, a figure or a question that earns the next paragraph.' },
+      { k: 'O', name: 'One angle', what: 'State early what the piece is really about.' },
+      { k: 'O', name: 'Other material', what: 'Vary each section: fact, example, quotation, observation.' },
+      { k: 'K', name: 'Kick back to the hook', what: 'End where you began, changed.' },
+    ],
+  },
+
+  /* ── Summary ───────────────────────────────────────── */
+  'summary-informational': {
+    word: 'BOIL', gloss: 'keep every main point, add nothing, and stop',
+    keys: [
+      { k: 'B', name: 'Both ends first', what: 'Read the whole passage before you write anything.' },
+      { k: 'O', name: 'One point per paragraph', what: 'Find the thing the rest of that paragraph exists to support.' },
+      { k: 'I', name: 'In your own words', what: 'Write that point as a single sentence of your own.' },
+      { k: 'L', name: 'Link them up', what: 'Join the sentences into one paragraph, in the passage\'s order.' },
+    ],
+  },
+  'summary-narrative': {
+    word: 'PLOT', gloss: 'keep the spine, lose the flesh — an account of a story, not a shorter story',
+    keys: [
+      { k: 'P', name: 'Pass through it all', what: 'Read to the end; the last paragraph often changes the earlier ones.' },
+      { k: 'L', name: 'Look for the change', what: 'What CHANGED in each paragraph. That change is your sentence.' },
+      { k: 'O', name: 'Order kept', what: 'Exactly as the passage had it, even if you find a neater order.' },
+      { k: 'T', name: 'Tie with time links', what: 'Then, once, by the time, afterwards.' },
+    ],
+  },
+  'summary-argument': {
+    word: 'CLAP', gloss: 'report what somebody claims and why, without joining in',
+    keys: [
+      { k: 'C', name: 'Claim first', what: 'The writer\'s position, usually in the opening paragraph.' },
+      { k: 'L', name: 'List the reasons', what: 'One sentence per paragraph, each carrying that paragraph\'s reason.' },
+      { k: 'A', name: 'Admit the concession', what: 'A summary that drops it has misrepresented the writer.' },
+      { k: 'P', name: 'Paragraph it', what: 'Join with logical links: because, however, admittedly, therefore.' },
+    ],
+  },
+  'summary-discussion': {
+    word: 'FAIR', gloss: 'if one side sounds stronger than the passage made it, you have summarised badly',
+    keys: [
+      { k: 'F', name: 'Frame the question', what: 'Open by naming what is being discussed, not by answering it.' },
+      { k: 'A', name: 'A side at a time', what: 'One sentence per paragraph, keeping each side\'s points on that side.' },
+      { k: 'I', name: 'In equal space', what: 'Give the two sides as much room as the passage did.' },
+      { k: 'R', name: 'Report where it ended', what: 'The common ground — or that it reached no verdict at all.' },
+    ],
+  },
+};
+
 /* ── Lookups ───────────────────────────────────────────── */
 
 const FORM_INDEX = new Map();
@@ -734,3 +977,7 @@ export const isSummaryForm = (id) => (FORM_INDEX.get(id) || {}).kind === 'summar
 export const familyOf = (formId) => FAMILY_OF.get(formId) || 'general';
 
 export const formLabel = (id) => (FORM_INDEX.get(id) || {}).label || 'General';
+
+/* The wall chart for a form, or null for a task the student brought
+   themselves — there is no form, so there is no word to remember it by. */
+export const getMnemonic = (id) => MNEMONICS[id] || null;
