@@ -40,10 +40,17 @@ const PUBLIC_PREFIXES = [
   "/blogs", "/editorials", "/utils/auth",
   // SEO: these are marketing/landing + listing pages that should be crawlable
   // and browsable without an account. Any actual paid AI action inside them
-  // (theory grading, writing grading) is separately enforced server-side in
-  // server/routes/ai.js (isPremiumUser → 402), so opening the page itself up
-  // to anonymous visitors doesn't bypass the premium gate.
-  "/exam-archive", "/theory-page", "/writing", "/prep-math",
+  // (theory grading) is separately enforced server-side in server/routes/ai.js
+  // (isPremiumUser → 402), so opening the page itself up to anonymous visitors
+  // doesn't bypass the premium gate.
+  //
+  // /writing is deliberately NOT here any more. Its lessons, wall charts and
+  // model texts are the paid product whether or not anybody presses Submit, so
+  // the page is premium-gated whole (utils/auth/premium-guard.js on
+  // writing/index.html). Short task links (/w/CODE) are gated by the same
+  // omission, and the login redirect carries ?next= so the student lands back
+  // on the task they were sent.
+  "/exam-archive", "/theory-page", "/prep-math",
 ];
 
 function isPublic(path) {

@@ -112,7 +112,7 @@ then "not premium") — the server is the real enforcement.
 |---|---|---|---|
 | virtual-lab | premium | — | page guard |
 | theory | premium | — | `/api/ai/generate` only — the page itself is a deliberately PUBLIC, crawlable SEO landing page (see the comment in `theory-page/index.html`); do not add a page guard there |
-| writing | premium | — | page guard (AI via proxy, see caveat) |
+| writing | premium | — | page guard on `writing/index.html` + `/api/ai/generate` + out of `middleware.js` PUBLIC_PREFIXES (three locks: signed-out never reaches the page, free users are sent to /subscribe, and the grading call still 402s) |
 | activities | premium | author, attempt | page guard + `/api/activities` |
 | flashcards | premium | — | page guard + `/api/ai/image` (card art) |
 | prep-math-activities | premium | base-blocks, cartesian-art, equivalent-fractions, polygon-angles, surface-area, transversals | page guard (per sub-app) |

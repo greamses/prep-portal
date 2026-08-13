@@ -13,8 +13,11 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/utils/components/nav.css" />
-    <link rel="stylesheet" href="./theme-import.css" />
-    <link rel="stylesheet" href="./style.css" />
+    <!-- ABSOLUTE, not "./". This page is also served at /w/<code> (the short
+         task link, rewritten in vercel.json), where a relative href would
+         resolve against /w/ and 404. -->
+    <link rel="stylesheet" href="/writing/theme-import.css" />
+    <link rel="stylesheet" href="/writing/style.css" />
 
     <meta
       name="description"
@@ -31,11 +34,17 @@
         }
       }
     </script>
-    <!-- The page itself is a public, crawlable landing page (SEO). The AI
-         grading action is premium-gated server-side in server/routes/ai.js
-         (POST /api/ai/generate → 402 premium_required); the client already
-         throws "Please sign in" before calling it if no user is signed in
-         (see utils/ai-client.js _idToken). -->
+    <!-- PREMIUM. This page used to be public and crawlable, with only the AI
+         grading action gated server-side (server/routes/ai.js → 402
+         premium_required). It is now gated whole: the lessons, the mnemonic
+         wall charts, the planner and the model texts are the product, and a
+         free account could read all of them without ever pressing Submit.
+         The server gate stays exactly where it was — this is a second lock on
+         the same door, not a replacement for it. Feature id "writing" in
+         /utils/features.js, so an admin can still flip it to free or grant it
+         to one user. /writing is also out of middleware.js's PUBLIC_PREFIXES
+         now, so a signed-out visitor never gets as far as this page. -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
       <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
   </head>
 
@@ -480,6 +489,17 @@
             <div class="mftr-wc" id="organize-tally">0 of 0 paragraphs</div>
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="organize-topic-btn" type="button">← Change Passage</button>
+            <!-- The same video, reachable from the organiser. A task opened
+                 from a short link never passes through the Learn phase, so the
+                 button that lived only in that footer now travels (js/ui.js
+                 moves the one panel into whichever section is on screen). -->
+            <button class="btn btn-ghost" id="organize-video-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="5" width="19" height="14" rx="2" />
+                <path d="M10 9.5v5l4.5-2.5z" />
+              </svg>
+              Watch a video
+            </button>
             <!-- Only appears once a draft on the sheet has been edited by hand:
                  the way back that does not touch what they wrote. -->
             <button class="btn btn-ghost" id="keep-paragraph-btn" type="button" style="display: none">Keep my draft →</button>
@@ -496,6 +516,13 @@
           <div class="mftr-inner" id="ftr-plan" style="display: none">
             <div class="mftr-wc" id="plan-tally">0 of 0 boxes</div>
             <div class="mftr-space"></div>
+            <button class="btn btn-ghost" id="plan-video-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="5" width="19" height="14" rx="2" />
+                <path d="M10 9.5v5l4.5-2.5z" />
+              </svg>
+              Watch a video
+            </button>
             <button class="btn btn-ghost" id="plan-skip-btn" type="button">Straight to the sheet →</button>
             <!-- Only appears once a draft on the sheet has been edited by hand. -->
             <button class="btn btn-ghost" id="plan-keep-btn" type="button" style="display: none">Keep my draft →</button>
@@ -538,7 +565,7 @@
 
     <!-- ES6 Modules -->
     <script src="/utils/components/nav-builder.js" type="module"></script>
-    <script type="module" src="./js/main.js"></script>
+    <script type="module" src="/writing/js/main.js"></script>
 
     <script type="module">
       import { heroPaint } from "/utils/components/nav-icons.js";

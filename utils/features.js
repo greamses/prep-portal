@@ -66,7 +66,12 @@ export const FEATURES = [
     desc: "Guided essay & composition coach",
     group: "Learning Labs",
     default: "premium",
-    paths: ["/writing"],
+    // "/w/" is the short task link (vercel.json rewrites /w/<code> to the same
+    // page). It carries the trailing slash so it cannot also swallow /writing —
+    // the longest matching prefix wins, but a bare "/w" would match every path
+    // beginning with a w, and a page resolving to the wrong feature resolves to
+    // the wrong admin switch.
+    paths: ["/writing", "/w/"],
     usesAiGenerate: true,
   },
   {
