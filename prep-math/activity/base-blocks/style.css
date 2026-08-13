@@ -716,3 +716,69 @@ body {
   .bb-dock__label { display: none; }
   .bb-board { max-height: calc(100% - 190px); }
 }
+
+/* ── the trade offer that floats over a highlight (js/prompt.js) ───────────────
+   The mat noticing out loud. It has to read at any camera angle and any
+   distance, so it is HTML over the canvas rather than a billboard in the
+   scene, and it is placed from the projected top of the highlighted pieces
+   every frame — the camera can orbit under it.
+
+   It offers and does not act: selection is also how you colour, move and
+   delete blocks here, so the card waits to be pressed. That is why it looks
+   like a button and says what pressing it will do. */
+.bb-trade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem 0.55rem;
+  background: color-mix(in srgb, var(--surface-primary) 95%, transparent);
+  border: 1.5px solid var(--ink);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  text-align: left;
+  animation: bbTradeIn 0.16s ease;
+  transition: background var(--duration-smooth, 0.2s) ease;
+}
+@keyframes bbTradeIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .bb-trade { animation: none; } }
+
+.bb-trade:hover { background: var(--surface-primary); }
+.bb-trade:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 3px; }
+
+/* Up and down are different moves, so they are different colours — the same
+   pairing the readout uses for growing and breaking. */
+.bb-trade[data-dir="merge"] .bb-trade__ico { color: var(--accent-success); }
+.bb-trade[data-dir="split"] .bb-trade__ico { color: var(--accent-secondary); }
+
+.bb-trade__ico { flex-shrink: 0; display: grid; place-items: center; }
+.bb-trade__body { display: grid; gap: 1px; }
+
+.bb-trade__sum {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 0.9rem;
+  line-height: 1.25;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.bb-trade__go {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .bb-trade { padding: 0.4rem 0.6rem 0.45rem; gap: 0.45rem; }
+  .bb-trade__sum { font-size: 0.8rem; }
+  .bb-trade__go { font-size: 0.56rem; }
+}

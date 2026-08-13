@@ -9,6 +9,7 @@ import { CFG, placeDims } from "./config.js";
 import { createEngine, createScene, retheme, fitView } from "./scene.js";
 import { createView } from "./view.js";
 import { createPointer } from "./pointer.js";
+import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { store, subscribe, emit, say, nextId } from "./state.js";
 import { splitSelected } from "./ops.js";
@@ -116,7 +117,10 @@ async function boot() {
   mountUI({ pointer, stage, onFit: () => fitView(ctx, store.blocks) });
   mountCornerControls(engine, ctx);
 
-  subscribe((s) => view.sync(s));
+  // The mat notices when a highlight is a trade and offers it (js/prompt.js).
+  const trade = createRegroupPrompt(ctx, view, stage);
+
+  subscribe((s) => { view.sync(s); trade.refresh(); });
 
   // keep the mat and the block colours in step with a light/dark switch
   new MutationObserver(() => {

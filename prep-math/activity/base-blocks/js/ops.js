@@ -254,6 +254,136 @@ export function mergeSelected() {
   return true;
 }
 
+/* ── regrouping ───────────────────────────────────────────────────────────────
+   ONE question asked of whatever is highlighted: is this a trade in the working
+   base, and which way does it go? Split and merge are two halves of the same
+   idea — regrouping — and a learner who has to decide which button they need
+   has been made to do the thinking the manipulative was supposed to do for
+   them. Highlight ten units and the mat says "10 units = 1 rod". Highlight the
+   rod and it says the same sentence backwards.
+
+   WHICH WAY WINS. Ten rods are both mergeable (into a flat) and splittable
+   (into a hundred units), so the two are not exclusive and something has to
+   choose. Merging does, always: it is the direction that makes the mat
+   simpler, and turning ten rods into a hundred loose cubes is a thing to ask
+   for deliberately rather than to be handed.
+
+   WHAT DOES NOT COUNT. A trade is a trade in the BASE. Splitting a hand-made
+   7-long block into seven units is a fair thing to do — the Split button still
+   does it — but it is not regrouping, so no offer is made for it. That is the
+   whole reason splitPlan's `n` is checked against the base here.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Read the highlight as a trade: { ok, dir, from, to, groups, … }. */
+export function regroupCheck(sel = selected(), base = store.base) {
+  if (!sel.length) return { ok: false, why: "Highlight some blocks to trade them." };
+
+  const a = sel[0];
+  const alike = sel.every((b) => b.l === a.l && b.w === a.w && b.h === a.h);
+
+  // UP: every `base` alike blocks make one of the next piece. More than one
+  // group at a time is still a legal trade, done several times over.
+  if (alike && sel.length >= base && sel.length % base === 0) {
+    const axis = mergeAxis(a);
+    if (a[axis] * base <= MAX_SIDE) {
+      const dims = { l: a.l, w: a.w, h: a.h };
+      dims[axis] = a[axis] * base;
+      return {
+        ok: true,
+        dir: "merge",
+        axis,
+        dims,
+        groups: sel.length / base,
+        from: placeOf(a, base),
+        to: placeOf(dims, base),
+        count: sel.length,
+      };
+    }
+  }
+
+  // DOWN: each block breaks into exactly `base` of the piece below it.
+  const plans = sel.map((b) => splitPlan(b, base));
+  if (plans.every((p) => p && p.n === base)) {
+    const p = plans[0];
+    const dims = { l: a.l, w: a.w, h: a.h };
+    dims[p.axis] = p.size;
+    return {
+      ok: true,
+      dir: "split",
+      axis: p.axis,
+      dims,
+      groups: sel.length,
+      from: placeOf(a, base),
+      to: placeOf(dims, base),
+      count: sel.length,
+      // Only meaningful when the selection is alike; the sentence below
+      // falls back to a plain count when it is not.
+      alike,
+    };
+  }
+
+  return { ok: false, why: `That is not a trade in base ${baseWord(base)}.` };
+}
+
+/* The trade in words. Totals on both sides rather than "…, three times over":
+   "30 units = 3 rods" is the equation the learner is meant to carry away, and
+   it stays true whether they traded one group or five. */
+const many = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+export function regroupSentence(check, base = store.base) {
+  if (!check.ok) return check.why || "";
+
+  if (check.dir === "merge") {
+    return check.from && check.to
+      ? `${many(check.count, check.from)} = ${many(check.groups, check.to)}`
+      : `${many(check.count, "block")} = ${many(check.groups, "bigger block")}`;
+  }
+  const made = check.count * base;
+  return check.from && check.to
+    ? `${many(check.count, check.from)} = ${many(made, check.to)}`
+    : `${many(check.count, "block")} = ${many(made, "piece")}`;
+}
+
+/**
+ * Do the trade the highlight is asking for. Merging several groups at once is
+ * one undo step, not one per group — the learner asked for a single thing.
+ */
+export function regroupSelected() {
+  const sel = selected();
+  const check = regroupCheck(sel);
+  if (!check.ok) { say(check.why, "warn"); return false; }
+  if (check.dir === "split") return splitSelected();
+
+  if (!room(check.groups - sel.length)) return false;
+  snapshot();
+
+  const base = store.base;
+  const gone = new Set(sel.map((b) => b.id));
+  const kept = store.blocks.filter((b) => !gone.has(b.id));
+
+  /* Reading order, so ten units picked out of a scattered mat come together in
+     the order the eye would put them: top row first, then left to right. */
+  const queue = [...sel].sort((p, q) => (p.z - q.z) || (p.x - q.x));
+  const fresh = [];
+  for (let i = 0; i < queue.length; i += base) {
+    const group = queue.slice(i, i + base);
+    const anchor = group[0];
+    const tag = group.every((b) => b.tag === anchor.tag) ? anchor.tag : null;
+    fresh.push({ id: nextId(), ...check.dims, x: 0, z: 0, tag, near: { x: anchor.x, z: anchor.z } });
+  }
+
+  if (!seat(kept, fresh)) {
+    store.history.pop();
+    say("No clear space for the traded pieces — clear a few blocks first.", "warn");
+    return false;
+  }
+
+  store.blocks = kept.concat(fresh);
+  store.selection = new Set(fresh.map((b) => b.id));
+  say(`${regroupSentence(check)} in base ${baseWord(base)}.`, "ok");
+  return true;
+}
+
 /* ── selection, colour, housekeeping ──────────────────────────────────────── */
 
 export function tagSelected(tag) {
