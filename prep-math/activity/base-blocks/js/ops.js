@@ -10,7 +10,7 @@
           height), which is what turns units→rod→flat→cube and nothing else.
    ========================================================================== */
 
-import { CFG, placeDims, placeOf, baseWord } from "./config.js";
+import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
 import { store, snapshot, say, nextId, selected } from "./state.js";
 import { occupancy, findSpot, mark, tidy as tidyLayout } from "./layout.js";
 
@@ -274,6 +274,44 @@ export function mergeSelected() {
    whole reason splitPlan's `n` is checked against the base here.
    ────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * The best grouping of `total` units in this base: as many of the biggest piece
+ * as it will take, then the next, down to loose units. Largest first.
+ * 35 in base ten → 3 rods and 5 units; 35 in base five → 1 flat and 2 rods.
+ * The top place has no ceiling — there is no piece above a cube, so 12000 units
+ * in base ten is twelve cubes, not something that cannot be shown.
+ */
+export function bestGrouping(total, base) {
+  const out = [];
+  let left = total;
+  for (const p of [...PLACES].reverse()) {
+    const dims = placeDims(p.id, base);
+    const value = dims.l * dims.w * dims.h;
+    const n = Math.floor(left / value);
+    if (n) out.push({ place: p.id, dims, value, n });
+    left -= n * value;
+  }
+  return out;
+}
+
+const dimsKey = (b) => `${b.l}x${b.w}x${b.h}`;
+
+/** What regrouping this selection would produce, and whether it changes anything. */
+export function regroupPlan(sel, base) {
+  const total = sel.reduce((n, b) => n + b.l * b.w * b.h, 0);
+  const pieces = bestGrouping(total, base);
+  const count = pieces.reduce((n, p) => n + p.n, 0);
+
+  const have = new Map();
+  for (const b of sel) have.set(dimsKey(b), (have.get(dimsKey(b)) || 0) + 1);
+  const want = new Map();
+  for (const p of pieces) want.set(dimsKey(p.dims), p.n);
+  const same =
+    have.size === want.size && [...want].every(([k, n]) => have.get(k) === n);
+
+  return { total, pieces, count, same };
+}
+
 /** Read the highlight as a trade: { ok, dir, from, to, groups, … }. */
 export function regroupCheck(sel = selected(), base = store.base) {
   if (!sel.length) return { ok: false, why: "Highlight some blocks to trade them." };
@@ -281,24 +319,25 @@ export function regroupCheck(sel = selected(), base = store.base) {
   const a = sel[0];
   const alike = sel.every((b) => b.l === a.l && b.w === a.w && b.h === a.h);
 
-  // UP: every `base` alike blocks make one of the next piece. More than one
-  // group at a time is still a legal trade, done several times over.
-  if (alike && sel.length >= base && sel.length % base === 0) {
-    const axis = mergeAxis(a);
-    if (a[axis] * base <= MAX_SIDE) {
-      const dims = { l: a.l, w: a.w, h: a.h };
-      dims[axis] = a[axis] * base;
-      return {
-        ok: true,
-        dir: "merge",
-        axis,
-        dims,
-        groups: sel.length / base,
-        from: placeOf(a, base),
-        to: placeOf(dims, base),
-        count: sel.length,
-      };
-    }
+  // UP: whatever is highlighted, worth so many units, written the best way this
+  // base can write it. Ten alike units becoming one rod is the special case of
+  // that, not a separate rule — which is why thirty-five loose units, or a
+  // hand-made 4×3×2, or a heap of mixed pieces all have an answer here too.
+  const plan = regroupPlan(sel, base);
+  if (!plan.same) {
+    const from = placeOf(a, base);
+    const to = plan.pieces.length === 1 ? placeOf(plan.pieces[0].dims, base) : null;
+    return {
+      ok: true,
+      dir: "merge",
+      ...plan,
+      // the classic one-for-many trade, which gets to keep its own sentence
+      exact: !!(alike && from && to),
+      from,
+      to,
+      count: sel.length, // blocks going in (plan.count is what comes out)
+      groups: plan.count,
+    };
   }
 
   // DOWN: each block breaks into exactly `base` of the piece below it.
@@ -330,13 +369,23 @@ export function regroupCheck(sel = selected(), base = store.base) {
    it stays true whether they traded one group or five. */
 const many = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** "1 flat, 2 rods and 3 units" — the right-hand side of a regrouping. */
+export function piecesInWords(pieces) {
+  const parts = pieces.map((p) => many(p.n, p.place));
+  if (parts.length < 2) return parts[0] || "nothing";
+  return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
+}
+
 export function regroupSentence(check, base = store.base) {
   if (!check.ok) return check.why || "";
 
   if (check.dir === "merge") {
-    return check.from && check.to
+    // A tidy one-kind-for-another trade keeps the sentence that names both
+    // pieces; anything mixed is stated from its worth in units, which is the
+    // only description that is true of every heap.
+    return check.exact
       ? `${many(check.count, check.from)} = ${many(check.groups, check.to)}`
-      : `${many(check.count, "block")} = ${many(check.groups, "bigger block")}`;
+      : `${many(check.total, "unit")} = ${piecesInWords(check.pieces)}`;
   }
   const made = check.count * base;
   return check.from && check.to
@@ -349,38 +398,65 @@ export function regroupSentence(check, base = store.base) {
  * one undo step, not one per group — the learner asked for a single thing.
  */
 export function regroupSelected() {
-  const sel = selected();
-  const check = regroupCheck(sel);
+  const check = regroupCheck();
   if (!check.ok) { say(check.why, "warn"); return false; }
   if (check.dir === "split") return splitSelected();
+  return regroupToBest();
+}
 
-  if (!room(check.groups - sel.length)) return false;
-  snapshot();
+/**
+ * Rewrite the highlighted blocks as the best grouping this base can make of
+ * them — biggest pieces first, nothing left over. This is the whole of the
+ * upward direction: ten units become a rod, thirty-five units become three rods
+ * and five units, and a hand-made 4×3×2 becomes two rods and four units,
+ * because all three are the same question asked of a different heap.
+ */
+export function regroupToBest() {
+  const sel = selected();
+  if (!sel.length) { say("Highlight some blocks to regroup them.", "warn"); return false; }
 
   const base = store.base;
+  const plan = regroupPlan(sel, base);
+  if (plan.same) {
+    say(`Those blocks are already grouped as well as base ${baseWord(base)} allows.`);
+    return false;
+  }
+  if (!room(plan.count - sel.length)) return false;
+
+  const sentence = regroupSentence(regroupCheck(sel, base), base);
+  snapshot();
   const gone = new Set(sel.map((b) => b.id));
   const kept = store.blocks.filter((b) => !gone.has(b.id));
 
-  /* Reading order, so ten units picked out of a scattered mat come together in
-     the order the eye would put them: top row first, then left to right. */
+  /* Reading order, so pieces picked out of a scattered mat come together where
+     the eye would put them: top row first, then left to right. */
   const queue = [...sel].sort((p, q) => (p.z - q.z) || (p.x - q.x));
+  const anchor = queue[0];
+  const tag = sel.every((b) => b.tag === sel[0].tag) ? sel[0].tag : null;
+
   const fresh = [];
-  for (let i = 0; i < queue.length; i += base) {
-    const group = queue.slice(i, i + base);
-    const anchor = group[0];
-    const tag = group.every((b) => b.tag === anchor.tag) ? anchor.tag : null;
-    fresh.push({ id: nextId(), ...check.dims, x: 0, z: 0, tag, near: { x: anchor.x, z: anchor.z } });
+  for (const piece of plan.pieces) {
+    for (let i = 0; i < piece.n; i++) {
+      fresh.push({
+        id: nextId(),
+        ...piece.dims,
+        x: 0,
+        z: 0,
+        tag,
+        near: { x: anchor.x, z: anchor.z },
+      });
+    }
   }
 
   if (!seat(kept, fresh)) {
     store.history.pop();
-    say("No clear space for the traded pieces — clear a few blocks first.", "warn");
+    say("No clear space for the regrouped pieces — clear a few blocks first.", "warn");
     return false;
   }
 
   store.blocks = kept.concat(fresh);
   store.selection = new Set(fresh.map((b) => b.id));
-  say(`${regroupSentence(check)} in base ${baseWord(base)}.`, "ok");
+  say(`${sentence} in base ${baseWord(base)}.`, "ok");
   return true;
 }
 

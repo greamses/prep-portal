@@ -8,6 +8,7 @@ const line = (d, extra = "") =>
 export const ICON = {
   split: line(`<rect x="2.5" y="6" width="7" height="12" rx="1"/><rect x="14.5" y="6" width="7" height="12" rx="1"/><path d="M12 3.5v17" stroke-dasharray="2 2.4"/>`),
   merge: line(`<rect x="2.5" y="6" width="6" height="12" rx="1"/><rect x="15.5" y="6" width="6" height="12" rx="1"/><path d="M10.4 12h3.2M12.4 10.2 14.2 12l-1.8 1.8"/>`),
+  regroup: line(`<rect x="2.5" y="14" width="4" height="6.5" rx="0.8"/><rect x="8.2" y="14" width="4" height="6.5" rx="0.8"/><rect x="13.9" y="14" width="4" height="6.5" rx="0.8"/><rect x="6" y="3.5" width="12" height="6.5" rx="0.8"/><path d="M12 12.4v-1.2" stroke-dasharray="1.6 1.6"/>`),
   crumbs: line(`<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/>`),
   rows: line(`<rect x="3" y="4" width="18" height="4.2" rx="1"/><rect x="3" y="10" width="12" height="4.2" rx="1"/><rect x="3" y="16" width="7" height="4.2" rx="1"/>`),
   trash: line(`<path d="M4 6.5h16M9.5 6.5V4.2h5v2.3M6.5 6.5 7.4 20h9.2l.9-13.5M10.2 10v6.4M13.8 10v6.4"/>`),

@@ -11,7 +11,7 @@ import { ICON } from "./icons.js";
 import { store, subscribe, emit, say, undo, canUndo, selected } from "./state.js";
 import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
-import { splitAxis, mergeCheck } from "./ops.js";
+import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -58,6 +58,9 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
   const run = (fn) => { fn(); emit(); };
 
   const ACTIONS = {
+    // pressing Regroup on the rail is a deliberate "sort this out" — the answer
+    // it lands may be nowhere near where the blocks were, so bring the camera
+    regroup: () => { if (ops.regroupToBest()) onFit(); },
     split: () => ops.splitSelected(),
     merge: () => ops.mergeSelected(),
     break: () => ops.breakToUnits(),
@@ -191,7 +194,8 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); return run(ACTIONS.undo); }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-    if (k === "s") { e.preventDefault(); run(ACTIONS.split); }
+    if (k === "r") { e.preventDefault(); run(ACTIONS.regroup); }
+    else if (k === "s") { e.preventDefault(); run(ACTIONS.split); }
     else if (k === "m") { e.preventDefault(); run(ACTIONS.merge); }
     else if (k === "b") { e.preventDefault(); run(ACTIONS.break); }
     else if (k === "t") { e.preventDefault(); run(ACTIONS.tidy); }
@@ -239,6 +243,8 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     const sel = selected();
     const canSplit = sel.some((b) => splitAxis(b));
     const merge = mergeCheck(sel, base, store.strict);
+    // live only when regrouping would actually change something
+    setEnabled("regroup", sel.length > 0 && !regroupPlan(sel, base).same);
     setEnabled("split", canSplit);
     setEnabled("merge", merge.ok);
     setEnabled("break", canSplit);

@@ -128,6 +128,11 @@
 
             <!-- ── tools ────────────────────────────────────────────────── -->
             <div class="bb-rail" role="toolbar" aria-label="Block tools">
+              <button class="bb-tool" type="button" data-act="regroup"
+                      aria-label="Regroup the picked blocks into the best grouping for this base (R)"
+                      title="Regroup — best grouping for this base (R)">
+                <span data-icon="regroup"></span><em>Regroup</em>
+              </button>
               <button class="bb-tool" type="button" data-act="split"
                       aria-label="Split the picked blocks (S)" title="Split (S)">
                 <span data-icon="split"></span><em>Split</em>
@@ -302,6 +307,12 @@
               ten, five in base five. Turn the rules off to join any number of
               matching blocks.
             </p>
+            <p>
+              <b>Regroup</b> does the whole job in one press: highlight anything at
+              all and it rewrites those blocks the best way this base can write
+              them. Thirty-five loose units become three rods and five units; the
+              same thirty-five in base five become one flat and two rods.
+            </p>
           </div>
         </article>
 
@@ -336,6 +347,7 @@
       <section class="bb-keys" aria-label="Keyboard shortcuts">
         <span class="bb-eyebrow">Keys</span>
         <ul>
+          <li><kbd>R</kbd> regroup</li>
           <li><kbd>S</kbd> split</li>
           <li><kbd>M</kbd> merge</li>
           <li><kbd>B</kbd> break to units</li>

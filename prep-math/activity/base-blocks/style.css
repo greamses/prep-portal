@@ -766,7 +766,10 @@ body {
   font-size: 0.9rem;
   line-height: 1.25;
   color: var(--ink);
-  white-space: nowrap;
+  /* "1234 units = 1 cube, 2 flats, 3 rods and 4 units" is a legal sentence
+     here, so the card wraps rather than growing wider than the stage. */
+  max-width: min(30ch, 62vw);
+  text-wrap: balance;
 }
 .bb-trade__go {
   font-family: var(--font-mono);

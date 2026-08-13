@@ -75,7 +75,8 @@ export function createRegroupPrompt(ctx, view, stage) {
 
     live = check;
     sum.textContent = regroupSentence(check, store.base);
-    go.textContent = check.dir === "merge" ? "Trade up  ⏎" : "Trade down  ⏎";
+    go.textContent =
+      check.dir !== "merge" ? "Trade down  ⏎" : check.exact ? "Trade up  ⏎" : "Regroup  ⏎";
     card.dataset.dir = check.dir;
     card.hidden = false;
     place();
