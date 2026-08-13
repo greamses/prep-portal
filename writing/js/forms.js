@@ -384,11 +384,115 @@ export const FAMILIES = [
           'Write a letter to an editor responding to a decision to cut something your community uses.',
         ],
       },
+    ],
+  },
+
+  /* ── REVIEW ──────────────────────────────────────────────────────────────
+     A review is an argument whose claim is a verdict, so this family used to
+     be one form sitting inside Argumentative. It is its own family now
+     because WHAT you are reviewing changes the job more than the verdict
+     does: a book is judged on pages you can quote, a film on things that
+     happen on a screen, a place on what it is like to actually be there. One
+     "Review" form asking for all three taught none of them — the student got
+     advice about plot when they were writing about a museum.
+
+     The general form is kept, last and plainly labelled, because prompts
+     filed under it and links already sent still point at `review`. Do not
+     delete that id. ─────────────────────────────────────────────────────── */
+  {
+    id: 'review',
+    label: 'Review',
+    blurb: 'Reaching a verdict and paying for it',
+    forms: [
+      {
+        id: 'review-book',
+        label: 'Book Review',
+        blurb: 'A verdict on a book, argued from its pages',
+        ask: 'a book review — the writer reaches a clear verdict on a novel or non-fiction book they have read and justifies it with specific evidence from the writing itself',
+        video: 'how to write a book review',
+        lesson: {
+          what: 'A book review is not a book report. A report tells the story; a review judges the book and proves the judgement from the pages. The reader wants to know whether it is worth their time, why, and who it suits — and every claim you make has to be paid for with something that is actually in the book.',
+          shape: [
+            'Open with the book, its author, what kind of book it is, and your verdict. Do not save the verdict for the end.',
+            'Give only as much of the story as the judgement needs — and never the ending.',
+            'Judge it in parts: the writing, the characters, the pace, the ideas. Say what works and what does not.',
+            'Close on the recommendation: who should read this, and who should not.',
+          ],
+          moves: [
+            'Quote. One short line lifted from the book proves more than a paragraph of your opinion.',
+            'Name the part that failed. "It drags in the middle" means nothing until you say which hundred pages.',
+            'Present tense for the book — "the narrator admits", not "the narrator admitted".',
+          ],
+          model: 'The first half is patient and exact, and the second half is in a hurry. Ade spends eighty pages learning not to trust his uncle and four sentences forgiving him, which is a shame, because the forgiving is the part the book was actually about.',
+        },
+        fallbacks: [
+          'Review a book you finished but would not recommend to everyone.',
+          'Review a book you were made to read for school, judging it honestly.',
+          'Review a book whose ending you thought it had not earned.',
+          'Review a non-fiction book, judging whether it taught you what it promised to.',
+        ],
+      },
+      {
+        id: 'review-film',
+        label: 'Film & Screen Review',
+        blurb: 'A verdict on a film or series, argued from the screen',
+        ask: 'a film or television review — the writer reaches a clear verdict on a film, series or programme and justifies it with specific evidence from what is on the screen',
+        video: 'how to write a film review',
+        lesson: {
+          what: 'A film review judges something the reader can watch for themselves, so vague praise is useless to them. What separates a review from a plot summary is evidence you can point at on the screen: a performance, a shot, a line, the music, the way it is cut.',
+          shape: [
+            'Say what it is, who made it, and what you think of it — in the first paragraph.',
+            'Set up just enough of the story for the judgement to make sense. Never spoil the ending.',
+            'Judge what is actually on the screen: acting, story, look, sound, pace.',
+            'End with who should watch it, and what they should expect.',
+          ],
+          moves: [
+            'Point at a moment. "The lead is good" is an opinion; "she says nothing for the whole scene and you still know" is a review.',
+            'Judge the sound and the look as well as the plot — most students write as if a film were a book.',
+            'Present tense for the film — "the camera stays on her", not "stayed".',
+          ],
+          model: 'It is beautifully made and it does not trust you. Every time the story reaches something you could have worked out on your own, a character arrives to explain it, and the music arrives behind them in case the explaining was not enough.',
+        },
+        fallbacks: [
+          'Review a film everyone praised that you did not think was very good.',
+          'Review a film or series you would recommend to someone who normally avoids that kind of thing.',
+          'Review an adaptation of a book, judging it as a film rather than as a copy.',
+          'Review the last thing you watched all the way through, and say honestly why you did.',
+        ],
+      },
+      {
+        id: 'review-place',
+        label: 'Place Review',
+        blurb: 'A verdict on somewhere you went, for someone deciding',
+        ask: 'a review of a place the writer has visited — a museum, park, market, restaurant, beach, event or public building — written for a reader deciding whether to go, with a clear verdict justified by specific detail',
+        video: 'how to write a review of a place travel writing',
+        lesson: {
+          what: 'A place review is written for somebody with a decision to make: should I go? That makes it different from a description, which only has to put the place in front of the reader. Everything here has to help them decide — what it costs, how long it takes, when it is busy, what is worth it and what is not.',
+          shape: [
+            'Say what the place is, when you went, and your verdict.',
+            'Walk the reader through it in the order a visitor meets it — arriving, then inside, then leaving.',
+            'Judge the things a visitor actually experiences: the price, the queue, the staff, the noise, the state of it.',
+            'End with who should go, when to go, and what to skip.',
+          ],
+          moves: [
+            'Be specific about practicalities. "It was expensive" helps nobody; the price does.',
+            'Say when you went. A beach in December and the same beach in August are two different reviews.',
+            'Judge it fairly against what it is trying to be — a market is not failing at being a shopping centre.',
+          ],
+          model: 'Go on a weekday if you can. On Saturday the queue for the upstairs gallery reaches back down the stairs and out past the ticket desk, and the two rooms that are worth the trip are both upstairs.',
+        },
+        fallbacks: [
+          'Review a place in your town that visitors are told to go to, and say whether they should.',
+          'Review somewhere you go often, as though for a stranger deciding whether to bother.',
+          'Review a place that disappointed you, being fair about why.',
+          'Review an event you attended — a match, a show, a fair — for someone deciding about next year.',
+        ],
+      },
       {
         id: 'review',
-        label: 'Review',
-        blurb: 'A judgement, supported by evidence',
-        ask: 'a review of a book, film, performance or product, in which the writer reaches a clear verdict and justifies it with specific evidence',
+        label: 'Review Anything Else',
+        blurb: 'The same job, for a product, a performance or an app',
+        ask: 'a review of a product, performance, service, app or event, in which the writer reaches a clear verdict and justifies it with specific evidence',
         video: 'how to write a review English lesson',
         lesson: {
           what: 'A review is an argument whose claim is a verdict. Summary is not review: the reader wants to know whether it is good, why, and for whom — and every judgement must be paid for with an example.',
@@ -406,10 +510,10 @@ export const FAMILIES = [
           model: 'The first hour is patient and very good. The trouble comes afterwards: having spent so long making us believe in the family, the film settles their argument in a single phone call, and a story that had earned its ending is handed one instead.',
         },
         fallbacks: [
-          'Review a book you finished but would not recommend to everyone.',
-          'Review a film or programme that is popular and, in your view, overrated.',
-          'Review a place you visited — a museum, a park, an event — for someone deciding whether to go.',
           'Review something you use every day, judging it as a product rather than a habit.',
+          'Review a performance you watched live — a play, a concert, a match.',
+          'Review an app or a website you rely on, judging it for somebody who has never used it.',
+          'Review a service your family pays for, and say whether it is worth the money.',
         ],
       },
     ],
@@ -722,7 +826,7 @@ export const FAMILIES = [
    version that explains it.
 
    They live in one table rather than inside each form because that is how you
-   check them — a wall of twenty-three words, read down in one go, is the only
+   check them — a wall of twenty-six words, read down in one go, is the only
    way to notice that two forms have quietly been given the same one, or that
    a letter has been made to stand for something nobody would ever recall.
 
@@ -845,6 +949,39 @@ export const MNEMONICS = {
       { k: 'A', name: 'Argue twice', what: 'Two short paragraphs. There is no room for a third.' },
       { k: 'I', name: 'I grant you one thing', what: 'A concession, handled in a clause rather than a paragraph.' },
       { k: 'L', name: 'Lay out what you want', what: 'Say what should be done, then sign off formally.' },
+    ],
+  },
+
+  /* ── Review ────────────────────────────────────────
+     Four words for what is structurally the same four moves, because the
+     word has to be about the thing being reviewed to be worth remembering.
+     PAGE for a book, REEL for a film, TOUR for a place — a student writing
+     about a museum should not be trying to recall an acronym about plot. */
+  'review-book': {
+    word: 'PAGE', gloss: 'a review is judged on what you can point to on the page',
+    keys: [
+      { k: 'P', name: 'Put the verdict first', what: 'The book, who wrote it, what kind it is, and what you think.' },
+      { k: 'A', name: 'A little of the story', what: 'Only as much as the judgement needs. Never the ending.' },
+      { k: 'G', name: 'Grounds for it', what: 'Writing, characters, pace, ideas — each claim paid for with a quotation or a scene.' },
+      { k: 'E', name: 'Everyone, or who?', what: 'End on who should read it, and who should not.' },
+    ],
+  },
+  'review-film': {
+    word: 'REEL', gloss: 'the evidence is on the screen — name it or it is only an opinion',
+    keys: [
+      { k: 'R', name: 'Rate it early', what: 'What it is, who made it, and your verdict — first paragraph.' },
+      { k: 'E', name: 'Enough of the story', what: 'The set-up only. Never spoil the ending.' },
+      { k: 'E', name: 'Evidence on screen', what: 'A performance, a shot, a line, the music, the cutting. Point at it.' },
+      { k: 'L', name: 'Leave a recommendation', what: 'Who should watch it, and what to expect.' },
+    ],
+  },
+  'review-place': {
+    word: 'TOUR', gloss: 'written for somebody with a decision to make, not somebody imagining it',
+    keys: [
+      { k: 'T', name: 'Tell them what it is', what: 'The place, when you went, and the verdict.' },
+      { k: 'O', name: 'One walk through', what: 'In the order a visitor meets it: arriving, inside, leaving.' },
+      { k: 'U', name: 'Up close', what: 'The price, the queue, the staff, the noise, the state of it.' },
+      { k: 'R', name: 'Right for whom', what: 'Who should go, when to go, and what to skip.' },
     ],
   },
   review: {

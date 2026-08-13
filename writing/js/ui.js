@@ -133,7 +133,7 @@ let pickedSource = null;
 // has been there. See syncTopicDisplay().
 let libraryVisited = false;
 
-export function initSetup({ onGenerated } = {}) {
+export function initSetup({ onGenerated, onDeepLink } = {}) {
   const mount = $('writing-setup');
   const beginBtn = $('begin-writing-btn');
   const refreshBtn = $('topic-refresh-btn');
@@ -149,7 +149,7 @@ export function initSetup({ onGenerated } = {}) {
   function showFamilyStep() {
     renderChoiceStep(carousel, 'family', {
       title: 'What kind of writing?',
-      subtitle: 'Four families. Each one is marked differently.',
+      subtitle: `${FAMILIES.length} families. Each one is marked differently.`,
       name: 'writing-family',
       options: FAMILIES.map((f) => ({
         value: f.id,
@@ -312,6 +312,11 @@ export function initSetup({ onGenerated } = {}) {
       if (carousel.current() === 'shelf') carousel.back();
       carousel.goTo('own');
     },
+    /* A task followed from a link opens itself. The carousel is still walked
+       to the right step underneath (onFormRestored, above), so closing the
+       modal lands them on the setup they would have had — but they are not
+       made to walk it first to reach a task somebody already chose for them. */
+    onDeepLink: () => onDeepLink?.(),
   });
 }
 
@@ -588,12 +593,39 @@ function syncGate() {
    backend proxy and quietly returns nothing when the server has no YouTube
    key or the visitor is signed out (see utils/ai-client.js). So the button
    says what happened rather than throwing. */
+
+/* ── Where the video shows ──────────────────────────────
+   There is ONE video panel and it moves. It used to live inside the Learn
+   phase and nowhere else, which was fine while the only way onto the sheet
+   was through the lesson. A task opened from a short link (/w/<code>) skips
+   Learn entirely, so the student would have been shown a "Watch a video"
+   button whose video appeared in a section that was not on screen.
+
+   Its home is remembered rather than assumed, so putting it back after a trip
+   to the planner does not leave it hanging below the lesson's end marker. */
+const VIDEO_HOSTS = ['lesson-section', 'summary-section', 'plan-section', 'editor-section'];
+let videoHome = null;
+
+function homeTheVideo(wrap) {
+  if (!videoHome) videoHome = { parent: wrap.parentElement, next: wrap.nextElementSibling };
+  const host = VIDEO_HOSTS.map((id) => $(id)).find((el) => el && el.style.display !== 'none');
+  if (!host || wrap.parentElement === host) return;
+  if (host === videoHome.parent) videoHome.parent.insertBefore(wrap, videoHome.next);
+  else host.appendChild(wrap);
+}
+
 export async function loadLessonVideo() {
   const form = getForm(currentWritingType);
   const wrap = $('lesson-video');
-  const btn = $('lesson-video-btn');
+  // Three buttons, one search — whichever phase they pressed it in, all of
+  // them go quiet while it runs.
+  const setBusy = (v) => ['lesson-video-btn', 'organize-video-btn', 'plan-video-btn']
+    .forEach((id) => { const b = $(id); if (b) b.disabled = v; });
   if (!wrap) return;
 
+  homeTheVideo(wrap);
+
+  // Already loaded — moving it was the whole job; just take them to it.
   if (!wrap.hidden) { wrap.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
   wrap.hidden = false;
@@ -611,7 +643,7 @@ export async function loadLessonVideo() {
   }
 
   wrap.innerHTML = '<p class="lesson-video-note">Looking for a lesson video…</p>';
-  if (btn) btn.disabled = true;
+  setBusy(true);
 
   /* The search is built from the FORM and the PROMPT together (js/api.js
      videoQueryFor) — a news report on a flooded road and one on a school
@@ -623,7 +655,7 @@ export async function loadLessonVideo() {
   if (!results.length && narrow !== form.video) {
     results = await youtubeSearch(form.video, { maxResults: 3 });
   }
-  if (btn) btn.disabled = false;
+  setBusy(false);
 
   if (!results.length) {
     wrap.innerHTML = `<p class="lesson-video-note">No video available right now — the lesson above covers it. (Sign in for videos.)</p>`;

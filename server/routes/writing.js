@@ -26,9 +26,13 @@ const { authenticate } = require("../middleware/auth");
 
 // A prompt is a sentence or two. Past this someone is pasting an essay.
 const MAX_PROMPT = 2000;
-// The four families of writing/js/forms.js, plus the two ids that stand in for
-// "no family" so a stray value can never be written straight through.
-const FAMILIES = ["narrative", "descriptive", "argumentative", "expository", "summary", "general"];
+// The families of writing/js/forms.js, plus "general", which stands in for
+// "no family" so a stray value can never be written straight through. Keep
+// this list in step with FAMILIES there — a family missing here is silently
+// filed as "general" and loses its shelf.
+const FAMILIES = [
+  "narrative", "descriptive", "argumentative", "review", "expository", "summary", "general",
+];
 
 // djb2 — the same cheap hash utils/solution-steps.js keys its overrides with.
 function hash(str) {
@@ -182,24 +186,111 @@ module.exports = function () {
      a task is handed to a class, and a student following the link has usually
      not signed in yet — a 401 here would make the link useless to exactly the
      people it was sent to. Only the task itself comes back, never who filed it. */
+  const taskShape = (id, d) => ({
+    found: true,
+    id,
+    prompt: d.prompt || "",
+    form: d.form || "",
+    videoId: d.videoId || "",
+    videoStart: d.videoStart || 0,
+    passage: d.passage || null,
+    code: d.shortCode || "",
+  });
+
   router.get("/task/:id", async (req, res) => {
     try {
       const id = String(req.params.id || "").slice(0, 120);
       if (!/^[a-z0-9_-]+$/i.test(id)) return res.status(400).json({ error: "bad id" });
       const snap = await col().doc(id).get();
       if (!snap.exists) return res.status(404).json({ error: "No such task." });
-      const d = snap.data() || {};
-      res.json({
-        found: true,
-        id,
-        prompt: d.prompt || "",
-        form: d.form || "",
-        videoId: d.videoId || "",
-        videoStart: d.videoStart || 0,
-        passage: d.passage || null,
-      });
+      res.json(taskShape(id, snap.data() || {}));
     } catch (err) {
       console.error("[/api/writing/task GET]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /* ── Short codes — a link a class can be TOLD ─────────────────────────────
+     The share link used to carry the whole task in the query string:
+     ?prompt=<a sentence>&form=…&video=…&t=… — well over two hundred
+     characters, impossible to read out and impossible to write on a board. A
+     code is five characters: prepportal.com.ng/w/K7M2Q.
+
+     The alphabet has no 0/O or 1/I in it, the same choice the class codes in
+     routes/classroom.js make, because these are read aloud and copied by
+     hand. Minting is IDEMPOTENT: the code is written to the library doc as
+     `shortCode` as well as to writingCodes/{CODE}, so sharing the same task
+     twice hands out the same link rather than quietly stranding the first
+     one — a teacher who re-shares on Monday what they shared on Friday has
+     not changed the task, and the students who already have it must not find
+     it dead.
+
+       POST /api/writing/prompts/:id/code  — owner (or admin) mints/fetches
+       GET  /api/writing/c/:code           — public: resolve → the task
+     ──────────────────────────────────────────────────────────────────────── */
+  const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const CODE_LEN = 5;
+  const codeDoc = (c) => db().collection("writingCodes").doc(c);
+  const newCode = () => {
+    let s = "";
+    for (let i = 0; i < CODE_LEN; i++) s += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+    return s;
+  };
+
+  router.post("/prompts/:id/code", authenticate, async (req, res) => {
+    try {
+      const id = String(req.params.id || "").slice(0, 120);
+      if (!/^[a-z0-9_-]+$/i.test(id)) return res.status(400).json({ error: "bad id" });
+
+      const ref = col().doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: "No such task." });
+      const d = snap.data() || {};
+      // Anyone could otherwise mint a link to somebody else's task and hand it
+      // round as their own — the id is derived from a hash, not a secret.
+      if (d.ownerUid !== req.user.uid && !isAdmin(req)) {
+        return res.status(403).json({ error: "Not your task." });
+      }
+      if (d.shortCode) return res.json({ ok: true, code: d.shortCode, reused: true });
+
+      // create() rather than set(): it fails if the code is already taken, which
+      // is the collision check. Six tries out of 33 million is plenty.
+      let code = "";
+      for (let i = 0; i < 6 && !code; i++) {
+        const c = newCode();
+        try {
+          await codeDoc(c).create({ taskId: id, ownerUid: d.ownerUid || null, createdAt: stamp() });
+          code = c;
+        } catch (_) { /* taken — roll again */ }
+      }
+      if (!code) return res.status(500).json({ error: "Could not make a short link — try again." });
+
+      await ref.set({ shortCode: code }, { merge: true });
+      res.json({ ok: true, code, reused: false });
+    } catch (err) {
+      console.error("[/api/writing/prompts/:id/code]", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Public, for the same reason /task/:id is: this is the link the class was
+  // given, and most of them will follow it before signing in.
+  router.get("/c/:code", async (req, res) => {
+    try {
+      const code = String(req.params.code || "").trim().toUpperCase().slice(0, 12);
+      if (!new RegExp(`^[${CODE_ALPHABET}]{3,12}$`).test(code)) {
+        return res.status(400).json({ error: "bad code" });
+      }
+      const hit = await codeDoc(code).get();
+      if (!hit.exists) return res.status(404).json({ error: "No such task." });
+      const taskId = String((hit.data() || {}).taskId || "");
+      const snap = taskId ? await col().doc(taskId).get() : null;
+      // The code outliving its task is a real state (the row was deleted), and
+      // it reads to a student exactly like a typo, so answer the same way.
+      if (!snap || !snap.exists) return res.status(404).json({ error: "No such task." });
+      res.json({ ...taskShape(taskId, snap.data() || {}), code });
+    } catch (err) {
+      console.error("[/api/writing/c GET]", err.message);
       res.status(500).json({ error: err.message });
     }
   });

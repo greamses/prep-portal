@@ -106,6 +106,18 @@ SUBSTITUTION STYLE — ARGUMENTATIVE / PERSUASIVE writing:
     • Version 1 adds a concession-rebuttal pattern (although X, Y).
     • Version 2 tightens with a topic sentence + evidence clause structure.`,
     
+    review: `
+SUBSTITUTION STYLE — REVIEW writing (book, film, place, product):
+  Word subs (<sub>): Target verdict words that carry no information.
+    • "good / bad / nice / interesting / amazing / boring" are the first priority — replace each with a word that says WHY: assured/derivative/overlong/underwritten/generous/airless.
+    • Replace plot-summary verbs with judging ones: it shows → it argues; there is a part where → the film risks.
+    • Replace vague praise of craft with the named craft: well made → tightly cut / carefully lit / patiently paced.
+    • Offer 3 options that differ in VERDICT strength, not just in formality, so the student can pick how hard they are marking it.
+  Sentence rewrites (<sent>): Turn description into judgement.
+    • Version 1 attaches the claim to its evidence ("X, because Y happens in Z").
+    • Version 2 states the verdict plainly and lets the next clause pay for it.
+    • Never rewrite a spoiler into the review, and keep the work in the PRESENT tense.`,
+
     expository: `
 SUBSTITUTION STYLE — EXPOSITORY / INFORMATIVE writing:
   Word subs (<sub>): Target vague or informal diction.
