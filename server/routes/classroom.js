@@ -8,6 +8,7 @@
  *
  *   POST /api/classroom/class-code   — teacher's join code (idempotent)
  *   GET  /api/classroom/roster       — teacher's students + class code
+ *   GET  /api/classroom/teachers     — admin: every class, with roster sizes
  *   POST /api/classroom/join         — student joins a class via { code }
  *   POST /api/classroom/assign       — teacher assigns an activity to students
  *   POST /api/classroom/assign-cbt   — …a built CBT practice test (by URL)
@@ -16,7 +17,9 @@
  *
  * Every assign route takes { all: true } for the whole class or
  * { studentUids: [...] } for named students, resolved by one helper that
- * intersects the list with the teacher's own roster.
+ * intersects the list with the roster. An ADMIN may add { teacherUid } to
+ * assign into somebody else's class — see resolveTeacher below; a teacher who
+ * sends that field for anyone but themselves gets a 403.
  */
 
 const express = require("express");
@@ -54,18 +57,103 @@ module.exports = function () {
   }
   const displayName = (req, p) => p.name || (req.user.email ? req.user.email.split("@")[0] : "User");
 
+  /* WHOSE class the assignment lands in.
+
+     Normally the caller's own — a teacher assigns to the students who joined
+     their code, and `teacherUid` is not a field they ever send. An ADMIN may
+     name another teacher, which is the whole point of them being able to see
+     every teacher's activities in the library: seeing one is no use without
+     being able to put it in front of a class.
+
+     Nobody else may name a teacher AT ALL. Returns null for "you may not touch
+     that class", which every caller turns into a 403 — silently falling back
+     to the caller's own class would be worse, because they would be told the
+     assignment succeeded and it would have gone somewhere else. */
+  async function resolveTeacher(req, b) {
+    const wanted = String((b && b.teacherUid) || "").trim();
+    if (!wanted || wanted === req.user.uid) return req.user.uid;
+    if (!isAdmin(req)) return null;
+    return wanted;
+  }
+
   /* Who an assignment goes to: the whole class, or the named students.
-     Named uids are INTERSECTED with the teacher's own roster — the list arrives
+     Named uids are INTERSECTED with that teacher's roster — the list arrives
      from the browser, and without this a teacher could post any uid at all and
      drop an assignment into a stranger's list. Assigning to "all" reads the
      same roster, so the two paths can never disagree about who is in the class. */
-  async function resolveTargets(req, b) {
-    const roster = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
+  async function resolveTargets(teacherUid, b) {
+    const roster = await db().collection("teacherStudents").doc(teacherUid).collection("roster").get();
     const inClass = new Set(roster.docs.map((d) => d.id));
     if (b.all) return [...inClass];
     if (!Array.isArray(b.studentUids)) return [];
     return b.studentUids.slice(0, 300).map(String).filter((uid) => inClass.has(uid));
   }
+
+  /* The name that goes ON the assignment. It is the OWNING teacher's, never
+     the admin's: the student's list says who set them the work, and "assigned
+     by the site administrator" is not an answer to that question. Who actually
+     pressed the button is recorded separately, as assignedByUid. */
+  async function teacherLabel(teacherUid, req, p) {
+    if (teacherUid === req.user.uid) return displayName(req, p);
+    const t = await profile(teacherUid);
+    if (t.name) return t.name;
+    const tc = await db().collection("teacherClass").doc(teacherUid).get();
+    if (tc.exists && tc.data().teacherName) return tc.data().teacherName;
+    return t.email ? String(t.email).split("@")[0] : "Teacher";
+  }
+
+  // The shared tail of all three assign routes: resolve the class, resolve the
+  // students in it, and fail with the reason rather than a bare empty list.
+  async function assignmentTargets(req, b, p) {
+    const teacherUid = await resolveTeacher(req, b);
+    if (!teacherUid) return { error: "That is not your class.", status: 403 };
+    const targets = await resolveTargets(teacherUid, b);
+    if (!targets.length) {
+      return {
+        error: teacherUid === req.user.uid
+          ? "No students to assign — add students to your class first."
+          : "That teacher has no students in their class yet.",
+        status: 400,
+      };
+    }
+    return { teacherUid, targets, teacherName: await teacherLabel(teacherUid, req, p) };
+  }
+
+  /* ── GET /teachers — every class an admin could assign into ───────
+     Admin only. The picker needs the roster size to be useful ("assign to
+     which class" is unanswerable without knowing which ones have anybody in
+     them), so each roster is read with .select() — the doc ids alone, none of
+     the student data, which is all a count needs. */
+  router.get("/teachers", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Admins only." });
+      const snap = await db().collection("users")
+        .where("role", "in", ["teacher", "admin"]).limit(200).get();
+
+      const teachers = await Promise.all(snap.docs.map(async (d) => {
+        const u = d.data() || {};
+        const [roster, tc] = await Promise.all([
+          db().collection("teacherStudents").doc(d.id).collection("roster").select().get(),
+          db().collection("teacherClass").doc(d.id).get(),
+        ]);
+        return {
+          uid: d.id,
+          name: u.name || (u.email ? String(u.email).split("@")[0] : "Teacher"),
+          email: u.email || "",
+          role: u.role || "teacher",
+          code: tc.exists ? tc.data().code || null : null,
+          students: roster.size,
+        };
+      }));
+
+      // Classes with students first — those are the ones worth assigning to.
+      teachers.sort((a, b) => b.students - a.students || a.name.localeCompare(b.name));
+      res.json({ teachers });
+    } catch (e) {
+      console.error("[/api/classroom/teachers]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   // ── POST /class-code — the teacher's join code (idempotent) ───────
   router.post("/class-code", authenticate, async (req, res) => {
@@ -152,25 +240,26 @@ module.exports = function () {
       const act = { id: actSnap.id, ...actSnap.data() };
       if (act.ownerUid !== req.user.uid && !isAdmin(req)) return res.status(403).json({ error: "Not your activity." });
 
-      const targets = await resolveTargets(req, b);
-      if (!targets.length) return res.status(400).json({ error: "No students to assign — add students to your class first." });
+      const who = await assignmentTargets(req, b, p);
+      if (who.error) return res.status(who.status).json({ error: who.error });
 
       const batch = db().batch();
-      for (const uid of targets) {
+      for (const uid of who.targets) {
         const ref = db().collection("studentAssignments").doc(uid).collection("items").doc(act.id);
         batch.set(ref, {
           activityId: act.id,
           shareSlug: act.shareSlug || null,
           activityTitle: act.title || null,
           subject: act.subject || null,
-          teacherUid: req.user.uid,
-          teacherName: displayName(req, p),
+          teacherUid: who.teacherUid,
+          teacherName: who.teacherName,
+          assignedByUid: req.user.uid,
           status: "assigned",
           assignedAt: stamp(),
         }, { merge: true });
       }
       await batch.commit();
-      res.json({ ok: true, assigned: targets.length });
+      res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign]", e.message);
       res.status(500).json({ error: e.message });
@@ -195,8 +284,8 @@ module.exports = function () {
       const title = String(b.title || "").trim().slice(0, 140) || "Practice test";
       const subject = String(b.subject || "").trim().slice(0, 80) || null;
 
-      const targets = await resolveTargets(req, b);
-      if (!targets.length) return res.status(400).json({ error: "No students to assign — add students to your class first." });
+      const who = await assignmentTargets(req, b, p);
+      if (who.error) return res.status(who.status).json({ error: who.error });
 
       // Stable doc id from the URL so the same config doesn't pile up duplicates.
       let h = 5381;
@@ -204,21 +293,22 @@ module.exports = function () {
       const docId = "cbt_" + (h >>> 0).toString(36);
 
       const batch = db().batch();
-      for (const uid of targets) {
+      for (const uid of who.targets) {
         const ref = db().collection("studentAssignments").doc(uid).collection("items").doc(docId);
         batch.set(ref, {
           kind: "cbt",
           cbtUrl: url,
           activityTitle: title,
           subject,
-          teacherUid: req.user.uid,
-          teacherName: displayName(req, p),
+          teacherUid: who.teacherUid,
+          teacherName: who.teacherName,
+          assignedByUid: req.user.uid,
           status: "assigned",
           assignedAt: stamp(),
         }, { merge: true });
       }
       await batch.commit();
-      res.json({ ok: true, assigned: targets.length });
+      res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign-cbt]", e.message);
       res.status(500).json({ error: e.message });
@@ -248,10 +338,8 @@ module.exports = function () {
         return res.status(403).json({ error: "Not your task." });
       }
 
-      const targets = await resolveTargets(req, b);
-      if (!targets.length) {
-        return res.status(400).json({ error: "No students to assign — add students to your class first." });
-      }
+      const who = await assignmentTargets(req, b, p);
+      if (who.error) return res.status(who.status).json({ error: who.error });
 
       // The prompt is the title; a summary's task line is generic, so the
       // passage title is what tells one apart from another in a list.
@@ -259,23 +347,31 @@ module.exports = function () {
         ? `Summary: ${task.passage.title}`
         : String(task.prompt || "Writing task").slice(0, 140);
 
+      // The short link when the task has one (routes/writing.js mints it on
+      // Share), because a student may well be reading this off a phone and
+      // typing it into another device.
+      const url = task.shortCode
+        ? `/w/${task.shortCode}`
+        : `/writing/index.html?task=${encodeURIComponent(taskId)}`;
+
       const batch = db().batch();
-      for (const uid of targets) {
+      for (const uid of who.targets) {
         const ref = db().collection("studentAssignments").doc(uid).collection("items").doc(`writing_${taskId}`);
         batch.set(ref, {
           kind: "writing",
-          writingUrl: `/writing/index.html?task=${encodeURIComponent(taskId)}`,
+          writingUrl: url,
           taskId,
           activityTitle: title,
           subject: task.formLabel || "English",
-          teacherUid: req.user.uid,
-          teacherName: displayName(req, p),
+          teacherUid: who.teacherUid,
+          teacherName: who.teacherName,
+          assignedByUid: req.user.uid,
           status: "assigned",
           assignedAt: stamp(),
         }, { merge: true });
       }
       await batch.commit();
-      res.json({ ok: true, assigned: targets.length });
+      res.json({ ok: true, assigned: who.targets.length, teacherName: who.teacherName });
     } catch (e) {
       console.error("[/api/classroom/assign-writing]", e.message);
       res.status(500).json({ error: e.message });

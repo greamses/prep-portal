@@ -9,7 +9,9 @@ import { auth } from "/firebase-init.js";
 
 const API = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
 
-async function api(path, opts = {}) {
+// Exported: admin-library.js hangs off the same API base, escaping and modal
+// rather than growing a third copy of all three.
+export async function api(path, opts = {}) {
   const token = await auth.currentUser.getIdToken();
   const res = await fetch(`${API}${path}`, {
     ...opts,
@@ -21,10 +23,10 @@ async function api(path, opts = {}) {
   return data;
 }
 
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+export const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 /* ── tiny on-brand modal ── */
-function modal(html) {
+export function modal(html) {
   const root = document.createElement("div");
   root.className = "cc-modal";
   root.innerHTML = `<div class="cc-modal__bd"></div><div class="cc-modal__card">${html}</div>`;

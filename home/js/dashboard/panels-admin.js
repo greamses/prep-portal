@@ -12,6 +12,7 @@ import {
 import { MOCK } from "/home/js/dashboard/mock-data.js";
 import { showClassModal } from "/home/js/dashboard/dashboard-modals.js";
 import { mountCalendar } from "/home/js/dashboard/calendar-client.js";
+import { mountAdminLibrary } from "/home/js/dashboard/admin-library.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildAdminPanels(user, data, layout) {
@@ -118,6 +119,22 @@ export function buildAdminPanels(user, data, layout) {
       </div>
     </div>
 
+    <!-- Every teacher's activities, and the one thing an admin can do with
+         them that a teacher cannot: put one in front of another teacher's
+         class. See admin-library.js. -->
+    <div class="db-panel span-full">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker">Activity Library</p>
+          <h2 class="db-panel-title">Everything teachers have built</h2>
+        </div>
+        <a class="db-icon-btn ib-blue" href="/theory-page/" title="Build a new activity">${I.plus}</a>
+      </div>
+      <div class="db-assign-list" id="db-library">
+        <div class="db-empty">Loading…</div>
+      </div>
+    </div>
+
     <div class="db-panel span-full db-calendar-panel">
       <div class="db-panel-head">
         <div>
@@ -144,5 +161,6 @@ export function buildAdminPanels(user, data, layout) {
     .querySelector("[data-action='new-class']")
     ?.addEventListener("click", showClassModal);
 
+  mountAdminLibrary(layout);
   mountCalendar(layout);
 }

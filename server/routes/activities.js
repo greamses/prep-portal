@@ -7,6 +7,7 @@
  *
  *   POST /api/activities              — teacher creates an activity (+ share link)
  *   GET  /api/activities/mine         — teacher's own activities + submission counts
+ *   GET  /api/activities/library      — admin: every teacher's activities
  *   GET  /api/activities/:idOrSlug    — fetch an activity to answer
  *   POST /api/activities/:id/submit   — student submits answers (+ marked result)
  *   GET  /api/activities/:id/submissions — teacher reviews submissions (owner only)
@@ -142,6 +143,42 @@ module.exports = function () {
       res.json({ activities: items });
     } catch (e) {
       console.error("[/api/activities/mine]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ── GET /library — every activity, for an admin ──────────────────
+     /mine answers "what have I built". This answers "what has anybody built",
+     which is what an admin needs before they can put one teacher's activity in
+     front of another teacher's class (POST /api/classroom/assign with a
+     teacherUid). Admin only: it is the whole authored corpus, complete with
+     who wrote it.
+
+     Declared BEFORE /:idOrSlug, or the slug route swallows the word "library".
+
+     Unsorted in the query and sorted here for the same reason /mine is —
+     ordering by createdAt alongside nothing else still costs an index on a
+     collection this route reads whole. */
+  router.get("/library", authenticate, async (req, res) => {
+    try {
+      if (!isAdmin(req)) return res.status(403).json({ error: "Admins only." });
+      const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 200));
+      const snap = await db().collection("activities").limit(limit).get();
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+      const items = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => ms(b.createdAt) - ms(a.createdAt))
+        .map((a) => ({
+          ...publicActivity(a),
+          // The questions are the bulk of a doc and a picker never shows them.
+          questions: undefined,
+          questionCount: (a.questions || []).length,
+          submissionCount: a.submissionCount || 0,
+          createdAt: ms(a.createdAt) || null,
+        }));
+      res.json({ activities: items });
+    } catch (e) {
+      console.error("[/api/activities/library]", e.message);
       res.status(500).json({ error: e.message });
     }
   });
