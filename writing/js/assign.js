@@ -15,7 +15,7 @@
 import { $, currentTopic, currentWritingType, currentPassage, customTask } from './config.js';
 import { auth } from '/firebase-init.js';
 import { formLabel, familyOf, isSummaryForm } from './forms.js';
-import { savePrompt } from './library.js';
+import { savePrompt, mintShortCode } from './library.js';
 
 const API_BASE =
   (typeof window !== 'undefined' && window.location.port === '5500')
@@ -55,7 +55,15 @@ async function fileCurrentTask() {
     videoId: customTask.videoId,
     videoStart: customTask.videoStart,
   });
-  return (id && id !== true) ? id : '';
+  if (!id || id === true) return '';
+  /* Give it a short code on the way past. The assignment lands in the
+     student's list as a link they click, so the length does not matter there
+     — but half of them will be reading it on a phone and doing the work on a
+     school computer, and /w/K7M2Q is a thing you can carry between the two.
+     Minting is idempotent, so this costs nothing when the task already has
+     one. Fire-and-forget: no assignment should fail for want of a nicer URL. */
+  await mintShortCode(id);
+  return id;
 }
 
 export async function initAssign() {

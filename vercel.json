@@ -7,7 +7,8 @@
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.js" }
+    { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/w/:code", "destination": "/writing/index.html" }
   ],
   "headers": [
     { "source": "/(.*).js", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },

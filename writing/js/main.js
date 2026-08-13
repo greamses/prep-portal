@@ -274,10 +274,13 @@ elRetryBtn?.addEventListener('click', () => {
 
 // ── Landing → the lesson, and only then the sheet ──────
 $('begin-writing-btn')?.addEventListener('click', () => openWritingModal());
-$('lesson-video-btn')?.addEventListener('click', () => loadLessonVideo());
+// One video, three doors — Learn, the organiser and the plan. The panel moves
+// to whichever phase asked for it (js/ui.js homeTheVideo).
+['lesson-video-btn', 'organize-video-btn', 'plan-video-btn']
+  .forEach((id) => $(id)?.addEventListener('click', () => loadLessonVideo()));
 // A summary is planned before it is written, so the lesson opens the organiser
 // rather than a blank sheet; every other form goes straight to the paper.
-$('start-writing-btn')?.addEventListener('click', () => {
+function startPlanning() {
   if (isSummaryMode()) { openOrganizer(); return; }
   // Every form with a mnemonic gets planned before it is written; a task the
   // student brought themselves has no form and so no plan, and goes straight
@@ -286,7 +289,8 @@ $('start-writing-btn')?.addEventListener('click', () => {
   syncRules();
   showPhase('write');
   setTimeout(() => elTextarea.focus(), 120);
-});
+}
+$('start-writing-btn')?.addEventListener('click', startPlanning);
 
 // ── Change Topic (modal → landing) ─────────────────────
 $('new-topic-btn')?.addEventListener('click', () => closeWritingModal());
@@ -317,6 +321,18 @@ window.addEventListener('DOMContentLoaded', () => {
   // them. Only an UNEDITED assembly is cleared: anything the student has since
   // typed themselves is theirs, and a new prompt is not a reason to bin it.
   initSetup({
+    /* A task followed from a short link (/w/<code>) opens itself, on the
+       planning sheet, with the video button beside it. Nobody sent a class a
+       link so that thirty students could each answer three setup questions
+       whose answers were decided by the person who sent it.
+
+       openWritingModal() first, because it is what renders the lesson behind
+       this phase and puts the modal in a state the Back buttons can return
+       to — the phase it lands on is then immediately swapped. */
+    onDeepLink: () => {
+      openWritingModal();
+      startPlanning();
+    },
     onGenerated: () => {
       if (lastAssembled && elTextarea.value.trim() === lastAssembled.trim()) {
         elTextarea.value = '';

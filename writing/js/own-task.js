@@ -20,6 +20,13 @@
    The same three things travel in a LINK — ?prompt=…&video=…&form=… — so a
    teacher can set one task for a whole class without anybody retyping it.
    Opening such a link applies the task exactly as if it had been typed here.
+
+   That link is now the FALLBACK, not the thing we hand out. A task is filed
+   in the library, given a five-character code, and shared as /w/K7M2Q — short
+   enough to read out to a class, write on a board, or type from a photo of
+   one. Following a short link also SKIPS the setup: the student was sent a
+   task, not asked to choose one, so the page opens straight on the planning
+   sheet with the video button beside it (see openDirect below).
 ═══════════════════════════════════════════════════════ */
 
 import {
@@ -28,7 +35,7 @@ import {
   currentPassage, setCurrentPassage,
 } from './config.js';
 import { getForm, isSummaryForm, familyOf, formLabel } from './forms.js';
-import { savePrompt, listPrompts, fetchTask } from './library.js';
+import { savePrompt, listPrompts, fetchTask, mintShortCode, fetchTaskByCode } from './library.js';
 
 const STORE_KEY = 'pp-writing-own-task';
 // A prompt is a sentence or two. Anything past this is someone pasting an
@@ -99,7 +106,7 @@ function load() {
 // has to police the order.
 let els = null;
 
-export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
+export function initOwnTask({ onChange, onFormRestored, onLibraryPick, onDeepLink } = {}) {
   const panel = $('own-panel');
   const promptEl = $('own-prompt');
   const videoEl = $('own-video');
@@ -267,14 +274,13 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
         return;
       }
       const copied = await copyText(url);
-      if (copied) {
-        flashShared('Link copied');
-      } else {
-        // Clipboard refused (permissions, or an insecure context) — then the
-        // link has to be visible somewhere it can be selected by hand.
-        note(`Copy this link: ${url}`);
-        flashShared('Link below');
-      }
+      /* The link is SHOWN whether or not the clipboard took it. A short link
+         is meant to be read out and written down, and a teacher who can only
+         paste it has lost half of what it is for. (When the clipboard refuses
+         — no permission, an insecure context — this is also the only copy
+         they get, so it can never be conditional.) */
+      note(copied ? `Copied — or read it out: ${url}` : `Copy this link: ${url}`);
+      flashShared(copied ? 'Link copied' : 'Link below');
     } finally {
       shareBtn.disabled = false;
     }
@@ -293,52 +299,75 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
     apply(applyOpts);
   };
 
-  // A ?task=<id> link is a summary (or any task filed by reference): the passage
-  // has to come back from the library before anything can be applied, so this
-  // one path is async. The saved task is NOT restored underneath it — a followed
-  // link means that task, and swapping it out mid-fetch would be a flicker and a
-  // lie about what they opened.
-  const sharedId = readSharedTaskId();
-  if (sharedId) {
-    note('Opening the task you were sent…');
-    fetchTask(sharedId).then((task) => {
-      if (!task) {
-        note('That shared task could not be found. It may have been removed.', true);
-        return;
-      }
-      const video = task.videoId ? `https://youtu.be/${task.videoId}` : '';
+  /* A task that arrives BY REFERENCE — /w/<code> or ?task=<id>. The passage
+     has to come back from the library before anything can be applied, so this
+     one path is async. The saved task is NOT restored underneath it — a
+     followed link means that task, and swapping it out mid-fetch would be a
+     flicker and a lie about what they opened.
 
-      /* A passage arrives as a PASSAGE, not as a custom prompt. isSummaryMode()
-         is `!customTask.usePrompt && currentPassage`, so pushing a summary
-         through apply() — which sets usePrompt — would hand the receiver a
-         blank essay sheet instead of the organiser, with the passage sitting
-         there unused. So this path sets the task directly and leaves the
-         custom-prompt claim alone; only the video rides along. */
-      if (task.passage) {
-        if (getForm(task.form)) setCurrentWritingType(task.form);
-        setCurrentPassage(task.passage);
-        setCurrentTopic(task.prompt || '');
-        videoEl.value = video;
-        const parsed = video ? parseYouTube(video) : null;
-        if (parsed) {
-          setCustomTask({
-            video,
-            videoId: parsed.videoId,
-            videoStart: parsed.start || task.videoStart || 0,
-            usePrompt: false,
-          });
-        }
-        onFormRestored?.(task.form || '');
-        note('This reading was shared with you — press Start when you are ready.');
-        onChange?.();
-        return;
-      }
+     `direct` is the difference between the two doors. Somebody who followed a
+     link was SENT this task; they were not asked to choose one, so there is
+     nothing for them to do on the setup carousel and it is only in the way.
+     The page opens on the planning sheet instead, with the video beside it. */
+  function openFiled(task, { direct }) {
+    const video = task.videoId ? `https://youtu.be/${task.videoId}` : '';
 
+    /* A passage arrives as a PASSAGE, not as a custom prompt. isSummaryMode()
+       is `!customTask.usePrompt && currentPassage`, so pushing a summary
+       through apply() — which sets usePrompt — would hand the receiver a
+       blank essay sheet instead of the organiser, with the passage sitting
+       there unused. So this path sets the task directly and leaves the
+       custom-prompt claim alone; only the video rides along. */
+    if (task.passage) {
+      if (getForm(task.form)) setCurrentWritingType(task.form);
+      setCurrentPassage(task.passage);
+      setCurrentTopic(task.prompt || '');
+      videoEl.value = video;
+      const parsed = video ? parseYouTube(video) : null;
+      if (parsed) {
+        setCustomTask({
+          video,
+          videoId: parsed.videoId,
+          videoStart: parsed.start || task.videoStart || 0,
+          usePrompt: false,
+        });
+      }
+      onFormRestored?.(task.form || '');
+      note('This reading was shared with you — press Start when you are ready.');
+      onChange?.();
+    } else {
       restore(
         { prompt: task.prompt, video, form: task.form },
         { shared: true, startFallback: task.videoStart || 0 },
       );
-    });
+    }
+
+    // After onChange, so the topic slip and the Start button are already in
+    // the state the sheet expects to find them in.
+    if (!direct) return;
+    /* Both branches above leave a note saying "press Start when you are
+       ready", which was true when a link dropped you on the setup page. It is
+       not true now — Start has already been pressed for them. The note is
+       behind the modal either way, but it is what they read the moment they
+       close it, so it has to describe the page they will be looking at. */
+    note('This task was set for you and is open on the sheet. Close it to change anything.');
+    onDeepLink?.();
+  }
+
+  const missing = () =>
+    note('That task could not be found. Check the code, or ask for the link again.', true);
+
+  const code = readShortCode();
+  if (code) {
+    note('Opening the task you were sent…');
+    fetchTaskByCode(code).then((task) => (task ? openFiled(task, { direct: true }) : missing()));
+    return;
+  }
+
+  const sharedId = readSharedTaskId();
+  if (sharedId) {
+    note('Opening the task you were sent…');
+    fetchTask(sharedId).then((task) => (task ? openFiled(task, { direct: true }) : missing()));
     return;
   }
 
@@ -356,6 +385,16 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick } = {}) {
 export function readSharedTaskId() {
   const id = (new URLSearchParams(location.search).get('task') || '').trim();
   return /^[a-z0-9_-]{3,120}$/i.test(id) ? id : '';
+}
+
+/* The code in /w/K7M2Q, or ''. Upper-cased on the way in: the link is meant
+   to be typed, and somebody typing it will type it in lower case. ?w=CODE is
+   accepted too, for anywhere the /w/ rewrite is not in front of the page (a
+   local static server, a preview host). */
+export function readShortCode() {
+  const m = location.pathname.match(/^\/w\/([^/?#]+)\/?$/i);
+  const raw = (m ? m[1] : new URLSearchParams(location.search).get('w') || '').trim().toUpperCase();
+  return /^[A-Z2-9]{3,12}$/.test(raw) ? raw : '';
 }
 
 /* The panel and the shelf, for js/ui.js to hang on the setup carousel. */
@@ -385,30 +424,47 @@ export function readSharedTask() {
   };
 }
 
-/* A SUMMARY's task is a whole reading, which will not go in a query string. So
-   that one shares by REFERENCE: the passage is filed in the library and the link
-   carries ?task=<id>. Everything else still shares by value, because a readable
-   ?prompt= is worth keeping — a teacher can see what they are sending, and edit
-   it in the address bar without any encoding ceremony. */
+/* EVERY task now shares by REFERENCE. It is filed in the library, given a
+   five-character code, and the link is /w/K7M2Q.
+
+   It used to share by VALUE for everything except a summary — the whole prompt
+   in the query string, on the argument that a teacher could read and edit what
+   they were sending. In practice that produced a link over two hundred
+   characters long that wrapped across three lines of a chat message and could
+   not be read out, written on a board, or typed from a photograph of one. A
+   task set for a class has to survive being spoken aloud; being editable in
+   the address bar was worth less than that.
+
+   The long form is still built when the short one cannot be: no signed-in
+   user, no network, a library that will not answer. A long link that works
+   beats a short link that does not exist. */
 export async function buildShareUrl() {
   if (!canShareTask()) return '';
-  const url = new URL(location.origin + location.pathname);
 
-  if (needsPassageShare()) {
-    const id = await savePrompt({
-      prompt: currentTopic,
-      form: currentWritingType,
-      formLabel: formLabel(currentWritingType),
-      family: familyOf(currentWritingType),
-      passage: currentPassage,
-      videoId: customTask.videoId,
-      videoStart: customTask.videoStart,
-    });
-    if (!id || id === true) return '';   // could not file it — no link to give
-    url.searchParams.set('task', id);
-    return url.toString();
+  const id = await savePrompt({
+    prompt: currentTopic,
+    form: currentWritingType,
+    formLabel: formLabel(currentWritingType),
+    family: familyOf(currentWritingType),
+    passage: needsPassageShare() ? currentPassage : null,
+    videoId: customTask.videoId,
+    videoStart: customTask.videoStart,
+  });
+
+  if (id && id !== true) {
+    const code = await mintShortCode(id);
+    if (code) return `${location.origin}/w/${code}`;
+    // Filed, but no code — the id still resolves, and it is shorter than the
+    // prompt would be.
+    const byId = new URL(location.origin + location.pathname);
+    byId.searchParams.set('task', id);
+    return byId.toString();
   }
 
+  // A summary cannot fall back to a query string: its task is a whole reading.
+  if (needsPassageShare()) return '';
+
+  const url = new URL(location.origin + location.pathname);
   url.searchParams.set('prompt', currentTopic);
   // The id rather than the pasted address: it is 11 characters instead of
   // sixty, and parseYouTube takes a bare id back.

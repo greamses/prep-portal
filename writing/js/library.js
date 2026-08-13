@@ -56,6 +56,35 @@ export async function fetchTask(id) {
   } catch { return null; }
 }
 
+/* ── Short codes ────────────────────────────────────────
+   The five characters behind /w/K7M2Q. Minting is idempotent on the server,
+   so this can be called every time Share is pressed without collecting a
+   drawer of dead links for the same task. */
+export async function mintShortCode(taskId) {
+  const t = await token();
+  if (!t || !taskId) return '';
+  try {
+    const res = await fetch(`${API_BASE}/api/writing/prompts/${encodeURIComponent(taskId)}/code`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    if (!res.ok) return '';
+    const data = await res.json().catch(() => ({}));
+    return data.code || '';
+  } catch { return ''; }
+}
+
+/** Resolve /w/<code> → the filed task. Public, like fetchTask. */
+export async function fetchTaskByCode(code) {
+  if (!code) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/writing/c/${encodeURIComponent(code)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.found ? data : null;
+  } catch { return null; }
+}
+
 /* The prompts already on the shelf for a form — yours, plus any published.
    Reports WHY it has nothing rather than just handing back an empty list: an
    empty shelf and an unreachable one look identical to the caller otherwise,
