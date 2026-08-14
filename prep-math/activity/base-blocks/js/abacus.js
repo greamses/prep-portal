@@ -16,7 +16,7 @@
    what makes the 2D view read correctly for them.
    ========================================================================== */
 
-import { cssVar } from "./config.js";
+import { BEAD_TOKENS, cssVar } from "./config.js";
 
 const B = () => window.BABYLON;
 
@@ -139,18 +139,33 @@ export function tapBead(thing, ref) {
 /* ── meshes ───────────────────────────────────────────────────────────────── */
 
 const matCache = new Map();
-function mat(scene, token, fallback) {
+function mat(scene, token, fallback, shade = 1) {
   const hex = cssVar(token, fallback);
-  const k = token + hex;
+  const k = token + hex + shade;
   if (matCache.has(k)) return matCache.get(k);
   const BJS = B();
   const m = new BJS.StandardMaterial("ab-" + k, scene);
-  m.diffuseColor = BJS.Color3.FromHexString(norm(hex));
-  m.specularColor = new BJS.Color3(0.12, 0.12, 0.12);
-  m.specularPower = 64;
+  m.diffuseColor = BJS.Color3.FromHexString(norm(hex)).scale(shade);
+  m.specularColor = new BJS.Color3(0.16, 0.16, 0.16);
+  m.specularPower = 48;
   matCache.set(k, m);
   return m;
 }
+
+/**
+ * A bead's colour. Each rod wears its own accent, so the places are told apart
+ * at a glance; the fives above the bar are the same hue gone deeper, which keeps
+ * a rod reading as one thing. The schoty has no bar, so its fifth and sixth
+ * beads stay contrasting — that is how you read one without counting.
+ */
+function beadPaint(spec, rod, tier, index) {
+  if (!spec.upright && (index === 4 || index === 5)) {
+    return { token: "--ink", fallback: "#2a2723", shade: 1 };
+  }
+  const [token, fallback] = BEAD_TOKENS[rod % BEAD_TOKENS.length];
+  return { token, fallback, shade: tier === "heaven" ? 0.66 : 1 };
+}
+
 export function clearAbacusMaterials() {
   matCache.forEach((m) => m.dispose());
   matCache.clear();
@@ -233,20 +248,20 @@ export function buildAbacus(ctx, thing) {
 
 function makeBead(ctx, root, thing, spec, size, r, tier, i) {
   const BJS = B();
-  // On a schoty the fifth and sixth beads are dark: that is the whole trick of
-  // reading one quickly, so it is not decoration.
-  const dark = !spec.upright && (i === 4 || i === 5);
-  const token = tier === "heaven"
-    ? "--accent-danger"
-    : dark ? "--accent-danger" : "--accent-secondary";
-  const fallback = tier === "heaven" ? "#f07a7a" : dark ? "#f07a7a" : "#6fb7e8";
+  const paint = beadPaint(spec, r, tier, i);
 
-  const mesh = BJS.MeshBuilder.CreateSphere("bead",
-    spec.upright
-      ? { diameterX: 1.05, diameterY: BEAD_H, diameterZ: 0.92, segments: 10 }
-      : { diameterX: 0.92, diameterY: BEAD_H, diameterZ: 1.05, segments: 10 },
-    ctx.scene);
-  mesh.material = mat(ctx.scene, token, fallback);
+  /* A six-sided disc, slightly narrower on top so its bevel catches the light.
+     The axis stands upright rather than lying along the rod: these frames are
+     read from above, and that is the face the hexagon needs to show. */
+  const mesh = BJS.MeshBuilder.CreateCylinder("bead", {
+    height: BEAD_H,
+    diameterTop: 0.86,
+    diameterBottom: 1.08,
+    tessellation: 6,
+  }, ctx.scene);
+  // a flat side facing the way the bead travels, so a packed tier sits square
+  mesh.rotation.y = spec.upright ? Math.PI / 6 : 0;
+  mesh.material = mat(ctx.scene, paint.token, paint.fallback, paint.shade);
   mesh.parent = root;
   mesh.metadata = { bead: { thingId: thing.id, rod: r, tier, index: i } };
   ctx.shadows.addShadowCaster(mesh);
