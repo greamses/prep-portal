@@ -70,6 +70,16 @@ export const PLACE_TOKENS = {
   custom: "--accent-warning",
 };
 
+/* Abacus beads take a theme accent per rod, so every place is its own colour and
+   a number can be read off the frame by where the colours change. */
+export const BEAD_TOKENS = [
+  ["--accent-primary", "#f4c95d"],
+  ["--accent-secondary", "#6fb7e8"],
+  ["--accent-success", "#7cc47c"],
+  ["--accent-danger", "#f07a7a"],
+  ["--accent-warning", "#f0a868"],
+];
+
 export const TAGS = [
   { id: 0, name: "Butter", hex: "#f6d268" },
   { id: 1, name: "Lilac", hex: "#c9a3ee" },
