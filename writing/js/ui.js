@@ -2,7 +2,11 @@
    PREPBOT — UI UTILITIES
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, currentWritingType, setCurrentWritingType, customTask } from './config.js';
+import {
+  $, currentTopic, currentWritingType, setCurrentWritingType, customTask,
+  currentLevel, setCurrentLevel, rememberedLevel, setCurrentTaskId,
+} from './config.js';
+import { LEVELS, levelLabel } from './levels.js';
 import { fetchGeneratedTopic, fetchModelText, videoQueryFor } from './api.js';
 import { FAMILIES, getForm, formLabel, isSummaryForm, familyOf, getMnemonic, keyColorClass } from './forms.js';
 import { isSummaryMode, passageHtml } from './summary.js';
@@ -114,17 +118,28 @@ export function initColorKeyAccordion(container) {
 }
 
 /* ── Landing setup — the shared step carousel ───────────
-   Three questions, in this order and no other:
+   Four questions, in this order and no other:
 
-     1. which FAMILY of writing      ("Narrative" alone is not a thing you can
-     2. which FORM inside it          be marked on — see js/forms.js)
-     3. where the PROMPT comes from  — we write you one, you paste the one you
+     1. which GRADE LEVEL            (js/levels.js — it decides the gate, the
+                                      rubric and how hard the pen presses)
+     2. which FAMILY of writing      ("Narrative" alone is not a thing you can
+     3. which FORM inside it          be marked on — see js/forms.js)
+     4. where the PROMPT comes from  — we write you one, you paste the one you
                                        were set, or you take one off the shelf
 
-   Step 3 is the point of the ordering. A prompt is taught, marked and filed by
-   its form, so it cannot be asked for until the form is settled — which is why
-   the "your own prompt" box does not exist on the page until you get here. It
-   is staged in the HTML and MOVED into the last two slides (js/own-task.js).
+   The level comes FIRST because it is the only answer that changes what the
+   other three mean: a narrative at Grade 5 and a narrative at Grade 11 are the
+   same form marked by two different examiners. Asking it last would mean
+   teaching the form, gating the sheet and half-marking the piece before
+   learning who wrote it. It is also the one answer that is remembered between
+   visits (a student is in one class all year), so in practice it is a step
+   walked past rather than answered.
+
+   Step 4 is the point of the rest of the ordering. A prompt is taught, marked
+   and filed by its form, so it cannot be asked for until the form is settled —
+   which is why the "your own prompt" box does not exist on the page until you
+   get here. It is staged in the HTML and MOVED into the last two slides
+   (js/own-task.js).
    ─────────────────────────────────────────────────────── */
 let pickedFamily = null;
 let pickedForm = null;
@@ -133,18 +148,47 @@ let pickedSource = null;
 // has been there. See syncTopicDisplay().
 let libraryVisited = false;
 
-export function initSetup({ onGenerated, onDeepLink } = {}) {
+export function initSetup({ onGenerated, onDeepLink, onLevelChange } = {}) {
   const mount = $('writing-setup');
   const beginBtn = $('begin-writing-btn');
   const refreshBtn = $('topic-refresh-btn');
   if (!mount) return;
 
   const carousel = createCarousel(mount);
+  carousel.addSlide('level', 'Level');
   carousel.addSlide('family', 'Form');
   carousel.addSlide('style', 'Style');
   carousel.addSlide('source', 'Prompt');
   carousel.addSlide('own', 'Your task');
   carousel.addSlide('shelf', 'Library');
+
+  // Last year's answer, already ticked. Choosing nothing keeps it.
+  setCurrentLevel(rememberedLevel(), { remember: false });
+
+  function showLevelStep() {
+    renderChoiceStep(carousel, 'level', {
+      title: 'What class are you in?',
+      subtitle: 'It sets how much the sheet asks for and how hard it is marked.',
+      name: 'writing-level',
+      options: LEVELS.map((l) => ({
+        value: l.id,
+        label: l.label,
+        note: l.blurb,
+        checked: l.id === currentLevel,
+      })),
+      skipLabel: 'Use this',
+      onPick: (id) => {
+        setCurrentLevel(id);
+        // The gate under the sheet is the level's now, so anything already
+        // showing a word floor has to be redrawn against the new one — and so
+        // does the slip, which names the level this task will be marked at.
+        onLevelChange?.(id);
+        syncTopicDisplay();
+        showFamilyStep();
+        carousel.goTo('family');
+      },
+    });
+  }
 
   function showFamilyStep() {
     renderChoiceStep(carousel, 'family', {
@@ -239,8 +283,11 @@ export function initSetup({ onGenerated, onDeepLink } = {}) {
   function generate(formId) {
     pickedForm = formId;
     const form = getForm(formId);
-    // Last action wins: asking for a prompt means you want the generated one.
+    // Last action wins: asking for a prompt means you want the generated one —
+    // and a generated prompt is nobody's assignment, so the filed task this
+    // session may have arrived on is no longer the task being answered.
     releaseCustomPrompt();
+    setCurrentTaskId('');
     if (beginBtn) beginBtn.disabled = true;
     if (refreshBtn) refreshBtn.disabled = true;
 
@@ -269,9 +316,13 @@ export function initSetup({ onGenerated, onDeepLink } = {}) {
     });
   }
 
+  showLevelStep();
   showFamilyStep();
   showStyleStep();
-  carousel.start('family');
+  carousel.start('level');
+  // The slip names the level from the first paint, not only once something has
+  // been picked — the remembered answer is already in force.
+  syncTopicDisplay();
 
   // Teachers get an Assign button on the slip. Resolves quietly to nothing for
   // everybody else — the roster endpoint behind it is teachers-only.
@@ -291,6 +342,10 @@ export function initSetup({ onGenerated, onDeepLink } = {}) {
     // A saved or shared task carries its form, so the whole walk can be
     // replayed: family → form → "I have my own" → the box holding it.
     onFormRestored: (formId) => {
+      // A shared task carries the level it was SET at (js/own-task.js applied
+      // it before calling this), so the level step is redrawn to show the
+      // teacher's answer rather than the student's remembered one.
+      showLevelStep();
       if (getForm(formId)) {
         pickedForm = formId;
         pickedFamily = familyOf(formId);
@@ -300,7 +355,8 @@ export function initSetup({ onGenerated, onDeepLink } = {}) {
         showSourceStep();
       }
       showOwnStep();
-      carousel.start('family');
+      carousel.start('level');
+      carousel.goTo('family');
       if (getForm(formId)) { carousel.goTo('style'); carousel.goTo('source'); }
       carousel.goTo('own');
     },
@@ -329,6 +385,8 @@ export function syncTopicDisplay() {
   }
   const flag = $('topic-own-flag');
   if (flag) flag.hidden = !customTask.usePrompt;
+  const lvl = $('topic-level');
+  if (lvl) { lvl.textContent = levelLabel(currentLevel); lvl.hidden = false; }
   /* Sharing is a LIBRARY action. Setting yourself a task is the common case and
      it needs no share button in the way — the prompt is filed either way. So the
      button only appears once somebody has actually been to the library, which is

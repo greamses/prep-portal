@@ -18,6 +18,8 @@ export const safe = (str) => {
 // ── API ─────────────────────────────────────────────────
 export { GEMINI_MODELS_UI as GEMINI_MODELS, GROQ_MODELS, GEMINI_SKIP_STATUSES as QUOTA_CODES } from '../../utils/ai-models.js';
 
+import { DEFAULT_LEVEL, getLevel } from './levels.js';
+
 // Key getter
 export const getGeminiKey = () => {
   const key = window.PrepPortalKeys?.gemini || null;
@@ -95,6 +97,18 @@ export let currentTopic = "";
 // own prompt on a slip that no longer claims to be theirs.
 export let generatedTopic = "";
 export let currentWritingType = 'general';
+/* Which grade band this piece is written and marked at (js/levels.js). Chosen
+   before the form — it changes the gate, the rubric and the pen — and carried
+   on a filed task, so a class opening their teacher's link is marked at the
+   level the teacher set it for rather than at whatever they last picked. */
+export let currentLevel = DEFAULT_LEVEL;
+/* The library id of the task on the sheet, when it came from one — a link, an
+   assignment, a slip off the shelf. It is what a finished piece is filed
+   AGAINST, and so it is what decides whose class list the work lands in: a
+   student answering their teacher's task must file under the TEACHER's task
+   id, not under a fresh copy of the same words filed under their own name.
+   Empty for a prompt this browser generated, which is filed on submit. */
+export let currentTaskId = '';
 // The passage a SUMMARY is written from: { title, paragraphs: [...] }. Null for
 // every other family — which is also how the rest of the page asks "are we in
 // summary mode?" without importing the form registry everywhere.
@@ -116,6 +130,24 @@ export const setCustomTask = (val) => {
   customTask = { prompt: '', video: '', videoId: '', videoStart: 0, usePrompt: false, ...(val || {}) };
 };
 export const setCurrentWritingType = (val) => { currentWritingType = val; };
+
+/* The level is remembered between visits. A student is in one class all year,
+   and asking them their grade every single time — on the step that now comes
+   FIRST — would be the most tedious question on the page. The step still shows,
+   with their answer already ticked; they walk past it rather than answer it. */
+const LEVEL_KEY = 'pp.writing.level';
+
+export const setCurrentLevel = (val, { remember = true } = {}) => {
+  currentLevel = getLevel(val).id;
+  if (!remember) return;
+  try { localStorage.setItem(LEVEL_KEY, currentLevel); } catch (_) { /* private mode */ }
+};
+
+export const setCurrentTaskId = (val) => { currentTaskId = String(val || ''); };
+
+export const rememberedLevel = () => {
+  try { return getLevel(localStorage.getItem(LEVEL_KEY)).id; } catch (_) { return DEFAULT_LEVEL; }
+};
 export const setCurrentPassage = (val) => { currentPassage = val || null; };
 export const setCommentCounter = (val) => { commentCounter = val; };
 export const resetCommentStore = () => { commentStore = {}; };

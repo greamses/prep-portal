@@ -670,6 +670,18 @@
   margin-top: 0.15rem;
 }
 
+/* What the teacher wrote on a piece of writing, shown on the student's own
+   row — they meet the verdict where they already look, rather than having to
+   find their way back to a results screen they closed. */
+.db-assign-note {
+  margin: 0.45rem 0 0;
+  padding-top: 0.4rem;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 14%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .db-assign-progress-row {
   display: flex;
   align-items: center;

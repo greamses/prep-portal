@@ -5,8 +5,9 @@
 import {
   currentWritingType, setCurrentWritingType,
   currentTopic, setCurrentTopic, setGeneratedTopic,
-  currentPassage, setCurrentPassage,
+  currentPassage, setCurrentPassage, currentLevel,
 } from './config.js';
+import { getLevel, levelBrief, marksAt } from './levels.js';
 import { getForm, familyOf, formLabel, isSummaryForm, getMnemonic } from './forms.js';
 import { fallbackPassageFor } from './passages.js';
 import { isSummaryMode } from './summary.js';
@@ -156,7 +157,74 @@ SUBSTITUTION STYLE — GENERAL:
    everything that does not change (the detection rules, the annotation tags,
    the JSON shape) is written once and the summary branch only swaps what a
    summary is actually marked on. */
-function getSystemPrompt({ summary = false } = {}) {
+/* ── The red pen, as a list rather than as prose ─────────
+   Every mark type the examiner may use, with its example. It is a list so the
+   LEVEL can take types out of it: a Grade 5 piece is not marked for faulty
+   parallel structure, and the way to stop that mark appearing is to not offer
+   it — not to hope the model remembers a "do not use" line further up.
+
+   The numbering is generated, so removing a type renumbers the rest instead of
+   leaving a gap the model has to reason about. */
+const MARK_TAGS = [
+  ['del', `<mark type="del" loss="-2">word</mark>`],
+  ['ins', `<mark type="ins" fix="word" loss="-2"> </mark>`],
+  ['cap', `<mark type="cap" fix="Word" loss="-2">word</mark>`],
+  ['lc', `<mark type="lc" fix="word" loss="-2">Word</mark>`],
+  ['trans', `<mark type="trans" loss="-2">wrong order phrase</mark>`],
+  ['para', `<mark type="para" loss="-2"> </mark>`],
+  ['spell', `<mark type="spell" fix="full form" loss="-1">abbr</mark>`],
+  ['sp', `<mark type="sp" fix="correct spelling" loss="-2">mispeled</mark>`],
+  ['run', `<mark type="run" loss="-3">fused clause</mark>`],
+  ['frag', `<mark type="frag" loss="-3">Because it rained.</mark>`],
+  ['punct', `<mark type="punct" fix="correct" loss="-2">,</mark>`],
+  ['ww', `<mark type="ww" fix="correct word" loss="-2">there</mark>`],
+  ['agr', `<mark type="agr" fix="corrected" loss="-3">The students was</mark>`],
+  ['vt', `<mark type="vt" fix="correct verb" loss="-2">Yesterday I go</mark>`],
+  ['art', `<mark type="art" fix="correct article" loss="-2">I need a information</mark>`],
+  ['prep', `<mark type="prep" fix="correct preposition" loss="-2">depend of</mark>`],
+  ['rep', `<mark type="rep" loss="-1">very very good</mark>`],
+  ['ref', `<mark type="ref" fix="clearer" loss="-2">he said to him</mark>`],
+  ['cs', `<mark type="cs" loss="-3">clause, clause</mark>`],
+  ['wo', `<mark type="wo" fix="correct order" loss="-2">I yesterday went</mark>`],
+  ['par', `<mark type="par" fix="parallel form" loss="-2">running, to jump, swim</mark>`],
+];
+// Types that carry a fix= the student can apply with one tap.
+const NEEDS_FIX = new Set(['cap', 'lc', 'spell', 'sp', 'punct', 'ww', 'agr', 'vt', 'art', 'prep', 'ref', 'wo', 'par', 'lift']);
+
+function markTagBlock(levelId, { summary = false } = {}) {
+  const tags = MARK_TAGS.filter(([type]) => marksAt(levelId, type)).map(([, tag]) => tag);
+  if (summary) tags.push(`<mark type="lift" fix="say this in your own words" loss="-3">six or more words copied from the passage</mark>`);
+  const lines = tags.map((t, i) => `${i + 1}. ${t}`).join('\n');
+  const fixed = tags
+    .map((t, i) => [i + 1, (t.match(/type="([a-z]+)"/) || [])[1]])
+    .filter(([, type]) => NEEDS_FIX.has(type))
+    .map(([n]) => n)
+    .join(',');
+  return { lines, fixed };
+}
+
+/* Per-category bands, expressed as a share of whatever that category is worth
+   at this level. Written once as percentages so a level that moves Grammar
+   from /30 to /40 does not need its own hand-written band table — and so the
+   three tables can never quietly drift apart. */
+const BAND_SHAPES = [
+  ['Grammar & Mechanics', [[1, 'zero errors'], [0.85, '2-3 minor slips'], [0.65, '4-7 mixed errors'], [0.45, '8-12 clear mechanical weaknesses'], [0.25, '13+ errors']]],
+  ['Vocabulary & Style', [[0.94, 'varied, precise, sophisticated'], [0.78, 'generally good'], [0.56, 'frequent vague diction'], [0.32, 'very limited']]],
+  ['Structure & Coherence', [[0.94, 'clear intro, body and conclusion'], [0.78, 'mostly organised'], [0.56, 'partial structure'], [0.32, 'little organisation']]],
+  ['Creativity & Content', [[0.94, 'genuinely original, rich detail'], [0.78, 'interesting but uneven'], [0.56, 'generic'], [0.32, 'very thin']]],
+];
+
+function calibrationFor(L) {
+  const rows = L.rubric.map((r) => {
+    const shape = (BAND_SHAPES.find(([cat]) => cat === r.category) || [null, []])[1];
+    const bands = shape.map(([share, what]) => `${Math.round(share * r.outOf)}=${what}`).join(', ');
+    return `  ${r.category} /${r.outOf}: ${bands}.`;
+  });
+  return `CALIBRATION:\n${rows.join('\n')}`;
+}
+
+function getSystemPrompt({ summary = false, levelId = currentLevel } = {}) {
+  const L = getLevel(levelId);
   const offTopic = summary
     ? `Before marking anything, decide: is this a genuine attempt to SUMMARISE the given passage?
 
@@ -203,11 +271,7 @@ Mark offTopic: false (proceed to mark normally) if:
 STILL MARK, and still say so in the feedback (they just do not cost marks): adding an opinion
 of the passage, adding facts of your own, quoting, keeping its examples or statistics, or
 writing longer than about a third of the original.`
-    : `CALIBRATION:
-  Grammar & Mechanics /30: 30=zero errors, 24-26=2-3 minor slips, 18-22=4-7 mixed errors, 12-16=8-12 clear mechanical weaknesses, 6-10=13+ errors.
-  Vocabulary & Style /25: 23-25=varied/precise/sophisticated, 18-22=generally good, 12-16=frequent vague diction, 6-10=very limited.
-  Structure & Coherence /25: 23-25=clear intro/body/conclusion, 18-22=mostly organised, 12-16=partial structure, 6-10=little organisation.
-  Creativity & Content /20: 18-20=genuinely original/rich detail, 13-17=interesting but uneven, 8-12=generic, 3-7=very thin.`;
+    : calibrationFor(L);
 
   // outOf 0 = a category that is COMMENTED ON but not scored; js/render.js
   // renders those as a note rather than a mark out of something.
@@ -216,10 +280,9 @@ writing longer than about a third of the original.`
     { "category": "Own Words", "score": 0, "outOf": 0, "feedback": "" },
     { "category": "Cohesion as One Paragraph", "score": 0, "outOf": 0, "feedback": "" },
     { "category": "Grammar & Mechanics", "score": 0, "outOf": 100, "feedback": "" }`
-    : `    { "category": "Grammar & Mechanics", "score": 0, "outOf": 30, "feedback": "" },
-    { "category": "Vocabulary & Style", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Structure & Coherence", "score": 0, "outOf": 25, "feedback": "" },
-    { "category": "Creativity & Content", "score": 0, "outOf": 20, "feedback": "" }`;
+    : L.rubric
+        .map((r) => `    { "category": "${r.category}", "score": 0, "outOf": ${r.outOf}, "feedback": "" }`)
+        .join(',\n');
 
   // The one mark that only exists in a summary: words carried over from the
   // source. It is the characteristic failure of the form, so it gets a red-pen
@@ -257,25 +320,27 @@ accurately in one clause of the student's own is the hardest thing to do in this
      sentence that is filler. */
   const houseRules = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE RULES THE SHEET ENFORCED BEFORE THIS REACHED YOU:
+THE RULES THE SHEET ENFORCED BEFORE THIS REACHED YOU (they are the ${L.label} floors):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • more than 150 words — SUMMARIES are exempt: a summary is about a third of
+  • more than ${L.gate.minWords} words — SUMMARIES are exempt: a summary is about a third of
     its passage, and length is not a virtue in it
-  • at least 5 paragraphs — NARRATIVE forms and summaries are exempt from this
-  • at least 5 sentences in every paragraph after the introduction
-  • at least 7 words in every sentence
+  • at least ${L.gate.minParagraphs} paragraphs — NARRATIVE forms and summaries are exempt from this
+  • at least ${L.gate.minSentences} sentences in every paragraph after the introduction
+  • at least ${L.gate.minSentenceWords} words in every sentence
 
 Do not congratulate the student for meeting them; they had no choice. Do not
 demand a word or paragraph count of a form that is exempt — a short, tight
 summary is the form done WELL and must never be marked down for its length.
 DO judge whether the
-sentences and paragraphs earn their place — a paragraph padded to five with
-filler, or a sentence stretched to seven words with "in my own opinion I think
+sentences and paragraphs earn their place — a paragraph padded to ${L.gate.minSentences} with
+filler, or a sentence stretched to ${L.gate.minSentenceWords} words with "in my own opinion I think
 that", is weaker than an honest short one, and Structure & Coherence and
 Vocabulary & Style are where you say so.
 `;
 
-  return `You are an uncompromising secondary-school English examiner marking with a red pen. Find and mark real errors. Also give positive credit where writing is genuinely strong.
+  return `You are an uncompromising English examiner marking with a red pen. Find and mark real errors. Also give positive credit where writing is genuinely strong.
+
+${levelBrief(levelId)}
 ${houseRules}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -297,10 +362,37 @@ ${summary
 mechanical losses you marked. A clean summary scores 100 — there is no ceiling here and no
 band table to squeeze it into. Do not average anything, and do not let the unscored
 categories pull it down.`
-  : `TOTAL BANDS: 85-95 near-perfect | 70-84 good | 55-69 average | 40-54 weak | 0-39 very weak.
-NEVER exceed 95. When in doubt, choose the LOWER score.`}
+  : `TOTAL BANDS: ${L.bands}.
+NEVER exceed ${L.ceiling}. When in doubt, choose the LOWER score.`}
 ${summaryMarks}
 
+${DETECTION_RULES}
+${substitutionBlock()}
+
+RESPOND ONLY WITH VALID JSON. No markdown.
+
+{
+  "offTopic": false,
+  "offTopicReason": "",
+  "totalScore": 0,
+  "rubric": [
+${rubricJson}
+  ],
+  "annotatedText": "",
+  "suggestions": [],
+  "studyTips": []
+}
+
+${tagBlock(levelId, { summary })}
+Preserve paragraph breaks as \\n\\n. Escape all JSON strings.`;
+}
+
+/* The detection rules and the tag list, written once. The whole-piece examiner
+   above and the per-paragraph pen in js/mark.js are the same pen — the only
+   difference is how much text is put in front of it at a time — so these two
+   blocks are shared rather than copied, which is what stops the two passes
+   from slowly marking to different standards. */
+const DETECTION_RULES = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VERB TENSE — DETECTION RULES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -339,62 +431,34 @@ ACTIVELY MARK common misspellings:
   Consonant doubling: occured→occurred, begining→beginning, writting→writing
   Silent letters: goverment→government, intresting→interesting, definitly→definitely
   Word confusions: alot→a lot, aswell→as well, untill→until
+`;
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${getSubstitutionGuidelines(familyOf(currentWritingType))}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-SUBSTITUTION RULES:
-- Use <sub> on any weak/vague/overused word. Provide exactly 3 comma-separated options.
-- Use <sent> on any flat/unclear sentence. Provide exactly 2 rewrites separated by |||.
-- NEVER use the original word as an option.
-
-RESPOND ONLY WITH VALID JSON. No markdown.
-
-{
-  "offTopic": false,
-  "offTopicReason": "",
-  "totalScore": 0,
-  "rubric": [
-${rubricJson}
-  ],
-  "annotatedText": "",
-  "suggestions": [],
-  "studyTips": []
-}
-
-ANNOTATION TAGS:
-1. <mark type="del" loss="-2">word</mark>
-2. <mark type="ins" fix="word" loss="-2"> </mark>
-3. <mark type="cap" fix="Word" loss="-2">word</mark>
-4. <mark type="lc" fix="word" loss="-2">Word</mark>
-5. <mark type="trans" loss="-2">wrong order phrase</mark>
-6. <mark type="para" loss="-2"> </mark>
-7. <mark type="spell" fix="full form" loss="-1">abbr</mark>
-8. <mark type="sp" fix="correct spelling" loss="-2">mispeled</mark>
-9. <mark type="run" loss="-3">fused clause</mark>
-10. <mark type="frag" loss="-3">Because it rained.</mark>
-11. <mark type="punct" fix="correct" loss="-2">,</mark>
-12. <mark type="ww" fix="correct word" loss="-2">there</mark>
-13. <mark type="agr" fix="corrected" loss="-3">The students was</mark>
-14. <mark type="vt" fix="correct verb" loss="-2">Yesterday I go</mark>
-15. <mark type="art" fix="correct article" loss="-2">I need a information</mark>
-16. <mark type="prep" fix="correct preposition" loss="-2">depend of</mark>
-17. <mark type="rep" loss="-1">very very good</mark>
-18. <mark type="ref" fix="clearer" loss="-2">he said to him</mark>
-19. <mark type="cs" loss="-3">clause, clause</mark>
-20. <mark type="wo" fix="correct order" loss="-2">I yesterday went</mark>
-21. <mark type="par" fix="parallel form" loss="-2">running, to jump, swim</mark>
-${summary ? '22. <mark type="lift" fix="say this in your own words" loss="-3">six or more words copied from the passage</mark>\n' : ''}
+/* The tag list, filtered to the marks this level uses. Exported because
+   js/mark.js hands the identical list to the per-paragraph pen. */
+export function tagBlock(levelId, { summary = false } = {}) {
+  const { lines, fixed } = markTagBlock(levelId, { summary });
+  return `ANNOTATION TAGS:
+${lines}
 HIGHLIGHTS: <hl cat="grammar|vocab|structure|style|good">text</hl>
 POSITIVE: <good reason="...">phrase</good>
 COMMENTS: <comment text="..."> </comment>
 SUBS: <sub opts="opt1, opt2, opt3">word</sub>
 SENTENCE: <sent opts="Version 1.|||Version 2.">sentence</sent>
 
-Always include fix="..." on types 3,4,7,8,11,12,13,14,15,16,18,20,21${summary ? ',22' : ''}.
-Preserve paragraph breaks as \\n\\n. Escape all JSON strings.`;
+Always include fix="..." on types ${fixed}.
+Use ONLY the tags listed above. A mark type that is not on the list is not marked at this level.`;
 }
+
+// The substitution guidance is family-specific, so it is a call and not a
+// constant — but both passes want the same one.
+export const substitutionBlock = () => `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${getSubstitutionGuidelines(familyOf(currentWritingType))}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUBSTITUTION RULES:
+- Use <sub> on any weak/vague/overused word. Provide exactly 3 comma-separated options.
+- Use <sent> on any flat/unclear sentence. Provide exactly 2 rewrites separated by |||.
+- NEVER use the original word as an option.`;
 
 // ── Topic Generation ───────────────────────────────────
 const GENERIC_FALLBACKS = [
@@ -958,15 +1022,219 @@ Return ONLY valid JSON: {"options":[${Array(n).fill('"..."').join(',')}]}`;
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   THE PEN, ONE PARAGRAPH AT A TIME
+
+   The whole-essay grader below hands an entire piece to the model and asks for
+   everything at once: every red mark, four rubric scores, suggestions and study
+   tips, in one JSON object that can run to twenty thousand tokens. Three things
+   are wrong with that. It is the single most expensive call on the site. It
+   fails whole — one malformed brace and a student who waited forty seconds gets
+   "please try again" and has nothing. And a model asked to hold nine paragraphs
+   in its head marks the first two carefully and the rest thinly.
+
+   So a piece is now marked the way a teacher marks one: paragraph by paragraph,
+   each in its own small call, then a short verdict written from the notes.
+
+     • Each paragraph pass sees ONE paragraph and returns the marked-up text,
+       one line saying what the paragraph does, and a diction band. Small
+       prompt, small answer, and a failure costs one paragraph rather than the
+       essay.
+     • The verdict pass never sees the essay again. It gets the notes, the
+       error tallies and the shape — which is enough to judge structure and
+       content, and is a fraction of the tokens.
+
+   What the model is no longer asked to do is ARITHMETIC. Grammar & Mechanics
+   is computed from the marks actually made, and Vocabulary & Style from the
+   per-paragraph bands, in js/mark.js. Both were things a language model was
+   being asked to total up and reliably got wrong.
+
+   A SUMMARY does not come through here — see js/mark.js for why.
+   ═══════════════════════════════════════════════════════ */
+
+/* Deliberately much shorter than getSystemPrompt(): no rubric, no band table,
+   no off-topic essay, no study tips. One paragraph, one pen. */
+function paragraphSystem(levelId) {
+  const L = getLevel(levelId);
+  return `You are an English examiner marking ONE PARAGRAPH of a student's piece with a red pen.
+
+${levelBrief(levelId)}
+
+You are marking a single paragraph, not the whole piece. Do NOT comment on the
+introduction or conclusion being missing, on the number of paragraphs, or on
+anything you cannot see — another pass judges the shape of the whole. Mark what
+is on the page in front of you.
+
+${DETECTION_RULES}
+${substitutionBlock()}
+
+${tagBlock(levelId)}
+
+RESPOND ONLY WITH VALID JSON. No markdown. Exactly this shape:
+
+{
+  "annotated": "the paragraph, reproduced word for word with your marks around the errors",
+  "onTopic": true,
+  "note": "one short line: what this paragraph actually does in the piece",
+  "vocabPct": 0,
+  "strengths": 0
+}
+
+  • "annotated" MUST contain every word of the paragraph exactly as the student
+    wrote it. You add tags; you never rewrite, reorder, correct or drop text.
+  • "onTopic" is false only if THIS paragraph has nothing to do with the topic.
+  • "note" is for the examiner who writes the final verdict and never sees the
+    text — say what job the paragraph does ("opens with a rhetorical question",
+    "second argument, unsupported"), not whether it was good.
+  • "vocabPct" is 0-100 for the diction and sentence variety of this paragraph
+    alone, judged at ${L.label}: 94=precise and varied, 78=generally good,
+    56=vague and repetitive, 32=very limited.
+  • "strengths" is how many genuinely strong moments you marked with <good>.`;
+}
+
+/** Mark one paragraph. Never throws — a paragraph that will not mark comes back
+    unmarked, with the student's own words intact, and the piece still gets a
+    result. Losing one paragraph's marks is a bad afternoon; losing the whole
+    marking because paragraph six returned a stray backslash is a wasted one. */
+export async function markParagraph({ index, total, text, levelId = currentLevel, topic = currentTopic }) {
+  const system = paragraphSystem(levelId);
+  const prompt = `WRITING FORM: ${formLabel(currentWritingType)}
+FAMILY: ${familyOf(currentWritingType)}
+TOPIC: ${topic}
+THIS IS PARAGRAPH ${index + 1} OF ${total}.
+
+PARAGRAPH:
+${text}`;
+
+  try {
+    const { text: raw } = await gradeWithFallback({
+      geminiBody: {
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ parts: [{ text: prompt }] }],
+        // A paragraph's marked-up copy is a few hundred tokens. The old
+        // whole-essay call asked for twenty thousand.
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 4000 },
+      },
+      groqSystem: system,
+      groqPrompt: prompt,
+    });
+    const d = parseJson(raw);
+    return {
+      ok: true,
+      annotated: String(d.annotated || text),
+      onTopic: d.onTopic !== false,
+      note: String(d.note || '').slice(0, 200),
+      vocabPct: clampPct(d.vocabPct, 60),
+      strengths: Number(d.strengths) || 0,
+    };
+  } catch (err) {
+    console.warn(`[Writing] paragraph ${index + 1} did not mark:`, err.message);
+    return { ok: false, annotated: text, onTopic: true, note: '', vocabPct: null, strengths: 0 };
+  }
+}
+
+/* The verdict. It is handed the SHAPE of the piece and never the piece: the
+   one-line note for each paragraph, how long each one is, and what the pen
+   found. That is what judging structure and content actually needs, and it is
+   perhaps a tenth of the tokens re-reading the essay would cost. */
+export async function verdictFromNotes({ paragraphs, tallies, levelId = currentLevel, topic = currentTopic, offTopicCount = 0 }) {
+  const L = getLevel(levelId);
+  const structure = L.rubric.find((r) => r.category === 'Structure & Coherence');
+  const content = L.rubric.find((r) => r.category === 'Creativity & Content');
+
+  const shape = paragraphs
+    .map((p, i) => `[${i + 1}] ${p.words} words, ${p.sentences} sentences, ${p.marks} error${p.marks === 1 ? '' : 's'} marked${p.onTopic ? '' : ', OFF TOPIC'} — ${p.note || 'no note'}`)
+    .join('\n');
+  const errors = Object.entries(tallies).sort((a, b) => b[1] - a[1])
+    .map(([type, n]) => `${type}×${n}`).join(', ') || 'none';
+
+  const system = `You are an English examiner writing the final verdict on a student's piece.
+
+${levelBrief(levelId)}
+
+You have ALREADY marked this piece paragraph by paragraph. You are not being
+shown the text again — you are shown what each paragraph does, how long it is,
+and what your pen found. Judge the piece as a whole from that.
+
+Two categories are already decided and are NOT yours: Grammar & Mechanics is
+computed from the marks you made, and Vocabulary & Style from the diction bands
+you gave each paragraph. Do not score them. Write their FEEDBACK only.
+
+${calibrationFor(L)}
+
+RESPOND ONLY WITH VALID JSON. No markdown. Exactly this shape:
+
+{
+  "offTopic": false,
+  "offTopicReason": "",
+  "grammarFeedback": "",
+  "vocabFeedback": "",
+  "structureScore": 0,
+  "structureFeedback": "",
+  "contentScore": 0,
+  "contentFeedback": "",
+  "suggestions": ["", "", ""],
+  "studyTips": [{ "title": "", "tip": "" }]
+}
+
+  • "structureScore" is out of ${structure ? structure.outOf : 25}. "contentScore" is out of ${content ? content.outOf : 25}.
+  • Set "offTopic" true only if the piece as a whole does not address the topic —
+    most or all paragraphs marked OFF TOPIC. One stray paragraph is not off topic;
+    say so in the structure feedback instead.
+  • Every feedback field is addressed to the student, in plain words they can act
+    on, two or three sentences. Never mention paragraph notes, passes or tallies.
+  • 3 to 5 suggestions, each one concrete thing to do differently next time.
+  • 2 to 4 study tips, each a title and a sentence.`;
+
+  const prompt = `WRITING FORM: ${formLabel(currentWritingType)}
+FAMILY: ${familyOf(currentWritingType)}
+TOPIC: ${topic}
+
+THE SHAPE OF THE PIECE — one line per paragraph:
+${shape}
+
+TOTAL: ${paragraphs.length} paragraphs, ${paragraphs.reduce((n, p) => n + p.words, 0)} words.
+PARAGRAPHS MARKED OFF TOPIC: ${offTopicCount} of ${paragraphs.length}.
+ERRORS FOUND, BY TYPE: ${errors}`;
+
+  const { text: raw } = await gradeWithFallback({
+    geminiBody: {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: 3000 },
+    },
+    groqSystem: system,
+    groqPrompt: prompt,
+  });
+  return parseJson(raw);
+}
+
+const clampPct = (v, fallback) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : fallback;
+};
+
+/* Models wrap JSON in prose, in fences, or in both. Take what is between the
+   first brace and the last, and strip the control characters that a stray
+   newline inside a string leaves behind. */
+function parseJson(text) {
+  let raw = text || '';
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON object found in response');
+  raw = raw.substring(start, end + 1).replace(/[\u0000-\u0009\u000B-\u001F]+/g, '');
+  return JSON.parse(raw);
+}
+
 // ── Essay Grading ──────────────────────────────────────
 /* One entry point for both. A summary hands the same examiner the source
    passage (numbered, because coverage feedback has to be able to say "you
    missed paragraph 4") and, if the student used the organiser, the sentence
    they wrote for each paragraph — which turns "is anything missing?" from a
    judgement into a check. */
-export async function gradeEssay(userText, { plan = null } = {}) {
+export async function gradeEssay(userText, { plan = null, levelId = currentLevel } = {}) {
   const summary = isSummaryMode();
-  const system = getSystemPrompt({ summary });
+  const system = getSystemPrompt({ summary, levelId });
 
   let prompt;
   if (summary) {

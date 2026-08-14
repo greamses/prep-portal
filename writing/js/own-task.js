@@ -32,7 +32,7 @@
 import {
   $, customTask, setCustomTask, setCurrentTopic, generatedTopic,
   currentTopic, currentWritingType, setCurrentWritingType,
-  currentPassage, setCurrentPassage,
+  currentPassage, setCurrentPassage, currentLevel, setCurrentLevel, setCurrentTaskId,
 } from './config.js';
 import { getForm, isSummaryForm, familyOf, formLabel } from './forms.js';
 import { savePrompt, listPrompts, fetchTask, mintShortCode, fetchTaskByCode } from './library.js';
@@ -216,6 +216,7 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick, onDeepLin
         form: currentWritingType,
         formLabel: formLabel(currentWritingType),
         family: familyOf(currentWritingType),
+        level: currentLevel,
         videoId: parsed ? parsed.videoId : '',
         videoStart: parsed ? parsed.start : 0,
       }).then((ok) => { if (ok) renderShelf({ force: true }); });
@@ -231,6 +232,10 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick, onDeepLin
       usePrompt: !!prompt,
     });
     if (prompt) setCurrentTopic(prompt);
+    /* Whatever is in the box is now the task, so it is no longer the filed one
+       that was opened by link. openFiled() sets the id back afterwards for the
+       one case where it is still true. */
+    setCurrentTaskId('');
     save();
 
     note(
@@ -312,6 +317,13 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick, onDeepLin
   function openFiled(task, { direct }) {
     const video = task.videoId ? `https://youtu.be/${task.videoId}` : '';
 
+    /* The level rides with the task. Whoever set it chose the standard this
+       piece is gated and marked at, and a class opening the same link must all
+       be held to the same one — so the student's remembered answer is overruled
+       here. Not remembered, though: doing somebody else's Grade 11 task must
+       not silently make every future piece of your own a Grade 11 task. */
+    if (task.level) setCurrentLevel(task.level, { remember: false });
+
     /* A passage arrives as a PASSAGE, not as a custom prompt. isSummaryMode()
        is `!customTask.usePrompt && currentPassage`, so pushing a summary
        through apply() — which sets usePrompt — would hand the receiver a
@@ -341,6 +353,12 @@ export function initOwnTask({ onChange, onFormRestored, onLibraryPick, onDeepLin
         { shared: true, startFallback: task.videoStart || 0 },
       );
     }
+
+    /* Remember WHICH task this is — the finished piece is filed against it, and
+       that is what puts the work in front of the teacher who set it. It is set
+       LAST because both branches above run apply(), which treats what is in the
+       box as a task of the student's own and clears this. */
+    setCurrentTaskId(task.id || '');
 
     // After onChange, so the topic slip and the Start button are already in
     // the state the sheet expects to find them in.
@@ -446,6 +464,7 @@ export async function buildShareUrl() {
     form: currentWritingType,
     formLabel: formLabel(currentWritingType),
     family: familyOf(currentWritingType),
+    level: currentLevel,
     passage: needsPassageShare() ? currentPassage : null,
     videoId: customTask.videoId,
     videoStart: customTask.videoStart,

@@ -132,14 +132,19 @@ async function fillStudentStats(layout, assignments) {
 function asgItem(a) {
   const isCbt = a.kind === "cbt";
   const isWriting = a.kind === "writing";
-  const done = a.status === "submitted";
-  // CBT practice and writing tasks have no submission hook yet, so they just
-  // open the thing — the pill says which kind it is rather than pretending to
-  // a score that will never arrive.
+  const done = a.status === "submitted" || a.status === "reviewed";
+  /* A CBT practice test still has no submission hook, so its pill says which
+     kind it is rather than pretending to a score that will never arrive.
+     Writing now does: handing a piece in flips this row to "submitted", and a
+     teacher signing it off flips it to "reviewed" with their score on it. */
   const pill = isCbt
     ? `<span class="db-pill pill-blue">Practice</span>`
     : isWriting
-      ? `<span class="db-pill pill-blue">Writing</span>`
+      ? (a.status === "reviewed"
+          ? `<span class="db-pill pill-green">${a.score != null ? `${a.score}%` : "Marked"}</span>`
+          : done
+            ? `<span class="db-pill pill-yellow">Marked — with your teacher</span>`
+            : `<span class="db-pill pill-blue">Writing</span>`)
       : done
         ? `<span class="db-pill pill-green">${a.score != null ? `${a.score}/${a.totalMarks}` : "Done"}</span>`
         : `<span class="db-pill pill-yellow">To do</span>`;
@@ -153,6 +158,9 @@ function asgItem(a) {
         <div class="db-assign-meta">${esc([a.subject, a.teacherName].filter(Boolean).join(" · "))}</div></div>
         ${pill}
       </div>
+      ${a.teacherComment
+        ? `<p class="db-assign-note">${esc(a.teacherName || "Your teacher")}: ${esc(a.teacherComment)}</p>`
+        : ""}
     </a>`;
 }
 

@@ -9,34 +9,13 @@ import {
 import { attachAnnotationListeners, showComment } from './popover.js';
 import { makeAccordion } from './ui.js';
 import { isSummaryMode } from './summary.js';
+import { scoreFromMarks } from './mark.js';
 
-/* ── A summary is scored on grammar and mechanics ALONE ──
-   Its other three categories are commented on and deliberately not marked, so
-   the number comes straight off the red pen: 100, less the losses on the
-   grammatical/mechanical marks actually made. Computed here rather than taken
-   on trust from the model, because "add up your own deductions" is exactly the
-   arithmetic a language model is worst at — and a rubric that quietly capped
-   every summary in the seventies is what sent us looking.
-
-   `lift` is the one mark that never costs anything: carrying six words out of
-   the passage is a summary-craft failure, not a mechanical error. It is still
-   marked, still explained, just not charged for. */
-const UNCHARGED_MARKS = new Set(['lift']);
-
-export function grammarScoreFrom(annotatedText) {
-  let deducted = 0;
-  let counted = 0;
-  // Attribute order varies (fix= may precede loss=), so scan opening tags and
-  // pull each attribute out on its own rather than assuming a fixed shape.
-  for (const tag of String(annotatedText || '').match(/<mark\b[^>]*>/gi) || []) {
-    const type = (tag.match(/type=['"]([^'"]+)['"]/i) || [])[1] || '';
-    const loss = parseInt((tag.match(/loss=['"]\s*(-?\d+)/i) || [])[1] || '0', 10);
-    if (!loss || UNCHARGED_MARKS.has(type)) continue;
-    deducted += Math.abs(loss);
-    counted += 1;
-  }
-  return { score: Math.max(0, Math.min(100, 100 - deducted)), deducted, counted };
-}
+/* A summary is scored on grammar and mechanics ALONE: 100, less what the red
+   pen actually cost. The tally moved to js/mark.js when essays started being
+   marked paragraph by paragraph — both routes now count the same marks the
+   same way, at the same level, which is the whole point of there being one
+   counter rather than two. */
 
 // Module state
 let paragraphChunks = [];
@@ -262,10 +241,10 @@ export function renderResults(data, originalText) {
   document.getElementById('rewrite-info-note')?.remove();
   
   const summaryMode = isSummaryMode();
-  const marks = summaryMode ? grammarScoreFrom(data.annotatedText) : null;
+  const marks = summaryMode ? scoreFromMarks(data.annotatedText) : null;
 
   const score = summaryMode
-    ? marks.score
+    ? marks.pct
     : Math.min(100, Math.max(0, data.totalScore || 0));
   elStamp.textContent = `${score}%`;
   elStamp.className = `score-stamp${score < 55 ? ' fail' : score < 70 ? ' avg' : ''}`;
@@ -278,7 +257,7 @@ export function renderResults(data, originalText) {
     const detail = marks.counted
       ? `${marks.counted} grammatical or mechanical error${marks.counted === 1 ? '' : 's'} marked, costing ${marks.deducted}.`
       : 'No grammatical or mechanical errors found.';
-    return { ...item, score: marks.score, feedback: `${detail} ${item.feedback || ''}`.trim() };
+    return { ...item, score: marks.pct, feedback: `${detail} ${item.feedback || ''}`.trim() };
   });
 
   elRubric.innerHTML = '';

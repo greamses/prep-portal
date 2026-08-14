@@ -1,5 +1,6 @@
 import { I } from "./icons.js";
 import { mountTeacherClassroom } from "./classroom-client.js";
+import { mountWritingReview } from "./writing-review.js";
 import { mountCalendar } from "./calendar-client.js";
 
 export function buildTeacherPanels(user, data, layout) {
@@ -48,6 +49,22 @@ export function buildTeacherPanels(user, data, layout) {
       </div>
     </div>
 
+    <!-- The class's writing, and the teacher's last word on it. The AI marks
+         first; the score here is a proposal until a teacher signs it off or
+         replaces it (home/js/dashboard/writing-review.js). -->
+    <div class="db-panel bento-tall">
+      <div class="db-panel-head">
+        <div>
+          <p class="db-kicker" id="db-writing-waiting">Writing</p>
+          <h2 class="db-panel-title">Handed In</h2>
+        </div>
+        <a class="db-icon-btn ib-blue" href="/writing/" title="Set a writing task">${I.plus}</a>
+      </div>
+      <div class="db-assign-list" id="db-writing-inbox">
+        <div class="db-empty">Loading…</div>
+      </div>
+    </div>
+
     <div class="db-panel span-full db-calendar-panel">
       <div class="db-panel-head">
         <div>
@@ -60,5 +77,6 @@ export function buildTeacherPanels(user, data, layout) {
 `;
 
   mountTeacherClassroom(layout);
+  mountWritingReview(layout);
   mountCalendar(layout);
 }

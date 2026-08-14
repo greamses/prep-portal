@@ -3,7 +3,8 @@
 ═══════════════════════════════════════════════════════ */
 
 import { $, setCommentCounter, resetCommentStore } from './config.js';
-import { gradeEssay } from './api.js';
+import { markDraft } from './mark.js';
+import { fileSubmission, sayFiled } from './submit.js';
 import { initPopover, setupPopoverListeners } from './popover.js';
 import { initRender, renderResults, clearResultsAccordions, resetParagraphState } from './render.js';
 import {
@@ -13,7 +14,7 @@ import {
 } from './ui.js';
 import {
   isSummaryMode, buildOrganizer, buildSheetAids, assembleParagraph,
-  getPlan, organizerProgress, resetOrganizer
+  organizerProgress, resetOrganizer
 } from './summary.js';
 import { checkDraft, renderRules, lockWriting, justClosedSentence, say } from './rules.js';
 import {
@@ -219,7 +220,27 @@ $('back-to-organizer-btn')?.addEventListener('click', () => {
   if (isSummaryMode()) openOrganizer(); else openPlanner();
 });
 
-// ── Submit ─────────────────────────────────────────────
+/* ── Submit ─────────────────────────────────────────────
+   The marking is no longer one long silence. An essay is marked paragraph by
+   paragraph (js/mark.js), so the overlay can say which one it is on — and
+   because each pass is a separate call, that count is the truth rather than a
+   fake progress bar. Once it is on screen, the piece is handed in
+   (js/submit.js) for whoever set the task to review. */
+const elLoadingText = elLoading?.querySelector('.loading-text');
+const elLoadingNote = elLoading?.querySelector('.loading-note');
+
+function showProgress({ done, total, phase }) {
+  if (elLoadingText) {
+    elLoadingText.textContent = phase === 'verdict' ? 'Writing the verdict' : 'Marking';
+  }
+  if (!elLoadingNote) return;
+  elLoadingNote.textContent =
+    phase === 'verdict' ? 'Weighing the piece as a whole'
+      : phase === 'summary' ? 'Reading it against the passage'
+      : total > 1 ? `Paragraph ${Math.min(done + 1, total)} of ${total}`
+      : 'Applying red pen marks & scoring';
+}
+
 elSubmitBtn.addEventListener('click', async () => {
   const userText = elTextarea.value.trim();
   if (!userText) return;
@@ -228,13 +249,15 @@ elSubmitBtn.addEventListener('click', async () => {
   if (!syncRules().ok) { elRules?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
 
   elLoading.classList.add('active');
+  showProgress({ done: 0, total: 1, phase: 'paragraphs' });
 
   try {
-    // The plan is only sent for a summary, and only as a coverage check — the
-    // paragraph is still what gets marked (js/api.js).
-    const data = await gradeEssay(userText, isSummaryMode() ? { plan: getPlan() } : {});
+    const data = await markDraft(userText, { onProgress: showProgress });
     renderResults(data, userText);
     showPhase('results');
+    // AFTER the result is on screen, never before it: filing is a receipt, not
+    // a gate, and a student must never lose a marking because a save failed.
+    fileSubmission(data, userText).then(sayFiled);
   } catch (err) {
     console.error("Grading failed:", err);
     alert(err.message.includes('API Error') ?
@@ -333,6 +356,11 @@ window.addEventListener('DOMContentLoaded', () => {
       openWritingModal();
       startPlanning();
     },
+    /* The gate under the sheet is the level's (js/rules.js rulesFor), so
+       changing the level changes what the checklist asks for. Redraw it, or a
+       student who moves from Grade 8 to Grade 11 is held to the new floor by a
+       Submit button that still shows the old one. */
+    onLevelChange: () => syncRules(),
     onGenerated: () => {
       if (lastAssembled && elTextarea.value.trim() === lastAssembled.trim()) {
         elTextarea.value = '';

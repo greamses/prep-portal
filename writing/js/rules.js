@@ -35,10 +35,15 @@
    there. Nothing on the sheet may be pasted in and nothing may be copied out.
 ═══════════════════════════════════════════════════════ */
 
-import { currentWritingType } from './config.js';
+import { currentWritingType, currentLevel } from './config.js';
 import { familyOf } from './forms.js';
+import { getLevel } from './levels.js';
 import { showTip } from './tip.js';
 
+/* The numbers above are the JUNIOR (Grades 7–9) gate, which is what this file
+   enforced for everybody before the level question existed. They are kept as
+   the exported names because other modules quote them, but the live figures
+   now come from the chosen band — see js/levels.js, and rulesFor() below. */
 export const MIN_WORDS = 150;              // strictly MORE than this
 export const MIN_PARAGRAPHS = 5;
 export const MIN_SENTENCES = 5;            // per paragraph, intro excepted
@@ -87,13 +92,16 @@ export function splitParagraphs(text) {
 /* Which rules this form is actually held to. The exemptions are the whole
    reason this is a function: a personal narrative and a summary are not badly
    written for being shaped differently. */
-export function rulesFor({ summary = false, formId = currentWritingType } = {}) {
+export function rulesFor({ summary = false, formId = currentWritingType, levelId = currentLevel } = {}) {
   const exemptParagraphs = summary || familyOf(formId) === 'narrative';
+  // The floors are the LEVEL's, not the page's: a Grade 5 piece is finished at
+  // 80 words and three paragraphs, and a Grade 11 one is not finished at 150.
+  const g = getLevel(levelId).gate;
   return {
-    minWords: summary ? 0 : MIN_WORDS,
-    minParagraphs: exemptParagraphs ? 0 : MIN_PARAGRAPHS,
-    minSentences: MIN_SENTENCES,
-    minSentenceWords: MIN_SENTENCE_WORDS,
+    minWords: summary ? 0 : g.minWords,
+    minParagraphs: exemptParagraphs ? 0 : g.minParagraphs,
+    minSentences: g.minSentences,
+    minSentenceWords: g.minSentenceWords,
     // Why a rule is missing, in the student's words. A rule that silently
     // disappears reads as a bug — and the summary's word note has to point at
     // the number that DOES govern it, or the row is just an absence.
@@ -112,8 +120,8 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
    Returns the rules as a list of rows, because that is how they are shown:
    a checklist under the sheet that fills in as the student writes, not an
    error message thrown at them when they press submit. */
-export function checkDraft(text, { summary = false, formId = currentWritingType } = {}) {
-  const R = rulesFor({ summary, formId });
+export function checkDraft(text, { summary = false, formId = currentWritingType, levelId = currentLevel } = {}) {
+  const R = rulesFor({ summary, formId, levelId });
   const words = wordCount(text);
   const blocks = splitParagraphs(text);
   const paragraphs = blocks.filter((b) => !isHeading(b));

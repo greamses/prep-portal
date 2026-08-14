@@ -190,6 +190,28 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       WRITING LIBRARY — the tasks people are set, and the pieces handed in.
+
+       The task documents themselves are readable by any signed-in user (a
+       shared /w/<code> link has to resolve for whoever was sent it) and are
+       only ever written by the server. What a STUDENT WROTE is another matter
+       entirely: essays live in a `submissions` subcollection that no client
+       rule grants, so only the server (Admin SDK) and admins can reach them,
+       and the teacher's review route is the only door in. Placement is the
+       protection here — the broad /{postCollection}/{postId} rule above matches
+       top-level documents only, so a top-level writingSubmissions collection
+       would have published the whole school's work to every signed-in account.
+    ───────────────────────────── */
+    match /writingLibrary/{taskId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+
+      match /submissions/{studentUid} {
+        allow read, write: if false;
+      }
+    }
+
+    /* ─────────────────────────────
        CLASSROOM (roster + assignments) — server-mediated (Admin SDK).
        Join codes are written server-side; the private bits — a teacher's
        student roster and each student's assigned activities — live in

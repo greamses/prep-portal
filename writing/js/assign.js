@@ -12,7 +12,7 @@
    403 from the server rather than a class list.
 ═══════════════════════════════════════════════════════ */
 
-import { $, currentTopic, currentWritingType, currentPassage, customTask } from './config.js';
+import { $, currentTopic, currentWritingType, currentPassage, customTask, currentLevel } from './config.js';
 import { auth } from '/firebase-init.js';
 import { formLabel, familyOf, isSummaryForm } from './forms.js';
 import { savePrompt, mintShortCode } from './library.js';
@@ -51,6 +51,8 @@ async function fileCurrentTask() {
     form: currentWritingType,
     formLabel: formLabel(currentWritingType),
     family: familyOf(currentWritingType),
+    // The class is being set this task AT this level — see js/levels.js.
+    level: currentLevel,
     passage: (isSummaryForm(currentWritingType) && !customTask.usePrompt) ? currentPassage : null,
     videoId: customTask.videoId,
     videoStart: customTask.videoStart,

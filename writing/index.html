@@ -91,6 +91,11 @@
             <div class="topic-header">
               <div class="topic-label">
                 Your Writing Prompt
+                <!-- The grade band this will be gated and marked at (js/levels.js).
+                     It is on the slip rather than only in the setup because it
+                     changes the mark, and a student handed a task by a teacher
+                     never chose it. -->
+                <span class="topic-level" id="topic-level" hidden></span>
                 <span class="topic-own-flag" id="topic-own-flag" hidden>your own</span>
                 <span class="topic-share-msg" id="topic-share-msg" role="status" aria-live="polite" style="display: none"></span>
               </div>
@@ -457,8 +462,12 @@
           <!-- Loading -->
           <div class="loading-overlay" id="loading-overlay">
             <div class="spinner"></div>
-            <div class="loading-text">Grading</div>
+            <!-- Both lines are rewritten as the marking walks the paragraphs
+                 (js/main.js showProgress) — an essay is marked one paragraph at
+                 a time now, so the count is real. -->
+            <div class="loading-text">Marking</div>
             <p
+              class="loading-note"
               style="
                 color: var(--muted);
                 font-size: 13px;

@@ -30,14 +30,17 @@ async function token() {
    `passage` is how a SUMMARY becomes shareable: its task is a whole reading,
    which cannot travel in a query string, so it is filed and the link points
    at it by id. */
-export async function savePrompt({ prompt, form, formLabel, family, videoId, videoStart, passage } = {}) {
+export async function savePrompt({ prompt, form, formLabel, family, videoId, videoStart, passage, level } = {}) {
   const t = await token();
   if (!t || !prompt || !form) return false;
   try {
     const res = await fetch(`${API_BASE}/api/writing/prompts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-      body: JSON.stringify({ prompt, form, formLabel, family, videoId, videoStart, passage }),
+      // `level` is part of the task, not of the student: a teacher who sets this
+      // for their Grade 8 class has set the marking standard too, and everyone
+      // who opens the link is held to it.
+      body: JSON.stringify({ prompt, form, formLabel, family, videoId, videoStart, passage, level }),
     });
     if (!res.ok) return false;
     const data = await res.json().catch(() => ({}));
