@@ -1,16 +1,18 @@
 /* ============================================================================
-   Base Blocks — pointer: pick, drag, marquee
+   Manipulatives — pointer: pick, drag, marquee, tap
    ----------------------------------------------------------------------------
-   Tap a block to pick it up; Ctrl/Shift-tap to add it to the selection; drag a
-   picked block (or a whole picked group) and it slides across the mat a whole
-   cell at a time, never through another block. Shift-drag on bare paper — or a
-   drag in lasso mode — sweeps a box selection. Double-tap splits.
+   Tap a thing to pick it up; Ctrl/Shift-tap to add it to the selection; drag a
+   picked thing (or a whole picked group) and it slides across the canvas a whole
+   cell at a time, never through anything else. Shift-drag on bare paper — or a
+   drag in lasso mode — sweeps a box selection. Double-tap splits a block.
+
+   Beads and board faces are checked FIRST and never select: sliding a bead or
+   tapping a times-table cell is what you meant, not picking the frame up. To
+   move the frame you grab its plate, which is what your hand would do.
    ========================================================================== */
 
-import { CFG } from "./config.js";
-import { store, snapshot, say } from "./state.js";
+import { store, snapshot, say, selectedItems } from "./state.js";
 import { occupancy, fits } from "./layout.js";
-import { place } from "./blocks.js";
 
 const B = () => window.BABYLON;
 const DOUBLE_MS = 320;
@@ -19,6 +21,8 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   const { scene, camera } = ctx;
   const onChange = hooks.onChange || (() => {});
   const onSplit = hooks.onSplit || (() => {});
+  const onBead = hooks.onBead || (() => {});
+  const onBoard = hooks.onBoard || (() => {});
   const marquee = hooks.marqueeEl || null;
 
   const state = {
@@ -33,13 +37,16 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     return { x: e.clientX - r.left, y: e.clientY - r.top, rect: r };
   }
 
-  function pickBlock(x, y) {
-    const hit = scene.pick(x, y, (m) => m.isPickable && m.metadata && m.metadata.blockId != null);
-    if (!hit?.hit || !hit.pickedMesh) return null;
-    return view.blockIdOf(hit.pickedMesh);
+  function pickAny(x, y, test) {
+    const hit = scene.pick(x, y, (m) => m.isPickable && test(m));
+    return hit?.hit ? hit : null;
   }
 
-  /** Where the pointer meets the mat plane, in mat cells (may be fractional). */
+  const isBead = (m) => !!m.metadata?.bead;
+  const isFace = (m) => !!m.metadata?.boardFace;
+  const isItem = (m) => m.metadata?.itemId != null && !m.metadata.boardFace;
+
+  /** Where the pointer meets the paper, in canvas cells (may be fractional). */
   function groundCell(x, y) {
     const BJS = B();
     const ray = scene.createPickingRay(x, y, BJS.Matrix.Identity(), camera);
@@ -47,12 +54,12 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     const d = ray.intersectsPlane(plane);
     if (d === null || d === undefined) return null;
     const p = ray.origin.add(ray.direction.scale(d));
-    return { x: p.x + CFG.mat / 2, z: p.z + CFG.mat / 2 };
+    return { x: p.x, z: p.z };
   }
 
   /* ── selection ──────────────────────────────────────────────────────────── */
 
-  function tapBlock(id, additive) {
+  function tapItem(id, additive) {
     if (additive) {
       if (store.selection.has(id)) store.selection.delete(id);
       else store.selection.add(id);
@@ -64,15 +71,15 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   /* ── drag ───────────────────────────────────────────────────────────────── */
 
-  function startDrag(id, cell) {
-    const ids = [...store.selection];
-    const moving = store.blocks.filter((b) => ids.includes(b.id));
+  function startDrag(cell) {
+    const moving = selectedItems();
     if (!moving.length) return;
+    const ids = new Set(moving.map((b) => b.id));
     state.drag = {
       origin: cell,
       moving,
       start: moving.map((b) => ({ id: b.id, x: b.x, z: b.z })),
-      grid: occupancy(store.blocks, new Set(ids)),
+      grid: occupancy(store.blocks.concat(store.things), ids),
       moved: false,
       dx: 0,
       dz: 0,
@@ -100,8 +107,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       const b = d.moving.find((m) => m.id === s.id);
       b.x = s.x + dx;
       b.z = s.z + dz;
-      const mesh = view.meshOf(b.id);
-      if (mesh) place(mesh, b);
+      view.placeItem(b);
     }
   }
 
@@ -154,15 +160,16 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     const y0 = Math.min(s.y0, s.y1), y1 = Math.max(s.y0, s.y1);
 
     const picked = s.additive ? new Set(store.selection) : new Set();
-    for (const b of store.blocks) {
+    for (const b of store.blocks.concat(store.things)) {
       const mesh = view.meshOf(b.id);
       if (!mesh) continue;
-      const p = BJS.Vector3.Project(mesh.position, BJS.Matrix.Identity(), scene.getTransformMatrix(), vp);
+      const at = mesh.getAbsolutePosition ? mesh.getAbsolutePosition() : mesh.position;
+      const p = BJS.Vector3.Project(at, BJS.Matrix.Identity(), scene.getTransformMatrix(), vp);
       const px = p.x * sx, py = p.y * sy;
       if (px >= x0 && px <= x1 && py >= y0 && py <= y1) picked.add(b.id);
     }
     store.selection = picked;
-    say(picked.size ? `${picked.size} block${picked.size === 1 ? "" : "s"} selected.` : "Nothing in the box.");
+    say(picked.size ? `${picked.size} selected.` : "Nothing in the box.");
     onChange();
   }
 
@@ -171,8 +178,21 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   function onDown(e) {
     if (e.button != null && e.button > 0) return; // let right/middle drag the camera
     const pt = localXY(e);
-    const id = pickBlock(pt.x, pt.y);
     const additive = e.ctrlKey || e.shiftKey || e.metaKey;
+
+    // a bead is always a bead
+    const beadHit = pickAny(pt.x, pt.y, isBead);
+    if (beadHit) { onBead(beadHit.pickedMesh.metadata.bead, e); return; }
+
+    // so is a square of a table
+    const faceHit = pickAny(pt.x, pt.y, isFace);
+    if (faceHit) {
+      const uv = faceHit.getTextureCoordinates();
+      if (uv) { onBoard(faceHit.pickedMesh.metadata.itemId, uv, e); return; }
+    }
+
+    const itemHit = pickAny(pt.x, pt.y, isItem);
+    const id = itemHit ? view.itemIdOf(itemHit.pickedMesh) : null;
 
     if (id == null) {
       if (state.lasso || e.shiftKey) startSweep(pt, additive);
@@ -189,11 +209,11 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     }
     state.lastTap = { id, at: now };
 
-    const canDrag = tapBlock(id, additive);
+    const canDrag = tapItem(id, additive);
     onChange();
     if (canDrag) {
       const cell = groundCell(pt.x, pt.y);
-      if (cell) startDrag(id, cell);
+      if (cell) startDrag(cell);
     }
   }
 
@@ -209,7 +229,10 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       return;
     }
     if (e.pointerType !== "touch") {
-      canvas.style.cursor = pickBlock(pt.x, pt.y) != null ? "grab" : state.lasso ? "crosshair" : "";
+      const over = pickAny(pt.x, pt.y, (m) => isBead(m) || isFace(m) || isItem(m));
+      canvas.style.cursor = over
+        ? (isBead(over.pickedMesh) || isFace(over.pickedMesh) ? "pointer" : "grab")
+        : state.lasso ? "crosshair" : "";
     }
   }
 

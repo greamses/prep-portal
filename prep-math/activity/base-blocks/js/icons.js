@@ -26,4 +26,7 @@ export const ICON = {
   close: line(`<path d="M6 6l12 12M18 6 6 18"/>`),
   info: line(`<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.9"/>`),
   check: line(`<path d="m5 12.5 4.6 4.6L19 7.8"/>`),
+  back: line(`<path d="M19 12H5M5 12l6-6M5 12l6 6"/>`),
+  flat: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/>`),
+  solid: line(`<path d="M12 3.2 20.5 8v8L12 20.8 3.5 16V8z"/><path d="m3.5 8 8.5 4.6L20.5 8M12 12.6v8.2"/>`),
 };

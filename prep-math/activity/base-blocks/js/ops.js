@@ -11,7 +11,7 @@
    ========================================================================== */
 
 import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
-import { store, snapshot, say, nextId, selected } from "./state.js";
+import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
 import { occupancy, findSpot, mark, tidy as tidyLayout } from "./layout.js";
 
 const MAX_SIDE = 64;
@@ -54,7 +54,9 @@ export function splitPlan(b, base) {
  * when even the tidy layout will not hold them, and then nothing has moved.
  */
 function seat(kept, fresh) {
-  const grid = occupancy(kept);
+  // abacus frames and chart boards hold cells too, so blocks must go round them
+  const standing = kept.concat(store.things);
+  const grid = occupancy(standing);
   const homeless = [];
   for (const f of fresh) {
     const spot = findSpot(grid, f.l, f.w, f.near || null);
@@ -64,7 +66,7 @@ function seat(kept, fresh) {
   fresh.forEach((f) => delete f.near);
   if (!homeless.length) return true;
 
-  const all = kept.concat(fresh);
+  const all = standing.concat(fresh);
   const before = all.map((b) => ({ b, x: b.x, z: b.z }));
   if (tidyLayout(all)) {
     say("The mat was getting crowded, so the pieces have been tidied into rows.");
@@ -471,34 +473,45 @@ export function tagSelected(tag) {
   return true;
 }
 
+/** Put an abacus frame or a chart board on the canvas. */
+export function addThing(thing) {
+  snapshot();
+  thing.id = nextId();
+  const spot = findSpot(occupancy(items()), thing.l, thing.w, null);
+  thing.x = spot ? spot.x : 0;
+  thing.z = spot ? spot.z : 0;
+  store.things.push(thing);
+  store.selection = new Set([thing.id]);
+  return thing;
+}
+
 export function deleteSelected() {
-  const sel = selected();
-  if (!sel.length) { say("Pick some blocks to remove first.", "warn"); return false; }
+  const sel = selectedItems();
+  if (!sel.length) { say("Pick something to remove first.", "warn"); return false; }
   snapshot();
   const gone = new Set(sel.map((b) => b.id));
   store.blocks = store.blocks.filter((b) => !gone.has(b.id));
+  store.things = store.things.filter((b) => !gone.has(b.id));
   store.selection = new Set();
-  say(`Removed ${sel.length} block${sel.length === 1 ? "" : "s"}.`);
+  say(`Removed ${sel.length} thing${sel.length === 1 ? "" : "s"}.`);
   return true;
 }
 
 export function clearMat() {
-  if (!store.blocks.length) return false;
+  if (!store.blocks.length && !store.things.length) return false;
   snapshot();
   store.blocks = [];
+  store.things = [];
   store.selection = new Set();
-  say("Mat cleared.");
+  say("Canvas cleared.");
   return true;
 }
 
 export function tidyMat() {
-  if (!store.blocks.length) { say("Nothing to tidy yet.", "warn"); return false; }
+  const all = items();
+  if (!all.length) { say("Nothing to tidy yet.", "warn"); return false; }
   snapshot();
-  if (!tidyLayout(store.blocks)) {
-    store.history.pop();
-    say("Too many pieces to lay out in rows — merge or clear a few.", "warn");
-    return false;
-  }
+  tidyLayout(all);
   say("Tidied — one row per highlight colour, biggest first.", "ok");
   return true;
 }
@@ -515,7 +528,7 @@ export function selectLike() {
 }
 
 export function selectAll() {
-  store.selection = new Set(store.blocks.map((b) => b.id));
+  store.selection = new Set(items().map((b) => b.id));
   return true;
 }
 

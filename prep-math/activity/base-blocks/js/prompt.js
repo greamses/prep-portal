@@ -99,7 +99,9 @@ export function createRegroupPrompt(ctx, view, stage) {
     let top = Infinity;
     for (const id of store.selection) {
       const mesh = view.meshOf(id);
-      if (!mesh) continue;
+      // abacus frames and boards come back as a transform node, not a mesh —
+      // they are never part of a trade, so they are simply not in the average
+      if (!mesh || !mesh.getBoundingInfo) continue;
       const bb = mesh.getBoundingInfo().boundingBox;
       // The top-centre of the piece, not its middle — otherwise a tall cube
       // wears the card halfway down its front face.

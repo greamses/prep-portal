@@ -1,9 +1,15 @@
 /* ============================================================================
-   Base Blocks — engine, camera, light and the paper mat
+   Manipulatives — engine, cameras and the endless sheet of paper
    ----------------------------------------------------------------------------
-   The mat is a sheet of squared paper: one faint line per unit cell and a bolder
-   line every `base` cells, so the grouping of the working base is visible before
-   a single block is put down. Babylon is the global `BABYLON`.
+   The paper is one big plane wearing a texture of `base × base` cells that
+   REPEATS, so the squared grid regroups when the base changes and still costs a
+   single 512px tile no matter how far the canvas runs. Cell (0,0) is the world
+   origin; the tile is offset so its bold lines land exactly on cell boundaries.
+
+   One camera does both views. 3D is the usual perspective orbit; 2D drops it to
+   an orthographic straight-down look with the rotation pinned, which is the
+   right way to read every one of these manipulatives — blocks, abacus and grids
+   all lie flat on the desk.
    ========================================================================== */
 
 import { CFG, cssVar } from "./config.js";
@@ -32,8 +38,8 @@ export function createScene(engine, canvas) {
     new BJS.Vector3(0, 1.5, 0),
     scene
   );
-  camera.lowerBetaLimit = 0.12;
-  camera.upperBetaLimit = Math.PI / 2 - 0.05; // never dip under the mat
+  camera.lowerBetaLimit = 0.06;
+  camera.upperBetaLimit = Math.PI / 2 - 0.05; // never dip under the paper
   camera.lowerRadiusLimit = CFG.camera.min;
   camera.upperRadiusLimit = CFG.camera.max;
   camera.wheelDeltaPercentage = 0.012;
@@ -43,7 +49,7 @@ export function createScene(engine, canvas) {
   camera.inertia = 0.72;
   camera.attachControl(canvas, true);
 
-  // kept deliberately dim: the blocks are pale pastels, and a hot key light
+  // kept deliberately dim: the pieces are pale pastels, and a hot key light
   // blows their top faces out to white (worst in the dark theme)
   const hemi = new BJS.HemisphericLight("hemi", new BJS.Vector3(0.2, 1, 0.1), scene);
   hemi.intensity = 0.62;
@@ -53,37 +59,23 @@ export function createScene(engine, canvas) {
   sun.position = new BJS.Vector3(30, 46, 26);
   sun.intensity = 0.45;
   sun.shadowMinZ = 4;
-  sun.shadowMaxZ = 140;
+  sun.shadowMaxZ = 200;
 
   const shadows = new BJS.ShadowGenerator(2048, sun);
   shadows.useBlurExponentialShadowMap = true;
   shadows.blurKernel = 28;
   shadows.darkness = 0.55;
 
-  // ── the desk the mat lies on (so the camera never sees past the world) ────
-  const desk = BJS.MeshBuilder.CreateGround(
-    "desk",
-    { width: CFG.mat * 3, height: CFG.mat * 3, subdivisions: 1 },
-    scene
-  );
-  desk.position.y = -0.03;
-  desk.isPickable = false;
-  const deskMat = new BJS.StandardMaterial("deskMat", scene);
-  deskMat.specularColor = new BJS.Color3(0, 0, 0);
-  deskMat.diffuseColor = new BJS.Color3(0, 0, 0);
-  deskMat.disableLighting = true; // painted flat in the page colour, so the far
-  desk.material = deskMat; //        edge of the world never shows as a seam
-
-  // ── the mat ───────────────────────────────────────────────────────────────
+  // ── the paper ─────────────────────────────────────────────────────────────
   const mat = BJS.MeshBuilder.CreateGround(
-    "mat",
-    { width: CFG.mat, height: CFG.mat, subdivisions: 1 },
+    "paper",
+    { width: CFG.ground, height: CFG.ground, subdivisions: 1 },
     scene
   );
   mat.receiveShadows = true;
   mat.isPickable = true;
 
-  const matMat = new BJS.StandardMaterial("matMat", scene);
+  const matMat = new BJS.StandardMaterial("paperMat", scene);
   matMat.specularColor = new BJS.Color3(0.02, 0.02, 0.02);
   mat.material = matMat;
 
@@ -96,38 +88,49 @@ export function createScene(engine, canvas) {
 
   const ctx = {
     scene,
+    engine,
     camera,
     sun,
     hemi,
     shadows,
     mat,
     matMat,
-    desk,
-    deskMat,
     highlight,
     matTexture: null,
     base: CFG.defaultBase,
+    flat: false, // true while the 2D view is on
   };
 
-  paintDesk(ctx);
+  // Orthographic zoom has no radius, so the wheel is mapped onto the ortho box
+  // every frame while the flat view is on.
+  scene.onBeforeRenderObservable.add(() => {
+    if (camera.mode !== BJS.Camera.ORTHOGRAPHIC_CAMERA) return;
+    const h = camera.radius * 0.5;
+    const a = engine.getAspectRatio(camera);
+    camera.orthoTop = h;
+    camera.orthoBottom = -h;
+    camera.orthoLeft = -h * a;
+    camera.orthoRight = h * a;
+  });
+
   paintMat(ctx, CFG.defaultBase);
   return ctx;
 }
 
-function paintDesk(ctx) {
-  const BJS = B();
-  ctx.deskMat.emissiveColor = BJS.Color3.FromHexString(norm(cssVar("--app-bg", "#f0ece3")));
-}
+/* ── the squared paper ────────────────────────────────────────────────────── */
 
-/** Redraw the squared paper so its bold lines group in the given base. */
+/**
+ * One tile = `base × base` cells: a faint line on every cell and a bold one on
+ * the tile's own edges, which is where the base's grouping shows.
+ */
 export function paintMat(ctx, base) {
   const BJS = B();
-  const px = 1024;
-  const cell = px / CFG.mat;
+  const px = 512;
+  const cell = px / base;
   ctx.base = base;
 
   ctx.matTexture?.dispose();
-  const tex = new BJS.DynamicTexture("matTex", { width: px, height: px }, ctx.scene, true);
+  const tex = new BJS.DynamicTexture("paperTex", { width: px, height: px }, ctx.scene, true);
   const g = tex.getContext();
 
   const paper = cssVar("--surface-primary", "#fffdf8");
@@ -137,46 +140,99 @@ export function paintMat(ctx, base) {
   g.fillStyle = paper;
   g.fillRect(0, 0, px, px);
 
-  // faint line on every unit
-  g.strokeStyle = rgba(faint, 0.28);
-  g.lineWidth = 1;
+  g.strokeStyle = rgba(faint, 0.3);
+  g.lineWidth = 1.5;
   g.beginPath();
-  for (let i = 0; i <= CFG.mat; i++) {
+  for (let i = 1; i < base; i++) {
     const p = Math.round(i * cell) + 0.5;
     g.moveTo(p, 0); g.lineTo(p, px);
     g.moveTo(0, p); g.lineTo(px, p);
   }
   g.stroke();
 
-  // bolder line every `base` units — the grouping of the working base
-  g.strokeStyle = rgba(ink, 0.2);
-  g.lineWidth = 2.5;
+  // the tile edge, drawn half in from each side so the two halves of the
+  // repeat meet as one line rather than a double-weight one
+  g.strokeStyle = rgba(ink, 0.22);
+  g.lineWidth = 3;
   g.beginPath();
-  for (let i = 0; i <= CFG.mat; i += base) {
-    const p = Math.round(i * cell) + 0.5;
-    g.moveTo(p, 0); g.lineTo(p, px);
-    g.moveTo(0, p); g.lineTo(px, p);
-  }
+  g.moveTo(1.5, 0); g.lineTo(1.5, px);
+  g.moveTo(px - 1.5, 0); g.lineTo(px - 1.5, px);
+  g.moveTo(0, 1.5); g.lineTo(px, 1.5);
+  g.moveTo(0, px - 1.5); g.lineTo(px, px - 1.5);
   g.stroke();
 
   tex.update(false);
   tex.hasAlpha = false;
+  tex.wrapU = BJS.Texture.WRAP_ADDRESSMODE;
+  tex.wrapV = BJS.Texture.WRAP_ADDRESSMODE;
+  tex.anisotropicFilteringLevel = 8;
+
+  /* The ground's UV runs 0..1 across its whole width, so one repeat per `base`
+     cells means this scale — and the offset slides the tile so a bold line sits
+     on cell 0 rather than on the far corner of the plane. */
+  tex.uScale = CFG.ground / base;
+  tex.vScale = CFG.ground / base;
+  tex.uOffset = -CFG.ground / (2 * base);
+  tex.vOffset = -CFG.ground / (2 * base);
+
   ctx.matTexture = tex;
   ctx.matMat.diffuseTexture = tex;
   ctx.matMat.diffuseColor = new BJS.Color3(1, 1, 1);
 }
 
-/** Swing the camera out until every block on the mat is in shot. */
-export function fitView(ctx, blocks) {
+/* ── 2D ⇄ 3D ──────────────────────────────────────────────────────────────── */
+
+export function setFlatView(ctx, on) {
   const BJS = B();
-  const half = CFG.mat / 2;
-  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, top = 2;
-  for (const b of blocks) {
-    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + b.l);
-    z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + b.w);
-    top = Math.max(top, b.h);
+  const cam = ctx.camera;
+  if (ctx.flat === on) return;
+  ctx.flat = on;
+
+  const fps = 60, frames = 22;
+  const ease = new BJS.CubicEase();
+  ease.setEasingMode(BJS.EasingFunction.EASINGMODE_EASEINOUT);
+
+  if (on) {
+    cam.lowerBetaLimit = null;
+    cam.upperBetaLimit = null;
+    BJS.Animation.CreateAndStartAnimation("flatB", cam, "beta", fps, frames,
+      cam.beta, 0.0001, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease,
+      () => {
+        cam.mode = BJS.Camera.ORTHOGRAPHIC_CAMERA;
+        // pin the orbit: straight down, north up, pan and zoom only
+        cam.lowerBetaLimit = cam.upperBetaLimit = 0.0001;
+        cam.lowerAlphaLimit = cam.upperAlphaLimit = cam.alpha;
+      });
+    BJS.Animation.CreateAndStartAnimation("flatA", cam, "alpha", fps, frames,
+      cam.alpha, -Math.PI / 2, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
+  } else {
+    cam.mode = BJS.Camera.PERSPECTIVE_CAMERA;
+    cam.lowerAlphaLimit = cam.upperAlphaLimit = null;
+    cam.lowerBetaLimit = null;
+    cam.upperBetaLimit = null;
+    BJS.Animation.CreateAndStartAnimation("solidB", cam, "beta", fps, frames,
+      cam.beta, CFG.camera.beta, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease,
+      () => {
+        cam.lowerBetaLimit = 0.06;
+        cam.upperBetaLimit = Math.PI / 2 - 0.05;
+      });
   }
-  if (!blocks.length) { x0 = z0 = 0; x1 = z1 = CFG.mat; }
+}
+
+/* ── framing ──────────────────────────────────────────────────────────────── */
+
+/** Swing the camera out until every given item is in shot. */
+export function fitView(ctx, items) {
+  const BJS = B();
+  let x0 = 0, x1 = 8, z0 = 0, z1 = 8, top = 2;
+  if (items.length) {
+    x0 = Infinity; x1 = -Infinity; z0 = Infinity; z1 = -Infinity;
+    for (const b of items) {
+      x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + b.l);
+      z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + b.w);
+      top = Math.max(top, b.h);
+    }
+  }
 
   const span = Math.max(x1 - x0, z1 - z0, 8);
   const radius = Math.max(
@@ -184,15 +240,16 @@ export function fitView(ctx, blocks) {
     Math.min(CFG.camera.max, span / (2 * Math.tan(ctx.camera.fov / 2)) + span * 0.12)
   );
 
-  // Looking at the mat obliquely, whatever the camera aims at lands LOW in the
-  // frame — the near half of the ground eats the bottom of the picture. Pulling
-  // the aim point back towards the camera lifts the blocks into the middle.
+  /* Looking at the paper obliquely, whatever the camera aims at lands LOW in
+     the frame — the near half of the ground eats the bottom of the picture.
+     Pulling the aim point back towards the camera lifts the pieces into the
+     middle. Straight down (the flat view) has no such skew. */
+  const lean = ctx.flat ? 0 : span * 0.3;
   const a = ctx.camera.alpha;
-  const lean = span * 0.3;
   const target = new BJS.Vector3(
-    (x0 + x1) / 2 - half + Math.cos(a) * lean,
+    (x0 + x1) / 2 + Math.cos(a) * lean,
     top / 2,
-    (z0 + z1) / 2 - half + Math.sin(a) * lean
+    (z0 + z1) / 2 + Math.sin(a) * lean
   );
 
   const fps = 60, frames = 26;
@@ -208,7 +265,6 @@ export function fitView(ctx, blocks) {
 export function retheme(ctx) {
   const BJS = B();
   ctx.scene.clearColor = BJS.Color4.FromHexString(hexA(cssVar("--app-bg", "#f0ece3")));
-  paintDesk(ctx);
   paintMat(ctx, ctx.base);
 }
 
@@ -218,10 +274,6 @@ export function retheme(ctx) {
 function hexA(hex) {
   const h = hex.trim();
   return h.length === 7 ? h + "ff" : h.length === 4 ? expand(h) + "ff" : h;
-}
-function norm(hex) {
-  const h = hex.trim();
-  return h.length === 4 ? expand(h) : h.slice(0, 7);
 }
 function expand(h) {
   return "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];

@@ -117,29 +117,27 @@ export function buildMesh(ctx, block, base) {
     ctx.scene
   );
   mesh.material = materialFor(ctx.scene, colourOf(block, base));
-  mesh.metadata = { blockId: block.id };
+  mesh.metadata = { itemId: block.id };
   mesh.receiveShadows = true;
   ctx.shadows.addShadowCaster(mesh);
   place(mesh, block);
   return mesh;
 }
 
-/** Put a mesh where its block says it lives (cells → world). */
+/** Put a mesh where its block says it lives (cells → world, one to one). */
 export function place(mesh, block, lift = 0) {
-  const half = CFG.mat / 2;
-  mesh.position.x = block.x + block.l / 2 - half;
-  mesh.position.z = block.z + block.w / 2 - half;
+  mesh.position.x = block.x + block.l / 2;
+  mesh.position.z = block.z + block.w / 2;
   mesh.position.y = block.h / 2 + lift;
 }
 
 /** Slide a mesh to its block's cell over CFG.anim ms. */
 export function glideTo(ctx, mesh, block) {
   const BJS = B();
-  const half = CFG.mat / 2;
   const target = new BJS.Vector3(
-    block.x + block.l / 2 - half,
+    block.x + block.l / 2,
     block.h / 2,
-    block.z + block.w / 2 - half
+    block.z + block.w / 2
   );
   if (BJS.Vector3.Distance(mesh.position, target) < 0.001) return;
   const fps = 60;

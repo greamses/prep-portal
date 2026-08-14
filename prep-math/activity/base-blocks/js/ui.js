@@ -1,14 +1,14 @@
 /* ============================================================================
-   Base Blocks — the controls
+   Manipulatives — the controls
    ----------------------------------------------------------------------------
-   Everything the learner can press lives inside the 3D stage, so the studio is
+   Everything the learner can press lives inside the canvas, so the workbench is
    still whole in fullscreen. Actions mutate the store and then emit; the view and
    this panel both re-read from the store, nothing draws itself mid-operation.
    ========================================================================== */
 
 import { CFG, PLACES, TAGS, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
-import { store, subscribe, emit, say, undo, canUndo, selected } from "./state.js";
+import { store, subscribe, emit, say, undo, canUndo, selected, selectedItems } from "./state.js";
 import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
@@ -16,7 +16,7 @@ import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-export function mountUI({ pointer, stage, onFit = () => {} }) {
+export function mountUI({ pointer, stage, onFit = () => {}, onFlat = () => {} }) {
   paintIcons(document);
 
   const el = {
@@ -30,10 +30,11 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     strictN: $("#bb-strict-n"),
     popBase: $("#bb-pop-base"),
     popOwn: $("#bb-pop-own"),
-    ownBtn: $("#bb-own-btn"),
     board: $("#bb-board"),
     boardBody: $("#bb-board-body"),
     boardBtn: $("#bb-board-btn"),
+    viewBtn: $("#bb-view-btn"),
+    viewLabel: $("#bb-view-label"),
     toast: $("#bb-toast"),
     tagdots: $("#bb-tagdots"),
     rail: $(".bb-rail"),
@@ -65,13 +66,12 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     merge: () => ops.mergeSelected(),
     break: () => ops.breakToUnits(),
     match: () => ops.selectLike(),
-    // tidying rearranges the whole mat, so bring the camera with it
     tidy: () => { if (ops.tidyMat()) onFit(); },
     undo: () => { if (undo()) say("Stepped back."); },
     delete: () => ops.deleteSelected(),
     lasso: () => {
       pointer.setLasso(!pointer.lasso);
-      say(pointer.lasso ? "Box pick on — drag on the paper to sweep up blocks." : "Box pick off.");
+      say(pointer.lasso ? "Box pick on — drag on the paper to sweep things up." : "Box pick off.");
     },
   };
 
@@ -82,14 +82,12 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     if (fn) run(fn);
   });
 
+  // the highlight dots live in the dock, beside whichever family is showing
   el.dock.addEventListener("click", (e) => {
-    const piece = e.target.closest("[data-place]");
-    if (piece) return run(() => ops.addPlace(piece.dataset.place));
     const dot = e.target.closest("[data-tag]");
-    if (dot) {
-      const raw = dot.dataset.tag;
-      return run(() => ops.tagSelected(raw === "none" ? null : Number(raw)));
-    }
+    if (!dot) return;
+    const raw = dot.dataset.tag;
+    run(() => ops.tagSelected(raw === "none" ? null : Number(raw)));
   });
 
   /* ── popovers ───────────────────────────────────────────────────────────── */
@@ -102,21 +100,16 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     trigger?.setAttribute("aria-expanded", "true");
   }
   function closePops(except = null) {
-    for (const [pop, trigger] of [
-      [el.popBase, el.baseBtn],
-      [el.popOwn, el.ownBtn],
-    ]) {
+    for (const pop of [el.popBase, el.popOwn]) {
       if (pop === except) continue;
       pop.hidden = true;
-      trigger.setAttribute("aria-expanded", "false");
     }
+    el.baseBtn.setAttribute("aria-expanded", "false");
+    $("#bb-own-btn")?.setAttribute("aria-expanded", "false");
   }
 
   el.baseBtn.addEventListener("click", () =>
     el.popBase.hidden ? openPop(el.popBase, el.baseBtn) : closePops()
-  );
-  el.ownBtn.addEventListener("click", () =>
-    el.popOwn.hidden ? openPop(el.popOwn, el.ownBtn) : closePops()
   );
   $$("[data-close]").forEach((b) => b.addEventListener("click", () => closePops()));
 
@@ -184,6 +177,18 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
   el.boardBtn.addEventListener("click", () => toggleBoard());
   $("[data-close-board]").addEventListener("click", () => toggleBoard(false));
 
+  /* ── 2D ⇄ 3D ────────────────────────────────────────────────────────────── */
+
+  function toggleFlat(on) {
+    const want = on ?? !store.flat;
+    if (want === store.flat) return;
+    store.flat = want;
+    onFlat(want);
+    say(want ? "Flat view — straight down on the paper." : "Solid view.");
+    emit();
+  }
+  el.viewBtn.addEventListener("click", () => toggleFlat());
+
   /* ── keyboard ───────────────────────────────────────────────────────────── */
 
   window.addEventListener("keydown", (e) => {
@@ -199,6 +204,7 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     else if (k === "m") { e.preventDefault(); run(ACTIONS.merge); }
     else if (k === "b") { e.preventDefault(); run(ACTIONS.break); }
     else if (k === "t") { e.preventDefault(); run(ACTIONS.tidy); }
+    else if (k === "v") { e.preventDefault(); toggleFlat(); }
     else if (k === "a") { e.preventDefault(); run(() => { ops.selectAll(); say("Everything selected."); }); }
     else if (k === "escape") { closePops(); run(() => { store.selection = new Set(); }); }
     else if (k === "delete" || k === "backspace") { e.preventDefault(); run(ACTIONS.delete); }
@@ -218,7 +224,7 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
     el.count.textContent = total;
     el.countSub.textContent =
       base === 10
-        ? `unit${total === 1 ? "" : "s"} on the mat`
+        ? `unit${total === 1 ? "" : "s"} on the canvas`
         : `units · ${toBase(total, base)} in base ${baseWord(base)}`;
 
     el.baseLabel.textContent = `Base ${baseWord(base)}`;
@@ -232,6 +238,12 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
       `<b>${base} rods</b> for one flat and <b>${base} flats</b> for one cube — ` +
       `a cube is ${base * base * base} units.`;
 
+    el.viewLabel.textContent = store.flat ? "3D" : "2D";
+    el.viewBtn.setAttribute("aria-pressed", String(store.flat));
+    el.viewBtn.classList.toggle("is-on", store.flat);
+    const viewIcon = el.viewBtn.querySelector("[data-icon]");
+    if (viewIcon) viewIcon.innerHTML = store.flat ? ICON.solid : ICON.flat;
+
     for (const p of PLACES) {
       const chip = $(`[data-size='${p.id}']`);
       if (!chip) continue;
@@ -241,16 +253,16 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
 
     // tool availability
     const sel = selected();
+    const anything = selectedItems();
     const canSplit = sel.some((b) => splitAxis(b));
     const merge = mergeCheck(sel, base, store.strict);
-    // live only when regrouping would actually change something
     setEnabled("regroup", sel.length > 0 && !regroupPlan(sel, base).same);
     setEnabled("split", canSplit);
     setEnabled("merge", merge.ok);
     setEnabled("break", canSplit);
     setEnabled("match", sel.length > 0);
-    setEnabled("delete", sel.length > 0);
-    setEnabled("tidy", store.blocks.length > 0);
+    setEnabled("delete", anything.length > 0);
+    setEnabled("tidy", store.blocks.length + store.things.length > 0);
     setEnabled("undo", canUndo());
     const lassoBtn = $("[data-act='lasso']");
     lassoBtn.setAttribute("aria-pressed", String(pointer.lasso));
@@ -281,7 +293,13 @@ export function mountUI({ pointer, stage, onFit = () => {} }) {
   subscribe(update);
   update();
 
-  return { update, toggleBoard };
+  return {
+    update,
+    toggleBoard,
+    toggleFlat,
+    openOwn: (trigger) => (el.popOwn.hidden ? openPop(el.popOwn, trigger) : closePops()),
+    refreshIcons: () => paintIcons(document),
+  };
 }
 
 /** Fill every <span data-icon="…"> with our own SVG. */

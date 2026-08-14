@@ -105,7 +105,7 @@ export const FEATURES = [
     default: "premium",
     paths: ["/prep-math/activity"],
     parts: [
-      { id: "base-blocks", label: "Base Blocks", path: "/prep-math/activity/base-blocks" },
+      { id: "base-blocks", label: "Manipulatives (blocks, abacus, grids)", path: "/prep-math/activity/base-blocks" },
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },

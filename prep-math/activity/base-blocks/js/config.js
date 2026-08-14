@@ -7,21 +7,26 @@
    ========================================================================== */
 
 export const CFG = {
-  mat: 56, // the mat is mat × mat unit cells
+  /* The canvas has no edges. `ground` is only how big the drawn sheet of paper
+     is — far enough out that the camera never reaches its rim — while the cells
+     things actually occupy are unbounded integers in both directions. */
+  ground: 4000,
+  searchRings: 400, // how far out placement will look before giving up
+
   inset: 0.08, // shrink each block a hair so touching blocks still read apart
-  gap: 1, // cells left between blocks when the mat is laid out
+  gap: 1, // cells left between things when the canvas is laid out
 
   minBase: 2,
   maxBase: 12,
   defaultBase: 10,
 
   maxDim: 20, // biggest side a hand-made block may have
-  maxBlocks: 300, // safety cap on how many pieces live on the mat
+  maxBlocks: 400, // safety cap on how many pieces live on the canvas
   maxBreak: 400, // refuse to smash a block into more units than this
 
   undoDepth: 40,
 
-  camera: { alpha: -Math.PI / 2.15, beta: 0.66, radius: 42, min: 6, max: 130 },
+  camera: { alpha: -Math.PI / 2.15, beta: 0.66, radius: 42, min: 4, max: 420 },
   anim: 260, // ms for a split/merge/tidy move
 };
 

@@ -1,82 +1,91 @@
 /* ============================================================================
-   Base Blocks — where a block lands on the mat
+   Manipulatives — where a thing lands on the canvas
    ----------------------------------------------------------------------------
-   The mat is an occupancy grid of unit cells. Nothing ever overlaps: a new or
-   split-off piece is given the first free rectangle that fits, and "Tidy up"
-   re-lays the whole mat in rows — one row per highlight colour, which is what
-   makes highlighting an organising tool rather than just paint.
+   The canvas has no edges. Cells are integers on an unbounded plane (negatives
+   included) and the occupancy map is a sparse Set of "x,z" keys, so an empty
+   canvas costs nothing however far you wander across it.
+
+   Because there is always more paper, placement cannot fail: findSpot walks
+   rings outward from where you wanted the thing and takes the first fit.
    ========================================================================== */
 
 import { CFG } from "./config.js";
 
-const N = CFG.mat;
+const key = (x, z) => x + "," + z;
 
-export function occupancy(blocks, skip = null) {
-  const grid = new Uint8Array(N * N);
-  for (const b of blocks) {
+export function occupancy(items, skip = null) {
+  const grid = new Set();
+  for (const b of items) {
     if (skip && skip.has(b.id)) continue;
-    for (let z = b.z; z < b.z + b.w; z++) {
-      for (let x = b.x; x < b.x + b.l; x++) {
-        if (x >= 0 && x < N && z >= 0 && z < N) grid[z * N + x] = 1;
-      }
-    }
+    mark(grid, b.x, b.z, b.l, b.w);
   }
   return grid;
 }
 
 export function fits(grid, x, z, l, w, pad = 0) {
-  if (x < 0 || z < 0 || x + l > N || z + w > N) return false;
-  const x0 = Math.max(0, x - pad), x1 = Math.min(N - 1, x + l - 1 + pad);
-  const z0 = Math.max(0, z - pad), z1 = Math.min(N - 1, z + w - 1 + pad);
-  for (let zz = z0; zz <= z1; zz++) {
-    for (let xx = x0; xx <= x1; xx++) if (grid[zz * N + xx]) return false;
+  for (let zz = z - pad; zz < z + w + pad; zz++) {
+    for (let xx = x - pad; xx < x + l + pad; xx++) {
+      if (grid.has(key(xx, zz))) return false;
+    }
   }
   return true;
 }
 
 export function mark(grid, x, z, l, w) {
   for (let zz = z; zz < z + w; zz++) {
-    for (let xx = x; xx < x + l; xx++) {
-      if (xx >= 0 && xx < N && zz >= 0 && zz < N) grid[zz * N + xx] = 1;
-    }
+    for (let xx = x; xx < x + l; xx++) grid.add(key(xx, zz));
+  }
+}
+
+export function unmark(grid, x, z, l, w) {
+  for (let zz = z; zz < z + w; zz++) {
+    for (let xx = x; xx < x + l; xx++) grid.delete(key(xx, zz));
   }
 }
 
 /**
- * First free l×w rectangle, searched outwards from `near` so split pieces stay
- * beside the block they came from instead of jumping across the mat.
+ * The nearest free l×w rectangle to `near`, searched in rings so split pieces
+ * settle beside the block they came from. Rings rather than a full scan: the
+ * plane is unbounded, so there is nothing to scan to the end of.
  */
 export function findSpot(grid, l, w, near = null) {
   const pad = CFG.gap;
-  const cx = near ? near.x : Math.floor((N - l) / 2);
-  const cz = near ? near.z : Math.floor((N - w) / 2);
+  const cx = near ? Math.round(near.x) : 0;
+  const cz = near ? Math.round(near.z) : 0;
+  if (fits(grid, cx, cz, l, w, pad)) return { x: cx, z: cz };
 
-  let best = null;
-  let bestD = Infinity;
-  for (let z = 0; z + w <= N; z++) {
-    for (let x = 0; x + l <= N; x++) {
-      const d = (x - cx) * (x - cx) + (z - cz) * (z - cz);
-      if (d >= bestD) continue;
-      if (fits(grid, x, z, l, w, pad)) { best = { x, z }; bestD = d; }
+  /* Rings are squares, so the first fit found while walking one is usually a
+     corner — take the whole ring and keep the nearest fit instead, or pieces
+     land strung out on the diagonal. */
+  for (let r = 1; r <= CFG.searchRings; r++) {
+    let best = null;
+    let bestD = Infinity;
+    for (let d = -r; d <= r; d++) {
+      for (const c of [
+        { x: cx + d, z: cz - r },
+        { x: cx + d, z: cz + r },
+        { x: cx - r, z: cz + d },
+        { x: cx + r, z: cz + d },
+      ]) {
+        const dist = (c.x - cx) * (c.x - cx) + (c.z - cz) * (c.z - cz);
+        if (dist >= bestD) continue;
+        if (fits(grid, c.x, c.z, l, w, pad)) { best = c; bestD = dist; }
+      }
     }
+    if (best) return best;
   }
-  if (best) return best;
-
-  // mat is tight — try again without the breathing space
-  for (let z = 0; z + w <= N; z++) {
-    for (let x = 0; x + l <= N; x++) {
-      if (fits(grid, x, z, l, w, 0)) return { x, z };
-    }
-  }
-  return null;
+  return null; // only if the canvas is somehow full for CFG.searchRings cells
 }
 
 /**
- * Re-lay every block in rows, biggest first, grouped by highlight colour.
- * Returns false and changes nothing if the mat cannot hold the tidy layout.
+ * Re-lay everything in rows, biggest first, grouped by highlight colour, and
+ * centre the result on the origin. The row width is chosen so the whole thing
+ * comes out roughly square rather than one endless line.
  */
-export function tidy(blocks) {
-  const sorted = [...blocks].sort((a, b) => {
+export function tidy(items) {
+  if (!items.length) return true;
+
+  const sorted = [...items].sort((a, b) => {
     const ta = a.tag == null ? 99 : a.tag;
     const tb = b.tag == null ? 99 : b.tag;
     if (ta !== tb) return ta - tb;
@@ -86,7 +95,11 @@ export function tidy(blocks) {
   });
 
   const pad = CFG.gap;
-  let x = 0, z = 0, rowW = 0, tag = sorted.length ? sorted[0].tag : null;
+  const area = sorted.reduce((n, b) => n + (b.l + pad) * (b.w + pad), 0);
+  const widest = sorted.reduce((n, b) => Math.max(n, b.l), 1);
+  const wrap = Math.max(widest, Math.ceil(Math.sqrt(area) * 1.25));
+
+  let x = 0, z = 0, rowW = 0, tag = sorted[0].tag;
   let usedX = 0, usedZ = 0;
   const out = [];
 
@@ -95,11 +108,10 @@ export function tidy(blocks) {
       z += rowW + pad;
       x = 0; rowW = 0; tag = b.tag;
     }
-    if (x + b.l > N) { // wrap
+    if (x && x + b.l > wrap) {
       z += rowW + pad;
       x = 0; rowW = 0;
     }
-    if (b.l > N || z + b.w > N) return false; // out of paper
     out.push({ id: b.id, x, z });
     x += b.l + pad;
     rowW = Math.max(rowW, b.w);
@@ -107,14 +119,24 @@ export function tidy(blocks) {
     usedZ = Math.max(usedZ, z + rowW);
   }
 
-  // sit the whole arrangement in the middle of the mat, not in a corner
-  const dx = Math.max(0, Math.floor((N - usedX) / 2));
-  const dz = Math.max(0, Math.floor((N - usedZ) / 2));
-
+  const dx = -Math.round(usedX / 2);
+  const dz = -Math.round(usedZ / 2);
   const byId = new Map(out.map((o) => [o.id, o]));
-  for (const b of blocks) {
+  for (const b of items) {
     const o = byId.get(b.id);
     if (o) { b.x = o.x + dx; b.z = o.z + dz; }
   }
   return true;
+}
+
+/** The cell-space bounding box of a set of items, or null when there are none. */
+export function bounds(items) {
+  if (!items.length) return null;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, top = 1;
+  for (const b of items) {
+    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + b.l);
+    z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + b.w);
+    top = Math.max(top, b.h);
+  }
+  return { x0, x1, z0, z1, top };
 }
