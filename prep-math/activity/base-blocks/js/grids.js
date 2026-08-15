@@ -12,6 +12,7 @@
    ========================================================================== */
 
 import { PLACES, placeDims, placeOf, toBase, baseWord, cssVar } from "./config.js";
+import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
 
@@ -28,13 +29,13 @@ export const GRID_MAX = 12; // tables run to twelve twelves
 export function makeBoard(variant, base) {
   if (variant === "place") {
     return {
-      kind: "board", variant, tag: null, x: 0, z: 0, turn: 0,
+      kind: "board", variant, tag: null, x: 0, z: 0, angle: 0,
       l: PLACES.length * COL, w: HEAD + AREA, h: SLAB,
     };
   }
   const n = GRID_MAX + 1; // a header line plus 1..12
   return {
-    kind: "board", variant, tag: null, x: 0, z: 0, turn: 0,
+    kind: "board", variant, tag: null, x: 0, z: 0, angle: 0,
     l: n * CELL, w: n * CELL, h: SLAB,
     hidden: [],          // "r,c" of cells blanked for practice
     focus: null,         // { r, c } lit row and column
@@ -86,13 +87,14 @@ export function buildBoard(ctx, thing, base) {
 }
 
 export function placeBoard(parts, thing) {
-  parts.root.position.x = thing.x + thing.l / 2;
-  parts.root.position.z = thing.z + thing.w / 2;
+  const f = footprint(thing);
+  parts.root.position.x = thing.x + f.l / 2;
+  parts.root.position.z = thing.z + f.w / 2;
   parts.root.position.y = 0;
   /* Turning the root turns the drawn face with it, which is the point — and the
      face's texture coordinates are untouched, so a tap still lands on the square
      it looks like it landed on however the board is lying. */
-  parts.root.rotation.y = (thing.turn || 0) * (Math.PI / 2);
+  parts.root.rotation.y = thing.angle || 0;
 }
 
 /* ── drawing ──────────────────────────────────────────────────────────────── */

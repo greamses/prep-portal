@@ -13,11 +13,34 @@ import { CFG } from "./config.js";
 
 const key = (x, z) => x + "," + z;
 
+/**
+ * The cells a thing actually stands on.
+ *
+ * `l` and `w` are what a thing IS — a rod is ten by one however it is lying —
+ * but a thing turned off the square covers a bigger square patch of paper than
+ * that, and the occupancy grid is axis-aligned. So the footprint is the upright
+ * box around the turned rectangle, which at a right angle is just `l` and `w`
+ * swapped and in between is larger than either.
+ */
+export function footprint(item) {
+  const a = item.angle || 0;
+  if (!a) return { l: item.l, w: item.w };
+  const c = Math.abs(Math.cos(a));
+  const s = Math.abs(Math.sin(a));
+  // a hair off before rounding up, so a right angle comes out exact rather than
+  // gaining a cell to a cosine that is 1e-17 shy of zero
+  return {
+    l: Math.max(1, Math.ceil(item.l * c + item.w * s - 1e-9)),
+    w: Math.max(1, Math.ceil(item.l * s + item.w * c - 1e-9)),
+  };
+}
+
 export function occupancy(items, skip = null) {
   const grid = new Set();
   for (const b of items) {
     if (skip && skip.has(b.id)) continue;
-    mark(grid, b.x, b.z, b.l, b.w);
+    const f = footprint(b);
+    mark(grid, b.x, b.z, f.l, f.w);
   }
   return grid;
 }
@@ -95,8 +118,13 @@ export function tidy(items) {
   });
 
   const pad = CFG.gap;
-  const area = sorted.reduce((n, b) => n + (b.l + pad) * (b.w + pad), 0);
-  const widest = sorted.reduce((n, b) => Math.max(n, b.l), 1);
+  // rows are laid out from the paper each thing covers, not from what it is
+  const foot = new Map(sorted.map((b) => [b.id, footprint(b)]));
+  const area = sorted.reduce((n, b) => {
+    const f = foot.get(b.id);
+    return n + (f.l + pad) * (f.w + pad);
+  }, 0);
+  const widest = sorted.reduce((n, b) => Math.max(n, foot.get(b.id).l), 1);
   const wrap = Math.max(widest, Math.ceil(Math.sqrt(area) * 1.25));
 
   let x = 0, z = 0, rowW = 0, tag = sorted[0].tag;
@@ -104,17 +132,18 @@ export function tidy(items) {
   const out = [];
 
   for (const b of sorted) {
+    const f = foot.get(b.id);
     if (b.tag !== tag) { // a new colour starts a new row
       z += rowW + pad;
       x = 0; rowW = 0; tag = b.tag;
     }
-    if (x && x + b.l > wrap) {
+    if (x && x + f.l > wrap) {
       z += rowW + pad;
       x = 0; rowW = 0;
     }
     out.push({ id: b.id, x, z });
-    x += b.l + pad;
-    rowW = Math.max(rowW, b.w);
+    x += f.l + pad;
+    rowW = Math.max(rowW, f.w);
     usedX = Math.max(usedX, x - pad);
     usedZ = Math.max(usedZ, z + rowW);
   }
@@ -134,8 +163,9 @@ export function bounds(items) {
   if (!items.length) return null;
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, top = 1;
   for (const b of items) {
-    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + b.l);
-    z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + b.w);
+    const f = footprint(b);
+    x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + f.l);
+    z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + f.w);
     top = Math.max(top, b.h);
   }
   return { x0, x1, z0, z1, top };

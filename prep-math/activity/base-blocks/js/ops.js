@@ -12,7 +12,7 @@
 
 import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
-import { occupancy, findSpot, fits, mark, tidy as tidyLayout } from "./layout.js";
+import { occupancy, findSpot, fits, mark, footprint, tidy as tidyLayout } from "./layout.js";
 
 const MAX_SIDE = 64;
 
@@ -529,35 +529,37 @@ export function tidyMat() {
  * frame or a board is not symmetrical — a soroban's rods have to end up running
  * the other way — so those carry a `turn` and the rig is spun by it.
  */
-export function rotateSelected() {
+export function rotateSelected(radians = Math.PI / 2) {
   const sel = selectedItems();
   if (!sel.length) { say("Pick something first, then turn it.", "warn"); return false; }
-
-  const turnable = sel.filter((b) => b.l !== b.w || b.kind);
-  if (!turnable.length) {
-    say("A cube looks the same whichever way round it is.", "warn");
-    return false;
-  }
-
   snapshot();
+  for (const b of sel) b.angle = (b.angle || 0) + radians;
+  settleSelected();
+  return true;
+}
+
+/**
+ * Give everything picked a patch of paper it actually fits on again.
+ *
+ * A turn changes the shape of the space a thing needs — a rod lying across the
+ * paper wants a long thin patch, the same rod at forty-five degrees wants a
+ * square one — so after turning, each is left where it is when the new shape
+ * still fits and moved to the nearest spot that has room when it does not.
+ */
+export function settleSelected() {
+  const sel = selectedItems();
+  if (!sel.length) return false;
   const moving = new Set(sel.map((b) => b.id));
   const grid = occupancy(items(), moving);
 
   for (const b of sel) {
-    if (b.kind) b.turn = ((b.turn || 0) + 1) % 4;
-    const l = b.w, w = b.l;
-    b.l = l;
-    b.w = w;
-
-    // keep it where it is if the new shape still fits, otherwise find it a spot
-    if (!fits(grid, b.x, b.z, l, w, CFG.gap)) {
-      const spot = findSpot(grid, l, w, { x: b.x, z: b.z });
+    const f = footprint(b);
+    if (!fits(grid, b.x, b.z, f.l, f.w, CFG.gap)) {
+      const spot = findSpot(grid, f.l, f.w, { x: b.x, z: b.z });
       if (spot) { b.x = spot.x; b.z = spot.z; }
     }
-    mark(grid, b.x, b.z, l, w);
+    mark(grid, b.x, b.z, f.l, f.w);
   }
-
-  say(sel.length === 1 ? "Turned a quarter." : `Turned ${sel.length} a quarter.`);
   return true;
 }
 

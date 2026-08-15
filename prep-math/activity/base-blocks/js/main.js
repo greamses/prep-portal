@@ -263,7 +263,7 @@ async function bootCanvas() {
     mountCornerControls();
 
     const trade = createRegroupPrompt(ctx, view, stage);
-    const turn = createTurnHandle(ctx, stage, doTurn);
+    const turn = createTurnHandle(ctx, view, stage, () => emit());
     subscribe((s) => { view.sync(s); trade.refresh(); turn.refresh(); });
     turn.refresh();
 

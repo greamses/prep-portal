@@ -13,7 +13,7 @@
    ========================================================================== */
 
 import { store, snapshot, say, selectedItems } from "./state.js";
-import { occupancy, fits } from "./layout.js";
+import { occupancy, fits, footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
 const DOUBLE_MS = 320;
@@ -99,7 +99,8 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
     const ok = d.start.every((s) => {
       const b = d.moving.find((m) => m.id === s.id);
-      return fits(d.grid, s.x + dx, s.z + dz, b.l, b.w, 0);
+      const f = footprint(b);
+      return fits(d.grid, s.x + dx, s.z + dz, f.l, f.w, 0);
     });
     if (!ok) return;
 

@@ -790,9 +790,10 @@ body.bb-locked { overflow: hidden; }
   transition: transform 0.12s ease, background 0.12s ease;
 }
 .bb-turn svg { width: 19px; height: 19px; }
-.bb-turn:hover { transform: rotate(15deg); }
-.bb-turn:active { transform: rotate(90deg); }
 .bb-turn[hidden] { display: none; }
+/* it is dragged, not pressed, so it wears a grab cursor and never a hand */
+.bb-turn { cursor: grab; touch-action: none; }
+.bb-turn.is-turning { cursor: grabbing; background: var(--accent-primary); }
 
 /* a short screen in landscape cannot take five full-size buttons */
 @media (max-height: 560px) {

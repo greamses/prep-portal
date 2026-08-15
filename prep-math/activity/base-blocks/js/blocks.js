@@ -8,6 +8,7 @@
    ========================================================================== */
 
 import { CFG, PLACE_TOKENS, TAGS, placeOf, cssVar } from "./config.js";
+import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
 
@@ -126,18 +127,24 @@ export function buildMesh(ctx, block, base) {
 
 /** Put a mesh where its block says it lives (cells → world, one to one). */
 export function place(mesh, block, lift = 0) {
-  mesh.position.x = block.x + block.l / 2;
-  mesh.position.z = block.z + block.w / 2;
+  // centred on the paper it covers, which is bigger than the block itself once
+  // the block is turned off the square
+  const f = footprint(block);
+  mesh.position.x = block.x + f.l / 2;
+  mesh.position.z = block.z + f.w / 2;
   mesh.position.y = block.h / 2 + lift;
+  mesh.rotation.y = block.angle || 0;
 }
 
 /** Slide a mesh to its block's cell over CFG.anim ms. */
 export function glideTo(ctx, mesh, block) {
   const BJS = B();
+  const f = footprint(block);
+  mesh.rotation.y = block.angle || 0;
   const target = new BJS.Vector3(
-    block.x + block.l / 2,
+    block.x + f.l / 2,
     block.h / 2,
-    block.z + block.w / 2
+    block.z + f.w / 2
   );
   if (BJS.Vector3.Distance(mesh.position, target) < 0.001) return;
   const fps = 60;

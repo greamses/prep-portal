@@ -21,6 +21,7 @@
    ========================================================================== */
 
 import { BEAD_TOKENS, cssVar } from "./config.js";
+import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
 
@@ -84,7 +85,7 @@ export function makeAbacus(variant) {
     h: FRAME_H,
     x: 0,
     z: 0,
-    turn: 0, // quarter turns, applied to the whole assembly
+    angle: 0, // radians, applied to the whole assembly
     tag: null,
     rods: Array.from({ length: spec.rods }, () => ({ heaven: 0, earth: 0 })),
   };
@@ -464,11 +465,12 @@ export function syncAbacus(thing, parts, animate = true) {
 
 /** Put the frame on its cell. */
 export function placeAbacus(parts, thing) {
-  parts.root.position.x = thing.x + thing.l / 2;
-  parts.root.position.z = thing.z + thing.w / 2;
+  const f = footprint(thing);
+  parts.root.position.x = thing.x + f.l / 2;
+  parts.root.position.z = thing.z + f.w / 2;
   parts.root.position.y = 0;
   // the whole assembly turns together — frame, beads and slate
-  parts.root.rotation.y = (thing.turn || 0) * (Math.PI / 2);
+  parts.root.rotation.y = thing.angle || 0;
 }
 
 /** A one-line reading of the frame, for the HUD. */
