@@ -49,6 +49,11 @@ export function createScene(engine, canvas) {
   camera.inertia = 0.72;
   camera.attachControl(canvas, true);
 
+  /* Babylon spins an ArcRotate camera on the arrow keys. We want the arrows to
+     SLIDE the paper instead (see panBy), and two handlers fighting over one key
+     is worse than either, so its keyboard input is taken off here. */
+  camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
+
   // kept deliberately dim: the pieces are pale pastels, and a hot key light
   // blows their top faces out to white (worst in the dark theme)
   const hemi = new BJS.HemisphericLight("hemi", new BJS.Vector3(0.2, 1, 0.1), scene);
@@ -259,6 +264,73 @@ export function fitView(ctx, items) {
     ctx.camera.target.clone(), target, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
   BJS.Animation.CreateAndStartAnimation("fitR", ctx.camera, "radius", fps, frames,
     ctx.camera.radius, radius, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
+}
+
+/* ── driving the camera from a button ─────────────────────────────────────── */
+
+const EASE_OUT = () => {
+  const BJS = B();
+  const e = new BJS.CubicEase();
+  e.setEasingMode(BJS.EasingFunction.EASINGMODE_EASEOUT);
+  return e;
+};
+
+/**
+ * Zoom by a factor (>1 pulls back, <1 moves in). Both views ride on `radius`:
+ * the perspective camera uses it directly and the flat view's ortho box is
+ * derived from it every frame, so one number drives the zoom in 2D and 3D alike.
+ */
+export function zoomBy(ctx, factor) {
+  const BJS = B();
+  const cam = ctx.camera;
+  const to = Math.max(CFG.camera.min, Math.min(CFG.camera.max, cam.radius * factor));
+  if (Math.abs(to - cam.radius) < 1e-4) return false; // already against a stop
+  BJS.Animation.CreateAndStartAnimation("zoom", cam, "radius", 60, 12,
+    cam.radius, to, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, EASE_OUT());
+  return true;
+}
+
+/**
+ * Slide the view across the paper. `dx`/`dz` are screen-relative: +1 is right
+ * and "down the screen", whichever way the camera happens to be facing.
+ *
+ * The two directions come from `alpha` rather than from the camera's own axes:
+ * flattening the camera's forward vector onto the paper is degenerate in the 2D
+ * view, where it points straight down and flattens to nothing. Off alpha they
+ * are exact in both views.
+ *
+ * `(cos a, 0, sin a)` is the way to the camera along the paper — the same vector
+ * fitView leans on. Down-the-screen is therefore TOWARDS the viewer, and
+ * screen-right is `up × forward`, in that order, because Babylon's world is
+ * left-handed; taking the cross product the other way round mirrors both keys.
+ */
+export function panBy(ctx, dx, dz) {
+  const BJS = B();
+  const cam = ctx.camera;
+  const step = cam.radius * 0.22; // a press moves the same share of the screen
+  const a = cam.alpha;
+  const right = new BJS.Vector3(-Math.sin(a), 0, Math.cos(a));
+  const fwd = new BJS.Vector3(Math.cos(a), 0, Math.sin(a));
+
+  const to = cam.target.clone()
+    .add(right.scale(dx * step))
+    .add(fwd.scale(dz * step));
+
+  BJS.Animation.CreateAndStartAnimation("pan", cam, "target", 60, 12,
+    cam.target.clone(), to, BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, EASE_OUT());
+}
+
+/**
+ * The hand tool: drag anywhere to slide the paper. Babylon pans an ArcRotate
+ * camera on the RIGHT mouse button, which a touch screen does not have and a
+ * child will not find, so the tool moves panning onto the left button while it
+ * is on. The pointer layer stops picking things up for as long as it lasts.
+ */
+export function setPanTool(ctx, on) {
+  const pointers = ctx.camera.inputs?.attached?.pointers;
+  if (!pointers) return false;
+  pointers.panningMouseButton = on ? 0 : 2;
+  return true;
 }
 
 /** Re-read the theme tokens after a light/dark switch. */

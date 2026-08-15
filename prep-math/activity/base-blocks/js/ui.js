@@ -16,7 +16,11 @@ import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-export function mountUI({ pointer, stage, onFit = () => {}, onFlat = () => {} }) {
+export function mountUI({
+  pointer, stage,
+  onFit = () => {}, onFlat = () => {},
+  onZoom = () => {}, onPan = () => {}, onHand = () => {},
+}) {
   paintIcons(document);
 
   const el = {
@@ -198,6 +202,17 @@ export function mountUI({ pointer, stage, onFit = () => {}, onFlat = () => {} })
 
     if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); return run(ACTIONS.undo); }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    /* Getting about the canvas: the arrows slide it and +/− zoom. These move the
+       camera only — nothing on the paper changes — so they never emit. */
+    const PAN = {
+      arrowleft: [-1, 0], arrowright: [1, 0],
+      arrowup: [0, -1], arrowdown: [0, 1],
+    };
+    if (PAN[k]) { e.preventDefault(); onPan(...PAN[k]); return; }
+    if (k === "+" || k === "=") { e.preventDefault(); onZoom(0.8); return; }
+    if (k === "-" || k === "_") { e.preventDefault(); onZoom(1.25); return; }
+    if (k === "h") { e.preventDefault(); onHand(); return; }
 
     if (k === "r") { e.preventDefault(); run(ACTIONS.regroup); }
     else if (k === "s") { e.preventDefault(); run(ACTIONS.split); }

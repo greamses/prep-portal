@@ -14,6 +14,10 @@
 
    All three lie FLAT on the paper, the way they lie on a desk, which is also
    what makes the 2D view read correctly for them.
+
+   There is no backing board: a frame is four timbers with the rods threaded
+   between them, and the desk shows through the gaps. The four rails are merged
+   into one mesh, which is what makes the whole frame one thing to pick up.
    ========================================================================== */
 
 import { BEAD_TOKENS, cssVar } from "./config.js";
@@ -26,7 +30,9 @@ const SLOT = 1.15;   // between neighbouring beads on a rod
 const TRAVEL = 1.25; // how far a bead slides to change sides
 const BAR_GAP = 1.0; // clear space either side of the reckoning bar
 const EDGE = 1.2;    // frame margin
-const PLATE = 0.18;  // thickness of the base plate
+const RAIL = 0.44;   // how thick the frame's four timbers are
+const FRAME_H = 0.62; // how deep the frame stands; beads sit down inside it
+const ROD_T = 0.1;   // a rod's square section
 const BEAD_H = 0.5;
 
 export const SPECS = {
@@ -54,7 +60,7 @@ export function makeAbacus(variant) {
     variant,
     l: Math.ceil(size.width),
     w: Math.ceil(size.depth),
-    h: BEAD_H + PLATE,
+    h: FRAME_H,
     x: 0,
     z: 0,
     tag: null,
@@ -70,7 +76,7 @@ function reach(n) {
 /**
  * The frame, sized to its beads. The two tiers are different depths — a soroban
  * keeps one bead above the bar and four below — so the bar does NOT sit in the
- * middle of the plate; `barZ` is where it actually goes, and everything is hung
+ * middle of the frame; `barZ` is where it actually goes, and everything is hung
  * off that. Get this wrong and the frame has a bald patch on the short side.
  */
 function frameSize(spec) {
@@ -193,41 +199,64 @@ export function buildAbacus(ctx, thing) {
   const railMat = mat(scene, "--ink", "#2a2723");
   const rodMat = mat(scene, "--text-tertiary", "#9a948a");
 
-  const plate = BJS.MeshBuilder.CreateBox("plate",
-    { width: size.width, depth: size.depth, height: PLATE }, scene);
-  plate.material = frameMat;
-  plate.position.y = PLATE / 2;
-  plate.parent = root;
-  plate.receiveShadows = true;
-  plate.metadata = { itemId: thing.id };
-  ctx.shadows.addShadowCaster(plate);
+  /* A real abacus has no backing board — four timbers and the rods threaded
+     between them, and you can see the desk through it. The four rails are merged
+     into ONE mesh so the frame still behaves like a single object: one thing to
+     pick up and drag, and one mesh for the selection glow (the highlight layer
+     takes a mesh, not a group). The end rails run the full width and the side
+     rails fill the gap between them, so the corners butt rather than overlap. */
+  const railMeshes = [
+    ["far", size.width, RAIL, 0, size.depth / 2 - RAIL / 2],
+    ["near", size.width, RAIL, 0, -(size.depth / 2 - RAIL / 2)],
+    ["left", RAIL, size.depth - RAIL * 2, -(size.width / 2 - RAIL / 2), 0],
+    ["right", RAIL, size.depth - RAIL * 2, size.width / 2 - RAIL / 2, 0],
+  ].map(([name, w, d, x, z]) => {
+    const m = BJS.MeshBuilder.CreateBox("rail-" + name,
+      { width: w, depth: d, height: FRAME_H }, scene);
+    m.position.set(x, FRAME_H / 2, z);
+    return m;
+  });
+
+  const frame = BJS.Mesh.MergeMeshes(railMeshes, true, true);
+  frame.name = "frame";
+  frame.material = frameMat;
+  frame.parent = root;
+  frame.receiveShadows = true;
+  frame.metadata = { itemId: thing.id };
+  ctx.shadows.addShadowCaster(frame);
 
   const beads = [];
   const heavenTier = spec.tiers.heaven;
   const earthTier = spec.tiers.earth;
 
-  // rods, and the reckoning bar the tiers are counted against
+  /* The rods run THROUGH their beads now instead of under them: with the board
+     gone there is nothing to lay a bead on, and threaded is what a real one is.
+     Both ends are buried in the rails, so a rod stops where the timber starts. */
   for (let r = 0; r < spec.rods; r++) {
-    const along = -size.width / 2 + EDGE + PITCH * (r + 0.5);
     const wire = BJS.MeshBuilder.CreateBox("rod",
       spec.upright
-        ? { width: 0.12, depth: size.depth - EDGE, height: 0.08 }
-        : { width: size.width - EDGE, depth: 0.12, height: 0.08 },
+        ? { width: ROD_T, depth: size.depth - RAIL * 2, height: ROD_T }
+        : { width: size.width - RAIL * 2, depth: ROD_T, height: ROD_T },
       scene);
     wire.material = rodMat;
     wire.parent = root;
     wire.isPickable = false;
-    if (spec.upright) wire.position.set(along, PLATE + 0.05, 0);
-    else wire.position.set(0, PLATE + 0.05, -size.depth / 2 + EDGE + PITCH * (r + 0.5));
+    if (spec.upright) {
+      wire.position.set(-size.width / 2 + EDGE + PITCH * (r + 0.5), FRAME_H / 2, 0);
+    } else {
+      wire.position.set(0, FRAME_H / 2, -size.depth / 2 + EDGE + PITCH * (r + 0.5));
+    }
   }
 
+  // The reckoning bar spans between the side rails, as deep as the beads it
+  // separates, so a tier packed against it stops dead against something solid.
   if (spec.upright) {
     const bar = BJS.MeshBuilder.CreateBox("bar",
-      { width: size.width, depth: 0.34, height: 0.24 }, scene);
+      { width: size.width - RAIL * 2, depth: 0.34, height: FRAME_H * 0.82 }, scene);
     bar.material = railMat;
     bar.parent = root;
     bar.isPickable = false;
-    bar.position.set(0, PLATE + 0.12, size.barZ);
+    bar.position.set(0, FRAME_H / 2, size.barZ);
   }
 
   for (let r = 0; r < spec.rods; r++) {
@@ -241,7 +270,7 @@ export function buildAbacus(ctx, thing) {
     }
   }
 
-  const parts = { root, beads, size, spec, plate };
+  const parts = { root, beads, size, spec, frame };
   syncAbacus(thing, parts, false);
   return parts;
 }
@@ -284,7 +313,7 @@ export function syncAbacus(thing, parts, animate = true) {
     const count = rod[mesh.__tier];
     const off = offsetOf(mesh.__index, count);
 
-    const y = PLATE + BEAD_H / 2;
+    const y = FRAME_H / 2;
     // Heaven is the far side of the bar and earth the near side — the frame is
     // lying on a desk, so "above the bar" is away from whoever is reading it.
     const target = spec.upright

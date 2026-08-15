@@ -97,7 +97,7 @@ export function createView(ctx) {
          use: the outline renderer inflates the mesh along its normals, and on a
          slab 2mm under its own printed face that shell swallows the table. */
       const on = store.selection.has(t.id);
-      const body = t.kind === "abacus" ? rig.parts.plate : rig.parts.slab;
+      const body = t.kind === "abacus" ? rig.parts.frame : rig.parts.slab;
       if (body && rig.lit !== on) {
         rig.lit = on;
         if (on) ctx.highlight.addMesh(body, glow);

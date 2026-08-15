@@ -8,7 +8,8 @@
 
    Beads and board faces are checked FIRST and never select: sliding a bead or
    tapping a times-table cell is what you meant, not picking the frame up. To
-   move the frame you grab its plate, which is what your hand would do.
+   move an abacus you grab its frame — the timbers, not the beads — which is
+   what your hand would do.
    ========================================================================== */
 
 import { store, snapshot, say, selectedItems } from "./state.js";
@@ -27,6 +28,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   const state = {
     lasso: false, // touch-friendly "select with a box" mode
+    pan: false,   // hand tool: every drag belongs to the camera
     drag: null,
     sweep: null,
     lastTap: { id: null, at: 0 },
@@ -177,6 +179,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   function onDown(e) {
     if (e.button != null && e.button > 0) return; // let right/middle drag the camera
+    if (state.pan) return; // hand tool on: the camera gets the drag, nothing is picked
     const pt = localXY(e);
     const additive = e.ctrlKey || e.shiftKey || e.metaKey;
 
@@ -229,6 +232,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       return;
     }
     if (e.pointerType !== "touch") {
+      if (state.pan) { canvas.style.cursor = "grab"; return; }
       const over = pickAny(pt.x, pt.y, (m) => isBead(m) || isFace(m) || isItem(m));
       canvas.style.cursor = over
         ? (isBead(over.pickedMesh) || isFace(over.pickedMesh) ? "pointer" : "grab")
@@ -251,6 +255,13 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     setLasso(on) {
       state.lasso = !!on;
       canvas.style.cursor = on ? "crosshair" : "";
+    },
+    get pan() { return state.pan; },
+    setPan(on) {
+      state.pan = !!on;
+      // a half-finished drag would otherwise keep running under the hand tool
+      if (state.pan) { state.drag = null; state.sweep = null; }
+      canvas.style.cursor = on ? "grab" : state.lasso ? "crosshair" : "";
     },
     destroy() {
       canvas.removeEventListener("pointerdown", onDown);
