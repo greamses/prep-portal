@@ -41,6 +41,19 @@ const RAIL = 0.34;   // how thick the frame's four timbers are
 const FRAME_H = 1.16; // deeper than a bead is wide, so the beads sit inside it
 const ROD_T = 0.11;  // a rod's square section, a shade fatter than the bead's eye
 
+/* The readout: a little slate standing above the frame with the number the
+   beads are currently showing. It lies flat like everything else, so it reads
+   from straight above as well as from the side. */
+const READ_D = 2.1;  // how deep the slate is
+const READ_GAP = 0.3; // clear paper between the frame and its slate
+const READ_PAD = READ_D + READ_GAP;
+/* The slate stands as tall as the frame, not flat on the paper. Lying flat it
+   was legible from straight above and hidden behind the far rail from every
+   other angle — the rail is over a unit tall and the slate was a sixth of that.
+   At frame height its face clears the rail, and being a horizontal face it still
+   reads straight on in the 2D view. */
+const SLATE_H = FRAME_H;
+
 export const SPECS = {
   soroban: {
     label: "Soroban", upright: true, rods: 9,
@@ -65,10 +78,13 @@ export function makeAbacus(variant) {
     kind: "abacus",
     variant,
     l: Math.ceil(size.width),
-    w: Math.ceil(size.depth),
+    // the readout stands above the frame and is part of the thing, so it has to
+    // be inside the footprint or the next piece along would be placed on top
+    w: Math.ceil(size.depth + READ_PAD),
     h: FRAME_H,
     x: 0,
     z: 0,
+    turn: 0, // quarter turns, applied to the whole assembly
     tag: null,
     rods: Array.from({ length: spec.rods }, () => ({ heaven: 0, earth: 0 })),
   };
@@ -201,6 +217,14 @@ export function buildAbacus(ctx, thing) {
   const size = frameSize(spec);
   const root = new BJS.TransformNode("ab" + thing.id, scene);
 
+  /* The frame hangs off a hub shifted back by half the readout's depth, so the
+     frame AND its slate together sit centred on the thing's footprint. Every
+     frame part is built in the frame's own coordinates and parented here, which
+     is what lets the bead arithmetic below stay ignorant of the slate. */
+  const hub = new BJS.TransformNode("abHub" + thing.id, scene);
+  hub.parent = root;
+  hub.position.z = -READ_PAD / 2;
+
   const frameMat = mat(scene, "--accent-warning", "#f0a868");
   // darker than the paper behind it, or the exposed stretch of rod between two
   // beads reads as a pale peg standing up rather than as wire running through
@@ -227,7 +251,7 @@ export function buildAbacus(ctx, thing) {
   const frame = BJS.Mesh.MergeMeshes(railMeshes, true, true);
   frame.name = "frame";
   frame.material = frameMat;
-  frame.parent = root;
+  frame.parent = hub;
   frame.receiveShadows = true;
   frame.metadata = { itemId: thing.id };
   ctx.shadows.addShadowCaster(frame);
@@ -246,7 +270,7 @@ export function buildAbacus(ctx, thing) {
         : { width: size.width - RAIL * 2, depth: ROD_T, height: ROD_T },
       scene);
     wire.material = rodMat;
-    wire.parent = root;
+    wire.parent = hub;
     wire.isPickable = false;
     if (spec.upright) {
       wire.position.set(-size.width / 2 + EDGE + PITCH * (r + 0.5), FRAME_H / 2, 0);
@@ -264,7 +288,7 @@ export function buildAbacus(ctx, thing) {
     const bar = BJS.MeshBuilder.CreateBox("bar",
       { width: size.width - RAIL * 2, depth: 0.22, height: FRAME_H }, scene);
     bar.material = mat(scene, "--accent-warning", "#f0a868", 0.72);
-    bar.parent = root;
+    bar.parent = hub;
     bar.isPickable = false;
     bar.position.set(0, FRAME_H / 2, size.barZ);
   }
@@ -272,20 +296,97 @@ export function buildAbacus(ctx, thing) {
   for (let r = 0; r < spec.rods; r++) {
     if (heavenTier) {
       for (let i = 0; i < heavenTier.n; i++) {
-        beads.push(makeBead(ctx, root, thing, spec, size, r, "heaven", i));
+        beads.push(makeBead(ctx, hub, thing, spec, size, r, "heaven", i));
       }
     }
     for (let i = 0; i < earthTier.n; i++) {
-      beads.push(makeBead(ctx, root, thing, spec, size, r, "earth", i));
+      beads.push(makeBead(ctx, hub, thing, spec, size, r, "earth", i));
     }
   }
 
-  const parts = { root, beads, size, spec, frame };
+  /* ── the readout slate, standing above the frame ────────────────────────── */
+  const slate = BJS.MeshBuilder.CreateBox("slate",
+    { width: size.width, depth: READ_D, height: SLATE_H }, scene);
+  /* The frame is on the hub, shifted back by half the readout's depth, so the
+     slate has to be measured from THERE and not from the root: the frame's far
+     rail is at `size.depth/2 - READ_PAD/2`, and a gap past it works out as
+     simply half a gap beyond half the frame. */
+  const slateZ = size.depth / 2 + READ_GAP / 2;
+  slate.position.set(0, SLATE_H / 2, slateZ);
+  slate.parent = root;
+  slate.material = frameMat;
+  slate.receiveShadows = true;
+  // the slate belongs to the abacus, so grabbing it picks the whole thing up
+  slate.metadata = { itemId: thing.id };
+  ctx.shadows.addShadowCaster(slate);
+
+  /* The number is drawn onto a separate plane a hair above the slate rather than
+     onto a face of it, for the reason the chart boards do the same: a box face
+     cannot be given its own texture without splitting the box into submeshes. */
+  const px = Math.min(2048, Math.round(size.width * 64));
+  const py = Math.min(1024, Math.round(READ_D * 64));
+  const tex = new BJS.DynamicTexture("abRead" + thing.id, { width: px, height: py }, scene, false);
+  tex.wrapU = BJS.Texture.CLAMP_ADDRESSMODE;
+  tex.wrapV = BJS.Texture.CLAMP_ADDRESSMODE;
+  tex.anisotropicFilteringLevel = 4;
+
+  const readMat = new BJS.StandardMaterial("abReadMat" + thing.id, scene);
+  readMat.diffuseTexture = tex;
+  readMat.specularColor = new BJS.Color3(0.02, 0.02, 0.02);
+
+  const readFace = BJS.MeshBuilder.CreateGround("readFace",
+    { width: size.width - 0.12, height: READ_D - 0.12 }, scene);
+  readFace.position.set(0, SLATE_H + 0.002, slateZ);
+  readFace.parent = root;
+  readFace.material = readMat;
+  readFace.isPickable = false;
+
+  const parts = { root, hub, beads, size, spec, frame, slate, readFace, tex, readMat, shown: null };
   syncAbacus(thing, parts, false);
   return parts;
 }
 
-function makeBead(ctx, root, thing, spec, size, r, tier, i) {
+/**
+ * Paint the slate. Kept off the render loop — it is only redrawn when the number
+ * it is showing actually changes, which for a frame being read is most presses
+ * and for one sitting still is never.
+ */
+function paintReadout(thing, parts) {
+  const value = abacusValue(thing);
+  if (parts.shown === value) return;
+  parts.shown = value;
+
+  const tex = parts.tex;
+  const g = tex.getContext();
+  const w = tex.getSize().width;
+  const h = tex.getSize().height;
+
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = cssVar("--surface-primary", "#fffdf8");
+  g.fillRect(0, 0, w, h);
+
+  const text = String(value);
+  /* One size that fits the widest number this frame can hold, not one that fits
+     the number showing: a readout that changes size as you count is a fidget. */
+  const widest = "0".repeat(thing.rods.length + 1);
+  let size = Math.floor(h * 0.68);
+  g.font = `700 ${size}px "JetBrains Mono", ui-monospace, monospace`;
+  const room = w * 0.9;
+  const wide = g.measureText(widest).width;
+  if (wide > room) {
+    size = Math.max(12, Math.floor(size * (room / wide)));
+    g.font = `700 ${size}px "JetBrains Mono", ui-monospace, monospace`;
+  }
+
+  g.fillStyle = cssVar("--ink", "#2a2723");
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText(text, w / 2, h / 2 + size * 0.04);
+
+  tex.update(true);
+}
+
+function makeBead(ctx, hub, thing, spec, size, r, tier, i) {
   const BJS = B();
   const paint = beadPaint(spec, r, tier, i);
 
@@ -313,7 +414,7 @@ function makeBead(ctx, root, thing, spec, size, r, tier, i) {
   else mesh.rotation.z = Math.PI / 2;
 
   mesh.material = mat(ctx.scene, paint.token, paint.fallback, paint.shade);
-  mesh.parent = root;
+  mesh.parent = hub;
   mesh.metadata = { bead: { thingId: thing.id, rod: r, tier, index: i } };
   ctx.shadows.addShadowCaster(mesh);
 
@@ -330,6 +431,7 @@ function makeBead(ctx, root, thing, spec, size, r, tier, i) {
 export function syncAbacus(thing, parts, animate = true) {
   const BJS = B();
   const { spec, size } = parts;
+  paintReadout(thing, parts);
   for (const mesh of parts.beads) {
     const rod = thing.rods[mesh.__rod];
     const count = rod[mesh.__tier];
@@ -365,6 +467,8 @@ export function placeAbacus(parts, thing) {
   parts.root.position.x = thing.x + thing.l / 2;
   parts.root.position.z = thing.z + thing.w / 2;
   parts.root.position.y = 0;
+  // the whole assembly turns together — frame, beads and slate
+  parts.root.rotation.y = (thing.turn || 0) * (Math.PI / 2);
 }
 
 /** A one-line reading of the frame, for the HUD. */

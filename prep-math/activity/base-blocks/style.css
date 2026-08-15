@@ -769,68 +769,36 @@ body.bb-locked { overflow: hidden; }
   color: var(--text-on-accent);
 }
 
+/* the turn handle — pinned to the top-right corner of whatever is picked */
+.bb-turn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-on-accent);
+  background: var(--accent-secondary);
+  border: 0;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.bb-turn svg { width: 19px; height: 19px; }
+.bb-turn:hover { transform: rotate(15deg); }
+.bb-turn:active { transform: rotate(90deg); }
+.bb-turn[hidden] { display: none; }
+
 /* a short screen in landscape cannot take five full-size buttons */
 @media (max-height: 560px) {
   .bb-viewpad { gap: 5px; }
   .bb-viewpad .gv-fs-btn { width: 30px; height: 30px; }
   .bb-viewpad .gv-fs-btn svg { width: 17px; height: 17px; }
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   NOTES + KEYS
-   ══════════════════════════════════════════════════════════════════════════ */
-
-.bb-notes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: clamp(1.1rem, 3vw, 1.8rem);
-  margin-top: clamp(2rem, 5vw, 3.2rem);
-}
-.bb-notes .pp-receipt__paper { padding: 1.5rem 1.2rem 1.3rem; }
-.bb-notes h2 {
-  margin: 0 0 0.5rem;
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold, 700);
-  font-size: var(--text-h3, 1.05rem);
-  color: var(--ink);
-}
-.bb-notes p {
-  margin: 0;
-  font-size: var(--text-body-sm, 0.88rem);
-  line-height: var(--leading-relaxed, 1.7);
-  color: var(--text-secondary);
-}
-.bb-notes p b { color: var(--ink); font-weight: var(--weight-semibold, 600); }
-.bb-notes__tag { position: absolute; top: -13px; left: 20px; z-index: 2; }
-
-.bb-keys {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem;
-  margin-top: clamp(1.6rem, 4vw, 2.4rem);
-  padding: 0.9rem 1rem;
-  background: var(--surface-primary);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-sm);
-}
-.bb-keys ul { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin: 0; padding: 0; list-style: none; }
-.bb-keys li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs, 0.7rem);
-  color: var(--text-secondary);
-}
-.bb-keys kbd {
-  padding: 0.14rem 0.36rem;
-  background: var(--surface-secondary);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-sm);
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  color: var(--ink);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

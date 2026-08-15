@@ -39,6 +39,19 @@ export function createView(ctx) {
     for (const b of store.blocks) {
       liveBlocks.add(b.id);
       let mesh = meshes.get(b.id);
+
+      /* A block is a plain box, so turning one is exactly swapping its two floor
+         measurements — there is no rotation to apply. But the mesh was built
+         from the old pair, and its grooves are per-face UVs sized in units, so
+         the box has to be built again rather than spun. */
+      const dims = b.l + "x" + b.w + "x" + b.h;
+      if (mesh && mesh.metadata.dims !== dims) {
+        ctx.shadows.removeShadowCaster(mesh);
+        mesh.dispose();
+        meshes.delete(b.id);
+        mesh = null;
+      }
+
       if (!mesh) {
         mesh = buildMesh(ctx, b, store.base);
         meshes.set(b.id, mesh);
@@ -50,6 +63,7 @@ export function createView(ctx) {
         else place(mesh, b);
       }
       mesh.metadata.colour = colourOf(b, store.base);
+      mesh.metadata.dims = dims;
 
       const on = store.selection.has(b.id);
       mesh.renderOutline = on;

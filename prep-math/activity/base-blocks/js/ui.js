@@ -19,7 +19,7 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export function mountUI({
   pointer, stage,
   onFit = () => {}, onFlat = () => {},
-  onZoom = () => {}, onPan = () => {}, onHand = () => {},
+  onZoom = () => {}, onPan = () => {}, onHand = () => {}, onTurn = () => {},
 }) {
   paintIcons(document);
 
@@ -220,6 +220,7 @@ export function mountUI({
     else if (k === "b") { e.preventDefault(); run(ACTIONS.break); }
     else if (k === "t") { e.preventDefault(); run(ACTIONS.tidy); }
     else if (k === "v") { e.preventDefault(); toggleFlat(); }
+    else if (k === "q") { e.preventDefault(); onTurn(); }
     else if (k === "a") { e.preventDefault(); run(() => { ops.selectAll(); say("Everything selected."); }); }
     else if (k === "escape") { closePops(); run(() => { store.selection = new Set(); }); }
     else if (k === "delete" || k === "backspace") { e.preventDefault(); run(ACTIONS.delete); }

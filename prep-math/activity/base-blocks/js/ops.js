@@ -12,7 +12,7 @@
 
 import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
-import { occupancy, findSpot, mark, tidy as tidyLayout } from "./layout.js";
+import { occupancy, findSpot, fits, mark, tidy as tidyLayout } from "./layout.js";
 
 const MAX_SIDE = 64;
 
@@ -513,6 +513,51 @@ export function tidyMat() {
   snapshot();
   tidyLayout(all);
   say("Tidied — one row per highlight colour, biggest first.", "ok");
+  return true;
+}
+
+/**
+ * Turn everything picked a quarter turn clockwise.
+ *
+ * A turn swaps a thing's two floor measurements, so the space it needs changes
+ * shape — it can easily no longer fit where it is standing. Each one is turned
+ * on the spot when there is room and moved to the nearest spot that has room
+ * when there is not, which is the same rule placement uses everywhere else.
+ *
+ * The two kinds turn differently and have to: a BLOCK is a plain box, so
+ * swapping its measurements IS the turn and the mesh is rebuilt from them. A
+ * frame or a board is not symmetrical — a soroban's rods have to end up running
+ * the other way — so those carry a `turn` and the rig is spun by it.
+ */
+export function rotateSelected() {
+  const sel = selectedItems();
+  if (!sel.length) { say("Pick something first, then turn it.", "warn"); return false; }
+
+  const turnable = sel.filter((b) => b.l !== b.w || b.kind);
+  if (!turnable.length) {
+    say("A cube looks the same whichever way round it is.", "warn");
+    return false;
+  }
+
+  snapshot();
+  const moving = new Set(sel.map((b) => b.id));
+  const grid = occupancy(items(), moving);
+
+  for (const b of sel) {
+    if (b.kind) b.turn = ((b.turn || 0) + 1) % 4;
+    const l = b.w, w = b.l;
+    b.l = l;
+    b.w = w;
+
+    // keep it where it is if the new shape still fits, otherwise find it a spot
+    if (!fits(grid, b.x, b.z, l, w, CFG.gap)) {
+      const spot = findSpot(grid, l, w, { x: b.x, z: b.z });
+      if (spot) { b.x = spot.x; b.z = spot.z; }
+    }
+    mark(grid, b.x, b.z, l, w);
+  }
+
+  say(sel.length === 1 ? "Turned a quarter." : `Turned ${sel.length} a quarter.`);
   return true;
 }
 

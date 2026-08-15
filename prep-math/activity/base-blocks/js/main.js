@@ -17,7 +17,8 @@ import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId } from "./state.js";
-import { splitSelected, addPlace, addThing } from "./ops.js";
+import { splitSelected, addPlace, addThing, rotateSelected } from "./ops.js";
+import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue } from "./abacus.js";
@@ -62,6 +63,11 @@ function loadBabylon() {
     s.onerror = reject;
     document.head.appendChild(s);
   });
+}
+
+/** A quarter turn, from the handle on the canvas or from the Q key. */
+function doTurn() {
+  if (rotateSelected()) emit();
 }
 
 /* ── the hand tool ────────────────────────────────────────────────────────── */
@@ -240,6 +246,7 @@ async function bootCanvas() {
       onZoom: (factor) => zoomBy(ctx, factor),
       onPan: (dx, dz) => panBy(ctx, dx, dz),
       onHand: () => setHand(!handOn),
+      onTurn: doTurn,
     });
 
     buildDock(
@@ -256,7 +263,9 @@ async function bootCanvas() {
     mountCornerControls();
 
     const trade = createRegroupPrompt(ctx, view, stage);
-    subscribe((s) => { view.sync(s); trade.refresh(); });
+    const turn = createTurnHandle(ctx, stage, doTurn);
+    subscribe((s) => { view.sync(s); trade.refresh(); turn.refresh(); });
+    turn.refresh();
 
     // keep the paper and the piece colours in step with a light/dark switch
     new MutationObserver(() => {
