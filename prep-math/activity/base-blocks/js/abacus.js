@@ -25,15 +25,21 @@ import { BEAD_TOKENS, cssVar } from "./config.js";
 const B = () => window.BABYLON;
 
 /* Bead travel and spacing, in world units (one unit cube = 1). */
-const PITCH = 1.7;   // between neighbouring rods
-const SLOT = 1.15;   // between neighbouring beads on a rod
-const TRAVEL = 1.25; // how far a bead slides to change sides
-const BAR_GAP = 1.0; // clear space either side of the reckoning bar
-const EDGE = 1.2;    // frame margin
-const RAIL = 0.44;   // how thick the frame's four timbers are
-const FRAME_H = 0.62; // how deep the frame stands; beads sit down inside it
-const ROD_T = 0.1;   // a rod's square section
-const BEAD_H = 0.5;
+/* A bead is a squat bicone turned about its rod: WIDE across and THIN along,
+   which is the shape that lets four of them pack into a couple of centimetres
+   and still be caught by a fingertip. Everything else here is sized off it. */
+const BEAD_D = 1.02;  // across the bead — the wide way, athwart the rod
+const BEAD_T = 0.42;  // along the rod — the thin way
+const BEAD_EYE = 0.05; // the hole it is threaded by, hidden inside the rod
+
+const PITCH = 1.22;  // between neighbouring rods; must clear BEAD_D
+const SLOT = 0.5;    // between neighbouring beads on a rod — packed, they touch
+const TRAVEL = 0.62; // how far a bead slides to change sides
+const BAR_GAP = 0.42; // clear space either side of the reckoning bar
+const EDGE = 0.82;   // frame margin
+const RAIL = 0.34;   // how thick the frame's four timbers are
+const FRAME_H = 1.16; // deeper than a bead is wide, so the beads sit inside it
+const ROD_T = 0.11;  // a rod's square section, a shade fatter than the bead's eye
 
 export const SPECS = {
   soroban: {
@@ -70,7 +76,7 @@ export function makeAbacus(variant) {
 
 /** How far a tier reaches from the bar when its beads are pushed right out. */
 function reach(n) {
-  return n ? BAR_GAP + (n - 1) * SLOT + TRAVEL + 0.5 : BAR_GAP;
+  return n ? BAR_GAP + (n - 1) * SLOT + TRAVEL + BEAD_T / 2 : BAR_GAP;
 }
 
 /**
@@ -196,8 +202,9 @@ export function buildAbacus(ctx, thing) {
   const root = new BJS.TransformNode("ab" + thing.id, scene);
 
   const frameMat = mat(scene, "--accent-warning", "#f0a868");
-  const railMat = mat(scene, "--ink", "#2a2723");
-  const rodMat = mat(scene, "--text-tertiary", "#9a948a");
+  // darker than the paper behind it, or the exposed stretch of rod between two
+  // beads reads as a pale peg standing up rather than as wire running through
+  const rodMat = mat(scene, "--text-tertiary", "#9a948a", 0.58);
 
   /* A real abacus has no backing board — four timbers and the rods threaded
      between them, and you can see the desk through it. The four rails are merged
@@ -248,12 +255,15 @@ export function buildAbacus(ctx, thing) {
     }
   }
 
-  // The reckoning bar spans between the side rails, as deep as the beads it
-  // separates, so a tier packed against it stops dead against something solid.
+  /* The reckoning bar spans between the side rails and stands the full depth of
+     the frame, so a tier packed against it stops dead against something solid.
+     It is the frame's own timber a few shades down, not a black bar: on a real
+     soroban the beam is part of the frame, and painting it black made it read
+     as a wall across the middle rather than as the thing you count against. */
   if (spec.upright) {
     const bar = BJS.MeshBuilder.CreateBox("bar",
-      { width: size.width - RAIL * 2, depth: 0.34, height: FRAME_H * 0.82 }, scene);
-    bar.material = railMat;
+      { width: size.width - RAIL * 2, depth: 0.22, height: FRAME_H }, scene);
+    bar.material = mat(scene, "--accent-warning", "#f0a868", 0.72);
     bar.parent = root;
     bar.isPickable = false;
     bar.position.set(0, FRAME_H / 2, size.barZ);
@@ -279,17 +289,29 @@ function makeBead(ctx, root, thing, spec, size, r, tier, i) {
   const BJS = B();
   const paint = beadPaint(spec, r, tier, i);
 
-  /* A six-sided disc, slightly narrower on top so its bevel catches the light.
-     The axis stands upright rather than lying along the rod: these frames are
-     read from above, and that is the face the hexagon needs to show. */
-  const mesh = BJS.MeshBuilder.CreateCylinder("bead", {
-    height: BEAD_H,
-    diameterTop: 0.86,
-    diameterBottom: 1.08,
-    tessellation: 6,
+  /* A bead is a solid of revolution about the ROD, not about the vertical: it
+     is threaded, so the rod is its axis and there is no other way for it to sit.
+     The profile is a bicone with a little belly — widest at the equator, drawn
+     in to the eye at both ends — which is what makes a packed tier read as a
+     row of edges rather than a sausage. */
+  const rr = BEAD_D / 2, tt = BEAD_T / 2;
+  const mesh = BJS.MeshBuilder.CreateLathe("bead", {
+    shape: [
+      new BJS.Vector3(BEAD_EYE, -tt, 0),
+      new BJS.Vector3(rr * 0.62, -tt * 0.44, 0),
+      new BJS.Vector3(rr, 0, 0),
+      new BJS.Vector3(rr * 0.62, tt * 0.44, 0),
+      new BJS.Vector3(BEAD_EYE, tt, 0),
+    ],
+    tessellation: 18,
+    closed: false,
   }, ctx.scene);
-  // a flat side facing the way the bead travels, so a packed tier sits square
-  mesh.rotation.y = spec.upright ? Math.PI / 6 : 0;
+
+  /* The lathe turns about Y, so tip it onto the rod: the upright frames run
+     their rods down Z, the schoty runs its wires across X. */
+  if (spec.upright) mesh.rotation.x = Math.PI / 2;
+  else mesh.rotation.z = Math.PI / 2;
+
   mesh.material = mat(ctx.scene, paint.token, paint.fallback, paint.shade);
   mesh.parent = root;
   mesh.metadata = { bead: { thingId: thing.id, rod: r, tier, index: i } };

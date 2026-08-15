@@ -327,9 +327,13 @@ export function panBy(ctx, dx, dz) {
  * is on. The pointer layer stops picking things up for as long as it lasts.
  */
 export function setPanTool(ctx, on) {
-  const pointers = ctx.camera.inputs?.attached?.pointers;
-  if (!pointers) return false;
-  pointers.panningMouseButton = on ? 0 : 2;
+  const cam = ctx.camera;
+  /* The button lives on the CAMERA as `_panningMouseButton` (2, the right one).
+     The pointers input has no `panningMouseButton` of its own — assigning one
+     there is accepted silently and read by nothing, which is precisely how this
+     shipped broken once. Verified against the running build, not the docs. */
+  if (!cam || !("_panningMouseButton" in cam)) return false;
+  cam._panningMouseButton = on ? 0 : 2;
   return true;
 }
 

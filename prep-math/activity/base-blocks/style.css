@@ -749,11 +749,16 @@ body.bb-locked { overflow: hidden; }
 }
 .bb-viewpad .gv-fs-btn {
   position: static;
+  /* sized to the tool rail on the left, so the two sets read as one kit */
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
   border: var(--border-subtle);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }
+.bb-viewpad .gv-fs-btn svg { width: 20px; height: 20px; }
 .bb-viewpad .gv-fs-btn:hover { background: var(--surface-secondary); }
 
 /* the hand tool is a mode, not an action, so it stays lit while it is on */
@@ -766,8 +771,9 @@ body.bb-locked { overflow: hidden; }
 
 /* a short screen in landscape cannot take five full-size buttons */
 @media (max-height: 560px) {
-  .bb-viewpad { gap: 6px; }
-  .bb-viewpad .gv-fs-btn { width: 36px; height: 36px; }
+  .bb-viewpad { gap: 5px; }
+  .bb-viewpad .gv-fs-btn { width: 30px; height: 30px; }
+  .bb-viewpad .gv-fs-btn svg { width: 17px; height: 17px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
