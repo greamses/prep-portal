@@ -328,41 +328,80 @@ body.bb-locked { overflow: hidden; }
 .bb-chip--back { background: var(--surface-primary); flex-shrink: 0; }
 .bb-chip--back:hover { background: var(--accent-primary); color: var(--text-on-accent); }
 
-/* ── left tool rail ───────────────────────────────────────────────────────── */
+/* ── left tool rail: four kits, two buttons wide ──────────────────────────── */
 .bb-rail {
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.4rem;
+  gap: 0.45rem;
+  padding: 0.5rem 0.45rem;
 }
+
+.bb-kit { display: flex; flex-direction: column; gap: 0.2rem; }
+.bb-kit + .bb-kit { padding-top: 0.45rem; border-top: var(--border-subtle); }
+.bb-kit__label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: var(--weight-semibold, 600);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding-left: 0.15rem;
+}
+/* three across: the canvas is wider than it is tall, so a short wide rail takes
+   less of the paper than a tall narrow one */
+.bb-kit__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 2px;
+}
+
 .bb-tool {
+  position: relative; /* the fly-out label hangs off this */
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  width: 60px;
-  padding: 0.42rem 0.2rem;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   background: transparent;
   border: 0;
   color: var(--ink);
   cursor: pointer;
   transition: var(--transition-fast, 0.15s ease);
 }
-.bb-tool svg { width: 20px; height: 20px; }
+.bb-tool svg { width: 19px; height: 19px; }
+
+/* The name only appears when you are on the button, so nineteen controls cost
+   the height of nine. It floats clear of the rail rather than widening it. */
 .bb-tool em {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  padding: 0.24rem 0.45rem;
+  background: var(--ink);
+  color: var(--surface-primary);
   font-style: normal;
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.03em;
-  color: var(--text-secondary);
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
 }
-.bb-tool:hover:not(:disabled) { background: var(--surface-secondary); transform: translateY(-1px); }
+.bb-tool:hover em,
+.bb-tool:focus-visible em { opacity: 1; }
+
+.bb-tool:hover:not(:disabled) { background: var(--surface-secondary); }
+.bb-tool:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
 .bb-tool.is-on { background: var(--accent-primary); color: var(--text-on-accent); }
-.bb-tool.is-on em { color: var(--text-on-accent); }
 .bb-tool:disabled { opacity: 0.34; cursor: default; }
+.bb-tool:disabled em { display: none; }
 .bb-tool--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-danger) 26%, transparent); }
 
 /* ── bottom dock: add a block · highlight ─────────────────────────────────── */
@@ -721,32 +760,6 @@ body.bb-locked { overflow: hidden; }
 .bb-toast[data-kind="ok"] { background: var(--accent-success); color: var(--text-on-accent); }
 .bb-toast[data-kind="warn"] { background: var(--accent-warning); color: var(--text-on-accent); }
 
-/* corner controls — one stacked pad: hand, zoom in/out, fit, fullscreen.
-   Stacking them in a flex column (rather than giving each its own `bottom:`)
-   means adding a sixth never means re-numbering the five under it. */
-.bb-viewpad {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column-reverse; /* first in the DOM sits lowest, by the thumb */
-  gap: 8px;
-}
-.bb-viewpad .gv-fs-btn {
-  position: static;
-  /* sized to the tool rail on the left, so the two sets read as one kit */
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
-  border: var(--border-subtle);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-}
-.bb-viewpad .gv-fs-btn svg { width: 20px; height: 20px; }
-.bb-viewpad .gv-fs-btn:hover { background: var(--surface-secondary); }
-
 /* the hand tool is a mode, not an action, so it stays lit while it is on */
 .bb-hand.is-on,
 .bb-hand.is-on:hover {
@@ -781,11 +794,14 @@ body.bb-locked { overflow: hidden; }
 .bb-turn { cursor: grab; touch-action: none; }
 .bb-turn.is-turning { cursor: grabbing; background: var(--accent-primary); }
 
-/* a short screen in landscape cannot take five full-size buttons */
-@media (max-height: 560px) {
-  .bb-viewpad { gap: 5px; }
-  .bb-viewpad .gv-fs-btn { width: 30px; height: 30px; }
-  .bb-viewpad .gv-fs-btn svg { width: 17px; height: 17px; }
+/* a short screen in landscape cannot take four full-size kits */
+@media (max-height: 620px) {
+  .bb-rail { gap: 0.3rem; padding: 0.35rem 0.3rem; }
+  .bb-kit + .bb-kit { padding-top: 0.3rem; }
+  .bb-kit__label { display: none; }
+  .bb-kit__grid { grid-template-columns: repeat(3, 30px); }
+  .bb-tool { width: 30px; height: 30px; }
+  .bb-tool svg { width: 17px; height: 17px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -802,12 +818,10 @@ body.bb-locked { overflow: hidden; }
 
 @media (max-width: 860px) {
   /* the stage is the whole viewport now — never give it a height here */
-  .bb-tool { width: 46px; }
-  .bb-tool em { display: none; }
-  /* the dock stops short of the corner buttons instead of sliding under them */
+  /* nothing sits in the bottom-right corner any more, so the dock has the width */
   .bb-dock {
     left: 12px;
-    right: 74px;
+    right: 12px;
     transform: none;
     max-width: none;
   }
@@ -817,6 +831,15 @@ body.bb-locked { overflow: hidden; }
 }
 
 @media (max-width: 560px) {
+  /* a third of a phone screen is too much rail — shrink the keys, keep all
+     fourteen, and let the group names go since there is no hover here anyway */
+  .bb-rail { gap: 0.3rem; padding: 0.35rem 0.3rem; }
+  .bb-kit + .bb-kit { padding-top: 0.3rem; }
+  .bb-kit__label { display: none; }
+  .bb-kit__grid { grid-template-columns: repeat(3, 30px); }
+  .bb-tool { width: 30px; height: 30px; }
+  .bb-tool svg { width: 17px; height: 17px; }
+
   .bb-count b { font-size: 1.3rem; }
   .bb-chip span:not([data-icon]) { display: none; }
   /* only the block pieces drop their name — they still show their value, and

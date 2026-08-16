@@ -129,45 +129,71 @@
             </div>
           </div>
 
-          <!-- ── tools ────────────────────────────────────────────────── -->
+          <!-- ── tools ─────────────────────────────────────────────────────
+               One rail, four kits. Buttons are icons only and name themselves
+               on hover or focus, so nineteen controls take a corner rather
+               than a column down the whole side of the paper. -->
           <div class="bb-rail" role="toolbar" aria-label="Tools">
-            <button class="bb-tool" type="button" data-act="regroup"
-                    aria-label="Regroup the picked blocks into the best grouping for this base (R)"
-                    title="Regroup — best grouping for this base (R)">
-              <span data-icon="regroup"></span><em>Regroup</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="split"
-                    aria-label="Split the picked blocks (S)" title="Split (S)">
-              <span data-icon="split"></span><em>Split</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="merge"
-                    aria-label="Merge the picked blocks (M)" title="Merge (M)">
-              <span data-icon="merge"></span><em>Merge</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="break"
-                    aria-label="Break the picked blocks into unit cubes (B)" title="Break to units (B)">
-              <span data-icon="crumbs"></span><em>To units</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="match"
-                    aria-label="Pick every block the same size as this one" title="Match every block this size">
-              <span data-icon="match"></span><em>Match</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="lasso" aria-pressed="false"
-                    aria-label="Box pick: drag on the paper to sweep up blocks" title="Box pick">
-              <span data-icon="lasso"></span><em>Box pick</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="tidy"
-                    aria-label="Tidy the canvas into rows (T)" title="Tidy up (T)">
-              <span data-icon="rows"></span><em>Tidy</em>
-            </button>
-            <button class="bb-tool" type="button" data-act="undo"
-                    aria-label="Undo the last change (Ctrl+Z)" title="Undo (Ctrl+Z)">
-              <span data-icon="undo"></span><em>Undo</em>
-            </button>
-            <button class="bb-tool bb-tool--danger" type="button" data-act="delete"
-                    aria-label="Remove the picked things (Delete)" title="Remove (Del)">
-              <span data-icon="trash"></span><em>Remove</em>
-            </button>
+            <div class="bb-kit" role="group" aria-label="Change the blocks">
+              <span class="bb-kit__label">Change</span>
+              <div class="bb-kit__grid">
+                <button class="bb-tool" type="button" data-act="regroup"
+                        aria-label="Regroup the picked blocks into the best grouping for this base (R)"
+                        title="Regroup — best grouping for this base (R)">
+                  <span data-icon="regroup"></span><em>Regroup</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="split"
+                        aria-label="Split the picked blocks (S)" title="Split (S)">
+                  <span data-icon="split"></span><em>Split</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="merge"
+                        aria-label="Merge the picked blocks (M)" title="Merge (M)">
+                  <span data-icon="merge"></span><em>Merge</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="break"
+                        aria-label="Break the picked blocks into unit cubes (B)" title="Break to units (B)">
+                  <span data-icon="crumbs"></span><em>To units</em>
+                </button>
+              </div>
+            </div>
+
+            <div class="bb-kit" role="group" aria-label="Choose things">
+              <span class="bb-kit__label">Pick</span>
+              <div class="bb-kit__grid">
+                <button class="bb-tool" type="button" data-act="match"
+                        aria-label="Pick every block the same size as this one" title="Match every block this size">
+                  <span data-icon="match"></span><em>Match</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="lasso" aria-pressed="false"
+                        aria-label="Box pick: drag on the paper to sweep up blocks" title="Box pick">
+                  <span data-icon="lasso"></span><em>Box pick</em>
+                </button>
+              </div>
+            </div>
+
+            <div class="bb-kit" role="group" aria-label="The canvas">
+              <span class="bb-kit__label">Canvas</span>
+              <div class="bb-kit__grid">
+                <button class="bb-tool" type="button" data-act="tidy"
+                        aria-label="Tidy the canvas into rows (T)" title="Tidy up (T)">
+                  <span data-icon="rows"></span><em>Tidy</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="undo"
+                        aria-label="Undo the last change (Ctrl+Z)" title="Undo (Ctrl+Z)">
+                  <span data-icon="undo"></span><em>Undo</em>
+                </button>
+                <button class="bb-tool bb-tool--danger" type="button" data-act="delete"
+                        aria-label="Remove the picked things (Delete)" title="Remove (Del)">
+                  <span data-icon="trash"></span><em>Remove</em>
+                </button>
+              </div>
+            </div>
+
+            <!-- the view kit is filled in by js/main.js, which owns the camera -->
+            <div class="bb-kit" role="group" aria-label="Where you are looking">
+              <span class="bb-kit__label">View</span>
+              <div class="bb-kit__grid" id="bb-kit-view"></div>
+            </div>
           </div>
 
           <!-- ── the dock: three families, built from js/tools.js ─────── -->

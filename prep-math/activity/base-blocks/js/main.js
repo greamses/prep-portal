@@ -91,39 +91,36 @@ function setHand(on) {
   say(handOn ? "Hand tool on — drag to slide the paper." : "Hand tool off.");
 }
 
-/* ── corner controls ──────────────────────────────────────────────────────── */
-function mountCornerControls() {
-  /* One stacked pad rather than a button per corner: they are all "where am I
-     looking" controls, and a flex column means adding one never means working
-     out a new `bottom:` for everything under it. */
-  const pad = document.createElement("div");
-  pad.className = "bb-viewpad";
-  stage.appendChild(pad);
+/* ── the View kit ─────────────────────────────────────────────────────────── */
+function mountViewKit() {
+  /* These live in the rail with everything else rather than in a pad of their
+     own in the far corner: they are one more group of controls, and two boxes
+     of buttons on one canvas was one box too many. */
+  const grid = document.getElementById("bb-kit-view");
 
   const add = (cls, label, title, icon, onClick) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "gv-fs-btn " + cls;
+    b.className = "bb-tool " + cls;
     b.setAttribute("aria-label", label);
     b.title = title;
-    b.innerHTML = icon;
+    b.innerHTML = `<span>${icon}</span><em>${label.split(":")[0]}</em>`;
     if (onClick) b.addEventListener("click", onClick);
-    pad.appendChild(b);
+    grid.appendChild(b);
     return b;
   };
 
-  // column-reverse: first added sits at the bottom, nearest the thumb
-  const btn = add("bb-fs", "Toggle fullscreen", "Fullscreen", ICON.expand);
-
-  add("bb-fit", "Fit everything in view", "Fit the view", ICON.fit,
-    () => fitView(ctx, store.blocks.concat(store.things)));
-
-  add("bb-zoomout", "Zoom out", "Zoom out (−)", ICON.zoomOut, () => zoomBy(ctx, 1.25));
-  add("bb-zoomin", "Zoom in", "Zoom in (+)", ICON.zoomIn, () => zoomBy(ctx, 0.8));
-
-  handBtn = add("bb-hand", "Hand tool: drag to slide the paper", "Hand tool (H)",
+  handBtn = add("bb-hand", "Hand", "Hand tool — drag to slide the paper (H)",
     ICON.hand, () => setHand(!handOn));
   handBtn.setAttribute("aria-pressed", "false");
+
+  add("bb-fit", "Fit", "Fit everything in view", ICON.fit,
+    () => fitView(ctx, store.blocks.concat(store.things)));
+
+  add("bb-zoomin", "Closer", "Zoom in (+)", ICON.zoomIn, () => zoomBy(ctx, 0.8));
+  add("bb-zoomout", "Further", "Zoom out (−)", ICON.zoomOut, () => zoomBy(ctx, 1.25));
+
+  const btn = add("bb-fs", "Full screen", "Fullscreen", ICON.expand);
 
   const isFull = () => document.fullscreenElement || document.webkitFullscreenElement;
   btn.addEventListener("click", async () => {
@@ -264,7 +261,7 @@ async function bootCanvas() {
       }
     ).paint(store.group);
 
-    mountCornerControls();
+    mountViewKit();
 
     const trade = createRegroupPrompt(ctx, view, stage);
     const turn = createTurnHandle(ctx, view, stage, () => emit());
