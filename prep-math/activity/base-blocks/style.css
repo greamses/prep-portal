@@ -72,7 +72,9 @@ body {
 .bb-eyebrow--note {
   padding: 0.45rem 0.9rem;
   background: var(--badge-subject-4-bg, #bfe3ff);
-  color: #2a2723;
+  /* --ink, not a fixed dark: the badge's blue is pale in light and deep in dark,
+     and only the flipping token stays legible on both */
+  color: var(--ink);
   transform: rotate(-1.4deg);
   box-shadow: var(--shadow-sm);
 }
@@ -108,43 +110,17 @@ body {
   line-height: var(--leading-relaxed, 1.8);
 }
 
-/* ── THE SHELF: three families of cards ───────────────────────────────────── */
+/* ── THE SHELF: one card, and it is the door ──────────────────────────────── */
 .bb-shelf {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(1.8rem, 4vw, 2.8rem);
-  margin-top: clamp(0.5rem, 2vw, 1.2rem);
-}
-
-/* named --family, not --group: the place-value readout already owns .bb-group */
-.bb-family__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem 0.9rem;
-  padding-bottom: 0.7rem;
-  margin-bottom: clamp(0.9rem, 2vw, 1.3rem);
-  border-bottom: var(--border-subtle);
-}
-.bb-family__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: var(--weight-black, 900);
-  font-size: var(--text-h2, clamp(1.3rem, 3.2vw, 1.9rem));
-  color: var(--ink);
-}
-.bb-family__blurb { margin: 0; color: var(--text-secondary); }
-
-.bb-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: clamp(0.9rem, 2.4vw, 1.4rem);
+  margin-top: clamp(0.8rem, 2.5vw, 1.6rem);
+  max-width: 640px;
 }
 
 .bb-card {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
   padding: 0;
   text-align: left;
   background: var(--surface-primary);
@@ -166,6 +142,16 @@ body {
   border-bottom: var(--border-subtle);
 }
 .bb-card__art svg { display: block; width: 100%; height: auto; max-height: 130px; }
+
+/* three pictures across, one per family, so the single card still shows its range */
+.bb-card__art--strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+.bb-card__pic { display: block; min-width: 0; }
+.bb-card__pic svg { max-height: 92px; }
 
 .bb-card__body {
   display: flex;

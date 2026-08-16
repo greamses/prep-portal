@@ -13,31 +13,33 @@
 import { GROUPS, toolById } from "./tools.js";
 import { ICON } from "./icons.js";
 
+/* Which tool the canvas opens on. The dock has all seven, so the shelf does not
+   need to: one card is the door, and choosing happens inside. */
+const DOOR = "base-blocks";
+
 export function buildShelf(root, onOpen) {
-  root.innerHTML = GROUPS.map(
-    (g) => `
-    <section class="bb-family" aria-labelledby="grp-${g.id}">
-      <div class="bb-family__head">
-        <h2 class="bb-family__title" id="grp-${g.id}">${g.label}</h2>
-        <p class="bb-family__blurb">${g.blurb}</p>
-      </div>
-      <div class="bb-cards">
-        ${g.tools
-          .map(
-            (t) => `
-          <button class="bb-card" type="button" data-tool="${t.id}">
-            <span class="bb-card__art">${t.art()}</span>
-            <span class="bb-card__body">
-              <span class="bb-card__title">${t.label}</span>
-              <span class="bb-card__blurb">${t.blurb}</span>
-            </span>
-            <span class="bb-card__go">Open ${ICON.chevron}</span>
-          </button>`
-          )
-          .join("")}
-      </div>
-    </section>`
-  ).join("");
+  /* One picture from each family, so the card shows what is behind it without
+     turning back into a list of seven. */
+  const strip = ["base-blocks", "soroban", "place-value"]
+    .map((id) => toolById(id))
+    .filter(Boolean)
+    .map((t) => `<span class="bb-card__pic">${t.art()}</span>`)
+    .join("");
+
+  root.innerHTML = `
+    <button class="bb-card bb-card--solo" type="button" data-tool="${DOOR}">
+      <span class="bb-card__art bb-card__art--strip">${strip}</span>
+      <span class="bb-card__body">
+        <span class="bb-card__title">Open the workbench</span>
+        <span class="bb-card__blurb">
+          ${GROUPS.map((g) => g.label).join(" · ")} — seven things on one endless
+          sheet of squared paper. Blocks to split and trade in any base, three
+          counting frames, and charts to stand the blocks on. Everything is in
+          the dock along the bottom once you are in.
+        </span>
+      </span>
+      <span class="bb-card__go">Open the canvas ${ICON.chevron}</span>
+    </button>`;
 
   root.addEventListener("click", (e) => {
     const card = e.target.closest("[data-tool]");
