@@ -117,7 +117,7 @@ export function createView(ctx) {
       return [t.variant, (t.hidden || []).join("|"), JSON.stringify(t.focus || null)].join("~");
     }
     const r = placeReading(t, store.blocks, store.base);
-    return ["place", store.base, r.digits.join(","), r.strays].join("~");
+    return ["place", store.base, r.digits.join(","), r.strays, (t.counters || []).join(",")].join("~");
   }
 
   function disposeRig(rig) {

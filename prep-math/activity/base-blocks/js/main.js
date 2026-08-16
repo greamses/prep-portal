@@ -22,7 +22,7 @@ import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue } from "./abacus.js";
-import { makeBoard, tapBoard, toggleCell, placeReading, placeSentence } from "./grids.js";
+import { makeBoard, tapBoard, tapPlace, toggleCell } from "./grids.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
 
@@ -222,7 +222,11 @@ async function bootCanvas() {
         const thing = store.things.find((t) => t.id === id);
         if (!thing) return;
         if (thing.variant === "place") {
-          say(placeSentence(placeReading(thing, store.blocks, store.base), store.base));
+          // shift takes a counter back out, the way it hides a square on a table
+          const done = tapPlace(thing, uv, store.base, {
+            remove: !!(e && (e.shiftKey || e.ctrlKey)),
+          });
+          if (done.message) say(done.message, done.changed ? "ok" : "warn");
           emit();
           return;
         }
