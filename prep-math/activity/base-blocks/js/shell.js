@@ -81,10 +81,14 @@ export function createCanvasView(el, { onOpen, onClose } = {}) {
 
 /** The dock's three tabs, and what each of them offers. */
 export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint }) {
+  /* The tabs are icons: three words across the dock cost a strip of canvas, and
+     the panel underneath already says what each family holds. */
   tabsEl.innerHTML = GROUPS.map(
     (g, i) => `
     <button class="bb-dock__tab" type="button" role="tab" data-group="${g.id}"
-      aria-selected="${i === 0}">${g.label}</button>`
+      aria-selected="${i === 0}" aria-label="${g.label}" title="${g.label}">
+      <span data-icon="${g.icon}"></span>
+    </button>`
   ).join("");
 
   function paint(groupId) {

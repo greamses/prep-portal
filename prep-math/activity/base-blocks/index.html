@@ -101,10 +101,13 @@
               <b id="bb-count-n">0</b>
               <span id="bb-count-sub">units on the canvas</span>
             </div>
+            <!-- icons, not words: the base chip keeps its number because that
+                 is a reading, not a label -->
             <div class="bb-top__right">
-              <button class="bb-chip" id="bb-view-btn" type="button" aria-pressed="false">
+              <button class="bb-chip bb-chip--icon" id="bb-view-btn" type="button"
+                      aria-pressed="false" title="Flat 2D view (V)">
                 <span data-icon="flat"></span>
-                <span id="bb-view-label">2D</span>
+                <span class="sr-only" id="bb-view-label">2D</span>
               </button>
               <button
                 class="bb-chip"
@@ -112,19 +115,21 @@
                 type="button"
                 aria-haspopup="dialog"
                 aria-expanded="false"
+                title="Working base"
               >
                 <span data-icon="base"></span>
-                <span id="bb-base-label">Base ten</span>
+                <b id="bb-base-label">10</b>
               </button>
               <button
-                class="bb-chip"
+                class="bb-chip bb-chip--icon"
                 id="bb-board-btn"
                 type="button"
                 aria-expanded="false"
                 aria-controls="bb-board"
+                aria-label="Read the canvas as a number"
+                title="Read the canvas as a number"
               >
                 <span data-icon="rows"></span>
-                <span>Place value</span>
               </button>
             </div>
           </div>

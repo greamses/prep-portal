@@ -325,6 +325,9 @@ body.bb-locked { overflow: hidden; }
 .bb-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 .bb-chip.is-on { background: var(--accent-primary); color: var(--text-on-accent); }
 .bb-chip svg { width: 15px; height: 15px; }
+.bb-chip b { font-family: var(--font-mono); font-weight: var(--weight-bold, 700); }
+/* an icon on its own gets a square, not a pill with nothing beside the glyph */
+.bb-chip--icon { padding: 0.4rem; }
 .bb-chip--back { background: var(--surface-primary); flex-shrink: 0; }
 .bb-chip--back:hover { background: var(--accent-primary); color: var(--text-on-accent); }
 
@@ -424,20 +427,18 @@ body.bb-locked { overflow: hidden; }
 }
 .bb-dock__tab {
   flex: 1 1 auto;
-  padding: 0.42rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34rem 0.85rem;
   background: transparent;
   border: 0;
   border-right: var(--border-subtle);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs, 0.68rem);
-  font-weight: var(--weight-semibold, 600);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
   cursor: pointer;
   transition: var(--transition-fast, 0.15s ease);
 }
+.bb-dock__tab svg { width: 19px; height: 19px; display: block; }
 .bb-dock__tab:last-child { border-right: 0; }
 .bb-dock__tab:hover { background: var(--surface-secondary); color: var(--ink); }
 .bb-dock__tab[aria-selected="true"] {
@@ -759,6 +760,22 @@ body.bb-locked { overflow: hidden; }
 .bb-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .bb-toast[data-kind="ok"] { background: var(--accent-success); color: var(--text-on-accent); }
 .bb-toast[data-kind="warn"] { background: var(--accent-warning); color: var(--text-on-accent); }
+
+/* the counter under the finger while it is being dragged across a chart */
+.bb-dotghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+.bb-dotghost[hidden] { display: none; }
 
 /* the hand tool is a mode, not an action, so it stays lit while it is on */
 .bb-hand.is-on,

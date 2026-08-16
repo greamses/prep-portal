@@ -98,6 +98,7 @@ function clone(t) {
   if (t.rods) copy.rods = t.rods.map((r) => ({ ...r }));
   if (t.hidden) copy.hidden = [...t.hidden];
   if (t.focus) copy.focus = { ...t.focus };
+  if (t.counters) copy.counters = [...t.counters];
   return copy;
 }
 

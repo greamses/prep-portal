@@ -11,31 +11,49 @@
    moment the working base changes.
    ========================================================================== */
 
-import { PLACES, placeDims, placeOf, toBase, baseWord, cssVar } from "./config.js";
+import { PLACES, placeAt, worthOf, placeDims, placeOf, toBase, baseWord, cssVar } from "./config.js";
 import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
 
 const SLAB = 0.22;      // how thick the board is
 const CELL = 2;         // canvas cells per table cell (multiply / divide)
-const COL = 12;         // canvas cells per place-value column
-const HEAD = 4;         // canvas cells of header depth
-const AREA = 13;        // canvas cells of column depth
+
+/* ── the place-value chart, measured in canvas cells ──────────────────────────
+   Down the face, top to bottom: a GUTTER of grow/shrink tabs on the left edge,
+   then for every column a TRAY of spare counters, a HEAD of labels, and the
+   AREA the counters sit in. */
+const GUT = 5;          // width of the left-hand gutter
+const COL = 12;         // width of one place column
+const TRAY = 5;         // depth of the spare-counter tray along the top
+const HEAD = 4;         // depth of the heading band
+const AREA = 14;        // depth of the counter area
+
+export const MIN_PLACES = 2;
+export const MAX_PLACES = 7;   // powers 0…6 — as far as the names carry
+export const MAX_DOTS = 30;    // a column will not hold more than this
 
 export const GRID_MAX = 12; // tables run to twelve twelves
+
+/** How wide and deep a chart of `n` places is, in cells. */
+export function chartSize(n) {
+  return { l: GUT + n * COL, w: TRAY + HEAD + AREA };
+}
 
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
 export function makeBoard(variant, base) {
   if (variant === "place") {
+    const places = PLACES.length;
     return {
       kind: "board", variant, tag: null, x: 0, z: 0, angle: 0,
-      l: PLACES.length * COL, w: HEAD + AREA, h: SLAB,
+      ...chartSize(places), h: SLAB,
+      places,
       /* Counters, one entry per column in the order they are drawn — biggest
          place on the LEFT, the way a number is written. They are the chart's own
          way of holding a digit, for when you want to work the places without
          fetching a block for every one. */
-      counters: PLACES.map(() => 0),
+      counters: Array.from({ length: places }, () => 0),
     };
   }
   const n = GRID_MAX + 1; // a header line plus 1..12
@@ -74,9 +92,14 @@ export function buildBoard(ctx, thing, base) {
 
   /* No mipmaps and clamped edges. A board's face is a single quad seen more or
      less straight on, so mips buy nothing — and an oblong non-power-of-two one
-     (the place-value chart is 2016 × 714) comes out black with them on. */
-  const px = Math.min(2048, Math.round(thing.l * 42));
-  const py = Math.min(2048, Math.round(thing.w * 42));
+     (the place-value chart is 2016 × 714) comes out black with them on.
+
+     One scale for both sides, never a per-side cap: the counter layout is worked
+     out in cells and drawn in pixels, and those two only agree while a cell is
+     the same number of pixels across as it is deep. */
+  const k = Math.min(42, 2048 / thing.l, 2048 / thing.w);
+  const px = Math.round(thing.l * k);
+  const py = Math.round(thing.w * k);
   const tex = new BJS.DynamicTexture("bdTex" + thing.id, { width: px, height: py }, scene, false);
   tex.wrapU = BJS.Texture.CLAMP_ADDRESSMODE;
   tex.wrapV = BJS.Texture.CLAMP_ADDRESSMODE;
@@ -130,37 +153,46 @@ export function paintBoard(thing, parts, opts = {}) {
 
 function drawPlace(g, W, H, thing, opts, c) {
   const base = opts.base || 10;
-  const reading = opts.reading || { counts: [], strays: 0, total: 0 };
-  const cols = PLACES.length;
-  const cw = W / cols;
-  const headH = H * (HEAD / (HEAD + AREA));
+  const reading = opts.reading || { counts: {}, strays: 0, total: 0 };
   const counters = countersOf(thing);
+  const order = placeOrder(thing);          // biggest place first, left to right
+  const k = W / thing.l;                    // pixels per cell (both ways alike)
+  const trayH = TRAY * k;
+  const headH = HEAD * k;
+  const gutW = GUT * k;
+  const colW = COL * k;
 
-  // biggest place on the left, the way a number is written
-  const order = [...PLACES].reverse();
+  drawGutter(g, gutW, H, thing, k, c);
 
-  for (let i = 0; i < cols; i++) {
+  for (let i = 0; i < order.length; i++) {
     const p = order[i];
-    const x = i * cw;
-    const d = placeDims(p.id, base);
-    const worth = d.l * d.w * d.h;
-    const hex = cssVar(TOKENS[p.id], "#f4c95d");
+    const x = gutW + i * colW;
+    const hex = colourOfPlace(p);
+
+    /* the tray: one spare counter per column, sitting over its own place, ready
+       to be dragged down into it */
+    g.fillStyle = rgba(c.ink, 0.05);
+    g.fillRect(x, 0, colW, trayH);
+    dot(g, x + colW / 2, trayH / 2, Math.min(trayH, colW) * 0.3, hex, c.ink, 0.5);
 
     g.fillStyle = tint(hex, 0.9);
-    g.fillRect(x, 0, cw, headH);
+    g.fillRect(x, trayH, colW, headH);
 
     g.fillStyle = "#2a2723";
     g.font = `700 ${Math.round(headH * 0.3)}px Unbounded, system-ui, sans-serif`;
-    g.fillText(p.plural, x + cw / 2, headH * 0.32);
+    g.fillText(fit(g, p.plural, colW * 0.92), x + colW / 2, trayH + headH * 0.32);
     g.font = `600 ${Math.round(headH * 0.2)}px "JetBrains Mono", monospace`;
-    g.fillText(`${worth}  ·  ${base}^${p.power}`, x + cw / 2, headH * 0.66);
+    g.fillText(`${worthOf(p.power, base)}  ·  ${base}^${p.power}`,
+      x + colW / 2, trayH + headH * 0.66);
 
-    // the count standing in this column, written faintly behind its counters
+    // the count in this column, written faintly behind its counters
+    const areaY = trayH + headH;
+    const areaH = H - areaY;
     const n = reading.counts[p.id] || 0;
     g.fillStyle = c.ink;
     g.font = `900 ${Math.round(headH * 0.62)}px Unbounded, system-ui, sans-serif`;
     g.globalAlpha = n ? 0.13 : 0.06;
-    g.fillText(String(n), x + cw / 2, headH + (H - headH) / 2);
+    g.fillText(String(n), x + colW / 2, areaY + areaH / 2);
     g.globalAlpha = 1;
 
     /* A column holding `base` counters or more is one trade away from being a
@@ -168,18 +200,72 @@ function drawPlace(g, W, H, thing, opts, c) {
     const held = counters[i] || 0;
     if (held >= base) {
       g.fillStyle = tint(cssVar("--accent-warning", "#f0a868"), 0.22);
-      g.fillRect(x, headH, cw, H - headH);
+      g.fillRect(x, areaY, colW, areaH);
     }
-    drawCounters(g, x, headH, cw, H - headH, held, hex, c.ink);
+    for (const s of counterSpots(held, x, areaY, colW, areaH)) {
+      dot(g, s.cx, s.cy, s.r, hex, c.ink, 1);
+    }
   }
 
   g.strokeStyle = rgba(c.ink, 0.5);
   g.lineWidth = 4;
   g.beginPath();
-  for (let i = 1; i < cols; i++) { g.moveTo(i * cw, 0); g.lineTo(i * cw, H); }
-  g.moveTo(0, headH); g.lineTo(W, headH);
+  for (let i = 0; i <= order.length; i++) {
+    const x = gutW + i * colW;
+    g.moveTo(x, 0); g.lineTo(x, H);
+  }
+  g.moveTo(gutW, trayH); g.lineTo(W, trayH);
+  g.moveTo(gutW, trayH + headH); g.lineTo(W, trayH + headH);
   g.stroke();
   g.strokeRect(2, 2, W - 4, H - 4);
+}
+
+/** The + / − tabs that make the chart wider or narrower, down its left edge. */
+function drawGutter(g, gutW, H, thing, k, c) {
+  const half = H / 2;
+  const s = gutW * 0.3;
+  g.fillStyle = rgba(c.ink, 0.06);
+  g.fillRect(0, 0, gutW, H);
+
+  const arm = (cy, minus) => {
+    g.strokeStyle = rgba(c.ink, 0.7);
+    g.lineWidth = Math.max(3, gutW * 0.07);
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(gutW / 2 - s, cy); g.lineTo(gutW / 2 + s, cy);
+    if (!minus) { g.moveTo(gutW / 2, cy - s); g.lineTo(gutW / 2, cy + s); }
+    g.stroke();
+  };
+  arm(half / 2, false);                       // grow: a bigger place on the left
+  g.globalAlpha = thing.places > MIN_PLACES ? 1 : 0.25;
+  arm(half + half / 2, true);                 // shrink, if the column is empty
+  g.globalAlpha = 1;
+
+  g.strokeStyle = rgba(c.ink, 0.25);
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(gutW * 0.25, half); g.lineTo(gutW * 0.75, half);
+  g.stroke();
+}
+
+function dot(g, cx, cy, r, hex, ink, alpha) {
+  g.globalAlpha = alpha;
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fillStyle = hex;
+  g.fill();
+  g.lineWidth = Math.max(2, r * 0.18);
+  g.strokeStyle = rgba(ink, 0.55);
+  g.stroke();
+  g.globalAlpha = 1;
+}
+
+/** Shrink a label until it fits the column it is written across. */
+function fit(g, text, max) {
+  if (g.measureText(text).width <= max) return text;
+  let s = text;
+  while (s.length > 4 && g.measureText(s + "…").width > max) s = s.slice(0, -1);
+  return s + "…";
 }
 
 const TOKENS = {
@@ -188,44 +274,59 @@ const TOKENS = {
   flat: "--accent-success",
   cube: "--accent-danger",
 };
+const EXTRA_TOKENS = ["--accent-warning", "--accent-primary", "--accent-secondary"];
+
+/** A place's colour: the four block colours, then the accents round again. */
+function colourOfPlace(p) {
+  if (TOKENS[p.id]) return cssVar(TOKENS[p.id], "#f4c95d");
+  return cssVar(EXTRA_TOKENS[(p.power - 4) % EXTRA_TOKENS.length], "#f0a868");
+}
 
 const PER_ROW = 5; // counters read at a glance in fives, the way a tally does
 
 /**
- * The dots in one column. They are laid out in rows of five, centred in the
- * column, and the whole block shrinks to fit however many there are — so a
- * column can hold a dozen counters without any of them leaving the paper.
+ * Where the dots in one column sit, in whatever units the rect is given in.
+ * ONE function for drawing and for hit-testing: the moment those two disagree
+ * you can see a counter you cannot pick up.
+ *
+ * Laid out in rows of five, centred in the column, shrinking to fit however
+ * many there are — so a column holds thirty without any leaving the paper.
  */
-function drawCounters(g, x0, y0, w, h, n, hex, ink) {
-  if (!n) return;
+export function counterSpots(n, x0, y0, w, h) {
+  const out = [];
+  if (!n) return out;
   const perRow = Math.min(PER_ROW, n);
   const rows = Math.ceil(n / perRow);
   const cell = Math.min(w / (perRow + 0.6), h / (rows + 0.6));
   const r = Math.min(cell * 0.36, w * 0.11);
   const startY = y0 + (h - rows * cell) / 2;
 
-  g.lineWidth = Math.max(2, r * 0.18);
-  g.strokeStyle = rgba(ink, 0.55);
-  for (let k = 0; k < n; k++) {
-    const row = Math.floor(k / perRow);
+  for (let i = 0; i < n; i++) {
+    const row = Math.floor(i / perRow);
     // the last row is centred under the full ones above it
     const inRow = Math.min(perRow, n - row * perRow);
     const rowX = x0 + (w - inRow * cell) / 2;
-    const cx = rowX + (k % perRow) * cell + cell / 2;
-    const cy = startY + row * cell + cell / 2;
-    g.beginPath();
-    g.arc(cx, cy, r, 0, Math.PI * 2);
-    g.fillStyle = hex;
-    g.fill();
-    g.stroke();
+    out.push({
+      cx: rowX + (i % perRow) * cell + cell / 2,
+      cy: startY + row * cell + cell / 2,
+      r,
+    });
   }
+  return out;
 }
 
-/** A chart made before counters existed still has none; treat that as zeros. */
+/** The chart's columns, biggest place first — the way a number is written. */
+export function placeOrder(thing) {
+  const n = thing.places || PLACES.length;
+  return Array.from({ length: n }, (_, i) => placeAt(n - 1 - i));
+}
+
+/** Keep the counter list the same length as the chart is wide. */
 function countersOf(thing) {
-  if (!Array.isArray(thing.counters) || thing.counters.length !== PLACES.length) {
-    thing.counters = PLACES.map(() => 0);
-  }
+  const n = thing.places || (thing.places = PLACES.length);
+  if (!Array.isArray(thing.counters)) thing.counters = [];
+  while (thing.counters.length < n) thing.counters.unshift(0);
+  while (thing.counters.length > n) thing.counters.shift();
   return thing.counters;
 }
 
@@ -288,60 +389,227 @@ function drawTable(g, W, H, thing, opts, c) {
 /* ── interaction ──────────────────────────────────────────────────────────── */
 
 /**
- * Turn a pick on the board's face into something happening.
- * `uv` is Babylon's texture coordinate: u across, v UP from the bottom.
+ * What is under a point on the place-value chart.
+ * `uv` is Babylon's texture coordinate: u across, v UP from the bottom — so a
+ * cell measured down from the top of the face is `(1 - v) * thing.w`.
+ *
+ * Returns a zone, the column it belongs to (null in the gutter) and, in the
+ * counter area, the index of the counter the point landed on (−1 for bare
+ * paper). The counter index comes from `counterSpots`, the same function that
+ * draws them, so what you can see is exactly what you can pick up.
  */
+export function hitPlace(thing, uv) {
+  const xc = uv.x * thing.l;
+  const yc = (1 - uv.y) * thing.w;
+  const n = thing.places || PLACES.length;
+
+  if (xc < GUT) {
+    return { zone: yc < thing.w / 2 ? "grow" : "shrink", col: null, index: -1 };
+  }
+  const col = Math.min(n - 1, Math.max(0, Math.floor((xc - GUT) / COL)));
+  if (yc < TRAY) return { zone: "tray", col, index: -1 };
+  if (yc < TRAY + HEAD) return { zone: "head", col, index: -1 };
+
+  const x0 = GUT + col * COL;
+  const y0 = TRAY + HEAD;
+  const held = countersOf(thing)[col] || 0;
+  const spots = counterSpots(held, x0, y0, COL, AREA);
+  let index = -1;
+  for (let i = spots.length - 1; i >= 0; i--) {
+    const s = spots[i];
+    const dx = xc - s.cx;
+    const dy = yc - s.cy;
+    // a shade wider than the dot looks, so a fingertip does not have to be exact
+    if (dx * dx + dy * dy <= (s.r * 1.35) ** 2) { index = i; break; }
+  }
+  return { zone: "area", col, index };
+}
+
 /**
- * A tap on the place-value chart: drop a counter in a column, take one back out
- * with shift, or tap a column's heading to trade a full column for one counter
- * in the place to its left — which is the whole point of the chart.
+ * A tap on the place-value chart. Bare paper in a column drops a counter in it,
+ * a counter takes itself back out, the heading trades a full column for one
+ * counter in the place to its left, and the gutter makes the chart wider or
+ * narrower.
  */
 export function tapPlace(thing, uv, base, { remove = false } = {}) {
-  const cols = PLACES.length;
-  const i = Math.min(cols - 1, Math.max(0, Math.floor(uv.x * cols)));
-  const order = [...PLACES].reverse();
+  const hit = hitPlace(thing, uv);
+  if (hit.zone === "grow") return growChart(thing);
+  if (hit.zone === "shrink") return shrinkChart(thing);
+
+  const order = placeOrder(thing);
+  const i = hit.col;
   const p = order[i];
   const counters = countersOf(thing);
 
-  // v runs UP from the bottom of the face, and the heading band is drawn on top
-  const onHead = uv.y > AREA / (HEAD + AREA);
-
-  if (onHead) {
-    if (counters[i] < base) {
-      return {
-        changed: false,
-        message: `${base} ${p.plural.toLowerCase()} make one ${order[i - 1]?.label.toLowerCase() || "of the next place"} — this column has ${counters[i]}.`,
-      };
-    }
-    if (i === 0) {
-      return {
-        changed: false,
-        message: `${p.plural} is the biggest place on this chart, so there is nowhere left to trade to.`,
-      };
-    }
-    counters[i] -= base;
-    counters[i - 1] += 1;
-    return {
-      changed: true,
-      message: `Traded ${base} ${p.plural.toLowerCase()} for one ${order[i - 1].label.toLowerCase()}.`,
-    };
+  if (hit.zone === "head") return tradeUp(thing, i, base);
+  if (hit.zone === "tray") {
+    if (counters[i] >= MAX_DOTS) return full(p);
+    counters[i] += 1;
+    return { changed: true, message: held(counters[i], p, i, order, base) };
   }
 
-  if (remove) {
+  // in the counter area: a counter takes itself away, bare paper adds one
+  if (remove || hit.index >= 0) {
     if (!counters[i]) return { changed: false, message: `No ${p.plural.toLowerCase()} to take away.` };
     counters[i] -= 1;
-  } else {
-    counters[i] += 1;
+    return { changed: true, message: `Took one ${p.label.toLowerCase()} away — ${counters[i]} left.` };
   }
+  if (counters[i] >= MAX_DOTS) return full(p);
+  counters[i] += 1;
+  return { changed: true, message: held(counters[i], p, i, order, base) };
+}
 
-  const held = counters[i];
-  if (held >= base) {
+function full(p) {
+  return { changed: false, message: `A column holds ${MAX_DOTS} ${p.plural.toLowerCase()} at most — trade some up.` };
+}
+
+function held(n, p, i, order, base) {
+  if (n >= base && i > 0) {
+    return `${n} ${p.plural.toLowerCase()} — tap the heading to trade ${base} of them for one ${order[i - 1].label.toLowerCase()}.`;
+  }
+  return `${n} ${n === 1 ? p.label.toLowerCase() : p.plural.toLowerCase()}.`;
+}
+
+/** Trade `base` counters in column `i` for one in the place to its left. */
+function tradeUp(thing, i, base) {
+  const order = placeOrder(thing);
+  const counters = countersOf(thing);
+  const p = order[i];
+  if (i === 0) {
     return {
-      changed: true,
-      message: `${held} ${p.plural.toLowerCase()} — tap the heading to trade ${base} of them for one ${order[i - 1]?.label.toLowerCase() || "bigger place"}.`,
+      changed: false,
+      message: `${p.plural} is the biggest place on this chart — press + on the left edge to add another.`,
     };
   }
-  return { changed: true, message: `${held} ${held === 1 ? p.label.toLowerCase() : p.plural.toLowerCase()}.` };
+  if (counters[i] < base) {
+    return {
+      changed: false,
+      message: `${base} ${p.plural.toLowerCase()} make one ${order[i - 1].label.toLowerCase()} — this column has ${counters[i]}.`,
+    };
+  }
+  counters[i] -= base;
+  counters[i - 1] += 1;
+  return {
+    changed: true,
+    message: `Traded ${base} ${p.plural.toLowerCase()} for one ${order[i - 1].label.toLowerCase()}.`,
+  };
+}
+
+/* ── growing and shrinking the chart ──────────────────────────────────────── */
+
+export function growChart(thing) {
+  const n = thing.places || PLACES.length;
+  if (n >= MAX_PLACES) {
+    return { changed: false, message: `${MAX_PLACES} places is as wide as this chart goes.` };
+  }
+  // normalise the list against the OLD width first, or countersOf pads it and
+  // the unshift below adds a second empty column nobody asked for
+  countersOf(thing).unshift(0);
+  thing.places = n + 1;
+  Object.assign(thing, chartSize(thing.places));
+  /* The new column is drawn on the LEFT, so the chart grows leftwards too —
+     otherwise every column already on it slides sideways under the counters. */
+  thing.x -= COL;
+  return {
+    changed: true, rebuilt: true,
+    message: `Added a column — ${placeAt(thing.places - 1).plural.toLowerCase()}.`,
+  };
+}
+
+export function shrinkChart(thing) {
+  const n = thing.places || PLACES.length;
+  const counters = countersOf(thing);
+  if (n <= MIN_PLACES) {
+    return { changed: false, message: `A chart needs at least ${MIN_PLACES} places.` };
+  }
+  if (counters[0]) {
+    return {
+      changed: false,
+      message: `Empty the ${placeOrder(thing)[0].plural.toLowerCase()} column before taking it away.`,
+    };
+  }
+  counters.shift();
+  thing.places = n - 1;
+  Object.assign(thing, chartSize(thing.places));
+  thing.x += COL;
+  return { changed: true, rebuilt: true, message: "Took a column off the chart." };
+}
+
+/* ── moving a counter from one place to another ───────────────────────────── */
+
+/**
+ * Drag a counter between columns. Going DOWN a place a counter breaks into as
+ * many of the smaller place as it is worth — one flat becomes ten rods — and
+ * going UP it takes that many to make one. That exchange is the chart's whole
+ * job, so it is done by the same arithmetic in both directions.
+ *
+ * `from` and `to` are column indices; `from` may be null, meaning the tray.
+ */
+export function moveCounter(thing, from, to, base) {
+  const order = placeOrder(thing);
+  const counters = countersOf(thing);
+  const dst = order[to];
+
+  if (from === null) {
+    if (counters[to] >= MAX_DOTS) return full(dst);
+    counters[to] += 1;
+    return { changed: true, message: held(counters[to], dst, to, order, base) };
+  }
+  if (from === to) return { changed: false, message: null };
+
+  const src = order[from];
+  if (!counters[from]) {
+    return { changed: false, message: `No ${src.plural.toLowerCase()} to move.` };
+  }
+
+  const step = Math.abs(src.power - dst.power);
+  const many = Math.pow(base, step);
+
+  if (src.power > dst.power) {
+    // one of the bigger place breaks into `many` of the smaller
+    if (counters[to] + many > MAX_DOTS) {
+      return {
+        changed: false,
+        message: `One ${src.label.toLowerCase()} is ${many} ${dst.plural.toLowerCase()} — more than a column holds.`,
+      };
+    }
+    counters[from] -= 1;
+    counters[to] += many;
+    return {
+      changed: true,
+      message: `One ${src.label.toLowerCase()} broke into ${many} ${dst.plural.toLowerCase()}.`,
+    };
+  }
+
+  // going up: it takes `many` of the smaller place to make one of the bigger
+  if (counters[from] < many) {
+    return {
+      changed: false,
+      message: `It takes ${many} ${src.plural.toLowerCase()} to make one ${dst.label.toLowerCase()} — there ${counters[from] === 1 ? "is" : "are"} ${counters[from]}.`,
+    };
+  }
+  if (counters[to] >= MAX_DOTS) return full(dst);
+  counters[from] -= many;
+  counters[to] += 1;
+  return {
+    changed: true,
+    message: `${many} ${src.plural.toLowerCase()} made one ${dst.label.toLowerCase()}.`,
+  };
+}
+
+/** A counter dragged clear of the chart is thrown away. */
+export function dropCounter(thing, from) {
+  const counters = countersOf(thing);
+  if (from === null) return { changed: false, message: null }; // a tray dot: nothing taken
+  if (!counters[from]) return { changed: false, message: null };
+  counters[from] -= 1;
+  const p = placeOrder(thing)[from];
+  return { changed: true, message: `Threw one ${p.label.toLowerCase()} away.` };
+}
+
+/** The colour a counter in a column wears — for the ghost that follows a drag. */
+export function counterColour(thing, col) {
+  return colourOfPlace(placeOrder(thing)[col]);
 }
 
 export function tapBoard(thing, uv, base) {
@@ -389,14 +657,14 @@ export function placeReading(thing, blocks, base) {
 
   /* Counters first: a counter in a column IS one of that place, so it counts
      towards the digit exactly as a block standing there would. */
-  const order = [...PLACES].reverse();
+  const order = placeOrder(thing);
   const counters = countersOf(thing);
   for (let i = 0; i < order.length; i++) {
     const n = counters[i] || 0;
     if (!n) continue;
     const p = order[i];
     counts[p.id] = (counts[p.id] || 0) + n;
-    total += n * Math.pow(base, p.power);
+    total += n * worthOf(p.power, base);
   }
 
   for (const b of blocks) {
@@ -404,8 +672,10 @@ export function placeReading(thing, blocks, base) {
     const cz = b.z + b.w / 2;
     if (cx < thing.x || cx > thing.x + thing.l) continue;
     if (cz < thing.z || cz > thing.z + thing.w) continue;
+    // the gutter is not a place — a block parked on it is not standing anywhere
+    if (cx - thing.x < GUT) continue;
 
-    const col = Math.min(PLACES.length - 1, Math.floor((cx - thing.x) / COL));
+    const col = Math.min(order.length - 1, Math.floor((cx - thing.x - GUT) / COL));
     const place = order[col];
     counts[place.id] = (counts[place.id] || 0) + 1;
     total += b.l * b.w * b.h;

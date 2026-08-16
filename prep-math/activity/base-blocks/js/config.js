@@ -39,6 +39,32 @@ export const PLACES = [
   { id: "cube", label: "Cube", plural: "Cubes", power: 3 },
 ];
 
+/**
+ * The place at any power, for charts that reach past the four places blocks
+ * come in. The shapes repeat on the cube — base^4 is a rod OF cubes, base^5 a
+ * flat of them, base^6 a cube of them — which is how Dienes blocks carry on,
+ * so the names carry on the same way.
+ */
+const CYCLE = [
+  ["rod", "Rod", "Rods"],
+  ["flat", "Flat", "Flats"],
+  ["cube", "Cube", "Cubes"],
+];
+
+export function placeAt(power) {
+  if (power <= 0) return { ...PLACES[0] };
+  if (power <= 3) return { ...PLACES[power] };
+  const [, label, plural] = CYCLE[(power - 1) % 3];
+  const deep = Math.floor((power - 1) / 3); // 1 = of cubes, 2 = of big cubes
+  const of = deep === 1 ? " of cubes" : " of big cubes";
+  return { id: "p" + power, label: label + of, plural: plural + of, power };
+}
+
+/** What one of a place is worth in units. */
+export function worthOf(power, base) {
+  return Math.pow(base, power);
+}
+
 /** The canonical l×w×h of each place in a given base. */
 export function placeDims(placeId, base) {
   switch (placeId) {

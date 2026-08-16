@@ -16,13 +16,17 @@ import { createPointer } from "./pointer.js";
 import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
-import { store, subscribe, emit, say, nextId } from "./state.js";
+import { store, subscribe, emit, say, nextId, snapshot } from "./state.js";
 import { splitSelected, addPlace, addThing, rotateSelected } from "./ops.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue } from "./abacus.js";
-import { makeBoard, tapBoard, tapPlace, toggleCell } from "./grids.js";
+import {
+  makeBoard, tapBoard, tapPlace, toggleCell,
+  hitPlace, moveCounter, dropCounter, counterColour,
+} from "./grids.js";
+import { createDotGhost } from "./dots.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
 
@@ -38,6 +42,7 @@ let view = null;
 let ui = null;
 let pointer = null;
 let booting = null;
+const ghost = createDotGhost(stage);
 
 /* ── a veil while the engine downloads ────────────────────────────────────── */
 function veilOn(text = "Setting out the canvas…") {
@@ -215,14 +220,49 @@ async function bootCanvas() {
           emit();
         }
       },
+      onFacePress: (id, uv) => {
+        const thing = store.things.find((t) => t.id === id);
+        if (!thing || thing.variant !== "place") return null;
+        const hit = hitPlace(thing, uv);
+        // the tray always has a counter to take; a column only where one is
+        const from = hit.zone === "tray" ? null
+          : hit.zone === "area" && hit.index >= 0 ? hit.col
+          : undefined;
+        if (from === undefined) return null;
+        ghost.show(counterColour(thing, hit.col));
+        return { thingId: id, from };
+      },
+      onFaceDragMove: (token, x, y) => ghost.move(x, y),
+      onFaceDrop: (token, targetId, uv) => {
+        ghost.hide();
+        const thing = store.things.find((t) => t.id === token.thingId);
+        if (!thing) return;
+        snapshot();
+
+        // dropped off this chart — the counter is thrown away
+        let done;
+        if (targetId !== token.thingId || !uv) {
+          done = dropCounter(thing, token.from);
+        } else {
+          const hit = hitPlace(thing, uv);
+          done = hit.col == null
+            ? dropCounter(thing, token.from)
+            : moveCounter(thing, token.from, hit.col, store.base);
+        }
+        if (!done.changed) store.history.pop();
+        if (done.message) say(done.message, done.changed ? "ok" : "warn");
+        emit();
+      },
       onBoard: (id, uv, e) => {
         const thing = store.things.find((t) => t.id === id);
         if (!thing) return;
         if (thing.variant === "place") {
           // shift takes a counter back out, the way it hides a square on a table
+          snapshot();
           const done = tapPlace(thing, uv, store.base, {
             remove: !!(e && (e.shiftKey || e.ctrlKey)),
           });
+          if (!done.changed) store.history.pop();
           if (done.message) say(done.message, done.changed ? "ok" : "warn");
           emit();
           return;

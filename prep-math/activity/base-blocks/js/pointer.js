@@ -24,12 +24,21 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   const onSplit = hooks.onSplit || (() => {});
   const onBead = hooks.onBead || (() => {});
   const onBoard = hooks.onBoard || (() => {});
+  /* A press on a board face may be the start of dragging a counter about. The
+     hook says whether there is anything to drag under the finger; if there is,
+     the tap is held back until we know the finger stayed still. */
+  const onFacePress = hooks.onFacePress || (() => null);
+  const onFaceDragMove = hooks.onFaceDragMove || (() => {});
+  const onFaceDrop = hooks.onFaceDrop || (() => {});
   const marquee = hooks.marqueeEl || null;
+
+  const TAP_SLOP = 7; // px a finger may wander and still count as a tap
 
   const state = {
     lasso: false, // touch-friendly "select with a box" mode
     pan: false,   // hand tool: every drag belongs to the camera
     drag: null,
+    face: null,   // a counter being dragged across a chart
     sweep: null,
     lastTap: { id: null, at: 0 },
   };
@@ -192,7 +201,17 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     const faceHit = pickAny(pt.x, pt.y, isFace);
     if (faceHit) {
       const uv = faceHit.getTextureCoordinates();
-      if (uv) { onBoard(faceHit.pickedMesh.metadata.itemId, uv, e); return; }
+      if (uv) {
+        const id = faceHit.pickedMesh.metadata.itemId;
+        const token = onFacePress(id, uv, e);
+        if (token) {
+          state.face = { token, id, uv, x0: pt.x, y0: pt.y, moved: false, e };
+          camera.detachControl();
+        } else {
+          onBoard(id, uv, e);
+        }
+        return;
+      }
     }
 
     const itemHit = pickAny(pt.x, pt.y, isItem);
@@ -223,6 +242,12 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   function onMove(e) {
     const pt = localXY(e);
+    if (state.face) {
+      const f = state.face;
+      if (!f.moved && Math.hypot(pt.x - f.x0, pt.y - f.y0) > TAP_SLOP) f.moved = true;
+      if (f.moved) onFaceDragMove(f.token, e.clientX, e.clientY);
+      return;
+    }
     if (state.sweep) {
       state.sweep.x1 = pt.x; state.sweep.y1 = pt.y;
       drawSweep();
@@ -241,9 +266,27 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     }
   }
 
-  function onUp() {
+  function onUp(e) {
+    if (state.face) endFace(e);
     if (state.sweep) endSweep();
     if (state.drag) endDrag();
+  }
+
+  /**
+   * The end of a press on a board face. A finger that never moved was a tap
+   * after all, so the tap is let through now; one that travelled is a drop, and
+   * lands wherever it let go — which may be on another board or on bare paper.
+   */
+  function endFace(e) {
+    const f = state.face;
+    state.face = null;
+    camera.attachControl(canvas, true);
+    if (!f.moved) { onBoard(f.id, f.uv, f.e); return; }
+
+    const pt = e ? localXY(e) : { x: f.x0, y: f.y0 };
+    const hit = pickAny(pt.x, pt.y, isFace);
+    const uv = hit ? hit.getTextureCoordinates() : null;
+    onFaceDrop(f.token, uv ? hit.pickedMesh.metadata.itemId : null, uv);
   }
 
   canvas.addEventListener("pointerdown", onDown);
@@ -261,7 +304,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     setPan(on) {
       state.pan = !!on;
       // a half-finished drag would otherwise keep running under the hand tool
-      if (state.pan) { state.drag = null; state.sweep = null; }
+      if (state.pan) { state.drag = null; state.sweep = null; state.face = null; }
       canvas.style.cursor = on ? "grab" : state.lasso ? "crosshair" : "";
     },
     destroy() {

@@ -33,4 +33,9 @@ export const ICON = {
   back: line(`<path d="M19 12H5M5 12l6-6M5 12l6 6"/>`),
   flat: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/>`),
   solid: line(`<path d="M12 3.2 20.5 8v8L12 20.8 3.5 16V8z"/><path d="m3.5 8 8.5 4.6L20.5 8M12 12.6v8.2"/>`),
+
+  /* the three families, for the dock's tabs */
+  blocks: line(`<path d="M8 2.8 14.2 6v6.4L8 15.6 1.8 12.4V6z"/><path d="m1.8 6 6.2 3.2L14.2 6M8 9.2v6.4"/><rect x="14" y="14" width="7.5" height="7.5" rx="0.8"/>`),
+  abacus: line(`<rect x="2.4" y="3.4" width="19.2" height="17.2" rx="1.4"/><path d="M2.4 8.6h19.2M2.4 15.4h19.2"/><circle cx="7.4" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="10.2" cy="15.4" r="2.5" fill="currentColor" stroke="none"/><circle cx="16.8" cy="15.4" r="2.5" fill="currentColor" stroke="none"/>`),
+  table: line(`<rect x="2.8" y="3.5" width="18.4" height="17" rx="1.4"/><path d="M2.8 9h18.4M2.8 15h18.4M9 3.5v17M15 3.5v17"/>`),
 };

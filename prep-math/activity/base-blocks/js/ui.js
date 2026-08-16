@@ -243,7 +243,9 @@ export function mountUI({
         ? `unit${total === 1 ? "" : "s"} on the canvas`
         : `units · ${toBase(total, base)} in base ${baseWord(base)}`;
 
-    el.baseLabel.textContent = `Base ${baseWord(base)}`;
+    // the chip shows the number; what it means is on the tooltip and in the popover
+    el.baseLabel.textContent = base;
+    el.baseBtn.title = `Working base — base ${baseWord(base)}`;
     el.strictN.textContent = base;
     el.strict.checked = store.strict;
     $$(".bb-base", el.bases).forEach((b) =>
@@ -256,6 +258,8 @@ export function mountUI({
 
     el.viewLabel.textContent = store.flat ? "3D" : "2D";
     el.viewBtn.setAttribute("aria-pressed", String(store.flat));
+    el.viewBtn.setAttribute("aria-label", store.flat ? "Back to the solid view (V)" : "Flat 2D view (V)");
+    el.viewBtn.title = store.flat ? "Solid 3D view (V)" : "Flat 2D view (V)";
     el.viewBtn.classList.toggle("is-on", store.flat);
     const viewIcon = el.viewBtn.querySelector("[data-icon]");
     if (viewIcon) viewIcon.innerHTML = store.flat ? ICON.solid : ICON.flat;

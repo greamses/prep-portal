@@ -14,6 +14,7 @@ export const GROUPS = [
   {
     id: "blocks",
     label: "Blocks",
+    icon: "blocks",
     blurb: "Place-value blocks you can cut apart and trade back together.",
     tools: [
       {
@@ -32,6 +33,7 @@ export const GROUPS = [
   {
     id: "abacus",
     label: "Abacus",
+    icon: "abacus",
     blurb: "Three counting frames, each with its own way of holding a number.",
     tools: [
       {
@@ -72,6 +74,7 @@ export const GROUPS = [
   {
     id: "grids",
     label: "Charts & grids",
+    icon: "table",
     blurb: "Boards to lay the blocks on, and tables to read a fact off.",
     tools: [
       {
