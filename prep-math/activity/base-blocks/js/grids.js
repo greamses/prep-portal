@@ -23,15 +23,18 @@ const CELL = 2;         // canvas cells per table cell (multiply / divide)
    Down the face, top to bottom: a GUTTER of grow/shrink tabs on the left edge,
    then for every column a TRAY of spare counters, a HEAD of labels, and the
    AREA the counters sit in. */
-const GUT = 5;          // width of the left-hand gutter
-const COL = 12;         // width of one place column
-const TRAY = 5;         // depth of the spare-counter tray along the top
-const HEAD = 4;         // depth of the heading band
-const AREA = 14;        // depth of the counter area
+const GUT = 3;          // width of the left-hand gutter
+const COL = 9;          // width of one place column
+const TRAY = 2;         // depth of the spare-counter tray along the top
+const HEAD = 2.5;       // depth of the heading band
+const AREA = 5.5;       // depth of the counter area
+/* TRAY + HEAD + AREA is 10 on purpose: the chart is exactly as deep as a flat
+   is wide, so it sits on the paper as one more hundred rather than towering
+   over everything else on the canvas. */
 
 export const MIN_PLACES = 2;
 export const MAX_PLACES = 7;   // powers 0…6 — as far as the names carry
-export const MAX_DOTS = 30;    // a column will not hold more than this
+export const MAX_DOTS = 20;    // as many as a column this deep holds legibly
 
 export const GRID_MAX = 12; // tables run to twelve twelves
 
@@ -220,32 +223,27 @@ function drawPlace(g, W, H, thing, opts, c) {
   g.strokeRect(2, 2, W - 4, H - 4);
 }
 
-/** The + / − tabs that make the chart wider or narrower, down its left edge. */
+/**
+ * The + and − that make the chart wider or narrower, down its left edge.
+ * Two hairline glyphs and nothing else — no panel, no rule, no fill: the whole
+ * point of the gutter is to be there when you look for it and invisible when
+ * you are not.
+ */
 function drawGutter(g, gutW, H, thing, k, c) {
-  const half = H / 2;
-  const s = gutW * 0.3;
-  g.fillStyle = rgba(c.ink, 0.06);
-  g.fillRect(0, 0, gutW, H);
-
+  const s = gutW * 0.19;
   const arm = (cy, minus) => {
-    g.strokeStyle = rgba(c.ink, 0.7);
-    g.lineWidth = Math.max(3, gutW * 0.07);
+    g.strokeStyle = rgba(c.ink, 0.45);
+    g.lineWidth = Math.max(2, gutW * 0.035);
     g.lineCap = "round";
     g.beginPath();
     g.moveTo(gutW / 2 - s, cy); g.lineTo(gutW / 2 + s, cy);
     if (!minus) { g.moveTo(gutW / 2, cy - s); g.lineTo(gutW / 2, cy + s); }
     g.stroke();
   };
-  arm(half / 2, false);                       // grow: a bigger place on the left
-  g.globalAlpha = thing.places > MIN_PLACES ? 1 : 0.25;
-  arm(half + half / 2, true);                 // shrink, if the column is empty
+  arm(H * 0.25, false);                       // grow: a bigger place on the left
+  g.globalAlpha = thing.places > MIN_PLACES ? 1 : 0.22;
+  arm(H * 0.75, true);                        // shrink, if the column is empty
   g.globalAlpha = 1;
-
-  g.strokeStyle = rgba(c.ink, 0.25);
-  g.lineWidth = 2;
-  g.beginPath();
-  g.moveTo(gutW * 0.25, half); g.lineTo(gutW * 0.75, half);
-  g.stroke();
 }
 
 function dot(g, cx, cy, r, hex, ink, alpha) {

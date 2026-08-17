@@ -91,54 +91,38 @@
           <canvas id="bb-canvas" touch-action="none"></canvas>
           <div class="bb-marquee" id="bb-marquee" hidden></div>
 
-          <!-- ── running total + base ─────────────────────────────────── -->
+          <!-- ── the running total, and nothing else ──────────────────── -->
           <div class="bb-top">
-            <button class="bb-chip bb-chip--back" id="bb-back" type="button">
-              <span data-icon="back"></span>
-              <span>Shelf</span>
-            </button>
             <div class="bb-count">
               <b id="bb-count-n">0</b>
               <span id="bb-count-sub">units on the canvas</span>
             </div>
-            <!-- icons, not words: the base chip keeps its number because that
-                 is a reading, not a label -->
-            <div class="bb-top__right">
-              <button class="bb-chip bb-chip--icon" id="bb-view-btn" type="button"
-                      aria-pressed="false" title="Flat 2D view (V)">
-                <span data-icon="flat"></span>
-                <span class="sr-only" id="bb-view-label">2D</span>
-              </button>
-              <button
-                class="bb-chip"
-                id="bb-base-btn"
-                type="button"
-                aria-haspopup="dialog"
-                aria-expanded="false"
-                title="Working base"
-              >
-                <span data-icon="base"></span>
-                <b id="bb-base-label">10</b>
-              </button>
-              <button
-                class="bb-chip bb-chip--icon"
-                id="bb-board-btn"
-                type="button"
-                aria-expanded="false"
-                aria-controls="bb-board"
-                aria-label="Read the canvas as a number"
-                title="Read the canvas as a number"
-              >
-                <span data-icon="rows"></span>
-              </button>
-            </div>
           </div>
 
           <!-- ── tools ─────────────────────────────────────────────────────
-               One rail, four kits. Buttons are icons only and name themselves
-               on hover or focus, so nineteen controls take a corner rather
-               than a column down the whole side of the paper. -->
+               ONE rail: every control on the canvas is a key in it. Keys are
+               icons and name themselves on hover or focus; a key with a corner
+               arrow has more behind it, and opens a panel beside the rail. -->
           <div class="bb-rail" role="toolbar" aria-label="Tools">
+            <div class="bb-kit" role="group" aria-label="Put things on the canvas">
+              <div class="bb-kit__grid">
+                <button class="bb-tool" type="button" data-act="back"
+                        aria-label="Back to the shelf" title="Back to the shelf">
+                  <span data-icon="back"></span><em>Shelf</em>
+                </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="add"
+                        aria-haspopup="true" aria-expanded="false"
+                        aria-label="Add something to the canvas" title="Add">
+                  <span data-icon="plus"></span><em>Add</em>
+                </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="paint"
+                        aria-haspopup="true" aria-expanded="false"
+                        aria-label="Highlight the picked things" title="Highlight">
+                  <span data-icon="brush"></span><em>Highlight</em>
+                </button>
+              </div>
+            </div>
+
             <div class="bb-kit" role="group" aria-label="Change the blocks">
               <span class="bb-kit__label">Change</span>
               <div class="bb-kit__grid">
@@ -159,12 +143,6 @@
                         aria-label="Break the picked blocks into unit cubes (B)" title="Break to units (B)">
                   <span data-icon="crumbs"></span><em>To units</em>
                 </button>
-              </div>
-            </div>
-
-            <div class="bb-kit" role="group" aria-label="Choose things">
-              <span class="bb-kit__label">Pick</span>
-              <div class="bb-kit__grid">
                 <button class="bb-tool" type="button" data-act="match"
                         aria-label="Pick every block the same size as this one" title="Match every block this size">
                   <span data-icon="match"></span><em>Match</em>
@@ -194,6 +172,30 @@
               </div>
             </div>
 
+            <div class="bb-kit" role="group" aria-label="The number">
+              <span class="bb-kit__label">Number</span>
+              <div class="bb-kit__grid">
+                <button class="bb-tool bb-tool--menu" type="button" id="bb-base-btn"
+                        data-menu="base" aria-haspopup="dialog" aria-expanded="false"
+                        title="Working base">
+                  <span data-icon="base"></span>
+                  <b class="bb-tool__badge" id="bb-base-label">10</b>
+                  <em>Base</em>
+                </button>
+                <button class="bb-tool" type="button" id="bb-board-btn" data-act="read"
+                        aria-expanded="false" aria-controls="bb-board"
+                        aria-label="Read the canvas as a number"
+                        title="Read the canvas as a number">
+                  <span data-icon="rows"></span><em>Reading</em>
+                </button>
+                <button class="bb-tool" type="button" id="bb-view-btn" data-act="view"
+                        aria-pressed="false" title="Flat 2D view (V)">
+                  <span data-icon="flat"></span>
+                  <em id="bb-view-label">2D</em>
+                </button>
+              </div>
+            </div>
+
             <!-- the view kit is filled in by js/main.js, which owns the camera -->
             <div class="bb-kit" role="group" aria-label="Where you are looking">
               <span class="bb-kit__label">View</span>
@@ -201,23 +203,22 @@
             </div>
           </div>
 
-          <!-- ── the dock: three families, built from js/tools.js ─────── -->
-          <div class="bb-dock">
-            <div class="bb-dock__tabs" id="bb-dock-tabs" role="tablist" aria-label="What to add"></div>
-            <div class="bb-dock__body">
-              <div class="bb-dock__panel" id="bb-dock-panel"></div>
-              <div class="bb-dock__group bb-dock__group--tags" role="group" aria-label="Highlight">
-                <span class="bb-dock__label">Highlight</span>
-                <span class="bb-tagdots" id="bb-tagdots"></span>
-                <button class="bb-tagclear" type="button" data-tag="none" title="Clear highlight">
-                  <span data-icon="eraser"></span>
-                </button>
-              </div>
-            </div>
+          <!-- ── what the rail's arrows open, beside the rail ─────────── -->
+          <div class="bb-fly" id="bb-fly-add" role="menu" aria-label="What to add" hidden>
+            <div class="bb-fly__tabs" id="bb-dock-tabs" role="tablist" aria-label="Which family"></div>
+            <div class="bb-fly__panel" id="bb-dock-panel"></div>
           </div>
 
-          <!-- ── base popover ─────────────────────────────────────────── -->
-          <div class="bb-pop" id="bb-pop-base" role="dialog" aria-label="Working base" hidden>
+          <div class="bb-fly bb-fly--pad" id="bb-fly-paint" role="menu" aria-label="Highlight" hidden>
+            <span class="bb-fly__label">Highlight</span>
+            <span class="bb-tagdots" id="bb-tagdots"></span>
+            <button class="bb-tagclear" type="button" data-tag="none" title="Clear highlight">
+              <span data-icon="eraser"></span>
+            </button>
+          </div>
+
+          <!-- ── the base panel, opened from the rail ──────────────────── -->
+          <div class="bb-pop bb-fly--anchored" id="bb-pop-base" role="dialog" aria-label="Working base" hidden>
             <div class="bb-pop__head">
               <span class="bb-eyebrow">Working base</span>
               <button class="bb-pop__x" type="button" data-close><span data-icon="close"></span></button>

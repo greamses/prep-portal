@@ -79,10 +79,10 @@ export function createCanvasView(el, { onOpen, onClose } = {}) {
   return { show, hide, get isOpen() { return open; } };
 }
 
-/** The dock's three tabs, and what each of them offers. */
+/** The Add panel's three tabs, and what each of them offers. */
 export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint }) {
-  /* The tabs are icons: three words across the dock cost a strip of canvas, and
-     the panel underneath already says what each family holds. */
+  /* The tabs are icons: three words across the panel cost a strip of canvas,
+     and what is under each of them says the same thing in the things it holds. */
   tabsEl.innerHTML = GROUPS.map(
     (g, i) => `
     <button class="bb-dock__tab" type="button" role="tab" data-group="${g.id}"
@@ -99,7 +99,6 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint })
 
     if (g.id === "blocks") {
       panelEl.innerHTML = `
-        <span class="bb-dock__label">Add</span>
         ${["unit", "rod", "flat", "cube"]
           .map(
             (p) => `
@@ -116,7 +115,6 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint })
         </button>`;
     } else {
       panelEl.innerHTML = `
-        <span class="bb-dock__label">Add</span>
         ${g.tools
           .map(
             (t) => `

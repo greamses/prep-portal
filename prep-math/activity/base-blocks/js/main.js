@@ -288,6 +288,7 @@ async function bootCanvas() {
       onPan: (dx, dz) => panBy(ctx, dx, dz),
       onHand: () => setHand(!handOn),
       onTurn: doTurn,
+      onBack: () => canvasView.hide(),
     });
 
     buildDock(
@@ -352,5 +353,4 @@ buildShelf(shelfEl, async (tool) => {
   document.querySelector(`[data-group='${tool.group}']`)?.click();
 });
 
-document.getElementById("bb-back").addEventListener("click", () => canvasView.hide());
 paintIcons(document);

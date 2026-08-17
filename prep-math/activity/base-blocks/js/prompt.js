@@ -19,6 +19,7 @@
 
 import { store, emit } from "./state.js";
 import { regroupCheck, regroupSentence, regroupSelected } from "./ops.js";
+import { ICON } from "./icons.js";
 
 const B = () => window.BABYLON;
 
@@ -26,6 +27,15 @@ const ARROWS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stro
   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d="M8 4v16"/><path d="m4.5 7.5 3.5-3.5 3.5 3.5"/>
   <path d="M16 20V4"/><path d="m12.5 16.5 3.5 3.5 3.5-3.5"/></svg>`;
+
+/* What the card offers, as a glyph. The sentence above it already says it in
+   words; the button only has to say "do it", and an icon does that in a corner
+   instead of a line. */
+const DEED = {
+  split: { icon: "split", say: "Trade down" },
+  up: { icon: "merge", say: "Trade up" },
+  regroup: { icon: "regroup", say: "Regroup" },
+};
 
 export function createRegroupPrompt(ctx, view, stage) {
   const { scene, camera } = ctx;
@@ -36,10 +46,8 @@ export function createRegroupPrompt(ctx, view, stage) {
   card.hidden = true;
   card.innerHTML = `
     <span class="bb-trade__ico">${ARROWS}</span>
-    <span class="bb-trade__body">
-      <span class="bb-trade__sum"></span>
-      <span class="bb-trade__go"></span>
-    </span>`;
+    <span class="bb-trade__sum"></span>
+    <span class="bb-trade__go"></span>`;
   stage.appendChild(card);
 
   const sum = card.querySelector(".bb-trade__sum");
@@ -75,8 +83,10 @@ export function createRegroupPrompt(ctx, view, stage) {
 
     live = check;
     sum.textContent = regroupSentence(check, store.base);
-    go.textContent =
-      check.dir !== "merge" ? "Trade down  ⏎" : check.exact ? "Trade up  ⏎" : "Regroup  ⏎";
+    const deed = DEED[check.dir !== "merge" ? "split" : check.exact ? "up" : "regroup"];
+    go.innerHTML = ICON[deed.icon];
+    card.setAttribute("aria-label", `${deed.say} — ${sum.textContent}`);
+    card.title = `${deed.say} (Enter)`;
     card.dataset.dir = check.dir;
     card.hidden = false;
     place();

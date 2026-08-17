@@ -330,9 +330,12 @@ export function buildAbacus(ctx, thing) {
   tex.wrapU = BJS.Texture.CLAMP_ADDRESSMODE;
   tex.wrapV = BJS.Texture.CLAMP_ADDRESSMODE;
   tex.anisotropicFilteringLevel = 4;
+  // the note is a shape on a clear sheet, so the timber shows round it
+  tex.hasAlpha = true;
 
   const readMat = new BJS.StandardMaterial("abReadMat" + thing.id, scene);
   readMat.diffuseTexture = tex;
+  readMat.useAlphaFromDiffuseTexture = true;
   readMat.specularColor = new BJS.Color3(0.02, 0.02, 0.02);
 
   const readFace = BJS.MeshBuilder.CreateGround("readFace",
@@ -352,6 +355,14 @@ export function buildAbacus(ctx, thing) {
  * it is showing actually changes, which for a frame being read is most presses
  * and for one sitting still is never.
  */
+/* A sticky note per frame, so three abacuses side by side are told apart by the
+   colour of their notes before you have read a digit of any of them. */
+const NOTE_TOKENS = {
+  soroban: ["--accent-primary", "#f4c95d"],
+  suanpan: ["--accent-secondary", "#6fb7e8"],
+  schoty: ["--accent-success", "#7cc47c"],
+};
+
 function paintReadout(thing, parts) {
   const value = abacusValue(thing);
   if (parts.shown === value) return;
@@ -362,27 +373,60 @@ function paintReadout(thing, parts) {
   const w = tex.getSize().width;
   const h = tex.getSize().height;
 
+  /* Transparent everywhere but the note itself, so what shows around it is the
+     frame's own timber — a note stuck on the headboard, not a printed panel. */
   g.clearRect(0, 0, w, h);
-  g.fillStyle = cssVar("--surface-primary", "#fffdf8");
-  g.fillRect(0, 0, w, h);
 
-  const text = String(value);
+  const [token, fallback] = NOTE_TOKENS[thing.variant] || NOTE_TOKENS.soroban;
+  const paper = cssVar(token, fallback);
+  const nh = h * 0.78;
+
   /* One size that fits the widest number this frame can hold, not one that fits
      the number showing: a readout that changes size as you count is a fidget. */
   const widest = "0".repeat(thing.rods.length + 1);
-  let size = Math.floor(h * 0.68);
-  g.font = `700 ${size}px "JetBrains Mono", ui-monospace, monospace`;
-  const room = w * 0.9;
-  const wide = g.measureText(widest).width;
+  let size = Math.floor(nh * 0.6);
+  const fontAt = (px) => `700 ${px}px "JetBrains Mono", ui-monospace, monospace`;
+  g.font = fontAt(size);
+  const room = w * 0.82;
+  let wide = g.measureText(widest).width;
   if (wide > room) {
     size = Math.max(12, Math.floor(size * (room / wide)));
-    g.font = `700 ${size}px "JetBrains Mono", ui-monospace, monospace`;
+    g.font = fontAt(size);
+    wide = g.measureText(widest).width;
   }
 
-  g.fillStyle = cssVar("--ink", "#2a2723");
+  /* The note is sized to the NUMBER, not to the headboard it is stuck on: the
+     slate is a long thin rail, and a patch that filled it would read as a
+     painted stripe rather than as a note somebody put there. */
+  const nw = Math.min(w * 0.92, Math.max(nh * 1.15, wide + nh * 0.7));
+
+  g.save();
+  g.translate(w / 2, h / 2);
+  g.rotate(-0.035); // a note is never put on straight
+  g.shadowColor = "rgba(30,26,20,0.36)";
+  g.shadowBlur = h * 0.1;
+  g.shadowOffsetY = h * 0.04;
+  g.fillStyle = paper;
+  g.fillRect(-nw / 2, -nh / 2, nw, nh);
+  g.shadowColor = "transparent";
+
+  // the peeled corner, bottom-right
+  const curl = Math.min(nw, nh) * 0.22;
+  g.fillStyle = "rgba(30,26,20,0.15)";
+  g.beginPath();
+  g.moveTo(nw / 2, nh / 2 - curl);
+  g.lineTo(nw / 2, nh / 2);
+  g.lineTo(nw / 2 - curl, nh / 2);
+  g.closePath();
+  g.fill();
+
+  // ink, not the flipping token: the note is always a pale pastel in both themes
+  g.font = fontAt(size);
+  g.fillStyle = "#2a2723";
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.fillText(text, w / 2, h / 2 + size * 0.04);
+  g.fillText(String(value), 0, size * 0.04);
+  g.restore();
 
   tex.update(true);
 }

@@ -20,6 +20,7 @@ export function mountUI({
   pointer, stage,
   onFit = () => {}, onFlat = () => {},
   onZoom = () => {}, onPan = () => {}, onHand = () => {}, onTurn = () => {},
+  onBack = () => {},
 }) {
   paintIcons(document);
 
@@ -42,7 +43,16 @@ export function mountUI({
     toast: $("#bb-toast"),
     tagdots: $("#bb-tagdots"),
     rail: $(".bb-rail"),
-    dock: $(".bb-dock"),
+    flyAdd: $("#bb-fly-add"),
+    flyPaint: $("#bb-fly-paint"),
+  };
+
+  /* Every panel the rail can open, by the key that opens it. Only one is ever
+     out at a time — they all live in the same strip beside the rail. */
+  const MENUS = {
+    add: el.flyAdd,
+    paint: el.flyPaint,
+    base: el.popBase,
   };
 
   /* ── build the repeated bits ────────────────────────────────────────────── */
@@ -77,49 +87,82 @@ export function mountUI({
       pointer.setLasso(!pointer.lasso);
       say(pointer.lasso ? "Box pick on — drag on the paper to sweep things up." : "Box pick off.");
     },
+    // the three that used to be chips on a bar of their own
+    back: () => { closeMenus(); onBack(); },
+    read: () => toggleBoard(),
+    view: () => toggleFlat(),
   };
 
   el.rail.addEventListener("click", (e) => {
+    const menu = e.target.closest("[data-menu]");
+    if (menu) { toggleMenu(menu.dataset.menu, menu); return; }
     const btn = e.target.closest("[data-act]");
     if (!btn || btn.disabled) return;
     const fn = ACTIONS[btn.dataset.act];
     if (fn) run(fn);
   });
 
-  // the highlight dots live in the dock, beside whichever family is showing
-  el.dock.addEventListener("click", (e) => {
+  // the highlight dots are one of the rail's panels now
+  el.flyPaint.addEventListener("click", (e) => {
     const dot = e.target.closest("[data-tag]");
     if (!dot) return;
     const raw = dot.dataset.tag;
     run(() => ops.tagSelected(raw === "none" ? null : Number(raw)));
   });
 
-  /* ── popovers ───────────────────────────────────────────────────────────── */
+  /* ── the rail's panels ──────────────────────────────────────────────────── */
 
-  function openPop(pop, trigger) {
-    closePops(pop);
-    // the base popover and the board claim the same corner — only one at a time
-    if (pop === el.popBase && !el.board.hidden) toggleBoard(false);
-    pop.hidden = false;
-    trigger?.setAttribute("aria-expanded", "true");
+  let openMenu = null;
+
+  /**
+   * Put a panel beside the key that opened it, and keep it on the stage.
+   * It clears whatever the key is IN — the rail, or another panel — rather than
+   * the key itself, so a column of keys opens a column of panels in line.
+   */
+  function anchor(panel, btn) {
+    const s = stage.getBoundingClientRect();
+    const r = btn.getBoundingClientRect();
+    const host = (btn.closest(".bb-rail") || btn.closest(".bb-fly") || btn).getBoundingClientRect();
+    // measured after it is shown, so offsetWidth/Height are the real ones
+    const w = panel.offsetWidth;
+    const h = panel.offsetHeight;
+    const left = Math.min(host.right - s.left + 8, s.width - w - 8);
+    panel.style.left = Math.round(Math.max(8, left)) + "px";
+    const want = r.top - s.top - 6;
+    panel.style.top = Math.round(Math.max(8, Math.min(s.height - h - 8, want))) + "px";
   }
-  function closePops(except = null) {
-    for (const pop of [el.popBase, el.popOwn]) {
-      if (pop === except) continue;
-      pop.hidden = true;
+
+  function closeMenus(except = null) {
+    for (const [name, panel] of Object.entries(MENUS)) {
+      if (name === except) continue;
+      panel.hidden = true;
+      $(`[data-menu='${name}']`)?.setAttribute("aria-expanded", "false");
+      $(`[data-menu='${name}']`)?.classList.remove("is-on");
     }
-    el.baseBtn.setAttribute("aria-expanded", "false");
-    $("#bb-own-btn")?.setAttribute("aria-expanded", "false");
+    if (except == null) openMenu = null;
+    // the own-size builder hangs off the Add panel, so it goes with it
+    if (except !== "add") el.popOwn.hidden = true;
   }
 
-  el.baseBtn.addEventListener("click", () =>
-    el.popBase.hidden ? openPop(el.popBase, el.baseBtn) : closePops()
-  );
-  $$("[data-close]").forEach((b) => b.addEventListener("click", () => closePops()));
+  function toggleMenu(name, btn) {
+    const panel = MENUS[name];
+    if (!panel) return;
+    if (openMenu === name) { closeMenus(); return; }
+    closeMenus(name);
+    openMenu = name;
+    panel.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    btn.classList.add("is-on");
+    anchor(panel, btn);
+  }
 
+  $$("[data-close]").forEach((b) => b.addEventListener("click", () => closeMenus()));
+
+  /* A press on the paper puts the panels away. The rail and the panels
+     themselves are exempt, or opening one would immediately shut it. */
   stage.addEventListener("pointerdown", (e) => {
-    if (e.target.closest(".bb-pop") || e.target.closest("#bb-base-btn") || e.target.closest("#bb-own-btn")) return;
-    closePops();
+    if (e.target.closest(".bb-fly") || e.target.closest(".bb-pop") || e.target.closest(".bb-rail")) return;
+    closeMenus();
   });
 
   el.bases.addEventListener("click", (e) => {
@@ -172,13 +215,12 @@ export function mountUI({
 
   function toggleBoard(on) {
     const show = on ?? el.board.hidden;
-    if (show) closePops();
+    if (show) closeMenus();
     el.board.hidden = !show;
     el.boardBtn.setAttribute("aria-expanded", String(show));
     el.boardBtn.classList.toggle("is-on", show);
     if (show) renderBoard(el.boardBody, store);
   }
-  el.boardBtn.addEventListener("click", () => toggleBoard());
   $("[data-close-board]").addEventListener("click", () => toggleBoard(false));
 
   /* ── 2D ⇄ 3D ────────────────────────────────────────────────────────────── */
@@ -191,7 +233,6 @@ export function mountUI({
     say(want ? "Flat view — straight down on the paper." : "Solid view.");
     emit();
   }
-  el.viewBtn.addEventListener("click", () => toggleFlat());
 
   /* ── keyboard ───────────────────────────────────────────────────────────── */
 
@@ -222,7 +263,7 @@ export function mountUI({
     else if (k === "v") { e.preventDefault(); toggleFlat(); }
     else if (k === "q") { e.preventDefault(); onTurn(); }
     else if (k === "a") { e.preventDefault(); run(() => { ops.selectAll(); say("Everything selected."); }); }
-    else if (k === "escape") { closePops(); run(() => { store.selection = new Set(); }); }
+    else if (k === "escape") { closeMenus(); run(() => { store.selection = new Set(); }); }
     else if (k === "delete" || k === "backspace") { e.preventDefault(); run(ACTIONS.delete); }
     else if (k >= "1" && k <= "6") { run(() => ops.tagSelected(Number(k) - 1)); }
     else if (k === "0") { run(() => ops.tagSelected(null)); }
@@ -317,7 +358,14 @@ export function mountUI({
     update,
     toggleBoard,
     toggleFlat,
-    openOwn: (trigger) => (el.popOwn.hidden ? openPop(el.popOwn, trigger) : closePops()),
+    /* The own-size builder opens off the Add panel, so it is anchored to that
+       button rather than to the rail key — and it leaves Add open behind it. */
+    openOwn: (trigger) => {
+      const show = el.popOwn.hidden;
+      el.popOwn.hidden = !show;
+      trigger?.setAttribute("aria-expanded", String(show));
+      if (show) anchor(el.popOwn, trigger || el.flyAdd);
+    },
     refreshIcons: () => paintIcons(document),
   };
 }

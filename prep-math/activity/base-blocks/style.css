@@ -262,7 +262,7 @@ body.bb-locked { overflow: hidden; }
 /* ── floating paper panels (one look for every HUD surface) ───────────────── */
 .bb-top,
 .bb-rail,
-.bb-dock,
+.bb-fly,
 .bb-pop,
 .bb-board {
   position: absolute;
@@ -274,16 +274,15 @@ body.bb-locked { overflow: hidden; }
   backdrop-filter: blur(7px);
 }
 
-/* ── top strip: running total + base ──────────────────────────────────────── */
+/* ── the running total, and nothing else ──────────────────────────────────── */
 .bb-top {
   top: 12px;
-  left: 12px;
-  right: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.35rem 0.8rem;
+  max-width: calc(100% - 24px);
 }
 .bb-count {
   display: flex;
@@ -294,7 +293,7 @@ body.bb-locked { overflow: hidden; }
 .bb-count b {
   font-family: var(--font-display);
   font-weight: var(--weight-black, 900);
-  font-size: var(--text-stat, 1.7rem);
+  font-size: 1.25rem;
   line-height: 1;
   color: var(--ink);
 }
@@ -306,30 +305,6 @@ body.bb-locked { overflow: hidden; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.bb-top__right { display: flex; gap: 0.4rem; flex-shrink: 0; }
-
-.bb-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.6rem;
-  background: var(--surface-secondary);
-  border: var(--border-subtle);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs, 0.7rem);
-  font-weight: var(--weight-semibold, 600);
-  cursor: pointer;
-  transition: var(--transition-fast, 0.15s ease);
-}
-.bb-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-.bb-chip.is-on { background: var(--accent-primary); color: var(--text-on-accent); }
-.bb-chip svg { width: 15px; height: 15px; }
-.bb-chip b { font-family: var(--font-mono); font-weight: var(--weight-bold, 700); }
-/* an icon on its own gets a square, not a pill with nothing beside the glyph */
-.bb-chip--icon { padding: 0.4rem; }
-.bb-chip--back { background: var(--surface-primary); flex-shrink: 0; }
-.bb-chip--back:hover { background: var(--accent-primary); color: var(--text-on-accent); }
 
 /* ── left tool rail: four kits, two buttons wide ──────────────────────────── */
 .bb-rail {
@@ -407,24 +382,72 @@ body.bb-locked { overflow: hidden; }
 .bb-tool:disabled em { display: none; }
 .bb-tool--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-danger) 26%, transparent); }
 
-/* ── bottom dock: add a block · highlight ─────────────────────────────────── */
-.bb-dock {
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
+/* A key with more behind it wears a small corner arrow — the only mark that
+   tells you a press opens a panel rather than doing something. */
+.bb-tool--menu::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-bottom: 4px solid currentColor;
+  opacity: 0.55;
+}
+.bb-tool--menu.is-on::after { opacity: 1; }
+
+/* the working base, read off the key itself */
+.bb-tool__badge {
+  position: absolute;
+  right: 1px;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: var(--weight-bold, 700);
+  line-height: 1;
+  color: var(--text-secondary);
+}
+.bb-tool.is-on .bb-tool__badge { color: var(--text-on-accent); }
+
+/* ── what a rail key opens: a panel in the strip beside the rail ──────────── */
+.bb-fly {
+  z-index: 24;
   display: flex;
   flex-direction: column;
-  max-width: calc(100% - 100px);
-  padding: 0;
-  overflow: hidden;
+  max-width: calc(100% - 24px);
 }
-
-/* the three families, as tabs over the things they offer */
-.bb-dock__tabs {
+.bb-fly[hidden] { display: none; }
+.bb-fly--pad {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+}
+.bb-fly__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.bb-fly__tabs {
   display: flex;
-  gap: 0;
   border-bottom: var(--border-subtle);
 }
+.bb-fly__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.55rem;
+  max-width: 300px;
+}
+/* the base panel and the own-size builder are placed by the same anchor(), so
+   they must not carry a corner of their own from the old popover rules */
+.bb-fly--anchored { right: auto; bottom: auto; }
+
+/* the three families, as tabs over the things they offer */
 .bb-dock__tab {
   flex: 1 1 auto;
   display: flex;
@@ -446,29 +469,6 @@ body.bb-locked { overflow: hidden; }
   color: var(--text-on-accent);
 }
 
-.bb-dock__body {
-  display: flex;
-  align-items: stretch;
-  gap: 0.55rem;
-  padding: 0.45rem 0.55rem;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-.bb-dock__panel {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding-right: 0.55rem;
-  border-right: var(--border-subtle);
-}
-.bb-dock__group {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding-right: 0.55rem;
-  border-right: var(--border-subtle);
-}
-.bb-dock__group:last-child { border-right: 0; padding-right: 0; }
 .bb-dock__label {
   font-family: var(--font-mono);
   font-size: 0.6rem;
@@ -546,8 +546,10 @@ body.bb-locked { overflow: hidden; }
   flex-direction: column;
   gap: 0.7rem;
 }
-#bb-pop-base { top: 62px; right: 12px; }
-#bb-pop-own { bottom: 78px; left: 50%; transform: translateX(-50%); }
+/* Both are placed by ui.js's anchor(), beside whatever key opened them, so
+   neither may claim a corner here — a `right`/`bottom` left over from the old
+   layout would fight the `left`/`top` the anchor sets. */
+#bb-pop-base, #bb-pop-own { top: 12px; left: 12px; }
 
 .bb-pop__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .bb-pop__x {
@@ -835,21 +837,13 @@ body.bb-locked { overflow: hidden; }
 
 @media (max-width: 860px) {
   /* the stage is the whole viewport now — never give it a height here */
-  /* nothing sits in the bottom-right corner any more, so the dock has the width */
-  .bb-dock {
-    left: 12px;
-    right: 12px;
-    transform: none;
-    max-width: none;
-  }
-  .bb-board, .bb-pop { width: calc(100% - 24px); }
-  #bb-pop-base, .bb-board { right: 12px; left: 12px; }
-  .bb-toast { max-width: calc(100% - 100px); bottom: 92px; }
+  .bb-board { right: 12px; left: 12px; width: auto; }
+  .bb-toast { max-width: calc(100% - 100px); bottom: 60px; }
 }
 
 @media (max-width: 560px) {
-  /* a third of a phone screen is too much rail — shrink the keys, keep all
-     fourteen, and let the group names go since there is no hover here anyway */
+  /* a third of a phone screen is too much rail — shrink the keys, keep them
+     all, and let the group names go since there is no hover here anyway */
   .bb-rail { gap: 0.3rem; padding: 0.35rem 0.3rem; }
   .bb-kit + .bb-kit { padding-top: 0.3rem; }
   .bb-kit__label { display: none; }
@@ -857,13 +851,10 @@ body.bb-locked { overflow: hidden; }
   .bb-tool { width: 30px; height: 30px; }
   .bb-tool svg { width: 17px; height: 17px; }
 
-  .bb-count b { font-size: 1.3rem; }
-  .bb-chip span:not([data-icon]) { display: none; }
-  /* only the block pieces drop their name — they still show their value, and
-     "Place value / Multiply / Divide" would be three identical swatches without */
-  .bb-piece--num span { display: none; }
-  .bb-dock__label { display: none; }
-  .bb-board { max-height: calc(100% - 190px); }
+  .bb-count b { font-size: 1.1rem; }
+  .bb-count span { display: none; }
+  .bb-fly__panel { max-width: min(230px, calc(100vw - 130px)); }
+  .bb-board { max-height: calc(100% - 120px); }
 }
 
 /* ── the trade offer that floats over a highlight (js/prompt.js) ───────────────
@@ -907,7 +898,6 @@ body.bb-locked { overflow: hidden; }
 .bb-trade[data-dir="split"] .bb-trade__ico { color: var(--accent-secondary); }
 
 .bb-trade__ico { flex-shrink: 0; display: grid; place-items: center; }
-.bb-trade__body { display: grid; gap: 1px; }
 
 .bb-trade__sum {
   font-family: var(--font-display);
@@ -920,17 +910,23 @@ body.bb-locked { overflow: hidden; }
   max-width: min(30ch, 62vw);
   text-wrap: balance;
 }
+/* the deed itself, as a key on the end of the sentence — split, merge or regroup */
 .bb-trade__go {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  white-space: nowrap;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
 }
+.bb-trade__go svg { width: 18px; height: 18px; }
+.bb-trade[data-dir="merge"] .bb-trade__go { background: var(--accent-success); }
+.bb-trade[data-dir="split"] .bb-trade__go { background: var(--accent-secondary); }
 
 @media (max-width: 640px) {
   .bb-trade { padding: 0.4rem 0.6rem 0.45rem; gap: 0.45rem; }
   .bb-trade__sum { font-size: 0.8rem; }
-  .bb-trade__go { font-size: 0.56rem; }
+  .bb-trade__go { width: 26px; height: 26px; }
+  .bb-trade__go svg { width: 16px; height: 16px; }
 }
