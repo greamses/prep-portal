@@ -12,6 +12,7 @@ import { store, subscribe, emit, say, undo, canUndo, selected, selectedItems } f
 import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
+import { toggleSync, afterBlocks, totalUnits } from "./sync.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -70,7 +71,17 @@ export function mountUI({
 
   /* ── actions ────────────────────────────────────────────────────────────── */
 
-  const run = (fn) => { fn(); emit(); };
+  /* Any action that moves the block total is a change to THE number, so with
+     sync on the frames and charts are brought along before anything redraws. */
+  const run = (fn) => {
+    const before = totalUnits();
+    fn();
+    if (totalUnits() !== before) {
+      const missed = afterBlocks();
+      if (missed) say(missed, "warn");
+    }
+    emit();
+  };
 
   const ACTIONS = {
     // pressing Regroup on the rail is a deliberate "sort this out" — the answer
@@ -91,6 +102,7 @@ export function mountUI({
     back: () => { closeMenus(); onBack(); },
     read: () => toggleBoard(),
     view: () => toggleFlat(),
+    sync: () => toggleSync(),
   };
 
   el.rail.addEventListener("click", (e) => {
@@ -168,7 +180,15 @@ export function mountUI({
   el.bases.addEventListener("click", (e) => {
     const b = e.target.closest("[data-base]");
     if (!b) return;
-    run(() => ops.setBase(Number(b.dataset.base)));
+    run(() => {
+      if (!ops.setBase(Number(b.dataset.base))) return;
+      /* A base change moves no blocks, so run()'s before/after check will not
+         fire — but every PLACE now means something else, and a schoty has just
+         been cleared to be rebuilt. The blocks are the one reading that does
+         not depend on the base, so with sync on they lead. */
+      const missed = afterBlocks();
+      if (missed) say(missed, "warn");
+    });
   });
 
   el.strict.addEventListener("change", () => {
@@ -261,6 +281,7 @@ export function mountUI({
     else if (k === "b") { e.preventDefault(); run(ACTIONS.break); }
     else if (k === "t") { e.preventDefault(); run(ACTIONS.tidy); }
     else if (k === "v") { e.preventDefault(); toggleFlat(); }
+    else if (k === "y") { e.preventDefault(); run(ACTIONS.sync); }
     else if (k === "q") { e.preventDefault(); onTurn(); }
     else if (k === "a") { e.preventDefault(); run(() => { ops.selectAll(); say("Everything selected."); }); }
     else if (k === "escape") { closeMenus(); run(() => { store.selection = new Set(); }); }
@@ -336,6 +357,10 @@ export function mountUI({
     const lassoBtn = $("[data-act='lasso']");
     lassoBtn.setAttribute("aria-pressed", String(pointer.lasso));
     lassoBtn.classList.toggle("is-on", pointer.lasso);
+
+    const syncBtn = $("#bb-sync-btn");
+    syncBtn.setAttribute("aria-pressed", String(store.sync));
+    syncBtn.classList.toggle("is-on", store.sync);
 
     $$(".bb-tagdot").forEach((d) => d.classList.toggle("is-live", sel.length > 0));
 

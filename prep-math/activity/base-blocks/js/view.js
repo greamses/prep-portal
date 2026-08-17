@@ -68,10 +68,12 @@ export function createView(ctx) {
     for (const t of store.things) {
       liveThings.add(t.id);
       let rig = rigs.get(t.id);
-      /* A chart that has grown or shrunk is a different size of slab with a
-         different size of texture on it, so the rig is built again rather than
-         repainted — the mesh itself changed, not just what is drawn on it. */
-      if (rig && rig.places !== (t.places ?? null)) {
+      /* A chart that has grown or shrunk, or a schoty moved to another base, is
+         a different size of thing with a different size of texture on it — so
+         the rig is built again rather than repainted. The mesh itself changed,
+         not just what is drawn on it. */
+      const shape = (t.places ?? "") + "/" + (t.base ?? "");
+      if (rig && rig.shape !== shape) {
         disposeRig(rig);
         rigs.delete(t.id);
         rig = null;
@@ -80,7 +82,7 @@ export function createView(ctx) {
         const parts = t.kind === "abacus"
           ? buildAbacus(ctx, t)
           : buildBoard(ctx, t, store.base);
-        rig = { parts, kind: t.kind, signature: "", places: t.places ?? null };
+        rig = { parts, kind: t.kind, signature: "", shape };
         rigs.set(t.id, rig);
       }
 

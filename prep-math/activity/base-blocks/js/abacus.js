@@ -74,14 +74,38 @@ export const SPECS = {
   },
 };
 
+/** Which frames a base can be counted on. */
+export const BASE_TEN_ONLY = ["soroban", "suanpan"];
+export function worksInBase(variant, base) {
+  return base === 10 || !BASE_TEN_ONLY.includes(variant);
+}
+
+/**
+ * A frame's spec in a given base.
+ *
+ * Only the schoty travels. It is a wire of plain ones with no bar, so it counts
+ * in whatever base you give it simply by having that many beads on each wire —
+ * five beads to a wire IS a base-five abacus. The soroban and the suanpan have
+ * a bead above the bar worth FIVE, which is a fact about ten and not about the
+ * frame; they stay in base ten and are not offered anywhere else.
+ */
+export function specOf(variant, base = 10) {
+  const s = SPECS[variant];
+  if (variant !== "schoty") return s;
+  return { ...s, tiers: { earth: { n: base, worth: 1 } } };
+}
+
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
-export function makeAbacus(variant) {
-  const spec = SPECS[variant];
+export function makeAbacus(variant, base = 10) {
+  // a frame carries the base it counts in, so a canvas may hold more than one
+  const own = worksInBase(variant, base) ? base : 10;
+  const spec = specOf(variant, own);
   const size = frameSize(spec);
   return {
     kind: "abacus",
     variant,
+    base: own,
     l: Math.ceil(size.width),
     // the readout stands above the frame and is part of the thing, so it has to
     // be inside the footprint or the next piece along would be placed on top
@@ -93,6 +117,21 @@ export function makeAbacus(variant) {
     tag: null,
     rods: Array.from({ length: spec.rods }, () => ({ heaven: 0, earth: 0 })),
   };
+}
+
+/**
+ * Move a frame to another base. Only a schoty can go: the wire grows or loses
+ * beads, so the frame is a different size and its rig has to be built again —
+ * view.js watches `thing.base` for exactly that.
+ */
+export function rebaseAbacus(thing, base) {
+  if (!worksInBase(thing.variant, base) || thing.base === base) return false;
+  thing.base = base;
+  const size = frameSize(specOf(thing.variant, base));
+  thing.l = Math.ceil(size.width);
+  thing.w = Math.ceil(size.depth + READ_PAD);
+  clearAbacus(thing);
+  return true;
 }
 
 /** How far a tier reaches from the bar when its beads are pushed right out. */
@@ -136,7 +175,7 @@ function offsetOf(index, count) {
 
 /** The digit a rod is showing. */
 export function rodValue(thing, r) {
-  const spec = SPECS[thing.variant];
+  const spec = specOf(thing.variant, thing.base || 10);
   const rod = thing.rods[r];
   const heaven = spec.tiers.heaven ? rod.heaven * spec.tiers.heaven.worth : 0;
   return heaven + rod.earth * spec.tiers.earth.worth;
@@ -145,9 +184,37 @@ export function rodValue(thing, r) {
 /** The whole frame as one number, leftmost rod the highest place. */
 export function abacusValue(thing) {
   const n = thing.rods.length;
+  const base = thing.base || 10;
   let total = 0;
-  for (let r = 0; r < n; r++) total += rodValue(thing, r) * Math.pow(10, n - 1 - r);
+  for (let r = 0; r < n; r++) total += rodValue(thing, r) * Math.pow(base, n - 1 - r);
   return total;
+}
+
+/**
+ * Set the frame to a number, the way you would key it in: the digits of `n` in
+ * this frame's base, right-aligned so the last rod is the ones. Returns false
+ * when the number is too big for the wires there are.
+ */
+export function setAbacusValue(thing, n) {
+  const base = thing.base || 10;
+  const spec = specOf(thing.variant, base);
+  const rods = thing.rods;
+  const digits = [];
+  let v = Math.max(0, Math.round(n));
+  while (v > 0) { digits.unshift(v % base); v = Math.floor(v / base); }
+  if (digits.length > rods.length) return false;
+
+  clearAbacus(thing);
+  const off = rods.length - digits.length;
+  for (let i = 0; i < digits.length; i++) {
+    const d = digits[i];
+    const rod = rods[off + i];
+    // spend the digit on the biggest beads first, as a hand would
+    const up = spec.tiers.heaven ? spec.tiers.heaven.worth : 0;
+    rod.heaven = up ? Math.min(spec.tiers.heaven.n, Math.floor(d / up)) : 0;
+    rod.earth = d - rod.heaven * up;
+  }
+  return true;
 }
 
 /** Every rod back to zero. */
@@ -192,7 +259,12 @@ function mat(scene, token, fallback, shade = 1) {
  * beads stay contrasting — that is how you read one without counting.
  */
 function beadPaint(spec, rod, tier, index) {
-  if (!spec.upright && (index === 4 || index === 5)) {
+  /* The dark pair brackets the middle of the wire, so it marks half the base
+     rather than always five — on a base-six schoty it is beads three and four.
+     A wire of three or fewer is short enough to count, so it stays plain. */
+  const n = spec.tiers.earth.n;
+  const half = Math.ceil(n / 2);
+  if (!spec.upright && n >= 4 && (index === half - 1 || index === half)) {
     return { token: "--ink", fallback: "#2a2723", shade: 1 };
   }
   const [token, fallback] = BEAD_TOKENS[rod % BEAD_TOKENS.length];
@@ -218,7 +290,7 @@ function norm(hex) {
 export function buildAbacus(ctx, thing) {
   const BJS = B();
   const scene = ctx.scene;
-  const spec = SPECS[thing.variant];
+  const spec = specOf(thing.variant, thing.base || 10);
   const size = frameSize(spec);
   const root = new BJS.TransformNode("ab" + thing.id, scene);
 

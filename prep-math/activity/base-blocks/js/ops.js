@@ -13,6 +13,7 @@
 import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
 import { occupancy, findSpot, fits, mark, footprint, tidy as tidyLayout } from "./layout.js";
+import { rebaseAbacus, worksInBase } from "./abacus.js";
 
 const MAX_SIDE = 64;
 
@@ -584,6 +585,24 @@ export function setBase(base) {
   if (b === store.base) return false;
   snapshot();
   store.base = b;
-  say(`Working in base ${baseWord(b)} — ${b} of a piece now trade for the next one up.`, "ok");
+
+  /* Counting frames follow the base where they can. A schoty is a wire of plain
+     ones, so it simply grows or loses beads; a soroban keeps a bead worth five
+     above its bar, which is a fact about ten, so it stays where it is. */
+  let moved = 0;
+  let stuck = 0;
+  for (const t of store.things) {
+    if (t.kind !== "abacus") continue;
+    if (rebaseAbacus(t, b)) moved += 1;
+    else if (!worksInBase(t.variant, b)) stuck += 1;
+  }
+
+  let note = `Working in base ${baseWord(b)} — ${b} of a piece now trade for the next one up.`;
+  if (moved) note += ` ${moved} schoty ${moved === 1 ? "wire has" : "wires have"} ${b} beads now.`;
+  if (stuck) {
+    note += ` ${stuck} frame${stuck === 1 ? "" : "s"} still count${stuck === 1 ? "s" : ""} in tens — `
+      + "only the schoty counts in other bases.";
+  }
+  say(note, stuck ? "warn" : "ok");
   return true;
 }

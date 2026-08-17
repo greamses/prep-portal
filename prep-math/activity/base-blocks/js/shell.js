@@ -12,6 +12,7 @@
 
 import { GROUPS, toolById } from "./tools.js";
 import { ICON } from "./icons.js";
+import { worksInBase } from "./abacus.js";
 
 /* Which tool the canvas opens on. The dock has all seven, so the shelf does not
    need to: one card is the door, and choosing happens inside. */
@@ -80,7 +81,7 @@ export function createCanvasView(el, { onOpen, onClose } = {}) {
 }
 
 /** The Add panel's three tabs, and what each of them offers. */
-export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint }) {
+export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint, base }) {
   /* The tabs are icons: three words across the panel cost a strip of canvas,
      and what is under each of them says the same thing in the things it holds. */
   tabsEl.innerHTML = GROUPS.map(
@@ -116,13 +117,18 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint })
     } else {
       panelEl.innerHTML = `
         ${g.tools
-          .map(
-            (t) => `
-          <button class="bb-piece" type="button" data-tool="${t.id}">
+          .map((t) => {
+            /* A soroban keeps a bead worth five above its bar, which is a fact
+               about ten and not about the frame — so away from base ten it is
+               offered but not pressable, with the reason on it. */
+            const off = t.kind === "abacus" && !worksInBase(t.variant, base());
+            return `
+          <button class="bb-piece" type="button" data-tool="${t.id}"
+            ${off ? `disabled title="A ${t.short.toLowerCase()} only counts in base ten. Change the base back, or use the schoty."` : ""}>
             <i class="bb-piece__swatch bb-swatch--${t.kind === "abacus" ? "rod" : "flat"}"></i>
             <span>${t.short}</span>
-          </button>`
-          )
+          </button>`;
+          })
           .join("")}`;
     }
     // the panel was just replaced, so its icons and its live labels (a rod is

@@ -21,12 +21,13 @@ import { splitSelected, addPlace, addThing, rotateSelected } from "./ops.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
-import { makeAbacus, tapBead, abacusValue } from "./abacus.js";
+import { makeAbacus, tapBead, abacusValue, setAbacusValue, worksInBase } from "./abacus.js";
 import {
   makeBoard, tapBoard, tapPlace, toggleCell,
   hitPlace, moveCounter, dropCounter, counterColour,
 } from "./grids.js";
 import { createDotGhost } from "./dots.js";
+import { syncFrom as spread, afterBlocks, valueOf, setChartValue } from "./sync.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
 
@@ -41,6 +42,7 @@ let ctx = null;
 let view = null;
 let ui = null;
 let pointer = null;
+let dock = null;
 let booting = null;
 const ghost = createDotGhost(stage);
 
@@ -73,6 +75,26 @@ function loadBabylon() {
 /** A quarter turn, from the handle on the canvas or from the Q key. */
 function doTurn() {
   if (rotateSelected()) emit();
+}
+
+/** Sync only speaks when a tool could not take the number it was handed. */
+function sayIf(note) {
+  if (note) say(note, "warn");
+}
+
+/**
+ * A thing just put on the canvas while sync is on starts out showing whatever
+ * everything else is showing — a new frame that read zero next to a chart
+ * reading 138 would look like sync had broken the moment you used it.
+ */
+function catchUp(thing) {
+  if (!store.sync || !thing) return;
+  const lead = store.things.find(
+    (t) => t.id !== thing.id && (t.kind === "abacus" || t.variant === "place")
+  );
+  const n = lead ? valueOf(lead) : store.blocks.reduce((s, b) => s + b.l * b.w * b.h, 0);
+  if (thing.kind === "abacus") setAbacusValue(thing, n);
+  else if (thing.variant === "place") setChartValue(thing, n);
 }
 
 /* ── the hand tool ────────────────────────────────────────────────────────── */
@@ -177,8 +199,13 @@ function placeTool(tool) {
     return;
   }
   if (tool.kind === "abacus") {
-    const thing = addThing(makeAbacus(tool.variant));
+    if (!worksInBase(tool.variant, store.base)) {
+      say(`A ${tool.short.toLowerCase()} only counts in base ten — use the schoty.`, "warn");
+      return;
+    }
+    const thing = addThing(makeAbacus(tool.variant, store.base));
     say(`${tool.label} — tap a bead to slide it against the bar.`);
+    catchUp(thing);
     fitView(ctx, [thing]);
     return;
   }
@@ -188,6 +215,7 @@ function placeTool(tool) {
       ? "Place-value chart — stand blocks in the columns and it reads them back."
       : `${tool.label} — tap a square to light its row and column.`
   );
+  catchUp(thing);
   fitView(ctx, [thing]);
 }
 
@@ -211,12 +239,13 @@ async function bootCanvas() {
 
     pointer = createPointer(ctx, view, canvas, {
       onChange: () => emit(),
-      onSplit: () => { splitSelected(); emit(); },
+      onSplit: () => { splitSelected(); sayIf(afterBlocks()); emit(); },
       onBead: (ref) => {
         const thing = store.things.find((t) => t.id === ref.thingId);
         if (!thing) return;
         if (tapBead(thing, ref)) {
-          say(`${abacusValue(thing)}`);
+          const n = abacusValue(thing);
+          say(spread(n, thing.id) || String(n));
           emit();
         }
       },
@@ -250,7 +279,8 @@ async function bootCanvas() {
             : moveCounter(thing, token.from, hit.col, store.base);
         }
         if (!done.changed) store.history.pop();
-        if (done.message) say(done.message, done.changed ? "ok" : "warn");
+        const spilled = done.changed ? spread(valueOf(thing), thing.id) : null;
+        if (done.message) say(spilled || done.message, done.changed && !spilled ? "ok" : "warn");
         emit();
       },
       onBoard: (id, uv, e) => {
@@ -263,7 +293,12 @@ async function bootCanvas() {
             remove: !!(e && (e.shiftKey || e.ctrlKey)),
           });
           if (!done.changed) store.history.pop();
-          if (done.message) say(done.message, done.changed ? "ok" : "warn");
+          const spilled = done.changed ? spread(valueOf(thing), thing.id) : null;
+          if (done.message) say(spilled || done.message, done.changed && !spilled ? "ok" : "warn");
+          /* A chart that has just grown reaches leftwards, and two columns is
+             enough to carry its own + and − off the side of the screen — so
+             bring the view with it, or you cannot press them again. */
+          if (done.rebuilt) fitView(ctx, [thing]);
           emit();
           return;
         }
@@ -291,14 +326,15 @@ async function bootCanvas() {
       onBack: () => canvasView.hide(),
     });
 
-    buildDock(
+    dock = buildDock(
       document.getElementById("bb-dock-tabs"),
       document.getElementById("bb-dock-panel"),
       {
-        onPiece: (p) => { addPlace(p); emit(); },
+        onPiece: (p) => { addPlace(p); sayIf(afterBlocks()); emit(); },
         onOwn: (btn) => ui.openOwn(btn),
         onPlace: (tool) => { placeTool(tool); emit(); },
         onPaint: () => { paintIcons(document); ui.update(); },
+        base: () => store.base,
       }
     ).paint(store.group);
 
@@ -315,12 +351,14 @@ async function bootCanvas() {
       view.retint(store);
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-    // the paper's bold lines follow the working base
+    // the paper's bold lines follow the working base, and so does what may be
+    // added: away from ten, only the schoty counts
     let lastBase = store.base;
     subscribe((s) => {
       if (s.base === lastBase) return;
       lastBase = s.base;
       paintMat(ctx, s.base);
+      dock?.paint(s.group);
     });
 
     ctx.camera.setTarget(new window.BABYLON.Vector3(0, 1.5, 0));
@@ -329,6 +367,14 @@ async function bootCanvas() {
     engine.runRenderLoop(() => ctx.scene.render());
     new ResizeObserver(() => engine.resize()).observe(stage);
     window.addEventListener("resize", () => engine.resize());
+
+    /* A way in for the tests. Everything on this canvas is drawn into a WebGL
+       texture, so what a frame or a chart is reading cannot be read back off
+       the page — a harness can only assert on what it can see. Opened with
+       ?debug so it is never there in a lesson. */
+    if (location.search.includes("debug")) {
+      window.__bb = { store, valueOf, view };
+    }
 
     veilOff();
     return true;

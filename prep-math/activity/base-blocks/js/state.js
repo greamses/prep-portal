@@ -22,6 +22,7 @@ export const store = {
   tool: "base-blocks", // which tool the dock is showing
   group: "blocks",
   flat: false, // 2D view on?
+  sync: false, // when on, every tool shows the same number (js/sync.js)
   seq: 1,
   history: [],
   message: null, // { text, kind } — one line of feedback for the HUD

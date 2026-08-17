@@ -44,6 +44,9 @@ export const ICON = {
      Tidy already owns the stack of bars, and no two keys may share a glyph. */
   reading: line(`<rect x="2.8" y="4.2" width="18.4" height="15.6" rx="1.4"/><path d="M7.4 10h9.2M7.4 14h9.2"/>`),
 
+  /* sync: two links of a chain, because that is what it does to the tools */
+  sync: line(`<path d="M9.6 14.4 14.4 9.6"/><path d="M11.2 7.4 13 5.6a3.7 3.7 0 0 1 5.3 5.3l-1.8 1.8"/><path d="M12.8 16.6 11 18.4a3.7 3.7 0 0 1-5.3-5.3l1.8-1.8"/>`),
+
   /* the three families, for the dock's tabs */
   blocks: line(`<path d="M8 2.8 14.2 6v6.4L8 15.6 1.8 12.4V6z"/><path d="m1.8 6 6.2 3.2L14.2 6M8 9.2v6.4"/><rect x="14" y="14" width="7.5" height="7.5" rx="0.8"/>`),
   abacus: line(`<rect x="2.4" y="3.4" width="19.2" height="17.2" rx="1.4"/><path d="M2.4 8.6h19.2M2.4 15.4h19.2"/><circle cx="7.4" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="10.2" cy="15.4" r="2.5" fill="currentColor" stroke="none"/><circle cx="16.8" cy="15.4" r="2.5" fill="currentColor" stroke="none"/>`),
