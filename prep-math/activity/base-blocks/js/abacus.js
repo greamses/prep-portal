@@ -26,33 +26,37 @@ import { footprint } from "./layout.js";
 const B = () => window.BABYLON;
 
 /* Bead travel and spacing, in world units (one unit cube = 1). */
-/* A bead is a squat bicone turned about its rod: WIDE across and THIN along,
-   which is the shape that lets four of them pack into a couple of centimetres
-   and still be caught by a fingertip. Everything else here is sized off it. */
-const BEAD_D = 1.02;  // across the bead — the wide way, athwart the rod
-const BEAD_T = 0.42;  // along the rod — the thin way
-const BEAD_EYE = 0.05; // the hole it is threaded by, hidden inside the rod
+/* A bead is a squat bicone turned about its rod: wide across, and A UNIT CUBE
+   LONG in the direction it travels. That length is the measure of the whole
+   frame — it is what a bead is compared against on this canvas, so a bead you
+   can put beside a unit block and see are the same is worth the extra paper.
+   Everything else here is sized off it. */
+const BEAD_T = 1.0;   // along the rod — one unit cube, the way a bead travels
+const BEAD_D = 1.3;   // across the bead — the wide way, athwart the rod
+const BEAD_EYE = 0.07; // the hole it is threaded by, hidden inside the rod
 
-const PITCH = 1.22;  // between neighbouring rods; must clear BEAD_D
-const SLOT = 0.5;    // between neighbouring beads on a rod — packed, they touch
-const TRAVEL = 0.62; // how far a bead slides to change sides
-const BAR_GAP = 0.42; // clear space either side of the reckoning bar
-const EDGE = 0.82;   // frame margin
-const RAIL = 0.34;   // how thick the frame's four timbers are
-const FRAME_H = 1.16; // deeper than a bead is wide, so the beads sit inside it
-const ROD_T = 0.11;  // a rod's square section, a shade fatter than the bead's eye
+const PITCH = 1.55;  // between neighbouring rods; must clear BEAD_D
+const SLOT = 1.1;    // between neighbouring beads on a rod — packed, they touch
+const TRAVEL = 1.45; // how far a bead slides to change sides
+const BAR_GAP = 1.0; // clear space either side of the reckoning bar
+const EDGE = 1.1;    // frame margin
+const RAIL = 0.45;   // how thick the frame's four timbers are
+const FRAME_H = 1.5; // deeper than a bead is wide, so the beads sit inside it
+const ROD_T = 0.15;  // a rod's square section, a shade fatter than the bead's eye
 
-/* The readout: a little slate standing above the frame with the number the
-   beads are currently showing. It lies flat like everything else, so it reads
-   from straight above as well as from the side. */
-const READ_D = 2.1;  // how deep the slate is
-const READ_GAP = 0.3; // clear paper between the frame and its slate
+/* The readout: a sticky note with the number the beads are showing, held at
+   frame height beyond the far rail. There is no board behind it — the note is
+   the whole of it, on a clear sheet, so what shows around it is the paper. */
+/* Deep enough that the number on it is a couple of units tall against a frame
+   this size — a note sized for the old small frame came out a thin strip. */
+const READ_D = 4.2;  // how deep the note's sheet is
+const READ_GAP = 0.3; // clear paper between the frame and its note
 const READ_PAD = READ_D + READ_GAP;
-/* The slate stands as tall as the frame, not flat on the paper. Lying flat it
-   was legible from straight above and hidden behind the far rail from every
-   other angle — the rail is over a unit tall and the slate was a sixth of that.
-   At frame height its face clears the rail, and being a horizontal face it still
-   reads straight on in the 2D view. */
+/* It is held at frame height rather than laid on the paper. Flat it was legible
+   from straight above and hidden behind the far rail from every other angle —
+   the rail is well over a unit tall and the note is a sheet with no thickness at
+   all. Up here its face clears the rail, and being horizontal it still reads
+   straight on in the 2D view. */
 const SLATE_H = FRAME_H;
 
 export const SPECS = {
@@ -305,32 +309,24 @@ export function buildAbacus(ctx, thing) {
     }
   }
 
-  /* ── the readout slate, standing above the frame ────────────────────────── */
-  const slate = BJS.MeshBuilder.CreateBox("slate",
-    { width: size.width, depth: READ_D, height: SLATE_H }, scene);
-  /* The frame is on the hub, shifted back by half the readout's depth, so the
-     slate has to be measured from THERE and not from the root: the frame's far
-     rail is at `size.depth/2 - READ_PAD/2`, and a gap past it works out as
-     simply half a gap beyond half the frame. */
-  const slateZ = size.depth / 2 + READ_GAP / 2;
-  slate.position.set(0, SLATE_H / 2, slateZ);
-  slate.parent = root;
-  slate.material = frameMat;
-  slate.receiveShadows = true;
-  // the slate belongs to the abacus, so grabbing it picks the whole thing up
-  slate.metadata = { itemId: thing.id };
-  ctx.shadows.addShadowCaster(slate);
+  /* ── the readout note, held above the frame ─────────────────────────────── */
+  /* One sheet and nothing behind it. There WAS a timber slate here for the note
+     to be stuck on; it read as a plank across the top of every frame and told
+     you nothing, so the note is on its own now — a clear sheet with a coloured
+     patch on it, and the paper showing through everywhere else.
 
-  /* The number is drawn onto a separate plane a hair above the slate rather than
-     onto a face of it, for the reason the chart boards do the same: a box face
-     cannot be given its own texture without splitting the box into submeshes. */
+     The frame is on the hub, shifted back by half the readout's depth, so the
+     sheet is measured from THERE and not from the root: the frame's far rail is
+     at `size.depth/2 - READ_PAD/2`, and a gap past it works out as simply half
+     a gap beyond half the frame. */
+  const slateZ = size.depth / 2 + READ_GAP / 2;
+
   const px = Math.min(2048, Math.round(size.width * 64));
   const py = Math.min(1024, Math.round(READ_D * 64));
   const tex = new BJS.DynamicTexture("abRead" + thing.id, { width: px, height: py }, scene, false);
   tex.wrapU = BJS.Texture.CLAMP_ADDRESSMODE;
   tex.wrapV = BJS.Texture.CLAMP_ADDRESSMODE;
   tex.anisotropicFilteringLevel = 4;
-  // the note is a shape on a clear sheet, so the timber shows round it
   tex.hasAlpha = true;
 
   const readMat = new BJS.StandardMaterial("abReadMat" + thing.id, scene);
@@ -339,13 +335,17 @@ export function buildAbacus(ctx, thing) {
   readMat.specularColor = new BJS.Color3(0.02, 0.02, 0.02);
 
   const readFace = BJS.MeshBuilder.CreateGround("readFace",
-    { width: size.width - 0.12, height: READ_D - 0.12 }, scene);
-  readFace.position.set(0, SLATE_H + 0.002, slateZ);
+    { width: size.width, height: READ_D }, scene);
+  readFace.position.set(0, SLATE_H, slateZ);
   readFace.parent = root;
   readFace.material = readMat;
-  readFace.isPickable = false;
+  // the note belongs to the abacus, so grabbing it picks the whole thing up
+  readFace.metadata = { itemId: thing.id };
+  /* Deliberately NOT a shadow caster: the shadow map ignores the texture's
+     alpha, so the sheet would drop a full rectangle on the paper and give away
+     the clear part the note is stuck to. */
 
-  const parts = { root, hub, beads, size, spec, frame, slate, readFace, tex, readMat, shown: null };
+  const parts = { root, hub, beads, size, spec, frame, readFace, tex, readMat, shown: null };
   syncAbacus(thing, parts, false);
   return parts;
 }
@@ -380,25 +380,26 @@ function paintReadout(thing, parts) {
   const [token, fallback] = NOTE_TOKENS[thing.variant] || NOTE_TOKENS.soroban;
   const paper = cssVar(token, fallback);
   const nh = h * 0.78;
+  const text = String(value);
 
-  /* One size that fits the widest number this frame can hold, not one that fits
-     the number showing: a readout that changes size as you count is a fidget. */
+  /* THE DIGITS never change size — a readout that shrinks as you count is a
+     fidget — so the size is set by what the widest number this frame can hold
+     needs, and stays there. */
   const widest = "0".repeat(thing.rods.length + 1);
-  let size = Math.floor(nh * 0.6);
+  let size = Math.floor(nh * 0.66);
   const fontAt = (px) => `700 ${px}px "JetBrains Mono", ui-monospace, monospace`;
   g.font = fontAt(size);
   const room = w * 0.82;
-  let wide = g.measureText(widest).width;
-  if (wide > room) {
-    size = Math.max(12, Math.floor(size * (room / wide)));
+  if (g.measureText(widest).width > room) {
+    size = Math.max(12, Math.floor(size * (room / g.measureText(widest).width)));
     g.font = fontAt(size);
-    wide = g.measureText(widest).width;
   }
 
-  /* The note is sized to the NUMBER, not to the headboard it is stuck on: the
-     slate is a long thin rail, and a patch that filled it would read as a
-     painted stripe rather than as a note somebody put there. */
-  const nw = Math.min(w * 0.92, Math.max(nh * 1.15, wide + nh * 0.7));
+  /* THE PAPER does change: the note is only as wide as the number written on
+     it, so a nought gets a small square and nine digits get a long one. A note
+     cut for the widest number this frame could ever hold left a single nought
+     marooned in the middle of an empty sheet. */
+  const nw = Math.min(w * 0.94, Math.max(nh * 1.1, g.measureText(text).width + nh * 0.62));
 
   g.save();
   g.translate(w / 2, h / 2);

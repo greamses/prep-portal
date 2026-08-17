@@ -17,7 +17,7 @@
    the highlighted meshes, because the camera can orbit under it.
    ========================================================================== */
 
-import { store, emit } from "./state.js";
+import { store, emit, say } from "./state.js";
 import { regroupCheck, regroupSentence, regroupSelected } from "./ops.js";
 import { ICON } from "./icons.js";
 
@@ -44,20 +44,25 @@ export function createRegroupPrompt(ctx, view, stage) {
   card.type = "button";
   card.className = "bb-trade";
   card.hidden = true;
+  /* Two glyphs and no words. The card sits ON the blocks it is about, where a
+     sentence covers the very thing it is describing; what it says in words is
+     on its tooltip, and the toast says it out loud the moment you press. */
   card.innerHTML = `
     <span class="bb-trade__ico">${ARROWS}</span>
-    <span class="bb-trade__sum"></span>
     <span class="bb-trade__go"></span>`;
   stage.appendChild(card);
 
-  const sum = card.querySelector(".bb-trade__sum");
   const go = card.querySelector(".bb-trade__go");
 
   let live = null;   // the check the card is currently showing
 
   function accept() {
     if (!live) return;
-    if (regroupSelected()) emit();
+    /* The card carries no words, so the sentence it WOULD have shown is said
+       here instead — after the trade, when it is a description of what just
+       happened rather than a label sitting on top of the blocks. */
+    const said = regroupSentence(live, store.base);
+    if (regroupSelected()) { say(said, "ok"); emit(); }
   }
 
   card.addEventListener("click", accept);
@@ -82,11 +87,11 @@ export function createRegroupPrompt(ctx, view, stage) {
     if (!check.ok) { live = null; card.hidden = true; return; }
 
     live = check;
-    sum.textContent = regroupSentence(check, store.base);
+    const said = regroupSentence(check, store.base);
     const deed = DEED[check.dir !== "merge" ? "split" : check.exact ? "up" : "regroup"];
     go.innerHTML = ICON[deed.icon];
-    card.setAttribute("aria-label", `${deed.say} — ${sum.textContent}`);
-    card.title = `${deed.say} (Enter)`;
+    card.setAttribute("aria-label", `${deed.say} — ${said}`);
+    card.title = `${said} — ${deed.say} (Enter)`;
     card.dataset.dir = check.dir;
     card.hidden = false;
     place();

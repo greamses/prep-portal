@@ -873,8 +873,8 @@ body.bb-locked { overflow: hidden; }
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.8rem 0.55rem;
+  gap: 0.4rem;
+  padding: 0.3rem;
   background: color-mix(in srgb, var(--surface-primary) 95%, transparent);
   border: 1.5px solid var(--ink);
   box-shadow: var(--shadow-md);
@@ -898,18 +898,6 @@ body.bb-locked { overflow: hidden; }
 .bb-trade[data-dir="split"] .bb-trade__ico { color: var(--accent-secondary); }
 
 .bb-trade__ico { flex-shrink: 0; display: grid; place-items: center; }
-
-.bb-trade__sum {
-  font-family: var(--font-display);
-  font-weight: var(--weight-bold);
-  font-size: 0.9rem;
-  line-height: 1.25;
-  color: var(--ink);
-  /* "1234 units = 1 cube, 2 flats, 3 rods and 4 units" is a legal sentence
-     here, so the card wraps rather than growing wider than the stage. */
-  max-width: min(30ch, 62vw);
-  text-wrap: balance;
-}
 /* the deed itself, as a key on the end of the sentence — split, merge or regroup */
 .bb-trade__go {
   flex-shrink: 0;

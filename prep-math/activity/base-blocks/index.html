@@ -186,7 +186,7 @@
                         aria-expanded="false" aria-controls="bb-board"
                         aria-label="Read the canvas as a number"
                         title="Read the canvas as a number">
-                  <span data-icon="rows"></span><em>Reading</em>
+                  <span data-icon="reading"></span><em>Reading</em>
                 </button>
                 <button class="bb-tool" type="button" id="bb-view-btn" data-act="view"
                         aria-pressed="false" title="Flat 2D view (V)">
@@ -223,14 +223,12 @@
               <span class="bb-eyebrow">Working base</span>
               <button class="bb-pop__x" type="button" data-close><span data-icon="close"></span></button>
             </div>
+            <!-- the two explanations are tooltips: they are read once and then
+                 they are furniture, and this panel opens beside the rail -->
             <div class="bb-bases" id="bb-bases"></div>
-            <p class="bb-pop__note" id="bb-base-note"></p>
-            <label class="bb-switch">
+            <label class="bb-switch" id="bb-strict-row">
               <input type="checkbox" id="bb-strict" checked />
-              <span>
-                <b>Trade rules</b> — only exactly <em id="bb-strict-n">10</em> alike blocks
-                may be merged. Turn this off to join any blocks that match.
-              </span>
+              <span><b>Trade rules</b> <em id="bb-strict-n">10</em></span>
             </label>
           </div>
 
@@ -268,7 +266,7 @@
             </div>
             <p class="bb-dims__out" id="bb-dims-out"></p>
             <button class="pp-btn" type="button" id="bb-add-own">
-              Put it on the canvas <span data-icon="plus"></span>
+              Put it on the canvas <span data-icon="check"></span>
             </button>
           </div>
 

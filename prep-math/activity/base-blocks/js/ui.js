@@ -29,10 +29,10 @@ export function mountUI({
     countSub: $("#bb-count-sub"),
     baseBtn: $("#bb-base-btn"),
     baseLabel: $("#bb-base-label"),
-    baseNote: $("#bb-base-note"),
     bases: $("#bb-bases"),
     strict: $("#bb-strict"),
     strictN: $("#bb-strict-n"),
+    strictRow: $("#bb-strict-row"),
     popBase: $("#bb-pop-base"),
     popOwn: $("#bb-pop-own"),
     board: $("#bb-board"),
@@ -292,10 +292,18 @@ export function mountUI({
     $$(".bb-base", el.bases).forEach((b) =>
       b.classList.toggle("is-on", Number(b.dataset.base) === base)
     );
-    el.baseNote.innerHTML =
-      `In base ${baseWord(base)}, <b>${base} units</b> trade for one rod, ` +
-      `<b>${base} rods</b> for one flat and <b>${base} flats</b> for one cube — ` +
+    /* Both explanations are tooltips. They say the same thing every time you
+       open the panel, and once you have read one you are only ever here to
+       press a number. */
+    el.bases.title =
+      `In base ${baseWord(base)}, ${base} units trade for one rod, ` +
+      `${base} rods for one flat and ${base} flats for one cube — ` +
       `a cube is ${base * base * base} units.`;
+    el.strictRow.title = store.strict
+      ? `Trade rules on — only exactly ${base} alike blocks may be merged. `
+        + "Turn this off to join any blocks that match."
+      : "Trade rules off — any matching blocks may be joined. "
+        + `Turn it on to require exactly ${base}.`;
 
     el.viewLabel.textContent = store.flat ? "3D" : "2D";
     el.viewBtn.setAttribute("aria-pressed", String(store.flat));
