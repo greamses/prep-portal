@@ -558,6 +558,10 @@ export function settleSelected() {
  * where it is while its new shape still fits, and moved to the nearest spot with
  * room only when it does not, so nothing slides about for no reason.
  */
+export function settleThings(list) {
+  return settle(list);
+}
+
 function settle(list) {
   if (!list.length) return false;
   const moving = new Set(list.map((b) => b.id));

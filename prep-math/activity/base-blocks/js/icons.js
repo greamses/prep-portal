@@ -54,6 +54,15 @@ export const ICON = {
      which is the own-size button's tick */
   bricks: line(`<rect x="2.6" y="5" width="18.8" height="14" rx="1.2"/><path d="M2.6 12h18.8M9.4 5v7M14.6 12v7"/>`),
 
+  /* a sticky note: the paper, the strip of tape it is stuck on by, and a couple
+     of lines of writing. The tape is what tells it from Reading, which is a card
+     of ruled lines and nothing else. */
+  note: line(`<rect x="4" y="5.4" width="16" height="15" rx="1.2"/><path d="m7.4 2.9 9.2 2.6"/><path d="M8.4 11h7.2M8.4 14.8h4.6"/>`),
+
+  /* work it out: a play triangle, because that is what it does — it runs the
+     addition through the frame a move at a time instead of landing on it */
+  play: line(`<path d="M8 5.4 19 12 8 18.6z"/>`),
+
   /* the three families, for the dock's tabs */
   blocks: line(`<path d="M8 2.8 14.2 6v6.4L8 15.6 1.8 12.4V6z"/><path d="m1.8 6 6.2 3.2L14.2 6M8 9.2v6.4"/><rect x="14" y="14" width="7.5" height="7.5" rx="0.8"/>`),
   abacus: line(`<rect x="2.4" y="3.4" width="19.2" height="17.2" rx="1.4"/><path d="M2.4 8.6h19.2M2.4 15.4h19.2"/><circle cx="7.4" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="10.2" cy="15.4" r="2.5" fill="currentColor" stroke="none"/><circle cx="16.8" cy="15.4" r="2.5" fill="currentColor" stroke="none"/>`),

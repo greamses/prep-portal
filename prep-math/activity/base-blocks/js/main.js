@@ -17,7 +17,8 @@ import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId, snapshot } from "./state.js";
-import { splitSelected, addPlace, addThing, rotateSelected } from "./ops.js";
+import { splitSelected, addPlace, addThing, rotateSelected, settleThings } from "./ops.js";
+import { makeNote, setNoteText } from "./notes.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
@@ -95,6 +96,33 @@ function catchUp(thing) {
   const n = lead ? valueOf(lead) : store.blocks.reduce((s, b) => s + b.l * b.w * b.h, 0);
   if (thing.kind === "abacus") setAbacusValue(thing, n);
   else if (thing.variant === "place") setChartValue(thing, n);
+}
+
+/* ── sticky notes ─────────────────────────────────────────────────────────── */
+
+/**
+ * Write a note, or rewrite the one that is picked up.
+ *
+ * A rewritten note is recut to its new words, so it may not fit where it was —
+ * `settleThings` leaves it exactly where it is when it still does, and moves it
+ * the shortest way it can when it does not.
+ */
+function stickNote({ text, paper, note }) {
+  if (note) {
+    snapshot(); // addThing takes its own, so only the rewrite needs one here
+    setNoteText(note, text, paper);
+    settleThings([note]);
+    say("Note rewritten.");
+  } else {
+    const made = addThing(makeNote(text, paper));
+    /* addThing leaves what it made picked up, and here that is wrong: the key
+       edits whatever is in your hand, so a note left in it would mean the next
+       note you wrote quietly replaced this one. Put it down. */
+    store.selection = new Set();
+    say("Note stuck on — tap it to pick it up and drag it where it belongs.");
+    fitView(ctx, [made]);
+  }
+  emit();
 }
 
 /* ── the hand tool ────────────────────────────────────────────────────────── */
@@ -324,6 +352,7 @@ async function bootCanvas() {
       onHand: () => setHand(!handOn),
       onTurn: doTurn,
       onBack: () => canvasView.hide(),
+      onNote: stickNote,
     });
 
     dock = buildDock(

@@ -165,6 +165,12 @@
                         aria-label="Undo the last change (Ctrl+Z)" title="Undo (Ctrl+Z)">
                   <span data-icon="undo"></span><em>Undo</em>
                 </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="note"
+                        aria-haspopup="dialog" aria-expanded="false"
+                        aria-label="Stick a note on the canvas"
+                        title="Stick a note on the canvas">
+                  <span data-icon="note"></span><em>Note</em>
+                </button>
                 <button class="bb-tool bb-tool--danger" type="button" data-act="delete"
                         aria-label="Remove the picked things (Delete)" title="Remove (Del)">
                   <span data-icon="trash"></span><em>Remove</em>
@@ -243,11 +249,37 @@
                 placeholder="1234"
                 aria-describedby="bb-keyin-note"
               />
-              <button class="pp-btn bb-keyin__go" type="submit">
-                Build it <span data-icon="bricks"></span>
+              <button class="pp-btn bb-keyin__go" type="submit"
+                      aria-label="Build it" title="Build it">
+                <span data-icon="bricks"></span>
               </button>
             </form>
             <p class="bb-keyin__note" id="bb-keyin-note"></p>
+          </div>
+
+          <!-- ── a sticky note to leave on the canvas ─────────────────────
+               Teachers stick these anywhere: an instruction beside the frame,
+               a question over the chart, a reminder on the bare paper. Pick a
+               note up first and this panel edits that one instead. -->
+          <div class="bb-fly" id="bb-fly-note" role="dialog" aria-label="Sticky note" hidden>
+            <form class="bb-note" id="bb-note-form">
+              <span class="bb-fly__label" id="bb-note-label">New note</span>
+              <textarea
+                class="bb-note__text"
+                id="bb-note-text"
+                rows="3"
+                maxlength="220"
+                spellcheck="true"
+                placeholder="Trade ten of these for one of those."
+              ></textarea>
+              <div class="bb-note__foot">
+                <span class="bb-note__papers" id="bb-note-papers"></span>
+                <button class="pp-btn bb-note__go" type="submit"
+                        aria-label="Stick it on the canvas" title="Stick it on">
+                  <span data-icon="note"></span>
+                </button>
+              </div>
+            </form>
           </div>
 
           <!-- ── the base panel, opened from the rail ──────────────────── -->

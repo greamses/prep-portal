@@ -13,6 +13,7 @@ import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
+import { NOTE_PAPERS } from "./notes.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -21,7 +22,7 @@ export function mountUI({
   pointer, stage,
   onFit = () => {}, onFlat = () => {},
   onZoom = () => {}, onPan = () => {}, onHand = () => {}, onTurn = () => {},
-  onBack = () => {},
+  onBack = () => {}, onNote = () => {},
 }) {
   paintIcons(document);
 
@@ -50,6 +51,11 @@ export function mountUI({
     keyin: $("#bb-keyin"),
     keyinBox: $("#bb-keyin-n"),
     keyinNote: $("#bb-keyin-note"),
+    flyNote: $("#bb-fly-note"),
+    noteForm: $("#bb-note-form"),
+    noteText: $("#bb-note-text"),
+    notePapers: $("#bb-note-papers"),
+    noteLabel: $("#bb-note-label"),
   };
 
   /* Every panel the rail can open, by the key that opens it. Only one is ever
@@ -59,6 +65,7 @@ export function mountUI({
     paint: el.flyPaint,
     base: el.popBase,
     type: el.flyType,
+    note: el.flyNote,
   };
 
   /* ── build the repeated bits ────────────────────────────────────────────── */
@@ -170,9 +177,12 @@ export function mountUI({
     panel.hidden = false;
     btn.setAttribute("aria-expanded", "true");
     btn.classList.add("is-on");
+    // opening the note panel reads whatever note is picked up, so the same key
+    // both writes a new one and edits the one in your hand
+    if (name === "note") loadNote();
     anchor(panel, btn);
     // a box you opened to type in should be ready to type in
-    panel.querySelector("input[type='text']")?.focus();
+    panel.querySelector("input[type='text'], textarea")?.focus();
   }
 
   $$("[data-close]").forEach((b) => b.addEventListener("click", () => closeMenus()));
@@ -250,6 +260,55 @@ export function mountUI({
     el.keyinNote.textContent = n == null || store.base === 10
       ? ""
       : `${el.keyinBox.value.trim()} in base ${baseWord(store.base)} is ${n} units.`;
+  });
+
+  /* ── sticky notes ───────────────────────────────────────────────────────── */
+
+  /* One key does both jobs. With a note picked up it edits that note; with
+     nothing picked up it writes a new one — which is the same rule the rest of
+     the rail follows, where every key acts on what is in your hand. */
+  let paperPick = 0;
+
+  el.notePapers.innerHTML = NOTE_PAPERS.map(
+    (hex, i) => `<button class="bb-note__paper" type="button" data-paper="${i}"
+       aria-pressed="${i === 0}" style="background:${hex}"
+       title="Note ${i + 1}"><span class="sr-only">Paper ${i + 1}</span></button>`
+  ).join("");
+
+  function showPapers() {
+    $$("[data-paper]", el.notePapers).forEach((b) => {
+      b.setAttribute("aria-pressed", String(Number(b.dataset.paper) === paperPick));
+    });
+  }
+
+  /** The one note in your hand, or null — two notes picked up is not an edit. */
+  function pickedNote() {
+    const notes = selectedItems().filter((t) => t.kind === "note");
+    return notes.length === 1 ? notes[0] : null;
+  }
+
+  function loadNote() {
+    const note = pickedNote();
+    el.noteLabel.textContent = note ? "Edit this note" : "New note";
+    el.noteText.value = note ? note.text : "";
+    paperPick = note ? note.paper : paperPick;
+    showPapers();
+  }
+
+  el.notePapers.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-paper]");
+    if (!b) return;
+    paperPick = Number(b.dataset.paper);
+    showPapers();
+  });
+
+  el.noteForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = el.noteText.value.trim();
+    if (!text) { say("A note with nothing on it is just paper.", "warn"); return; }
+    onNote({ text, paper: paperPick, note: pickedNote() });
+    el.noteText.value = "";
+    closeMenus();
   });
 
   /* ── own-size builder ───────────────────────────────────────────────────── */
