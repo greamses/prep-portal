@@ -7,7 +7,7 @@
    10×10×10 cube shows a hundred on each face — at the cost of one draw call.
    ========================================================================== */
 
-import { CFG, PLACE_TOKENS, TAGS, placeOf, cssVar } from "./config.js";
+import { CFG, CUSTOM_TOKEN, TAGS, placeOf, powerOf, placeColour, cssVar } from "./config.js";
 import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
@@ -84,11 +84,17 @@ export function clearMaterials() {
   matCache = new Map();
 }
 
-/** The colour a block should wear: its highlight tag if it has one, else its place. */
+/**
+ * The colour a block should wear: its highlight tag if it has one, else the
+ * colour of its place WITHIN ITS PERIOD. A thousand-cube is butter like a unit
+ * cube, because both are the unit of their period; what tells them apart is
+ * that one of them is a thousand times the size.
+ */
 export function colourOf(block, base) {
   if (block.tag != null) return TAGS[block.tag].hex;
-  const place = placeOf(block, base) || "custom";
-  return cssVar(PLACE_TOKENS[place], "#f4c95d");
+  const power = powerOf(placeOf(block, base));
+  if (power == null) return cssVar(CUSTOM_TOKEN[0], CUSTOM_TOKEN[1]);
+  return placeColour(power);
 }
 
 /* ── mesh ─────────────────────────────────────────────────────────────────── */

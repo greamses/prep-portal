@@ -88,23 +88,40 @@ export function placeOf(block, base) {
 /* ── Colour ────────────────────────────────────────────────────────────────
    Place colours come from the live theme tokens so the mat re-tints with the
    rest of the site. Highlight tags are paint: fixed pastels in both themes. */
-export const PLACE_TOKENS = {
-  unit: "--accent-primary",
-  rod: "--accent-secondary",
-  flat: "--accent-success",
-  cube: "--accent-danger",
-  custom: "--accent-warning",
-};
-
-/* Abacus beads take a theme accent per rod, so every place is its own colour and
-   a number can be read off the frame by where the colours change. */
-export const BEAD_TOKENS = [
-  ["--accent-primary", "#f4c95d"],
-  ["--accent-secondary", "#6fb7e8"],
-  ["--accent-success", "#7cc47c"],
-  ["--accent-danger", "#f07a7a"],
-  ["--accent-warning", "#f0a868"],
+/**
+ * Colour says WHICH OF units, tens and hundreds a thing is — and nothing else.
+ *
+ * The places run in threes: a thousand is the unit of the thousands the way one
+ * is the unit of the ones, ten thousand is its ten, a hundred thousand its
+ * hundred. So the three colours run in threes with them, and a learner reading
+ * any tool sees the same butter-sky-leaf beat repeating however far up the
+ * number goes. Size and shape say which PERIOD you are in; colour says where in
+ * the period. Every tool on this canvas asks these two functions, and only
+ * these two, what colour a place is.
+ */
+export const PERIOD_TOKENS = [
+  ["--accent-primary", "#f4c95d"],   // units of any period
+  ["--accent-secondary", "#6fb7e8"], // tens of any period
+  ["--accent-success", "#7cc47c"],   // hundreds of any period
 ];
+
+/** A block the learner sized themselves is no place at all, so it is apart. */
+export const CUSTOM_TOKEN = ["--accent-warning", "#f0a868"];
+
+export function placeToken(power) {
+  return PERIOD_TOKENS[((power % 3) + 3) % 3];
+}
+
+export function placeColour(power) {
+  const [token, fallback] = placeToken(power);
+  return cssVar(token, fallback);
+}
+
+/** The power of one of the four named places, or null for a shape of your own. */
+export function powerOf(placeId) {
+  const p = PLACES.find((x) => x.id === placeId);
+  return p ? p.power : null;
+}
 
 export const TAGS = [
   { id: 0, name: "Butter", hex: "#f6d268" },

@@ -199,6 +199,12 @@
                         title="Sync — change one tool and the rest show the same number (Y)">
                   <span data-icon="sync"></span><em>Sync</em>
                 </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="type"
+                        aria-haspopup="dialog" aria-expanded="false"
+                        aria-label="Type a number and see it on every tool"
+                        title="Type a number and see it built">
+                  <span data-icon="keyin"></span><em>Type it</em>
+                </button>
               </div>
             </div>
 
@@ -221,6 +227,27 @@
             <button class="bb-tagclear" type="button" data-tag="none" title="Clear highlight">
               <span data-icon="eraser"></span>
             </button>
+          </div>
+
+          <!-- ── type a number and watch it get built ─────────────────── -->
+          <div class="bb-fly" id="bb-fly-type" role="dialog" aria-label="Type a number" hidden>
+            <form class="bb-keyin" id="bb-keyin">
+              <label class="bb-fly__label" for="bb-keyin-n">Show me</label>
+              <input
+                class="bb-keyin__box"
+                id="bb-keyin-n"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="1234"
+                aria-describedby="bb-keyin-note"
+              />
+              <button class="pp-btn bb-keyin__go" type="submit">
+                Build it <span data-icon="bricks"></span>
+              </button>
+            </form>
+            <p class="bb-keyin__note" id="bb-keyin-note"></p>
           </div>
 
           <!-- ── the base panel, opened from the rail ──────────────────── -->

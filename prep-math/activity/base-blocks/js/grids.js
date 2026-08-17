@@ -11,7 +11,9 @@
    moment the working base changes.
    ========================================================================== */
 
-import { PLACES, placeAt, worthOf, placeDims, placeOf, toBase, baseWord, cssVar } from "./config.js";
+import {
+  PLACES, placeAt, worthOf, placeDims, placeOf, placeColour, toBase, baseWord, cssVar,
+} from "./config.js";
 import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
@@ -266,18 +268,9 @@ function fit(g, text, max) {
   return s + "…";
 }
 
-const TOKENS = {
-  unit: "--accent-primary",
-  rod: "--accent-secondary",
-  flat: "--accent-success",
-  cube: "--accent-danger",
-};
-const EXTRA_TOKENS = ["--accent-warning", "--accent-primary", "--accent-secondary"];
-
-/** A place's colour: the four block colours, then the accents round again. */
+/** A place's colour — the same three, repeating with the periods. */
 function colourOfPlace(p) {
-  if (TOKENS[p.id]) return cssVar(TOKENS[p.id], "#f4c95d");
-  return cssVar(EXTRA_TOKENS[(p.power - 4) % EXTRA_TOKENS.length], "#f0a868");
+  return placeColour(p.power);
 }
 
 const PER_ROW = 5; // counters read at a glance in fives, the way a tally does

@@ -14,12 +14,12 @@
    Everything else re-reads.
    ========================================================================== */
 
-import { CFG, placeDims, PLACES } from "./config.js";
+import { CFG, placeDims, PLACES, toBase, baseWord } from "./config.js";
 import { store, say, nextId } from "./state.js";
 import { setAbacusValue, abacusValue } from "./abacus.js";
 import { placeReading, placeOrder, growChart, MAX_DOTS, MAX_PLACES } from "./grids.js";
 import { bestGrouping } from "./ops.js";
-import { occupancy, findSpot, mark, tidy } from "./layout.js";
+import { occupancy, findSpot, fits, mark, footprint, tidy } from "./layout.js";
 
 /** Everything sync writes to — the frames and charts that hold a number. */
 function targets(exceptId) {
@@ -39,8 +39,10 @@ export function valueOf(thing) {
  * Write `n` into every tool but the one that produced it.
  * Returns a short note on anything that could not take it, or null.
  */
-export function syncFrom(n, exceptId, { blocks = true } = {}) {
-  if (!store.sync) return null;
+export function syncFrom(n, exceptId, { blocks = true, force = false } = {}) {
+  // `force` is for a number that was TYPED: asking for it is asking for all of
+  // it, whether or not the tools are tied together the rest of the time
+  if (!store.sync && !force) return null;
   const missed = [];
 
   for (const t of targets(exceptId)) {
@@ -86,11 +88,17 @@ export function setChartValue(thing, n) {
 export function setBlocksValue(n) {
   const base = store.base;
   const want = Math.max(0, Math.round(n));
+  /* COUNT the pieces before making any. A cube is the biggest block there is,
+     so a big enough number wants millions of them — and building that array to
+     find out it is too long is how you hang the page. */
+  const plan = bestGrouping(want, base);
+  const many = plan.reduce((s, part) => s + part.n, 0);
+  if (many > CFG.maxBlocks) return false;
+
   const pieces = [];
-  for (const part of bestGrouping(want, base)) {
+  for (const part of plan) {
     for (let i = 0; i < part.n; i++) pieces.push({ ...part.dims });
   }
-  if (pieces.length > CFG.maxBlocks) return false;
 
   // keep the highlight tags of what was there, in order, so colours survive
   const tags = store.blocks.map((b) => b.tag);
@@ -100,18 +108,40 @@ export function setBlocksValue(n) {
 
   /* Laid out clear of everything else on the canvas rather than tidied over the
      whole of it — the frames and charts are where they were put, and sync must
-     not shuffle them about every time a bead moves. */
+     not shuffle them about every time a bead moves.
+
+     The whole FOOTPRINT has to be clear, not just the corner cell: a block that
+     overlaps a place-value chart is standing in one of its columns, and the
+     chart counts it — so a sloppy check here makes the chart read more than the
+     number sync just handed it. */
   tidy(store.blocks);
   const grid = occupancy(store.things);
   for (const b of store.blocks) {
-    if (grid.has(b.x + "," + b.z)) {
-      const spot = findSpot(grid, b.l, b.w, b);
+    const f = footprint(b);
+    if (!fits(grid, b.x, b.z, f.l, f.w, CFG.gap)) {
+      const spot = findSpot(grid, f.l, f.w, b);
       if (spot) { b.x = spot.x; b.z = spot.z; }
     }
-    mark(grid, b.x, b.z, b.l, b.w);
+    mark(grid, b.x, b.z, f.l, f.w);
   }
   store.selection = new Set();
   return true;
+}
+
+/**
+ * Build a number that was typed in. Everything shows it — blocks, beads and
+ * counters — whether or not sync is on, because typing 1234 and pressing Build
+ * is not a subtle request.
+ */
+export function buildNumber(n) {
+  const want = Math.max(0, Math.round(n));
+  const missed = syncFrom(want, null, { force: true });
+  if (missed) return { ok: false, message: missed };
+  // in base ten "1234 is 1234 in base ten" is nothing to say
+  const said = store.base === 10
+    ? `${want} units`
+    : `${toBase(want, store.base)} in base ${baseWord(store.base)} — ${want} units`;
+  return { ok: true, message: `${said}, on every tool on the canvas.` };
 }
 
 /** The blocks have changed; with sync on, let the other tools catch up. */

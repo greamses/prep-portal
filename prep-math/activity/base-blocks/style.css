@@ -69,14 +69,22 @@ body {
 }
 .bb-eyebrow svg { width: 15px; height: 15px; }
 
+/* The same note the rest of the site sticks on things (.pp-sticky): fixed pale
+   paper in both themes, fixed ink, a hand rather than a face, the -2deg tilt and
+   the two shadows. Notes are paper, not chrome. */
 .bb-eyebrow--note {
-  padding: 0.45rem 0.9rem;
-  background: var(--badge-subject-4-bg, #bfe3ff);
-  /* --ink, not a fixed dark: the badge's blue is pale in light and deep in dark,
-     and only the flipping token stays legible on both */
-  color: var(--ink);
-  transform: rotate(-1.4deg);
-  box-shadow: var(--shadow-sm);
+  padding: 0.5rem 1rem 0.55rem;
+  background: #bfe3ff;
+  color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  border-radius: 2px;
+  transform: rotate(-2deg);
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
 }
 
 .bb-title {
@@ -447,6 +455,41 @@ body.bb-locked { overflow: hidden; }
    they must not carry a corner of their own from the old popover rules */
 .bb-fly--anchored { right: auto; bottom: auto; }
 
+/* ── type a number and watch it get built ─────────────────────────────────── */
+#bb-fly-type { padding: 0.6rem 0.7rem 0.65rem; gap: 0.4rem; }
+.bb-keyin {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.bb-keyin__box {
+  width: 7.5ch;
+  padding: 0.35rem 0.5rem;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: var(--weight-bold, 700);
+  text-align: center;
+}
+.bb-keyin__box:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 1px;
+}
+.bb-keyin__go { padding: 0.35rem 0.6rem; font-size: var(--text-mono-xs, 0.7rem); }
+.bb-keyin__go svg { width: 13px; height: 13px; }
+.bb-keyin__note {
+  margin: 0;
+  max-width: 30ch;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs, 0.68rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.bb-keyin__note:empty { display: none; }
+.bb-keyin__note[data-kind="warn"] { color: var(--accent-danger); }
+
 /* the three families, as tabs over the things they offer */
 .bb-dock__tab {
   flex: 1 1 auto;
@@ -506,10 +549,13 @@ body.bb-locked { overflow: hidden; }
 
 /* place colours, mirrored from the 3D blocks */
 .bb-swatch { display: inline-block; width: 11px; height: 11px; margin-right: 0.4rem; border: 1px solid rgba(42, 39, 35, 0.3); }
+/* Units, tens and hundreds keep their colour in every period — so the cube,
+   being the unit of the thousands, wears the unit's butter. Size tells the two
+   apart; colour is only ever saying where in a period you are. */
 .bb-swatch--unit { background: var(--accent-primary); }
 .bb-swatch--rod { background: var(--accent-secondary); }
 .bb-swatch--flat { background: var(--accent-success); }
-.bb-swatch--cube { background: var(--accent-danger); }
+.bb-swatch--cube { background: var(--accent-primary); }
 .bb-swatch--custom { background: var(--accent-warning); }
 
 .bb-tagdots { display: flex; gap: 0.25rem; }

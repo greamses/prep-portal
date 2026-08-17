@@ -6,13 +6,13 @@
    this panel both re-read from the store, nothing draws itself mid-operation.
    ========================================================================== */
 
-import { CFG, PLACES, TAGS, placeDims, toBase, baseWord } from "./config.js";
+import { CFG, DIGITS, PLACES, TAGS, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
 import { store, subscribe, emit, say, undo, canUndo, selected, selectedItems } from "./state.js";
 import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
-import { toggleSync, afterBlocks, totalUnits } from "./sync.js";
+import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -46,6 +46,10 @@ export function mountUI({
     rail: $(".bb-rail"),
     flyAdd: $("#bb-fly-add"),
     flyPaint: $("#bb-fly-paint"),
+    flyType: $("#bb-fly-type"),
+    keyin: $("#bb-keyin"),
+    keyinBox: $("#bb-keyin-n"),
+    keyinNote: $("#bb-keyin-note"),
   };
 
   /* Every panel the rail can open, by the key that opens it. Only one is ever
@@ -54,6 +58,7 @@ export function mountUI({
     add: el.flyAdd,
     paint: el.flyPaint,
     base: el.popBase,
+    type: el.flyType,
   };
 
   /* ── build the repeated bits ────────────────────────────────────────────── */
@@ -166,6 +171,8 @@ export function mountUI({
     btn.setAttribute("aria-expanded", "true");
     btn.classList.add("is-on");
     anchor(panel, btn);
+    // a box you opened to type in should be ready to type in
+    panel.querySelector("input[type='text']")?.focus();
   }
 
   $$("[data-close]").forEach((b) => b.addEventListener("click", () => closeMenus()));
@@ -199,6 +206,50 @@ export function mountUI({
         : "Trade rules off — any matching blocks may be joined."
     );
     emit();
+  });
+
+  /* ── type a number and watch it get built ───────────────────────────────── */
+
+  /* Read in the WORKING BASE, not always in ten: in base five, typing 1234
+     should build 1234₅. Digits above nine are A and B, the way the readout
+     writes them. */
+  function readTyped(raw) {
+    const s = String(raw).trim().toUpperCase().replace(/[\s,]/g, "");
+    if (!s) return null;
+    let n = 0;
+    for (const ch of s) {
+      const d = DIGITS.indexOf(ch);
+      if (d < 0 || d >= store.base) return null;
+      n = n * store.base + d;
+      if (n > 1e12) return null;
+    }
+    return n;
+  }
+
+  el.keyin.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const n = readTyped(el.keyinBox.value);
+    if (n == null) {
+      el.keyinNote.textContent =
+        `Base ${baseWord(store.base)} is written with ${DIGITS.slice(0, store.base).split("").join(" ")}.`;
+      el.keyinNote.dataset.kind = "warn";
+      return;
+    }
+    const done = buildNumber(n);
+    el.keyinNote.textContent = done.message;
+    el.keyinNote.dataset.kind = done.ok ? "ok" : "warn";
+    say(done.message, done.ok ? "ok" : "warn");
+    emit();
+  });
+
+  /* The tools were just told to show something, so say what that is under the
+     box as well — the canvas may be scrolled away from all of them. */
+  el.keyinBox.addEventListener("input", () => {
+    const n = readTyped(el.keyinBox.value);
+    el.keyinNote.dataset.kind = "";
+    el.keyinNote.textContent = n == null || store.base === 10
+      ? ""
+      : `${el.keyinBox.value.trim()} in base ${baseWord(store.base)} is ${n} units.`;
   });
 
   /* ── own-size builder ───────────────────────────────────────────────────── */
@@ -258,7 +309,13 @@ export function mountUI({
 
   window.addEventListener("keydown", (e) => {
     const t = e.target;
-    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
+      /* Every letter belongs to the box while you are in it — except Escape,
+         which has to get you back out. Without this the panel stays open, and
+         pressing its own key again reads as "close" when you meant "open". */
+      if (e.key === "Escape") { e.preventDefault(); t.blur(); closeMenus(); }
+      return;
+    }
     const k = e.key.toLowerCase();
 
     if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); return run(ACTIONS.undo); }

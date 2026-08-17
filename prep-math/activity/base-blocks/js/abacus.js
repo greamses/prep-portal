@@ -20,7 +20,7 @@
    into one mesh, which is what makes the whole frame one thing to pick up.
    ========================================================================== */
 
-import { BEAD_TOKENS, cssVar } from "./config.js";
+import { placeToken, cssVar } from "./config.js";
 import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
@@ -258,7 +258,7 @@ function mat(scene, token, fallback, shade = 1) {
  * a rod reading as one thing. The schoty has no bar, so its fifth and sixth
  * beads stay contrasting — that is how you read one without counting.
  */
-function beadPaint(spec, rod, tier, index) {
+function beadPaint(spec, power, tier, index) {
   /* The dark pair brackets the middle of the wire, so it marks half the base
      rather than always five — on a base-six schoty it is beads three and four.
      A wire of three or fewer is short enough to count, so it stays plain. */
@@ -267,7 +267,10 @@ function beadPaint(spec, rod, tier, index) {
   if (!spec.upright && n >= 4 && (index === half - 1 || index === half)) {
     return { token: "--ink", fallback: "#2a2723", shade: 1 };
   }
-  const [token, fallback] = BEAD_TOKENS[rod % BEAD_TOKENS.length];
+  /* A wire's colour is its PLACE within its period, the same butter-sky-leaf as
+     the blocks and the chart — so ones, tens and hundreds look the same wherever
+     you are on the frame, and the beat of three tells you the periods apart. */
+  const [token, fallback] = placeToken(power);
   return { token, fallback, shade: tier === "heaven" ? 0.66 : 1 };
 }
 
@@ -428,12 +431,19 @@ export function buildAbacus(ctx, thing) {
  * and for one sitting still is never.
  */
 /* A sticky note per frame, so three abacuses side by side are told apart by the
-   colour of their notes before you have read a digit of any of them. */
-const NOTE_TOKENS = {
-  soroban: ["--accent-primary", "#f4c95d"],
-  suanpan: ["--accent-secondary", "#6fb7e8"],
-  schoty: ["--accent-success", "#7cc47c"],
+   colour of their notes before you have read a digit of any of them.
+
+   These are the site's own note papers (.pp-sticky--c0…c5 in components.css),
+   not theme tokens: a note is PAPER, so it is the same pale colour in the light
+   and in the dark, and it is written on in a hand rather than set in a face. */
+const NOTE_PAPER = {
+  soroban: "#fff3a8",
+  suanpan: "#bfe3ff",
+  schoty: "#c8f0c0",
 };
+const NOTE_INK = "#14130f";
+const NOTE_HAND = '"Shantell Sans", "Segoe Print", "Bradley Hand", cursive';
+const NOTE_TILT = -0.035; // the -2deg every note on this site is stuck on at
 
 function paintReadout(thing, parts) {
   const value = abacusValue(thing);
@@ -449,19 +459,18 @@ function paintReadout(thing, parts) {
      frame's own timber — a note stuck on the headboard, not a printed panel. */
   g.clearRect(0, 0, w, h);
 
-  const [token, fallback] = NOTE_TOKENS[thing.variant] || NOTE_TOKENS.soroban;
-  const paper = cssVar(token, fallback);
-  const nh = h * 0.78;
+  const paper = NOTE_PAPER[thing.variant] || NOTE_PAPER.soroban;
+  const nh = h * 0.74;
   const text = String(value);
 
   /* THE DIGITS never change size — a readout that shrinks as you count is a
      fidget — so the size is set by what the widest number this frame can hold
      needs, and stays there. */
   const widest = "0".repeat(thing.rods.length + 1);
-  let size = Math.floor(nh * 0.66);
-  const fontAt = (px) => `700 ${px}px "JetBrains Mono", ui-monospace, monospace`;
+  let size = Math.floor(nh * 0.58);
+  const fontAt = (px) => `600 ${px}px ${NOTE_HAND}`;
   g.font = fontAt(size);
-  const room = w * 0.82;
+  const room = w * 0.8;
   if (g.measureText(widest).width > room) {
     size = Math.max(12, Math.floor(size * (room / g.measureText(widest).width)));
     g.font = fontAt(size);
@@ -471,34 +480,48 @@ function paintReadout(thing, parts) {
      it, so a nought gets a small square and nine digits get a long one. A note
      cut for the widest number this frame could ever hold left a single nought
      marooned in the middle of an empty sheet. */
-  const nw = Math.min(w * 0.94, Math.max(nh * 1.1, g.measureText(text).width + nh * 0.62));
+  const nw = Math.min(w * 0.94, Math.max(nh * 1.1, g.measureText(text).width + nh * 0.7));
 
   g.save();
   g.translate(w / 2, h / 2);
-  g.rotate(-0.035); // a note is never put on straight
-  g.shadowColor = "rgba(30,26,20,0.36)";
-  g.shadowBlur = h * 0.1;
-  g.shadowOffsetY = h * 0.04;
+  g.rotate(NOTE_TILT);
+
+  /* .pp-sticky's two shadows: a hairline right under the paper, and a soft one
+     thrown down and to the right. Canvas takes one at a time, so they are two
+     passes over the same rectangle. */
+  const put = () => g.fillRect(-nw / 2, -nh / 2, nw, nh);
   g.fillStyle = paper;
-  g.fillRect(-nw / 2, -nh / 2, nw, nh);
+  g.shadowColor = "rgba(20,19,15,0.3)";
+  g.shadowBlur = h * 0.09;
+  g.shadowOffsetX = h * 0.035;
+  g.shadowOffsetY = h * 0.06;
+  put();
+  g.shadowColor = "rgba(20,19,15,0.1)";
+  g.shadowBlur = h * 0.008;
+  g.shadowOffsetX = 0;
+  g.shadowOffsetY = h * 0.008;
+  put();
   g.shadowColor = "transparent";
 
-  // the peeled corner, bottom-right
-  const curl = Math.min(nw, nh) * 0.22;
-  g.fillStyle = "rgba(30,26,20,0.15)";
-  g.beginPath();
-  g.moveTo(nw / 2, nh / 2 - curl);
-  g.lineTo(nw / 2, nh / 2);
-  g.lineTo(nw / 2 - curl, nh / 2);
-  g.closePath();
-  g.fill();
+  // the strip of tape across the top, as .pp-sticky--tape wears it
+  const tapeW = Math.min(nw * 0.42, nh * 1.1);
+  const tapeH = nh * 0.17;
+  g.save();
+  g.translate(0, -nh / 2);
+  g.rotate(-0.061);
+  g.fillStyle = "rgba(255,255,255,0.45)";
+  g.fillRect(-tapeW / 2, -tapeH * 0.55, tapeW, tapeH);
+  g.strokeStyle = "rgba(0,0,0,0.1)";
+  g.lineWidth = Math.max(1, tapeH * 0.06);
+  g.strokeRect(-tapeW / 2, -tapeH * 0.55, tapeW, tapeH);
+  g.restore();
 
-  // ink, not the flipping token: the note is always a pale pastel in both themes
+  // written on, not set: the note's ink is fixed, because its paper is
   g.font = fontAt(size);
-  g.fillStyle = "#2a2723";
+  g.fillStyle = NOTE_INK;
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.fillText(String(value), 0, size * 0.04);
+  g.fillText(text, 0, size * 0.06 + nh * 0.05);
   g.restore();
 
   tex.update(true);
@@ -506,7 +529,8 @@ function paintReadout(thing, parts) {
 
 function makeBead(ctx, hub, thing, spec, size, r, tier, i) {
   const BJS = B();
-  const paint = beadPaint(spec, r, tier, i);
+  // rods run biggest-first, so the last one is the ones and rod r is base^(n-1-r)
+  const paint = beadPaint(spec, thing.rods.length - 1 - r, tier, i);
 
   /* A bead is a solid of revolution about the ROD, not about the vertical: it
      is threaded, so the rod is its axis and there is no other way for it to sit.
