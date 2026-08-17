@@ -10,10 +10,11 @@
           height), which is what turns units→rod→flat→cube and nothing else.
    ========================================================================== */
 
-import { CFG, PLACES, placeDims, placeOf, baseWord } from "./config.js";
+import { CFG, PLACES, placeDims, placeOf, baseWord, toBase } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
 import { occupancy, findSpot, fits, mark, footprint, tidy as tidyLayout } from "./layout.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
+import { rebaseBoard, tableMax } from "./grids.js";
 
 const MAX_SIDE = 64;
 
@@ -548,12 +549,21 @@ export function rotateSelected(radians = Math.PI / 2) {
  * still fits and moved to the nearest spot that has room when it does not.
  */
 export function settleSelected() {
-  const sel = selectedItems();
-  if (!sel.length) return false;
-  const moving = new Set(sel.map((b) => b.id));
+  return settle(selectedItems());
+}
+
+/**
+ * Re-fit a list of items whose shape has just changed — by turning, or by
+ * following the base into a size they were not before. Each is left exactly
+ * where it is while its new shape still fits, and moved to the nearest spot with
+ * room only when it does not, so nothing slides about for no reason.
+ */
+function settle(list) {
+  if (!list.length) return false;
+  const moving = new Set(list.map((b) => b.id));
   const grid = occupancy(items(), moving);
 
-  for (const b of sel) {
+  for (const b of list) {
     const f = footprint(b);
     if (!fits(grid, b.x, b.z, f.l, f.w, CFG.gap)) {
       const spot = findSpot(grid, f.l, f.w, { x: b.x, z: b.z });
@@ -591,14 +601,31 @@ export function setBase(base) {
      above its bar, which is a fact about ten, so it stays where it is. */
   let moved = 0;
   let stuck = 0;
+  let tables = 0;
+  const resized = [];
   for (const t of store.things) {
-    if (t.kind !== "abacus") continue;
-    if (rebaseAbacus(t, b)) moved += 1;
-    else if (!worksInBase(t.variant, b)) stuck += 1;
+    if (t.kind === "abacus") {
+      if (rebaseAbacus(t, b)) { moved += 1; resized.push(t); }
+      else if (!worksInBase(t.variant, b)) stuck += 1;
+    } else if (rebaseBoard(t, b)) {
+      resized.push(t);
+      /* A times table IS the base it is written in, so every one of them moves —
+         four rows in base five, eleven in base twelve, and every product on the
+         board rewritten to match. */
+      tables += 1;
+    }
   }
+  /* Everything that just changed size gets re-fitted, or a table that grew from
+     four rows to eleven would be standing through its neighbours. */
+  settle(resized);
 
   let note = `Working in base ${baseWord(b)} — ${b} of a piece now trade for the next one up.`;
   if (moved) note += ` ${moved} schoty ${moved === 1 ? "wire has" : "wires have"} ${b} beads now.`;
+  if (tables) {
+    const m = toBase(tableMax(b), b);
+    note += ` ${tables} table${tables === 1 ? "" : "s"} `
+      + `${tables === 1 ? "runs" : "run"} to ${m} × ${m} now.`;
+  }
   if (stuck) {
     note += ` ${stuck} frame${stuck === 1 ? "" : "s"} still count${stuck === 1 ? "s" : ""} in tens — `
       + "only the schoty counts in other bases.";

@@ -124,7 +124,8 @@ export function createView(ctx) {
   /* What a board's drawn face depends on — redraw only when this changes. */
   function boardSignature(t, store) {
     if (t.variant !== "place") {
-      return [t.variant, (t.hidden || []).join("|"), JSON.stringify(t.focus || null)].join("~");
+      return [t.variant, t.base, t.max, (t.hidden || []).join("|"),
+        JSON.stringify(t.focus || null)].join("~");
     }
     const r = placeReading(t, store.blocks, store.base);
     return ["place", store.base, t.places, r.digits.join(","), r.strays,

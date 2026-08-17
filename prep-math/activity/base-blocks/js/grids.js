@@ -38,7 +38,27 @@ export const MIN_PLACES = 2;
 export const MAX_PLACES = 7;   // powers 0…6 — as far as the names carry
 export const MAX_DOTS = 20;    // as many as a column this deep holds legibly
 
-export const GRID_MAX = 12; // tables run to twelve twelves
+/**
+ * How far a table runs.
+ *
+ * A times table stops being new at the last digit the base has: past 4 in base
+ * five every product is one you have already met, wearing a carry. So the table
+ * is (base−1) by (base−1) — the whole of multiplication in that base and not a
+ * square more, which is why a base-five table is small enough to hold in the
+ * head and a base-ten one is not.
+ *
+ * Base ten is the one exception, and it is a fact about us rather than about
+ * ten: the twelve-times table is learnt whole, so it stays whole.
+ */
+export const GRID_MAX = 12; // base ten runs to twelve twelves
+export function tableMax(base) {
+  return base === 10 ? GRID_MAX : base - 1;
+}
+
+/** The table a board is actually carrying (its own, not the canvas's). */
+function maxOf(thing) {
+  return thing.max || tableMax(thing.base || 10);
+}
 
 /** How wide and deep a chart of `n` places is, in cells. */
 export function chartSize(n) {
@@ -61,13 +81,44 @@ export function makeBoard(variant, base) {
       counters: Array.from({ length: places }, () => 0),
     };
   }
-  const n = GRID_MAX + 1; // a header line plus 1..12
+  /* A table carries the base it was written in, the way a counting frame does:
+     view.js watches `thing.base` and builds the rig again when it changes, which
+     it must, because a base-five table is a different size of board. */
+  const max = tableMax(base);
+  const n = max + 1; // a header line, then 1…max
   return {
     kind: "board", variant, tag: null, x: 0, z: 0, angle: 0,
+    base, max,
     l: n * CELL, w: n * CELL, h: SLAB,
     hidden: [],          // "r,c" of cells blanked for practice
     focus: null,         // { r, c } lit row and column
   };
+}
+
+/**
+ * Move a table to another base. Every product on it is rewritten, and the board
+ * itself changes size — in base five there are four rows, in base twelve eleven.
+ *
+ * The place-value chart does not come here: it relabels its columns in the new
+ * base without changing shape, so a repaint is all it needs.
+ */
+export function rebaseBoard(thing, base) {
+  if (thing.variant === "place" || thing.base === base) return false;
+  const max = tableMax(base);
+  thing.base = base;
+  thing.max = max;
+  const n = max + 1;
+  thing.l = n * CELL;
+  thing.w = n * CELL;
+  /* A square that no longer exists cannot stay hidden, and a row lit off the
+     end of the table would light nothing at all. */
+  thing.hidden = (thing.hidden || []).filter((key) => {
+    const [r, c] = key.split(",").map(Number);
+    return r <= max && c <= max;
+  });
+  const f = thing.focus;
+  if (f && ((f.r || 0) > max || (f.c || 0) > max)) thing.focus = null;
+  return true;
 }
 
 /* ── meshes ───────────────────────────────────────────────────────────────── */
@@ -322,7 +373,8 @@ function countersOf(thing) {
 }
 
 function drawTable(g, W, H, thing, opts, c) {
-  const n = GRID_MAX + 1;
+  const base = thing.base || opts.base || 10;
+  const n = maxOf(thing) + 1;
   const cw = W / n;
   const ch = H / n;
   const divide = thing.variant === "divide";
@@ -345,11 +397,13 @@ function drawTable(g, W, H, thing, opts, c) {
       else if (answer) { g.fillStyle = answerFill; g.fillRect(x, y, cw, ch); }
       else if (lit) { g.fillStyle = focusFill; g.fillRect(x, y, cw, ch); }
 
+      /* Written in the working base, headings and products alike — in base five
+         three fours is 22, and the table only teaches that if it says so. */
       let text = "";
       if (r === 0 && col === 0) text = divide ? "÷" : "×";
-      else if (r === 0) text = String(col);
-      else if (col === 0) text = String(r);
-      else if (!hidden.has(r + "," + col)) text = String(r * col);
+      else if (r === 0) text = toBase(col, base);
+      else if (col === 0) text = toBase(r, base);
+      else if (!hidden.has(r + "," + col)) text = toBase(r * col, base);
 
       if (!text) continue;
       g.fillStyle = isHead ? "#2a2723" : c.ink;
@@ -605,7 +659,8 @@ export function counterColour(thing, col) {
 
 export function tapBoard(thing, uv, base) {
   if (thing.variant === "place") return { changed: false };
-  const n = GRID_MAX + 1;
+  const b = thing.base || base || 10;
+  const n = maxOf(thing) + 1;
   const col = Math.floor(uv.x * n);
   const r = Math.floor((1 - uv.y) * n);
   if (r < 0 || col < 0 || r >= n || col >= n) return { changed: false };
@@ -618,16 +673,19 @@ export function tapBoard(thing, uv, base) {
 
   thing.focus = { r, c: col };
   const product = r * col;
-  if (thing.variant === "divide") {
-    return { changed: true, message: `${product} ÷ ${r} = ${col}` };
-  }
-  return { changed: true, message: `${r} × ${col} = ${product}` };
+  /* Away from base ten the fact is worth saying twice — once the way the table
+     writes it, once in the tens the learner already counts in. */
+  const tail = b === 10 ? "" : ` — ${product} in tens.`;
+  const say = (a, op, c2, d) =>
+    `${toBase(a, b)} ${op} ${toBase(c2, b)} = ${toBase(d, b)}${tail}`;
+  if (thing.variant === "divide") return { changed: true, message: say(product, "÷", r, col) };
+  return { changed: true, message: say(r, "×", col, product) };
 }
 
 /** Blank a cell out for practice (or bring it back). */
 export function toggleCell(thing, uv) {
   if (thing.variant === "place") return false;
-  const n = GRID_MAX + 1;
+  const n = maxOf(thing) + 1;
   const col = Math.floor(uv.x * n);
   const r = Math.floor((1 - uv.y) * n);
   if (r < 1 || col < 1 || r >= n || col >= n) return false;

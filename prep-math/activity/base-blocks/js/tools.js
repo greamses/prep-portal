@@ -95,8 +95,9 @@ export const GROUPS = [
         label: "Multiplication Grid",
         short: "Multiply",
         blurb:
-          "Every product to twelve twelves. Tap a cell to hide or show it, and " +
-          "its row and column light up so you can see where the answer comes from.",
+          "Every product to twelve twelves in base ten — and in any other base, " +
+          "the whole of its multiplication in one square. Tap a cell to light " +
+          "its row and column, or hide it and try to say it first.",
         art: multiplyArt,
       },
       {
@@ -106,8 +107,9 @@ export const GROUPS = [
         label: "Division Grid",
         short: "Divide",
         blurb:
-          "The same table read backwards: pick the number you are dividing by, " +
-          "then find the one you are dividing, and the answer is on the edge.",
+          "The same table read backwards, in whatever base you are working in: " +
+          "find the number you are dividing inside the square, and its two " +
+          "edges are what you divided by and what you got.",
         art: divideArt,
       },
     ],
