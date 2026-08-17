@@ -255,6 +255,20 @@
               </button>
             </form>
             <p class="bb-keyin__note" id="bb-keyin-note"></p>
+            <!-- the same number, worked on to a frame instead of built. The
+                 signs are signs, not icons: no key on this canvas may share a
+                 glyph with another, and + already belongs to Add. -->
+            <div class="bb-sums" id="bb-sums">
+              <span class="bb-fly__label">Work it out on the frame</span>
+              <div class="bb-sums__keys">
+                <button class="bb-sum" type="button" data-sum="1"
+                        aria-label="Add it to the frame, bead by bead"
+                        title="Add it, bead by bead">+</button>
+                <button class="bb-sum" type="button" data-sum="-1"
+                        aria-label="Take it off the frame, bead by bead"
+                        title="Take it off, bead by bead">−</button>
+              </div>
+            </div>
           </div>
 
           <!-- ── a sticky note to leave on the canvas ─────────────────────

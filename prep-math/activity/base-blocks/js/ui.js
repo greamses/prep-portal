@@ -22,7 +22,7 @@ export function mountUI({
   pointer, stage,
   onFit = () => {}, onFlat = () => {},
   onZoom = () => {}, onPan = () => {}, onHand = () => {}, onTurn = () => {},
-  onBack = () => {}, onNote = () => {},
+  onBack = () => {}, onNote = () => {}, onSum = () => {},
 }) {
   paintIcons(document);
 
@@ -261,6 +261,28 @@ export function mountUI({
       ? ""
       : `${el.keyinBox.value.trim()} in base ${baseWord(store.base)} is ${n} units.`;
   });
+
+  /* ── worked out on a frame, a bead at a time ────────────────────────────── */
+
+  /* The same box, used the other way. Building a number REPLACES what is on the
+     canvas; adding it to a frame KEEPS what is there and works the sum on to it,
+     which is a different question and gets its own pair of keys. */
+  $("#bb-sums").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-sum]");
+    if (!b || b.disabled) return;
+    const n = readTyped(el.keyinBox.value);
+    if (n == null || n === 0) {
+      el.keyinNote.textContent = "Type a number to work on to the frame first.";
+      el.keyinNote.dataset.kind = "warn";
+      return;
+    }
+    onSum(n, Number(b.dataset.sum));
+  });
+
+  /** The sum keys are dead while a sum is running — one hand, one frame. */
+  function sumsBusy(on) {
+    $$("[data-sum]").forEach((b) => { b.disabled = !!on; });
+  }
 
   /* ── sticky notes ───────────────────────────────────────────────────────── */
 
@@ -516,6 +538,7 @@ export function mountUI({
       if (show) anchor(el.popOwn, trigger || el.flyAdd);
     },
     refreshIcons: () => paintIcons(document),
+    sumsBusy,
   };
 }
 

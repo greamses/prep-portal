@@ -499,6 +499,33 @@ body.bb-locked { overflow: hidden; }
 .bb-keyin__note:empty { display: none; }
 .bb-keyin__note[data-kind="warn"] { color: var(--accent-danger); }
 
+/* the same number, worked on to a counting frame a bead at a time */
+.bb-sums {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.45rem;
+  border-top: var(--border-subtle);
+}
+.bb-sums__keys { display: flex; gap: 0.35rem; }
+.bb-sum {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: var(--weight-bold, 700);
+  line-height: 1;
+  cursor: pointer;
+}
+.bb-sum:hover:not(:disabled) { background: var(--surface-raised, var(--surface-primary)); }
+.bb-sum:disabled { opacity: 0.4; cursor: default; }
+.bb-sum:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 1px; }
+
 /* ── the sticky note panel ────────────────────────────────────────────────── */
 #bb-fly-note { padding: 0.6rem 0.7rem 0.65rem; gap: 0.4rem; }
 .bb-note { display: grid; gap: 0.45rem; }

@@ -16,7 +16,8 @@ import { createPointer } from "./pointer.js";
 import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
-import { store, subscribe, emit, say, nextId, snapshot } from "./state.js";
+import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
+import { planSum, applyStep, canWorkSums } from "./sums.js";
 import { splitSelected, addPlace, addThing, rotateSelected, settleThings } from "./ops.js";
 import { makeNote, setNoteText } from "./notes.js";
 import { createTurnHandle } from "./turn.js";
@@ -97,6 +98,75 @@ function catchUp(thing) {
   if (thing.kind === "abacus") setAbacusValue(thing, n);
   else if (thing.variant === "place") setChartValue(thing, n);
 }
+
+/* ── a sum worked out on a frame ──────────────────────────────────────────── */
+
+const STEP_MS = 1500; // long enough to read the sentence before the beads move
+
+let sumRunning = false;
+
+/** Which frame the sum is worked on: the one in your hand, else the only one. */
+function sumFrame() {
+  const picked = selectedItems().find(canWorkSums);
+  if (picked) return { frame: picked, why: null };
+  const all = store.things.filter(canWorkSums);
+  if (all.length === 1) return { frame: all[0], why: null };
+  if (all.length > 1) return { frame: null, why: "Pick the frame you want the sum worked on first." };
+  const schoty = store.things.some((t) => t.kind === "abacus");
+  return {
+    frame: null,
+    why: schoty
+      ? "A schoty has no bead worth five, so it has no friends to use. Add a soroban or a suanpan."
+      : "Put a soroban or a suanpan on the canvas first.",
+  };
+}
+
+/**
+ * Work a number on to a frame, one hand movement at a time.
+ *
+ * The whole sum is planned before a bead moves, so a frame that cannot hold the
+ * answer says so and stays as it was. Then the steps are played with the
+ * sentence up first — the pause with the words showing and the beads still is
+ * where the learner works out what is about to happen.
+ */
+async function runSum(n, sign) {
+  if (sumRunning) return;
+  const { frame: f, why } = sumFrame();
+  if (!f) { say(why, "warn"); emit(); return; }
+
+  const plan = planSum(f, n, sign);
+  if (!plan.ok) { say(plan.message, "warn"); emit(); return; }
+  if (!plan.steps.length) { say("Nothing to do — that is zero."); emit(); return; }
+
+  const was = abacusValue(f);
+  sumRunning = true;
+  ui.sumsBusy(true);
+  snapshot();
+  store.selection = new Set([f.id]);
+  fitView(ctx, [f]);
+
+  try {
+    for (const step of plan.steps) {
+      say(step.text, step.kind === "direct" ? "info" : "ok");
+      emit();
+      await wait(STEP_MS);
+      if (step.dh || step.de) {
+        applyStep(f, step);
+        emit();
+        await wait(STEP_MS * 0.5);
+      }
+    }
+    const now = abacusValue(f);
+    say(`${was} ${sign > 0 ? "+" : "−"} ${n} = ${now}.`, "ok");
+    sayIf(spread(now, f.id));
+  } finally {
+    sumRunning = false;
+    ui.sumsBusy(false);
+    emit();
+  }
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ── sticky notes ─────────────────────────────────────────────────────────── */
 
@@ -353,6 +423,7 @@ async function bootCanvas() {
       onTurn: doTurn,
       onBack: () => canvasView.hide(),
       onNote: stickNote,
+      onSum: runSum,
     });
 
     dock = buildDock(
