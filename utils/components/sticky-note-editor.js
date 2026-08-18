@@ -13,19 +13,26 @@
    silently arming the pen for whatever you type next, which looks like the key
    did nothing.
 
-   The editing itself is `document.execCommand`. It is deprecated and it emits
-   whatever markup it feels like, and it is still the only thing in a browser
-   that will bold a selection spanning three elements correctly. We never read
-   that markup back: `runsFromDOM` asks for the COMPUTED style of each piece of
-   text, which is right whatever produced it.
+   ── the pens work on the MODEL, not the markup ────────────────────────────
+   Not `document.execCommand`. That is the obvious way to format a selection and
+   it was the first way this worked, but it rewrites the markup as it pleases:
+   an underline put on before a size change simply vanished when the size change
+   restructured the nodes around it, and no amount of care about the order of
+   operations fixes that.
+
+   So every pen reads the runs off the paper, splits them at the two CHARACTER
+   OFFSETS the highlight covers, dresses that stretch, and writes the paper back
+   from the runs. Nothing is handed to the browser to restructure, so no pen can
+   undo another. Typing is still the browser's own — `runsFromDOM` reads it back
+   off the COMPUTED style of each piece of text, which is right whatever
+   produced it.
    ========================================================================== */
 
 import {
-  PAPERS, INKS, MARKS, FONTS, SIZES,
-  runsToHTML, runsFromDOM, editNote, noteText,
+  PAPERS, INKS, MARKS, FONTS, SIZES, DEFAULT_SIZE,
+  runsToNodes, runsFromDOM, editNote, noteText, snapSize,
+  restyle, toggleOver, runsOver,
 } from "./sticky-note.js";
-
-const SIZE_TOKEN = "7"; // the legacy size we hijack, then rewrite to real px
 
 /**
  * @param {object} opts
@@ -39,10 +46,12 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   root.hidden = true;
   root.innerHTML = `
     <div class="pp-note__bar" role="toolbar" aria-label="How the note is written">
-      <button type="button" class="pp-note__key" data-do="smaller" title="Smaller writing"
-              aria-label="Smaller writing"><span class="pp-note__a pp-note__a--sm">A</span></button>
-      <button type="button" class="pp-note__key" data-do="bigger" title="Bigger writing"
-              aria-label="Bigger writing"><span class="pp-note__a pp-note__a--lg">A</span></button>
+      <select class="pp-note__pickfont" data-set="font" title="Face" aria-label="Face">
+        ${FONTS.map((f) => `<option value="${f.id}" style="font-family:${f.css}">${f.name}</option>`).join("")}
+      </select>
+      <select class="pp-note__picksize" data-set="size" title="Size" aria-label="Size">
+        ${SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
+      </select>
       <i class="pp-note__sep"></i>
       <button type="button" class="pp-note__key pp-note__key--b" data-do="bold"
               title="Bold" aria-label="Bold">B</button>
@@ -50,8 +59,6 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
               title="Slanted" aria-label="Slanted">I</button>
       <button type="button" class="pp-note__key pp-note__key--u" data-do="underline"
               title="Underlined" aria-label="Underlined">U</button>
-      <button type="button" class="pp-note__key pp-note__key--font" data-do="font"
-              title="Another face" aria-label="Another face">Aa</button>
       <i class="pp-note__sep"></i>
       <button type="button" class="pp-note__swatch" data-pick="ink"
               title="Colour of the writing" aria-label="Colour of the writing"
@@ -141,93 +148,93 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     }
   }
 
-  /** Run `fn` over whatever is highlighted, or over the lot if nothing is. */
-  function onSelection(fn) {
-    paper.focus();
-    const sel = window.getSelection();
-    const whole = !inPaper() || sel.isCollapsed;
-    if (whole) selectAll();
-    const at = saveSel();
-    fn();
-    if (whole) {
-      // put the caret back at the end rather than leaving the note highlighted
-      const range = document.createRange();
-      range.selectNodeContents(paper);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    } else {
-      // the same words stay chosen, so a run of keys dresses ONE stretch of text
-      restoreSel(at);
-    }
-    harvest();
-  }
-
-  const cmd = (name, value = null) => {
-    try { document.execCommand(name, false, value); } catch { /* nothing to do */ }
-  };
-
   /* ── the pens ───────────────────────────────────────────────────────────── */
 
-  /**
-   * Writing size, the one thing execCommand cannot express in pixels.
-   *
-   * The legacy `fontSize` command is used purely to MARK the selection — it is
-   * the only way to wrap exactly the highlighted text, spans and all — and then
-   * every mark it left is rewritten to the size we actually wanted.
-   */
-  function setSize(px) {
-    cmd("styleWithCSS", "false");
-    cmd("fontSize", SIZE_TOKEN);
-    cmd("styleWithCSS", "true");
-    root.querySelectorAll(`font[size="${SIZE_TOKEN}"]`).forEach((f) => {
-      const span = document.createElement("span");
-      span.style.fontSize = px + "px";
-      while (f.firstChild) span.appendChild(f.firstChild);
-      f.replaceWith(span);
-    });
-    // some engines honour styleWithCSS even here, so catch the CSS form too
-    root.querySelectorAll('[style*="xxx-large"]').forEach((el) => {
-      el.style.fontSize = px + "px";
-    });
-  }
+  /** How many characters the note holds — the end of "everything". */
+  const plainLength = () => paper.textContent.length;
 
-  /** The size the highlighted text is now, so a step moves from where you are. */
-  function sizeIndexNow() {
-    const sel = window.getSelection();
-    let el = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : paper;
-    if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement;
-    if (!el || !paper.contains(el)) el = paper;
-    const px = parseFloat(getComputedStyle(el).fontSize) || SIZES[1];
-    let best = 0;
-    SIZES.forEach((s, i) => {
-      if (Math.abs(s - px) < Math.abs(SIZES[best] - px)) best = i;
-    });
-    return best;
+  /**
+   * Dress what is highlighted, or the whole note when nothing is.
+   *
+   * Everything the bar does goes through here: read the runs off the paper,
+   * restyle the chosen stretch, write the paper back from the runs. Nothing is
+   * ever handed to the browser to restructure, so no pen can undo another.
+   */
+  function dressSelection(make, at = null) {
+    paper.focus();
+    if (at) restoreSel(at);
+    let where = saveSel();
+    if (!where || where.a === where.b) where = { a: 0, b: plainLength() };
+    if (where.b <= where.a) return;
+
+    const runs = runsFromDOM(paper);
+    const patch = typeof make === "function" ? make(runs, where) : make;
+    if (!patch) return;
+
+    editNote(note, { runs: restyle(runs, where.a, where.b, patch) });
+    paper.replaceChildren(runsToNodes(note.runs));
+    restoreSel(where);
+    readBack();
+    onInput(note);
   }
 
   const DO = {
-    bold: () => cmd("bold"),
-    italic: () => cmd("italic"),
-    underline: () => cmd("underline"),
-    bigger: () => setSize(SIZES[Math.min(SIZES.length - 1, sizeIndexNow() + 1)]),
-    smaller: () => setSize(SIZES[Math.max(0, sizeIndexNow() - 1)]),
-    font: () => {
-      const now = root.querySelector(".pp-note__key--font").dataset.font || FONTS[0].id;
-      const next = FONTS[(FONTS.findIndex((f) => f.id === now) + 1) % FONTS.length];
-      root.querySelector(".pp-note__key--font").dataset.font = next.id;
-      root.querySelector(".pp-note__key--font").title = next.name;
-      cmd("fontName", next.css);
-    },
+    bold: (runs, at) => ({ bold: toggleOver(runs, at.a, at.b, "bold") }),
+    italic: (runs, at) => ({ italic: toggleOver(runs, at.a, at.b, "italic") }),
+    underline: (runs, at) => ({ underline: toggleOver(runs, at.a, at.b, "underline") }),
   };
 
-  bar.addEventListener("pointerdown", (e) => e.preventDefault()); // keep the caret
+  /* A press on the bar must not take the caret out of the paper — except on a
+     dropdown, which cannot open at all if its own pointerdown is cancelled. */
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("select")) { held = saveSel(); return; }
+    e.preventDefault();
+  });
   bar.addEventListener("click", (e) => {
     const key = e.target.closest("[data-do]");
-    if (key) { closePick(); cmd("styleWithCSS", "true"); onSelection(DO[key.dataset.do]); return; }
+    if (key) { closePick(); dressSelection(DO[key.dataset.do]); return; }
     const picker = e.target.closest("[data-pick]");
     if (picker) openPick(picker.dataset.pick, picker);
   });
+
+  /* ── the two dropdowns ──────────────────────────────────────────────────── */
+
+  /* Opening a native dropdown blurs the paper and loses the highlight, so the
+     highlight is remembered on the way IN and put back before the change is
+     applied. Native rather than a menu of our own on purpose: it is the control
+     a phone and a screen reader already know how to work. */
+  let held = null;
+
+  const fontSel = root.querySelector("[data-set=font]");
+  const sizeSel = root.querySelector("[data-set=size]");
+
+  for (const sel of [fontSel, sizeSel]) {
+    sel.addEventListener("focus", () => { if (!held) held = saveSel(); });
+    sel.addEventListener("change", () => {
+      const at = held;
+      held = null;
+      closePick();
+      dressSelection(sel === sizeSel
+        ? { px: Number(sizeSel.value) }
+        : { font: FONTS.find((f) => f.id === fontSel.value)?.css || FONTS[0].css }, at);
+    });
+  }
+
+  /** Show what the writing under the caret actually is, as it moves. */
+  function readBack() {
+    if (root.hidden) return;
+    const s = window.getSelection();
+    let el = s && s.rangeCount ? s.getRangeAt(0).startContainer : null;
+    if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement;
+    if (!el || !paper.contains(el)) return;
+    const cs = getComputedStyle(el);
+    sizeSel.value = String(snapSize(parseFloat(cs.fontSize) || SIZES[DEFAULT_SIZE]));
+    const fam = cs.fontFamily.toLowerCase();
+    const hit = FONTS.find((f) =>
+      fam.includes(f.css.split(",")[0].replace(/["']/g, "").trim().toLowerCase()));
+    if (hit) fontSel.value = hit.id;
+  }
+  document.addEventListener("selectionchange", readBack);
 
   /* ── the three swatch strips ────────────────────────────────────────────── */
 
@@ -266,12 +273,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
       onInput(note);
       return;
     }
-    cmd("styleWithCSS", "true");
-    onSelection(() => {
-      if (which === "ink") cmd("foreColor", hex);
-      // clearing a highlight is setting it to nothing, which needs the literal
-      else cmd("hiliteColor", hex || "transparent");
-    });
+    dressSelection(which === "ink" ? { ink: hex } : { mark: hex });
     swatch(which).style.background = hex || "transparent";
   });
 
@@ -289,8 +291,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); close(true); return; }
     if ((e.ctrlKey || e.metaKey) && "biu".includes(e.key.toLowerCase())) {
       e.preventDefault();
-      cmd("styleWithCSS", "true");
-      onSelection(DO[{ b: "bold", i: "italic", u: "underline" }[e.key.toLowerCase()]]);
+      dressSelection(DO[{ b: "bold", i: "italic", u: "underline" }[e.key.toLowerCase()]]);
       return;
     }
     e.stopPropagation(); // a page's own single-letter shortcuts are not for here
@@ -299,7 +300,17 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   paper.addEventListener("paste", (e) => {
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData("text");
-    cmd("insertText", text);
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !inPaper()) return;
+    const r = sel.getRangeAt(0);
+    r.deleteContents();
+    const node = document.createTextNode(text);
+    r.insertNode(node);
+    r.setStartAfter(node);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    harvest();
   });
 
   /* ── opening, dressing and closing ──────────────────────────────────────── */
@@ -316,7 +327,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     note = thing;
     root.hidden = false;
     closePick();
-    paper.innerHTML = runsToHTML(note.runs);
+    paper.replaceChildren(runsToNodes(note.runs));
     swatch("ink").style.background = note.runs?.[0]?.ink || INKS[0].hex;
     swatch("mark").style.background = note.runs?.[0]?.mark || "transparent";
     dress();
@@ -327,6 +338,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     range.collapse(false);
     sel.removeAllRanges();
     sel.addRange(range);
+    readBack();
   }
 
   function close(commit = true) {
@@ -356,6 +368,9 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     get note() { return note; },
     /** Is this event inside the editor? — for a host's own click-away rule. */
     owns: (target) => root.contains(target),
-    destroy: () => root.remove(),
+    destroy: () => {
+      document.removeEventListener("selectionchange", readBack);
+      root.remove();
+    },
   };
 }

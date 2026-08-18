@@ -63,17 +63,27 @@ export const MARKS = [
   { id: "blue", hex: "#a8dcff", name: "Blue" },
 ];
 
-/** The site's own faces, and nothing else — a note is not a font menu. */
+/**
+ * The faces a note may be written in.
+ *
+ * The site's own three first, then the two everyone reaches for, then the one
+ * mathematics is set in: STIX Two is what MathJax renders with, so a note
+ * beside a formula can be written in the same face as the formula. A host that
+ * wants it web-safe should load "STIX Two Text" — it falls back through Cambria
+ * Math and Latin Modern Math to a plain serif where it is missing.
+ */
 export const FONTS = [
   { id: "hand", name: "Hand", css: '"Shantell Sans", "Segoe Print", cursive' },
   { id: "display", name: "Display", css: '"Unbounded", system-ui, sans-serif' },
   { id: "mono", name: "Mono", css: '"JetBrains Mono", "Courier New", monospace' },
+  { id: "calibri", name: "Calibri", css: 'Calibri, Carlito, "Segoe UI", sans-serif' },
+  { id: "times", name: "Times New Roman", css: '"Times New Roman", Tinos, Times, serif' },
+  { id: "math", name: "Math (STIX Two)", css: '"STIX Two Text", "STIX Two Math", "Cambria Math", "Latin Modern Math", serif' },
 ];
 
-/** How big you are writing, in note-pixels. Five steps, not a nudged number:
-    a wall of notes made of five sizes still looks like a set. */
-export const SIZES = [13, 16, 20, 26, 34];
-export const DEFAULT_SIZE = 1;
+/** How big you are writing, in note-pixels — the twelve a word processor offers. */
+export const SIZES = [10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48];
+export const DEFAULT_SIZE = 4; // 16px
 
 /* Paper geometry, in note-pixels. A note-pixel is the unit everything here is
    measured in; the caller decides how big one is on ITS surface. */
@@ -165,6 +175,61 @@ export function normalise(runs) {
 const STYLE_KEYS = ["px", "bold", "italic", "underline", "font", "ink", "mark"];
 export function sameStyle(a, b) {
   return STYLE_KEYS.every((k) => (a[k] || null) === (b[k] || null));
+}
+
+/* ── dressing a stretch of text ───────────────────────────────────────────── */
+
+/** The runs covering characters [a, b) — for asking what is already there. */
+export function runsOver(runs, a, b) {
+  const out = [];
+  let at = 0;
+  for (const r of runs) {
+    const end = at + r.text.length;
+    if (end > a && at < b) out.push(r);
+    at = end;
+  }
+  return out;
+}
+
+/**
+ * Dress characters [a, b) and leave the rest alone.
+ *
+ * This is how EVERY pen works, rather than `document.execCommand`. The browser's
+ * own editing is the only thing that will bold a selection spanning three
+ * elements — but it rewrites the markup as it pleases while doing it, and an
+ * underline put on before a size change simply vanished when the size change
+ * restructured the nodes around it. Splitting runs at two character offsets
+ * cannot lose anything: the words do not move and every other run is copied
+ * across untouched.
+ */
+export function restyle(runs, a, b, patch) {
+  if (b <= a) return runs.map((r) => ({ ...r }));
+  const out = [];
+  let at = 0;
+  for (const r of runs) {
+    const start = at;
+    const end = at + r.text.length;
+    at = end;
+    if (end <= a || start >= b) { out.push({ ...r }); continue; }
+
+    const pre = Math.max(0, a - start);
+    const post = Math.min(r.text.length, Math.max(0, b - start));
+    if (pre) out.push({ ...r, text: r.text.slice(0, pre) });
+    out.push({ ...r, ...patch, text: r.text.slice(pre, post) });
+    if (post < r.text.length) out.push({ ...r, text: r.text.slice(post) });
+  }
+  return normalise(out);
+}
+
+/**
+ * What a toggle should do to a stretch: turn it OFF when every bit of it is
+ * already on, and ON otherwise — so a half-bold selection goes fully bold
+ * before it goes plain, which is what every editor does.
+ */
+export function toggleOver(runs, a, b, key) {
+  const covered = runsOver(runs, a, b);
+  if (!covered.length) return true;
+  return !covered.every((r) => !!r[key]);
 }
 
 /* ── measuring and laying out ─────────────────────────────────────────────── */
@@ -368,24 +433,43 @@ export function paintRuns(g, layout, x0, y0) {
 
 /* ── the bridge to editable HTML ──────────────────────────────────────────── */
 
-const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/**
+ * Runs → nodes for a contenteditable.
+ *
+ * BUILT, not concatenated. A font stack has double quotes in it ("Shantell
+ * Sans"), and putting one inside style="…" ends the attribute right there — the
+ * colour, the weight and the underline after it were thrown away, so a note
+ * reopened to be edited came up plain and the next keystroke made that real.
+ * Setting the properties on a real element cannot go wrong that way.
+ */
+export function runsToNodes(runs, doc = document) {
+  const frag = doc.createDocumentFragment();
+  for (const r of runs || []) {
+    const lines = String(r.text).split("\n");
+    lines.forEach((line, i) => {
+      if (i) frag.appendChild(doc.createElement("br"));
+      if (!line) return;
+      const span = doc.createElement("span");
+      const s = span.style;
+      s.fontSize = (r.px || SIZES[DEFAULT_SIZE]) + "px";
+      s.fontFamily = r.font || FONTS[0].css;
+      s.color = r.ink || INKS[0].hex;
+      s.fontWeight = r.bold ? WEIGHT_BOLD : WEIGHT_PLAIN;
+      s.fontStyle = r.italic ? "italic" : "normal";
+      s.textDecoration = r.underline ? "underline" : "none";
+      if (r.mark) s.backgroundColor = r.mark;
+      span.textContent = line;
+      frag.appendChild(span);
+    });
+  }
+  return frag;
+}
 
-/** Runs → the HTML a contenteditable should hold. */
-export function runsToHTML(runs) {
-  return (runs || [])
-    .map((r) => {
-      const style = [
-        `font-size:${r.px || SIZES[DEFAULT_SIZE]}px`,
-        `font-family:${r.font || FONTS[0].css}`,
-        `color:${r.ink || INKS[0].hex}`,
-        `font-weight:${r.bold ? WEIGHT_BOLD : WEIGHT_PLAIN}`,
-        `font-style:${r.italic ? "italic" : "normal"}`,
-        `text-decoration:${r.underline ? "underline" : "none"}`,
-        r.mark ? `background-color:${r.mark}` : "",
-      ].filter(Boolean).join(";");
-      return `<span style="${style}">${esc(r.text).replace(/\n/g, "<br>")}</span>`;
-    })
-    .join("") || "";
+/** The same, as a string — for anywhere that needs one (a preview, an export). */
+export function runsToHTML(runs, doc = document) {
+  const box = doc.createElement("div");
+  box.appendChild(runsToNodes(runs, doc));
+  return box.innerHTML;
 }
 
 const HEX = (css) => {

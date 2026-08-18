@@ -162,3 +162,25 @@
   content: "Write on the note…";
   opacity: 0.4;
 }
+
+/* ── the two dropdowns ────────────────────────────────────────────────────── */
+/* Native selects on purpose: a phone and a screen reader already know them. */
+.pp-note__pickfont,
+.pp-note__picksize {
+  height: 1.55rem;
+  padding: 0 0.2rem;
+  background: var(--surface-secondary, rgba(20, 19, 15, 0.05));
+  border: 1px solid var(--border-color, rgba(20, 19, 15, 0.16));
+  border-radius: 4px;
+  color: var(--ink, #2a2723);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+.pp-note__pickfont { max-width: 8.6rem; }
+.pp-note__picksize { width: 3.2rem; }
+.pp-note__pickfont:focus-visible,
+.pp-note__picksize:focus-visible {
+  outline: 2px solid var(--accent-secondary, #6fb7e8);
+  outline-offset: 1px;
+}

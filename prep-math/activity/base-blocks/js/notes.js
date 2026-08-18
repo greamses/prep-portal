@@ -112,7 +112,11 @@ export function placeNote(parts, thing) {
 
 export function paintNote(thing, parts) {
   const tex = parts.tex;
-  const g = tex.getContext();
+  /* A rig is disposed and built again whenever a note changes, so a repaint
+     queued behind something slow — the fonts arriving — can land on a texture
+     that is already gone. A disposed one has no context. */
+  const g = tex && tex.getContext ? tex.getContext() : null;
+  if (!g) return;
   const W = tex.getSize().width;
   const H = tex.getSize().height;
   const k = W / (thing.l * PX_PER_CELL); // texture pixels per note-pixel
@@ -128,6 +132,15 @@ export function paintNote(thing, parts) {
 
   // invertY: a 2D canvas counts rows down and a ground's V runs up
   tex.update(true);
+
+  /* A face that has not arrived yet is drawn in whatever the browser falls back
+     to, and a canvas texture is painted once and kept — so a note written in
+     Times or in the maths face came out in the wrong one for the rest of the
+     session. Paint it again when the fonts are in. `ready` settles once, and
+     `status` is "loaded" by then, so this cannot loop. */
+  if (document.fonts && document.fonts.status !== "loaded") {
+    document.fonts.ready.then(() => paintNote(thing, parts));
+  }
 }
 
 /** What view.js watches to know a note has changed under it. */

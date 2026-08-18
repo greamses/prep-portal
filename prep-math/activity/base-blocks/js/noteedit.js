@@ -30,8 +30,13 @@ export function createNoteEditor(ctx, view, stage, { onInput = () => {}, onCommi
       /* The paper is recut to the words as they are typed, so the note you are
          writing on is always the size the note will be. */
       measure(n);
-      place();
       onInput(n);
+      /* The host has just redrawn, and a note whose words changed is a note
+         whose rig was BUILT AGAIN — switched on, as a new rig is. So it is put
+         back out here, or the 3D note comes up behind the paper you are typing
+         on and you are looking at the same note twice. */
+      show3D(n, false);
+      place();
     },
     onDone: (n, info) => {
       show3D(n, true);
