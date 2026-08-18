@@ -13,6 +13,7 @@
 import { GROUPS, toolById } from "./tools.js";
 import { ICON } from "./icons.js";
 import { worksInBase } from "./abacus.js";
+import { TILES } from "./tiles.js";
 
 /* Which tool the canvas opens on. The dock has all seven, so the shelf does not
    need to: one card is the door, and choosing happens inside. */
@@ -81,7 +82,7 @@ export function createCanvasView(el, { onOpen, onClose } = {}) {
 }
 
 /** The Add panel's three tabs, and what each of them offers. */
-export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint, base }) {
+export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, onPaint, base }) {
   /* The tabs are icons: three words across the panel cost a strip of canvas,
      and what is under each of them says the same thing in the things it holds. */
   tabsEl.innerHTML = GROUPS.map(
@@ -114,6 +115,22 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint, b
           <i class="bb-piece__swatch bb-swatch--custom"></i>
           <span>Own size</span><em data-size="own">3×2×2</em>
         </button>`;
+    } else if (g.id === "tiles") {
+      /* Six tiles and a red one of each. The negatives are a SECOND ROW of the
+         same six rather than a separate list, because that is what they are:
+         the same tiles turned over. */
+      panelEl.innerHTML = TILES.map((t) => `
+        <button class="bb-piece bb-piece--tile" type="button"
+                data-tile="${t.id}" data-sign="1" title="One ${t.label} tile">
+          <i class="bb-piece__swatch" style="background:var(${t.token}, ${t.fallback})"></i>
+          <span>${t.label}</span>
+        </button>`).join("")
+        + TILES.map((t) => `
+        <button class="bb-piece bb-piece--tile bb-piece--minus" type="button"
+                data-tile="${t.id}" data-sign="-1" title="One negative ${t.label} tile">
+          <i class="bb-piece__swatch" style="background:#d2544a"></i>
+          <span>−${t.label}</span>
+        </button>`).join("");
     } else {
       panelEl.innerHTML = `
         ${g.tools
@@ -144,6 +161,8 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onOwn, onPaint, b
   panelEl.addEventListener("click", (e) => {
     const piece = e.target.closest("[data-place]");
     if (piece) return onPiece(piece.dataset.place);
+    const tile = e.target.closest("[data-tile]");
+    if (tile) return onTile(tile.dataset.tile, Number(tile.dataset.sign));
     const own = e.target.closest("#bb-own-btn");
     if (own) return onOwn(own);
     const tool = e.target.closest("[data-tool]");

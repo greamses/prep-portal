@@ -12,6 +12,7 @@ import { buildMesh, colourOf, glideTo, place, repaint, clearMaterials } from "./
 import { buildAbacus, placeAbacus, syncAbacus, clearAbacusMaterials } from "./abacus.js";
 import { buildBoard, placeBoard, paintBoard, placeReading } from "./grids.js";
 import { buildNote, placeNote, noteShape } from "./notes.js";
+import { buildTile, placeTile, tileShape, clearTileMaterials } from "./tiles.js";
 
 const B = () => window.BABYLON;
 
@@ -76,8 +77,8 @@ export function createView(ctx) {
       /* A note is recut to whatever is written on it, so what it SAYS and how
          it is dressed are both part of its shape — watching the words alone
          would miss a note that had only gone bold. */
-      const shape = t.kind === "note"
-        ? noteShape(t)
+      const shape = t.kind === "note" ? noteShape(t)
+        : t.kind === "tile" ? tileShape(t)
         : [t.places ?? "", t.base ?? ""].join("/");
       if (rig && rig.shape !== shape) {
         disposeRig(rig);
@@ -87,6 +88,7 @@ export function createView(ctx) {
       if (!rig) {
         const parts = t.kind === "abacus" ? buildAbacus(ctx, t)
           : t.kind === "note" ? buildNote(ctx, t)
+          : t.kind === "tile" ? buildTile(ctx, t)
           : buildBoard(ctx, t, store.base);
         rig = { parts, kind: t.kind, signature: "", shape };
         rigs.set(t.id, rig);
@@ -97,6 +99,8 @@ export function createView(ctx) {
         syncAbacus(t, rig.parts, animate);
       } else if (t.kind === "note") {
         placeNote(rig.parts, t);
+      } else if (t.kind === "tile") {
+        placeTile(rig.parts, t);
       } else {
         placeBoard(rig.parts, t);
         const sig = boardSignature(t, store);
@@ -154,6 +158,7 @@ export function createView(ctx) {
   function retint(store) {
     clearMaterials();
     clearAbacusMaterials();
+    clearTileMaterials();
     for (const b of store.blocks) {
       const mesh = meshes.get(b.id);
       if (!mesh) continue;
@@ -185,6 +190,7 @@ export function createView(ctx) {
     if (!rig) return;
     if (rig.kind === "abacus") placeAbacus(rig.parts, item);
     else if (rig.kind === "note") placeNote(rig.parts, item);
+    else if (rig.kind === "tile") placeTile(rig.parts, item);
     else placeBoard(rig.parts, item);
   }
 

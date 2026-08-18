@@ -13,6 +13,7 @@ import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
+import { tilesReading } from "./tiles.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -435,11 +436,23 @@ export function mountUI({
     const base = store.base;
     const total = store.blocks.reduce((n, b) => n + b.l * b.w * b.h, 0);
 
-    el.count.textContent = total;
-    el.countSub.textContent =
-      base === 10
-        ? `unit${total === 1 ? "" : "s"} on the canvas`
-        : `units · ${toBase(total, base)} in base ${baseWord(base)}`;
+    /* Tiles are not units and must never be counted as any, so when there are
+       tiles on the canvas the pill reads the EXPRESSION they come to instead —
+       the same job the number does for the blocks. */
+    const tiles = store.things.filter((t) => t.kind === "tile");
+    if (tiles.length) {
+      const read = tilesReading(tiles);
+      el.count.textContent = read.text;
+      el.countSub.textContent = total
+        ? `on the canvas · ${total} unit${total === 1 ? "" : "s"} of blocks`
+        : "on the canvas";
+    } else {
+      el.count.textContent = total;
+      el.countSub.textContent =
+        base === 10
+          ? `unit${total === 1 ? "" : "s"} on the canvas`
+          : `units · ${toBase(total, base)} in base ${baseWord(base)}`;
+    }
 
     // the chip shows the number; what it means is on the tooltip and in the popover
     el.baseLabel.textContent = base;
@@ -482,9 +495,13 @@ export function mountUI({
     const anything = selectedItems();
     const canSplit = sel.some((b) => splitAxis(b));
     const merge = mergeCheck(sel, base, store.strict);
+    /* Merge also cancels zero pairs, so it has to be pressable when what is
+       picked up is TILES — `selected()` is blocks only, and a canvas of tiles
+       would have left the key greyed out for the one thing it can do to them. */
+    const pairs = anything.filter((t) => t.kind === "tile");
     setEnabled("regroup", sel.length > 0 && !regroupPlan(sel, base).same);
     setEnabled("split", canSplit);
-    setEnabled("merge", merge.ok);
+    setEnabled("merge", merge.ok || pairs.length > 1);
     setEnabled("break", canSplit);
     setEnabled("match", sel.length > 0);
     setEnabled("delete", anything.length > 0);

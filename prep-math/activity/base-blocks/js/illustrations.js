@@ -162,3 +162,29 @@ export const divideArt = () =>
       { c: 4, r: 0, fill: "var(--accent-warning, #f0a868)" },
     ],
   });
+
+/* ── algebra tiles ────────────────────────────────────────────────────────── */
+
+/**
+ * The family in one picture: the x² square, the x tile, a red −x beside it and
+ * the unit. The x tile is drawn LONGER than four units and shorter than five,
+ * which is the whole point of the set — you cannot measure x with ones.
+ */
+export function tilesArt() {
+  const u = 7;          // a unit tile
+  const x = u * 4.6;    // an x tile, at its true length
+  const tile = (px, py, w, h, fill, label, size = 9) =>
+    `<rect x="${px}" y="${py}" width="${w}" height="${h}" rx="1.5"
+       fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>
+     <text x="${px + w / 2}" y="${py + h / 2}" fill="${LINE}" font-size="${size}"
+       font-weight="700" text-anchor="middle" dominant-baseline="central"
+       font-family="Unbounded, system-ui, sans-serif">${label}</text>`;
+
+  return svg(
+    tile(7, 14, x * 0.72, x * 0.72, "var(--accent-secondary, #6fb7e8)", "x²", 11) +
+      tile(38, 14, x * 0.72, u, "var(--accent-secondary, #6fb7e8)", "x") +
+      tile(38, 27, x * 0.72, u, "#d2544a", "−x") +
+      tile(38, 40, x * 0.42, u, "var(--accent-warning, #f0a868)", "y", 8) +
+      tile(80, 40, u, u, "var(--accent-primary, #f4c95d)", "1", 8)
+  );
+}

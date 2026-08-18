@@ -66,5 +66,9 @@ export const ICON = {
   /* the three families, for the dock's tabs */
   blocks: line(`<path d="M8 2.8 14.2 6v6.4L8 15.6 1.8 12.4V6z"/><path d="m1.8 6 6.2 3.2L14.2 6M8 9.2v6.4"/><rect x="14" y="14" width="7.5" height="7.5" rx="0.8"/>`),
   abacus: line(`<rect x="2.4" y="3.4" width="19.2" height="17.2" rx="1.4"/><path d="M2.4 8.6h19.2M2.4 15.4h19.2"/><circle cx="7.4" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="10.2" cy="15.4" r="2.5" fill="currentColor" stroke="none"/><circle cx="16.8" cy="15.4" r="2.5" fill="currentColor" stroke="none"/>`),
+  /* algebra tiles: a big square, a long tile and a small one — the three sizes
+     the family is made of, which no other key here draws */
+  algebra: line(`<rect x="2.6" y="2.8" width="10" height="10" rx="0.8"/><rect x="14.8" y="2.8" width="6.6" height="10" rx="0.8"/><rect x="2.6" y="15.4" width="5.4" height="5.4" rx="0.8"/><rect x="10.4" y="15.4" width="5.4" height="5.4" rx="0.8" stroke-dasharray="2.2 1.8"/>`),
+
   table: line(`<rect x="2.8" y="3.5" width="18.4" height="17" rx="1.4"/><path d="M2.8 9h18.4M2.8 15h18.4M9 3.5v17M15 3.5v17"/>`),
 };

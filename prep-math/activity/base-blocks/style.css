@@ -1158,3 +1158,8 @@ body.bb-locked { overflow: hidden; }
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
+
+/* an algebra tile in the Add panel: its own colour on the swatch, and the
+   negatives set apart so the two rows read as one family turned over */
+.bb-piece--tile span { font-family: var(--font-display); font-weight: 700; }
+.bb-piece--minus { opacity: 0.92; }

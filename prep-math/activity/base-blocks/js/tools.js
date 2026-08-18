@@ -7,7 +7,7 @@
 
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
-  placeValueArt, multiplyArt, divideArt,
+  placeValueArt, multiplyArt, divideArt, tilesArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -68,6 +68,25 @@ export const GROUPS = [
           "One bead above the bar worth five, four below worth one. Exactly " +
           "enough beads for a digit and not one more.",
         art: sorobanArt,
+      },
+    ],
+  },
+  {
+    id: "tiles",
+    label: "Algebra tiles",
+    icon: "algebra",
+    blurb: "Tiles for x and y and 1, and a red one of each for the negatives.",
+    tools: [
+      {
+        id: "algebra-tiles",
+        kind: "tile",
+        label: "Algebra Tiles",
+        short: "Tiles",
+        blurb:
+          "x² , xy , y² , x , y and 1 — and a red one of each, because a tile " +
+          "and its opposite are nothing at all. The x-tile is deliberately not " +
+          "a whole number of units long: x is the thing you are not told.",
+        art: tilesArt,
       },
     ],
   },

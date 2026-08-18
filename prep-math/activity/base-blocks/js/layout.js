@@ -126,6 +126,20 @@ function byPlace(a, b) {
 }
 
 /**
+ * The order the lower band is read in: whatever was put out first — EXCEPT that
+ * algebra tiles sort by degree, so a row of them reads as the expression it is:
+ * x² before x before 1, the way it would be written down. The tools come first
+ * and the tiles after, so the two never interleave.
+ */
+function byPutOut(a, b) {
+  const ta = a.kind === "tile";
+  const tb = b.kind === "tile";
+  if (ta !== tb) return ta ? 1 : -1;
+  if (ta && (a.degree ?? 0) !== (b.degree ?? 0)) return (b.degree ?? 0) - (a.degree ?? 0);
+  return a.id - b.id;
+}
+
+/**
  * Lay a list out left to right in rows, and say how big the block of them is.
  *
  * ONE ROW is the point: "biggest place first, left to right" is a sentence, and
@@ -169,7 +183,7 @@ function rows(list, sorter, { cap = 150 } = {}) {
 export function arrange(blocks, things) {
   const pad = CFG.gap;
   const top = rows(blocks, byPlace);
-  const bottom = rows(things, (a, b) => a.id - b.id, { cap: 200 });
+  const bottom = rows(things, byPutOut, { cap: 200 });
 
   /* `rows` counts its rows downward in its own space, so a world z is that
      SUBTRACTED from the top of the band — and an item's stored z is its LOW

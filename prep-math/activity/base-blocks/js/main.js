@@ -18,7 +18,7 @@ import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
-import { splitSelected, addPlace, addThing, rotateSelected, settleThings } from "./ops.js";
+import { splitSelected, addPlace, addThing, addTile, rotateSelected, settleThings } from "./ops.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -321,6 +321,12 @@ function placeTool(tool) {
     seedBlocks();
     return;
   }
+  if (tool.kind === "tile") {
+    /* The Tiles card is a door to the family, not one tile: which tile you want
+       is the only question, and the panel is where it is asked. */
+    say("Algebra tiles — pick one from the panel. A red tile is its negative.");
+    return;
+  }
   if (tool.kind === "abacus") {
     if (!worksInBase(tool.variant, store.base)) {
       say(`A ${tool.short.toLowerCase()} only counts in base ten — use the schoty.`, "warn");
@@ -458,6 +464,7 @@ async function bootCanvas() {
       document.getElementById("bb-dock-panel"),
       {
         onPiece: (p) => { addPlace(p); sayIf(afterBlocks()); emit(); },
+        onTile: (id, sign) => { const t = addTile(id, sign); fitView(ctx, [t]); emit(); },
         onOwn: (btn) => ui.openOwn(btn),
         onPlace: (tool) => { placeTool(tool); emit(); },
         onPaint: () => { paintIcons(document); ui.update(); },

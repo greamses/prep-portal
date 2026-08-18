@@ -8,6 +8,7 @@
 
 import { PLACES, TAGS, placeOf, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
+import { tilesReading } from "./tiles.js";
 
 const SUP = { 0: "⁰", 1: "¹", 2: "²", 3: "³" };
 
@@ -92,7 +93,14 @@ export function renderBoard(el, store) {
        </div>`
     : "";
 
+  const tiles = store.things.filter((t) => t.kind === "tile");
+  const expression = tiles.length
+    ? `<p class="bb-board__base">The tiles read
+         <b>${tilesReading(tiles).text}</b></p>`
+    : "";
+
   el.innerHTML = `
+    ${expression}
     <div class="bb-board__total">
       <b>${total}</b>
       <span>unit${total === 1 ? "" : "s"} on the mat</span>

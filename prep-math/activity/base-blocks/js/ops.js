@@ -15,6 +15,7 @@ import { store, snapshot, say, nextId, selected, selectedItems, items } from "./
 import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
+import { makeTile, tileSpec, zeroPairs, tilesReading } from "./tiles.js";
 
 const MAX_SIDE = 64;
 
@@ -109,6 +110,46 @@ export function addPlace(placeId) {
     say(`Added one ${placeId} — ${d.l * d.w * d.h} unit${d.l * d.w * d.h === 1 ? "" : "s"}.`);
   }
   return b;
+}
+
+/**
+ * Put one algebra tile on the canvas.
+ *
+ * Tiles are THINGS, not blocks: they take cells and they drag and turn like
+ * everything else, but they are not places and must never be counted into the
+ * unit total or traded by the base — x is not a number of units, which is the
+ * one thing the whole family exists to say.
+ */
+export function addTile(id, sign = 1) {
+  const tile = addThing(makeTile(id, sign));
+  arrange(store.blocks, store.things);
+  const spec = tileSpec(id);
+  say(`Added one ${sign < 0 ? "−" : ""}${spec.label} tile.`);
+  return tile;
+}
+
+/**
+ * Cancel every zero pair in the selection — a tile and its opposite are
+ * nothing, and taking them off the canvas together is what says so.
+ */
+export function cancelPairs() {
+  const tiles = selectedItems().filter((t) => t.kind === "tile");
+  if (tiles.length < 2) {
+    say("Pick a tile and its opposite — a red one and a plain one of the same size.", "warn");
+    return false;
+  }
+  const gone = zeroPairs(tiles);
+  if (!gone.size) {
+    say("Nothing cancels there: a zero pair is one tile and its opposite.", "warn");
+    return false;
+  }
+  snapshot();
+  store.things = store.things.filter((t) => !gone.has(t.id));
+  store.selection = new Set([...store.selection].filter((id) => !gone.has(id)));
+  const pairs = gone.size / 2;
+  const left = tilesReading(store.things.filter((t) => t.kind === "tile"));
+  say(`${pairs} zero pair${pairs === 1 ? "" : "s"} cancelled — the canvas reads ${left.text}.`, "ok");
+  return true;
 }
 
 /** Add a block the learner has sized themselves. */
@@ -230,6 +271,11 @@ export function mergeCheck(sel = selected(), base = store.base, strict = store.s
 }
 
 export function mergeSelected() {
+  /* Merge means "put these together and see what they come to", and on algebra
+     tiles what a tile and its opposite come to is nothing. Same key, same
+     question, the answer the family gives. */
+  if (selectedItems().some((t) => t.kind === "tile")) return cancelPairs();
+
   const sel = selected();
   const check = mergeCheck(sel);
   if (!check.ok) { say(check.why, "warn"); return false; }
