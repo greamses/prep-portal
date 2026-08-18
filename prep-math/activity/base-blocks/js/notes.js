@@ -41,21 +41,28 @@ const MAX_W = 15;
 const PAD = 1.2;   // cells of margin inside the paper
 const LINE = 1.5;  // cells per line of writing
 
-export const MAX_CHARS = 220;
+export const MAX_CHARS = 400;
+
+/* How big the writing is, as a multiple. The two keys on the note step through
+   these rather than nudging a number, so every note on a canvas is one of five
+   sizes and a wall of them still looks like a set. */
+export const SCALES = [0.7, 0.85, 1, 1.3, 1.7];
+export const DEFAULT_SCALE = 2; // the index of 1
 
 /**
  * How many cells of paper the words need.
  *
  * The note grows with what is written on it — that is the whole behaviour a
- * paper note has — so this is worked out from the text and nothing else, and
- * `makeNote` and `setNoteText` both come here rather than guessing.
+ * paper note has — so this is worked out from the text and the writing size and
+ * nothing else. Everything that changes a note comes here rather than guessing.
  */
-export function noteSize(text) {
+export function noteSize(text, scaleIndex = DEFAULT_SCALE) {
+  const k = SCALES[scaleIndex] ?? 1;
   const lines = wrap(String(text || " "), WRAP);
   const widest = lines.reduce((n, s) => Math.max(n, s.length), 1);
-  const l = Math.round(Math.min(MAX_W, Math.max(MIN_W, widest * 0.55 + PAD * 2)));
-  const w = Math.round(Math.max(4, lines.length * LINE + PAD * 2));
-  return { l, w, lines };
+  const l = Math.round(Math.min(MAX_W * k, Math.max(MIN_W * k, widest * 0.55 * k + PAD * 2)));
+  const w = Math.round(Math.max(4, lines.length * LINE * k + PAD * 2));
+  return { l, w, lines, k };
 }
 
 /** Break text into lines: honour the returns that were typed, wrap the rest. */
@@ -77,28 +84,38 @@ function wrap(text, cols) {
 
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
-export function makeNote(text, paper = 0) {
-  const size = noteSize(text);
-  return {
+const wrapPaper = (n) => ((n % NOTE_PAPERS.length) + NOTE_PAPERS.length) % NOTE_PAPERS.length;
+
+export function makeNote(text = "", paper = 0) {
+  const note = {
     kind: "note",
-    text: String(text || "").slice(0, MAX_CHARS),
-    paper: ((paper % NOTE_PAPERS.length) + NOTE_PAPERS.length) % NOTE_PAPERS.length,
+    text: "",
+    paper: wrapPaper(paper),
+    scale: DEFAULT_SCALE,
+    bold: false,
+    italic: false,
     tag: null,
     x: 0, z: 0, angle: 0,
-    l: size.l, w: size.w, h: 0.02,
+    l: MIN_W, w: 4, h: 0.02,
   };
+  return recut(note, { text });
 }
 
 /**
- * Rewrite a note. The paper is recut to the new words, so view.js has to build
- * the rig again — it watches `thing.shape`, which is what changes here.
+ * Change a note and recut its paper to fit.
+ *
+ * ONE way in for every edit — the words, the writing size, the weight, the
+ * paper — because the size of the note depends on all of them and a caller that
+ * set a field itself would leave the paper the wrong size for its writing.
+ * view.js watches these fields as the note's `shape` and rebuilds its rig.
  */
-export function setNoteText(thing, text, paper) {
-  thing.text = String(text || "").slice(0, MAX_CHARS);
-  if (paper != null) {
-    thing.paper = ((paper % NOTE_PAPERS.length) + NOTE_PAPERS.length) % NOTE_PAPERS.length;
-  }
-  const size = noteSize(thing.text);
+export function recut(thing, { text, paper, scale, bold, italic } = {}) {
+  if (text != null) thing.text = String(text).slice(0, MAX_CHARS);
+  if (paper != null) thing.paper = wrapPaper(paper);
+  if (scale != null) thing.scale = Math.max(0, Math.min(SCALES.length - 1, scale));
+  if (bold != null) thing.bold = !!bold;
+  if (italic != null) thing.italic = !!italic;
+  const size = noteSize(thing.text, thing.scale);
   thing.l = size.l;
   thing.w = size.w;
   return thing;
@@ -160,7 +177,7 @@ export function paintNote(thing, parts) {
 
   g.clearRect(0, 0, W, H);
 
-  const { lines } = noteSize(thing.text);
+  const { lines } = noteSize(thing.text, thing.scale);
   const paper = NOTE_PAPERS[thing.paper] || NOTE_PAPERS[0];
   const pw = W - PAD * 0.5 * k;
   const ph = H - PAD * 0.5 * k;
@@ -198,14 +215,18 @@ export function paintNote(thing, parts) {
   g.restore();
 
   /* Written by hand, and sized so the longest line just fits the paper — a note
-     is read from across a room, so it takes as much of its paper as it can. */
+     is read from across a room, so it takes as much of its paper as it can. The
+     writing size the learner chose is already in the SIZE OF THE PAPER (the note
+     was recut for it), so the text filling its paper is what makes it bigger. */
+  const face = (px) =>
+    `${thing.italic ? "italic " : ""}${thing.bold ? 800 : 600} ${px}px ${HAND}`;
   const room = pw * 0.84;
   let size = Math.min(k * 0.9, (ph * 0.78) / Math.max(1, lines.length));
-  g.font = `600 ${size}px ${HAND}`;
+  g.font = face(size);
   const widest = lines.reduce((n, s) => Math.max(n, g.measureText(s).width), 1);
   if (widest > room) {
     size = Math.max(8, size * (room / widest));
-    g.font = `600 ${size}px ${HAND}`;
+    g.font = face(size);
   }
 
   g.fillStyle = INK;

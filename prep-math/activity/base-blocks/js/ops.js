@@ -476,10 +476,11 @@ export function tagSelected(tag) {
 }
 
 /** Put an abacus frame or a chart board on the canvas. */
-export function addThing(thing) {
+/** `want` is where it should go if it can — a thing dropped on the paper. */
+export function addThing(thing, want = null) {
   snapshot();
   thing.id = nextId();
-  const spot = findSpot(occupancy(items()), thing.l, thing.w, null);
+  const spot = findSpot(occupancy(items()), thing.l, thing.w, want);
   thing.x = spot ? spot.x : 0;
   thing.z = spot ? spot.z : 0;
   store.things.push(thing);

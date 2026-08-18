@@ -19,7 +19,8 @@ import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
 import { splitSelected, addPlace, addThing, rotateSelected, settleThings } from "./ops.js";
-import { makeNote, setNoteText } from "./notes.js";
+import { makeNote } from "./notes.js";
+import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark } from "./layout.js";
@@ -44,6 +45,7 @@ let ctx = null;
 let view = null;
 let ui = null;
 let pointer = null;
+let noteEditor = null;
 let dock = null;
 let booting = null;
 const ghost = createDotGhost(stage);
@@ -170,29 +172,55 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ── sticky notes ─────────────────────────────────────────────────────────── */
 
+/* Papers are handed out in turn, so a wall of notes is not all one colour. */
+let nextPaper = 0;
+
 /**
- * Write a note, or rewrite the one that is picked up.
+ * A note dragged out of the rail and dropped on the paper.
  *
- * A rewritten note is recut to its new words, so it may not fit where it was —
- * `settleThings` leaves it exactly where it is when it still does, and moves it
- * the shortest way it can when it does not.
+ * It lands empty, exactly where it was let go, with the caret already in it —
+ * dragging a note out and typing on it is one movement, not "make a note" and
+ * then "now write on it". A note that is left empty is thrown away when you
+ * click off it, so a mis-drag costs nothing.
  */
-function stickNote({ text, paper, note }) {
-  if (note) {
-    snapshot(); // addThing takes its own, so only the rewrite needs one here
-    setNoteText(note, text, paper);
-    settleThings([note]);
-    say("Note rewritten.");
+function dropNote({ clientX, clientY }) {
+  const at = clientX != null ? pointer.cellAt(clientX, clientY) : null;
+  const note = makeNote("", nextPaper++);
+  addThing(note, at ? { x: Math.round(at.x - note.l / 2), z: Math.round(at.z - note.w / 2) } : null);
+  editNote(note);
+}
+
+/**
+ * Open a note to write on.
+ *
+ * The selection is dropped first: writing on a note is not the same as holding
+ * it, and a note left picked up wears the glow and carries the turn handle —
+ * both of them sitting on the very paper you are trying to read as you type.
+ */
+function editNote(note) {
+  store.selection = new Set();
+  emit();
+  noteEditor.open(note);
+}
+
+/** Writing on a note has finished: an empty one was never really a note. */
+function afterNote(note, { empty }) {
+  if (empty) {
+    store.things = store.things.filter((t) => t.id !== note.id);
+    store.selection.delete(note.id);
   } else {
-    const made = addThing(makeNote(text, paper));
-    /* addThing leaves what it made picked up, and here that is wrong: the key
-       edits whatever is in your hand, so a note left in it would mean the next
-       note you wrote quietly replaced this one. Put it down. */
-    store.selection = new Set();
-    say("Note stuck on — tap it to pick it up and drag it where it belongs.");
-    fitView(ctx, [made]);
+    /* The paper was recut to the words as they were typed, so it may not fit
+       where it was any more — leave it be if it does, move it least if not. */
+    settleThings([note]);
   }
   emit();
+}
+
+/** A double-tap: a block comes apart, a note opens to be written on. */
+function doubleTap(id) {
+  const note = store.things.find((t) => t.id === id && t.kind === "note");
+  if (note) { editNote(note); return; }
+  if (splitSelected()) { sayIf(afterBlocks()); emit(); }
 }
 
 /* ── the hand tool ────────────────────────────────────────────────────────── */
@@ -337,7 +365,7 @@ async function bootCanvas() {
 
     pointer = createPointer(ctx, view, canvas, {
       onChange: () => emit(),
-      onSplit: () => { splitSelected(); sayIf(afterBlocks()); emit(); },
+      onDouble: doubleTap,
       onBead: (ref) => {
         const thing = store.things.find((t) => t.id === ref.thingId);
         if (!thing) return;
@@ -422,7 +450,7 @@ async function bootCanvas() {
       onHand: () => setHand(!handOn),
       onTurn: doTurn,
       onBack: () => canvasView.hide(),
-      onNote: stickNote,
+      onNote: dropNote,
       onSum: runSum,
     });
 
@@ -441,6 +469,7 @@ async function bootCanvas() {
     mountViewKit();
 
     const trade = createRegroupPrompt(ctx, view, stage);
+    noteEditor = createNoteEditor(ctx, view, stage, { onCommit: afterNote });
     const turn = createTurnHandle(ctx, view, stage, () => emit());
     subscribe((s) => { view.sync(s); trade.refresh(); turn.refresh(); });
     turn.refresh();

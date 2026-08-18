@@ -13,7 +13,6 @@ import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
-import { NOTE_PAPERS } from "./notes.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -51,11 +50,6 @@ export function mountUI({
     keyin: $("#bb-keyin"),
     keyinBox: $("#bb-keyin-n"),
     keyinNote: $("#bb-keyin-note"),
-    flyNote: $("#bb-fly-note"),
-    noteForm: $("#bb-note-form"),
-    noteText: $("#bb-note-text"),
-    notePapers: $("#bb-note-papers"),
-    noteLabel: $("#bb-note-label"),
   };
 
   /* Every panel the rail can open, by the key that opens it. Only one is ever
@@ -65,7 +59,6 @@ export function mountUI({
     paint: el.flyPaint,
     base: el.popBase,
     type: el.flyType,
-    note: el.flyNote,
   };
 
   /* ── build the repeated bits ────────────────────────────────────────────── */
@@ -177,9 +170,6 @@ export function mountUI({
     panel.hidden = false;
     btn.setAttribute("aria-expanded", "true");
     btn.classList.add("is-on");
-    // opening the note panel reads whatever note is picked up, so the same key
-    // both writes a new one and edits the one in your hand
-    if (name === "note") loadNote();
     anchor(panel, btn);
     // a box you opened to type in should be ready to type in
     panel.querySelector("input[type='text'], textarea")?.focus();
@@ -284,53 +274,61 @@ export function mountUI({
     $$("[data-sum]").forEach((b) => { b.disabled = !!on; });
   }
 
-  /* ── sticky notes ───────────────────────────────────────────────────────── */
+  /* ── dragging a note out of the rail ────────────────────────────────────── */
 
-  /* One key does both jobs. With a note picked up it edits that note; with
-     nothing picked up it writes a new one — which is the same rule the rest of
-     the rail follows, where every key acts on what is in your hand. */
-  let paperPick = 0;
+  /**
+   * The Note key is not a button that opens a panel — it is the note itself,
+   * waiting to be dragged out. Press it and a piece of paper follows your hand;
+   * let go over the canvas and that is where the note lands, ready to type on.
+   *
+   * A plain click (a press that never moved, and a keyboard press) still works:
+   * the note lands in the middle of what you are looking at. A key you can only
+   * use by dragging is a key some people cannot use at all.
+   */
+  const noteBtn = $("#bb-note-btn");
+  let noteDrag = null;
 
-  el.notePapers.innerHTML = NOTE_PAPERS.map(
-    (hex, i) => `<button class="bb-note__paper" type="button" data-paper="${i}"
-       aria-pressed="${i === 0}" style="background:${hex}"
-       title="Note ${i + 1}"><span class="sr-only">Paper ${i + 1}</span></button>`
-  ).join("");
-
-  function showPapers() {
-    $$("[data-paper]", el.notePapers).forEach((b) => {
-      b.setAttribute("aria-pressed", String(Number(b.dataset.paper) === paperPick));
-    });
+  function ghostOn(e) {
+    const g = document.createElement("div");
+    g.className = "bb-noteghost";
+    g.setAttribute("aria-hidden", "true");
+    stage.appendChild(g);
+    noteDrag = { ghost: g, id: e.pointerId, moved: false };
+    ghostTo(e);
   }
 
-  /** The one note in your hand, or null — two notes picked up is not an edit. */
-  function pickedNote() {
-    const notes = selectedItems().filter((t) => t.kind === "note");
-    return notes.length === 1 ? notes[0] : null;
+  function ghostTo(e) {
+    if (!noteDrag) return;
+    const r = stage.getBoundingClientRect();
+    noteDrag.ghost.style.transform =
+      `translate(${Math.round(e.clientX - r.left - 34)}px, ${Math.round(e.clientY - r.top - 26)}px)`;
   }
 
-  function loadNote() {
-    const note = pickedNote();
-    el.noteLabel.textContent = note ? "Edit this note" : "New note";
-    el.noteText.value = note ? note.text : "";
-    paperPick = note ? note.paper : paperPick;
-    showPapers();
-  }
-
-  el.notePapers.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-paper]");
-    if (!b) return;
-    paperPick = Number(b.dataset.paper);
-    showPapers();
+  noteBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    closeMenus();
+    noteBtn.setPointerCapture(e.pointerId);
+    ghostOn(e);
   });
 
-  el.noteForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const text = el.noteText.value.trim();
-    if (!text) { say("A note with nothing on it is just paper.", "warn"); return; }
-    onNote({ text, paper: paperPick, note: pickedNote() });
-    el.noteText.value = "";
-    closeMenus();
+  noteBtn.addEventListener("pointermove", (e) => {
+    if (!noteDrag || e.pointerId !== noteDrag.id) return;
+    noteDrag.moved = true;
+    ghostTo(e);
+  });
+
+  function endNoteDrag(e) {
+    if (!noteDrag || (e && e.pointerId !== noteDrag.id)) return;
+    const { ghost, moved } = noteDrag;
+    noteDrag = null;
+    ghost.remove();
+    // a press that never moved drops it in the middle, not under the rail
+    onNote(moved && e ? { clientX: e.clientX, clientY: e.clientY } : {});
+  }
+  noteBtn.addEventListener("pointerup", endNoteDrag);
+  noteBtn.addEventListener("pointercancel", endNoteDrag);
+  noteBtn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNote({}); }
   });
 
   /* ── own-size builder ───────────────────────────────────────────────────── */

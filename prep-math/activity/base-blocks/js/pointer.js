@@ -16,12 +16,18 @@ import { store, snapshot, say, selectedItems } from "./state.js";
 import { occupancy, fits, footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
-const DOUBLE_MS = 320;
+/* What counts as a double-tap. Nearer the platform's own 500ms than the 320 it
+   was: a double-tap is now how you open a note to write on it, and that is a
+   deliberate, aimed gesture rather than a flick — on a touchscreen especially. */
+const DOUBLE_MS = 450;
 
 export function createPointer(ctx, view, canvas, hooks = {}) {
   const { scene, camera } = ctx;
   const onChange = hooks.onChange || (() => {});
-  const onSplit = hooks.onSplit || (() => {});
+  /* A double-tap means different things to different items — a block comes
+     apart, a note opens to be written on — so the hook is told WHICH item it
+     was and decides. */
+  const onDouble = hooks.onDouble || (() => {});
   const onBead = hooks.onBead || (() => {});
   const onBoard = hooks.onBoard || (() => {});
   /* A press on a board face may be the start of dragging a counter about. The
@@ -227,7 +233,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       state.lastTap = { id: null, at: 0 };
       store.selection = new Set([id]);
       onChange();
-      onSplit();
+      onDouble(id);
       return;
     }
     state.lastTap = { id, at: now };
@@ -295,6 +301,12 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   window.addEventListener("pointercancel", onUp);
 
   return {
+    /** Where a point on the stage meets the paper — for dropping things on it. */
+    cellAt(clientX, clientY) {
+      const r = canvas.getBoundingClientRect();
+      if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) return null;
+      return groundCell(clientX - r.left, clientY - r.top);
+    },
     get lasso() { return state.lasso; },
     setLasso(on) {
       state.lasso = !!on;
