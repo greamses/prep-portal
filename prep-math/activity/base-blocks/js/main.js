@@ -23,7 +23,7 @@ import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
-import { occupancy, findSpot, mark } from "./layout.js";
+import { occupancy, findSpot, mark, arrange } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue, setAbacusValue, worksInBase } from "./abacus.js";
 import {
   makeBoard, tapBoard, tapPlace, toggleCell,
@@ -304,13 +304,10 @@ function seedBlocks() {
     placeDims("unit", b),
     placeDims("unit", b),
   ];
-  const grid = occupancy(store.blocks.concat(store.things));
   for (const d of start) {
-    const spot = findSpot(grid, d.l, d.w);
-    if (!spot) continue;
-    mark(grid, spot.x, spot.z, d.l, d.w);
-    store.blocks.push({ id: nextId(), ...d, x: spot.x, z: spot.z, tag: null });
+    store.blocks.push({ id: nextId(), ...d, x: 0, z: 0, tag: null });
   }
+  arrange(store.blocks, store.things);
   say("One flat, two rods and three units — that is 123. Try splitting the flat.");
 }
 
@@ -330,12 +327,14 @@ function placeTool(tool) {
       return;
     }
     const thing = addThing(makeAbacus(tool.variant, store.base));
+    arrange(store.blocks, store.things);
     say(`${tool.label} — tap a bead to slide it against the bar.`);
     catchUp(thing);
     fitView(ctx, [thing]);
     return;
   }
   const thing = addThing(makeBoard(tool.variant, store.base));
+  arrange(store.blocks, store.things);
   say(
     tool.variant === "place"
       ? "Place-value chart — stand blocks in the columns and it reads them back."
@@ -469,7 +468,8 @@ async function bootCanvas() {
     mountViewKit();
 
     const trade = createRegroupPrompt(ctx, view, stage);
-    noteEditor = createNoteEditor(ctx, view, stage, { onCommit: afterNote });
+    noteEditor = createNoteEditor(ctx, view, stage,
+      { onInput: () => emit(), onCommit: afterNote });
     const turn = createTurnHandle(ctx, view, stage, () => emit());
     subscribe((s) => { view.sync(s); trade.refresh(); turn.refresh(); });
     turn.refresh();

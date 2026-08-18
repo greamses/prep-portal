@@ -32,12 +32,72 @@ export function createTurnHandle(ctx, view, stage, onDone) {
   btn.type = "button";
   btn.className = "bb-turn";
   btn.hidden = true;
-  btn.title = "Drag to turn — hold shift for 15° steps";
-  btn.setAttribute("aria-label", "Drag to turn the picked thing; hold shift for fifteen degree steps");
+  btn.title = "Drag to turn — shift for 15° steps, right-click to type an angle";
+  btn.setAttribute("aria-label",
+    "Drag to turn the picked thing; hold shift for fifteen degree steps, "
+    + "or right-click to type an exact angle");
   btn.innerHTML = ICON.turn;
   stage.appendChild(btn);
 
+  /* Typing an exact angle. Dragging is for "about there" and this is for "45",
+     which is a different question — a protractor beside the handle rather than
+     a steadier hand. It follows the handle about, opens on a right-click, and
+     shows the angle live while you drag so the two are one control. */
+  const box = document.createElement("form");
+  box.className = "bb-turnbox";
+  box.hidden = true;
+  box.innerHTML = `
+    <input class="bb-turnbox__n" id="bb-turn-n" type="text" inputmode="decimal"
+           autocomplete="off" spellcheck="false" aria-label="Angle in degrees" />
+    <span class="bb-turnbox__deg" aria-hidden="true">°</span>`;
+  stage.appendChild(box);
+  const boxInput = box.querySelector("input");
+
   let drag = null;
+
+  /** Show the angle in the box while it is open, so dragging reads out. */
+  function onAngle(rad) {
+    if (box.hidden || document.activeElement === boxInput) return;
+    boxInput.value = String(Math.round(((rad * 180) / Math.PI) % 360));
+  }
+
+  function openBox() {
+    const sel = selectedItems();
+    if (!sel.length) return;
+    box.hidden = false;
+    boxInput.value = String(Math.round((((sel[0].angle || 0) * 180) / Math.PI) % 360));
+    place();
+    boxInput.focus();
+    boxInput.select();
+  }
+
+  function closeBox() {
+    box.hidden = true;
+  }
+
+  btn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    if (box.hidden) openBox(); else closeBox();
+  });
+
+  box.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const deg = Number(String(boxInput.value).replace(/[^\d.+-]/g, ""));
+    if (!Number.isFinite(deg)) { closeBox(); return; }
+    const sel = selectedItems();
+    if (!sel.length) { closeBox(); return; }
+    snapshot();
+    for (const b of sel) b.angle = (deg * Math.PI) / 180;
+    settleSelected();
+    onDone();
+    closeBox();
+    place();
+  });
+
+  box.addEventListener("keydown", (e) => {
+    e.stopPropagation(); // the canvas's own letter shortcuts are not for here
+    if (e.key === "Escape") { e.preventDefault(); closeBox(); }
+  });
 
   const local = (e) => {
     const r = stage.getBoundingClientRect();
@@ -83,7 +143,8 @@ export function createTurnHandle(ctx, view, stage, onDone) {
       id: e.pointerId,
       centre,
       at,
-      start: Math.atan2(at.y - centre.y, at.x - centre.x),
+      last: Math.atan2(at.y - centre.y, at.x - centre.x),
+      delta: 0,
       from: sel.map((b) => ({ b, a: b.angle || 0 })),
       moved: false,
     };
@@ -99,15 +160,27 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     /* Screen angles run clockwise (y counts downward) and so does a positive
        turn about Y seen from above, so the two agree without a sign flip. */
     const now = Math.atan2(at.y - drag.centre.y, at.x - drag.centre.x);
-    const delta = now - drag.start;
+
+    /* atan2 jumps by a full turn as the hand crosses due west, and a raw
+       difference from the starting angle would jump with it — the thing would
+       spin right round for a pixel of movement. Unwrapping keeps the delta
+       CONTINUOUS by accumulating the small step since the last move, which is
+       what makes a slow drag feel like turning something rather than nudging
+       it, and it lets the turn go past a full circle without unwinding. */
+    let step = now - drag.last;
+    if (step > Math.PI) step -= 2 * Math.PI;
+    else if (step < -Math.PI) step += 2 * Math.PI;
+    drag.last = now;
+    drag.delta += step;
 
     for (const { b, a } of drag.from) {
-      const next = a + delta;
+      const next = a + drag.delta;
       b.angle = e.shiftKey ? Math.round(next / STEP) * STEP : next;
       view.placeItem(b);
     }
     drag.moved = true;
     place();
+    onAngle(drag.from[0] ? drag.from[0].b.angle : 0);
   });
 
   function end(e) {
@@ -125,6 +198,7 @@ export function createTurnHandle(ctx, view, stage, onDone) {
   function refresh() {
     const on = store.selection.size > 0;
     btn.hidden = !on;
+    if (!on) closeBox();
     if (on) place();
   }
 
@@ -167,6 +241,14 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     cx = Math.max(8, Math.min(rect.width - w - 8, cx));
     cy = Math.max(8, Math.min(rect.height - h - 8, cy));
     btn.style.transform = `translate(${Math.round(cx)}px, ${Math.round(cy)}px)`;
+
+    // the box rides just under the handle it belongs to
+    if (!box.hidden) {
+      const bw = box.offsetWidth || 74;
+      box.style.transform =
+        `translate(${Math.round(Math.max(8, Math.min(rect.width - bw - 8, cx + w / 2 - bw / 2)))}px, `
+        + `${Math.round(Math.min(rect.height - 40, cy + h + 6))}px)`;
+    }
   }
 
   // the camera can orbit without the store changing, so it is re-pinned after
@@ -178,6 +260,7 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     destroy() {
       scene.onAfterRenderObservable.remove(obs);
       btn.remove();
+      box.remove();
     },
   };
 }

@@ -12,7 +12,7 @@
 
 import { CFG, PLACES, placeDims, placeOf, baseWord, toBase } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
-import { occupancy, findSpot, fits, mark, footprint, tidy as tidyLayout } from "./layout.js";
+import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
 
@@ -70,8 +70,8 @@ function seat(kept, fresh) {
 
   const all = standing.concat(fresh);
   const before = all.map((b) => ({ b, x: b.x, z: b.z }));
-  if (tidyLayout(all)) {
-    say("The mat was getting crowded, so the pieces have been tidied into rows.");
+  if (arrange(kept.concat(fresh), store.things)) {
+    say("The mat was getting crowded, so everything has been set out again.");
     return true;
   }
   before.forEach((s) => { s.b.x = s.x; s.b.z = s.z; });
@@ -102,6 +102,9 @@ export function addPlace(placeId) {
   const d = placeDims(placeId, store.base);
   const b = addBlock(d.l, d.w, d.h);
   if (b) {
+    /* Slot it into the reading order rather than dropping it in the first hole
+       going: a canvas of blocks is meant to be read biggest place first. */
+    arrange(store.blocks, store.things);
     store.selection = new Set([b.id]);
     say(`Added one ${placeId} — ${d.l * d.w * d.h} unit${d.l * d.w * d.h === 1 ? "" : "s"}.`);
   }
@@ -514,8 +517,8 @@ export function tidyMat() {
   const all = items();
   if (!all.length) { say("Nothing to tidy yet.", "warn"); return false; }
   snapshot();
-  tidyLayout(all);
-  say("Tidied — one row per highlight colour, biggest first.", "ok");
+  arrange(store.blocks, store.things);
+  say("Tidied — the blocks above, biggest place first; the tools below.", "ok");
   return true;
 }
 

@@ -100,61 +100,92 @@ export function findSpot(grid, l, w, near = null) {
   return null; // only if the canvas is somehow full for CFG.searchRings cells
 }
 
+/* ── how the canvas is set out ────────────────────────────────────────────── */
+
+/* POSITIVE z is up the screen on this canvas — measured by projecting a point
+   at z −20 and one at z +20 and comparing their screen y, not reasoned about.
+   The camera looks down the paper from just off the −z axis, so it is easy to
+   talk yourself into the opposite and the algebra reads fine either way. */
+const UP = 1;
+
 /**
- * Re-lay everything in rows, biggest first, grouped by highlight colour, and
- * centre the result on the origin. The row width is chosen so the whole thing
- * comes out roughly square rather than one endless line.
+ * The order blocks are read in: the biggest place first.
+ *
+ * A cube, then flats, then rods, then units — the way a number is written, so
+ * the canvas is laid out the way it would be said. Highlight colour breaks a
+ * tie, so a marked group still stays together within its place.
  */
-export function tidy(items) {
-  if (!items.length) return true;
+function byPlace(a, b) {
+  const va = a.l * a.w * a.h;
+  const vb = b.l * b.w * b.h;
+  if (va !== vb) return vb - va;
+  const ta = a.tag == null ? 99 : a.tag;
+  const tb = b.tag == null ? 99 : b.tag;
+  if (ta !== tb) return ta - tb;
+  return b.w - a.w;
+}
 
-  const sorted = [...items].sort((a, b) => {
-    const ta = a.tag == null ? 99 : a.tag;
-    const tb = b.tag == null ? 99 : b.tag;
-    if (ta !== tb) return ta - tb;
-    const va = a.l * a.w * a.h, vb = b.l * b.w * b.h;
-    if (va !== vb) return vb - va;
-    return b.w - a.w;
-  });
-
+/**
+ * Lay a list out left to right in rows, and say how big the block of them is.
+ *
+ * ONE ROW is the point: "biggest place first, left to right" is a sentence, and
+ * a sentence that wraps after every other word is not one. So the row runs as
+ * wide as it needs to and only wraps past `cap`, which is there to stop a
+ * hundred unit cubes marching off over the horizon.
+ */
+function rows(list, sorter, { cap = 150 } = {}) {
   const pad = CFG.gap;
-  // rows are laid out from the paper each thing covers, not from what it is
+  const sorted = [...list].sort(sorter);
   const foot = new Map(sorted.map((b) => [b.id, footprint(b)]));
-  const area = sorted.reduce((n, b) => {
-    const f = foot.get(b.id);
-    return n + (f.l + pad) * (f.w + pad);
-  }, 0);
   const widest = sorted.reduce((n, b) => Math.max(n, foot.get(b.id).l), 1);
-  const wrap = Math.max(widest, Math.ceil(Math.sqrt(area) * 1.25));
+  const total = sorted.reduce((n, b) => n + foot.get(b.id).l + pad, 0) - pad;
+  const wrap = Math.max(widest, Math.min(total, cap));
 
-  let x = 0, z = 0, rowW = 0, tag = sorted[0].tag;
-  let usedX = 0, usedZ = 0;
   const out = [];
-
+  let x = 0, z = 0, rowW = 0, usedX = 0;
   for (const b of sorted) {
     const f = foot.get(b.id);
-    if (b.tag !== tag) { // a new colour starts a new row
-      z += rowW + pad;
-      x = 0; rowW = 0; tag = b.tag;
-    }
-    if (x && x + f.l > wrap) {
-      z += rowW + pad;
-      x = 0; rowW = 0;
-    }
-    out.push({ id: b.id, x, z });
+    if (x && x + f.l > wrap) { z += rowW + pad; x = 0; rowW = 0; }
+    out.push({ item: b, x, z });
     x += f.l + pad;
     rowW = Math.max(rowW, f.w);
     usedX = Math.max(usedX, x - pad);
-    usedZ = Math.max(usedZ, z + rowW);
+  }
+  return { out, w: usedX, h: z + rowW };
+}
+
+/**
+ * Set the whole canvas out: BLOCKS ABOVE, TOOLS BELOW.
+ *
+ * The blocks are one band across the top, biggest place to smallest, left to
+ * right — the order a number is written in, so the paper reads like the number
+ * it is holding. The tools go in a band underneath in the order they were put
+ * out, because that order is the learner's own and nothing about a soroban says
+ * it belongs before or after a chart.
+ *
+ * The two bands are centred on the same middle line, so the canvas has a
+ * top half and a bottom half however much is in either.
+ */
+export function arrange(blocks, things) {
+  const pad = CFG.gap;
+  const top = rows(blocks, byPlace);
+  const bottom = rows(things, (a, b) => a.id - b.id, { cap: 200 });
+
+  /* `rows` counts its rows downward in its own space, so a world z is that
+     SUBTRACTED from the top of the band — and an item's stored z is its LOW
+     corner, which up here is its bottom edge. Get either wrong and the rows
+     come out in reverse.  */
+  function put(band, topZ) {
+    const dx = -Math.round(band.w / 2);
+    for (const o of band.out) {
+      o.item.x = o.x + dx;
+      o.item.z = Math.round(topZ - UP * (o.z + footprint(o.item).w));
+    }
   }
 
-  const dx = -Math.round(usedX / 2);
-  const dz = -Math.round(usedZ / 2);
-  const byId = new Map(out.map((o) => [o.id, o]));
-  for (const b of items) {
-    const o = byId.get(b.id);
-    if (o) { b.x = o.x + dx; b.z = o.z + dz; }
-  }
+  // the blocks' band hangs off the middle line upwards, the tools' band below it
+  put(top, UP * (top.h + pad));
+  put(bottom, UP * -pad);
   return true;
 }
 

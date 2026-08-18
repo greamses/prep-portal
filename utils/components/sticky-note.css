@@ -1,0 +1,164 @@
+/* ============================================================================
+   Sticky notes — the editor's own styles
+   ----------------------------------------------------------------------------
+   Link this wherever createStickyEditor() is used. The PAPER is deliberately
+   theme-proof: paper is paper in the light and in the dark, and its colours come
+   from the component rather than from tokens. The BAR is chrome, so it follows
+   the theme like everything else.
+   ========================================================================== */
+
+.pp-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10050;
+  display: grid;
+  gap: 0.3rem;
+  transform-origin: 50% 50%;
+}
+
+/* ── the bar of pens ──────────────────────────────────────────────────────── */
+.pp-note__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.22rem 0.3rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.14));
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 4px 12px rgba(20, 19, 15, 0.16);
+}
+.pp-note__sep {
+  width: 1px;
+  height: 1.05rem;
+  margin: 0 0.12rem;
+  background: var(--border-color, rgba(20, 19, 15, 0.14));
+}
+
+.pp-note__key {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--ink, #2a2723);
+  font-family: var(--font-body, system-ui);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pp-note__key:hover { background: var(--surface-secondary, rgba(20, 19, 15, 0.06)); }
+.pp-note__key:focus-visible {
+  outline: 2px solid var(--accent-secondary, #6fb7e8);
+  outline-offset: 1px;
+}
+.pp-note__key--b { font-weight: 800; }
+.pp-note__key--i { font-style: italic; font-family: Georgia, serif; }
+.pp-note__key--u { text-decoration: underline; }
+.pp-note__key--font { font-size: 0.72rem; letter-spacing: -0.02em; }
+/* the two A's are one glyph at two sizes, which is the whole idea of the key */
+.pp-note__a { line-height: 1; }
+.pp-note__a--sm { font-size: 0.66rem; }
+.pp-note__a--lg { font-size: 1.02rem; }
+
+/* a pen you choose a colour for: the key wears the colour it is holding */
+.pp-note__swatch {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pp-note__swatch:hover { background: var(--surface-secondary, rgba(20, 19, 15, 0.06)); }
+.pp-note__swatch:focus-visible {
+  outline: 2px solid var(--accent-secondary, #6fb7e8);
+  outline-offset: 1px;
+}
+.pp-note__swatch b {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid rgba(20, 19, 15, 0.32);
+  border-radius: 3px;
+}
+/* the highlighter is a nib, the paper is a sheet — so they are not three
+   identical squares you have to read the tooltip to tell apart */
+.pp-note__swatch--mark b { height: 0.5rem; border-radius: 1px; }
+.pp-note__swatch--paper b { transform: rotate(-4deg); border-radius: 1px; }
+
+/* ── the colour strip a swatch opens ──────────────────────────────────────── */
+.pp-note__pick {
+  position: absolute;
+  top: 2.1rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.28rem 0.32rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.14));
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 6px 16px rgba(20, 19, 15, 0.2);
+}
+.pp-note__chip {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 1px solid rgba(20, 19, 15, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+}
+/* "no highlight" is a struck-through blank, not an empty hole */
+.pp-note__chip.is-none {
+  background:
+    linear-gradient(to top right,
+      transparent 45%, rgba(20, 19, 15, 0.55) 45%, rgba(20, 19, 15, 0.55) 55%, transparent 55%),
+    var(--surface-primary, #fffdf8);
+}
+
+/* ── the paper ────────────────────────────────────────────────────────────── */
+.pp-note__paper {
+  position: relative;
+  padding: 1.1rem 1rem 0.85rem;
+  color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  /* under 600 on purpose — see WEIGHT_PLAIN in sticky-note.js */
+  font-weight: 500;
+  line-height: 1.34;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+  box-shadow:
+    0 1px 2px rgba(20, 19, 15, 0.1),
+    4px 8px 18px rgba(20, 19, 15, 0.3);
+}
+/* No focus ring: the note is only ever focused deliberately, and the bar
+   appearing over it is a plainer sign than a hairline that reads as a fault. */
+.pp-note__paper,
+.pp-note__paper:focus,
+.pp-note__paper:focus-visible { outline: none; }
+
+/* the strip of tape, as .pp-sticky--tape wears it */
+.pp-note__paper::before {
+  content: "";
+  position: absolute;
+  top: -0.42rem;
+  left: 50%;
+  width: 42%;
+  max-width: 92px;
+  height: 0.95rem;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transform: translateX(-50%) rotate(-3.5deg);
+  pointer-events: none;
+}
+.pp-note__paper:empty::after {
+  content: "Write on the note…";
+  opacity: 0.4;
+}

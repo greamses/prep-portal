@@ -1125,3 +1125,36 @@ body.bb-locked { overflow: hidden; }
   .bb-trade__go { width: 26px; height: 26px; }
   .bb-trade__go svg { width: 16px; height: 16px; }
 }
+
+/* ── typing an exact angle, under the turn handle ─────────────────────────── */
+.bb-turnbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10045;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.2rem 0.3rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 4px 12px rgba(20, 19, 15, 0.18);
+}
+.bb-turnbox__n {
+  width: 3.4ch;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: var(--weight-bold, 700);
+  text-align: right;
+}
+.bb-turnbox__n:focus-visible { outline: none; }
+.bb-turnbox__deg {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}

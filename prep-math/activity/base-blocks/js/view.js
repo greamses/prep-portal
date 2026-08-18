@@ -11,7 +11,7 @@ import { cssVar } from "./config.js";
 import { buildMesh, colourOf, glideTo, place, repaint, clearMaterials } from "./blocks.js";
 import { buildAbacus, placeAbacus, syncAbacus, clearAbacusMaterials } from "./abacus.js";
 import { buildBoard, placeBoard, paintBoard, placeReading } from "./grids.js";
-import { buildNote, placeNote } from "./notes.js";
+import { buildNote, placeNote, noteShape } from "./notes.js";
 
 const B = () => window.BABYLON;
 
@@ -73,9 +73,12 @@ export function createView(ctx) {
          a different size of thing with a different size of texture on it — so
          the rig is built again rather than repainted. The mesh itself changed,
          not just what is drawn on it. */
-      /* A note is recut to whatever is written on it, so its words are part of
-         its shape the way a chart's places are. */
-      const shape = [t.places ?? "", t.base ?? "", t.text ?? "", t.paper ?? ""].join("/");
+      /* A note is recut to whatever is written on it, so what it SAYS and how
+         it is dressed are both part of its shape — watching the words alone
+         would miss a note that had only gone bold. */
+      const shape = t.kind === "note"
+        ? noteShape(t)
+        : [t.places ?? "", t.base ?? ""].join("/");
       if (rig && rig.shape !== shape) {
         disposeRig(rig);
         rigs.delete(t.id);

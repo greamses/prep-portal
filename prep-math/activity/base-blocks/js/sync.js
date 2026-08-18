@@ -19,7 +19,7 @@ import { store, say, nextId } from "./state.js";
 import { setAbacusValue, abacusValue } from "./abacus.js";
 import { placeReading, placeOrder, growChart, MAX_DOTS, MAX_PLACES } from "./grids.js";
 import { bestGrouping } from "./ops.js";
-import { occupancy, findSpot, fits, mark, footprint, tidy } from "./layout.js";
+import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
 
 /** Everything sync writes to — the frames and charts that hold a number. */
 function targets(exceptId) {
@@ -114,7 +114,7 @@ export function setBlocksValue(n) {
      overlaps a place-value chart is standing in one of its columns, and the
      chart counts it — so a sloppy check here makes the chart read more than the
      number sync just handed it. */
-  tidy(store.blocks);
+  arrange(store.blocks, store.things);
   const grid = occupancy(store.things);
   for (const b of store.blocks) {
     const f = footprint(b);
