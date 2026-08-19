@@ -2,7 +2,9 @@
    Manipulatives — what there is to put on the canvas
    ----------------------------------------------------------------------------
    ONE registry, read by both the shelf on the landing page and the dock inside
-   the canvas, so the three families can never drift apart between them.
+   the canvas, so the families can never drift apart between them. A group may
+   name a `face` — the tool whose picture stands for it on the landing card —
+   and gets its first tool if it does not.
    ========================================================================== */
 
 import {
@@ -34,6 +36,10 @@ export const GROUPS = [
     id: "abacus",
     label: "Abacus",
     icon: "abacus",
+    /* the family's face on the landing card: the soroban is the frame most
+       people picture, and the schoty (first here) reads as a ladder in a
+       thumbnail */
+    face: "soroban",
     blurb: "Three counting frames, each with its own way of holding a number.",
     tools: [
       {

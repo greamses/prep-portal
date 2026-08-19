@@ -1,29 +1,36 @@
 /* ============================================================================
    Manipulatives — the shelf and the canvas it opens
    ----------------------------------------------------------------------------
-   The landing page is a shelf: three families of cards, drawn from the one
+   The landing page is a shelf: one card per family, drawn from the one
    registry in tools.js. Picking a card opens the canvas over the whole viewport
-   and puts that tool on it. The dock inside the canvas is the same three
-   families again, so nothing has to be learnt twice.
+   and puts that tool on it. The dock inside the canvas is the same families
+   again, so nothing has to be learnt twice.
 
    Babylon is not loaded until the first card is pressed — the shelf is plain
    HTML and should cost nothing.
    ========================================================================== */
 
-import { GROUPS, toolById } from "./tools.js";
+import { GROUPS, TOOLS, toolById } from "./tools.js";
 import { ICON } from "./icons.js";
 import { worksInBase } from "./abacus.js";
 import { TILES } from "./tiles.js";
 
-/* Which tool the canvas opens on. The dock has all seven, so the shelf does not
-   need to: one card is the door, and choosing happens inside. */
+/* Which tool the canvas opens on. The dock has every one of them, so the shelf
+   does not need to: one card is the door, and choosing happens inside. */
 const DOOR = "base-blocks";
 
+/* The card counts the tools out loud, so a family added to the registry is
+   announced instead of leaving the copy a number behind. Prose on this page is
+   written, not numbered — the digits are for the canvas. */
+const COUNTS = ["no", "one", "two", "three", "four", "five", "six", "seven",
+                "eight", "nine", "ten", "eleven", "twelve"];
+const spell = (n) => COUNTS[n] || String(n);
+
 export function buildShelf(root, onOpen) {
-  /* One picture from each family, so the card shows what is behind it without
-     turning back into a list of seven. */
-  const strip = ["base-blocks", "soroban", "place-value"]
-    .map((id) => toolById(id))
+  /* One picture from each family — taken from the registry, so a family added
+     to tools.js shows up here instead of being quietly left off the door. The
+     face of a family is its first tool unless it names another. */
+  const strip = GROUPS.map((g) => toolById(g.face || g.tools[0]?.id))
     .filter(Boolean)
     .map((t) => `<span class="bb-card__pic">${t.art()}</span>`)
     .join("");
@@ -34,9 +41,9 @@ export function buildShelf(root, onOpen) {
       <span class="bb-card__body">
         <span class="bb-card__title">Open the workbench</span>
         <span class="bb-card__blurb">
-          ${GROUPS.map((g) => g.label).join(" · ")} — eight things on one endless
-          sheet of squared paper. Blocks to split and trade in any base, three
-          counting frames, algebra tiles and cubes, and charts to stand the
+          ${GROUPS.map((g) => g.label).join(" · ")} — ${spell(TOOLS.length)} things on
+          one endless sheet of squared paper. Blocks to split and trade in any base,
+          three counting frames, algebra tiles and cubes, and charts to stand the
           blocks on. Everything is in the rail down the side once you are in.
         </span>
       </span>
@@ -81,10 +88,11 @@ export function createCanvasView(el, { onOpen, onClose } = {}) {
   return { show, hide, get isOpen() { return open; } };
 }
 
-/** The Add panel's three tabs, and what each of them offers. */
+/** The Add panel's tabs — one per family — and what each of them offers. */
 export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, onPaint, base }) {
-  /* The tabs are icons: three words across the panel cost a strip of canvas,
-     and what is under each of them says the same thing in the things it holds. */
+  /* The tabs are icons: the family names written across the panel cost a strip
+     of canvas, and what is under each of them says the same thing in the things
+     it holds. */
   tabsEl.innerHTML = GROUPS.map(
     (g, i) => `
     <button class="bb-dock__tab" type="button" role="tab" data-group="${g.id}"

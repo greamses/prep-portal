@@ -189,7 +189,7 @@ const NAV_CONFIG = [
           /* The workbenches: open-ended things to think with rather than an
              exercise to work through, which is why they sit with the tools and
              not with the activities. */
-          { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "3D blocks, abacuses and charts on one canvas" },
+          { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "Blocks, abacuses, algebra tiles and charts" },
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },

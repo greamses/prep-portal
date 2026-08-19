@@ -151,10 +151,13 @@ body {
 }
 .bb-card__art svg { display: block; width: 100%; height: auto; max-height: 130px; }
 
-/* three pictures across, one per family, so the single card still shows its range */
+/* one picture per family across the card, so the single door still shows its
+   range — the columns are counted from the pictures, not written down here, or
+   a new family lands in a second row on its own */
 .bb-card__art--strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 0.8rem;
   align-items: center;
 }
