@@ -18,14 +18,17 @@
    x² is x by x, y² is y by y, and xy is one of each — so the tiles only fit
    together the ways the algebra allows, which is the whole of the teaching.
 
-   ── unit, rod, flat, cube — in x and in y ─────────────────────────────────
-   The family goes all the way up to the SOLIDS: x³ is x by x by x, x²y is an
-   x-square standing y tall, and so on down to the unit, which is one by one by
-   one. It is the same four shapes the base blocks have, built out of x and y
-   instead of out of ten — and that is why every flat piece here is exactly ONE
-   UNIT THICK. Stack x of the x² flats and you have the x³ cube; if a tile were
-   a thin wafer instead, that sentence would be a lie, and the cube would sit on
-   the canvas as a picture of itself rather than as x of anything.
+   ── the tiles lie flat, the cubes stand up ────────────────────────────────
+   The family goes as far as the SOLIDS: x³ is x by x by x, x²y is an x-square
+   standing y tall, xy² and y³ likewise. Those four have a third side that is a
+   LENGTH, so they are built with it and they stand up off the paper.
+
+   Everything below them is a TILE and lies flat and thin — x², xy, y², x, y and
+   1. Their third side is not part of what they are worth: an x² is an area, x
+   by x, and a tile is how an area is laid out on paper. Given a full unit of
+   thickness the whole set turned into a heap of boxes and buried the rectangle
+   the pieces were put down to show, so thickness here says one thing only, and
+   says it plainly: standing up means a cube, lying flat means a tile.
 
    ── the negative is the same tile turned over ─────────────────────────────
    A negative tile is the same shape in the same size, in red, with a minus on
@@ -43,10 +46,14 @@ const B = () => window.BABYLON;
 export const X_LEN = 4.6;
 export const Y_LEN = 2.7;
 
-/* A flat piece is one unit thick — the same depth a base-ten flat has, so the
-   two families sit on the paper at the same height and x of the x² flats really
-   is the x³ cube. */
-const FLAT = 1;
+/* How thick a tile is: thin enough to read as a tile and not as a box, and the
+   same for every one of them, so a row of tiles is a flat surface with a
+   rectangle to be seen in it. It is NOT part of what a tile is worth. */
+const THIN = 0.32;
+
+/* One unit across — the short side of the x and y tiles and the side of the
+   unit tile. A real measurement, and nothing to do with how thick they are. */
+const ONE = 1;
 
 const BLUE = { token: "--accent-secondary", fallback: "#6fb7e8" }; // all x
 const GREEN = { token: "--accent-success", fallback: "#7cc47c" };  // x and y both
@@ -67,16 +74,16 @@ export const TILES = [
   { id: "x2y", label: "x²y", l: X_LEN, w: X_LEN, h: Y_LEN, x: 2, y: 1, ...GREEN },
   { id: "xy2", label: "xy²", l: X_LEN, w: Y_LEN, h: Y_LEN, x: 1, y: 2, ...GREEN },
   { id: "y3", label: "y³", l: Y_LEN, w: Y_LEN, h: Y_LEN, x: 0, y: 3, ...AMBER },
-  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, h: FLAT, x: 2, y: 0, ...BLUE },
-  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, h: FLAT, x: 1, y: 1, ...GREEN },
-  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, h: FLAT, x: 0, y: 2, ...AMBER },
-  { id: "x", label: "x", l: X_LEN, w: FLAT, h: FLAT, x: 1, y: 0, ...BLUE },
-  { id: "y", label: "y", l: Y_LEN, w: FLAT, h: FLAT, x: 0, y: 1, ...AMBER },
-  { id: "one", label: "1", l: 1, w: 1, h: 1, x: 0, y: 0, ...BUTTER },
+  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, h: THIN, x: 2, y: 0, ...BLUE },
+  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, h: THIN, x: 1, y: 1, ...GREEN },
+  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, h: THIN, x: 0, y: 2, ...AMBER },
+  { id: "x", label: "x", l: X_LEN, w: ONE, h: THIN, x: 1, y: 0, ...BLUE },
+  { id: "y", label: "y", l: Y_LEN, w: ONE, h: THIN, x: 0, y: 1, ...AMBER },
+  { id: "one", label: "1", l: ONE, w: ONE, h: THIN, x: 0, y: 0, ...BUTTER },
 ];
 
 /** A piece that stands up off the paper: x³, x²y, xy², y³. */
-export const isSolid = (spec) => spec.h > FLAT;
+export const isSolid = (spec) => spec.h > THIN;
 
 /* The red every negative tile is, in both themes: a negative is not a different
    PIECE, it is the same piece turned over, and the underside of a set of
