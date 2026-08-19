@@ -14,6 +14,7 @@ import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
 import { tilesReading } from "./tiles.js";
+import { math, setMath, typesetIn, numTex } from "./maths.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -442,17 +443,18 @@ export function mountUI({
     const tiles = store.things.filter((t) => t.kind === "tile");
     if (tiles.length) {
       const read = tilesReading(tiles);
-      el.count.textContent = read.text;
-      el.countSub.textContent = total
-        ? `on the canvas · ${total} unit${total === 1 ? "" : "s"} of blocks`
+      setMath(el.count, read.tex, read.text);
+      el.countSub.innerHTML = total
+        ? `on the canvas · ${math(String(total), String(total))} unit${total === 1 ? "" : "s"} of blocks`
         : "on the canvas";
     } else {
-      el.count.textContent = total;
-      el.countSub.textContent =
+      setMath(el.count, String(total), String(total));
+      el.countSub.innerHTML =
         base === 10
           ? `unit${total === 1 ? "" : "s"} on the canvas`
-          : `units · ${toBase(total, base)} in base ${baseWord(base)}`;
+          : `units · ${math(numTex(toBase(total, base), base), toBase(total, base))} in base ${baseWord(base)}`;
     }
+    typesetIn(el.countSub);
 
     // the chip shows the number; what it means is on the tooltip and in the popover
     el.baseLabel.textContent = base;

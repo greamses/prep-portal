@@ -47,6 +47,20 @@
       }
     </script>
 
+    <!-- MathJax sets every number and expression the canvas reads back: the
+         running total, a number in another base, a place as a power of the
+         base, and the expression a canvas of algebra tiles comes to. tex-svg,
+         like the rest of the site: self-contained SVG that inherits
+         currentColor, so it follows the theme. We typeset ourselves. -->
+    <script>
+      window.MathJax = {
+        tex: { displayMath: [['\\[', '\\]']], inlineMath: [['\\(', '\\)']] },
+        svg: { fontCache: 'global', scale: 1.0 },
+        startup: { typeset: false },
+      };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
     <script src="/utils/components/loader.js"></script>
   </head>
 

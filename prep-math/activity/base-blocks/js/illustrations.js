@@ -163,28 +163,45 @@ export const divideArt = () =>
     ],
   });
 
-/* ── algebra tiles ────────────────────────────────────────────────────────── */
+/* ── algebra tiles and blocks ───────────────────────────────────────────── */
 
 /**
- * The family in one picture: the x² square, the x tile, a red −x beside it and
- * the unit. The x tile is drawn LONGER than four units and shorter than five,
- * which is the whole point of the set — you cannot measure x with ones.
+ * The family in one picture: the x³ cube standing up off the paper, the x²
+ * flat, the x rod with a red −x under it, a y and the unit. The x pieces are
+ * drawn LONGER than four units and shorter than five, which is the whole point
+ * of the set — you cannot measure x with ones.
  */
 export function tilesArt() {
   const u = 7;          // a unit tile
-  const x = u * 4.6;    // an x tile, at its true length
   const tile = (px, py, w, h, fill, label, size = 9) =>
     `<rect x="${px}" y="${py}" width="${w}" height="${h}" rx="1.5"
-       fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>
-     <text x="${px + w / 2}" y="${py + h / 2}" fill="${LINE}" font-size="${size}"
+       fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>` + word(px + w / 2, py + h / 2, label, size);
+
+  const word = (cx, cy, label, size) =>
+    `<text x="${cx}" y="${cy}" fill="${LINE}" font-size="${size}"
        font-weight="700" text-anchor="middle" dominant-baseline="central"
        font-family="Unbounded, system-ui, sans-serif">${label}</text>`;
 
+  /* A solid, drawn obliquely: the face you read, a lid and a side. Both of
+     those are the SAME fill with a wash over them — the fills are theme tokens
+     and cannot be darkened arithmetically. */
+  const solid = (px, py, s, d, fill, label) => {
+    const lid = `${px},${py} ${px + d},${py - d} ${px + s + d},${py - d} ${px + s},${py}`;
+    const side = `${px + s},${py} ${px + s + d},${py - d} ${px + s + d},${py + s - d} ${px + s},${py + s}`;
+    return `<polygon points="${lid}" fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>
+      <polygon points="${lid}" fill="rgba(255,255,255,.30)" stroke="none"/>
+      <polygon points="${side}" fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>
+      <polygon points="${side}" fill="rgba(42,39,35,.18)" stroke="none"/>
+      <rect x="${px}" y="${py}" width="${s}" height="${s}" rx="1"
+        fill="${fill}" stroke="${LINE}" stroke-width="1.3"/>` + word(px + s / 2, py + s / 2, label, 11);
+  };
+
   return svg(
-    tile(7, 14, x * 0.72, x * 0.72, "var(--accent-secondary, #6fb7e8)", "x²", 11) +
-      tile(38, 14, x * 0.72, u, "var(--accent-secondary, #6fb7e8)", "x") +
-      tile(38, 27, x * 0.72, u, "#d2544a", "−x") +
-      tile(38, 40, x * 0.42, u, "var(--accent-warning, #f0a868)", "y", 8) +
-      tile(80, 40, u, u, "var(--accent-primary, #f4c95d)", "1", 8)
+    solid(8, 30, 30, 11, "var(--accent-secondary, #6fb7e8)", "x³") +
+      tile(58, 14, 28, 28, "var(--accent-secondary, #6fb7e8)", "x²", 10) +
+      tile(58, 48, 28, u, "var(--accent-secondary, #6fb7e8)", "x") +
+      tile(58, 59, 28, u, "#d2544a", "−x") +
+      tile(92, 20, 16, u, "var(--accent-warning, #f0a868)", "y", 8) +
+      tile(92, 48, u, u, "var(--accent-primary, #f4c95d)", "1", 8)
   );
 }

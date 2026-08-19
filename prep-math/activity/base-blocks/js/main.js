@@ -18,7 +18,8 @@ import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
-import { splitSelected, addPlace, addThing, addTile, rotateSelected, settleThings } from "./ops.js";
+import { splitSelected, addPlace, addThing, addTile, rotateSelected, settleThings,
+  cancelOverlapping } from "./ops.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -322,9 +323,9 @@ function placeTool(tool) {
     return;
   }
   if (tool.kind === "tile") {
-    /* The Tiles card is a door to the family, not one tile: which tile you want
-       is the only question, and the panel is where it is asked. */
-    say("Algebra tiles — pick one from the panel. A red tile is its negative.");
+    /* The Tiles card is a door to the family, not one tile: which piece you
+       want is the only question, and the panel is where it is asked. */
+    say("Algebra tiles — pick a piece from the panel, cubes first. A red one is its negative.");
     return;
   }
   if (tool.kind === "abacus") {
@@ -371,6 +372,9 @@ async function bootCanvas() {
     pointer = createPointer(ctx, view, canvas, {
       onChange: () => emit(),
       onDouble: doubleTap,
+      /* Let go of a tile over its opposite and the pair cancels itself: the
+         zero pair made physical, with no key to press. */
+      onDrop: (moved) => cancelOverlapping(moved),
       onBead: (ref) => {
         const thing = store.things.find((t) => t.id === ref.thingId);
         if (!thing) return;
@@ -464,7 +468,14 @@ async function bootCanvas() {
       document.getElementById("bb-dock-panel"),
       {
         onPiece: (p) => { addPlace(p); sayIf(afterBlocks()); emit(); },
-        onTile: (id, sign) => { const t = addTile(id, sign); fitView(ctx, [t]); emit(); },
+        /* Fit the WHOLE ROW, not the piece just added: tiles come out one
+           beside the last, and a camera that dives onto each new piece hides
+           the row it belongs to. */
+        onTile: (id, sign) => {
+          addTile(id, sign);
+          fitView(ctx, store.things.filter((t) => t.kind === "tile"));
+          emit();
+        },
         onOwn: (btn) => ui.openOwn(btn),
         onPlace: (tool) => { placeTool(tool); emit(); },
         onPaint: () => { paintIcons(document); ui.update(); },

@@ -36,6 +36,9 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   const onFacePress = hooks.onFacePress || (() => null);
   const onFaceDragMove = hooks.onFaceDragMove || (() => {});
   const onFaceDrop = hooks.onFaceDrop || (() => {});
+  /* What was let go of, and where. Algebra tiles laid over their opposites
+     cancel on the drop, so the hook is told which items moved. */
+  const onDrop = hooks.onDrop || (() => {});
   const marquee = hooks.marqueeEl || null;
 
   const TAP_SLOP = 7; // px a finger may wander and still count as a tap
@@ -97,6 +100,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       moving,
       start: moving.map((b) => ({ id: b.id, x: b.x, z: b.z })),
       grid: occupancy(store.blocks.concat(store.things), ids),
+      free: moving.every((b) => b.kind === "tile"),
       moved: false,
       dx: 0,
       dz: 0,
@@ -108,11 +112,17 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   function dragTo(cell) {
     const d = state.drag;
     if (!d || !cell) return;
-    const dx = Math.round(cell.x - d.origin.x);
-    const dz = Math.round(cell.z - d.origin.z);
+
+    /* Algebra tiles move FREELY: not a cell at a time, and not stopped by what
+       is already there. They are meant to be pushed up against one another and
+       laid over their opposites, and a piece that snaps to the paper's squares
+       can do neither — x is not a whole number of squares. Everything else
+       still moves a cell at a time and still goes round what is in the way. */
+    const dx = d.free ? cell.x - d.origin.x : Math.round(cell.x - d.origin.x);
+    const dz = d.free ? cell.z - d.origin.z : Math.round(cell.z - d.origin.z);
     if (dx === d.dx && dz === d.dz) return;
 
-    const ok = d.start.every((s) => {
+    const ok = d.free || d.start.every((s) => {
       const b = d.moving.find((m) => m.id === s.id);
       const f = footprint(b);
       return fits(d.grid, s.x + dx, s.z + dz, f.l, f.w, 0);
@@ -131,7 +141,10 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   function endDrag() {
     if (!state.drag) return;
-    if (state.drag.moved) onChange({ animate: false });
+    if (state.drag.moved) {
+      onDrop(state.drag.moving);
+      onChange({ animate: false });
+    }
     state.drag = null;
     camera.attachControl(canvas, true);
     canvas.style.cursor = "";

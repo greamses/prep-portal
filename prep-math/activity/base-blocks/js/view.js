@@ -117,13 +117,22 @@ export function createView(ctx) {
 
       /* A frame or a board is picked out with a glow, NOT the outline blocks
          use: the outline renderer inflates the mesh along its normals, and on a
-         slab 2mm under its own printed face that shell swallows the table. */
+         slab 2mm under its own printed face that shell swallows the table.
+
+         THE PRINTED FACE GOES IN THE LAYER TOO. The glow is composited after
+         the scene and masked by the meshes in the layer — so a face that is not
+         in it is not masked, and the glow washes flat over the top of the thing,
+         hiding the very label that says which piece it is. Every rig whose top
+         is a separate printed plane must put that plane in with its body. */
       const on = store.selection.has(t.id);
       const body = t.kind === "abacus" ? rig.parts.frame : rig.parts.slab;
-      if (body && rig.lit !== on) {
+      const lit = [body, rig.parts.face].filter(Boolean);
+      if (lit.length && rig.lit !== on) {
         rig.lit = on;
-        if (on) ctx.highlight.addMesh(body, glow);
-        else ctx.highlight.removeMesh(body);
+        for (const m of lit) {
+          if (on) ctx.highlight.addMesh(m, glow);
+          else ctx.highlight.removeMesh(m);
+        }
       }
     }
     for (const [id, rig] of rigs) {

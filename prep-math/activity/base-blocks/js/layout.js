@@ -27,20 +27,45 @@ export function footprint(item) {
   if (!a) return { l: item.l, w: item.w };
   const c = Math.abs(Math.cos(a));
   const s = Math.abs(Math.sin(a));
+  const l = item.l * c + item.w * s;
+  const w = item.l * s + item.w * c;
+  // a tile is off the grid whichever way it is lying — rounding a turned one up
+  // to whole cells would put daylight back between it and the next piece
+  if (item.kind === "tile") return { l, w };
   // a hair off before rounding up, so a right angle comes out exact rather than
   // gaining a cell to a cosine that is 1e-17 shy of zero
   return {
-    l: Math.max(1, Math.ceil(item.l * c + item.w * s - 1e-9)),
-    w: Math.max(1, Math.ceil(item.l * s + item.w * c - 1e-9)),
+    l: Math.max(1, Math.ceil(l - 1e-9)),
+    w: Math.max(1, Math.ceil(w - 1e-9)),
   };
+}
+
+/**
+ * The whole cells a thing covers, however fractionally it covers them.
+ *
+ * Algebra tiles are measured in x and in y, which are not whole numbers of
+ * cells and are not meant to be — so a tile's own position and size stay
+ * fractional, and only the OCCUPANCY map rounds outwards to the squares of
+ * paper it is standing on. Everything else is already whole and comes through
+ * unchanged.
+ */
+function cellBox(b) {
+  const f = footprint(b);
+  const x = Math.floor(b.x);
+  const z = Math.floor(b.z);
+  return { x, z, l: Math.ceil(b.x + f.l) - x, w: Math.ceil(b.z + f.w) - z };
 }
 
 export function occupancy(items, skip = null) {
   const grid = new Set();
   for (const b of items) {
     if (skip && skip.has(b.id)) continue;
-    const f = footprint(b);
-    mark(grid, b.x, b.z, f.l, f.w);
+    /* A tile reserves no paper: pieces are meant to be pushed up against one
+       another and laid over their opposites, so they are laid out and dragged
+       free of the grid entirely. */
+    if (b.kind === "tile") continue;
+    const c = cellBox(b);
+    mark(grid, c.x, c.z, c.l, c.w);
   }
   return grid;
 }
@@ -151,19 +176,30 @@ function rows(list, sorter, { cap = 150 } = {}) {
   const pad = CFG.gap;
   const sorted = [...list].sort(sorter);
   const foot = new Map(sorted.map((b) => [b.id, footprint(b)]));
+  /* Two algebra tiles standing next to each other TOUCH — no gap at all. A gap
+     between two blocks says they are two blocks; a gap between two tiles hides
+     the one thing the pieces are for, which is fitting together into a
+     rectangle whose sides you can read. */
+  const gapBefore = (b, prev) =>
+    prev && prev.kind === "tile" && b.kind === "tile" ? 0 : pad;
+
   const widest = sorted.reduce((n, b) => Math.max(n, foot.get(b.id).l), 1);
-  const total = sorted.reduce((n, b) => n + foot.get(b.id).l + pad, 0) - pad;
+  const total = sorted.reduce((n, b, i) =>
+    n + foot.get(b.id).l + (i ? gapBefore(b, sorted[i - 1]) : 0), 0);
   const wrap = Math.max(widest, Math.min(total, cap));
 
   const out = [];
-  let x = 0, z = 0, rowW = 0, usedX = 0;
+  let x = 0, z = 0, rowW = 0, usedX = 0, prev = null;
   for (const b of sorted) {
     const f = foot.get(b.id);
-    if (x && x + f.l > wrap) { z += rowW + pad; x = 0; rowW = 0; }
+    const g = x ? gapBefore(b, prev) : 0;
+    if (x && x + g + f.l > wrap) { z += rowW + pad; x = 0; rowW = 0; }
+    else x += g;
     out.push({ item: b, x, z });
-    x += f.l + pad;
+    x += f.l;
     rowW = Math.max(rowW, f.w);
-    usedX = Math.max(usedX, x - pad);
+    usedX = Math.max(usedX, x);
+    prev = b;
   }
   return { out, w: usedX, h: z + rowW };
 }
@@ -193,7 +229,10 @@ export function arrange(blocks, things) {
     const dx = -Math.round(band.w / 2);
     for (const o of band.out) {
       o.item.x = o.x + dx;
-      o.item.z = Math.round(topZ - UP * (o.z + footprint(o.item).w));
+      const z = topZ - UP * (o.z + footprint(o.item).w);
+      // a tile is placed to the tenth; rounding it would open the very gaps
+      // the row was closed up to avoid
+      o.item.z = o.item.kind === "tile" ? z : Math.round(z);
     }
   }
 

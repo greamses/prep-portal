@@ -1,20 +1,31 @@
 /* ============================================================================
-   Manipulatives — algebra tiles
+   Manipulatives — algebra tiles and blocks
    ----------------------------------------------------------------------------
    The blocks make a NUMBER out of its places. These make an EXPRESSION out of
-   its terms: x² and x and 1, in two variables, each of them with a negative.
+   its terms: x³ and x² and x and 1, in two variables, each of them with a
+   negative.
 
    ── x is not five ─────────────────────────────────────────────────────────
    The one rule that makes algebra tiles work is that the x-tile's length is not
    a whole number of unit tiles. If it were, a learner would lay units along it,
    count them, and "find out" what x is — and x is the thing you are not told.
    So X_LEN is 4.6 and Y_LEN is 2.7: near enough to the squared paper to sit on
-   it tidily, far enough that no number of units ever fits. The tile OCCUPIES a
-   whole number of cells (the grid is integers) but it is DRAWN at its true
-   length, and the two are deliberately different.
+   it tidily, far enough that no number of units ever fits. A piece is measured,
+   laid out and dragged at its TRUE length — the rest of the canvas works in
+   whole cells, and these do not, because two pieces put side by side have to
+   touch.
 
    x² is x by x, y² is y by y, and xy is one of each — so the tiles only fit
    together the ways the algebra allows, which is the whole of the teaching.
+
+   ── unit, rod, flat, cube — in x and in y ─────────────────────────────────
+   The family goes all the way up to the SOLIDS: x³ is x by x by x, x²y is an
+   x-square standing y tall, and so on down to the unit, which is one by one by
+   one. It is the same four shapes the base blocks have, built out of x and y
+   instead of out of ten — and that is why every flat piece here is exactly ONE
+   UNIT THICK. Stack x of the x² flats and you have the x³ cube; if a tile were
+   a thin wafer instead, that sentence would be a lie, and the cube would sit on
+   the canvas as a picture of itself rather than as x of anything.
 
    ── the negative is the same tile turned over ─────────────────────────────
    A negative tile is the same shape in the same size, in red, with a minus on
@@ -32,22 +43,40 @@ const B = () => window.BABYLON;
 export const X_LEN = 4.6;
 export const Y_LEN = 2.7;
 
-const THICK = 0.32; // a tile is a tile, not a block: it lies flat and thin
+/* A flat piece is one unit thick — the same depth a base-ten flat has, so the
+   two families sit on the paper at the same height and x of the x² flats really
+   is the x³ cube. */
+const FLAT = 1;
+
+const BLUE = { token: "--accent-secondary", fallback: "#6fb7e8" }; // all x
+const GREEN = { token: "--accent-success", fallback: "#7cc47c" };  // x and y both
+const AMBER = { token: "--accent-warning", fallback: "#f0a868" };  // all y
+const BUTTER = { token: "--accent-primary", fallback: "#f4c95d" }; // the plain unit
 
 /**
- * The six tiles, by what they are worth.
+ * The ten pieces, by what they are worth, written the way an expression is:
+ * highest degree first, and x before y at the same degree.
  *
- * `l` and `w` are the true lengths. `power` is what the term is for reading an
- * expression back: how many x's and how many y's are multiplied together.
+ * `l`, `w` and `h` are the TRUE lengths — a side is x, or y, or one. `x` and
+ * `y` are the powers, which is what the term is for reading an expression back:
+ * how many x's and how many y's are multiplied together. Colour says which
+ * letters a piece is made of and nothing else.
  */
 export const TILES = [
-  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, x: 2, y: 0, token: "--accent-secondary", fallback: "#6fb7e8" },
-  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, x: 1, y: 1, token: "--accent-success", fallback: "#7cc47c" },
-  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, x: 0, y: 2, token: "--accent-warning", fallback: "#f0a868" },
-  { id: "x", label: "x", l: X_LEN, w: 1, x: 1, y: 0, token: "--accent-secondary", fallback: "#6fb7e8" },
-  { id: "y", label: "y", l: Y_LEN, w: 1, x: 0, y: 1, token: "--accent-warning", fallback: "#f0a868" },
-  { id: "one", label: "1", l: 1, w: 1, x: 0, y: 0, token: "--accent-primary", fallback: "#f4c95d" },
+  { id: "x3", label: "x³", l: X_LEN, w: X_LEN, h: X_LEN, x: 3, y: 0, ...BLUE },
+  { id: "x2y", label: "x²y", l: X_LEN, w: X_LEN, h: Y_LEN, x: 2, y: 1, ...GREEN },
+  { id: "xy2", label: "xy²", l: X_LEN, w: Y_LEN, h: Y_LEN, x: 1, y: 2, ...GREEN },
+  { id: "y3", label: "y³", l: Y_LEN, w: Y_LEN, h: Y_LEN, x: 0, y: 3, ...AMBER },
+  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, h: FLAT, x: 2, y: 0, ...BLUE },
+  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, h: FLAT, x: 1, y: 1, ...GREEN },
+  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, h: FLAT, x: 0, y: 2, ...AMBER },
+  { id: "x", label: "x", l: X_LEN, w: FLAT, h: FLAT, x: 1, y: 0, ...BLUE },
+  { id: "y", label: "y", l: Y_LEN, w: FLAT, h: FLAT, x: 0, y: 1, ...AMBER },
+  { id: "one", label: "1", l: 1, w: 1, h: 1, x: 0, y: 0, ...BUTTER },
 ];
+
+/** A piece that stands up off the paper: x³, x²y, xy², y³. */
+export const isSolid = (spec) => spec.h > FLAT;
 
 /* The red every negative tile is, in both themes: a negative is not a different
    PIECE, it is the same piece turned over, and the underside of a set of
@@ -69,10 +98,14 @@ export function makeTile(id, sign = 1) {
     degree: spec.x + spec.y,
     tag: null,
     x: 0, z: 0, angle: 0,
-    // what it OCCUPIES: whole cells, because the grid is integers
-    l: Math.ceil(spec.l),
-    w: Math.ceil(spec.w),
-    h: THICK,
+    /* TRUE lengths, not cells. A piece is exactly as big as it is worth, and
+       two of them laid side by side must TOUCH — an x-tile rounded up to five
+       cells would leave four tenths of a unit of daylight between it and the
+       next piece, and a row of tiles that does not close up cannot show you a
+       rectangle. Tiles live off the grid; everything else is still on it. */
+    l: spec.l,
+    w: spec.w,
+    h: spec.h,
   };
 }
 
@@ -82,11 +115,22 @@ export function tileTerm(thing) {
   return { x: spec.x, y: spec.y, n: thing.sign };
 }
 
+/* x, x², x³ — a power is written the way it is written, up as far as the set
+   goes, which is the cube. */
+const SUP = ["", "", "²", "³"];
+const letters = (x, y) =>
+  (x ? "x" + SUP[x] : "") + (y ? "y" + SUP[y] : "");
+
+/* The same term for MathJax, which wants the powers spelled out. */
+const letterTex = (x, y) =>
+  (x ? "x" + (x > 1 ? `^{${x}}` : "") : "") + (y ? "y" + (y > 1 ? `^{${y}}` : "") : "");
+
 /**
  * Read every tile on the canvas back as an expression.
  *
  * Terms are gathered by their powers and written in the order a textbook writes
- * them — the highest degree first, and x before y at the same degree.
+ * them — the highest degree first, and x before y at the same degree. Comes
+ * back twice over: `text` to read or to speak, `tex` for MathJax to set.
  */
 export function tilesReading(tiles) {
   const by = new Map();
@@ -103,22 +147,20 @@ export function tilesReading(tiles) {
     .filter((t) => t.n !== 0)
     .sort((a, b) => (b.x + b.y) - (a.x + a.y) || b.x - a.x);
 
-  if (!terms.length) return { terms, text: "0" };
+  if (!terms.length) return { terms, text: "0", tex: "0" };
 
-  const text = terms
+  const write = (glyphs, minus, plus) => terms
     .map((t, i) => {
-      const sign = t.n < 0 ? "−" : "+";
       const size = Math.abs(t.n);
-      const part = [
-        t.x ? (t.x === 1 ? "x" : "x²") : "",
-        t.y ? (t.y === 1 ? "y" : "y²") : "",
-      ].join("");
+      const part = glyphs(t.x, t.y);
       const number = size === 1 && part ? "" : String(size);
       const body = number + part;
-      return i === 0 ? (t.n < 0 ? "−" + body : body) : ` ${sign} ${body}`;
+      return i === 0 ? (t.n < 0 ? minus + body : body)
+        : ` ${t.n < 0 ? minus : plus} ${body}`;
     })
     .join("");
-  return { terms, text };
+
+  return { terms, text: write(letters, "−", "+"), tex: write(letterTex, "-", "+") };
 }
 
 /**
@@ -174,10 +216,11 @@ export function buildTile(ctx, thing) {
 
   /* Drawn at its TRUE length, inside a footprint rounded up to whole cells —
      so an x-tile visibly overhangs four squares and falls short of five, and no
-     counting of units will ever tell you what x is. */
+     counting of units will ever tell you what x is. The height is true as well,
+     which is what makes an x³ a cube and not a tall box. */
   const slab = BJS.MeshBuilder.CreateBox("tile",
-    { width: spec.l, depth: spec.w, height: THICK }, scene);
-  slab.position.y = THICK / 2;
+    { width: spec.l, depth: spec.w, height: spec.h }, scene);
+  slab.position.y = spec.h / 2;
   slab.parent = root;
   slab.receiveShadows = true;
   slab.metadata = { itemId: thing.id };
@@ -189,7 +232,7 @@ export function buildTile(ctx, thing) {
      only one anybody reads. */
   const face = BJS.MeshBuilder.CreateGround("tileFace",
     { width: spec.l * 0.94, height: spec.w * 0.94 }, scene);
-  face.position.y = THICK + 0.004;
+  face.position.y = spec.h + 0.004;
   face.parent = root;
   face.metadata = { itemId: thing.id };
 
@@ -223,8 +266,17 @@ export function paintTile(thing, parts) {
   g.textBaseline = "middle";
 
   const label = (thing.sign < 0 ? "−" : "") + spec.label;
-  const size = Math.round(Math.min(W, H) * (spec.id === "one" ? 0.52 : 0.4));
+  let size = Math.round(Math.min(W, H) * (spec.id === "one" ? 0.52 : 0.4));
   g.font = `700 ${size}px Unbounded, system-ui, sans-serif`;
+  /* "−x²y" on the top of an xy² is four glyphs across a face that is only y
+     wide: measure it and come down until it fits, rather than letting the
+     writing run off the piece. */
+  const room = W * 0.84;
+  const wide = g.measureText(label).width;
+  if (wide > room) {
+    size = Math.max(8, Math.round(size * (room / wide)));
+    g.font = `700 ${size}px Unbounded, system-ui, sans-serif`;
+  }
   g.fillStyle = "rgba(20,19,15,0.82)";
   g.fillText(label, W / 2, H / 2 + size * 0.04);
 

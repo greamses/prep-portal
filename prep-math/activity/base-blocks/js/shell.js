@@ -34,10 +34,10 @@ export function buildShelf(root, onOpen) {
       <span class="bb-card__body">
         <span class="bb-card__title">Open the workbench</span>
         <span class="bb-card__blurb">
-          ${GROUPS.map((g) => g.label).join(" · ")} — seven things on one endless
+          ${GROUPS.map((g) => g.label).join(" · ")} — eight things on one endless
           sheet of squared paper. Blocks to split and trade in any base, three
-          counting frames, and charts to stand the blocks on. Everything is in
-          the dock along the bottom once you are in.
+          counting frames, algebra tiles and cubes, and charts to stand the
+          blocks on. Everything is in the rail down the side once you are in.
         </span>
       </span>
       <span class="bb-card__go">Open the canvas ${ICON.chevron}</span>
@@ -116,9 +116,10 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, on
           <span>Own size</span><em data-size="own">3×2×2</em>
         </button>`;
     } else if (g.id === "tiles") {
-      /* Six tiles and a red one of each. The negatives are a SECOND ROW of the
-         same six rather than a separate list, because that is what they are:
-         the same tiles turned over. */
+      /* Ten pieces and a red one of each — the cubes first, then the flats and
+         the rods, the way an expression is written. The negatives are a SECOND
+         ROW of the same ten rather than a separate list, because that is what
+         they are: the same pieces turned over. */
       panelEl.innerHTML = TILES.map((t) => `
         <button class="bb-piece bb-piece--tile" type="button"
                 data-tile="${t.id}" data-sign="1" title="One ${t.label} tile">

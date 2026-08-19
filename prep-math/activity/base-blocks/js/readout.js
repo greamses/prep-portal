@@ -9,8 +9,14 @@
 import { PLACES, TAGS, placeOf, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
 import { tilesReading } from "./tiles.js";
+import { math, typesetIn, numTex } from "./maths.js";
 
 const SUP = { 0: "⁰", 1: "¹", 2: "²", 3: "³" };
+
+/* A place written as what it is: a power of the working base. The Unicode is
+   what stands there until MathJax has the TeX. */
+const powerOf = (base, power) =>
+  math(`${base}^{${power}}`, `${base}${SUP[power]}`);
 
 export function census(store) {
   const counts = { unit: 0, rod: 0, flat: 0, cube: 0 };
@@ -38,9 +44,9 @@ export function renderBoard(el, store) {
       return `
         <tr class="${n ? "" : "is-empty"}${canTrade ? " can-trade" : ""}">
           <th scope="row"><span class="bb-swatch bb-swatch--${p.id}"></span>${p.plural}</th>
-          <td class="bb-cols__val">${value}<span class="bb-cols__pow">${base}${SUP[p.power]}</span></td>
-          <td class="bb-cols__n">${n}</td>
-          <td class="bb-cols__sub">${n ? n * value : ""}</td>
+          <td class="bb-cols__val">${math(String(value), String(value))}<span class="bb-cols__pow">${powerOf(base, p.power)}</span></td>
+          <td class="bb-cols__n">${math(String(n), String(n))}</td>
+          <td class="bb-cols__sub">${n ? math(String(n * value), String(n * value)) : ""}</td>
         </tr>`;
     })
     .join("");
@@ -55,11 +61,20 @@ export function renderBoard(el, store) {
        </tr>`
     : "";
 
+  /* The number written out as what each place is worth — one piece of
+     mathematics rather than a row of glyphs, so it sets as one line. */
+  const expandedTex = rows
+    .filter((p) => counts[p.id])
+    .map((p) => `${counts[p.id]} ${String.fromCharCode(92)}times ${base}^{${p.power}}`)
+    .join(" + ");
   const expandedParts = rows
     .filter((p) => counts[p.id])
     .map((p) => `${counts[p.id]} × ${base}${SUP[p.power]}`);
-  if (custom.length) expandedParts.push(`own blocks (${customUnits})`);
-  const expanded = expandedParts.join(" + ");
+  const expandedPlain = expandedParts.join(" + ");
+  const expanded = expandedTex
+    ? math(expandedTex, expandedPlain) +
+      (custom.length ? ` + own blocks (${math(String(customUnits), String(customUnits))})` : "")
+    : (custom.length ? `own blocks (${math(String(customUnits), String(customUnits))})` : "");
 
   const tradeable = rows.find((p) => counts[p.id] >= base && p.power < 3);
   const nudge = tradeable
@@ -86,7 +101,7 @@ export function renderBoard(el, store) {
                <span class="bb-group__dot" style="background:${g.t.hex}"></span>
                <span class="bb-group__name">${g.t.name}</span>
                <span class="bb-group__n">${g.n} block${g.n === 1 ? "" : "s"}</span>
-               <b class="bb-group__units">${g.units}</b>
+               <b class="bb-group__units">${math(String(g.units), String(g.units))}</b>
              </div>`
            )
            .join("")}
@@ -94,20 +109,21 @@ export function renderBoard(el, store) {
     : "";
 
   const tiles = store.things.filter((t) => t.kind === "tile");
-  const expression = tiles.length
+  const read = tiles.length ? tilesReading(tiles) : null;
+  const expression = read
     ? `<p class="bb-board__base">The tiles read
-         <b>${tilesReading(tiles).text}</b></p>`
+         <b>${math(read.tex, read.text)}</b></p>`
     : "";
 
   el.innerHTML = `
     ${expression}
     <div class="bb-board__total">
-      <b>${total}</b>
+      <b>${math(String(total), String(total))}</b>
       <span>unit${total === 1 ? "" : "s"} on the mat</span>
     </div>
     <p class="bb-board__base">
       In base ${baseWord(base)} that is
-      <b>${toBase(total, base)}</b><sub>${base}</sub>
+      <b>${math(numTex(toBase(total, base), base), toBase(total, base))}</b>
     </p>
     <table class="bb-cols">
       <thead>
@@ -119,4 +135,7 @@ export function renderBoard(el, store) {
     ${nudge}
     ${groups}
   `;
+
+  // one pass over the panel that was just built: every number on it at once
+  typesetIn(el);
 }

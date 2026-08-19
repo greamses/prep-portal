@@ -15,7 +15,7 @@ import { store, snapshot, say, nextId, selected, selectedItems, items } from "./
 import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
-import { makeTile, tileSpec, zeroPairs, tilesReading } from "./tiles.js";
+import { makeTile, tileSpec, isSolid, zeroPairs, tilesReading } from "./tiles.js";
 
 const MAX_SIDE = 64;
 
@@ -118,14 +118,90 @@ export function addPlace(placeId) {
  * Tiles are THINGS, not blocks: they take cells and they drag and turn like
  * everything else, but they are not places and must never be counted into the
  * unit total or traded by the base — x is not a number of units, which is the
- * one thing the whole family exists to say.
+ * one thing the whole family exists to say. That goes for the solids too: an x³
+ * cube is a piece, never 97 units of one.
  */
 export function addTile(id, sign = 1) {
-  const tile = addThing(makeTile(id, sign));
-  arrange(store.blocks, store.things);
+  snapshot();
+  const tile = makeTile(id, sign);
+  tile.id = nextId();
+
+  /* Pieces come out of the box in a ROW, each one touching the last along the
+     same top edge — and the canvas is NOT set out again around them. A learner
+     who has spent a minute fitting tiles into a rectangle should not have it
+     swept up because they reached for one more piece. */
+  const last = [...store.things].reverse().find((t) => t.kind === "tile");
+  if (last) {
+    const f = footprint(last);
+    tile.x = last.x + f.l;
+    tile.z = last.z + f.w - footprint(tile).w;
+  } else {
+    const spot = findSpot(occupancy(items()), tile.l, tile.w, null);
+    tile.x = spot ? spot.x : 0;
+    tile.z = spot ? spot.z : 0;
+  }
+  store.things.push(tile);
+  store.selection = new Set([tile.id]);
+
   const spec = tileSpec(id);
-  say(`Added one ${sign < 0 ? "−" : ""}${spec.label} tile.`);
+  say(`Added one ${sign < 0 ? "−" : ""}${spec.label} ${isSolid(spec) ? "block" : "tile"}.`);
   return tile;
+}
+
+/** Do two things overlap on the paper, and by how much of the smaller one? */
+function overlapShare(a, b) {
+  const fa = footprint(a);
+  const fb = footprint(b);
+  const w = Math.min(a.x + fa.l, b.x + fb.l) - Math.max(a.x, b.x);
+  const d = Math.min(a.z + fa.w, b.z + fb.w) - Math.max(a.z, b.z);
+  if (w <= 0 || d <= 0) return 0;
+  return (w * d) / Math.min(fa.l * fa.w, fb.l * fb.w);
+}
+
+/* How much of a piece has to be lying over its opposite before the two are
+   taken to have been put together. Not a touch — a deliberate covering. */
+const COVERED = 0.4;
+
+/**
+ * A piece dropped ON TOP of its opposite: the two of them are nothing at all,
+ * so both leave the canvas.
+ *
+ * This is the zero pair made physical — no key to press, no pair to select.
+ * You lay −xy over xy, they cancel, and what is left is what the expression
+ * came to. Only the pieces that were just moved are tested, so nothing
+ * disappears out from under a learner who has not touched it.
+ */
+export function cancelOverlapping(moved) {
+  const tiles = moved.filter((t) => t && t.kind === "tile");
+  if (!tiles.length) return false;
+
+  const gone = new Set();
+  const pairs = [];
+  for (const t of tiles) {
+    if (gone.has(t.id)) continue;
+    let best = null;
+    let bestShare = COVERED;
+    for (const o of store.things) {
+      if (o.kind !== "tile" || o.id === t.id || gone.has(o.id)) continue;
+      if (o.variant !== t.variant || o.sign === t.sign) continue;
+      const share = overlapShare(t, o);
+      if (share >= bestShare) { best = o; bestShare = share; }
+    }
+    if (!best) continue;
+    gone.add(t.id);
+    gone.add(best.id);
+    pairs.push(tileSpec(t.variant).label);
+  }
+  if (!gone.size) return false;
+
+  store.things = store.things.filter((t) => !gone.has(t.id));
+  store.selection = new Set([...store.selection].filter((id) => !gone.has(id)));
+  const left = tilesReading(store.things.filter((t) => t.kind === "tile"));
+  const what = pairs.length === 1
+    ? `${pairs[0]} and −${pairs[0]} are nothing at all`
+    : `${pairs.length} zero pairs are nothing at all`;
+  say(`${what} — the canvas reads ${left.text}.`, "ok");
+  return true;
 }
 
 /**
@@ -618,6 +694,9 @@ function settle(list) {
   const grid = occupancy(items(), moving);
 
   for (const b of list) {
+    /* A tile stays exactly where it was put down. It is off the grid on
+       purpose: it may touch its neighbour, and it may lie over its opposite. */
+    if (b.kind === "tile") continue;
     const f = footprint(b);
     if (!fits(grid, b.x, b.z, f.l, f.w, CFG.gap)) {
       const spot = findSpot(grid, f.l, f.w, { x: b.x, z: b.z });

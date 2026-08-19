@@ -456,6 +456,10 @@ body.bb-locked { overflow: hidden; }
   gap: 0.3rem;
   padding: 0.45rem 0.55rem;
   max-width: 300px;
+  /* the algebra family is twenty pieces with its negatives, which is taller
+     than a short screen: let the panel scroll rather than run off the canvas */
+  max-height: min(58vh, 460px);
+  overflow-y: auto;
 }
 /* the base panel and the own-size builder are placed by the same anchor(), so
    they must not carry a corner of their own from the old popover rules */
@@ -1163,3 +1167,11 @@ body.bb-locked { overflow: hidden; }
    negatives set apart so the two rows read as one family turned over */
 .bb-piece--tile span { font-family: var(--font-display); font-weight: 700; }
 .bb-piece--minus { opacity: 0.92; }
+
+/* ── numbers set as mathematics ───────────────────────────────────────────── */
+/* MathJax's tex-svg output, dropped inline into the pill, the reading panel and
+   the tables. It inherits currentColor, so the only work left is making it sit
+   on the line like the words either side of it. */
+.bb-math mjx-container { display: inline-block !important; margin: 0 !important; }
+.bb-math mjx-container svg { vertical-align: -0.08em; }
+.bb-math mjx-container[display="true"] { display: inline-block !important; }
