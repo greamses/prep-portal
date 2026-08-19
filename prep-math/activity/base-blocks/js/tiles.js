@@ -23,12 +23,19 @@
    standing y tall, xy² and y³ likewise. Those four have a third side that is a
    LENGTH, so they are built with it and they stand up off the paper.
 
-   Everything below them is a TILE and lies flat and thin — x², xy, y², x, y and
-   1. Their third side is not part of what they are worth: an x² is an area, x
-   by x, and a tile is how an area is laid out on paper. Given a full unit of
-   thickness the whole set turned into a heap of boxes and buried the rectangle
-   the pieces were put down to show, so thickness here says one thing only, and
-   says it plainly: standing up means a cube, lying flat means a tile.
+   Everything below them is a TILE and has NO THIRD SIDE AT ALL — x², xy, y², x,
+   y and 1 are flat: sheets on the paper, not slabs above it. Their thickness is
+   not part of what they are worth (an x² is an area, x by x), and every
+   thickness tried — a full unit, then a wafer — read as a box and buried the
+   rectangle the pieces are put down to show. So thickness here says one thing
+   only, and says it plainly: a piece with a third side is a CUBE and stands up,
+   a piece without one is a TILE and lies flat.
+
+   That is the model as well as the picture. A tile's `h` is 0, so `isSolid` is
+   simply "has a height", the turn handle sits on the paper where the tile is,
+   and nothing has to know a magic wafer number. Only the drawing lifts a tile,
+   by `LIFT` — a hair, so the sheet is not fighting the paper for the same
+   pixels.
 
    ── the negative is the same tile turned over ─────────────────────────────
    A negative tile is the same shape in the same size, in red, with a minus on
@@ -46,13 +53,26 @@ const B = () => window.BABYLON;
 export const X_LEN = 4.6;
 export const Y_LEN = 2.7;
 
-/* How thick a tile is: thin enough to read as a tile and not as a box, and the
-   same for every one of them, so a row of tiles is a flat surface with a
-   rectangle to be seen in it. It is NOT part of what a tile is worth. */
-const THIN = 0.32;
+/* A tile has no thickness: it is a sheet lying on the paper. Written down so
+   the specs below say what they mean, and so nothing reads a bare 0 as an
+   oversight. */
+const FLAT = 0;
+
+/* How far off the paper a tile is DRAWN — not how thick it is. Two surfaces at
+   the same height fight for the same pixels, and the winner changes with the
+   angle; a hair of clearance settles it and is invisible.
+
+   Tiles overlap on purpose (a piece is dropped onto its opposite to cancel the
+   pair, and they move through each other freely), so two sheets at the SAME
+   hair would fight each other just as badly. Each one is lifted by its own id
+   instead — a ladder of steps far too small to see and too small to stack into
+   anything, but enough that no two sheets are ever exactly level. */
+const LIFT = 0.012;
+const STEP = 0.0015;
+const liftOf = (thing) => LIFT + (Math.abs(thing.id | 0) % 24) * STEP;
 
 /* One unit across — the short side of the x and y tiles and the side of the
-   unit tile. A real measurement, and nothing to do with how thick they are. */
+   unit tile. A real measurement, and nothing to do with lying flat. */
 const ONE = 1;
 
 const BLUE = { token: "--accent-secondary", fallback: "#6fb7e8" }; // all x
@@ -74,16 +94,17 @@ export const TILES = [
   { id: "x2y", label: "x²y", l: X_LEN, w: X_LEN, h: Y_LEN, x: 2, y: 1, ...GREEN },
   { id: "xy2", label: "xy²", l: X_LEN, w: Y_LEN, h: Y_LEN, x: 1, y: 2, ...GREEN },
   { id: "y3", label: "y³", l: Y_LEN, w: Y_LEN, h: Y_LEN, x: 0, y: 3, ...AMBER },
-  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, h: THIN, x: 2, y: 0, ...BLUE },
-  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, h: THIN, x: 1, y: 1, ...GREEN },
-  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, h: THIN, x: 0, y: 2, ...AMBER },
-  { id: "x", label: "x", l: X_LEN, w: ONE, h: THIN, x: 1, y: 0, ...BLUE },
-  { id: "y", label: "y", l: Y_LEN, w: ONE, h: THIN, x: 0, y: 1, ...AMBER },
-  { id: "one", label: "1", l: ONE, w: ONE, h: THIN, x: 0, y: 0, ...BUTTER },
+  { id: "x2", label: "x²", l: X_LEN, w: X_LEN, h: FLAT, x: 2, y: 0, ...BLUE },
+  { id: "xy", label: "xy", l: X_LEN, w: Y_LEN, h: FLAT, x: 1, y: 1, ...GREEN },
+  { id: "y2", label: "y²", l: Y_LEN, w: Y_LEN, h: FLAT, x: 0, y: 2, ...AMBER },
+  { id: "x", label: "x", l: X_LEN, w: ONE, h: FLAT, x: 1, y: 0, ...BLUE },
+  { id: "y", label: "y", l: Y_LEN, w: ONE, h: FLAT, x: 0, y: 1, ...AMBER },
+  { id: "one", label: "1", l: ONE, w: ONE, h: FLAT, x: 0, y: 0, ...BUTTER },
 ];
 
-/** A piece that stands up off the paper: x³, x²y, xy², y³. */
-export const isSolid = (spec) => spec.h > THIN;
+/** A piece that stands up off the paper: x³, x²y, xy², y³ — the ones with a
+    third side. Everything else is a sheet. */
+export const isSolid = (spec) => spec.h > 0;
 
 /* The red every negative tile is, in both themes: a negative is not a different
    PIECE, it is the same piece turned over, and the underside of a set of
@@ -223,23 +244,34 @@ export function buildTile(ctx, thing) {
 
   /* Drawn at its TRUE length, inside a footprint rounded up to whole cells —
      so an x-tile visibly overhangs four squares and falls short of five, and no
-     counting of units will ever tell you what x is. The height is true as well,
-     which is what makes an x³ a cube and not a tall box. */
-  const slab = BJS.MeshBuilder.CreateBox("tile",
-    { width: spec.l, depth: spec.w, height: spec.h }, scene);
-  slab.position.y = spec.h / 2;
+     counting of units will ever tell you what x is.
+
+     A CUBE IS A BOX AND A TILE IS A SHEET. The four solids are built with their
+     true height, which is what makes an x³ a cube and not a tall box. The other
+     six get a ground: no sides to catch the light, so however low the camera
+     goes there is no edge to see and no thickness to mistake for part of what
+     the piece is worth. A sheet casts no shadow either — a shadow under a tile
+     is the same lie as an edge on it. */
+  const solid = isSolid(spec);
+  const slab = solid
+    ? BJS.MeshBuilder.CreateBox("tile",
+        { width: spec.l, depth: spec.w, height: spec.h }, scene)
+    : BJS.MeshBuilder.CreateGround("tile",
+        { width: spec.l, height: spec.w }, scene);
+  const lift = liftOf(thing);
+  slab.position.y = solid ? spec.h / 2 : lift;
   slab.parent = root;
   slab.receiveShadows = true;
   slab.metadata = { itemId: thing.id };
   slab.material = mat(scene, colourOfTile(thing));
-  ctx.shadows.addShadowCaster(slab);
+  if (solid) ctx.shadows.addShadowCaster(slab);
 
-  /* The label is printed on a sheet a whisker above the tile rather than on the
-     box itself: a box takes one material for all six faces, and the top is the
-     only one anybody reads. */
+  /* The label is printed on a sheet a whisker above the piece rather than on
+     the piece itself: a box takes one material for all six faces, and the top
+     is the only one anybody reads. */
   const face = BJS.MeshBuilder.CreateGround("tileFace",
     { width: spec.l * 0.94, height: spec.w * 0.94 }, scene);
-  face.position.y = spec.h + 0.004;
+  face.position.y = (solid ? spec.h : lift) + 0.004;
   face.parent = root;
   face.metadata = { itemId: thing.id };
 
