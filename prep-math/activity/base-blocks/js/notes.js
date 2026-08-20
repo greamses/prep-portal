@@ -15,6 +15,7 @@ import {
   makeNote as makeStickyNote, layoutNote, paintSticky, noteText, editNote,
   PAPERS, MAX_W,
 } from "/utils/components/sticky-note.js";
+import { whenMathDrawn } from "/utils/components/sticky-math.js";
 import { footprint } from "./layout.js";
 
 const B = () => window.BABYLON;
@@ -124,7 +125,7 @@ export function paintNote(thing, parts) {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, W, H);
   g.scale(k, k);
-  paintSticky(g, thing, thing.at || measure(thing).at, {
+  const waiting = paintSticky(g, thing, thing.at || measure(thing).at, {
     width: thing.l * PX_PER_CELL,
     height: thing.w * PX_PER_CELL,
   });
@@ -140,6 +141,19 @@ export function paintNote(thing, parts) {
      `status` is "loaded" by then, so this cannot loop. */
   if (document.fonts && document.fonts.status !== "loaded") {
     document.fonts.ready.then(() => paintNote(thing, parts));
+  }
+
+  /* And again when a formula on it has been set. An equation is drawn as a
+     picture of typeset mathematics, and making that picture is a round trip
+     through an image — so the note is painted with the SOURCE showing and
+     painted again the moment the mathematics arrives. The same one-shot
+     arrangement as the fonts, and it cannot loop: nothing wakes us unless a
+     picture actually landed. */
+  if (waiting) {
+    whenMathDrawn(() => {
+      measure(thing); // a set formula is a different size from its source
+      paintNote(thing, parts);
+    });
   }
 }
 

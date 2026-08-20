@@ -26,6 +26,18 @@
    undo another. Typing is still the browser's own — `runsFromDOM` reads it back
    off the COMPUTED style of each piece of text, which is right whatever
    produced it.
+
+   ── an equation is typed the way a word processor types one ───────────────
+   ALT + = opens an equation where the caret is — the same key a word processor
+   has used for this for twenty years — and so does the x² key on the bar. What
+   you type into it is TeX, shown as you type it, and it is SET the moment you
+   leave it: Enter, Tab, Escape, or a press anywhere else on the paper. A press
+   on a set equation opens it again with its source back, so an equation is
+   never a thing you have to delete and retype to correct.
+
+   Set, it is one element that cannot be typed into, so the caret steps over it
+   and backspace takes the whole of it — an equation is one thing, and half an
+   equation is not a smaller equation.
    ========================================================================== */
 
 import {
@@ -33,6 +45,7 @@ import {
   runsToNodes, runsFromDOM, editNote, noteText, snapSize,
   restyle, toggleOver, runsOver,
 } from "./sticky-note.js";
+import { mathNode } from "./sticky-math.js";
 
 /**
  * @param {object} opts
@@ -59,6 +72,8 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
               title="Slanted" aria-label="Slanted">I</button>
       <button type="button" class="pp-note__key pp-note__key--u" data-do="underline"
               title="Underlined" aria-label="Underlined">U</button>
+      <button type="button" class="pp-note__key pp-note__key--eq" data-do="math"
+              title="Equation (Alt + =)" aria-label="Write an equation">x²</button>
       <i class="pp-note__sep"></i>
       <button type="button" class="pp-note__swatch" data-pick="ink"
               title="Colour of the writing" aria-label="Colour of the writing"
@@ -104,16 +119,50 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
      points at, which changing the writing size has to do. Character offsets
      survive any amount of re-marking, because the words do not move. */
 
-  function offsetOf(container, offset) {
-    const walk = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT);
+  /* What counts as a character, and it must be EXACTLY what `runsFromDOM`
+     counts: the words, one for every line break, and an equation as the whole
+     of its source. The two are the same ruler read from either end — the model
+     counts the runs, this counts the paper — and a pen dresses the wrong words
+     the moment they disagree. */
+  function walkerOver(root) {
+    return document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+      acceptNode(n) {
+        if (n.nodeType === Node.ELEMENT_NODE && n.hasAttribute?.("data-tex")) {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+        const el = n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement;
+        if (el && el.closest && el.closest("[data-tex]")) return NodeFilter.FILTER_REJECT;
+        if (n.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+        return n.tagName === "BR" ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+      },
+    });
+  }
+
+  const lenOf = (node) =>
+    node.nodeType === Node.TEXT_NODE ? node.nodeValue.length
+      : node.hasAttribute?.("data-tex") ? (node.getAttribute("data-tex") || "").length
+      : 1; // a line break is one character, the way the model holds it
+
+  function charsIn(root) {
+    const walk = walkerOver(root);
     let n = 0;
     let node = walk.nextNode();
-    while (node) {
-      if (node === container) return n + offset;
-      n += node.nodeValue.length;
-      node = walk.nextNode();
-    }
+    while (node) { n += lenOf(node); node = walk.nextNode(); }
     return n;
+  }
+
+  /**
+   * Where a point in the paper is, in characters from the start of the note.
+   *
+   * Measured by counting everything BEFORE it rather than by walking to it: a
+   * selection may be anchored to an element and an index of its children, which
+   * a walk over text nodes cannot find at all.
+   */
+  function offsetOf(container, offset) {
+    const r = document.createRange();
+    r.setStart(paper, 0);
+    try { r.setEnd(container, offset); } catch { return charsIn(paper); }
+    return charsIn(r.cloneContents());
   }
 
   function saveSel() {
@@ -125,19 +174,27 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
   function restoreSel(at) {
     if (!at) return;
-    const walk = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT);
+    const walk = walkerOver(paper);
     const range = document.createRange();
     let n = 0;
     let node = walk.nextNode();
     let started = false;
     while (node) {
-      const len = node.nodeValue.length;
+      const len = lenOf(node);
+      const text = node.nodeType === Node.TEXT_NODE;
       if (!started && at.a <= n + len) {
-        range.setStart(node, Math.max(0, at.a - n));
+        /* An equation and a line break are not typed into, so an offset that
+           lands anywhere inside one goes to the near side or the far side of
+           it — there is no "half way through" an equation to point at. */
+        if (text) range.setStart(node, Math.max(0, at.a - n));
+        else if (at.a <= n) range.setStartBefore(node);
+        else range.setStartAfter(node);
         started = true;
       }
       if (started && at.b <= n + len) {
-        range.setEnd(node, Math.max(0, at.b - n));
+        if (text) range.setEnd(node, Math.max(0, at.b - n));
+        else if (at.b <= n) range.setEndBefore(node);
+        else range.setEndAfter(node);
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
@@ -146,6 +203,12 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
       n += len;
       node = walk.nextNode();
     }
+    // past the end of everything: the caret belongs at the end
+    range.selectNodeContents(paper);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
 
   /* ── the pens ───────────────────────────────────────────────────────────── */
@@ -184,6 +247,100 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     underline: (runs, at) => ({ underline: toggleOver(runs, at.a, at.b, "underline") }),
   };
 
+  /* ── equations ──────────────────────────────────────────────────────────── */
+
+  /** The equation being typed, if one is open. */
+  const openEq = () => paper.querySelector("[data-eq]");
+
+  /** Put the caret inside an element (at its end). */
+  function caretIn(el, atEnd = true) {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.collapse(!atEnd);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  function caretAfter(node) {
+    const r = document.createRange();
+    r.setStartAfter(node);
+    r.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  /**
+   * Open an equation where the caret is.
+   *
+   * Anything highlighted becomes its source, so selecting `x^2 + 1` and
+   * pressing the key turns those words into that equation — which is the other
+   * way people expect this to work, and costs nothing to allow.
+   */
+  function insertEquation(tex = "") {
+    setEquation(); // one at a time
+    paper.focus();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !inPaper()) {
+      const r = document.createRange();
+      r.selectNodeContents(paper);
+      r.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    const r = window.getSelection().getRangeAt(0);
+    const picked = String(r.toString() || "").trim();
+    r.deleteContents();
+
+    const box = document.createElement("span");
+    box.className = "pp-note__eqbox";
+    box.setAttribute("data-eq", "1");
+    box.setAttribute("spellcheck", "false");
+    box.textContent = tex || picked;
+    r.insertNode(box);
+    caretIn(box);
+    harvest();
+  }
+
+  /**
+   * Set whatever equation is open — the moment you leave it, as a word
+   * processor does. An empty one was never an equation and simply goes.
+   */
+  function setEquation() {
+    const box = openEq();
+    if (!box) return false;
+    const tex = box.textContent.trim();
+    if (!tex) { box.remove(); harvest(); return true; }
+    const eq = mathNode(tex);
+    box.replaceWith(eq);
+    caretAfter(eq);
+    harvest();
+    return true;
+  }
+
+  /** Open a set equation again, with its source back, to be corrected. */
+  function editEquation(el) {
+    setEquation();
+    const box = document.createElement("span");
+    box.className = "pp-note__eqbox";
+    box.setAttribute("data-eq", "1");
+    box.setAttribute("spellcheck", "false");
+    box.textContent = el.getAttribute("data-tex") || "";
+    el.replaceWith(box);
+    caretIn(box);
+    harvest();
+  }
+
+  /* A press on a set equation opens it; a press anywhere else on the paper
+     closes whichever one was open. Caught on the way down, so the caret lands
+     where the press was rather than inside the equation that just closed. */
+  paper.addEventListener("pointerdown", (e) => {
+    const eq = e.target.closest?.("[data-tex]");
+    if (eq && paper.contains(eq)) { e.preventDefault(); editEquation(eq); return; }
+    if (!e.target.closest?.("[data-eq]")) setEquation();
+  });
+
   /* A press on the bar must not take the caret out of the paper — except on a
      dropdown, which cannot open at all if its own pointerdown is cancelled. */
   bar.addEventListener("pointerdown", (e) => {
@@ -192,6 +349,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   });
   bar.addEventListener("click", (e) => {
     const key = e.target.closest("[data-do]");
+    if (key && key.dataset.do === "math") { closePick(); insertEquation(); return; }
     if (key) { closePick(); dressSelection(DO[key.dataset.do]); return; }
     const picker = e.target.closest("[data-pick]");
     if (picker) openPick(picker.dataset.pick, picker);
@@ -287,6 +445,22 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
   paper.addEventListener("input", harvest);
   paper.addEventListener("keydown", (e) => {
+    /* ALT + = opens an equation — the key a word processor has used for this
+       since before any of these learners were born. */
+    if (e.altKey && (e.key === "=" || e.key === "+")) {
+      e.preventDefault();
+      insertEquation();
+      return;
+    }
+    /* Inside one, the keys that mean "done" set it and stay on the note. Escape
+       especially: it must not close a note you were only halfway through
+       writing an equation on. */
+    if (openEq() && ["Enter", "Tab", "Escape"].includes(e.key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      setEquation();
+      return;
+    }
     if (e.key === "Escape") { e.preventDefault(); close(true); return; }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); close(true); return; }
     if ((e.ctrlKey || e.metaKey) && "biu".includes(e.key.toLowerCase())) {
@@ -343,6 +517,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
 
   function close(commit = true) {
     if (!note) return;
+    setEquation(); // an equation left open is still an equation
     const was = note;
     if (commit) editNote(was, { runs: runsFromDOM(paper) });
     note = null;

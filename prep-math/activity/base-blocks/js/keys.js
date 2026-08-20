@@ -61,6 +61,20 @@ export const SHORTCUTS = [
     ],
   },
   {
+    /* These belong to the note's own paper rather than to the canvas — the
+       editor has them while you are writing on a note — but a learner looking
+       for "how do I write a formula" looks in one list, so they are in it. */
+    name: "Writing on a note",
+    items: [
+      { keys: "Double-tap", act: null, does: "Open a note to write on it" },
+      { keys: "Alt + =", act: null, does: "Write an equation where the caret is" },
+      { keys: "Enter", act: null, does: "Set the equation and carry on writing" },
+      { keys: "Tap it", act: null, does: "Open a set equation again to correct it" },
+      { keys: "Ctrl + B I U", act: null, does: "Bold, slanted, underlined" },
+      { keys: "Esc", act: null, does: "Put the pen down — an empty note is binned" },
+    ],
+  },
+  {
     name: "Getting about",
     items: [
       { keys: "← ↑ → ↓", act: null, does: "Slide the paper under the camera" },

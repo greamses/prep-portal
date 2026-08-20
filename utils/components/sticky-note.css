@@ -184,3 +184,56 @@
   outline: 2px solid var(--accent-secondary, #6fb7e8);
   outline-offset: 1px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EQUATIONS — a formula written in the middle of the words
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The key that opens one, set in the face mathematics is set in. */
+.pp-note__key--eq {
+  font-family: "STIX Two Text", "STIX Two Math", "Cambria Math", serif;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+/* A SET equation: one object in the writing. It cannot be typed into, so it is
+   pressed to be opened again — and it says so by lighting up under the pointer
+   rather than by wearing a border it does not need. */
+.pp-note__eq {
+  display: inline-block;
+  padding: 0 0.1em;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+.pp-note__eq:hover {
+  background: var(--accent-secondary-soft, rgba(111, 183, 232, 0.22));
+}
+/* MathJax never came, so the source is standing in for it. */
+.pp-note__eq.is-source {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.94em;
+  border-bottom: 1px dotted currentColor;
+}
+
+/* An equation being TYPED: plainly a box you are writing source into, so that
+   the moment it is set the change from source to mathematics is obvious. */
+.pp-note__eqbox {
+  display: inline-block;
+  /* An EMPTY one has to be a box you can see and aim a caret at: the moment
+     after Alt + = there is nothing in it yet, and an empty inline element with
+     no size at all is a control that looks like it never opened. */
+  min-width: 1.4em;
+  min-height: 1.25em;
+  line-height: 1.25;
+  vertical-align: baseline;
+  padding: 0 0.25em;
+  background: rgba(20, 80, 140, 0.1);
+  border-bottom: 1px dashed rgba(20, 80, 140, 0.6);
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.94em;
+  white-space: pre-wrap;
+}
+.pp-note__eqbox:focus,
+.pp-note__eqbox:focus-visible { outline: none; }

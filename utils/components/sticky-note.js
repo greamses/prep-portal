@@ -3,10 +3,10 @@
    ----------------------------------------------------------------------------
    A note is paper you write on. This module owns what one IS and how one is
    DRAWN, and knows nothing about where it is being used: it has no imports, no
-   framework, and never touches the page except through a 2D canvas context you
-   hand it. The Manipulatives canvas paints notes into a WebGL texture with it;
-   a plain page can paint one into an ordinary <canvas>; anything that can give
-   it a context can show one.
+   framework beyond its own maths sibling, and never touches the page except
+   through a 2D canvas context you hand it. The Manipulatives canvas paints
+   notes into a WebGL texture with it; a plain page can paint one into an
+   ordinary <canvas>; anything that can give it a context can show one.
 
    The look is .pp-sticky's (components.css): the same six papers, the -2deg
    tilt, the two shadows, the strip of tape. Paper is PAPER — the same pale
@@ -16,7 +16,14 @@
    A note's words are RUNS, not a string, because formatting belongs to a
    stretch of text and not to the whole note:
 
-     run = { text, px, bold, italic, underline, font, ink, mark }
+     run = { text, px, bold, italic, underline, font, ink, mark, tex }
+
+   A run with a `tex` is MATHEMATICS: an equation written in the middle of the
+   words, the way one is on real paper. It is ONE THING — it is never split,
+   never wrapped and never half-formatted, because half an equation is not an
+   equation. Its `text` is the source that was typed, so a note still reads as
+   something everywhere a note is read as text, and js/sticky-math.js turns it
+   into set mathematics wherever there is a MathJax to do it.
 
    `px`, `font`, `ink` and `mark` hold CSS-ready values rather than keys into the
    registries below, so a note is lossless: whatever a browser's own editing
@@ -31,6 +38,8 @@
    out at the size you asked for, wrapped at a maximum width, and the paper is
    cut to the result — WIDER until it reaches that maximum, and TALLER after.
    ========================================================================== */
+
+import { measureMath, mathPicture, mathNode } from "./sticky-math.js";
 
 /* ── registries ───────────────────────────────────────────────────────────── */
 
@@ -112,9 +121,19 @@ export function blankRun(over = {}) {
     font: FONTS[0].css,
     ink: INKS[0].hex,
     mark: null,
+    tex: null,     // set, and this stretch is an equation rather than words
     ...over,
   };
 }
+
+/** One equation, as a run. Its text is the source, so it reads as something. */
+export function mathRun(tex, over = {}) {
+  const src = String(tex || "").trim();
+  return blankRun({ ...over, text: src, tex: src });
+}
+
+/** Is this stretch an equation rather than words? */
+export const isMath = (run) => !!(run && run.tex);
 
 /** The nearest size we offer to a measured one. */
 export function snapSize(px) {
@@ -174,6 +193,10 @@ export function normalise(runs) {
 
 const STYLE_KEYS = ["px", "bold", "italic", "underline", "font", "ink", "mark"];
 export function sameStyle(a, b) {
+  /* Two equations are two equations however alike they are dressed: welded
+     together they would be one formula reading "x+1x+1", which is a different
+     piece of mathematics from the two that were written. */
+  if (isMath(a) || isMath(b)) return false;
   return STYLE_KEYS.every((k) => (a[k] || null) === (b[k] || null));
 }
 
@@ -211,6 +234,12 @@ export function restyle(runs, a, b, patch) {
     const end = at + r.text.length;
     at = end;
     if (end <= a || start >= b) { out.push({ ...r }); continue; }
+
+    /* An equation is dressed WHOLE or not at all. Cutting one at a character
+       offset would leave two runs each holding half a formula, and half a
+       formula does not typeset — so a highlight that touches an equation at
+       all takes the whole of it with it. */
+    if (isMath(r)) { out.push({ ...r, ...patch, tex: r.tex, text: r.text }); continue; }
 
     const pre = Math.max(0, a - start);
     const post = Math.min(r.text.length, Math.max(0, b - start));
@@ -280,6 +309,9 @@ export function layoutNote(note, { maxWidth = MAX_W } = {}) {
      drawn, rather than re-joined with assumed gaps. */
   const pieces = [];
   for (const run of runs) {
+    /* An equation is ONE piece: never broken at a space, never wrapped in the
+       middle of itself. "x + 1" is three words and one formula. */
+    if (isMath(run)) { pieces.push({ run, text: run.text, math: true }); continue; }
     for (const bit of String(run.text).split(/(\n|[^\S\n]+)/)) {
       if (bit === "") continue;
       pieces.push({ run, text: bit, br: bit === "\n", space: /^[^\S\n]+$/.test(bit) });
@@ -289,28 +321,40 @@ export function layoutNote(note, { maxWidth = MAX_W } = {}) {
   /* A line is as tall as the BIGGEST thing written on it, so a heading word in
      the middle of a sentence pushes its own line apart and nothing else. */
   const lines = [];
-  let line = { frags: [], w: 0, px: 0 };
+  let line = { frags: [], w: 0, px: 0, tall: 0 };
   const wrap = () => {
     line.px = line.px || SIZES[DEFAULT_SIZE];
-    line.h = line.px * LINE;
+    /* A line is as tall as the biggest thing on it — and a formula with a
+       fraction in it is taller than the writing it is set at, so it pushes its
+       own line apart rather than being clipped by the line above. */
+    line.h = Math.max(line.px * LINE, line.tall * 1.12);
     lines.push(line);
-    line = { frags: [], w: 0, px: 0 };
+    line = { frags: [], w: 0, px: 0, tall: 0 };
   };
 
   for (const p of pieces) {
     if (p.br) { wrap(); continue; }
     const px = pxOf(p.run);
     let w;
-    if (g) { g.font = fontOf(p.run); w = g.measureText(p.text).width; }
-    else w = p.text.length * px * 0.55;
+    let box = null;
+    if (p.math) {
+      box = measureMath(p.run.tex, px);
+      w = box.w;
+    } else if (g) {
+      g.font = fontOf(p.run);
+      w = g.measureText(p.text).width;
+    } else {
+      w = p.text.length * px * 0.55;
+    }
     // a space that would push the line over is simply where the line ends
     if (line.w + w > room && line.frags.length) {
       if (p.space) { wrap(); continue; }
       wrap();
     }
-    line.frags.push({ run: p.run, text: p.text, w, px });
+    line.frags.push({ run: p.run, text: p.text, w, px, math: !!p.math, box });
     line.w += w;
     line.px = Math.max(line.px, px);
+    if (box) line.tall = Math.max(line.tall, box.h);
   }
   wrap();
 
@@ -341,6 +385,9 @@ export function layoutNote(note, { maxWidth = MAX_W } = {}) {
  *
  * `tilt` is the -2deg the paper is stuck on at. A caller that has already
  * rotated its own surface passes 0.
+ *
+ * Returns true when a formula on the note is still being made into a picture,
+ * so the caller knows to paint again once it is.
  */
 export function paintSticky(g, note, layout, { width, height, tilt = TILT, shadow = true } = {}) {
   const W = width ?? layout.width;
@@ -390,13 +437,22 @@ export function paintSticky(g, note, layout, { width, height, tilt = TILT, shado
   g.strokeRect(-tapeW / 2, -tapeH * 0.55, tapeW, tapeH);
   g.restore();
 
-  paintRuns(g, layout, -pw / 2, -ph / 2);
+  const waiting = paintRuns(g, layout, -pw / 2, -ph / 2);
   g.restore();
+  return waiting;
 }
 
-/** The writing itself, from the top-left corner of the paper. */
+/**
+ * The writing itself, from the top-left corner of the paper.
+ *
+ * Returns true when something on the note is not drawn yet — a formula whose
+ * picture is still being made. The caller paints again when it is told the
+ * picture has arrived, exactly the way a note is painted again when the web
+ * fonts turn up.
+ */
 export function paintRuns(g, layout, x0, y0) {
   let y = y0 + PAD_TOP;
+  let waiting = false;
 
   for (const line of layout.lines) {
     let x = x0 + PAD_X;
@@ -404,6 +460,13 @@ export function paintRuns(g, layout, x0, y0) {
     for (const frag of line.frags) {
       const run = frag.run;
       const px = frag.px;
+
+      if (frag.math) {
+        if (!paintMath(g, frag, x, mid)) waiting = true;
+        x += frag.w;
+        continue;
+      }
+
       g.font = fontOf(run);
 
       /* The highlighter goes down FIRST and behind — it is a pen drawn over the
@@ -429,6 +492,41 @@ export function paintRuns(g, layout, x0, y0) {
     }
     y += line.h;
   }
+  return waiting;
+}
+
+/**
+ * One equation, drawn where the words would have been.
+ *
+ * It sits on the line's BASELINE rather than in the middle of it: a formula
+ * that hangs below the line (a fraction, a y with a tail) has to hang below the
+ * words too, or the note reads as though the mathematics were floating. The
+ * baseline of a line drawn "middle" is a shade under a third of the writing
+ * size below the middle, which is close enough for every face here.
+ *
+ * Returns false while the picture is still being made — the source text is
+ * drawn in the meantime, so the note always says what was typed.
+ */
+function paintMath(g, frag, x, mid) {
+  const px = frag.px;
+  const box = frag.box || { w: frag.w, h: px * 1.2, depth: px * 0.2 };
+  const base = mid + px * 0.32;
+  const pic = mathPicture(frag.run.tex, px, frag.run.ink || INKS[0].hex);
+
+  if (frag.run.mark) {
+    g.fillStyle = frag.run.mark;
+    g.fillRect(x, base - (box.h - box.depth), frag.w, box.h);
+  }
+  if (pic && pic.img) {
+    g.drawImage(pic.img, x, base - (box.h - box.depth), box.w, box.h);
+    return true;
+  }
+  /* No picture yet, or no MathJax at all: the source, in the maths face, so it
+     is legible as mathematics and obviously the thing that was typed. */
+  g.font = `${WEIGHT_PLAIN} ${px}px ${FONTS[5].css}`;
+  g.fillStyle = frag.run.ink || INKS[0].hex;
+  g.fillText(frag.text, x, mid);
+  return false;
 }
 
 /* ── the bridge to editable HTML ──────────────────────────────────────────── */
@@ -445,6 +543,17 @@ export function paintRuns(g, layout, x0, y0) {
 export function runsToNodes(runs, doc = document) {
   const frag = doc.createDocumentFragment();
   for (const r of runs || []) {
+    /* An equation goes in as ONE element that cannot be typed into: the caret
+       steps over it, backspace takes the whole of it, and a press on it opens
+       it to be edited — which is what a word processor does with one. */
+    if (isMath(r)) {
+      const eq = mathNode(r.tex, doc);
+      eq.style.fontSize = (r.px || SIZES[DEFAULT_SIZE]) + "px";
+      eq.style.color = r.ink || INKS[0].hex;
+      if (r.mark) eq.style.backgroundColor = r.mark;
+      frag.appendChild(eq);
+      continue;
+    }
     const lines = String(r.text).split("\n");
     lines.forEach((line, i) => {
       if (i) frag.appendChild(doc.createElement("br"));
@@ -490,12 +599,37 @@ const HEX = (css) => {
  */
 export function runsFromDOM(root) {
   const runs = [];
-  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  /* Everything INSIDE an equation is refused: it is a picture of mathematics
+     and not writing, and reading its paths back would put a page of SVG into
+     the note. The equation element itself is still visited, and what it holds
+     is the source it was typeset from. */
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+    acceptNode(node) {
+      if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute?.("data-tex")) {
+        return NodeFilter.FILTER_ACCEPT;
+      }
+      const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      if (el && el.closest && el.closest("[data-tex]")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
   let node = walk.nextNode();
   while (node) {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const tag = node.tagName;
-      if (tag === "BR") runs.push(blankRun({ text: "\n" }));
+      if (node.hasAttribute?.("data-tex")) {
+        const cs = getComputedStyle(node);
+        runs.push(mathRun(node.getAttribute("data-tex"), {
+          px: snapSize(parseFloat(cs.fontSize) || SIZES[DEFAULT_SIZE]),
+          ink: HEX(cs.color) || INKS[0].hex,
+          /* The highlighter is read off the equation's OWN style and never off
+             the computed one: an equation lights up under the pointer to say it
+             can be opened, and a note read back while the pointer happened to
+             be over it would take that hover for a highlighter and keep it. */
+          mark: HEX(node.style.backgroundColor) || null,
+        }));
+      }
+      else if (tag === "BR") runs.push(blankRun({ text: "\n" }));
       else if (tag === "DIV" || tag === "P") {
         // a block the editor started: everything before it ended a line
         if (runs.length && !/\n$/.test(runs[runs.length - 1].text)) {
