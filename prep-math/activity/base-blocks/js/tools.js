@@ -115,6 +115,10 @@ export const GROUPS = [
     id: "grids",
     label: "Charts & grids",
     icon: "table",
+    /* This family shows TWO pictures on the door. The number card is not a
+       chart and reads nothing like one, and behind a single picture of a
+       place-value chart nobody ever found it. */
+    faces: ["place-value", "number-card"],
     blurb: "Boards to lay the blocks on, and tables to read a fact off.",
     tools: [
       {

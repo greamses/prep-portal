@@ -182,11 +182,15 @@ export function mathPicture(tex, px, ink) {
  * Falls back to the source in a monospace box, which is both honest and still
  * editable — the note says what the learner typed either way.
  */
-export function mathNode(tex, doc = document) {
+export function mathNode(tex, doc = document, src = null) {
   const span = doc.createElement("span");
   span.className = "pp-note__eq";
   span.setAttribute("contenteditable", "false");
   span.setAttribute("data-tex", String(tex));
+  /* What the learner actually TYPED, when that was not TeX — kept beside the
+     TeX so opening the equation again gives back their own writing rather than
+     the \frac{}{} it was turned into. See utils/components/math-linear.js. */
+  if (src != null && String(src) !== String(tex)) span.setAttribute("data-src", String(src));
   span.setAttribute("title", "Tap to edit this equation");
   if (mathReady()) {
     try {

@@ -30,10 +30,18 @@
    ── an equation is typed the way a word processor types one ───────────────
    ALT + = opens an equation where the caret is — the same key a word processor
    has used for this for twenty years — and so does the x² key on the bar. What
-   you type into it is TeX, shown as you type it, and it is SET the moment you
-   leave it: Enter, Tab, Escape, or a press anywhere else on the paper. A press
-   on a set equation opens it again with its source back, so an equation is
-   never a thing you have to delete and retype to correct.
+   you type into it is LINEAR MATHEMATICS: `1/2`, `x^(2n+1)`, `sqrt(b^2-4ac)`,
+   said the way it would be said out loud. It is translated to TeX and SET the
+   moment you leave it — Enter, Tab, Escape, or a press anywhere else on the
+   paper — and what you typed is kept beside the TeX, so a press on a set
+   equation opens it again with YOUR OWN WRITING back rather than the
+   \frac{}{} it was turned into. Nothing has to be deleted and retyped to be
+   corrected. Raw TeX still goes in untouched, for anyone who prefers it.
+
+   The `?` key beside it opens the card of signs: every shape and symbol that
+   can be typed, each SET by the same typesetter from the same translation, so
+   the card cannot describe something the parser does not do. Pressing a row
+   types its source into the equation.
 
    Set, it is one element that cannot be typed into, so the caret steps over it
    and backspace takes the whole of it — an equation is one thing, and half an
@@ -46,6 +54,7 @@ import {
   restyle, toggleOver, runsOver,
 } from "./sticky-note.js";
 import { mathNode } from "./sticky-math.js";
+import { toTeX, SIGNS } from "./math-linear.js";
 
 /**
  * @param {object} opts
@@ -74,6 +83,9 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
               title="Underlined" aria-label="Underlined">U</button>
       <button type="button" class="pp-note__key pp-note__key--eq" data-do="math"
               title="Equation (Alt + =)" aria-label="Write an equation">x²</button>
+      <button type="button" class="pp-note__key pp-note__key--signs" data-do="signs"
+              title="Every sign you can type" aria-label="Every sign you can type"
+              aria-haspopup="true" aria-expanded="false">?</button>
       <i class="pp-note__sep"></i>
       <button type="button" class="pp-note__swatch" data-pick="ink"
               title="Colour of the writing" aria-label="Colour of the writing"
@@ -86,6 +98,8 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
               aria-haspopup="true"><b></b></button>
     </div>
     <div class="pp-note__pick" hidden></div>
+    <div class="pp-note__signs" hidden role="dialog"
+         aria-label="Every sign you can type in an equation"></div>
     <div class="pp-note__paper" contenteditable="true" role="textbox" aria-multiline="true"
          aria-label="What the note says" spellcheck="true"></div>`;
   host.appendChild(root);
@@ -306,27 +320,32 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   /**
    * Set whatever equation is open — the moment you leave it, as a word
    * processor does. An empty one was never an equation and simply goes.
+   *
+   * What was typed is TRANSLATED on the way in (see math-linear.js), so `1/2`
+   * becomes a fraction and `x^(2n+1)` an index of more than one character —
+   * and it is kept beside the TeX, so opening the equation again gives back
+   * the learner's own writing rather than the \frac{}{} we made of it.
    */
   function setEquation() {
     const box = openEq();
     if (!box) return false;
-    const tex = box.textContent.trim();
-    if (!tex) { box.remove(); harvest(); return true; }
-    const eq = mathNode(tex);
+    const typed = box.textContent.trim();
+    if (!typed) { box.remove(); harvest(); return true; }
+    const eq = mathNode(toTeX(typed), document, typed);
     box.replaceWith(eq);
     caretAfter(eq);
     harvest();
     return true;
   }
 
-  /** Open a set equation again, with its source back, to be corrected. */
+  /** Open a set equation again, with what was typed back, to be corrected. */
   function editEquation(el) {
     setEquation();
     const box = document.createElement("span");
     box.className = "pp-note__eqbox";
     box.setAttribute("data-eq", "1");
     box.setAttribute("spellcheck", "false");
-    box.textContent = el.getAttribute("data-tex") || "";
+    box.textContent = el.getAttribute("data-src") || el.getAttribute("data-tex") || "";
     el.replaceWith(box);
     caretIn(box);
     harvest();
@@ -349,11 +368,100 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
   });
   bar.addEventListener("click", (e) => {
     const key = e.target.closest("[data-do]");
-    if (key && key.dataset.do === "math") { closePick(); insertEquation(); return; }
+    if (key && key.dataset.do === "signs") { closePick(); toggleSigns(); return; }
+    if (key && key.dataset.do === "math") { closePick(); closeSigns(); insertEquation(); return; }
     if (key) { closePick(); dressSelection(DO[key.dataset.do]); return; }
     const picker = e.target.closest("[data-pick]");
-    if (picker) openPick(picker.dataset.pick, picker);
+    if (picker) { closeSigns(); openPick(picker.dataset.pick, picker); }
   });
+
+  /* ── the card of signs ──────────────────────────────────────────────────── */
+
+  /* What may be typed into an equation, shown as the thing it produces rather
+     than described — every row is SET by the same typesetter that will set it
+     on the note, from the same translation, so the card cannot drift out of
+     step with what the parser actually does. Pressing a row types it for you,
+     which is what makes it a palette and not only a list. */
+  const signsEl = root.querySelector(".pp-note__signs");
+  const signsKey = root.querySelector("[data-do='signs']");
+  let signsBuilt = false;
+
+  function buildSigns() {
+    if (signsBuilt) return;
+    signsBuilt = true;
+    for (const group of SIGNS) {
+      const box = document.createElement("div");
+      box.className = "pp-note__signset";
+      const head = document.createElement("p");
+      head.className = "pp-note__signhead";
+      head.innerHTML = `<b>${group.name}</b><span>${group.hint}</span>`;
+      box.appendChild(head);
+
+      const list = document.createElement("div");
+      list.className = "pp-note__signrows";
+      for (const item of group.items) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "pp-note__sign";
+        row.dataset.type = item.type;
+        row.title = item.says ? `${item.says} — type ${item.type}` : `Type ${item.type}`;
+
+        const typed = document.createElement("code");
+        typed.textContent = item.type;
+        const shows = mathNode(toTeX(item.type));
+        shows.removeAttribute("title");
+        shows.classList.add("pp-note__signeq");
+
+        row.append(typed, shows);
+        list.appendChild(row);
+      }
+      box.appendChild(list);
+      signsEl.appendChild(box);
+    }
+  }
+
+  /* A press inside the card must not put the caret down: the equation being
+     written is the whole reason the card is open. */
+  signsEl.addEventListener("pointerdown", (e) => e.preventDefault());
+  signsEl.addEventListener("click", (e) => {
+    const row = e.target.closest("[data-type]");
+    if (!row) return;
+    typeIntoEquation(row.dataset.type);
+  });
+
+  /**
+   * Put a sign into the equation being written — opening one first if none is.
+   *
+   * Typed as the SOURCE, not as the answer: what lands in the box is `1/2`,
+   * the same thing the learner would have typed, so it can be edited, built on
+   * and learnt from. A palette that pasted \frac{1}{2} would teach nothing.
+   */
+  function typeIntoEquation(text) {
+    if (!openEq()) insertEquation();
+    const box = openEq();
+    if (!box) return;
+    paper.focus();
+    const sel = window.getSelection();
+    let r = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    if (!r || !box.contains(r.commonAncestorContainer)) { caretIn(box); r = sel.getRangeAt(0); }
+    r.deleteContents();
+    const node = document.createTextNode(text);
+    r.insertNode(node);
+    caretAfter(node);
+    harvest();
+  }
+
+  function closeSigns() {
+    signsEl.hidden = true;
+    signsKey.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleSigns() {
+    if (!signsEl.hidden) { closeSigns(); return; }
+    buildSigns();
+    signsEl.hidden = false;
+    signsKey.setAttribute("aria-expanded", "true");
+  }
 
   /* ── the two dropdowns ──────────────────────────────────────────────────── */
 
@@ -501,6 +609,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     note = thing;
     root.hidden = false;
     closePick();
+    closeSigns();
     paper.replaceChildren(runsToNodes(note.runs));
     swatch("ink").style.background = note.runs?.[0]?.ink || INKS[0].hex;
     swatch("mark").style.background = note.runs?.[0]?.mark || "transparent";
@@ -523,6 +632,7 @@ export function createStickyEditor({ host, onInput = () => {}, onDone = () => {}
     note = null;
     root.hidden = true;
     closePick();
+    closeSigns();
     onDone(was, { empty: !noteText(was).trim() });
   }
 

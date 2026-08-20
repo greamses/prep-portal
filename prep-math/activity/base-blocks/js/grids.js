@@ -452,6 +452,15 @@ function drawTable(g, W, H, thing, opts, c) {
   const headFill = tint(cssVar("--accent-primary", "#f4c95d"), 0.85);
   const focusFill = tint(cssVar("--accent-secondary", "#6fb7e8"), 0.35);
   const answerFill = tint(cssVar("--accent-success", "#7cc47c"), 0.6);
+  /* The swept array is a WEAKER wash than a tapped row, because it covers a
+     whole rectangle rather than a line and a strong fill over thirty squares
+     would drown the numbers written in them. */
+  const arrayFill = tint(cssVar("--accent-secondary", "#6fb7e8"), 0.18);
+  const headLit = tint(cssVar("--accent-primary", "#f4c95d"), 0.55);
+
+  /* The rectangle swept out of the corner, if one is: rows 1…r by columns
+     1…c, with the product standing in the far corner of it. */
+  const arr = thing.array;
 
   for (let r = 0; r < n; r++) {
     for (let col = 0; col < n; col++) {
@@ -459,10 +468,19 @@ function drawTable(g, W, H, thing, opts, c) {
       const y = r * ch;
       const isHead = r === 0 || col === 0;
       const lit = focus && (r === focus.r || col === focus.c) && !isHead;
-      const answer = focus && r === focus.r && col === focus.c;
+      const answer = arr
+        ? (r === arr.r && col === arr.c)
+        : focus && r === focus.r && col === focus.c;
+      const inArray = arr && !isHead && r <= arr.r && col <= arr.c;
+      /* The two headings the array is counting are darkened along its edges —
+         they are the two factors, and an array whose factors are not marked is
+         a shaded rectangle you have to count to read. */
+      const headFactor = arr && isHead
+        && ((r === 0 && col >= 1 && col <= arr.c) || (col === 0 && r >= 1 && r <= arr.r));
 
-      if (isHead) { g.fillStyle = headFill; g.fillRect(x, y, cw, ch); }
+      if (isHead) { g.fillStyle = headFactor ? headLit : headFill; g.fillRect(x, y, cw, ch); }
       else if (answer) { g.fillStyle = answerFill; g.fillRect(x, y, cw, ch); }
+      else if (inArray) { g.fillStyle = arrayFill; g.fillRect(x, y, cw, ch); }
       else if (lit) { g.fillStyle = focusFill; g.fillRect(x, y, cw, ch); }
 
       /* Written in the working base, headings and products alike — in base five
@@ -489,6 +507,14 @@ function drawTable(g, W, H, thing, opts, c) {
     g.moveTo(0, i * ch); g.lineTo(W, i * ch);
   }
   g.stroke();
+
+  /* One line round the whole rectangle. The wash says which squares are in it;
+     this says they are ONE THING — which is the whole point of an array. */
+  if (arr) {
+    g.strokeStyle = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.95);
+    g.lineWidth = 6;
+    g.strokeRect(cw, ch, arr.c * cw, arr.r * ch);
+  }
 
   g.strokeStyle = rgba(c.ink, 0.6);
   g.lineWidth = 5;
@@ -733,6 +759,11 @@ export function tapBoard(thing, uv, base) {
   const r = Math.floor((1 - uv.y) * n);
   if (r < 0 || col < 0 || r >= n || col >= n) return { changed: false };
 
+  /* A tap goes back to reading a line. Whatever rectangle was swept is put
+     away first — the two are different ways of asking the same table a
+     question, and both at once is neither. */
+  thing.array = null;
+
   if (r === 0 || col === 0) {
     // a header taps the whole line into focus
     thing.focus = r === 0 && col === 0 ? null : { r: r || null, c: col || null };
@@ -751,6 +782,55 @@ export function tapBoard(thing, uv, base) {
 }
 
 /** Blank a cell out for practice (or bring it back). */
+/* ── sweeping an array out of the corner ──────────────────────────────────── */
+
+/** Which square of a table this point is in — the headings counting as 0. */
+export function cellOf(thing, uv) {
+  const n = maxOf(thing) + 1;
+  const col = Math.floor(uv.x * n);
+  const r = Math.floor((1 - uv.y) * n);
+  if (r < 0 || col < 0 || r >= n || col >= n) return null;
+  return { r, col, n };
+}
+
+/**
+ * Drag across the table and pull a rectangle out of its corner.
+ *
+ * A multiplication grid is a picture of every array there is, and the fact
+ * that 3 × 4 is twelve is the fact that a rectangle three rows deep and four
+ * columns across holds twelve squares. Tapping a cell says the fact; sweeping
+ * the rectangle SHOWS it, which is the thing a grid on paper cannot do.
+ *
+ * It is always anchored at the corner, whichever square the finger went down
+ * on: an array is r by c counted from one, and a rectangle floating in the
+ * middle of the table is not a multiplication of anything.
+ */
+export function sweepArray(thing, uv, base) {
+  const hit = cellOf(thing, uv);
+  if (!hit) return { changed: false };
+  const r = Math.max(1, Math.min(hit.n - 1, hit.r));
+  const c = Math.max(1, Math.min(hit.n - 1, hit.col));
+  const was = thing.array;
+  if (was && was.r === r && was.c === c) return { changed: false };
+
+  thing.array = { r, c };
+  thing.focus = null; // the rectangle is the highlight now
+  const b = thing.base || base || 10;
+  const product = r * c;
+  const tail = b === 10 ? "" : ` — ${product} in tens.`;
+  return {
+    changed: true,
+    message: `${toBase(r, b)} × ${toBase(c, b)} = ${toBase(product, b)}${tail}`,
+  };
+}
+
+/** Put the rectangle away. */
+export function clearArray(thing) {
+  if (!thing || !thing.array) return false;
+  thing.array = null;
+  return true;
+}
+
 export function toggleCell(thing, uv) {
   if (thing.variant === "place") return false;
   const n = maxOf(thing) + 1;

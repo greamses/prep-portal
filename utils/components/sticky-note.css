@@ -237,3 +237,101 @@
 }
 .pp-note__eqbox:focus,
 .pp-note__eqbox:focus-visible { outline: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CARD OF SIGNS
+   Everything that may be typed into an equation, each row showing the source
+   beside the thing it sets as. It hangs under the bar like the colour strip,
+   but it is a CARD and not a strip: there is too much of it to be a row, and
+   a learner reads it rather than picks from it once.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pp-note__key--signs { font-weight: 700; }
+
+.pp-note__signs {
+  position: absolute;
+  top: 2.1rem;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  max-height: 17rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.55rem 0.6rem 0.7rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.14));
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 10px 26px rgba(20, 19, 15, 0.24);
+  color: var(--ink, #2a2723);
+}
+.pp-note__signs[hidden] { display: none; }
+
+.pp-note__signset + .pp-note__signset { margin-top: 0.7rem; }
+
+.pp-note__signhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0 0 0.35rem;
+  font-family: var(--font-mono, monospace);
+  line-height: 1.35;
+}
+.pp-note__signhead b {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pp-note__signhead span {
+  font-size: 0.64rem;
+  color: var(--text-secondary, rgba(20, 19, 15, 0.62));
+}
+
+.pp-note__signrows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  /* a wide gap BETWEEN the columns: each row is a pair that has to read as a
+     pair, and with the columns close together the answer in one column sits
+     next to the source in the next and the two read as one row */
+  gap: 0.22rem 1.1rem;
+}
+
+/* One row: what you TYPE on the left, what it BECOMES on the right, with the
+   arrow between them implied by the gap rather than drawn — the two columns
+   already read as before and after. */
+.pp-note__sign {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  padding: 0.2rem 0.36rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.pp-note__sign:hover {
+  background: var(--surface-secondary, rgba(20, 19, 15, 0.06));
+  border-color: var(--border-color, rgba(20, 19, 15, 0.14));
+}
+.pp-note__sign:focus-visible {
+  outline: 2px solid var(--accent-secondary, #6fb7e8);
+  outline-offset: 1px;
+}
+.pp-note__sign code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  color: var(--text-secondary, rgba(20, 19, 15, 0.7));
+  white-space: nowrap;
+}
+/* the set mathematics: never a pointer target of its own, and never lit up on
+   hover the way a set equation in the writing is — here it is a picture of an
+   answer, not a thing to open */
+.pp-note__signeq {
+  cursor: pointer;
+  pointer-events: none;
+  font-size: 0.82rem;
+}
+.pp-note__signeq:hover { background: none; }

@@ -30,7 +30,7 @@ import { ICON } from "./icons.js";
 import { occupancy, findSpot, mark, arrange } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue, setAbacusValue, worksInBase } from "./abacus.js";
 import {
-  makeBoard, tapBoard, tapPlace, toggleCell,
+  makeBoard, tapBoard, tapPlace, toggleCell, sweepArray,
   hitPlace, moveCounter, dropCounter, counterColour,
 } from "./grids.js";
 import { createDotGhost } from "./dots.js";
@@ -435,7 +435,12 @@ async function bootCanvas() {
       },
       onFacePress: (id, uv) => {
         const thing = store.things.find((t) => t.id === id);
-        if (!thing || thing.variant !== "place") return null;
+        if (!thing) return null;
+        /* A press on a times table may be the start of sweeping an array out
+           of its corner. It asks to be TRACKED, so the pointer tells it which
+           square the finger is over rather than only where it is on screen. */
+        if (thing.variant === "multiply") return { thingId: id, track: true, array: true };
+        if (thing.variant !== "place") return null;
         const hit = hitPlace(thing, uv);
         // the tray always has a counter to take; a column only where one is
         const from = hit.zone === "tray" ? null
@@ -445,8 +450,23 @@ async function bootCanvas() {
         ghost.show(counterColour(thing, hit.col));
         return { thingId: id, from };
       },
-      onFaceDragMove: (token, x, y) => ghost.move(x, y),
+      onFaceDragMove: (token, x, y, uv) => {
+        /* Sweeping an array: the rectangle follows the finger, and the fact is
+           said as it goes, so the numbers and the shape are read together. One
+           snapshot for the WHOLE sweep, taken at the first square — a drag that
+           passed over thirty squares is one change, not thirty. */
+        if (token.array) {
+          const thing = store.things.find((t) => t.id === token.thingId);
+          if (!thing || !uv) return;
+          if (!token.began) { snapshot(); token.began = true; }
+          const done = sweepArray(thing, uv, store.base);
+          if (done.changed) { say(done.message, "ok"); emit(); }
+          return;
+        }
+        ghost.move(x, y);
+      },
       onFaceDrop: (token, targetId, uv) => {
+        if (token.array) return; // the sweep already put the rectangle where it goes
         ghost.hide();
         const thing = store.things.find((t) => t.id === token.thingId);
         if (!thing) return;
@@ -595,7 +615,11 @@ async function bootCanvas() {
        the page — a harness can only assert on what it can see. Opened with
        ?debug so it is never there in a lesson. */
     if (location.search.includes("debug")) {
-      window.__bb = { store, valueOf, view };
+      /* `ctx` is here so a harness can project a point on the canvas to a
+         screen pixel and drive the REAL pointer at it — which is the only way
+         to test anything drawn into a texture, an array swept out of a times
+         table included. */
+      window.__bb = { store, valueOf, view, ctx };
     }
 
     veilOff();

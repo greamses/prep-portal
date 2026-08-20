@@ -290,7 +290,15 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     if (state.face) {
       const f = state.face;
       if (!f.moved && Math.hypot(pt.x - f.x0, pt.y - f.y0) > TAP_SLOP) f.moved = true;
-      if (f.moved) onFaceDragMove(f.token, e.clientX, e.clientY);
+      if (f.moved) {
+        /* A drag that is going somewhere ON the face — sweeping an array out
+           of a table — needs the SQUARE under the finger and not the screen
+           point, so it is picked here. Only for a token that asked for it: a
+           counter being carried about only needs to know where the ghost goes,
+           and a ray cast every pointermove for nothing is a ray cast wasted. */
+        const uv = f.token && f.token.track ? faceUV(pt) : null;
+        onFaceDragMove(f.token, e.clientX, e.clientY, uv);
+      }
       return;
     }
     if (state.sweep) {
@@ -332,6 +340,12 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     const hit = pickAny(pt.x, pt.y, isFace);
     const uv = hit ? hit.getTextureCoordinates() : null;
     onFaceDrop(f.token, uv ? hit.pickedMesh.metadata.itemId : null, uv);
+  }
+
+  /** The point on a board's face under this screen point, if there is one. */
+  function faceUV(pt) {
+    const hit = pickAny(pt.x, pt.y, isFace);
+    return hit ? hit.getTextureCoordinates() : null;
   }
 
   canvas.addEventListener("pointerdown", onDown);

@@ -27,27 +27,46 @@ const COUNTS = ["no", "one", "two", "three", "four", "five", "six", "seven",
 const spell = (n) => COUNTS[n] || String(n);
 
 export function buildShelf(root, onOpen) {
-  /* One picture from each family — taken from the registry, so a family added
-     to tools.js shows up here instead of being quietly left off the door. The
-     face of a family is its first tool unless it names another. */
-  const strip = GROUPS.map((g) => toolById(g.face || g.tools[0]?.id))
+  /* The pictures across the door, taken from the registry so a family added to
+     tools.js shows up here instead of being quietly left off. A family shows
+     its first tool unless it names another with `face`, or several with
+     `faces` — which is how the number card gets onto the door beside the chart
+     it shares a family with, rather than living four presses deep in the dock
+     where nobody finds it. */
+  const strip = GROUPS
+    .flatMap((g) => (g.faces || [g.face || g.tools[0]?.id]))
+    .map(toolById)
     .filter(Boolean)
-    .map((t) => `<span class="bb-card__pic">${t.art()}</span>`)
+    .map((t) => `<span class="bb-card__pic" title="${t.label}">${t.art()}</span>`)
     .join("");
 
+  /* Dressed as every other card the site offers a thing on — the receipt paper,
+     the sticky tag, the meta line and the read-more of the games and blogs
+     grids (/blogs/css/blog.css). One card rather than a grid of them, because
+     choosing which manipulative happens inside the canvas and not out here. */
   root.innerHTML = `
-    <button class="bb-card bb-card--solo" type="button" data-tool="${DOOR}">
-      <span class="bb-card__art bb-card__art--strip">${strip}</span>
-      <span class="bb-card__body">
-        <span class="bb-card__title">Open the workbench</span>
-        <span class="bb-card__blurb">
+    <button class="science-card pp-receipt science-card--p3 bb-door" type="button"
+            data-tool="${DOOR}">
+      <span class="card-inner pp-receipt__paper">
+        <span class="bb-card__art--strip">${strip}</span>
+        <span class="card-badges">
+          <span class="pp-sticky pp-sticky--c3">Mathematics</span>
+          <span class="pp-pill pp-pill--static">${ICON.grid}<span>One canvas</span></span>
+        </span>
+        <span class="card-meta">
+          <span>${ICON.blocks} ${spell(TOOLS.length)} things</span>
+          <span>${ICON.flat} 2D and 3D</span>
+        </span>
+        <span class="card-title">Open the workbench</span>
+        <span class="card-excerpt">
           ${GROUPS.map((g) => g.label).join(" · ")} — ${spell(TOOLS.length)} things on
           one endless sheet of squared paper. Blocks to split and trade in any base,
-          three counting frames, algebra tiles and cubes, and charts to stand the
-          blocks on. Everything is in the rail down the side once you are in.
+          three counting frames, algebra tiles and cubes, charts to stand the blocks
+          on, and a card that says what the canvas comes to. Everything is in the
+          rail down the side once you are in.
         </span>
+        <span class="read-more">Open the canvas ${ICON.chevron}</span>
       </span>
-      <span class="bb-card__go">Open the canvas ${ICON.chevron}</span>
     </button>`;
 
   root.addEventListener("click", (e) => {

@@ -122,14 +122,15 @@ export function blankRun(over = {}) {
     ink: INKS[0].hex,
     mark: null,
     tex: null,     // set, and this stretch is an equation rather than words
+    src: null,     // what was TYPED, when that was not the TeX — see mathNode
     ...over,
   };
 }
 
 /** One equation, as a run. Its text is the source, so it reads as something. */
 export function mathRun(tex, over = {}) {
-  const src = String(tex || "").trim();
-  return blankRun({ ...over, text: src, tex: src });
+  const body = String(tex || "").trim();
+  return blankRun({ ...over, text: body, tex: body });
 }
 
 /** Is this stretch an equation rather than words? */
@@ -547,7 +548,7 @@ export function runsToNodes(runs, doc = document) {
        steps over it, backspace takes the whole of it, and a press on it opens
        it to be edited — which is what a word processor does with one. */
     if (isMath(r)) {
-      const eq = mathNode(r.tex, doc);
+      const eq = mathNode(r.tex, doc, r.src || null);
       eq.style.fontSize = (r.px || SIZES[DEFAULT_SIZE]) + "px";
       eq.style.color = r.ink || INKS[0].hex;
       if (r.mark) eq.style.backgroundColor = r.mark;
@@ -620,6 +621,8 @@ export function runsFromDOM(root) {
       if (node.hasAttribute?.("data-tex")) {
         const cs = getComputedStyle(node);
         runs.push(mathRun(node.getAttribute("data-tex"), {
+          // what was typed, when that was not the TeX itself — see mathNode
+          src: node.getAttribute("data-src") || null,
           px: snapSize(parseFloat(cs.fontSize) || SIZES[DEFAULT_SIZE]),
           ink: HEX(cs.color) || INKS[0].hex,
           /* The highlighter is read off the equation's OWN style and never off
