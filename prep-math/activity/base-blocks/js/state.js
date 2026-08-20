@@ -29,6 +29,9 @@ export const store = {
   snap: { grid: false, side: true },
   seq: 1,
   history: [],
+  /* Stepped back, and not yet stepped forward again. Cleared by any NEW change,
+     because at that moment the way forward is a way that no longer exists. */
+  future: [],
   message: null, // { text, kind } — one line of feedback for the HUD
 };
 
@@ -84,15 +87,32 @@ export function totalUnits(blocks = store.blocks) {
 
 /* ── undo ─────────────────────────────────────────────────────────────────── */
 
-export function snapshot() {
-  store.history.push({
+/** Everything that can be stepped back to, copied deeply enough to be safe. */
+function capture() {
+  return {
     base: store.base,
     seq: store.seq,
     blocks: store.blocks.map((b) => ({ ...b })),
     things: store.things.map((t) => clone(t)),
     selection: [...store.selection],
-  });
+  };
+}
+
+function restore(s) {
+  store.base = s.base;
+  store.seq = s.seq;
+  store.blocks = s.blocks;
+  store.things = s.things;
+  const live = new Set(items().map((b) => b.id));
+  store.selection = new Set(s.selection.filter((id) => live.has(id)));
+}
+
+export function snapshot() {
+  store.history.push(capture());
   if (store.history.length > CFG.undoDepth) store.history.shift();
+  /* A new change writes over the future. You cannot step forward into a canvas
+     that was only ever reached from a past you have just left. */
+  store.future.length = 0;
 }
 
 /* Things carry nested state (an abacus's rods, a grid's hidden cells) that a
@@ -110,15 +130,28 @@ function clone(t) {
 export function undo() {
   const s = store.history.pop();
   if (!s) { say("Nothing left to undo.", "warn"); return false; }
-  store.base = s.base;
-  store.seq = s.seq;
-  store.blocks = s.blocks;
-  store.things = s.things;
-  const live = new Set(items().map((b) => b.id));
-  store.selection = new Set(s.selection.filter((id) => live.has(id)));
+  /* Where we are now becomes the way forward — so undo and redo are one
+     another's opposite exactly, and stepping back and forward again lands on
+     the canvas you started from and not on a rebuilt guess at it. */
+  store.future.push(capture());
+  if (store.future.length > CFG.undoDepth) store.future.shift();
+  restore(s);
+  return true;
+}
+
+export function redo() {
+  const s = store.future.pop();
+  if (!s) { say("Nothing to step forward to.", "warn"); return false; }
+  store.history.push(capture());
+  if (store.history.length > CFG.undoDepth) store.history.shift();
+  restore(s);
   return true;
 }
 
 export function canUndo() {
   return store.history.length > 0;
+}
+
+export function canRedo() {
+  return store.future.length > 0;
 }

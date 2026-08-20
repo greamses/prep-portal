@@ -8,7 +8,7 @@
 
 import { CFG, DIGITS, PLACES, TAGS, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
-import { store, subscribe, emit, say, undo, canUndo, selected, selectedItems } from "./state.js";
+import { store, subscribe, emit, say, undo, redo, canUndo, canRedo, selected, selectedItems } from "./state.js";
 import * as ops from "./ops.js";
 import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
@@ -119,6 +119,7 @@ export function mountUI({
     match: () => ops.selectLike(),
     tidy: () => { if (ops.tidyMat()) onFit(); },
     undo: () => { if (undo()) say("Stepped back."); },
+    redo: () => { if (redo()) say("Stepped forward again."); },
     delete: () => ops.deleteSelected(),
     lasso: () => {
       pointer.setLasso(!pointer.lasso);
@@ -466,7 +467,13 @@ export function mountUI({
     }
     const k = e.key.toLowerCase();
 
-    if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); return run(ACTIONS.undo); }
+    /* Both of the two conventions, because both are muscle memory somewhere:
+       Ctrl+Y is Windows's and Ctrl+Shift+Z is everywhere else's. */
+    if ((e.ctrlKey || e.metaKey) && k === "z") {
+      e.preventDefault();
+      return run(e.shiftKey ? ACTIONS.redo : ACTIONS.undo);
+    }
+    if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); return run(ACTIONS.redo); }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     /* Getting about the canvas: the arrows slide it and +/− zoom. These move the
@@ -584,6 +591,7 @@ export function mountUI({
     setEnabled("tip", anything.some(ops.canTip));
     setEnabled("tidy", store.blocks.length + store.things.length > 0);
     setEnabled("undo", canUndo());
+    setEnabled("redo", canRedo());
     const lassoBtn = $("[data-act='lasso']");
     lassoBtn.setAttribute("aria-pressed", String(pointer.lasso));
     lassoBtn.classList.toggle("is-on", pointer.lasso);
@@ -626,6 +634,14 @@ export function mountUI({
 
   return {
     update,
+    /* The strip of keys that appears under a picked-up block runs the SAME
+       actions, and asks the same question about which of them are pressable —
+       one answer, given in two places. */
+    act: (name) => { const fn = ACTIONS[name]; if (fn) run(fn); },
+    enabled: (name) => {
+      const b = $(`[data-act='${name}']`);
+      return !!b && !b.disabled;
+    },
     toggleBoard,
     toggleFlat,
     /* The own-size builder opens off the Add panel, so it is anchored to that

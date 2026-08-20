@@ -15,7 +15,7 @@
    ========================================================================== */
 
 import { CFG, placeDims, PLACES, toBase, baseWord } from "./config.js";
-import { store, say, nextId } from "./state.js";
+import { store, snapshot, say, nextId } from "./state.js";
 import { setAbacusValue, abacusValue } from "./abacus.js";
 import { placeReading, placeOrder, growChart, MAX_DOTS, MAX_PLACES } from "./grids.js";
 import { bestGrouping } from "./ops.js";
@@ -135,7 +135,13 @@ export function setBlocksValue(n) {
  */
 export function buildNumber(n) {
   const want = Math.max(0, Math.round(n));
+  /* Typing a number REPLACES what is on the canvas, so it is a change like any
+     other and has to be one step back — without this, undoing after typing one
+     stepped over it to whatever had been done before, which is the sort of
+     thing that makes people stop trusting undo. */
+  snapshot();
   const missed = syncFrom(want, null, { force: true });
+  if (missed) store.history.pop(); // nothing happened, so there is nothing to undo
   if (missed) return { ok: false, message: missed };
   // in base ten "1234 is 1234 in base ten" is nothing to say
   const said = store.base === 10

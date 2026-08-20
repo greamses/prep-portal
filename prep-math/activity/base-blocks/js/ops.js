@@ -17,6 +17,7 @@ import { snapLift, othersThan } from "./snap.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
 import { makeTile, tileSpec, isSolid, zeroPairs, tilesReading } from "./tiles.js";
+import { makeCard } from "./card.js";
 
 const MAX_SIDE = 64;
 
@@ -96,6 +97,21 @@ export function addBlock(l, w, h, opts = {}) {
   }
   store.blocks.push(b);
   return b;
+}
+
+/**
+ * Put a number card on the canvas.
+ *
+ * It says what the canvas comes to the moment it lands, so a card is never a
+ * blank waiting to be filled in — and it goes on saying it, because
+ * `refreshCards` rewrites every card whenever the number changes.
+ */
+export function addCard(notation = "standard") {
+  const card = makeCard(store.base, notation);
+  const thing = addThing(card);
+  arrange(store.blocks, store.things);
+  say("A number card — pick it up and the dropdown says how it writes the number.");
+  return thing;
 }
 
 /** Add one of the named places (unit / rod / flat / cube) for the working base. */

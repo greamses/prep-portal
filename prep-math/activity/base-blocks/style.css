@@ -725,6 +725,9 @@ body.bb-locked { overflow: hidden; }
 .bb-swatch--flat { background: var(--accent-success); }
 .bb-swatch--cube { background: var(--accent-primary); }
 .bb-swatch--custom { background: var(--accent-warning); }
+/* the number card is paper, not a block, so its chip wears the card's own
+   sky rather than a board's green */
+.bb-swatch--card { background: #bfe3ff; }
 
 .bb-tagdots { display: flex; gap: 0.25rem; }
 .bb-tagdot {
@@ -1241,3 +1244,91 @@ body.bb-locked { overflow: hidden; }
 .bb-math mjx-container { display: inline-block !important; margin: 0 !important; }
 .bb-math mjx-container svg { vertical-align: -0.08em; }
 .bb-math mjx-container[display="true"] { display: inline-block !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CONTROLS THAT RIDE ON WHAT YOU ARE HOLDING
+   Both are pinned over the canvas by projecting the item's own patch of paper,
+   so everything here is position + look and nothing here is layout.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* A number card's dropdown: how it writes the number. */
+.bb-cardpick {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 26;
+  height: 26px;
+  padding: 0 0.35rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 7px;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.bb-cardpick[hidden] { display: none; }
+.bb-cardpick:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 1px;
+}
+
+/* The block keys, under the block they belong to. The same keys as the rail's,
+   so they wear the rail's own look — a strip of them rather than a grid. */
+.bb-blockbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 24;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 11px;
+  box-shadow: var(--shadow-md);
+}
+.bb-blockbar[hidden] { display: none; }
+.bb-blockbar__key {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.bb-blockbar__key svg { width: 18px; height: 18px; }
+.bb-blockbar__key:hover:not(:disabled) { background: var(--surface-secondary); }
+.bb-blockbar__key:disabled { opacity: 0.3; cursor: default; }
+.bb-blockbar__key:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: -1px;
+}
+/* the name floats under the key, the way the rail's keys name themselves */
+.bb-blockbar__key em {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.12rem 0.34rem;
+  border-radius: 5px;
+  background: var(--ink);
+  color: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-style: normal;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.bb-blockbar__key:hover em,
+.bb-blockbar__key:focus-visible em { opacity: 1; }

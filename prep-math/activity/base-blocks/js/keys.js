@@ -7,9 +7,9 @@
    same stroke — there is no second place to keep in step.
 
    A handful of keys cannot be one entry each: the arrows, the two zooms, the
-   highlight digits and Ctrl+Z are RANGES or modified keys, so they are listed
-   here with no `k` and handled by name in ui.js's keydown. Those are the only
-   four, and each is marked.
+   highlight digits and the step-back/step-forward pair are RANGES or modified
+   keys, so they are listed here with no `k` and handled by name in ui.js's
+   keydown. Those are the only five, and each is marked.
    ========================================================================== */
 
 export const SHORTCUTS = [
@@ -21,6 +21,7 @@ export const SHORTCUTS = [
       { keys: "Del", k: "delete", act: "delete", does: "Remove what is picked up" },
       { keys: "Backspace", k: "backspace", act: "delete", does: "The same", hide: true },
       { keys: "Ctrl + Z", act: "undo", does: "Step back" },
+      { keys: "Ctrl + Y", act: "redo", does: "Step forward again — Ctrl + Shift + Z does the same" },
       { keys: "1 … 6", act: null, does: "Highlight what is picked up" },
       { keys: "0", act: null, does: "Take the highlight off" },
       { keys: "Shift-drag", act: null, does: "Sweep a box round several things" },

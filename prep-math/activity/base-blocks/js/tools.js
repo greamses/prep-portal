@@ -9,7 +9,7 @@
 
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
-  placeValueArt, multiplyArt, divideArt, tilesArt, frameArt,
+  placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -139,6 +139,18 @@ export const GROUPS = [
           "the whole of its multiplication in one square. Tap a cell to light " +
           "its row and column, or hide it and try to say it first.",
         art: multiplyArt,
+      },
+      {
+        id: "number-card",
+        kind: "card",
+        label: "Number Card",
+        short: "Number card",
+        blurb:
+          "A card that says what the canvas comes to, written whichever way " +
+          "you ask for: 123, or 100 + 20 + 3, or 1 × 10² + 2 × 10¹ + 3, or " +
+          "one flat and two rods and three units. Change the canvas and the " +
+          "card follows it.",
+        art: numberCardArt,
       },
       {
         id: "division",

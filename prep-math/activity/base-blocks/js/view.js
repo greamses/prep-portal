@@ -77,7 +77,9 @@ export function createView(ctx) {
       /* A note is recut to whatever is written on it, so what it SAYS and how
          it is dressed are both part of its shape — watching the words alone
          would miss a note that had only gone bold. */
-      const shape = t.kind === "note" ? noteShape(t)
+      /* A card is a note that nobody writes on: same paper, same drawing, and
+         the same signature — what it SAYS is what tells the view it changed. */
+      const shape = t.kind === "note" || t.kind === "card" ? noteShape(t)
         : t.kind === "tile" ? tileShape(t)
         : [t.places ?? "", t.base ?? ""].join("/");
       if (rig && rig.shape !== shape) {
@@ -87,7 +89,7 @@ export function createView(ctx) {
       }
       if (!rig) {
         const parts = t.kind === "abacus" ? buildAbacus(ctx, t)
-          : t.kind === "note" ? buildNote(ctx, t)
+          : t.kind === "note" || t.kind === "card" ? buildNote(ctx, t)
           : t.kind === "tile" ? buildTile(ctx, t)
           : buildBoard(ctx, t, store.base);
         rig = { parts, kind: t.kind, signature: "", shape };
@@ -97,7 +99,7 @@ export function createView(ctx) {
       if (t.kind === "abacus") {
         placeAbacus(rig.parts, t);
         syncAbacus(t, rig.parts, animate);
-      } else if (t.kind === "note") {
+      } else if (t.kind === "note" || t.kind === "card") {
         placeNote(rig.parts, t);
       } else if (t.kind === "tile") {
         placeTile(rig.parts, t);
@@ -198,7 +200,7 @@ export function createView(ctx) {
     const rig = rigs.get(item.id);
     if (!rig) return;
     if (rig.kind === "abacus") placeAbacus(rig.parts, item);
-    else if (rig.kind === "note") placeNote(rig.parts, item);
+    else if (rig.kind === "note" || rig.kind === "card") placeNote(rig.parts, item);
     else if (rig.kind === "tile") placeTile(rig.parts, item);
     else placeBoard(rig.parts, item);
   }

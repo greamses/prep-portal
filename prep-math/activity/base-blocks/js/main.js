@@ -18,8 +18,11 @@ import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
-import { splitSelected, addPlace, addThing, addTile, rotateSelected, settleThings,
-  cancelOverlapping } from "./ops.js";
+import { splitSelected, addPlace, addThing, addTile, addCard, rotateSelected,
+  settleThings, cancelOverlapping } from "./ops.js";
+import { refreshCards, setNotation } from "./card.js";
+import { createCardPicker } from "./cardui.js";
+import { createBlockBar } from "./blockbar.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -366,6 +369,11 @@ function placeTool(tool) {
     say("Algebra tiles — pick a piece from the panel, cubes first. A red one is its negative.");
     return;
   }
+  if (tool.kind === "card") {
+    const card = addCard();
+    fitView(ctx, [card]);
+    return;
+  }
   if (tool.kind === "abacus") {
     if (!worksInBase(tool.variant, store.base)) {
       say(`A ${tool.short.toLowerCase()} only counts in base ten — use the schoty.`, "warn");
@@ -529,11 +537,34 @@ async function bootCanvas() {
 
     mountViewKit();
 
+    /* Cards are rewritten BEFORE anything redraws, so the view sees the words
+       they should be showing rather than last change's. Registered before the
+       view's own subscriber for exactly that reason. */
+    subscribe(() => refreshCards());
+
+    const cardPick = createCardPicker(ctx, view, stage, {
+      onPick: (card, id) => {
+        // a change to the canvas like any other, and one step back from it
+        snapshot();
+        if (setNotation(card, id)) emit(); else store.history.pop();
+      },
+    });
+    const blockBar = createBlockBar(ctx, view, stage, {
+      onAct: (name) => ui.act(name),
+      enabled: (name) => ui.enabled(name),
+    });
+
     const trade = createRegroupPrompt(ctx, view, stage);
     noteEditor = createNoteEditor(ctx, view, stage,
       { onInput: () => emit(), onCommit: afterNote });
     const turn = createTurnHandle(ctx, view, stage, () => emit());
-    subscribe((s) => { view.sync(s); trade.refresh(); turn.refresh(); });
+    subscribe((s) => {
+      view.sync(s);
+      trade.refresh();
+      turn.refresh();
+      cardPick.refresh();
+      blockBar.refresh();
+    });
     turn.refresh();
 
     // keep the paper and the piece colours in step with a light/dark switch

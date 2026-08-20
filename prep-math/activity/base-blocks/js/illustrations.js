@@ -248,3 +248,24 @@ export function frameArt() {
     box(field + xl + 2, z0 + t + xl + 2, u - 2, u - 2, BUTTER)
   );
 }
+
+/**
+ * The number card: one number said two ways on a piece of paper, which is the
+ * whole of what the card is for.
+ */
+export function numberCardArt() {
+  const word = (x, y, text, size, weight = 700, fill = LINE) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="STIX Two Text, Cambria Math, serif">${text}</text>`;
+
+  return svg(
+    `<rect x="16" y="12" width="88" height="56" rx="3" fill="#bfe3ff"
+       stroke="${LINE}" stroke-width="1.4" transform="rotate(-2 60 40)"/>` +
+    `<rect x="44" y="8" width="32" height="7" rx="1" fill="rgba(255,255,255,.55)"
+       stroke="rgba(0,0,0,.1)" stroke-width="0.8" transform="rotate(-3 60 11)"/>` +
+    word(60, 28, "123", 20) +
+    word(60, 48, "100 + 20 + 3", 11, 500) +
+    word(60, 60, "1 flat, 2 rods, 3 units", 7, 500, "rgba(42,39,35,.7)")
+  );
+}

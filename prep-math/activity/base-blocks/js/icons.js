@@ -15,6 +15,9 @@ export const ICON = {
   rows: line(`<rect x="3" y="4" width="18" height="4.2" rx="1"/><rect x="3" y="10" width="12" height="4.2" rx="1"/><rect x="3" y="16" width="7" height="4.2" rx="1"/>`),
   trash: line(`<path d="M4 6.5h16M9.5 6.5V4.2h5v2.3M6.5 6.5 7.4 20h9.2l.9-13.5M10.2 10v6.4M13.8 10v6.4"/>`),
   undo: line(`<path d="M4 9.5h9.5a5.5 5.5 0 0 1 0 11H8M4 9.5 8 5.6M4 9.5l4 4"/>`),
+  /* redo is undo read the other way — the same arrow, mirrored, the way split
+     and merge are one drawing read two ways */
+  redo: line(`<path d="M20 9.5h-9.5a5.5 5.5 0 0 0 0 11H16M20 9.5 16 5.6M20 9.5l-4 4"/>`),
   lasso: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5" stroke-dasharray="3 2.6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>`),
   /* "pick every one this size": one piece in hand and two more of the same
      answering to it — not two rectangles side by side, which read as merge */
@@ -97,6 +100,10 @@ export const ICON = {
 
   /* the keys: a keyboard, with a space bar nothing else here has */
   keys: line(`<rect x="2.2" y="5.8" width="19.6" height="12.4" rx="1.6"/><path d="M6.2 9.6h.01M9.8 9.6h.01M13.4 9.6h.01M17 9.6h.01M6.2 13h.01M9.8 13h.01M13.4 13h.01M17 13h.01M8.4 16.2h7.2"/>`),
+
+  /* the number card: a piece of paper with a number on it and the same number
+     written out underneath — which is the whole of what the card does */
+  card: line(`<rect x="2.6" y="3.6" width="18.8" height="16.8" rx="1.6"/><path d="M6.6 9.4h4.2M6.6 14.4h10.8M6.6 17.2h7.4"/><path d="M14.6 7.2h3.4v4.4h-3.4z"/>`),
 
   table: line(`<rect x="2.8" y="3.5" width="18.4" height="17" rx="1.4"/><path d="M2.8 9h18.4M2.8 15h18.4M9 3.5v17M15 3.5v17"/>`),
 };
