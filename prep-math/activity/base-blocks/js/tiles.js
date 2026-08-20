@@ -37,6 +37,15 @@
    by `LIFT` — a hair, so the sheet is not fighting the paper for the same
    pixels.
 
+   ── and both can be picked up off the paper ───────────────────────────────
+   A piece carries a `y` (how far it is held above the paper) and a `tip` (a
+   rotation about its own length). Those two are the third dimension made
+   movable: Turn spins a piece where it lies, Tip stands it up on an edge or
+   over onto another face, and Lift holds it above the paper so pieces can be
+   stacked. A tile stood upright is a sheet seen edge-on, which is why the
+   materials here are drawn on BOTH sides — culled, an x² stood up would vanish
+   as you walked round it.
+
    ── the negative is the same tile turned over ─────────────────────────────
    A negative tile is the same shape in the same size, in red, with a minus on
    it. Put a tile and its negative together and they are nothing: that is a ZERO
@@ -44,7 +53,7 @@
    ========================================================================== */
 
 import { cssVar } from "./config.js";
-import { footprint } from "./layout.js";
+import { footprint, standing } from "./layout.js";
 
 const B = () => window.BABYLON;
 
@@ -162,11 +171,23 @@ const letterTex = (x, y) =>
  */
 export function tilesReading(tiles) {
   const by = new Map();
-  for (const t of tiles) {
-    const { x, y, n } = tileTerm(t);
-    const key = x + "," + y;
-    by.set(key, (by.get(key) || 0) + n);
-  }
+  for (const t of tiles) addTerm(by, tileTerm(t));
+  return writeTerms(by);
+}
+
+/** Add one term to a gathering of them, keyed by its powers. */
+export function addTerm(by, { x, y, n }) {
+  const key = x + "," + y;
+  by.set(key, (by.get(key) || 0) + n);
+  return by;
+}
+
+/**
+ * Write a gathering of terms out as an expression — once to read, once for
+ * MathJax to set. Highest degree first, and x before y at the same degree,
+ * which is the order a textbook writes them in.
+ */
+export function writeTerms(by) {
   const terms = [...by.entries()]
     .map(([key, n]) => {
       const [x, y] = key.split(",").map(Number);
@@ -189,6 +210,23 @@ export function tilesReading(tiles) {
     .join("");
 
   return { terms, text: write(letters, "−", "+"), tex: write(letterTex, "-", "+") };
+}
+
+/**
+ * What a SIDE of that length is, as a term.
+ *
+ * The lengths of this family are 4.6, 2.7 and 1, and no two of them are within
+ * a hair of each other, so a measured edge says which letter it is without
+ * having to ask the piece. That is what lets the area frame read an edge off
+ * whatever is laid along it — an x² tile lying along the top of the frame
+ * offers an x-long side, and x is what it contributes.
+ */
+export function termOfLength(len, sign = 1) {
+  const near = (a, b) => Math.abs(a - b) < 0.12;
+  if (near(len, X_LEN)) return { x: 1, y: 0, n: sign };
+  if (near(len, Y_LEN)) return { x: 0, y: 1, n: sign };
+  if (near(len, ONE)) return { x: 0, y: 0, n: sign };
+  return null;
 }
 
 /**
@@ -223,6 +261,10 @@ function mat(scene, hex, shade = 1) {
   const c = BJS.Color3.FromHexString(hex).scale(shade);
   m.diffuseColor = c;
   m.specularColor = new BJS.Color3(0.03, 0.03, 0.03);
+  /* A sheet has two sides to be looked at once it can be TIPPED UP on its edge.
+     Culled, an x² stood upright would vanish the moment you walked round it —
+     which is the one thing a piece standing in a diagram must not do. */
+  m.backFaceCulling = false;
   matCache.set(k, m);
   return m;
 }
@@ -258,8 +300,11 @@ export function buildTile(ctx, thing) {
         { width: spec.l, depth: spec.w, height: spec.h }, scene)
     : BJS.MeshBuilder.CreateGround("tile",
         { width: spec.l, height: spec.w }, scene);
-  const lift = liftOf(thing);
-  slab.position.y = solid ? spec.h / 2 : lift;
+  /* The ROOT carries how high the piece rides — half its standing height, plus
+     any lift, plus (for a sheet) the hair that keeps it off the paper — so that
+     tipping the root turns the piece about its own middle and the whole thing
+     stays resting on the paper. The parts hang off that middle. */
+  slab.position.y = 0;
   slab.parent = root;
   slab.receiveShadows = true;
   slab.metadata = { itemId: thing.id };
@@ -271,7 +316,7 @@ export function buildTile(ctx, thing) {
      is the only one anybody reads. */
   const face = BJS.MeshBuilder.CreateGround("tileFace",
     { width: spec.l * 0.94, height: spec.w * 0.94 }, scene);
-  face.position.y = (solid ? spec.h : lift) + 0.004;
+  face.position.y = (solid ? spec.h / 2 : 0) + 0.004;
   face.parent = root;
   face.metadata = { itemId: thing.id };
 
@@ -284,6 +329,7 @@ export function buildTile(ctx, thing) {
   fm.useAlphaFromDiffuseTexture = true;
   fm.specularColor = new BJS.Color3(0, 0, 0);
   fm.emissiveColor = new BJS.Color3(0.3, 0.3, 0.3);
+  fm.backFaceCulling = false; // read from either side once the piece stands up
   face.material = fm;
 
   const parts = { root, slab, face, tex, faceMat: fm };
@@ -324,9 +370,14 @@ export function paintTile(thing, parts) {
 
 export function placeTile(parts, thing) {
   const f = footprint(thing);
+  const spec = tileSpec(thing.variant);
   parts.root.position.x = thing.x + f.l / 2;
   parts.root.position.z = thing.z + f.w / 2;
-  parts.root.position.y = 0;
+  /* Resting on the paper however it is lying, plus the hair of clearance a
+     sheet needs to stop it fighting the paper for the same pixels. */
+  parts.root.position.y = standing(thing).h / 2 + (thing.y || 0)
+    + (isSolid(spec) ? 0 : liftOf(thing));
+  parts.root.rotation.x = thing.tip || 0;
   parts.root.rotation.y = thing.angle || 0;
 }
 

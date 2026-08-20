@@ -9,16 +9,27 @@
    The place-value chart is the one that talks to the rest of the canvas: it
    reads whatever blocks are standing in its columns, and it relabels itself the
    moment the working base changes.
+
+   The area frame is the odd one out and is drawn here but READ in js/frame.js:
+   it is not a table but a corner and two tracks, printed on the paper rather
+   than built on a slab, so that a tile laid in it lies on top of it.
    ========================================================================== */
 
 import {
   PLACES, placeAt, worthOf, placeDims, placeOf, placeColour, toBase, baseWord, cssVar,
 } from "./config.js";
 import { footprint } from "./layout.js";
+import { TRACK, FRAME_SIDE } from "./frame.js";
 
 const B = () => window.BABYLON;
 
-const SLAB = 0.22;      // how thick the board is
+const SLAB = 0.22;      // how thick a board is
+
+/* Except the area frame, which is not a board you stand things ON but a ruling
+   PRINTED ON THE PAPER — a corner and two tracks. It has to be thinner than the
+   hair of clearance a tile is drawn at, or every piece laid in the frame would
+   be swallowed by the very board it was laid on. */
+const PRINT = 0.006;
 const CELL = 2;         // canvas cells per table cell (multiply / divide)
 
 /* ── the place-value chart, measured in canvas cells ──────────────────────────
@@ -81,6 +92,15 @@ export function makeBoard(variant, base) {
       counters: Array.from({ length: places }, () => 0),
     };
   }
+  /* The area frame is not a table and does not follow the base: x is x in every
+     base there is. It is a corner and two tracks, and what it reads comes from
+     the pieces laid on it rather than from anything printed on it. */
+  if (variant === "area") {
+    return {
+      kind: "board", variant, tag: null, x: 0, z: 0, angle: 0,
+      l: FRAME_SIDE, w: FRAME_SIDE, h: PRINT,
+    };
+  }
   /* A table carries the base it was written in, the way a counting frame does:
      view.js watches `thing.base` and builds the rig again when it changes, which
      it must, because a base-five table is a different size of board. */
@@ -103,7 +123,13 @@ export function makeBoard(variant, base) {
  * base without changing shape, so a repaint is all it needs.
  */
 export function rebaseBoard(thing, base) {
-  if (thing.variant === "place" || thing.base === base) return false;
+  /* Only a TABLE is written in a base. This guard is load-bearing: `setBase`
+     walks everything on the canvas and offers it here, so without it an algebra
+     tile or a sticky note — neither of which has a base — would be resized into
+     a times table the first time the base was changed. */
+  if (thing.kind !== "board") return false;
+  if (thing.variant === "place" || thing.variant === "area") return false;
+  if (thing.base === base) return false;
   const max = tableMax(base);
   thing.base = base;
   thing.max = max;
@@ -128,9 +154,12 @@ export function buildBoard(ctx, thing, base) {
   const scene = ctx.scene;
   const root = new BJS.TransformNode("bd" + thing.id, scene);
 
+  /* A board is as thick as it says it is: the charts are slabs you stand blocks
+     on, the area frame is a sheet printed on the paper. */
+  const thick = thing.h || SLAB;
   const slab = BJS.MeshBuilder.CreateBox("slab",
-    { width: thing.l, depth: thing.w, height: SLAB }, scene);
-  slab.position.y = SLAB / 2;
+    { width: thing.l, depth: thing.w, height: thick }, scene);
+  slab.position.y = thick / 2;
   slab.parent = root;
   slab.receiveShadows = true;
   slab.metadata = { itemId: thing.id };
@@ -138,11 +167,13 @@ export function buildBoard(ctx, thing, base) {
   edge.diffuseColor = BJS.Color3.FromHexString(norm(cssVar("--ink", "#2a2723")));
   edge.specularColor = new BJS.Color3(0, 0, 0);
   slab.material = edge;
-  ctx.shadows.addShadowCaster(slab);
+  /* A printed frame casts no shadow, for the same reason a tile does not: a
+     shadow says the thing has a thickness, and this one has none to speak of. */
+  if (thick > 0.05) ctx.shadows.addShadowCaster(slab);
 
   const face = BJS.MeshBuilder.CreateGround("face",
     { width: thing.l - 0.12, height: thing.w - 0.12 }, scene);
-  face.position.y = SLAB + 0.002;
+  face.position.y = thick + 0.002;
   face.parent = root;
   face.metadata = { itemId: thing.id, boardFace: true };
 
@@ -174,7 +205,7 @@ export function placeBoard(parts, thing) {
   const f = footprint(thing);
   parts.root.position.x = thing.x + f.l / 2;
   parts.root.position.z = thing.z + f.w / 2;
-  parts.root.position.y = 0;
+  parts.root.position.y = thing.y || 0;
   /* Turning the root turns the drawn face with it, which is the point — and the
      face's texture coordinates are untouched, so a tap still lands on the square
      it looks like it landed on however the board is lying. */
@@ -200,11 +231,48 @@ export function paintBoard(thing, parts, opts = {}) {
   g.textBaseline = "middle";
 
   if (thing.variant === "place") drawPlace(g, W, H, thing, opts, { ink, soft });
+  else if (thing.variant === "area") drawArea(g, W, H, thing, { ink, soft });
   else drawTable(g, W, H, thing, opts, { ink, soft });
 
   // invertY: a 2D canvas counts rows downward and the ground's V runs upward,
   // so without this every label comes out upside down
   tex.update(true);
+}
+
+/**
+ * The area frame: a corner, two tracks and an open field.
+ *
+ * Wordless on purpose. Everything printed here is furniture — where the sides
+ * go and where the answer goes — and the mathematics is entirely in the pieces
+ * the learner lays on it. The one glyph is the × in the corner, which says what
+ * the two tracks are to each other.
+ */
+function drawArea(g, W, H, thing, c) {
+  const k = W / thing.l;          // pixels per cell, the same both ways
+  const t = TRACK * k;
+  const accent = cssVar("--accent-secondary", "#6fb7e8");
+
+  // the two tracks: where what you are multiplying goes
+  g.fillStyle = rgba(c.ink, 0.05);
+  g.fillRect(t, 0, W - t, t);     // along the top (the far edge)
+  g.fillRect(0, t, t, H - t);     // down the left side
+
+  // the corner, which belongs to neither and holds the sign
+  g.fillStyle = tint(accent, 0.86);
+  g.fillRect(0, 0, t, t);
+  g.fillStyle = "#2a2723";
+  g.font = `700 ${Math.round(t * 0.5)}px Unbounded, system-ui, sans-serif`;
+  g.fillText("×", t / 2, t / 2);
+
+  /* The field is left as bare paper — the pieces are what fills it, and a tint
+     under them would fight every colour the family has. */
+  g.strokeStyle = rgba(c.ink, 0.5);
+  g.lineWidth = 4;
+  g.beginPath();
+  g.moveTo(t, 0); g.lineTo(t, H);
+  g.moveTo(0, t); g.lineTo(W, t);
+  g.stroke();
+  g.strokeRect(2, 2, W - 4, H - 4);
 }
 
 function drawPlace(g, W, H, thing, opts, c) {

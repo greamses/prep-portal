@@ -31,6 +31,7 @@ import {
   hitPlace, moveCounter, dropCounter, counterColour,
 } from "./grids.js";
 import { createDotGhost } from "./dots.js";
+import { frames, readFrame, frameSentence, frameSquare } from "./frame.js";
 import { syncFrom as spread, afterBlocks, valueOf, setChartValue } from "./sync.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
@@ -224,6 +225,43 @@ function doubleTap(id) {
   if (splitSelected()) { sayIf(afterBlocks()); emit(); }
 }
 
+/* ── the area frame reads itself ──────────────────────────────────────────── */
+
+/** What one frame comes to, in a sentence. */
+function sayFrame(thing) {
+  if (!frameSquare(thing)) {
+    say("Turn the frame square to the paper (Q) before it can read itself.", "warn");
+    return;
+  }
+  const read = readFrame(thing, store.things.filter((t) => t.kind === "tile"));
+  const line = frameSentence(read);
+  if (!line) {
+    say("An empty frame. Lay pieces along the top and down the side, then fill it in.");
+    return;
+  }
+  if (line.kind === "asked" || !read.sides) { say(line.text); return; }
+  say(read.agree
+    ? `${line.text} — the rectangle closes.`
+    : `${line.text} — not yet.`, read.agree ? "ok" : "info");
+}
+
+/**
+ * Say so the moment a frame comes right.
+ *
+ * Only when it CHANGES: a frame that already agreed and was not touched has
+ * nothing new to say, and a sentence repeated on every drop stops being read.
+ */
+function announceFrames() {
+  for (const f of frames(store.things)) {
+    if (!frameSquare(f)) continue;
+    const read = readFrame(f, store.things.filter((t) => t.kind === "tile"));
+    const line = frameSentence(read);
+    const now = line && read.agree ? line.text : "";
+    if (now && now !== f.said) say(`${now} — the rectangle closes.`, "ok");
+    f.said = now;
+  }
+}
+
 /* ── the hand tool ────────────────────────────────────────────────────────── */
 
 let handOn = false;
@@ -345,7 +383,10 @@ function placeTool(tool) {
   say(
     tool.variant === "place"
       ? "Place-value chart — stand blocks in the columns and it reads them back."
-      : `${tool.label} — tap a square to light its row and column.`
+      : tool.variant === "area"
+        ? "Area frame — lay pieces along the two tracks to say what you are "
+          + "multiplying, then fill the field between them."
+        : `${tool.label} — tap a square to light its row and column.`
   );
   catchUp(thing);
   fitView(ctx, [thing]);
@@ -421,6 +462,9 @@ async function bootCanvas() {
       onBoard: (id, uv, e) => {
         const thing = store.things.find((t) => t.id === id);
         if (!thing) return;
+        /* The area frame has no squares to tap: what it holds is the pieces
+           lying on it, so a tap simply asks it to read itself out. */
+        if (thing.variant === "area") { sayFrame(thing); emit(); return; }
         if (thing.variant === "place") {
           // shift takes a counter back out, the way it hides a square on a table
           snapshot();

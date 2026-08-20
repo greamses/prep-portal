@@ -8,7 +8,7 @@
    ========================================================================== */
 
 import { CFG, CUSTOM_TOKEN, TAGS, placeOf, powerOf, placeColour, cssVar } from "./config.js";
-import { footprint } from "./layout.js";
+import { footprint, standing } from "./layout.js";
 
 const B = () => window.BABYLON;
 
@@ -138,18 +138,34 @@ export function place(mesh, block, lift = 0) {
   const f = footprint(block);
   mesh.position.x = block.x + f.l / 2;
   mesh.position.z = block.z + f.w / 2;
-  mesh.position.y = block.h / 2 + lift;
+  mesh.position.y = restY(block) + lift;
+  /* Tipped first, then turned. Babylon's rotation is yaw-pitch-roll, so setting
+     both leaves the pitch in the block's OWN frame and the yaw about the world's
+     upright — which is the order a hand does it in: tip the piece over, then
+     turn it round on the paper. */
+  mesh.rotation.x = block.tip || 0;
   mesh.rotation.y = block.angle || 0;
+}
+
+/**
+ * Where the middle of a piece sits above the paper: half of however tall it is
+ * LYING LIKE THIS, plus however far it has been lifted. A piece tipped onto its
+ * edge is a different height from the same piece lying flat, and it still has
+ * to rest on the paper rather than sink into it.
+ */
+export function restY(block) {
+  return standing(block).h / 2 + (block.y || 0);
 }
 
 /** Slide a mesh to its block's cell over CFG.anim ms. */
 export function glideTo(ctx, mesh, block) {
   const BJS = B();
   const f = footprint(block);
+  mesh.rotation.x = block.tip || 0;
   mesh.rotation.y = block.angle || 0;
   const target = new BJS.Vector3(
     block.x + f.l / 2,
-    block.h / 2,
+    restY(block),
     block.z + f.w / 2
   );
   if (BJS.Vector3.Distance(mesh.position, target) < 0.001) return;

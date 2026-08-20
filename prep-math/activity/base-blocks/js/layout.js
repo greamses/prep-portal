@@ -7,11 +7,42 @@
 
    Because there is always more paper, placement cannot fail: findSpot walks
    rings outward from where you wanted the thing and takes the first fit.
+
+   Two measurements answer "how big is this thing lying like this": `standing`
+   is the box it presents once it has been tipped, and `footprint` is the patch
+   of paper that box covers once it has also been turned. Nothing that measures
+   a piece may read `l`/`w`/`h` straight off it — those say what a thing IS, not
+   how it happens to be lying.
    ========================================================================== */
 
 import { CFG } from "./config.js";
 
 const key = (x, z) => x + "," + z;
+
+/**
+ * The box a thing presents to the paper once it has been TIPPED — before it is
+ * turned about the upright.
+ *
+ * Tipping is a rotation about the piece's own length, so its length never
+ * changes; its width and its height trade places. At a right angle they have
+ * swapped outright: an x²y cube tipped over is y tall no longer but y deep, and
+ * an x² tile tipped up is standing on its edge with no depth left at all.
+ *
+ * `l`/`w`/`h` are what a piece IS. This is what it is currently LYING LIKE, and
+ * everything that measures the paper or the height goes through it.
+ */
+export function standing(item) {
+  const t = item.tip || 0;
+  if (!t) return { l: item.l, w: item.w, h: item.h };
+  const c = Math.abs(Math.cos(t));
+  const s = Math.abs(Math.sin(t));
+  return { l: item.l, w: item.w * c + item.h * s, h: item.w * s + item.h * c };
+}
+
+/** How far off the paper a thing's top is, tip and lift and all. */
+export function topOf(item) {
+  return (item.y || 0) + standing(item).h;
+}
 
 /**
  * The cells a thing actually stands on.
@@ -23,15 +54,26 @@ const key = (x, z) => x + "," + z;
  * swapped and in between is larger than either.
  */
 export function footprint(item) {
+  const st = standing(item);
   const a = item.angle || 0;
-  if (!a) return { l: item.l, w: item.w };
+  /* A tile stood on its edge covers a line and not a patch — no width at all.
+     Nothing may ever be asked to divide by that area, so a piece always keeps a
+     hair of paper under it however far over it has been tipped. */
+  const THIN = 0.05;
+  if (!a) {
+    if (item.kind === "tile") return { l: Math.max(st.l, THIN), w: Math.max(st.w, THIN) };
+    return {
+      l: Math.max(1, Math.ceil(st.l - 1e-9)),
+      w: Math.max(1, Math.ceil(st.w - 1e-9)),
+    };
+  }
   const c = Math.abs(Math.cos(a));
   const s = Math.abs(Math.sin(a));
-  const l = item.l * c + item.w * s;
-  const w = item.l * s + item.w * c;
+  const l = st.l * c + st.w * s;
+  const w = st.l * s + st.w * c;
   // a tile is off the grid whichever way it is lying — rounding a turned one up
   // to whole cells would put daylight back between it and the next piece
-  if (item.kind === "tile") return { l, w };
+  if (item.kind === "tile") return { l: Math.max(l, THIN), w: Math.max(w, THIN) };
   // a hair off before rounding up, so a right angle comes out exact rather than
   // gaining a cell to a cosine that is 1e-17 shy of zero
   return {
@@ -250,7 +292,7 @@ export function bounds(items) {
     const f = footprint(b);
     x0 = Math.min(x0, b.x); x1 = Math.max(x1, b.x + f.l);
     z0 = Math.min(z0, b.z); z1 = Math.max(z1, b.z + f.w);
-    top = Math.max(top, b.h);
+    top = Math.max(top, topOf(b));
   }
   return { x0, x1, z0, z1, top };
 }

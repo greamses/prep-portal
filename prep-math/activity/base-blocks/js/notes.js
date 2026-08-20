@@ -106,7 +106,7 @@ export function placeNote(parts, thing) {
   const f = footprint(thing);
   parts.root.position.x = thing.x + f.l / 2;
   parts.root.position.z = thing.z + f.w / 2;
-  parts.root.position.y = 0;
+  parts.root.position.y = thing.y || 0;
   parts.root.rotation.y = thing.angle || 0;
 }
 

@@ -14,6 +14,8 @@ import { renderBoard } from "./readout.js";
 import { splitAxis, mergeCheck, regroupPlan } from "./ops.js";
 import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
 import { tilesReading } from "./tiles.js";
+import { SHORTCUTS, keyMap } from "./keys.js";
+import { frames, readFrame, frameSentence, frameSquare } from "./frame.js";
 import { math, setMath, typesetIn, numTex } from "./maths.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -49,6 +51,8 @@ export function mountUI({
     flyAdd: $("#bb-fly-add"),
     flyPaint: $("#bb-fly-paint"),
     flyType: $("#bb-fly-type"),
+    flyKeys: $("#bb-fly-keys"),
+    keysBody: $("#bb-keys-body"),
     keyin: $("#bb-keyin"),
     keyinBox: $("#bb-keyin-n"),
     keyinNote: $("#bb-keyin-note"),
@@ -61,6 +65,7 @@ export function mountUI({
     paint: el.flyPaint,
     base: el.popBase,
     type: el.flyType,
+    keys: el.flyKeys,
   };
 
   /* ── build the repeated bits ────────────────────────────────────────────── */
@@ -70,6 +75,20 @@ export function mountUI({
       `<button class="bb-tagdot" type="button" data-tag="${t.id}" title="Highlight ${t.name}"
         style="--dot:${t.hex}"><span class="sr-only">${t.name}</span></button>`
   ).join("");
+
+  /* Every shortcut there is, straight out of js/keys.js — the same list the
+     canvas dispatches from, so a key can never be on one and not the other. */
+  el.keysBody.innerHTML = SHORTCUTS.map((g) => `
+    <div class="bb-keys__set">
+      <span class="bb-fly__label">${g.name}</span>
+      <dl class="bb-keys__list">
+        ${g.items.filter((i) => !i.hide).map((i) => `
+          <div class="bb-keys__row">
+            <dt><kbd>${i.keys}</kbd></dt>
+            <dd>${i.does}</dd>
+          </div>`).join("")}
+      </dl>
+    </div>`).join("");
 
   el.bases.innerHTML = Array.from({ length: CFG.maxBase - CFG.minBase + 1 }, (_, i) => {
     const b = CFG.minBase + i;
@@ -110,7 +129,30 @@ export function mountUI({
     read: () => toggleBoard(),
     view: () => toggleFlat(),
     sync: () => toggleSync(),
+    // the third dimension: off the paper, and over onto another face
+    turn: () => onTurn(),
+    lift: () => ops.liftSelected(1),
+    lower: () => ops.liftSelected(-1),
+    tip: () => ops.tipSelected(),
+    snapGrid: () => toggleSnap("grid"),
+    snapSide: () => toggleSnap("side"),
   };
+
+  /**
+   * How a piece lands when you let go of it. Two switches, not one setting with
+   * two values: they answer different questions and are wanted together as
+   * often as apart — flush for fitting tiles to each other, squares for
+   * straightening a row against the paper.
+   */
+  function toggleSnap(which) {
+    store.snap[which] = !store.snap[which];
+    const on = store.snap[which];
+    say(which === "grid"
+      ? (on ? "Squares on — a piece lands on the paper's own ruling."
+            : "Squares off.")
+      : (on ? "Flush on — an edge near another edge is pulled level with it."
+            : "Flush off — pieces go exactly where you put them."));
+  }
 
   el.rail.addEventListener("click", (e) => {
     const menu = e.target.closest("[data-menu]");
@@ -388,6 +430,31 @@ export function mountUI({
 
   /* ── keyboard ───────────────────────────────────────────────────────────── */
 
+  /* What each shortcut in js/keys.js actually does. The list there is the one
+     source: a key added to it and named here works, and shows up in the panel,
+     without anything else being touched. */
+  const KEYS = keyMap();
+  const HANDLERS = {
+    regroup: () => run(ACTIONS.regroup),
+    split: () => run(ACTIONS.split),
+    merge: () => run(ACTIONS.merge),
+    break: () => run(ACTIONS.break),
+    tidy: () => run(ACTIONS.tidy),
+    sync: () => run(ACTIONS.sync),
+    delete: () => run(ACTIONS.delete),
+    lift: () => run(ACTIONS.lift),
+    lower: () => run(ACTIONS.lower),
+    tip: () => run(ACTIONS.tip),
+    turn: () => onTurn(),
+    snapGrid: () => run(ACTIONS.snapGrid),
+    snapSide: () => run(ACTIONS.snapSide),
+    hand: () => onHand(),
+    view: () => toggleFlat(),
+    all: () => run(() => { ops.selectAll(); say("Everything selected."); }),
+    clear: () => { closeMenus(); run(() => { store.selection = new Set(); }); },
+    keys: () => toggleMenu("keys", $("[data-menu='keys']")),
+  };
+
   window.addEventListener("keydown", (e) => {
     const t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
@@ -411,20 +478,13 @@ export function mountUI({
     if (PAN[k]) { e.preventDefault(); onPan(...PAN[k]); return; }
     if (k === "+" || k === "=") { e.preventDefault(); onZoom(0.8); return; }
     if (k === "-" || k === "_") { e.preventDefault(); onZoom(1.25); return; }
-    if (k === "h") { e.preventDefault(); onHand(); return; }
 
-    if (k === "r") { e.preventDefault(); run(ACTIONS.regroup); }
-    else if (k === "s") { e.preventDefault(); run(ACTIONS.split); }
-    else if (k === "m") { e.preventDefault(); run(ACTIONS.merge); }
-    else if (k === "b") { e.preventDefault(); run(ACTIONS.break); }
-    else if (k === "t") { e.preventDefault(); run(ACTIONS.tidy); }
-    else if (k === "v") { e.preventDefault(); toggleFlat(); }
-    else if (k === "y") { e.preventDefault(); run(ACTIONS.sync); }
-    else if (k === "q") { e.preventDefault(); onTurn(); }
-    else if (k === "a") { e.preventDefault(); run(() => { ops.selectAll(); say("Everything selected."); }); }
-    else if (k === "escape") { closeMenus(); run(() => { store.selection = new Set(); }); }
-    else if (k === "delete" || k === "backspace") { e.preventDefault(); run(ACTIONS.delete); }
-    else if (k >= "1" && k <= "6") { run(() => ops.tagSelected(Number(k) - 1)); }
+    // everything with an entry of its own
+    const act = KEYS.get(k);
+    if (act && HANDLERS[act]) { e.preventDefault(); HANDLERS[act](); return; }
+
+    // the highlight colours, which are a range rather than a key each
+    if (k >= "1" && k <= "6") { run(() => ops.tagSelected(Number(k) - 1)); }
     else if (k === "0") { run(() => ops.tagSelected(null)); }
   });
 
@@ -441,7 +501,18 @@ export function mountUI({
        tiles on the canvas the pill reads the EXPRESSION they come to instead —
        the same job the number does for the blocks. */
     const tiles = store.things.filter((t) => t.kind === "tile");
-    if (tiles.length) {
+    /* An area frame asks a question of the tiles, so once there is one on the
+       canvas the pill reads what the FRAME says rather than the loose sum of
+       everything lying about: (x + 3)(x + 2) and whether what is in it agrees. */
+    const frame = frames(store.things).find(frameSquare);
+    const asked = frame ? frameSentence(readFrame(frame, tiles)) : null;
+    if (asked) {
+      setMath(el.count, asked.tex, asked.text);
+      el.countSub.textContent = asked.kind === "done" ? "the rectangle closes"
+        : asked.kind === "off" ? "not yet"
+        : asked.kind === "asked" ? "fill the frame in"
+        : "in the frame";
+    } else if (tiles.length) {
       const read = tilesReading(tiles);
       setMath(el.count, read.tex, read.text);
       el.countSub.innerHTML = total
@@ -507,11 +578,22 @@ export function mountUI({
     setEnabled("break", canSplit);
     setEnabled("match", sel.length > 0);
     setEnabled("delete", anything.length > 0);
+    setEnabled("turn", anything.length > 0);
+    setEnabled("lift", anything.length > 0);
+    setEnabled("lower", anything.some((b) => (b.y || 0) > 0));
+    setEnabled("tip", anything.some(ops.canTip));
     setEnabled("tidy", store.blocks.length + store.things.length > 0);
     setEnabled("undo", canUndo());
     const lassoBtn = $("[data-act='lasso']");
     lassoBtn.setAttribute("aria-pressed", String(pointer.lasso));
     lassoBtn.classList.toggle("is-on", pointer.lasso);
+
+    for (const [act, on] of [["snapGrid", store.snap.grid], ["snapSide", store.snap.side]]) {
+      const b = $(`[data-act='${act}']`);
+      if (!b) continue;
+      b.setAttribute("aria-pressed", String(on));
+      b.classList.toggle("is-on", on);
+    }
 
     const syncBtn = $("#bb-sync-btn");
     syncBtn.setAttribute("aria-pressed", String(store.sync));

@@ -7,6 +7,11 @@
    in the scene, for the same reason the trade card is: a 3D one would have to be
    picked, dragged and kept a sensible size against the camera.
 
+   There are THREE of them, in a little column: turn it on the paper, lift it
+   off the paper, tip it over. The last two are the third dimension made
+   draggable — see ops.js — and they are dragged UP AND DOWN, because that is
+   the direction the thing they do happens in.
+
    The angle comes from the CENTRE of what is picked, not from the handle: the
    handle orbits as the thing turns, and measuring from a moving thing to itself
    would feed the rotation back into its own input.
@@ -17,13 +22,17 @@
    paper is the one thing both of them have.
    ========================================================================== */
 
-import { store, snapshot, selectedItems } from "./state.js";
-import { footprint } from "./layout.js";
-import { settleSelected } from "./ops.js";
+import { store, snapshot, selectedItems, say } from "./state.js";
+import { footprint, standing } from "./layout.js";
+import { settleSelected, canTip } from "./ops.js";
+import { snapLift, othersThan } from "./snap.js";
 import { ICON } from "./icons.js";
 
 const B = () => window.BABYLON;
 const STEP = Math.PI / 12; // fifteen degrees, while shift is held
+
+/* How far the hand must travel to tip a piece a quarter turn. */
+const TIP_PER_PX = Math.PI / 2 / 130;
 
 export function createTurnHandle(ctx, view, stage, onDone) {
   const { scene, camera } = ctx;
@@ -38,6 +47,117 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     + "or right-click to type an exact angle");
   btn.innerHTML = ICON.turn;
   stage.appendChild(btn);
+
+  /* ── the two that work in the third dimension ───────────────────────────── */
+
+  function extraHandle(cls, icon, title, aria) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "bb-turn " + cls;
+    b.hidden = true;
+    b.title = title;
+    b.setAttribute("aria-label", aria);
+    b.innerHTML = icon;
+    stage.appendChild(b);
+    return b;
+  }
+
+  const liftBtn = extraHandle("bb-lift", ICON.lift,
+    "Drag up and down to lift it off the paper (U and D)",
+    "Drag up or down to lift the picked thing off the paper, or press U and D");
+  const tipBtn = extraHandle("bb-tip", ICON.tip,
+    "Drag up and down to tip it over (E for a quarter tip)",
+    "Drag up or down to tip the picked thing over; E tips it a quarter turn");
+
+  /**
+   * One drag, up and down, doing whatever it is told with the distance.
+   *
+   * The two handles differ only in what a pixel of hand movement MEANS, so the
+   * business of capturing the pointer, taking one snapshot, redrawing live and
+   * settling at the end is written once.
+   */
+  function vertical(el, { begin, move, end }) {
+    let run = null;
+    el.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sel = selectedItems();
+      if (!sel.length) return;
+      el.setPointerCapture(e.pointerId);
+      snapshot();
+      run = { id: e.pointerId, y0: e.clientY, sel, moved: false, ...(begin(sel) || {}) };
+      el.classList.add("is-turning");
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!run || e.pointerId !== run.id) return;
+      e.preventDefault();
+      // up the screen is a smaller clientY, and up is the direction that adds
+      move(run, run.y0 - e.clientY, e);
+      run.moved = true;
+      for (const b of run.sel) view.placeItem(b);
+      place();
+    });
+    const stop = (e) => {
+      if (!run || (e && e.pointerId !== run.id)) return;
+      const done = run;
+      run = null;
+      el.classList.remove("is-turning");
+      if (done.moved) { end?.(done); onDone(); }
+      place();
+    };
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointercancel", stop);
+  }
+
+  /* LIFT. A pixel is worth whatever a pixel is worth on this canvas at this
+     zoom — measured by projecting one unit of height and seeing how far up the
+     screen it lands — so the piece comes up under your finger rather than at
+     some rate of its own. Straight down (the flat view) a unit of height
+     projects to nothing at all, so there is a floor under that measurement and
+     a word about why nothing appears to be happening. */
+  vertical(liftBtn, {
+    begin: (sel) => {
+      const low = Math.min(...sel.map((b) => b.y || 0));
+      if (store.flat) say("Turn the flat view off (V) to watch it rise.");
+      return {
+        low,
+        from: sel.map((b) => ({ b, y: b.y || 0 })),
+        others: othersThan(sel),
+        perUnit: pixelsPerUnit(sel),
+      };
+    },
+    move: (r, dy) => {
+      const want = Math.max(0, r.low + dy / r.perUnit);
+      const landed = snapLift(r.sel, want, r.others);
+      const rise = landed - r.low;
+      for (const { b, y } of r.from) b.y = Math.max(0, y + rise);
+    },
+  });
+
+  /* TIP. Shift snaps to fifteen degrees, the way turning does — and a piece
+     that has been tipped needs a new patch of paper, because its footprint has
+     just changed shape. */
+  vertical(tipBtn, {
+    begin: (sel) => ({ sel: sel.filter(canTip), from: sel.filter(canTip).map((b) => ({ b, t: b.tip || 0 })) }),
+    move: (r, dy, e) => {
+      const step = dy * TIP_PER_PX;
+      for (const { b, t } of r.from) {
+        const next = t + step;
+        b.tip = e.shiftKey ? Math.round(next / STEP) * STEP : next;
+      }
+    },
+    end: () => { settleSelected(); },
+  });
+
+  /** How many pixels up the screen one unit of height is, here and now. */
+  function pixelsPerUnit(sel) {
+    const b = sel[0];
+    const f = footprint(b);
+    const at = { x: b.x + f.l / 2, z: b.z + f.w / 2 };
+    const a = project(at.x, 0, at.z);
+    const c = project(at.x, 1, at.z);
+    return Math.max(6, Math.abs(a.y - c.y));
+  }
 
   /* Typing an exact angle. Dragging is for "about there" and this is for "45",
      which is a different question — a protractor beside the handle rather than
@@ -123,7 +243,7 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     let x = 0, y = 0;
     for (const b of sel) {
       const f = footprint(b);
-      const p = project(b.x + f.l / 2, b.h / 2, b.z + f.w / 2);
+      const p = project(b.x + f.l / 2, (b.y || 0) + standing(b).h / 2, b.z + f.w / 2);
       x += p.x; y += p.y;
     }
     return { x: x / sel.length, y: y / sel.length };
@@ -198,6 +318,10 @@ export function createTurnHandle(ctx, view, stage, onDone) {
   function refresh() {
     const on = store.selection.size > 0;
     btn.hidden = !on;
+    liftBtn.hidden = !on;
+    /* Tipping is for the pieces. A chart or a counting frame standing on its
+       edge is not a lesson about anything, so the handle is simply not there. */
+    tipBtn.hidden = !on || !selectedItems().some(canTip);
     if (!on) closeBox();
     if (on) place();
   }
@@ -225,7 +349,7 @@ export function createTurnHandle(ctx, view, stage, onDone) {
         const f = footprint(b);
         for (const x of [b.x, b.x + f.l]) {
           for (const z of [b.z, b.z + f.w]) {
-            for (const y of [0, b.h]) {
+            for (const y of [b.y || 0, (b.y || 0) + standing(b).h]) {
               const p = project(x, y, z);
               right = Math.max(right, p.x);
               top = Math.min(top, p.y);
@@ -239,8 +363,18 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     }
 
     cx = Math.max(8, Math.min(rect.width - w - 8, cx));
-    cy = Math.max(8, Math.min(rect.height - h - 8, cy));
+    cy = Math.max(8, Math.min(rect.height - h * 3 - 20, cy));
     btn.style.transform = `translate(${Math.round(cx)}px, ${Math.round(cy)}px)`;
+
+    /* The other two hang under it in a column, in the order they take the piece
+       further from the paper: turn it where it lies, lift it off, tip it over. */
+    const under = (el, n) => {
+      if (el.hidden) return;
+      el.style.transform =
+        `translate(${Math.round(cx)}px, ${Math.round(cy + n * (h + 6))}px)`;
+    };
+    under(liftBtn, 1);
+    under(tipBtn, tipBtn.hidden ? 1 : 2);
 
     // the box rides just under the handle it belongs to
     if (!box.hidden) {
@@ -260,6 +394,8 @@ export function createTurnHandle(ctx, view, stage, onDone) {
     destroy() {
       scene.onAfterRenderObservable.remove(obs);
       btn.remove();
+      liftBtn.remove();
+      tipBtn.remove();
       box.remove();
     },
   };

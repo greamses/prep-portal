@@ -70,5 +70,33 @@ export const ICON = {
      the family is made of, which no other key here draws */
   algebra: line(`<rect x="2.6" y="2.8" width="10" height="10" rx="0.8"/><rect x="14.8" y="2.8" width="6.6" height="10" rx="0.8"/><rect x="2.6" y="15.4" width="5.4" height="5.4" rx="0.8"/><rect x="10.4" y="15.4" width="5.4" height="5.4" rx="0.8" stroke-dasharray="2.2 1.8"/>`),
 
+  /* ── the third dimension, and how a piece lands ──────────────────────────
+     No two pressable things on this canvas may share a glyph, so each of these
+     draws the thing it does and not a generic arrow. */
+
+  /* lift: a piece held above the paper, with the paper drawn as the line it is
+     no longer touching */
+  lift: line(`<rect x="3.2" y="7.6" width="10" height="6.6" rx="1"/><path d="M2.6 20.2h18.8" stroke-dasharray="2.6 2.4"/><path d="M17.6 16.6V7.9M15.2 10.3l2.4-2.4 2.4 2.4"/>`),
+
+  /* let it down: the same drawing read the other way, the way merge is split
+     backwards — the piece on its way onto a paper that is solid again because
+     it is about to be touched */
+  lower: line(`<rect x="3.2" y="9.6" width="10" height="6.6" rx="1"/><path d="M2.6 20.2h18.8"/><path d="M17.6 7.6v8.8M15.2 14l2.4 2.4 2.4-2.4"/>`),
+
+  /* tip: the same piece lying down and standing up, and the little arc that
+     takes it from one to the other */
+  tip: line(`<path d="M2.4 20.6h19.2"/><rect x="3.2" y="16.2" width="8.6" height="4.4" rx="0.8"/><rect x="15.2" y="7.4" width="4.4" height="13.2" rx="0.8"/><path d="M12.9 12.9a5.4 5.4 0 0 1 2.1-3.6"/>`),
+
+  /* snap to the squares: a piece sitting exactly on a ruling, and the other
+     crossings of that ruling waiting for one */
+  grid: line(`<rect x="2.8" y="2.8" width="7.6" height="7.6" rx="0.8" fill="currentColor" stroke="none"/><path d="M14.4 6.6h3M15.9 5.1v3M14.4 16.4h3M15.9 14.9v3M4.8 16.4h3M6.3 14.9v3"/>`),
+
+  /* flush: a magnet, which is what an edge that pulls another edge level with
+     itself actually is */
+  flush: line(`<path d="M6.4 3.4v9.4a5.6 5.6 0 0 0 11.2 0V3.4"/><path d="M6.4 8.6h5M12.6 8.6h5"/>`),
+
+  /* the keys: a keyboard, with a space bar nothing else here has */
+  keys: line(`<rect x="2.2" y="5.8" width="19.6" height="12.4" rx="1.6"/><path d="M6.2 9.6h.01M9.8 9.6h.01M13.4 9.6h.01M17 9.6h.01M6.2 13h.01M9.8 13h.01M13.4 13h.01M17 13h.01M8.4 16.2h7.2"/>`),
+
   table: line(`<rect x="2.8" y="3.5" width="18.4" height="17" rx="1.4"/><path d="M2.8 9h18.4M2.8 15h18.4M9 3.5v17M15 3.5v17"/>`),
 };

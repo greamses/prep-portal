@@ -9,6 +9,7 @@
 import { PLACES, TAGS, placeOf, placeDims, toBase, baseWord } from "./config.js";
 import { ICON } from "./icons.js";
 import { tilesReading } from "./tiles.js";
+import { frames, readFrame, frameSquare } from "./frame.js";
 import { math, typesetIn, numTex } from "./maths.js";
 
 const SUP = { 0: "⁰", 1: "¹", 2: "²", 3: "³" };
@@ -115,8 +116,36 @@ export function renderBoard(el, store) {
          <b>${math(read.tex, read.text)}</b></p>`
     : "";
 
+  /* Every area frame gets its own paragraph: the two sides it has been given,
+     what is lying in it, and whether those agree. What it SHOULD come to is
+     never written — that is the question the frame is asking. */
+  const framed = frames(store.things).map((f, i) => {
+    if (!frameSquare(f)) {
+      return `<p class="bb-board__base">Frame ${i + 1} is not square to the paper,
+        so it cannot read itself. Turn it back with <b>Q</b>.</p>`;
+    }
+    const r = readFrame(f, tiles);
+    if (r.empty) {
+      return `<p class="bb-board__base">Frame ${i + 1} is empty — lay pieces along
+        the top and down the side to say what you are multiplying.</p>`;
+    }
+    const side = (x) => `<b>${math(x.tex, x.text)}</b>`;
+    const sides = r.sides
+      ? `across ${side(r.a)} and down ${side(r.b)}`
+      : "no sides laid out yet";
+    const inner = r.inner.terms.length
+      ? `it holds ${side(r.inner)}`
+      : "nothing in it yet";
+    const verdict = !r.sides || !r.inner.terms.length ? ""
+      : r.agree
+        ? " — and those agree: the rectangle closes."
+        : " — and those do not agree yet.";
+    return `<p class="bb-board__base">Frame ${i + 1}: ${sides}, ${inner}${verdict}</p>`;
+  }).join("");
+
   el.innerHTML = `
     ${expression}
+    ${framed}
     <div class="bb-board__total">
       <b>${math(String(total), String(total))}</b>
       <span>unit${total === 1 ? "" : "s"} on the mat</span>

@@ -205,3 +205,46 @@ export function tilesArt() {
       tile(92, 48, u, u, "var(--accent-primary, #f4c95d)", "1", 8)
   );
 }
+
+/**
+ * The area frame: the corner, the two tracks with a side laid along each, and
+ * the field filled in — the whole of (x + 1)(x + 1) in one picture, which is
+ * the only way to say in a thumbnail what the frame is for.
+ */
+export function frameArt() {
+  const x0 = 20;
+  const z0 = 12;
+  const t = 9;            // the tracks
+  const xl = 26;          // an x-length
+  const u = 9;            // a unit
+  const BLUE = "var(--accent-secondary, #6fb7e8)";
+  const BUTTER = "var(--accent-primary, #f4c95d)";
+
+  const box = (px, py, w, h, fill) =>
+    `<rect x="${px}" y="${py}" width="${w}" height="${h}" rx="1.2"
+       fill="${fill}" stroke="${LINE}" stroke-width="1.2"/>`;
+
+  const field = x0 + t;
+  return svg(
+    // the board, and the two tracks printed on it
+    `<rect x="${x0}" y="${z0}" width="${t + xl + u + 4}" height="${t + xl + u + 4}"
+       rx="2" fill="${PAPER}" stroke="${LINE}" stroke-width="1.4"/>` +
+    `<rect x="${field}" y="${z0}" width="${xl + u + 4}" height="${t}" fill="rgba(42,39,35,.06)"/>` +
+    `<rect x="${x0}" y="${z0 + t}" width="${t}" height="${xl + u + 4}" fill="rgba(42,39,35,.06)"/>` +
+    `<path d="M${field} ${z0}V${z0 + t + xl + u + 4}M${x0} ${z0 + t}H${x0 + t + xl + u + 4}"
+       stroke="${FAINT}" stroke-width="1"/>` +
+    `<text x="${x0 + t / 2}" y="${z0 + t / 2}" fill="${LINE}" font-size="8"
+       font-weight="700" text-anchor="middle" dominant-baseline="central"
+       font-family="Unbounded, system-ui, sans-serif">×</text>` +
+    // the sides: x and 1 along the top, x and 1 down the left
+    box(field + 1, z0 + 1.5, xl, u - 3, BLUE) +
+    box(field + xl + 2, z0 + 1.5, u - 2, u - 3, BUTTER) +
+    box(x0 + 2, z0 + t + 1, u - 3, xl, BLUE) +
+    box(x0 + 2, z0 + t + xl + 2, u - 3, u - 2, BUTTER) +
+    // and the rectangle they make: x², x, x, 1
+    box(field + 1, z0 + t + 1, xl, xl, BLUE) +
+    box(field + xl + 2, z0 + t + 1, u - 2, xl, BLUE) +
+    box(field + 1, z0 + t + xl + 2, xl, u - 2, BLUE) +
+    box(field + xl + 2, z0 + t + xl + 2, u - 2, u - 2, BUTTER)
+  );
+}

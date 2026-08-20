@@ -16,13 +16,17 @@ import { CFG } from "./config.js";
 export const store = {
   base: CFG.defaultBase,
   strict: true, // "trade" rules: you may only merge exactly `base` alike blocks
-  blocks: [], // { id, l, w, h, x, z, tag }
-  things: [], // { id, kind: "abacus" | "board", … , l, w, h, x, z }
+  blocks: [], // { id, l, w, h, x, z, y, angle, tip, tag }
+  things: [], // { id, kind: "abacus" | "board" | "tile" | "note", … , l, w, h, x, z }
   selection: new Set(),
   tool: "base-blocks", // which tool the dock is showing
   group: "blocks",
   flat: false, // 2D view on?
   sync: false, // when on, every tool shows the same number (js/sync.js)
+  /* How a piece lands when you let go of it (js/snap.js). Flush is on to begin
+     with because the algebra tiles are the pieces that move freely, and pieces
+     that do not quite touch are the one way they can lie to you. */
+  snap: { grid: false, side: true },
   seq: 1,
   history: [],
   message: null, // { text, kind } — one line of feedback for the HUD

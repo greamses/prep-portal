@@ -6,6 +6,11 @@
    cell at a time, never through anything else. Shift-drag on bare paper — or a
    drag in lasso mode — sweeps a box selection. Double-tap splits a block.
 
+   Algebra tiles are the exception, because x is not a whole number of squares:
+   they move freely and through each other, and js/snap.js decides where they
+   actually land — flush against a neighbouring edge, or on the paper's own
+   ruling, or exactly where the hand let go if the alt key is down.
+
    Beads and board faces are checked FIRST and never select: sliding a bead or
    tapping a times-table cell is what you meant, not picking the frame up. To
    move an abacus you grab its frame — the timbers, not the beads — which is
@@ -14,6 +19,7 @@
 
 import { store, snapshot, say, selectedItems } from "./state.js";
 import { occupancy, fits, footprint } from "./layout.js";
+import { snapMove } from "./snap.js";
 
 const B = () => window.BABYLON;
 /* What counts as a double-tap. Nearer the platform's own 500ms than the 320 it
@@ -99,8 +105,16 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       origin: cell,
       moving,
       start: moving.map((b) => ({ id: b.id, x: b.x, z: b.z })),
+      /* Copies of what is moving, left WHERE THE DRAG BEGAN. The snap is
+         worked out by adding the move to these, never to the live pieces: the
+         live ones have already been moved by every pointermove so far, and
+         adding the move to them again would count it twice over. */
+      ghosts: moving.map((b) => ({ ...b })),
       grid: occupancy(store.blocks.concat(store.things), ids),
       free: moving.every((b) => b.kind === "tile"),
+      /* Everything a freely-moving piece could land against, worked out once at
+         the start of the drag rather than on every pointermove. */
+      others: store.blocks.concat(store.things).filter((b) => !ids.has(b.id)),
       moved: false,
       dx: 0,
       dz: 0,
@@ -118,8 +132,19 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
        laid over their opposites, and a piece that snaps to the paper's squares
        can do neither — x is not a whole number of squares. Everything else
        still moves a cell at a time and still goes round what is in the way. */
-    const dx = d.free ? cell.x - d.origin.x : Math.round(cell.x - d.origin.x);
-    const dz = d.free ? cell.z - d.origin.z : Math.round(cell.z - d.origin.z);
+    let dx = d.free ? cell.x - d.origin.x : Math.round(cell.x - d.origin.x);
+    let dz = d.free ? cell.z - d.origin.z : Math.round(cell.z - d.origin.z);
+
+    /* A freely-moving piece is the one that can be a hair out, so it is the one
+       snapping is for — the rest are already on the squares by construction.
+       Held down, the alt key suspends it: sometimes a piece has to go exactly
+       where you put it, and a snap you cannot switch off for a moment is a snap
+       that gets in the way. */
+    if (d.free && !d.raw) {
+      const s = snapMove(d.ghosts, dx, dz, d.others);
+      dx = s.dx;
+      dz = s.dz;
+    }
     if (dx === d.dx && dz === d.dz) return;
 
     const ok = d.free || d.start.every((s) => {
@@ -261,6 +286,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
 
   function onMove(e) {
     const pt = localXY(e);
+    if (state.drag) state.drag.raw = !!e.altKey;
     if (state.face) {
       const f = state.face;
       if (!f.moved && Math.hypot(pt.x - f.x0, pt.y - f.y0) > TAP_SLOP) f.moved = true;

@@ -9,7 +9,7 @@
 
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
-  placeValueArt, multiplyArt, divideArt, tilesArt,
+  placeValueArt, multiplyArt, divideArt, tilesArt, frameArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -95,6 +95,19 @@ export const GROUPS = [
           "x-tile is deliberately not a whole number of units long: x is the " +
           "thing you are not told.",
         art: tilesArt,
+      },
+      {
+        id: "area-frame",
+        kind: "board",
+        variant: "area",
+        label: "Area Frame",
+        short: "Frame",
+        blurb:
+          "A corner with a track along the top and a track down the side. Lay " +
+          "pieces along the two tracks to say what you are multiplying, fill " +
+          "the field between them to say what it comes to, and the frame says " +
+          "whether the two agree — read the other way round, it is factorising.",
+        art: frameArt,
       },
     ],
   },

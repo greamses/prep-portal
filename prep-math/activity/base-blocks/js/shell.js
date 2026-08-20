@@ -128,7 +128,16 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, on
          the rods, the way an expression is written. The negatives are a SECOND
          ROW of the same ten rather than a separate list, because that is what
          they are: the same pieces turned over. */
-      panelEl.innerHTML = TILES.map((t) => `
+      /* The frame goes at the head of the family's panel: it is the board the
+         pieces are laid on, so it is offered before the pieces are. */
+      const frame = g.tools.find((t) => t.kind === "board");
+      panelEl.innerHTML = (frame ? `
+        <button class="bb-piece bb-piece--wide" type="button" data-tool="${frame.id}"
+                title="${frame.blurb}">
+          <i class="bb-piece__swatch bb-swatch--flat"></i>
+          <span>${frame.label}</span>
+        </button>` : "")
+        + TILES.map((t) => `
         <button class="bb-piece bb-piece--tile" type="button"
                 data-tile="${t.id}" data-sign="1" title="One ${t.label} tile">
           <i class="bb-piece__swatch" style="background:var(${t.token}, ${t.fallback})"></i>

@@ -13,6 +13,7 @@
 import { CFG, PLACES, placeDims, placeOf, baseWord, toBase } from "./config.js";
 import { store, snapshot, say, nextId, selected, selectedItems, items } from "./state.js";
 import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
+import { snapLift, othersThan } from "./snap.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
 import { makeTile, tileSpec, isSolid, zeroPairs, tilesReading } from "./tiles.js";
@@ -664,6 +665,77 @@ export function rotateSelected(radians = Math.PI / 2) {
   for (const b of sel) b.angle = (b.angle || 0) + radians;
   settleSelected();
   return true;
+}
+
+/**
+ * Raise or lower everything picked off the paper.
+ *
+ * The canvas is a sheet of paper and almost everything on it lies on that
+ * sheet — but an x²y is a SOLID, and a solid can be stood on top of another
+ * one. This is the third measurement made movable: `y` is how far a piece is
+ * held above the paper, and it is the only thing on the canvas that the flat
+ * view cannot show you, which is why lifting says so when the flat view is on.
+ *
+ * Snapping applies here as it does on the paper: flush stacks a piece on the
+ * top of whatever it is over, squares puts it at a whole number of units.
+ */
+export function liftSelected(dy) {
+  const sel = selectedItems();
+  if (!sel.length) { say("Pick something first, then lift it.", "warn"); return false; }
+  snapshot();
+
+  /* The group moves as one, so the snap is worked out for the group and the
+     same rise is given to each — otherwise two pieces lifted together would
+     land at two different heights and stop being a group. */
+  const low = Math.min(...sel.map((b) => b.y || 0));
+  const want = Math.max(0, low + dy);
+  const landed = snapLift(sel, want, othersThan(sel));
+  const rise = landed - low;
+  if (!rise) {
+    if (dy < 0 && low === 0) say("That is already on the paper.", "warn");
+    return false;
+  }
+  for (const b of sel) b.y = Math.max(0, (b.y || 0) + rise);
+
+  const at = Math.round(landed * 100) / 100;
+  say(at === 0
+    ? "Down on the paper."
+    : `Held ${at} unit${at === 1 ? "" : "s"} above the paper.`);
+  return true;
+}
+
+/**
+ * Tip everything picked over — a rotation about the piece's own LENGTH, so an
+ * x² tile stands up on its edge and an x²y cube lands on a different face.
+ *
+ * This is the other half of moving in the third dimension: Turn spins a piece
+ * on the paper, Tip stands it up off the paper. Between the two, any face of a
+ * piece can be brought to face any way, which is what building a box out of
+ * x³, x²y, xy² and y³ actually needs.
+ */
+export function tipSelected(radians = Math.PI / 2) {
+  const sel = selectedItems().filter(canTip);
+  if (!sel.length) {
+    say("Tipping is for the blocks and the tiles — a frame lies flat.", "warn");
+    return false;
+  }
+  snapshot();
+  for (const b of sel) b.tip = wrap((b.tip || 0) + radians);
+  settle(sel);
+  return true;
+}
+
+/** A frame, a chart or a note has a right way up; a piece does not. */
+export function canTip(item) {
+  return !item.kind || item.kind === "tile";
+}
+
+/* Kept inside one turn so the number in the box stays readable, and so that
+   tipping four times comes back to exactly nought rather than to 6.283. */
+function wrap(a) {
+  const t = Math.PI * 2;
+  const n = a % t;
+  return Math.abs(n) < 1e-9 ? 0 : n;
 }
 
 /**

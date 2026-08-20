@@ -174,6 +174,48 @@
               </div>
             </div>
 
+
+            <!-- MOVE: where a piece is and which way up it is — including the
+                 third dimension, which is the only part of this canvas the flat
+                 view cannot show you — and how it lands when you let go. -->
+            <div class="bb-kit" role="group" aria-label="Move the picked things">
+              <span class="bb-kit__label">Move</span>
+              <div class="bb-kit__grid">
+                <button class="bb-tool" type="button" data-act="turn"
+                        aria-label="Turn the picked things a quarter turn on the paper (Q)"
+                        title="Turn a quarter turn on the paper (Q)">
+                  <span data-icon="turn"></span><em>Turn</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="tip"
+                        aria-label="Tip the picked things a quarter turn onto another face (E)"
+                        title="Tip onto another face (E)">
+                  <span data-icon="tip"></span><em>Tip</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="lift"
+                        aria-label="Lift the picked things a unit off the paper (U)"
+                        title="Lift it off the paper (U)">
+                  <span data-icon="lift"></span><em>Lift</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="lower"
+                        aria-label="Let the picked things down a unit (D)"
+                        title="Let it down (D)">
+                  <span data-icon="lower"></span><em>Down</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="snapGrid"
+                        aria-pressed="false"
+                        aria-label="Snap to the squares of the paper (G)"
+                        title="Snap to the squares (G)">
+                  <span data-icon="grid"></span><em>Squares</em>
+                </button>
+                <button class="bb-tool" type="button" data-act="snapSide"
+                        aria-pressed="true"
+                        aria-label="Snap flush against the piece beside it (F)"
+                        title="Snap flush to a side (F)">
+                  <span data-icon="flush"></span><em>Flush</em>
+                </button>
+              </div>
+            </div>
+
             <!-- CANVAS: what happens to the whole sheet, including leaving it -->
             <div class="bb-kit" role="group" aria-label="The canvas">
               <span class="bb-kit__label">Canvas</span>
@@ -189,6 +231,12 @@
                 <button class="bb-tool bb-tool--danger" type="button" data-act="delete"
                         aria-label="Remove the picked things (Delete)" title="Remove (Del)">
                   <span data-icon="trash"></span><em>Remove</em>
+                </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="keys"
+                        aria-haspopup="dialog" aria-expanded="false"
+                        aria-label="Every shortcut on this canvas (?)"
+                        title="The keys (?)">
+                  <span data-icon="keys"></span><em>Keys</em>
                 </button>
                 <button class="bb-tool" type="button" data-act="back"
                         aria-label="Back to the shelf" title="Back to the shelf">
@@ -291,6 +339,16 @@
                         title="Take it off, bead by bead">−</button>
               </div>
             </div>
+          </div>
+
+          <!-- ── every key on the canvas, written out of js/keys.js ────── -->
+          <div class="bb-fly bb-fly--keys" id="bb-fly-keys" role="dialog"
+               aria-label="Keyboard shortcuts" hidden>
+            <div class="bb-pop__head">
+              <span class="bb-eyebrow">The keys</span>
+              <button class="bb-pop__x" type="button" data-close><span data-icon="close"></span></button>
+            </div>
+            <div id="bb-keys-body"></div>
           </div>
 
           <!-- ── the base panel, opened from the rail ──────────────────── -->
