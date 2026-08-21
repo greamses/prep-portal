@@ -1,0 +1,259 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALGEBRA MOVES
+
+   Everything here is the site's own: the paint wash behind the page, the torn
+   receipts, the pill for a move, the sticky tag. The only new thing is the
+   stage the equation is written on, and even that is paper.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The signature wash ─────────────────────────────────────────────────── */
+.am-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.24;
+}
+.am-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .am-paint { opacity: 0.14; }
+
+/* ── Page ───────────────────────────────────────────────────────────────── */
+.am-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--padding-lg) var(--padding-md) var(--padding-xl);
+}
+
+.am-hero { margin-bottom: var(--gap-lg); max-width: 46rem; }
+
+.am-eyebrow {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--gap-xs);
+}
+
+.am-title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-black);
+  font-size: var(--text-h1);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+  margin: 0 0 var(--gap-sm);
+}
+.am-title em { color: var(--accent-secondary); font-style: normal; }
+
+.am-lead {
+  font-size: var(--text-body-sm, 0.92rem);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Bench ──────────────────────────────────────────────────────────────── */
+.am-bench {
+  display: grid;
+  gap: var(--gap-lg);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 980px) {
+  .am-bench { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+}
+
+.am-play { position: relative; }
+/* A sticky tag has to be a SIBLING of __paper — the receipt's mask clips
+   anything inside it. */
+.pp-sticky.am-flag { position: absolute; top: -18px; right: 24px; z-index: 2; }
+
+.am-side { display: grid; gap: var(--gap-lg); }
+
+.am-h {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--gap-sm);
+}
+
+/* ── The stage the equation is written on ───────────────────────────────── */
+.am-stage {
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  /* --padding-xs clamps up to ~57px here, which starved the equation of the
+     card it is supposed to fill. */
+  padding: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
+}
+
+.am-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.am-glyph {
+  fill: var(--ink);
+  dominant-baseline: alphabetic;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.am-rule { fill: var(--ink); }
+
+/* Selection sits BEHIND the writing, so the term stays black on paper rather
+   than turning into a coloured button. */
+.am-sel {
+  fill: var(--accent-primary);
+  opacity: 0.42;
+}
+[data-theme="dark"] .am-sel { opacity: 0.3; }
+
+.am-hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.am-hit:hover { fill: var(--ink); fill-opacity: 0.06; }
+.am-hit:focus-visible { fill: var(--accent-secondary); fill-opacity: 0.18; }
+
+@media (prefers-reduced-motion: reduce) {
+  .am-glyph, .am-rule { transition: none !important; }
+}
+
+/* ── What the tool is saying ────────────────────────────────────────────── */
+.am-say {
+  min-height: 1.4em;
+  margin: 0 0 var(--gap-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+}
+.am-say.is-ok { color: var(--accent-success); }
+.am-say.is-no { color: var(--accent-danger); font-weight: var(--weight-semibold); }
+
+/* ── The moves on offer ─────────────────────────────────────────────────── */
+.am-offers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+  min-height: 3.2rem;
+  align-items: flex-start;
+}
+
+.am-prompt {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+  padding: var(--gap-xs) 0;
+}
+
+/* loader.js re-imports components.css AFTER this file, so a bare .am-move
+   loses every tie with .pp-pill. Anything that overrides a component
+   declaration has to carry both classes. */
+.pp-pill.am-move {
+  --tile: var(--accent-secondary);
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15em;
+  text-align: left;
+  line-height: 1.25;
+  padding: 0.5em 0.85em;
+}
+.am-move em {
+  font-style: normal;
+  font-weight: var(--weight-semibold);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.am-move i {
+  font-style: normal;
+  font-size: 0.82em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* ── The working ────────────────────────────────────────────────────────── */
+.am-steps {
+  list-style: none;
+  margin: 0 0 var(--gap-sm);
+  padding: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  counter-reset: step;
+}
+
+.am-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  padding: var(--gap-xs) 0;
+  border-bottom: var(--border-subtle);
+}
+.am-step:last-child { border-bottom: 0; }
+.am-step b {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm, 0.9rem);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+}
+.am-step span {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+}
+
+/* ── Controls ───────────────────────────────────────────────────────────── */
+/* The quiet twin of the yellow key. DESIGN.md documents a .pp-btn--ghost, but
+   sticky-ui.css already owns that class name for something else and partner.html
+   depends on it — so this one stays local rather than colliding in the shared
+   component sheet. */
+.pp-btn.am-quiet {
+  background: var(--surface-primary);
+  color: var(--ink);
+}
+
+.am-row { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+.am-row--type { flex-wrap: nowrap; align-items: stretch; }
+
+.am-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm, 0.9rem);
+  color: var(--ink);
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-none);
+  padding: 0.6em 0.7em;
+}
+.am-input:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+
+.am-note {
+  margin: var(--gap-xs) 0 var(--gap-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--text-tertiary);
+}
+.am-note b { color: var(--text-secondary); font-weight: var(--weight-semibold); }
+
+.am-starters { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+.pp-pill.am-starter {
+  --tile: var(--accent-warning);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
