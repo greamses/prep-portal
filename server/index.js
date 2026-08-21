@@ -99,6 +99,8 @@ app.use("/api/admin",   quota.guard, require("./routes/admin")(db, auth));
 app.use("/api/magazine", require("./routes/magazine")(db));
 app.use("/api/youtube",  require("./routes/youtube")());
 app.use("/api/grammar",  require("./routes/grammar")());
+// Pure function of its query string: no auth, no AI spend, no data access.
+app.use("/api/algebra",  require("./routes/algebra")());
 app.use("/api/writing",  quota.guard, require("./routes/writing")());
 
 // Health check

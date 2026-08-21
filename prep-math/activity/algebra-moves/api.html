@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Algebra Moves API</title>
+    <meta
+      name="description"
+      content="Poke the algebra engine directly: parse an equation into a tree, list the legal moves on any term, make one, work the whole thing out, or ask whether a step someone else wrote is legal."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper"><div class="logo-cluster"></div></div>
+      <div class="loader-word"><span>Engine</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="am-paint" aria-hidden="true"></div>
+
+    <main class="am-page am-page--api">
+      <header class="am-hero">
+        <span class="am-eyebrow">Mathematics · Under the bonnet</span>
+        <h1 class="am-title">The engine<em>.</em></h1>
+        <p class="am-lead">
+          The same algebra that runs
+          <a class="am-link" href="./index.html">Algebra Moves</a>, over HTTP.
+          One implementation, not two — a server-side copy of the rules would be
+          free to drift from the one the student actually uses. Nothing here
+          needs a browser, an account, or an AI call.
+        </p>
+      </header>
+
+      <div class="am-bench am-bench--api">
+        <section class="pp-receipt am-play">
+          <div class="pp-receipt__paper">
+            <h2 class="am-h">Try it</h2>
+
+            <div class="am-row am-row--type">
+              <input
+                class="am-input"
+                id="ap-eq"
+                type="text"
+                value="2x - 7 = 4x + 1"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Equation"
+              />
+            </div>
+
+            <div class="am-starters" id="ap-verbs" style="margin-top: 0.6rem"></div>
+
+            <div class="am-row am-row--type" id="ap-second" hidden style="margin-top: 0.6rem">
+              <input
+                class="am-input"
+                id="ap-to"
+                type="text"
+                value="2x = 4x + 8"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="The step to check"
+              />
+            </div>
+            <p class="am-note" id="ap-hint"></p>
+
+            <p class="am-h" style="margin-top: 1rem">The request</p>
+            <p class="am-url"><a id="ap-url" href="#" target="_blank" rel="noopener"></a></p>
+
+            <p class="am-h" style="margin-top: 1rem">What came back</p>
+            <pre class="am-json" id="ap-out">…</pre>
+          </div>
+        </section>
+
+        <div class="am-side">
+          <section class="pp-receipt">
+            <div class="pp-receipt__paper">
+              <h2 class="am-h">The endpoints</h2>
+              <dl class="am-api-list">
+                <dt>GET /api/algebra/parse</dt>
+                <dd>
+                  The tree a typed line becomes, every node with the id the
+                  animation matches on — and whether it reads back unchanged.
+                </dd>
+
+                <dt>GET /api/algebra/moves</dt>
+                <dd>
+                  Every term, and the legal moves offered on it. The exact menu
+                  the page shows when you tap it.
+                </dd>
+
+                <dt>GET /api/algebra/apply</dt>
+                <dd>
+                  Make one move. Terms are named by <b>index</b>, left to right
+                  across both sides, because node ids only mean anything inside
+                  one parse.
+                </dd>
+
+                <dt>GET /api/algebra/solve</dt>
+                <dd>
+                  The whole worked solution. The solver has no powers a student
+                  does not — it picks from the same menu, one move at a time.
+                </dd>
+
+                <dt>GET /api/algebra/check</dt>
+                <dd>
+                  Is that step legal? Works on any two equations, whoever wrote
+                  them. This is the gate every move passes before a student is
+                  allowed to see it.
+                </dd>
+              </dl>
+            </div>
+          </section>
+
+          <section class="pp-receipt">
+            <div class="pp-receipt__paper">
+              <h2 class="am-h">How it is typed</h2>
+              <p class="am-note">
+                Equations go in the way they are said — <b>1/2</b> for a half,
+                <b>x^2</b> for a square, <b>3x</b> for three of them. In a URL,
+                <b>=</b> must be written <b>%3D</b> and <b>+</b> as <b>%2B</b>;
+                the box above does that for you.
+              </p>
+              <p class="am-note">
+                Public on purpose: it is a pure function of its query string,
+                capped at 200 characters in and 24 steps out.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="./js/api-explorer.js"></script>
+  </body>
+</html>

@@ -172,6 +172,68 @@ export function flipSigns(eq) {
   return { eq: A.eqn(flip(eq.l), flip(eq.r), eq.id), from: new Map(), note: "Change every sign" };
 }
 
+/* ── Open the brackets ──────────────────────────────────────────────────────
+   3(x + 1) becomes 3x + 3. Only a NUMBER may be multiplied in, which keeps
+   this to the case a student meets and away from the ones where distributing
+   is where the wrong answers live.
+
+   The result is spliced into the side rather than nested inside it, or the
+   line would read 3x + 3 + 2 while the tree still thought the first two were
+   one lump and no further move could touch them separately. */
+
+export function expand(eq, id) {
+  const loc = locate(eq, id);
+  if (!loc) return { error: "That is not one of the terms." };
+
+  // −3(x + 1) is the same job with the sign folded into the multiplier.
+  const flipped = loc.term.kind === "neg" && !loc.term.paren;
+  const body = flipped ? loc.term.k : loc.term;
+  if (body.kind !== "prod") return { error: "There are no brackets to open there." };
+
+  const at = body.kids.findIndex((k) => k.kind === "sum");
+  if (at < 0) return { error: "There are no brackets to open there." };
+
+  const others = body.kids.filter((_, i) => i !== at);
+  if (!others.length || !others.every(A.isNumeric)) {
+    return { error: "I only multiply a number into a bracket." };
+  }
+
+  let factor = flipped ? R.neg(R.ONE) : R.ONE;
+  for (const k of others) {
+    const v = A.exactValue(k);
+    if (!v) return { error: "I cannot work out what is multiplying the bracket." };
+    factor = R.mul(factor, v);
+  }
+
+  const inner = A.termsOf(body.kids[at]);
+  const grown = inner.map((t) => {
+    const read = A.readTerm(t);
+    // A term we can read gets its number changed; one we cannot keeps its
+    // shape and simply gains a multiplier out in front.
+    return read
+      ? A.termFrom(R.mul(read.c, factor), read.vars.length ? A.varNodesOf(t) : [])
+      : A.prod([A.numberNode(factor), t]);
+  });
+
+  const nextTerms = [...loc.terms.slice(0, loc.index), ...grown, ...loc.terms.slice(loc.index + 1)];
+  const nextSide = A.sideFromTerms(nextTerms, eq[loc.side]);
+  const eqNext = loc.side === "l" ? A.eqn(nextSide, eq.r, eq.id) : A.eqn(eq.l, nextSide, eq.id);
+
+  // Each new term came out of the bracket, so they all fly from the old one.
+  const from = new Map();
+  for (const g of grown) if (g.id !== loc.term.id) from.set(g.id, [loc.term.id]);
+
+  return { eq: eqNext, from, note: `${plain(loc.term)} opens up to ${grown.map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ")}` };
+}
+
+/* ── Turn it round ──────────────────────────────────────────────────────────
+   5 = x is a finished answer, but it is not how anyone writes one down. Both
+   sides keep their ids, so they slide past each other rather than blink. */
+
+export function swapSides(eq) {
+  return { eq: A.eqn(eq.r, eq.l, eq.id), from: new Map(), note: "Turn it round" };
+}
+
 /* ── Drop a zero ────────────────────────────────────────────────────────────
    Adding nothing is still written down until someone says to stop writing it.
    Without this the leftovers of a cancelled term sit there forever, and the
@@ -279,6 +341,19 @@ export function offers(eq, id) {
   if (term.kind === "frac" && read && read.vars.length > 0) {
     const trial = cancel(eq, id);
     if (!trial.error) out.push({ key: "cancel", label: "Cancel it down", hint: "same number top and bottom", run: () => trial });
+  }
+
+  // A bracket with a number in front of it.
+  {
+    const trial = expand(eq, id);
+    if (!trial.error) {
+      out.push({ key: "expand", label: "Open the brackets", hint: "multiply it through", run: () => trial });
+    }
+  }
+
+  // The letters have ended up on the right and the answer is written backwards.
+  if (A.isNumeric(eq.l) && !A.isNumeric(eq.r)) {
+    out.push({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", run: () => swapSides(eq) });
   }
 
   // Anything numeric that is not already a single tidy number.

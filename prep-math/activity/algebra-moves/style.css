@@ -227,6 +227,9 @@
 }
 
 .am-row { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+/* A class with `display` outranks the [hidden] attribute, so hidden rows have
+   to say so themselves or they stay on screen. */
+.am-row[hidden] { display: none; }
 .am-row--type { flex-wrap: nowrap; align-items: stretch; }
 
 .am-input {
@@ -257,3 +260,58 @@
   text-transform: none;
   letter-spacing: 0.02em;
 }
+
+/* ── The API explorer (api.html) ─────────────────────────────────────────── */
+@media (min-width: 980px) {
+  .am-bench--api { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+}
+
+.am-link { color: var(--accent-secondary); text-underline-offset: 3px; }
+
+.pp-pill.am-verb.is-on {
+  --tile: var(--accent-secondary);
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+
+.am-url {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  word-break: break-all;
+}
+.am-url a { color: var(--accent-secondary); }
+
+.am-json {
+  margin: 0;
+  padding: var(--gap-sm);
+  max-height: 26rem;
+  overflow: auto;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+}
+.am-json.is-bad { color: var(--accent-danger); }
+
+.am-api-list { margin: 0; }
+.am-api-list dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+  margin-top: var(--gap-sm);
+}
+.am-api-list dt:first-child { margin-top: 0; }
+.am-api-list dd {
+  margin: 0.2em 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--text-tertiary);
+}
+.am-api-list dd b { color: var(--text-secondary); font-weight: var(--weight-semibold); }
