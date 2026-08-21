@@ -175,6 +175,7 @@ const NAV_CONFIG = [
         description: "Hands-on math practice",
         children: [
           { text: "Algebra Lab", href: "/prep-math/drag/index.html", description: "Drag-and-drop equation solving" },
+          { text: "Algebra Moves", href: "/prep-math/activity/algebra-moves/index.html", description: "Name the move, watch the equation rearrange" },
           { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", description: "Visualize fraction equivalence" },
           { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html", description: "Explore angle rules and sums" },
           { text: "Surface Area", href: "/prep-math/activity/surface-area/index.html", description: "Calculate area on 3D shapes" },

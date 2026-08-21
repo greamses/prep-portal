@@ -105,6 +105,7 @@ export const FEATURES = [
     default: "premium",
     paths: ["/prep-math/activity"],
     parts: [
+      { id: "algebra-moves", label: "Algebra Moves (name the move, the equation rearranges)", path: "/prep-math/activity/algebra-moves" },
       { id: "base-blocks", label: "Manipulatives (blocks, abacus, tiles, grids)", path: "/prep-math/activity/base-blocks" },
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
