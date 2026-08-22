@@ -42,6 +42,8 @@ function tokenise(src) {
     }
     if (isAlpha(c)) { out.push({ t: "var", v: c, at: i }); i++; continue; }
     if ("+-*/^()=".includes(c)) { out.push({ t: c, v: c, at: i }); i++; continue; }
+    // The keypad's placeholder for a slot you have not filled in yet.
+    if (c === "?") { out.push({ t: "hole", v: "?", at: i }); i++; continue; }
     // Typed with the keys a phone offers instead of the ones we expect.
     if (c === "×" || c === "·") { out.push({ t: "*", v: "*", at: i }); i++; continue; }
     if (c === "÷") { out.push({ t: "/", v: "/", at: i }); i++; continue; }
@@ -53,7 +55,7 @@ function tokenise(src) {
 }
 
 /** Tokens that can begin a factor — a "-" cannot, or 3 - 2 would read as 3(-2). */
-const STARTS_FACTOR = new Set(["num", "var", "("]);
+const STARTS_FACTOR = new Set(["num", "var", "(", "hole"]);
 
 export function parse(src) {
   const toks = tokenise(src);
@@ -65,6 +67,7 @@ export function parse(src) {
     const tk = peek();
     if (tk.t === "num") { p++; return A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null); }
     if (tk.t === "var") { p++; return A.vr(tk.v); }
+    if (tk.t === "hole") { p++; return A.hole(); }
     // A bracket the student typed is a bracket they keep seeing: mark it here
     // rather than have the layout guess later where brackets belong.
     if (tk.t === "(") { p++; const e = expr(); eat(")"); e.paren = true; return e; }

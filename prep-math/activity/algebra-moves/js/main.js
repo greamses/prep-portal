@@ -1,24 +1,26 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   ALGEBRA MOVES — spike
+   ALGEBRA MOVES
 
-   Tap a term, pick a named move, watch the equation rearrange itself.
+   Tap a term, pick a named move, and the equation writes its next line.
 
    The student names the move rather than dragging one term onto another. That
-   is the whole design decision this spike exists to try: naming the move
-   removes the guesswork about what a drag meant, which is where a drag-driven
-   tool spends most of its difficulty and produces most of its wrong answers.
-   It also happens to be what an exam wants a student to be able to say.
+   is the design decision the whole thing rests on: naming it removes the
+   guesswork about what a drag meant, which is where a drag-driven tool spends
+   most of its difficulty and produces most of its wrong answers. It is also
+   what an exam asks a student to be able to say.
 
-   Nothing reaches the screen unchecked. Every move is applied to a copy, run
-   past the numeric verifier, and only then shown — a rewrite that cannot be
-   proved to keep the same solutions is refused out loud.
+   Nothing reaches the canvas unchecked. Every move is applied to a copy and run
+   past the numeric verifier first — see verify.js — so a rewrite that cannot be
+   proved to keep the same solutions is refused out loud instead of drawn.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { parse } from "./parse.js";
 import { plain, fontReady } from "./layout.js";
-import { offers } from "./ops.js";
-import { preservesSolutions } from "./verify.js";
-import { createStage } from "./render.js";
+import { createCanvas } from "./canvas.js";
+import { createCard } from "./card.js";
+import { createMenu } from "./menu.js";
+import { createKeypad } from "./keypad.js";
+import { solve } from "./solve.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -26,141 +28,104 @@ const $ = (sel) => document.querySelector(sel);
 const STARTERS = [
   "3x + 5 = 20",
   "2x - 7 = 4x + 1",
+  "3(x + 1) = 9",
+  "(3x + 5)/4 = 5",
   "5 - x = 2",
-  "2 + 3x + 1 = 7",
-  "x/4 = 3",
-  "-4x = 12",
+  "7 = 2x - 3",
 ];
 
-let eq = null;
-let past = [];      // [{ eq, note }] — every line of the working so far
-let stage = null;
+let canvas = null;
+let menu = null;
+let keypad = null;
+let cards = [];
+let active = null;
 
-/* ── The working ────────────────────────────────────────────────────────── */
-
-function renderSteps() {
-  const list = $("#am-steps");
-  list.textContent = "";
-  past.forEach((step, i) => {
-    const row = document.createElement("li");
-    row.className = "am-step";
-    const line = document.createElement("b");
-    line.textContent = plain(step.eq);
-    const why = document.createElement("span");
-    why.textContent = step.note || (i === 0 ? "where we started" : "");
-    row.append(line, why);
-    list.appendChild(row);
-  });
-  list.scrollTop = list.scrollHeight;
-  $("#am-undo").disabled = past.length < 2;
-}
-
+/* ── Saying things ──────────────────────────────────────────────────────── */
+let sayTimer = null;
 function say(text, tone = "") {
   const el = $("#am-say");
   el.textContent = text || "";
-  el.className = `am-say ${tone}`;
+  el.className = `am-say${tone ? ` is-${tone}` : ""}`;
+  clearTimeout(sayTimer);
+  if (text) sayTimer = setTimeout(() => { el.textContent = ""; el.className = "am-say"; }, 4200);
 }
 
-/* ── The menu of moves ──────────────────────────────────────────────────── */
-
-function renderOffers(id) {
-  const box = $("#am-offers");
-  box.textContent = "";
-
-  if (!id) {
-    box.innerHTML = `<span class="am-prompt">Tap a term to see what you can do with it.</span>`;
-    return;
-  }
-
-  const list = offers(eq, id);
-  if (!list.length) {
-    box.innerHTML = `<span class="am-prompt">Nothing to do with that one.</span>`;
-    return;
-  }
-
-  for (const offer of list) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "pp-pill am-move";
-    btn.innerHTML = `<em>${offer.label}</em><i>${offer.hint}</i>`;
-    btn.addEventListener("click", () => apply(offer));
-    box.appendChild(btn);
-  }
+function countUp() {
+  $("#am-count").textContent =
+    cards.length === 0 ? "nothing on the canvas yet"
+    : `${cards.length} ${cards.length === 1 ? "problem" : "problems"}`;
 }
 
-/* ── Making a move ──────────────────────────────────────────────────────── */
+/* ── The menu that follows the picked term ──────────────────────────────── */
+function openMenuFor(card) {
+  const picked = card.picked;
+  if (!picked) return menu.close();
 
-function apply(offer) {
-  const result = offer.run();
-
-  if (result.error) {
-    say(result.error, "is-no");
-    return;
+  const moves = card.movesForPicked();
+  if (!moves.length) {
+    menu.close();
+    return say("Nothing to do with that one.");
   }
 
-  // The gate. A move is not shown until the numbers agree that it is the same
-  // equation — see verify.js for why this is cheap and why it is not optional.
-  const check = preservesSolutions(eq, result.eq);
-  if (!check.ok) {
-    say(`I will not do that — ${check.why}.`, "is-no");
-    return;
-  }
-
-  eq = result.eq;
-  past.push({ eq, note: result.note });
-  stage.clearPick();
-  stage.show(eq, { from: result.from });
-  renderOffers(null);
-  renderSteps();
-  say(result.note, "is-ok");
+  menu.open(moves, () => card.rectFor(picked), (offer) => {
+    const result = card.apply(offer);
+    menu.close();
+    if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
+    say(result.note, "ok");
+    canvas.revealCard(card.el);
+  });
 }
 
-function undo() {
-  if (past.length < 2) return;
-  past.pop();
-  eq = past[past.length - 1].eq;
-  stage.clearPick();
-  stage.show(eq, { from: new Map() });
-  renderOffers(null);
-  renderSteps();
-  say("Stepped back.");
-}
+/* ── Putting a problem on the paper ─────────────────────────────────────── */
+function addCard(eq) {
+  const spot = canvas.freeSpot(cards.map((c) => ({
+    x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top),
+    // offsetWidth/Height are the card's own pixels, untouched by the canvas
+    // zoom — the same space its left/top are written in.
+    w: c.el.offsetWidth, h: c.el.offsetHeight,
+  })));
 
-/* ── Starting over ──────────────────────────────────────────────────────── */
+  const card = createCard(eq, {
+    x: spot.x, y: spot.y,
+    onPick: (picked, self) => {
+      // Only one card can hold the menu at a time.
+      for (const other of cards) if (other !== self) other.clearPick();
+      active = self;
+      if (picked) openMenuFor(self); else menu.close();
+    },
+    onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
+    onRemove: (self) => {
+      cards = cards.filter((c) => c !== self);
+      if (active === self) { active = null; menu.close(); }
+      countUp();
+    },
+  });
 
-function start(src) {
-  let next;
-  try {
-    next = parse(src);
-  } catch (err) {
-    say(err.message, "is-no");
-    return false;
-  }
-  eq = next;
-  past = [{ eq, note: "" }];
-  stage.forget();
-  stage.show(eq, { animate: false });
-  renderOffers(null);
-  renderSteps();
-  say("");
-  $("#am-input").value = src;
-  return true;
+  cards.push(card);
+  canvas.add(card.el);
+  countUp();
+  canvas.revealCard(card.el);
+  return card;
 }
 
 /* ── Wiring ─────────────────────────────────────────────────────────────── */
-
 async function boot() {
   const paint = $(".am-paint");
   if (paint) paint.innerHTML = heroPaint();
 
-  // Every width in the layout comes from measuring this font. Measure before
-  // it has loaded and the whole equation is laid out to the fallback's metrics.
+  // Every width in the layout comes from measuring this font. Measure before it
+  // has loaded and the whole equation is set to the fallback's metrics.
   await fontReady();
 
-  stage = createStage($("#am-stage"), {
-    onPick: (id) => {
-      say("");
-      renderOffers(id);
+  canvas = createCanvas($("#am-canvas"));
+  menu = createMenu($("#am-frame"));
+  canvas.onMove(() => menu.reposition());
+
+  keypad = createKeypad($("#am-keypad"), {
+    onSubmit: (eq) => {
+      addCard(eq);
+      say(`${plain(eq)} is on the canvas.`, "ok");
+      closeDrawer();
     },
   });
 
@@ -170,18 +135,57 @@ async function boot() {
     chip.type = "button";
     chip.className = "pp-pill am-starter";
     chip.textContent = src;
-    chip.addEventListener("click", () => start(src));
+    chip.addEventListener("click", () => keypad.set(src));
     chips.appendChild(chip);
   }
 
-  $("#am-set").addEventListener("click", () => start($("#am-input").value.trim()));
-  $("#am-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") start($("#am-input").value.trim());
+  // Tapping bare paper puts the menu away.
+  $("#am-canvas").addEventListener("click", (e) => {
+    if (e.target.closest(".am-card")) return;
+    for (const c of cards) c.clearPick();
+    menu.close();
   });
-  $("#am-undo").addEventListener("click", undo);
-  $("#am-restart").addEventListener("click", () => start(past[0] ? plain(past[0].eq).replace(/−/g, "-") : STARTERS[0]));
 
-  start(STARTERS[0]);
+  $("#am-add").addEventListener("click", () => openDrawer());
+  $("#am-drawer-close").addEventListener("click", () => closeDrawer());
+  $("#am-zoom-in").addEventListener("click", () => canvas.zoomBy(1.25));
+  $("#am-zoom-out").addEventListener("click", () => canvas.zoomBy(0.8));
+  $("#am-zoom-reset").addEventListener("click", () => canvas.reset());
+
+  $("#am-work").addEventListener("click", () => {
+    if (!active) return say("Tap a problem first.");
+    const worked = solve(active.equation);
+    if (!worked.solved) return say(worked.stuck || "I could not finish that one.", "no");
+    say(`${worked.steps.length - 1} more ${worked.steps.length === 2 ? "step" : "steps"} to ${worked.steps[worked.steps.length - 1].equation}.`, "ok");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { menu.close(); closeDrawer(); }
+  });
+
+  for (const src of STARTERS.slice(0, 2)) addCard(parse(src));
+  canvas.reset();
+  countUp();
+  openDrawer();
+}
+
+/* ── The keypad drawer ──────────────────────────────────────────────────────
+   A shut drawer is slid off the bottom of the frame rather than removed, so it
+   can come back with an animation — which leaves the keys and the line still in
+   the tab order, and tabbing lands you in a keypad nobody can see. `inert` takes
+   the whole thing out of reach without touching the transform. */
+function openDrawer() {
+  const drawer = $("#am-drawer");
+  drawer.classList.add("is-open");
+  drawer.inert = false;
+  $("#am-add").setAttribute("aria-expanded", "true");
+  keypad?.focus();
+}
+function closeDrawer() {
+  const drawer = $("#am-drawer");
+  drawer.classList.remove("is-open");
+  drawer.inert = true;
+  $("#am-add").setAttribute("aria-expanded", "false");
 }
 
 boot();

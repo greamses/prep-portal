@@ -249,7 +249,7 @@ module.exports = function algebraRoutes() {
         "GET /api/algebra/solve?eq=":  "the whole worked solution",
         "GET /api/algebra/check?from=&to=": "is that step legal?",
       },
-      moves: ["across", "combine", "divide", "cancel", "flip", "expand", "swap", "dropzero", "workout"],
+      moves: ["across", "combine", "divide", "times", "cancel", "flip", "expand", "swap", "dropzero", "workout"],
       note: "Type = as %3D in a query string, and + as %2B.",
     });
   });

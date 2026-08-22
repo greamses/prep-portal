@@ -134,6 +134,44 @@ export function divideBoth(eq, value) {
   return { eq: eqNext, from: new Map(), note: `Divide both sides by ${say(value)}` };
 }
 
+/* ── Times both sides ───────────────────────────────────────────────────────
+   The other half of dividing, and the only way past (3x + 5)/4 = 5: the top is
+   a sum, so there is nothing to cancel it down to, and every other move leaves
+   the fraction exactly where it was.
+
+   Only by a NUMBER, and never by zero, for the same reason as dividing —
+   multiplying an equation by something that might be zero turns it into one
+   that every number solves. */
+
+/** Brackets a numerator wore inside a fraction are not wanted once it is a
+    side of its own. Same id, so the writing still travels. */
+const unbracket = (node) => (node.paren ? { ...node, paren: false } : node);
+
+export function timesBoth(eq, value) {
+  if (R.isZero(value)) return { error: "Multiplying by zero loses the equation." };
+  if (R.isOne(value)) return { error: "Multiplying by one changes nothing." };
+
+  const from = new Map();
+
+  const grow = (side) => {
+    // A fraction over exactly this number simply loses its bottom, and its top
+    // comes up wearing its own id — so the numerator's writing does not move.
+    if (side.kind === "frac") {
+      const den = A.exactValue(side.b);
+      if (den && R.same(den, value)) return unbracket(side.a);
+    }
+    const next = A.prod([A.numberNode(value), side]);
+    from.set(next.id, [side.id]);
+    return next;
+  };
+
+  return {
+    eq: A.eqn(grow(eq.l), grow(eq.r), eq.id),
+    from,
+    note: `Multiply both sides by ${say(value)}`,
+  };
+}
+
 /* ── Cancel a fraction down ─────────────────────────────────────────────────
    What dividing both sides leaves behind: 3x/3. The numerator has to READ as a
    term and the denominator has to be a plain non-zero number, so there is no
@@ -150,8 +188,16 @@ export function cancel(eq, id) {
   const top = A.readTerm(node.a);
   if (!top) return { error: "I cannot read the top as a term." };
 
+  /* Cancelling has to leave a WHOLE number in front, because that is what the
+     word means to a student. Without this, x/3 "cancels" to 1/3x and 2x/5 to
+     2/5x — the bar goes away and a worse fraction takes its place, and the
+     working that follows is unreadable. Those are the fractions you clear by
+     multiplying both sides instead. */
+  const c = R.div(top.c, den);
+  if (!R.isInt(c)) return { error: "The bottom does not divide into the top." };
+
   // Reuse the numerator's own variable nodes: the x never moves, the 3s go.
-  const next = A.termFrom(R.div(top.c, den), top.vars.length ? A.varNodesOf(node.a) : []);
+  const next = A.termFrom(c, top.vars.length ? A.varNodesOf(node.a) : []);
   if (plain(next) === plain(node)) return { error: "That will not cancel." };
 
   const from = next.id === node.id ? new Map() : new Map([[next.id, [node.id]]]);
@@ -320,10 +366,36 @@ export function offers(eq, id) {
     }
   }
 
-  // The last step of a linear equation: one term left, with a number in front.
-  // Divide by the SIGNED coefficient, the way it is taught — dividing −4x by 4
-  // and then tidying the sign afterwards is two steps where one will do.
-  if (read && terms.length === 1 && read.vars.length > 0 && !R.isOne(R.abs(read.c))) {
+  /* A fraction with a letter in it that is the whole of its side: clear it by
+     multiplying. This is the only way out of (3x + 5)/4 = 5 — the top is a sum,
+     so there is nothing to cancel down and nothing else touches the bottom.
+
+     A numeric fraction is deliberately left alone. x = 5/2 is a finished
+     answer, and offering to multiply it away turns two lines of working into
+     seven for nothing. */
+  let clearsByTimes = false;
+  if (term.kind === "frac" && terms.length === 1 && !A.isNumeric(term)) {
+    const den = A.exactValue(term.b);
+    if (den && !R.isZero(den) && !R.isOne(den)) {
+      clearsByTimes = true;
+      out.push({
+        key: "times",
+        label: `Multiply both sides by ${say(den)}`,
+        hint: "undo the dividing",
+        run: () => timesBoth(eq, den),
+      });
+    }
+  }
+
+  /* The last step of a linear equation: one term left, with a number in front.
+     Divide by the SIGNED coefficient, the way it is taught — dividing −4x by 4
+     and then tidying the sign afterwards is two steps where one will do.
+
+     Never offered as "divide both sides by 1/3", though: that is x/3 = 4 read
+     inside out, nobody writes it, and the offer just above is the move
+     everybody does write. */
+  if (read && terms.length === 1 && read.vars.length > 0 && !R.isOne(R.abs(read.c))
+      && !(clearsByTimes && !R.isInt(read.c))) {
     out.push({
       key: "divide",
       label: `Divide both sides by ${say(read.c)}`,

@@ -1,24 +1,460 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    ALGEBRA MOVES
 
-   Everything here is the site's own: the paint wash behind the page, the torn
-   receipts, the pill for a move, the sticky tag. The only new thing is the
-   stage the equation is written on, and even that is paper.
+   Two pages share this sheet: the canvas (index.html) and the API explorer
+   (api.html). Everything is the site's own — the paint wash, the torn receipt,
+   the pill, the sticky. The only new surfaces are the paper you work on and the
+   keypad you type on, and both of those are still paper.
+
+   NOTE ON SPECIFICITY: loader.js re-imports components.css AFTER this file, so
+   anything overriding a .pp-* declaration has to carry both class names or it
+   loses the tie.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --am-nav: 76px;          /* .site-nav is a fixed 76px at every width */
+  --am-paper: #fffdf8;
+}
+[data-theme="dark"] {
+  --am-paper: var(--surface-primary);
+}
 
 /* ── The signature wash ─────────────────────────────────────────────────── */
 .am-paint {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0.24;
+  opacity: 0.2;
 }
 .am-paint svg { width: 100%; height: 100%; display: block; }
-[data-theme="dark"] .am-paint { opacity: 0.14; }
+[data-theme="dark"] .am-paint { opacity: 0.12; }
 
-/* ── Page ───────────────────────────────────────────────────────────────── */
+/* ═══ THE CANVAS PAGE ════════════════════════════════════════════════════ */
+
+.am-body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.am-frame {
+  position: fixed;
+  inset: var(--am-nav) 0 0 0;
+  overflow: hidden;
+  background: var(--app-bg);
+}
+
+/* The paper itself: an endless sheet, ruled, that pans under the cards. */
+.am-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: grab;
+  touch-action: none;
+  overflow: hidden;
+}
+.am-canvas.is-panning { cursor: grabbing; }
+
+.am-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(42, 39, 35, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 39, 35, 0.055) 1px, transparent 1px);
+}
+[data-theme="dark"] .am-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 253, 248, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 253, 248, 0.05) 1px, transparent 1px);
+}
+
+.am-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* ── A card: one problem and its working ────────────────────────────────── */
+.am-card {
+  position: absolute;
+  background: var(--am-paper);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.2s ease;
+}
+.am-card.is-lifted { box-shadow: var(--shadow-xl); }
+
+.am-card__grip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  padding: 0 0.45rem;
+  background: var(--surface-secondary);
+  border-bottom: var(--border-subtle);
+  cursor: grab;
+  touch-action: none;
+}
+.am-card.is-lifted .am-card__grip { cursor: grabbing; }
+
+/* The handle reads as something to hold without needing a label. */
+.am-card__dots {
+  width: 26px;
+  height: 7px;
+  background-image: radial-gradient(circle, var(--text-tertiary) 1px, transparent 1.1px);
+  background-size: 5px 5px;
+  opacity: 0.75;
+}
+
+.am-card__tools { display: flex; gap: 0.15rem; }
+.am-card__btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.am-card__btn:hover { color: var(--ink); background: rgba(42, 39, 35, 0.07); }
+[data-theme="dark"] .am-card__btn:hover { background: rgba(255, 253, 248, 0.1); }
+
+.am-card__sheet { position: relative; }
+
+.am-card__done {
+  padding: 0.3rem 0.6rem 0.45rem;
+  border-top: var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-bold);
+  color: var(--accent-success);
+  text-align: center;
+}
+.am-card__done::before { content: "solved · "; color: var(--text-tertiary); font-weight: 400; }
+
+/* ── A line of working ──────────────────────────────────────────────────── */
+.am-work { position: absolute; }
+.am-work:not(.is-live) { opacity: 0.5; }
+
+.am-work__why {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0.7rem;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.am-row-svg { display: block; overflow: visible; }
+
+.am-glyph {
+  fill: var(--ink);
+  dominant-baseline: alphabetic;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.am-rule { fill: var(--ink); }
+
+/* Selection sits BEHIND the writing, so a picked term stays black ink on
+   paper rather than turning into a coloured button. */
+.am-sel { fill: var(--accent-primary); opacity: 0.45; }
+[data-theme="dark"] .am-sel { opacity: 0.32; }
+
+.am-hit { fill: transparent; cursor: pointer; outline: none; }
+.am-hit:hover { fill: var(--ink); fill-opacity: 0.07; }
+.am-hit:focus-visible { fill: var(--accent-secondary); fill-opacity: 0.2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .am-glyph, .am-rule { transition: none !important; }
+}
+
+/* ── The menu of moves ──────────────────────────────────────────────────── */
+.am-menu {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.35rem;
+  background: var(--am-paper);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+}
+/* `display: flex` above beats the UA's `[hidden] { display: none }`, so a
+   closed menu has to be put away by hand — otherwise the empty sheet stays on
+   the paper as a small square of border. */
+.am-menu[hidden] { display: none; }
+
+.am-move {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1em;
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+.am-move:hover { background: var(--surface-secondary); }
+.am-move em {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: var(--weight-semibold);
+  font-style: normal;
+  color: var(--ink);
+}
+.am-move i {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-style: normal;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* ── What the tool is saying ────────────────────────────────────────────── */
+.am-say {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: 0.85rem;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: calc(100% - 2rem);
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: 1.9;
+  color: var(--text-secondary);
+  background: var(--am-paper);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.am-say:empty { display: none; }
+.am-say.is-ok { color: var(--accent-success); }
+.am-say.is-no { color: var(--accent-danger); font-weight: var(--weight-semibold); }
+
+/* ── The rail ───────────────────────────────────────────────────────────── */
+.am-rail {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.35rem;
+  background: var(--am-paper);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+}
+.am-rail__group { display: flex; gap: 0.2rem; }
+.am-rail__group + .am-rail__group { padding-left: 0.5rem; border-left: var(--border-subtle); }
+
+.am-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.55rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.am-tool:hover { background: var(--surface-secondary); color: var(--ink); }
+.am-tool em {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.am-tool--key {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+.am-tool--key:hover { background: var(--accent-primary); color: var(--text-on-accent); filter: brightness(1.05); }
+
+.am-count {
+  padding-right: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ── The keypad drawer ──────────────────────────────────────────────────── */
+.am-drawer {
+  position: absolute;
+  z-index: 50;
+  left: 50%;
+  bottom: 0;
+  width: min(30rem, calc(100vw - 1.5rem));
+  transform: translate(-50%, calc(100% + 2rem));
+  transition: transform var(--transition-bounce);
+  pointer-events: none;
+}
+.am-drawer.is-open { transform: translate(-50%, -4.6rem); pointer-events: auto; }
+
+.am-drawer__paper {
+  position: relative;
+  padding: 0.9rem;
+  background: var(--am-paper);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-xl);
+  max-height: calc(100vh - var(--am-nav) - 7rem);
+  overflow-y: auto;
+}
+
+.am-drawer__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.am-drawer__close:hover { color: var(--ink); background: var(--surface-secondary); }
+
+/* The equation drawn as it is typed. */
+.am-preview {
+  display: grid;
+  place-items: center;
+  min-height: 5rem;
+  margin-bottom: 0.6rem;
+  padding: 0.4rem;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  overflow-x: auto;
+}
+.am-preview .is-stale { opacity: 0.32; }
+
+.am-line {
+  display: block;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-none);
+  padding: 0.55em 0.6em;
+  caret-color: var(--accent-secondary);
+}
+.am-line:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+
+.am-keysay {
+  min-height: 1.35em;
+  margin: 0.35rem 0 0.55rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+}
+.am-keysay.is-ok { color: var(--accent-success); }
+.am-keysay.is-no { color: var(--accent-danger); }
+
+.am-pad { display: grid; gap: 0.3rem; }
+.am-pad__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+
+.am-key {
+  padding: 0.62rem 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, box-shadow 0.14s ease, background 0.14s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.am-key:hover { background: var(--surface-secondary); }
+.am-key:active { transform: translateY(1px); box-shadow: none; }
+.am-key--letter { color: var(--accent-secondary); font-style: italic; }
+.am-key--warn { color: var(--accent-danger); }
+.am-key--go {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.am-key--wide { grid-column: span 2; }
+
+.am-starters { display: flex; flex-wrap: wrap; gap: var(--gap-xs); margin-top: 0.7rem; }
+.pp-pill.am-starter {
+  --tile: var(--accent-warning);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.am-note {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--text-tertiary);
+}
+.am-note b { color: var(--text-secondary); font-weight: var(--weight-semibold); }
+
+.am-link { color: var(--accent-secondary); text-underline-offset: 3px; }
+
+/* Phones: the keypad wants the width, and the rail must not fight it. */
+@media (max-width: 560px) {
+  .am-drawer { width: 100vw; }
+  .am-drawer.is-open { transform: translate(-50%, 0); }
+  .am-drawer__paper { border-left: 0; border-right: 0; border-bottom: 0; }
+  .am-rail { bottom: 0.6rem; gap: 0.3rem; padding: 0.28rem; }
+  .am-tool em { display: none; }
+  .am-tool--key em { display: inline; }
+  .am-count { display: none; }
+  .am-key { padding: 0.7rem 0.15rem; font-size: 0.8rem; }
+}
+
+/* ═══ THE API EXPLORER PAGE ══════════════════════════════════════════════ */
+
 .am-page {
   position: relative;
   z-index: 1;
@@ -26,6 +462,7 @@
   margin: 0 auto;
   padding: var(--padding-lg) var(--padding-md) var(--padding-xl);
 }
+.am-page--api .am-paint { position: fixed; }
 
 .am-hero { margin-bottom: var(--gap-lg); max-width: 46rem; }
 
@@ -57,7 +494,6 @@
   margin: 0;
 }
 
-/* ── Bench ──────────────────────────────────────────────────────────────── */
 .am-bench {
   display: grid;
   gap: var(--gap-lg);
@@ -65,14 +501,10 @@
   align-items: start;
 }
 @media (min-width: 980px) {
-  .am-bench { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+  .am-bench--api { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 }
 
 .am-play { position: relative; }
-/* A sticky tag has to be a SIBLING of __paper — the receipt's mask clips
-   anything inside it. */
-.pp-sticky.am-flag { position: absolute; top: -18px; right: 24px; z-index: 2; }
-
 .am-side { display: grid; gap: var(--gap-lg); }
 
 .am-h {
@@ -85,150 +517,9 @@
   margin: 0 0 var(--gap-sm);
 }
 
-/* ── The stage the equation is written on ───────────────────────────────── */
-.am-stage {
-  background: var(--surface-secondary);
-  border: var(--border-subtle);
-  /* --padding-xs clamps up to ~57px here, which starved the equation of the
-     card it is supposed to fill. */
-  padding: var(--gap-sm);
-  margin-bottom: var(--gap-sm);
-}
-
-.am-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.am-glyph {
-  fill: var(--ink);
-  dominant-baseline: alphabetic;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.am-rule { fill: var(--ink); }
-
-/* Selection sits BEHIND the writing, so the term stays black on paper rather
-   than turning into a coloured button. */
-.am-sel {
-  fill: var(--accent-primary);
-  opacity: 0.42;
-}
-[data-theme="dark"] .am-sel { opacity: 0.3; }
-
-.am-hit {
-  fill: transparent;
-  cursor: pointer;
-  outline: none;
-}
-.am-hit:hover { fill: var(--ink); fill-opacity: 0.06; }
-.am-hit:focus-visible { fill: var(--accent-secondary); fill-opacity: 0.18; }
-
-@media (prefers-reduced-motion: reduce) {
-  .am-glyph, .am-rule { transition: none !important; }
-}
-
-/* ── What the tool is saying ────────────────────────────────────────────── */
-.am-say {
-  min-height: 1.4em;
-  margin: 0 0 var(--gap-sm);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs);
-  color: var(--text-tertiary);
-}
-.am-say.is-ok { color: var(--accent-success); }
-.am-say.is-no { color: var(--accent-danger); font-weight: var(--weight-semibold); }
-
-/* ── The moves on offer ─────────────────────────────────────────────────── */
-.am-offers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-xs);
-  min-height: 3.2rem;
-  align-items: flex-start;
-}
-
-.am-prompt {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs);
-  color: var(--text-tertiary);
-  padding: var(--gap-xs) 0;
-}
-
-/* loader.js re-imports components.css AFTER this file, so a bare .am-move
-   loses every tie with .pp-pill. Anything that overrides a component
-   declaration has to carry both classes. */
-.pp-pill.am-move {
-  --tile: var(--accent-secondary);
-  white-space: normal;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15em;
-  text-align: left;
-  line-height: 1.25;
-  padding: 0.5em 0.85em;
-}
-.am-move em {
-  font-style: normal;
-  font-weight: var(--weight-semibold);
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--ink);
-}
-.am-move i {
-  font-style: normal;
-  font-size: 0.82em;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-
-/* ── The working ────────────────────────────────────────────────────────── */
-.am-steps {
-  list-style: none;
-  margin: 0 0 var(--gap-sm);
-  padding: 0;
-  max-height: 17rem;
-  overflow-y: auto;
-  counter-reset: step;
-}
-
-.am-step {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1em;
-  padding: var(--gap-xs) 0;
-  border-bottom: var(--border-subtle);
-}
-.am-step:last-child { border-bottom: 0; }
-.am-step b {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-sm, 0.9rem);
-  font-weight: var(--weight-bold);
-  color: var(--ink);
-}
-.am-step span {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs);
-  color: var(--text-tertiary);
-}
-
-/* ── Controls ───────────────────────────────────────────────────────────── */
-/* The quiet twin of the yellow key. DESIGN.md documents a .pp-btn--ghost, but
-   sticky-ui.css already owns that class name for something else and partner.html
-   depends on it — so this one stays local rather than colliding in the shared
-   component sheet. */
-.pp-btn.am-quiet {
-  background: var(--surface-primary);
-  color: var(--ink);
-}
-
 .am-row { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
-/* A class with `display` outranks the [hidden] attribute, so hidden rows have
-   to say so themselves or they stay on screen. */
+/* A class with `display` outranks the [hidden] attribute, so a hidden row has
+   to say so itself or it stays on screen. */
 .am-row[hidden] { display: none; }
 .am-row--type { flex-wrap: nowrap; align-items: stretch; }
 
@@ -244,29 +535,6 @@
   padding: 0.6em 0.7em;
 }
 .am-input:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
-
-.am-note {
-  margin: var(--gap-xs) 0 var(--gap-sm);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs);
-  line-height: var(--leading-relaxed);
-  color: var(--text-tertiary);
-}
-.am-note b { color: var(--text-secondary); font-weight: var(--weight-semibold); }
-
-.am-starters { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
-.pp-pill.am-starter {
-  --tile: var(--accent-warning);
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-
-/* ── The API explorer (api.html) ─────────────────────────────────────────── */
-@media (min-width: 980px) {
-  .am-bench--api { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-}
-
-.am-link { color: var(--accent-secondary); text-underline-offset: 3px; }
 
 .pp-pill.am-verb.is-on {
   --tile: var(--accent-secondary);
@@ -315,3 +583,28 @@
   color: var(--text-tertiary);
 }
 .am-api-list dd b { color: var(--text-secondary); font-weight: var(--weight-semibold); }
+
+/* An empty slot in a half-typed line: the shape is there, the contents are not. */
+.am-hole {
+  fill: var(--accent-secondary);
+  fill-opacity: 0.1;
+  stroke: var(--accent-secondary);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 2.5;
+  opacity: 0.75;
+}
+
+/* The primary action gets its own full-width key rather than a cell that would
+   never fit the grid. */
+.am-key--go-wide {
+  display: block;
+  width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.72rem;
+}
+
+/* On a phone the reason costs more width than it is worth; the working itself
+   still reads, and the toast says what just happened. */
+@media (max-width: 560px) {
+  .am-work__why { display: none; }
+}

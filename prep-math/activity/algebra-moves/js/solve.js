@@ -21,13 +21,19 @@ import { offers } from "./ops.js";
 import { preservesSolutions } from "./verify.js";
 import { plain } from "./layout.js";
 
-/* Cheapest and most obviously-right first. Shoving a term across the equals
-   sign is the move most likely to undo itself, so it goes last. */
-const RANK = { workout: 0, dropzero: 1, cancel: 2, expand: 3, flip: 4, combine: 5, swap: 6, across: 7, divide: 8 };
+/* Cheapest and most obviously-right first: tidy what is already written before
+   changing the shape of it, or the tidying gets carried along inside the new
+   shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
+   the equals sign is the move most likely to undo itself, so it goes last. */
+const RANK = { workout: 0, dropzero: 1, combine: 2, cancel: 3, times: 4, expand: 5, flip: 6, swap: 7, across: 8, divide: 9 };
 
+/* A finished answer is a NUMBER, not merely something with no letters in it.
+   (20 − 5)/3 is variable-free and still half a step from being an answer, so a
+   fraction only counts once both halves are numbers themselves. */
 const isNumberNode = (n) =>
-  n.kind === "num" || (n.kind === "neg" && isNumberNode(n.k)) ||
-  (n.kind === "frac" && A.isNumeric(n));
+  n.kind === "num" ||
+  (n.kind === "neg" && isNumberNode(n.k)) ||
+  (n.kind === "frac" && isNumberNode(n.a) && isNumberNode(n.b));
 
 /** x = 5, or x = −4/3. One letter on the left, one plain number on the right. */
 export function isSolved(eq) {

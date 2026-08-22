@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
@@ -10,7 +10,7 @@
     <title>Prep Portal | Algebra Moves</title>
     <meta
       name="description"
-      content="Rearrange an equation by naming the move. Tap a term, choose what to do with it — take it from both sides, add it to a like term, divide, cancel — and watch the writing travel to where it now belongs."
+      content="An endless sheet for working algebra out. Type an equation on the keypad, tap a term, and name what you want done with it — take it from both sides, add it to a like term, multiply, divide, cancel — and watch the writing travel into the line below."
     />
 
     <!-- Page access gate: feature "prep-math-activities", part "algebra-moves" -->
@@ -45,7 +45,7 @@
     <script src="/utils/components/loader.js"></script>
   </head>
 
-  <body>
+  <body class="am-body">
     <div id="loader">
       <div id="loader-wrapper"><div class="logo-cluster"></div></div>
       <div class="loader-word"><span>Algebra</span></div>
@@ -55,78 +55,69 @@
     <script type="module" src="/utils/auth/login-guard.js"></script>
     <nav class="site-nav" data-nav="main"></nav>
 
-    <div class="am-paint" aria-hidden="true"></div>
+    <!-- ═══ THE CANVAS, FILLING WHAT IS LEFT OF THE WINDOW ═══ -->
+    <main class="am-frame" id="am-frame">
+      <div class="am-paint" aria-hidden="true"></div>
 
-    <main class="am-page">
-      <header class="am-hero">
-        <span class="am-eyebrow">Mathematics · Working it out</span>
-        <h1 class="am-title">Algebra Moves<em>.</em></h1>
-        <p class="am-lead">
-          An equation is one thing being rearranged, not a new line of writing
-          each time. Tap a term, say what you want done with it, and watch it
-          travel to where it now belongs.
-        </p>
-      </header>
+      <div class="am-canvas" id="am-canvas" touch-action="none"></div>
 
-      <div class="am-bench">
-        <!-- ═══ THE STAGE ═══ -->
-        <section class="pp-receipt am-play" aria-label="The equation">
-          <span
-            class="pp-sticky pp-sticky--c3 pp-sticky--tape am-flag"
-            style="--pp-note-tilt: -4deg"
-            >Spike</span
-          >
-          <div class="pp-receipt__paper">
-            <div class="am-stage" id="am-stage"></div>
+      <!-- ── What the tool is saying ─────────────────────────────────── -->
+      <p class="am-say" id="am-say" role="status" aria-live="polite"></p>
 
-            <p class="am-say" id="am-say" role="status" aria-live="polite"></p>
-
-            <div class="am-offers" id="am-offers" aria-label="Moves you can make"></div>
-          </div>
-        </section>
-
-        <!-- ═══ THE WORKING, AND WHAT TO WORK ON ═══ -->
-        <div class="am-side">
-          <section class="pp-receipt am-working" aria-label="The working">
-            <div class="pp-receipt__paper">
-              <h2 class="am-h">The working</h2>
-              <ol class="am-steps" id="am-steps"></ol>
-              <div class="am-row">
-                <button class="pp-btn am-quiet" type="button" id="am-undo">Step back</button>
-                <button class="pp-btn am-quiet" type="button" id="am-restart">Start again</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="pp-receipt am-setup" aria-label="Choose an equation">
-            <div class="pp-receipt__paper">
-              <h2 class="am-h">Another equation</h2>
-              <div class="am-row am-row--type">
-                <input
-                  class="am-input"
-                  id="am-input"
-                  type="text"
-                  inputmode="text"
-                  autocomplete="off"
-                  spellcheck="false"
-                  aria-label="Type an equation"
-                />
-                <button class="pp-btn" type="button" id="am-set">Set it</button>
-              </div>
-              <p class="am-note">
-                Typed the way it is said — <b>1/2</b> for a half, <b>x^2</b> for
-                a square, <b>3x</b> for three of them.
-              </p>
-              <div class="am-starters" id="am-starters"></div>
-
-              <p class="am-note" style="margin-bottom: 0">
-                The same algebra is reachable over HTTP —
-                <a class="am-link" href="./api.html">see the engine</a>.
-              </p>
-            </div>
-          </section>
+      <!-- ── The rail ────────────────────────────────────────────────── -->
+      <div class="am-rail" role="toolbar" aria-label="Canvas tools">
+        <div class="am-rail__group">
+          <button class="am-tool am-tool--key" type="button" id="am-add"
+                  aria-expanded="false" aria-controls="am-drawer"
+                  title="Type an equation" aria-label="Type an equation">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <em>New</em>
+          </button>
+          <button class="am-tool" type="button" id="am-work"
+                  title="How many steps are left?" aria-label="How many steps are left?">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+            <em>Steps left</em>
+          </button>
         </div>
+
+        <div class="am-rail__group">
+          <button class="am-tool" type="button" id="am-zoom-out" title="Zoom out" aria-label="Zoom out">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-4.3-4.3"/></svg>
+          </button>
+          <button class="am-tool" type="button" id="am-zoom-in" title="Zoom in" aria-label="Zoom in">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-4.3-4.3"/></svg>
+          </button>
+          <button class="am-tool" type="button" id="am-zoom-reset" title="Back to the middle" aria-label="Back to the middle">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          </button>
+        </div>
+
+        <span class="am-count" id="am-count"></span>
       </div>
+
+      <!-- ── The keypad, in a drawer ─────────────────────────────────── -->
+      <section class="am-drawer" id="am-drawer" aria-label="Type an equation" inert>
+        <div class="am-drawer__paper">
+          <button class="am-drawer__close" type="button" id="am-drawer-close" aria-label="Put the keypad away">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+
+          <div class="am-keypad" id="am-keypad"></div>
+
+          <div class="am-starters" id="am-starters"></div>
+          <p class="am-note">
+            Typed the way it is said — <b>1/2</b> for a half, <b>x^2</b> for a
+            square, <b>3x</b> for three of them. The same algebra is reachable
+            over HTTP: <a class="am-link" href="./api.html">see the engine</a>.
+          </p>
+        </div>
+      </section>
     </main>
 
     <script type="module" src="/utils/components/nav-builder.js"></script>

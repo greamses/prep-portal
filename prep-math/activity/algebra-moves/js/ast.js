@@ -30,6 +30,12 @@ export const frac = (a, b, id = freshId())           => ({ id, kind: "frac", a, 
 export const pow  = (b, e, id = freshId())           => ({ id, kind: "pow", b, e });
 export const eqn  = (l, r, id = freshId())           => ({ id, kind: "eq", l, r });
 
+/* An empty slot in a half-typed line — the box a fraction key leaves behind
+   before anything has been put in it. It only ever exists in the keypad's
+   preview: nothing with a hole in it can be put on the canvas, so no move and
+   no verifier ever meets one. */
+export const hole = (id = freshId())                 => ({ id, kind: "hole" });
+
 /** A rational as a tree: an integer is one node, anything else is a fraction. */
 export function numberNode(r) {
   if (R.isNegative(r)) return neg(numberNode(R.neg(r)));

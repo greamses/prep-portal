@@ -66,6 +66,11 @@ function numText(node) {
    written (20 − 5)/3 or it says something else entirely. */
 
 function needsBrackets(node, parentKind, slot) {
+  // A fraction bar and a raised exponent do their own grouping, so brackets in
+  // those places are noise EVEN WHEN THE STUDENT TYPED THEM — which matters
+  // because the keypad's fraction key types a pair into each half.
+  if (parentKind === "frac") return false;
+  if (parentKind === "pow" && slot === 1) return false;
   if (node.paren) return true;
   switch (parentKind) {
     case "prod": return node.kind === "sum" || (node.kind === "neg" && slot > 0);
@@ -128,6 +133,11 @@ function measureBare(node, size, binary) {
     }
     case "var":
       return { ...base, kind: "text", text: node.name, italic: true, w: measureText(node.name, size, true) };
+
+    case "hole":
+      // Drawn as a box the size of a digit, so a half-typed fraction looks like
+      // a fraction with something still to go in it.
+      return { ...base, kind: "hole", w: 0.62 * size, ascent: 0.62 * size, descent: 0.02 * size };
 
     case "neg": {
       // A minus in front of a term is tight; a minus BETWEEN terms is an
@@ -259,6 +269,11 @@ function place(m, x, y, out) {
       text("t", m.text, x, y, m.size, m.italic);
       break;
 
+    case "hole":
+      out.atoms.push({ key: `${id}#box`, nodeId: id, kind: "hole",
+                       x, y: y - m.ascent, w: m.w, h: m.ascent + m.descent });
+      break;
+
     case "neg":
       text("sign", "−", x, y, m.size, false);
       place(m.k, x + m.signW + m.gap, y, out);
@@ -338,6 +353,7 @@ export function plain(node, parentKind = null, slot = 0) {
   switch (node.kind) {
     case "num":  return wrap(numText(node));
     case "var":  return wrap(node.name);
+    case "hole": return wrap("?");
     case "neg":  return wrap(`−${plain(node.k, "neg", 0)}`);
     case "sum":  return wrap(node.kids.map((k, i) =>
                    i === 0 ? plain(k, "sum", 0)
