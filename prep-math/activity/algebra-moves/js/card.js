@@ -21,17 +21,26 @@ const ROW_GAP = 10;
 const PAD = 18;
 const NOTE_GAP = 12;   // matches .am-work__why margin-left
 
+/* The six papers of .pp-sticky (components.css), taken in turn so a canvas of
+   problems reads as a pad of notes rather than a stack of windows. Tilts are
+   fixed rather than random: a tilt that changes every reload makes the canvas
+   feel unstable, and past about two degrees the working stops sitting level
+   enough to read down. */
+const PAPERS = 6;
+const TILTS = [-1.7, 1.2, -0.9, 1.8, -1.4, 0.8];
+
 let seq = 0;
 
 export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
   const id = `card${++seq}`;
-  const rows = [];        // { row, offset, note }
+  const rows = [];        // { row, offset, note, from }
   let picked = null;
-  let stack = [];         // the equations, for stepping back
+  let undone = [];        // lines stepped back off the bottom, newest last
 
   const el = document.createElement("div");
-  el.className = "am-card";
+  el.className = `am-card pp-sticky--c${seq % PAPERS}`;
   el.dataset.card = id;
+  el.style.setProperty("--am-tilt", `${TILTS[seq % TILTS.length]}deg`);
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
 
@@ -42,9 +51,13 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
   const tools = document.createElement("div");
   tools.className = "am-card__tools";
   tools.innerHTML = `
-    <button type="button" class="am-card__btn" data-act="back" title="Step back" aria-label="Step back">
+    <button type="button" class="am-card__btn" data-act="back" title="Step back" aria-label="Step back" disabled>
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
            stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+    </button>
+    <button type="button" class="am-card__btn" data-act="forward" title="Step forward again" aria-label="Step forward again" disabled>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
+           stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
     </button>
     <button type="button" class="am-card__btn" data-act="close" title="Take it off the canvas" aria-label="Take it off the canvas">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
@@ -122,9 +135,10 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
       sheet.replaceChild(stale, sheet.lastElementChild);
     }
 
-    const entry = { row: buildRow(nextEq, SIZE), note };
+    // `from` is kept with the row: stepping forward again replays the same
+    // travel rather than fading the writing in from nowhere.
+    const entry = { row: buildRow(nextEq, SIZE), note, from };
     rows.push(entry);
-    stack.push(nextEq);
 
     const holder = paint(entry, true);
     sheet.appendChild(holder);
@@ -144,13 +158,22 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
 
     flag.hidden = !isSolved(nextEq);
     if (!flag.hidden) flag.textContent = plain(nextEq);
+    arrows();
     onChange?.(api);
+  }
+
+  /** The two arrows only offer what there is: a step to take back, a step to
+      put back. A greyed arrow says where you are in the working. */
+  function arrows() {
+    tools.querySelector("[data-act='back']").disabled = rows.length < 2;
+    tools.querySelector("[data-act='forward']").disabled = undone.length === 0;
   }
 
   function stepBack() {
     if (rows.length < 2) return;
-    rows.pop();
-    stack.pop();
+    // Keep the whole row, not just its equation: put back the same reason and
+    // the same travel when the forward arrow is pressed.
+    undone.push(rows.pop());
     sheet.removeChild(sheet.lastElementChild);
     picked = null;
     const last = rows[rows.length - 1];
@@ -158,8 +181,17 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
     sheet.replaceChild(fresh, sheet.lastElementChild);
     relayout();
     flag.hidden = !isSolved(last.row.eq);
+    arrows();
     onPick?.(null, api);
     onChange?.(api);
+  }
+
+  function stepForward() {
+    const back = undone.pop();
+    if (!back) return;
+    picked = null;
+    push(back.row.eq, { from: back.from, note: back.note });
+    onPick?.(null, api);
   }
 
   /* ── Tapping a term ──────────────────────────────────────────────────── */
@@ -185,6 +217,7 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
   tools.addEventListener("click", (e) => {
     const act = e.target.closest("[data-act]")?.dataset.act;
     if (act === "back") stepBack();
+    if (act === "forward") stepForward();
     if (act === "close") { el.remove(); onRemove?.(api); }
   });
 
@@ -217,12 +250,19 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
       const verdict = preservesSolutions(this.equation, result.eq);
       if (!verdict.ok) return { refused: verdict.why };
       picked = null;
-      push(result.eq, { from: result.from, note: result.note });
+      // A move made here is a new branch of the working: whatever was stepped
+      // back off the bottom is not on the way to it any more.
+      undone = [];
+      // The margin gets the SHORTHAND — +5, ÷3 — the way working is annotated
+      // by hand. The sentence is what the offer was called and what the tool
+      // says out loud when it lands; it does not belong beside every line.
+      push(result.eq, { from: result.from, note: offer.mark || "" });
       return { ok: true, note: result.note };
     },
 
     clearPick() { if (picked) { picked = null; repaintLive(); } },
     stepBack,
+    stepForward,
     working: () => rows.map((r) => ({ equation: plain(r.row.eq), note: r.note })),
     remove() { el.remove(); onRemove?.(api); },
   };

@@ -170,7 +170,3 @@ export function flipInto({ prevRow, prevOffset, newRow, newOffset, newSvg, from 
   });
 }
 
-/** A one-off drawing with nothing interactive about it — the keypad preview. */
-export function renderStatic(eq, size) {
-  return paintRow(buildRow(eq, size), { live: false });
-}

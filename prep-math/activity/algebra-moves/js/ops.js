@@ -37,6 +37,9 @@ const isPlainZero = (node) => node.kind === "num" && R.isZero(node.v);
 /** Numbers written in prose use the same minus sign the equation does. */
 const say = (r) => R.toText(r).replace(/-/g, "−");
 
+/** The same number as it goes in a MARGIN, where a minus needs holding. */
+const mul = (r) => (R.isNegative(r) ? `(${say(r)})` : say(r));
+
 /* ── Take a term from both sides ────────────────────────────────────────────
    The move everyone means when they say "move it across". We do not model it
    as movement: we subtract the term from both sides, it cancels on one and
@@ -346,6 +349,12 @@ export function offers(eq, id) {
     key: "across",
     label: adding ? `Add ${plain(term.k)} to both sides` : `Take ${plain(term)} from both sides`,
     hint: "the balance rule",
+    // What gets written beside the line. Only the four moves that DO something
+    // to both sides get one, because those are the four a person writing this
+    // out by hand would annotate; the tidying steps speak for themselves and a
+    // sentence beside every line only makes the card wide and the working hard
+    // to read down.
+    mark: adding ? `+${plain(term.k)}` : `−${plain(term)}`,
     run: () => takeAcross(eq, id),
   });
 
@@ -382,6 +391,7 @@ export function offers(eq, id) {
         key: "times",
         label: `Multiply both sides by ${say(den)}`,
         hint: "undo the dividing",
+        mark: `×${mul(den)}`,
         run: () => timesBoth(eq, den),
       });
     }
@@ -400,13 +410,14 @@ export function offers(eq, id) {
       key: "divide",
       label: `Divide both sides by ${say(read.c)}`,
       hint: "undo the multiplying",
+      mark: `÷${mul(read.c)}`,
       run: () => divideBoth(eq, read.c),
     });
   }
 
   // −x = −3 wants its signs changed, not a division by −1.
   if (read && terms.length === 1 && read.vars.length > 0 && R.isNegative(read.c) && R.isOne(R.abs(read.c))) {
-    out.push({ key: "flip", label: "Change every sign", hint: "times both sides by −1", run: () => flipSigns(eq) });
+    out.push({ key: "flip", label: "Change every sign", hint: "times both sides by −1", mark: "×(−1)", run: () => flipSigns(eq) });
   }
 
   // The fraction that dividing both sides left behind.

@@ -116,6 +116,9 @@ export function createCanvas(host) {
 
     add(cardEl) { world.appendChild(cardEl); },
 
+    /** Put a card on top of the pile — it is the one being worked on. */
+    raise(cardEl) { if (cardEl.parentElement === world) world.appendChild(cardEl); },
+
     /** The middle of the visible area, in world terms — where a new card goes. */
     centre() {
       const box = host.getBoundingClientRect();
@@ -139,7 +142,7 @@ export function createCanvas(host) {
          move adds a line under it and a reason to the right of it, so spacing
          them by what they measure at birth guarantees they collide three moves
          later. Roughly a solved five-line problem. */
-      const ROOM = { w: 540, h: 300 };
+      const ROOM = { w: 540, h: 420 };
       const GAP = 28;
       const frame = host.getBoundingClientRect().width;
       // On a phone ROOM is wider than the window; there is no sense reserving

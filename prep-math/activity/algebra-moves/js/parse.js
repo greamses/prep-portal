@@ -63,36 +63,57 @@ export function parse(src) {
   const peek = () => toks[p];
   const eat = (t) => { if (toks[p].t !== t) throw new SyntaxError(`I expected ${t === "end" ? "the end" : `"${t}"`} here.`); return toks[p++]; };
 
+  /* Where in the typed line each node came from, as [start, end).
+     The keypad needs it and nothing else does: it is what lets a caret in the
+     DRAWN equation know which characters of the source it is standing between.
+     Recorded here because this is the only place that still knows — by the
+     time there is a tree, the string is gone.
+
+     A production that hands its child straight back re-stamps the same span
+     over itself, which costs nothing and is why this is one line per rule. */
+  const from = () => p;
+  const span = (mark, node) => {
+    if (node) node.src = [toks[mark].at, p > mark ? toks[p - 1].at + String(toks[p - 1].v).length : toks[mark].at];
+    return node;
+  };
+
   function atom() {
+    const mark = from();
     const tk = peek();
-    if (tk.t === "num") { p++; return A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null); }
-    if (tk.t === "var") { p++; return A.vr(tk.v); }
-    if (tk.t === "hole") { p++; return A.hole(); }
+    if (tk.t === "num") { p++; return span(mark, A.num(R.fromDecimal(tk.v), tk.v.includes(".") ? tk.v : null)); }
+    if (tk.t === "var") { p++; return span(mark, A.vr(tk.v)); }
+    if (tk.t === "hole") { p++; return span(mark, A.hole()); }
     // A bracket the student typed is a bracket they keep seeing: mark it here
     // rather than have the layout guess later where brackets belong.
+    // The span stays the content's own, WITHOUT the brackets. It is where the
+    // caret may stand, and inside the brackets is exactly where a student
+    // wanting to add another digit to (4) means to be.
     if (tk.t === "(") { p++; const e = expr(); eat(")"); e.paren = true; return e; }
     throw new SyntaxError(tk.t === "end" ? "The line stops before it is finished." : `I did not expect "${tk.v}" here.`);
   }
 
   function power() {
+    const mark = from();
     const base = atom();
-    if (peek().t === "^") { p++; return A.pow(base, factor()); }
+    if (peek().t === "^") { p++; return span(mark, A.pow(base, factor())); }
     return base;
   }
 
   function factor() {
-    if (peek().t === "-") { p++; return A.neg(factor()); }
-    if (peek().t === "+") { p++; return factor(); }
+    const mark = from();
+    if (peek().t === "-") { p++; return span(mark, A.neg(factor())); }
+    if (peek().t === "+") { p++; return span(mark, factor()); }
     return power();
   }
 
   function term() {
+    const mark = from();
     let node = factor();
     for (;;) {
       const tk = peek();
-      if (tk.t === "*") { p++; node = mul(node, factor()); continue; }
-      if (tk.t === "/") { p++; node = A.frac(node, factor()); continue; }
-      if (STARTS_FACTOR.has(tk.t)) { node = mul(node, factor()); continue; }
+      if (tk.t === "*") { p++; node = span(mark, mul(node, factor())); continue; }
+      if (tk.t === "/") { p++; node = span(mark, A.frac(node, factor())); continue; }
+      if (STARTS_FACTOR.has(tk.t)) { node = span(mark, mul(node, factor())); continue; }
       return node;
     }
   }
@@ -103,20 +124,23 @@ export function parse(src) {
     a.kind === "prod" && !a.paren ? A.prod([...a.kids, b], a.id) : A.prod([a, b]);
 
   function expr() {
+    const mark = from();
     const terms = [term()];
     for (;;) {
       const tk = peek();
+      const at = from();
       if (tk.t === "+") { p++; terms.push(term()); continue; }
-      if (tk.t === "-") { p++; terms.push(A.neg(term())); continue; }
+      if (tk.t === "-") { p++; terms.push(span(at, A.neg(term()))); continue; }
       break;
     }
-    return terms.length === 1 ? terms[0] : A.sum(terms);
+    return span(mark, terms.length === 1 ? terms[0] : A.sum(terms));
   }
 
+  const start = from();
   const left = expr();
   if (peek().t !== "=") throw new SyntaxError("This needs an equals sign — the tool works on equations.");
   p++;
   const right = expr();
   eat("end");
-  return A.eqn(left, right);
+  return span(start, A.eqn(left, right));
 }

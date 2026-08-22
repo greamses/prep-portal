@@ -44,6 +44,10 @@
   overflow: hidden;
   background: var(--app-bg);
 }
+/* Filling the screen leaves the nav behind, so the strip reserved for it has to
+   be given back — otherwise the sheet starts below a band of nothing. */
+.am-frame:fullscreen,
+.am-frame:-webkit-full-screen { inset: 0; }
 
 /* The paper itself: an endless sheet, ruled, that pans under the cards. */
 .am-canvas {
@@ -77,15 +81,41 @@
   will-change: transform;
 }
 
-/* ── A card: one problem and its working ────────────────────────────────── */
+/* ── A card: one problem and its working, on a sheet off the pad ──────────
+   The paper colour comes from .pp-sticky--c0…c5 in components.css, so this is
+   the site's sticky note and not a second one that drifts from it.
+
+   Paper is paper in the light and in the dark — that is the whole point of the
+   component — so the card fixes its own ink rather than inheriting --ink, which
+   flips to near-white in the dark theme and would leave the working invisible
+   on a lemon-yellow note. Everything inside reads those variables: the glyphs,
+   the fraction bars, the margin marks and the little buttons. */
 .am-card {
+  --ink: #14130f;
+  --text-tertiary: rgba(20, 19, 15, 0.5);
+  --text-secondary: rgba(20, 19, 15, 0.68);
+  --border-subtle: 1px solid rgba(20, 19, 15, 0.12);
+
   position: absolute;
-  background: var(--am-paper);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.2s ease;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 9px 14px -5px rgba(20, 19, 15, 0.34);
+  transform: rotate(var(--am-tilt, -1.4deg));
+  transform-origin: 50% 40%;
+  transition: box-shadow 0.2s ease, transform 0.2s var(--ease-bounce, ease);
 }
-.am-card.is-lifted { box-shadow: var(--shadow-xl); }
+/* Picked up off the pad: straightened and lifted, the way you square a note to
+   read it. */
+.am-card.is-lifted {
+  transform: rotate(0deg) scale(1.014);
+  box-shadow:
+    0 2px 3px rgba(20, 19, 15, 0.12),
+    10px 18px 30px -8px rgba(20, 19, 15, 0.4);
+}
 
 .am-card__grip {
   display: flex;
@@ -93,8 +123,8 @@
   justify-content: space-between;
   height: 26px;
   padding: 0 0.45rem;
-  background: var(--surface-secondary);
-  border-bottom: var(--border-subtle);
+  /* No chrome bar on a sticky note: the handle is a few dots on the paper. */
+  background: transparent;
   cursor: grab;
   touch-action: none;
 }
@@ -122,26 +152,32 @@
   cursor: pointer;
   border-radius: 2px;
 }
-.am-card__btn:hover { color: var(--ink); background: rgba(42, 39, 35, 0.07); }
-[data-theme="dark"] .am-card__btn:hover { background: rgba(255, 253, 248, 0.1); }
+.am-card__btn:hover:not(:disabled) { color: var(--ink); background: rgba(20, 19, 15, 0.1); }
+/* An arrow with nothing to do stays where it is and goes quiet, so the pair
+   reads as a position in the working rather than appearing and disappearing. */
+.am-card__btn:disabled { opacity: 0.3; cursor: default; }
 
 .am-card__sheet { position: relative; }
 
 .am-card__done {
   padding: 0.3rem 0.6rem 0.45rem;
-  border-top: var(--border-subtle);
+  border-top: 1px dashed rgba(20, 19, 15, 0.18);
   font-family: var(--font-mono);
   font-size: var(--text-mono-xs);
   font-weight: var(--weight-bold);
-  color: var(--accent-success);
+  /* A dark green that holds on every one of the six papers; the theme's own
+     success colour is tuned for the app's background, not for lemon paper. */
+  color: #1f6b3a;
   text-align: center;
 }
 .am-card__done::before { content: "solved · "; color: var(--text-tertiary); font-weight: 400; }
 
 /* ── A line of working ──────────────────────────────────────────────────── */
 .am-work { position: absolute; }
-.am-work:not(.is-live) { opacity: 0.5; }
+.am-work:not(.is-live) { opacity: 0.56; }
 
+/* What was done to both sides, written beside the line the way it is written
+   by hand: +5, ÷3. Short enough now to keep, so the phone rule below is gone. */
 .am-work__why {
   position: absolute;
   left: 100%;
@@ -149,11 +185,12 @@
   transform: translateY(-50%);
   margin-left: 0.7rem;
   white-space: nowrap;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 15px;
   font-style: normal;
-  letter-spacing: 0.02em;
-  color: var(--text-tertiary);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -167,14 +204,18 @@
 }
 .am-rule { fill: var(--ink); }
 
-/* Selection sits BEHIND the writing, so a picked term stays black ink on
-   paper rather than turning into a coloured button. */
-.am-sel { fill: var(--accent-primary); opacity: 0.45; }
-[data-theme="dark"] .am-sel { opacity: 0.32; }
+/* Selection sits BEHIND the writing, so a picked term stays black ink on paper
+   rather than turning into a coloured button. On coloured paper it has to be a
+   ring rather than a wash: a yellow highlight over a yellow note is nothing. */
+.am-sel {
+  fill: rgba(255, 255, 255, 0.5);
+  stroke: rgba(20, 19, 15, 0.5);
+  stroke-width: 1.4;
+}
 
 .am-hit { fill: transparent; cursor: pointer; outline: none; }
-.am-hit:hover { fill: var(--ink); fill-opacity: 0.07; }
-.am-hit:focus-visible { fill: var(--accent-secondary); fill-opacity: 0.2; }
+.am-hit:hover { fill: #14130f; fill-opacity: 0.07; }
+.am-hit:focus-visible { fill: #14130f; fill-opacity: 0.14; }
 
 @media (prefers-reduced-motion: reduce) {
   .am-glyph, .am-rule { transition: none !important; }
@@ -336,6 +377,7 @@
 
 .am-drawer__close {
   position: absolute;
+  z-index: 2;                 /* the drawing below it is positioned too */
   top: 0.5rem;
   right: 0.5rem;
   display: grid;
@@ -352,32 +394,67 @@
 .am-drawer__close:hover { color: var(--ink); background: var(--surface-secondary); }
 
 /* The equation drawn as it is typed. */
+/* The drawing IS the field you type in. It is not an input, so it has to be
+   given a field's manners by hand: a text cursor over it, and a ring when the
+   line behind it has the focus. */
 .am-preview {
+  position: relative;
   display: grid;
   place-items: center;
-  min-height: 5rem;
-  margin-bottom: 0.6rem;
-  padding: 0.4rem;
-  background: var(--surface-secondary);
-  border: var(--border-subtle);
-  overflow-x: auto;
-}
-.am-preview .is-stale { opacity: 0.32; }
-
-.am-line {
-  display: block;
-  width: 100%;
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-  color: var(--ink);
+  min-height: 5.6rem;
+  margin-bottom: 0.15rem;
+  padding: 0.55rem 0.4rem;
   background: var(--surface-primary);
   border: var(--border-subtle);
-  border-radius: var(--radius-none);
-  padding: 0.55em 0.6em;
-  caret-color: var(--accent-secondary);
+  overflow-x: auto;
+  cursor: text;
+  touch-action: manipulation;
 }
-.am-line:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+.am-preview.is-live { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+/* An empty field still shows you where you are about to type. */
+.am-preview.is-empty.is-live::after {
+  content: "";
+  display: block;
+  width: 2px;
+  height: 2.4rem;
+  background: var(--accent-secondary);
+  animation: am-blink 1.06s step-end infinite;
+}
+
+/* When the line cannot be drawn at all, the letters themselves stand in for it
+   — set in the equation's own face, so the box does not change character while
+   a student is halfway through fixing a typo. */
+.am-preview__raw {
+  margin: 0;
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 1.5rem;
+  color: var(--text-tertiary);
+  word-break: break-all;
+}
+
+/* Ours, because a native caret cannot stand halfway down a fraction. */
+.am-caret {
+  fill: var(--accent-secondary);
+  animation: am-blink 1.06s step-end infinite;
+}
+.am-band { fill: var(--accent-secondary); opacity: 0.22; }
+@keyframes am-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .am-caret { animation: none; } }
+
+/* The source is still a real <input> — that is what keeps arrow keys, a
+   physical keyboard and selection working on plain text — it is simply not the
+   thing you look at. It has to stay focusable, so it cannot be display:none. */
+.am-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 
 .am-keysay {
   min-height: 1.35em;
@@ -603,8 +680,4 @@
   padding: 0.72rem;
 }
 
-/* On a phone the reason costs more width than it is worth; the working itself
-   still reads, and the toast says what just happened. */
-@media (max-width: 560px) {
-  .am-work__why { display: none; }
-}
+

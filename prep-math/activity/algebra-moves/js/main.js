@@ -91,6 +91,10 @@ function addCard(eq) {
       // Only one card can hold the menu at a time.
       for (const other of cards) if (other !== self) other.clearPick();
       active = self;
+      // Cards grow downward as the working piles up, so one will eventually
+      // reach under its neighbour. Touching a card brings it to the top of the
+      // pile, which is what stops that mattering.
+      if (picked) canvas.raise(self.el);
       if (picked) openMenuFor(self); else menu.close();
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
@@ -151,6 +155,7 @@ async function boot() {
   $("#am-zoom-in").addEventListener("click", () => canvas.zoomBy(1.25));
   $("#am-zoom-out").addEventListener("click", () => canvas.zoomBy(0.8));
   $("#am-zoom-reset").addEventListener("click", () => canvas.reset());
+  wireFullScreen();
 
   $("#am-work").addEventListener("click", () => {
     if (!active) return say("Tap a problem first.");
@@ -167,6 +172,49 @@ async function boot() {
   canvas.reset();
   countUp();
   openDrawer();
+}
+
+/* ── Filling the screen ─────────────────────────────────────────────────────
+   The FRAME goes fullscreen, not the document: the rail, the drawer and the
+   menu of moves are all inside it, so they come along and keep working. The nav
+   does not, which is the point — an endless sheet wants the whole window. */
+const EXPAND = '<path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/>';
+const SHRINK = '<path d="M9 4v4a1 1 0 0 1-1 1H4M15 4v4a1 1 0 0 0 1 1h4M9 20v-4a1 1 0 0 0-1-1H4M15 20v-4a1 1 0 0 1 1-1h4"/>';
+
+const fullNow = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+function wireFullScreen() {
+  const btn = $("#am-full");
+  const frame = $("#am-frame");
+  if (!btn || !frame) return;
+
+  // Nothing here can promise fullscreen: an iframe without `allowfullscreen`,
+  // and iPhone Safari, both refuse it outright. Take the button away rather
+  // than leave one that does nothing when pressed.
+  if (!(frame.requestFullscreen || frame.webkitRequestFullscreen)) { btn.hidden = true; return; }
+
+  btn.addEventListener("click", async () => {
+    try {
+      if (fullNow()) await (document.exitFullscreen?.() ?? document.webkitExitFullscreen?.());
+      else await (frame.requestFullscreen?.() ?? frame.webkitRequestFullscreen?.());
+    } catch {
+      say("This browser will not let the page fill the screen.", "no");
+    }
+  });
+
+  const sync = () => {
+    const on = !!fullNow();
+    btn.querySelector("svg").innerHTML = on ? SHRINK : EXPAND;
+    btn.title = on ? "Back to the page" : "Fill the screen";
+    btn.setAttribute("aria-label", btn.title);
+    btn.setAttribute("aria-pressed", String(on));
+    // Every position on the canvas is measured off the frame, and the frame
+    // just changed size under everything.
+    menu.close();
+    canvas.reset();
+  };
+  document.addEventListener("fullscreenchange", sync);
+  document.addEventListener("webkitfullscreenchange", sync);
 }
 
 /* ── The keypad drawer ──────────────────────────────────────────────────────
