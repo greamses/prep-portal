@@ -222,53 +222,44 @@
 }
 
 /* ── The menu of moves ──────────────────────────────────────────────────── */
+/* No paper of its own: with one chip in it, a sheet behind the chip is just a
+   second border round the same thing. The chip carries its own shadow. */
 .am-menu {
   position: absolute;
   z-index: 40;
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
   max-width: min(20rem, calc(100vw - 2rem));
-  padding: 0.35rem;
-  background: var(--am-paper);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-lg);
 }
 /* `display: flex` above beats the UA's `[hidden] { display: none }`, so a
    closed menu has to be put away by hand — otherwise the empty sheet stays on
    the paper as a small square of border. */
 .am-menu[hidden] { display: none; }
 
+/* The chip itself: big enough for a thumb, short enough to read without
+   reading. Set in the equation's own face, because it is a piece of algebra —
+   +5, ÷3, 3x + 3 — and not a caption about one. */
 .am-move {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1em;
-  width: 100%;
-  padding: 0.4rem 0.55rem;
+  display: block;
+  min-width: 3.1rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.75rem;
   border: 0;
   border-radius: 2px;
-  background: transparent;
-  text-align: left;
+  background: var(--accent-primary);
+  color: var(--text-on-accent, #2a2723);
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 1.32rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-align: center;
   cursor: pointer;
-  transition: background 0.14s ease;
+  box-shadow: 0 3px 10px -2px rgba(20, 19, 15, 0.4);
+  transition: transform 0.12s ease, filter 0.12s ease;
 }
-.am-move:hover { background: var(--surface-secondary); }
-.am-move em {
-  font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: var(--weight-semibold);
-  font-style: normal;
-  color: var(--ink);
-}
-.am-move i {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-style: normal;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
+.am-move:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.am-move:active { transform: translateY(0); }
+.am-move:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ── What the tool is saying ────────────────────────────────────────────── */
 .am-say {

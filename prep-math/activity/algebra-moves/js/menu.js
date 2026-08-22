@@ -1,9 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    THE MENU OF MOVES
 
-   A small sheet of offers that opens beside whatever term was tapped. On a
-   canvas it has to follow the term rather than live in a side panel, or you
-   lose your place every time you look away from what you are working on.
+   A chip that opens beside whatever term was tapped, saying what would be done
+   to it: +5, ÷3, 20. On a canvas it has to follow the term rather than live in
+   a side panel, or you lose your place every time you look away from what you
+   are working on.
+
+   One chip, not a menu. The choosing is done by picking the TERM — the tool
+   already knows which move it would play on it (solve.js, bestOffers), and a
+   list of sentences to read is slower than the algebra it is there to do.
 
    It sits in SCREEN coordinates, above the zoom transform, so the type stays
    readable however far out the canvas is zoomed.
@@ -62,9 +67,12 @@ export function createMenu(host) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "am-move";
-        btn.innerHTML = `<em></em><i></i>`;
-        btn.querySelector("em").textContent = offer.label;
-        btn.querySelector("i").textContent = offer.hint;
+        // The button says the move, in the two or three characters a person
+        // would write. The sentence goes on the tooltip and on the label a
+        // screen reader reads, so nothing is lost by not printing it.
+        btn.textContent = offer.mark || offer.label;
+        btn.title = offer.label;
+        btn.setAttribute("aria-label", offer.label);
         btn.addEventListener("click", (e) => { e.stopPropagation(); onPick(offer); });
         box.appendChild(btn);
       }

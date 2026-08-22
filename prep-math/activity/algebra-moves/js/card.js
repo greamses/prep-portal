@@ -12,9 +12,8 @@
 
 import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
-import { offers } from "./ops.js";
 import { preservesSolutions } from "./verify.js";
-import { isSolved } from "./solve.js";
+import { isSolved, bestOffers } from "./solve.js";
 
 const SIZE = 34;
 const ROW_GAP = 10;
@@ -26,6 +25,9 @@ const NOTE_GAP = 12;   // matches .am-work__why margin-left
    fixed rather than random: a tilt that changes every reload makes the canvas
    feel unstable, and past about two degrees the working stops sitting level
    enough to read down. */
+/** The moves that are done to both sides, and so are written in the margin. */
+const MARGIN = new Set(["across", "divide", "times", "flip"]);
+
 const PAPERS = 6;
 const TILTS = [-1.7, 1.2, -0.9, 1.8, -1.4, 0.8];
 
@@ -237,10 +239,13 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
       return node ? node.getBoundingClientRect() : null;
     },
 
-    /** The offers for whatever is picked, each already checked. */
+    /* THE move for whatever is picked — one, not a list.
+       A menu of five things to read is slower than doing the algebra, and the
+       tool already knows which one it would play: see bestOffers. Choosing
+       still belongs to the student, it is just chosen by picking the TERM. */
     movesForPicked() {
       if (!picked) return [];
-      return offers(this.equation, picked);
+      return bestOffers(this.equation, picked).slice(0, 1);
     },
 
     /** Make a move. Returns null when it was refused, with the reason. */
@@ -253,10 +258,10 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
       // A move made here is a new branch of the working: whatever was stepped
       // back off the bottom is not on the way to it any more.
       undone = [];
-      // The margin gets the SHORTHAND — +5, ÷3 — the way working is annotated
-      // by hand. The sentence is what the offer was called and what the tool
-      // says out loud when it lands; it does not belong beside every line.
-      push(result.eq, { from: result.from, note: offer.mark || "" });
+      // Only the moves that do something to BOTH sides get a margin mark, the
+      // way working is annotated by hand: +5, ÷3. A tidying step's mark is the
+      // answer it produced, which is already written on the line.
+      push(result.eq, { from: result.from, note: MARGIN.has(offer.key) ? offer.mark : "" });
       return { ok: true, note: result.note };
     },
 

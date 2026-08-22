@@ -64,7 +64,10 @@ function openMenuFor(card) {
   const moves = card.movesForPicked();
   if (!moves.length) {
     menu.close();
-    return say("Nothing to do with that one.");
+    // The only things filtered out are carrying a term to the side it is
+    // already on and turning a line round for nothing, so this is almost
+    // always literally true — and it is the thing worth saying.
+    return say("That one is already where it belongs.");
   }
 
   menu.open(moves, () => card.rectFor(picked), (offer) => {

@@ -51,6 +51,37 @@ function letterSide(eq) {
 }
 
 /**
+ * The moves worth offering on one term, best first.
+ *
+ * This is what the student is shown, and it is the same judgement the solver
+ * makes about its own next move — one function, so the tool can never offer a
+ * move it would not play itself. It is why a term with nothing useful to do
+ * says so rather than offering something that undoes the last line.
+ *
+ * Two rules do the filtering, and they are the two a teacher says out loud:
+ * a term only crosses the equals sign if it is on the wrong side for what it
+ * is — letters together, numbers on the other side — and turning the equation
+ * round is only progress when the answer is already sitting there backwards.
+ */
+export function bestOffers(eq, id) {
+  const home = letterSide(eq);
+  const onHome = new Set(A.termsOf(eq[home]).map((t) => t.id));
+  const term = A.findById(eq, id);
+  if (!term) return [];
+
+  const out = [];
+  for (const offer of offers(eq, id)) {
+    if (offer.key === "swap" && !isAnswerBackwards(eq)) continue;
+    if (offer.key === "across") {
+      const hasLetter = !A.isNumeric(term);
+      if (hasLetter === onHome.has(id)) continue;
+    }
+    out.push(offer);
+  }
+  return out.sort((a, b) => (RANK[a.key] ?? 9) - (RANK[b.key] ?? 9));
+}
+
+/**
  * Work an equation through to x = something, using only the moves the student
  * is offered. Returns every line, in order, with the reason for each.
  *
@@ -63,23 +94,11 @@ export function solve(eq, { maxSteps = 24 } = {}) {
   for (let i = 0; i < maxSteps; i++) {
     if (isSolved(eq)) return { solved: true, steps };
 
-    const home = letterSide(eq);
-    const onHome = new Set(A.termsOf(eq[home]).map((t) => t.id));
-
+    // Exactly what the student would be shown on every term, pooled.
     const choices = [];
     for (const side of ["l", "r"]) {
       for (const term of A.termsOf(eq[side])) {
-        for (const offer of offers(eq, term.id)) {
-          // Only carry a term across if it is on the wrong side for what it is:
-          // letters belong on the home side, numbers on the other.
-          // Turning it round is only progress when the answer is already there
-          // backwards; otherwise it is a free move to cycle on.
-          if (offer.key === "swap" && !isAnswerBackwards(eq)) continue;
-          if (offer.key === "across") {
-            const hasLetter = !A.isNumeric(term);
-            const atHome = onHome.has(term.id);
-            if (hasLetter === atHome) continue;
-          }
+        for (const offer of bestOffers(eq, term.id)) {
           choices.push({ offer, rank: RANK[offer.key] ?? 9 });
         }
       }

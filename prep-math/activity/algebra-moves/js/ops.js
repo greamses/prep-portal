@@ -113,6 +113,7 @@ export function combine(eq, aId, bId) {
   return {
     eq: eqNext,
     from,
+    mark: plain(combined),
     note: `${plain(first.term)} and ${plain(second.term)} make ${plain(combined)}`,
   };
 }
@@ -204,7 +205,7 @@ export function cancel(eq, id) {
   if (plain(next) === plain(node)) return { error: "That will not cancel." };
 
   const from = next.id === node.id ? new Map() : new Map([[next.id, [node.id]]]);
-  return { eq: A.replace(eq, id, next), from, note: `${plain(node)} is ${plain(next)}` };
+  return { eq: A.replace(eq, id, next), from, mark: plain(next), note: `${plain(node)} is ${plain(next)}` };
 }
 
 /* ── Change every sign ──────────────────────────────────────────────────────
@@ -272,7 +273,8 @@ export function expand(eq, id) {
   const from = new Map();
   for (const g of grown) if (g.id !== loc.term.id) from.set(g.id, [loc.term.id]);
 
-  return { eq: eqNext, from, note: `${plain(loc.term)} opens up to ${grown.map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ")}` };
+  const opened = grown.map((g) => plain(g)).join(" + ").replace(/\+ −/g, "− ");
+  return { eq: eqNext, from, mark: opened, note: `${plain(loc.term)} opens up to ${opened}` };
 }
 
 /* ── Turn it round ──────────────────────────────────────────────────────────
@@ -318,14 +320,29 @@ export function workOut(eq, id) {
   return {
     eq: A.replace(eq, id, next),
     from: new Map([[next.id, [node.id]]]),
+    mark: plain(next),
     note: `${plain(node)} is ${plain(next)}`,
   };
 }
 
 /* ── What can I do with this? ───────────────────────────────────────────────
-   The menu the student sees after tapping a term. Everything offered here is
-   legal by construction and then checked by the verifier before it is applied,
-   so there is no path from a tap to a wrong line. */
+   The moves available on a term. Everything offered here is legal by
+   construction and then checked by the verifier before it is applied, so there
+   is no path from a tap to a wrong line.
+
+   Every offer carries a MARK: two or three characters for the button, because
+   a button that has to be read is a button that slows the working down. Two
+   kinds, and between them they cover everything:
+
+     what is being DONE to both sides     +5   −3x   ÷3   ×4   ×(−1)
+     what the term BECOMES                20   x     3x + 3
+
+   The sentence is still there as `label`, for what the tool says out loud when
+   the move lands and for the API. It is just not what you have to read to make
+   a move.
+
+   solve.js turns this list into the ONE move worth offering — see bestOffers.
+*/
 
 export function offers(eq, id) {
   const loc = locate(eq, id);
@@ -340,7 +357,7 @@ export function offers(eq, id) {
   // the equals sign — that is a move that changes the writing and nothing else.
   if (isPlainZero(term)) {
     if (terms.length > 1) {
-      out.push({ key: "dropzero", label: "Rub out the 0", hint: "adding nothing", run: () => dropZero(eq, id) });
+      out.push({ key: "dropzero", label: "Rub out the 0", hint: "adding nothing", mark: "⌫", run: () => dropZero(eq, id) });
     }
     return out;
   }
@@ -366,12 +383,16 @@ export function offers(eq, id) {
       return r && r.sig === read.sig;
     });
     if (partner) {
-      out.push({
-        key: "combine",
-        label: `Add it to ${plain(partner)}`,
-        hint: "like terms",
-        run: () => combine(eq, id, partner.id),
-      });
+      const trial = combine(eq, id, partner.id);
+      if (!trial.error) {
+        out.push({
+          key: "combine",
+          label: `Add it to ${plain(partner)}`,
+          hint: "like terms",
+          mark: trial.mark,
+          run: () => trial,
+        });
+      }
     }
   }
 
@@ -423,27 +444,27 @@ export function offers(eq, id) {
   // The fraction that dividing both sides left behind.
   if (term.kind === "frac" && read && read.vars.length > 0) {
     const trial = cancel(eq, id);
-    if (!trial.error) out.push({ key: "cancel", label: "Cancel it down", hint: "same number top and bottom", run: () => trial });
+    if (!trial.error) out.push({ key: "cancel", label: "Cancel it down", hint: "same number top and bottom", mark: trial.mark, run: () => trial });
   }
 
   // A bracket with a number in front of it.
   {
     const trial = expand(eq, id);
     if (!trial.error) {
-      out.push({ key: "expand", label: "Open the brackets", hint: "multiply it through", run: () => trial });
+      out.push({ key: "expand", label: "Open the brackets", hint: "multiply it through", mark: trial.mark, run: () => trial });
     }
   }
 
   // The letters have ended up on the right and the answer is written backwards.
   if (A.isNumeric(eq.l) && !A.isNumeric(eq.r)) {
-    out.push({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", run: () => swapSides(eq) });
+    out.push({ key: "swap", label: "Turn it round", hint: "same equation, read the other way", mark: "⇄", run: () => swapSides(eq) });
   }
 
   // Anything numeric that is not already a single tidy number.
   if (A.isNumeric(term)) {
     const trial = workOut(eq, id);
     if (!trial.error) {
-      out.push({ key: "workout", label: `Work out ${plain(term)}`, hint: "arithmetic", run: () => trial });
+      out.push({ key: "workout", label: `Work out ${plain(term)}`, hint: "arithmetic", mark: trial.mark, run: () => trial });
     }
   }
 
