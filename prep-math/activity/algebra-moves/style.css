@@ -170,7 +170,7 @@
   color: #1f6b3a;
   text-align: center;
 }
-.am-card__done::before { content: "solved · "; color: var(--text-tertiary); font-weight: 400; }
+.am-card__done::before { content: attr(data-tag) " · "; color: var(--text-tertiary); font-weight: 400; }
 
 /* ── A line of working ──────────────────────────────────────────────────── */
 .am-work { position: absolute; }
@@ -203,6 +203,40 @@
   -webkit-user-select: none;
 }
 .am-rule { fill: var(--ink); }
+
+/* A formula card carries the name of the formula on its handle, and the values
+   it was given just under it — the question, written above the working the way
+   it is written above the working on paper. */
+.am-card__name {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(20, 19, 15, 0.5);
+}
+
+.am-card__given {
+  margin: 0;
+  padding: 0.45rem 0.8rem 0;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(20, 19, 15, 0.75);
+}
+.am-card__given span {
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(20, 19, 15, 0.42);
+}
 
 /* Selection sits BEHIND the writing, so a picked term stays black ink on paper
    rather than turning into a coloured button. On coloured paper it has to be a
@@ -509,6 +543,138 @@
 
 .am-link { color: var(--accent-secondary); text-underline-offset: 3px; }
 
+/* ── Two ways into the drawer ─────────────────────────────────── */
+.am-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+  padding-right: 2rem;         /* clear of the close button */
+}
+.am-tab {
+  padding: 0.4rem 0.8rem;
+  border: var(--border-subtle);
+  border-radius: 2px;
+  background: var(--surface-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.am-tab:hover { color: var(--ink); }
+.am-tab.is-on {
+  background: var(--accent-primary);
+  border-color: transparent;
+  color: var(--text-on-accent);
+}
+
+/* ── The formula shelf ───────────────────────────────────────────
+   Every formula on the shelf is DRAWN with the same typesetting the canvas uses,
+   not written out in a monospace line. A student should recognise the thing they
+   are picking as the thing they will be working on. */
+.am-fx__groups { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+.pp-pill.am-fx__group {
+  --tile: var(--accent-secondary);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  opacity: 0.5;
+}
+.pp-pill.am-fx__group.is-on { opacity: 1; }
+
+.am-fx__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.am-fx__pick {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.5rem 0.55rem;
+  border: var(--border-subtle);
+  border-radius: 2px;
+  background: var(--surface-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.am-fx__pick:hover { background: var(--surface-secondary); }
+.am-fx__pick.is-on { border-color: var(--accent-primary); box-shadow: inset 0 0 0 1px var(--accent-primary); }
+.am-fx__pick em {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-style: normal;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  color: var(--text-tertiary);
+}
+
+/* A wide formula is SCALED to the tile rather than scrolled inside it: the tile
+   is a button, so a scrollbar in it is something nobody can use, and C = 2(22/7)r
+   would otherwise be cut off halfway through its own r. The drawing is SVG with
+   a viewBox, so shrinking it costs nothing. */
+.am-fx__ink { min-width: 0; }
+.am-fx__ink svg { display: block; max-width: 100%; height: auto; }
+
+.am-fx__form {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: var(--border-subtle);
+}
+.am-fx__head { display: grid; gap: 0.2rem; justify-items: center; }
+.am-fx__cap {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.am-fx__rows { display: grid; gap: 0.3rem; margin-top: 0.7rem; }
+.am-fx__row {
+  display: grid;
+  grid-template-columns: 1.3rem 1fr 5.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+.am-fx__row b {
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.am-fx__row span {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  color: var(--text-tertiary);
+}
+.am-fx__value {
+  width: 100%;
+  padding: 0.42rem 0.5rem;
+  border: var(--border-subtle);
+  border-radius: 2px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-align: right;
+}
+.am-fx__value:focus { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
+.am-fx__value::placeholder { color: var(--text-tertiary); opacity: 0.7; }
+
+.am-fx__say {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--text-tertiary);
+}
+.am-fx__say.is-ok { color: var(--accent-success); }
+.am-fx__say.is-no { color: var(--accent-danger); }
+
 /* Phones: the keypad wants the width, and the rail must not fight it. */
 @media (max-width: 560px) {
   .am-drawer { width: 100vw; }
@@ -519,6 +685,8 @@
   .am-tool--key em { display: inline; }
   .am-count { display: none; }
   .am-key { padding: 0.7rem 0.15rem; font-size: 0.8rem; }
+  .am-fx__list { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); }
+  .am-fx__row { grid-template-columns: 1.2rem 1fr 4.5rem; }
 }
 
 /* ═══ THE API EXPLORER PAGE ══════════════════════════════════════════════ */

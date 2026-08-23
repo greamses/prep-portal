@@ -14,6 +14,8 @@ import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, bestOffers } from "./solve.js";
+import { asNumbers, hasSubstitutions } from "./ops.js";
+import * as R from "./rational.js";
 
 const SIZE = 34;
 const ROW_GAP = 10;
@@ -33,7 +35,11 @@ const TILTS = [-1.7, 1.2, -0.9, 1.8, -1.4, 0.8];
 
 let seq = 0;
 
-export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
+/** A given value as it is written on the card: v = 5, t = 1/2, a = −3. */
+const said = (given) =>
+  Object.entries(given).map(([k, v]) => `${k} = ${R.toText(v).replace(/-/g, "−")}`);
+
+export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onRemove }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   let picked = null;
@@ -46,9 +52,21 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
 
+  // The letters this card was handed values for, and the number each stands
+  // for. Held as exact rationals; the verifier wants them as plain numbers, and
+  // converting once here keeps that conversion out of every move.
+  const values = given && Object.keys(given).length ? given : null;
+  const pinned = values ? asNumbers(values) : null;
+
   const grip = document.createElement("div");
   grip.className = "am-card__grip";
   grip.innerHTML = `<span class="am-card__dots" aria-hidden="true"></span>`;
+  if (title) {
+    const name = document.createElement("b");
+    name.className = "am-card__name";
+    name.textContent = title;
+    grip.appendChild(name);
+  }
 
   const tools = document.createElement("div");
   tools.className = "am-card__tools";
@@ -70,11 +88,21 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
   const sheet = document.createElement("div");
   sheet.className = "am-card__sheet";
 
+  /* The question, written above the working the way it is written above the
+     working on paper. It stays there after every number has gone in, because
+     what the letters stood for is most of what the answer means. */
+  let ask = null;
+  if (values) {
+    ask = document.createElement("p");
+    ask.className = "am-card__given";
+    ask.innerHTML = `<span>given</span> ${said(values).join(", ")}${find ? ` &middot; <span>find</span> ${find}` : ""}`;
+  }
+
   const flag = document.createElement("div");
   flag.className = "am-card__done";
   flag.hidden = true;
 
-  el.append(grip, sheet, flag);
+  el.append(grip, ...(ask ? [ask] : []), sheet, flag);
 
   /* ── Laying the rows out ─────────────────────────────────────────────────
      Every row is nudged right so all the equals signs sit on one line. */
@@ -158,10 +186,20 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
       );
     }
 
-    flag.hidden = !isSolved(nextEq);
-    if (!flag.hidden) flag.textContent = plain(nextEq);
+    done(nextEq);
     arrows();
     onChange?.(api);
+  }
+
+  /* An equation finishes at an answer and an expression finishes when there is
+     nothing left to do to it, so the flag says which of the two happened. */
+  function done(nextEq) {
+    const over = isSolved(nextEq, { given: values });
+    flag.hidden = !over;
+    if (over) {
+      flag.dataset.tag = nextEq.kind === "expr" ? "as tidy as it goes" : "solved";
+      flag.textContent = plain(nextEq);
+    }
   }
 
   /** The two arrows only offer what there is: a step to take back, a step to
@@ -182,7 +220,7 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
     const fresh = paint(last, true);
     sheet.replaceChild(fresh, sheet.lastElementChild);
     relayout();
-    flag.hidden = !isSolved(last.row.eq);
+    done(last.row.eq);
     arrows();
     onPick?.(null, api);
     onChange?.(api);
@@ -230,7 +268,11 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
     get equation() { return rows[rows.length - 1].row.eq; },
     get picked() { return picked; },
     get depth() { return rows.length; },
-    get solved() { return isSolved(rows[rows.length - 1].row.eq); },
+    get solved() { return isSolved(rows[rows.length - 1].row.eq, { given: values }); },
+    get given() { return values; },
+
+    /** Is there still a number waiting to go into this line? */
+    get waiting() { return hasSubstitutions(rows[rows.length - 1].row.eq, values); },
 
     /** Where a term sits on screen, so a menu can be put beside it. */
     rectFor(nodeId) {
@@ -245,14 +287,14 @@ export function createCard(eq, { x, y, onPick, onChange, onRemove }) {
        still belongs to the student, it is just chosen by picking the TERM. */
     movesForPicked() {
       if (!picked) return [];
-      return bestOffers(this.equation, picked).slice(0, 1);
+      return bestOffers(this.equation, picked, { given: values }).slice(0, 1);
     },
 
     /** Make a move. Returns null when it was refused, with the reason. */
     apply(offer) {
       const result = offer.run();
       if (result.error) return { refused: result.error };
-      const verdict = preservesSolutions(this.equation, result.eq);
+      const verdict = preservesSolutions(this.equation, result.eq, { given: pinned, scaledBy: result.scaledBy });
       if (!verdict.ok) return { refused: verdict.why };
       picked = null;
       // A move made here is a new branch of the working: whatever was stepped

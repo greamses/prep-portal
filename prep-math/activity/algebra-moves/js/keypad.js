@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    THE KEYPAD
 
-   A calculator you type equations on, with the equation drawn properly above
-   the keys as you go. The source line underneath is the site's own linear
+   A calculator you type maths on — an equation, or an expression with no equals
+   sign in it at all — with the line drawn properly above the keys as you go. The source line underneath is the site's own linear
    syntax — 1/2, x^2, 3x — the same thing students type everywhere else here,
    so nothing new has to be learned and read-back stays exact.
 
@@ -67,7 +67,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   line.inputMode = "none";        // our keys are the keyboard
   line.autocomplete = "off";
   line.spellcheck = false;
-  line.setAttribute("aria-label", "The equation you are typing");
+  line.setAttribute("aria-label", "The line you are typing");
 
   const say = document.createElement("p");
   say.className = "am-keysay";
@@ -116,11 +116,11 @@ export function createKeypad(host, { onSubmit } = {}) {
     // typed yet, and brackets nobody asked for would be drawn round it.
     const dangling = /[+\-*/^=]\s*$/.test(text);
     if (dangling) for (const ch of " ?") put(ch, src.length);
-    // No equals sign yet is the ordinary state of a line halfway through being
-    // typed. Standing an empty box where the other side will go draws the SHAPE
-    // of what is missing, which is the same thing the brackets key does.
+    /* No equals sign is not a line half-typed — it is an expression, which is a
+       perfectly good thing to put on the canvas and tidy. This used to stand an
+       empty box where the other side "should" go, which was the keypad quietly
+       insisting on a kind of problem the tool no longer only does. */
     const noEquals = !text.includes("=");
-    if (noEquals) for (const ch of " = ?") put(ch, src.length);
 
     // typed -> drawn: the first drawn character that came from here or later.
     const forward = new Array(src.length + 1).fill(text.length);
@@ -202,7 +202,7 @@ export function createKeypad(host, { onSubmit } = {}) {
 
     if (!src.trim()) {
       preview.classList.add("is-empty");
-      say.textContent = "Type an equation. It will be drawn here as you go.";
+      say.textContent = "Type an equation, or an expression to tidy up. It is drawn here as you go.";
       say.className = "am-keysay";
       return;
     }
@@ -237,9 +237,8 @@ export function createKeypad(host, { onSubmit } = {}) {
     const todo =
       fixed.slots    ? "Fill in the empty box."
       : fixed.dangling ? "Something still has to come after that."
-      : fixed.noEquals ? "Now the equals sign, and the other side."
       : null;
-    say.textContent = todo ?? "Ready.";
+    say.textContent = todo ?? (fixed.noEquals ? "Ready — no equals sign, so this one gets tidied up." : "Ready.");
     say.className = todo ? "am-keysay" : "am-keysay is-ok";
   }
 

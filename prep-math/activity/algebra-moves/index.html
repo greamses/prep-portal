@@ -10,7 +10,7 @@
     <title>Prep Portal | Algebra Moves</title>
     <meta
       name="description"
-      content="An endless sheet for working algebra out. Type an equation on the keypad, tap a term, and name what you want done with it — take it from both sides, add it to a like term, multiply, divide, cancel — and watch the writing travel into the line below."
+      content="An endless sheet for working algebra out. Type an equation or an expression, or pick a formula and say what you were given, then tap a term — the tool writes the next line and the writing travels into it."
     />
 
     <!-- Page access gate: feature "prep-math-activities", part "algebra-moves" -->
@@ -69,7 +69,7 @@
         <div class="am-rail__group">
           <button class="am-tool am-tool--key" type="button" id="am-add"
                   aria-expanded="false" aria-controls="am-drawer"
-                  title="Type an equation" aria-label="Type an equation">
+                  title="Put a problem on the canvas" aria-label="Put a problem on the canvas">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             <em>New</em>
@@ -106,21 +106,41 @@
       </div>
 
       <!-- ── The keypad, in a drawer ─────────────────────────────────── -->
-      <section class="am-drawer" id="am-drawer" aria-label="Type an equation" inert>
+      <section class="am-drawer" id="am-drawer" aria-label="Put a problem on the canvas" inert>
         <div class="am-drawer__paper">
           <button class="am-drawer__close" type="button" id="am-drawer-close" aria-label="Put the keypad away">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                  stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
 
-          <div class="am-keypad" id="am-keypad"></div>
+          <!-- Two ways in: type your own, or take a formula and say what you
+               were given. Both end up as the same kind of card. -->
+          <div class="am-tabs" role="tablist" aria-label="Where the problem comes from">
+            <button class="am-tab is-on" type="button" role="tab" id="am-tab-type"
+                    data-pane="type" aria-selected="true" aria-controls="am-pane-type">Type it</button>
+            <button class="am-tab" type="button" role="tab" id="am-tab-formula"
+                    data-pane="formula" aria-selected="false" aria-controls="am-pane-formula">Formulas</button>
+          </div>
 
-          <div class="am-starters" id="am-starters"></div>
-          <p class="am-note">
-            Typed the way it is said — <b>1/2</b> for a half, <b>x^2</b> for a
-            square, <b>3x</b> for three of them. The same algebra is reachable
-            over HTTP: <a class="am-link" href="./api.html">see the engine</a>.
-          </p>
+          <div class="am-pane" id="am-pane-type" role="tabpanel" aria-labelledby="am-tab-type">
+            <div class="am-keypad" id="am-keypad"></div>
+
+            <div class="am-starters" id="am-starters"></div>
+            <p class="am-note">
+              Typed the way it is said — <b>1/2</b> for a half, <b>x^2</b> for a
+              square, <b>3x</b> for three of them. Leave the equals sign out and
+              you get an expression to tidy up instead. The same algebra is
+              reachable over HTTP: <a class="am-link" href="./api.html">see the engine</a>.
+            </p>
+          </div>
+
+          <div class="am-pane" id="am-pane-formula" role="tabpanel" aria-labelledby="am-tab-formula" hidden>
+            <div class="am-fx" id="am-formulas"></div>
+            <p class="am-note">
+              Fill in every letter but the one you are looking for, and it goes on
+              the canvas with those numbers pinned to it. Tap a term to put them in.
+            </p>
+          </div>
         </div>
       </section>
     </main>

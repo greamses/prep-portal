@@ -30,6 +30,12 @@ export const frac = (a, b, id = freshId())           => ({ id, kind: "frac", a, 
 export const pow  = (b, e, id = freshId())           => ({ id, kind: "pow", b, e });
 export const eqn  = (l, r, id = freshId())           => ({ id, kind: "eq", l, r });
 
+/* A line with only one side: 3x + 5 − x, put on the canvas to be tidied rather
+   than solved. It is a node of its own rather than an equation with a missing
+   half, so that nothing downstream can forget to check and go looking for eq.r.
+   Everything that walks a root asks SIDES what sides it has, and gets one. */
+export const expression = (e, id = freshId())        => ({ id, kind: "expr", e });
+
 /* An empty slot in a half-typed line — the box a fraction key leaves behind
    before anything has been put in it. It only ever exists in the keypad's
    preview: nothing with a hole in it can be put on the canvas, so no move and
@@ -45,6 +51,7 @@ export function numberNode(r) {
 
 export function kidsOf(node) {
   switch (node.kind) {
+    case "expr": return [node.e];
     case "neg":  return [node.k];
     case "sum":
     case "prod": return node.kids;
@@ -82,6 +89,7 @@ export function replace(root, id, next) {
       case "frac": { const a = rec(n.a), b = rec(n.b); return a === n.a && b === n.b ? n : frac(a, b, n.id); }
       case "pow":  { const b = rec(n.b), e = rec(n.e); return b === n.b && e === n.e ? n : pow(b, e, n.id); }
       case "eq":   { const l = rec(n.l), r = rec(n.r); return l === n.l && r === n.r ? n : eqn(l, r, n.id); }
+      case "expr": { const e = rec(n.e); return e === n.e ? n : expression(e, n.id); }
       default:     return n;
     }
   };
@@ -95,6 +103,25 @@ export function replace(root, id, next) {
    is a single term. */
 
 export const termsOf = (side) => (side.kind === "sum" ? side.kids : [side]);
+
+/* ── The sides of a line ────────────────────────────────────────────────────
+   Two for an equation, one for an expression. Every walk over "both sides" in
+   the tool goes through here, which is what let expressions arrive without a
+   `.r` being read somewhere and coming back undefined. */
+
+export const SIDES = (root) => (root.kind === "expr" ? ["e"] : ["l", "r"]);
+
+export const isEquation = (root) => root.kind === "eq";
+
+/** The same line with one side replaced, keeping the root's own id. */
+export function setSide(root, side, next) {
+  if (root.kind === "expr") return next === root.e ? root : expression(next, root.id);
+  if (side === "l") return next === root.l ? root : eqn(next, root.r, root.id);
+  return next === root.r ? root : eqn(root.l, next, root.id);
+}
+
+/** Every top-level term of the line, left to right — what a student can tap. */
+export const allTerms = (root) => SIDES(root).flatMap((s) => termsOf(root[s]));
 
 /** Rebuild a side from its terms, keeping the sum's own id if there still is one. */
 export function sideFromTerms(terms, oldSide) {

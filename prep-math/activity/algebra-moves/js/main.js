@@ -1,7 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    ALGEBRA MOVES
 
-   Tap a term, pick a named move, and the equation writes its next line.
+   Tap a term and the line writes its next one. Three kinds of thing go on the
+   canvas: an equation to solve, an expression to tidy up, and a formula with a
+   set of values pinned to it — which is the first two with substitution in
+   front of them.
 
    The student names the move rather than dragging one term onto another. That
    is the design decision the whole thing rests on: naming it removes the
@@ -20,18 +23,23 @@ import { createCanvas } from "./canvas.js";
 import { createCard } from "./card.js";
 import { createMenu } from "./menu.js";
 import { createKeypad } from "./keypad.js";
+import { createFormulaPicker } from "./formula-picker.js";
 import { solve } from "./solve.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
 const $ = (sel) => document.querySelector(sel);
 
+/* Equations and expressions side by side, because the second kind is the one
+   nobody expects to be here. */
 const STARTERS = [
   "3x + 5 = 20",
   "2x - 7 = 4x + 1",
   "3(x + 1) = 9",
   "(3x + 5)/4 = 5",
-  "5 - x = 2",
-  "7 = 2x - 3",
+  "3x + 5 - x",
+  "2(x + 3) + 4x",
+  "-(3 - x)",
+  "12y/4 - y",
 ];
 
 let canvas = null;
@@ -64,10 +72,14 @@ function openMenuFor(card) {
   const moves = card.movesForPicked();
   if (!moves.length) {
     menu.close();
-    // The only things filtered out are carrying a term to the side it is
-    // already on and turning a line round for nothing, so this is almost
+    // While a formula still has numbers to go into it, nothing else is offered
+    // anywhere — so a term with no move is a term with no letter of its own to
+    // fill in, and saying it belongs where it is would be the wrong answer.
+    if (card.waiting) return say("Put the numbers in first — tap a term with a letter in it.");
+    // Otherwise the only things filtered out are carrying a term to the side it
+    // is already on and turning a line round for nothing, so this is almost
     // always literally true — and it is the thing worth saying.
-    return say("That one is already where it belongs.");
+    return say(card.solved ? "That one is finished." : "That one is already where it belongs.");
   }
 
   menu.open(moves, () => card.rectFor(picked), (offer) => {
@@ -80,7 +92,7 @@ function openMenuFor(card) {
 }
 
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
-function addCard(eq) {
+function addCard(eq, { given = null, title = "", find = "" } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
     x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top),
     // offsetWidth/Height are the card's own pixels, untouched by the canvas
@@ -89,7 +101,7 @@ function addCard(eq) {
   })));
 
   const card = createCard(eq, {
-    x: spot.x, y: spot.y,
+    x: spot.x, y: spot.y, given, title, find,
     onPick: (picked, self) => {
       // Only one card can hold the menu at a time.
       for (const other of cards) if (other !== self) other.clearPick();
@@ -136,6 +148,16 @@ async function boot() {
     },
   });
 
+  createFormulaPicker($("#am-formulas"), {
+    onSubmit: ({ eq, given, find, title }) => {
+      addCard(eq, { given, find, title });
+      say(`${title} is on the canvas — tap a letter to put its number in.`, "ok");
+      closeDrawer();
+    },
+  });
+
+  wireTabs();
+
   const chips = $("#am-starters");
   for (const src of STARTERS) {
     const chip = document.createElement("button");
@@ -162,19 +184,41 @@ async function boot() {
 
   $("#am-work").addEventListener("click", () => {
     if (!active) return say("Tap a problem first.");
-    const worked = solve(active.equation);
+    const worked = solve(active.equation, { given: active.given });
     if (!worked.solved) return say(worked.stuck || "I could not finish that one.", "no");
-    say(`${worked.steps.length - 1} more ${worked.steps.length === 2 ? "step" : "steps"} to ${worked.steps[worked.steps.length - 1].equation}.`, "ok");
+    const left = worked.steps.length - 1;
+    if (left === 0) return say("That one is already finished.", "ok");
+    const end = worked.steps[worked.steps.length - 1].equation;
+    say(`${left} more ${left === 1 ? "step" : "steps"} to ${end}.`, "ok");
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { menu.close(); closeDrawer(); }
   });
 
-  for (const src of STARTERS.slice(0, 2)) addCard(parse(src));
+  // One of each kind, so the canvas says on sight that both are welcome here.
+  for (const src of ["3x + 5 = 20", "3x + 5 - x"]) addCard(parse(src));
   canvas.reset();
   countUp();
   openDrawer();
+}
+
+/* ── The two ways in ──────────────────────────────────────────────
+   Type your own, or take a formula off the shelf. The panes are hidden rather
+   than unbuilt, so the keypad keeps its caret and the formula form keeps what
+   was typed into it while you look at the other one. */
+function wireTabs() {
+  const tabs = [...document.querySelectorAll(".am-tab")];
+  const show = (which) => {
+    for (const tab of tabs) {
+      const on = tab.dataset.pane === which;
+      tab.classList.toggle("is-on", on);
+      tab.setAttribute("aria-selected", String(on));
+      document.querySelector(`#am-pane-${tab.dataset.pane}`).hidden = !on;
+    }
+    if (which === "type") keypad?.focus();
+  };
+  for (const tab of tabs) tab.addEventListener("click", () => show(tab.dataset.pane));
 }
 
 /* ── Filling the screen ─────────────────────────────────────────────────────
@@ -230,7 +274,7 @@ function openDrawer() {
   drawer.classList.add("is-open");
   drawer.inert = false;
   $("#am-add").setAttribute("aria-expanded", "true");
-  keypad?.focus();
+  if (!$("#am-pane-type").hidden) keypad?.focus();
 }
 function closeDrawer() {
   const drawer = $("#am-drawer");

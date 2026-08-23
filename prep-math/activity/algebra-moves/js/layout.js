@@ -216,6 +216,15 @@ function measureBare(node, size, binary) {
                descent: Math.max(b.descent, e.descent - rise) };
     }
 
+    // A one-sided line is drawn as exactly its one side. It keeps a node of its
+    // own here so it gets a box like everything else — the keypad's caret walks
+    // boxes, and the root is the box that spans the whole line.
+    case "expr": {
+      const e = measure(node.e, size, "expr", 0);
+      return { ...base, kind: "expr", e, w: e.w,
+               ascent: Math.max(base.ascent, e.ascent), descent: Math.max(base.descent, e.descent) };
+    }
+
     case "eq": {
       const l = measure(node.l, size, "eq", 0);
       const r = measure(node.r, size, "eq", 1);
@@ -317,6 +326,10 @@ function place(m, x, y, out) {
       place(m.e, x + m.b.w + m.kern, y - m.rise, out);
       break;
 
+    case "expr":
+      place(m.e, x, y, out);
+      break;
+
     case "eq": {
       place(m.l, x, y, out);
       const ex = x + m.l.w + m.gap;
@@ -328,7 +341,7 @@ function place(m, x, y, out) {
 }
 
 /**
- * Lay an equation out.
+ * Lay a line out.
  * Returns { w, h, atoms, boxes, baseline } in a coordinate space that starts
  * at (0, 0) — the caller decides where on the page that lands.
  */
@@ -364,6 +377,7 @@ export function plain(node, parentKind = null, slot = 0) {
     case "frac": return wrap(`${plain(node.a, "frac", 0)}/${plain(node.b, "frac", 1)}`);
     case "pow":  return wrap(`${plain(node.b, "pow", 0)}^${plain(node.e, "pow", 1)}`);
     case "eq":   return `${plain(node.l, "eq", 0)} = ${plain(node.r, "eq", 1)}`;
+    case "expr": return plain(node.e, "expr", 0);
     default:     return "?";
   }
 }

@@ -9,7 +9,7 @@
 
    Grammar:
 
-     equation := expr ("=" expr)?
+     line     := expr ("=" expr)?          <- an equation, or just an expression
      expr     := term (("+" | "-") term)*
      term     := factor (("*" | "/") factor | factor)*      <- juxtaposition
      factor   := "-" factor | power
@@ -136,10 +136,14 @@ export function parse(src) {
     return span(mark, terms.length === 1 ? terms[0] : A.sum(terms));
   }
 
+  /* An equals sign is what makes it an equation; without one the line is an
+     EXPRESSION, and the tool tidies it instead of solving it. Refusing that
+     used to be the first thing this parser did, which meant half the algebra a
+     student is asked to do could not be typed in at all. */
   const start = from();
   const left = expr();
-  if (peek().t !== "=") throw new SyntaxError("This needs an equals sign — the tool works on equations.");
-  p++;
+  if (peek().t === "end") return span(start, A.expression(left));
+  eat("=");
   const right = expr();
   eat("end");
   return span(start, A.eqn(left, right));

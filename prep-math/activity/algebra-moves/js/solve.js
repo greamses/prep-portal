@@ -17,7 +17,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import * as A from "./ast.js";
-import { offers } from "./ops.js";
+import { offers, hasSubstitutions, asNumbers } from "./ops.js";
 import { preservesSolutions } from "./verify.js";
 import { plain } from "./layout.js";
 
@@ -25,27 +25,49 @@ import { plain } from "./layout.js";
    changing the shape of it, or the tidying gets carried along inside the new
    shape — x/2 = 4 − 1 multiplied up reads x = 2(4 − 1). Shoving a term across
    the equals sign is the move most likely to undo itself, so it goes last. */
-const RANK = { workout: 0, dropzero: 1, combine: 2, cancel: 3, times: 4, expand: 5, flip: 6, swap: 7, across: 8, divide: 9 };
+const RANK = { substitute: 0, workout: 1, dropzero: 2, combine: 3, cancel: 4, times: 5, expand: 6, flip: 7, swap: 8, across: 9, divide: 10 };
+const LAST = 99;
 
 /* A finished answer is a NUMBER, not merely something with no letters in it.
    (20 − 5)/3 is variable-free and still half a step from being an answer, so a
-   fraction only counts once both halves are numbers themselves. */
+   fraction only counts once both halves are numbers themselves — AND once it is
+   as far down as it goes. 48/6 passes every other test for a number and is not
+   an answer to anything; the check is the same one "work it out" makes, which
+   is what keeps the two from ever disagreeing. */
 const isNumberNode = (n) =>
   n.kind === "num" ||
   (n.kind === "neg" && isNumberNode(n.k)) ||
-  (n.kind === "frac" && isNumberNode(n.a) && isNumberNode(n.b));
+  (n.kind === "frac" && isNumberNode(n.a) && isNumberNode(n.b) && isLowest(n));
 
-/** x = 5, or x = −4/3. One letter on the left, one plain number on the right. */
-export function isSolved(eq) {
+function isLowest(n) {
+  const v = A.exactValue(n);
+  return !!v && plain(A.numberNode(v)) === plain(n);
+}
+
+/**
+ * Is this line finished?
+ *
+ * An equation is finished at x = 5: one letter on the left, one plain number on
+ * the right. An expression has no such shape to reach, so finished means what
+ * it means on paper — there is nothing left to do to it. Asking the move set
+ * itself is both the honest definition and a self-maintaining one: a move added
+ * later automatically stops counting a line as tidy while it still applies.
+ */
+export function isSolved(eq, { given = null } = {}) {
+  if (eq.kind === "expr") {
+    return !A.allTerms(eq).some((t) => offers(eq, t.id, { given }).length > 0);
+  }
+  if (hasSubstitutions(eq, given)) return false;
   return eq.l.kind === "var" && A.termsOf(eq.r).length === 1 && isNumberNode(eq.r);
 }
 
 /** 5 = x is the same answer, just written backwards — one "turn it round" away. */
 const isAnswerBackwards = (eq) =>
-  eq.r.kind === "var" && A.termsOf(eq.l).length === 1 && isNumberNode(eq.l);
+  eq.kind === "eq" && eq.r.kind === "var" && A.termsOf(eq.l).length === 1 && isNumberNode(eq.l);
 
 /** Which side we are gathering the letters on — wherever most of them already are. */
 function letterSide(eq) {
+  if (eq.kind === "expr") return "e";
   const count = (side) => A.termsOf(side).filter((t) => !A.isNumeric(t)).length;
   return count(eq.r) > count(eq.l) ? "r" : "l";
 }
@@ -63,14 +85,20 @@ function letterSide(eq) {
  * is — letters together, numbers on the other side — and turning the equation
  * round is only progress when the answer is already sitting there backwards.
  */
-export function bestOffers(eq, id) {
+export function bestOffers(eq, id, { given = null } = {}) {
   const home = letterSide(eq);
   const onHome = new Set(A.termsOf(eq[home]).map((t) => t.id));
   const term = A.findById(eq, id);
   if (!term) return [];
 
+  // A formula with a number still to go into it has exactly one sensible next
+  // move anywhere on the line, and it is putting that number in. Reshaping a
+  // formula around letters that are about to become 5 and 2 is work thrown away.
+  const pending = hasSubstitutions(eq, given);
+
   const out = [];
-  for (const offer of offers(eq, id)) {
+  for (const offer of offers(eq, id, { given })) {
+    if (pending && offer.key !== "substitute") continue;
     if (offer.key === "swap" && !isAnswerBackwards(eq)) continue;
     if (offer.key === "across") {
       const hasLetter = !A.isNumeric(term);
@@ -78,29 +106,29 @@ export function bestOffers(eq, id) {
     }
     out.push(offer);
   }
-  return out.sort((a, b) => (RANK[a.key] ?? 9) - (RANK[b.key] ?? 9));
+  return out.sort((a, b) => (RANK[a.key] ?? LAST) - (RANK[b.key] ?? LAST));
 }
 
 /**
- * Work an equation through to x = something, using only the moves the student
- * is offered. Returns every line, in order, with the reason for each.
+ * Work a line through to wherever it finishes — x = something for an equation,
+ * as tidy as it goes for an expression — using only the moves the student is
+ * offered. Returns every line, in order, with the reason for each.
  *
  *   { solved, steps: [{ equation, note, move }], stuck? }
  */
-export function solve(eq, { maxSteps = 24 } = {}) {
+export function solve(eq, { maxSteps = 24, given = null } = {}) {
   const steps = [{ equation: plain(eq), note: "where we started", move: null }];
   const seen = new Set([plain(eq)]);
+  const pinned = given ? asNumbers(given) : null;
 
   for (let i = 0; i < maxSteps; i++) {
-    if (isSolved(eq)) return { solved: true, steps };
+    if (isSolved(eq, { given })) return { solved: true, steps };
 
     // Exactly what the student would be shown on every term, pooled.
     const choices = [];
-    for (const side of ["l", "r"]) {
-      for (const term of A.termsOf(eq[side])) {
-        for (const offer of bestOffers(eq, term.id)) {
-          choices.push({ offer, rank: RANK[offer.key] ?? 9 });
-        }
+    for (const term of A.allTerms(eq)) {
+      for (const offer of bestOffers(eq, term.id, { given })) {
+        choices.push({ offer, rank: RANK[offer.key] ?? LAST });
       }
     }
     choices.sort((a, b) => a.rank - b.rank);
@@ -111,7 +139,7 @@ export function solve(eq, { maxSteps = 24 } = {}) {
     for (const { offer } of choices) {
       const result = offer.run();
       if (result.error) continue;
-      if (!preservesSolutions(eq, result.eq).ok) continue;
+      if (!preservesSolutions(eq, result.eq, { given: pinned, scaledBy: result.scaledBy }).ok) continue;
       const line = plain(result.eq);
       if (seen.has(line)) continue;
       seen.add(line);
@@ -123,9 +151,10 @@ export function solve(eq, { maxSteps = 24 } = {}) {
     if (!moved) break;
   }
 
+  const done = isSolved(eq, { given });
   return {
-    solved: isSolved(eq),
+    solved: done,
     steps,
-    stuck: isSolved(eq) ? undefined : "I ran out of moves that get any closer.",
+    stuck: done ? undefined : "I ran out of moves that get any closer.",
   };
 }

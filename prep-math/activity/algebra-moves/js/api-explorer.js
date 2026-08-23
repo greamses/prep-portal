@@ -17,6 +17,7 @@ const VERBS = [
   { id: "parse", label: "parse",  hint: "the tree, and does it read back" },
   { id: "apply", label: "apply",  hint: "one move — needs a term and a move" },
   { id: "check", label: "check",  hint: "is that step legal?" },
+  { id: "formulas", label: "formulas", hint: "the shelf, and what each letter wants" },
 ];
 
 let verb = "solve";
@@ -26,13 +27,18 @@ let applyMove = "across";
 function url() {
   const eq = $("#ap-eq").value.trim();
   const base = `/api/algebra/${verb}`;
+  // Values for a formula's letters ride along on everything that takes an
+  // equation — the substitutions are moves like any other.
+  const given = $("#ap-given")?.value.trim();
+  const pinned = given ? `&given=${encodeURIComponent(given)}` : "";
+  if (verb === "formulas") return base;
   if (verb === "check") {
-    return `${base}?from=${encodeURIComponent(eq)}&to=${encodeURIComponent($("#ap-to").value.trim())}`;
+    return `${base}?from=${encodeURIComponent(eq)}&to=${encodeURIComponent($("#ap-to").value.trim())}${pinned}`;
   }
   if (verb === "apply") {
-    return `${base}?eq=${encodeURIComponent(eq)}&term=${applyTerm}&move=${encodeURIComponent(applyMove)}`;
+    return `${base}?eq=${encodeURIComponent(eq)}&term=${applyTerm}&move=${encodeURIComponent(applyMove)}${pinned}`;
   }
-  return `${base}?eq=${encodeURIComponent(eq)}`;
+  return `${base}?eq=${encodeURIComponent(eq)}${pinned}`;
 }
 
 function paintUrl() {
@@ -42,6 +48,7 @@ function paintUrl() {
   link.href = u;
 
   $("#ap-second").hidden = verb !== "check";
+  $("#ap-line").hidden = verb === "formulas";
   const chosen = VERBS.find((v) => v.id === verb);
   $("#ap-hint").textContent =
     verb === "apply"
@@ -96,7 +103,7 @@ function boot() {
   }
   rail.firstElementChild.classList.add("is-on");
 
-  for (const id of ["#ap-eq", "#ap-to"]) {
+  for (const id of ["#ap-eq", "#ap-to", "#ap-given"]) {
     $(id).addEventListener("input", paintUrl);
     $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
   }

@@ -13,6 +13,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { layout, FONT_FAMILY } from "./layout.js";
+import { allTerms } from "./ast.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -24,7 +25,9 @@ export const el = (name, attrs) => {
 
 /**
  * Measure one line. `eqX` is where the equals sign lands, so a stack of rows
- * can be lined up on it the way working is lined up on paper.
+ * can be lined up on it the way working is lined up on paper. An expression has
+ * no equals sign to line up on, so its rows line up on the left margin instead
+ * — which is, again, how it is written by hand.
  */
 export function buildRow(eq, size) {
   const L = layout(eq, size, 6);
@@ -35,11 +38,9 @@ export function buildRow(eq, size) {
     boxes: L.boxes,
     w: L.w,
     h: L.h,
-    eqX: eqAtom ? eqAtom.x : L.w / 2,
+    eqX: eqAtom ? eqAtom.x : 0,
   };
 }
-
-const termsOfSide = (side) => (side.kind === "sum" ? side.kids : [side]);
 
 /** Draw a row. Only a `live` row gets tappable terms; the rest is just ink. */
 export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
@@ -77,7 +78,7 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
   }
 
   if (live) {
-    for (const t of [...termsOfSide(row.eq.l), ...termsOfSide(row.eq.r)]) {
+    for (const t of allTerms(row.eq)) {
       const b = row.boxes.get(t.id);
       if (!b) continue;
       const grow = 6;

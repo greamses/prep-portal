@@ -69,7 +69,7 @@
           <div class="pp-receipt__paper">
             <h2 class="am-h">Try it</h2>
 
-            <div class="am-row am-row--type">
+            <div class="am-row am-row--type" id="ap-line">
               <input
                 class="am-input"
                 id="ap-eq"
@@ -77,7 +77,21 @@
                 value="2x - 7 = 4x + 1"
                 autocomplete="off"
                 spellcheck="false"
-                aria-label="Equation"
+                aria-label="An equation, or an expression with no equals sign"
+              />
+            </div>
+
+            <!-- Values for a formula's letters. Empty for ordinary algebra. -->
+            <div class="am-row am-row--type" style="margin-top: 0.6rem">
+              <input
+                class="am-input"
+                id="ap-given"
+                type="text"
+                value=""
+                placeholder="given: u:5,a:2,t:3"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Values for a formula's letters"
               />
             </div>
 
@@ -136,11 +150,24 @@
 
                 <dt>GET /api/algebra/check</dt>
                 <dd>
-                  Is that step legal? Works on any two equations, whoever wrote
-                  them. This is the gate every move passes before a student is
-                  allowed to see it.
+                  Is that step legal? Works on any two lines, whoever wrote them.
+                  This is the gate every move passes before a student is allowed
+                  to see it.
+                </dd>
+
+                <dt>GET /api/algebra/formulas</dt>
+                <dd>
+                  The formula shelf the page offers, with what every letter
+                  stands for and a worked set of values for each.
                 </dd>
               </dl>
+
+              <p class="am-note" style="margin-top: 0.9rem">
+                <b>eq</b> takes an expression as readily as an equation — leave
+                the equals sign out and the moves on offer are the tidying ones.
+                <b>given</b> pins a formula's letters to values
+                (<b>u:5,a:2,t:3</b>), which makes the first moves substitutions.
+              </p>
             </div>
           </section>
 
