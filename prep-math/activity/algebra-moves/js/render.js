@@ -88,9 +88,35 @@ export function paintRow(row, { live = false, picked = null, pad = 0 } = {}) {
       hit.dataset.node = t.id;
       hits.appendChild(hit);
     }
+
+    /* The equals sign is a destination, not a term: with something picked, it is
+       the obvious place to tap when you mean "over there". Its target is the
+       whole gutter between the two sides rather than the glyph, which is three
+       pixels wide and no use to a thumb. */
+    const gap = eqGutter(row);
+    if (gap) {
+      const hit = el("rect", { ...gap, class: "am-hit am-hit--eq", tabindex: "0", role: "button" });
+      hit.dataset.drop = "=";
+      hit.setAttribute("aria-label", "Carry it over the equals sign");
+      hits.appendChild(hit);
+    }
   }
 
   return svg;
+}
+
+/** The space between the two sides, where the equals sign is written. */
+function eqGutter(row) {
+  if (row.eq.kind !== "eq") return null;
+  const l = row.boxes.get(row.eq.l.id);
+  const r = row.boxes.get(row.eq.r.id);
+  if (!l || !r) return null;
+  const x = l.x + l.w;
+  const width = r.x - x;
+  if (width <= 0) return null;
+  const y = Math.min(l.y, r.y);
+  const height = Math.max(l.y + l.h, r.y + r.h) - y;
+  return { x, y, width, height };
 }
 
 /* Atom keys are ours (n12#op1) and contain a #, which a selector would read as

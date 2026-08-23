@@ -260,6 +260,13 @@
 .am-hit:hover { fill: #14130f; fill-opacity: 0.07; }
 .am-hit:focus-visible { fill: #14130f; fill-opacity: 0.14; }
 
+/* The equals sign only becomes a place once something is picked up — before
+   that there is nothing to carry there, and a target that highlights for no
+   reason is a target nobody trusts. */
+.am-hit--eq { pointer-events: none; }
+.am-card.has-pick .am-hit--eq { pointer-events: auto; }
+.am-card.has-pick .am-hit--eq:hover { fill: #14130f; fill-opacity: 0.09; }
+
 @media (prefers-reduced-motion: reduce) {
   .am-glyph, .am-rule { transition: none !important; }
 }
@@ -549,7 +556,10 @@
    lands on the paper are visibly the same 7. That is worth more on a maths
    keypad than any amount of chrome. */
 .am-key {
-  padding: 0.5rem 0.2rem 0.56rem;
+  display: grid;
+  place-items: center;
+  min-height: 3.35rem;         /* the fraction key sets the height; the rest match */
+  padding: 0.4rem 0.2rem 0.44rem;
   font-family: "STIX Two Text", "Times New Roman", serif;
   font-size: 1.34rem;
   font-weight: 400;
@@ -569,6 +579,10 @@
 }
 .am-key:hover { background: var(--surface-secondary); }
 .am-key:active { transform: translateY(1px); box-shadow: none; }
+/* A typeset face. It is drawn, so it is not affected by the button's own
+   font-size, and it must not be stretched by the grid cell either. */
+.am-key__ink { display: block; line-height: 0; }
+.am-key__ink svg { display: block; }
 /* A letter is italic on the canvas, so it is italic on the key. */
 .am-key--letter { color: var(--accent-secondary); font-style: italic; }
 /* The keys that are not maths — delete, the arrows, clear — stay a size down and
@@ -741,6 +755,15 @@
 .am-fx__say.is-ok { color: var(--accent-success); }
 .am-fx__say.is-no { color: var(--accent-danger); }
 
+.pp-sticky.am-fx__demo {
+  --pp-note-bg: #f0ece2;
+  --pp-note-tilt: -1.4deg;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.7rem 0.35rem;
+  font-size: 0.74rem;
+  color: #5a544a;
+}
+
 /* Phones: the keypad wants the width, and the rail must not fight it. */
 @media (max-width: 560px) {
   .am-drawer { width: 100vw; }
@@ -752,7 +775,7 @@
   .am-tool--key em { display: inline; }
   .am-count { display: none; }
   /* Still the equation's face, just fewer pixels of it. */
-  .am-key { padding: 0.5rem 0.1rem 0.55rem; font-size: 1.14rem; }
+  .am-key { min-height: 2.9rem; padding: 0.35rem 0.1rem 0.4rem; font-size: 1.14rem; }
   .am-key--act { font-size: 0.72rem; }
   .am-fx__list { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); }
   .am-fx__row { grid-template-columns: 1.2rem 1fr 4.5rem; }

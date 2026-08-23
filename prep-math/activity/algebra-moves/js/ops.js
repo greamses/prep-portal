@@ -494,6 +494,70 @@ export const hasSubstitutions = (eq, given) =>
    solve.js turns this list into the ONE move worth offering — see bestOffers.
 */
 
+/* ── Where do you want it? ──────────────────────────────────────────
+   Tap a term, then tap where it should end up. Two of the moves are ABOUT a
+   destination and nothing else — carrying a term over the equals sign, and
+   folding it into a like term — and for those two, saying where is saying which.
+
+   It is a second way in, not a replacement for the chip: naming the move is
+   still what the tool is for, and this is the same naming done by pointing.
+   Nothing is loosened — the move it works out goes through the verifier like
+   everything else, so pointing somewhere silly gets you a refusal, not a
+   wrong line.
+
+   ONLY TWO DESTINATIONS COUNT, and the restriction is the whole design:
+
+     the equals sign      carry it across
+     a LIKE term beside it   fold the two together
+
+   Everything else is still just a tap that picks something up. That matters
+   because a second tap already meant something — changing your mind — and a
+   gesture that quietly eats it would make the tool feel possessed. Tapping the
+   5 and then the 20 has to go on meaning "actually, the 20". The two cases
+   above cannot mean that: the equals sign was never something you could pick
+   up, and folding a term into its like neighbour is the same move the chip on
+   either of them already offers.
+
+   `toId` is another term's id, or "=" for the equals sign itself. */
+
+export const EQUALS = "=";
+
+export function offerTo(eq, fromId, toId) {
+  const from = locate(eq, fromId);
+  if (!from || fromId === toId) return null;
+
+  const cross = () => {
+    const trial = takeAcross(eq, fromId);
+    if (trial.error) return null;
+    const adding = from.term.kind === "neg" && !from.term.paren;
+    const what = plain(adding ? from.term.k : from.term);
+    return {
+      key: "across",
+      label: adding ? `Add ${what} to both sides` : `Take ${what} from both sides`,
+      hint: "the balance rule",
+      mark: adding ? `+${what}` : `−${what}`,
+      run: () => trial,
+    };
+  };
+
+  if (toId === EQUALS) return A.isEquation(eq) ? cross() : null;
+
+  const to = locate(eq, toId);
+  // A term on the far side is a term you might simply have meant to pick up
+  // instead. Crossing is what the equals sign is for.
+  if (!to || to.side !== from.side) return null;
+
+  const trial = combine(eq, fromId, toId);
+  if (trial.error) return null;
+  return {
+    key: "combine",
+    label: `Add it to ${plain(to.term)}`,
+    hint: "like terms",
+    mark: trial.mark,
+    run: () => trial,
+  };
+}
+
 export function offers(eq, id, { given = null } = {}) {
   const loc = locate(eq, id);
   if (!loc) return [];

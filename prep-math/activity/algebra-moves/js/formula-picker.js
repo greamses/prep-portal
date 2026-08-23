@@ -10,6 +10,12 @@
    card that comes out is an ordinary equation card with a set of values pinned
    to it, and every move after that is the ordinary move set.
 
+   IT STARTS EMPTY. The numbers are the student's question, not ours; a form
+   that arrives already filled in is a worked example, and it reads as though
+   the formula only comes with those values. The bank still carries a set (they
+   are what the sweep solves every formula with), and there is a button to drop
+   them in — but you have to ask for them.
+
    The one thing this does that no other panel does is CHECK ITSELF. Whenever
    the blank moves, it runs the solver over what the form currently says and
    reports whether the moves on offer can actually finish it. Leaving out the r
@@ -105,7 +111,6 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
 
     const rows = document.createElement("div");
     rows.className = "am-fx__rows";
-    const example = chosen.example || {};
     for (const [letter, meaning] of Object.entries(chosen.letters)) {
       const row = document.createElement("label");
       row.className = "am-fx__row";
@@ -115,8 +120,8 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
       input.inputMode = "decimal";
       input.className = "am-fx__value";
       input.placeholder = "?";
-      input.value = example[letter] ?? "";
       input.setAttribute("aria-label", `${letter}, ${meaning}`);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
       input.addEventListener("input", check);
       row.appendChild(input);
       rows.appendChild(row);
@@ -127,6 +132,20 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
     const say = document.createElement("p");
     say.className = "am-fx__say";
     form.appendChild(say);
+
+    // The bank's own numbers, for when you want to see one work rather than
+    // ask one of your own.
+    if (Object.keys(chosen.example || {}).length) {
+      const demo = document.createElement("button");
+      demo.type = "button";
+      demo.className = "pp-sticky pp-note-btn am-fx__demo";
+      demo.textContent = "use an example";
+      demo.addEventListener("click", () => {
+        for (const [letter, input] of fields) input.value = chosen.example[letter] ?? "";
+        check();
+      });
+      form.appendChild(demo);
+    }
 
     const go = document.createElement("button");
     go.type = "button";

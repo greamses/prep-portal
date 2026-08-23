@@ -14,7 +14,7 @@ import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
 import { isSolved, bestOffers } from "./solve.js";
-import { asNumbers, hasSubstitutions } from "./ops.js";
+import { asNumbers, hasSubstitutions, offerTo, EQUALS } from "./ops.js";
 import * as R from "./rational.js";
 
 const SIZE = 34;
@@ -39,7 +39,7 @@ let seq = 0;
 const said = (given) =>
   Object.entries(given).map(([k, v]) => `${k} = ${R.toText(v).replace(/-/g, "−")}`);
 
-export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onRemove }) {
+export function createCard(eq, { x, y, given = null, title = "", find = "", onPick, onChange, onGesture, onRemove }) {
   const id = `card${++seq}`;
   const rows = [];        // { row, offset, note, from }
   let picked = null;
@@ -133,6 +133,9 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   }
 
   function paint(entry, live) {
+    // The card says whether something is picked up, because the equals sign is
+    // only a place to put things while something is in hand.
+    if (live) el.classList.toggle("has-pick", !!picked);
     const svg = paintRow(entry.row, { live, picked: live ? picked : null });
     const holder = document.createElement("div");
     holder.className = `am-work${live ? " is-live" : ""}`;
@@ -247,6 +250,16 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
     // this very target, and by the time the click reaches the canvas its
     // e.target has no ancestors left to recognise.
     if (hit) e.stopPropagation();
+
+    /* A second tap, somewhere else, is a DESTINATION: put the thing I picked
+       there. If that reads as a move, it is the move; if it does not, the tap
+       simply picks up whatever was tapped, which is what it always did. */
+    const to = hit && (hit.dataset.drop === EQUALS ? EQUALS : hit.dataset.node);
+    if (picked && to && to !== picked) {
+      const offer = offerTo(api.equation, picked, to);
+      if (offer) { onGesture?.(offer, api); return; }
+    }
+
     const next = hit ? (hit.dataset.node === picked ? null : hit.dataset.node) : null;
     if (next === picked && !hit) return;
     picked = next;

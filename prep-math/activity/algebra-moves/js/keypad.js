@@ -28,23 +28,34 @@ import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
 
 /* label, what it types, and how far back into it the caret goes.
-   `wide` marks the keys that earn a double cell. */
+   `wide` marks the keys that earn a double cell.
+
+   `math` is the key's FACE, written in the same linear syntax as everything
+   else and set by the same typesetter the canvas uses — so the fraction key is
+   a real fraction with a real bar over a real denominator, not an "a/b" with a
+   slash in it, and the power keys carry real raised exponents. A key that shows
+   you a slash and then draws you a bar has told you a small lie about what it
+   does. The brackets key draws the empty slot it is about to give you.
+
+   Everything else is a single glyph, already set in the equation's own face by
+   .am-key, so drawing it through the typesetter would produce exactly the same
+   picture at more cost. */
 const KEYS = [
   [
     { k: "7" }, { k: "8" }, { k: "9" },
-    { k: "÷", t: "/" }, { k: "x²", t: "^(2)", back: 0, title: "squared" },
-    { k: "( )", t: "()", back: 1, title: "brackets" },
+    { k: "÷", t: "/" }, { k: "x²", t: "^(2)", back: 0, title: "squared", math: "x^2" },
+    { k: "( )", t: "()", back: 1, title: "brackets", math: "(?)" },
     { k: "⌫", act: "back", title: "Delete", tone: "warn" },
   ],
   [
     { k: "4" }, { k: "5" }, { k: "6" },
-    { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of" },
+    { k: "×", t: "*" }, { k: "aᵇ", t: "^()", back: 1, title: "to the power of", math: "a^b" },
     { k: "x", t: "x", tone: "letter" }, { k: "y", t: "y", tone: "letter" },
   ],
   [
     { k: "1" }, { k: "2" }, { k: "3" },
     { k: "−", t: "-" },
-    { k: "a⁄b", t: "()/()", back: 4, title: "fraction" },
+    { k: "a⁄b", t: "()/()", back: 4, title: "fraction", math: "a/b" },
     { k: "←", act: "left", title: "Move left" },
     { k: "→", act: "right", title: "Move right" },
   ],
@@ -95,6 +106,7 @@ export function createKeypad(host, { onSubmit } = {}) {
   host.append(preview, line, say, give, pad, go);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
+  const KEY_SIZE = 19;            // and on a key face, which has a cell to fit
   let anchors = [];               // where each source offset sits on the page
   let toDrawn = [];               // typed offset -> repaired offset
 
@@ -512,6 +524,21 @@ export function createKeypad(host, { onSubmit } = {}) {
                  sign: flipSign, clear: () => { line.value = ""; draw(); line.focus(); },
                  enter: submit };
 
+  /** A key's face, typeset rather than spelled out. */
+  function face(src) {
+    const holder = document.createElement("span");
+    holder.className = "am-key__ink";
+    // The face is a picture of the key, not its name: without this a screen
+    // reader reads the fraction key as "ab" and the power key as "x2".
+    holder.setAttribute("aria-hidden", "true");
+    try {
+      holder.appendChild(paintRow(buildRow(parse(src), KEY_SIZE), { live: false }));
+    } catch {
+      holder.textContent = src;   // a face that will not parse is a bug, not a crash
+    }
+    return holder;
+  }
+
   for (const row of KEYS) {
     const rail = document.createElement("div");
     rail.className = "am-pad__row";
@@ -522,7 +549,8 @@ export function createKeypad(host, { onSubmit } = {}) {
       // labelled, not set: it gets the mono face a caption has.
       btn.className = `am-key${key.act ? " am-key--act" : ""}` +
                       `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
-      btn.textContent = key.k;
+      if (key.math) btn.appendChild(face(key.math));
+      else btn.textContent = key.k;
       if (key.title) btn.title = key.title;
       btn.setAttribute("aria-label", key.title || key.k);
       // pointerdown, not click: never let the caret leave the line.

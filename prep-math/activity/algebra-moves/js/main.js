@@ -91,6 +91,18 @@ function openMenuFor(card) {
   });
 }
 
+/* The second way to make a move, said once and then never again: the chip is
+   the obvious one, and this one has to be mentioned or nobody finds it. */
+let hinted = false;
+function hintOnce() {
+  if (hinted) return;
+  hinted = true;
+  setTimeout(() => {
+    if (!active?.picked) return;
+    say("Or tap where you want it — the equals sign to send it across, a like term to fold it into.");
+  }, 1400);
+}
+
 /* ── Putting a problem on the paper ─────────────────────────────────────── */
 function addCard(eq, { given = null, title = "", find = "" } = {}) {
   const spot = canvas.freeSpot(cards.map((c) => ({
@@ -110,9 +122,16 @@ function addCard(eq, { given = null, title = "", find = "" } = {}) {
       // reach under its neighbour. Touching a card brings it to the top of the
       // pile, which is what stops that mattering.
       if (picked) canvas.raise(self.el);
-      if (picked) openMenuFor(self); else menu.close();
+      if (picked) { openMenuFor(self); hintOnce(); } else menu.close();
     },
     onChange: (self) => { if (self.picked) openMenuFor(self); else menu.close(); },
+    onGesture: (offer, self) => {
+      const result = self.apply(offer);
+      menu.close();
+      if (result.refused) return say(`I will not do that — ${result.refused}.`, "no");
+      say(result.note, "ok");
+      canvas.revealCard(self.el);
+    },
     onRemove: (self) => {
       cards = cards.filter((c) => c !== self);
       if (active === self) { active = null; menu.close(); }
