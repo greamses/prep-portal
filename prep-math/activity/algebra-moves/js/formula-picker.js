@@ -54,7 +54,7 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
   for (const g of GROUPS) {
     const chip = document.createElement("button");
     chip.type = "button";
-    chip.className = "pp-pill am-fx__group";
+    chip.className = "pp-sticky pp-note-btn am-fx__group";
     chip.textContent = g.group;
     chip.addEventListener("click", () => { group = g.group; paintList(); });
     tabs.appendChild(chip);
@@ -68,7 +68,9 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
     for (const f of GROUPS.find((g) => g.group === group).items) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "am-fx__pick";
+      // Each formula on its own sheet of paper, the colours taken in turn — the
+      // same pad the cards on the canvas are torn from.
+      btn.className = `pp-sticky am-fx__pick pp-sticky--c${list.children.length % 6}`;
       btn.classList.toggle("is-on", chosen?.id === f.id);
       btn.appendChild(drawn(f.eq, 21));
       const name = document.createElement("em");
@@ -128,7 +130,7 @@ export function createFormulaPicker(host, { onSubmit } = {}) {
 
     const go = document.createElement("button");
     go.type = "button";
-    go.className = "am-key am-key--go am-key--go-wide";
+    go.className = "pp-sticky pp-note-btn am-go";
     go.textContent = "Put it on the canvas";
     go.addEventListener("click", submit);
     form.appendChild(go);

@@ -66,7 +66,7 @@ export function createMenu(host) {
       for (const offer of offers) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "am-move";
+        btn.className = "pp-sticky pp-note-btn am-move";
         // The button says the move, in the two or three characters a person
         // would write. The sentence goes on the tooltip and on the label a
         // screen reader reads, so nothing is lost by not printing it.

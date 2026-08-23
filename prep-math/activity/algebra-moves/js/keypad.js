@@ -24,6 +24,7 @@
 
 import { parse } from "./parse.js";
 import { buildRow, paintRow, el } from "./render.js";
+import { readValue } from "./formulas.js";
 import * as A from "./ast.js";
 
 /* label, what it types, and how far back into it the caret goes.
@@ -72,15 +73,26 @@ export function createKeypad(host, { onSubmit } = {}) {
   const say = document.createElement("p");
   say.className = "am-keysay";
 
+  /* Values for the letters in whatever has been typed. The formula shelf is not
+     the only place a substitution belongs: a line a student wrote themselves has
+     letters of their own, and "work it out when x is 3" is the same question
+     asked about their own algebra. The row builds itself out of the line — type
+     a y and a box for y appears. */
+  const give = document.createElement("div");
+  give.className = "am-give";
+  give.hidden = true;
+  const values = new Map();      // letter -> its input
+  const kept = new Map();        // letter -> what was typed, across redraws
+
   const pad = document.createElement("div");
   pad.className = "am-pad";
 
   const go = document.createElement("button");
   go.type = "button";
-  go.className = "am-key am-key--go am-key--go-wide";
+  go.className = "pp-sticky pp-note-btn am-go";
   go.textContent = "Put it on the canvas";
 
-  host.append(preview, line, say, pad, go);
+  host.append(preview, line, say, give, pad, go);
 
   const SIZE = 40;                // the drawing's font size, in CSS pixels
   let anchors = [];               // where each source offset sits on the page
@@ -128,6 +140,14 @@ export function createKeypad(host, { onSubmit } = {}) {
     for (let i = src.length - 1; i >= 0; i--) {
       if (forward[i] === text.length) forward[i] = forward[i + 1];
     }
+    // A space is not a place — the same rule the arrow keys work by. Landing on
+    // one puts the caret beside whatever character it was standing next to
+    // rather than in the thing that comes after it, which for the space this
+    // repair invents in front of a slot means beside the last letter typed
+    // instead of inside the box waiting for the next one.
+    for (let i = 0; i <= src.length; i++) {
+      while (forward[i] < text.length && text[forward[i]] === " ") forward[i]++;
+    }
     return {
       text, forward, dangling, noEquals,
       slots: /\(\s*\)/.test(src),
@@ -146,6 +166,11 @@ export function createKeypad(host, { onSubmit } = {}) {
     const rp = new Map();
     for (const a of row.atoms) if (a.key.endsWith("#rp")) rp.set(a.nodeId, a.x);
 
+    // The dashed box a slot is drawn as, so the caret can be put INSIDE it
+    // rather than beside it.
+    const slots = new Map();
+    for (const a of row.atoms) if (a.kind === "hole") slots.set(a.nodeId, a);
+
     const out = [];
     A.walk(eq, (n) => {
       const box = row.boxes.get(n.id);
@@ -161,6 +186,7 @@ export function createKeypad(host, { onSubmit } = {}) {
       out.push({
         from: n.src[0], to: n.src[1], box, left, right,
         leaf: A.kidsOf(n).length === 0,
+        slot: slots.get(n.id) || null,
         typedFrom: back(n.src[0]), typedTo: back(n.src[1]),
       });
     });
@@ -184,11 +210,77 @@ export function createKeypad(host, { onSubmit } = {}) {
       for (const [at, x] of [[a.from, a.left], [a.to, a.right]]) {
         const d = Math.abs(at - k);
         if (!best || d < best.d || (d === best.d && a.box.w < best.w)) {
-          best = { d, x, y: a.box.y, h: a.box.h, w: a.box.w };
+          best = { d, x, y: a.box.y, h: a.box.h, w: a.box.w, slot: a.slot };
         }
       }
     }
+
+    /* A slot is not a character to stand beside — it is a box with nothing in
+       it yet, and the caret belongs in the MIDDLE of it. Left where the rule
+       above puts it, the caret is drawn along the box's own dashed left edge,
+       which reads as standing outside the very thing it is about to fill.
+       The box's own rectangle is used rather than the node's, because a slot
+       the student bracketed is boxed with its brackets and its middle would
+       otherwise be measured across those too. */
+    if (best && best.slot) {
+      const s = best.slot;
+      return { x: s.x + s.w / 2, y: s.y, h: s.h };
+    }
     return best;
+  }
+
+  /* -- Boxes for the letters that are in the line --------------------------
+     Rebuilt only when the SET of letters changes, never on every keystroke:
+     replacing an input the student is typing into takes the focus away from
+     them mid-number. */
+  function letters(names) {
+    const now = names.join("");
+    give.hidden = names.length === 0;
+    if (give.dataset.of === now) return;
+    give.dataset.of = now;
+
+    for (const [letter, input] of values) kept.set(letter, input.value);
+    values.clear();
+    give.textContent = "";
+    if (!names.length) return;
+
+    const cap = document.createElement("span");
+    cap.className = "am-give__cap";
+    cap.textContent = "let";
+    give.appendChild(cap);
+
+    for (const name of names) {
+      const row = document.createElement("label");
+      row.className = "am-give__row";
+      row.innerHTML = `<b></b><i>=</i>`;
+      row.querySelector("b").textContent = name;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "decimal";
+      input.className = "am-give__value";
+      input.placeholder = "?";
+      input.value = kept.get(name) ?? "";
+      input.setAttribute("aria-label", `A value for ${name}`);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+      row.appendChild(input);
+      give.appendChild(row);
+      values.set(name, input);
+    }
+  }
+
+  /** What is in those boxes: the letters given a value, and the ones left out. */
+  function given() {
+    const out = {};
+    const blank = [];
+    const wrong = [];
+    for (const [letter, input] of values) {
+      const raw = input.value.trim();
+      if (!raw) { blank.push(letter); continue; }
+      const v = readValue(raw);
+      if (!v) wrong.push(letter);
+      else out[letter] = v;
+    }
+    return { given: Object.keys(out).length ? out : null, blank, wrong };
   }
 
   /* -- The picture above the keys ------------------------------------------ */
@@ -201,6 +293,7 @@ export function createKeypad(host, { onSubmit } = {}) {
     preview.classList.toggle("is-live", document.activeElement === line);
 
     if (!src.trim()) {
+      letters([]);
       preview.classList.add("is-empty");
       say.textContent = "Type an equation, or an expression to tidy up. It is drawn here as you go.";
       say.className = "am-keysay";
@@ -221,10 +314,13 @@ export function createKeypad(host, { onSubmit } = {}) {
       raw.className = "am-preview__raw";
       raw.textContent = src;
       preview.appendChild(raw);
+      letters([]);
       say.textContent = err.message;
       say.className = "am-keysay is-no";
       return;
     }
+
+    letters(A.varsIn(eq).sort());
 
     const row = buildRow(eq, SIZE);
     const svg = paintRow(row, { live: false });
@@ -395,8 +491,20 @@ export function createKeypad(host, { onSubmit } = {}) {
       say.className = "am-keysay is-no";
       return;
     }
-    onSubmit?.(eq, src);
+
+    const vals = given();
+    if (vals.wrong.length) {
+      say.textContent = `${vals.wrong.join(" and ")} — I cannot read that as a number.`;
+      say.className = "am-keysay is-no";
+      return;
+    }
+
+    // One letter left without a value is the thing being looked for, and worth
+    // writing on the card. Two or more and there is no one answer to name.
+    onSubmit?.(eq, src, vals.given, vals.given && vals.blank.length === 1 ? vals.blank[0] : "");
     line.value = "";
+    for (const input of values.values()) input.value = "";
+    kept.clear();
     draw();
   }
 
@@ -410,7 +518,10 @@ export function createKeypad(host, { onSubmit } = {}) {
     for (const key of row) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `am-key${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
+      // A key that DOES something to the keypad rather than typing maths is
+      // labelled, not set: it gets the mono face a caption has.
+      btn.className = `am-key${key.act ? " am-key--act" : ""}` +
+                      `${key.tone ? ` am-key--${key.tone}` : ""}${key.wide ? " am-key--wide" : ""}`;
       btn.textContent = key.k;
       if (key.title) btn.title = key.title;
       btn.setAttribute("aria-label", key.title || key.k);

@@ -141,9 +141,14 @@ async function boot() {
   canvas.onMove(() => menu.reposition());
 
   keypad = createKeypad($("#am-keypad"), {
-    onSubmit: (eq) => {
-      addCard(eq);
-      say(`${plain(eq)} is on the canvas.`, "ok");
+    onSubmit: (eq, src, given, find) => {
+      addCard(eq, { given, find });
+      say(
+        given
+          ? `${plain(eq)} is on the canvas — tap a letter to put its number in.`
+          : `${plain(eq)} is on the canvas.`,
+        "ok"
+      );
       closeDrawer();
     },
   });
@@ -159,14 +164,14 @@ async function boot() {
   wireTabs();
 
   const chips = $("#am-starters");
-  for (const src of STARTERS) {
+  STARTERS.forEach((src, i) => {
     const chip = document.createElement("button");
     chip.type = "button";
-    chip.className = "pp-pill am-starter";
+    chip.className = `pp-sticky pp-note-btn am-starter pp-sticky--c${i % 6}`;
     chip.textContent = src;
     chip.addEventListener("click", () => keypad.set(src));
     chips.appendChild(chip);
-  }
+  });
 
   // Tapping bare paper puts the menu away.
   $("#am-canvas").addEventListener("click", (e) => {

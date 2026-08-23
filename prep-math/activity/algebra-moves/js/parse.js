@@ -73,7 +73,13 @@ export function parse(src) {
      over itself, which costs nothing and is why this is one line per rule. */
   const from = () => p;
   const span = (mark, node) => {
-    if (node) node.src = [toks[mark].at, p > mark ? toks[p - 1].at + String(toks[p - 1].v).length : toks[mark].at];
+    // A BRACKETED node keeps the span of its contents, without the brackets —
+    // see atom(). A production that hands its child straight back would
+    // otherwise quietly widen it to include them, and then a caret inside (?)
+    // is a caret standing at the edge of the whole (?) instead of in the box.
+    if (node && !node.paren) {
+      node.src = [toks[mark].at, p > mark ? toks[p - 1].at + String(toks[p - 1].v).length : toks[mark].at];
+    }
     return node;
   };
 

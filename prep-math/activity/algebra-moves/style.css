@@ -3,8 +3,17 @@
 
    Two pages share this sheet: the canvas (index.html) and the API explorer
    (api.html). Everything is the site's own — the paint wash, the torn receipt,
-   the pill, the sticky. The only new surfaces are the paper you work on and the
-   keypad you type on, and both of those are still paper.
+   the sticky note.
+
+   THREE SURFACES, AND EACH IS ONE THING ONLY.
+
+     the paper you work on   the cards: sticky notes, one colour each
+     the paper you type on   a torn receipt, exactly like the site's doorways
+     every button on them    a sticky note too (.pp-sticky .pp-note-btn)
+
+   The single exception is the KEYS. A key is not a note — you press it, it does
+   not sit on the desk — and it is set in the equation's own face, so that the 7
+   you press and the 7 that lands on the canvas are visibly the same 7.
 
    NOTE ON SPECIFICITY: loader.js re-imports components.css AFTER this file, so
    anything overriding a .pp-* declaration has to carry both class names or it
@@ -270,30 +279,25 @@
    the paper as a small square of border. */
 .am-menu[hidden] { display: none; }
 
-/* The chip itself: big enough for a thumb, short enough to read without
-   reading. Set in the equation's own face, because it is a piece of algebra —
-   +5, ÷3, 3x + 3 — and not a caption about one. */
-.am-move {
+/* The chip itself: a note torn off and held beside the term. Big enough for a
+   thumb, short enough to read without reading, and set in the equation's own
+   face — it is a piece of algebra (+5, ÷3, 3x + 3), not a caption about one. */
+.pp-sticky.am-move {
+  --pp-note-bg: #f4c95d;
+  --pp-note-tilt: -2.4deg;
   display: block;
   min-width: 3.1rem;
   min-height: 2.5rem;
-  padding: 0.3rem 0.75rem;
-  border: 0;
-  border-radius: 2px;
-  background: var(--accent-primary);
-  color: var(--text-on-accent, #2a2723);
+  padding: 0.32rem 0.8rem 0.38rem;
   font-family: "STIX Two Text", "Times New Roman", serif;
   font-size: 1.32rem;
-  line-height: 1.5;
+  font-weight: 400;
+  line-height: 1.45;
   white-space: nowrap;
   text-align: center;
-  cursor: pointer;
-  box-shadow: 0 3px 10px -2px rgba(20, 19, 15, 0.4);
-  transition: transform 0.12s ease, filter 0.12s ease;
 }
-.am-move:hover { filter: brightness(1.06); transform: translateY(-1px); }
-.am-move:active { transform: translateY(0); }
-.am-move:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pp-sticky.am-move:hover { transform: rotate(var(--pp-note-tilt)) translateY(-2px); }
+.pp-sticky.am-move:focus-visible { outline: 2px solid #14130f; outline-offset: 2px; }
 
 /* ── What the tool is saying ────────────────────────────────────────────── */
 .am-say {
@@ -322,53 +326,42 @@
 .am-say.is-no { color: var(--accent-danger); font-weight: var(--weight-semibold); }
 
 /* ── The rail ───────────────────────────────────────────────────────────── */
+/* No bar any more: the tools are notes stuck along the bottom of the sheet, so
+   the rail is only the arrangement. Colour says what a thing is — the two
+   actions are on coloured paper, the four view controls on unbleached. */
 .am-rail {
   position: absolute;
   z-index: 30;
   left: 50%;
-  bottom: 1rem;
+  bottom: 0.9rem;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 0.5rem;
   max-width: calc(100% - 1.5rem);
-  padding: 0.35rem;
-  background: var(--am-paper);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-lg);
 }
-.am-rail__group { display: flex; gap: 0.2rem; }
-.am-rail__group + .am-rail__group { padding-left: 0.5rem; border-left: var(--border-subtle); }
+.am-rail__group { display: flex; align-items: center; gap: 0.35rem; }
 
-.am-tool {
+.pp-sticky.am-tool {
+  --pp-note-tilt: -1.4deg;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.42rem 0.55rem;
-  border: 0;
-  border-radius: 2px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem 0.55rem;
+  font-size: 0.74rem;
 }
-.am-tool:hover { background: var(--surface-secondary); color: var(--ink); }
-.am-tool em {
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
+.pp-sticky.am-tool:nth-child(even) { --pp-note-tilt: 1.5deg; }
+.pp-sticky.am-tool em {
   font-style: normal;
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
-.am-tool--key {
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
-}
-.am-tool--key:hover { background: var(--accent-primary); color: var(--text-on-accent); filter: brightness(1.05); }
+.pp-sticky.am-tool--key   { --pp-note-bg: #f4c95d; }
+.pp-sticky.am-tool--do    { --pp-note-bg: #c8f0c0; }
+.pp-sticky.am-tool--plain { --pp-note-bg: #f0ece2; color: #4a453d; }
 
 .am-count {
-  padding-right: 0.35rem;
+  padding: 0 0.2rem;
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.06em;
@@ -390,33 +383,36 @@
 }
 .am-drawer.is-open { transform: translate(-50%, -4.6rem); pointer-events: auto; }
 
-.am-drawer__paper {
-  position: relative;
-  padding: 0.9rem;
-  background: var(--am-paper);
-  border: var(--border-subtle);
-  box-shadow: var(--shadow-xl);
-  max-height: calc(100vh - var(--am-nav) - 7rem);
+/* The receipt's own shadow is a drop-shadow filter on the wrapper, which is
+   what lets it follow the torn edge instead of squaring it off. */
+.am-drawer__paper.pp-receipt { display: block; }
+.am-drawer .pp-receipt__paper { padding: 1rem 1.1rem; }
+
+/* The scrolling lives INSIDE the torn paper. Put it on the paper itself and the
+   mask travels with the scroll, taking the teeth off the top and bottom. */
+.am-drawer__roll {
+  max-height: calc(100vh - var(--am-nav) - 8.5rem);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.am-drawer__close {
+.pp-sticky.am-drawer__close {
+  --pp-note-bg: #f0ece2;
+  --pp-note-tilt: 2deg;
   position: absolute;
-  z-index: 2;                 /* the drawing below it is positioned too */
-  top: 0.5rem;
-  right: 0.5rem;
+  z-index: 3;                 /* the drawing below it is positioned too */
+  /* Clear of the torn edge: the receipt's mask cuts teeth out of the top 13px
+     of the paper AND of everything drawn in it, so a button sitting at 0 comes
+     out with a serrated top of its own. */
+  top: 15px;
+  right: 15px;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 0;
-  border-radius: 2px;
-  background: transparent;
-  color: var(--text-tertiary);
-  cursor: pointer;
+  color: #4a453d;
 }
-.am-drawer__close:hover { color: var(--ink); background: var(--surface-secondary); }
 
 /* The equation drawn as it is typed. */
 /* The drawing IS the field you type in. It is not an input, so it has to be
@@ -491,14 +487,73 @@
 .am-keysay.is-ok { color: var(--accent-success); }
 .am-keysay.is-no { color: var(--accent-danger); }
 
-.am-pad { display: grid; gap: 0.3rem; }
-.am-pad__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
-
-.am-key {
-  padding: 0.62rem 0.2rem;
+/* ── Giving a letter a value ────────────────────────────────────────
+   Builds itself out of whatever has been typed, so it is only ever as wide as
+   the line has letters. Reads as a sentence — let x = 3, y = 2 — because that is
+   how the question is written. */
+.am-give {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.am-give[hidden] { display: none; }
+.am-give__cap {
   font-family: var(--font-mono);
-  font-size: 0.86rem;
-  font-weight: var(--weight-semibold);
+  font-size: 0.56rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.am-give__row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.22rem;
+  cursor: text;
+}
+.am-give__row b,
+.am-give__row i {
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.am-give__row b { font-style: italic; }
+.am-give__row i { font-style: normal; color: var(--text-tertiary); }
+.am-give__value {
+  width: 3.2rem;
+  padding: 0.22rem 0.35rem;
+  border: 0;
+  border-bottom: 1.5px dashed var(--border-color, rgba(42, 39, 35, 0.28));
+  background: transparent;
+  color: var(--ink);
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 1.05rem;
+  text-align: center;
+}
+.am-give__value:focus {
+  outline: none;
+  border-bottom-color: var(--accent-secondary);
+  border-bottom-style: solid;
+}
+.am-give__value::placeholder { color: var(--text-tertiary); opacity: 0.6; }
+
+.am-pad { display: grid; gap: 0.32rem; }
+.am-pad__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.32rem; }
+
+/* A key is the one thing here that is NOT a note — you press it, it does not sit
+   on the desk. What it is instead is a piece of the equation: set in the same
+   face the canvas writes in, at the same size, so the 7 you press and the 7 that
+   lands on the paper are visibly the same 7. That is worth more on a maths
+   keypad than any amount of chrome. */
+.am-key {
+  padding: 0.5rem 0.2rem 0.56rem;
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-size: 1.34rem;
+  font-weight: 400;
+  line-height: 1.15;
   color: var(--ink);
   background: var(--surface-primary);
   border: var(--border-subtle);
@@ -514,23 +569,30 @@
 }
 .am-key:hover { background: var(--surface-secondary); }
 .am-key:active { transform: translateY(1px); box-shadow: none; }
+/* A letter is italic on the canvas, so it is italic on the key. */
 .am-key--letter { color: var(--accent-secondary); font-style: italic; }
+/* The keys that are not maths — delete, the arrows, clear — stay a size down and
+   in the mono label face: they are instructions to the keypad, not to the sum. */
 .am-key--warn { color: var(--accent-danger); }
-.am-key--go {
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.am-key--act {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: var(--weight-semibold);
 }
 .am-key--wide { grid-column: span 2; }
 
-.am-starters { display: flex; flex-wrap: wrap; gap: var(--gap-xs); margin-top: 0.7rem; }
-.pp-pill.am-starter {
-  --tile: var(--accent-warning);
-  text-transform: none;
-  letter-spacing: 0.02em;
+.am-starters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+/* Set in the equation's face: a starter is a piece of algebra, and pressing it
+   should feel like taking that exact line off the pad. */
+.pp-sticky.am-starter {
+  --pp-note-tilt: -1.5deg;
+  padding: 0.34rem 0.7rem 0.4rem;
+  font-family: "STIX Two Text", "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 1rem;
+  font-style: italic;
 }
+.pp-sticky.am-starter:nth-child(even) { --pp-note-tilt: 1.6deg; }
 
 .am-note {
   margin: 0.6rem 0 0;
@@ -546,70 +608,74 @@
 /* ── Two ways into the drawer ─────────────────────────────────── */
 .am-tabs {
   display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.7rem;
-  padding-right: 2rem;         /* clear of the close button */
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  padding-right: 2.4rem;       /* clear of the close button */
 }
-.am-tab {
-  padding: 0.4rem 0.8rem;
-  border: var(--border-subtle);
-  border-radius: 2px;
-  background: var(--surface-primary);
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  cursor: pointer;
+/* The tab you are not on is a note face down: unbleached paper, no colour. */
+.pp-sticky.am-tab {
+  --pp-note-bg: #f0ece2;
+  --pp-note-tilt: -1.6deg;
+  padding: 0.42rem 0.85rem 0.48rem;
+  font-size: 0.8rem;
+  color: #5a544a;
 }
-.am-tab:hover { color: var(--ink); }
-.am-tab.is-on {
-  background: var(--accent-primary);
-  border-color: transparent;
-  color: var(--text-on-accent);
-}
+.pp-sticky.am-tab:nth-child(even) { --pp-note-tilt: 1.4deg; }
+.pp-sticky.am-tab.is-on { --pp-note-bg: #f4c95d; color: #14130f; }
 
 /* ── The formula shelf ───────────────────────────────────────────
    Every formula on the shelf is DRAWN with the same typesetting the canvas uses,
    not written out in a monospace line. A student should recognise the thing they
    are picking as the thing they will be working on. */
-.am-fx__groups { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
-.pp-pill.am-fx__group {
-  --tile: var(--accent-secondary);
-  text-transform: none;
-  letter-spacing: 0.02em;
-  opacity: 0.5;
+.am-fx__groups { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.pp-sticky.am-fx__group {
+  --pp-note-bg: #f0ece2;
+  --pp-note-tilt: -1.2deg;
+  padding: 0.38rem 0.75rem 0.42rem;
+  font-size: 0.78rem;
+  color: #5a544a;
 }
-.pp-pill.am-fx__group.is-on { opacity: 1; }
+.pp-sticky.am-fx__group:nth-child(even) { --pp-note-tilt: 1.3deg; }
+.pp-sticky.am-fx__group.is-on { --pp-note-bg: #b8ece2; color: #14130f; }
 
 .am-fx__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
-  gap: 0.4rem;
-  margin-top: 0.6rem;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
 }
-.am-fx__pick {
+/* A shelf of notes, not a grid of tiles. The tilt is small and alternates, or
+   nine of them at the same angle reads as a mistake rather than a pad. */
+.pp-sticky.am-fx__pick {
+  --pp-note-tilt: -1deg;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.25rem;
   min-width: 0;
-  padding: 0.5rem 0.55rem;
-  border: var(--border-subtle);
-  border-radius: 2px;
-  background: var(--surface-primary);
+  padding: 0.55rem 0.6rem 0.6rem;
   text-align: left;
   cursor: pointer;
+  transition: transform 0.16s var(--ease-bounce, ease), box-shadow 0.16s ease;
 }
-.am-fx__pick:hover { background: var(--surface-secondary); }
-.am-fx__pick.is-on { border-color: var(--accent-primary); box-shadow: inset 0 0 0 1px var(--accent-primary); }
-.am-fx__pick em {
+.pp-sticky.am-fx__pick:nth-child(even) { --pp-note-tilt: 1.1deg; }
+.pp-sticky.am-fx__pick:hover { transform: rotate(var(--pp-note-tilt)) translateY(-2px); }
+.pp-sticky.am-fx__pick.is-on {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow:
+    0 2px 3px rgba(20, 19, 15, 0.12),
+    8px 14px 22px -6px rgba(20, 19, 15, 0.4);
+}
+.pp-sticky.am-fx__pick em {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-style: normal;
+  font-weight: 500;
   line-height: 1.35;
   letter-spacing: 0.03em;
-  color: var(--text-tertiary);
+  color: rgba(20, 19, 15, 0.6);
 }
+/* Paper is paper: the maths on a note is dark ink whatever the theme is. */
+.pp-sticky.am-fx__pick .am-glyph,
+.pp-sticky.am-fx__pick .am-rule { fill: #14130f; }
 
 /* A wide formula is SCALED to the tile rather than scrolled inside it: the tile
    is a button, so a scrollbar in it is something nobody can use, and C = 2(22/7)r
@@ -679,12 +745,15 @@
 @media (max-width: 560px) {
   .am-drawer { width: 100vw; }
   .am-drawer.is-open { transform: translate(-50%, 0); }
-  .am-drawer__paper { border-left: 0; border-right: 0; border-bottom: 0; }
-  .am-rail { bottom: 0.6rem; gap: 0.3rem; padding: 0.28rem; }
+  .am-drawer .pp-receipt__paper { padding: 0.9rem 0.7rem; }
+  .am-rail { bottom: 0.6rem; gap: 0.3rem; }
+  .pp-sticky.am-tool { padding: 0.45rem 0.5rem 0.5rem; }
   .am-tool em { display: none; }
   .am-tool--key em { display: inline; }
   .am-count { display: none; }
-  .am-key { padding: 0.7rem 0.15rem; font-size: 0.8rem; }
+  /* Still the equation's face, just fewer pixels of it. */
+  .am-key { padding: 0.5rem 0.1rem 0.55rem; font-size: 1.14rem; }
+  .am-key--act { font-size: 0.72rem; }
   .am-fx__list { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); }
   .am-fx__row { grid-template-columns: 1.2rem 1fr 4.5rem; }
 }
@@ -772,11 +841,17 @@
 }
 .am-input:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: -2px; }
 
-.pp-pill.am-verb.is-on {
-  --tile: var(--accent-secondary);
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
+/* The explorer's verbs are the same notes the canvas uses: unbleached until it
+   is the one you are looking at. */
+.pp-sticky.am-verb {
+  --pp-note-bg: #f0ece2;
+  --pp-note-tilt: -1.5deg;
+  padding: 0.36rem 0.75rem 0.42rem;
+  font-size: 0.8rem;
+  color: #5a544a;
 }
+.pp-sticky.am-verb:nth-child(even) { --pp-note-tilt: 1.4deg; }
+.pp-sticky.am-verb.is-on { --pp-note-bg: #f4c95d; color: #14130f; }
 
 .am-url {
   margin: 0;
@@ -830,13 +905,18 @@
   opacity: 0.75;
 }
 
-/* The primary action gets its own full-width key rather than a cell that would
-   never fit the grid. */
-.am-key--go-wide {
+/* The primary action is a note across the whole width — the yellow one you
+   press when the line is finished, the same paper as everything else on the
+   desk and nothing like the keys above it. */
+.pp-sticky.am-go {
+  --pp-note-bg: #f4c95d;
+  --pp-note-tilt: -0.7deg;
   display: block;
   width: 100%;
-  margin-top: 0.45rem;
-  padding: 0.72rem;
+  margin-top: 0.8rem;
+  padding: 0.7rem 1rem 0.75rem;
+  font-size: 0.94rem;
 }
+.pp-sticky.am-go:hover { transform: rotate(var(--pp-note-tilt)) translateY(-2px); }
 
 

@@ -67,14 +67,14 @@
       <!-- ── The rail ────────────────────────────────────────────────── -->
       <div class="am-rail" role="toolbar" aria-label="Canvas tools">
         <div class="am-rail__group">
-          <button class="am-tool am-tool--key" type="button" id="am-add"
+          <button class="pp-sticky pp-note-btn am-tool am-tool--key" type="button" id="am-add"
                   aria-expanded="false" aria-controls="am-drawer"
                   title="Put a problem on the canvas" aria-label="Put a problem on the canvas">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             <em>New</em>
           </button>
-          <button class="am-tool" type="button" id="am-work"
+          <button class="pp-sticky pp-note-btn am-tool am-tool--do" type="button" id="am-work"
                   title="How many steps are left?" aria-label="How many steps are left?">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
@@ -83,19 +83,19 @@
         </div>
 
         <div class="am-rail__group">
-          <button class="am-tool" type="button" id="am-zoom-out" title="Zoom out" aria-label="Zoom out">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" title="Zoom out" aria-label="Zoom out">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-4.3-4.3"/></svg>
           </button>
-          <button class="am-tool" type="button" id="am-zoom-in" title="Zoom in" aria-label="Zoom in">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-in" title="Zoom in" aria-label="Zoom in">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-4.3-4.3"/></svg>
           </button>
-          <button class="am-tool" type="button" id="am-zoom-reset" title="Back to the middle" aria-label="Back to the middle">
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-reset" title="Back to the middle" aria-label="Back to the middle">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
           </button>
-          <button class="am-tool" type="button" id="am-full" aria-pressed="false"
+          <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-full" aria-pressed="false"
                   title="Fill the screen" aria-label="Fill the screen">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
@@ -107,8 +107,14 @@
 
       <!-- ── The keypad, in a drawer ─────────────────────────────────── -->
       <section class="am-drawer" id="am-drawer" aria-label="Put a problem on the canvas" inert>
-        <div class="am-drawer__paper">
-          <button class="am-drawer__close" type="button" id="am-drawer-close" aria-label="Put the keypad away">
+        <!-- The place you type is a receipt, like every other paper the site
+             hands you. The wrapper carries the shadow, the inner paper carries
+             the torn edge; the scrolling is a third element inside both, or the
+             teeth get cut off the moment the content is taller than the drawer. -->
+        <div class="am-drawer__paper pp-receipt">
+         <div class="pp-receipt__paper">
+          <div class="am-drawer__roll">
+          <button class="pp-sticky pp-note-btn am-drawer__close" type="button" id="am-drawer-close" aria-label="Put the keypad away">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                  stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
@@ -116,9 +122,9 @@
           <!-- Two ways in: type your own, or take a formula and say what you
                were given. Both end up as the same kind of card. -->
           <div class="am-tabs" role="tablist" aria-label="Where the problem comes from">
-            <button class="am-tab is-on" type="button" role="tab" id="am-tab-type"
+            <button class="pp-sticky pp-note-btn am-tab is-on" type="button" role="tab" id="am-tab-type"
                     data-pane="type" aria-selected="true" aria-controls="am-pane-type">Type it</button>
-            <button class="am-tab" type="button" role="tab" id="am-tab-formula"
+            <button class="pp-sticky pp-note-btn am-tab" type="button" role="tab" id="am-tab-formula"
                     data-pane="formula" aria-selected="false" aria-controls="am-pane-formula">Formulas</button>
           </div>
 
@@ -141,6 +147,8 @@
               the canvas with those numbers pinned to it. Tap a term to put them in.
             </p>
           </div>
+          </div>
+         </div>
         </div>
       </section>
     </main>

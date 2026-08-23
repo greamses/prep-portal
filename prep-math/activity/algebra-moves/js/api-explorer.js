@@ -90,7 +90,7 @@ function boot() {
   for (const v of VERBS) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "pp-pill am-starter am-verb";
+    btn.className = "pp-sticky pp-note-btn am-verb";
     btn.textContent = v.label;
     btn.dataset.verb = v.id;
     btn.addEventListener("click", () => {
