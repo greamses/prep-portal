@@ -269,3 +269,78 @@ export function numberCardArt() {
     word(60, 60, "1 flat, 2 rods, 3 units", 7, 500, "rgba(42,39,35,.7)")
   );
 }
+
+/**
+ * The bus stop, mid-working: the answer coming along the top, what has been
+ * taken away underneath, and the next number brought down beside what was left.
+ * Drawn as a MOMENT rather than a finished sum, because a division standing
+ * complete on a card says "watch"; one half-worked says "your turn".
+ */
+export function longDivideArt() {
+  const cw = 13;                       // one digit column
+  const x0 = 34;                       // where the bar stands
+  const col = (i) => x0 + 6 + i * cw;  // the middle of digit column i
+
+  const fig = (x, y, text, size = 13, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+
+  const rule = (from, to, y, stroke = LINE, w = 1.3) =>
+    `<path d="M${from} ${y}H${to}" stroke="${stroke}" stroke-width="${w}"
+       stroke-linecap="round" fill="none"/>`;
+
+  return svg(
+    // the stop itself: over the number, and down the side of all the working
+    `<path d="M${x0} 70V22H108" stroke="${LINE}" stroke-width="1.8"
+       stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+    // the answer so far, with the last digit still to come
+    fig(col(0), 13, "4") + fig(col(1), 13, "3") +
+    `<rect x="${col(2) - 6}" y="6" width="12" height="14" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>` +
+    // what is being divided, and who is doing the dividing
+    fig(18, 32, "7") +
+    fig(col(0), 32, "3") + fig(col(1), 32, "0") + fig(col(2), 32, "5") +
+    // taken away, and ruled off
+    fig(col(0) - 9, 46, "−", 11, FAINT) +
+    fig(col(0), 46, "2") + fig(col(1), 46, "8") +
+    rule(col(0) - 6, col(1) + 6, 54) +
+    // what was left, and the digit brought down beside it
+    fig(col(1), 64, "2") + fig(col(2), 64, "5")
+  );
+}
+
+/**
+ * A column addition mid-working: the carried 1 sitting small above the tens,
+ * the ones already written under the line, and the next column waiting. Drawn
+ * as a MOMENT rather than a finished sum, because a sum standing complete on a
+ * card says "watch"; one half-worked says "your turn".
+ */
+export function columnAddArt() {
+  const cw = 14;
+  const right = 96;                        // the ones column
+  const col = (p) => right - p * cw;       // p counted from the ones end
+
+  const fig = (x, y, text, size = 14, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+
+  return svg(
+    // the carry, small and in the accent, above the column it is carried into
+    fig(col(1), 11, "1", 9, "var(--accent-secondary, #6fb7e8)") +
+    // the two numbers being added, and the sign in front of the lower one
+    fig(col(2), 27, "2") + fig(col(1), 27, "6") + fig(col(0), 27, "9") +
+    fig(col(3) + 2, 45, "+", 13, FAINT) +
+    fig(col(2), 45, "1") + fig(col(1), 45, "8") + fig(col(0), 45, "2") +
+    // the line of the sum, reaching back through the sign
+    `<path d="M${col(3) - 4} 56H${col(0) + 7}" stroke="${LINE}" stroke-width="1.6"
+       stroke-linecap="round" fill="none"/>` +
+    // the ones written, and the tens column waiting to be answered
+    `<rect x="${col(1) - 7}" y="60" width="14" height="16" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>` +
+    fig(col(0), 68, "1")
+  );
+}

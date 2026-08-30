@@ -76,6 +76,19 @@ export const SHORTCUTS = [
     ],
   },
   {
+    /* Like the note's keys, these belong to the strip that appears over a
+       division or an addition rather than to the canvas — but "how do I work
+       this" is looked up in one list, so they are in it. */
+    name: "Working a written sum",
+    items: [
+      { keys: "Tap the page", act: null, does: "Pick the board up, and put the caret in the box" },
+      { keys: "Enter", act: null, does: "Write what you have typed — it goes down only if it is right" },
+      { keys: "The top row", act: null, does: "Set any sum you like, written in the base you are working in" },
+      { keys: "Show me", act: null, does: "Write this one line for you, and say what it was" },
+      { keys: "Rub out", act: null, does: "Take the working off and start the same sum again" },
+    ],
+  },
+  {
     name: "Getting about",
     items: [
       { keys: "← ↑ → ↓", act: null, does: "Slide the paper under the camera" },

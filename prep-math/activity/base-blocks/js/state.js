@@ -124,6 +124,7 @@ function clone(t) {
   if (t.hidden) copy.hidden = [...t.hidden];
   if (t.focus) copy.focus = { ...t.focus };
   if (t.counters) copy.counters = [...t.counters];
+  if (t.addends) copy.addends = [...t.addends];
   return copy;
 }
 

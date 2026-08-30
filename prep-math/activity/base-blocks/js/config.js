@@ -147,6 +147,26 @@ export function toBase(n, base) {
   return s;
 }
 
+/**
+ * Read a number WRITTEN in the working base back into a plain count.
+ *
+ * Strict on purpose: null for anything that is not a number in this base, so
+ * typing 8 into a base-five sum is refused rather than quietly taken as eight.
+ * A slip of the finger looks the same as the misunderstanding, and the boards
+ * that use this exist to catch the misunderstanding.
+ */
+export function fromBase(text, base) {
+  const s = String(text ?? "").trim().toUpperCase().replace(/\s+/g, "");
+  if (!s) return null;
+  let n = 0;
+  for (const ch of s) {
+    const d = DIGITS.indexOf(ch);
+    if (d < 0 || d >= base) return null;
+    n = n * base + d;
+  }
+  return n;
+}
+
 /** Spoken name of a base, for labels like "base five". */
 const BASE_WORDS = [
   "", "", "two", "three", "four", "five", "six",
@@ -160,4 +180,22 @@ export function baseWord(base) {
 export function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
+}
+
+/* ── colour, for the things that paint themselves ─────────────────────────── */
+
+/** A hex colour in a shape parseInt can read, whatever shape it arrived in. */
+export function norm(hex) {
+  const h = String(hex || "").trim();
+  if (/^#[0-9a-f]{3}$/i.test(h)) return "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+  if (/^#[0-9a-f]{6}$/i.test(h)) return h;
+  if (/^#[0-9a-f]{8}$/i.test(h)) return h.slice(0, 7);
+  return "#2a2723";
+}
+
+/** The same colour at an alpha — what every 2D face here fades its ink with. */
+export function rgba(hex, a) {
+  const h = norm(hex).replace("#", "");
+  const n = parseInt(h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }

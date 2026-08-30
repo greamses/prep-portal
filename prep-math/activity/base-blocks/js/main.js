@@ -23,6 +23,8 @@ import { splitSelected, addPlace, addThing, addTile, addCard, rotateSelected,
 import { refreshCards, setNotation } from "./card.js";
 import { createCardPicker } from "./cardui.js";
 import { createBlockBar } from "./blockbar.js";
+import { createSheetPanel } from "./sheetui.js";
+import { sheetFor } from "./sheets.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -52,6 +54,7 @@ let ui = null;
 let pointer = null;
 let noteEditor = null;
 let dock = null;
+let sheetPanel = null;
 let booting = null;
 const ghost = createDotGhost(stage);
 
@@ -388,16 +391,55 @@ function placeTool(tool) {
   }
   const thing = addThing(makeBoard(tool.variant, store.base));
   arrange(store.blocks, store.things);
+  /* A sheet you WORK on is picked up the moment it lands. The strip that asks
+     the questions belongs to the board in your hand, and a sum nobody is
+     holding is only a picture of one. */
+  const sheet = sheetFor(thing);
+  if (sheet) store.selection = new Set([thing.id]);
   say(
     tool.variant === "place"
       ? "Place-value chart — stand blocks in the columns and it reads them back."
       : tool.variant === "area"
         ? "Area frame — lay pieces along the two tracks to say what you are "
           + "multiplying, then fill the field between them."
-        : `${tool.label} — tap a square to light its row and column.`
+        : sheet
+          ? `${sumOf(sheet, thing)} — ${sheet.ask(thing).text}`
+          : `${tool.label} — tap a square to light its row and column.`
   );
   catchUp(thing);
   fitView(ctx, [thing]);
+}
+
+/* ── working a written sum ────────────────────────────────────────────────── */
+
+/** The sum a sheet is set to, said the way that method writes it. */
+function sumOf(sheet, board) {
+  const showing = sheet.read(board);
+  return sheet.fields.map((f) => showing[f.n]).join(` ${sheet.sep} `).trim();
+}
+
+/**
+ * Everything that writes on a division or an addition comes through here: one
+ * step back per figure written, and NOTHING in the history for an answer that
+ * was refused. Undo on this canvas takes a line of working off the page; it was
+ * never meant to walk back through wrong guesses.
+ */
+function sheetAct(board, run) {
+  if (!board) return;
+  snapshot();
+  const done = run(board);
+  /* A refused answer is not a step back to take. It DOES change the board —
+     the tally of slips goes up, which is how the board knows to offer to write
+     one for you — but undo on this canvas takes a line of working off the page
+     and was never meant to walk back through wrong guesses. */
+  if (done.ok === false || !done.changed) store.history.pop();
+  /* A board that has just been given a new sum is a different size, so it is
+     put down again before anything else is standing where it now reaches. */
+  if (done.changed && done.resized) settleThings([board]);
+  if (done.message) {
+    say(done.message, done.ok === false ? "warn" : done.changed ? "ok" : "info");
+  }
+  emit();
 }
 
 /* ── boot the 3D side once ────────────────────────────────────────────────── */
@@ -493,6 +535,18 @@ async function bootCanvas() {
         /* The area frame has no squares to tap: what it holds is the pieces
            lying on it, so a tap simply asks it to read itself out. */
         if (thing.variant === "area") { sayFrame(thing); emit(); return; }
+        /* Tapping a worked sum is asking to be told the question again — and it
+           picks the board up and puts the caret in the box, because a face is
+           the one part of a board that does not select itself. */
+        const worked = sheetFor(thing);
+        if (worked) {
+          store.selection = new Set([thing.id]);
+          const q = worked.ask(thing);
+          say(q.text, q.done ? "ok" : "info");
+          emit();
+          sheetPanel?.focus();
+          return;
+        }
         if (thing.variant === "place") {
           // shift takes a counter back out, the way it hides a square on a table
           snapshot();
@@ -574,6 +628,18 @@ async function bootCanvas() {
       enabled: (name) => ui.enabled(name),
     });
 
+    sheetPanel = createSheetPanel(ctx, view, stage, {
+      onAnswer: (board, text) => sheetAct(board, (t) => sheetFor(t).answer(t, text)),
+      onShow: (board) => sheetAct(board, (t) => sheetFor(t).showNext(t)),
+      onReset: (board) => sheetAct(board, (t) => sheetFor(t).reset(t)),
+      /* A new sum makes the board a different size, so this is the one action
+         here that has to put it down again afterwards. */
+      onSum: (board, values) => sheetAct(board, (t) => {
+        const done = sheetFor(t).set(t, values);
+        return { ...done, resized: done.changed };
+      }),
+    });
+
     const trade = createRegroupPrompt(ctx, view, stage);
     noteEditor = createNoteEditor(ctx, view, stage,
       { onInput: () => emit(), onCommit: afterNote });
@@ -584,6 +650,7 @@ async function bootCanvas() {
       turn.refresh();
       cardPick.refresh();
       blockBar.refresh();
+      sheetPanel.refresh();
     });
     turn.refresh();
 

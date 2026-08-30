@@ -81,7 +81,11 @@ export function createView(ctx) {
          the same signature — what it SAYS is what tells the view it changed. */
       const shape = t.kind === "note" || t.kind === "card" ? noteShape(t)
         : t.kind === "tile" ? tileShape(t)
-        : [t.places ?? "", t.base ?? ""].join("/");
+        /* A written sum's board is cut to fit the sum on it, so the numbers
+           are part of its SHAPE and not merely of its drawing: set a longer
+           sum and the slab itself has to be built again. */
+        : [t.places ?? "", t.base ?? "", t.dividend ?? "", t.divisor ?? "",
+           (t.addends || []).join("+")].join("/");
       if (rig && rig.shape !== shape) {
         disposeRig(rig);
         rigs.delete(t.id);
@@ -150,7 +154,10 @@ export function createView(ctx) {
       return [t.variant, t.base, t.max, (t.hidden || []).join("|"),
         JSON.stringify(t.focus || null),
         // the swept array is painted into the face, so the face repaints for it
-        JSON.stringify(t.array || null)].join("~");
+        JSON.stringify(t.array || null),
+        // and so is how far a written sum has been worked
+        t.done ?? "", t.dividend ?? "", t.divisor ?? "",
+        (t.addends || []).join("+")].join("~");
     }
     const r = placeReading(t, store.blocks, store.base);
     return ["place", store.base, t.places, r.digits.join(","), r.strays,

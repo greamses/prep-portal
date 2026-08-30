@@ -10,6 +10,7 @@
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
+  longDivideArt, columnAddArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -115,11 +116,12 @@ export const GROUPS = [
     id: "grids",
     label: "Charts & grids",
     icon: "table",
-    /* This family shows TWO pictures on the door. The number card is not a
-       chart and reads nothing like one, and behind a single picture of a
-       place-value chart nobody ever found it. */
-    faces: ["place-value", "number-card"],
-    blurb: "Boards to lay the blocks on, and tables to read a fact off.",
+    /* This family shows FOUR pictures on the door, because it holds four
+       different KINDS of thing behind one name. The number card is not a chart
+       and neither written sum is a table, and behind a single picture of a
+       place-value chart nobody ever found any of them. */
+    faces: ["place-value", "column-addition", "long-division", "number-card"],
+    blurb: "Boards to lay the blocks on, tables to read a fact off, and sheets to work a sum out on.",
     tools: [
       {
         id: "place-value",
@@ -155,6 +157,33 @@ export const GROUPS = [
           "one flat and two rods and three units. Change the canvas and the " +
           "card follows it.",
         art: numberCardArt,
+      },
+      {
+        id: "column-addition",
+        kind: "board",
+        variant: "column",
+        label: "Column Addition",
+        short: "Adding up",
+        blurb:
+          "Numbers stacked, a line, and the answer written a column at a time "
+          + "from the right. It asks what goes under the line and then what "
+          + "carries — two questions, because they are two different facts — "
+          + "and writes the carry small above the column it goes into. Add up "
+          + "to four numbers, in any base you are working in.",
+        art: columnAddArt,
+      },
+      {
+        id: "long-division",
+        kind: "board",
+        variant: "longdiv",
+        label: "Long Division",
+        short: "Long division",
+        blurb:
+          "The bus stop, worked a line at a time. Say how many times it goes, "
+          + "what that comes to and what is left, and the board writes each one "
+          + "in its own column — or refuses it and says why. Set any sum you "
+          + "like, in any base you are working in.",
+        art: longDivideArt,
       },
       {
         id: "division",

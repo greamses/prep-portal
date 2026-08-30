@@ -16,6 +16,7 @@ import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js
 import { snapLift, othersThan } from "./snap.js";
 import { rebaseAbacus, worksInBase } from "./abacus.js";
 import { rebaseBoard, tableMax } from "./grids.js";
+import { isSheet } from "./sheets.js";
 import { makeTile, tileSpec, isSolid, zeroPairs, tilesReading } from "./tiles.js";
 import { makeCard } from "./card.js";
 
@@ -823,6 +824,7 @@ export function setBase(base) {
   let moved = 0;
   let stuck = 0;
   let tables = 0;
+  let sheets = 0;
   const resized = [];
   for (const t of store.things) {
     if (t.kind === "abacus") {
@@ -833,7 +835,8 @@ export function setBase(base) {
       /* A times table IS the base it is written in, so every one of them moves —
          four rows in base five, eleven in base twelve, and every product on the
          board rewritten to match. */
-      tables += 1;
+      if (isSheet(t.variant)) sheets += 1;
+      else tables += 1;
     }
   }
   /* Everything that just changed size gets re-fitted, or a table that grew from
@@ -846,6 +849,15 @@ export function setBase(base) {
     const m = toBase(tableMax(b), b);
     note += ` ${tables} table${tables === 1 ? "" : "s"} `
       + `${tables === 1 ? "runs" : "run"} to ${m} × ${m} now.`;
+  }
+  /* A division or an addition is worked place by place, and the places have
+     just changed — so the page is rubbed clean rather than half-translated.
+     Said out loud, because working that vanishes without a word reads as a
+     bug. */
+  if (sheets) {
+    note += ` ${sheets} written sum${sheets === 1 ? "" : "s"} `
+      + `${sheets === 1 ? "was" : "were"} rubbed out — the working goes place `
+      + "by place, and the places have changed.";
   }
   if (stuck) {
     note += ` ${stuck} frame${stuck === 1 ? "" : "s"} still count${stuck === 1 ? "s" : ""} in tens — `

@@ -1322,3 +1322,104 @@ body.bb-locked { overflow: hidden; }
 }
 .bb-blockbar__key:hover em,
 .bb-blockbar__key:focus-visible em { opacity: 1; }
+
+/* The strip you work a written sum from — a long division or a column
+   addition, which share it. The sum, the question and the box the answer goes
+   in. Wider than the other two pinned things because it holds a sentence — but
+   still a strip of paper over the canvas and not a dialogue, so it never takes
+   the page away from the working it is about. */
+.bb-sheetpanel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 26;
+  width: min(340px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  padding: 0.5rem 0.6rem 0.55rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 13px;
+  box-shadow: var(--shadow-md);
+}
+.bb-sheetpanel[hidden] { display: none; }
+
+.bb-sheetpanel__sum,
+.bb-sheetpanel__work { display: flex; align-items: center; gap: 0.3rem; }
+
+.bb-sheetpanel__num,
+.bb-sheetpanel__in {
+  min-width: 0;
+  padding: 0.28rem 0.4rem;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 8px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm, 0.8rem);
+  font-weight: var(--weight-semibold, 600);
+  text-align: center;
+}
+.bb-sheetpanel__num { flex: 1 1 0; }
+/* One box holding a whole sum — "269 + 182" — rather than one number, so it is
+   read from the left like writing instead of from the middle like a figure. */
+.bb-sheetpanel__num--wide { flex: 1 1 100%; text-align: left; letter-spacing: 0.04em; }
+.bb-sheetpanel__in { flex: 1 1 0; font-size: 0.95rem; letter-spacing: 0.06em; }
+.bb-sheetpanel__in:disabled { opacity: 0.45; }
+.bb-sheetpanel__num:focus-visible,
+.bb-sheetpanel__in:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 1px;
+}
+.bb-sheetpanel__op {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+/* Only there away from base ten, where what may be typed is not obvious. */
+.bb-sheetpanel__base {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.34rem;
+  border-radius: 5px;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+.bb-sheetpanel__base[hidden] { display: none; }
+
+/* The question. It is the point of the whole strip, so it is the one thing on
+   it set in the reading face rather than in figures. */
+.bb-sheetpanel__ask {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-body-sm, 0.84rem);
+  line-height: var(--leading-snug, 1.4);
+}
+.bb-sheetpanel[data-state="done"] .bb-sheetpanel__ask { color: var(--accent-success, #4f9a4f); }
+
+.bb-sheetpanel__key {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.bb-sheetpanel__key svg { width: 16px; height: 16px; }
+.bb-sheetpanel__key:hover { transform: translateY(-1px); background: var(--surface-tertiary, var(--surface-secondary)); }
+.bb-sheetpanel__key:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 1px;
+}
+.bb-sheetpanel__key--go { background: var(--accent-primary); color: var(--text-on-accent); }

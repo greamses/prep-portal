@@ -17,9 +17,12 @@
 
 import {
   PLACES, placeAt, worthOf, placeDims, placeOf, placeColour, toBase, baseWord, cssVar,
+  rgba, norm,
 } from "./config.js";
 import { footprint } from "./layout.js";
 import { TRACK, FRAME_SIDE } from "./frame.js";
+import { makeLongDiv, rebaseLongDiv, drawLongDiv } from "./longdiv.js";
+import { makeColumn, rebaseColumn, drawColumn } from "./column.js";
 
 const B = () => window.BABYLON;
 
@@ -79,6 +82,11 @@ export function chartSize(n) {
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
 export function makeBoard(variant, base) {
+  /* The two written sums are boards like the rest — a slab with a face printed
+     on it — but everything about what is printed on them belongs to the method,
+     so they are made and drawn in their own modules and only PLACED here. */
+  if (variant === "longdiv") return makeLongDiv(base);
+  if (variant === "column") return makeColumn(base);
   if (variant === "place") {
     const places = PLACES.length;
     return {
@@ -130,6 +138,10 @@ export function rebaseBoard(thing, base) {
   if (thing.kind !== "board") return false;
   if (thing.variant === "place" || thing.variant === "area") return false;
   if (thing.base === base) return false;
+  /* A written sum is written in a base too, but its size comes from how long
+     the sum is rather than from how far the table runs. */
+  if (thing.variant === "longdiv") return rebaseLongDiv(thing, base);
+  if (thing.variant === "column") return rebaseColumn(thing, base);
   const max = tableMax(base);
   thing.base = base;
   thing.max = max;
@@ -232,6 +244,8 @@ export function paintBoard(thing, parts, opts = {}) {
 
   if (thing.variant === "place") drawPlace(g, W, H, thing, opts, { ink, soft });
   else if (thing.variant === "area") drawArea(g, W, H, thing, { ink, soft });
+  else if (thing.variant === "longdiv") drawLongDiv(g, W, H, thing, { ink, soft });
+  else if (thing.variant === "column") drawColumn(g, W, H, thing, { ink, soft });
   else drawTable(g, W, H, thing, opts, { ink, soft });
 
   // invertY: a 2D canvas counts rows downward and the ground's V runs upward,
@@ -258,7 +272,7 @@ function drawArea(g, W, H, thing, c) {
   g.fillRect(0, t, t, H - t);     // down the left side
 
   // the corner, which belongs to neither and holds the sign
-  g.fillStyle = tint(accent, 0.86);
+  g.fillStyle = rgba(accent, 0.86);
   g.fillRect(0, 0, t, t);
   g.fillStyle = "#2a2723";
   g.font = `700 ${Math.round(t * 0.5)}px Unbounded, system-ui, sans-serif`;
@@ -299,7 +313,7 @@ function drawPlace(g, W, H, thing, opts, c) {
     g.fillRect(x, 0, colW, trayH);
     dot(g, x + colW / 2, trayH / 2, Math.min(trayH, colW) * 0.3, hex, c.ink, 0.5);
 
-    g.fillStyle = tint(hex, 0.9);
+    g.fillStyle = rgba(hex, 0.9);
     g.fillRect(x, trayH, colW, headH);
 
     g.fillStyle = "#2a2723";
@@ -323,7 +337,7 @@ function drawPlace(g, W, H, thing, opts, c) {
        digit; say so on the column itself rather than only in the toast. */
     const held = counters[i] || 0;
     if (held >= base) {
-      g.fillStyle = tint(cssVar("--accent-warning", "#f0a868"), 0.22);
+      g.fillStyle = rgba(cssVar("--accent-warning", "#f0a868"), 0.22);
       g.fillRect(x, areaY, colW, areaH);
     }
     for (const s of counterSpots(held, x, areaY, colW, areaH)) {
@@ -449,14 +463,14 @@ function drawTable(g, W, H, thing, opts, c) {
   const hidden = new Set(thing.hidden || []);
   const focus = thing.focus;
 
-  const headFill = tint(cssVar("--accent-primary", "#f4c95d"), 0.85);
-  const focusFill = tint(cssVar("--accent-secondary", "#6fb7e8"), 0.35);
-  const answerFill = tint(cssVar("--accent-success", "#7cc47c"), 0.6);
+  const headFill = rgba(cssVar("--accent-primary", "#f4c95d"), 0.85);
+  const focusFill = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.35);
+  const answerFill = rgba(cssVar("--accent-success", "#7cc47c"), 0.6);
   /* The swept array is a WEAKER wash than a tapped row, because it covers a
      whole rectangle rather than a line and a strong fill over thirty squares
      would drown the numbers written in them. */
-  const arrayFill = tint(cssVar("--accent-secondary", "#6fb7e8"), 0.18);
-  const headLit = tint(cssVar("--accent-primary", "#f4c95d"), 0.55);
+  const arrayFill = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.18);
+  const headLit = rgba(cssVar("--accent-primary", "#f4c95d"), 0.55);
 
   /* The rectangle swept out of the corner, if one is: rows 1…r by columns
      1…c, with the product standing in the far corner of it. */
@@ -894,22 +908,4 @@ export function placeSentence(reading, base) {
   }
   const digits = reading.digits.join("").replace(/^0+(?=\d)/, "");
   return `The chart reads ${digits} — ${reading.total} units in base ${baseWord(base)} is ${toBase(reading.total, base)}.`;
-}
-
-/* ── colour helpers ───────────────────────────────────────────────────────── */
-
-function norm(hex) {
-  const h = String(hex || "").trim();
-  if (/^#[0-9a-f]{3}$/i.test(h)) return "#" + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
-  if (/^#[0-9a-f]{6}$/i.test(h)) return h;
-  if (/^#[0-9a-f]{8}$/i.test(h)) return h.slice(0, 7);
-  return "#2a2723";
-}
-function rgba(hex, a) {
-  const h = norm(hex).replace("#", "");
-  const n = parseInt(h, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
-function tint(hex, a) {
-  return rgba(hex, a);
 }
