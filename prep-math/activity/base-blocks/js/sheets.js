@@ -16,6 +16,12 @@
    the board. Parsing lives on the sheet's own side of the line, because what
    counts as a legal sum is part of the method and not part of the strip.
 
+   `value` and `setValue` are how a sheet joins in with sync — see sync.js. A
+   written sum holds a number like a frame or a chart does: the DIVIDEND for a
+   division (the number being shared out) and the TOTAL for an addition (what
+   the sum comes to). Neither is the answer being worked towards, and that is
+   deliberate: sync passes round the number a tool is working ON.
+
    `cells` is the other half of the same idea: the ANSWER is typed into the page
    itself (js/cells.js), so each method says which cells are open for writing and
    how many figures go in them. A method with a step that is dragged rather than
@@ -41,6 +47,8 @@ export const SHEETS = {
     showNext: longdiv.showNext,
     reset: longdiv.resetWork,
     cells: longdiv.cellsOf,
+    value: (t) => t.dividend,
+    setValue: longdiv.setDividend,
     /* The one step on either board that is not typed. Only the division has
        one, so only the division answers to it. */
     bring: longdiv.bringDown,
@@ -59,6 +67,8 @@ export const SHEETS = {
     showNext: column.showNext,
     reset: column.resetWork,
     cells: column.cellsOf,
+    value: (t) => t.addends.reduce((s, n) => s + n, 0),
+    setValue: column.setTotal,
   },
 };
 

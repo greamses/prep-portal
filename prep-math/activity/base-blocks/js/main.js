@@ -104,11 +104,14 @@ function sayIf(note) {
 function catchUp(thing) {
   if (!store.sync || !thing) return;
   const lead = store.things.find(
-    (t) => t.id !== thing.id && (t.kind === "abacus" || t.variant === "place")
+    (t) => t.id !== thing.id
+      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t))
   );
   const n = lead ? valueOf(lead) : store.blocks.reduce((s, b) => s + b.l * b.w * b.h, 0);
+  const sheet = sheetFor(thing);
   if (thing.kind === "abacus") setAbacusValue(thing, n);
   else if (thing.variant === "place") setChartValue(thing, n);
+  else if (sheet) sheet.setValue(thing, n);
 }
 
 /* ── a sum worked out on a frame ──────────────────────────────────────────── */
@@ -650,7 +653,11 @@ async function bootCanvas() {
          here that has to put it down again afterwards. */
       onSum: (board, values) => sheetAct(board, (t) => {
         const done = sheetFor(t).set(t, values);
-        return { ...done, resized: done.changed };
+        /* A sum you set by hand is a number you have just named, so with sync on
+           it becomes THE number and everything else re-reads — the same as
+           sliding a bead or dropping a counter. */
+        const spilled = done.changed ? spread(valueOf(t), t.id) : null;
+        return { ...done, resized: done.changed, message: spilled || done.message };
       }),
     });
 

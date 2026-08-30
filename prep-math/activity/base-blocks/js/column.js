@@ -419,6 +419,23 @@ export function showNext(thing) {
 }
 
 /**
+ * Show `n` on this board — which for an addition means a sum that COMES TO n.
+ *
+ * Split down the middle: two numbers of the same length, which is the shape
+ * that carries, and the same n always gives back the same sum so the board does
+ * not shuffle under you every time something else on the canvas twitches. A sum
+ * that already totals n is LEFT ALONE — sync asks the board to show a number,
+ * not to be rewritten for the sake of it.
+ */
+export function setTotal(thing, n) {
+  const want = Math.max(0, Math.round(n));
+  if (want === thing.addends.reduce((s, x) => s + x, 0)) return true;
+  const a = Math.ceil(want / 2);
+  if (want - a < 1) return false;   // nothing under two can be split in two
+  return setSum(thing, [a, want - a]).ok === true;
+}
+
+/**
  * The cell the learner writes in NOW — over the page itself, not in a strip
  * beside it. Always exactly one box here: every figure this method asks for is
  * a single figure, which is the whole reason it asks twice for a column that

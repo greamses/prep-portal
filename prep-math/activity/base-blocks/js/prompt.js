@@ -42,7 +42,9 @@ export function createRegroupPrompt(ctx, view, stage) {
 
   const card = document.createElement("button");
   card.type = "button";
-  card.className = "bb-trade";
+  /* A note the canvas sticks on the pile, offering the trade — the same paper
+     everything else here says things on. */
+  card.className = "bb-trade pp-sticky pp-sticky--c5";
   card.hidden = true;
   /* Two glyphs and no words. The card sits ON the blocks it is about, where a
      sentence covers the very thing it is describing; what it says in words is

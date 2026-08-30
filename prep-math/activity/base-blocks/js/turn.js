@@ -167,9 +167,11 @@ export function createTurnHandle(ctx, view, stage, onDone) {
   box.className = "bb-turnbox";
   box.hidden = true;
   box.innerHTML = `
-    <input class="bb-turnbox__n" id="bb-turn-n" type="text" inputmode="decimal"
-           autocomplete="off" spellcheck="false" aria-label="Angle in degrees" />
-    <span class="bb-turnbox__deg" aria-hidden="true">°</span>`;
+    <div class="pp-receipt__paper bb-paper bb-turnbox__paper">
+      <input class="bb-turnbox__n" id="bb-turn-n" type="text" inputmode="decimal"
+             autocomplete="off" spellcheck="false" aria-label="Angle in degrees" />
+      <span class="bb-turnbox__deg" aria-hidden="true">°</span>
+    </div>`;
   stage.appendChild(box);
   const boxInput = box.querySelector("input");
 

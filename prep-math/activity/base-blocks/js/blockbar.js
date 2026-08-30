@@ -42,11 +42,15 @@ export function createBlockBar(ctx, view, stage, { onAct = () => {}, enabled = (
   bar.hidden = true;
   bar.setAttribute("role", "toolbar");
   bar.setAttribute("aria-label", "What to do with the block you are holding");
-  bar.innerHTML = KEYS.map((k) => `
+  /* On the shared receipt's paper like every other panel here — see style.css.
+     Two elements because a filter under a mask gets clipped. */
+  bar.innerHTML = `<div class="pp-receipt__paper bb-paper bb-blockbar__paper">`
+    + KEYS.map((k) => `
     <button class="bb-blockbar__key" type="button" data-act="${k.act}"
             title="${k.hint}" aria-label="${k.hint}">
       <span>${ICON[k.icon]}</span><em>${k.name}</em>
-    </button>`).join("");
+    </button>`).join("")
+    + `</div>`;
   stage.appendChild(bar);
 
   /* A press on the strip is a press on the strip and not on the paper under it:

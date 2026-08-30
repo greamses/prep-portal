@@ -18,13 +18,20 @@ import { CFG, placeDims, PLACES, toBase, baseWord } from "./config.js";
 import { store, snapshot, say, nextId } from "./state.js";
 import { setAbacusValue, abacusValue } from "./abacus.js";
 import { placeReading, placeOrder, growChart, MAX_DOTS, MAX_PLACES } from "./grids.js";
-import { bestGrouping } from "./ops.js";
+import { bestGrouping, settleThings } from "./ops.js";
+import { sheetFor } from "./sheets.js";
 import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js";
 
-/** Everything sync writes to — the frames and charts that hold a number. */
+/**
+ * Everything sync writes to — the frames, the charts, and the written sums.
+ *
+ * A long division and a column addition hold a number as much as a soroban
+ * does; they just say it as a piece of working rather than as a row of beads.
+ */
 function targets(exceptId) {
   return store.things.filter(
-    (t) => t.id !== exceptId && (t.kind === "abacus" || t.variant === "place")
+    (t) => t.id !== exceptId
+      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t))
   );
 }
 
@@ -32,6 +39,8 @@ function targets(exceptId) {
 export function valueOf(thing) {
   if (thing.kind === "abacus") return abacusValue(thing);
   if (thing.variant === "place") return placeReading(thing, store.blocks, store.base).total;
+  const sheet = sheetFor(thing);
+  if (sheet) return sheet.value(thing);
   return 0;
 }
 
@@ -44,14 +53,24 @@ export function syncFrom(n, exceptId, { blocks = true, force = false } = {}) {
   // it, whether or not the tools are tied together the rest of the time
   if (!store.sync && !force) return null;
   const missed = [];
+  const recut = [];
 
   for (const t of targets(exceptId)) {
+    const sheet = sheetFor(t);
     if (t.kind === "abacus") {
       if (!setAbacusValue(t, n)) missed.push("the " + t.variant);
+    } else if (sheet) {
+      if (sheet.setValue(t, n)) recut.push(t);
+      else missed.push("the " + sheet.name);
     } else if (!setChartValue(t, n)) {
       missed.push("the chart");
     }
   }
+
+  /* A written sum is cut to fit the sum on it, so a new number makes it a
+     different size — and a board that grew has to be put down again before
+     something else is standing where it now reaches. */
+  if (recut.length) settleThings(recut);
 
   // the blocks are only rewritten when they are not themselves the source
   if (blocks && exceptId !== "blocks" && !setBlocksValue(n)) missed.push("the blocks");

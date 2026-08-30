@@ -454,6 +454,18 @@ export function showNext(thing) {
 }
 
 /**
+ * Show `n` on this board — the number being divided.
+ *
+ * The divisor is left where it is: it is the question being asked OF the
+ * number, not part of the number, and sync hands round a number.
+ */
+export function setDividend(thing, n) {
+  const want = Math.max(0, Math.round(n));
+  if (want === thing.dividend) return true;
+  return setSum(thing, want, thing.divisor).ok === true;
+}
+
+/**
  * The cells the learner writes in NOW — one box per digit, over the page itself.
  *
  * A number two figures long is two boxes in two columns, because that is what it

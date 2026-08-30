@@ -335,7 +335,7 @@ export function mountUI({
 
   function ghostOn(e) {
     const g = document.createElement("div");
-    g.className = "bb-noteghost";
+    g.className = "bb-noteghost pp-sticky pp-sticky--c0";
     g.setAttribute("aria-hidden", "true");
     stage.appendChild(g);
     noteDrag = { ghost: g, id: e.pointerId, moved: false };

@@ -47,7 +47,11 @@ export function createSheetPanel(ctx, view, stage, {
   panel.hidden = true;
   panel.setAttribute("role", "group");
   panel.setAttribute("aria-label", "Working the sum");
+  /* Wrapped in the shared receipt's paper — see style.css. The outer element
+     positions the strip and carries the drop-shadow; the paper carries the torn
+     edge, because a filter under a mask gets clipped. */
   panel.innerHTML = `
+    <div class="pp-receipt__paper bb-paper bb-sheetpanel__paper">
     <form class="bb-sheetpanel__sum" data-form="sum"></form>
     <p class="bb-sheetpanel__ask" data-ask aria-live="polite"></p>
     <div class="bb-sheetpanel__work">
@@ -60,6 +64,7 @@ export function createSheetPanel(ctx, view, stage, {
               title="Rub the working out and start again" aria-label="Rub the working out and start again">
         ${ICON.eraser}
       </button>
+    </div>
     </div>`;
   stage.appendChild(panel);
 
@@ -161,16 +166,19 @@ export function createSheetPanel(ctx, view, stage, {
     const h = panel.offsetHeight || 96;
     const x = Math.max(8, Math.min(rect.width - w - 8, (left + right) / 2 - w / 2));
 
-    /* Above the board if there is room, and UNDER it if there is not.
-       Clamping it to the top of the stage instead would lay it across the top
-       of the page — which on an addition is the row the carries are written
-       in, and on a division is the answer. The strip must never cover the
-       working it is asking about. */
+    /* Above the board if there is room, UNDER it if there is not, and pinned to
+       the FOOT of the stage when the board is bigger than the screen.
+
+       Never clamped to the top: the top of one of these pages is the row the
+       carries go in and the line the answer is written on, and the strip must
+       not cover the working it is asking about. The foot is the safest corner
+       left — and the boxes are stacked above the strip as well (style.css), so
+       even where they do meet, the figure you are reaching for wins the press. */
     const above = top - h - 10;
     const below = bottom + 10;
     const y = above >= 8 ? above
       : below + h <= rect.height - 8 ? below
-        : Math.max(8, Math.min(rect.height - h - 8, above));
+        : rect.height - h - 8;
     panel.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
   }
 
