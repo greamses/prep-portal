@@ -24,6 +24,7 @@ import { refreshCards, setNotation } from "./card.js";
 import { createCardPicker } from "./cardui.js";
 import { createBlockBar } from "./blockbar.js";
 import { createSheetPanel } from "./sheetui.js";
+import { createCellLayer } from "./cells.js";
 import { sheetFor } from "./sheets.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
@@ -55,6 +56,7 @@ let pointer = null;
 let noteEditor = null;
 let dock = null;
 let sheetPanel = null;
+let cellLayer = null;
 let booting = null;
 const ghost = createDotGhost(stage);
 
@@ -434,8 +436,13 @@ function sheetAct(board, run) {
      and was never meant to walk back through wrong guesses. */
   if (done.ok === false || !done.changed) store.history.pop();
   /* A board that has just been given a new sum is a different size, so it is
-     put down again before anything else is standing where it now reaches. */
-  if (done.changed && done.resized) settleThings([board]);
+     put down again before anything else is standing where it now reaches — and
+     the camera goes back to it, because the answer is typed in cells ON the
+     page now and a longer sum can put them off the side of the screen. */
+  if (done.changed && done.resized) {
+    settleThings([board]);
+    fitView(ctx, [board]);
+  }
   if (done.message) {
     say(done.message, done.ok === false ? "warn" : done.changed ? "ok" : "info");
   }
@@ -544,7 +551,7 @@ async function bootCanvas() {
           const q = worked.ask(thing);
           say(q.text, q.done ? "ok" : "info");
           emit();
-          sheetPanel?.focus();
+          cellLayer?.focus();
           return;
         }
         if (thing.variant === "place") {
@@ -628,8 +635,15 @@ async function bootCanvas() {
       enabled: (name) => ui.enabled(name),
     });
 
+    /* The answer goes in the cells of the page; the strip only asks. Both come
+       through the same one action, so a figure written either way takes exactly
+       one step back. */
+    cellLayer = createCellLayer(ctx, view, stage, {
+      onWrite: (board, text) => sheetAct(board, (t) => sheetFor(t).answer(t, text)),
+      onBring: (board) => sheetAct(board, (t) => sheetFor(t).bring(t)),
+    });
+
     sheetPanel = createSheetPanel(ctx, view, stage, {
-      onAnswer: (board, text) => sheetAct(board, (t) => sheetFor(t).answer(t, text)),
       onShow: (board) => sheetAct(board, (t) => sheetFor(t).showNext(t)),
       onReset: (board) => sheetAct(board, (t) => sheetFor(t).reset(t)),
       /* A new sum makes the board a different size, so this is the one action
@@ -651,6 +665,7 @@ async function bootCanvas() {
       cardPick.refresh();
       blockBar.refresh();
       sheetPanel.refresh();
+      cellLayer.refresh();
     });
     turn.refresh();
 

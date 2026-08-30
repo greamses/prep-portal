@@ -326,9 +326,18 @@ function nudge(e, plan, given) {
     return `Not quite — ${write(col.total, b)} is ${write(col.carry, b)} `
       + `${baseWord(b)}${col.carry === 1 ? "" : "s"} and ${write(col.stay, b)} over.`;
   }
-  /* The whole total written where only one figure fits. The commonest slip on
-     this page, and it is not a wrong sum — it is the right sum with nowhere to
-     put it, which is exactly what carrying is for. */
+  /* Writing the carry where the figure that stays goes. Now that a cell holds
+     ONE figure, this is what "the answer is twelve" comes out as: the 1 gets
+     written first because it is said first, in the column it does not belong
+     to. Naming it is the whole lesson of carrying. */
+  if (col.carry && given === col.carry) {
+    return `That ${write(col.carry, b)} is the part that CARRIES — it belongs above `
+      + `the next column. Under the line goes what is left of ${write(col.total, b)}.`;
+  }
+  /* The whole total offered where only one figure fits. A cell takes one figure
+     so this cannot be typed on the page any more, but the sum can still be given
+     whole from elsewhere, and it is not a wrong sum — it is the right sum with
+     nowhere to put it, which is exactly what carrying is for. */
   if (given === col.total && col.carry) {
     return `${write(col.total, b)} is right, but it will not fit in one column — `
       + `write the ${write(col.stay, b)} and the ${write(col.carry, b)} carries.`;
@@ -409,6 +418,23 @@ export function showNext(thing) {
   };
 }
 
+/**
+ * The cell the learner writes in NOW — over the page itself, not in a strip
+ * beside it. Always exactly one box here: every figure this method asks for is
+ * a single figure, which is the whole reason it asks twice for a column that
+ * overflows instead of once for the total.
+ */
+export function cellsOf(thing) {
+  const plan = planOf(thing);
+  const e = plan.entries[thing.done];
+  if (!e) return null;
+  return {
+    mode: "type",
+    grid: { cols: plan.cols, rows: plan.rows, gutter: GUTTER },
+    cells: [{ row: e.row, col: plan.width - 1 - e.place }],
+  };
+}
+
 /* ── the page, as marks ───────────────────────────────────────────────────── */
 
 /**
@@ -448,7 +474,8 @@ export function sheetOf(thing) {
     // the line of the sum, drawn under the last number and back through the sign
     rule: { row: plan.addends.length, from: -GUTTER, to: plan.width - 1 },
     sign: { row: plan.addends.length, col: -GUTTER },
-    ask: e ? { row: e.row, col: colOf(e.place) } : null,
+    // a list, because the division's page asks for two cells at once
+    ask: e ? { row: e.row, cols: [colOf(e.place)] } : null,
     finished,
     total: plan.total,
   };
@@ -479,16 +506,18 @@ export function drawColumn(g, W, H, thing, c) {
   /* Where the next figure goes, so the question in the panel and the place on
      the page are the same fact seen twice. */
   if (sheet.ask) {
-    const x = colX(sheet.ask.col);
     const y = rowY(sheet.ask.row);
-    g.fillStyle = rgba(accent, 0.16);
-    g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
-    g.save();
-    g.strokeStyle = rgba(accent, 0.9);
-    g.lineWidth = Math.max(2, rh * 0.05);
-    g.setLineDash([rh * 0.12, rh * 0.1]);
-    g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
-    g.restore();
+    for (const col of sheet.ask.cols) {
+      const x = colX(col);
+      g.fillStyle = rgba(accent, 0.16);
+      g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.save();
+      g.strokeStyle = rgba(accent, 0.9);
+      g.lineWidth = Math.max(2, rh * 0.05);
+      g.setLineDash([rh * 0.12, rh * 0.1]);
+      g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.restore();
+    }
   }
 
   /* The whole working is written in one monospaced hand, so a column of figures

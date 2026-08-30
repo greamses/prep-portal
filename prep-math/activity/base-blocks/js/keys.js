@@ -81,8 +81,11 @@ export const SHORTCUTS = [
        this" is looked up in one list, so they are in it. */
     name: "Working a written sum",
     items: [
-      { keys: "Tap the page", act: null, does: "Pick the board up, and put the caret in the box" },
-      { keys: "Enter", act: null, does: "Write what you have typed — it goes down only if it is right" },
+      { keys: "Tap the page", act: null, does: "Pick the board up, and put the caret in the first box" },
+      { keys: "Type a figure", act: null, does: "One box for one figure, in the cell it belongs to — it moves on as you fill it" },
+      { keys: "Enter", act: null, does: "Write the number, once every box has a figure — it goes down only if it is right" },
+      { keys: "Backspace", act: null, does: "Back a box, and rub that figure out" },
+      { keys: "Drag the digit", act: null, does: "Bring the waiting figure down (a tap on it does the same)" },
       { keys: "The top row", act: null, does: "Set any sum you like, written in the base you are working in" },
       { keys: "Show me", act: null, does: "Write this one line for you, and say what it was" },
       { keys: "Rub out", act: null, does: "Take the working off and start the same sum again" },

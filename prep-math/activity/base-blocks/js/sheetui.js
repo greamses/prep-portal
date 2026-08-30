@@ -1,16 +1,21 @@
 /* ============================================================================
    Manipulatives — the strip you work a written sum from
    ----------------------------------------------------------------------------
-   The board holds the page; this holds the pen. Pick a long division or a
-   column addition up and a strip appears above it: the sum it is set to, the
-   question it is waiting on, and a box to write the answer in.
+   The board holds the page; this asks the questions. Pick a long division or a
+   column addition up and a strip appears by it: the sum it is set to, the
+   question it is waiting on, and the two keys that write a line for you or rub
+   the working out.
+
+   THE ANSWER IS NOT TYPED HERE. It is typed into the cells of the page itself
+   (js/cells.js) — one box for one figure, standing in the column that figure
+   belongs to. This strip holds the words; the page holds the writing.
 
    It is DOM over the canvas rather than anything drawn into the board's face,
-   for the reason cardui.js is: this is a text box and four buttons, and every
+   for the reason cardui.js is: this is a text box and three buttons, and every
    phone keyboard and every screen reader already knows what to do with those.
    A keypad painted into a texture knows none of it.
 
-   The question is shown here and the CELL IT GOES IN is outlined over on the
+   The question is said here and the CELLS IT GOES IN are outlined over on the
    board, so the sentence and the place on the page are the same fact seen
    twice. Neither works alone: a question with no place is a riddle, and a
    flashing box with no question is a form.
@@ -33,7 +38,7 @@ import { ICON } from "./icons.js";
 const B = () => window.BABYLON;
 
 export function createSheetPanel(ctx, view, stage, {
-  onAnswer = () => {}, onShow = () => {}, onReset = () => {}, onSum = () => {},
+  onShow = () => {}, onReset = () => {}, onSum = () => {},
 } = {}) {
   const { scene, camera } = ctx;
 
@@ -45,13 +50,8 @@ export function createSheetPanel(ctx, view, stage, {
   panel.innerHTML = `
     <form class="bb-sheetpanel__sum" data-form="sum"></form>
     <p class="bb-sheetpanel__ask" data-ask aria-live="polite"></p>
-    <form class="bb-sheetpanel__work" data-form="answer">
-      <input class="bb-sheetpanel__in" data-in inputmode="numeric" autocomplete="off"
-             spellcheck="false" placeholder="?" aria-label="Your answer" />
-      <button class="bb-sheetpanel__key bb-sheetpanel__key--go" type="submit"
-              title="Write it on the page (Enter)" aria-label="Write it on the page">
-        ${ICON.check}
-      </button>
+    <div class="bb-sheetpanel__work">
+      <span class="bb-sheetpanel__where" data-where></span>
       <button class="bb-sheetpanel__key" type="button" data-do="show"
               title="Write this one for me" aria-label="Write this one for me">
         ${ICON.info}
@@ -60,11 +60,11 @@ export function createSheetPanel(ctx, view, stage, {
               title="Rub the working out and start again" aria-label="Rub the working out and start again">
         ${ICON.eraser}
       </button>
-    </form>`;
+    </div>`;
   stage.appendChild(panel);
 
   const askEl = panel.querySelector("[data-ask]");
-  const inEl = panel.querySelector("[data-in]");
+  const whereEl = panel.querySelector("[data-where]");
   const sumEl = panel.querySelector('[data-form="sum"]');
 
   /* Which method's boxes are standing in the sum row. Rebuilt only when it
@@ -112,17 +112,7 @@ export function createSheetPanel(ctx, view, stage, {
     e.preventDefault();
     const board = only();
     if (!board) return;
-    if (e.target.dataset.form === "sum") {
-      onSum(board, typed());
-      inEl.focus();
-      return;
-    }
-    const answer = inEl.value;
-    /* Cleared straight away, right or wrong. A box still holding the last
-       answer invites the next one to be typed on the end of it. */
-    inEl.value = "";
-    onAnswer(board, answer);
-    inEl.focus();
+    onSum(board, typed());
   });
 
   panel.addEventListener("click", (e) => {
@@ -130,8 +120,8 @@ export function createSheetPanel(ctx, view, stage, {
     if (!key || key.dataset.do === "sum") return;
     const board = only();
     if (!board) return;
-    if (key.dataset.do === "show") { onShow(board); inEl.value = ""; inEl.focus(); }
-    if (key.dataset.do === "again") { onReset(board); inEl.value = ""; inEl.focus(); }
+    if (key.dataset.do === "show") onShow(board);
+    if (key.dataset.do === "again") onReset(board);
   });
 
   function project(x, y, z) {
@@ -205,19 +195,18 @@ export function createSheetPanel(ctx, view, stage, {
     baseEl.title = b === 10 ? "" : `Write every number in base ${baseWord(b)} — digits 0 to ${DIGITS[b - 1]}.`;
 
     const q = sheet.ask(board);
-    askEl.textContent = q.done ? q.text : `${q.text}${q.where ? ` — ${q.where}.` : ""}`;
+    askEl.textContent = q.text;
+    /* Where it goes is said apart from what it is, because the two are answered
+       in different places: the question is read here, and the answer is written
+       over there in the outlined cells. */
+    whereEl.textContent = q.done ? ""
+      /* The gesture as well as the place, because a figure you drag rather than
+         type is the one thing on either board nobody expects. */
+      : q.kind === "b" ? `Drag it ${q.where || "into place"}`
+        : q.where ? `Write it ${q.where}` : "";
     panel.dataset.state = q.done ? "done" : "asking";
-    inEl.disabled = q.done;
-    inEl.placeholder = q.done ? "finished" : "?";
 
     place();
-  }
-
-  /** Put the caret where the answer goes, so the keyboard is already there. */
-  function focus() {
-    if (panel.hidden || inEl.disabled) return;
-    inEl.focus();
-    inEl.select();
   }
 
   // the camera can orbit without the store changing, so it is placed every frame
@@ -225,7 +214,6 @@ export function createSheetPanel(ctx, view, stage, {
 
   return {
     refresh,
-    focus,
     destroy() {
       scene.onAfterRenderObservable.remove(obs);
       panel.remove();

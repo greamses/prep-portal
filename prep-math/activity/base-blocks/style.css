@@ -1365,12 +1365,16 @@ body.bb-locked { overflow: hidden; }
 /* One box holding a whole sum — "269 + 182" — rather than one number, so it is
    read from the left like writing instead of from the middle like a figure. */
 .bb-sheetpanel__num--wide { flex: 1 1 100%; text-align: left; letter-spacing: 0.04em; }
-.bb-sheetpanel__in { flex: 1 1 0; font-size: 0.95rem; letter-spacing: 0.06em; }
-.bb-sheetpanel__in:disabled { opacity: 0.45; }
-.bb-sheetpanel__num:focus-visible,
-.bb-sheetpanel__in:focus-visible {
+.bb-sheetpanel__num:focus-visible {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 1px;
+}
+/* Where the answer goes, said in words — the answer itself is written over on
+   the page, so this row has no box of its own any more. */
+.bb-sheetpanel__where {
+  flex: 1 1 auto;
+  color: var(--text-secondary);
+  font-size: var(--text-body-xs, 0.72rem);
 }
 .bb-sheetpanel__op {
   flex: 0 0 auto;
@@ -1422,4 +1426,99 @@ body.bb-locked { overflow: hidden; }
   outline: 2px solid var(--accent-secondary);
   outline-offset: 1px;
 }
-.bb-sheetpanel__key--go { background: var(--accent-primary); color: var(--text-on-accent); }
+
+/* ── writing in the page's own cells ──────────────────────────────────────────
+   One box for one figure, laid over the cell of the board it belongs to. The
+   boxes are smaller than the cell on purpose: the dashed outline painted into
+   the page still shows round them, so a box reads as something written INTO the
+   working rather than as a control parked on top of it. */
+.bb-cells {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+}
+.bb-cells[hidden] { display: none; }
+
+.bb-cells__box,
+.bb-cells__chip,
+.bb-cells__drop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}
+
+.bb-cells__box {
+  padding: 0;
+  border: 2px solid var(--accent-secondary);
+  border-radius: 6px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold, 700);
+  line-height: 1;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(42, 39, 35, 0.16);
+}
+.bb-cells__box:focus-visible,
+.bb-cells__box:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 34%, transparent);
+}
+
+/* The digit waiting to be brought down. It stands up off the page — a shadow
+   and a lift — because the whole point is that this one is to be PICKED UP,
+   and a figure that looks like the printed ones beside it does not say so. */
+.bb-cells__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid var(--accent-primary);
+  border-radius: 7px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold, 700);
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 3px 8px rgba(42, 39, 35, 0.24);
+  animation: bb-cells-waiting 2.1s ease-in-out infinite;
+}
+.bb-cells__chip.is-held {
+  cursor: grabbing;
+  animation: none;
+  box-shadow: 0 8px 18px rgba(42, 39, 35, 0.3);
+}
+.bb-cells__chip:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* A slow glow while it waits to be picked up. It cannot be a movement: the
+   chip is placed with a transform every frame, and an animation on transform
+   would fight the placement and throw the digit into the corner. */
+@keyframes bb-cells-waiting {
+  0%, 100% { box-shadow: 0 3px 8px rgba(42, 39, 35, 0.24); }
+  50% { box-shadow: 0 3px 8px rgba(42, 39, 35, 0.24), 0 0 0 5px color-mix(in srgb, var(--accent-primary) 26%, transparent); }
+}
+
+/* Where it is going. Invisible until the digit is over it, because the cell is
+   already outlined on the page underneath. */
+.bb-cells__drop {
+  border-radius: 7px;
+  border: 2px dashed transparent;
+  pointer-events: none;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.bb-cells__drop.is-over {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-cells__chip { animation: none; }
+}

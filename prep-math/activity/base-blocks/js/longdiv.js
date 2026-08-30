@@ -135,12 +135,24 @@ export function workOut(dividend, divisor, base) {
     s.diffRow = k + 1 < live.length ? live[k + 1].curRow : remRow;
   });
 
+  /* Which row a digit brought down lands on: the row of the next step that
+     actually divides, because a digit the divisor will not go into joins the
+     one after it on the same line rather than starting a line of its own. */
+  const firstLive = live.length ? live[0].i : digits.length - 1;
+  const bringRow = (j) => {
+    const s = live.find((x) => x.i >= j);
+    return s ? s.curRow : remRow;
+  };
+
   /* What the learner is asked for, in the order a hand writing this would ask
-     it of itself. Bringing a digit down is not in the list: copying a digit
-     straight down the page is not a question, and a board that made you type it
-     would be asking you to prove you can read. */
+     it of itself. Bringing a digit down IS in the list — it is not typed but
+     DRAGGED, because copying a figure down the page is a movement and not a
+     calculation, and typing it would only prove you can read. */
   const entries = [];
   for (const s of steps) {
+    if (s.write && s.i > firstLive) {
+      entries.push({ kind: "b", step: s, value: digits[s.i], row: bringRow(s.i), endCol: s.i });
+    }
     if (s.write) entries.push({ kind: "q", step: s, value: s.q, row: 0, endCol: s.i });
     if (s.q > 0) {
       entries.push({ kind: "p", step: s, value: s.product, row: s.prodRow, endCol: s.i });
@@ -315,6 +327,13 @@ export function ask(thing) {
   if (e.kind === "r") {
     return { done: false, kind: "r", text: `Nothing went in — what is left over?`, where: "at the foot of the working" };
   }
+  if (e.kind === "b") {
+    return {
+      done: false, kind: "b",
+      text: `Bring the ${write(e.value, b)} down.`,
+      where: "beside what is left over",
+    };
+  }
   return {
     done: false, kind: "d",
     text: `${write(s.cur, b)} − ${write(s.product, b)} — what is left?`,
@@ -358,10 +377,8 @@ function told(e, plan) {
   }
   if (e.kind === "p") return `${write(s.q, b)} × ${write(plan.divisor, b)} = ${write(s.product, b)}.`;
   if (e.kind === "r") return `${write(plan.dividend, b)} is left over.`;
-  const brought = plan.digits[s.i + 1];
-  return s.i + 1 < plan.digits.length
-    ? `${write(s.cur, b)} − ${write(s.product, b)} = ${write(s.rem, b)} — bring the ${write(brought, b)} down.`
-    : `${write(s.cur, b)} − ${write(s.product, b)} = ${write(s.rem, b)}.`;
+  if (e.kind === "b") return `${write(e.value, b)} comes down — that makes ${write(s.cur, b)}.`;
+  return `${write(s.cur, b)} − ${write(s.product, b)} = ${write(s.rem, b)}.`;
 }
 
 /** The sentence for a finished sum, said once the last number is written. */
@@ -408,6 +425,21 @@ export function answer(thing, text) {
   };
 }
 
+/**
+ * Bring the waiting digit down — the one thing on this board done with the hand
+ * rather than with the head. Refused unless that is what is being asked for, so
+ * a stray drag cannot skip a step of the working.
+ */
+export function bringDown(thing) {
+  const plan = planOf(thing);
+  const e = plan.entries[thing.done];
+  if (!e || e.kind !== "b") {
+    return { ok: false, changed: false, message: "There is nothing to bring down just now." };
+  }
+  thing.done += 1;
+  return { ok: true, changed: true, message: told(e, plan) };
+}
+
 /** Write the next number for them, and say what it was. */
 export function showNext(thing) {
   const plan = planOf(thing);
@@ -419,6 +451,41 @@ export function showNext(thing) {
     changed: true, finished,
     message: finished ? finish(plan) : `${write(e.value, thing.base)} — ${told(e, plan)}`,
   };
+}
+
+/**
+ * The cells the learner writes in NOW — one box per digit, over the page itself.
+ *
+ * A number two figures long is two boxes in two columns, because that is what it
+ * is on paper: 28 taken away from 30 is a 2 in the tens and an 8 in the ones,
+ * and one box holding "28" quietly drops the whole argument about place.
+ */
+export function cellsOf(thing) {
+  const plan = planOf(thing);
+  const e = plan.entries[thing.done];
+  if (!e) return null;
+  const grid = { cols: plan.cols, rows: plan.rows, gutter: plan.gutter };
+  if (e.kind === "b") {
+    return {
+      mode: "bring", grid, ch: write(e.value, thing.base),
+      from: { row: 1, col: e.endCol },     // where it stands in the dividend
+      to: { row: e.row, col: e.endCol },   // and where it is going
+    };
+  }
+  const figures = write(e.value, thing.base);
+  return {
+    mode: "type", grid,
+    cells: [...figures].map((ch, k) => ({
+      row: e.row, col: e.endCol - (figures.length - 1 - k),
+    })),
+  };
+}
+
+/** The columns the pending number occupies — one per box. */
+function askCols(thing) {
+  const open = cellsOf(thing);
+  if (!open) return [];
+  return open.mode === "bring" ? [open.to.col] : open.cells.map((c) => c.col);
 }
 
 /* ── the page, as marks ───────────────────────────────────────────────────── */
@@ -456,19 +523,9 @@ export function sheetOf(thing) {
 
   const e = plan.entries[thing.done] || null;
 
-  /* Which digits have been brought down: everything as far as the step the
-     board is standing on. The pending question belongs to a step that has been
-     REACHED — its digit is already on the page, waiting to be divided into. */
-  const reached = e ? e.step.i : plan.digits.length - 1;
-  const firstLive = plan.live.length ? plan.live[0].i : plan.digits.length - 1;
-  const bringRow = (j) => {
-    const s = plan.live.find((x) => x.i >= j);
-    return s ? s.curRow : plan.rows - 1;
-  };
-  for (let j = firstLive + 1; j <= reached; j++) {
-    marks.push({ row: bringRow(j), col: j, ch: DIGITS[plan.digits[j]], tone: "ink" });
-  }
-
+  /* Nothing is on this page that was not put there. A digit brought down is a
+     step of the working like any other, so it appears when it is brought and
+     not a moment before. */
   // everything that has actually been written
   for (let n = 0; n < thing.done; n++) {
     const done = plan.entries[n];
@@ -487,7 +544,9 @@ export function sheetOf(thing) {
   return {
     plan, cols: plan.cols, rows: plan.rows, gutter: plan.gutter,
     marks, rules, minus,
-    ask: e ? { row: e.row, col: e.endCol } : null,
+    /* Every cell the next number goes in, not just its last: a two-figure
+       answer is outlined as two cells, which is how many boxes there are. */
+    ask: e ? { row: e.row, cols: askCols(thing) } : null,
     finished,
     remainder: plan.remainder,
     tail: finished && plan.remainder ? `r ${write(plan.remainder, b)}` : "",
@@ -530,16 +589,18 @@ export function drawLongDiv(g, W, H, thing, c) {
   /* Where the next number goes, so the question in the panel and the place on
      the page are the same thing seen twice. */
   if (sheet.ask) {
-    const x = colX(sheet.ask.col);
     const y = rowY(sheet.ask.row);
-    g.fillStyle = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.16);
-    g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
-    g.save();
-    g.strokeStyle = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.9);
-    g.lineWidth = Math.max(2, rh * 0.05);
-    g.setLineDash([rh * 0.12, rh * 0.1]);
-    g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
-    g.restore();
+    for (const col of sheet.ask.cols) {
+      const x = colX(col);
+      g.fillStyle = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.16);
+      g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.save();
+      g.strokeStyle = rgba(cssVar("--accent-secondary", "#6fb7e8"), 0.9);
+      g.lineWidth = Math.max(2, rh * 0.05);
+      g.setLineDash([rh * 0.12, rh * 0.1]);
+      g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.restore();
+    }
   }
 
   /* The whole working is written in one monospaced hand, so a column of digits

@@ -15,6 +15,11 @@
    the board is showing into the boxes, set takes what was typed and puts it on
    the board. Parsing lives on the sheet's own side of the line, because what
    counts as a legal sum is part of the method and not part of the strip.
+
+   `cells` is the other half of the same idea: the ANSWER is typed into the page
+   itself (js/cells.js), so each method says which cells are open for writing and
+   how many figures go in them. A method with a step that is dragged rather than
+   typed says so there too, and answers to `bring`.
    ========================================================================== */
 
 import { toBase, fromBase } from "./config.js";
@@ -35,6 +40,10 @@ export const SHEETS = {
     answer: longdiv.answer,
     showNext: longdiv.showNext,
     reset: longdiv.resetWork,
+    cells: longdiv.cellsOf,
+    /* The one step on either board that is not typed. Only the division has
+       one, so only the division answers to it. */
+    bring: longdiv.bringDown,
   },
   column: {
     name: "column addition",
@@ -49,6 +58,7 @@ export const SHEETS = {
     answer: column.answer,
     showNext: column.showNext,
     reset: column.resetWork,
+    cells: column.cellsOf,
   },
 };
 
