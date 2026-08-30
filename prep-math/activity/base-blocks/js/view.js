@@ -10,7 +10,9 @@
 import { cssVar } from "./config.js";
 import { buildMesh, colourOf, glideTo, place, repaint, clearMaterials } from "./blocks.js";
 import { buildAbacus, placeAbacus, syncAbacus, clearAbacusMaterials } from "./abacus.js";
-import { buildBoard, placeBoard, paintBoard, placeReading } from "./grids.js";
+import {
+  buildBoard, placeBoard, glideBoard, growBoard, paintBoard, placeReading,
+} from "./grids.js";
 import { buildNote, placeNote, noteShape } from "./notes.js";
 import { buildTile, placeTile, tileShape, clearTileMaterials } from "./tiles.js";
 
@@ -86,18 +88,27 @@ export function createView(ctx) {
            sum and the slab itself has to be built again. */
         : [t.places ?? "", t.base ?? "", t.dividend ?? "", t.divisor ?? "",
            (t.addends || []).join("+")].join("/");
+      /* How big the page was before it was recut, so the new one can grow into
+         its size rather than blink into it. */
+      let was = null;
       if (rig && rig.shape !== shape) {
+        was = rig.size;
         disposeRig(rig);
         rigs.delete(t.id);
         rig = null;
       }
+      /* A rig built this frame has no position yet — it must be PUT where it
+         goes, not slid there from the middle of the canvas. */
+      let built = false;
       if (!rig) {
+        built = true;
         const parts = t.kind === "abacus" ? buildAbacus(ctx, t)
           : t.kind === "note" || t.kind === "card" ? buildNote(ctx, t)
           : t.kind === "tile" ? buildTile(ctx, t)
           : buildBoard(ctx, t, store.base);
-        rig = { parts, kind: t.kind, signature: "", shape };
+        rig = { parts, kind: t.kind, signature: "", shape, size: { l: t.l, w: t.w } };
         rigs.set(t.id, rig);
+        if (animate && t.kind === "board") growBoard(ctx, parts, was, t);
       }
 
       if (t.kind === "abacus") {
@@ -108,7 +119,10 @@ export function createView(ctx) {
       } else if (t.kind === "tile") {
         placeTile(rig.parts, t);
       } else {
-        placeBoard(rig.parts, t);
+        /* Under sync a board slides to where it now belongs, like everything
+           else on the canvas; while it is being dragged, `placeItem` snaps it. */
+        if (animate && !built) glideBoard(ctx, rig.parts, t);
+        else placeBoard(rig.parts, t);
         const sig = boardSignature(t, store);
         if (sig !== rig.signature) {
           rig.signature = sig;

@@ -167,6 +167,13 @@ async function runSum(n, sign) {
       await wait(STEP_MS);
       if (step.dh || step.de) {
         applyStep(f, step);
+        /* Everything else keeps up A STEP AT A TIME, not all at once at the end.
+           With sync on, the point of the canvas is that the tools tell the same
+           story together — beads sliding while a chart and a written sum sat
+           still, then all of them jumping at the last movement, told it twice
+           instead. Anything a step could not be shown on is reported at the end
+           by the final spread, so nothing is said twice here either. */
+        spread(abacusValue(f), f.id);
         emit();
         await wait(STEP_MS * 0.5);
       }

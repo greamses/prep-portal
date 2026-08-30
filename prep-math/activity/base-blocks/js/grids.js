@@ -16,8 +16,8 @@
    ========================================================================== */
 
 import {
-  PLACES, placeAt, worthOf, placeDims, placeOf, placeColour, toBase, baseWord, cssVar,
-  rgba, norm,
+  CFG, PLACES, placeAt, worthOf, placeDims, placeOf, placeColour, toBase, baseWord,
+  cssVar, rgba, norm,
 } from "./config.js";
 import { footprint } from "./layout.js";
 import { TRACK, FRAME_SIDE } from "./frame.js";
@@ -211,6 +211,62 @@ export function buildBoard(ctx, thing, base) {
   const parts = { root, slab, face, tex, edge, faceMat };
   paintBoard(thing, parts, { base });
   return parts;
+}
+
+/**
+ * Slide a board to where it now belongs, instead of teleporting it there.
+ *
+ * The blocks have always glided under sync (blocks.js `glideTo`) and the beads
+ * have always slid, so a chart or a written sum that jumped was the one thing on
+ * the canvas that moved without being seen to move. Same duration, same easing,
+ * for the same reason: what moved, and where it went, is half of what sync is
+ * showing you.
+ *
+ * The turn is NOT animated. A board is turned by hand and follows the finger;
+ * easing it would lag behind the handle.
+ */
+export function glideBoard(ctx, parts, thing) {
+  const BJS = B();
+  const f = footprint(thing);
+  parts.root.rotation.y = thing.angle || 0;
+  const target = new BJS.Vector3(
+    thing.x + f.l / 2, thing.y || 0, thing.z + f.w / 2);
+  if (BJS.Vector3.Distance(parts.root.position, target) < 0.001) return;
+  const fps = 60;
+  const frames = Math.max(2, Math.round((CFG.anim / 1000) * fps));
+  const ease = new BJS.CubicEase();
+  ease.setEasingMode(BJS.EasingFunction.EASINGMODE_EASEOUT);
+  BJS.Animation.CreateAndStartAnimation(
+    "bdmv", parts.root, "position", fps, frames,
+    parts.root.position.clone(), target,
+    BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease
+  );
+}
+
+/**
+ * A board that has just been cut to a different size GROWS into it.
+ *
+ * Setting a longer sum, or a base that makes the times table wider, throws the
+ * old slab away and builds a new one — so without this the page blinks: gone,
+ * and back a size bigger, with nothing to say it was the same sheet of paper.
+ * Starting it at the old size and letting it out to the new one says "this page
+ * grew a column", which is exactly what happened.
+ */
+export function growBoard(ctx, parts, was, now) {
+  const BJS = B();
+  if (!was || !was.l || !was.w || !now.l || !now.w) return;
+  const from = new BJS.Vector3(was.l / now.l, 1, was.w / now.w);
+  if (Math.abs(from.x - 1) < 0.02 && Math.abs(from.z - 1) < 0.02) return;
+  parts.root.scaling = from;
+  const fps = 60;
+  const frames = Math.max(2, Math.round((CFG.anim / 1000) * fps));
+  const ease = new BJS.CubicEase();
+  ease.setEasingMode(BJS.EasingFunction.EASINGMODE_EASEOUT);
+  BJS.Animation.CreateAndStartAnimation(
+    "bdgrow", parts.root, "scaling", fps, frames,
+    from.clone(), new BJS.Vector3(1, 1, 1),
+    BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, ease
+  );
 }
 
 export function placeBoard(parts, thing) {
