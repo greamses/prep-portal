@@ -49,6 +49,12 @@ const PANELS = ".bb-fly, .bb-pop, .bb-board, .bb-sheetpanel";
 const MIN_W = 180;
 const MIN_H = 90;
 
+/* What to call a card when it is closed, so the line of feedback names the
+   thing that went rather than saying "removed" at you. */
+const NAMES = {
+  note: "Note", card: "Number card", abacus: "Frame", tile: "Tile", board: "Board",
+};
+
 export function createPickTool(ctx, view, stage) {
   const { scene, camera } = ctx;
 
@@ -79,12 +85,29 @@ export function createPickTool(ctx, view, stage) {
 
   /* ── which card is under the pointer ─────────────────────────────────────── */
 
-  /** The one note or number card that is picked up, if that is what is. */
-  function heldCard() {
+  /**
+   * The one THING that is picked up. Everything on the paper is a card here — a
+   * frame, a chart, a written sum, a tile, a note — except the blocks, which are
+   * the material you build with rather than a card you handle. They have the
+   * whole Blocks kit of their own and a strip of keys that comes to them.
+   */
+  function heldThing() {
     const picked = selectedItems();
     if (picked.length !== 1) return null;
     const t = picked[0];
-    return t.kind === "note" || t.kind === "card" ? t : null;
+    return t.kind && t.kind !== "block" && store.things.includes(t) ? t : null;
+  }
+
+  /**
+   * Which cards can be pulled to a size, and what that means for them.
+   *
+   * A note is the only one with a size of its OWN — everything else on the paper
+   * is cut to fit what it holds, and a soroban you could stretch would be a
+   * soroban with the wrong number of beads on it. So the corner only appears
+   * where pulling it means something.
+   */
+  function canSize(t) {
+    return !!t && (t.kind === "note" || t.kind === "card");
   }
 
   /** The topmost open panel, which is the one a press would have landed on. */
@@ -264,7 +287,7 @@ export function createPickTool(ctx, view, stage) {
       store.selection = new Set();
       onThing = null;
       kit.hidden = true;
-      say(gone.kind === "card" ? "Number card closed." : "Note closed.");
+      say(`${NAMES[gone.kind] || gone.variant || "That"} closed.`);
       emit();
     }
   });
@@ -285,12 +308,14 @@ export function createPickTool(ctx, view, stage) {
     /* A panel that is open is what you meant; otherwise the card in your hand
        on the paper. Both at once cannot happen — the handles go on one card. */
     const panel = openPanel();
-    const card = heldCard();
+    const card = heldThing();
     onPanel = panel;
     onThing = panel ? null : card;
     const on = !!(onPanel || onThing);
     kit.hidden = !on;
     kit.dataset.on = onPanel ? "panel" : onThing ? "card" : "";
+    /* No corner where a pull would mean nothing. */
+    grip.hidden = !(onPanel || canSize(onThing));
     if (on) place();
   }
 

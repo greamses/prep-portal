@@ -30,6 +30,7 @@
 
 import { toBase, fromBase } from "./config.js";
 import * as longdiv from "./longdiv.js";
+import { stageOf, layStage, stageSentence } from "./divblocks.js";
 import * as column from "./column.js";
 
 export const SHEETS = {
@@ -50,6 +51,12 @@ export const SHEETS = {
     /* Not the dividend: what is still to be shared out, which shrinks as the
        sum is worked. See longdiv.leftToShare. */
     value: longdiv.leftToShare,
+    /* And the same working laid out in blocks, stage by stage of DMSB — the
+       half that answers "where did the 4 come from?". See divblocks.js. Only
+       this method has one; an addition is not a sharing out. */
+    stage: stageOf,
+    lay: layStage,
+    stageSaid: stageSentence,
     setValue: longdiv.setDividend,
     /* The one step on either board that is not typed. Only the division has
        one, so only the division answers to it. */

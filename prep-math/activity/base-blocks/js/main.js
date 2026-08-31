@@ -27,6 +27,13 @@ import { createSheetPanel } from "./sheetui.js";
 import { createCellLayer } from "./cells.js";
 import { createPickTool } from "./pick.js";
 import { sheetFor } from "./sheets.js";
+/* Namespaces for the ?debug handle below — the page itself uses the named
+   imports above; these are so a test can reach a module without importing it. */
+import * as ops from "./ops.js";
+import * as sync from "./sync.js";
+import * as sheets from "./sheets.js";
+import * as sceneMod from "./scene.js";
+import * as layoutMod from "./layout.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -421,6 +428,12 @@ function placeTool(tool) {
           : `${tool.label} — tap a square to light its row and column.`
   );
   catchUp(thing);
+  /* A division put out while sync is on shows its first stage at once: thirty
+     tens on the paper, and the question is how many groups of seven. */
+  if (sheet && store.sync) {
+    const stage = sheet.stage?.(thing);
+    if (stage) sheet.lay(thing, stage);
+  }
   fitView(ctx, [thing]);
 }
 
@@ -466,8 +479,22 @@ function sheetAct(board, run) {
      is its total from the first line to the last, so working one spreads
      nothing, which is right — nothing about it changed.) */
   const now = valueOf(board);
-  const spilled = done.changed && now !== was ? spread(now, board.id) : null;
-  const note = spilled || done.message;
+  let spilled = null;
+  let shown = "";
+  if (done.changed && store.sync) {
+    /* A division's blocks change at EVERY stage, not only when the count does:
+       the D of DMSB groups thirty tens into four sevens without adding or
+       taking away a single one of them, and that grouping is the answer to
+       "where did the 4 come from". So it is not guarded by `now !== was`. */
+    const stage = sheetFor(board).stage?.(board);
+    if (stage && sheetFor(board).lay(board, stage)) {
+      spilled = spread(now, board.id, { blocks: false });
+      shown = " " + sheetFor(board).stageSaid(stage, store.base);
+    } else if (now !== was) {
+      spilled = spread(now, board.id);
+    }
+  }
+  const note = spilled || (done.message ? done.message + shown : "");
   if (note) {
     say(note, done.ok === false || spilled ? "warn" : done.changed ? "ok" : "info");
   }
@@ -731,7 +758,13 @@ async function bootCanvas() {
          screen pixel and drive the REAL pointer at it — which is the only way
          to test anything drawn into a texture, an array swept out of a times
          table included. */
-      window.__bb = { store, valueOf, view, ctx };
+      /* The modules are on the handle too, not just the state. A test that has
+         to `await import()` inside every page.evaluate loses one to V8's garbage
+         collector every so often — "resulting promise was garbage collected" —
+         and the heavier the call the likelier it is. Reaching them off one
+         object costs nothing and makes that whole class of flake go away. */
+      window.__bb = { store, valueOf, view, ctx, emit, say, ops, sync, sheets,
+        scene: sceneMod, layout: layoutMod };
     }
 
     veilOff();

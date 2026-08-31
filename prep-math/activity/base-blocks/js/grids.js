@@ -232,6 +232,17 @@ export function glideBoard(ctx, parts, thing) {
   const target = new BJS.Vector3(
     thing.x + f.l / 2, thing.y || 0, thing.z + f.w / 2);
   if (BJS.Vector3.Distance(parts.root.position, target) < 0.001) return;
+
+  /* Already on its way to exactly here? Then leave it alone.
+     CreateAndStartAnimation REPLACES the running one and starts its clock
+     again, so a board re-aimed at the same spot on every store change crawls
+     and, if the changes keep coming, never arrives at all. This was
+     intermittent and looked like the animation simply not working. */
+  const going = parts.goingTo;
+  if (going && BJS.Vector3.Distance(going, target) < 0.001
+    && ctx.scene.getAllAnimatablesByTarget(parts.root).length) return;
+  parts.goingTo = target.clone();
+
   const fps = 60;
   const frames = Math.max(2, Math.round((CFG.anim / 1000) * fps));
   const ease = new BJS.CubicEase();
@@ -270,6 +281,7 @@ export function growBoard(ctx, parts, was, now) {
 }
 
 export function placeBoard(parts, thing) {
+  parts.goingTo = null;   // put, not sent: it is not on its way anywhere
   const f = footprint(thing);
   parts.root.position.x = thing.x + f.l / 2;
   parts.root.position.z = thing.z + f.w / 2;
