@@ -111,6 +111,27 @@ export function stageSentence(stage, base) {
     + `${word} on the paper${over}.`;
 }
 
+/**
+ * What a stage leaves behind when its groups are taken away.
+ *
+ * The groups are the working. Sweeping them off the paper at the subtraction
+ * loses the very thing that was shown — so before they go they are written on a
+ * note and the note stays on the canvas. At the end of a division the notes read
+ * down the page as the whole sum: what was made into groups at each stage, what
+ * that came to, and what was left.
+ */
+export function groupNote(stage, base) {
+  if (!stage || !stage.grouped) return "";
+  const word = PLACE_WORDS[stage.power] || `${base}s`;
+  const one = word.replace(/s$/, "");
+  const worth = stage.groups * stage.per * base ** stage.power;
+  const over = stage.spare
+    ? `\n${stage.spare} ${stage.spare === 1 ? one : word} over`
+    : "\nnone over";
+  return `${stage.groups} × ${stage.per} ${word}\n= ${stage.groups * stage.per} `
+    + `${word} = ${worth}${over}`;
+}
+
 /* ── laying it out ────────────────────────────────────────────────────────── */
 
 /** One piece of the place at `power`, in this base. */

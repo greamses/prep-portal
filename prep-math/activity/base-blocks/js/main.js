@@ -38,7 +38,7 @@ import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
 import { ICON } from "./icons.js";
-import { occupancy, findSpot, mark, arrange } from "./layout.js";
+import { occupancy, findSpot, mark, arrange, footprint } from "./layout.js";
 import { makeAbacus, tapBead, abacusValue, setAbacusValue, worksInBase } from "./abacus.js";
 import {
   makeBoard, tapBoard, tapPlace, toggleCell, sweepArray,
@@ -198,6 +198,26 @@ async function runSum(n, sign) {
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Put a note on the canvas beside a board, without disturbing anything.
+ *
+ * Not `addThing`: that arranges the whole canvas, which would sweep the groups
+ * about at the very moment we are trying to keep a record of them. This finds
+ * one clear patch and leaves everything else where it is.
+ */
+function keepNote(text, near) {
+  const note = makeNote(text, nextPaper++ % 6);
+  note.id = nextId();
+  const f = footprint(note);
+  const grid = occupancy(store.blocks.concat(store.things));
+  const spot = findSpot(grid, f.l, f.w, { x: near.x + near.l + 2, z: near.z });
+  if (!spot) return null;
+  note.x = spot.x;
+  note.z = spot.z;
+  store.things.push(note);
+  return note;
+}
 
 /* ── sticky notes ─────────────────────────────────────────────────────────── */
 
@@ -455,6 +475,9 @@ function sheetAct(board, run) {
   if (!board) return;
   snapshot();
   const was = valueOf(board);
+  /* The stage BEFORE the line is written, because writing the subtraction is
+     what takes its groups off the paper — and they are not to be lost. */
+  const grouped = sheetFor(board).stage?.(board);
   const done = run(board);
   /* A refused answer is not a step back to take. It DOES change the board —
      the tally of slips goes up, which is how the board knows to offer to write
@@ -486,6 +509,13 @@ function sheetAct(board, run) {
        the D of DMSB groups thirty tens into four sevens without adding or
        taking away a single one of them, and that grouping is the answer to
        "where did the 4 come from". So it is not guarded by `now !== was`. */
+    /* The S of DMSB: the groups that were on the paper have just been taken
+       away, so they are written on a note first and the note stays. Do not
+       delete the working — put it down. */
+    if (done.kind === "d" && grouped && grouped.grouped) {
+      const said = sheetFor(board).groupNote(grouped, store.base);
+      if (said) keepNote(said, board);
+    }
     const stage = sheetFor(board).stage?.(board);
     if (stage && sheetFor(board).lay(board, stage)) {
       spilled = spread(now, board.id, { blocks: false });

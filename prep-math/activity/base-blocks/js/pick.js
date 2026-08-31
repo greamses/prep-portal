@@ -41,8 +41,14 @@ const B = () => window.BABYLON;
 
 /* The panels that are cards you may handle. The rail is deliberately not one,
    and neither is the toast or the running total — those are the canvas
-   speaking, not a card of yours. */
-const PANELS = ".bb-fly, .bb-pop, .bb-board, .bb-sheetpanel";
+   speaking, not a card of yours.
+
+   The strip over a written sum is not one either. It is not a panel you opened;
+   it belongs to the board and goes where the board goes. Leaving it in this list
+   was a real bug: with a long division in your hand the strip is always up, so
+   it always won, and the × closed the strip while the division itself could
+   never be taken hold of at all. */
+const PANELS = ".bb-fly, .bb-pop, .bb-board";
 
 /* A panel may not be pulled smaller than this, or there is nothing left to
    take hold of and no way back. */
@@ -157,10 +163,24 @@ export function createPickTool(ctx, view, stage) {
     return { x: r.x - s.x, y: r.y - s.y, w: r.width, h: r.height };
   }
 
+  /* Room for the bar, which hangs above the frame, and the grip, which hangs
+     below it. Handles printed outside the stage cannot be pressed. */
+  const EDGE = 22;
+
   function lay(box) {
-    kit.style.transform = `translate(${Math.round(box.x)}px, ${Math.round(box.y)}px)`;
-    kit.style.width = `${Math.round(box.w)}px`;
-    kit.style.height = `${Math.round(box.h)}px`;
+    /* Clamped to what is ON SCREEN. A board can easily be bigger than the view —
+       a long division at a comfortable zoom usually is — and handles pinned to
+       the corners of something you can only see the middle of are handles you
+       cannot reach. The frame hugs the card where the card is visible, and stops
+       at the edge of the stage where it is not. */
+    const r = stage.getBoundingClientRect();
+    const left = Math.max(EDGE, Math.min(box.x, r.width - 80));
+    const top = Math.max(EDGE, Math.min(box.y, r.height - 60));
+    const right = Math.min(r.width - EDGE / 2, Math.max(box.x + box.w, left + 60));
+    const bottom = Math.min(r.height - EDGE / 2, Math.max(box.y + box.h, top + 40));
+    kit.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+    kit.style.width = `${Math.round(right - left)}px`;
+    kit.style.height = `${Math.round(bottom - top)}px`;
   }
 
   function place() {
@@ -266,15 +286,16 @@ export function createPickTool(ctx, view, stage) {
   shut.addEventListener("click", (e) => {
     e.stopPropagation();
     if (onPanel) {
-      onPanel.hidden = true;
-      /* The key that opened it has to know it is shut, or its arrow still says
-         open and the next press only closes it again. The rail names its panels
-         by the tail of their id — #bb-fly-add is data-menu="add" — so the key is
-         found rather than guessed at. */
+      /* Shut it the way the rail shuts it — by pressing the key that opened it.
+         Hiding the element behind ui.js's back leaves that key still believing
+         its panel is open, so the next press closes what is already closed and
+         the panel seems not to come back at all. The rail names its panels by
+         the tail of their id: #bb-fly-add is data-menu="add". */
       const menu = onPanel.id.replace(/^bb-(fly|pop)-/, "");
       const opener = document.querySelector(
         `[aria-controls="${onPanel.id}"], [data-menu="${menu}"]`);
-      opener?.setAttribute("aria-expanded", "false");
+      if (opener) opener.click();
+      else onPanel.hidden = true;
       onPanel = null;
       kit.hidden = true;
       emit();
@@ -305,12 +326,13 @@ export function createPickTool(ctx, view, stage) {
     }
     stage.classList.add("is-picking");
 
-    /* A panel that is open is what you meant; otherwise the card in your hand
-       on the paper. Both at once cannot happen — the handles go on one card. */
-    const panel = openPanel();
+    /* THE CARD IN YOUR HAND COMES FIRST. You picked it up; that is the whole
+       gesture this tool is named after. A panel gets the handles only when your
+       hands are empty, which is also the only time you would be reaching for
+       one. */
     const card = heldThing();
-    onPanel = panel;
-    onThing = panel ? null : card;
+    onThing = card;
+    onPanel = card ? null : openPanel();
     const on = !!(onPanel || onThing);
     kit.hidden = !on;
     kit.dataset.on = onPanel ? "panel" : onThing ? "card" : "";

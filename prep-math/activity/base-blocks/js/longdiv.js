@@ -419,8 +419,11 @@ export function answer(thing, text) {
 
   thing.done += 1;
   const finished = thing.done >= plan.entries.length;
+  /* `kind` is how the canvas knows WHICH of D, M, S, B was just written — the
+     blocks are laid out differently for each, and the S is the one where a
+     group of them is taken away. */
   return {
-    ok: true, changed: true, finished,
+    ok: true, changed: true, finished, kind: e.kind,
     message: finished ? finish(plan) : told(e, plan),
   };
 }
@@ -448,7 +451,7 @@ export function showNext(thing) {
   thing.done += 1;
   const finished = thing.done >= plan.entries.length;
   return {
-    changed: true, finished,
+    changed: true, finished, kind: e.kind,
     message: finished ? finish(plan) : `${write(e.value, thing.base)} — ${told(e, plan)}`,
   };
 }

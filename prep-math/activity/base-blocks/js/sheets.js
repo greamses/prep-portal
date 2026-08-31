@@ -30,7 +30,7 @@
 
 import { toBase, fromBase } from "./config.js";
 import * as longdiv from "./longdiv.js";
-import { stageOf, layStage, stageSentence } from "./divblocks.js";
+import { stageOf, layStage, stageSentence, groupNote } from "./divblocks.js";
 import * as column from "./column.js";
 
 export const SHEETS = {
@@ -57,6 +57,7 @@ export const SHEETS = {
     stage: stageOf,
     lay: layStage,
     stageSaid: stageSentence,
+    groupNote,
     setValue: longdiv.setDividend,
     /* The one step on either board that is not typed. Only the division has
        one, so only the division answers to it. */
