@@ -47,7 +47,9 @@ export const SHEETS = {
     showNext: longdiv.showNext,
     reset: longdiv.resetWork,
     cells: longdiv.cellsOf,
-    value: (t) => t.dividend,
+    /* Not the dividend: what is still to be shared out, which shrinks as the
+       sum is worked. See longdiv.leftToShare. */
+    value: longdiv.leftToShare,
     setValue: longdiv.setDividend,
     /* The one step on either board that is not typed. Only the division has
        one, so only the division answers to it. */

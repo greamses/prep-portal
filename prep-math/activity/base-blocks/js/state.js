@@ -23,6 +23,9 @@ export const store = {
   group: "blocks",
   flat: false, // 2D view on?
   sync: false, // when on, every tool shows the same number (js/sync.js)
+  /* The pick tool (js/pick.js): a mode in which the CARDS themselves are what
+     you are handling — moved, resized, closed — rather than what is on them. */
+  pick: false,
   /* How a piece lands when you let go of it (js/snap.js). Flush is on to begin
      with because the algebra tiles are the pieces that move freely, and pieces
      that do not quite touch are the one way they can lie to you. */

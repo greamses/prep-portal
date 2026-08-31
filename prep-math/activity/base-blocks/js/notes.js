@@ -42,8 +42,21 @@ const MAX_CELLS = Math.round(MAX_W / PX_PER_CELL);
  * footprint are all cut from the one measurement rather than three that might
  * disagree by a pixel.
  */
+/**
+ * How wide this note is allowed to run, in cells.
+ *
+ * `note.wide` is a width set BY HAND with the pick tool. It is a maximum and not
+ * a size: the writing still decides how tall the paper is, so pulling a note
+ * narrower makes it taller and pulling it wider makes it shorter, which is what
+ * happens to a piece of writing on a real page. Without one, a note runs to the
+ * component's own maximum and grows downwards from there.
+ */
+export const NOTE_MIN_CELLS = 3;
+export const NOTE_MAX_CELLS = MAX_CELLS;
+
 export function measure(note) {
-  const at = layoutNote(note, { maxWidth: MAX_CELLS * PX_PER_CELL });
+  const wide = Math.max(NOTE_MIN_CELLS, Math.min(MAX_CELLS, note.wide || MAX_CELLS));
+  const at = layoutNote(note, { maxWidth: wide * PX_PER_CELL });
   note.at = at;
   note.l = Math.max(2, Math.ceil(at.width / PX_PER_CELL));
   note.w = Math.max(2, Math.ceil(at.height / PX_PER_CELL));
@@ -159,5 +172,7 @@ export function paintNote(thing, parts) {
 
 /** What view.js watches to know a note has changed under it. */
 export function noteShape(thing) {
-  return `${thing.rev || 0}/${thing.l}x${thing.w}`;
+  /* The width set by hand is part of the shape as much as the writing is: pull
+     a note narrower and the paper is a different piece of paper. */
+  return `${thing.rev || 0}/${thing.l}x${thing.w}/${thing.wide || 0}`;
 }

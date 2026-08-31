@@ -31,6 +31,9 @@ export const ICON = {
   fit: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><rect x="8.6" y="8.6" width="6.8" height="6.8" rx="1"/>`),
   zoomIn: line(`<circle cx="10.5" cy="10.5" r="6.6"/><path d="m15.4 15.4 5.1 5.1M7.8 10.5h5.4M10.5 7.8v5.4"/>`),
   zoomOut: line(`<circle cx="10.5" cy="10.5" r="6.6"/><path d="m15.4 15.4 5.1 5.1M7.8 10.5h5.4"/>`),
+  /* A pointer with a corner of card behind it. Nothing else on this canvas is
+     an arrow, which is the rule: no two pressable things share a glyph. */
+  pick: line(`<path d="M14.5 4.5h5v5"/><path d="M5.2 3.6l6.1 15.2 2.2-5.5 5.5-2.2z"/>`),
   hand: line(`<path d="M8.6 11.4V5.9a1.45 1.45 0 0 1 2.9 0v4.7m0-1.1a1.45 1.45 0 0 1 2.9 0v1.1m0-.8a1.45 1.45 0 0 1 2.9 0v4.4a5.4 5.4 0 0 1-5.4 5.4h-.8a4.9 4.9 0 0 1-4.2-2.4l-2.2-3.7a1.45 1.45 0 0 1 2.3-1.7l1 1.2"/>`),
   turn: line(`<path d="M20 5.5v5h-5"/><path d="M19.6 10.5a7.8 7.8 0 1 0-1.2 6"/>`),
   chevron: line(`<path d="m8 5 7 7-7 7"/>`),

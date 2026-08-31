@@ -25,6 +25,7 @@ import { createCardPicker } from "./cardui.js";
 import { createBlockBar } from "./blockbar.js";
 import { createSheetPanel } from "./sheetui.js";
 import { createCellLayer } from "./cells.js";
+import { createPickTool } from "./pick.js";
 import { sheetFor } from "./sheets.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
@@ -57,6 +58,7 @@ let noteEditor = null;
 let dock = null;
 let sheetPanel = null;
 let cellLayer = null;
+let pickTool = null;
 let booting = null;
 const ghost = createDotGhost(stage);
 
@@ -439,6 +441,7 @@ function sumOf(sheet, board) {
 function sheetAct(board, run) {
   if (!board) return;
   snapshot();
+  const was = valueOf(board);
   const done = run(board);
   /* A refused answer is not a step back to take. It DOES change the board —
      the tally of slips goes up, which is how the board knows to offer to write
@@ -453,8 +456,20 @@ function sheetAct(board, run) {
     settleThings([board]);
     fitView(ctx, [board]);
   }
-  if (done.message) {
-    say(done.message, done.ok === false ? "warn" : done.changed ? "ok" : "info");
+  /* EVERY step of the working spreads, not just a sum set by hand. A long
+     division takes a pile apart a line at a time, so what is left to share out
+     changes as it goes — and with sync on the blocks have to come down with it,
+     or the canvas is telling two different stories at once.
+
+     Only when the number actually moved: spreading a number nothing has changed
+     would rebuild every block on the canvas for no reason. (An addition's total
+     is its total from the first line to the last, so working one spreads
+     nothing, which is right — nothing about it changed.) */
+  const now = valueOf(board);
+  const spilled = done.changed && now !== was ? spread(now, board.id) : null;
+  const note = spilled || done.message;
+  if (note) {
+    say(note, done.ok === false || spilled ? "warn" : done.changed ? "ok" : "info");
   }
   emit();
 }
@@ -658,15 +673,15 @@ async function bootCanvas() {
       onReset: (board) => sheetAct(board, (t) => sheetFor(t).reset(t)),
       /* A new sum makes the board a different size, so this is the one action
          here that has to put it down again afterwards. */
+      /* A new sum is a new size of board; the spread is sheetAct's business,
+         the same as it is for every other line of working. */
       onSum: (board, values) => sheetAct(board, (t) => {
         const done = sheetFor(t).set(t, values);
-        /* A sum you set by hand is a number you have just named, so with sync on
-           it becomes THE number and everything else re-reads — the same as
-           sliding a bead or dropping a counter. */
-        const spilled = done.changed ? spread(valueOf(t), t.id) : null;
-        return { ...done, resized: done.changed, message: spilled || done.message };
+        return { ...done, resized: done.changed };
       }),
     });
+
+    pickTool = createPickTool(ctx, view, stage);
 
     const trade = createRegroupPrompt(ctx, view, stage);
     noteEditor = createNoteEditor(ctx, view, stage,
@@ -680,6 +695,7 @@ async function bootCanvas() {
       blockBar.refresh();
       sheetPanel.refresh();
       cellLayer.refresh();
+      pickTool.refresh();
     });
     turn.refresh();
 

@@ -466,6 +466,31 @@ export function setDividend(thing, n) {
 }
 
 /**
+ * What is STILL TO BE SHARED OUT — the number this board is holding right now.
+ *
+ * A division is repeated subtraction, so the number on the page is not the same
+ * from one line to the next: 305 shared between 7 is 305 to begin with, then 25
+ * once the first 28 has been taken away, and 4 at the end. That is the number
+ * the other tools should be showing while the sum is worked — watch the blocks
+ * and you watch the pile being shared out and getting smaller.
+ *
+ * Whatever step is pending, what is left is the number that step is dividing
+ * into, with every digit not yet brought down still hanging off the end of it.
+ * With nothing worked that is the dividend, and with everything worked it is the
+ * remainder — so this agrees with `setDividend` at both ends.
+ */
+export function leftToShare(thing) {
+  const plan = planOf(thing);
+  const e = plan.entries[thing.done];
+  if (!e) return plan.remainder;
+  const s = e.step;
+  const tail = plan.digits.length - 1 - s.i;   // digits still to come down
+  let n = s.cur;
+  for (let k = s.i + 1; k < plan.digits.length; k++) n = n * thing.base + plan.digits[k];
+  return tail >= 0 ? n : s.cur;
+}
+
+/**
  * The cells the learner writes in NOW — one box per digit, over the page itself.
  *
  * A number two figures long is two boxes in two columns, because that is what it

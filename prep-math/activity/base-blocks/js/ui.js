@@ -137,6 +137,14 @@ export function mountUI({
     tip: () => ops.tipSelected(),
     snapGrid: () => toggleSnap("grid"),
     snapSide: () => toggleSnap("side"),
+    /* A mode, so it is a press that stays down: while it is on, the CARDS
+       themselves are what you are handling (js/pick.js). */
+    pick: () => {
+      store.pick = !store.pick;
+      say(store.pick
+        ? "Pick — drag a card by its bar, pull the corner to resize it, or close it."
+        : "Pick off — the cards do their own jobs again.");
+    },
   };
 
   /**
@@ -182,6 +190,9 @@ export function mountUI({
    * the key itself, so a column of keys opens a column of panels in line.
    */
   function anchor(panel, btn) {
+    /* A panel put somewhere by hand with the pick tool stays where it was put:
+       re-anchoring it would drag it back to the rail the next time it opened. */
+    if (panel.classList.contains("is-put")) return;
     const s = stage.getBoundingClientRect();
     const r = btn.getBoundingClientRect();
     const host = (btn.closest(".bb-rail") || btn.closest(".bb-fly") || btn).getBoundingClientRect();
@@ -450,6 +461,7 @@ export function mountUI({
     snapGrid: () => run(ACTIONS.snapGrid),
     snapSide: () => run(ACTIONS.snapSide),
     hand: () => onHand(),
+    pick: () => run(ACTIONS.pick),
     view: () => toggleFlat(),
     all: () => run(() => { ops.selectAll(); say("Everything selected."); }),
     clear: () => { closeMenus(); run(() => { store.selection = new Set(); }); },
@@ -596,7 +608,8 @@ export function mountUI({
     lassoBtn.setAttribute("aria-pressed", String(pointer.lasso));
     lassoBtn.classList.toggle("is-on", pointer.lasso);
 
-    for (const [act, on] of [["snapGrid", store.snap.grid], ["snapSide", store.snap.side]]) {
+    for (const [act, on] of [["snapGrid", store.snap.grid], ["snapSide", store.snap.side],
+      ["pick", store.pick]]) {
       const b = $(`[data-act='${act}']`);
       if (!b) continue;
       b.setAttribute("aria-pressed", String(on));

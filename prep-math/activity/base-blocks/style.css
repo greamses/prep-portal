@@ -447,8 +447,19 @@ body.bb-locked { overflow: hidden; }
 .bb-tool.is-on .bb-tool__badge { color: var(--text-on-accent); }
 
 /* ── what a rail key opens: a panel in the strip beside the rail ──────────── */
+/* ── what sits over what ─────────────────────────────────────────────────────
+   Two families, and the order between them is the rule: things PINNED to
+   something on the canvas — the block keys, the strip over a written sum, the
+   boxes on its page — sit UNDER the panels you deliberately opened from the
+   rail. A strip that follows a board must never end up over the panel you just
+   asked for; it did, and the Add panel's tabs could not be pressed through it.
+
+     20  the rail          24  the block keys      26  the sum's strip
+     28  the boxes on the page (over its own strip, so a figure can be typed)
+     34  the fly-outs      36  the reading board   38  the popovers
+     42  the toast — the canvas speaking, and always readable  */
 .bb-fly {
-  z-index: 24;
+  z-index: 34;
   max-width: calc(100% - 24px);
 }
 .bb-fly[hidden] { display: none; }
@@ -777,7 +788,7 @@ body.bb-locked { overflow: hidden; }
 
 /* ── popovers ─────────────────────────────────────────────────────────────── */
 .bb-pop {
-  z-index: 30;
+  z-index: 38;
   width: min(320px, calc(100% - 24px));
 }
 .bb-paper.bb-pop__paper { gap: 0.7rem; padding: 0.85rem 0.95rem 0.95rem; }
@@ -884,7 +895,7 @@ body.bb-locked { overflow: hidden; }
 
 /* ── place-value board ────────────────────────────────────────────────────── */
 .bb-board {
-  z-index: 28;
+  z-index: 36;
   top: 62px;
   right: 12px;
   width: min(320px, calc(100% - 24px));
@@ -984,7 +995,7 @@ body.bb-locked { overflow: hidden; }
    in — which is exactly the trouble the old ink-coloured toast had. */
 .bb-toast.pp-sticky {
   position: absolute;
-  z-index: 32;
+  z-index: 42;
   left: 50%;
   bottom: 84px;
   transform: translate(-50%, 8px) rotate(var(--pp-note-tilt, -1.5deg));
@@ -1559,3 +1570,84 @@ body.bb-locked { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .bb-cells__chip { animation: none; }
 }
+
+/* ── the pick tool: handling the cards themselves ─────────────────────────────
+   One set of handles, laid over whichever card is being handled — a floating
+   panel or a note on the paper. The frame is drawn round the card rather than
+   in it, so nothing on the card moves or is covered while you take hold of it.
+
+   Only the three handles take the pointer. The middle is left alone: pick mode
+   is for the card, not against the canvas, and you can still see what you are
+   moving it over. */
+.bb-pickkit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10050;
+  pointer-events: none;
+  outline: 2px dashed var(--accent-secondary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.bb-pickkit[hidden] { display: none; }
+
+.bb-pickkit__bar,
+.bb-pickkit__key,
+.bb-pickkit__grip {
+  position: absolute;
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: var(--accent-secondary);
+  color: var(--text-on-accent);
+  box-shadow: 0 2px 6px rgba(20, 19, 15, 0.28);
+}
+
+/* The bar you take hold of, sitting on top of the card like a tab. */
+.bb-pickkit__bar {
+  top: -15px;
+  left: 12px;
+  right: 34px;
+  height: 12px;
+  border-radius: 4px 4px 0 0;
+  cursor: grab;
+  touch-action: none;
+}
+.bb-pickkit__bar:active { cursor: grabbing; }
+
+.bb-pickkit__key {
+  top: -17px;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--accent-danger, #f07a7a);
+  cursor: pointer;
+}
+.bb-pickkit__key svg { width: 11px; height: 11px; }
+
+/* The corner you pull. A triangle, because a square in the corner of a card
+   reads as a fourth button rather than as an edge to drag. */
+.bb-pickkit__grip {
+  right: -5px;
+  bottom: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 0 0 4px 0;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+/* A card on the paper is only ever as wide as the WRITING allows, so its grip
+   pulls sideways and the height follows. Saying so with the cursor costs
+   nothing and stops the first pull being a surprise. */
+.bb-pickkit[data-on="card"] .bb-pickkit__grip { cursor: ew-resize; }
+
+/* While the tool is on, the whole stage says so. */
+.bb-stage.is-picking .bb-fly,
+.bb-stage.is-picking .bb-pop,
+.bb-stage.is-picking .bb-board,
+.bb-stage.is-picking .bb-sheetpanel { cursor: default; }

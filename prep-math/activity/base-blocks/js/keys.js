@@ -97,6 +97,7 @@ export const SHORTCUTS = [
       { keys: "← ↑ → ↓", act: null, does: "Slide the paper under the camera" },
       { keys: "+ / −", act: null, does: "Closer and further" },
       { keys: "H", k: "h", act: "hand", does: "The hand tool: drag anywhere to slide the paper" },
+      { keys: "P", k: "p", act: "pick", does: "The pick tool: move, resize or close a card" },
       { keys: "V", k: "v", act: "view", does: "Flat 2D view, and back to solid" },
       { keys: "?", k: "?", act: "keys", does: "This list" },
       { keys: "Right-drag", act: null, does: "Swing the camera round the paper" },

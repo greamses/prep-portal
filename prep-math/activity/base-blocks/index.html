@@ -240,7 +240,13 @@
                           aria-label="Remove the picked things (Delete)" title="Remove (Del)">
                     <span data-icon="trash"></span><em>Remove</em>
                   </button>
-                  <button class="bb-tool bb-tool--menu" type="button" data-menu="keys"
+                  <button class="bb-tool" type="button" data-act="pick"
+                        aria-pressed="false"
+                        aria-label="The pick tool: move, resize or close a card (P)"
+                        title="Pick: handle the cards themselves (P)">
+                  <span data-icon="pick"></span><em>Pick</em>
+                </button>
+                <button class="bb-tool bb-tool--menu" type="button" data-menu="keys"
                           aria-haspopup="dialog" aria-expanded="false"
                           aria-label="Every shortcut on this canvas (?)"
                           title="The keys (?)">

@@ -143,7 +143,14 @@ export function setBlocksValue(n) {
     }
     mark(grid, b.x, b.z, f.l, f.w);
   }
-  store.selection = new Set();
+  /* The BLOCKS are gone and their ids with them, so a selection that named one
+     is stale — but a board, a frame or a note is still exactly where it was and
+     still in your hand. Clearing the lot used to put down whatever you were
+     holding every time a number went round, which on a written sum takes the
+     strip and the answer boxes away in the middle of the working. */
+  store.selection = new Set(
+    [...store.selection].filter((id) => store.things.some((t) => t.id === id))
+  );
   return true;
 }
 

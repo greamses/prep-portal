@@ -145,6 +145,8 @@ export function createSheetPanel(ctx, view, stage, {
   function place() {
     const board = only();
     if (!board) { panel.hidden = true; return; }
+    /* Put somewhere by hand with the pick tool — leave it there. */
+    if (panel.classList.contains("is-put")) return;
     const f = footprint(board);
     let left = Infinity;
     let right = -Infinity;
