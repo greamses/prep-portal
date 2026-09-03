@@ -26,6 +26,9 @@ export const store = {
   /* The pick tool (js/pick.js): a mode in which the CARDS themselves are what
      you are handling — moved, resized, closed — rather than what is on them. */
   pick: false,
+  /* Quiet: no toast, and no offer to trade. The canvas still knows everything
+     it knew — it simply stops interrupting. */
+  quiet: false,
   /* How a piece lands when you let go of it (js/snap.js). Flush is on to begin
      with because the algebra tiles are the pieces that move freely, and pieces
      that do not quite touch are the one way they can lie to you. */
@@ -85,7 +88,11 @@ export function selectedItems() {
 }
 
 export function totalUnits(blocks = store.blocks) {
-  return blocks.reduce((n, b) => n + b.l * b.w * b.h, 0);
+  /* Pieces SET ASIDE are not counted. A long division deals its groups out and
+     leaves them on the paper (js/divblocks.js); they are a record of what has
+     been shared, not part of what is still to share, and counting them again
+     would say the sum had never moved. */
+  return blocks.reduce((n, b) => (b.aside ? n : n + b.l * b.w * b.h), 0);
 }
 
 /* ── undo ─────────────────────────────────────────────────────────────────── */
@@ -128,6 +135,7 @@ function clone(t) {
   if (t.focus) copy.focus = { ...t.focus };
   if (t.counters) copy.counters = [...t.counters];
   if (t.addends) copy.addends = [...t.addends];
+  if (t.blockFrame) copy.blockFrame = { ...t.blockFrame };
   return copy;
 }
 

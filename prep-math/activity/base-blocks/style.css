@@ -323,8 +323,11 @@ body.bb-locked { overflow: hidden; }
   gap: 0.5rem;
   min-width: 0;
 }
+/* Figures are set in the mono, not the display face: the display face is for
+   HEADINGS on this site, and a number in it beside a number in the mono reads
+   as two different kinds of thing. */
 .bb-count b {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-weight: var(--weight-black, 900);
   font-size: 1.25rem;
   line-height: 1;
@@ -911,7 +914,7 @@ body.bb-locked { overflow: hidden; }
 
 .bb-board__total { display: flex; align-items: baseline; gap: 0.45rem; }
 .bb-board__total b {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-weight: var(--weight-black, 900);
   font-size: var(--text-stat, 1.8rem);
   color: var(--ink);
@@ -1267,7 +1270,7 @@ body.bb-locked { overflow: hidden; }
 
 /* an algebra tile in the Add panel: its own colour on the swatch, and the
    negatives set apart so the two rows read as one family turned over */
-.bb-piece--tile span { font-family: var(--font-display); font-weight: 700; }
+.bb-piece--tile span { font-family: var(--font-mono); font-weight: 700; }
 .bb-piece--minus { opacity: 0.92; }
 
 /* The area frame is the board the pieces are laid on, so it takes a line of its
@@ -1386,7 +1389,41 @@ body.bb-locked { overflow: hidden; }
   z-index: 26;
   width: min(340px, calc(100vw - 24px));
 }
-.bb-paper.bb-sheetpanel__paper { gap: 0.42rem; }
+.bb-paper.bb-sheetpanel__paper { gap: 0.42rem; position: relative; }
+
+/* The key that folds the strip away, in its top corner where a card's own
+   controls live. Turned over once it is folded — one pressable thing in two
+   states, which is not the same as two things sharing a glyph. */
+.bb-sheetpanel__fold {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.bb-sheetpanel__fold svg { width: 15px; height: 15px; }
+.bb-sheetpanel__fold:hover { color: var(--ink); }
+.bb-sheetpanel.is-small .bb-sheetpanel__fold { transform: rotate(180deg); }
+
+/* Folded: the sum on one line and nothing else. */
+.bb-sheetpanel__folded {
+  display: none;
+  margin: 0;
+  padding-right: 1.4rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm, 0.8rem);
+  font-weight: var(--weight-semibold, 600);
+  color: var(--ink);
+}
+.bb-sheetpanel.is-small { width: auto; }
+.bb-sheetpanel.is-small .bb-sheetpanel__folded { display: block; }
+.bb-sheetpanel.is-small .bb-sheetpanel__sum,
+.bb-sheetpanel.is-small .bb-sheetpanel__ask,
+.bb-sheetpanel.is-small .bb-sheetpanel__work { display: none; }
 .bb-sheetpanel[hidden] { display: none; }
 
 .bb-sheetpanel__sum,

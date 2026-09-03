@@ -52,6 +52,10 @@ export function createSheetPanel(ctx, view, stage, {
      edge, because a filter under a mask gets clipped. */
   panel.innerHTML = `
     <div class="pp-receipt__paper bb-paper bb-sheetpanel__paper">
+    <button class="bb-sheetpanel__fold" type="button" data-do="fold"
+            aria-expanded="true" title="Fold the strip away (the page needs the room)"
+            aria-label="Fold the strip away">${ICON.fold}</button>
+    <p class="bb-sheetpanel__folded" data-folded aria-hidden="true"></p>
     <form class="bb-sheetpanel__sum" data-form="sum"></form>
     <p class="bb-sheetpanel__ask" data-ask aria-live="polite"></p>
     <div class="bb-sheetpanel__work">
@@ -69,6 +73,8 @@ export function createSheetPanel(ctx, view, stage, {
   stage.appendChild(panel);
 
   const askEl = panel.querySelector("[data-ask]");
+  const foldEl = panel.querySelector("[data-folded]");
+  const foldKey = panel.querySelector('[data-do="fold"]');
   const whereEl = panel.querySelector("[data-where]");
   const sumEl = panel.querySelector('[data-form="sum"]');
 
@@ -120,9 +126,22 @@ export function createSheetPanel(ctx, view, stage, {
     onSum(board, typed());
   });
 
+  /* Folded, the strip is one line: the sum it is set to, and the key to open it
+     again. A long division is a big piece of paper and the strip sits over it —
+     being able to put it out of the way is the difference between reading the
+     working and squinting round a panel. */
+  foldKey.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const small = !panel.classList.contains("is-small");
+    panel.classList.toggle("is-small", small);
+    foldKey.setAttribute("aria-expanded", String(!small));
+    foldKey.title = small ? "Open the strip again" : "Fold the strip away";
+    refresh();
+  });
+
   panel.addEventListener("click", (e) => {
     const key = e.target.closest("[data-do]");
-    if (!key || key.dataset.do === "sum") return;
+    if (!key || key.dataset.do === "sum" || key.dataset.do === "fold") return;
     const board = only();
     if (!board) return;
     if (key.dataset.do === "show") onShow(board);
@@ -203,6 +222,8 @@ export function createSheetPanel(ctx, view, stage, {
     baseEl.title = b === 10 ? "" : `Write every number in base ${baseWord(b)} — digits 0 to ${DIGITS[b - 1]}.`;
 
     const q = sheet.ask(board);
+    /* What the folded line says: the sum, so you still know which page this is. */
+    foldEl.textContent = sheet.fields.map((f) => showing[f.n]).join(` ${sheet.sep} `).trim();
     askEl.textContent = q.text;
     /* Where it goes is said apart from what it is, because the two are answered
        in different places: the question is read here, and the answer is written

@@ -83,6 +83,9 @@ export function createRegroupPrompt(ctx, view, stage) {
 
   /** Re-read the store: is there an offer to make, and what does it say? */
   function refresh() {
+    /* Quiet means quiet. This is an offer nobody asked for, and the same trade
+       is on the Blocks kit the moment it IS wanted. */
+    if (store.quiet) { live = null; card.hidden = true; return; }
     const sel = store.blocks.filter((b) => store.selection.has(b.id));
     const check = sel.length ? regroupCheck(sel, store.base) : { ok: false };
 

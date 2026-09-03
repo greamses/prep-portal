@@ -449,7 +449,7 @@ function placeTool(tool) {
   );
   catchUp(thing);
   /* A division put out while sync is on shows its first stage at once: thirty
-     tens on the paper, and the question is how many groups of seven. */
+     tens on the paper, seven empty piles, and the question is how many each. */
   if (sheet && store.sync) {
     const stage = sheet.stage?.(thing);
     if (stage) sheet.lay(thing, stage);
@@ -476,7 +476,8 @@ function sheetAct(board, run) {
   snapshot();
   const was = valueOf(board);
   /* The stage BEFORE the line is written, because writing the subtraction is
-     what takes its groups off the paper — and they are not to be lost. */
+     what takes that round out of what is left to share — and after the last one
+     there is no stage left to read it from. */
   const grouped = sheetFor(board).stage?.(board);
   const done = run(board);
   /* A refused answer is not a step back to take. It DOES change the board —
@@ -506,13 +507,16 @@ function sheetAct(board, run) {
   let shown = "";
   if (done.changed && store.sync) {
     /* A division's blocks change at EVERY stage, not only when the count does:
-       the D of DMSB groups thirty tens into four sevens without adding or
-       taking away a single one of them, and that grouping is the answer to
+       the D of DMSB deals four tens into each of the seven piles without adding
+       or taking away a single one of them, and that dealing is the answer to
        "where did the 4 come from". So it is not guarded by `now !== was`. */
-    /* The S of DMSB: the groups that were on the paper have just been taken
-       away, so they are written on a note first and the note stays. Do not
-       delete the working — put it down. */
+    /* The S of DMSB. What has been dealt does NOT go: it stays in the piles it
+       was dealt into and stops counting as still-to-share, and a note is stuck
+       beside the piles saying what the round came to. The working carries on
+       with what is left, so by the end the whole division is laid out in
+       blocks — seven piles of 43, and the 4 that would not go round. */
     if (done.kind === "d" && grouped && grouped.grouped) {
+      sheetFor(board).setAside(board);
       const said = sheetFor(board).groupNote(grouped, store.base);
       if (said) keepNote(said, board);
     }

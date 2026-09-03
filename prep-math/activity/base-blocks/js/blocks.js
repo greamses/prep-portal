@@ -12,6 +12,10 @@ import { footprint, standing } from "./layout.js";
 
 const B = () => window.BABYLON;
 
+/* How long one ROUND of dealing waits behind the one before it. Shorter than a
+   glide, so the rounds overlap and read as a rhythm rather than a queue. */
+const DEAL_ROUND = 170;
+
 let grooveTex = null;
 let matCache = new Map();
 
@@ -171,17 +175,37 @@ export function glideTo(ctx, mesh, block) {
   if (BJS.Vector3.Distance(mesh.position, target) < 0.001) return;
   const fps = 60;
   const frames = Math.max(2, Math.round((CFG.anim / 1000) * fps));
-  BJS.Animation.CreateAndStartAnimation(
-    "mv",
-    mesh,
-    "position",
-    fps,
-    frames,
-    mesh.position.clone(),
-    target,
-    BJS.Animation.ANIMATIONLOOPMODE_CONSTANT,
-    easeOut()
+  const from = mesh.position.clone();
+
+  /* A piece being DEALT waits its round out before it sets off. Sharing 30
+     between 7 is one to each pile, then one to each pile again, and again — and
+     a picture where all twenty-eight tens fly at once has thrown that away and
+     shown you only the answer. `deal` is which round this piece goes out in;
+     everything else travels straight away. */
+  const round = block.deal || 0;
+  if (!round) {
+    BJS.Animation.CreateAndStartAnimation(
+      "mv", mesh, "position", fps, frames, from, target,
+      BJS.Animation.ANIMATIONLOOPMODE_CONSTANT, easeOut()
+    );
+    return;
+  }
+  const hold = Math.max(1, Math.round((DEAL_ROUND / 1000) * fps)) * round;
+  const anim = new BJS.Animation(
+    "deal", "position", fps,
+    BJS.Animation.ANIMATIONTYPE_VECTOR3,
+    BJS.Animation.ANIMATIONLOOPMODE_CONSTANT
   );
+  anim.setKeys([
+    { frame: 0, value: from },
+    { frame: hold, value: from },
+    { frame: hold + frames, value: target },
+  ]);
+  anim.setEasingFunction(easeOut());
+  /* beginDirectAnimation, not CreateAndStartAnimation: it runs the animation
+     without hanging it on the mesh, so a piece that is mid-deal when the next
+     stage is laid is simply given a new one and does not fight an old. */
+  ctx.scene.beginDirectAnimation(mesh, [anim], 0, hold + frames, false);
 }
 
 function easeOut() {

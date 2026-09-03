@@ -119,11 +119,17 @@ export function setBlocksValue(n) {
     for (let i = 0; i < part.n; i++) pieces.push({ ...part.dims });
   }
 
+  /* Pieces SET ASIDE are kept. They are a record of what a long division has
+     already dealt out (js/divblocks.js), not part of the number being written —
+     and the last line of a division comes through here, so without this the
+     whole working is swept up at the very moment it is finished. */
+  const kept = store.blocks.filter((b) => b.aside);
+
   // keep the highlight tags of what was there, in order, so colours survive
-  const tags = store.blocks.map((b) => b.tag);
-  store.blocks = pieces.map((d, i) => ({
+  const tags = store.blocks.filter((b) => !b.aside).map((b) => b.tag);
+  store.blocks = kept.concat(pieces.map((d, i) => ({
     id: nextId(), ...d, x: 0, z: 0, angle: 0, tag: tags[i] ?? null,
-  }));
+  })));
 
   /* Laid out clear of everything else on the canvas rather than tidied over the
      whole of it — the frames and charts are where they were put, and sync must
@@ -133,9 +139,12 @@ export function setBlocksValue(n) {
      overlaps a place-value chart is standing in one of its columns, and the
      chart counts it — so a sloppy check here makes the chart read more than the
      number sync just handed it. */
-  arrange(store.blocks, store.things);
-  const grid = occupancy(store.things);
-  for (const b of store.blocks) {
+  /* Laid out clear of the record as well as of the things: a group that has been
+     dealt out stays exactly where it was dealt. */
+  const live = store.blocks.filter((b) => !b.aside);
+  arrange(live, store.things.concat(kept));
+  const grid = occupancy(store.things.concat(kept));
+  for (const b of live) {
     const f = footprint(b);
     if (!fits(grid, b.x, b.z, f.l, f.w, CFG.gap)) {
       const spot = findSpot(grid, f.l, f.w, b);
@@ -183,7 +192,8 @@ export function afterBlocks() {
 }
 
 export function totalUnits() {
-  return store.blocks.reduce((s, b) => s + b.l * b.w * b.h, 0);
+  // the same rule state.js follows: what has been dealt out is not what is left
+  return store.blocks.reduce((s, b) => (b.aside ? s : s + b.l * b.w * b.h), 0);
 }
 
 /** Turn sync on or off, and bring everything into line the moment it goes on. */

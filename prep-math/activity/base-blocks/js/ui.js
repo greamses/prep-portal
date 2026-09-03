@@ -137,6 +137,13 @@ export function mountUI({
     tip: () => ops.tipSelected(),
     snapGrid: () => toggleSnap("grid"),
     snapSide: () => toggleSnap("side"),
+    /* Nothing is lost by turning these off — the Reading panel still says what
+       the canvas comes to, and the trade is still on every block key. */
+    quiet: () => {
+      store.quiet = !store.quiet;
+      if (store.quiet) el.toast.classList.remove("is-on");
+      else say("Pop-ups on again.");
+    },
     /* A mode, so it is a press that stays down: while it is on, the CARDS
        themselves are what you are handling (js/pick.js). */
     pick: () => {
@@ -462,6 +469,7 @@ export function mountUI({
     snapSide: () => run(ACTIONS.snapSide),
     hand: () => onHand(),
     pick: () => run(ACTIONS.pick),
+    quiet: () => run(ACTIONS.quiet),
     view: () => toggleFlat(),
     all: () => run(() => { ops.selectAll(); say("Everything selected."); }),
     clear: () => { closeMenus(); run(() => { store.selection = new Set(); }); },
@@ -514,7 +522,14 @@ export function mountUI({
 
   function update() {
     const base = store.base;
-    const total = store.blocks.reduce((n, b) => n + b.l * b.w * b.h, 0);
+    /* The SAME count sync passes round (js/sync.js), not a third copy of the
+       arithmetic — this one quietly went on counting pieces that had been dealt
+       out and set aside by a long division, so the pill said 305 while every
+       other tool on the canvas said 25. */
+    const total = totalUnits();
+    /* What a division has already shared out is still on the paper, so it is
+       said here rather than left to look like blocks that went missing. */
+    const dealt = store.blocks.reduce((n, b) => (b.aside ? n + b.l * b.w * b.h : n), 0);
 
     /* Tiles are not units and must never be counted as any, so when there are
        tiles on the canvas the pill reads the EXPRESSION they come to instead —
@@ -539,10 +554,12 @@ export function mountUI({
         : "on the canvas";
     } else {
       setMath(el.count, String(total), String(total));
+      const shared = dealt ? ` · ${math(String(dealt), String(dealt))} shared out` : "";
       el.countSub.innerHTML =
-        base === 10
+        (base === 10
           ? `unit${total === 1 ? "" : "s"} on the canvas`
-          : `units · ${math(numTex(toBase(total, base), base), toBase(total, base))} in base ${baseWord(base)}`;
+          : `units · ${math(numTex(toBase(total, base), base), toBase(total, base))} in base ${baseWord(base)}`)
+        + shared;
     }
     typesetIn(el.countSub);
 
@@ -609,7 +626,7 @@ export function mountUI({
     lassoBtn.classList.toggle("is-on", pointer.lasso);
 
     for (const [act, on] of [["snapGrid", store.snap.grid], ["snapSide", store.snap.side],
-      ["pick", store.pick]]) {
+      ["pick", store.pick], ["quiet", store.quiet]]) {
       const b = $(`[data-act='${act}']`);
       if (!b) continue;
       b.setAttribute("aria-pressed", String(on));
@@ -627,7 +644,7 @@ export function mountUI({
 
     // one line of feedback
     const msg = store.message;
-    if (msg && msg.at !== lastMessage) {
+    if (msg && msg.at !== lastMessage && !store.quiet) {
       lastMessage = msg.at;
       el.toast.textContent = msg.text;
       el.toast.dataset.kind = msg.kind;

@@ -5,48 +5,87 @@
    what it LOOKS like on the paper, and it is the half that answers "but where
    did the 4 come from?".
 
-   305 shared between 7. You cannot share 3 hundreds between 7, so you break
-   them: THIRTY TENS. Now the question is one anybody can act out — how many
-   groups of 7 tens can you make out of 30? Four, with 2 tens over. That is the
-   4 in the answer and that is the remainder, and both of them are sitting on
-   the paper in front of you:
+   ── the divisor is how many PILES there are ───────────────────────────────
+   305 shared between 7 makes SEVEN piles. Not four groups of seven — seven
+   groups, one for each share, and the answer is how much ends up in each of
+   them. That is the whole picture, and it is the one the sum is written to
+   produce: 43 in every pile, and 4 that would not go round.
 
-       ▭▭▭▭▭▭▭   ▭▭▭▭▭▭▭   ▭▭▭▭▭▭▭   ▭▭▭▭▭▭▭     ▭▭    ▪▪▪▪▪
-       ── 4 groups of 7 tens ─────────────────    over   the 5
-                                                         not yet
-                                                         brought down
+   The piles are there from the first moment and they never move. Each stage of
+   the working deals ONE PLACE into them:
 
-   ── the blocks are the same number, arranged ──────────────────────────────
-   Nothing is added or taken away to make the groups: 4×7 + 2 tens + 5 units is
-   305, the number the page is still holding. The stage does not change WHAT is
-   on the paper, only how it is laid out — until the subtraction, when the
-   grouped tens are taken away and 25 is what is left. That is why the count
-   drops exactly when the S of DMSB is written and not before.
+       3 hundreds will not go between 7, so they are broken: THIRTY TENS.
+       Deal the tens round: four to each pile — that is the 4 in the answer —
+       and 2 tens will not go round again. Those 2 tens break into 20 ones,
+       the 5 comes down to join them, and 25 ones are dealt round: three each,
+       which is the 3, and 4 left over, which is the remainder.
 
-   ── colour is not used to say "group" ─────────────────────────────────────
+       ┌──────┐ ┌──────┐ ┌──────┐        the working heap
+       │ ▭▭▭▭ │ │ ▭▭▭▭ │ │ ▭▭▭▭ │        ▪▪▪▪
+       │  ▪▪▪ │ │  ▪▪▪ │ │  ▪▪▪ │        4 over
+       └──────┘ └──────┘ └──────┘
+        43       43       43   … seven of them
+
+   ── how it is animated ────────────────────────────────────────────────────
+   Pieces KEEP THEIR IDENTITY across a stage, so a ten that goes into a pile is
+   the same block gliding out of the heap and into the pile — not one block
+   vanishing and another appearing somewhere else. And they are dealt in ROUNDS:
+   every pile gets its first ten together, then its second, then its third. That
+   stagger is the whole argument for why the answer is four — you watch four
+   rounds go out and the fifth will not go round.
+
+   The frame the picture lives in is measured from the WHOLE sum before the first
+   piece is laid, so nothing shifts about half way through: a pile that has been
+   dealt to stays exactly where it is for the rest of the working.
+
+   ── what is counted ───────────────────────────────────────────────────────
+   A piece dealt into a pile is marked `aside` once the subtraction is written.
+   It is still on the paper and still in view — that is the point — but it is no
+   longer part of what is LEFT to share, so it is not in the canvas total.
+   Counting it again would say the sum had never moved. So the canvas reads 305,
+   then 25, then 4, while all 305 stay where you can see them.
+
+   ── colour is not used to say "pile" ──────────────────────────────────────
    On this canvas colour says which PLACE a piece is and nothing else, so the
-   groups are told apart by the GAPS between them. A group is a slab of pieces
-   that touch; the space is the grouping.
+   piles are told apart by the GAPS between them. A pile is a slab of pieces that
+   touch; the space is the grouping.
 
    ── when it stands aside ──────────────────────────────────────────────────
-   A stage with more pieces than the canvas will hold, or working in a place
-   bigger than a cube, is not laid out at all — the caller falls back to simply
-   showing the number. Half a picture is worse than none here.
+   Too many piles to read, more pieces in a place than the canvas will hold, or
+   working in a place bigger than a cube: none of those is laid out at all and
+   the caller falls back to simply showing the number. Half a picture is worse
+   than none here.
    ========================================================================== */
 
 import { CFG, placeAt, placeDims } from "./config.js";
 import { store, nextId } from "./state.js";
-import { occupancy, findSpot, mark } from "./layout.js";
+import { occupancy, findSpot } from "./layout.js";
 import { planOf, leftToShare } from "./longdiv.js";
 
-/* Cells left between one group and the next. Two, not one: one cell is the gap
+/* Cells left between one pile and the next. Two, not one: one cell is the gap
    the canvas already leaves between any two pieces, and a grouping you have to
    measure is not a grouping you can see. */
 const GROUP_GAP = 2;
 
-/* Past this many pieces in the working place the groups are wider than the
-   paper is useful, and the picture stops teaching anything. */
+/* Between the places WITHIN a pile — the tens and the ones of the same 43. One
+   cell, so they read as one pile with two kinds of piece in it. */
+const ROW_GAP = 1;
+
+/* Between one block-of-the-base and the next within a single place: thirty tens
+   are three hundreds standing apart, not one column of thirty. */
+const BLOCK_GAP = 1;
+
+/* Between the piles and the heap that is still to be shared. Wider than any gap
+   inside the picture, because that is the one division that matters: what has
+   been given out, and what has not. */
+const APART = 4;
+
+/* Past this many pieces in the working place the heap is wider than the paper is
+   useful, and the picture stops teaching anything. */
 const MAX_HEAP = 40;
+
+/* More piles than this and you cannot see them as piles — you see a wall. */
+const MAX_GROUPS = 12;
 
 /* The four places blocks come in. Beyond a cube there is no piece to lay out. */
 const TOP_POWER = 3;
@@ -54,85 +93,130 @@ const TOP_POWER = 3;
 /** Ten, a hundred, a thousand — said the way the sentence wants it. */
 const PLACE_WORDS = ["ones", "tens", "hundreds", "thousands"];
 
+const wordFor = (power, base) => PLACE_WORDS[power] || `lots of ${base ** power}`;
+const oneOf = (power, n, base) => {
+  const w = wordFor(power, base);
+  return n === 1 ? w.replace(/s$/, "") : w;
+};
+
 /**
  * What the paper should be showing at this stage of the working.
  *
- * Returns null when there is nothing to show or the stage will not lay out, and
- * the caller should fall back to the plain number.
+ * Returns null when the stage will not lay out and the caller should fall back
+ * to the plain number. When the sum is FINISHED it still returns a stage — the
+ * finished picture, seven piles of 43 and a remainder of 4, is the one worth
+ * looking at longest and it would be a poor joke to sweep it away at the end.
  */
 export function stageOf(thing) {
   const plan = planOf(thing);
-  const e = plan.entries[thing.done];
-  if (!e) return null;                       // finished; the remainder is all
-  const s = e.step;
-  const tail = plan.digits.length - 1 - s.i; // digits not yet brought down
-  if (tail > TOP_POWER) return null;         // no block is worth that much
+  if (plan.divisor < 2 || plan.divisor > MAX_GROUPS) return null;
 
-  /* GROUPED once the answer's figure is known — which is exactly after the D of
+  const e = plan.entries[thing.done];
+  const done = !e;
+  const s = done ? plan.steps[plan.steps.length - 1] : e.step;
+  const power = done ? 0 : plan.digits.length - 1 - s.i;
+  if (power > TOP_POWER) return null;
+
+  /* DEALT once the answer's figure is known — which is exactly after the D of
      DMSB and before the S. Ask it first and the heap is unbroken, which is the
-     question: how many groups of seven can you make out of these? */
-  const grouped = e.kind === "p" || e.kind === "d";
-  const heap = s.cur;                        // pieces of the working place
+     question: thirty tens, seven piles, how many each? */
+  const grouped = done || e.kind === "p" || e.kind === "d";
+  const heap = done ? plan.remainder : s.cur;
   if (heap > MAX_HEAP) return null;
 
-  const per = plan.divisor;
-  const groups = grouped ? s.q : 0;
-  const spare = heap - groups * per;
+  const groups = plan.divisor;
+  const per = done || !grouped ? 0 : s.q;
+  const spare = done ? plan.remainder : heap - per * groups;
+
+  /* What every pile is holding already, from the stages that are done with. */
+  const had = [];
+  for (const st of plan.steps) {
+    if (st.q <= 0) continue;
+    if (!done && st.i >= s.i) continue;      // this stage's round is `per`
+    const p = plan.digits.length - 1 - st.i;
+    if (p > TOP_POWER) return null;
+    had.push({ power: p, n: st.q });
+  }
 
   /* The digits still to come down, each at its own place, kept to one side. */
   const rest = [];
-  for (let k = s.i + 1; k < plan.digits.length; k++) {
-    const power = plan.digits.length - 1 - k;
-    if (plan.digits[k]) rest.push({ power, n: plan.digits[k] });
+  if (!done) {
+    for (let k = s.i + 1; k < plan.digits.length; k++) {
+      if (plan.digits[k]) rest.push({ power: plan.digits.length - 1 - k, n: plan.digits[k] });
+    }
   }
 
-  const pieces = groups * per + spare + rest.reduce((n, r) => n + r.n, 0);
+  const each = had.reduce((n, h) => n + h.n, 0) + per;
+  const loose = grouped ? spare : heap;
+  const pieces = groups * each + loose + rest.reduce((n, r) => n + r.n, 0);
   if (pieces > CFG.maxBlocks) return null;
 
   return {
-    power: tail, per, groups, spare, rest, heap,
-    total: leftToShare(thing),
-    grouped,
+    power, groups, per, spare, had, rest, heap, grouped, done, loose,
+    each,                                   // what one pile is holding now
+    total: done ? plan.remainder : leftToShare(thing),
   };
 }
 
-/** "4 groups of 7 tens, and 2 tens over." */
+/** "4 tens each for the 7 piles, and 2 tens over." */
 export function stageSentence(stage, base) {
   if (!stage) return "";
-  const word = PLACE_WORDS[stage.power] || `${base}s`;
-  const one = word.replace(/s$/, "");
+  if (stage.done) {
+    const each = stage.had.map((h) => `${h.n} ${wordFor(h.power, base)}`).join(" and ");
+    const over = stage.spare
+      ? `, and ${stage.spare} ${oneOf(0, stage.spare, base)} left over`
+      : ", and nothing left over";
+    return `${stage.groups} piles with ${each} in each${over}.`;
+  }
   if (!stage.grouped) {
-    return `${stage.heap} ${word} on the paper — how many groups of ${stage.per}?`;
+    return `${stage.heap} ${wordFor(stage.power, base)} on the paper, `
+      + `${stage.groups} piles — how many each?`;
   }
   const over = stage.spare
-    ? `, and ${stage.spare} ${stage.spare === 1 ? one : word} over`
+    ? `, and ${stage.spare} ${oneOf(stage.power, stage.spare, base)} over`
     : ", with none over";
-  return `${stage.groups} group${stage.groups === 1 ? "" : "s"} of ${stage.per} `
-    + `${word} on the paper${over}.`;
+  return `${stage.per} ${oneOf(stage.power, stage.per, base)} each `
+    + `for the ${stage.groups} piles${over}.`;
 }
 
 /**
- * What a stage leaves behind when its groups are taken away.
+ * The note that goes beside the piles when a round has been dealt.
  *
- * The groups are the working. Sweeping them off the paper at the subtraction
- * loses the very thing that was shown — so before they go they are written on a
- * note and the note stays on the canvas. At the end of a division the notes read
- * down the page as the whole sum: what was made into groups at each stage, what
- * that came to, and what was left.
+ * The piles themselves are the record and they stay; this only LABELS them, so
+ * that at the end the notes read down the page as the working: what went into
+ * each pile at this stage, what that came to altogether, and what would not go
+ * round. It never replaces the blocks.
  */
 export function groupNote(stage, base) {
-  if (!stage || !stage.grouped) return "";
-  const word = PLACE_WORDS[stage.power] || `${base}s`;
-  const one = word.replace(/s$/, "");
-  const worth = stage.groups * stage.per * base ** stage.power;
+  if (!stage || !stage.grouped || stage.done || !stage.per) return "";
+  const word = wordFor(stage.power, base);
+  const worth = stage.per * stage.groups * base ** stage.power;
   const over = stage.spare
-    ? `\n${stage.spare} ${stage.spare === 1 ? one : word} over`
+    ? `\n${stage.spare} ${oneOf(stage.power, stage.spare, base)} over`
     : "\nnone over";
-  return `${stage.groups} × ${stage.per} ${word}\n= ${stage.groups * stage.per} `
-    + `${word} = ${worth}${over}`;
+  return `${stage.per} ${word} each\n× ${stage.groups} piles = `
+    + `${stage.per * stage.groups} ${word}\n= ${worth}${over}`;
 }
 
 /* ── laying it out ────────────────────────────────────────────────────────── */
+
+/**
+ * The round that has just been dealt is no longer part of what is left.
+ *
+ * Nothing moves and nothing is deleted: the pieces stay in the piles they were
+ * dealt into, which is the whole point — the learner watched four tens go into
+ * every pile and they are still there to be counted. All that changes is that
+ * they stop counting as "still to share", which is what the subtraction says.
+ */
+export function setAside(thing) {
+  let n = 0;
+  for (const b of store.blocks) {
+    if (b.group == null || b.aside) continue;
+    b.aside = true;
+    n += 1;
+  }
+  return n;
+}
 
 /** One piece of the place at `power`, in this base. */
 function pieceOf(power, base) {
@@ -140,74 +224,235 @@ function pieceOf(power, base) {
 }
 
 /**
+ * How `n` pieces of one place lie together.
+ *
+ * A row as wide as the base: ten units line up in a row of ten, and ten rods —
+ * which are already a base long each — stack one under another into the square
+ * they make. That is how the pieces are meant to go together, so the shape of a
+ * pile is the shape the blocks themselves argue for.
+ *
+ * And a place never runs deeper than the base: the eleventh row starts a new
+ * block beside the first. Thirty tens is not a column thirty deep, it is THREE
+ * HUNDREDS standing side by side, which is exactly the fact the first line of
+ * this division turns on.
+ */
+function stackOf(power, n, base) {
+  const dim = pieceOf(power, base);
+  const perRow = Math.max(1, Math.round(base / dim.l));
+  const rows = Math.max(1, Math.ceil(n / perRow));
+  const blocks = Math.max(1, Math.ceil(rows / base));
+  const blockWide = perRow * dim.l;
+  return {
+    dim, perRow, blockWide, cap: base,
+    wide: blocks * blockWide + (blocks - 1) * BLOCK_GAP,
+    deep: Math.max(1, Math.min(rows, base)) * dim.w,
+  };
+}
+
+/** Where the k-th piece of a stack sits, measured from its top-left corner. */
+function posIn(s, k) {
+  const row = Math.floor(k / s.perRow);
+  return {
+    dx: Math.floor(row / s.cap) * (s.blockWide + BLOCK_GAP) + (k % s.perRow) * s.dim.l,
+    dz: (row % s.cap) * s.dim.w,
+  };
+}
+
+/**
+ * The shape of ONE pile, measured from what it will hold when the sum is done.
+ *
+ * Measured from the END and not from the stage in hand, so that the tens dealt
+ * in the first round sit in the same cells for the rest of the working and the
+ * ones dealt in the second go UNDER them rather than shoving them along. A
+ * picture whose earlier steps move while you are looking at the later ones is
+ * not a record of anything.
+ */
+function slotOf(places, base) {
+  const rows = [];
+  let wide = 0;
+  let deep = 0;
+  for (const p of places) {
+    if (!p.n) continue;
+    const s = stackOf(p.power, p.n, base);
+    rows.push({ ...s, power: p.power, dz: deep });
+    wide = Math.max(wide, s.wide);
+    deep += s.deep + ROW_GAP;
+  }
+  return { rows, wide: Math.max(1, wide), deep: Math.max(1, deep - (rows.length ? ROW_GAP : 0)) };
+}
+
+/** The heap still to be shared: what is over at this place, then what has not come down. */
+function heapOf(power, loose, rest, base) {
+  const parts = [];
+  let x = 0;
+  let deep = 0;
+  if (loose > 0) {
+    const s = stackOf(power, loose, base);
+    parts.push({ ...s, power, n: loose, dx: 0 });
+    x = s.wide + APART;
+    deep = s.deep;
+  }
+  for (const r of rest) {
+    const s = stackOf(r.power, r.n, base);
+    parts.push({ ...s, power: r.power, n: r.n, dx: x });
+    x += s.wide + APART;
+    deep = Math.max(deep, s.deep);
+  }
+  return { parts, wide: Math.max(1, x ? x - APART : 1), deep: Math.max(1, deep) };
+}
+
+/**
+ * The rectangle the whole picture lives in, measured from the plan.
+ *
+ * Every stage is laid inside this one frame, and the frame is found a home on
+ * the canvas ONCE. That is what stops the piles wandering: they are not looked
+ * up a fresh place each time the working moves on.
+ */
+function frameOf(plan, base) {
+  const ends = [];
+  for (const st of plan.steps) {
+    if (st.q > 0) ends.push({ power: plan.digits.length - 1 - st.i, n: st.q });
+  }
+  const slot = slotOf(ends, base);
+  const cols = Math.max(1, Math.ceil(Math.sqrt(plan.divisor)));
+  const rows = Math.ceil(plan.divisor / cols);
+
+  /* Room for the biggest the heap ever gets, so it never pushes the piles about
+     when a place is broken down and twenty ones appear where two tens were. */
+  let heapWide = 1;
+  let heapDeep = 1;
+  for (const st of plan.steps) {
+    const rest = [];
+    for (let k = st.i + 1; k < plan.digits.length; k++) {
+      if (plan.digits[k]) rest.push({ power: plan.digits.length - 1 - k, n: plan.digits[k] });
+    }
+    const h = heapOf(plan.digits.length - 1 - st.i, st.cur, rest, base);
+    heapWide = Math.max(heapWide, h.wide);
+    heapDeep = Math.max(heapDeep, h.deep);
+  }
+
+  const pilesWide = cols * slot.wide + (cols - 1) * GROUP_GAP;
+  const pilesDeep = rows * slot.deep + (rows - 1) * GROUP_GAP;
+  return {
+    slot, cols, rows, heapWide, heapDeep,
+    wide: Math.max(1, Math.round(Math.max(pilesWide, heapWide))),
+    deep: Math.max(1, Math.round(pilesDeep + APART + heapDeep)),
+  };
+}
+
+/**
  * Put the stage on the canvas as blocks.
  *
- * Everything is measured first and given ONE clear rectangle, rather than each
- * piece being found a home of its own: the whole point is the shape of the
- * arrangement, and a group that got pushed round a chart is not a group any
- * more. Returns false if there is nowhere it will go.
+ * Pieces already on the paper are REUSED wherever one of the right place is
+ * free — the nearest one, and a piece already in the pile it is wanted in for
+ * preference. That is what makes the picture animate rather than blink: the
+ * canvas glides every block from where it was to where it now belongs, so a ten
+ * being dealt is a ten travelling out of the heap and into a pile.
+ *
+ * Returns false if there is nowhere the frame will go.
  */
 export function layStage(thing, stage) {
   const base = store.base;
-  const dim = pieceOf(stage.power, base);
+  const plan = planOf(thing);
+  const frame = frameOf(plan, base);
 
-  /* The groups WRAP into rows rather than running off in one line. Four groups
-     of seven rods on a single line is sixty-six cells by seven — a strip so long
-     and thin that on screen you are looking down a corridor of it. Squared up it
-     reads at a glance, which is the whole job.
+  /* The frame is found a home once per sum. Change the sum and it is a different
+     picture and gets a fresh place; work the same sum on and the piles do not
+     move a cell from the first round to the last. */
+  const key = `${thing.dividend}/${thing.divisor}/${thing.base}/${base}`;
+  let at = thing.blockFrame && thing.blockFrame.key === key ? thing.blockFrame : null;
+  if (!at) {
+    const spot = findSpot(occupancy(store.things), frame.wide, frame.deep, { x: 0, z: 0 });
+    if (!spot) return false;
+    at = { key, x: spot.x, z: spot.z };
+    thing.blockFrame = at;
+  }
 
-     What is OVER goes on a row of its own under them, with a bigger gap: put a
-     spare piece directly beneath a group and it looks like part of it, which is
-     exactly the mistake this picture exists to prevent. */
-  const step = dim.l + GROUP_GAP;
-  const rowDeep = dim.w * stage.per + GROUP_GAP;
-  const perRow = Math.max(1, Math.ceil(Math.sqrt(stage.groups)));
-  const rows = Math.ceil(stage.groups / perRow);
-  const apart = GROUP_GAP * 2;          // between the groups and what is over
-
-  /* The last row: what is over, then the digits not yet brought down. */
-  const overDeep = stage.spare ? dim.w * stage.spare : 0;
-  let overWide = stage.spare ? dim.l + GROUP_GAP : 0;
-  for (const r of stage.rest) overWide += apart + pieceOf(r.power, base).l * r.n;
-  const restDeep = Math.max(0, ...stage.rest.map((r) => pieceOf(r.power, base).w));
-
-  const wide = Math.max(1, Math.round(Math.max(perRow * step, overWide)));
-  const lastDeep = Math.max(overDeep, restDeep);
-  const deep = Math.max(1, Math.round(rows * rowDeep + (lastDeep ? apart + lastDeep : 0)));
-
-  const grid = occupancy(store.things);
-  const spot = findSpot(grid, wide, deep, { x: 0, z: 0 });
-  if (!spot) return false;
-
-  const made = [];
-  const put = (d, x, z) => made.push({
-    id: nextId(), ...d, x, z, y: 0, angle: 0, tip: 0, tag: null,
-  });
+  /* What each pile is holding at this stage, by place. Each stage of a division
+     deals a different place, so a place names its row without ambiguity. */
+  const held = new Map(stage.had.map((h) => [h.power, h.n]));
+  if (stage.grouped && stage.per) held.set(stage.power, stage.per);
 
   /* Rows are laid from the FAR edge downwards, because z runs up the screen and
-     the groups should read before what is left over, top to bottom. */
+     the piles should read before the heap, top to bottom. */
+  const targets = [];
+  const top = at.z + frame.deep;
   for (let g = 0; g < stage.groups; g++) {
-    const row = Math.floor(g / perRow);
-    const col = g % perRow;
-    const z = spot.z + deep - (row + 1) * rowDeep + GROUP_GAP;
-    for (let k = 0; k < stage.per; k++) put(dim, spot.x + col * step, z + k * dim.w);
+    const gx = at.x + (g % frame.cols) * (frame.slot.wide + GROUP_GAP);
+    const gz = top - Math.floor(g / frame.cols) * (frame.slot.deep + GROUP_GAP);
+    for (const r of frame.slot.rows) {
+      const n = held.get(r.power) || 0;
+      if (!n) continue;
+      /* The round being dealt THIS stage: it is what animates, and it is not yet
+         off the working total — the subtraction has not been written. */
+      const fresh = stage.grouped && stage.per > 0 && r.power === stage.power;
+      for (let k = 0; k < n; k++) {
+        const p = posIn(r, k);
+        targets.push({
+          dim: r.dim,
+          x: gx + p.dx,
+          z: gz - r.dz - p.dz - r.dim.w,
+          group: g,
+          aside: !fresh,
+          /* Which round it goes out in. Every pile's first piece travels
+             together, then every pile's second — so you watch the tens go round
+             four times and see for yourself that a fifth will not. */
+          deal: fresh ? k : 0,
+        });
+      }
+    }
   }
 
-  let x = spot.x;
-  const z = spot.z;
-  for (let k = 0; k < stage.spare; k++) put(dim, x, z + k * dim.w);
-  if (stage.spare) x += dim.l + GROUP_GAP;
-  for (const r of stage.rest) {
-    x += apart;
-    const d = pieceOf(r.power, base);
-    for (let k = 0; k < r.n; k++) put(d, x + k * d.l, z);
-    x += d.l * r.n;
+  const heap = heapOf(stage.power, stage.loose, stage.rest, base);
+  for (const p of heap.parts) {
+    for (let k = 0; k < p.n; k++) {
+      const q = posIn(p, k);
+      targets.push({
+        dim: p.dim,
+        x: at.x + p.dx + q.dx,
+        z: at.z + frame.heapDeep - q.dz - p.dim.w,
+        group: null, aside: false, deal: 0,
+      });
+    }
   }
 
-  store.blocks = made;
-  mark(grid, spot.x, spot.z, wide, deep);
-  /* The blocks that were there are gone and their ids with them, so a selection
-     naming one is stale — the same rule sync.js follows. */
+  /* ── give every target a piece ──────────────────────────────────────────
+     A piece already sitting in the pile the target belongs to is left exactly
+     where it is; otherwise the nearest loose piece of the right place is the one
+     a hand would reach for, and reaching for the nearest is also what stops the
+     blocks crossing over one another on their way. */
+  const sig = (d) => `${d.l}|${d.w}|${d.h}`;
+  const spare = store.blocks.slice();
+  const taken = new Set();
+  const laid = [];
+  for (const t of targets) {
+    const want = sig(t.dim);
+    let best = null;
+    let score = Infinity;
+    for (const b of spare) {
+      if (taken.has(b.id) || sig(b) !== want) continue;
+      const home = b.group === t.group ? 0 : 1e7;
+      const far = (b.x - t.x) ** 2 + (b.z - t.z) ** 2;
+      if (home + far < score) { score = home + far; best = b; }
+    }
+    if (best) {
+      taken.add(best.id);
+      Object.assign(best, {
+        x: t.x, z: t.z, y: 0, angle: 0, tip: 0,
+        group: t.group, aside: t.aside, deal: t.deal,
+      });
+      laid.push(best);
+    } else {
+      laid.push({
+        id: nextId(), ...t.dim, x: t.x, z: t.z, y: 0, angle: 0, tip: 0, tag: null,
+        group: t.group, aside: t.aside, deal: t.deal,
+      });
+    }
+  }
+
+  store.blocks = laid;
+  /* Pieces that were traded away are gone and their ids with them, so a
+     selection naming one is stale — the same rule sync.js follows. */
   store.selection = new Set(
     [...store.selection].filter((id) => store.things.some((t) => t.id === id))
   );
