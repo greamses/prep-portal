@@ -16,9 +16,19 @@
 
        3 hundreds will not go between 7, so they are broken: THIRTY TENS.
        Deal the tens round: four to each pile — that is the 4 in the answer —
-       and 2 tens will not go round again. Those 2 tens break into 20 ones,
-       the 5 comes down to join them, and 25 ones are dealt round: three each,
-       which is the 3, and 4 left over, which is the remainder.
+       and 2 tens will not go round again. Those 2 tens BREAK THERE AND THEN
+       into 20 ones, the 5 comes down to join them, and 25 ones are dealt
+       round: three each, which is the 3, and 4 left over.
+
+   ── what is over is broken at once ───────────────────────────────
+   The moment a round has been dealt, whatever would not go round is broken into
+   the next place down — the 2 tens become 20 ones while you are looking at them,
+   because that is the only reason the working can carry on at all. The one
+   exception is the FINAL remainder: 4 ones at the end of 305 ÷ 7 are the answer
+   to the sum, and breaking them would answer a question nobody asked.
+
+   The digit waiting to come down stands apart from the broken pieces until it is
+   brought down, so the blocks never say more than the page does.
 
        ┌──────┐ ┌──────┐ ┌──────┐        the working heap
        │ ▭▭▭▭ │ │ ▭▭▭▭ │ │ ▭▭▭▭ │        ▪▪▪▪
@@ -59,7 +69,7 @@
 
 import { CFG, placeAt, placeDims } from "./config.js";
 import { store, nextId } from "./state.js";
-import { occupancy, findSpot } from "./layout.js";
+import { occupancy, findSpot, footprint } from "./layout.js";
 import { planOf, leftToShare } from "./longdiv.js";
 
 /* Cells left between one pile and the next. Two, not one: one cell is the gap
@@ -87,6 +97,15 @@ const MAX_HEAP = 40;
 /* More piles than this and you cannot see them as piles — you see a wall. */
 const MAX_GROUPS = 12;
 
+/* Piles to a row. Four, because a row of four is countable at a glance and a
+   seventh pile then reads as "one row and three" rather than as a queue. */
+const PER_ROW = 4;
+
+/* Loose pieces the heap will hold. Bigger than MAX_HEAP because breaking a
+   place down multiplies the count by the base while making every piece smaller:
+   six tens are six rods, but sixty ones pack into a square. */
+const MAX_LOOSE = 130;
+
 /* The four places blocks come in. Beyond a cube there is no piece to lay out. */
 const TOP_POWER = 3;
 
@@ -98,6 +117,56 @@ const oneOf = (power, n, base) => {
   const w = wordFor(power, base);
   return n === 1 ? w.replace(/s$/, "") : w;
 };
+
+/**
+ * What the paper should be showing at this stage of the working.
+ *
+ * Returns null when the stage will not lay out and the caller should fall back
+ * to the plain number. When the sum is FINISHED it still returns a stage — the
+ * finished picture, seven piles of 43 and a remainder of 4, is the one worth
+ * looking at longest and it would be a poor joke to sweep it away at the end.
+ */
+/**
+ * The loose pieces at a given point in the working, and the digits not yet
+ * brought down.
+ *
+ * Written apart from `stageOf` because the FRAME has to know how big the heap
+ * ever gets before the first piece is laid, and asking the same question of
+ * every entry in the plan is how it finds out.
+ */
+function heapAt(plan, done) {
+  const len = plan.digits.length;
+  const later = (from) => {
+    const out = [];
+    for (let k = from; k < len; k++) {
+      if (plan.digits[k]) out.push({ power: len - 1 - k, n: plan.digits[k] });
+    }
+    return out;
+  };
+  const e = plan.entries[done];
+  if (!e) return { power: 0, n: plan.remainder, waiting: [] };
+  const s = e.step;
+  const power = len - 1 - s.i;
+
+  /* Waiting to be brought down. The digit is NOT in the heap yet — bringing it
+     down is a move the learner makes, and blocks that have already made it for
+     them are blocks telling them the answer. */
+  if (e.kind === "b") {
+    return { power, n: s.cur - plan.digits[s.i], waiting: later(s.i) };
+  }
+  /* Before the round is dealt: the whole heap, unbroken, which IS the question. */
+  if (e.kind === "q") return { power, n: s.cur, waiting: later(s.i + 1) };
+
+  /* The round has been dealt and what would not go round is standing there in
+     the place it was dealt from — 2 TENS, not 20 ones. It is broken at the very
+     next entry, once the subtraction has been written: the page is asking
+     "30 take away 28" and blocks that had already broken themselves down would
+     be answering a question in ones that was asked in tens.
+
+     At the last step there IS no next entry, and what is over is the remainder
+     and the answer to the sum. It is never broken. */
+  return { power, n: s.rem, waiting: later(s.i + 1) };
+}
 
 /**
  * What the paper should be showing at this stage of the working.
@@ -138,21 +207,21 @@ export function stageOf(thing) {
     had.push({ power: p, n: st.q });
   }
 
-  /* The digits still to come down, each at its own place, kept to one side. */
-  const rest = [];
-  if (!done) {
-    for (let k = s.i + 1; k < plan.digits.length; k++) {
-      if (plan.digits[k]) rest.push({ power: plan.digits.length - 1 - k, n: plan.digits[k] });
-    }
-  }
+  /* The loose pieces, and the digits still to come down. */
+  const loose = heapAt(plan, thing.done);
+  if (loose.power < 0) return null;
+  const rest = loose.waiting;
+  const spread = loose.n + rest.reduce((n, r) => n + r.n, 0);
+  if (spread > MAX_LOOSE) return null;
 
   const each = had.reduce((n, h) => n + h.n, 0) + per;
-  const loose = grouped ? spare : heap;
-  const pieces = groups * each + loose + rest.reduce((n, r) => n + r.n, 0);
+  const pieces = groups * each + spread;
   if (pieces > CFG.maxBlocks) return null;
 
   return {
-    power, groups, per, spare, had, rest, heap, grouped, done, loose,
+    power, groups, per, spare, had, rest, heap, grouped, done,
+    loose: loose.n,                         // how many loose pieces
+    loosePower: loose.power,                // and what place they are in
     each,                                   // what one pile is holding now
     total: done ? plan.remainder : leftToShare(thing),
   };
@@ -169,6 +238,14 @@ export function stageSentence(stage, base) {
     return `${stage.groups} piles with ${each} in each${over}.`;
   }
   if (!stage.grouped) {
+    /* Between the subtraction and the bring-down the blocks say LESS than the
+       page: what was over has been broken down, but the next digit has not come
+       down to join it yet. Say what is actually there. */
+    const wait = stage.rest.reduce((n, r) => n + r.n, 0);
+    if (wait && stage.loose !== stage.heap) {
+      return `${stage.loose} ${oneOf(stage.loosePower, stage.loose, base)} `
+        + `on the paper, and ${wait} still to come down.`;
+    }
     return `${stage.heap} ${wordFor(stage.power, base)} on the paper, `
       + `${stage.groups} piles — how many each?`;
   }
@@ -238,14 +315,32 @@ function pieceOf(power, base) {
  */
 function stackOf(power, n, base) {
   const dim = pieceOf(power, base);
-  const perRow = Math.max(1, Math.round(base / dim.l));
+  /* A ROD STANDS ACROSS THE PAPER, not along it. Turned a quarter turn it is one
+     cell wide and a base deep, so rods sit side by side like palings and you can
+     count them along a row at a glance — four rods in a pile read as four. Laid
+     end-on and stacked they make the same square, but you have to count DOWN a
+     column to see how many, which is the one thing this picture is for. Only a
+     piece that is longer than it is wide is turned; a unit and a flat are square
+     and there is nothing to turn. */
+  const turn = dim.l !== dim.w ? Math.PI / 2 : 0;
+  const pw = turn ? dim.w : dim.l;         // how wide it is LYING LIKE THIS
+  const pd = turn ? dim.l : dim.w;         // and how deep
+  const perRow = Math.max(1, Math.round(base / pw));
+  /* A block is a square of the base: ten units across and ten down, or ten
+     turned rods side by side, both of which come to one hundred. */
+  const cap = Math.max(1, Math.floor(base / pd));
   const rows = Math.max(1, Math.ceil(n / perRow));
-  const blocks = Math.max(1, Math.ceil(rows / base));
-  const blockWide = perRow * dim.l;
+  const blocks = Math.max(1, Math.ceil(rows / cap));
+  const blockWide = perRow * pw;
   return {
-    dim, perRow, blockWide, cap: base,
-    wide: blocks * blockWide + (blocks - 1) * BLOCK_GAP,
-    deep: Math.max(1, Math.min(rows, base)) * dim.w,
+    dim, turn, pw, pd, perRow, cap, blockWide,
+    /* A single part-filled block is only as wide as what is in it — four rods
+       measure four, not the ten a full row would. Two or more and every block
+       but the last IS full, so the row is its true width. */
+    wide: blocks > 1
+      ? blocks * blockWide + (blocks - 1) * BLOCK_GAP
+      : Math.max(1, Math.min(n, perRow)) * pw,
+    deep: Math.max(1, Math.min(rows, cap)) * pd,
   };
 }
 
@@ -253,8 +348,8 @@ function stackOf(power, n, base) {
 function posIn(s, k) {
   const row = Math.floor(k / s.perRow);
   return {
-    dx: Math.floor(row / s.cap) * (s.blockWide + BLOCK_GAP) + (k % s.perRow) * s.dim.l,
-    dz: (row % s.cap) * s.dim.w,
+    dx: Math.floor(row / s.cap) * (s.blockWide + BLOCK_GAP) + (k % s.perRow) * s.pw,
+    dz: (row % s.cap) * s.pd,
   };
 }
 
@@ -314,21 +409,21 @@ function frameOf(plan, base) {
     if (st.q > 0) ends.push({ power: plan.digits.length - 1 - st.i, n: st.q });
   }
   const slot = slotOf(ends, base);
-  const cols = Math.max(1, Math.ceil(Math.sqrt(plan.divisor)));
+  const cols = Math.max(1, Math.min(plan.divisor, PER_ROW));
   const rows = Math.ceil(plan.divisor / cols);
 
   /* Room for the biggest the heap ever gets, so it never pushes the piles about
-     when a place is broken down and twenty ones appear where two tens were. */
+     when a place is broken down and twenty ones appear where two tens were.
+     Asked of every entry in the plan, because the heap changes shape WITHIN a
+     step as well as between them. */
   let heapWide = 1;
   let heapDeep = 1;
-  for (const st of plan.steps) {
-    const rest = [];
-    for (let k = st.i + 1; k < plan.digits.length; k++) {
-      if (plan.digits[k]) rest.push({ power: plan.digits.length - 1 - k, n: plan.digits[k] });
-    }
-    const h = heapOf(plan.digits.length - 1 - st.i, st.cur, rest, base);
-    heapWide = Math.max(heapWide, h.wide);
-    heapDeep = Math.max(heapDeep, h.deep);
+  for (let i = 0; i <= plan.entries.length; i++) {
+    const h = heapAt(plan, i);
+    if (h.power < 0) continue;
+    const box = heapOf(h.power, h.n, h.waiting, base);
+    heapWide = Math.max(heapWide, box.wide);
+    heapDeep = Math.max(heapDeep, box.deep);
   }
 
   const pilesWide = cols * slot.wide + (cols - 1) * GROUP_GAP;
@@ -362,7 +457,21 @@ export function layStage(thing, stage) {
   const key = `${thing.dividend}/${thing.divisor}/${thing.base}/${base}`;
   let at = thing.blockFrame && thing.blockFrame.key === key ? thing.blockFrame : null;
   if (!at) {
-    const spot = findSpot(occupancy(store.things), frame.wide, frame.deep, { x: 0, z: 0 });
+    /* THE BLOCKS GO ON THE LEFT AND THE PAGE ON THE RIGHT. They are two halves
+       of one argument and have to be read together - a picture found a home
+       wherever there happened to be room is a picture you go looking for. Lined
+       up along their top edges, so the first round dealt and the first line of
+       working are level with each other.
+
+       findSpot searches outward from there, so if something is already standing
+       in that space the picture lands as near to it as it can rather than on top
+       of it. */
+    const f = footprint(thing);
+    const want = {
+      x: Math.round(thing.x - frame.wide - APART),
+      z: Math.round(thing.z + f.w - frame.deep),
+    };
+    const spot = findSpot(occupancy(store.things), frame.wide, frame.deep, want);
     if (!spot) return false;
     at = { key, x: spot.x, z: spot.z };
     thing.blockFrame = at;
@@ -389,9 +498,9 @@ export function layStage(thing, stage) {
       for (let k = 0; k < n; k++) {
         const p = posIn(r, k);
         targets.push({
-          dim: r.dim,
+          dim: r.dim, turn: r.turn,
           x: gx + p.dx,
-          z: gz - r.dz - p.dz - r.dim.w,
+          z: gz - r.dz - p.dz - r.pd,
           group: g,
           aside: !fresh,
           /* Which round it goes out in. Every pile's first piece travels
@@ -403,14 +512,14 @@ export function layStage(thing, stage) {
     }
   }
 
-  const heap = heapOf(stage.power, stage.loose, stage.rest, base);
+  const heap = heapOf(stage.loosePower, stage.loose, stage.rest, base);
   for (const p of heap.parts) {
     for (let k = 0; k < p.n; k++) {
       const q = posIn(p, k);
       targets.push({
-        dim: p.dim,
+        dim: p.dim, turn: p.turn,
         x: at.x + p.dx + q.dx,
-        z: at.z + frame.heapDeep - q.dz - p.dim.w,
+        z: at.z + frame.heapDeep - q.dz - p.pd,
         group: null, aside: false, deal: 0,
       });
     }
@@ -438,13 +547,13 @@ export function layStage(thing, stage) {
     if (best) {
       taken.add(best.id);
       Object.assign(best, {
-        x: t.x, z: t.z, y: 0, angle: 0, tip: 0,
+        x: t.x, z: t.z, y: 0, angle: t.turn, tip: 0,
         group: t.group, aside: t.aside, deal: t.deal,
       });
       laid.push(best);
     } else {
       laid.push({
-        id: nextId(), ...t.dim, x: t.x, z: t.z, y: 0, angle: 0, tip: 0, tag: null,
+        id: nextId(), ...t.dim, x: t.x, z: t.z, y: 0, angle: t.turn, tip: 0, tag: null,
         group: t.group, aside: t.aside, deal: t.deal,
       });
     }
