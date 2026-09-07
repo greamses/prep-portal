@@ -110,6 +110,7 @@ export const FEATURES = [
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
+      { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },
       { id: "transversals", label: "Transversals", path: "/prep-math/activity/transversals" },
     ],

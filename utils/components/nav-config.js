@@ -177,9 +177,10 @@ const NAV_CONFIG = [
           { text: "Algebra Lab", href: "/prep-math/drag/index.html", description: "Drag-and-drop equation solving" },
           { text: "Algebra Moves", href: "/prep-math/activity/algebra-moves/index.html", description: "Name the move, watch the equation rearrange" },
           { text: "Equivalent Fractions", href: "/prep-math/activity/equivalent-fractions/index.html", description: "Visualize fraction equivalence" },
-          { text: "Polygon Angles", href: "/prep-math/activity/polygon-angles/index.html", description: "Explore angle rules and sums" },
-          { text: "Surface Area", href: "/prep-math/activity/surface-area/index.html", description: "Calculate area on 3D shapes" },
-          { text: "Transversals", href: "/prep-math/activity/transversals/index.html", description: "Learn parallel lines and angles" },
+          /* The four geometry studios are one link with a tab bar across the
+             top of each page (utils/components/geometry-tabs.js), rather than
+             four sibling entries the reader has to tell apart. */
+          { text: "Geometry", href: "/prep-math/activity/polygon-angles/index.html", description: "Angles, transversals, Pythagoras and surface area" },
         ],
       },
       {

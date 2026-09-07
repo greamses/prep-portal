@@ -78,3 +78,48 @@
   outline-offset: -2.5px;
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
 }
+
+/* ── Variants ─────────────────────────────────────────────────────────────
+   The exam-archive games all scroll, so the base bar sits in normal flow.
+   The prep-math geometry studios don't: two of them are fixed-height app
+   shells and two are a full-bleed canvas, hence these two modifiers. */
+
+/* Compact — for the fixed-height shells (Polygon Angles, Transversals), where
+   the bar is a flex row between the page header and the app grid and every
+   pixel it takes comes off the drawing. */
+.builder-tabs--compact {
+  gap: 0.85rem 0.4rem;
+  padding-top: 10px;
+  margin: 0 0 4px;
+  flex-shrink: 0;
+}
+.builder-tabs--compact .builder-tab.pp-pill {
+  font-size: 0.72rem;
+  padding: 0.3rem 0.7rem 0.34rem;
+}
+.builder-tabs--compact .builder-tab.pp-pill::before {
+  top: -7px;
+  width: 36px;
+  height: 12px;
+}
+
+/* Those two shells pin html/body to the viewport with `padding: 0`, which
+   cancels the 76px offset nav.css adds to clear the fixed site nav — so their
+   own 52px page header has always sat behind it, invisible and unreachable.
+   While the nav is up, drop that dead header and hand its space to the tab bar.
+   Polygon Angles hides the site nav once you open a lesson; that is the one
+   time the page header is really wanted, so it comes back and the tabs, which
+   belong to the browsing view, step out of the way. */
+.site-nav:not(.hidden) ~ header:has(~ .builder-tabs--compact) { display: none; }
+.site-nav:not(.hidden) ~ .builder-tabs--compact { margin-top: 76px; }
+.site-nav.hidden ~ .builder-tabs--compact { display: none; }
+
+/* Float — for the canvas pages (Pythagoras, Surface Area). The bar stays in
+   normal flow so it can never collide with the banner underneath it; it only
+   needs lifting above the canvas, which is painted behind everything. */
+.builder-tabs--float {
+  position: relative;
+  z-index: 20;
+  margin: 0;
+  padding-top: 12px;
+}

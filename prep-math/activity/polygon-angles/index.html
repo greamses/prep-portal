@@ -18,6 +18,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/game-tabs.css" />
   
     <script type="importmap">
       {
@@ -53,6 +55,9 @@
         <span class="header-label">Polygon Explorer</span>
       </div>
     </header>
+
+    <!-- One nav link, four studios: the bar is filled by geometry-tabs.js -->
+    <div class="builder-tabs builder-tabs--compact" data-tabs="geometry"></div>
 
     <div class="app">
       <!-- ========================================== -->
@@ -1236,6 +1241,7 @@
     <script src="./script.js"></script>
     <script src="/utils/components/loader.js"></script>
     <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="/utils/components/geometry-tabs.js"></script>
 
     <script>
       RobotTeacher.init({
