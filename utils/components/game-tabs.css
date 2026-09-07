@@ -123,3 +123,35 @@
   margin: 0;
   padding-top: 12px;
 }
+
+/* ── Fullscreen ───────────────────────────────────────────────────────────
+   The toggle lives at the end of the geometry tab bar (mounted by
+   geometry-tabs.js) and is deliberately NOT a .builder-tab, so it stays out of
+   the notes' colour rotation and reads as chrome rather than a destination. */
+.gt-fs-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  align-self: center;
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  background: var(--surface-primary);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition-base, 0.2s) ease,
+    box-shadow 0.2s ease;
+}
+.gt-fs-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.gt-fs-btn:active { transform: translateY(0); }
+.gt-fs-btn svg { width: 15px; height: 15px; }
+
+/* The fullscreen layout itself. Applied as soon as the page loads when the
+   preference is set, so tabbing between studios stays fullscreen even in the
+   moment before the browser hands back real fullscreen. */
+html.pp-geo-fs .site-nav { display: none; }
+html.pp-geo-fs body { padding-top: 0; }
+html.pp-geo-fs .site-nav:not(.hidden) ~ .builder-tabs--compact { margin-top: 0; }

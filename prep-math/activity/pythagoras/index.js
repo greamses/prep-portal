@@ -43,22 +43,33 @@ const T = {
 };
 const LAST_LANDING = T.movePiece(3)[1];
 
-/* --- PALETTES -------------------------------------------------------------
-   The four pieces are four shades of ONE hue on purpose: however far they
-   travel they still read as the square they were cut from. */
-const PALETTE_MULTI = {
-  triangle: '#F0A868',
-  short:    '#3B82F6',
-  hyp:      '#FF4911',
-  pieces:   ['#A6E22E', '#8FD41F', '#78BD17', '#61A314'],
-};
-const PALETTE_MONO = {
-  triangle: '#93B7D8',
-  short:    '#3B82F6',
-  hyp:      '#1E40AF',
-  pieces:   ['#7CB0E8', '#5E9BDD', '#4785CE', '#356FB4'],
-};
-const palette = () => (configState.multicolor ? PALETTE_MULTI : PALETTE_MONO);
+/* --- PALETTE --------------------------------------------------------------
+   Read from theme.css rather than written here, so the figure is in the site's
+   own accents and follows a re-theme. The four pieces are four shades of ONE
+   token on purpose: however far they travel they still read as the square they
+   were cut from. */
+function shades(token, count) {
+  const base = new THREE.Color(themeToken(token, '#7cc47c'));
+  const hsl = base.getHSL({ h: 0, s: 0, l: 0 });
+  return Array.from({ length: count }, (_, i) =>
+    new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l * (1 - i * 0.17)).getStyle());
+}
+
+function palette() {
+  return configState.multicolor
+    ? {
+        triangle: themeToken('--accent-warning', '#f0a868'),
+        short:    themeToken('--accent-secondary', '#6fb7e8'),
+        hyp:      themeToken('--accent-danger', '#f07a7a'),
+        pieces:   shades('--accent-success', 4),
+      }
+    : {
+        triangle: shades('--accent-secondary', 4)[3],
+        short:    themeToken('--accent-secondary', '#6fb7e8'),
+        hyp:      shades('--accent-secondary', 4)[2],
+        pieces:   shades('--accent-secondary', 4),
+      };
+}
 
 /* --- EASING / TIMING ------------------------------------------------------- */
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -75,10 +86,12 @@ const themeToken = (name, fallback) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
 let inkColor = new THREE.Color(themeToken('--ink', '#2a2723'));
-scene.background = new THREE.Color(themeToken('--app-bg', '#f0ece3'));
 
+/* Transparent, not filled with --app-bg: the site's paint-blob wash is painted
+   into <body> behind this canvas, and it is meant to show on every page. */
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 container.appendChild(renderer.domElement);
@@ -120,7 +133,7 @@ const DEPTH = 0.07;
 
 /* A polygon given as [[x, y], …] becomes a shallow extruded tile with an inked
    outline, built in whatever local frame the caller passes the points in. */
-function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false } = {}) {
+function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false, flat = false } = {}) {
   /* When the legs are equal two of a piece's corners coincide, which would
      leave a zero-length edge for the triangulator and the outline to chew on. */
   const pts = points2d.filter(([x, y], i) => {
@@ -128,7 +141,12 @@ function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false } = {}) {
     return Math.hypot(x - px, y - py) > 1e-9;
   });
   const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: false });
+  /* A see-through tile is built flat. Extruded, you would be looking through
+     its front cap, its back cap AND its side walls, and three coats of 20%
+     stack up to something much more solid than 20%. */
+  const geo = flat
+    ? new THREE.ShapeGeometry(shape)
+    : new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: false });
   const mesh = new THREE.Mesh(
     geo,
     new THREE.MeshLambertMaterial({
@@ -190,6 +208,28 @@ function cutBar(from, to, thickness) {
   return mesh;
 }
 
+/* A grab handle: the yellow key colour the rest of the site uses for the thing
+   you are meant to take hold of, with a ring so it reads on any tile under it.
+   `leg` says which leg this corner runs along. */
+function mkHandle(leg, at) {
+  const g = new THREE.Group();
+  g.position.set(at[0], at[1], DEPTH * 3);
+  g.userData.leg = leg;
+
+  const knob = new THREE.Mesh(
+    new THREE.SphereGeometry(0.19, 24, 16),
+    new THREE.MeshLambertMaterial({ color: new THREE.Color(themeToken('--accent-primary', '#f4c95d')) }),
+  );
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.19, 0.045, 10, 28),
+    new THREE.MeshBasicMaterial({ color: inkColor }),
+  );
+  knob.frustumCulled = false;
+  ring.frustumCulled = false;
+  g.add(knob, ring);
+  return g;
+}
+
 /* --- THE FIGURE ------------------------------------------------------------ */
 let fig = null;          // the geometry, straight from figure.js
 let parts = null;        // the meshes, keyed for applyProgress
@@ -236,7 +276,7 @@ function buildScene() {
   const shortSq = growingSquare(squares.short.base, squares.short.side, pal.short);
   const longSq  = growingSquare(squares.long.base,  squares.long.side,  pal.pieces[0]);
   const hypSq   = growingSquare(squares.hyp.base,   squares.hyp.side,   pal.hyp,
-                                { opacity: 0.2, z: -DEPTH * 0.6 });
+                                { opacity: 0.26, z: -DEPTH * 0.6, flat: true });
   hypSq.userData.outline.material.opacity = 0.85;
 
   /* The two cuts across the big square. */
@@ -269,10 +309,19 @@ function buildScene() {
   wholeMesh.userData.marker = new THREE.Object3D();
   wholeMesh.add(wholeMesh.userData.marker);
 
-  sceneGroup.add(hypSq, shortSq, longSq, triangle, rightAngle, ...cuts,
-                 ...pieceMeshes, wholeMesh);
+  /* Grab handles on the two free corners. Each one runs along its own leg, so
+     dragging changes that leg and nothing else — the right angle can't be
+     pulled out of true. */
+  const handles = [
+    mkHandle('b', [B[0], B[1]]),
+    mkHandle('a', [A[0], A[1]]),
+  ];
 
-  parts = { triangle, rightAngle, shortSq, longSq, hypSq, cuts, pieceMeshes, wholeMesh };
+  sceneGroup.add(hypSq, shortSq, longSq, triangle, rightAngle, ...cuts,
+                 ...pieceMeshes, wholeMesh, ...handles);
+
+  parts = { triangle, rightAngle, shortSq, longSq, hypSq, cuts, pieceMeshes,
+            wholeMesh, handles };
 
   /* Centre the figure on the origin so orbiting spins it about itself. */
   const bounds = boundsOf([
@@ -358,7 +407,9 @@ function buildLabels() {
     const el = document.createElement('div');
     el.className = 'float-label';
     el.textContent = spec.text;
-    el.style.background = spec.bg;
+    /* paper label, tile colour as the stripe down its side — printing on a
+       saturated fill would fight the rest of the page */
+    el.style.setProperty('--tile', spec.bg);
     el.style.opacity = '0';
     labelsContainer.appendChild(el);
     return el;
@@ -486,7 +537,7 @@ function applyProgress(v) {
      which is the only cue the proof is finished */
   const settled = eased(v, T.settle);
   hypSq.userData.outline.material.opacity = 0.85 + 0.15 * settled;
-  hypSq.material.opacity = 0.2 * (1 - settled * 0.6);
+  hypSq.material.opacity = 0.26 * (1 - settled * 0.6);
 
   updateBanner(v);
   updateLabels(v);
@@ -505,7 +556,13 @@ function freeBand() {
   return { top: a, bottom: b, height: b - a, centre: (a + b) / 2 };
 }
 
-function fitCamera() {
+/* Where the camera wants to be. animate() eases towards it rather than
+   snapping, which matters while the triangle is being dragged: the figure
+   changes size on every half-unit and a hard refit each time would make the
+   corner jump out from under the pointer. */
+let fitTarget = null;
+
+function fitCamera({ straighten = false } = {}) {
   const b = sceneGroup.userData.bounds;
   if (!b) return;
   const W = window.innerWidth, H = window.innerHeight;
@@ -524,11 +581,38 @@ function fitCamera() {
      middle of the window. */
   const offsetY = ((band.centre - H / 2) / H) * worldH;
 
-  camera.position.set(0, offsetY, dist);
-  controls.target.set(0, offsetY, 0);
   controls.minDistance = dist * 0.4;
   controls.maxDistance = dist * 2.2;
-  controls.update();
+  fitTarget = { dist, offsetY, straighten };
+  if (!camera.position.lengthSq()) {
+    camera.position.set(0, offsetY, dist);   // first frame: no easing to do
+    controls.target.set(0, offsetY, 0);
+    controls.update();
+    fitTarget = null;
+  }
+}
+
+/* One step of that easing. Runs only while a fit is outstanding, so it never
+   fights the user's own zoom. */
+function stepCameraFit() {
+  if (!fitTarget) return;
+  const { dist, offsetY, straighten } = fitTarget;
+  const k = 0.16;
+  const facing = new THREE.Vector3(0, 0, 1);
+  const here = camera.position.clone().sub(controls.target);
+  const dir = here.clone().normalize();
+  if (straighten) dir.lerp(facing, k).normalize();
+
+  const nextDist = lerp(here.length() || dist, dist, k);
+  controls.target.x = lerp(controls.target.x, 0, k);
+  controls.target.y = lerp(controls.target.y, offsetY, k);
+  camera.position.copy(controls.target).addScaledVector(dir, nextDist);
+
+  const settled =
+    Math.abs(nextDist - dist) < dist * 0.002 &&
+    Math.abs(controls.target.y - offsetY) < 0.002 &&
+    (!straighten || dir.angleTo(facing) < 0.004);
+  if (settled) fitTarget = null;
 }
 
 window.addEventListener('resize', () => {
@@ -599,7 +683,90 @@ const toggleModal = (show) => {
 document.getElementById('settings-btn').addEventListener('click', () => toggleModal(true));
 document.getElementById('close-settings').addEventListener('click', () => toggleModal(false));
 modalBackdrop.addEventListener('click', () => toggleModal(false));
-document.getElementById('reset-view-btn').addEventListener('click', () => fitCamera());
+document.getElementById('reset-view-btn').addEventListener('click', () => fitCamera({ straighten: true }));
+
+/* --- DRAGGING THE TRIANGLE -------------------------------------------------
+   Pick up either free corner and the leg it sits on follows the pointer. The
+   figure is rebuilt from the new legs, so the squares, the cut and the whole
+   dissection re-derive themselves — the identity holds for whatever triangle
+   you drag out, which is rather the point. */
+const LEG_MIN = 1, LEG_MAX = 6, LEG_STEP = 0.5;
+
+/* The hint has done its job either way once you have read it — it goes on the
+   first drag, and on a timer for anyone who is only here to watch. */
+const dismissHint = () => document.getElementById('drag-hint')?.classList.add('gone');
+setTimeout(dismissHint, 14000);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const figurePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const canvasEl = renderer.domElement;
+let dragging = null;
+let hasDragged = false;
+
+function setPointer(e) {
+  const r = canvasEl.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+}
+
+const handleUnder = () =>
+  parts?.handles.find((h) => raycaster.intersectObject(h, true).length > 0) || null;
+
+/* Where the pointer meets the plane the figure lies in, in figure coordinates. */
+function pointerInFigure() {
+  const hit = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(figurePlane, hit)) return null;
+  sceneGroup.worldToLocal(hit);
+  return hit;
+}
+
+const snapLeg = (v) =>
+  Math.min(LEG_MAX, Math.max(LEG_MIN, Math.round(v / LEG_STEP) * LEG_STEP));
+
+canvasEl.addEventListener('pointerdown', (e) => {
+  setPointer(e);
+  const h = handleUnder();
+  if (!h) return;
+  dragging = h.userData.leg;
+  controls.enabled = false;
+  canvasEl.setPointerCapture(e.pointerId);
+  canvasEl.style.cursor = 'grabbing';
+});
+
+canvasEl.addEventListener('pointermove', (e) => {
+  setPointer(e);
+  if (!dragging) {
+    canvasEl.style.cursor = handleUnder() ? 'grab' : '';
+    return;
+  }
+  const p = pointerInFigure();
+  if (!p) return;
+  /* The b corner runs along the horizontal leg and the a corner up the
+     vertical one, so only one coordinate of the pointer is listened to. */
+  const want = snapLeg(dragging === 'b' ? Math.abs(p.x) : Math.abs(p.y));
+  if (want === configState[dragging]) return;
+  configState[dragging] = want;
+  (dragging === 'b' ? legB : legA).value = String(want);
+  legAVal.textContent = fmt(configState.a);
+  legBVal.textContent = fmt(configState.b);
+  if (!hasDragged) {
+    hasDragged = true;
+    dismissHint();
+  }
+  rebuild();
+});
+
+for (const ev of ['pointerup', 'pointercancel']) {
+  canvasEl.addEventListener(ev, (e) => {
+    if (!dragging) return;
+    dragging = null;
+    controls.enabled = true;
+    canvasEl.style.cursor = '';
+    try { canvasEl.releasePointerCapture(e.pointerId); } catch { /* already gone */ }
+  });
+}
 
 /* Whole-number triples, so the arithmetic in the banner comes out clean. */
 const TRIPLES = [
@@ -608,10 +775,13 @@ const TRIPLES = [
   [2.5, 6, 6.5],
 ];
 const tripleRow = document.getElementById('triple-row');
-TRIPLES.forEach(([a, b, c]) => {
+TRIPLES.forEach(([a, b, c], i) => {
   const chip = document.createElement('button');
   chip.type = 'button';
-  chip.className = 'triple-chip';
+  /* A preset is a note you pick up, so it is one — colour-rotated like every
+     other row of choices on the site. */
+  chip.className = `pp-sticky pp-sticky--c${i % 6} triple-chip`;
+  chip.style.setProperty('--pp-note-tilt', `${i % 2 ? 1.6 : -2}deg`);
   chip.textContent = `${fmt(a)} · ${fmt(b)} · ${fmt(c)}`;
   chip.addEventListener('click', () => {
     legA.value = String(a);
@@ -653,9 +823,9 @@ function rebuild() {
   applyProgress(at);
 }
 
-/* Follow the site's light/dark switch. */
+/* Follow the site's light/dark switch — the tile colours are theme tokens, so
+   they have to be read again. */
 const themeObserver = new MutationObserver(() => {
-  scene.background = new THREE.Color(themeToken('--app-bg', '#f0ece3'));
   inkColor = new THREE.Color(themeToken('--ink', '#2a2723'));
   rebuild();
 });
@@ -675,6 +845,7 @@ function animate(now) {
     if (next >= 100) { setProgress(100); stopPlaying(); }
     else setProgress(next);
   }
+  stepCameraFit();
   controls.update();
   if (!playing) updateLabels(parseFloat(slider.value));
   renderer.render(scene, camera);
