@@ -957,33 +957,18 @@ header {
 /* The two activity notes read as a pair, apart from the six animations. */
 .anim-mode-btn--quiz { --pp-note-bg: #ffd7a3; }
 
-/* "Name the Pair" — the six named relationships.
-   One column, full names. Two columns put "Vertically Opposite" and
-   "Alternate Exterior" in a ~140px box, where the wrap plus each note's tilt
-   and shadow had them climbing over each other. The names are the thing being
-   learned, so they are not abbreviated to make a grid fit. */
-.quiz-names[hidden] { display: none; }
-.quiz-names {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.42rem;
+/* "Name the Pair" answers on the six relationship notes already in the row.
+   "Normal" is not one of the names, so it steps out while the activity runs. */
+.anim-modes.is-naming .anim-mode-btn[data-mode="none"] { display: none; }
+/* Waiting to be picked: a hair more lift than the rest, so the six read as a
+   live answer sheet rather than the mode row sitting there. */
+.anim-mode-btn.is-answering {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-1px);
 }
-.quiz-names .pp-btn {
-  font-size: 0.68rem;
-  padding: 0.3rem 0.55rem 0.34rem;
-  line-height: 1.2;
-  /* A list, not a scatter — barely any lean, so the rows stay parallel. */
-  --pp-note-tilt: -0.5deg;
+/* What you chose keeps the ink outline; the true one goes green, so a wrong
+   pick is always shown beside the right answer. */
+.anim-mode-btn.is-picked {
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
 }
-.quiz-names .quiz-name:nth-child(1) { --pp-note-bg: #fff3a8; }
-.quiz-names .quiz-name:nth-child(2) { --pp-note-bg: #e8c8ff; }
-.quiz-names .quiz-name:nth-child(3) { --pp-note-bg: #c8f0c0; }
-.quiz-names .quiz-name:nth-child(4) { --pp-note-bg: #bfe3ff; }
-.quiz-names .quiz-name:nth-child(5) { --pp-note-bg: #ffd7a3; }
-.quiz-names .quiz-name:nth-child(6) { --pp-note-bg: #b8ece2; }
-.quiz-name:disabled { opacity: 0.5; cursor: default; }
-/* What you chose gets the ink outline; the true one goes green, so a wrong
-   pick is always shown next to the right answer. */
-.quiz-name.is-picked { outline: 2.5px solid var(--ink); outline-offset: -2.5px; opacity: 1; }
-.quiz-name.is-answer { --pp-note-bg: #c8f0c0; opacity: 1; }
+.anim-mode-btn.is-answer { --pp-note-bg: #c8f0c0; }

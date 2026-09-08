@@ -21,7 +21,8 @@ const state = {
   activeWedge: null,
 
     protractor: false,
-  colors: true,         // off: every angle is plain paper, so position is the only clue
+    colors: true,         // off: every angle is plain paper, so position is the only clue
+  arcs: true,           // off: no sectors at all — see arcVisible()
   quiz: null            // see startQuiz() — null whenever an activity isn't running
 };
 
@@ -69,6 +70,8 @@ const QUIZ_MODES = {
   quiz_identify: 'Name the Pair',
 };
 const isQuiz = () => Boolean(QUIZ_MODES[state.animMode]);
+/* The six animation modes whose names are also the six answers. */
+const REL_MODES = ['vert_opp', 'corresponding', 'alt_int', 'alt_ext', 'cons_int', 'cons_ext'];
 /* At exactly 90° every angle is a right angle, so a pair is equal AND
    supplementary at once. The activities say so rather than marking one wrong. */
 const isRightAngleCase = () => Math.abs(state.tAngle - 90) < 0.5;
@@ -312,9 +315,10 @@ function nextQuestion() {
   } else {
     q.reference = randomAngle();
     q.pair = null;
-    q.want = 'equal';        // first an equal one, then a supplementary one
+        q.want = 'equal';        // first an equal one, then a supplementary one
     q.gotEqual = null;
     q.gotSupp = null;
+    q.tried = [];            // every angle chosen this round keeps its arc
   }
   syncQuizUI();
   render();
@@ -355,6 +359,9 @@ function answerEqualSupp(answer) {
 function answerPick(w) {
   const q = state.quiz;
   if (!q || q.settled || w === q.reference) return;
+  /* Revealed on being chosen, right or wrong — seeing a wrong pick next to the
+     reference is how you find out they were not the same size after all. */
+  if (!q.tried.includes(w)) q.tried.push(w);
   const equal = sameFamily(q.reference, w);
   const both = isRightAngleCase();
   const wantEqual = q.want === 'equal';
@@ -416,14 +423,20 @@ function syncQuizUI() {
     b.classList.toggle('is-picked', q.settled && q.picked === b.dataset.answer);
   });
 
-  const names = document.getElementById('quiz-names');
-  names.hidden = q.mode !== 'quiz_identify';
-  names.querySelectorAll('.quiz-name').forEach((b) => {
-    b.disabled = q.settled;
-    b.classList.toggle('is-picked', q.settled && q.picked === b.dataset.rel);
-    /* Once it is settled the true one is marked, so a wrong pick is shown
-       beside the right answer rather than on its own. */
-    b.classList.toggle('is-answer', q.settled && b.dataset.rel === q.rel);
+    /* "Name the Pair" is answered on the SIX RELATIONSHIP NOTES ALREADY IN THE
+     ROW — they carry those names for the animations, so asking the question on
+     a second set of identical buttons would just be the same words twice.
+     While the activity is running they answer instead of switching mode, and
+     "Normal" steps out of the row because it is not one of the names. */
+  const naming = q.mode === 'quiz_identify';
+  document.querySelector('.anim-modes').classList.toggle('is-naming', naming);
+  document.querySelectorAll('.anim-mode-btn').forEach((b) => {
+    const isRel = REL_MODES.includes(b.dataset.mode);
+    b.classList.toggle('is-picked', naming && q.settled && q.picked === b.dataset.mode);
+    /* Settled, the true one is marked too, so a wrong pick is shown beside the
+       right answer rather than on its own. */
+    b.classList.toggle('is-answer', naming && q.settled && b.dataset.mode === q.rel);
+    b.classList.toggle('is-answering', naming && isRel && !q.settled);
   });
 
     let prompt;
@@ -441,6 +454,30 @@ function syncQuizUI() {
   $quiz.prompt().classList.toggle('quiz-prompt--settled', q.settled);
   $quiz.score().textContent = `${q.right} of ${q.asked}`;
   $quiz.next().hidden = !q.settled;
+}
+
+/* ── WHEN AN ARC MAY BE DRAWN ─────────────────────────────────────────────
+   The sector is a size hint even with the colours off: a wide obtuse wedge and
+   a narrow acute one are told apart at a glance, which hands over the answer to
+   all three activities. So inside an activity the arc stops being decoration
+   and becomes the REVEAL — it is drawn only for the angle being asked about
+   and for the ones the learner has actually chosen, which is exactly when
+   comparing the two sizes is the point rather than a give-away.
+
+   Where an arc is withheld the sector is still drawn, transparent, so the
+   angle stays the same size to tap; a dot on its bisector says which angle it
+   is without saying how big. */
+function arcVisible(w) {
+  if (!state.arcs) return false;          // the settings switch: none, anywhere
+  const q = state.quiz;
+  if (!isQuiz() || !q) return true;       // exploring — show them all
+
+  if (q.mode === 'quiz_pick') {
+    // the question angle, plus everything tried against it
+    return w === q.reference || q.tried?.includes(w);
+  }
+  // the other two ask about a pair, so both arcs arrive together, on answering
+  return Boolean(q.settled) && q.pair.includes(w);
 }
 
 /* Which angles this activity wants lit, and how brightly. */
@@ -554,13 +591,30 @@ function render() {
         /* With colours off every angle is the same plain paper, so nothing about
        the fill says which family it is in — the activities then have to be
        reasoned out from position, which is the point of the switch. */
-    const fill = state.colors ? wdg.color : 'var(--surface-secondary)';
+        const fill = state.colors ? wdg.color : 'var(--surface-secondary)';
+    const showArc = arcVisible(wdg.w);
 
+    /* Withheld: the same sector, painted transparent. It keeps its full hit
+       area — an angle has to stay as easy to tap as it looks — while showing
+       nothing of its size. `transparent` rather than `none` on purpose: `none`
+       is unpainted, and an unpainted fill takes no pointer events. */
     gWdg.appendChild(el('path', {
       d: getSectorPath(wdg.cx, wdg.cy, wdg.start, wdg.sweep, r),
-      fill, stroke: strokeColor, 'stroke-width': '1.5',
-      'stroke-dasharray': strokeDash, opacity: opacity
+      fill: showArc ? fill : 'transparent',
+      stroke: showArc ? strokeColor : 'none', 'stroke-width': '1.5',
+      'stroke-dasharray': strokeDash, opacity: showArc ? opacity : 1
     }));
+
+    /* A dot on the bisector marks the angle when its arc is withheld: it says
+       WHICH angle without saying how big. */
+    if (!showArc && opacity > 0.1) {
+      const midDot = rad(wdg.start + wdg.sweep / 2);
+      gWdg.appendChild(el('circle', {
+        cx: wdg.cx + r * 0.5 * Math.cos(midDot),
+        cy: wdg.cy + r * 0.5 * Math.sin(midDot),
+        r: '3.5', fill: 'var(--ink)', opacity: opacity
+      }));
+    }
 
     let labelStr = '';
     if (state.showNames) labelStr += '∠' + wdg.w;
@@ -576,7 +630,8 @@ function render() {
         x: lx, y: ly + 3,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
         'font-family': 'JetBrains Mono,monospace', 'font-size': '11',
-                'font-weight': '700', fill: state.colors ? wdg.textFill : 'var(--ink)',
+                        'font-weight': '700',
+        fill: showArc && state.colors ? wdg.textFill : 'var(--ink)',
         opacity: opacity > 0.5 ? 1 : 0.7
       }));
     }
@@ -729,10 +784,17 @@ wireToggle('t-center', 'showCenter');
 wireToggle('t-grid', 'grid');
 wireToggle('t-protractor', 'protractor');
 wireToggle('t-colors', 'colors');
+wireToggle('t-arcs', 'arcs');
 
 // Animation Mode Selector
 document.querySelectorAll('.anim-mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    /* Mid-question in "Name the Pair", these six notes are the answer sheet,
+       not the mode switcher. The three activity notes still switch. */
+    if (state.animMode === 'quiz_identify' && REL_MODES.includes(btn.dataset.mode)) {
+      answerIdentify(btn.dataset.mode);
+      return;
+    }
     document.querySelectorAll('.anim-mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.animMode = btn.dataset.mode;
@@ -751,8 +813,14 @@ document.querySelectorAll('.anim-mode-btn').forEach(btn => {
     /* Leaving an activity clears the score; entering one deals a question.
        Moving between the two activities keeps the running total, since it is
        the same skill either way. */
-    if (isQuiz()) startQuiz(state.animMode);
-    else { state.quiz = null; syncQuizUI(); }
+        if (isQuiz()) startQuiz(state.animMode);
+    else {
+      state.quiz = null;
+      document.querySelector('.anim-modes').classList.remove('is-naming');
+      document.querySelectorAll('.anim-mode-btn').forEach((b) =>
+        b.classList.remove('is-picked', 'is-answer', 'is-answering'));
+      syncQuizUI();
+    }
     render();
   });
 });
@@ -760,9 +828,7 @@ document.querySelectorAll('.anim-mode-btn').forEach(btn => {
 document.querySelectorAll('.quiz-choice').forEach((btn) => {
   btn.addEventListener('click', () => answerEqualSupp(btn.dataset.answer));
 });
-document.querySelectorAll('.quiz-name').forEach((btn) => {
-  btn.addEventListener('click', () => answerIdentify(btn.dataset.rel));
-});
+
 document.getElementById('quiz-next').addEventListener('click', nextQuestion);
 
 /* Changing the figure mid-question would change the answer under the learner,

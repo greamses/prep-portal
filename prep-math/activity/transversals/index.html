@@ -142,14 +142,6 @@
                 <button class="pp-btn quiz-choice" type="button" data-answer="equal">Equal</button>
                 <button class="pp-btn quiz-choice" type="button" data-answer="supplementary">Supplementary</button>
               </div>
-              <div class="quiz-names" id="quiz-names" hidden>
-                <button class="pp-btn quiz-name" type="button" data-rel="vert_opp">Vertically Opposite</button>
-                <button class="pp-btn quiz-name" type="button" data-rel="corresponding">Corresponding</button>
-                <button class="pp-btn quiz-name" type="button" data-rel="alt_int">Alternate Interior</button>
-                <button class="pp-btn quiz-name" type="button" data-rel="alt_ext">Alternate Exterior</button>
-                <button class="pp-btn quiz-name" type="button" data-rel="cons_int">Co-interior</button>
-                <button class="pp-btn quiz-name" type="button" data-rel="cons_ext">Co-exterior</button>
-              </div>
               <div class="quiz-foot">
                 <span class="quiz-score" id="quiz-score">0 of 0</span>
                 <button class="pp-btn quiz-next" id="quiz-next" type="button" hidden>Next</button>
@@ -341,6 +333,16 @@
               <div class="ctrl-label">Show Center Anchor</div>
               <label class="toggle"
                 ><input type="checkbox" id="t-center" checked />
+                <div class="t-track"><div class="t-thumb"></div></div>
+              </label>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-label">
+                Angle Arcs
+                <small>In the activities, only the angle asked about and the ones you choose</small>
+              </div>
+              <label class="toggle"
+                ><input type="checkbox" id="t-arcs" checked />
                 <div class="t-track"><div class="t-thumb"></div></div>
               </label>
             </div>
