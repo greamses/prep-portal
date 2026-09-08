@@ -476,7 +476,15 @@ function arcVisible(w) {
     // the question angle, plus everything tried against it
     return w === q.reference || q.tried?.includes(w);
   }
-  // the other two ask about a pair, so both arcs arrive together, on answering
+
+  /* "Name the Pair" asks where the two angles SIT, not how big they are, so
+     both are drawn from the start — you cannot judge a position from a pair of
+     dots, and having to hunt for ∠4 and ∠8 by their labels is a reading test,
+     not a geometry one. */
+  if (q.mode === 'quiz_identify') return q.pair.includes(w);
+
+  /* "Equal or Supplementary" is the one where the size IS the answer, so its
+     two arcs stay back until the question is settled. */
   return Boolean(q.settled) && q.pair.includes(w);
 }
 
