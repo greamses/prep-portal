@@ -168,6 +168,9 @@
 .pp-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md, 0 4px 11px rgba(42, 39, 35, 0.12)); }
 .pp-btn:active { transform: translateY(0); }
 .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; box-shadow: none; }
+/* The class sets display, which outranks the UA sheet's [hidden] rule — so a
+   .pp-btn with the hidden attribute stays on screen unless we say otherwise. */
+.pp-btn[hidden] { display: none; }
 
 /* ── SETUP CAROUSEL ────────────────────────────────────────────────────
    Step-by-step wizard used by Drills/Puzzles/Geometry setup forms — one

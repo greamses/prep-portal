@@ -131,9 +131,56 @@ const playBtn       = document.getElementById('play-btn');
 /* --- MESH HELPERS ---------------------------------------------------------- */
 const DEPTH = 0.07;
 
+/* --- UNIT SQUARES ---------------------------------------------------------
+   The squares on the legs are ruled into 1×1 cells, so a² and b² are numbers
+   you can count rather than take on trust.
+
+   It is one repeating cell used as a colour map, not a mesh of little squares:
+   the map multiplies the tile's own colour, so the ruling is always a darker
+   shade of whatever the tile is and needs no second draw call. Both shape and
+   extrude geometries give a vertex its own x,y as its uv, so one repeat lands
+   on exactly one unit — and because the map rides the mesh, the cells travel
+   with a piece when it slides, which is the whole point: you watch b² worth of
+   unit squares arrive inside c². */
+let gridCanvas = null;
+function unitCell() {
+  if (!gridCanvas) {
+    const S = 64, LINE = 3;
+    gridCanvas = document.createElement('canvas');
+    gridCanvas.width = gridCanvas.height = S;
+    const g = gridCanvas.getContext('2d');
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, S, S);
+    /* Only two edges are ruled: repeated, each meets its neighbour's and
+       makes a single line, so the tiling stays seamless. */
+    g.fillStyle = 'rgba(20, 19, 15, 0.3)';
+    g.fillRect(0, 0, LINE, S);
+    g.fillRect(0, 0, S, LINE);
+  }
+  return gridCanvas;
+}
+
+/* Line up a tile's ruling with the figure's own lattice. A mesh is built about
+   its local origin, so the cells only fall on whole-number coordinates if the
+   map is shifted by wherever that origin sits between them.
+
+   Each tile gets its OWN texture off the shared canvas rather than a clone:
+   clones share a GPU source behind a reference count, and disposing them on
+   rebuild would pull that source out from under a cached original. A 64px cell
+   per tile costs nothing. */
+const frac = (v) => ((v % 1) + 1) % 1;
+function griddedAt(originX, originY) {
+  const t = new THREE.CanvasTexture(unitCell());
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  t.offset.set(frac(originX), frac(originY));
+  return t;
+}
+
 /* A polygon given as [[x, y], …] becomes a shallow extruded tile with an inked
    outline, built in whatever local frame the caller passes the points in. */
-function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false, flat = false } = {}) {
+function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false, flat = false, grid = null } = {}) {
   /* When the legs are equal two of a piece's corners coincide, which would
      leave a zero-length edge for the triangulator and the outline to chew on. */
   const pts = points2d.filter(([x, y], i) => {
@@ -154,6 +201,7 @@ function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false, flat = fa
       side: THREE.DoubleSide,
       transparent: fade || opacity < 1,
       opacity,
+      map: grid ? griddedAt(grid[0], grid[1]) : null,
     }),
   );
   mesh.position.z = z;
@@ -174,22 +222,26 @@ function tileMesh(points2d, color, { opacity = 1, z = 0, fade = false, flat = fa
 }
 
 /* A square that unfolds out of the edge it stands on. The geometry is built
-   with that edge along local x, so growing it is just scale.y from 0 to 1. */
-function growingSquare(base, side, color, opts) {
+   with that edge along local x, so growing it is just scale.y from 0 to 1.
+
+   Its local origin is the START of the base edge rather than the middle, which
+   costs nothing and means the unit ruling begins at the square's own corner —
+   from the middle, an odd-sided square would be ruled off by half a cell. */
+function growingSquare(base, side, color, opts = {}) {
   const [P, Q] = base;
   const mesh = tileMesh(
-    [[-side / 2, 0], [side / 2, 0], [side / 2, side], [-side / 2, side]],
+    [[0, 0], [side, 0], [side, side], [0, side]],
     color,
-    opts,
+    { ...opts, grid: opts.grid ? [0, 0] : null },
   );
-  mesh.position.x = (P[0] + Q[0]) / 2;
-  mesh.position.y = (P[1] + Q[1]) / 2;
+  mesh.position.x = P[0];
+  mesh.position.y = P[1];
   mesh.rotation.z = Math.atan2(Q[1] - P[1], Q[0] - P[0]);
 
   /* An empty at the square's middle so a floating label can ride along as the
      square grows out of its edge. */
   const marker = new THREE.Object3D();
-  marker.position.set(0, side / 2, 0);
+  marker.position.set(side / 2, side / 2, 0);
   mesh.add(marker);
   mesh.userData.marker = marker;
   return mesh;
@@ -239,7 +291,10 @@ let domLabels = [];
 function disposeFigure() {
   sceneGroup.traverse((o) => {
     if (o.geometry) o.geometry.dispose();
-    if (o.material) o.material.dispose();
+    if (o.material) {
+      o.material.map?.dispose();     // each tile clones the ruling for its own offset
+      o.material.dispose();
+    }
   });
   sceneGroup.clear();
 }
@@ -273,8 +328,15 @@ function buildScene() {
   /* The three squares, each grown out of the side it stands on. The one on the
      hypotenuse is left mostly see-through: it is the container being filled,
      not another tile. */
-  const shortSq = growingSquare(squares.short.base, squares.short.side, pal.short);
-  const longSq  = growingSquare(squares.long.base,  squares.long.side,  pal.pieces[0]);
+  /* The two leg squares are ruled into unit cells; the one on the hypotenuse
+     is not. It is the container being filled, and its side is usually
+     irrational anyway — you find c² by counting what lands inside it, not by
+     ruling it up. A second grid at a different angle under the pieces would
+     only be noise. */
+  const shortSq = growingSquare(squares.short.base, squares.short.side, pal.short,
+                                { grid: true });
+  const longSq  = growingSquare(squares.long.base,  squares.long.side,  pal.pieces[0],
+                                { grid: true });
   const hypSq   = growingSquare(squares.hyp.base,   squares.hyp.side,   pal.hyp,
                                 { opacity: 0.26, z: -DEPTH * 0.6, flat: true });
   hypSq.userData.outline.material.opacity = 0.85;
@@ -292,7 +354,10 @@ function buildScene() {
 
   const pieceMeshes = fig.pieces.map((p, i) => {
     const motion = rigidMotion(p.start, p.end);
-    const mesh = tileMesh(motion.local, pal.pieces[i], { z: DEPTH * 0.9 });
+    /* Ruled from where the piece STARTED, so its cells are the very cells it
+       had while it was still part of the big square. */
+    const mesh = tileMesh(motion.local, pal.pieces[i],
+                          { z: DEPTH * 0.9, grid: motion.from });
     /* which way it steps aside when the square first comes apart */
     const dx = motion.from[0] - O[0], dy = motion.from[1] - O[1];
     const d = Math.hypot(dx, dy) || 1;
@@ -304,7 +369,8 @@ function buildScene() {
   });
 
   const wholeMotion = rigidMotion(fig.whole.start, fig.whole.end);
-  const wholeMesh = tileMesh(wholeMotion.local, pal.short, { z: DEPTH * 0.9 });
+  const wholeMesh = tileMesh(wholeMotion.local, pal.short,
+                             { z: DEPTH * 0.9, grid: wholeMotion.from });
   wholeMesh.userData.motion = wholeMotion;
   wholeMesh.userData.marker = new THREE.Object3D();
   wholeMesh.add(wholeMesh.userData.marker);
@@ -335,7 +401,10 @@ function buildScene() {
 }
 
 /* --- FLOATING LABELS ------------------------------------------------------- */
-const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''));
+/* Two decimals would round 0.0625 to 0.06; trimming a fixed precision instead
+   keeps small numbers honest and still sweeps up float noise like
+   0.30000000000000004. */
+const fmt = (n) => (Number.isInteger(n) ? String(n) : String(Number(n.toPrecision(12))));
 
 function buildLabels() {
   const pal = palette();
@@ -441,9 +510,9 @@ function steps() {
     { until: T.triangle[1],
       text: 'A right-angled triangle. The two short sides are the legs, <em>a</em> and <em>b</em>; the long one, opposite the right angle, is the hypotenuse <em>c</em>.' },
     { until: T.growHyp[1],
-      text: 'Stand a square on every side. Each one has area side × side — so their areas are <em>a²</em>, <em>b²</em> and <em>c²</em>.' },
+      text: 'Stand a square on every side. The two on the legs are ruled into unit squares, so their areas are there to be counted: <em>a²</em> and <em>b²</em>.' },
     { until: T.cut[0],
-      text: `a² = ${fmt(a * a)} and b² = ${fmt(b * b)}. Together that is ${fmt(a * a + b * b)}, and c² = ${fmt(c * c)}. The question is whether the two small squares really fill the big one.` },
+      text: `Count them: a² = ${fmt(a * a)} unit squares and b² = ${fmt(b * b)}, which is ${fmt(a * a + b * b)} between them. c² = ${fmt(c * c)}. The question is whether those ${fmt(a * a + b * b)} really do fill the big square.` },
     { until: T.part[0],
       text: `Cut the larger square — the one on <em>${fig.longLeg}</em>, side ${fmt(big)} — with two lines through its centre: one parallel to the hypotenuse, one straight across it.` },
     { until: T.movePiece(0)[0],
@@ -690,7 +759,9 @@ document.getElementById('reset-view-btn').addEventListener('click', () => fitCam
    figure is rebuilt from the new legs, so the squares, the cut and the whole
    dissection re-derive themselves — the identity holds for whatever triangle
    you drag out, which is rather the point. */
-const LEG_MIN = 1, LEG_MAX = 6, LEG_STEP = 0.5;
+/* Whole numbers only. The squares are ruled into unit cells and the point of
+   that is being able to count them, which a half-cell along one edge ruins. */
+const LEG_MIN = 1, LEG_MAX = 8, LEG_STEP = 1;
 
 /* The hint has done its job either way once you have read it — it goes on the
    first drag, and on a timer for anyone who is only here to watch. */
@@ -771,8 +842,7 @@ for (const ev of ['pointerup', 'pointercancel']) {
 /* Whole-number triples, so the arithmetic in the banner comes out clean. */
 const TRIPLES = [
   [3, 4, 5],
-  [1.5, 2, 2.5],
-  [2.5, 6, 6.5],
+  [6, 8, 10],
 ];
 const tripleRow = document.getElementById('triple-row');
 TRIPLES.forEach(([a, b, c], i) => {
@@ -789,6 +859,78 @@ TRIPLES.forEach(([a, b, c], i) => {
     onLegsChanged();
   });
   tripleRow.appendChild(chip);
+});
+
+/* --- IS IT A TRIPLE? -------------------------------------------------------
+   Three lengths in, a verdict out. Deliberately not restricted to the triangle
+   the figure can draw: the interesting question is often about numbers too big
+   for the board, and being told "yes, but I can't show you" is a real answer.
+   Where it CAN be drawn, the verdict comes with a button that draws it. */
+const triA = document.getElementById('tri-a');
+const triB = document.getElementById('tri-b');
+const triC = document.getElementById('tri-c');
+const triVerdict = document.getElementById('tri-verdict');
+const triDraw = document.getElementById('tri-draw');
+
+const drawable = (n) =>
+  Number.isInteger(n) && n >= LEG_MIN && n <= LEG_MAX;
+
+function say(text, tone) {
+  triVerdict.textContent = text;
+  triVerdict.className = `pp-sticky tri-verdict pp-sticky--${tone}`;
+}
+
+function checkTriple() {
+  const a = parseFloat(triA.value);
+  const b = parseFloat(triB.value);
+  const c = parseFloat(triC.value);
+  triDraw.hidden = true;
+
+  if (![a, b, c].every((n) => Number.isFinite(n) && n > 0)) {
+    say('Put three lengths in — the longest one last.', 'c3');
+    return;
+  }
+
+  const legs = a * a + b * b;
+  const hyp = c * c;
+  /* Compared with a relative tolerance, so 0.3, 0.4, 0.5 is still a triple
+     rather than a victim of binary fractions. */
+  const same = Math.abs(legs - hyp) <= 1e-9 * Math.max(legs, hyp, 1);
+
+  if (c <= Math.max(a, b) && !same) {
+    say(`c has to be the longest side, and ${fmt(c)} is not. Try the three the other way round.`, 'c4');
+    return;
+  }
+
+  if (same) {
+    const sum = `${fmt(a)}² + ${fmt(b)}² = ${fmt(a * a)} + ${fmt(b * b)} = ${fmt(legs)}, and ${fmt(c)}² = ${fmt(hyp)}.`;
+    const canDraw = drawable(a) && drawable(b);
+    say(canDraw
+      ? `${sum} Yes — a right-angled triangle.`
+      : `${sum} Yes — a right-angled triangle, though the legs are outside what the board draws (whole numbers up to ${LEG_MAX}).`,
+      'c2');
+    if (canDraw) {
+      triDraw.hidden = false;
+      triDraw.dataset.a = String(a);
+      triDraw.dataset.b = String(b);
+    }
+    return;
+  }
+
+  const off = legs - hyp;
+  say(`${fmt(a)}² + ${fmt(b)}² = ${fmt(legs)}, but ${fmt(c)}² = ${fmt(hyp)} — ${fmt(Math.abs(off))} ${off > 0 ? 'over' : 'short'}. Not a right-angled triangle.`, 'c4');
+}
+
+for (const el of [triA, triB, triC]) el.addEventListener('input', checkTriple);
+checkTriple();   // paint the resting state from the same place as every other
+
+triDraw.addEventListener('click', () => {
+  legA.value = triDraw.dataset.a;
+  legB.value = triDraw.dataset.b;
+  onLegsChanged();
+  setProgress(0);
+  startPlaying();
+  toggleModal(false);
 });
 
 function onLegsChanged() {

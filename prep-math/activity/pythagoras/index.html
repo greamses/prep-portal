@@ -268,6 +268,48 @@
       }
       /* A full-width note barely leans — the tilt is a wink, not a shrug. */
       #settings-modal .pp-btn { width: 100%; margin-top: 0.2rem; --pp-note-tilt: -0.7deg; }
+      /* Green, to pair with the verdict note that summons it. */
+      #tri-draw { --pp-note-bg: #c8f0c0; }
+
+      /* ── Triple checker: three lengths and a verdict on paper. ────────── */
+      .tri-check {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .tri-check .pp-setup-input {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        /* Right-aligned so the digits end hard against their own ², rather than
+           floating in the middle of the box away from it. */
+        padding: 0.45rem 0.15rem 0.45rem 0.3rem;
+        text-align: right;
+        /* No spinner: the arrows crowd a 3-character box and this is a thing
+           you type, not a thing you nudge. */
+        appearance: textfield;
+        -moz-appearance: textfield;
+      }
+      .tri-check .pp-setup-input::-webkit-outer-spin-button,
+      .tri-check .pp-setup-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .tri-op {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      .pp-sticky.tri-verdict {
+        display: block;
+        margin: 0.2rem 0 0;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        padding: 0.5rem 0.75rem 0.55rem;
+        --pp-note-tilt: -0.8deg;
+      }
 
       /* Triple presets are notes you can pick up. */
       .triple-row { display: flex; flex-wrap: wrap; gap: 0.8rem 0.55rem; }
@@ -386,14 +428,33 @@
           <span>Legs</span>
           <div class="leg-row">
             <label class="slider-label" for="leg-a">a</label>
-            <input type="range" id="leg-a" min="1" max="6" step="0.5" value="3" />
+            <input type="range" id="leg-a" min="1" max="8" step="1" value="3" />
             <span class="leg-value" id="leg-a-val">3</span>
           </div>
           <div class="leg-row">
             <label class="slider-label" for="leg-b">b</label>
-            <input type="range" id="leg-b" min="1" max="6" step="0.5" value="4" />
+            <input type="range" id="leg-b" min="1" max="8" step="1" value="4" />
             <span class="leg-value" id="leg-b-val">4</span>
           </div>
+        </div>
+
+        <div class="pp-setup-field">
+          <span>Is it a triple?</span>
+          <div class="tri-check">
+            <input class="pp-setup-input" id="tri-a" type="number" min="0" step="any"
+                   inputmode="decimal" placeholder="a" aria-label="First leg" />
+            <span class="tri-op">² +</span>
+            <input class="pp-setup-input" id="tri-b" type="number" min="0" step="any"
+                   inputmode="decimal" placeholder="b" aria-label="Second leg" />
+            <span class="tri-op">² =</span>
+            <input class="pp-setup-input" id="tri-c" type="number" min="0" step="any"
+                   inputmode="decimal" placeholder="c" aria-label="Hypotenuse" />
+            <span class="tri-op">²</span>
+          </div>
+          <p class="pp-sticky tri-verdict" id="tri-verdict" role="status">
+            Put three lengths in — the longest one last.
+          </p>
+          <button type="button" class="pp-btn" id="tri-draw" hidden>Draw this one</button>
         </div>
 
         <div class="pp-setup-field">
