@@ -1251,37 +1251,6 @@ input[type="range"]::-moz-range-thumb {
 .pa-prepbot .mm-prepbot-bubble { max-width: 264px; padding: 0.6rem 0.8rem; }
 .pa-prepbot .mm-prepbot-bubble p { font-size: 0.78rem; line-height: 1.4; }
 
-/* Next / Back sit between the bubble and the avatar, so the eye goes
-   instruction → what to do about it → the character saying it. */
-.pa-lesson-nav {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 2px;
-}
-.pa-lesson-nav .pp-btn {
-  font-size: 0.74rem;
-  padding: 0.35rem 0.8rem 0.4rem;
-}
-.pa-lesson-back { --pp-note-bg: #f0ece2; }
-.pa-lesson-back:disabled { opacity: 0.45; cursor: default; transform: none; }
-/* Once the step is actually done, Next is the obvious thing to press. */
-.pa-lesson-nav--ready .pa-lesson-next { --pp-note-bg: #c8f0c0; }
-
-/* The control a step is about. A soft double ring in the site's accent
-   rather than the old hard neon outline. */
-.pa-lesson-target {
-  border-radius: 2px;
-  box-shadow:
-    0 0 0 3px var(--accent-secondary),
-    0 0 0 7px color-mix(in srgb, var(--accent-secondary) 28%, transparent) !important;
-  animation: pa-lesson-pulse 1.6s ease-in-out infinite;
-  z-index: 1000;
-}
-@keyframes pa-lesson-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px var(--accent-secondary), 0 0 0 7px color-mix(in srgb, var(--accent-secondary) 28%, transparent); }
-  50% { box-shadow: 0 0 0 3px var(--accent-secondary), 0 0 0 12px color-mix(in srgb, var(--accent-secondary) 0%, transparent); }
-}
-
 @media (max-width: 640px) {
   .pa-prepbot { right: 10px; bottom: 10px; }
 }

@@ -77,8 +77,7 @@
    Small paper keys with the site's border and lift — square, not round. */
 .fab,
 .zoom-btn,
-.modal-close,
-.back-btn {
+.modal-close {
   background: var(--surface-primary);
   color: var(--ink);
   border: var(--border, 2px solid #2a2723);
@@ -90,15 +89,13 @@
 }
 .fab:hover,
 .zoom-btn:hover,
-.modal-close:hover,
-.back-btn:hover {
+.modal-close:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 .fab:active,
 .zoom-btn:active,
-.modal-close:active,
-.back-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.modal-close:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 /* The settings key is the one call to action on the canvas, so it is yellow. */
 .fab {
   background: var(--accent-primary);
@@ -106,12 +103,10 @@
 }
 
 /* ── THINGS YOU CHOOSE BETWEEN ARE NOTES ─────────────────────────────────
-   The relationship modes and the module map's tooltip are picked, not read, so
-   they are sticky notes — same paper, tilt and lift as every other selector on
+   The relationship modes are picked, not read, so they are sticky notes — same paper, tilt and lift as every other selector on
    the site. Paper stays a light pastel in both themes, as in components.css. */
 .anim-mode-btn,
-.badge,
-.current-tooltip {
+.badge {
   font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
   font-weight: 700;
   letter-spacing: 0;
@@ -148,15 +143,6 @@
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
 }
 .badge { --pp-note-bg: #bfe3ff; --pp-note-tilt: -1.5deg; }
-.current-tooltip {
-  --pp-note-bg: #c8f0c0;
-  --pp-note-tilt: -2.5deg;
-  /* Above the module note it floats up towards — as a bordered card it used to
-     tuck underneath and lose its top half. */
-  z-index: 40;
-}
-/* That tooltip drew its own little arrow out of the old bordered card. */
-.current-tooltip::after { display: none; }
 
 /* ── RANGE INPUTS ────────────────────────────────────────────────────────
    The last of the hard 0-blur offset shadows lived on these thumbs. */
@@ -200,66 +186,6 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: var(--shadow-sm);
 }
 .toggle input:checked + .t-track { background: var(--accent-success); }
-
-/* ── POLYGON ANGLES: the module map ──────────────────────────────────────
-   Its header strip is a note, and a lesson node is a paper key. The locked
-   state carried a `0 8px 0` hard shadow, which was the loudest piece of the
-   old look left anywhere in the studios. */
-.module-header {
-  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
-  background: var(--pp-note-bg, #bfe3ff);
-  color: #14130f;
-  border: 0;
-  border-radius: 2px;
-  box-shadow:
-    0 1px 1px rgba(20, 19, 15, 0.1),
-    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
-  /* Deliberately NOT tilted. A tilt would give this wide strip a stacking
-     context, and the "Start" tag on the first node floats up into its space by
-     design — tilted, the header sits over it and eats the tag. */
-}
-.module-header p,
-.module-header h2 { color: #14130f; }
-/* The header sits at z-index 100 and the "Start" tag floats up into its space
-   by design, so the CURRENT node — and only that one — is lifted over it. */
-.node-wrap.current { z-index: 101; }
-
-.node-btn {
-  background: var(--surface-primary);
-  border: var(--border, 2px solid #2a2723);
-  border-radius: 2px;
-  box-shadow: var(--shadow-md);
-  transition:
-    transform var(--transition-base, 0.2s) ease,
-    box-shadow 0.2s ease;
-}
-.node-wrap:not(.locked) .node-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-}
-.node-wrap.completed .node-btn { background: var(--accent-primary); }
-.node-wrap.current .node-btn {
-  background: var(--accent-secondary);
-  color: var(--text-on-accent, #2a2723);
-  box-shadow: var(--shadow-lg);
-  animation: none;
-}
-.node-wrap.locked .node-btn,
-.node-wrap.locked .node-btn:active {
-  background: var(--surface-secondary);
-  border-color: var(--border-color, color-mix(in srgb, var(--ink) 14%, transparent));
-  box-shadow: var(--shadow-sm);
-  color: var(--text-tertiary);
-  transform: none;
-}
-
-/* ── The paint wash ──────────────────────────────────────────────────────
-   These two shells fill the viewport, so only a band of the site's blob
-   background shows above the app. At full strength that band reads as a
-   stripe of colour rather than a wash; it belongs on every page, so it stays,
-   quietly. */
-.pp-page-paint { opacity: 0.18; }
-[data-theme="dark"] .pp-page-paint { opacity: 0.12; }
 
 /* ── THE LEGACY PALETTE ──────────────────────────────────────────────────
    Both studios still write the pre-redesign colours literally: near-black

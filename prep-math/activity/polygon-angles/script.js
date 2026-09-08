@@ -803,6 +803,13 @@ function render() {
   }
 
   document.getElementById("s-sum").textContent = (n - 2) * 180 + "°";
+
+  // PrepBot names the shape once the dragging settles (see prepbot.js).
+  window.PolygonPrepbot?.noteShape({
+    sides: n,
+    interior: isIrregular ? NaN : ((n - 2) * 180) / n,
+    sum: (n - 2) * 180,
+  });
   document.getElementById("f-interior").textContent = isIrregular
     ? `Varies`
     : `(${n}−2)×180/${n} = ${(((n - 2) * 180) / n).toFixed(1)}°`;
@@ -860,8 +867,6 @@ function wire(id, key, transform, displayId, displayFmt) {
   });
 
   elem.addEventListener("change", () => {
-    if (window.RobotTeacher)
-      RobotTeacher.observe(`change_${key}`, { value: state[key] });
   });
 }
 
@@ -869,11 +874,6 @@ function wireToggle(id, key) {
   document.getElementById(id).addEventListener("change", (e) => {
     state[key] = e.target.checked;
     render();
-    if (window.RobotTeacher)
-      RobotTeacher.observe("toggle_feature", {
-        feature: key,
-        enabled: state[key],
-      });
   });
 }
 
@@ -915,8 +915,6 @@ document.querySelectorAll(".anim-mode-btn").forEach((btn) => {
       document.getElementById("dv-anim-val").textContent = "0%";
     }
     render();
-    if (window.RobotTeacher)
-      RobotTeacher.observe("change_anim_mode", { mode: state.animMode });
   });
 });
 
@@ -935,23 +933,19 @@ function applyZoom(zoomFactor, svgMx = VW / 2, svgMy = VH / 2) {
 
 svg.addEventListener("dblclick", () => {
   resetPolygon();
-  if (window.RobotTeacher) RobotTeacher.observe("reset_polygon");
 });
 
 document.getElementById("btn-zoom-in").onclick = () => {
   applyZoom(1.25);
-  if (window.RobotTeacher) RobotTeacher.observe("zoom_in");
 };
 document.getElementById("btn-zoom-out").onclick = () => {
   applyZoom(0.8);
-  if (window.RobotTeacher) RobotTeacher.observe("zoom_out");
 };
 document.getElementById("btn-zoom-reset").onclick = () => {
   vX = 0;
   vY = 0;
   vScale = 1;
   updateView();
-  if (window.RobotTeacher) RobotTeacher.observe("zoom_reset");
 };
 
 let isDragging = false,
@@ -1097,11 +1091,6 @@ svg.addEventListener("pointerup", (e) => {
         render();
       }
     } else {
-      if (window.RobotTeacher)
-        RobotTeacher.observe("drag_vertex", {
-          isEdge: Array.isArray(dragVertIdx),
-          sides: state.sides,
-        });
     }
     dragVertIdx = null;
     isVertDragging = false;
@@ -1111,7 +1100,6 @@ svg.addEventListener("pointerup", (e) => {
   }
 
   if (isDragging && panDistance > 10) {
-    if (window.RobotTeacher) RobotTeacher.observe("pan_canvas");
   }
 
   isDragging = false;
@@ -1181,7 +1169,6 @@ svg.addEventListener("touchend", (e) => {
   const now = Date.now();
   if (now - lastTapTime < 300) {
     resetPolygon();
-    if (window.RobotTeacher) RobotTeacher.observe("reset_polygon");
   }
   lastTapTime = now;
 });
@@ -1199,277 +1186,3 @@ document.addEventListener("keydown", (e) => {
 });
 
 isInitialized = true;
-
-// ==========================================
-// VIEW SWITCHER (Map <-> Canvas)
-// ==========================================
-const pathView = document.getElementById("path-view");
-const editorView = document.getElementById("editor-view");
-const btnStartLesson = document.getElementById("btn-start-lesson");
-const btnBackMap = document.getElementById("btn-back-map");
-
-// Hide robot on map view initially
-const ensureRobotHidden = setInterval(() => {
-  const botWrap = document.getElementById("rt-guide-wrapper");
-  if (botWrap) {
-    botWrap.style.display = "none";
-    clearInterval(ensureRobotHidden);
-  }
-}, 100);
-
-// ==========================================
-// MAP NODE INTERACTION SYSTEM
-// ==========================================
-
-const MODULE_NODES = {
-  module1: {
-    container: document.querySelectorAll(".module-group")[0],
-    lessonCount: 5,
-  },
-  module2: {
-    container: document.querySelectorAll(".module-group")[1],
-    lessonCount: 5,
-  },
-  module3: {
-    container: document.querySelectorAll(".module-group")[2],
-    lessonCount: 5,
-  },
-  module4: {
-    container: document.querySelectorAll(".module-group")[3],
-    lessonCount: 5,
-  },
-  module5: {
-    container: document.querySelectorAll(".module-group")[4],
-    lessonCount: 5,
-  },
-  module6: {
-    container: document.querySelectorAll(".module-group")[5],
-    lessonCount: 5,
-  },
-  module7: {
-    container: document.querySelectorAll(".module-group")[6],
-    lessonCount: 5,
-  },
-};
-
-function refreshAllModuleHeaders() {
-  Object.entries(MODULE_NODES).forEach(([moduleId, modData]) => {
-    const header = modData.container.querySelector(".module-header");
-    if (!header) return;
-
-    // Check if the previous module's chest is completed
-    const modNum = parseInt(moduleId.replace("module", ""));
-    let isUnlocked = moduleId === "module1"; // Module 1 always unlocked
-
-    if (modNum > 1) {
-      const prevChestKey = `rt_completed_module${modNum - 1}_chest`;
-      isUnlocked = localStorage.getItem(prevChestKey) === "true";
-    }
-
-    if (isUnlocked) {
-      // Restore the header to active styling
-      header.style.background = "";
-      header.style.color = "";
-      header.style.boxShadow = "";
-      header.style.borderColor = "";
-      const p = header.querySelector("p");
-      const h2 = header.querySelector("h2");
-      if (p) p.style.color = "";
-      if (h2) h2.style.color = "";
-    }
-  });
-}
-
-function initMapNodes() {
-  Object.entries(MODULE_NODES).forEach(([moduleId, modData]) => {
-    const nodes = modData.container.querySelectorAll(".node-wrap");
-    const modNum = parseInt(moduleId.replace("module", ""));
-
-    // Check if this whole module is unlocked
-    let moduleUnlocked = moduleId === "module1";
-    if (modNum > 1) {
-      const prevChestKey = `rt_completed_module${modNum - 1}_chest`;
-      moduleUnlocked = localStorage.getItem(prevChestKey) === "true";
-    }
-
-    // If module is unlocked, restore the header styling
-    if (moduleUnlocked) {
-      const header = modData.container.querySelector(".module-header");
-      if (header) {
-        header.style.background = "";
-        header.style.color = "";
-        header.style.boxShadow = "";
-        header.style.borderColor = "";
-        const p = header.querySelector("p");
-        const h2 = header.querySelector("h2");
-        if (p) p.style.color = "";
-        if (h2) h2.style.color = "";
-      }
-    }
-
-    for (let i = 0; i < modData.lessonCount; i++) {
-      const node = nodes[i];
-      if (!node) continue;
-
-      const lessonId = i + 1;
-      const completedKey = `rt_completed_${moduleId}_${lessonId}`;
-      const isCompleted = localStorage.getItem(completedKey) === "true";
-
-      // Determine if this specific node should be unlocked
-      let isUnlocked = false;
-      if (moduleUnlocked) {
-        if (lessonId === 1) {
-          isUnlocked = true; // First lesson of unlocked module
-        } else {
-          const prevLessonKey = `rt_completed_${moduleId}_${lessonId - 1}`;
-          isUnlocked = localStorage.getItem(prevLessonKey) === "true";
-        }
-      }
-
-      // Also unlock if already completed (so completed nodes stay clickable)
-      if (isCompleted) isUnlocked = true;
-
-      // Update node appearance
-      if (isCompleted) {
-        node.classList.remove("locked");
-        node.classList.add("completed");
-        // Replace the lock SVG with a checkmark
-        const btn = node.querySelector(".node-btn");
-        if (btn) {
-          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-        }
-        // Remove chest styling if it's a chest node
-        if (node.classList.contains("chest")) {
-          node.classList.remove("locked");
-        }
-      } else if (isUnlocked) {
-        node.classList.remove("locked");
-        // Restore the play icon
-        const btn = node.querySelector(".node-btn");
-        if (btn && !btn.querySelector("polygon")) {
-          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
-        }
-      }
-
-      // Remove old click handlers by cloning
-      const newNode = node.cloneNode(true);
-      node.parentNode.replaceChild(newNode, node);
-
-      // Attach click handler
-      attachNodeClickHandler(newNode, moduleId, lessonId, isUnlocked);
-    }
-  });
-}
-
-function attachNodeClickHandler(node, moduleId, lessonId, isUnlocked) {
-  node.addEventListener("click", () => {
-    if (!isUnlocked) {
-      // Locked node: shake to indicate it's locked
-      node.classList.add("shake");
-      setTimeout(() => node.classList.remove("shake"), 500);
-      return;
-    }
-
-    // Open the editor
-    pathView.classList.add("hidden");
-    editorView.classList.remove("hidden");
-    btnBackMap.classList.remove("hidden");
-    document.querySelector(".site-nav").classList.add("hidden");
-
-    // Show Robot
-    const botWrap = document.getElementById("rt-guide-wrapper");
-    if (botWrap) botWrap.style.display = "flex";
-
-    window.dispatchEvent(new Event("resize"));
-
-    // Load the module lesson
-    if (window.RobotTeacher && window.RobotTeacher.loadModuleLesson) {
-      RobotTeacher.loadModuleLesson(moduleId, lessonId);
-    } else {
-      // Fallback: wait for RobotTeacher to be ready
-      const retry = setInterval(() => {
-        if (window.RobotTeacher && window.RobotTeacher.loadModuleLesson) {
-          RobotTeacher.loadModuleLesson(moduleId, lessonId);
-          clearInterval(retry);
-        }
-      }, 200);
-    }
-  });
-}
-
-// Called when a lesson finishes (from RobotTeacher's return_to_map)
-function onLessonComplete(moduleId, lessonId) {
-  const completedKey = `rt_completed_${moduleId}_${lessonId}`;
-  localStorage.setItem(completedKey, "true");
-  if (lessonId === 5) {
-    localStorage.setItem(`rt_completed_${moduleId}_chest`, "true");
-    refreshAllModuleHeaders();
-  }
-
-  // Return to map
-  setTimeout(() => {
-    editorView.classList.add("hidden");
-    pathView.classList.remove("hidden");
-    btnBackMap.classList.add("hidden");
-    document.querySelector(".site-nav").classList.remove("hidden");
-
-    const botWrap = document.getElementById("rt-guide-wrapper");
-    if (botWrap) botWrap.style.display = "none";
-    initMapNodes();
-    refreshAllModuleHeaders();
-  }, 1500);
-}
-
-// Patch RobotTeacher with onLessonComplete
-setTimeout(() => {
-  if (window.RobotTeacher) {
-    RobotTeacher.init({ onLessonComplete: onLessonComplete });
-  }
-}, 1000);
-
-// Start button: load Module 1, Lesson 1
-if (btnStartLesson) {
-  btnStartLesson.addEventListener("click", () => {
-    pathView.classList.add("hidden");
-    editorView.classList.remove("hidden");
-    btnBackMap.classList.remove("hidden");
-    document.querySelector(".site-nav").classList.add("hidden");
-
-    const botWrap = document.getElementById("rt-guide-wrapper");
-    if (botWrap) botWrap.style.display = "flex";
-
-    window.dispatchEvent(new Event("resize"));
-
-    if (window.RobotTeacher && window.RobotTeacher.loadModuleLesson) {
-      RobotTeacher.loadModuleLesson("module1", 1);
-    }
-  });
-}
-
-// Back button: return to map
-if (btnBackMap) {
-  btnBackMap.addEventListener("click", () => {
-    editorView.classList.add("hidden");
-    pathView.classList.remove("hidden");
-    btnBackMap.classList.add("hidden");
-    document.querySelector(".site-nav").classList.remove("hidden");
-
-    const botWrap = document.getElementById("rt-guide-wrapper");
-    if (botWrap) botWrap.style.display = "none";
-
-    initMapNodes();
-  });
-}
-
-// Initialize on load
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    initMapNodes();
-    refreshAllModuleHeaders();
-  }, 600);
-});
-
-initMapNodes();
-refreshAllModuleHeaders();
-
-render();
