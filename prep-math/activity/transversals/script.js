@@ -18,8 +18,25 @@ const state = {
   
   animMode: 'none',
   animProgress: 0,
-  activeWedge: null
+  activeWedge: null,
+
+  protractor: false,
+  quiz: null            // see startQuiz() — null whenever an activity isn't running
 };
+
+/* ── THE EIGHT ANGLES, IN TWO FAMILIES ────────────────────────────────────
+   Across parallel lines every one of the eight angles is either the acute one
+   or the obtuse one — there is no third size. So any two of them are equal
+   when they fall in the SAME family and supplementary when they fall in
+   different ones, and that single fact is what both activities below test.
+   (1, 4, 5, 8 are the acute family; 2, 3, 6, 7 the obtuse one.) */
+const ACUTE_FAMILY = [1, 4, 5, 8];
+const sameFamily = (a, b) => ACUTE_FAMILY.includes(a) === ACUTE_FAMILY.includes(b);
+const QUIZ_MODES = { quiz_equal_supp: 'Equal or Supplementary', quiz_pick: 'Pick the Correct Angle' };
+const isQuiz = () => Boolean(QUIZ_MODES[state.animMode]);
+/* At exactly 90° every angle is a right angle, so a pair is equal AND
+   supplementary at once. The activities say so rather than marking one wrong. */
+const isRightAngleCase = () => Math.abs(state.tAngle - 90) < 0.5;
 
 let vX = 0, vY = 0, vScale = 1;
 let animReq = null;
@@ -140,6 +157,233 @@ function runAnim(targetVal) {
   step();
 }
 
+/* ── PROTRACTOR ───────────────────────────────────────────────────────────
+   A real half-disc protractor laid on one of the two crossings, baseline along
+   that horizontal line, so an angle can be read off the figure instead of
+   taken from the readout. It carries both scales the plastic ones do — outer
+   running left-to-right, inner right-to-left — because reading the correct one
+   is most of the skill.
+
+   It sits on whichever crossing the learner is working at: the active or
+   reference angle's vertex, else the upper one. */
+function buildProtractor(P1, P2, A, r) {
+  const atLower = (w) => w >= 5;
+  const focus = state.quiz?.reference ? state.quiz.reference
+    : state.quiz?.pair ? state.quiz.pair[0]
+    : state.activeWedge;
+  const C = focus && atLower(focus) ? P2 : P1;
+  /* Clear of the wedges: the scale has to be readable ALONGSIDE the angles it
+     measures, not printed on top of them. */
+  const R = Math.max(r * 2.6, 130);
+
+  const g = el('g', { class: 'protractor', 'pointer-events': 'none' });
+
+  // body: a half disc above the line, plus the flat edge along it
+  g.appendChild(el('path', {
+    d: `M ${C.x - R} ${C.y} A ${R} ${R} 0 0 1 ${C.x + R} ${C.y} Z`,
+    fill: 'var(--surface-primary)', opacity: '0.62',
+    stroke: 'var(--ink)', 'stroke-width': '1.2'
+  }));
+  g.appendChild(el('line', {
+    x1: C.x - R, y1: C.y, x2: C.x + R, y2: C.y,
+    stroke: 'var(--ink)', 'stroke-width': '1.2', opacity: '0.8'
+  }));
+
+  // ticks: every 1 short, every 5 medium, every 10 long with both numbers
+  for (let d = 0; d <= 180; d += 1) {
+    const a = rad(180 + d);                       // 0 at the RIGHT, sweeping up and over
+    const long = d % 10 === 0, mid = d % 5 === 0;
+    const inner = R - (long ? 15 : mid ? 10 : 6);
+    g.appendChild(el('line', {
+      x1: C.x + R * Math.cos(a), y1: C.y + R * Math.sin(a),
+      x2: C.x + inner * Math.cos(a), y2: C.y + inner * Math.sin(a),
+      stroke: 'var(--ink)', 'stroke-width': long ? '1.2' : '0.7',
+      opacity: long ? '0.8' : '0.45'
+    }));
+    if (d % 30 !== 0) continue;
+    const put = (value, radius, size) => {
+      const t = txt(String(value), {
+        x: C.x + radius * Math.cos(a), y: C.y + radius * Math.sin(a) + 3,
+        'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace',
+        'font-size': String(size), 'font-weight': '700',
+        fill: 'var(--ink)', opacity: '0.75'
+      });
+      g.appendChild(t);
+    };
+    put(d, R - 26, 9);              // outer scale, 0 on the left
+    put(180 - d, R - 44, 8);        // inner scale, 0 on the right
+  }
+
+  // centre mark
+  g.appendChild(el('circle', {
+    cx: C.x, cy: C.y, r: '2.5', fill: 'var(--ink)', opacity: '0.8'
+  }));
+
+  /* The transversal's own arm, drawn over the scale, so the number it points
+     at is the angle being measured rather than something to estimate. */
+  const armLen = R - 4;
+  const armA = rad(180 + A);
+  g.appendChild(el('line', {
+    x1: C.x, y1: C.y,
+    x2: C.x + armLen * Math.cos(armA), y2: C.y + armLen * Math.sin(armA),
+    stroke: 'var(--accent-danger)', 'stroke-width': '2', opacity: '0.9'
+  }));
+  return g;
+}
+
+/* ── THE TWO ACTIVITIES ───────────────────────────────────────────────────
+   Both rest on the same fact (see sameFamily above) and both are answered on
+   the figure itself, not from the readout panel.
+
+     Equal or Supplementary — two angles are lit; say which they are.
+     Pick the Correct Angle — one angle is lit; tap one that is EQUAL to it,
+       then one that is SUPPLEMENTARY to it.
+*/
+const $quiz = {
+  strip: () => document.getElementById('quiz-strip'),
+  prompt: () => document.getElementById('quiz-prompt'),
+  answers: () => document.getElementById('quiz-answers'),
+  score: () => document.getElementById('quiz-score'),
+  next: () => document.getElementById('quiz-next'),
+};
+
+function randomAngle(exclude = []) {
+  const pool = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => !exclude.includes(n));
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function startQuiz(mode) {
+  const kept = state.quiz ? { asked: state.quiz.asked, right: state.quiz.right } : { asked: 0, right: 0 };
+  state.quiz = { mode, ...kept, settled: false, verdict: '' };
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const q = state.quiz;
+  if (!q) return;
+  q.settled = false;
+  q.verdict = '';
+  q.picked = null;
+  if (q.mode === 'quiz_equal_supp') {
+    const a = randomAngle();
+    q.pair = [a, randomAngle([a])];
+    q.reference = null;
+  } else {
+    q.reference = randomAngle();
+    q.pair = null;
+    q.want = 'equal';        // first an equal one, then a supplementary one
+    q.gotEqual = null;
+    q.gotSupp = null;
+  }
+  syncQuizUI();
+  render();
+}
+
+function scoreQuestion(correct) {
+  const q = state.quiz;
+  q.asked += 1;
+  if (correct) q.right += 1;
+}
+
+/* Equal-or-Supplementary: the two buttons under the prompt. */
+function answerEqualSupp(answer) {
+  const q = state.quiz;
+  if (!q || q.settled) return;
+  const [a, b] = q.pair;
+  const equal = sameFamily(a, b);
+  const both = isRightAngleCase();
+  const correct = both || (answer === 'equal') === equal;
+
+  q.settled = true;
+  q.picked = answer;
+  scoreQuestion(correct);
+  q.verdict = both
+    ? `Both — at 90° every angle is a right angle, so ∠${a} and ∠${b} are equal AND add to 180°.`
+    : correct
+      ? equal
+        ? `Right: ∠${a} and ∠${b} are the same size.`
+        : `Right: ∠${a} + ∠${b} = 180°.`
+      : equal
+        ? `Not quite — ∠${a} and ∠${b} are the same size, so they are equal.`
+        : `Not quite — ∠${a} and ∠${b} add to 180°, so they are supplementary.`;
+  syncQuizUI();
+  render();
+}
+
+/* Pick the Correct Angle: answered by tapping a wedge on the figure. */
+function answerPick(w) {
+  const q = state.quiz;
+  if (!q || q.settled || w === q.reference) return;
+  const equal = sameFamily(q.reference, w);
+  const both = isRightAngleCase();
+  const wantEqual = q.want === 'equal';
+  const correct = both || equal === wantEqual;
+
+  if (!correct) {
+    q.verdict = wantEqual
+      ? `∠${w} is supplementary to ∠${q.reference}, not equal to it. Try another.`
+      : `∠${w} is equal to ∠${q.reference}, not supplementary. Try another.`;
+    syncQuizUI();
+    render();
+    return;
+  }
+
+  if (wantEqual) {
+    q.gotEqual = w;
+    q.want = 'supplementary';
+    q.verdict = both
+      ? `At 90° every angle works — ∠${w} it is. Now pick one that is supplementary.`
+      : `Yes — ∠${w} = ∠${q.reference}. Now pick one that is supplementary.`;
+  } else {
+    q.gotSupp = w;
+    q.settled = true;
+    scoreQuestion(true);
+    q.verdict = `Yes — ∠${q.reference} + ∠${w} = 180°. Both found.`;
+  }
+  syncQuizUI();
+  render();
+}
+
+function syncQuizUI() {
+  const strip = $quiz.strip();
+  if (!strip) return;
+  const q = state.quiz;
+  strip.hidden = !isQuiz();
+  document.querySelector('.anim-slider-row').hidden = isQuiz();
+  if (!isQuiz() || !q) return;
+
+  const answers = $quiz.answers();
+  answers.hidden = q.mode !== 'quiz_equal_supp';
+  answers.querySelectorAll('.quiz-choice').forEach((b) => {
+    b.disabled = q.settled;
+    b.classList.toggle('is-picked', q.settled && q.picked === b.dataset.answer);
+  });
+
+  let prompt;
+  if (q.mode === 'quiz_equal_supp') {
+    prompt = q.verdict || `Are ∠${q.pair[0]} and ∠${q.pair[1]} equal, or supplementary?`;
+  } else if (q.settled) {
+    prompt = q.verdict;
+  } else {
+    prompt = q.verdict
+      || `Tap the angle that is ${q.want === 'equal' ? 'EQUAL to' : 'SUPPLEMENTARY to'} ∠${q.reference}.`;
+  }
+  $quiz.prompt().textContent = prompt;
+  $quiz.prompt().classList.toggle('quiz-prompt--settled', q.settled);
+  $quiz.score().textContent = `${q.right} of ${q.asked}`;
+  $quiz.next().hidden = !q.settled;
+}
+
+/* Which angles this activity wants lit, and how brightly. */
+function quizOpacity(w) {
+  const q = state.quiz;
+  if (!q) return null;
+  if (q.mode === 'quiz_equal_supp') return q.pair.includes(w) ? 0.9 : 0.12;
+  if (w === q.reference) return 0.9;
+  if (q.gotEqual === w || q.gotSupp === w) return 0.9;
+  return q.settled ? 0.12 : 0.4;   // still choosable until the round is done
+}
+
 function render() {
   gTransform.innerHTML = '';
   
@@ -179,6 +423,8 @@ function render() {
 
   gTransform.appendChild(gBase);
 
+  if (state.protractor) gTransform.appendChild(buildProtractor(P1, P2, A, r));
+
   let wedges =[
     { w: 1, cx: P1.x, cy: P1.y, start: 180, sweep: A, color: '#ffe500', textFill: '#0a0a0a' },
     { w: 2, cx: P1.x, cy: P1.y, start: 180 + A, sweep: 180 - A, color: '#0055ff', textFill: '#ffffff' },
@@ -205,11 +451,14 @@ function render() {
     let isTarget = wdg.w === targetForActive;
     let isPartner = wdg.w === partnerForActive;
 
-    let opacity = 0.85;
+        let opacity = 0.85;
     let strokeDash = '';
     let strokeColor = '#0a0a0a';
-    
-    if (modeCfg) {
+
+    const quizOp = isQuiz() ? quizOpacity(wdg.w) : null;
+    if (quizOp !== null) {
+      opacity = quizOp;
+    } else if (modeCfg) {
       if (state.activeWedge) {
         if (isActiveMover) opacity = 0.85;
         else if (modeCfg.supplementary && isPartner) opacity = 0.85; // Visually group supplementary partner
@@ -221,8 +470,13 @@ function render() {
       }
     }
 
+        /* In "Pick the Correct Angle" every angle but the reference is a valid
+       tap, so they carry the same affordance class the animations use. */
+    const quizPickable = state.animMode === 'quiz_pick'
+      && state.quiz && !state.quiz.settled && wdg.w !== state.quiz.reference;
+
     let gWdg = el('g', {
-       class: isMover ? 'sector-wedge valid-mover' : 'sector-wedge',
+       class: (isMover || quizPickable) ? 'sector-wedge valid-mover' : 'sector-wedge',
        'data-w': wdg.w
     });
 
@@ -323,6 +577,8 @@ function render() {
 
   const modeNames = {
     none: 'Angles Explorer',
+        quiz_equal_supp: 'Equal or Supplementary',
+    quiz_pick: 'Pick the Correct Angle',
     vert_opp: 'Vertically Opposite',
     corresponding: 'Corresponding',
     alt_int: 'Alternate Interior',
@@ -334,8 +590,11 @@ function render() {
   document.getElementById('poly-badge').textContent = modeNames[state.animMode];
   document.getElementById('s-mode-name').textContent = modeNames[state.animMode];
 
-  let relStr = 'Supp: α + β = 180°';
-  if (state.animMode !== 'none') {
+    let relStr = 'Supp: α + β = 180°';
+  if (isQuiz()) {
+    const q = state.quiz;
+    relStr = q ? `Score ${q.right} of ${q.asked}` : 'Activity';
+  } else if (state.animMode !== 'none') {
     if(!state.activeWedge) {
        relStr = 'Tap a sector to animate!';
     } else {
@@ -388,6 +647,7 @@ wireToggle('t-names', 'showNames');
 wireToggle('t-vertices', 'showVertices');
 wireToggle('t-center', 'showCenter');
 wireToggle('t-grid', 'grid');
+wireToggle('t-protractor', 'protractor');
 
 // Animation Mode Selector
 document.querySelectorAll('.anim-mode-btn').forEach(btn => {
@@ -405,9 +665,26 @@ document.querySelectorAll('.anim-mode-btn').forEach(btn => {
     sl.disabled = true; // Stays disabled until a sector is tapped
     sl.value = 0;
     
-    document.getElementById('dv-anim-val').textContent = '0%';
+        document.getElementById('dv-anim-val').textContent = '0%';
+
+    /* Leaving an activity clears the score; entering one deals a question.
+       Moving between the two activities keeps the running total, since it is
+       the same skill either way. */
+    if (isQuiz()) startQuiz(state.animMode);
+    else { state.quiz = null; syncQuizUI(); }
     render();
   });
+});
+
+document.querySelectorAll('.quiz-choice').forEach((btn) => {
+  btn.addEventListener('click', () => answerEqualSupp(btn.dataset.answer));
+});
+document.getElementById('quiz-next').addEventListener('click', nextQuestion);
+
+/* Changing the figure mid-question would change the answer under the learner,
+   so a fresh question is dealt whenever the angle moves. */
+document.getElementById('sl-angle').addEventListener('change', () => {
+  if (isQuiz() && state.quiz && !state.quiz.settled) nextQuestion();
 });
 
 function applyZoom(zoomFactor, svgMx = VW / 2, svgMy = VH / 2) {
@@ -436,9 +713,14 @@ svg.addEventListener('pointerdown', e => {
   if (e.target.closest('.anim-panel') || e.target.closest('.zoom-controls')) return;
   
   // -- NEW INTERACTION LAYER --
-  const wedgeNode = e.target.closest('.valid-mover');
+    const wedgeNode = e.target.closest('.valid-mover');
   if (wedgeNode) {
     let wId = parseInt(wedgeNode.getAttribute('data-w'));
+    if (state.animMode === 'quiz_pick') {
+      answerPick(wId);
+      e.stopPropagation();
+      return;
+    }
     state.activeWedge = wId;
     state.animProgress = 0;
     document.getElementById('sl-anim').disabled = false;

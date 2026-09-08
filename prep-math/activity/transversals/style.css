@@ -901,3 +901,58 @@ header {
   color: var(--ink);
 }
 .ctrl-row { border-bottom: var(--border-subtle); }
+/* ============================================================
+   THE TWO ACTIVITIES + THE PROTRACTOR
+   ------------------------------------------------------------
+   The quiz strip stands in for the animation slider in the two
+   activity modes, where there is nothing to scrub.
+   ============================================================ */
+
+/* Each of these sets `display`, which outranks the UA sheet's [hidden] rule —
+   without saying so explicitly the strip shows in every mode and the animation
+   slider never gets out of the way. Same trap as .pp-btn in components.css. */
+.quiz-strip[hidden],
+.quiz-answers[hidden],
+.anim-slider-row[hidden] { display: none; }
+
+.quiz-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+}
+.quiz-prompt {
+  margin: 0;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+/* Once the round is settled the sentence is a verdict, not an instruction. */
+.quiz-prompt--settled { color: var(--accent-secondary); }
+
+.quiz-answers { display: flex; gap: 0.5rem; }
+.quiz-answers .pp-btn { flex: 1; font-size: 0.72rem; padding: 0.35rem 0.6rem 0.4rem; }
+.quiz-choice[data-answer="equal"] { --pp-note-bg: #bfe3ff; }
+.quiz-choice[data-answer="supplementary"] { --pp-note-bg: #e8c8ff; }
+.quiz-choice.is-picked { outline: 2.5px solid var(--ink); outline-offset: -2.5px; }
+.quiz-choice:disabled { opacity: 0.55; cursor: default; }
+
+.quiz-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.quiz-score {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide, 0.05em);
+  color: var(--text-tertiary);
+}
+.quiz-next { --pp-note-bg: #c8f0c0; font-size: 0.72rem; padding: 0.32rem 0.75rem 0.36rem; }
+
+/* The two activity notes read as a pair, apart from the six animations. */
+.anim-mode-btn--quiz { --pp-note-bg: #ffd7a3; }

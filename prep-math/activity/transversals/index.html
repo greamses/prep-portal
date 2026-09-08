@@ -123,6 +123,26 @@
               <button class="anim-mode-btn" data-mode="cons_ext">
                 Cons. Ext
               </button>
+              <button class="anim-mode-btn anim-mode-btn--quiz" data-mode="quiz_equal_supp">
+                Equal or Supp?
+              </button>
+              <button class="anim-mode-btn anim-mode-btn--quiz" data-mode="quiz_pick">
+                Pick the Angle
+              </button>
+            </div>
+
+            <!-- Quiz strip: replaces the animation slider in the two activity
+                 modes, where there is nothing to scrub. -->
+            <div class="quiz-strip" id="quiz-strip" hidden>
+              <p class="quiz-prompt" id="quiz-prompt"></p>
+              <div class="quiz-answers" id="quiz-answers">
+                <button class="pp-btn quiz-choice" type="button" data-answer="equal">Equal</button>
+                <button class="pp-btn quiz-choice" type="button" data-answer="supplementary">Supplementary</button>
+              </div>
+              <div class="quiz-foot">
+                <span class="quiz-score" id="quiz-score">0 of 0</span>
+                <button class="pp-btn quiz-next" id="quiz-next" type="button" hidden>Next</button>
+              </div>
             </div>
             <div class="anim-slider-row">
               <input
@@ -310,6 +330,16 @@
               <div class="ctrl-label">Show Center Anchor</div>
               <label class="toggle"
                 ><input type="checkbox" id="t-center" checked />
+                <div class="t-track"><div class="t-thumb"></div></div>
+              </label>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-label">
+                Protractor
+                <small>Read the angles straight off the figure</small>
+              </div>
+              <label class="toggle"
+                ><input type="checkbox" id="t-protractor" />
                 <div class="t-track"><div class="t-thumb"></div></div>
               </label>
             </div>
