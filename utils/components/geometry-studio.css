@@ -1,0 +1,309 @@
+/* ============================================================================
+   GEOMETRY STUDIO SKIN  —  utils/components/geometry-studio.css
+   ----------------------------------------------------------------------------
+   Polygon Angles and Transversals are the same app template wearing two sets of
+   content, and both still carried the old neo-brutalist look underneath a thin
+   "soft UI" patch: pill buttons, 999px chips, 14–18px rounded cards and a
+   couple of hard 0-blur offset shadows.
+
+   This sheet is the last layer on both pages. It does not restyle them from
+   nothing — it MAPS the vocabulary they already use onto the site's own, per
+   DESIGN.md: panels become paper with square corners and a soft shadow, the
+   things you choose between become sticky notes, icon buttons become small
+   paper keys, and section headings become the mono uppercase rules the setup
+   receipts use. One file, because the two pages share every one of these
+   class names; new geometry studios link it rather than copying it.
+
+   Load AFTER the page's own style.css. Its sibling tabs, Pythagoras and
+   Surface Area, are built on the shared components directly and don't need it.
+   ========================================================================== */
+
+/* ── PAPER PANELS ────────────────────────────────────────────────────────
+   Everything that was a rounded card is now a sheet of paper: square, soft
+   shadow, hairline border. */
+.canvas-frame,
+.anim-panel,
+.modal,
+.stat-card,
+.ctrl-group {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 2px;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: none;
+}
+.modal { box-shadow: var(--shadow-xl); }
+.stat-card { box-shadow: var(--shadow-sm); }
+.ctrl-group { box-shadow: none; }
+
+/* ── SECTION HEADINGS ────────────────────────────────────────────────────
+   The same mono, uppercase, wide-tracked rule the setup receipts use, over a
+   dashed tear line. */
+.modal-header,
+.info-header,
+.ctrl-group-label {
+  background: transparent;
+  border-bottom: 1px dashed var(--border-subtle);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.modal-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.stat-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* ── ICON BUTTONS ────────────────────────────────────────────────────────
+   Small paper keys with the site's border and lift — square, not round. */
+.fab,
+.zoom-btn,
+.modal-close,
+.back-btn {
+  background: var(--surface-primary);
+  color: var(--ink);
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition-base, 0.2s) ease,
+    box-shadow 0.2s ease;
+}
+.fab:hover,
+.zoom-btn:hover,
+.modal-close:hover,
+.back-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.fab:active,
+.zoom-btn:active,
+.modal-close:active,
+.back-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+/* The settings key is the one call to action on the canvas, so it is yellow. */
+.fab {
+  background: var(--accent-primary);
+  color: var(--text-on-accent, #2a2723);
+}
+
+/* ── THINGS YOU CHOOSE BETWEEN ARE NOTES ─────────────────────────────────
+   The relationship modes and the module map's tooltip are picked, not read, so
+   they are sticky notes — same paper, tilt and lift as every other selector on
+   the site. Paper stays a light pastel in both themes, as in components.css. */
+.anim-mode-btn,
+.badge,
+.current-tooltip {
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.anim-modes .anim-mode-btn:nth-child(1) { --pp-note-bg: #fff3a8; }
+.anim-modes .anim-mode-btn:nth-child(2) { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.anim-modes .anim-mode-btn:nth-child(3) { --pp-note-bg: #c8f0c0; }
+.anim-modes .anim-mode-btn:nth-child(4) { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.anim-modes .anim-mode-btn:nth-child(5) { --pp-note-bg: #ffd7a3; }
+.anim-modes .anim-mode-btn:nth-child(6) { --pp-note-bg: #b8ece2; --pp-note-tilt: 1.4deg; }
+.anim-modes .anim-mode-btn:nth-child(7) { --pp-note-bg: #fff3a8; --pp-note-tilt: -1.4deg; }
+.anim-mode-btn:hover {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  color: #14130f;
+}
+/* Selected takes an inked outline rather than inverting to a dark chip — the
+   note keeps its own colour, exactly like the page tabs. */
+.anim-mode-btn.active {
+  background: var(--pp-note-bg, #fff3a8);
+  color: #14130f;
+  border: 0;
+  outline: 2.5px solid var(--ink);
+  outline-offset: -2.5px;
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+}
+.badge { --pp-note-bg: #bfe3ff; --pp-note-tilt: -1.5deg; }
+.current-tooltip {
+  --pp-note-bg: #c8f0c0;
+  --pp-note-tilt: -2.5deg;
+  /* Above the module note it floats up towards — as a bordered card it used to
+     tuck underneath and lose its top half. */
+  z-index: 40;
+}
+/* That tooltip drew its own little arrow out of the old bordered card. */
+.current-tooltip::after { display: none; }
+
+/* ── RANGE INPUTS ────────────────────────────────────────────────────────
+   The last of the hard 0-blur offset shadows lived on these thumbs. */
+input[type="range"] {
+  height: 6px;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: translateY(-1px) scale(1.06); }
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── TOGGLES ─────────────────────────────────────────────────────────────
+   Paper track, square thumb — the pill switch was the last piece of generic
+   chrome in the settings sheets. */
+.t-track {
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  border-radius: 999px;
+}
+.t-thumb {
+  background: var(--surface-primary);
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
+}
+.toggle input:checked + .t-track { background: var(--accent-success); }
+
+/* ── POLYGON ANGLES: the module map ──────────────────────────────────────
+   Its header strip is a note, and a lesson node is a paper key. The locked
+   state carried a `0 8px 0` hard shadow, which was the loudest piece of the
+   old look left anywhere in the studios. */
+.module-header {
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  background: var(--pp-note-bg, #bfe3ff);
+  color: #14130f;
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  /* Deliberately NOT tilted. A tilt would give this wide strip a stacking
+     context, and the "Start" tag on the first node floats up into its space by
+     design — tilted, the header sits over it and eats the tag. */
+}
+.module-header p,
+.module-header h2 { color: #14130f; }
+/* The header sits at z-index 100 and the "Start" tag floats up into its space
+   by design, so the CURRENT node — and only that one — is lifted over it. */
+.node-wrap.current { z-index: 101; }
+
+.node-btn {
+  background: var(--surface-primary);
+  border: var(--border, 2px solid #2a2723);
+  border-radius: 2px;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--transition-base, 0.2s) ease,
+    box-shadow 0.2s ease;
+}
+.node-wrap:not(.locked) .node-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.node-wrap.completed .node-btn { background: var(--accent-primary); }
+.node-wrap.current .node-btn {
+  background: var(--accent-secondary);
+  color: var(--text-on-accent, #2a2723);
+  box-shadow: var(--shadow-lg);
+  animation: none;
+}
+.node-wrap.locked .node-btn,
+.node-wrap.locked .node-btn:active {
+  background: var(--surface-secondary);
+  border-color: var(--border-color, color-mix(in srgb, var(--ink) 14%, transparent));
+  box-shadow: var(--shadow-sm);
+  color: var(--text-tertiary);
+  transform: none;
+}
+
+/* ── The paint wash ──────────────────────────────────────────────────────
+   These two shells fill the viewport, so only a band of the site's blob
+   background shows above the app. At full strength that band reads as a
+   stripe of colour rather than a wash; it belongs on every page, so it stays,
+   quietly. */
+.pp-page-paint { opacity: 0.18; }
+[data-theme="dark"] .pp-page-paint { opacity: 0.12; }
+
+/* ── THE LEGACY PALETTE ──────────────────────────────────────────────────
+   Both studios still write the pre-redesign colours literally: near-black
+   #0a0a0a ink, neon #ffe500 yellow and #0055ff blue, and rgba(10,10,10,…) for
+   every secondary text colour. In dark mode that meant black lines on a near-
+   black canvas and label text you could not read; in light it was the loud old
+   look the rest of the site has moved off.
+
+   Text and panels are re-pointed at tokens below. The drawing is a different
+   problem: the SVG is built in JS, which writes the colours into `stroke` and
+   `fill` PRESENTATION ATTRIBUTES at about thirty call sites across the two
+   scripts. A CSS declaration outranks a presentation attribute, so matching on
+   the attribute VALUE re-points them all at once — and unlike a token read at
+   draw time it follows a theme switch with no redraw at all. */
+.stat-name,
+.formula-lhs,
+.ctrl-label small { color: var(--text-tertiary); }
+.formula-row { border-bottom: 1px dashed var(--border-subtle); }
+.overlay { background: rgba(var(--shadow-color, 42, 39, 35), 0.5); }
+
+#polygon-svg [stroke="#0a0a0a"] { stroke: var(--ink); }
+#polygon-svg [fill="#0a0a0a"] { fill: var(--ink); }
+#polygon-svg [stroke="rgba(10,10,10,0.2)"] {
+  stroke: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+#polygon-svg [fill="rgba(0,0,0,0.03)"] {
+  fill: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+/* The two angle families are named in the panel as "yellow" and "blue", so they
+   stay yellow and blue — just the site's, rather than the old neon. */
+#polygon-svg [fill="#ffe500"] { fill: var(--accent-primary); }
+#polygon-svg [stroke="#ffe500"] { stroke: var(--accent-primary); }
+#polygon-svg [fill="rgba(255,229,0,0.22)"] {
+  fill: color-mix(in srgb, var(--accent-primary) 32%, transparent);
+}
+#polygon-svg [fill="#0055ff"] { fill: var(--accent-secondary); }
+#polygon-svg [stroke="#0055ff"] { stroke: var(--accent-secondary); }
+#polygon-svg [fill="rgba(255, 0, 60, 0.85)"] { fill: var(--accent-danger); }
+#polygon-svg [fill="#ccc"] { fill: var(--surface-secondary); }
+
+/* A wedge label sits on an accent that stays light in BOTH themes, so it needs
+   the on-accent ink rather than --ink, which flips. These come after the rules
+   above and are more specific, so they win. */
+#polygon-svg text[fill="#0a0a0a"],
+#polygon-svg text[fill="#ffffff"],
+#polygon-svg text[fill="#fff"] { fill: var(--text-on-accent, #2a2723); }

@@ -12,29 +12,45 @@ const configState = {
 };
 
 // --- PALETTES ---
-const paletteMulti = ['#FF4911', '#3B82F6', '#FF007F', '#A6E22E', '#9D4EDD', '#FFD966'];
-const paletteMono  = ['#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A', '#172554'];
+// Read from theme.css rather than written down, so the faces are in the site's
+// own soft accents, follow a re-theme and match the Pythagoras tab.
+const themeToken = (name, fallback) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
+// Shades of one token, for the single-colour mode.
+function shades(token, count, fallback) {
+  const hsl = new THREE.Color(themeToken(token, fallback)).getHSL({ h: 0, s: 0, l: 0 });
+  return Array.from({ length: count }, (_, i) =>
+    new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l * (1 - i * 0.13)));
+}
 
 function getColorArray(isMulti, count) {
-  const p = isMulti ? paletteMulti : paletteMono;
-  return Array.from({ length: count }, (_, i) => new THREE.Color(p[i % p.length]));
+  const p = isMulti
+    ? [
+        themeToken('--accent-secondary', '#6fb7e8'),
+        themeToken('--accent-warning', '#f0a868'),
+        themeToken('--accent-success', '#7cc47c'),
+        themeToken('--accent-danger', '#f07a7a'),
+        themeToken('--accent-primary', '#f4c95d'),
+        shades('--accent-secondary', 3, '#6fb7e8')[2].getStyle(),
+      ].map((c) => new THREE.Color(c))
+    : shades('--accent-secondary', 6, '#6fb7e8');
+  return Array.from({ length: count }, (_, i) => p[i % p.length].clone());
 }
 
 // --- SCENE SETUP ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-// FIX 1: Set scene.background instead of alpha:true to eliminate depth-buffer
-// precision issues with premultiplied transparency compositing. Pull the
-// colour from the soft-UI theme token so the canvas matches the rest of the
-// site (and follows light/dark), falling back to the original cream.
-const appBg = getComputedStyle(document.documentElement)
-  .getPropertyValue('--app-bg').trim() || '#F4F4F0';
-scene.background = new THREE.Color(appBg);
+// The canvas is transparent so the site's paint-blob wash, painted into <body>
+// behind it, still shows on this page like every other. An older note here
+// blamed alpha:true for depth-sorting artefacts on the sphere; rendering the
+// same frames both ways shows the moire on its stripe shader either way, so
+// that was a misattribution and transparency costs nothing.
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 
-// FIX: remove alpha:true — depth sorting artifacts disappeared
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // Ensures overlapping coplanar faces (box net) render correctly
@@ -51,9 +67,12 @@ controls.dampingFactor = 0.08;
 const sceneGroup = new THREE.Group();
 scene.add(sceneGroup);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+// Three's Lambert BRDF carries a 1/π, so an intensity of PI is what renders a
+// material at exactly its own colour — at 0.7 the faces arrived muted and
+// didn't match the Pythagoras tab's tiles.
+const ambientLight = new THREE.AmbientLight(0xffffff, Math.PI * 0.78);
 scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+const dirLight = new THREE.DirectionalLight(0xffffff, Math.PI * 0.3);
 dirLight.position.set(5, 10, 7);
 scene.add(dirLight);
 
@@ -61,8 +80,10 @@ let isMobile = window.innerWidth <= 768;
 
 function fitCamera(mobileFlag) {
   const aspect = window.innerWidth / window.innerHeight;
-  const targetHeight = mobileFlag ? 18 : 12;
-  const targetWidth  = mobileFlag ? 12 : 18;
+  // Roomier than it used to be: the note and the tab bar sit over the top of
+  // the canvas now, and a fully exploded net was running underneath them.
+  const targetHeight = mobileFlag ? 24 : 17;
+  const targetWidth  = mobileFlag ? 14 : 20;
   const vFov  = (camera.fov * Math.PI) / 180;
   const zH    = targetHeight / (2 * Math.tan(vFov / 2));
   const zW    = targetWidth  / (2 * aspect * Math.tan(vFov / 2));
@@ -157,8 +178,9 @@ function initLabels(labelData) {
     const div = document.createElement('div');
     div.className = 'floating-label';
     div.innerText  = l.text;
-    div.style.backgroundColor = l.bg;
-    div.style.color = l.textColor || '#fff';
+    // the face's colour rides as a stripe down the side of a paper label,
+    // rather than text printed on a saturated fill
+    div.style.setProperty('--tile', l.bg);
     labelsContainer.appendChild(div);
     domLabels.push({ div, l });
   });
@@ -177,13 +199,15 @@ function disableFrustumCulling() {
 
 function customAlert(message) {
   document.getElementById('custom-alert-text').innerText = message;
-  document.getElementById('alert-backdrop').style.display = 'block';
-  document.getElementById('custom-alert').style.display = 'flex';
+  document.getElementById('alert-backdrop').classList.add('open');
+  document.getElementById('custom-alert').classList.add('open');
 }
-document.getElementById('close-alert').addEventListener('click', () => {
-  document.getElementById('alert-backdrop').style.display = 'none';
-  document.getElementById('custom-alert').style.display = 'none';
-});
+const closeAlert = () => {
+  document.getElementById('alert-backdrop').classList.remove('open');
+  document.getElementById('custom-alert').classList.remove('open');
+};
+document.getElementById('close-alert').addEventListener('click', closeAlert);
+document.getElementById('alert-backdrop').addEventListener('click', closeAlert);
 
 // --- ROTATION TOGGLE ---
 function syncRotateBtn() {
@@ -808,32 +832,20 @@ const modalBackdrop = document.getElementById('modal-backdrop');
 const closeSettingsBtn = document.getElementById('close-settings');
 
 function toggleModal(show) {
-  settingsModal.style.display = show ? 'flex' : 'none';
-  modalBackdrop.style.display = show ? 'block' : 'none';
+  settingsModal.classList.toggle('open', show);
+  modalBackdrop.classList.toggle('open', show);
 }
 settingsBtn.addEventListener('click', () => toggleModal(true));
 closeSettingsBtn.addEventListener('click', () => toggleModal(false));
 modalBackdrop.addEventListener('click', () => toggleModal(false));
 
-const shapeDropdown    = document.getElementById('shape-dropdown');
-const shapeSelectedText = document.getElementById('selected-shape-text');
-const shapeOptions     = document.getElementById('shape-options');
-
-shapeDropdown.addEventListener('click', (e) => {
-  e.stopPropagation();
-  shapeOptions.classList.toggle('show');
-});
-document.addEventListener('click', () => shapeOptions.classList.remove('show'));
-
-document.querySelectorAll('.dropdown-option').forEach(opt => {
-  opt.addEventListener('click', (e) => {
-    const val  = e.target.getAttribute('data-value');
-    shapeSelectedText.innerText = e.target.innerText;
-    if (configState.shape !== val) {
-      configState.shape = val;
-      customAlert(`Initializing Mathematical Proof for: ${e.target.innerText}`);
-      initShape(val);
-    }
+// The solid is picked from a row of sticky notes carrying real radios — the
+// same selector the game setup screens use — rather than a bespoke dropdown.
+document.querySelectorAll('#shape-options input[name="shape"]').forEach((radio) => {
+  radio.addEventListener('change', () => {
+    if (!radio.checked || configState.shape === radio.value) return;
+    configState.shape = radio.value;
+    initShape(radio.value);
   });
 });
 
@@ -848,52 +860,6 @@ document.getElementById('toggle-explanation').addEventListener('change', (e) => 
 document.getElementById('toggle-colors').addEventListener('change', (e) => {
   configState.multicolor = e.target.checked;
   initShape(configState.shape);
-});
-
-// ── Color Legend Modal Logic ───────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const colorKeyBtn = document.getElementById('color-key-btn');
-  const colorLegend = document.getElementById('color-legend');
-
-  // Populate legend from shapes array
-  colorLegend.innerHTML = shapes.map(s => {
-    const isDark = c => {
-      const r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
-      return (r*299 + g*587 + b*114)/1000 < 128;
-    };
-    return `
-      <div style="
-        display:flex; align-items:center; gap:6px;
-        background:${s.color};
-        border:2px solid #1a1a1a;
-        box-shadow:2px 2px 0 #1a1a1a;
-        padding:4px 10px;
-        font-family:'JetBrains Mono',monospace;
-        font-weight:700; font-size:13px;
-        color:${isDark(s.color) ? '#fff' : '#1a1a1a'};
-        white-space:nowrap;
-      ">
-        <span style="font-size:16px; font-family:'Unbounded',sans-serif;">${s.val}</span>
-        ${s.isPrime ? '<span style="font-size:10px;opacity:.8;">★</span>' : ''}
-      </div>
-    `;
-  }).join('');
-
-  colorKeyBtn.addEventListener('click', e => {
-  e.preventDefault();
-  colorLegend.classList.toggle('hide');
-  
-  const isHidden = colorLegend.classList.contains('hide');
-  colorKeyBtn.innerHTML = isHidden ?
-    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/>
-        <circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/>
-        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-       </svg><span>Color Key</span>` :
-    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-       </svg><span>Hide Key</span>`;
-});
 });
 
 // INIT

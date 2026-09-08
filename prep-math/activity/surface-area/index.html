@@ -21,25 +21,32 @@
     />
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
     <style>
       /* =========================================================
-         Surface Area explorer — soft-UI skin matching the home page.
-         All colour / shadow tokens come from theme.css (via nav.css).
+         Surface Area studio — the same clothes as its sibling tab,
+         Pythagoras. The paper, the notes and the torn receipts all
+         come from components.css / setup.css; nothing here is a
+         card of its own, and every colour is a theme.css token.
          ========================================================= */
       body {
         margin: 0;
         overflow: hidden;
-        background-color: var(--app-bg);
+        background: var(--app-bg);
         font-family: var(--font-mono);
         color: var(--ink);
       }
 
+      /* Transparent canvas behind the whole page, so the site's paint-blob
+         wash still shows through the shape. */
       #canvas-container {
         position: fixed;
         inset: 0;
         z-index: 1;
       }
+      .pp-page-paint { opacity: 0.15; }
+      [data-theme="dark"] .pp-page-paint { opacity: 0.1; }
 
       /* Tab bar + banner ride above the canvas in normal flow, so neither one
          needs to know how tall the other is. */
@@ -47,103 +54,31 @@
         position: relative;
         z-index: 20;
         pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
       #page-top .builder-tabs { pointer-events: auto; }
 
-      /* Soft floating panel base (rounded sticker card, soft shadow). */
-      .neo-box {
-        position: absolute;
-        z-index: 10;
-        background: var(--surface-primary);
-        border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent);
-        border-radius: 20px;
-        box-shadow: var(--shadow-lg);
-      }
-
-      /* Explanation banner — soft card. */
+      /* ── The commentary is a sticky note. It is wide, so it barely tilts. */
       #explanation-overlay {
-        position: relative;
-        margin: 12px auto 0;
-        padding: 14px 26px;
-        text-align: center;
-        width: min(85%, 600px);
+        margin: 14px auto 0;
+        padding: 0.85rem 1.4rem 0.95rem;
+        width: min(88%, 620px);
         box-sizing: border-box;
-        pointer-events: none;
-        transition: background-color 0.4s, opacity 0.3s;
+        text-align: center;
+        --pp-note-tilt: -0.5deg;
+        transition: opacity var(--transition-base, 0.3s);
       }
       #explanation-overlay p {
         margin: 0;
-        font-family: var(--font-display);
-        font-size: clamp(0.9rem, 2.2vw, 1.1rem);
-        line-height: 1.4;
-        font-weight: var(--weight-bold);
-        letter-spacing: -0.01em;
-        color: var(--ink);
+        font-size: 0.95rem;
+        line-height: var(--leading-snug, 1.45);
+        font-weight: 600;
       }
 
-      /* Bottom slider bar — soft card. */
-      #controls {
-        position: fixed;
-        z-index: 20;
-        bottom: 5%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 85%;
-        max-width: 600px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px 26px;
-      }
-      .slider-label {
-        font-family: var(--font-display);
-        font-size: 0.8rem;
-        font-weight: var(--weight-bold);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-      }
-
-      /* Soft pill range slider. */
-      input[type="range"] {
-        flex-grow: 1;
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 8px;
-        background: color-mix(in srgb, var(--ink) 12%, transparent);
-        border-radius: 999px;
-        cursor: pointer;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        height: 24px;
-        width: 24px;
-        background: var(--accent-secondary);
-        border: 3px solid var(--surface-primary);
-        cursor: pointer;
-        box-shadow: var(--shadow-sm);
-        border-radius: 50%;
-        transition: transform 0.12s ease;
-      }
-      input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); }
-      input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.02); }
-      input[type="range"]::-moz-range-thumb {
-        height: 24px;
-        width: 24px;
-        background: var(--accent-secondary);
-        border: 3px solid var(--surface-primary);
-        cursor: pointer;
-        box-shadow: var(--shadow-sm);
-        border-radius: 50%;
-      }
-
-      /* Floating 3D labels — soft pills (bg colour set inline by JS). */
+      /* ── Face labels: paper, with the face's own colour as a stripe down
+         the side, rather than text printed on a saturated fill. ─────────── */
       #labels-container {
         position: fixed;
         inset: 0;
@@ -153,253 +88,195 @@
       .floating-label {
         position: absolute;
         transform: translate(-50%, -50%);
-        background: var(--accent-primary);
-        padding: 5px 12px;
-        border: none;
-        box-shadow: var(--shadow-md);
-        font-family: var(--font-mono);
-        font-size: 0.8rem;
-        font-weight: 700;
-        white-space: nowrap;
-        transition: opacity 0.2s ease;
-        opacity: 0;
-        border-radius: 999px;
-      }
-
-      /* Top-right button cluster. */
-      #top-buttons {
-        position: fixed;
-        top: 88px;
-        right: 20px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        z-index: 100;
-      }
-
-      /* Soft pill buttons. */
-      .top-btn {
+        padding: 0.25rem 0.6rem;
+        border-radius: 2px;
+        border: var(--border, 2px solid #2a2723);
         background: var(--surface-primary);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
         color: var(--ink);
-        padding: 11px 16px;
-        font-family: var(--font-display);
-        font-weight: var(--weight-bold);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: transform 0.15s var(--ease-bounce, ease), box-shadow 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
+        box-shadow: var(--shadow-sm);
+        opacity: 0;
+        transition: opacity var(--transition-base, 0.25s);
+      }
+      .floating-label::before {
+        content: "";
+        position: absolute;
+        left: -2px;
+        top: -2px;
+        bottom: -2px;
+        width: 5px;
+        background: var(--tile, var(--accent-secondary));
+      }
+
+      /* ── The slider strip is a torn receipt. ───────────────────────────── */
+      #controls {
+        position: fixed;
+        bottom: max(3%, env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(90%, 620px);
+        z-index: 20;
+      }
+      #controls .pp-receipt__paper {
         display: flex;
         align-items: center;
-        gap: 7px;
-        border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);
-        box-shadow: var(--shadow-sm);
-        border-radius: 999px;
+        gap: 0.85rem;
+        padding: 1rem 1.5rem 1.05rem;
+      }
+      .slider-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--tracking-wide, 0.05em);
+        color: var(--text-secondary);
         white-space: nowrap;
-        -webkit-tap-highlight-color: transparent;
       }
-      .top-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-      .top-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
 
-      /* Rotation toggle — accent-success when ON. */
-      #rotate-btn.active {
-        background: var(--accent-success);
-        color: #fff;
-        border-color: var(--accent-success);
+      /* Range input — square-ended track, paper thumb with the site's border. */
+      input[type="range"] {
+        flex-grow: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        background: var(--surface-secondary);
+        border: var(--border-subtle);
+        cursor: pointer;
       }
-      #rotate-btn .icon { display: inline-flex; transition: transform 0.3s; }
-      #rotate-btn.active .icon { animation: spin-slow 3s linear infinite; }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 22px;
+        width: 22px;
+        background: var(--accent-primary);
+        border: var(--border, 2px solid #2a2723);
+        border-radius: 2px;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition-base, 0.14s);
+      }
+      input[type="range"]::-webkit-slider-thumb:hover { transform: translateY(-1px) scale(1.06); }
+      input[type="range"]::-moz-range-thumb {
+        height: 22px;
+        width: 22px;
+        background: var(--accent-primary);
+        border: var(--border, 2px solid #2a2723);
+        border-radius: 2px;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Square icon button on .pp-btn. sticky-ui.css turns every .pp-btn into
+         a taped note, which is clutter at 38px and gets cropped by a receipt's
+         mask — the same exemption sticky-ui makes for icon-only buttons. */
+      .pp-btn.icon-btn {
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        transform: none;
+        background: var(--pp-note-bg, #fff3a8);
+      }
+      .pp-btn.icon-btn::before { display: none; }
+      .pp-btn.icon-btn:hover { transform: translateY(-2px); }
+      .pp-btn.icon-btn:active { transform: translateY(0); }
+      .icon-btn svg { width: 17px; height: 17px; }
+      #rotate-btn.active { --pp-note-bg: #c8f0c0; }
+      #rotate-btn.active svg { animation: spin-slow 3s linear infinite; }
       @keyframes spin-slow {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
 
-      /* Modal backdrops. */
-      #modal-backdrop,
-      #alert-backdrop {
-        display: none;
+      #top-buttons {
         position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(20, 19, 15, 0.45);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-        z-index: 101;
+        top: 92px;
+        right: 18px;
+        z-index: 25;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
       }
 
-      /* Soft dashboard-window modal. */
-      .modal-box {
-        display: none;
+      /* ── Sheets: the shared setup receipt. ─────────────────────────────── */
+      #modal-backdrop,
+      #alert-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(var(--shadow-color, 42, 39, 35), 0.45);
+        z-index: 40;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-base, 0.22s);
+      }
+      #modal-backdrop.open,
+      #alert-backdrop.open { opacity: 1; pointer-events: auto; }
+
+      /* Compounded with .pp-receipt on purpose: loader.js injects components.css
+         late, so at an equal-specificity tie .pp-receipt's own `position:
+         relative` beats a bare .modal-box and the sheet drifts out of the
+         viewport. setup.css carries the same note for .sticky-choice. */
+      .modal-box.pp-receipt {
         position: fixed;
         top: 50%;
         left: 50%;
+        transform: translate(-50%, -46%);
+        width: min(92%, 400px);
+        margin: 0;
+        max-height: 82vh;
+        overflow-y: auto;
+        z-index: 50;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity var(--transition-base, 0.22s),
+          transform var(--transition-bounce, 0.4s cubic-bezier(0.16, 1, 0.3, 1));
+      }
+      .modal-box.pp-receipt.open {
+        opacity: 1;
+        pointer-events: auto;
         transform: translate(-50%, -50%);
-        padding: 26px 30px;
-        width: 90%;
-        max-width: 420px;
-        z-index: 102;
-        flex-direction: column;
-        gap: 18px;
       }
-      .modal-box h2 {
-        margin: 0 0 6px 0;
-        font-family: var(--font-display);
-        font-weight: var(--weight-black);
-        text-transform: none;
-        letter-spacing: -0.01em;
-        font-size: 1.4rem;
-        color: var(--ink);
-        border-bottom: var(--border-subtle);
-        padding-bottom: 12px;
-      }
+      .modal-box .pp-setup__paper { gap: 1.3rem; }
+      .modal-box .pp-btn { width: 100%; margin-top: 0.2rem; --pp-note-tilt: -0.7deg; }
 
-      .setting-row {
+      #custom-alert .pp-receipt__paper {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: var(--font-display);
-        font-weight: var(--weight-bold);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-size: 0.82rem;
-        color: var(--ink);
-      }
-
-      /* Custom dropdown — soft pill. */
-      .custom-dropdown {
-        position: relative;
-        width: 160px;
-        font-family: var(--font-mono);
-      }
-      .dropdown-selected {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 0.95rem;
-        background: var(--surface-secondary);
-        border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-        border-radius: 999px;
-        box-shadow: var(--shadow-sm);
-        font-family: var(--font-mono);
-        font-weight: 700;
-        font-size: 0.66rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--ink);
-        cursor: pointer;
-        user-select: none;
-        transition: transform 0.12s ease, box-shadow 0.12s ease;
-      }
-      .dropdown-selected:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-      .dropdown-options {
-        display: none;
         flex-direction: column;
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        right: 0;
-        background: var(--surface-primary);
-        border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-        border-radius: 16px;
-        box-shadow: var(--shadow-lg);
-        z-index: 103;
-        padding: 0.35rem;
-        overflow: hidden;
-      }
-      .dropdown-options.show { display: flex; }
-      .dropdown-option {
-        padding: 0.5rem 0.9rem;
-        font-family: var(--font-mono);
-        font-weight: 700;
-        font-size: 0.66rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--ink);
-        cursor: pointer;
-        border-radius: 999px;
-        transition: background 0.1s, transform 0.1s, color 0.1s;
-      }
-      .dropdown-option:hover {
-        background: color-mix(in srgb, var(--accent-secondary) 16%, var(--surface-primary));
-        color: var(--accent-secondary);
-        transform: translateX(3px);
-      }
-
-      /* Soft toggle switch. */
-      .neo-switch {
-        position: relative;
-        display: inline-block;
-        width: 48px;
-        height: 27px;
-      }
-      .neo-switch input { opacity: 0; width: 0; height: 0; }
-      .neo-slider {
-        position: absolute;
-        cursor: pointer;
-        inset: 0;
-        background-color: color-mix(in srgb, var(--ink) 14%, transparent);
-        border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
-        transition: 0.2s;
-        border-radius: 999px;
-      }
-      .neo-slider:before {
-        position: absolute;
-        content: "";
-        height: 19px;
-        width: 19px;
-        left: 2px;
-        bottom: 2px;
-        background-color: var(--surface-primary);
-        box-shadow: var(--shadow-sm);
-        transition: 0.2s;
-        border-radius: 50%;
-      }
-      input:checked + .neo-slider {
-        background-color: var(--accent-success);
-        border-color: var(--accent-success);
-      }
-      input:checked + .neo-slider:before { transform: translateX(21px); }
-
-      /* Pill CTA. */
-      .btn-action {
-        margin-top: 6px;
-        background: var(--accent-primary);
-        color: var(--ink);
-        border: none;
-        box-shadow: var(--shadow-md);
-        padding: 13px;
-        font-family: var(--font-display);
-        font-weight: var(--weight-bold);
-        font-size: 0.95rem;
-        cursor: pointer;
-        border-radius: 999px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        align-items: center;
+        gap: 0.9rem;
         text-align: center;
-        transition: transform 0.15s var(--ease-bounce, ease), box-shadow 0.15s ease;
       }
-      .btn-action:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-      .btn-action:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
-
-      #custom-alert { gap: 14px; text-align: center; align-items: center; }
-      #custom-alert svg { width: 48px; height: 48px; stroke: var(--accent-secondary); }
+      #custom-alert svg { width: 40px; height: 40px; stroke: var(--accent-secondary); }
       #custom-alert p {
+        margin: 0;
         font-family: var(--font-mono);
-        font-size: 1rem;
+        font-size: 0.82rem;
         font-weight: 600;
         color: var(--ink);
-        margin: 8px 0;
       }
 
-      /* ---- Mobile ---- */
-      @media (max-width: 768px) {
-        #explanation-overlay { top: 74px; width: 90%; }
-        #explanation-overlay p { font-size: 0.9rem; }
-        #controls { padding: 12px 16px; gap: 12px; width: 90%; }
-        .slider-label { font-size: 0.72rem; }
-        .floating-label { font-size: 0.72rem; padding: 4px 9px; }
-        #top-buttons { gap: 7px; top: 72px; }
-        .top-btn { padding: 9px 12px; font-size: 0.72rem; }
+      @media (max-width: 640px) {
+        #controls { bottom: 2.5%; width: 94%; }
+        #controls .pp-receipt__paper { gap: 0.6rem; padding: 0.85rem 1.1rem 0.9rem; }
+        .slider-label { font-size: 0.64rem; }
+        #explanation-overlay { padding: 0.7rem 1rem 0.8rem; }
+        #explanation-overlay p { font-size: 0.86rem; }
+        /* The tab bar wraps onto two rows on a phone, so the cluster moves
+           down beside the shape rather than under the notes. */
+        #top-buttons {
+          top: auto;
+          bottom: 104px;
+          right: 12px;
+          flex-direction: row;
+        }
       }
     </style>
       <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
@@ -424,172 +301,116 @@
       <!-- One nav link, four studios: the bar is filled by geometry-tabs.js -->
       <div class="builder-tabs builder-tabs--float" data-tabs="geometry"></div>
 
-      <div id="explanation-overlay" class="neo-box">
-        <p id="text-content">Loading Mathematical Proof...</p>
+      <div id="explanation-overlay" class="pp-sticky pp-sticky--c0 pp-sticky--tape">
+        <p id="text-content">Unfolding the shape…</p>
       </div>
     </div>
 
     <!-- Grouped top-right buttons -->
     <div id="top-buttons">
       <!-- Rotation toggle — ON by default -->
-      <button
-        id="rotate-btn"
-        class="top-btn active"
-        title="Toggle auto-rotation"
-      >
-        <span class="icon">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-        </span>
+      <button id="rotate-btn" class="pp-btn icon-btn active" title="Auto-rotation ON — click to stop"
+              aria-label="Toggle auto-rotation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
       </button>
 
-      <button id="settings-btn" class="top-btn" title="Open settings">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+      <button id="settings-btn" class="pp-btn icon-btn" title="The shape" aria-label="Open settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"></circle>
-          <path
-            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
-          ></path>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       </button>
     </div>
 
-    <!-- Settings modal -->
+    <!-- Settings sheet — the shared setup receipt -->
     <div id="modal-backdrop"></div>
-    <div id="settings-modal" class="neo-box modal-box">
-      <h2>Configuration</h2>
+    <div id="settings-modal" class="modal-box pp-receipt pp-setup__receipt">
+      <div class="pp-receipt__paper pp-setup__paper">
+        <h2 class="pp-setup__title">The shape</h2>
 
-      <div class="setting-row">
-        <label>Shape Net</label>
-        <div class="custom-dropdown" id="shape-dropdown">
-          <div class="dropdown-selected">
-            <span id="selected-shape-text">Sphere</span>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </div>
-          <div class="dropdown-options" id="shape-options">
-            <div class="dropdown-option" data-value="sphere">Sphere</div>
-            <div class="dropdown-option" data-value="cone">Cone</div>
-            <div class="dropdown-option" data-value="cylinder">Cylinder</div>
-            <div class="dropdown-option" data-value="cube">Cube</div>
-            <div class="dropdown-option" data-value="cuboid">Cuboid</div>
+        <div class="pp-setup-field">
+          <span>Solid</span>
+          <div class="sticky-row" id="shape-options">
+            <label class="pp-sticky sticky-choice pp-sticky--c0">
+              <input type="radio" name="shape" value="sphere" checked /> Sphere
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c1">
+              <input type="radio" name="shape" value="cone" /> Cone
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c2">
+              <input type="radio" name="shape" value="cylinder" /> Cylinder
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c3">
+              <input type="radio" name="shape" value="cube" /> Cube
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c4">
+              <input type="radio" name="shape" value="cuboid" /> Cuboid
+            </label>
           </div>
         </div>
-      </div>
 
-      <div class="setting-row">
-        <label>Show Area Labels</label>
-        <label class="neo-switch">
-          <input type="checkbox" id="toggle-labels" checked />
-          <span class="neo-slider"></span>
-        </label>
-      </div>
+        <div class="pp-setup-field">
+          <span>Show</span>
+          <div class="sticky-row">
+            <label class="pp-sticky sticky-choice pp-sticky--c0">
+              <input type="checkbox" id="toggle-labels" checked /> Area labels
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c1">
+              <input type="checkbox" id="toggle-explanation" checked /> Commentary
+            </label>
+            <label class="pp-sticky sticky-choice pp-sticky--c2">
+              <input type="checkbox" id="toggle-colors" checked /> Colour
+            </label>
+          </div>
+        </div>
 
-      <div class="setting-row">
-        <label>Explanations</label>
-        <label class="neo-switch">
-          <input type="checkbox" id="toggle-explanation" checked />
-          <span class="neo-slider"></span>
-        </label>
+        <button type="button" class="pp-btn" id="close-settings">Done</button>
       </div>
-
-      <div class="setting-row">
-        <label>Multicolor</label>
-        <label class="neo-switch">
-          <input type="checkbox" id="toggle-colors" checked />
-          <span class="neo-slider"></span>
-        </label>
-      </div>
-
-      <div class="btn-action" id="close-settings">Apply / Close</div>
     </div>
 
-    <!-- Alert modal -->
+    <!-- Alert sheet -->
     <div id="alert-backdrop"></div>
-    <div id="custom-alert" class="neo-box modal-box">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-      </svg>
-      <p id="custom-alert-text">Alert message</p>
-      <div class="btn-action" id="close-alert" style="width: 100px">OK</div>
+    <div id="custom-alert" class="modal-box pp-receipt">
+      <div class="pp-receipt__paper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <p id="custom-alert-text">Alert message</p>
+        <button type="button" class="pp-btn" id="close-alert">OK</button>
+      </div>
     </div>
 
     <div id="canvas-container"></div>
 
-    <div id="controls" class="neo-box">
-      <span class="slider-label">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        3D
-      </span>
-      <input type="range" id="progress-slider" min="0" max="100" value="0" />
-      <span class="slider-label">
-        Net
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
-        </svg>
-      </span>
+    <div id="controls" class="pp-receipt">
+      <div class="pp-receipt__paper">
+        <span class="slider-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          </svg>
+          Solid
+        </span>
+        <input type="range" id="progress-slider" min="0" max="100" value="0"
+               aria-label="Unfolding progress" />
+        <span class="slider-label">
+          Net
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="1"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+        </span>
+      </div>
     </div>
 
     <script type="importmap">
