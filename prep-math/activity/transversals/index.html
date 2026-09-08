@@ -129,6 +129,9 @@
               <button class="anim-mode-btn anim-mode-btn--quiz" data-mode="quiz_pick">
                 Pick the Angle
               </button>
+              <button class="anim-mode-btn anim-mode-btn--quiz" data-mode="quiz_identify">
+                Name the Pair
+              </button>
             </div>
 
             <!-- Quiz strip: replaces the animation slider in the two activity
@@ -138,6 +141,14 @@
               <div class="quiz-answers" id="quiz-answers">
                 <button class="pp-btn quiz-choice" type="button" data-answer="equal">Equal</button>
                 <button class="pp-btn quiz-choice" type="button" data-answer="supplementary">Supplementary</button>
+              </div>
+              <div class="quiz-names" id="quiz-names" hidden>
+                <button class="pp-btn quiz-name" type="button" data-rel="vert_opp">Vertically Opposite</button>
+                <button class="pp-btn quiz-name" type="button" data-rel="corresponding">Corresponding</button>
+                <button class="pp-btn quiz-name" type="button" data-rel="alt_int">Alternate Interior</button>
+                <button class="pp-btn quiz-name" type="button" data-rel="alt_ext">Alternate Exterior</button>
+                <button class="pp-btn quiz-name" type="button" data-rel="cons_int">Co-interior</button>
+                <button class="pp-btn quiz-name" type="button" data-rel="cons_ext">Co-exterior</button>
               </div>
               <div class="quiz-foot">
                 <span class="quiz-score" id="quiz-score">0 of 0</span>
@@ -166,12 +177,12 @@
           <div class="stat-card">
             <div class="stat-tag">Acute ∠ (α)</div>
             <div class="stat-val" id="s-angle-alpha">60°</div>
-            <div class="stat-name">Yellow family</div>
+            <div class="stat-name" id="s-family-a">Yellow family</div>
           </div>
           <div class="stat-card">
             <div class="stat-tag">Obtuse ∠ (β)</div>
             <div class="stat-val" id="s-angle-beta">120°</div>
-            <div class="stat-name">Blue family</div>
+            <div class="stat-name" id="s-family-b">Blue family</div>
           </div>
           <div class="stat-card">
             <div class="stat-tag">Selected Mode</div>
@@ -330,6 +341,16 @@
               <div class="ctrl-label">Show Center Anchor</div>
               <label class="toggle"
                 ><input type="checkbox" id="t-center" checked />
+                <div class="t-track"><div class="t-thumb"></div></div>
+              </label>
+            </div>
+            <div class="ctrl-row">
+              <div class="ctrl-label">
+                Angle Colours
+                <small>Off makes the activities harder — no colour to read</small>
+              </div>
+              <label class="toggle"
+                ><input type="checkbox" id="t-colors" checked />
                 <div class="t-track"><div class="t-thumb"></div></div>
               </label>
             </div>

@@ -20,8 +20,39 @@ const state = {
   animProgress: 0,
   activeWedge: null,
 
-  protractor: false,
+    protractor: false,
+  colors: true,         // off: every angle is plain paper, so position is the only clue
   quiz: null            // see startQuiz() — null whenever an activity isn't running
+};
+
+/* ── THE NAMED PAIRS ──────────────────────────────────────────────────────
+   The six relationships the panel lists, as the actual pairs of angles. Only
+   these are ever asked about in "Name the Pair" — two angles on the same line
+   (∠1 and ∠2, say) are a linear pair with no name in this set. */
+const NAMED_PAIRS = {
+  vert_opp:      [[1, 4], [2, 3], [5, 8], [6, 7]],
+  corresponding: [[1, 5], [2, 6], [3, 7], [4, 8]],
+  alt_int:       [[3, 6], [4, 5]],
+  alt_ext:       [[1, 8], [2, 7]],
+  cons_int:      [[3, 5], [4, 6]],
+  cons_ext:      [[1, 7], [2, 8]],
+};
+const REL_LABELS = {
+  vert_opp: 'vertically opposite',
+  corresponding: 'corresponding',
+  alt_int: 'alternate interior',
+  alt_ext: 'alternate exterior',
+  cons_int: 'co-interior (consecutive interior)',
+  cons_ext: 'co-exterior (consecutive exterior)',
+};
+/* Why each one is what it is — the sentence that makes the name stick. */
+const REL_WHY = {
+  vert_opp: 'they are back-to-back at the same crossing',
+  corresponding: 'they sit in matching positions at the two crossings',
+  alt_int: 'they are between the parallels, on opposite sides of the transversal',
+  alt_ext: 'they are outside the parallels, on opposite sides of the transversal',
+  cons_int: 'they are between the parallels, on the SAME side of the transversal',
+  cons_ext: 'they are outside the parallels, on the SAME side of the transversal',
 };
 
 /* ── THE EIGHT ANGLES, IN TWO FAMILIES ────────────────────────────────────
@@ -32,7 +63,11 @@ const state = {
    (1, 4, 5, 8 are the acute family; 2, 3, 6, 7 the obtuse one.) */
 const ACUTE_FAMILY = [1, 4, 5, 8];
 const sameFamily = (a, b) => ACUTE_FAMILY.includes(a) === ACUTE_FAMILY.includes(b);
-const QUIZ_MODES = { quiz_equal_supp: 'Equal or Supplementary', quiz_pick: 'Pick the Correct Angle' };
+const QUIZ_MODES = {
+  quiz_equal_supp: 'Equal or Supplementary',
+  quiz_pick: 'Pick the Correct Angle',
+  quiz_identify: 'Name the Pair',
+};
 const isQuiz = () => Boolean(QUIZ_MODES[state.animMode]);
 /* At exactly 90° every angle is a right angle, so a pair is equal AND
    supplementary at once. The activities say so rather than marking one wrong. */
@@ -268,6 +303,12 @@ function nextQuestion() {
     const a = randomAngle();
     q.pair = [a, randomAngle([a])];
     q.reference = null;
+    } else if (q.mode === 'quiz_identify') {
+    const rels = Object.keys(NAMED_PAIRS);
+    q.rel = rels[Math.floor(Math.random() * rels.length)];
+    const options = NAMED_PAIRS[q.rel];
+    q.pair = options[Math.floor(Math.random() * options.length)];
+    q.reference = null;
   } else {
     q.reference = randomAngle();
     q.pair = null;
@@ -344,6 +385,22 @@ function answerPick(w) {
   render();
 }
 
+/* Name the Pair: the six named relationships, answered from the buttons. */
+function answerIdentify(rel) {
+  const q = state.quiz;
+  if (!q || q.settled) return;
+  const [a, b] = q.pair;
+  const correct = rel === q.rel;
+  q.settled = true;
+  q.picked = rel;
+  scoreQuestion(correct);
+  q.verdict = correct
+    ? `Yes — ∠${a} and ∠${b} are ${REL_LABELS[q.rel]}: ${REL_WHY[q.rel]}.`
+    : `Not quite. ∠${a} and ∠${b} are ${REL_LABELS[q.rel]} — ${REL_WHY[q.rel]}.`;
+  syncQuizUI();
+  render();
+}
+
 function syncQuizUI() {
   const strip = $quiz.strip();
   if (!strip) return;
@@ -352,16 +409,28 @@ function syncQuizUI() {
   document.querySelector('.anim-slider-row').hidden = isQuiz();
   if (!isQuiz() || !q) return;
 
-  const answers = $quiz.answers();
+    const answers = $quiz.answers();
   answers.hidden = q.mode !== 'quiz_equal_supp';
   answers.querySelectorAll('.quiz-choice').forEach((b) => {
     b.disabled = q.settled;
     b.classList.toggle('is-picked', q.settled && q.picked === b.dataset.answer);
   });
 
-  let prompt;
+  const names = document.getElementById('quiz-names');
+  names.hidden = q.mode !== 'quiz_identify';
+  names.querySelectorAll('.quiz-name').forEach((b) => {
+    b.disabled = q.settled;
+    b.classList.toggle('is-picked', q.settled && q.picked === b.dataset.rel);
+    /* Once it is settled the true one is marked, so a wrong pick is shown
+       beside the right answer rather than on its own. */
+    b.classList.toggle('is-answer', q.settled && b.dataset.rel === q.rel);
+  });
+
+    let prompt;
   if (q.mode === 'quiz_equal_supp') {
     prompt = q.verdict || `Are ∠${q.pair[0]} and ∠${q.pair[1]} equal, or supplementary?`;
+  } else if (q.mode === 'quiz_identify') {
+    prompt = q.verdict || `What are ∠${q.pair[0]} and ∠${q.pair[1]} to each other?`;
   } else if (q.settled) {
     prompt = q.verdict;
   } else {
@@ -378,7 +447,9 @@ function syncQuizUI() {
 function quizOpacity(w) {
   const q = state.quiz;
   if (!q) return null;
-  if (q.mode === 'quiz_equal_supp') return q.pair.includes(w) ? 0.9 : 0.12;
+    if (q.mode === 'quiz_equal_supp' || q.mode === 'quiz_identify') {
+    return q.pair.includes(w) ? 0.9 : 0.12;
+  }
   if (w === q.reference) return 0.9;
   if (q.gotEqual === w || q.gotSupp === w) return 0.9;
   return q.settled ? 0.12 : 0.4;   // still choosable until the round is done
@@ -480,9 +551,14 @@ function render() {
        'data-w': wdg.w
     });
 
+        /* With colours off every angle is the same plain paper, so nothing about
+       the fill says which family it is in — the activities then have to be
+       reasoned out from position, which is the point of the switch. */
+    const fill = state.colors ? wdg.color : 'var(--surface-secondary)';
+
     gWdg.appendChild(el('path', {
       d: getSectorPath(wdg.cx, wdg.cy, wdg.start, wdg.sweep, r),
-      fill: wdg.color, stroke: strokeColor, 'stroke-width': '1.5',
+      fill, stroke: strokeColor, 'stroke-width': '1.5',
       'stroke-dasharray': strokeDash, opacity: opacity
     }));
 
@@ -500,7 +576,8 @@ function render() {
         x: lx, y: ly + 3,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
         'font-family': 'JetBrains Mono,monospace', 'font-size': '11',
-        'font-weight': '700', fill: wdg.textFill, opacity: opacity > 0.5 ? 1 : 0.7
+                'font-weight': '700', fill: state.colors ? wdg.textFill : 'var(--ink)',
+        opacity: opacity > 0.5 ? 1 : 0.7
       }));
     }
     gTransform.appendChild(gWdg);
@@ -572,13 +649,16 @@ function render() {
   // Update DOM readouts
   let acute = Math.min(A, 180 - A);
   let obtuse = Math.max(A, 180 - A);
+    document.getElementById('s-family-a').textContent = state.colors ? 'Yellow family' : 'Acute family';
+  document.getElementById('s-family-b').textContent = state.colors ? 'Blue family' : 'Obtuse family';
   document.getElementById('s-angle-alpha').textContent = acute.toFixed(1) + '°';
   document.getElementById('s-angle-beta').textContent = obtuse.toFixed(1) + '°';
 
   const modeNames = {
     none: 'Angles Explorer',
         quiz_equal_supp: 'Equal or Supplementary',
-    quiz_pick: 'Pick the Correct Angle',
+        quiz_pick: 'Pick the Correct Angle',
+    quiz_identify: 'Name the Pair',
     vert_opp: 'Vertically Opposite',
     corresponding: 'Corresponding',
     alt_int: 'Alternate Interior',
@@ -648,6 +728,7 @@ wireToggle('t-vertices', 'showVertices');
 wireToggle('t-center', 'showCenter');
 wireToggle('t-grid', 'grid');
 wireToggle('t-protractor', 'protractor');
+wireToggle('t-colors', 'colors');
 
 // Animation Mode Selector
 document.querySelectorAll('.anim-mode-btn').forEach(btn => {
@@ -678,6 +759,9 @@ document.querySelectorAll('.anim-mode-btn').forEach(btn => {
 
 document.querySelectorAll('.quiz-choice').forEach((btn) => {
   btn.addEventListener('click', () => answerEqualSupp(btn.dataset.answer));
+});
+document.querySelectorAll('.quiz-name').forEach((btn) => {
+  btn.addEventListener('click', () => answerIdentify(btn.dataset.rel));
 });
 document.getElementById('quiz-next').addEventListener('click', nextQuestion);
 
