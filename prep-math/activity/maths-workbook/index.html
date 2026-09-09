@@ -7,13 +7,13 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#f4c95d" />
-    <title>Prep Portal | Dividing and Remainders</title>
+    <title>Prep Portal | Maths Workbook</title>
     <meta
       name="description"
-      content="Build a printable workbook on dividing with remainders: piles of shapes to ring into groups, trays to share them between, the division sentence with every part named, and fraction bars that turn the bit left over into a mixed number and an improper fraction. Made for reinforcement, with a worked example and an answer key."
+      content="Build one printable maths workbook from four families: place value with base-ten blocks and charts; adding and taking away with and without regrouping, written across and down; dividing by grouping objects, with the divisor and the remainder named; and fractions — identifying, colouring, and adding the ones that match. Worked examples, an answer key, and a code that rebuilds the same paper."
     />
 
-    <!-- Page access gate: feature "prep-math-activities", part "remainders-workbook" -->
+    <!-- Page access gate: feature "prep-math-activities", part "maths-workbook" -->
     <script type="module" src="/utils/auth/premium-guard.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -69,18 +69,20 @@
     <main class="wb-main">
       <header class="wb-hero">
         <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
-        <h1 class="wb-title">Dividing and Remainders<em>.</em></h1>
+        <h1 class="wb-title">Maths Workbook<em>.</em></h1>
         <p class="wb-lead">
-          A pile of things and a pencil. Ring the groups, count what is left
-          over, and write the sentence underneath — with every part named, so
-          the divisor and the remainder are things you can point at. Then the
-          bit left over turns into a fraction, and the fraction bars turn that
-          into a mixed number and an improper fraction.
+          Four families on one sheet, in the order they are taught. What a
+          number is, made of blocks and read off a chart. Adding and taking
+          away, with and without regrouping, written across the page and down
+          it. Dividing by grouping things you can count, with the divisor and
+          the remainder named. And fractions — coloured in, read off, and added
+          when the parts match.
         </p>
         <p class="wb-sister">
-          Built for reinforcement — do the step, say the word, do it again. The
-          same bench builds the
-          <a href="/prep-math/activity/place-value-workbook/index.html">Place Value Workbook</a>.
+          Tick what you need and it comes out as one paper with one code at the
+          foot of it. The same blocks are on the
+          <a href="/prep-math/activity/base-blocks/index.html">Manipulatives canvas</a>
+          if you would rather move them about than print them.
         </p>
       </header>
 
@@ -94,12 +96,38 @@
               <label class="wb-field">
                 <span>Title on the front</span>
                 <input class="wb-input" id="wb-title" type="text" maxlength="52"
-                       value="Dividing and Remainders" autocomplete="off" />
+                       value="Maths Workbook" autocomplete="off" />
+              </label>
+
+              <div class="wb-row2">
+                <label class="wb-field">
+                  <span>Base</span>
+                  <select class="wb-select" id="mw-base"></select>
+                </label>
+                <label class="wb-field">
+                  <span>Places</span>
+                  <select class="wb-select" id="mw-places"></select>
+                </label>
+              </div>
+
+              <label class="wb-field">
+                <span>Zeros in the middle</span>
+                <select class="wb-select" id="mw-zeros">
+                  <option value="0">None — every place has something in it</option>
+                  <option value="0.25" selected>Some — a zero here and there</option>
+                  <option value="0.45">Plenty — zeros are the point</option>
+                </select>
+                <span class="wb-field__hint">
+                  An empty place is the hardest thing about place value. This is
+                  how often one turns up inside a number. Base and places only
+                  change the place-value questions; everything else on the sheet
+                  is base ten and says so.
+                </span>
               </label>
 
               <label class="wb-field">
                 <span>How much help</span>
-                <select class="wb-select" id="rw-help"></select>
+                <select class="wb-select" id="mw-help"></select>
                 <span class="wb-field__hint">
                   The pictures are the same every time; what changes is how much
                   is already done. Start at <strong>Show me</strong> and move
@@ -109,7 +137,7 @@
 
               <label class="wb-field">
                 <span>How hard</span>
-                <select class="wb-select" id="rw-level"></select>
+                <select class="wb-select" id="mw-level"></select>
                 <span class="wb-field__hint">
                   The numbers stay small at every level. This is a workbook about
                   an idea, and an idea lost in the middle of a big division was
@@ -134,6 +162,10 @@
                 <label class="wb-toggle">
                   <input type="checkbox" id="wb-nameline" checked />
                   Name, class and date line
+                </label>
+                <label class="wb-toggle">
+                  <input type="checkbox" id="mw-blockskey" checked />
+                  A key showing what each block is worth
                 </label>
                 <label class="wb-toggle">
                   <input type="checkbox" id="wb-answers" checked />

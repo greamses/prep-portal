@@ -1,10 +1,9 @@
 /* ============================================================================
-   Place Value Workbook — the exercises, as one registry
+   Maths Workbook — the PLACE VALUE exercises
    ----------------------------------------------------------------------------
-   ONE list, read by the builder (which offers them), the workbook (which prints
-   them) and the answer key (which marks them), so a new exercise is an entry
-   here and nothing else. Same shape as tools.js and sheets.js on the
-   manipulatives canvas.
+   One of the four families this workbook is made of. They are assembled into
+   the single registry the engine reads in ./exercises.js, which is the file to
+   read first — this one only holds the place-value half.
 
    Every entry answers the same four questions:
 
@@ -100,13 +99,13 @@ function saidCounts(counts, o) {
 
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
-export const GROUPS = [
+export const PLACE_GROUPS = [
   { id: "blocks", label: "Number blocks", blurb: "The concrete stage: pieces you can count, trade and draw." },
   { id: "charts", label: "Place value charts", blurb: "The bridge: a column for each place, to write into and read off." },
   { id: "numbers", label: "The number on its own", blurb: "The abstract stage: expanded form, words, stepping, rounding, comparing and ordering." },
 ];
 
-export const EXERCISES = [
+export const PLACE_EXERCISES = [
   /* ───────────────────────────── blocks ─────────────────────────────────── */
   {
     id: "blocks-count",
@@ -774,16 +773,6 @@ export const EXERCISES = [
     },
   },
 ];
-
-export function exerciseById(id) {
-  return EXERCISES.find((e) => e.id === id) || null;
-}
-
-/** Whether an exercise can run at all under these options, and why not. */
-export function unavailable(ex, o) {
-  if (ex.tenOnly && o.base !== 10) return "base ten only";
-  return null;
-}
 
 /** The number of places an exercise will actually use. */
 export function placesFor(ex, o) {

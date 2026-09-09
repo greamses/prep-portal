@@ -193,8 +193,7 @@ const NAV_CONFIG = [
              not with the activities. */
           { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "Blocks, abacuses, algebra tiles and charts" },
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
-          { text: "Place Value Workbook", href: "/prep-math/activity/place-value-workbook/index.html", description: "Build a printable workbook, blocks and charts" },
-          { text: "Dividing & Remainders", href: "/prep-math/activity/remainders-workbook/index.html", description: "Printable — group the objects, then fraction bars" },
+          { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Printable — place value, sums, remainders, fractions" },
           { text: "Polynomial Remainder Theorem", href: "/prep-math/activity/remainder-theorem-workbook/index.html", description: "Printable — P(x) divided by (x − a)" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },

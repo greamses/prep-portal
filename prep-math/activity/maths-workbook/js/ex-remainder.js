@@ -1,8 +1,10 @@
 /* ============================================================================
-   Remainders Workbook — the exercises, as one registry
+   Maths Workbook — the DIVIDING AND REMAINDERS exercises
    ----------------------------------------------------------------------------
-   ONE list, read by the builder, the engine and the answer key. Same shape as
-   every other workbook on the site — see /utils/components/workbook/engine.js.
+   One of the four families this workbook is made of; they are assembled into
+   one registry in ./exercises.js. The level and help dials declared here are
+   shared with the sums and the fractions, because all three are about numbers
+   a child can hold rather than about place value.
 
    THE ORDER IS THE TEACHING, and here the order is the whole argument:
 
@@ -33,32 +35,35 @@ const box = () => `<span class="rw-answer"></span>`;
    paper is asked for the same way round. */
 const slot = (label) => `<span class="rw-slot"><em>${label}</em>${box()}</span>`;
 
-export const GROUPS = [
-  { id: "group", label: "A · Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
-  { id: "write", label: "B · Write it down", blurb: "The same picture as a sentence, with every part named." },
-  { id: "bridge", label: "C · What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
-  { id: "bars", label: "D · Fraction bars", blurb: "Mixed numbers and improper fractions, coloured in." },
+export const REM_GROUPS = [
+  { id: "group", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
+  { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
+  { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
+  { id: "bars", label: "Fraction bars", blurb: "Mixed numbers and improper fractions, coloured in." },
 ];
 
 /* ── how hard ──────────────────────────────────────────────────────────────
    Small on purpose at every level. This paper is about an IDEA, and a child
    who loses the idea while working out 47 ÷ 8 has not been taught the idea. */
 
+/* `dens` is the denominators a level uses. It is wider than `divisors` on
+   purpose: eighths are an easy fraction to see and a hard number to divide by,
+   so the fraction sections reach further than the dividing ones do. */
 export const LEVELS = {
   gentle: {
     id: "gentle",
     label: "Gentle — up to 20 things, shared into 2s, 3s, 4s and 5s",
-    max: 20, divisors: [2, 3, 4, 5], dens: [2, 3, 4], maxWhole: 3,
+    max: 20, divisors: [2, 3, 4, 5], dens: [2, 3, 4, 6, 8], maxWhole: 3,
   },
   middle: {
     id: "middle",
     label: "Middle — up to 34 things, shared into 2s to 6s",
-    max: 34, divisors: [2, 3, 4, 5, 6], dens: [2, 3, 4, 5, 6], maxWhole: 4,
+    max: 34, divisors: [2, 3, 4, 5, 6], dens: [2, 3, 4, 5, 6, 8], maxWhole: 4,
   },
   stretch: {
     id: "stretch",
     label: "Stretch — up to 48 things, shared into 3s to 9s",
-    max: 48, divisors: [3, 4, 5, 6, 7, 8, 9], dens: [3, 4, 5, 6, 8], maxWhole: 5,
+    max: 48, divisors: [3, 4, 5, 6, 7, 8, 9], dens: [3, 4, 5, 6, 8, 10, 12], maxWhole: 5,
   },
 };
 
@@ -484,20 +489,11 @@ const convertQuick = {
 
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
-export const EXERCISES = [
+export const REM_EXERCISES = [
   ringGroups, shareOut,
   pictureSentence, nameTheParts, divideWrite, buildBack,
   leftoverFraction,
   barsRead, mixedToImproper, improperToMixed, convertQuick,
 ];
-
-export function exerciseById(id) {
-  return EXERCISES.find((e) => e.id === id) || null;
-}
-
-/** Nothing here is barred at any level — the levels only change the numbers. */
-export function unavailable() {
-  return null;
-}
 
 export { line, box, slot };
