@@ -10,6 +10,21 @@
    ink as the rest of the sheet in both themes.
    ========================================================================== */
 
+/* The blocks key: one of each piece, named and priced. */
+.pv-key {
+  display: flex;
+  gap: 7mm;
+  align-items: flex-end;
+  margin: 3.5mm 0 0 11mm;
+  padding: 2.5mm 4mm 2mm;
+  border: 0.35mm dashed #c8c0b4;
+}
+.pv-key__item { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
+.pv-key__art { display: flex; align-items: flex-end; min-height: 19mm; }
+.pv-key__art svg { display: block; }
+.pv-key__name { font-size: 7pt; letter-spacing: 0.06em; color: var(--wb-mid); }
+.pv-key__worth { font-size: 7.5pt; font-weight: 600; }
+
 /* ── blocks ────────────────────────────────────────────────────────────── */
 
 /* The blocks carry their own size in millimetres — see CELL_MM in blocks.js —

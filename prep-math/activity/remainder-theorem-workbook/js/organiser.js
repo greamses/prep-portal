@@ -93,7 +93,7 @@ export function frame({ a }, o, { given = {} } = {}) {
 
   const row = (step, body) =>
     `<div class="rt-frame__step">` +
-    `<span class="rt-frame__no">${step.no}</span>` +
+    `<span class="rt-frame__no rt-frame__no--s${step.no}">${step.no}</span>` +
     `<span class="rt-frame__what">${named ? step.what : ""}</span>` +
     `<span class="rt-frame__work">${body}</span>` +
     `</div>`;

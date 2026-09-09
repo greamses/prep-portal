@@ -122,10 +122,14 @@ function coverBlock(o, subject) {
 }
 
 /** The heading that opens a section, and whatever the subject hangs under it. */
-function headBlock(section, letter, o, subject, state) {
+function headBlock(section, letter, o, subject, state, i = 0) {
   const node = el("div", "wb-sec");
+  /* Each section's letter is the next note in the pack of six, so the sections
+     are told apart by colour as well as by letter. */
   node.innerHTML =
-    `<h2 class="wb-sec__title"><span class="wb-sec__letter">${letter}</span>${section.ex.heading}</h2>` +
+    `<h2 class="wb-sec__title">` +
+    `<span class="wb-sec__letter wb-sec__letter--c${i % 6}">${letter}</span>` +
+    `${section.ex.heading}</h2>` +
     `<p class="wb-sec__say">${section.ex.instruction(section.opts)}</p>`;
   const extra = subject.sectionHead ? subject.sectionHead(section, o, state) : "";
   if (extra) node.insertAdjacentHTML("beforeend", extra);
@@ -153,7 +157,7 @@ export function blocksOf(sections, o, subject) {
   sections.forEach((section, i) => {
     blocks.push({
       kind: "head",
-      node: headBlock(section, LETTERS[i] || "•", o, subject, state),
+      node: headBlock(section, LETTERS[i] || "•", o, subject, state, i),
     });
 
     const cols = section.ex.cols || 1;

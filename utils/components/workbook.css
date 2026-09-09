@@ -230,7 +230,9 @@ body {
 .wb-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; cursor: pointer; }
 .wb-toggle input { accent-color: var(--accent-secondary); width: 15px; height: 15px; }
 
-.wb-seed { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; }
+/* The re-roll button is a note with tape on it, so the row leaves it room. */
+.wb-seed { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; margin-top: 0.5rem; }
+.wb-seed .pp-btn { padding: 0.5rem 0.75rem; }
 .wb-seed__code {
   font-family: var(--font-display);
   font-weight: 700;
@@ -247,7 +249,8 @@ body {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  padding: 0.6rem 0.8rem;
+  /* Room at the top for the tape over the print button. */
+  padding: 1.05rem 0.8rem 0.6rem;
   background: var(--surface-primary);
   border: var(--border-subtle);
   box-shadow: var(--shadow-sm);
@@ -261,7 +264,8 @@ body {
 }
 .wb-toolbar__count svg { width: 15px; height: 15px; }
 .wb-toolbar__spacer { flex: 1 1 auto; }
-.wb-toolbar .pp-btn svg { width: 16px; height: 16px; }
+/* sticky-ui.css already pins the icon; all this needs is the tape's headroom. */
+.wb-toolbar .pp-btn { margin-top: 0.15rem; }
 
 .wb-note {
   font-size: 0.72rem;
@@ -381,41 +385,51 @@ body {
   font-weight: 700;
   font-size: 11.5pt;
 }
+/* The section letter is one of the site's sticky notes shrunk to the size of a
+   letter: pastel paper, NO outline, a soft shadow and a slight tilt. Each
+   section gets the next note in the pack, so a child looking for section C is
+   looking for the green one as much as for the letter.
+
+   The six pastels are written out as fixed hexes rather than pulled from
+   components.css, because this is the paper: it must print the same from a
+   dark-mode browser as from a light one, and it must not change if the note
+   palette is ever re-themed. */
 .wb-sec__letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 7mm;
-  height: 7mm;
+  width: 8mm;
+  height: 8mm;
   flex: 0 0 auto;
-  background: #f4c95d;
-  border: 0.4mm solid var(--wb-ink);
-  font-size: 9pt;
-  font-weight: 900;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5mm;
+  background: var(--wb-note, #fff3a8);
+  color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  font-size: 11.5pt;
+  line-height: 1;
+  transform: rotate(var(--wb-note-tilt, -3deg));
+  box-shadow:
+    0 0.2mm 0.3mm rgba(20, 19, 15, 0.12),
+    0.9mm 1.3mm 1.7mm -0.8mm rgba(20, 19, 15, 0.3);
 }
-.wb-sec__letter--key { background: #7cc47c; }
-.wb-sec__letter svg { width: 4mm; height: 4mm; stroke-width: 2.6; }
+.wb-sec__letter--c0 { --wb-note: #fff3a8; --wb-note-tilt: -3deg; }
+.wb-sec__letter--c1 { --wb-note: #e8c8ff; --wb-note-tilt: 2.5deg; }
+.wb-sec__letter--c2 { --wb-note: #c8f0c0; --wb-note-tilt: -2deg; }
+.wb-sec__letter--c3 { --wb-note: #bfe3ff; --wb-note-tilt: 3deg; }
+.wb-sec__letter--c4 { --wb-note: #ffd7a3; --wb-note-tilt: -2.5deg; }
+.wb-sec__letter--c5 { --wb-note: #b8ece2; --wb-note-tilt: 2deg; }
+/* The answer key is always the same note, whatever it lands on in the pack. */
+.wb-sec__letter--key { --wb-note: #c8f0c0; --wb-note-tilt: -2deg; }
+.wb-sec__letter svg { width: 4.4mm; height: 4.4mm; stroke-width: 2.6; }
 .wb-sec__say {
-  margin: 1.8mm 0 0 10mm;
+  margin: 1.8mm 0 0 11mm;
   font-size: 8.5pt;
   line-height: 1.45;
   color: var(--wb-mid);
 }
-
-/* The blocks key: one of each piece, named and priced. */
-.pv-key {
-  display: flex;
-  gap: 7mm;
-  align-items: flex-end;
-  margin: 3.5mm 0 0 10mm;
-  padding: 2.5mm 4mm 2mm;
-  border: 0.35mm dashed #c8c0b4;
-}
-.pv-key__item { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
-.pv-key__art { display: flex; align-items: flex-end; min-height: 19mm; }
-.pv-key__art svg { display: block; }
-.pv-key__name { font-size: 7pt; letter-spacing: 0.06em; color: var(--wb-mid); }
-.pv-key__worth { font-size: 7.5pt; font-weight: 600; }
 
 /* ── questions ─────────────────────────────────────────────────────────── */
 

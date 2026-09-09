@@ -47,7 +47,7 @@
 
 .rt-frame__step {
   display: grid;
-  grid-template-columns: 9mm 44mm minmax(0, 1fr);
+  grid-template-columns: 10mm 44mm minmax(0, 1fr);
   align-items: center;
   gap: 0 3mm;
   min-height: 14mm;
@@ -62,20 +62,36 @@
    thinks it should be. */
 .rt-frame__work .wb-line--lg { max-width: 100%; margin-left: 0; }
 
-/* The number is the thing a child navigates by, so it is a shape and not just
-   a digit — the same shape in every frame on every page. */
+/* The number is the thing a child navigates by, so it is a sticky note and not
+   just a digit: the same four notes, the same four colours, in the same four
+   places, in every frame on every page. Step three is always the green one.
+
+   Colour is never the only signal — the number is written on the note, and the
+   step is named beside it — but a second signal is the whole point of an
+   organiser, and it is the one a child finds fastest. */
 .rt-frame__no {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 7mm;
-  height: 7mm;
-  border: 0.4mm solid #2a2723;
-  border-radius: 50%;
-  background: #f4c95d;
-  font-size: 10pt;
+  width: 7.5mm;
+  height: 7.5mm;
+  border: 0;
+  border-radius: 0.5mm;
+  background: var(--rt-note, #fff3a8);
+  color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 11pt;
   font-weight: 700;
+  line-height: 1;
+  transform: rotate(var(--rt-note-tilt, -3deg));
+  box-shadow:
+    0 0.2mm 0.3mm rgba(20, 19, 15, 0.12),
+    0.9mm 1.3mm 1.7mm -0.8mm rgba(20, 19, 15, 0.28);
 }
+.rt-frame__no--s1 { --rt-note: #fff3a8; --rt-note-tilt: -3deg; }
+.rt-frame__no--s2 { --rt-note: #bfe3ff; --rt-note-tilt: 2.5deg; }
+.rt-frame__no--s3 { --rt-note: #c8f0c0; --rt-note-tilt: -2deg; }
+.rt-frame__no--s4 { --rt-note: #ffd7a3; --rt-note-tilt: 3deg; }
 .rt-frame__what {
   font-size: 8.5pt;
   line-height: 1.3;
@@ -249,7 +265,7 @@
 
 .rt-worked {
   position: relative;
-  margin: 3.5mm 0 1mm 10mm;
+  margin: 3.5mm 0 1mm 11mm;
   padding: 3mm 4mm 3.5mm;
   border: 0.35mm dashed #9c958a;
   background: #f7f4ec;
