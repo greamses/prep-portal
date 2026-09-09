@@ -109,6 +109,7 @@ export const FEATURES = [
       { id: "base-blocks", label: "Manipulatives (blocks, abacus, tiles, grids)", path: "/prep-math/activity/base-blocks" },
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
+      { id: "place-value-workbook", label: "Place Value Workbook (printable)", path: "/prep-math/activity/place-value-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

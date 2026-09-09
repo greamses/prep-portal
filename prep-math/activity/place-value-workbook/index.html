@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Place Value Workbook</title>
+    <meta
+      name="description"
+      content="Build a printable place-value workbook in seconds: number-block piles to count, trade and draw, place-value charts to fill in and read off, expanded form, words, comparing and ordering — with an answer key, in any base from two to twelve. Print it or save it as a PDF."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "place-value-workbook" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- The nav resolves the signed-in user through bare firebase specifiers. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Workbook</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="pv-paint" aria-hidden="true"></div>
+
+    <main class="pv-main">
+      <header class="pv-hero">
+        <span class="pv-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
+        <h1 class="pv-title">Place Value Workbook<em>.</em></h1>
+        <p class="pv-lead">
+          Choose what should be on the paper and it is laid out, page by page,
+          exactly as it will come out of the printer. Blocks to count, trade and
+          draw, charts to fill in and read off, and the number on its own — with
+          an answer key on the back.
+        </p>
+      </header>
+
+      <div class="pv-work">
+        <!-- ═══ THE BUILDER ═══ -->
+        <aside class="pv-rail">
+          <div class="pp-receipt">
+            <div class="pp-receipt__paper pv-rail__paper">
+              <h2 class="pv-rail__title"><span data-icon="sliders"></span> Build the workbook</h2>
+
+              <label class="pv-field">
+                <span>Title on the front</span>
+                <input class="pv-input" id="pv-title" type="text" maxlength="52"
+                       value="Place Value" autocomplete="off" />
+              </label>
+
+              <div class="pv-row2">
+                <label class="pv-field">
+                  <span>Base</span>
+                  <select class="pv-select" id="pv-base"></select>
+                </label>
+                <label class="pv-field">
+                  <span>Places</span>
+                  <select class="pv-select" id="pv-places"></select>
+                </label>
+              </div>
+
+              <label class="pv-field">
+                <span>Zeros in the middle</span>
+                <select class="pv-select" id="pv-zeros">
+                  <option value="0">None — every place has something in it</option>
+                  <option value="0.25" selected>Some — a zero here and there</option>
+                  <option value="0.45">Plenty — zeros are the point</option>
+                </select>
+                <span class="pv-field__hint">
+                  An empty place is the hardest thing about place value. This is
+                  how often one turns up inside a number.
+                </span>
+              </label>
+
+              <fieldset class="pv-fieldset">
+                <legend>What goes on the paper</legend>
+                <div id="pv-picks"></div>
+              </fieldset>
+
+              <fieldset class="pv-fieldset">
+                <legend>The sheet itself</legend>
+                <label class="pv-field">
+                  <span>Paper</span>
+                  <select class="pv-select" id="pv-paper">
+                    <option value="a4" selected>A4</option>
+                    <option value="letter">US Letter</option>
+                  </select>
+                </label>
+                <label class="pv-toggle">
+                  <input type="checkbox" id="pv-nameline" checked />
+                  Name, class and date line
+                </label>
+                <label class="pv-toggle">
+                  <input type="checkbox" id="pv-blockskey" checked />
+                  A key showing what each block is worth
+                </label>
+                <label class="pv-toggle">
+                  <input type="checkbox" id="pv-answers" checked />
+                  Answer key at the back
+                </label>
+              </fieldset>
+
+              <div class="pv-field">
+                <span>Workbook code</span>
+                <div class="pv-seed">
+                  <input class="pv-input pv-seed__code" id="pv-seedcode" type="text"
+                         maxlength="5" autocomplete="off" spellcheck="false"
+                         aria-label="Workbook code — the same code always makes the same workbook" />
+                  <button class="pp-btn pp-btn--ghost" id="pv-reseed" type="button"
+                          title="Make a different workbook">
+                    <span data-icon="dice"></span>
+                  </button>
+                </div>
+                <span class="pv-field__hint">
+                  The same code always builds the same workbook — so a second
+                  copy for a child who lost theirs really is the same paper, and
+                  two children can be given different ones.
+                </span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ═══ THE PAPER ═══ -->
+        <section class="pv-preview">
+          <div class="pv-toolbar">
+            <span class="pv-toolbar__count">
+              <span data-icon="page"></span>
+              <span id="pv-pages">—</span>
+            </span>
+            <span class="pv-toolbar__spacer"></span>
+            <button class="pp-btn" id="pv-print" type="button">
+              Print <span data-icon="print"></span>
+            </button>
+          </div>
+
+          <p class="pv-note">
+            The print dialog is also how you save a PDF — pick
+            <strong>Save as PDF</strong> as the destination. Turn
+            <strong>Headers and footers</strong> off and set margins to
+            <strong>None</strong>: the workbook carries its own margins, page
+            numbers and code.
+          </p>
+
+          <div class="pv-viewport" id="pv-viewport">
+            <div class="pv-scaler" id="pv-scaler">
+              <div class="pv-sheet" id="pv-sheet"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".pv-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
