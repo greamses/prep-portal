@@ -132,6 +132,24 @@ body {
   max-width: 640px;
 }
 
+/* The one line under the door: the workbook is the same blocks on paper, and
+   without this the only route between the two is the nav. Set as body copy and
+   not as a second card — there is one door on this page and this is a
+   footnote to it, not a rival to it. */
+.bb-sister {
+  max-width: 640px;
+  margin: clamp(0.9rem, 2.5vw, 1.4rem) 0 0;
+  font-size: var(--text-body-sm, 0.86rem);
+  line-height: var(--leading-relaxed, 1.8);
+  color: var(--text-tertiary);
+}
+.bb-sister a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: linear-gradient(transparent 82%, var(--accent-primary) 82%);
+}
+.bb-sister a:hover { color: var(--ink); }
+
 /* a button, but laid out like the anchor the card was written for */
 .bb-door {
   display: block;

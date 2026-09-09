@@ -45,6 +45,10 @@ import { toBase } from "../../base-blocks/js/config.js";
    the paper. */
 const WIDE = 64;
 
+/* …and how many fit across ONE HALF of a question, for the two piles that get
+   set side by side to be compared. Half the width, less the gap between them. */
+const PAIR = 42;
+
 const line = (size = "md") => `<span class="pv-line pv-line--${size}"></span>`;
 const box = () => `<span class="pv-box"></span>`;
 const num = (n, base) => `<span class="pv-num">${figures(n, base)}</span>`;
@@ -99,7 +103,7 @@ function saidCounts(counts, o) {
 export const GROUPS = [
   { id: "blocks", label: "Number blocks", blurb: "The concrete stage: pieces you can count, trade and draw." },
   { id: "charts", label: "Place value charts", blurb: "The bridge: a column for each place, to write into and read off." },
-  { id: "numbers", label: "The number on its own", blurb: "The abstract stage: expanded form, words, comparing and ordering." },
+  { id: "numbers", label: "The number on its own", blurb: "The abstract stage: expanded form, words, stepping, rounding, comparing and ordering." },
 ];
 
 export const EXERCISES = [
@@ -237,6 +241,64 @@ export const EXERCISES = [
     },
   },
 
+  {
+    id: "blocks-compare",
+    group: "blocks",
+    label: "Which pile is worth more?",
+    blurb: "Two piles side by side. The heap that covers more paper is not always the bigger number.",
+    heading: "Which pile is worth more?",
+    instruction: () =>
+      "Write what each pile comes to, then put &lt; or &gt; in the box. Read the " +
+      "biggest piece first — a scatter of loose units takes up room and is worth " +
+      "the least of anything on the page.",
+    cols: 1,
+    defaultCount: 3,
+    maxPlaces: 3,
+    make(r, o) {
+      const places = Math.min(o.places, 3);
+      const a = blocksNumber(r, o, { places });
+      /* The second pile is grown from the first, sharing its top place more
+         often than not, so the two cannot be told apart on the biggest piece
+         alone and have to be read down to the place where they differ.
+         They are never equal, unlike the abstract compare further down: two
+         identical pictures read as a printing mistake, not as a question. */
+      const da = digitsOf(a.n, o.base, places);
+      let nb = a.n;
+      let guard = 0;
+      while (nb === a.n && guard++ < 40) {
+        const db = da.slice();
+        const p = r.int(0, places - (r.chance(0.6) ? 2 : 1));
+        db[p] = r.int(p === places - 1 ? 1 : 0, o.base - 1);
+        if (r.chance(0.4)) {
+          const q = r.int(0, Math.max(0, places - 2));
+          db[q] = r.int(0, o.base - 1);
+        }
+        nb = 0;
+        for (let i = places - 1; i >= 0; i--) nb = nb * o.base + db[i];
+      }
+      if (nb === a.n) nb = a.n + 1;
+      return { places, a: a.n, b: nb };
+    },
+    render(item, o) {
+      const pile = (tag, n) =>
+        `<div class="pv-pair__side">` +
+        `<span class="pv-pair__tag">${tag}</span>` +
+        `<div class="pv-art">${blocksSvg(digitsOf(n, o.base, item.places), o.base, {
+          maxCells: PAIR, cellMm: 1.7, label: "A pile of base blocks",
+        })}</div>` +
+        `</div>`;
+      return (
+        `<div class="pv-pair">${pile("a", item.a)}${pile("b", item.b)}</div>` +
+        `<p class="pv-ask">a is ${line("sm")} &nbsp; b is ${line("sm")}</p>` +
+        `<p class="pv-ask">a ${box()} b</p>`
+      );
+    },
+    answer(item, o) {
+      const sign = item.a > item.b ? "&gt;" : "&lt;";
+      return [`${figures(item.a, o.base)} ${sign} ${figures(item.b, o.base)}`];
+    },
+  },
+
   /* ───────────────────────────── charts ─────────────────────────────────── */
   {
     id: "chart-write",
@@ -293,6 +355,54 @@ export const EXERCISES = [
     },
     answer(item, o) {
       return item.ns.map((n) => figures(n, o.base));
+    },
+  },
+
+  {
+    id: "chart-mixed",
+    group: "charts",
+    label: "Fill in the gaps",
+    blurb: "Some rows give the number, some give the columns. Fill in whichever half is missing.",
+    heading: "Fill in the missing half",
+    instruction: () =>
+      "Every row of this chart is one number with half of it left out. Where the " +
+      "number is given, write it into the columns; where the columns are given, " +
+      "write the number.",
+    cols: 1,
+    groupSize: 6,
+    defaultCount: 6,
+    make(r, o, k) {
+      /* Strict alternation off one coin, rather than a coin per row: left to
+         chance a chart can come out with five rows running the same way, and a
+         chart that only ever goes one way is two exercises pretending to be
+         one. The coin decides which way the top row goes. */
+      const flip = r.chance(0.5) ? 1 : 0;
+      const rows = [];
+      for (let i = 0; i < k; i++) {
+        rows.push({
+          n: drawNumber(r, o, { zeros: Math.max(o.zeros, 0.3) }),
+          toChart: (i + flip) % 2 === 0,
+        });
+      }
+      return { rows };
+    },
+    render(item, o) {
+      return chartHtml({
+        powers: powersFor(o.places),
+        base: o.base,
+        side: "Number",
+        rows: item.rows.map((row) => ({
+          side: row.toChart ? figures(row.n, o.base) : "",
+          digits: row.toChart ? null : digitsOf(row.n, o.base, o.places),
+        })),
+      });
+    },
+    answer(item, o) {
+      return item.rows.map((row) =>
+        row.toChart
+          ? `${figures(row.n, o.base)} → ${toBase(row.n, o.base).split("").join(" | ")}`
+          : figures(row.n, o.base)
+      );
     },
   },
 
@@ -416,6 +526,131 @@ export const EXERCISES = [
     },
     answer(item, o) {
       return [item.toWords ? inWords(item.n) : figures(item.n, o.base)];
+    },
+  },
+
+  {
+    id: "neighbours",
+    group: "numbers",
+    label: "One more, one less",
+    blurb: "Step up and down by a whole place — over the boundary as often as not.",
+    heading: "One more, one less",
+    instruction: () =>
+      "Each number comes with a step. Write the number that much more, and the " +
+      "number that much less. Watch a place that is already full: stepping past " +
+      "it empties it and carries into the next place along.",
+    cols: 2,
+    defaultCount: 6,
+    make(r, o) {
+      /* The step is always ONE of a place a child can name — one unit, one ten,
+         one hundred — because what is being asked is which place changes, not
+         how to add an awkward number. */
+      const p = r.int(0, Math.min(o.places - 1, 2));
+      const step = Math.pow(o.base, p);
+      const d = digitsOf(drawNumber(r, o, { zeros: Math.min(o.zeros, 0.2) }), o.base, o.places);
+      /* Three questions in five are BUILT to cross a boundary: a full place to
+         carry out of, or an empty one to borrow into. Left to chance most
+         numbers step without either, and then the exercise teaches nothing but
+         copying a digit out. */
+      const roll = r.raw();
+      if (roll < 0.35) d[p] = o.base - 1;
+      else if (roll < 0.6 && p < o.places - 1) d[p] = 0;
+      let n = 0;
+      for (let i = o.places - 1; i >= 0; i--) n = n * o.base + d[i];
+      /* …but never "take the whole number away": 100 less than 100 is a fine
+         sum and a rotten question about places. */
+      if (n === step) n += r.int(1, o.base - 1);
+      return { n, step };
+    },
+    render(item, o) {
+      const s = figures(item.step, o.base);
+      return (
+        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="pv-ask"><em>${s} more</em> ${line("sm")}</p>` +
+        `<p class="pv-ask"><em>${s} less</em> ${line("sm")}</p>`
+      );
+    },
+    answer(item, o) {
+      return [
+        `${figures(item.n + item.step, o.base)} &nbsp;·&nbsp; ${figures(item.n - item.step, o.base)}`,
+      ];
+    },
+  },
+
+  {
+    id: "how-many",
+    group: "numbers",
+    label: "How many tens in all?",
+    blurb: "470 has 47 tens, not 7. The idea every written method later rests on.",
+    heading: "How many in all?",
+    instruction: () =>
+      "Not the digit sitting in that place — how many there are in the whole " +
+      "number. Cover every place to the right of the one you are asked about, " +
+      "and read off what is left.",
+    cols: 2,
+    defaultCount: 6,
+    make(r, o) {
+      /* Never the TOP place: "how many thousands in 4 706" answers itself off
+         the first digit, and the whole point of the question is the places
+         stacked above the one being asked about. A two-place number has no
+         such place, and there the question is honestly the easy one. */
+      return {
+        n: drawNumber(r, o, { zeros: Math.min(o.zeros, 0.2) }),
+        p: r.int(1, Math.max(1, o.places - 2)),
+      };
+    },
+    render(item, o) {
+      return (
+        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="pv-ask">How many ${placeNameLower(item.p, o.base)} in all? ${line("sm")}</p>`
+      );
+    },
+    answer(item, o) {
+      const all = Math.floor(item.n / Math.pow(o.base, item.p));
+      /* "1 ten", not "1 tens" — the key is read out loud to a class. */
+      return [`${figures(all, o.base)} ${placeNameFor(all, item.p, o.base)}`];
+    },
+  },
+
+  {
+    id: "round",
+    group: "numbers",
+    label: "Round it",
+    blurb: "To the nearest ten, hundred or thousand. One digit decides, and it is not the one being rounded.",
+    heading: "Round each number",
+    instruction: (o) =>
+      `Round each number to the place you are asked for. Look at the digit just ` +
+      `below that place: if it is ${figures(Math.ceil(o.base / 2), o.base)} or ` +
+      `more the place goes up by one, and if it is less the place stays as it ` +
+      `is. Either way every place below it becomes a zero.`,
+    cols: 2,
+    defaultCount: 6,
+    make(r, o) {
+      const p = r.int(1, o.places - 1);
+      const d = digitsOf(drawNumber(r, o, { zeros: Math.min(o.zeros, 0.15) }), o.base, o.places);
+      /* One in four sits exactly on the halfway digit, because "and 5 goes up"
+         is the half of the rule a child is actually being asked to remember.
+         Only in an even base is there a digit exactly halfway to land on. */
+      if (o.base % 2 === 0 && r.chance(0.25)) d[p - 1] = o.base / 2;
+      let n = 0;
+      for (let i = o.places - 1; i >= 0; i--) n = n * o.base + d[i];
+      return { n, p };
+    },
+    render(item, o) {
+      return (
+        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="pv-ask">to the nearest ${placeNameFor(1, item.p, o.base)} ${line("sm")}</p>`
+      );
+    },
+    answer(item, o) {
+      /* The rule as it is TAUGHT — the one digit just below decides — and not
+         "whichever multiple is nearer". The two agree in base ten; in an odd
+         base they can part company, and the key has to say what the paper
+         asked for. */
+      const step = Math.pow(o.base, item.p);
+      const below = digitsOf(item.n, o.base, o.places)[item.p - 1];
+      const down = Math.floor(item.n / step) * step;
+      return [figures(below * 2 >= o.base ? down + step : down, o.base)];
     },
   },
 

@@ -22,10 +22,10 @@
    section missed.
    ========================================================================== */
 
-import { EXERCISES, exerciseById, unavailable, placesFor } from "./exercises.js";
+import { exerciseById, unavailable, placesFor } from "./exercises.js";
 import { blocksKey } from "./blocks.js";
 import { ICON } from "./icons.js";
-import { stream, placeName, placeWorth, seedCode } from "./numbers.js";
+import { stream, seedFrom, placeName, placeWorth, seedCode } from "./numbers.js";
 import { baseWord } from "../../base-blocks/js/config.js";
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -42,9 +42,14 @@ export const PAPERS = {
  * Draw every question the options ask for.
  *
  * Each exercise gets its OWN stream, mixed from the seed and the exercise's
- * fixed position in the registry — so turning section C from four questions to
- * six leaves sections A, B and D exactly as they were. A worksheet you cannot
- * adjust without reprinting the whole thing is a worksheet nobody adjusts.
+ * ID — so turning section C from four questions to six leaves sections A, B and
+ * D exactly as they were. A worksheet you cannot adjust without reprinting the
+ * whole thing is a worksheet nobody adjusts.
+ *
+ * The ID rather than the position in the registry, because a new exercise
+ * slotted in between two old ones would otherwise reshuffle the questions of
+ * every exercise below it, and a seed code printed last term would rebuild a
+ * different paper this term. The registry is meant to be added to.
  */
 export function buildSections(o) {
   const out = [];
@@ -53,8 +58,7 @@ export function buildSections(o) {
     if (!ex || !choice.count) return;
     if (unavailable(ex, o)) return;
 
-    const ns = EXERCISES.indexOf(ex) * 977 + 1;
-    const r = stream(o.seed, ns);
+    const r = stream(o.seed, seedFrom(ex.id));
     const opts = { ...o, places: placesFor(ex, o) };
 
     const groupSize = ex.groupSize || 1;

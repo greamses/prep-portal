@@ -22,7 +22,7 @@ import { mulberry32, hashSeed } from "/utils/games/rng.js";
 
 /* ── the seeded stream ─────────────────────────────────────────────────────
    One workbook = one seed. Every draw comes off a stream mixed from that seed
-   and the exercise's own index, so adding a question to section three cannot
+   and the exercise's own name, so adding a question to section three cannot
    quietly reshuffle section four — which matters, because the answer key is
    generated from the same seed and has to describe the same paper. */
 
@@ -99,10 +99,10 @@ export function placeNameLower(power, base) {
 /**
  * "1 hundred and 6 tens", not "1 hundreds and 6 tens".
  *
- * Only ever asked about a place a BLOCK comes in — ones, tens, hundreds and
- * thousands, or units, rods, flats and cubes in another base — and every one
- * of those is a single word made plural with an s, so dropping the s is the
- * whole rule. Deeper places are never said aloud on this paper, only charted.
+ * Asked about any place the paper says out loud — "3 hundreds" under a pile of
+ * blocks, "to the nearest ten thousand" over in the rounding exercise — and
+ * every place name here, English or block, ends in a plain s, so dropping the s
+ * is the whole rule.
  */
 export function placeNameFor(count, power, base) {
   const name = placeNameLower(power, base);
