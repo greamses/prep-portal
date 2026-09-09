@@ -1,0 +1,601 @@
+/* ============================================================================
+   PRINTABLE WORKBOOK — the paper, and the bench you build it on
+   ----------------------------------------------------------------------------
+   The shared half of every workbook generator on the site. Two worlds live in
+   this file and they are kept firmly apart.
+
+   THE BENCH — .wb-hero, .wb-rail, .wb-toolbar — is the site: theme tokens, soft
+   shadows, square corners, the paint blob behind it all. It follows light and
+   dark like everything else.
+
+   THE PAPER — everything inside .wb-sheet — is a printed document. It is
+   measured in millimetres, not rem, and its colours are FIXED. A sheet must
+   come out of the printer the same whether the teacher was in dark mode or
+   light when they pressed the button, and a printer has no theme. This is the
+   same reasoning that keeps a .pp-sticky a fixed pastel with dark ink in both
+   themes; it is just carried through a whole document.
+
+   What is NOT here is anything a particular subject draws — base-ten blocks, a
+   place-value chart, a graphic organiser. Those live beside their own workbook
+   and are linked after this file, so they can lean on the paper's tokens
+   (--wb-ink, --wb-mid, --wb-faint) without this file ever knowing about them.
+
+   Used by:
+     /prep-math/activity/place-value-workbook/
+     /prep-math/activity/remainder-theorem-workbook/
+   ========================================================================== */
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--ink);
+  overflow-x: clip;
+}
+
+/* theme.css sets the whole body in the display font and is injected by the
+   loader AFTER this file, so the mono default is claimed here, on the page's
+   own wrapper, rather than fought for on <body>. */
+.wb-main { font-family: var(--font-mono); }
+
+.wb-paint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.24;
+}
+.wb-paint svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .wb-paint { opacity: 0.13; }
+
+.wb-main {
+  position: relative;
+  z-index: 1;
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: clamp(1.4rem, 4vw, 3rem) clamp(0.9rem, 3vw, 2rem) 4rem;
+}
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+
+.wb-hero { text-align: center; margin-bottom: clamp(1.4rem, 3vw, 2.4rem); }
+
+.wb-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-mono-xs, 0.72rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.wb-eyebrow svg { width: 15px; height: 15px; }
+
+.wb-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: var(--text-h1, clamp(1.9rem, 5vw, 3.1rem));
+  line-height: var(--leading-tight, 1.05);
+  margin: 0.5rem 0 0.6rem;
+}
+.wb-title em { font-style: normal; color: var(--accent-primary); }
+
+.wb-lead {
+  max-width: 62ch;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-size: var(--text-body, 0.95rem);
+  line-height: var(--leading-relaxed, 1.65);
+}
+
+/* The way back to the canvas these blocks came from. See the note on
+   .bb-sister at the other end: the two pages are one lesson in two states. */
+.wb-sister {
+  margin: 0.55rem 0 0;
+  font-size: var(--text-body-sm, 0.82rem);
+  color: var(--text-tertiary);
+}
+.wb-sister a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: linear-gradient(transparent 82%, var(--accent-primary) 82%);
+}
+.wb-sister a:hover { color: var(--ink); }
+
+/* ── the two columns ───────────────────────────────────────────────────── */
+
+.wb-work {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: clamp(1rem, 2.4vw, 2rem);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .wb-work { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── the builder rail ──────────────────────────────────────────────────── */
+
+.wb-rail { position: sticky; top: 88px; }
+@media (max-width: 900px) { .wb-rail { position: static; } }
+
+.wb-rail__paper {
+  padding: 1.5rem 1.35rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+@media (max-width: 900px) { .wb-rail__paper { max-height: none; } }
+
+.wb-rail__title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+.wb-rail__title svg { width: 18px; height: 18px; color: var(--text-secondary); }
+
+.wb-field { display: flex; flex-direction: column; gap: 0.45rem; }
+.wb-field > span:first-child,
+.wb-fieldset > legend {
+  font-size: var(--text-mono-xs, 0.7rem);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.wb-field__hint {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+.wb-input,
+.wb-select {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  color: var(--ink);
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-bottom: 2px solid rgba(42, 39, 35, 0.35);
+  border-radius: var(--radius-none, 0);
+  padding: 0.5rem 0.6rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.wb-input:focus,
+.wb-select:focus {
+  outline: none;
+  border-bottom-color: var(--accent-secondary);
+  background: var(--surface-secondary);
+}
+
+.wb-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+.wb-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+
+/* Each exercise is a line: a checkbox, its name, and how many of it. The count
+   greys out with the row rather than disappearing, so the shape of the list
+   never moves as things are switched on and off. */
+.wb-pick {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.34rem 0.4rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s);
+}
+.wb-pick:hover { background: var(--surface-secondary); }
+.wb-pick:has(input:checked) { border-color: rgba(42, 39, 35, 0.14); background: var(--surface-primary); }
+.wb-pick input[type="checkbox"] { accent-color: var(--accent-secondary); width: 15px; height: 15px; }
+.wb-pick__label { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.wb-pick__name { font-size: 0.82rem; font-weight: 600; }
+.wb-pick__blurb { font-size: 0.68rem; color: var(--text-tertiary); line-height: 1.35; }
+.wb-pick__count {
+  width: 3.6rem;
+  padding: 0.24rem 0.3rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: var(--surface-secondary);
+  border: var(--border-subtle);
+  color: var(--ink);
+}
+.wb-pick:not(:has(input:checked)) .wb-pick__count { opacity: 0.35; }
+.wb-pick.is-off { opacity: 0.45; cursor: not-allowed; }
+.wb-pick.is-off .wb-pick__blurb em { font-style: normal; color: var(--accent-warning); }
+
+.wb-group__name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0.1rem;
+  font-size: var(--text-mono-xs, 0.7rem);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.wb-group__name svg { width: 14px; height: 14px; }
+
+.wb-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; cursor: pointer; }
+.wb-toggle input { accent-color: var(--accent-secondary); width: 15px; height: 15px; }
+
+.wb-seed { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; }
+.wb-seed__code {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-align: center;
+}
+
+/* ── the preview side ──────────────────────────────────────────────────── */
+
+.wb-preview { min-width: 0; display: flex; flex-direction: column; gap: 0.85rem; }
+
+.wb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.wb-toolbar__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.wb-toolbar__count svg { width: 15px; height: 15px; }
+.wb-toolbar__spacer { flex: 1 1 auto; }
+.wb-toolbar .pp-btn svg { width: 16px; height: 16px; }
+
+.wb-note {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wb-viewport { position: relative; width: 100%; overflow: hidden; }
+.wb-scaler { position: absolute; top: 0; left: 0; transform-origin: top left; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PAPER. Everything below is the printed document; nothing below reads a
+   theme token.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wb-sheet {
+  --wb-w: 210mm;
+  --wb-h: 297mm;
+  --wb-pad-x: 14mm;
+  --wb-pad-t: 13mm;
+  --wb-pad-b: 15mm;
+  --wb-ink: #2a2723;
+  --wb-mid: #6b655c;
+  --wb-faint: #b6afa4;
+  --wb-rule: #2a2723;
+  --wb-paper: #ffffff;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8mm;
+  width: var(--wb-w);
+  color: var(--wb-ink);
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.wb-page {
+  position: relative;
+  width: var(--wb-w);
+  /* A hair under the sheet so a rounding error at the foot of the page cannot
+     spill a blank sheet out of the printer. */
+  height: calc(var(--wb-h) - 0.4mm);
+  box-sizing: border-box;
+  background: var(--wb-paper);
+  box-shadow: 0 2mm 6mm rgba(42, 39, 35, 0.16);
+  overflow: hidden;
+}
+
+.wb-page__inner {
+  position: absolute;
+  inset: var(--wb-pad-t) var(--wb-pad-x) var(--wb-pad-b);
+  overflow: hidden;
+}
+
+.wb-page__foot {
+  position: absolute;
+  left: var(--wb-pad-x);
+  right: var(--wb-pad-x);
+  bottom: 6mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 7pt;
+  letter-spacing: 0.06em;
+  color: var(--wb-faint);
+  border-top: 0.3mm solid #e6e0d6;
+  padding-top: 1.6mm;
+}
+
+/* ── the cover block ───────────────────────────────────────────────────── */
+
+.wb-cover { margin-bottom: 6mm; }
+.wb-cover__eyebrow {
+  margin: 0;
+  font-size: 7.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--wb-mid);
+}
+.wb-cover__title {
+  margin: 1.5mm 0 0;
+  font-family: var(--font-display), "Unbounded", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 20pt;
+  line-height: 1.1;
+  color: var(--wb-ink);
+}
+.wb-cover__sub { margin: 1.2mm 0 0; font-size: 8.5pt; color: var(--wb-mid); }
+.wb-cover__rules {
+  display: flex;
+  gap: 6mm;
+  margin-top: 5mm;
+  padding-top: 3.5mm;
+  border-top: 0.4mm solid var(--wb-ink);
+}
+.wb-cover__field { flex: 1 1 0; display: flex; align-items: baseline; gap: 2mm; min-width: 0; }
+.wb-cover__field em {
+  font-style: normal;
+  font-size: 7.5pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wb-mid);
+}
+
+/* ── section heads ─────────────────────────────────────────────────────── */
+
+.wb-sec { margin: 5mm 0 3mm; break-inside: avoid; }
+.wb-sec:first-child { margin-top: 0; }
+.wb-sec__title {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  margin: 0;
+  font-family: var(--font-display), "Unbounded", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 11.5pt;
+}
+.wb-sec__letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7mm;
+  height: 7mm;
+  flex: 0 0 auto;
+  background: #f4c95d;
+  border: 0.4mm solid var(--wb-ink);
+  font-size: 9pt;
+  font-weight: 900;
+}
+.wb-sec__letter--key { background: #7cc47c; }
+.wb-sec__letter svg { width: 4mm; height: 4mm; stroke-width: 2.6; }
+.wb-sec__say {
+  margin: 1.8mm 0 0 10mm;
+  font-size: 8.5pt;
+  line-height: 1.45;
+  color: var(--wb-mid);
+}
+
+/* The blocks key: one of each piece, named and priced. */
+.pv-key {
+  display: flex;
+  gap: 7mm;
+  align-items: flex-end;
+  margin: 3.5mm 0 0 10mm;
+  padding: 2.5mm 4mm 2mm;
+  border: 0.35mm dashed #c8c0b4;
+}
+.pv-key__item { display: flex; flex-direction: column; align-items: center; gap: 0.8mm; }
+.pv-key__art { display: flex; align-items: flex-end; min-height: 19mm; }
+.pv-key__art svg { display: block; }
+.pv-key__name { font-size: 7pt; letter-spacing: 0.06em; color: var(--wb-mid); }
+.pv-key__worth { font-size: 7.5pt; font-weight: 600; }
+
+/* ── questions ─────────────────────────────────────────────────────────── */
+
+.wb-row { display: grid; gap: 3mm 6mm; margin-bottom: 3mm; }
+.wb-row--1 { grid-template-columns: minmax(0, 1fr); }
+.wb-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.wb-item {
+  display: grid;
+  grid-template-columns: 9mm minmax(0, 1fr);
+  gap: 2mm;
+  align-items: start;
+  break-inside: avoid;
+}
+.wb-item__no {
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--wb-mid);
+  padding-top: 0.6mm;
+  white-space: nowrap;
+}
+.wb-item__body { min-width: 0; }
+
+.wb-ask {
+  margin: 1.6mm 0 0;
+  font-size: 9.5pt;
+  line-height: 1.9;
+}
+.wb-ask:first-child { margin-top: 0; }
+.wb-ask--lead { font-size: 11pt; }
+.wb-ask em { font-style: normal; font-size: 8pt; color: var(--wb-mid); }
+
+.wb-num {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.wb-num--spread { font-size: 15pt; letter-spacing: 0.16em; }
+.wb-gap { display: inline-block; width: 1.6mm; }
+.wb-sep { padding: 0 2.5mm; color: var(--wb-faint); }
+.wb-given { letter-spacing: 0.02em; }
+.wb-words { font-style: italic; font-size: 10pt; }
+
+/* The digit that has been ringed, in the exercise that asks what it is worth.
+   A ring and not a highlighter: it has to survive a black-and-white printer.
+   Its own letter-spacing is zero — the spread number's tracking would otherwise
+   sit INSIDE the ring as a trailing gap and pull it off the digit — and the
+   spacing is put back as a margin, outside it. */
+.wb-ring {
+  display: inline-block;
+  letter-spacing: 0;
+  padding: 0.2mm 1.1mm;
+  margin: 0 0.5mm;
+  box-shadow: 0 0 0 0.45mm var(--wb-ink);
+  border-radius: 50%;
+}
+
+/* The three things a child writes into. */
+.wb-line {
+  display: inline-block;
+  border-bottom: 0.4mm solid var(--wb-rule);
+  vertical-align: baseline;
+  margin: 0 1mm;
+  height: 4mm;
+}
+.wb-line--xs { width: 9mm; }
+.wb-line--eq { width: 14mm; }
+.wb-line--sm { width: 22mm; }
+.wb-line--md { width: 34mm; }
+.wb-line--lg { width: 100%; max-width: 120mm; }
+.wb-line--fill { flex: 1 1 auto; min-width: 12mm; }
+
+.wb-box {
+  display: inline-block;
+  width: 8mm;
+  height: 8mm;
+  border: 0.45mm solid var(--wb-ink);
+  vertical-align: -2.4mm;
+  margin: 0 2mm;
+}
+
+.wb-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8mm;
+  height: 8mm;
+  margin-right: 2mm;
+  border: 0.45mm solid var(--wb-ink);
+  background: #f7f2e7;
+  font-size: 12pt;
+  font-weight: 700;
+}
+
+/* ── the answer key ────────────────────────────────────────────────────── */
+
+.wb-answers { break-inside: avoid; margin-bottom: 3mm; }
+.wb-answers__title {
+  margin: 3mm 0 1.4mm;
+  font-family: var(--font-display), "Unbounded", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 9pt;
+}
+.wb-answers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 2;
+  column-gap: 8mm;
+  font-size: 8.5pt;
+  line-height: 1.65;
+}
+.wb-answers__list li {
+  display: flex;
+  gap: 2mm;
+  break-inside: avoid;
+  padding: 0.3mm 0;
+}
+.wb-answers__no {
+  flex: 0 0 5mm;
+  font-weight: 700;
+  color: var(--wb-mid);
+}
+
+/* ── the empty state ───────────────────────────────────────────────────── */
+
+.wb-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  border: 1px dashed rgba(42, 39, 35, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PRINT — the whole page falls away and only the sheet is left.
+   Explicit chain rather than `visibility: hidden`, because hidden elements
+   still take up space and would push the first page down.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  body > *:not(.wb-main) { display: none !important; }
+  .wb-main > *:not(.wb-work) { display: none !important; }
+  .wb-work > *:not(.wb-preview) { display: none !important; }
+  .wb-preview > *:not(.wb-viewport) { display: none !important; }
+
+  .wb-main,
+  .wb-work,
+  .wb-preview,
+  .wb-viewport,
+  .wb-scaler,
+  .wb-sheet {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .wb-page {
+    box-shadow: none !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  .wb-page:last-child { break-after: auto; page-break-after: auto; }
+}
+

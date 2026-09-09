@@ -1,0 +1,278 @@
+/* ============================================================================
+   Remainder Theorem Workbook — what THIS workbook draws
+   ----------------------------------------------------------------------------
+   The paper itself, the bench around it and every mark a child writes into come
+   from /utils/components/workbook.css. What is left here is the organisers —
+   the frame, the ladder, the zero box and the joining lines — plus the box a
+   worked example sits in.
+
+   Two things are deliberate throughout and worth saying once:
+
+   IT IS BIGGER THAN IT NEEDS TO BE. Rows are taller, rules are further apart
+   and type is a point larger than the place-value workbook's, because this
+   paper is built for reinforcement and for a learner who needs room to write
+   without their answer touching the next thing. Fewer questions per page is
+   the price and it is the right price.
+
+   NOTHING IS SAID WITH COLOUR ALONE. A step's number is in a tinted circle,
+   but the number is also written; the total row of the ladder is tinted, but it
+   also says "Add them all up". The sheet has to work photocopied.
+
+   Every colour is a fixed hex, like the rest of the paper — see the note at the
+   top of workbook.css. The three tints are the site's own period palette, the
+   same butter, sky and leaf the blocks are painted in.
+   ========================================================================== */
+
+/* Indices must not push the lines apart. */
+.wb-sheet sup {
+  font-size: 0.66em;
+  line-height: 0;
+  vertical-align: 0.55em;
+}
+
+/* This paper's type runs one point larger than the place-value workbook's. */
+.wb-sheet .wb-ask { font-size: 10.5pt; }
+.wb-sheet .wb-ask--lead { font-size: 12pt; }
+
+/* ── the four-step frame ───────────────────────────────────────────────────
+   Four rows, always the same four, always in the same order, with an arrow
+   between them. Rows and not boxes-in-a-flowchart: a child reads down a page,
+   and a method drawn left to right is a method read in the wrong order. */
+
+.rt-frame {
+  margin: 2.5mm 0 1mm;
+  border: 0.5mm solid #2a2723;
+  background: #fffdf8;
+}
+
+.rt-frame__step {
+  display: grid;
+  grid-template-columns: 9mm 44mm minmax(0, 1fr);
+  align-items: center;
+  gap: 0 3mm;
+  min-height: 14mm;
+  padding: 1.6mm 3mm;
+}
+/* Every row but the first is ruled off. Written as :not(:first-child) and not
+   as an adjacent-sibling rule, because the arrows sit BETWEEN the rows in the
+   markup and no two rows are ever siblings in a row. */
+.rt-frame__step:not(:first-child) { border-top: 0.3mm solid #d8d2c6; }
+
+/* Step three's line is the width of its cell, whatever the shared long line
+   thinks it should be. */
+.rt-frame__work .wb-line--lg { max-width: 100%; margin-left: 0; }
+
+/* The number is the thing a child navigates by, so it is a shape and not just
+   a digit — the same shape in every frame on every page. */
+.rt-frame__no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7mm;
+  height: 7mm;
+  border: 0.4mm solid #2a2723;
+  border-radius: 50%;
+  background: #f4c95d;
+  font-size: 10pt;
+  font-weight: 700;
+}
+.rt-frame__what {
+  font-size: 8.5pt;
+  line-height: 1.3;
+  color: #4a453d;
+}
+.rt-frame__work {
+  font-size: 11pt;
+  min-width: 0;
+}
+
+/* The arrow sits between two rows, overlapping the rule, so the frame reads as
+   one thing going downwards rather than four things in a stack. */
+.rt-arrow {
+  display: block;
+  width: 5mm;
+  height: 5mm;
+  margin: -2.6mm auto;
+  position: relative;
+  z-index: 1;
+  background: #fffdf8;
+}
+.rt-arrow--right { display: inline-block; vertical-align: -1.3mm; margin: 0 2mm; }
+
+/* ── the swap ladder ───────────────────────────────────────────────────────*/
+
+.rt-ladder {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2.5mm 0 1mm;
+  table-layout: fixed;
+}
+.rt-ladder th,
+.rt-ladder td {
+  border: 0.3mm solid #a9a296;
+  padding: 1.4mm 2.5mm;
+  text-align: left;
+}
+.rt-ladder th {
+  background: #f2ede3;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4a453d;
+}
+.rt-ladder__term { width: 24%; font-size: 11pt; font-weight: 700; }
+.rt-ladder__swap { width: 46%; font-size: 10.5pt; height: 10mm; }
+.rt-ladder__got { width: 30%; font-size: 11pt; }
+
+/* The last row is where the four little answers become one. It is tinted AND
+   it says so. */
+.rt-ladder__total td {
+  background: #eaf5ea;
+  font-weight: 700;
+  font-size: 9.5pt;
+}
+.rt-ladder__total td:first-child { text-align: right; }
+
+/* ── the zero box ──────────────────────────────────────────────────────────*/
+
+.rt-zero {
+  display: inline-flex;
+  align-items: center;
+  margin: 1mm 0;
+}
+.rt-zero__cell {
+  display: inline-flex;
+  align-items: center;
+  min-height: 10mm;
+  padding: 1mm 3mm;
+  border: 0.45mm solid #2a2723;
+  background: #fffdf8;
+  font-size: 12pt;
+  white-space: nowrap;
+}
+.rt-zero__cell--ans { background: #fff8e6; }
+
+/* ── joining the pairs up ──────────────────────────────────────────────────
+   Two columns and a wide gutter. The gutter is the exercise: it has to be wide
+   enough to draw a line across that clearly starts at one dot and ends at
+   another, and narrow enough that the two columns are read as a pair. */
+
+.rt-match {
+  display: grid;
+  grid-template-columns: 1fr 30mm 1fr;
+  gap: 0;
+  /* Narrower than the page. Two columns a hand's width apart read as a pair to
+     be joined; two columns at opposite edges of the paper read as two lists. */
+  max-width: 128mm;
+  margin: 2mm 0 1mm;
+}
+.rt-match__side {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12pt;
+}
+/* The dots FACE EACH OTHER across the gutter: the left column's dot on its
+   right edge, the right column's on its left. A dot on the far side of its own
+   label is a dot you draw a line through the words to reach. */
+.rt-match__side li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3mm;
+  height: 11mm;
+}
+.rt-match__side li .rt-match__dot { order: 2; }
+.rt-match__side--right { grid-column: 3; }
+.rt-match__side--right li { justify-content: flex-start; }
+.rt-match__side--right li .rt-match__dot { order: 0; }
+.rt-match__dot {
+  width: 2.2mm;
+  height: 2.2mm;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #2a2723;
+}
+
+/* ── the box you work in ───────────────────────────────────────────────────
+   Ruled, not blank. A child asked to "show your working" in an empty rectangle
+   writes one line in the middle and stops; rules say how much is expected. */
+
+.rt-work {
+  display: block;
+  position: relative;
+  height: calc(var(--rt-lines, 4) * 8mm);
+  margin: 2mm 0;
+  border: 0.4mm solid #2a2723;
+  background: #fffdf8;
+}
+.rt-work__rule {
+  position: absolute;
+  left: 2mm;
+  right: 2mm;
+  height: 0;
+  border-top: 0.25mm solid #ded8cc;
+}
+
+/* ── two boxes to tick ─────────────────────────────────────────────────────*/
+
+.rt-tick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2mm 7mm;
+  vertical-align: middle;
+}
+.rt-tick__one {
+  display: inline-flex;
+  align-items: center;
+  gap: 1mm;
+  font-size: 9.5pt;
+  white-space: nowrap;
+}
+/* The shared tick box is sized for a digit; here it is only ever ticked. */
+.rt-tick .wb-box { width: 6.5mm; height: 6.5mm; margin: 0 1mm 0 0; vertical-align: -1.6mm; }
+
+/* A true/false line is a sentence and a fixed column of boxes, so the boxes
+   start at the same place on every line however long the sentence is. */
+.rt-tf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52mm;
+  align-items: center;
+  gap: 1mm 4mm;
+}
+
+/* ── one done for you ──────────────────────────────────────────────────────
+   The worked example is the same organiser as the questions under it, filled
+   in. Tinted and tagged so nobody writes in it, and printed only at the Show
+   me level — see organiser.js. */
+
+.rt-worked {
+  position: relative;
+  margin: 3.5mm 0 1mm 10mm;
+  padding: 3mm 4mm 3.5mm;
+  border: 0.35mm dashed #9c958a;
+  background: #f7f4ec;
+}
+.rt-worked__tag {
+  margin: 0 0 1.5mm;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b655c;
+}
+.rt-worked__ask { margin: 0 0 2mm; font-size: 10pt; font-weight: 700; }
+.rt-worked .rt-frame,
+.rt-worked .rt-ladder,
+.rt-worked .rt-zero { margin-bottom: 0; }
+.rt-worked .wb-ask { font-size: 10pt; }
+
+/* ── the bench: this workbook's own two controls ───────────────────────────*/
+
+.rt-help-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+}

@@ -7,13 +7,13 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#f4c95d" />
-    <title>Prep Portal | Place Value Workbook</title>
+    <title>Prep Portal | Remainder Theorem Workbook</title>
     <meta
       name="description"
-      content="Build a printable place-value workbook in seconds: number-block piles to count, trade and draw, place-value charts to fill in and read off, expanded form, words, comparing and ordering — with an answer key, in any base from two to twelve. Print it or save it as a PDF."
+      content="Build a printable remainder-theorem workbook with graphic organisers: a four-step frame, a swap ladder with a row for every term, and a zero box — plus matching, factor-theorem and true-or-false practice, with a worked example and an answer key. Made for reinforcement and for learners who need the method drawn on the page."
     />
 
-    <!-- Page access gate: feature "prep-math-activities", part "place-value-workbook" -->
+    <!-- Page access gate: feature "prep-math-activities", part "remainder-theorem-workbook" -->
     <script type="module" src="/utils/auth/premium-guard.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="/utils/components/nav.css" />
     <link rel="stylesheet" href="/utils/components/components.css" />
     <!-- The paper, the bench and every mark a child writes into. This page's
-         own sheet adds only the blocks and the chart. -->
+         own sheet adds only the graphic organisers. -->
     <link rel="stylesheet" href="/utils/components/workbook.css" />
     <link rel="stylesheet" href="./style.css" />
 
@@ -66,17 +66,17 @@
     <main class="wb-main">
       <header class="wb-hero">
         <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
-        <h1 class="wb-title">Place Value Workbook<em>.</em></h1>
+        <h1 class="wb-title">Remainder Theorem Workbook<em>.</em></h1>
         <p class="wb-lead">
-          Choose what should be on the paper and it is laid out, page by page,
-          exactly as it will come out of the printer. Blocks to count, trade and
-          draw, charts to fill in and read off, and the number on its own — with
-          an answer key on the back.
+          One method, split into steps small enough to finish, and drawn on the
+          page so nobody has to hold it in their head. Find the zero of the
+          bracket. Swap x for it, a row at a time. Then both together, in a
+          four-step frame that never changes.
         </p>
         <p class="wb-sister">
-          The same blocks are on the
-          <a href="/prep-math/activity/base-blocks/index.html">Manipulatives canvas</a>,
-          if you would rather move them about than print them.
+          Built for reinforcement — say the word, do the step, do it again. The
+          same bench builds the
+          <a href="/prep-math/activity/place-value-workbook/index.html">Place Value Workbook</a>.
         </p>
       </header>
 
@@ -90,30 +90,26 @@
               <label class="wb-field">
                 <span>Title on the front</span>
                 <input class="wb-input" id="wb-title" type="text" maxlength="52"
-                       value="Place Value" autocomplete="off" />
+                       value="The Remainder Theorem" autocomplete="off" />
               </label>
 
-              <div class="wb-row2">
-                <label class="wb-field">
-                  <span>Base</span>
-                  <select class="wb-select" id="pv-base"></select>
-                </label>
-                <label class="wb-field">
-                  <span>Places</span>
-                  <select class="wb-select" id="pv-places"></select>
-                </label>
-              </div>
+              <label class="wb-field">
+                <span>How much help</span>
+                <select class="wb-select" id="rt-help"></select>
+                <span class="wb-field__hint">
+                  The organiser is the same every time; what changes is how much
+                  of it is already written. Start at <strong>Show me</strong> and
+                  move down a step only when a whole page comes back right.
+                </span>
+              </label>
 
               <label class="wb-field">
-                <span>Zeros in the middle</span>
-                <select class="wb-select" id="pv-zeros">
-                  <option value="0">None — every place has something in it</option>
-                  <option value="0.25" selected>Some — a zero here and there</option>
-                  <option value="0.45">Plenty — zeros are the point</option>
-                </select>
+                <span>How hard</span>
+                <select class="wb-select" id="rt-level"></select>
                 <span class="wb-field__hint">
-                  An empty place is the hardest thing about place value. This is
-                  how often one turns up inside a number.
+                  The numbers stay small at every level. This is a workbook about
+                  a method, and a method lost in the middle of a big
+                  multiplication was not taught.
                 </span>
               </label>
 
@@ -136,10 +132,6 @@
                   Name, class and date line
                 </label>
                 <label class="wb-toggle">
-                  <input type="checkbox" id="pv-blockskey" checked />
-                  A key showing what each block is worth
-                </label>
-                <label class="wb-toggle">
                   <input type="checkbox" id="wb-answers" checked />
                   Answer key at the back
                 </label>
@@ -157,9 +149,9 @@
                   </button>
                 </div>
                 <span class="wb-field__hint">
-                  The same code always builds the same workbook — so a second
-                  copy for a child who lost theirs really is the same paper, and
-                  two children can be given different ones.
+                  The same code always builds the same workbook. Print the same
+                  paper again next week and it is the same questions in the same
+                  order — which is the point of practice.
                 </span>
               </div>
             </div>

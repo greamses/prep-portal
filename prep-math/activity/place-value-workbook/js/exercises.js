@@ -49,9 +49,9 @@ const WIDE = 64;
    set side by side to be compared. Half the width, less the gap between them. */
 const PAIR = 42;
 
-const line = (size = "md") => `<span class="pv-line pv-line--${size}"></span>`;
-const box = () => `<span class="pv-box"></span>`;
-const num = (n, base) => `<span class="pv-num">${figures(n, base)}</span>`;
+const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
+const box = () => `<span class="wb-box"></span>`;
+const num = (n, base) => `<span class="wb-num">${figures(n, base)}</span>`;
 
 /* ── how big a number an exercise may use ──────────────────────────────────*/
 
@@ -125,7 +125,7 @@ export const EXERCISES = [
     render(item, o) {
       return (
         `<div class="pv-art">${blocksSvg(item.counts, o.base, { maxCells: WIDE, label: "A pile of base blocks" })}</div>` +
-        `<p class="pv-ask">The number is ${line("md")}</p>`
+        `<p class="wb-ask">The number is ${line("md")}</p>`
       );
     },
     answer(item, o) {
@@ -186,7 +186,7 @@ export const EXERCISES = [
     },
     render(item, o) {
       return (
-        `<p class="pv-ask pv-ask--lead">Draw ${num(item.n, o.base)}.</p>` +
+        `<p class="wb-ask wb-ask--lead">Draw ${num(item.n, o.base)}.</p>` +
         `<div class="pv-art pv-art--box">${drawingBox(o.base, { rows: 14, cols: WIDE })}</div>`
       );
     },
@@ -232,8 +232,8 @@ export const EXERCISES = [
         .join("&nbsp;&nbsp;");
       return (
         `<div class="pv-art">${blocksSvg(item.messy, o.base, { maxCells: WIDE, label: "A pile of base blocks with too many of one piece" })}</div>` +
-        `<p class="pv-ask">Tidied up: ${blanks}</p>` +
-        `<p class="pv-ask">The number is ${line("md")}</p>`
+        `<p class="wb-ask">Tidied up: ${blanks}</p>` +
+        `<p class="wb-ask">The number is ${line("md")}</p>`
       );
     },
     answer(item, o) {
@@ -289,8 +289,8 @@ export const EXERCISES = [
         `</div>`;
       return (
         `<div class="pv-pair">${pile("a", item.a)}${pile("b", item.b)}</div>` +
-        `<p class="pv-ask">a is ${line("sm")} &nbsp; b is ${line("sm")}</p>` +
-        `<p class="pv-ask">a ${box()} b</p>`
+        `<p class="wb-ask">a is ${line("sm")} &nbsp; b is ${line("sm")}</p>` +
+        `<p class="wb-ask">a ${box()} b</p>`
       );
     },
     answer(item, o) {
@@ -429,14 +429,14 @@ export const EXERCISES = [
          a PLACE and not on the n-th character of a grouped string. */
       let out = "";
       for (let p = o.places - 1; p >= 0; p--) {
-        if (p < o.places - 1 && (p + 1) % 3 === 0) out += `<span class="pv-gap"></span>`;
+        if (p < o.places - 1 && (p + 1) % 3 === 0) out += `<span class="wb-gap"></span>`;
         const ch = digitChar(digits[p]);
-        out += p === item.p ? `<span class="pv-ring">${ch}</span>` : `<span>${ch}</span>`;
+        out += p === item.p ? `<span class="wb-ring">${ch}</span>` : `<span>${ch}</span>`;
       }
       return (
-        `<p class="pv-ask pv-ask--lead"><span class="pv-num pv-num--spread">${out}</span></p>` +
-        `<p class="pv-ask">Place: ${line("sm")}</p>` +
-        `<p class="pv-ask">Worth: ${line("sm")}</p>`
+        `<p class="wb-ask wb-ask--lead"><span class="wb-num wb-num--spread">${out}</span></p>` +
+        `<p class="wb-ask">Place: ${line("sm")}</p>` +
+        `<p class="wb-ask">Worth: ${line("sm")}</p>`
       );
     },
     answer(item, o) {
@@ -466,7 +466,7 @@ export const EXERCISES = [
          and a blank longer than its answer is a hint that there is more to
          write. */
       const blanks = Array.from({ length: Math.max(2, parts) }, () => line("eq")).join(" + ");
-      return `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)} = ${blanks}</p>`;
+      return `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)} = ${blanks}</p>`;
     },
     answer(item, o) {
       const digits = digitsOf(item.n, o.base, o.places);
@@ -497,7 +497,7 @@ export const EXERCISES = [
       for (let p = o.places - 1; p >= 0; p--) {
         if (digits[p]) parts.push(figures(digits[p] * Math.pow(o.base, p), o.base));
       }
-      return `<p class="pv-ask pv-ask--lead">${parts.join(" + ")} = ${line("sm")}</p>`;
+      return `<p class="wb-ask wb-ask--lead">${parts.join(" + ")} = ${line("sm")}</p>`;
     },
     answer(item, o) {
       return [figures(item.n, o.base)];
@@ -520,9 +520,9 @@ export const EXERCISES = [
     },
     render(item, o) {
       if (item.toWords) {
-        return `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)} &nbsp;=&nbsp; ${line("lg")}</p>`;
+        return `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)} &nbsp;=&nbsp; ${line("lg")}</p>`;
       }
-      return `<p class="pv-ask pv-ask--lead"><em class="pv-words">${inWords(item.n)}</em> &nbsp;=&nbsp; ${line("sm")}</p>`;
+      return `<p class="wb-ask wb-ask--lead"><em class="wb-words">${inWords(item.n)}</em> &nbsp;=&nbsp; ${line("sm")}</p>`;
     },
     answer(item, o) {
       return [item.toWords ? inWords(item.n) : figures(item.n, o.base)];
@@ -565,9 +565,9 @@ export const EXERCISES = [
     render(item, o) {
       const s = figures(item.step, o.base);
       return (
-        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
-        `<p class="pv-ask"><em>${s} more</em> ${line("sm")}</p>` +
-        `<p class="pv-ask"><em>${s} less</em> ${line("sm")}</p>`
+        `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="wb-ask"><em>${s} more</em> ${line("sm")}</p>` +
+        `<p class="wb-ask"><em>${s} less</em> ${line("sm")}</p>`
       );
     },
     answer(item, o) {
@@ -601,8 +601,8 @@ export const EXERCISES = [
     },
     render(item, o) {
       return (
-        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
-        `<p class="pv-ask">How many ${placeNameLower(item.p, o.base)} in all? ${line("sm")}</p>`
+        `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="wb-ask">How many ${placeNameLower(item.p, o.base)} in all? ${line("sm")}</p>`
       );
     },
     answer(item, o) {
@@ -638,8 +638,8 @@ export const EXERCISES = [
     },
     render(item, o) {
       return (
-        `<p class="pv-ask pv-ask--lead">${num(item.n, o.base)}</p>` +
-        `<p class="pv-ask">to the nearest ${placeNameFor(1, item.p, o.base)} ${line("sm")}</p>`
+        `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)}</p>` +
+        `<p class="wb-ask">to the nearest ${placeNameFor(1, item.p, o.base)} ${line("sm")}</p>`
       );
     },
     answer(item, o) {
@@ -686,7 +686,7 @@ export const EXERCISES = [
       return { a, b: nb };
     },
     render(item, o) {
-      return `<p class="pv-ask pv-ask--lead">${num(item.a, o.base)} ${box()} ${num(item.b, o.base)}</p>`;
+      return `<p class="wb-ask wb-ask--lead">${num(item.a, o.base)} ${box()} ${num(item.b, o.base)}</p>`;
     },
     answer(item) {
       return [item.a > item.b ? "&gt;" : item.a < item.b ? "&lt;" : "="];
@@ -725,8 +725,8 @@ export const EXERCISES = [
     },
     render(item, o) {
       return (
-        `<p class="pv-ask pv-ask--lead pv-given">${item.ns.map((n) => num(n, o.base)).join("<span class=\"pv-sep\">·</span>")}</p>` +
-        `<p class="pv-ask">${item.ns.map(() => line("sm")).join(" , ")}</p>`
+        `<p class="wb-ask wb-ask--lead wb-given">${item.ns.map((n) => num(n, o.base)).join("<span class=\"wb-sep\">·</span>")}</p>` +
+        `<p class="wb-ask">${item.ns.map(() => line("sm")).join(" , ")}</p>`
       );
     },
     answer(item, o) {
@@ -755,11 +755,11 @@ export const EXERCISES = [
       return { digits: picked };
     },
     render(item) {
-      const chips = item.digits.map((d) => `<span class="pv-chip">${digitChar(d)}</span>`).join("");
+      const chips = item.digits.map((d) => `<span class="wb-chip">${digitChar(d)}</span>`).join("");
       return (
-        `<p class="pv-ask pv-ask--lead">${chips}</p>` +
-        `<p class="pv-ask">Biggest ${line("sm")}</p>` +
-        `<p class="pv-ask">Smallest ${line("sm")}</p>`
+        `<p class="wb-ask wb-ask--lead">${chips}</p>` +
+        `<p class="wb-ask">Biggest ${line("sm")}</p>` +
+        `<p class="wb-ask">Smallest ${line("sm")}</p>`
       );
     },
     answer(item, o) {
