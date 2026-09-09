@@ -244,11 +244,27 @@ export function mountBuilder(cfg) {
       resizeTimer = setTimeout(fit, 120);
     });
 
-    /* Measured pagination depends on the real metrics of Unbounded and
-       JetBrains Mono, so the first build waits for them. Without this the
-       first render paginates against the fallback font and every page is a
-       line out. */
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+    /* Measured pagination depends on the real metrics of every font on the
+       paper, so the first build waits for them by NAME.
+       
+       document.fonts.ready is not enough on its own and the difference is not
+       academic: it resolves when the fonts requested SO FAR have arrived, and
+       the handwritten face is not requested until the first render has put a
+       section letter on the page. So the honest sequence is — paginate against
+       a fallback, request the real face, finish loading it, and never
+       re-paginate — which leaves the last question of a page hanging over the
+       edge. Asking for the three faces up front closes that window. */
+    const faces = [
+      '700 12pt "Shantell Sans"',
+      '900 20pt Unbounded',
+      '400 10pt "JetBrains Mono"',
+      '700 10pt "JetBrains Mono"',
+    ];
+    if (document.fonts && document.fonts.load) {
+      Promise.all(faces.map((f) => document.fonts.load(f).catch(() => {})))
+        .then(() => document.fonts.ready)
+        .then(render);
+    }
     render();
   }
 

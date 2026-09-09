@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Dividing and Remainders</title>
+    <meta
+      name="description"
+      content="Build a printable workbook on dividing with remainders: piles of shapes to ring into groups, trays to share them between, the division sentence with every part named, and fraction bars that turn the bit left over into a mixed number and an improper fraction. Made for reinforcement, with a worked example and an answer key."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "remainders-workbook" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <!-- The paper, the bench and every mark a child writes into. This page's
+         own sheet adds only the pictures. -->
+    <link rel="stylesheet" href="/utils/components/workbook.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <!-- Turns every .pp-btn on the bench into a sticky note. Loaded last, as
+         its own header asks, so it wins without anything needing !important. -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+
+    <!-- The nav resolves the signed-in user through bare firebase specifiers. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Workbook</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="wb-paint" aria-hidden="true"></div>
+
+    <main class="wb-main">
+      <header class="wb-hero">
+        <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
+        <h1 class="wb-title">Dividing and Remainders<em>.</em></h1>
+        <p class="wb-lead">
+          A pile of things and a pencil. Ring the groups, count what is left
+          over, and write the sentence underneath — with every part named, so
+          the divisor and the remainder are things you can point at. Then the
+          bit left over turns into a fraction, and the fraction bars turn that
+          into a mixed number and an improper fraction.
+        </p>
+        <p class="wb-sister">
+          Built for reinforcement — do the step, say the word, do it again. The
+          same bench builds the
+          <a href="/prep-math/activity/place-value-workbook/index.html">Place Value Workbook</a>.
+        </p>
+      </header>
+
+      <div class="wb-work">
+        <!-- ═══ THE BUILDER ═══ -->
+        <aside class="wb-rail">
+          <div class="pp-receipt">
+            <div class="pp-receipt__paper wb-rail__paper">
+              <h2 class="wb-rail__title"><span data-icon="sliders"></span> Build the workbook</h2>
+
+              <label class="wb-field">
+                <span>Title on the front</span>
+                <input class="wb-input" id="wb-title" type="text" maxlength="52"
+                       value="Dividing and Remainders" autocomplete="off" />
+              </label>
+
+              <label class="wb-field">
+                <span>How much help</span>
+                <select class="wb-select" id="rw-help"></select>
+                <span class="wb-field__hint">
+                  The pictures are the same every time; what changes is how much
+                  is already done. Start at <strong>Show me</strong> and move
+                  down a step only when a whole page comes back right.
+                </span>
+              </label>
+
+              <label class="wb-field">
+                <span>How hard</span>
+                <select class="wb-select" id="rw-level"></select>
+                <span class="wb-field__hint">
+                  The numbers stay small at every level. This is a workbook about
+                  an idea, and an idea lost in the middle of a big division was
+                  not taught.
+                </span>
+              </label>
+
+              <fieldset class="wb-fieldset">
+                <legend>What goes on the paper</legend>
+                <div id="wb-picks"></div>
+              </fieldset>
+
+              <fieldset class="wb-fieldset">
+                <legend>The sheet itself</legend>
+                <label class="wb-field">
+                  <span>Paper</span>
+                  <select class="wb-select" id="wb-paper">
+                    <option value="a4" selected>A4</option>
+                    <option value="letter">US Letter</option>
+                  </select>
+                </label>
+                <label class="wb-toggle">
+                  <input type="checkbox" id="wb-nameline" checked />
+                  Name, class and date line
+                </label>
+                <label class="wb-toggle">
+                  <input type="checkbox" id="wb-answers" checked />
+                  Answer key at the back
+                </label>
+              </fieldset>
+
+              <div class="wb-field">
+                <span>Workbook code</span>
+                <div class="wb-seed">
+                  <input class="wb-input wb-seed__code" id="wb-seedcode" type="text"
+                         maxlength="5" autocomplete="off" spellcheck="false"
+                         aria-label="Workbook code — the same code always makes the same workbook" />
+                  <button class="pp-btn pp-btn--ghost" id="wb-reseed" type="button"
+                          title="Make a different workbook">
+                    <span data-icon="dice"></span>
+                  </button>
+                </div>
+                <span class="wb-field__hint">
+                  The same code always builds the same workbook. Print the same
+                  paper again next week and it is the same questions in the same
+                  order — which is the point of practice.
+                </span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ═══ THE PAPER ═══ -->
+        <section class="wb-preview">
+          <div class="wb-toolbar">
+            <span class="wb-toolbar__count">
+              <span data-icon="page"></span>
+              <span id="wb-pages">—</span>
+            </span>
+            <span class="wb-toolbar__spacer"></span>
+            <button class="pp-btn" id="wb-print" type="button">
+              Print <span data-icon="print"></span>
+            </button>
+          </div>
+
+          <p class="wb-note">
+            The print dialog is also how you save a PDF — pick
+            <strong>Save as PDF</strong> as the destination. Turn
+            <strong>Headers and footers</strong> off and set margins to
+            <strong>None</strong>: the workbook carries its own margins, page
+            numbers and code.
+          </p>
+
+          <div class="wb-viewport" id="wb-viewport">
+            <div class="wb-scaler" id="wb-scaler">
+              <div class="wb-sheet" id="wb-sheet"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".wb-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
