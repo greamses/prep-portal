@@ -53,43 +53,104 @@ export function mountBuilder(cfg) {
 
   /* ── the list of exercises, grouped, straight off the registry ──────────*/
 
+  /* A workbook that has grown chapters shows one chapter at a time, behind a
+     row of tabs: the first group of a chapter carries `chapter`, and the rest
+     follow it. What is ticked in the other chapters stays ticked — the paper
+     is everything ticked, in every tab — and each tab says how many. */
+  const TAB_KEY = `${store}:tab`;
+  let tabAt = 0;
+  try { tabAt = Number(localStorage.getItem(TAB_KEY)) || 0; } catch (_) {}
+
+  function chaptersOf() {
+    const out = [];
+    groups.forEach((g) => {
+      if (g.chapter || !out.length) out.push({ name: g.chapter || "", groups: [] });
+      out[out.length - 1].groups.push(g);
+    });
+    return out;
+  }
+
+  function showTab(i) {
+    const host = $("wb-picks");
+    const panels = host.querySelectorAll(".wb-picks__flow");
+    tabAt = clamp(i, 0, panels.length - 1);
+    panels.forEach((p, j) => { p.hidden = j !== tabAt; });
+    host.querySelectorAll(".wb-tabs .builder-tab").forEach((t, j) => {
+      t.classList.toggle("is-active", j === tabAt);
+      t.setAttribute("aria-selected", String(j === tabAt));
+    });
+    try { localStorage.setItem(TAB_KEY, String(tabAt)); } catch (_) {}
+  }
+
+  function countTabs() {
+    const host = $("wb-picks");
+    const tabs = host.querySelectorAll(".wb-tabs .builder-tab");
+    host.querySelectorAll(".wb-picks__flow").forEach((p, j) => {
+      const n = p.querySelectorAll('[data-role="on"]:checked').length;
+      const badge = tabs[j] && tabs[j].querySelector(".wb-tab__n");
+      if (badge) { badge.textContent = n; badge.hidden = !n; }
+    });
+  }
+
   function fillPicks(chosen) {
     const host = $("wb-picks");
     host.innerHTML = "";
-    groups.forEach((g) => {
-      /* A workbook that has grown chapters marks where each one starts: the
-         first group of a chapter carries `chapter`, and the rest follow it. */
-      if (g.chapter) {
-        const ch = document.createElement("p");
-        ch.className = "wb-chapter__name";
-        ch.textContent = g.chapter;
-        host.appendChild(ch);
-      }
-      /* A group is one box, so the list's columns never part a heading from
-         its rows. */
-      const group = document.createElement("div");
-      group.className = "wb-group";
-      host.appendChild(group);
-      const head = document.createElement("p");
-      head.className = "wb-group__name";
-      head.innerHTML = `${glyphs[g.id] || ""}${g.label}`;
-      group.appendChild(head);
-
-      exercises.filter((e) => e.group === g.id).forEach((ex) => {
-        const row = document.createElement("label");
-        row.className = "wb-pick";
-        row.dataset.id = ex.id;
-        const n = chosen[ex.id] ?? 0;
-        row.innerHTML =
-          `<input type="checkbox" data-role="on"${n ? " checked" : ""} />` +
-          `<span class="wb-pick__label">` +
-          `<span class="wb-pick__name">${ex.label}</span>` +
-          `<span class="wb-pick__blurb">${ex.blurb}</span>` +
-          `</span>` +
-          `<input class="wb-pick__count" data-role="count" type="number" min="1" max="40" ` +
-          `value="${n || ex.defaultCount}" aria-label="How many ${ex.label} questions" />`;
-        group.appendChild(row);
+    const chapters = chaptersOf();
+    const tabbed = chapters.length > 1;
+    if (tabbed) {
+      const bar = document.createElement("div");
+      bar.className = "builder-tabs builder-tabs--compact wb-tabs";
+      bar.setAttribute("role", "tablist");
+      chapters.forEach((ch, j) => {
+        /* "Chapter 2 · Transversal angles" — the tab says the topic */
+        const [num, topic] = ch.name.includes(" · ") ? ch.name.split(" · ") : ["", ch.name];
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "pp-pill builder-tab";
+        tab.setAttribute("role", "tab");
+        tab.title = ch.name;
+        tab.innerHTML = `${topic}<b class="wb-tab__n" hidden></b>`;
+        tab.setAttribute("aria-label", `${num} ${topic}`.trim());
+        tab.addEventListener("click", () => showTab(j));
+        bar.appendChild(tab);
       });
+      host.appendChild(bar);
+    }
+    chapters.forEach((ch) => {
+      const flow = document.createElement("div");
+      flow.className = "wb-picks__flow";
+      if (tabbed) flow.setAttribute("role", "tabpanel");
+      host.appendChild(flow);
+      ch.groups.forEach((g) => fillGroup(flow, g, chosen));
+    });
+    if (tabbed) { showTab(tabAt); countTabs(); }
+  }
+
+  /* A group is one box, so the list's columns never part a heading from its
+     rows. The blurb under each exercise's name shows on hover (workbook.css). */
+  function fillGroup(host, g, chosen) {
+    const group = document.createElement("div");
+    group.className = "wb-group";
+    host.appendChild(group);
+    const head = document.createElement("p");
+    head.className = "wb-group__name";
+    head.innerHTML = `${glyphs[g.id] || ""}${g.label}`;
+    group.appendChild(head);
+
+    exercises.filter((e) => e.group === g.id).forEach((ex) => {
+      const row = document.createElement("label");
+      row.className = "wb-pick";
+      row.dataset.id = ex.id;
+      const n = chosen[ex.id] ?? 0;
+      row.innerHTML =
+        `<input type="checkbox" data-role="on"${n ? " checked" : ""} />` +
+        `<span class="wb-pick__label">` +
+        `<span class="wb-pick__name">${ex.label}</span>` +
+        `<span class="wb-pick__blurb">${ex.blurb}</span>` +
+        `</span>` +
+        `<input class="wb-pick__count" data-role="count" type="number" min="1" max="40" ` +
+        `value="${n || ex.defaultCount}" aria-label="How many ${ex.label} questions" />`;
+      group.appendChild(row);
     });
   }
 
@@ -278,6 +339,7 @@ export function mountBuilder(cfg) {
       schedule();
     });
     rail.addEventListener("change", schedule);
+    rail.addEventListener("change", (e) => { if (e.target.dataset.role === "on") countTabs(); });
 
     $("wb-reseed").addEventListener("click", () => {
       $("wb-seedcode").value = seedCode((Math.random() * 0xffffffff) >>> 0);
