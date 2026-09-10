@@ -184,6 +184,9 @@ function itemNode(section, entry) {
   node.innerHTML =
     `<span class="wb-item__no">${no}</span>` +
     `<div class="wb-item__body">${section.ex.render(entry.item, section.opts)}</div>`;
+  /* The question remembers what it was made from, so the on-screen layer can
+     ask its exercise for the key (interactive.js). */
+  node.__wb = { ex: section.ex, item: entry.item, opts: section.opts };
   return node;
 }
 

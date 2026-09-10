@@ -26,6 +26,7 @@ import {
 } from "./figure.js";
 import { levelOf, helpOf, stepped, triangleAngles, dealer, regularFor } from "./levels.js";
 import { protractorSvg } from "../../maths-workbook/js/protractor.js";
+import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const deg = (label) => `<span class="wb-slot"><em>${label}</em>${box()}°</span>`;
@@ -106,6 +107,10 @@ const triMeasure = {
       `</div>`
     );
   },
+  /* Measured, so 2° either way; the total of three measurements 3°. */
+  key(item) {
+    return [want.num(item.A, 2), want.num(item.B, 2), want.num(item.C, 2), want.num(180, 3)];
+  },
   answer(item) {
     return [`A = ${item.A}°, B = ${item.B}°, C = ${item.C}° — altogether 180°`];
   },
@@ -143,6 +148,9 @@ const triTear = {
       `make a straight line — and a straight line is 180°. Any triangle does this.</p></div>`
     );
   },
+  key() {
+    return [want.text("straight", "a straight line", "straight line"), want.num(180)];
+  },
   answer() {
     return ["a straight line — 180°, whatever the triangle"];
   },
@@ -178,6 +186,9 @@ const triCheck = {
       `<span class="wb-tick"><span class="wb-tick__one"><span class="wb-box"></span>triangle</span>` +
       `<span class="wb-tick__one"><span class="wb-box"></span>not a triangle</span></span>`
     );
+  },
+  key(item) {
+    return [want.num(item.a + item.b + item.c), want.tick(item.yes ? 0 : 1)];
   },
   answer(item) {
     const t = item.a + item.b + item.c;
@@ -218,6 +229,9 @@ const triMissing = {
       `x = 180 − 120 = <b>60°</b>.</p></div>`
     );
   },
+  key(item) {
+    return [want.num([item.A, item.B, item.C][item.missing])];
+  },
   answer(item) {
     return [`x = ${[item.A, item.B, item.C][item.missing]}°`];
   },
@@ -256,6 +270,9 @@ const triIsosceles = {
       `and they are equal, so each is 140 ÷ 2 = <b>70°</b>.</p></div>`
     );
   },
+  key(item) {
+    return item.given === "top" ? [want.num(item.b)] : [want.num(item.b), want.num(item.t)];
+  },
   answer(item) {
     return item.given === "top"
       ? [`x = ${item.b}° (each bottom angle)`]
@@ -289,6 +306,9 @@ const triRight = {
       })) +
       `<p class="wb-ask">${deg("x =")}</p>`
     );
+  },
+  key(item) {
+    return [want.num(90 - item.a)];
   },
   answer(item) {
     return [`x = ${90 - item.a}°`];
@@ -337,6 +357,9 @@ const triAlgebra = {
       `<p class="wb-ask">${deg("x =")}</p>`
     );
   },
+  key(item) {
+    return [want.num(item.x)];
+  },
   answer(item) {
     return [`x = ${item.x}° — the angles are ${item.a}°, ${item.b}° and ${item.c}°`];
   },
@@ -374,6 +397,9 @@ const extLine = {
       `<p class="wb-ask wb-worked__say">70° inside and x outside make a straight line, ` +
       `so x = 180 − 70 = <b>110°</b>.</p></div>`
     );
+  },
+  key(item) {
+    return [want.num(180 - item.B)];
   },
   answer(item) {
     return [`x = ${180 - item.B}°`];
@@ -413,6 +439,9 @@ const extFind = {
       `180 − 70 = 110.</p></div>`
     );
   },
+  key(item) {
+    return [want.num(item.A + item.C)];
+  },
   answer(item) {
     return [`x = ${item.A}° + ${item.C}° = ${item.A + item.C}°`];
   },
@@ -444,6 +473,9 @@ const extSum = {
       `<p class="wb-ask">${deg("x =")}</p>`
     );
   },
+  key(item) {
+    return [want.num(180 - [item.A, item.B, item.C][item.missing])];
+  },
   answer(item) {
     return [`x = ${180 - [item.A, item.B, item.C][item.missing]}° (the three make 360°)`];
   },
@@ -471,6 +503,9 @@ const extRegular = {
       art(figureSvg(regularPoints(item.n), { labels: [], ext: [{ at: 1, label: "x" }], ticks: true, box: HALF })) +
       `<p class="wb-ask">360° ÷ ${box()} = ${box()}°</p>`
     );
+  },
+  key(item) {
+    return [want.num(item.n), want.num(360 / item.n)];
   },
   answer(item) {
     return [`360° ÷ ${item.n} = ${360 / item.n}°`];

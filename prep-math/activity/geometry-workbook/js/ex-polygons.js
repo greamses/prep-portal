@@ -29,6 +29,7 @@ import {
 import { levelOf, helpOf, sidesFor, regularFor, dealer } from "./levels.js";
 
 const box = () => `<span class="wb-answer"></span>`;
+import { want } from "/utils/components/workbook/want.js";
 const deg = (label) => `<span class="wb-slot"><em>${label}</em>${box()}°</span>`;
 const art = (svg) => `<div class="gw-art">${svg}</div>`;
 const HALF = { w: 68, h: 50 };
@@ -115,6 +116,28 @@ const decompDraw = {
       `because the two corners next to the dot are already joined to it.</p></div>`
     );
   },
+  /* The lines are drawn on the figure: from the red dot to every corner that
+     is not already its neighbour, and nothing else. */
+  key(item) {
+    const n = item.n;
+    return [
+      want.num(n), want.num(n - 2),
+      want.draw({
+        says: `${n - 3} lines from the red dot, to every corner except its two neighbours`,
+        check(lines) {
+          const need = new Set();
+          for (let k = 2; k <= n - 2; k++) need.add(k);
+          const got = new Set();
+          for (const [a, b] of lines) {
+            const other = a === 0 ? b : b === 0 ? a : -1;
+            if (other < 0 || !need.has(other)) return false;
+            got.add(other);
+          }
+          return got.size === need.size;
+        },
+      }),
+    ];
+  },
   answer(item) {
     return [`${item.n} sides → ${item.n - 2} triangles`];
   },
@@ -143,6 +166,13 @@ const decompCount = {
       flow({ n: helpOf(o).id === "show" ? item.n : null }, { named: helpOf(o).id !== "try" }) +
       `</div>`
     );
+  },
+  /* the four-box flow: sides (unless the Show me level printed it), then the
+     triangles twice — once on their own, once in "× 180" — then the total */
+  key(item, o) {
+    const t = item.n - 2;
+    const first = helpOf(o).id === "show" ? [] : [want.num(item.n)];
+    return [...first, want.num(t), want.num(t), want.num(t * 180)];
   },
   answer(item) {
     return [`${item.n} sides → ${item.n - 2} triangles → ${item.n - 2} × 180 = ${(item.n - 2) * 180}°`];
@@ -181,20 +211,36 @@ const decompTable = {
         return (
           `<tr><td class="gw-table__shape">${shape}</td>` +
           `<td>${NAMES[n]}</td>` +
-          `<td>${give ? n : ""}</td>` +
-          `<td>${give ? n - 2 : ""}</td>` +
-          `<td>${give ? `${(n - 2) * 180}°` : ""}</td></tr>`
+          (give
+            ? `<td>${n}</td><td>${n - 2}</td><td>${(n - 2) * 180}°</td></tr>`
+            : `<td class="wb-cell"></td><td class="wb-cell"></td><td class="wb-cell"></td></tr>`)
         );
       })
       .join("");
     const tail = item.withN
-      ? `<tr class="gw-table__rule"><td></td><td>any shape</td><td><b>n</b></td><td></td><td></td></tr>`
+      ? `<tr class="gw-table__rule"><td></td><td>any shape</td><td><b>n</b></td><td class="wb-cell"></td><td class="wb-cell"></td></tr>`
       : "";
     return (
       `<table class="gw-table"><thead><tr>` +
       `<th>Shape</th><th>Name</th><th>Sides</th><th>Triangles</th><th>Angles add to</th>` +
       `</tr></thead><tbody>${body}${tail}</tbody></table>`
     );
+  },
+  /* the cells left blank, row by row: sides, triangles, total — and the rule
+     in words on the last row at the stretch level */
+  key(item, o) {
+    const filled = { show: 2, help: 1, try: 0 }[helpOf(o).id] ?? 1;
+    const out = [];
+    item.rows.forEach((n, i) => {
+      if (i >= filled) out.push(want.num(n), want.num(n - 2), want.num((n - 2) * 180));
+    });
+    if (item.withN) {
+      out.push(
+        want.text("n - 2", "n-2"),
+        want.text("(n - 2) × 180", "(n-2)x180", "180(n-2)", "180x(n-2)", "(n-2)180")
+      );
+    }
+    return out;
   },
   answer(item) {
     const rows = item.rows.map((n) => `${NAMES[n]}: ${n} sides, ${n - 2} triangles, ${(n - 2) * 180}°`);
@@ -231,6 +277,10 @@ const decompCentre = {
       `<p class="wb-ask">= ${box()}°.</p>` +
       `</div></div>`
     );
+  },
+  key(item) {
+    const n = item.n;
+    return [n, n, n * 180, 360, n * 180, 360, (n - 2) * 180].map((v) => want.num(v));
   },
   answer(item) {
     const n = item.n;
@@ -272,6 +322,13 @@ const polySum = {
       `Three lots of 180 is 540.</p></div>`
     );
   },
+  /* the four-box flow: sides (unless the Show me level printed it), then the
+     triangles twice — once on their own, once in "× 180" — then the total */
+  key(item, o) {
+    const t = item.n - 2;
+    const first = helpOf(o).id === "show" ? [] : [want.num(item.n)];
+    return [...first, want.num(t), want.num(t), want.num(t * 180)];
+  },
   answer(item) {
     return [`${NAMES[item.n]}: (${item.n} − 2) × 180 = ${(item.n - 2) * 180}°`];
   },
@@ -299,6 +356,9 @@ const polySides = {
       `<p class="wb-ask">${item.sum} ÷ 180 = ${box()} triangles</p>` +
       `<p class="wb-ask">${box()} + 2 = ${box()} sides</p>`
     );
+  },
+  key(item) {
+    return [want.num(item.n - 2), want.num(item.n - 2), want.num(item.n)];
   },
   answer(item) {
     return [`${item.sum} ÷ 180 = ${item.n - 2}; ${item.n - 2} + 2 = ${item.n} sides (${NAMES[item.n]})`];
@@ -348,6 +408,9 @@ const polyMissing = {
       `up to 360°. ${known.join(" + ")} = ${sum}, so x = 360 − ${sum} = <b>${360 - sum}°</b>.</p></div>`
     );
   },
+  key(item) {
+    return [want.num((item.n - 2) * 180), want.num(item.angles[item.missing])];
+  },
   answer(item) {
     const sum = (item.n - 2) * 180;
     return [`total ${sum}°; x = ${item.angles[item.missing]}°`];
@@ -387,6 +450,10 @@ const polyRegular = {
       `There are 6 equal corners, so each is 720 ÷ 6 = <b>120°</b>.</p></div>`
     );
   },
+  key(item) {
+    const sum = (item.n - 2) * 180;
+    return [want.num(sum), want.num(item.n), want.num(sum / item.n)];
+  },
   answer(item) {
     const sum = (item.n - 2) * 180;
     return [`${sum}° ÷ ${item.n} = ${sum / item.n}°`];
@@ -416,6 +483,10 @@ const polyRegularBack = {
       `<p class="wb-ask">Outside angle: 180 − ${item.each} = ${box()}°</p>` +
       `<p class="wb-ask">360 ÷ ${box()} = ${box()} sides</p>`
     );
+  },
+  key(item) {
+    const out = 180 - item.each;
+    return [want.num(out), want.num(out), want.num(item.n)];
   },
   answer(item) {
     const out = 180 - item.each;

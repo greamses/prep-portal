@@ -14,6 +14,7 @@ import {
 import { ICON } from "./icons.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
 import { onAdmin } from "/utils/components/workbook/admin.js";
+import { protractorSvg } from "../../maths-workbook/js/protractor.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -78,6 +79,8 @@ mountBuilder({
   subject: SUBJECT,
   /* sold per print — see /utils/components/workbook/print-pass.js */
   print: { workbook: "geometry-workbook", label: "Geometry Workbook" },
+  /* done on screen: typed, ticked, ruled, measured, and marked */
+  interactive: { protractor: protractorSvg() },
   store: "gw-workbook-v1",
   groups: GROUPS,
   glyphs: {

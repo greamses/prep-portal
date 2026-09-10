@@ -27,13 +27,16 @@
      print     { workbook, label } — this workbook is sold per print: the
                  Print button goes through the ₦5,000 pass (print-pass.js).
                  Without it the workbook prints free.
+     interactive  { protractor } — the paper can be done on screen and
+                 marked (interactive.js); `protractor` is the instrument's SVG
      })
    ========================================================================== */
 
 import { renderWorkbook, PAPERS } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
 import { ICON } from "./icons.js";
-import { printPass, guardPrinting } from "./print-pass.js";
+import { printPass, guardPrinting, workbookKey } from "./print-pass.js";
+import { mountInteractive } from "./interactive.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -44,6 +47,7 @@ export function mountBuilder(cfg) {
   /* A workbook sold per print gets the pass; any other prints free, so its
      pages are always cleared for the printer. */
   let pass = null;
+  let live = null;
   if (!cfg.print) document.documentElement.classList.add("wb-print-ok");
 
   /* ── the list of exercises, grouped, straight off the registry ──────────*/
@@ -168,6 +172,7 @@ export function mountBuilder(cfg) {
     $("wb-pages").textContent = pages === 1 ? "1 page" : `${pages} pages`;
     $("wb-print").disabled = false;
     if (pass) pass.update(o, { pages, sections: o.chosen.length, code: $("wb-seedcode").value });
+    if (live) workbookKey(store, o).then((k) => live.afterRender(k));
     pageRule(o.paper);
     fit();
   }
@@ -234,6 +239,16 @@ export function mountBuilder(cfg) {
     if (cfg.print) {
       pass = printPass(cfg.print);
       guardPrinting(pass);
+    }
+    if (cfg.interactive) {
+      live = mountInteractive({
+        sheet: sheet(),
+        viewport: $("wb-viewport"),
+        scaler: $("wb-scaler"),
+        toolbar: document.querySelector(".wb-toolbar"),
+        refit: fit,
+        protractor: cfg.interactive.protractor,
+      });
     }
 
     document.querySelectorAll("[data-icon]").forEach((el) => {

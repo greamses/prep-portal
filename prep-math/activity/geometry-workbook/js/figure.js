@@ -295,6 +295,8 @@ export function figureSvg(pts0, opts = {}) {
 
   return (
     `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" ` +
+    /* the corners, for the on-screen layer to snap lines and the protractor to */
+    `data-pts="${pts.map((p) => p.map(f).join(",")).join(" ")}"${mark !== null ? ` data-mark="${mark}"` : ""} ` +
     `aria-label="A shape with ${n} sides">${body}</svg>`
   );
 }

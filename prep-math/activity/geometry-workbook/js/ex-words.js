@@ -20,6 +20,7 @@ import { NAMES, aName } from "./figure.js";
 import { levelOf, stepped, triangleAngles, regularFor, sidesFor } from "./levels.js";
 
 const box = () => `<span class="wb-answer"></span>`;
+import { want } from "/utils/components/workbook/want.js";
 const rank = (o) => ({ gentle: 0, middle: 1, stretch: 2 }[levelOf(o).id] ?? 0);
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
@@ -33,6 +34,7 @@ const BANK = [
       return {
         text: `A roof frame is a triangle. Two of its corners are ${a}° and ${b}°. What is the third corner?`,
         ans: `${c}°  (180 − ${a} − ${b})`,
+        want: [c],
       };
     },
   },
@@ -44,6 +46,7 @@ const BANK = [
       return {
         text: `Seen from the front, a tent is an isosceles triangle. The angle at the top is ${t}°. What are the two angles at the bottom?`,
         ans: `${b}° each  ((180 − ${t}) ÷ 2)`,
+        want: [b],
       };
     },
   },
@@ -56,6 +59,7 @@ const BANK = [
       return {
         text: `A ${thing} is shaped like a regular ${NAMES[n]}. What is the size of each of its corners?`,
         ans: `${each}°  (${(n - 2) * 180} ÷ ${n})`,
+        want: [each],
       };
     },
   },
@@ -66,6 +70,7 @@ const BANK = [
       return {
         text: `A school field has ${n} straight sides. What do all its corners add up to?`,
         ans: `${(n - 2) * 180}°  ((${n} − 2) × 180)`,
+        want: [(n - 2) * 180],
       };
     },
   },
@@ -88,6 +93,7 @@ const BANK = [
       return {
         text: `A farm plot has four straight sides. Three of its corners are ${a}°, ${b}° and ${c}°. What is the fourth corner?`,
         ans: `${d}°  (360 − ${a + b + c})`,
+        want: [d],
       };
     },
   },
@@ -98,6 +104,7 @@ const BANK = [
       return {
         text: `A ladder leans against a wall and makes an angle of ${a}° with the ground. The wall meets the ground at a right angle. What angle does the ladder make with the wall?`,
         ans: `${90 - a}°  (90 − ${a})`,
+        want: [90 - a],
       };
     },
   },
@@ -108,6 +115,7 @@ const BANK = [
       return {
         text: `One side of a triangular garden is carried on as a straight path. The two corners of the garden furthest from where the path starts are ${a}° and ${c}°. What angle does the path make with the garden's other side?`,
         ans: `${a + c}°  (the outside angle is the two far corners added: ${a} + ${c})`,
+        want: [a + c],
       };
     },
   },
@@ -119,6 +127,7 @@ const BANK = [
       return {
         text: `Every corner of a regular shape measures ${each}°. How many sides does it have?`,
         ans: `${n} — ${aName(n)}  (outside angle ${180 - each}°, 360 ÷ ${180 - each})`,
+        want: [n],
       };
     },
   },
@@ -129,6 +138,7 @@ const BANK = [
       return {
         text: `The corners of a shape add up to ${(n - 2) * 180}°. How many sides does it have?`,
         ans: `${n}  (${(n - 2) * 180} ÷ 180 = ${n - 2}, then + 2)`,
+        want: [n],
       };
     },
   },
@@ -138,6 +148,7 @@ const BANK = [
       return {
         text: `An equilateral triangle has all three sides the same length. What is each of its angles, and what is each angle outside it?`,
         ans: `60° inside, 120° outside`,
+        want: [60, 120],
       };
     },
   },
@@ -150,6 +161,7 @@ const BANK = [
       return {
         text: `The angles of a triangle are ${said}. Find x, and the size of each angle.`,
         ans: `x = ${x}°; the angles are ${set.map((c) => c * x + "°").join(", ")}`,
+        want: [x],
       };
     },
   },
@@ -162,6 +174,7 @@ const BANK = [
       return {
         text: `The four angles of a quadrilateral are ${said}. Find x, and the size of each angle.`,
         ans: `x = ${x}°; the angles are ${set.map((c) => c * x + "°").join(", ")}`,
+        want: [x],
       };
     },
   },
@@ -204,6 +217,11 @@ const geoWords = {
       `<span class="wb-work__rule" style="top:66.6%"></span></span>` +
       `<p class="wb-ask"><span class="wb-slot"><em>Answer</em>${box()}</span></p>`
     );
+  },
+  /* The one box has to mention the number (or numbers) asked for; the
+     working above it is for the child, not the marker. */
+  key(item) {
+    return [want.nums(...item.want)];
   },
   answer(item) {
     return [cap(item.ans)];

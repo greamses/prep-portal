@@ -28,6 +28,7 @@ import {
   angleSize, drawnSize, familyOf, PAIRS, isInterior, isLeft,
 } from "./transversal.js";
 import { levelOf, stepped, dealer } from "./levels.js";
+import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const small = () => `<span class="wb-answer gw-num"></span>`;
@@ -187,6 +188,8 @@ const stepsTable = (rows) =>
   `<table class="gw-steps"><tr><th></th><th>across</th><th>up or down</th></tr>` +
   rows.map((n) => `<tr><th>${n}</th><td>${small()}</td><td>${small()}</td></tr>`).join("") +
   `</table>`;
+/* A dot's column and row, from where it sits on the grid (see dotGridSvg). */
+const dotAt = ([x, y]) => [Math.round((x - 5) / 6), Math.round((y - 5) / 6)];
 const upWord = (dy) => (dy >= 0 ? `${dy} up` : `${-dy} down`);
 
 /** A direction a child can count: 1–4 across, up to 3 up or down. */
@@ -272,6 +275,11 @@ const parSpot = {
       )
     );
   },
+  key(item) {
+    const [ax, ay] = stepsOf(item.a, item.b);
+    const [bx, by] = stepsOf(item.c, item.d);
+    return [want.num(ax), want.steps(ay), want.num(bx), want.steps(by), want.tick(item.yes ? 0 : 1)];
+  },
   answer(item) {
     const [ax, ay] = stepsOf(item.a, item.b);
     const [bx, by] = stepsOf(item.c, item.d);
@@ -319,6 +327,29 @@ const parDraw = {
       )
     );
   },
+  /* The line is ruled on the grid, from P, the same way as the given line:
+     any length, either way along it — but every line drawn has to be one. */
+  key(item) {
+    const [vx, vy] = item.v;
+    return [
+      want.num(vx), want.steps(vy),
+      want.draw({
+        says: `from P, ${vx} across and ${upWord(vy)}`,
+        check(lines, fig) {
+          if (!lines.length) return false;
+          return lines.every(([i, j]) => {
+            const a = dotAt(fig.pts[i]);
+            const b = dotAt(fig.pts[j]);
+            const atP = (d) => d[0] === item.P[0] && d[1] === item.P[1];
+            if (!atP(a) && !atP(b)) return false;
+            const q = atP(a) ? b : a;
+            const d = [q[0] - item.P[0], q[1] - item.P[1]];
+            return (d[0] || d[1]) && d[0] * -vy - d[1] * vx === 0;
+          });
+        },
+      }),
+    ];
+  },
   answer(item) {
     return [`from P go ${item.v[0]} across and ${upWord(item.v[1])}, then join`];
   },
@@ -350,6 +381,9 @@ const trWhich = {
       box: item.lines === 3 ? TALL : FIG,
     })) + ask(`The transversal is line ${small()}`);
   },
+  key(item) {
+    return [want.text(item.names[item.lines])];
+  },
   answer(item) {
     const others = item.names.slice(0, item.lines).join(" and ");
     return [`line ${item.names[item.lines]} — it crosses ${others}`];
@@ -376,6 +410,9 @@ const trCount = {
     return art(transversalSvg({ phi: item.phi, lines: item.lines, dots: true, rot: item.rot, box: item.lines === 3 ? TALL : FIG })) +
       ask(`${num("Lines crossed")}${num("Angles")}`) +
       ask(num("At each crossing"));
+  },
+  key(item) {
+    return [want.num(item.lines), want.num(item.lines * 4), want.num(4)];
   },
   answer(item) {
     return [`${item.lines} lines, ${item.lines * 4} angles — 4 at each crossing`];
@@ -411,6 +448,22 @@ const trDraw = {
       )
     );
   },
+  /* A straight line that crosses both parallels (the numbering is on paper). */
+  key() {
+    return [
+      want.draw({
+        free: true,
+        says: "one straight line that crosses both parallel lines",
+        check(lines, fig) {
+          const cross = (p, q, r, s) => {
+            const o = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+            return o(p, q, r) !== o(p, q, s) && o(r, s, p) !== o(r, s, q);
+          };
+          return lines.some(([a, b]) => fig.par.every((l) => cross(a, b, [l[0], l[1]], [l[2], l[3]])));
+        },
+      }),
+    ];
+  },
   answer() {
     return ["any straight line across both — 1 to 4 at the top crossing, 5 to 8 at the bottom"];
   },
@@ -437,6 +490,9 @@ const taInOut = {
       ask(`Interior: ${small()}${small()}${small()}${small()}`) +
       ask(`Exterior: ${small()}${small()}${small()}${small()}`);
   },
+  key() {
+    return [want.set(3, 4, 5, 6), want.set(1, 2, 7, 8)];
+  },
   answer() {
     return ["interior 3, 4, 5, 6 — exterior 1, 2, 7, 8"];
   },
@@ -461,6 +517,9 @@ const taWhere = {
     return art(transversalSvg({ phi: item.phi, shade: [item.n], box: FIG })) +
       `<p class="gw-tickrow">${tick("interior", "exterior")}</p>` +
       `<p class="gw-tickrow">${tick("left", "right")} of the transversal</p>`;
+  },
+  key(item) {
+    return [want.tick(isInterior(item.n) ? 0 : 1), want.tick(isLeft(item.n) ? 0 : 1)];
   },
   answer(item) {
     return [`∠${item.n}: ${isInterior(item.n) ? "interior" : "exterior"}, ${isLeft(item.n) ? "left" : "right"}`];
@@ -487,6 +546,13 @@ const aoSort = {
     return art(transversalSvg({ phi: item.phi, numbers: true, rot: item.rot, box: FIG })) +
       ask(`Acute: ${small()}${small()}${small()}${small()}`) +
       ask(`Obtuse: ${small()}${small()}${small()}${small()}`);
+  },
+  key(item) {
+    const all = [1, 2, 3, 4, 5, 6, 7, 8];
+    return [
+      want.set(...all.filter((n) => angleSize(n, item.phi) < 90)),
+      want.set(...all.filter((n) => angleSize(n, item.phi) > 90)),
+    ];
   },
   answer(item) {
     const all = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -529,6 +595,9 @@ const aoFill = {
       )
     );
   },
+  key(item) {
+    return [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => n !== item.g).map((n) => want.num(angleSize(n, item.phi)));
+  },
   answer(item) {
     return [[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `∠${n} = ${angleSize(n, item.phi)}°`).join(", ")];
   },
@@ -570,6 +639,9 @@ function findEx({ id, group, label, blurb, heading, instruction, rels, sample, c
         ask(deg("x =")) + tick(SAME, PAIRED);
     },
     worked: () => workedFind(...sample),
+    key(item) {
+      return [want.num(angleSize(item.u, item.phi)), want.tick(REL[item.rel].equal ? 0 : 1)];
+    },
     answer(item) {
       const a = angleSize(item.g, item.phi);
       const x = angleSize(item.u, item.phi);
@@ -598,6 +670,9 @@ function nameEx({ id, group, label, blurb, heading, instruction, rels }) {
     render(item) {
       return art(transversalSvg({ phi: item.phi, numbers: true, box: FIG })) +
         item.asks.map((n) => ask(`∠${n} and ∠${small()} are ${REL[relOf(item.pool, n)].name}`)).join("");
+    },
+    key(item) {
+      return item.asks.map((n) => want.num(mateOf(item.pool, n)));
     },
     answer(item) {
       return [item.asks.map((n) => `∠${n} and ∠${mateOf(item.pool, n)}`).join("; ")];
@@ -634,6 +709,9 @@ function algebraEx({ id, group, label, heading, rels }) {
     render(item) {
       const labels = { [item.g]: expr(...item.e1), [item.u]: expr(...item.e2) };
       return art(transversalSvg({ phi: item.phi, labels, box: FIG })) + ask(deg("x ="));
+    },
+    key(item) {
+      return [want.num(item.x)];
     },
     answer(item) {
       const R = REL[item.rel];
@@ -679,6 +757,9 @@ const voFind = {
       )
     );
   },
+  key(item) {
+    return [want.num(crossSize(opposite(item.k), item.a))];
+  },
   answer(item) {
     return [`x = ${crossSize(item.k, item.a)}°`];
   },
@@ -703,6 +784,9 @@ const voAll = {
     ["x", "y", "z"].forEach((l, j) => { labels[((item.k + j) % 4) + 1] = l; });
     return art(crossingSvg(item.a, { labels, rot: item.rot, box: CROSS })) +
       ask(`${deg("x =")}${deg("y =")}`) + ask(deg("z ="));
+  },
+  key(item) {
+    return [0, 1, 2].map((j) => want.num(crossSize(((item.k + j) % 4) + 1, item.a)));
   },
   answer(item) {
     const out = ["x", "y", "z"].map((l, j) => `${l} = ${crossSize(((item.k + j) % 4) + 1, item.a)}°`);
@@ -745,6 +829,9 @@ const voAlgebra = {
   render(item) {
     const labels = { [item.k]: expr(...item.e1), [opposite(item.k)]: expr(...item.e2) };
     return art(crossingSvg(item.a, { labels, rot: item.rot, box: CROSS })) + ask(deg("x ="));
+  },
+  key(item) {
+    return [want.num(item.x)];
   },
   answer(item) {
     return [`x = ${item.x} — both angles are ${item.v1}°`];
@@ -876,6 +963,10 @@ const ciCheck = {
     return art(transversalSvg({ phi: item.phi, skew: item.skew, arrows: false, labels, box: FIG })) +
       ask(deg("Together")) + tick("parallel", "not parallel");
   },
+  key(item) {
+    const t = item.pair.reduce((sum, n) => sum + drawnSize(n, item.phi, item.skew), 0);
+    return [want.num(t), want.tick(t === 180 ? 0 : 1)];
+  },
   answer(item) {
     const [a, b] = item.pair.map((n) => drawnSize(n, item.phi, item.skew));
     const t = a + b;
@@ -931,6 +1022,10 @@ const ceSort = {
         tick(...KINDS) + `<p class="wb-ask">so they are</p>` + tick(SAME, PAIRED)
     );
   },
+  key(item) {
+    const R = REL[item.rel];
+    return [want.tick(KINDS.indexOf(R.kind)), want.tick(R.equal ? 0 : 1)];
+  },
   answer(item) {
     const R = REL[item.rel];
     return [`${R.name} — ${R.equal ? "equal" : "add up to 180°"}`];
@@ -982,6 +1077,10 @@ const mtTwo = {
           "y = <b>110°</b>. The 70° is no help with y — it is on the other line.")
     );
   },
+  key(item) {
+    const [p0, p1] = item.phis;
+    return [want.num(angleSize(item.x[1], p0)), want.num(angleSize(item.y[1], p1))];
+  },
   answer(item) {
     const [p0, p1] = item.phis;
     return [
@@ -1014,6 +1113,9 @@ const mtThree = {
   render(item) {
     const labels = { [item.g]: `${angleSize(item.g, item.phi)}°`, [item.x]: "x", [item.y]: "y" };
     return art(transversalSvg({ phi: item.phi, lines: 3, labels, box: TALL })) + ask(`${deg("x =")}${deg("y =")}`);
+  },
+  key(item) {
+    return [want.num(angleSize(item.x, item.phi)), want.num(angleSize(item.y, item.phi))];
   },
   answer(item) {
     return [`x = ${angleSize(item.x, item.phi)}°, y = ${angleSize(item.y, item.phi)}°`];
@@ -1071,6 +1173,12 @@ const ttFind = {
       )
     );
   },
+  key(item) {
+    const { p, q } = item;
+    const z = 180 - p - q;
+    /* x, y, z in the places they are asked, whichever pair was given */
+    return [want.num(p), want.num(q), want.num(z)];
+  },
   answer(item) {
     const z = 180 - item.p - item.q;
     return [`x = ${item.p}°, y = ${item.q}°, z = ${z}°`];
@@ -1102,6 +1210,9 @@ const ttProof = {
         ask(`${p}°, c and ${q}° make a straight line, so ${deg("c =")}`) +
         ask(`a + b + c = ${deg("")}`)
     );
+  },
+  key(item) {
+    return [want.num(item.p), want.num(item.q), want.num(180 - item.p - item.q), want.num(180)];
   },
   answer(item) {
     const c = 180 - item.p - item.q;

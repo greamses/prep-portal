@@ -98,7 +98,9 @@ export const isLeft = (n) => [1, 3].includes(((n - 1) % 4) + 1);
    millimetres, so a figure squeezed into half a column keeps readable labels. */
 
 function scene() {
-  return { lines: [], marks: [] };
+  /* pts: the points a line can be ruled to or a protractor dropped on — the
+     crossings, the corners — written onto the SVG for interactive.js */
+  return { lines: [], marks: [], pts: [] };
 }
 
 /* Roughly where a mark reaches, in mm round its anchor: [left, top, right, bottom]. */
@@ -191,8 +193,11 @@ function render(sc, box, { rot = 0, pad = 3 } = {}) {
   /* The rotation is applied to the marks by turning their ANGLES back the other
      way: `dir()` works in screen space after the points are rotated, and a
      rotation of the figure by rot turns every direction by −rot on screen. */
+  const ptsAttr = sc.pts.length ? ` data-pts="${sc.pts.map((p) => T(p).map(f).join(",")).join(" ")}"` : "";
+  const par = sc.lines.filter((l) => l.par);
+  const parAttr = par.length ? ` data-par="${par.map((l) => [...T(l.a), ...T(l.b)].map(f).join(",")).join(";")}"` : "";
   return (
-    `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" ` +
+    `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img"${ptsAttr}${parAttr} ` +
     `aria-label="Lines and the angles between them">${body}</svg>`
   );
 }
@@ -275,7 +280,8 @@ export function transversalSvg({
       a = [cx + (lo - cx) * Math.cos(t), y - (lo - cx) * Math.sin(t)];
       b = [cx + (hi - cx) * Math.cos(t), y - (hi - cx) * Math.sin(t)];
     }
-    sc.lines.push({ a, b, col: PARA });
+    sc.lines.push({ a, b, col: PARA, par: true });
+    if (!bare) sc.pts.push([xs[c], y]);
     if (arrows && !skew) sc.marks.push({ kind: "arrow", at: [hi - 10, y], a: 0, count: 1 });
     if (names) sc.marks.push({ kind: "text", at: [hi, y], a: 0, d: 3.2, text: names[c], size: 3.6, col: INK });
   }
@@ -328,6 +334,7 @@ export function crossingSvg(a, { labels = {}, rot = 0, box = { w: 62, h: 46 } } 
   const L = 30;
   sc.lines.push({ a: mul(dir(0), -L), b: mul(dir(0), L) });
   sc.lines.push({ a: mul(dir(a), -L), b: mul(dir(a), L), col: TRANS, w: 0.8 });
+  sc.pts.push([0, 0]);
   /* positions round the point, anticlockwise from the right: 1 = [0,a],
      2 = [a,180], 3 = [180,180+a], 4 = [180+a,360] */
   const sectors = { 1: [0, a], 2: [a, 180], 3: [180, 180 + a], 4: [180 + a, 360] };
@@ -360,6 +367,7 @@ export function twoTransversalsSvg(phis, { labels = {}, box = { w: 118, h: 58 } 
     const xs = xsOf(t);
     const up = dir(phis[t]);
     sc.lines.push({ a: [xs[0] + up[0] * 16, up[1] * 16], b: [xs[1] - up[0] * 16, gap - up[1] * 16], col: TRANS, w: 0.8 });
+    sc.pts.push([xs[0], 0], [xs[1], gap]);
     for (let c = 0; c < 2; c++) {
       for (let pos = 1; pos <= 4; pos++) {
         const n = c * 4 + pos;
@@ -402,6 +410,7 @@ export function triangleBetweenSvg(p, q, { labels = {}, box = { w: 70, h: 50 } }
   sc.lines.push({ a: apex, b: bL, col: TRANS, w: 0.8 });
   sc.lines.push({ a: apex, b: bR, col: TRANS, w: 0.8 });
   sc.lines.push({ a: bL, b: bR, w: 0.9 });
+  sc.pts.push(apex, bL, bR);
 
   const put = (key, at, a0, a1) => {
     const text = labels[key];
@@ -469,5 +478,11 @@ export function dotGridSvg({ cols = 11, rows = 8, segs = [], names = [], P = nul
     const at = best([[3, -2.6], [-3, -2.6], [3, 3], [-3, 3]].map(([dx, dy]) => [pp[0] + dx, pp[1] + dy]));
     body += label(at, "P", ARC);
   }
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" class="gw-fig" role="img" aria-label="A dot grid with a line and a point P">${body}</svg>`;
+  const dots = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) dots.push(`${c * s + m},${r * s + m}`);
+  return (
+    `<svg viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" class="gw-fig" role="img" ` +
+    `data-grid="${cols},${rows}" data-pts="${dots.join(" ")}" ` +
+    `aria-label="A dot grid with a line and a point P">${body}</svg>`
+  );
 }
