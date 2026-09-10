@@ -100,7 +100,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   const colourSvgs = (node) => [...node.querySelectorAll(".wb-item__body svg")].filter((v) => v.querySelector("[data-part]"));
   const rec = (i) => {
     const r = (store[i] ||= {});
-    r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= []; r.stuck ||= [];
+    r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -171,7 +171,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll(".wb-match li").forEach((li) => { li.onclick = null; li.classList.remove("is-picked"); });
     node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
     node.querySelectorAll("svg[data-stickable]").forEach((s) => s.removeAttribute("data-stickable"));
-    node.querySelectorAll("svg[data-paste]").forEach((s) => s.classList.remove("has-stuck"));
+    node.querySelectorAll("svg[data-paste]").forEach((s) => s.classList.remove("has-stuck", "is-fitted"));
     node.querySelectorAll("[data-corner]").forEach((p) => {
       p.classList.remove("is-torn"); p.removeAttribute("tabindex"); p.removeAttribute("role"); p.removeAttribute("transform");
     });
@@ -427,88 +427,173 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     paint();
   }
 
-  /* ── tearing corners off and sticking them down ──────────────────────────
-     Tap a coloured corner of the figure — or drag it onto the line — and it
-     comes away, leaving a pale gap, and is stuck with its point on the dot,
-     against the corners already there: the first along the line to the left
-     of the dot, each next one round the top. The three corners of a triangle
-     finish exactly on the line on the other side, which is the whole lesson.
-     Tap a stuck corner to take it off again. The figure says each corner's
-     angle and colour (svg[data-tear]); the line says where its dot is
-     (svg[data-paste]). */
+  /* ── tearing corners off and fitting them on a line ──────────────────────
+     The experiment, done by hand. Tap a coloured corner of the triangle — or
+     drag it across — and it comes away, leaving a pale gap, and lies loose
+     on the line's figure, the size it was and facing the way it faced. From
+     there the child does the rest:
+       · drag a corner to move it; let go with its point near the dot and the
+         point goes onto the dot;
+       · turn it by the knob at the edge of its arc (or the arrow keys);
+       · drag from the dot to draw a line out of it; drag a line's end to turn
+         it and make it longer or shorter;
+       · turn the corners to fit between the lines.
+     An edge that comes within 3° of the straight line, a drawn line, or the
+     edge of a corner already on the dot clicks onto it, so small hands can
+     line things up. When the three corners fill the straight line exactly,
+     the line goes green — it does not say "a straight line": that is the
+     question's to ask. The figure says each corner's angle, colour, size and
+     facing (svg[data-tear], [data-start]); the line's figure says where its
+     dot is (svg[data-paste]). Nothing here is marked. */
   function makeStickable(node, idx) {
     const tear = node.querySelector("svg[data-tear]");
     const paste = node.querySelector("svg[data-paste]");
     if (!tear || !paste) return;
     tear.dataset.stickable = "1";
+    paste.dataset.stickable = "1";
     const angles = tear.dataset.tear.split(",").map(Number);
     const cols = (tear.dataset.tearCols || "").split(",");
+    const R = Number(tear.dataset.tearR) || 13;
     const [ox, oy] = paste.dataset.paste.split(",").map(Number);
-    const R = Math.min(12, oy - 1);
-    const pieces = [...tear.querySelectorAll("[data-corner]")];
-    const stuck = () => rec(idx).stuck;
+    const corners = [...tear.querySelectorAll("[data-corner]")];
+    const startOf = (i) => Number(corners[i]?.dataset.start) || 0;
+    const vertexOf = (i) => (corners[i]?.getAttribute("d").match(/-?\d+(\.\d+)?/g) || [0, 0]).slice(0, 2).map(Number);
+    const SNAP_DEG = 3;
+    const DOT_MM = 3.5;
     const rad = (d) => (d * Math.PI) / 180;
-    const at = (deg, r = R) => [ox + r * Math.cos(rad(180 + deg)), oy + r * Math.sin(rad(180 + deg))];
+    const degOf = (x, y) => (Math.atan2(y, x) * 180) / Math.PI;
+    const norm = (d) => ((d % 360) + 360) % 360;
+    const diff = (a, b) => ((((a - b) % 360) + 540) % 360) - 180; // a − b, in (−180, 180]
     const f = (n) => n.toFixed(2);
+    const S = () => {
+      const r = rec(idx);
+      r.tear ||= { pieces: {}, rays: [], log: [] };
+      return r.tear;
+    };
+    const atDot = (p) => p && Math.hypot(p.x - ox, p.y - oy) < 0.01;
+    /* the two edges of a laid corner, as directions out of its point */
+    const edges = (i, p) => [norm(startOf(i) + p.rot), norm(startOf(i) + p.rot + angles[i])];
+
+    /* Do the corners on the dot fill one side of the line, edge to edge? */
+    function fitted() {
+      const st = S();
+      const on = Object.keys(st.pieces).map(Number).filter((i) => atDot(st.pieces[i]));
+      if (on.length !== 3) return false;
+      return [180, 0].some((base) => {
+        const spans = on.map((i) => norm(edges(i, st.pieces[i])[0] - base)).map((s, k) => [s, angles[on[k]]]);
+        spans.sort((a, b) => a[0] - b[0]);
+        let at = 0;
+        return spans.every(([s, a]) => {
+          const ok = Math.abs(diff(s, at)) < 2.5;
+          at = s + a;
+          return ok;
+        }) && Math.abs(at - 180) < 2.5;
+      });
+    }
+
+    const el = (tag, attrs, parent) => {
+      const n = document.createElementNS(SVGNS, tag);
+      Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+      parent?.appendChild(n);
+      return n;
+    };
 
     const paint = () => {
-      const on = stuck();
-      pieces.forEach((p) => {
-        const i = Number(p.dataset.corner);
-        const torn = on.includes(i);
+      const st = S();
+      corners.forEach((p, i) => {
+        const torn = i in st.pieces;
         p.classList.toggle("is-torn", torn);
         p.setAttribute("role", "button");
         p.setAttribute("tabindex", torn ? "-1" : "0");
-        p.setAttribute("aria-label", `Tear off corner ${String.fromCharCode(65 + i)} and stick it on the line`);
+        p.setAttribute("aria-label", `Tear off corner ${String.fromCharCode(65 + i)}`);
       });
       paste.querySelector(":scope > .wb-stuck")?.remove();
-      const g = document.createElementNS(SVGNS, "g");
-      g.setAttribute("class", "wb-stuck");
-      let start = 0;
-      on.forEach((i) => {
-        const a = angles[i];
-        const [x0, y0] = at(start);
-        const [x1, y1] = at(start + a);
-        const piece = document.createElementNS(SVGNS, "path");
-        piece.setAttribute("d", `M${f(ox)} ${f(oy)} L${f(x0)} ${f(y0)} A${R} ${R} 0 ${a > 180 ? 1 : 0} 1 ${f(x1)} ${f(y1)} Z`);
-        piece.setAttribute("fill", cols[i] || "#f4c95d");
-        piece.setAttribute("class", "wb-stuck__piece");
-        piece.dataset.stuck = i;
-        g.appendChild(piece);
-        const [tx, ty] = at(start + a / 2, R * 0.6);
-        const t = document.createElementNS(SVGNS, "text");
-        t.setAttribute("x", f(tx)); t.setAttribute("y", f(ty + 1.1));
-        t.setAttribute("class", "wb-stuck__name");
-        t.textContent = String.fromCharCode(65 + i);
-        g.appendChild(t);
-        start += a;
+      const g = el("g", { class: "wb-stuck" }, paste);
+      st.rays.forEach((ray, k) => {
+        const ex = ox + ray.len * Math.cos(rad(ray.ang));
+        const ey = oy + ray.len * Math.sin(rad(ray.ang));
+        el("line", { class: "wb-ray", x1: f(ox), y1: f(oy), x2: f(ex), y2: f(ey) }, g);
+        el("circle", { class: "wb-ray__end", "data-ray": k, cx: f(ex), cy: f(ey), r: 1.7 }, g);
       });
-      /* the dot on top, so the three points are seen to meet on it */
-      const dot = document.createElementNS(SVGNS, "circle");
-      dot.setAttribute("cx", ox); dot.setAttribute("cy", oy); dot.setAttribute("r", 1.1);
-      dot.setAttribute("class", "wb-stuck__dot");
-      g.appendChild(dot);
-      paste.appendChild(g);
-      paste.classList.toggle("has-stuck", on.length > 0);
+      st.log.filter((t) => t[0] === "p").map((t) => Number(t.slice(1))).forEach((i) => {
+        const p = st.pieces[i];
+        if (!p) return;
+        const s = startOf(i);
+        const a = angles[i];
+        const pg = el("g", {
+          class: "wb-piece", "data-piece": i, tabindex: 0, role: "img",
+          "aria-label": `Corner ${String.fromCharCode(65 + i)}. Drag to move; turn with the knob or the arrow keys.`,
+          transform: `translate(${f(p.x)} ${f(p.y)}) rotate(${f(p.rot)})`,
+        }, g);
+        const x0 = R * Math.cos(rad(s)), y0 = R * Math.sin(rad(s));
+        const x1 = R * Math.cos(rad(s + a)), y1 = R * Math.sin(rad(s + a));
+        el("path", { d: `M0 0 L${f(x0)} ${f(y0)} A${R} ${R} 0 ${a > 180 ? 1 : 0} 1 ${f(x1)} ${f(y1)} Z`, fill: cols[i] || "#f4c95d" }, pg);
+        const m = rad(s + a / 2);
+        const t = el("text", { class: "wb-piece__name", x: f(R * 0.55 * Math.cos(m)), y: f(R * 0.55 * Math.sin(m) + 1.2) }, pg);
+        t.textContent = String.fromCharCode(65 + i);
+        el("circle", { class: "wb-piece__knob", "data-knob": i, cx: f((R + 2.6) * Math.cos(m)), cy: f((R + 2.6) * Math.sin(m)), r: 1.9 }, pg);
+      });
+      el("circle", { class: "wb-stuck__dot", cx: ox, cy: oy, r: 1.1 }, g);
+      paste.classList.toggle("has-stuck", st.log.length > 0);
+      paste.classList.toggle("is-fitted", fitted());
     };
-    const stick = (i) => {
-      if (stuck().includes(i)) return;
-      stuck().push(i);
-      paint(); dirty(node); save();
+    const changed = () => { tear.__wbStickPaint(); dirty(node); save(); };
+
+    /* Lay corner i on the line's figure: its point at (x, y), or — tapped —
+       in the next free place along the top. */
+    const tearOff = (i, at = null) => {
+      const st = S();
+      if (i in st.pieces) return;
+      /* loose, clear of the dot: left, right, then between */
+      const n = Object.keys(st.pieces).length;
+      const [x, y] = at || [ox + [-44, 44, -22][n % 3], oy - 12];
+      st.pieces[i] = { x, y, rot: 0 };
+      st.log.push(`p${i}`);
+      changed();
     };
+
+    /* Turn corner i so that an edge within SNAP_DEG of something to line up
+       with lies on it — only once its point is on the dot. */
+    const snapTurn = (i) => {
+      const st = S();
+      const p = st.pieces[i];
+      if (!atDot(p)) return;
+      const targets = [0, 180, ...st.rays.map((r) => r.ang)];
+      Object.keys(st.pieces).map(Number).forEach((j) => { if (j !== i && atDot(st.pieces[j])) targets.push(...edges(j, st.pieces[j])); });
+      let best = null;
+      edges(i, p).forEach((e) => targets.forEach((t) => {
+        const d = diff(t, e);
+        if (Math.abs(d) < SNAP_DEG && (best === null || Math.abs(d) < Math.abs(best))) best = d;
+      }));
+      if (best !== null) p.rot += best;
+    };
+    const snapRay = (ray) => {
+      const st = S();
+      const targets = [0, 180];
+      Object.keys(st.pieces).map(Number).forEach((j) => { if (atDot(st.pieces[j])) targets.push(...edges(j, st.pieces[j])); });
+      let best = null;
+      targets.forEach((t) => {
+        const d = diff(t, ray.ang);
+        if (Math.abs(d) < SNAP_DEG && (best === null || Math.abs(d) < Math.abs(best))) best = d;
+      });
+      ray.ang = norm(ray.ang + (best ?? 0));
+    };
+
     tear.__wbStickPaint = paint;
     paint();
 
     /* Bound once per figure, like the ruled lines. */
     if (!tear.__wbStickBound) {
       tear.__wbStickBound = true;
+
+      /* ── off the triangle ── */
       let drag = null;
       /* Which corner is under the pointer, by its shape — the corner's letter
          and its tear line are drawn over it, right where a finger lands. */
       const cornerAt = (e) => {
         const [x, y] = svgPoint(tear, e.clientX, e.clientY);
         const pt = new DOMPoint(x, y);
-        return pieces.find((p) => !p.classList.contains("is-torn") && p.isPointInFill?.(pt))
+        return corners.find((p) => !p.classList.contains("is-torn") && p.isPointInFill?.(pt))
           || e.target.closest?.("[data-corner]");
       };
       tear.addEventListener("pointerdown", (e) => {
@@ -529,15 +614,21 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
       const drop = (e, cancelled) => {
         if (!drag) return;
-        const { p, moved } = drag;
+        const { p, moved, x, y } = drag;
         drag = null;
         p.removeAttribute("transform");
         tear.classList.remove("is-dragging");
         if (cancelled) return;
+        const i = Number(p.dataset.corner);
+        if (!moved) { tearOff(i); return; }
         const r = paste.getBoundingClientRect();
         const over = e.clientX >= r.left - 12 && e.clientX <= r.right + 12 && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12;
-        /* a tap sticks it; a drag sticks it where it was let go over the line */
-        if (!moved || over) stick(Number(p.dataset.corner));
+        if (!over) return;
+        /* its point lands where the dragged corner's point was let go */
+        const m = tear.getScreenCTM();
+        const [vx, vy] = vertexOf(i);
+        const sp = m ? new DOMPoint(vx, vy).matrixTransform(m) : { x: e.clientX, y: e.clientY };
+        tearOff(i, svgPoint(paste, sp.x + (e.clientX - x), sp.y + (e.clientY - y)));
       };
       tear.addEventListener("pointerup", (e) => drop(e, false));
       tear.addEventListener("pointercancel", (e) => drop(e, true));
@@ -545,23 +636,130 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         const p = e.target.closest?.("[data-corner]");
         if (!tear.dataset.stickable || !p || (e.key !== "Enter" && e.key !== " ")) return;
         e.preventDefault();
-        stick(Number(p.dataset.corner));
+        tearOff(Number(p.dataset.corner));
       });
-      paste.addEventListener("click", (e) => {
-        const s = e.target.closest("[data-stuck]");
-        if (!tear.dataset.stickable || !s) return;
-        const list = stuck();
-        const at2 = list.indexOf(Number(s.dataset.stuck));
-        if (at2 >= 0) list.splice(at2, 1);
-        tear.__wbStickPaint(); dirty(node); save();
+
+      /* ── on the line's figure ──
+         What is under the pointer is worked out from the geometry, not from
+         the element hit: a corner turned past the figure's edge is still
+         drawn (overflow) but the browser does not deliver presses there. So
+         the press is caught for the whole page, early, and only kept when it
+         lands on something of this figure's — in this order: a corner's
+         knob, a line's end, the dot (a new line, even with corners on it),
+         then the body of a corner, the one on top first. */
+      let op = null;
+      /* a handle is at least 14 screen pixels to grab, however small the
+         paper is drawn — on a phone a millimetre is barely two pixels */
+      let grab = 1;
+      const within = (d, r) => d <= Math.max(r, grab);
+      const hitAt = (x, y) => {
+        const m0 = paste.getScreenCTM();
+        grab = m0 ? 14 / m0.a : 1;
+        const st = S();
+        const laid = st.log.filter((t) => t[0] === "p").map((t) => Number(t.slice(1))).filter((i) => st.pieces[i]);
+        for (const i of [...laid].reverse()) {
+          const p = st.pieces[i];
+          const m = rad(startOf(i) + angles[i] / 2 + p.rot);
+          if (within(Math.hypot(x - (p.x + (R + 2.6) * Math.cos(m)), y - (p.y + (R + 2.6) * Math.sin(m))), 2.8)) return { kind: "turn", i };
+        }
+        for (let k = st.rays.length - 1; k >= 0; k--) {
+          const r = st.rays[k];
+          if (within(Math.hypot(x - (ox + r.len * Math.cos(rad(r.ang))), y - (oy + r.len * Math.sin(rad(r.ang)))), 2.8)) return { kind: "ray", k };
+        }
+        if (within(Math.hypot(x - ox, y - oy), 2.6)) return { kind: "new-ray" };
+        for (const i of [...laid].reverse()) {
+          const p = st.pieces[i];
+          const d = Math.hypot(x - p.x, y - p.y);
+          const into = norm(degOf(x - p.x, y - p.y) - (startOf(i) + p.rot));
+          if (d <= R + 0.5 && into <= angles[i]) return { kind: "move", i };
+        }
+        return null;
+      };
+      const press = (e) => {
+        if (!paste.isConnected) { document.removeEventListener("pointerdown", press, true); return; }
+        if (!paste.dataset.stickable || e.button > 0) return;
+        const [x, y] = svgPoint(paste, e.clientX, e.clientY);
+        const hit = hitAt(x, y);
+        if (!hit) return;
+        const st = S();
+        if (hit.kind === "new-ray") {
+          st.rays.push({ ang: 270, len: 0 });
+          st.log.push("r");
+          op = { kind: "ray", k: st.rays.length - 1 };
+        } else if (hit.kind === "move") {
+          const p = st.pieces[hit.i];
+          op = { kind: "move", i: hit.i, x, y, px: p.x, py: p.y };
+        } else op = hit;
+        e.preventDefault();
+        e.stopPropagation();
+        paste.setPointerCapture(e.pointerId);
+        if (op.i !== undefined) paste.querySelector(`[data-piece="${op.i}"]`)?.focus({ preventScroll: true });
+      };
+      document.addEventListener("pointerdown", press, true);
+      paste.addEventListener("pointermove", (e) => {
+        if (!op) return;
+        const st = S();
+        const [x, y] = svgPoint(paste, e.clientX, e.clientY);
+        if (op.kind === "move") {
+          const p = st.pieces[op.i];
+          p.x = op.px + (x - op.x);
+          p.y = op.py + (y - op.y);
+        } else if (op.kind === "turn") {
+          const p = st.pieces[op.i];
+          /* the knob sits on the middle of the arc: point it at the pointer */
+          p.rot = norm(degOf(x - p.x, y - p.y) - (startOf(op.i) + angles[op.i] / 2));
+          snapTurn(op.i);
+        } else {
+          const ray = st.rays[op.k];
+          ray.ang = norm(degOf(x - ox, y - oy));
+          ray.len = Math.min(70, Math.hypot(x - ox, y - oy));
+          snapRay(ray);
+        }
+        tear.__wbStickPaint();
+      });
+      const up = () => {
+        if (!op) return;
+        const st = S();
+        if (op.kind === "move") {
+          const p = st.pieces[op.i];
+          if (Math.hypot(p.x - ox, p.y - oy) < DOT_MM) { p.x = ox; p.y = oy; snapTurn(op.i); }
+        }
+        if (op.kind === "ray" && st.rays[op.k].len < 4) {
+          /* a tap on the dot, not a line: nothing drawn (a line made shorter
+             than that is taken away) */
+          st.rays.splice(op.k, 1);
+          const at = st.log.lastIndexOf("r");
+          if (at >= 0) st.log.splice(at, 1);
+        }
+        op = null;
+        changed();
+      };
+      paste.addEventListener("pointerup", up);
+      paste.addEventListener("pointercancel", up);
+      paste.addEventListener("keydown", (e) => {
+        const piece = e.target.closest?.("[data-piece]");
+        if (!paste.dataset.stickable || !piece) return;
+        const step = e.shiftKey ? 5 : 1;
+        const p = S().pieces[piece.dataset.piece];
+        if (e.key === "ArrowLeft") p.rot = norm(p.rot - step);
+        else if (e.key === "ArrowRight") p.rot = norm(p.rot + step);
+        else return;
+        e.preventDefault();
+        changed();
+        paste.querySelector(`[data-piece="${piece.dataset.piece}"]`)?.focus({ preventScroll: true });
       });
     }
 
+    /* Undo takes back the last corner laid or line drawn; Clear, everything. */
     drawbar(hostOf(paste), (d) => {
-      const list = stuck();
-      if (d === "undo") list.pop();
-      if (d === "wipe") list.length = 0;
-      tear.__wbStickPaint(); dirty(node); save();
+      const st = S();
+      if (d === "undo") {
+        const t = st.log.pop();
+        if (t === "r") st.rays.pop();
+        else if (t) delete st.pieces[t.slice(1)];
+      }
+      if (d === "wipe") { st.pieces = {}; st.rays = []; st.log = []; }
+      changed();
     });
   }
 

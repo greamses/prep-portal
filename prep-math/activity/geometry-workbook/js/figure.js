@@ -388,9 +388,12 @@ export function tearTriangle(A, B, C, { tilt = 0 } = {}) {
     const a = add(V, mul(u, r));
     const b = add(V, mul(v, r));
     const cross = u[0] * v[1] - u[1] * v[0];
-    /* data-corner: on screen this piece can be torn off and stuck on the
-       paste line (interactive.js, want.stick) */
-    body += `<path data-corner="${i}" d="M${f(V[0])} ${f(V[1])} L${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])} Z" fill="${cols[i]}" fill-opacity="0.75" stroke="none"/>`;
+    /* data-corner: on screen this piece can be torn off and laid on the
+       paste line (interactive.js, want.stick). data-start is the direction
+       its arc starts from, turning clockwise on screen through the angle —
+       how it is facing in the triangle, so it comes off facing that way. */
+    const start = deg(Math.atan2((cross > 0 ? u : v)[1], (cross > 0 ? u : v)[0]));
+    body += `<path data-corner="${i}" data-start="${f(start)}" d="M${f(V[0])} ${f(V[1])} L${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])} Z" fill="${cols[i]}" fill-opacity="0.75" stroke="none"/>`;
     body += `<path d="M${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])}" fill="none" stroke="${INK}" stroke-width="0.4" stroke-dasharray="1.2 0.9"/>`;
     const bis = unit(add(u, v));
     const t = add(V, mul(bis, 7));
@@ -398,17 +401,18 @@ export function tearTriangle(A, B, C, { tilt = 0 } = {}) {
   });
   /* data-tear: each corner's angle, its colour, and how far the tear runs
      from the point — what a torn-off corner looks like when it is stuck */
-  return `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" aria-label="A triangle to cut out, with its corners marked" data-tear="${A},${B},${C}" data-tear-cols="${cols.join(",")}">${body}</svg>`;
+  return `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" aria-label="A triangle to cut out, with its corners marked" data-tear="${A},${B},${C}" data-tear-cols="${cols.join(",")}" data-tear-r="13">${body}</svg>`;
 }
 
-/** A straight line with a dot in the middle, to stick the three corners on.
-    data-paste is the dot, and the line runs left from it. */
+/** A straight line with a dot in the middle, to stick the three corners on,
+    with room round it for corners the size of the triangle's (13 mm) to be
+    laid down and turned either side of the line. data-paste is the dot. */
 export function pasteLine() {
   return (
-    `<svg viewBox="0 0 90 16" width="90mm" height="16mm" class="gw-fig" role="img" aria-label="A straight line to stick the corners on" data-paste="45,13">` +
-    `<line x1="2" y1="13" x2="88" y2="13" stroke="${INK}" stroke-width="0.7"/>` +
-    `<circle cx="45" cy="13" r="1.1" fill="${ARC}"/>` +
-    `<text class="gw-paste-say" x="45" y="5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3" fill="#6b655c">stick the three points on this dot</text>` +
+    `<svg viewBox="0 0 120 50" width="120mm" height="50mm" class="gw-fig" role="img" aria-label="A straight line to stick the corners on" data-paste="60,34">` +
+    `<line x1="2" y1="34" x2="118" y2="34" stroke="${INK}" stroke-width="0.7"/>` +
+    `<circle cx="60" cy="34" r="1.1" fill="${ARC}"/>` +
+    `<text x="60" y="6" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3" fill="#6b655c">stick the three points on this dot</text>` +
     `</svg>`
   );
 }

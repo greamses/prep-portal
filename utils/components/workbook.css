@@ -448,15 +448,24 @@ html.wb-modal-on .wb-openbar { visibility: hidden; }
    makeStickable). */
 .wb-live svg[data-stickable] { touch-action: none; }
 /* the letters and tear lines over the corners let the pointer through */
-.wb-live svg[data-stickable] > :not([data-corner]) { pointer-events: none; }
+.wb-live svg[data-tear][data-stickable] > :not([data-corner]) { pointer-events: none; }
 .wb-live svg[data-stickable] [data-corner] { cursor: grab; }
 .wb-live svg[data-stickable] [data-corner]:hover,
 .wb-live svg[data-stickable] [data-corner]:focus-visible { fill-opacity: 1; stroke: #2a2723; stroke-width: 0.6; outline: none; }
 .wb-live svg[data-stickable] [data-corner].is-torn { fill-opacity: 0.14; cursor: default; stroke: none; }
 svg[data-stickable].is-dragging { overflow: visible; position: relative; z-index: 8; cursor: grabbing; }
+/* The line's figure is a small bench: corners and lines may be moved past
+   its edges while they are being fitted. */
+.wb-live svg[data-paste][data-stickable] { overflow: visible; position: relative; z-index: 4; touch-action: none; cursor: crosshair; }
 svg[data-paste].has-stuck > text { visibility: hidden; }
-.wb-stuck__piece { stroke: #2a2723; stroke-width: 0.45; cursor: pointer; }
-.wb-stuck__name { font-family: "JetBrains Mono", monospace; font-size: 3px; font-weight: 700; fill: #2a2723; text-anchor: middle; pointer-events: none; }
+svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
+.wb-ray { stroke: #2f6ea8; stroke-width: 0.5; stroke-linecap: round; pointer-events: none; }
+.wb-ray__end { fill: #fffdf8; stroke: #2f6ea8; stroke-width: 0.45; cursor: grab; }
+.wb-piece { cursor: grab; outline: none; }
+.wb-piece path { stroke: #2a2723; stroke-width: 0.45; fill-opacity: 0.92; }
+.wb-piece:focus-visible path { stroke-width: 0.9; }
+.wb-piece__name { font-family: "JetBrains Mono", monospace; font-size: 3.4px; font-weight: 700; fill: #2a2723; text-anchor: middle; pointer-events: none; }
+.wb-piece__knob { fill: #fffdf8; stroke: #2a2723; stroke-width: 0.45; cursor: alias; }
 .wb-stuck__dot { fill: #c0453f; pointer-events: none; }
 /* On a phone the bar is one short row that scrolls sideways, so pinned under
    the nav it still leaves the page to work on. */
