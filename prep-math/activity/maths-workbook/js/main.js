@@ -19,6 +19,7 @@ import { blocksKey } from "./blocks.js";
 import { ICON } from "./icons.js";
 import { CFG, baseWord } from "../../base-blocks/js/config.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
+import { onAdmin } from "/utils/components/workbook/admin.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -112,6 +113,10 @@ const SUBJECT = {
       const worths = Array.from({ length: 4 }, (_, p) => placeWorth(p, o.base));
       return blocksKey(o.base, names, worths);
     }
+    /* The protractor is not an example, it is the instrument the questions
+       tell you to cut out — so it prints at every level of help. A page that
+       says "cut out the protractor" and has no protractor on it is broken. */
+    if (section.ex.alwaysWorked) return section.ex.worked(section.opts);
     if (helpOf(o).id === "show" && section.ex.worked) return section.ex.worked(section.opts);
     return "";
   },
@@ -140,6 +145,10 @@ mountBuilder({
     bars: ICON.frac,
     "frac-what": ICON.pie,
     "frac-add": ICON.frac,
+    fives: ICON.fives,
+    time: ICON.clock,
+    "angle-name": ICON.angle,
+    "angle-measure": ICON.protractor,
   },
   icons: ICON,
   title: "Maths Workbook",
@@ -152,6 +161,7 @@ mountBuilder({
       blocksKey: $("mw-blockskey").checked,
       level: $("mw-level").value,
       help: $("mw-help").value,
+      watermark: $("mw-watermark").checked,
     }),
     write: (saved) => {
       $("mw-base").value = String(saved.base ?? 10);
@@ -161,6 +171,9 @@ mountBuilder({
       $("mw-blockskey").checked = saved.blocksKey !== false;
       $("mw-level").value = saved.level ?? "gentle";
       $("mw-help").value = saved.help ?? "show";
+      /* On by default and on for everyone. Only the row that TURNS IT OFF is
+         held back, and only until the admin is known to be signed in. */
+      $("mw-watermark").checked = saved.watermark !== false;
     },
     /* Changing the base renames every place, so the places menu is rewritten
        before the paper is. */
@@ -168,4 +181,10 @@ mountBuilder({
       if (e.target.id === "mw-base") fillPlaces(Number(e.target.value));
     },
   },
+});
+
+/* The one control that is not everybody's. See workbook/admin.js — this is a
+   tidy-up, not a lock. */
+onAdmin(() => {
+  $("mw-watermark-row").hidden = false;
 });

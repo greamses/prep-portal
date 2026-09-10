@@ -410,3 +410,78 @@ thead .pv-chart__side {
   flex-wrap: wrap;
   margin: 3mm 0 2mm;
 }
+
+/* ══ COUNTING IN FIVES, AND TELLING THE TIME ═══════════════════════════════ */
+
+/* The track: a row of steps, some filled and some to fill. Boxes rather than a
+   ruled line, because what goes in each one is a whole number and a box is the
+   shape of "one answer here". */
+.mt-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2mm;
+  margin: 2.5mm 0 2mm;
+}
+.mt-track__cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17mm;
+  height: 11mm;
+  border: 0.4mm solid #b6afa4;
+  background: #f7f4ee;
+  font-size: 13pt;
+  font-weight: 700;
+}
+/* The steps to be filled in are the ones with a real box round them; the ones
+   already there are quieter, so the eye goes to the gaps. */
+.mt-track__cell--gap { border-color: #2a2723; border-width: 0.5mm; background: #fffdf8; }
+.mt-track__cell--was { border-color: #2a2723; border-width: 0.5mm; background: #fffdf8; }
+
+.mt-art { margin: 2.5mm 0 2mm; }
+.mt-art svg { display: block; }
+
+/* Two clocks side by side, for the worked example that has to show quarter
+   past and quarter to together — the two that are confused with each other. */
+.mt-two { display: flex; gap: 10mm; flex-wrap: wrap; align-items: flex-start; }
+.mt-two .wb-ask { margin-top: 1mm; }
+
+/* Which hand is which, printed once at the head of the section. The strips are
+   drawn at the hands' real weights, so the key is the thing it describes. */
+.mt-key {
+  display: flex;
+  gap: 8mm;
+  flex-wrap: wrap;
+  margin: 2.5mm 0 1mm;
+  font-size: 8.5pt;
+}
+.mt-key__one { display: inline-flex; align-items: center; gap: 2mm; }
+.mt-key__hand { display: inline-block; border-radius: 1mm; }
+.mt-key__hand--hour { width: 8mm; height: 2.4mm; background: #c0453f; }
+.mt-key__hand--min { width: 14mm; height: 1.1mm; background: #2f6ea8; }
+
+/* The joining exercise has clocks on one side, so its rows are tall. */
+.mt-match .rt-match__side li { height: auto; padding: 1.5mm 0; }
+.mt-match { max-width: 150mm; }
+
+/* ══ ANGLES ════════════════════════════════════════════════════════════════ */
+
+.ma-art { margin: 2mm 0; }
+.ma-art svg { display: block; }
+
+/* The five names, drawn once at the head of the naming section. */
+.ma-five {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4mm 6mm;
+  align-items: flex-start;
+}
+.ma-five > span { width: 30mm; }
+.ma-five__name { margin: 0; font-size: 8pt; line-height: 1.3; }
+.ma-five__name b { display: block; font-size: 9.5pt; }
+.ma-five__name em { font-style: normal; color: #4a453d; }
+
+/* The protractor to cut out. Dashed all the way round rather than tinted: the
+   instruction is "cut this out", and a dashed edge says so without a word. */
+.ma-cut { border-style: dashed; border-width: 0.4mm; background: none; }
+.ma-cut .ma-art { margin: 1mm 0 0; }

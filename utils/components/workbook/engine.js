@@ -44,6 +44,40 @@ import { ICON } from "./icons.js";
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+/**
+ * A, B … Z, then AA, AB and on. A workbook with every exercise ticked runs
+ * past twenty-six sections, and a page of sections all labelled the same
+ * character is a workbook whose answer key cannot be matched to it.
+ */
+function sectionLetter(i) {
+  let n = i;
+  let out = "";
+  do {
+    out = LETTERS[n % 26] + out;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return out;
+}
+
+/* Whose paper this is. It goes on the cover and at the foot of every page,
+   because a workbook that is photocopied, stapled and handed round loses its
+   cover on the first pass and every sheet after that is anonymous. */
+export const AUTHOR = "Emmanuel Daniel";
+export const SITE = "Prepportal.com.ng";
+
+/* The mark itself: our own logo, drawn once here and re-used on every page.
+   Fixed hexes and no theme tokens, like everything else on the paper — and
+   pale enough to write straight over, which is the whole point of a
+   watermark rather than a logo in the corner. */
+const WATERMARK = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <g transform="translate(50 25) rotate(10) scale(1 0.95)"><path d="M 13.7 -4.5 Q 15 0 14.2 4.9 Q 13.4 9.7 8.7 11.2 Q 4.1 12.7 0 12.6 Q -4.1 12.6 -6.9 9.8 Q -9.6 7 -11.6 3.5 Q -13.6 0 -11.6 -3.5 Q -9.6 -6.9 -6.7 -9.4 Q -3.8 -11.8 0 -11.8 Q 3.8 -11.8 8.1 -10.4 Q 12.4 -9 13.7 -4.5 Z" fill="#6fb7e8"/></g>
+  <g transform="translate(73.8 42.3) rotate(82) scale(1 0.95)"><path d="M 13.7 -4.5 Q 15 0 14.2 4.9 Q 13.4 9.7 8.7 11.2 Q 4.1 12.7 0 12.6 Q -4.1 12.6 -6.9 9.8 Q -9.6 7 -11.6 3.5 Q -13.6 0 -11.6 -3.5 Q -9.6 -6.9 -6.7 -9.4 Q -3.8 -11.8 0 -11.8 Q 3.8 -11.8 8.1 -10.4 Q 12.4 -9 13.7 -4.5 Z" fill="#f4c95d"/></g>
+  <g transform="translate(64.5 75.5) rotate(154) scale(1 0.95)"><path d="M 13.7 -4.5 Q 15 0 14.2 4.9 Q 13.4 9.7 8.7 11.2 Q 4.1 12.7 0 12.6 Q -4.1 12.6 -6.9 9.8 Q -9.6 7 -11.6 3.5 Q -13.6 0 -11.6 -3.5 Q -9.6 -6.9 -6.7 -9.4 Q -3.8 -11.8 0 -11.8 Q 3.8 -11.8 8.1 -10.4 Q 12.4 -9 13.7 -4.5 Z" fill="#7cc47c"/></g>
+  <g transform="translate(35.5 75.5) rotate(206) scale(1 0.95)"><path d="M 13.7 -4.5 Q 15 0 14.2 4.9 Q 13.4 9.7 8.7 11.2 Q 4.1 12.7 0 12.6 Q -4.1 12.6 -6.9 9.8 Q -9.6 7 -11.6 3.5 Q -13.6 0 -11.6 -3.5 Q -9.6 -6.9 -6.7 -9.4 Q -3.8 -11.8 0 -11.8 Q 3.8 -11.8 8.1 -10.4 Q 12.4 -9 13.7 -4.5 Z" fill="#f0a868"/></g>
+  <g transform="translate(26.2 42.3) rotate(278) scale(1 0.95)"><path d="M 13.7 -4.5 Q 15 0 14.2 4.9 Q 13.4 9.7 8.7 11.2 Q 4.1 12.7 0 12.6 Q -4.1 12.6 -6.9 9.8 Q -9.6 7 -11.6 3.5 Q -13.6 0 -11.6 -3.5 Q -9.6 -6.9 -6.7 -9.4 Q -3.8 -11.8 0 -11.8 Q 3.8 -11.8 8.1 -10.4 Q 12.4 -9 13.7 -4.5 Z" fill="#c9a3ee"/></g>
+  <circle cx="50" cy="50" r="11" fill="#2a2723"/>
+</svg>`;
+
 /* Paper, in millimetres. The margins the pages are laid out to live in the
    stylesheet, because they are a look and not a fact about the paper. */
 export const PAPERS = {
@@ -117,6 +151,7 @@ function coverBlock(o, subject) {
     `<p class="wb-cover__eyebrow">${subject.eyebrow}</p>
      <h1 class="wb-cover__title">${escapeHtml(o.title)}</h1>
      <p class="wb-cover__sub">${subject.subtitle(o)}</p>
+     <p class="wb-cover__by">${AUTHOR} &nbsp;·&nbsp; ${SITE}</p>
      ${o.nameLine ? `<div class="wb-cover__rules">${rule("Name")}${rule("Class")}${rule("Date")}</div>` : ""}`
   );
 }
@@ -157,7 +192,7 @@ export function blocksOf(sections, o, subject) {
   sections.forEach((section, i) => {
     blocks.push({
       kind: "head",
-      node: headBlock(section, LETTERS[i] || "•", o, subject, state, i),
+      node: headBlock(section, sectionLetter(i), o, subject, state, i),
     });
 
     const cols = section.ex.cols || 1;
@@ -195,26 +230,42 @@ function answerBlocks(sections, o) {
         rows.push(`<li><span class="wb-answers__no">${n++}</span><span>${a}</span></li>`);
       });
     });
-    out.push({
-      kind: "row",
-      node: el(
-        "div",
-        "wb-answers",
-        `<h3 class="wb-answers__title">${LETTERS[i] || "•"} · ${section.ex.heading}</h3>` +
-          `<ol class="wb-answers__list">${rows.join("")}</ol>`
-      ),
-    });
+    /* Cut into blocks a page can hold. Pagination can only move a block whole,
+       so a section with forty answers in it would be one block taller than the
+       paper — and the engine's last resort for a block that fits nowhere is to
+       let it clip, which on an ANSWER KEY means answers that silently are not
+       there. The heading goes on the first piece only. */
+    const PER = 24;
+    for (let k = 0; k < rows.length; k += PER) {
+      const head =
+        k === 0
+          ? `<h3 class="wb-answers__title">${sectionLetter(i)} · ${section.ex.heading}</h3>`
+          : "";
+      out.push({
+        kind: "row",
+        node: el(
+          "div",
+          "wb-answers",
+          head + `<ol class="wb-answers__list">${rows.slice(k, k + PER).join("")}</ol>`
+        ),
+      });
+    }
   });
   return out;
 }
 
 /* ── paginate ──────────────────────────────────────────────────────────────*/
 
-function newPage(sheet) {
+function newPage(sheet, mark) {
   const page = el("section", "wb-page");
   page.innerHTML =
+    (mark ? `<div class="wb-page__wm" aria-hidden="true">${WATERMARK}</div>` : "") +
     `<div class="wb-page__inner"></div>` +
-    `<footer class="wb-page__foot"><span class="wb-page__mark"></span><span class="wb-page__no"></span></footer>`;
+    `<footer class="wb-page__foot">` +
+    `<span class="wb-page__by">${AUTHOR} · ${SITE}</span>` +
+    `<span class="wb-page__mark"></span>` +
+    `<span class="wb-page__no"></span>` +
+    `</footer>`;
   sheet.appendChild(page);
   return page.querySelector(".wb-page__inner");
 }
@@ -233,13 +284,14 @@ export function paginate(sheet, blocks, o) {
   sheet.style.setProperty("--wb-w", paper.w + "mm");
   sheet.style.setProperty("--wb-h", paper.h + "mm");
 
-  let inner = newPage(sheet);
+  const mark = o.watermark !== false;
+  let inner = newPage(sheet, mark);
 
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
 
     if (b.kind === "break") {
-      if (inner.childElementCount) inner = newPage(sheet);
+      if (inner.childElementCount) inner = newPage(sheet, mark);
       continue;
     }
 
@@ -252,7 +304,7 @@ export function paginate(sheet, blocks, o) {
         continue;
       }
       inner.removeChild(b.node);
-      inner = newPage(sheet);
+      inner = newPage(sheet, mark);
       inner.appendChild(b.node);
     }
 
@@ -265,7 +317,7 @@ export function paginate(sheet, blocks, o) {
       inner.removeChild(next);
       if (spills && inner.childElementCount > 1) {
         inner.removeChild(b.node);
-        inner = newPage(sheet);
+        inner = newPage(sheet, mark);
         inner.appendChild(b.node);
       }
     }

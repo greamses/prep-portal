@@ -228,6 +228,10 @@ body {
 .wb-group__name svg { width: 14px; height: 14px; }
 
 .wb-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; cursor: pointer; }
+/* The class sets display, which outranks the UA sheet's [hidden] rule — so a
+   row with the hidden attribute stays on screen unless we say otherwise. The
+   admin-only watermark switch depends on this working. */
+.wb-toggle[hidden] { display: none; }
 .wb-toggle input { accent-color: var(--accent-secondary); width: 15px; height: 15px; }
 
 /* The re-roll button is a note with tape on it, so the row leaves it room. */
@@ -321,15 +325,42 @@ body {
   inset: var(--wb-pad-t) var(--wb-pad-x) var(--wb-pad-b);
   overflow: hidden;
 }
+/* The middle of the footer carries the title and the code; the two ends carry
+   the byline and the page number. Three parts, so none of them ever has to be
+   read past another. */
+.wb-page__mark { flex: 1 1 auto; text-align: center; }
+.wb-page__by { white-space: nowrap; }
+.wb-page__no { white-space: nowrap; }
+
+/* The mark: our logo, large, pale, dead centre, BEHIND the writing. Pale
+   enough to write straight over — a watermark that a child cannot write on top
+   of is a stain. It prints because the sheet forces print-color-adjust. */
+.wb-page__wm {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 105mm;
+  height: 105mm;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  opacity: 0.055;
+  pointer-events: none;
+  z-index: 0;
+}
+.wb-page__wm svg { width: 100%; height: 100%; display: block; }
+/* The content sits above it — the mark is behind the paper's writing, not on
+   top of it. */
+.wb-page__inner { z-index: 1; }
 
 .wb-page__foot {
   position: absolute;
   left: var(--wb-pad-x);
   right: var(--wb-pad-x);
   bottom: 6mm;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 4mm;
   font-size: 7pt;
   letter-spacing: 0.06em;
   color: var(--wb-faint);
@@ -356,6 +387,14 @@ body {
   color: var(--wb-ink);
 }
 .wb-cover__sub { margin: 1.2mm 0 0; font-size: 8.5pt; color: var(--wb-mid); }
+/* Whose paper this is, on the cover. */
+.wb-cover__by {
+  margin: 1.6mm 0 0;
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--wb-ink);
+}
 .wb-cover__rules {
   display: flex;
   gap: 6mm;
