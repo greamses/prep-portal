@@ -404,6 +404,23 @@ html.wb-full-on .wb-main { z-index: auto; }
 .wb-pay__msg { min-height: 1.1em; margin: 0 0 0.6rem; font-size: 0.75rem; color: var(--accent-danger, #c0453f); }
 .wb-pay__actions { display: flex; justify-content: flex-end; gap: 0.7rem; align-items: center; flex-wrap: wrap; }
 
+/* setting a workbook for a class (assign.js) — on the same receipt */
+.wb-assign__field { display: flex; flex-direction: column; gap: 0.3rem; margin: 0 0 0.8rem; font-size: 0.72rem; color: var(--text-secondary); }
+.wb-assign__link { margin: 0 0 0.6rem; font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.82rem; word-break: break-all; }
+.wb-assign__mine { margin-top: 1rem; }
+.wb-assign__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted var(--border-color, rgba(0, 0, 0, 0.2));
+  font-size: 0.78rem;
+  color: var(--ink, #2a2723);
+  text-decoration: none;
+}
+.wb-assign__row span:last-child { color: var(--text-secondary); white-space: nowrap; }
+.wb-pay__actions a.pp-btn { text-decoration: none; }
+
 /* THE PREVIEW MARK. An unpaid workbook's pages carry PREVIEW across them, over
    the writing, so a screenshot of the preview is not a clean worksheet. Faint
    enough to read the questions through. */

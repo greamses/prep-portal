@@ -57,15 +57,16 @@ export function currentUser() {
   });
 }
 
-/** POST to our API as the signed-in user. Throws with the server's message. */
-export async function api(path, body) {
+/** Call our API as the signed-in user: POST with a body, GET without one.
+    Throws with the server's message. */
+export async function api(path, body, method = body === undefined ? "GET" : "POST") {
   const user = await currentUser();
   if (!user) throw new Error("Please sign in first.");
   const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
   const res = await fetch(`${base}${path}`, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
-    body: JSON.stringify(body || {}),
+    body: method === "GET" ? undefined : JSON.stringify(body || {}),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);

@@ -95,7 +95,7 @@ service cloud.firestore {
     // must not reach them — rules are OR'd, so they are excluded here rather
     // than denied in a match of their own.
     function isServerOnly(col) {
-      return col in ['paymentEvents', 'workbookPrints', 'workbookOrders',
+      return col in ['paymentEvents', 'workbookPrints', 'workbookOrders', 'workbookAssignments',
                      'partners', 'referralCodes', 'earnings', 'payouts'];
     }
 

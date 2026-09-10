@@ -37,6 +37,7 @@ import { seedCode, seedFrom } from "./seed.js";
 import { ICON } from "./icons.js";
 import { printPass, guardPrinting, workbookKey } from "./print-pass.js";
 import { mountInteractive } from "./interactive.js";
+import { mountAssign } from "./assign.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -239,6 +240,8 @@ export function mountBuilder(cfg) {
     if (cfg.print) {
       pass = printPass(cfg.print);
       guardPrinting(pass);
+      /* a workbook that is sold can also be set for a class — teachers only */
+      mountAssign({ workbook: cfg.print.workbook, label: cfg.print.label, getOptions: readOptions });
     }
     if (cfg.interactive) {
       live = mountInteractive({

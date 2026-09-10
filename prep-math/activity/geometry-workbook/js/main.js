@@ -8,13 +8,11 @@
    it is an instrument and not an example.
    ========================================================================== */
 
-import {
-  EXERCISES, GROUPS, LEVELS, HELP, levelOf, helpOf, unavailable, exerciseById, chapterOf,
-} from "./exercises.js";
+import { GROUPS, LEVELS, HELP } from "./exercises.js";
+import { SUBJECT, LIVE, WORKBOOK } from "./subject.js";
 import { ICON } from "./icons.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
 import { onAdmin } from "/utils/components/workbook/admin.js";
-import { protractorSvg } from "../../maths-workbook/js/protractor.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -43,44 +41,14 @@ function fillMenu(id, table) {
   });
 }
 
-const CHAPTERS = { 1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles" };
-
-const SUBJECT = {
-  /* Names the chapter the paper is from — or both, when it mixes them. */
-  eyebrow: (o) => {
-    const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
-    const which = found.size === 1 ? CHAPTERS[[...found][0]] : "Chapters 1 and 2: Angles";
-    return `Mathematics · Geometry · ${which}`;
-  },
-  subtitle: (o) => {
-    const L = levelOf(o);
-    const H = helpOf(o);
-    const step = L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`;
-    const help =
-      H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named";
-    return `${step} · shapes up to ${L.maxSides} sides · ${help}`;
-  },
-  exercises: EXERCISES,
-  unavailable,
-  /* The protractor is not an example, it is the instrument the questions tell
-     you to cut out — so it prints at every level. Everything else that has a
-     worked example shows it at Show me only, at the head of its own section. */
-  sectionHead: (section, o) => {
-    if (section.ex.alwaysWorked) return section.ex.worked(section.opts);
-    if (helpOf(o).id === "show" && section.ex.worked) return section.ex.worked(section.opts);
-    return "";
-  },
-};
-
 fillMenu("gw-level", LEVELS);
 fillMenu("gw-help", HELP);
 
 mountBuilder({
   subject: SUBJECT,
   /* sold per print — see /utils/components/workbook/print-pass.js */
-  print: { workbook: "geometry-workbook", label: "Geometry Workbook" },
-  /* done on screen: typed, ticked, ruled, measured, and marked */
-  interactive: { protractor: protractorSvg() },
+  print: { workbook: WORKBOOK.id, label: WORKBOOK.label },
+  interactive: LIVE,
   store: "gw-workbook-v1",
   groups: GROUPS,
   glyphs: {

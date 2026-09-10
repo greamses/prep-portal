@@ -41,9 +41,12 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *     protractor   the instrument's SVG (mm-sized), or none
  *     places       this workbook's own answer boxes, as a selector, added to
  *                  the shared ones (".rw-answer, .rw-fill" …)
+ *     onCheck      called with { right, total } after every "Check my answers"
+ *                  (the assignment player sends it to the teacher)
+ *     locked       interactive for good: no "Back to paper" (the player)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "" }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", onCheck = null, locked = false }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -58,6 +61,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   toggle.className = "pp-btn wb-tint-1 wb-live-toggle";
   toggle.textContent = "Make interactive";
   toolbar.querySelector(".wb-toolbar__spacer")?.after(toggle);
+  if (locked) toggle.hidden = true;
 
   const bar = document.createElement("div");
   bar.className = "wb-livebar";
@@ -592,6 +596,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     score.textContent = total ? `${right} / ${total} right · ${pct}%` : "Nothing to mark yet";
     if (unmarked) score.textContent += ` · ${unmarked} to check yourself`;
     paintWants();
+    if (onCheck && total) { try { onCheck({ right, total }); } catch { /* the page's business */ } }
   }
 
   /* Under each wrong place, the right answer — only when asked for. A child
@@ -785,5 +790,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       keyPages(true);
     },
     isLive: () => live,
+    enter: () => { if (!live) enter(); },
   };
 }

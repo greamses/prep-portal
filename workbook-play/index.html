@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Prep Portal | Your workbook</title>
+    <meta name="robots" content="noindex" />
+    <meta name="description" content="A workbook your teacher set: do it on screen and it is marked as you go." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Shantell+Sans:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/workbook.css" />
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="/workbook-play/style.css" />
+
+    <script src="/utils/components/loader.js"></script>
+    <!-- A free account is all this needs: no premium guard. -->
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+  </head>
+  <body>
+    <main class="wb-main">
+      <header class="wb-hero wp-hero">
+        <span class="wb-eyebrow" id="wp-eyebrow">A workbook from your teacher</span>
+        <h1 class="wb-title" id="wp-title">Opening your workbook<em>.</em></h1>
+        <p class="wb-lead" id="wp-lead">
+          Type in the boxes, tick, draw on the shapes, then press
+          <strong>Check my answers</strong>. Your score goes to your teacher each time.
+        </p>
+      </header>
+
+      <section class="wp-results" id="wp-results" hidden></section>
+
+      <div class="wb-work wp-work">
+        <section class="wb-preview">
+          <div class="wb-toolbar">
+            <span class="wb-toolbar__count"><span id="wb-pages">—</span></span>
+            <span class="wb-toolbar__spacer"></span>
+          </div>
+          <p class="wp-msg" id="wp-msg" role="status"></p>
+          <div class="wb-viewport" id="wb-viewport">
+            <div class="wb-scaler" id="wb-scaler">
+              <div class="wb-sheet" id="wb-sheet"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="/workbook-play/player.js"></script>
+  </body>
+</html>
