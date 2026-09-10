@@ -11,7 +11,10 @@ import { protractorSvg } from "../../maths-workbook/js/protractor.js";
 
 export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", style: "/prep-math/activity/geometry-workbook/style.css" };
 
-const CHAPTERS = { 1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles", 3: "Chapter 3: Pyramids and prisms" };
+const CHAPTERS = {
+  1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles",
+  3: "Chapter 3: Pyramids and prisms", 4: "Chapter 4: Pythagoras' rule",
+};
 
 export const SUBJECT = {
   /* Names the chapter the paper is from — or both, when it mixes them. */
@@ -22,13 +25,20 @@ export const SUBJECT = {
       : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
     return `Mathematics · Geometry · ${which}`;
   },
+  /* Says what the level means for the chapters actually on the paper: the
+     angles' step and the shapes for chapters 1–2, the sides for chapter 4. */
   subtitle: (o) => {
     const L = levelOf(o);
     const H = helpOf(o);
-    const step = L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`;
-    const help =
-      H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named";
-    return `${step} · shapes up to ${L.maxSides} sides · ${help}`;
+    const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
+    const parts = [];
+    if (found.has(1) || found.has(2) || !found.size) {
+      parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
+      parts.push(`shapes up to ${L.maxSides} sides`);
+    }
+    if (found.has(4)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
+    parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
+    return parts.join(" · ");
   },
   exercises: EXERCISES,
   /* The protractor is not an example, it is the instrument the questions tell

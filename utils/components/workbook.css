@@ -1194,6 +1194,9 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 /* on a picture drawn over with the pencil the objects run right to the edge,
    so the buttons sit just above it instead of on top of them */
 .wb-drawhost.is-pen-host > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
+/* and so do a dot grid's: its dots reach the corner too, and a dot under the
+   buttons is a dot that cannot be ruled from */
+.wb-drawhost:has(> svg[data-grid]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
 
 /* the paper's own little sticky notes: smaller, with a smaller strip of tape */
 .wb-drawbar .pp-btn {

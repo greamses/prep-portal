@@ -78,4 +78,22 @@ export const ICON = {
   tube: line(`<ellipse cx="6" cy="12" rx="2.5" ry="6"/><path d="M6 6h12M6 18h12"/><ellipse cx="18" cy="12" rx="2.5" ry="6"/>`),
   /* A frustum: a pyramid with its top cut off. */
   frustum: line(`<path d="M8 6h8l4 13H4zM8 6l-1 13M16 6l1 13"/>`),
+
+  /* ── chapter 4 ── */
+  /* A right-angled triangle with its square corner. */
+  rightTri: line(`<path d="M5 19.5V5l14.5 14.5z"/><path d="M5 16h3.5v3.5"/>`),
+  /* The same, its long side drawn twice: the hypotenuse. */
+  hyp: line(`<path d="M5 19.5V5l14.5 14.5z"/><path d="M7.5 4.2 20.3 17" stroke-dasharray="1.6 1.3"/><path d="M5 16h3.5v3.5"/>`),
+  /* A triangle with a square on each short side. */
+  pySquares: line(`<path d="M9 15V9l6 6z"/><path d="M9 15h6v6H9zM9 9H3v6h6"/><path d="m9 9 3-3 6 6-3 3"/>`),
+  /* Two small squares and a plus: they make the big one. */
+  pySum: line(`<path d="M3 13h5v5H3zM11 11h7v7h-7z"/><path d="M8.2 7.5h3M9.7 6v3"/><path d="M19 5.5h2.5M20.25 4.2v2.6"/>`),
+  /* A big square with a small one taken out of its corner. */
+  pyDiff: line(`<path d="M4 4h16v16H4z"/><path d="M4 12h8v8" stroke-dasharray="1.6 1.3"/><path d="M14.5 8h3"/>`),
+  /* Short, short, long: the rule as three bars and an equals sign. */
+  pyFormula: line(`<path d="M3.5 7h5M3.5 12h7M13 9.5h2.5M13 11.5h2.5M18 6v8"/><path d="M3.5 17h17"/>`),
+  /* Three, four and five dots in a row: a triple. */
+  triples: line(`<circle cx="5" cy="6" r=".8"/><circle cx="8" cy="6" r=".8"/><circle cx="11" cy="6" r=".8"/>` +
+    `<circle cx="5" cy="12" r=".8"/><circle cx="8" cy="12" r=".8"/><circle cx="11" cy="12" r=".8"/><circle cx="14" cy="12" r=".8"/>` +
+    `<circle cx="5" cy="18" r=".8"/><circle cx="8" cy="18" r=".8"/><circle cx="11" cy="18" r=".8"/><circle cx="14" cy="18" r=".8"/><circle cx="17" cy="18" r=".8"/>`),
 };

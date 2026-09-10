@@ -9,6 +9,7 @@
      ex-words.js         word problems
      ex-transversals.js  chapter 2, all of it
      ex-solids.js        chapter 3, all of it (drawn by solid.js)
+     ex-pythagoras.js    chapter 4, all of it (drawn by pythag.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -33,6 +34,11 @@
      the rule for faces, edges and corners · surface area · volume · real-world
      practicals · one base open · both bases open · the frustum
 
+   Chapter 4 — Pythagoras' rule
+     right-angled triangles · the sides of a right-angled triangle · forming
+     squares from the sides · sum of sides · difference of sides · the
+     Pythagorean formula · Pythagorean triples
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -49,6 +55,7 @@ import {
 import { WORD_GROUPS, WORD_EXERCISES } from "./ex-words.js";
 import { TRANS_GROUPS, TRANS_EXERCISES } from "./ex-transversals.js";
 import { SOLID_GROUPS, SOLID_EXERCISES } from "./ex-solids.js";
+import { PY_GROUPS, PY_EXERCISES } from "./ex-pythagoras.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -61,6 +68,7 @@ export const GROUPS = [
   ...EXT_GROUPS,
   ...TRANS_GROUPS,
   ...SOLID_GROUPS,
+  ...PY_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -73,12 +81,16 @@ export const EXERCISES = [
   ...EXT_EXERCISES,
   ...TRANS_EXERCISES,
   ...SOLID_EXERCISES,
+  ...PY_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1, 2 or 3. */
-const CHAPTER_TWO = new Set(TRANS_GROUPS.map((g) => g.id));
-const CHAPTER_THREE = new Set(SOLID_GROUPS.map((g) => g.id));
-export const chapterOf = (ex) => (CHAPTER_THREE.has(ex.group) ? 3 : CHAPTER_TWO.has(ex.group) ? 2 : 1);
+/** Which chapter an exercise belongs to: 1 to 4. */
+const CHAPTER = new Map([
+  ...TRANS_GROUPS.map((g) => [g.id, 2]),
+  ...SOLID_GROUPS.map((g) => [g.id, 3]),
+  ...PY_GROUPS.map((g) => [g.id, 4]),
+]);
+export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
   return EXERCISES.find((e) => e.id === id) || null;
