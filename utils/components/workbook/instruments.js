@@ -75,11 +75,15 @@ function setSquareSvg() {
   const W = SQ_LEG + 2 * SQ_PAD;
   const H = SQ_LEG + 2 * SQ_PAD;
   let body = `<path d="M${f(C[0])} ${f(C[1])} L${f(A[0])} ${f(A[1])} L${f(B[0])} ${f(B[1])} Z" fill="#c8f0c0" fill-opacity="0.6" stroke="${INK}" stroke-width="0.5" stroke-linejoin="round"/>`;
-  /* the cut-out, a smaller triangle the same shape */
-  const g = 17;
-  const c2 = [C[0] + g, C[1] - g * 0.6];
-  const a2 = [A[0] - g * 1.55, c2[1]];
-  const b2 = [c2[0], B[1] + g * 1.55];
+  /* The cut-out: the same triangle, smaller, every side parallel to the
+     outside and the same distance g in from it. The two square edges move in
+     by g; the long edge moves in by g too, which along a square edge is
+     g × √2 — so each inner square edge is g(2 + √2) shorter. */
+  const g = 14;
+  const inner = SQ_LEG - g * (2 + Math.SQRT2);
+  const c2 = [C[0] + g, C[1] - g];
+  const a2 = [c2[0] + inner, c2[1]];
+  const b2 = [c2[0], c2[1] - inner];
   body += `<path d="M${f(c2[0])} ${f(c2[1])} L${f(a2[0])} ${f(a2[1])} L${f(b2[0])} ${f(b2[1])} Z" fill="#fffdf8" fill-opacity="0.55" stroke="${INK}" stroke-width="0.35" stroke-linejoin="round"/>`;
   /* the scale, along the bottom edge from the square corner */
   for (let mm = 0; mm <= SQ_LEG - 8; mm++) {
