@@ -25,6 +25,7 @@
 
 import { angleSvg, protractorSvg, KINDS, kindOf, kindNamed } from "./protractor.js";
 import { levelOf } from "./ex-remainder.js";
+import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="rw-answer"></span>`;
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
@@ -111,6 +112,10 @@ const nameAngle = {
       `</div></div>`
     );
   },
+  key(item) {
+    const name = kindNamed(kindOf(item.deg)).name;
+    return [want.words(name, `${name} angle`, `an ${name} angle`, `a ${name} angle`)];
+  },
   answer(item) {
     return [kindNamed(kindOf(item.deg)).name];
   },
@@ -144,6 +149,9 @@ const sortAngles = {
       `<span class="wb-tick__one"><span class="wb-box"></span>bigger</span>` +
       `</span>`
     );
+  },
+  key(item) {
+    return [want.tick(item.deg === 90 ? 1 : item.deg < 90 ? 0 : 2)];
   },
   answer(item) {
     return [item.deg === 90 ? "exactly a right angle" : item.deg < 90 ? "smaller" : "bigger"];
@@ -184,6 +192,9 @@ const readScale = {
       `round: read the ring whose zero your first arm is on.</p></div>`
     );
   },
+  key(item) {
+    return [want.num(item.deg)];
+  },
   answer(item) {
     return [`${item.deg}°`];
   },
@@ -221,6 +232,9 @@ const measureAngle = {
     );
   },
   alwaysWorked: true,
+  key(item) {
+    return [want.num(item.deg, 2)];
+  },
   answer(item) {
     return [`${item.deg}°`];
   },
@@ -246,6 +260,30 @@ const drawAngleEx = {
       `<p class="wb-ask wb-ask--lead">Draw an angle of <b>${item.deg}°</b>.</p>` +
       `<div class="ma-art">${angleSvg(0, { tilt: item.tilt, mark: false })}</div>`
     );
+  },
+  /* The second arm is ruled from the corner (the line snaps onto it). It is
+     right within 3° of the angle asked for, on either side of the first arm. */
+  key(item) {
+    return [
+      want.draw({
+        free: true,
+        on: "svg.ma-angle",
+        says: `an arm ${item.deg}° round from the one drawn`,
+        check(lines, fig) {
+          const [v, a] = fig.pts;
+          if (!v || !a) return false;
+          const base = Math.atan2(a[1] - v[1], a[0] - v[0]);
+          return lines.some(([p, q]) => {
+            const near = (u) => Math.hypot(u[0] - v[0], u[1] - v[1]) < 2.5;
+            const far = near(p) ? q : near(q) ? p : null;
+            if (!far || Math.hypot(far[0] - v[0], far[1] - v[1]) < 6) return false;
+            let d = Math.abs(Math.atan2(far[1] - v[1], far[0] - v[0]) - base) * 180 / Math.PI;
+            if (d > 180) d = 360 - d;
+            return Math.abs(d - item.deg) <= 3;
+          });
+        },
+      }),
+    ];
   },
   answer(item) {
     return [`${item.deg}° from the arm drawn`];
@@ -273,6 +311,11 @@ const estimateAngle = {
       `<p class="wb-ask"><span class="rw-slot"><em>My guess</em>${box()}</span></p>` +
       `<p class="wb-ask"><span class="rw-slot"><em>Measured</em>${box()}</span></p>`
     );
+  },
+  /* the guess is not marked — only how near it was matters, and that is the
+     child's own lesson */
+  key(item) {
+    return [want.free(), want.num(item.deg, 2)];
   },
   answer(item) {
     return [`${item.deg}°`];

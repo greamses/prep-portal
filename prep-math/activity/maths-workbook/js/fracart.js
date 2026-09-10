@@ -47,8 +47,11 @@ function pie(den, shaded) {
   let body = "";
   for (let i = 0; i < den; i++) {
     const fill = i < shaded ? SHADE : PAPER;
-    body += wedge(i, den).replace("<path ", `<path fill="${fill}" stroke="${INK}" stroke-width="0.45" `)
-      .replace("<circle ", `<circle fill="${fill}" stroke="${INK}" stroke-width="0.45" `);
+    /* data-part / data-shaded: which part this is, and whether it came
+       coloured — so the on-screen layer can let a child colour it in */
+    const tag = `data-part="${i}"${i < shaded ? ' data-shaded="1"' : ""} `;
+    body += wedge(i, den).replace("<path ", `<path ${tag}fill="${fill}" stroke="${INK}" stroke-width="0.45" `)
+      .replace("<circle ", `<circle ${tag}fill="${fill}" stroke="${INK}" stroke-width="0.45" `);
   }
   /* The rim last, over the cuts, so the whole reads as one object. */
   body += `<circle cx="${R}" cy="${R}" r="${R}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
@@ -65,7 +68,7 @@ function bar(den, shaded) {
   let body = "";
   for (let i = 0; i < den; i++) {
     body +=
-      `<rect x="${(i * cell).toFixed(2)}" y="0" width="${cell.toFixed(2)}" height="${BAR_H}" ` +
+      `<rect data-part="${i}"${i < shaded ? ' data-shaded="1"' : ""} x="${(i * cell).toFixed(2)}" y="0" width="${cell.toFixed(2)}" height="${BAR_H}" ` +
       `fill="${i < shaded ? SHADE : PAPER}" stroke="${INK}" stroke-width="0.45"/>`;
   }
   body += `<rect x="0" y="0" width="${BAR_W}" height="${BAR_H}" fill="none" stroke="${INK}" stroke-width="0.9"/>`;
@@ -92,7 +95,7 @@ function gridShape(den, shaded) {
     const c = i % cols;
     const r = Math.floor(i / cols);
     body +=
-      `<rect x="${c * s}" y="${r * s}" width="${s}" height="${s}" ` +
+      `<rect data-part="${i}"${i < shaded ? ' data-shaded="1"' : ""} x="${c * s}" y="${r * s}" width="${s}" height="${s}" ` +
       `fill="${i < shaded ? SHADE : PAPER}" stroke="${INK}" stroke-width="0.45"/>`;
   }
   body += `<rect x="0" y="0" width="${cols * s}" height="${rows * s}" fill="none" ` +

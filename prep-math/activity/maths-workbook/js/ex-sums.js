@@ -24,6 +24,7 @@
 import { blocksSvg } from "./blocks.js";
 import { bothWays } from "./sumart.js";
 import { levelOf } from "./ex-remainder.js";
+import { want } from "/utils/components/workbook/want.js";
 
 export const SUM_GROUPS = [
   {
@@ -167,6 +168,21 @@ function subPicture(a, b, places) {
   );
 }
 
+/* ── answers for the on-screen layer ───────────────────────────────────────*/
+
+function sumKey(item, carries) {
+  const cols = item.places + (item.op === "+" ? 1 : 0);
+  const S = [];
+  let v = item.total;
+  for (let i = 0; i < cols; i++) { S.push(v % 10); v = Math.floor(v / 10); }
+  let top = cols - 1;
+  while (top > 0 && S[top] === 0) top--;
+  const out = [want.num(item.total)];
+  if (carries) for (let p = cols - 1; p >= 1; p--) out.push(want.free());
+  for (let p = cols - 1; p >= 0; p--) out.push(want.cell(S[p], p > top));
+  return [...out, want.pen(".ms-piles svg")];
+}
+
 /* ── the four exercises ────────────────────────────────────────────────────*/
 
 function make(kind) {
@@ -205,6 +221,13 @@ const addNoRegroup = {
       `Two tens and one ten is three tens. Nothing reached ten, so nothing is carried.</p></div>`
     );
   },
+  /* the answer across, then (with a carry row) one box per carry that is
+     not marked — a carry is working, not the answer — then the answer row,
+     highest column first; a column above the answer's first figure may stay
+     empty */
+  key(item) {
+    return sumKey(item, false);
+  },
   answer(item) {
     return [`${item.a} + ${item.b} = ${item.total}`];
   },
@@ -238,6 +261,13 @@ const addRegroup = {
       `little box above the tens.</p></div>`
     );
   },
+  /* the answer across, then (with a carry row) one box per carry that is
+     not marked — a carry is working, not the answer — then the answer row,
+     highest column first; a column above the answer's first figure may stay
+     empty */
+  key(item) {
+    return sumKey(item, true);
+  },
   answer(item) {
     return [`${item.a} + ${item.b} = ${item.total}`];
   },
@@ -266,6 +296,13 @@ const subNoRegroup = {
       `<p class="wb-ask rw-worked__say">Eight ones take away three ones is five ones. ` +
       `Four tens take away two tens is two tens. There was enough in both columns.</p></div>`
     );
+  },
+  /* the answer across, then (with a carry row) one box per carry that is
+     not marked — a carry is working, not the answer — then the answer row,
+     highest column first; a column above the answer's first figure may stay
+     empty */
+  key(item) {
+    return sumKey(item, false);
   },
   answer(item) {
     return [`${item.a} − ${item.b} = ${item.total}`];
@@ -299,6 +336,13 @@ const subRegroup = {
       `the four tens into ten ones: three tens left, and twelve ones. Twelve take away ` +
       `seven is five; three tens take away one ten is two tens.</p></div>`
     );
+  },
+  /* the answer across, then (with a carry row) one box per carry that is
+     not marked — a carry is working, not the answer — then the answer row,
+     highest column first; a column above the answer's first figure may stay
+     empty */
+  key(item) {
+    return sumKey(item, true);
   },
   answer(item) {
     return [`${item.a} − ${item.b} = ${item.total}`];

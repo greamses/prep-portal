@@ -27,6 +27,7 @@
 
 import { pileSvg, jitterFor, traysSvg, SHAPE_NAMES, SHAPE_WORDS } from "./shapes.js";
 import { barsSvg, sentence, mixed, improper } from "./bars.js";
+import { want } from "/utils/components/workbook/want.js";
 
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
 const box = () => `<span class="rw-answer"></span>`;
@@ -146,6 +147,9 @@ const ringGroups = {
       `make another four, so two is the remainder.</p></div>`
     );
   },
+  key(item) {
+    return [want.num(item.q), want.num(item.r), want.pen(".rw-art svg")];
+  },
   answer(item) {
     return [`${item.q} groups, ${item.r} left over`];
   },
@@ -174,6 +178,9 @@ const shareOut = {
       `<div class="rw-art">${traysSvg(item.d)}</div>` +
       `<p class="wb-ask">${slot("Each tray gets")}${slot("Left over")}</p>`
     );
+  },
+  key(item) {
+    return [want.num(item.q), want.num(item.r), want.pen(".rw-art svg")];
   },
   answer(item) {
     return [`${item.q} each, ${item.r} left over`];
@@ -214,6 +221,9 @@ const pictureSentence = {
       `</div>`
     );
   },
+  key(item) {
+    return [want.num(item.n), want.num(item.d), want.num(item.q), want.num(item.r), want.pen(".rw-art svg")];
+  },
   answer(item) {
     return [`${item.n} ÷ ${item.d} = ${item.q} r ${item.r}`];
   },
@@ -241,6 +251,9 @@ const nameTheParts = {
       `</p><p class="wb-ask">Which number is <b>${asked}</b>? ${box()}</p>`
     );
   },
+  key(item) {
+    return [want.num(item[item.ask])];
+  },
   answer(item) {
     return [String(item[item.ask])];
   },
@@ -267,6 +280,9 @@ const divideWrite = {
       named: helpOf(o).id === "show",
     });
   },
+  key(item) {
+    return [want.num(item.q), want.num(item.r)];
+  },
   answer(item) {
     return [`${item.q} r ${item.r}`];
   },
@@ -291,6 +307,9 @@ const buildBack = {
       `and <b>${item.r}</b> left over.</p>` +
       `<p class="wb-ask">${slot("How many to start with")}</p>`
     );
+  },
+  key(item) {
+    return [want.num(item.n)];
   },
   answer(item) {
     return [`${item.n} &nbsp;(${item.q} × ${item.d} + ${item.r})`];
@@ -341,6 +360,12 @@ const leftoverFraction = {
       `So 17 ÷ 5 = ${mixed(3, 2, 5)} — and that is the same as ${improper(17, 5)}.</p></div>`
     );
   },
+  key(item) {
+    return [
+      want.colour({ count: item.r, says: `colour ${item.r} more` }),
+      want.num(item.q), want.num(item.r), want.num(item.d),
+    ];
+  },
   answer(item) {
     return [`${item.q} ${item.r}/${item.d}`];
   },
@@ -387,6 +412,9 @@ const barsRead = {
       `Nine quarters altogether: ${improper(9, 4)}.</p></div>`
     );
   },
+  key(item) {
+    return [want.num(item.whole), want.num(item.num), want.num(item.den), want.num(item.top), want.num(item.den)];
+  },
   answer(item) {
     return [`${item.whole} ${item.num}/${item.den} = ${item.top}/${item.den}`];
   },
@@ -413,6 +441,9 @@ const mixedToImproper = {
       `<p class="wb-ask">${mixed(item.whole, item.num, item.den)} = ` +
       `${improper(null, null, { blank: true })}</p>`
     );
+  },
+  key(item) {
+    return [want.colour({ count: item.top, says: `colour ${item.top} parts` }), want.num(item.top), want.num(item.den)];
   },
   answer(item) {
     return [`${item.top}/${item.den}`];
@@ -452,6 +483,12 @@ const improperToMixed = {
       `It is 7 ÷ 3 = 2 remainder 1 — the same sum.</p></div>`
     );
   },
+  key(item) {
+    return [
+      want.colour({ count: item.top, says: `colour ${item.top} parts` }),
+      want.num(item.whole), want.num(item.num), want.num(item.den),
+    ];
+  },
   answer(item) {
     return [`${item.whole} ${item.num}/${item.den}`];
   },
@@ -477,6 +514,11 @@ const convertQuick = {
           `${improper(null, null, { blank: true })}</p>`
       : `<p class="wb-ask wb-ask--lead">${improper(item.top, item.den)} = ` +
           `${mixed(null, null, null, { blank: true })}</p>`;
+  },
+  key(item) {
+    return item.toImproper
+      ? [want.num(item.top), want.num(item.den)]
+      : [want.num(item.whole), want.num(item.num), want.num(item.den)];
   },
   answer(item) {
     return [

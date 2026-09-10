@@ -86,13 +86,13 @@ export function chartHtml({ powers, base, rows, side = "", tail = "", band = tru
   const body = rows
     .map((row) => {
       const blank = (v) => (v === "" || v === undefined || v === null
-        ? " pv-chart__side--blank" : "");
+        ? " pv-chart__side--blank wb-cell" : "");
       const cells = powers
         .map((p, i) => {
           const edge = i > 0 && p % 3 === 2 ? " pv-chart__col--period" : "";
           const d = row.digits ? row.digits[p] : null;
           const text = d === null || d === undefined ? "" : digitChar(d);
-          return `<td class="pv-chart__cell${edge}">${text}</td>`;
+          return `<td class="pv-chart__cell${edge}${text === "" ? " wb-cell" : ""}">${text}</td>`;
         })
         .join("");
       return (

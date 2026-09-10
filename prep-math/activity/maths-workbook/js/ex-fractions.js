@@ -24,6 +24,7 @@
 
 import { shapeSvg, kindsFor, frac } from "./fracart.js";
 import { levelOf, helpOf } from "./ex-remainder.js";
+import { want } from "/utils/components/workbook/want.js";
 
 export const FRAC_GROUPS = [
   {
@@ -78,6 +79,9 @@ const fracIdentify = {
       `${frac(3, 4, { big: true })}.</p></div>`
     );
   },
+  key(item) {
+    return [want.num(item.num), want.num(item.den)];
+  },
   answer(item) {
     return [`${item.num}/${item.den}`];
   },
@@ -102,6 +106,9 @@ const fracColour = {
       `<p class="wb-ask wb-ask--lead">Colour in ${frac(item.num, item.den, { big: true })}</p>` +
       `<div class="mf-art">${shapeSvg(item.kind, item.den, 0)}</div>`
     );
+  },
+  key(item) {
+    return [want.colour({ count: item.num, says: `colour ${item.num} of the ${item.den}` })];
   },
   answer(item) {
     return [`${item.num} of the ${item.den} parts`];
@@ -135,6 +142,9 @@ const fracSame = {
       `<span>${shapeSvg("grid", item.den, 0)}</span>` +
       `</div>`
     );
+  },
+  key(item) {
+    return [0, 1, 2].map((nth) => want.colour({ count: item.num, nth, says: `colour ${item.num} of the ${item.den}` }));
   },
   answer(item) {
     return [`${item.num}/${item.den} of each — the same amount every time`];
@@ -205,6 +215,14 @@ const addLike = {
       `They are all fifths, so the five does not change — only how many of them.</p></div>`
     );
   },
+  /* at Show me the pictures come coloured in; otherwise colour them */
+  key(item, o) {
+    const out = [want.num(item.total), want.num(item.den)];
+    if (helpOf(o).id !== "show") {
+      out.push(want.colour({ count: item.a, nth: 0 }), want.colour({ count: item.b, nth: 1 }));
+    }
+    return out;
+  },
   answer(item) {
     return [`${item.total}/${item.den}`];
   },
@@ -237,6 +255,9 @@ const subLike = {
       `<div class="mf-art">${shapeSvg(item.kind, item.den, item.a)}</div>`
     );
   },
+  key(item) {
+    return [want.num(item.total), want.num(item.den), want.colour({ count: item.b, mode: "cross", says: `cross out ${item.b}` })];
+  },
   answer(item) {
     return [`${item.total}/${item.den}`];
   },
@@ -267,6 +288,9 @@ const addLikeQuick = {
       frac(null, null, { blank: true, big: true }) +
       `</p>`
     );
+  },
+  key(item) {
+    return [want.num(item.total), want.num(item.den)];
   },
   answer(item) {
     return [`${item.total}/${item.den}`];

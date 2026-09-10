@@ -32,6 +32,7 @@ import {
   placeNameFor, digitChar, digitChars,
 } from "./numbers.js";
 import { toBase } from "../../base-blocks/js/config.js";
+import { want } from "/utils/components/workbook/want.js";
 
 /* ── the marks a child writes in ───────────────────────────────────────────
    A ruled line, a box for one character, and a box for one word. Three sizes
@@ -97,6 +98,20 @@ function saidCounts(counts, o) {
   return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
 }
 
+/* ── answers for the on-screen layer (see /utils/components/workbook/want.js) */
+
+/* The chart cells for one number, highest place first; a place above the
+   number's first figure may be left empty. */
+function chartCells(n, o, places) {
+  const d = digitsOf(n, o.base, places);
+  let top = places - 1;
+  while (top > 0 && d[top] === 0) top--;
+  const out = [];
+  for (let p = places - 1; p >= 0; p--) out.push(want.cell(digitChar(d[p]), p > top));
+  return out;
+}
+const fig = (n, o) => want.text(figures(n, o.base));
+
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
 export const PLACE_GROUPS = [
@@ -126,6 +141,9 @@ export const PLACE_EXERCISES = [
         `<div class="pv-art">${blocksSvg(item.counts, o.base, { maxCells: WIDE, label: "A pile of base blocks" })}</div>` +
         `<p class="wb-ask">The number is ${line("md")}</p>`
       );
+    },
+    key(item, o) {
+      return [fig(item.n, o)];
     },
     answer(item, o) {
       return [`${figures(item.n, o.base)} &nbsp;(${saidCounts(item.counts, o)})`];
@@ -160,6 +178,9 @@ export const PLACE_EXERCISES = [
         })
       );
     },
+    key(item, o) {
+      return [...chartCells(item.n, o, item.places), fig(item.n, o)];
+    },
     answer(item, o) {
       const d = digitsOf(item.n, o.base, item.places);
       return [d.slice().reverse().map(digitChar).join(" | ") + " &nbsp;→&nbsp; " + figures(item.n, o.base)];
@@ -188,6 +209,10 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask wb-ask--lead">Draw ${num(item.n, o.base)}.</p>` +
         `<div class="pv-art pv-art--box">${drawingBox(o.base, { rows: 14, cols: WIDE })}</div>`
       );
+    },
+    /* drawn on squared paper: a pencil, and checked by the grown-up */
+    key() {
+      return [want.pen(".pv-drawbox")];
     },
     answer(item, o) {
       return [saidCounts(item.counts, o)];
@@ -234,6 +259,11 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask">Tidied up: ${blanks}</p>` +
         `<p class="wb-ask">The number is ${line("md")}</p>`
       );
+    },
+    key(item, o) {
+      const out = [];
+      for (let p = item.places - 1; p >= 0; p--) out.push(want.num(item.tidy[p]));
+      return [...out, fig(item.n, o)];
     },
     answer(item, o) {
       return [`${saidCounts(item.tidy, o)} = ${figures(item.n, o.base)}`];
@@ -292,6 +322,9 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask">a ${box()} b</p>`
       );
     },
+    key(item, o) {
+      return [fig(item.a, o), fig(item.b, o), want.text(item.a > item.b ? ">" : "<")];
+    },
     answer(item, o) {
       const sign = item.a > item.b ? "&gt;" : "&lt;";
       return [`${figures(item.a, o.base)} ${sign} ${figures(item.b, o.base)}`];
@@ -322,6 +355,9 @@ export const PLACE_EXERCISES = [
         rows: item.ns.map((n) => ({ side: figures(n, o.base), digits: null })),
       });
     },
+    key(item, o) {
+      return item.ns.flatMap((n) => chartCells(n, o, o.places));
+    },
     answer(item, o) {
       return item.ns.map(
         (n) => `${figures(n, o.base)} → ${toBase(n, o.base).split("").join(" | ")}`
@@ -351,6 +387,9 @@ export const PLACE_EXERCISES = [
         tail: "The number",
         rows: item.ns.map((n) => ({ digits: digitsOf(n, o.base, o.places), tail: "" })),
       });
+    },
+    key(item, o) {
+      return item.ns.map((n) => fig(n, o));
     },
     answer(item, o) {
       return item.ns.map((n) => figures(n, o.base));
@@ -396,6 +435,9 @@ export const PLACE_EXERCISES = [
         })),
       });
     },
+    key(item, o) {
+      return item.rows.flatMap((row) => (row.toChart ? chartCells(row.n, o, o.places) : [fig(row.n, o)]));
+    },
     answer(item, o) {
       return item.rows.map((row) =>
         row.toChart
@@ -438,6 +480,13 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask">Worth: ${line("sm")}</p>`
       );
     },
+    key(item, o) {
+      const name = placeNameLower(item.p, o.base);
+      return [
+        want.words(name, name.replace(/s$/, ""), `${name} place`, `the ${name}`),
+        fig(item.d * Math.pow(o.base, item.p), o),
+      ];
+    },
     answer(item, o) {
       const worth = item.d * Math.pow(o.base, item.p);
       return [`${placeNameLower(item.p, o.base)} · ${figures(worth, o.base)}`];
@@ -466,6 +515,15 @@ export const PLACE_EXERCISES = [
          write. */
       const blanks = Array.from({ length: Math.max(2, parts) }, () => line("eq")).join(" + ");
       return `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)} = ${blanks}</p>`;
+    },
+    /* the parts in any order; a second blank on a one-part number is spare */
+    key(item, o) {
+      const digits = digitsOf(item.n, o.base, o.places);
+      const parts = [];
+      for (let p = o.places - 1; p >= 0; p--) {
+        if (digits[p]) parts.push(Number(figures(digits[p] * Math.pow(o.base, p), o.base).replace(/\s/g, "")));
+      }
+      return parts.length >= 2 ? [want.set(...parts)] : [want.set(...parts), want.free()];
     },
     answer(item, o) {
       const digits = digitsOf(item.n, o.base, o.places);
@@ -498,6 +556,9 @@ export const PLACE_EXERCISES = [
       }
       return `<p class="wb-ask wb-ask--lead">${parts.join(" + ")} = ${line("sm")}</p>`;
     },
+    key(item, o) {
+      return [fig(item.n, o)];
+    },
     answer(item, o) {
       return [figures(item.n, o.base)];
     },
@@ -522,6 +583,11 @@ export const PLACE_EXERCISES = [
         return `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)} &nbsp;=&nbsp; ${line("lg")}</p>`;
       }
       return `<p class="wb-ask wb-ask--lead"><em class="wb-words">${inWords(item.n)}</em> &nbsp;=&nbsp; ${line("sm")}</p>`;
+    },
+    key(item, o) {
+      if (!item.toWords) return [fig(item.n, o)];
+      const w = inWords(item.n);
+      return [want.words(w, w.replace(/ and /g, " "))];
     },
     answer(item, o) {
       return [item.toWords ? inWords(item.n) : figures(item.n, o.base)];
@@ -569,6 +635,9 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask"><em>${s} less</em> ${line("sm")}</p>`
       );
     },
+    key(item, o) {
+      return [fig(item.n + item.step, o), fig(item.n - item.step, o)];
+    },
     answer(item, o) {
       return [
         `${figures(item.n + item.step, o.base)} &nbsp;·&nbsp; ${figures(item.n - item.step, o.base)}`,
@@ -603,6 +672,11 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)}</p>` +
         `<p class="wb-ask">How many ${placeNameLower(item.p, o.base)} in all? ${line("sm")}</p>`
       );
+    },
+    key(item, o) {
+      const all = Math.floor(item.n / Math.pow(o.base, item.p));
+      const f = figures(all, o.base);
+      return [want.words(f, `${f} ${placeNameFor(all, item.p, o.base)}`)];
     },
     answer(item, o) {
       const all = Math.floor(item.n / Math.pow(o.base, item.p));
@@ -640,6 +714,12 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask wb-ask--lead">${num(item.n, o.base)}</p>` +
         `<p class="wb-ask">to the nearest ${placeNameFor(1, item.p, o.base)} ${line("sm")}</p>`
       );
+    },
+    key(item, o) {
+      const step = Math.pow(o.base, item.p);
+      const below = digitsOf(item.n, o.base, o.places)[item.p - 1];
+      const down = Math.floor(item.n / step) * step;
+      return [fig(below * 2 >= o.base ? down + step : down, o)];
     },
     answer(item, o) {
       /* The rule as it is TAUGHT — the one digit just below decides — and not
@@ -687,6 +767,9 @@ export const PLACE_EXERCISES = [
     render(item, o) {
       return `<p class="wb-ask wb-ask--lead">${num(item.a, o.base)} ${box()} ${num(item.b, o.base)}</p>`;
     },
+    key(item) {
+      return [want.text(item.a > item.b ? ">" : item.a < item.b ? "<" : "=")];
+    },
     answer(item) {
       return [item.a > item.b ? "&gt;" : item.a < item.b ? "&lt;" : "="];
     },
@@ -728,6 +811,9 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask">${item.ns.map(() => line("sm")).join(" , ")}</p>`
       );
     },
+    key(item, o) {
+      return item.ns.slice().sort((x, y) => x - y).map((n) => fig(n, o));
+    },
     answer(item, o) {
       return [item.ns.slice().sort((x, y) => x - y).map((n) => figures(n, o.base)).join(", ")];
     },
@@ -760,6 +846,16 @@ export const PLACE_EXERCISES = [
         `<p class="wb-ask">Biggest ${line("sm")}</p>` +
         `<p class="wb-ask">Smallest ${line("sm")}</p>`
       );
+    },
+    key(item, o) {
+      const desc = item.digits.slice().sort((a, b) => b - a);
+      const asc = item.digits.slice().sort((a, b) => a - b);
+      if (asc[0] === 0) {
+        const swap = asc.findIndex((d) => d > 0);
+        if (swap > 0) [asc[0], asc[swap]] = [asc[swap], asc[0]];
+      }
+      const read = (arr) => figures(arr.reduce((s, d) => s * o.base + d, 0), o.base);
+      return [want.text(read(desc)), want.text(read(asc))];
     },
     answer(item, o) {
       const desc = item.digits.slice().sort((a, b) => b - a);

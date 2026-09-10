@@ -248,6 +248,7 @@ export function mountBuilder(cfg) {
         toolbar: document.querySelector(".wb-toolbar"),
         refit: fit,
         protractor: cfg.interactive.protractor,
+        places: cfg.interactive.places || "",
       });
     }
 

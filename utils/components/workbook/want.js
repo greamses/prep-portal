@@ -37,7 +37,20 @@ export const want = {
    *   for free drawing. `fig` is { pts, par } read off the figure.
    *   says: what the right drawing is, for "show me the answers".
    */
-  draw: ({ check, says, free = false }) => ({ kind: "draw", check, says, free }),
+  draw: ({ check, says, free = false, on = null, hands = false }) => ({ kind: "draw", check, says, free, on, hands }),
+  /** One cell of a chart or a written sum: a figure, or — for a leading zero —
+      a figure the child may leave empty. */
+  cell: (v, blankOk = false) => ({ kind: "cell", v: String(v), blankOk }),
+  /** Words, compared on letters and figures only: "twenty-five past 3",
+      "twenty five past three" and "Twenty-Five Past Three" are one answer. */
+  words: (...accept) => ({ kind: "words", accept }),
+  /** Parts of the question's nth cut-up shape to colour in (mode "fill") or to
+      cross out (mode "cross") — how many, not which. Covers no places. */
+  colour: ({ count, nth = 0, mode = "fill", says = "" }) => ({ kind: "colour", count, nth, mode, says }),
+  /** Two columns to join: the right [left, right] pairs. Covers no places. */
+  match: (pairs, says = "") => ({ kind: "match", pairs, says }),
+  /** A pencil on the pictures for what is not marked — ringing, sharing. */
+  pen: (on = null) => ({ kind: "pen", on }),
 };
 
 /* ── judging, shared by the page and the Node checks ─────────────────────────*/
@@ -57,8 +70,11 @@ export function normText(s) {
     .toLowerCase()
     .replace(MINUS, "-")
     .replace(/[×✕*]/g, "x")
-    .replace(/[°\s.]/g, "");
+    .replace(/[°\s.,]/g, "");
 }
+
+/** Letters and figures only, for answers that are words. */
+export const normWords = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const numbersIn = (s) => (String(s ?? "").replace(MINUS, "-").match(/-?\d+(\.\d+)?/g) || []).map(Number);
 
@@ -102,13 +118,22 @@ export function judge(entry, values) {
     }
     case "tick":
       return [Number(values[0]) === entry.i];
+    case "cell": {
+      const t = normText(values[0]);
+      return [t === normText(entry.v) || (entry.blankOk && t === "")];
+    }
+    case "words": {
+      const t = normWords(values[0]);
+      return [t !== "" && entry.accept.some((a) => normWords(a) === t)];
+    }
     default:
       return values.map(() => true);
   }
 }
 
 /** How many answer places an entry covers. */
-export const placesOf = (entry) => (entry.kind === "set" ? entry.vs.length : entry.kind === "draw" ? 0 : 1);
+export const placesOf = (entry) =>
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -120,6 +145,10 @@ export function sayWant(entry, tickLabels = []) {
     case "set": return entry.vs.join(", ");
     case "tick": return tickLabels[entry.i] || `option ${entry.i + 1}`;
     case "draw": return entry.says || "";
+    case "cell": return entry.v;
+    case "words": return entry.accept[0];
+    case "colour": return entry.says || `${entry.count} ${entry.mode === "cross" ? "crossed out" : "coloured"}`;
+    case "match": return entry.says || "";
     default: return "";
   }
 }
@@ -133,6 +162,8 @@ export function rightValues(entry) {
     case "nums": return [entry.vs.join(" and ")];
     case "set": return entry.vs.map(String);
     case "tick": return [entry.i];
+    case "cell": return [entry.v];
+    case "words": return [entry.accept[0]];
     default: return [""];
   }
 }

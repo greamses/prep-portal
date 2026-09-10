@@ -91,6 +91,7 @@ export function angleSvg(deg, { tilt = 0, mark = true, protractor = false, label
   const out = mm || w;
   return (
     `<svg viewBox="0 0 ${w} ${w}" width="${out}mm" height="${out}mm" class="ma-angle" ` +
+    `data-pts="${cx},${cy} ${ax.toFixed(2)},${ay.toFixed(2)}" ` +
     `role="img" aria-label="${label || `An angle of ${deg} degrees`}">${body}</svg>`
   );
 }

@@ -108,7 +108,7 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
     `</tr>`;
   const rowS =
     `<tr class="ms-down__answer"><td></td>` +
-    cols.map((p) => cell(S === null ? "" : (S[p] ? S[p] : (p === cols[0] ? "" : S[p])))).join("") +
+    cols.map((p) => cell(S === null ? "" : (S[p] ? S[p] : (p === cols[0] ? "" : S[p])), S === null ? "wb-cell" : "")).join("") +
     `</tr>`;
 
   return (

@@ -21,6 +21,7 @@
 
 import { clockSvg, handKey, digital, timeWords, said } from "./clock.js";
 import { helpOf } from "./ex-remainder.js";
+import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="rw-answer"></span>`;
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
@@ -39,6 +40,23 @@ export const TIME_GROUPS = [
 ];
 
 /* ── counting in fives ─────────────────────────────────────────────────────*/
+
+/* ── answers for the on-screen layer ───────────────────────────────────────*/
+
+const HOUR_FIG = ["12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
+/* "twenty past seven" and "twenty past 7" are the same answer. */
+function wordsKey(h, m) {
+  const w = timeWords(h, m);
+  const hh = h % 12;
+  const next = (hh + 1) % 12;
+  const say = m <= 30 ? hh : next;
+  const named = ["twelve", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven"][say];
+  return want.words(w, w.replace(named, HOUR_FIG[say]));
+}
+function digitalKey(h, m) {
+  const d = digital(h, m);
+  return want.words(d, d.length === 4 ? `0${d}` : d);
+}
 
 const countFives = {
   id: "count-fives",
@@ -84,6 +102,9 @@ const countFives = {
       `fives — the ones digit goes 5, 0, 5, 0 all the way along.</p></div>`
     );
   },
+  key(item) {
+    return item.gaps.slice().sort((a, b) => a - b).map((i) => want.num(item.nums[i]));
+  },
   answer(item) {
     return [item.gaps.sort((a, b) => a - b).map((i) => item.nums[i]).join(", ")];
   },
@@ -106,6 +127,9 @@ const countOn = {
       `<p class="wb-ask wb-ask--lead">Start at <b>${item.start}</b>.</p>` +
       `<p class="wb-ask">${[1, 2, 3, 4, 5].map(() => box()).join("")}</p>`
     );
+  },
+  key(item) {
+    return [1, 2, 3, 4, 5].map((k) => want.num(item.start + k * 5));
   },
   answer(item) {
     return [[1, 2, 3, 4, 5].map((k) => item.start + k * 5).join(", ")];
@@ -137,6 +161,10 @@ const fivesClock = {
       `<p class="wb-ask rw-worked__say">The 1 is five minutes, the 2 is ten, the 3 is ` +
       `fifteen. All the way round is sixty — and sixty minutes is one hour.</p></div>`
     );
+  },
+  /* written round the face with the pencil; checked by the grown-up */
+  key() {
+    return [want.pen("svg.mt-clock")];
   },
   answer() {
     return ["5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60 round the face"];
@@ -187,6 +215,9 @@ function readOne(id, kind, label, blurb, heading, instruction, count) {
         `<p class="wb-ask">In words ${line("lg")}</p>` +
         `<p class="wb-ask">In figures ${box()}</p>`
       );
+    },
+    key(item) {
+      return [wordsKey(item.h, item.m), digitalKey(item.h, item.m)];
     },
     answer(item) {
       return [`${timeWords(item.h, item.m)} · ${digital(item.h, item.m)}`];
@@ -307,6 +338,27 @@ const drawTime = {
       `long hand is at the 8. The short hand is most of the way from the 8 to the 9.</p></div>`
     );
   },
+  /* Ruled from the centre: the long hand to the outer ring, the short hand to
+     the inner. Past the half hour the short hand may be on either number. */
+  key(item) {
+    const { h, m } = item;
+    const minute = 12 + ((m / 5) % 12 || 12);
+    const hour = (h % 12) || 12;
+    const hours = new Set([hour]);
+    if (m >= 30) hours.add((h % 12) + 1);
+    return [
+      want.draw({
+        on: "svg.mt-clock",
+        hands: true,
+        says: `long hand to the ${(m / 5) % 12 || 12}, short hand to the ${hour}${m >= 30 ? ` or ${(h % 12) + 1}` : ""}`,
+        check(lines) {
+          const ends = lines.map(([a, b]) => (a === 0 ? b : b === 0 ? a : -1));
+          if (ends.length !== 2 || ends.includes(-1)) return false;
+          return ends.includes(minute) && ends.some((e) => e <= 12 && hours.has(e));
+        },
+      }),
+    ];
+  },
   answer(item) {
     return [`${digital(item.h, item.m)} — long hand on the ${(item.m / 5) % 12 || 12}`];
   },
@@ -341,6 +393,10 @@ const matchTime = {
       `<ul class="wb-match__side wb-match__side--right">${right}</ul>` +
       `</div>`
     );
+  },
+  key(item) {
+    const pairs = item.times.map((t, i) => [i, item.right.findIndex((u) => u.h === t.h && u.m === t.m)]);
+    return [want.match(pairs, "each clock to its own time")];
   },
   answer(item) {
     return item.times.map((t) => `${digital(t.h, t.m)} → ${timeWords(t.h, t.m)}`);

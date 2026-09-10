@@ -170,7 +170,7 @@ export function printPass({ workbook, label }) {
           </p>
           <p class="wb-pay__msg" id="wb-pay-msg" role="status"></p>
           <div class="wb-pay__actions">
-            <button type="button" class="pp-pill" id="wb-pay-cancel">Not now</button>
+            <button type="button" class="pp-btn wb-tint-4" id="wb-pay-cancel">Not now</button>
             <button type="button" class="pp-btn" id="wb-pay-go">Pay ${naira(PRICE)}</button>
           </div>
         </div>

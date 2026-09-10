@@ -20,6 +20,7 @@ import { ICON } from "./icons.js";
 import { CFG, baseWord } from "../../base-blocks/js/config.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
 import { onAdmin } from "/utils/components/workbook/admin.js";
+import { protractorSvg } from "./protractor.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -133,6 +134,13 @@ mountBuilder({
   subject: SUBJECT,
   /* sold per print — see /utils/components/workbook/print-pass.js */
   print: { workbook: "maths-workbook", label: "Maths Workbook" },
+  /* done on screen and marked. This workbook's own boxes — the remainder
+     sentence, the fraction blanks, the gaps in a track of fives, the parts of
+     a written sum — are answer places too. */
+  interactive: {
+    protractor: protractorSvg(),
+    places: ".wb-box, .rw-answer, .rw-fill, .rw-sentence__blank, .mt-track__cell--gap, .ms-across__box, .ms-down__carrybox",
+  },
   store: "mw-workbook-v1",
   groups: GROUPS,
   glyphs: {

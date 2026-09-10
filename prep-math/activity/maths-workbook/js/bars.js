@@ -39,7 +39,7 @@ export function barsSvg(den, shaded, bars, { label = "" } = {}) {
     for (let c = 0; c < den; c++) {
       const filled = b * den + c < shaded;
       body +=
-        `<rect x="${(c * cell).toFixed(2)}" y="${y}" width="${cell.toFixed(2)}" height="${BAR_H}" ` +
+        `<rect data-part="${b * den + c}"${filled ? ' data-shaded="1"' : ""} x="${(c * cell).toFixed(2)}" y="${y}" width="${cell.toFixed(2)}" height="${BAR_H}" ` +
         `fill="${filled ? SHADE : PAPER}" stroke="${INK}" stroke-width="0.45"/>`;
     }
     /* The outline is drawn again over the cells so the WHOLE reads as one

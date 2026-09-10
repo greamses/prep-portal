@@ -33,12 +33,17 @@ const svgPoint = (svg, clientX, clientY) => {
 const parsePts = (s) => (s ? s.trim().split(/\s+/).map((q) => q.split(",").map(Number)) : []);
 const parseSegs = (s) => (s ? s.trim().split(";").filter(Boolean).map((q) => q.split(/[ ,]+/).map(Number)) : []);
 
+const COLOUR = "#6fb7e8";            // the paper's own shading blue
+const SVGNS = "http://www.w3.org/2000/svg";
+
 /**
- *   mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor })
+ *   mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places })
  *     protractor   the instrument's SVG (mm-sized), or none
+ *     places       this workbook's own answer boxes, as a selector, added to
+ *                  the shared ones (".rw-answer, .rw-fill" …)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "" }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -50,7 +55,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   const toggle = document.createElement("button");
   toggle.type = "button";
-  toggle.className = "pp-pill wb-live-toggle";
+  toggle.className = "pp-btn wb-tint-1 wb-live-toggle";
   toggle.textContent = "Make interactive";
   toolbar.querySelector(".wb-toolbar__spacer")?.after(toggle);
 
@@ -59,9 +64,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   bar.hidden = true;
   bar.innerHTML = `
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
-    ${protractor ? `<button type="button" class="pp-pill" data-act="protractor">Protractor</button>` : ""}
-    <button type="button" class="pp-pill" data-act="clear">Clear</button>
-    <button type="button" class="pp-pill" data-act="show" hidden>Show the answers</button>
+    <button type="button" class="pp-btn wb-tint-5" data-act="full">Full screen</button>
+    ${protractor ? `<button type="button" class="pp-btn wb-tint-3" data-act="protractor">Protractor</button>` : ""}
+    <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
+    <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
     <span class="wb-livebar__score" role="status"></span>
     <button type="button" class="pp-btn" data-act="check">Check my answers</button>`;
   toolbar.after(bar);
@@ -75,15 +81,60 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
     if (act === "clear") clearAll();
     if (act === "protractor") toggleProtractor();
+    if (act === "full") setFull(!full);
+  });
+
+  /* ── full screen ───────────────────────────────────────────────────────
+     Interactive mode is a workspace: the paper and its tools fill the
+     window, the builder rail and the site around it are out of the way. The
+     window is filled by the page itself (so it works on a phone, where the
+     browser will not make an element full screen) and, where the browser
+     allows it, the browser's own full screen hides its bars as well. Esc, or
+     the button, puts the window back; "Back to paper" does both. */
+  let full = false;
+  const preview = toolbar.closest(".wb-preview") || sheet.closest(".wb-preview");
+  const fullBtn = bar.querySelector('[data-act="full"]');
+  function setFull(on) {
+    full = on;
+    preview?.classList.toggle("wb-full", on);
+    document.documentElement.classList.toggle("wb-full-on", on);
+    fullBtn.textContent = on ? "Leave full screen" : "Full screen";
+    try {
+      if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+      if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    } catch { /* a browser that says no is still a full window */ }
+    requestAnimationFrame(refit);
+  }
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && full) {
+      /* Esc left the browser's full screen: the window stays the workspace,
+         the button says so */
+      fullBtn.textContent = "Full screen";
+      full = false;
+      preview?.classList.remove("wb-full");
+      document.documentElement.classList.remove("wb-full-on");
+    }
+    requestAnimationFrame(refit);
   });
 
   /* ── the questions on the paper ────────────────────────────────────────*/
 
   const items = () => [...sheet.querySelectorAll(".wb-item")].filter((n) => n.__wb);
-  const slotsOf = (node) => [...node.querySelectorAll(`.wb-item__body ${SLOTS.split(", ").join(", .wb-item__body ")}`)];
+  const ALL = [SLOTS, places].filter(Boolean).join(", ").split(/\s*,\s*/);
+  const SELECT = ALL.map((q) => `.wb-item__body ${q}`).join(", ");
+  /* Every answer place in the question, in page order — but not the little
+     boxes INSIDE a tick row, which belong to the row. */
+  const slotsOf = (node) => [...node.querySelectorAll(SELECT)]
+    .filter((el) => el.classList.contains("wb-tick") || !el.parentElement.closest(".wb-tick"));
   const keyOf = (node) => (node.__wb.ex.key ? node.__wb.ex.key(node.__wb.item, node.__wb.opts) : null);
-  const drawOf = (node) => (keyOf(node) || []).find((e) => e.kind === "draw") || null;
-  const rec = (i) => (store[i] ||= { v: [], lines: [] });
+  const drawSvg = (node, e) => node.querySelector(e.on || (e.free ? "svg[data-par]" : "svg[data-pts]"));
+  const colourSvgs = (node) => [...node.querySelectorAll(".wb-item__body svg")].filter((v) => v.querySelector("[data-part]"));
+  const rec = (i) => {
+    const r = (store[i] ||= {});
+    r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
+    return r;
+  };
+  const MARKED = (e) => !["free", "pen"].includes(e.kind);
 
   let saving = 0;
   const save = () => {
@@ -135,13 +186,20 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       slot.appendChild(input);
     });
 
-    const draw = drawOf(node);
-    const svg = draw && node.querySelector(draw.free ? "svg[data-par]" : "svg[data-pts]");
-    if (svg) makeDrawable(node, idx, svg, draw);
+    (keyOf(node) || []).forEach((e) => {
+      if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
+      if (e.kind === "colour") makeColourable(node, idx, e);
+      if (e.kind === "match") makeMatchable(node, idx, e);
+      if (e.kind === "pen") makePen(node, idx, e);
+    });
   }
 
   function deaden(node) {
-    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw").forEach((n) => n.remove());
+    node.querySelectorAll("[data-part][data-fill0]").forEach((p) => p.setAttribute("fill", p.dataset.fill0));
+    node.querySelectorAll("[data-colourable]").forEach((v) => v.removeAttribute("data-colourable"));
+    node.querySelectorAll("[data-pen]").forEach((v) => v.removeAttribute("data-pen"));
+    node.querySelectorAll(".wb-match li").forEach((li) => { li.onclick = null; li.classList.remove("is-picked"); });
+    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines").forEach((n) => n.remove());
     node.querySelectorAll(".is-live, .is-right, .is-wrong, .is-on, .is-want").forEach((n) =>
       n.classList.remove("is-live", "is-right", "is-wrong", "is-on", "is-want"));
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
@@ -154,6 +212,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (!checked) return;
     node.querySelectorAll(".is-right, .is-wrong").forEach((n) => n.classList.remove("is-right", "is-wrong"));
     node.querySelectorAll(".wb-want").forEach((n) => n.remove());
+    node.querySelectorAll(".wb-match").forEach((m) => { m.__wbJudge = null; m.__wbPaint?.(); });
   }
 
   /* ── ruling lines on a figure ──────────────────────────────────────────*/
@@ -181,7 +240,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         const l = document.createElementNS(NS, "line");
         l.setAttribute("x1", a[0]); l.setAttribute("y1", a[1]);
         l.setAttribute("x2", b[0]); l.setAttribute("y2", b[1]);
-        l.setAttribute("class", "wb-draw__line");
+        /* a clock face: a line to the inner ring is the hour hand, to the
+           outer ring the minute hand */
+        const hand = draw.hands ? (Math.max(ln[0], ln[1]) > 12 ? " wb-draw__line--minute" : " wb-draw__line--hour") : "";
+        l.setAttribute("class", `wb-draw__line${hand}`);
         g.appendChild(l);
       });
       if (!draw.free) pts.forEach((p) => {
@@ -211,14 +273,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       svg.addEventListener("pointerdown", (e) => {
         if (!svg.dataset.drawable) return;
         const p = svgPoint(svg, e.clientX, e.clientY);
-        const i = draw.free ? p : nearest(p);
+        const near = nearest(p);
+        const i = draw.free ? (near >= 0 ? pts[near].slice() : p) : near;
         if (!draw.free && i < 0) return;
         e.preventDefault();
         svg.setPointerCapture(e.pointerId);
         from = i;
         ghost = document.createElementNS(NS, "line");
         ghost.setAttribute("class", "wb-draw__ghost");
-        const s0 = draw.free ? p : pts[i];
+        const s0 = draw.free ? i : pts[i];
         ghost.setAttribute("x1", s0[0]); ghost.setAttribute("y1", s0[1]);
         ghost.setAttribute("x2", s0[0]); ghost.setAttribute("y2", s0[1]);
         layer().appendChild(ghost);
@@ -256,23 +319,202 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     /* Undo and clear sit over the figure's corner, so the question keeps the
        exact height it was paginated at. */
-    const art = svg.closest(".gw-art, .wb-art") || svg.parentElement;
-    art.classList.add("wb-drawhost");
-    if (!art.querySelector(":scope > .wb-drawbar")) {
-      const tools = document.createElement("span");
-      tools.className = "wb-drawbar";
-      tools.innerHTML = `<button type="button" data-d="undo">Undo</button><button type="button" data-d="wipe">Clear</button>`;
-      tools.addEventListener("click", (e) => {
-        const d = e.target.dataset.d;
-        const lines = rec(idx).lines;
-        if (d === "undo") lines.pop();
-        if (d === "wipe") lines.length = 0;
-        svg.__wbPaint();
+    drawbar(hostOf(svg), (d) => {
+      const lines = rec(idx).lines;
+      if (d === "undo") lines.pop();
+      if (d === "wipe") lines.length = 0;
+      svg.__wbPaint();
+      dirty(node);
+      save();
+    });
+  }
+
+  /* Where the Undo / Clear buttons and the marks for a figure go: the element
+     that holds the figure, shrunk to it. */
+  function hostOf(svg) {
+    const host = svg.closest(".gw-art, .wb-art, .rw-art, .pv-art, .mt-art, .mf-art, .ma-art") || svg.parentElement;
+    host.classList.add("wb-drawhost");
+    return host;
+  }
+
+  function drawbar(host, act) {
+    if (host.querySelector(":scope > .wb-drawbar")) return;
+    const tools = document.createElement("span");
+    tools.className = "wb-drawbar";
+    tools.innerHTML =
+      `<button type="button" class="pp-btn wb-tint-3" data-d="undo">Undo</button>` +
+      `<button type="button" class="pp-btn wb-tint-4" data-d="wipe">Clear</button>`;
+    tools.addEventListener("click", (e) => { if (e.target.dataset.d) act(e.target.dataset.d); });
+    host.appendChild(tools);
+  }
+
+  /* ── colouring parts in (or crossing them out) ─────────────────────────
+     Shapes cut into parts carry data-part on each part; a part printed
+     already coloured carries data-shaded. Colouring fills the empty parts;
+     crossing out (taking away) marks the coloured ones with an X. */
+  function makeColourable(node, idx, e) {
+    const k = e.nth || 0;
+    const svg = colourSvgs(node)[k];
+    if (!svg) return;
+    const mode = e.mode || "fill";
+    svg.dataset.colourable = mode;
+    const paint = () => {
+      const on = new Set(rec(idx).colours[k] || []);
+      svg.querySelector(":scope > .wb-cross")?.remove();
+      const cross = document.createElementNS(SVGNS, "g");
+      cross.setAttribute("class", "wb-cross");
+      svg.querySelectorAll("[data-part]").forEach((p) => {
+        if (p.dataset.fill0 === undefined) p.dataset.fill0 = p.getAttribute("fill") || "";
+        const hit = on.has(p.dataset.part);
+        if (mode === "fill") p.setAttribute("fill", hit ? COLOUR : p.dataset.fill0);
+        else if (hit) {
+          const b = p.getBBox();
+          const m = Math.min(b.width, b.height) * 0.22;
+          [[b.x + m, b.y + m, b.x + b.width - m, b.y + b.height - m], [b.x + b.width - m, b.y + m, b.x + m, b.y + b.height - m]]
+            .forEach(([x1, y1, x2, y2]) => {
+              const l = document.createElementNS(SVGNS, "line");
+              l.setAttribute("x1", x1); l.setAttribute("y1", y1); l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+              cross.appendChild(l);
+            });
+        }
+      });
+      svg.appendChild(cross);
+    };
+    svg.__wbColourPaint = paint;
+    paint();
+    if (!svg.__wbColourBound) {
+      svg.__wbColourBound = true;
+      svg.addEventListener("click", (ev) => {
+        const m = svg.dataset.colourable;
+        if (!m) return;
+        const part = ev.target.closest("[data-part]");
+        if (!part) return;
+        const given = part.dataset.shaded === "1";
+        if ((m === "fill" && given) || (m === "cross" && !given)) return;
+        const list = (rec(idx).colours[k] ||= []);
+        const at = list.indexOf(part.dataset.part);
+        if (at >= 0) list.splice(at, 1); else list.push(part.dataset.part);
+        svg.__wbColourPaint();
         dirty(node);
         save();
       });
-      art.appendChild(tools);
     }
+  }
+
+  /* ── joining two columns ───────────────────────────────────────────────
+     Tap something on the left, then what it goes with on the right; the line
+     is drawn between their dots. Tapping a left one again starts it over. */
+  function makeMatchable(node, idx, e) {
+    const box = node.querySelector(".wb-match");
+    if (!box) return;
+    box.classList.add("is-live");
+    const lefts = [...box.querySelectorAll(".wb-match__side:not(.wb-match__side--right) > li")];
+    const rights = [...box.querySelectorAll(".wb-match__side--right > li")];
+    let picked = null;
+    const dot = (li) => li.querySelector(".wb-match__dot") || li;
+    const paint = () => {
+      box.querySelector(":scope > .wb-matchlines")?.remove();
+      const svg = document.createElementNS(SVGNS, "svg");
+      svg.setAttribute("class", "wb-matchlines");
+      const br = box.getBoundingClientRect();
+      const z = br.width / (box.offsetWidth || 1) || 1;
+      svg.setAttribute("viewBox", `0 0 ${box.offsetWidth} ${box.offsetHeight}`);
+      const at = (el) => { const r = el.getBoundingClientRect(); return [(r.left + r.width / 2 - br.left) / z, (r.top + r.height / 2 - br.top) / z]; };
+      rec(idx).pairs.forEach(([l, r]) => {
+        if (!lefts[l] || !rights[r]) return;
+        const [x1, y1] = at(dot(lefts[l]));
+        const [x2, y2] = at(dot(rights[r]));
+        const ln = document.createElementNS(SVGNS, "line");
+        ln.setAttribute("x1", x1); ln.setAttribute("y1", y1); ln.setAttribute("x2", x2); ln.setAttribute("y2", y2);
+        const judged = box.__wbJudge ? (box.__wbJudge(l, r) ? " is-right" : " is-wrong") : "";
+        ln.setAttribute("class", `wb-matchline${judged}`);
+        svg.appendChild(ln);
+      });
+      box.appendChild(svg);
+      lefts.forEach((li, i) => li.classList.toggle("is-picked", i === picked));
+    };
+    box.__wbPaint = paint;
+    lefts.forEach((li, i) => {
+      li.onclick = () => { picked = picked === i ? null : i; paint(); };
+    });
+    rights.forEach((li, j) => {
+      li.onclick = () => {
+        if (picked === null) return;
+        const r = rec(idx);
+        r.pairs = r.pairs.filter(([l, rr]) => l !== picked && rr !== j);
+        r.pairs.push([picked, j]);
+        picked = null;
+        paint();
+        dirty(node);
+        save();
+      };
+    });
+    paint();
+  }
+
+  /* ── a pencil ──────────────────────────────────────────────────────────
+     For the things a child does to a picture that are not marked — ringing
+     groups, drawing counters into trays, drawing blocks. Strokes are kept
+     like everything else, but no key looks at them. */
+  function makePen(node, idx, e) {
+    [...node.querySelectorAll(e.on || ".wb-item__body svg")].forEach((svg, k) => {
+      svg.dataset.pen = "1";
+      const layer = () => {
+        let g = svg.querySelector(":scope > .wb-pen");
+        if (!g) { g = document.createElementNS(SVGNS, "g"); g.setAttribute("class", "wb-pen"); svg.appendChild(g); }
+        return g;
+      };
+      const strokes = () => (rec(idx).pens[k] ||= []);
+      const paint = () => {
+        const g = layer();
+        g.innerHTML = "";
+        strokes().forEach((pts) => {
+          const pl = document.createElementNS(SVGNS, "polyline");
+          pl.setAttribute("points", pts.map((p) => p.join(",")).join(" "));
+          g.appendChild(pl);
+        });
+      };
+      svg.__wbPenPaint = paint;
+      paint();
+      if (!svg.__wbPenBound) {
+        svg.__wbPenBound = true;
+        let cur = null;
+        let line = null;
+        svg.addEventListener("pointerdown", (ev) => {
+          if (!svg.dataset.pen) return;
+          ev.preventDefault();
+          svg.setPointerCapture(ev.pointerId);
+          cur = [svgPoint(svg, ev.clientX, ev.clientY).map((v) => +v.toFixed(1))];
+          line = document.createElementNS(SVGNS, "polyline");
+          layer().appendChild(line);
+        });
+        svg.addEventListener("pointermove", (ev) => {
+          if (!cur) return;
+          const p = svgPoint(svg, ev.clientX, ev.clientY).map((v) => +v.toFixed(1));
+          const q = cur[cur.length - 1];
+          if (Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.6) return;
+          cur.push(p);
+          line.setAttribute("points", cur.map((c) => c.join(",")).join(" "));
+        });
+        const end = () => {
+          if (!cur) return;
+          if (cur.length > 1) strokes().push(cur);
+          cur = null;
+          svg.__wbPenPaint();
+          save();
+        };
+        svg.addEventListener("pointerup", end);
+        svg.addEventListener("pointercancel", end);
+      }
+      const penHost = hostOf(svg);
+      penHost.classList.add("is-pen-host");
+      drawbar(penHost, (d) => {
+        if (d === "undo") strokes().pop();
+        if (d === "wipe") strokes().length = 0;
+        svg.__wbPenPaint();
+        save();
+      });
+    });
   }
 
   /* ── marking ───────────────────────────────────────────────────────────*/
@@ -284,13 +526,41 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     items().forEach((node, idx) => {
       const entries = keyOf(node);
       node.querySelectorAll(".wb-want").forEach((n) => n.remove());
-      if (!entries) { unmarked++; return; }
+      if (!entries || !entries.some(MARKED)) { unmarked++; return; }
       const slots = slotsOf(node);
       let s = 0;
       let allRight = true;
       entries.forEach((entry) => {
+        if (entry.kind === "colour") {
+          const svg = colourSvgs(node)[entry.nth || 0];
+          const got = (rec(idx).colours[entry.nth || 0] || []).length;
+          const ok = got === entry.count;
+          const host = svg && hostOf(svg);
+          host?.classList.add("is-colour-host");
+          host?.classList.remove("is-right", "is-wrong");
+          host?.classList.add(ok ? "is-right" : "is-wrong");
+          if (host) host.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "match") {
+          const box = node.querySelector(".wb-match");
+          const good = new Set(entry.pairs.map(([l, r]) => `${l}:${r}`));
+          const pairs = rec(idx).pairs;
+          const n = entry.pairs.length;
+          let hits = 0;
+          pairs.forEach(([l, r]) => { if (good.has(`${l}:${r}`)) hits++; });
+          if (box) { box.__wbJudge = (l, r) => good.has(`${l}:${r}`); box.__wbPaint?.(); }
+          right += hits; total += n;
+          if (hits < n) allRight = false;
+          box?.classList.remove("is-right", "is-wrong");
+          box?.classList.add(hits === n ? "is-right" : "is-wrong");
+          if (box) box.dataset.want = sayWant(entry);
+          return;
+        }
+        if (entry.kind === "pen") return;
         if (entry.kind === "draw") {
-          const svg = node.querySelector(entry.free ? "svg[data-par]" : "svg[data-pts]");
+          const svg = drawSvg(node, entry);
           const fig = svg ? { pts: parsePts(svg.dataset.pts), par: parseSegs(svg.dataset.par) } : { pts: [], par: [] };
           const ok = !!entry.check(rec(idx).lines, fig);
           svg?.closest(".wb-drawhost")?.classList.remove("is-right", "is-wrong");
@@ -478,6 +748,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function enter() {
     live = true;
+    setFull(true);
     sheet.classList.add("wb-live");
     toggle.textContent = "Back to paper";
     toggle.classList.add("is-on");
@@ -489,6 +760,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function leave() {
     live = false;
+    setFull(false);
     sheet.classList.remove("wb-live");
     toggle.textContent = "Make interactive";
     toggle.classList.remove("is-on");

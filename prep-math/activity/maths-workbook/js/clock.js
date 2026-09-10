@@ -105,9 +105,17 @@ export function clockSvg(h, m, { hands = true, fives = false, label = "", mm = 0
      than one a child draws the hands onto, and shrinking the whole thing keeps
      the numbers in proportion to the face. */
   const out = mm || size;
+  /* Where hands can be drawn on a blank face, for the on-screen layer: the
+     centre, then twelve points on an inner ring (the SHORT hour hand) and
+     twelve on an outer ring (the LONG minute hand), 1 to 12 in order. */
+  let spots = "";
+  if (!hands) {
+    const ring = (rr) => Array.from({ length: 12 }, (_, i) => pt((i + 1) * 30, rr, c, c).map((v) => v.toFixed(2)).join(","));
+    spots = ` data-pts="${[`${c},${c}`, ...ring(R * 0.5), ...ring(R * 0.84)].join(" ")}"`;
+  }
   return (
     `<svg viewBox="0 0 ${size} ${size}" width="${out}mm" height="${out}mm" ` +
-    `class="mt-clock" role="img" aria-label="${label || (hands ? `A clock showing ${digital(h, m)}` : "A blank clock face")}">` +
+    `class="mt-clock"${spots} role="img" aria-label="${label || (hands ? `A clock showing ${digital(h, m)}` : "A blank clock face")}">` +
     `${body}</svg>`
   );
 }
