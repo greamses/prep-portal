@@ -379,6 +379,10 @@ body {
   border: var(--border-subtle);
   box-shadow: 0 24px 60px -12px rgba(20, 19, 15, 0.45);
 }
+/* The preview is a flex column; with the modal's height fixed, its children
+   would shrink to fit it — the paper squeezed to one screen and clipped, and
+   nothing left to scroll. They keep their own heights and the modal scrolls. */
+.wb-preview.wb-modal.is-open > * { flex-shrink: 0; }
 @media (max-width: 700px) {
   .wb-preview.wb-modal.is-open { inset: 0; border: 0; }
 }
