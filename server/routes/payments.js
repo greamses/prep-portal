@@ -19,6 +19,7 @@ const express = require("express");
 const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
+const prints = require("../lib/workbook-prints");
 
 // Paystack plan code → our plan metadata (mirrors payment-manager.js PLANS).
 // monthlyEqKobo is the per-month value (used to size the yearly commission as a
@@ -81,6 +82,9 @@ module.exports = function () {
     if (!reference) return { applied: false, premium: false };
 
     const meta = normalizeMeta(tx.metadata);
+    /* A ₦5,000 workbook print is not a subscription. It never grants premium,
+       whichever door it comes in by (see lib/workbook-prints.js). */
+    if (meta.kind === prints.KIND) return { applied: false, premium: false };
     const email = (tx.customer && tx.customer.email) || meta.email || null;
     const uid = await resolveUid(meta.uid, email);
     if (!uid) { console.warn("[payments] no uid for ref", reference); return { applied: false, premium: false }; }
@@ -200,6 +204,9 @@ module.exports = function () {
       if (!tx || tx.status !== "success") {
         return res.status(400).json({ ok: false, error: "Payment not successful." });
       }
+      if (prints.isPrintCharge(tx)) {
+        return res.status(400).json({ ok: false, error: "That payment was for a workbook print, not a plan." });
+      }
       // Bind to the signed-in user — never trust a client-supplied uid.
       tx.metadata = normalizeMeta(tx.metadata);
       tx.metadata.uid = req.user.uid;
@@ -245,7 +252,8 @@ module.exports = function () {
 
       const event = JSON.parse(raw.toString("utf8"));
       if (event.event === "charge.success" && event.data) {
-        await applyCharge(event.data);
+        if (prints.isPrintCharge(event.data)) await prints.applyPrintCharge(event.data);
+        else await applyCharge(event.data);
       }
       // Other events (subscription.create, invoice.*, charge refunds) can be
       // handled in later phases. Always 200 so Paystack stops retrying.

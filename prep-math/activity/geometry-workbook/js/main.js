@@ -76,6 +76,8 @@ fillMenu("gw-help", HELP);
 
 mountBuilder({
   subject: SUBJECT,
+  /* sold per print — see /utils/components/workbook/print-pass.js */
+  print: { workbook: "geometry-workbook", label: "Geometry Workbook" },
   store: "gw-workbook-v1",
   groups: GROUPS,
   glyphs: {

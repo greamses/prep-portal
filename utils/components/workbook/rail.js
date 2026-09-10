@@ -24,12 +24,16 @@
        extra     { ids, read(), write(saved), onInput(e) } — the page's own
                  controls: which element ids to listen to, how to read them
                  into the options, how to put a saved workbook back into them
+     print     { workbook, label } — this workbook is sold per print: the
+                 Print button goes through the ₦5,000 pass (print-pass.js).
+                 Without it the workbook prints free.
      })
    ========================================================================== */
 
 import { renderWorkbook, PAPERS } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
 import { ICON } from "./icons.js";
+import { printPass, guardPrinting } from "./print-pass.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -37,6 +41,10 @@ const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 export function mountBuilder(cfg) {
   const { subject, store, glyphs = {}, groups, title, starter = {}, extra = {} } = cfg;
   const exercises = subject.exercises;
+  /* A workbook sold per print gets the pass; any other prints free, so its
+     pages are always cleared for the printer. */
+  let pass = null;
+  if (!cfg.print) document.documentElement.classList.add("wb-print-ok");
 
   /* ── the list of exercises, grouped, straight off the registry ──────────*/
 
@@ -91,6 +99,7 @@ export function mountBuilder(cfg) {
       nameLine: $("wb-nameline").checked,
       answers: $("wb-answers").checked,
       seed: seedFrom($("wb-seedcode").value),
+      code: $("wb-seedcode").value.trim().toUpperCase(),
       chosen,
       ...(extra.read ? extra.read() : {}),
     };
@@ -98,7 +107,7 @@ export function mountBuilder(cfg) {
 
   function save(o) {
     try {
-      const { chosen, seed, ...rest } = o;
+      const { chosen, seed, code, ...rest } = o;
       localStorage.setItem(
         store,
         JSON.stringify({
@@ -158,6 +167,7 @@ export function mountBuilder(cfg) {
     const pages = renderWorkbook(sheet(), o, subject);
     $("wb-pages").textContent = pages === 1 ? "1 page" : `${pages} pages`;
     $("wb-print").disabled = false;
+    if (pass) pass.update(o, { pages, sections: o.chosen.length, code: $("wb-seedcode").value });
     pageRule(o.paper);
     fit();
   }
@@ -214,6 +224,18 @@ export function mountBuilder(cfg) {
     $("wb-answers").checked = saved?.answers !== false;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);
 
+    /* The button's words change with the pass ("Print · ₦5,000"), its icon
+       does not, so the words get their own span. */
+    const printBtn = $("wb-print");
+    if (!printBtn.querySelector(".wb-print__label")) {
+      [...printBtn.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
+      printBtn.insertAdjacentHTML("afterbegin", `<span class="wb-print__label">Print</span> `);
+    }
+    if (cfg.print) {
+      pass = printPass(cfg.print);
+      guardPrinting(pass);
+    }
+
     document.querySelectorAll("[data-icon]").forEach((el) => {
       el.innerHTML = (cfg.icons || ICON)[el.dataset.icon] || "";
     });
@@ -236,7 +258,7 @@ export function mountBuilder(cfg) {
       render();
     });
 
-    $("wb-print").addEventListener("click", () => window.print());
+    $("wb-print").addEventListener("click", () => (pass ? pass.print() : window.print()));
 
     /* The printer gets the pages at full size; the preview's transform would
        otherwise be baked into the print in some browsers. Undo it for the

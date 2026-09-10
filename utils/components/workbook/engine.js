@@ -41,6 +41,11 @@
    ========================================================================== */
 
 import { stream, seedFrom, seedCode } from "./seed.js";
+
+/* The code printed on the paper is the one that was TYPED: the seed is a hash
+   of it, and printing seedCode(seed) instead gave a different five letters
+   that, typed back in, built a different workbook. */
+const codeOf = (o) => (o.code ? String(o.code).toUpperCase() : seedCode(o.seed));
 import { ICON } from "./icons.js";
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -219,7 +224,7 @@ function answerBlocks(sections, o) {
       "div",
       "wb-sec wb-sec--key",
       `<h2 class="wb-sec__title"><span class="wb-sec__letter wb-sec__letter--key">${ICON.check}</span>Answers</h2>
-       <p class="wb-sec__say">Workbook ${seedCode(o.seed)} — every copy printed with this code has these answers.</p>`
+       <p class="wb-sec__say">Workbook ${codeOf(o)} — every copy printed with this code has these answers.</p>`
     ),
   });
 
@@ -329,7 +334,7 @@ export function paginate(sheet, blocks, o) {
   const pages = [...sheet.querySelectorAll(".wb-page")];
   pages.forEach((p, i) => {
     p.querySelector(".wb-page__no").textContent = `${i + 1} / ${pages.length}`;
-    p.querySelector(".wb-page__mark").textContent = `${o.title} · ${seedCode(o.seed)}`;
+    p.querySelector(".wb-page__mark").textContent = `${o.title} · ${codeOf(o)}`;
   });
   return pages.length;
 }

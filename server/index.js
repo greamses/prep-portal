@@ -80,6 +80,7 @@ app.use("/api/usage", require("./routes/usage")());
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use("/api/payments", payments.router);
+app.use("/api/workbooks", require("./routes/workbooks")());
 app.use("/api/partner", quota.guard, require("./routes/partner")());
 app.use("/api/auth",  require("./routes/auth")());
 app.use("/api/ai",    require("./routes/ai")());

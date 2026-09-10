@@ -279,6 +279,75 @@ body {
 }
 .wb-toolbar__count svg { width: 15px; height: 15px; }
 .wb-toolbar__spacer { flex: 1 1 auto; }
+
+/* ── the print pass (print-pass.js) ────────────────────────────────────── */
+
+.wb-pass {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  padding: 0.2rem 0.6rem;
+  border: 1px dashed var(--border-color, rgba(0, 0, 0, 0.18));
+  border-radius: 999px;
+}
+.wb-pass.is-paid {
+  color: var(--accent-success, #3f8f4f);
+  border-style: solid;
+  border-color: currentColor;
+}
+
+.wb-pay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(20, 18, 15, 0.45);
+}
+.wb-pay__card { width: min(26rem, 100%); }
+.wb-pay__eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #8f887c);
+}
+.wb-pay__title { margin: 0 0 0.9rem; font-family: var(--font-display); font-size: 1.25rem; }
+.wb-pay__lines { margin: 0 0 0.9rem; font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.8rem; }
+.wb-pay__lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted var(--border-color, rgba(0, 0, 0, 0.2));
+}
+.wb-pay__lines dt { color: var(--text-secondary); }
+.wb-pay__lines dd { margin: 0; text-align: right; font-weight: 600; }
+.wb-pay__total { border-bottom: 0 !important; padding-top: 0.55rem !important; font-size: 1rem; }
+.wb-pay__small {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-weight: 400;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.wb-pay__msg { min-height: 1.1em; margin: 0 0 0.6rem; font-size: 0.75rem; color: var(--accent-danger, #c0453f); }
+.wb-pay__actions { display: flex; justify-content: flex-end; gap: 0.7rem; align-items: center; flex-wrap: wrap; }
+
+/* THE PREVIEW MARK. An unpaid workbook's pages carry PREVIEW across them, over
+   the writing, so a screenshot of the preview is not a clean worksheet. Faint
+   enough to read the questions through. */
+.wb-preview-mark .wb-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='230'><text x='170' y='128' text-anchor='middle' transform='rotate(-28 170 115)' font-family='Arial,sans-serif' font-size='44' font-weight='700' letter-spacing='6' fill='%23c0453f' fill-opacity='0.16'>PREVIEW</text></svg>");
+  background-size: 88mm 60mm;
+  background-repeat: repeat;
+}
 /* sticky-ui.css already pins the icon; all this needs is the tape's headroom. */
 .wb-toolbar .pp-btn { margin-top: 0.15rem; }
 
@@ -340,6 +409,9 @@ body {
    the byline and the page number. Three parts, so none of them ever has to be
    read past another. */
 .wb-page__mark { flex: 1 1 auto; text-align: center; }
+/* A paid print carries its buyer and order code after the title and seed
+   code (print-pass.js sets the variable; unpaid it is empty). */
+.wb-page__mark::after { content: var(--wb-licence, ""); white-space: pre-wrap; }
 .wb-page__by { white-space: nowrap; }
 .wb-page__no { white-space: nowrap; }
 
@@ -779,5 +851,20 @@ body {
     page-break-after: always;
   }
   .wb-page:last-child { break-after: auto; page-break-after: auto; }
+
+  /* NO PASS, NO PAGES. Whatever started the print — the button, Ctrl+P, the
+     browser's own menu, Save as PDF — an unpaid workbook comes out as a single
+     page that says where the real one is. The class is set only from the
+     server's answer (print-pass.js). */
+  html:not(.wb-print-ok) body > * { display: none !important; }
+  html:not(.wb-print-ok) .wb-sheet { display: none !important; }
+  html:not(.wb-print-ok) body::before {
+    content: "This workbook has not been paid for, so it does not print.\A\A Printing a workbook is ₦5,000 — buy the print pass on the workbook page at prepportal.com.ng. Every paid copy carries the buyer’s name.";
+    display: block;
+    white-space: pre-wrap;
+    padding: 60mm 25mm;
+    font: 600 15pt/1.5 Arial, sans-serif;
+    color: #2a2723;
+  }
 }
 

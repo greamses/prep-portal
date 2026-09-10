@@ -131,6 +131,8 @@ fillMenu("mw-help", HELP);
 
 mountBuilder({
   subject: SUBJECT,
+  /* sold per print — see /utils/components/workbook/print-pass.js */
+  print: { workbook: "maths-workbook", label: "Maths Workbook" },
   store: "mw-workbook-v1",
   groups: GROUPS,
   glyphs: {

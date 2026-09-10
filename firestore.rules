@@ -90,11 +90,21 @@ service cloud.firestore {
       return col.matches('.*-posts') || col == 'blogs';
     }
 
+    // Money and payout records: written and read ONLY by the server (Admin
+    // SDK). They hold emails and amounts, so the generic signed-in read below
+    // must not reach them — rules are OR'd, so they are excluded here rather
+    // than denied in a match of their own.
+    function isServerOnly(col) {
+      return col in ['paymentEvents', 'workbookPrints', 'workbookOrders',
+                     'partners', 'referralCodes', 'earnings', 'payouts'];
+    }
+
     match /{postCollection}/{postId} {
       // Blog posts are PUBLIC: anyone (signed in or not) can read them.
       // Any other top-level collection caught by this generic rule keeps the
-      // previous behaviour (signed-in read only).
-      allow read: if isPostCollection(postCollection) || isLoggedIn();
+      // previous behaviour (signed-in read only) — except the server-only ones.
+      allow read: if isPostCollection(postCollection) ||
+                     (isLoggedIn() && !isServerOnly(postCollection));
 
       // View counts may be bumped by anyone (so anonymous reads still count);
       // likes require a signed-in user.
