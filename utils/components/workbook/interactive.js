@@ -19,6 +19,7 @@
    ========================================================================== */
 
 import { judge, placesOf, sayWant } from "./want.js";
+import { instruments, TOOL_ICONS } from "./instruments.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -38,7 +39,8 @@ const SVGNS = "http://www.w3.org/2000/svg";
 
 /**
  *   mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places })
- *     protractor   the instrument's SVG (mm-sized), or none
+ *     protractor   the workbook's protractor SVG (mm-sized), or none — it
+ *                  joins the ruler and set square in the toolbox
  *     places       this workbook's own answer boxes, as a selector, added to
  *                  the shared ones (".rw-answer, .rw-fill" …)
  *     onCheck      called with { right, total } after every "Check my answers"
@@ -52,7 +54,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
   let checked = false;
   let showing = false;
-  let tool = null;
 
   /* ── the controls ──────────────────────────────────────────────────────*/
 
@@ -68,7 +69,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   bar.hidden = true;
   bar.innerHTML = `
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
-    ${protractor ? `<button type="button" class="pp-btn wb-tint-3" data-act="protractor">Protractor</button>` : ""}
+    <button type="button" class="pp-btn wb-tint-3 wb-toolbox-btn" data-act="toolbox" aria-expanded="false">${TOOL_ICONS.box} Toolbox</button>
+    <span class="wb-toolbox" hidden>${instruments({ protractor }).map((s) =>
+      `<button type="button" class="pp-btn wb-tint-5" data-tool="${s.id}" aria-pressed="false">${TOOL_ICONS[s.id] || ""} ${s.label}</button>`).join("")}</span>
     <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
     <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
     <span class="wb-livebar__score" role="status"></span>
@@ -83,7 +86,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (act === "check") check();
     if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
     if (act === "clear") clearAll();
-    if (act === "protractor") toggleProtractor();
+    if (act === "toolbox") {
+      const tray = bar.querySelector(".wb-toolbox");
+      tray.hidden = !tray.hidden;
+      e.target.closest("[data-act]").setAttribute("aria-expanded", String(!tray.hidden));
+      e.target.closest("[data-act]").classList.toggle("is-on", !tray.hidden);
+    }
+    const tool = e.target.closest("[data-tool]")?.dataset.tool;
+    if (tool) toggleTool(tool);
   });
 
   /* ── the questions on the paper ────────────────────────────────────────*/
@@ -937,113 +947,172 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     items().forEach((node, i) => { deaden(node); enliven(node, i); });
   }
 
-  /* ── the protractor ────────────────────────────────────────────────────
-     It lives in the scaler, so it is drawn at the same scale as the paper and
-     measures what the paper measures. Drag it by its body; turn it by the
-     knob at its end (or with the arrow keys once it has been touched); let
-     go near a corner and its centre dot jumps onto the corner. */
+  /* ── the toolbox: a ruler, a protractor, a set square ────────────────────
+     Each lives in the scaler, so it is drawn at the paper's own scale and
+     measures what the paper measures. Drag one by its body; turn it by the
+     knob (or the arrow keys once it has been touched). Let go with its pivot
+     — the ruler's 0, the protractor's centre, the set square's square corner
+     — near a corner of a figure and the pivot goes onto the corner; and while
+     it sits on a corner, an edge turned to within a few degrees of a side
+     from that corner lies along it. So a ruler dropped on A and turned
+     towards B reads the length of AB, and a protractor's baseline lies down
+     along an arm. See instruments.js for what each one is. */
+
+  const TOOLS = instruments({ protractor });
+  const out = {};                     // id -> { el, st, spec }
+  const TURN_SNAP = 4;                // degrees
 
   function zoom() {
     const r = scaler.getBoundingClientRect();
     return r.width / (scaler.offsetWidth || 1) || 1;
   }
 
+  /* Every corner of every figure (not the dot grids: every dot is a point
+     there, and a tool that jumps to the nearest dot cannot be put down),
+     with the other corners of the same figure, in the scaler's pixels. */
   function corners() {
     const sr = scaler.getBoundingClientRect();
     const z = zoom();
-    const out = [];
-    /* not the dot grids: every dot is a point there, and a protractor that jumps
-       to the nearest dot is one that cannot be put down */
+    const all = [];
     sheet.querySelectorAll("svg[data-pts]:not([data-grid])").forEach((svg) => {
       const m = svg.getScreenCTM();
       if (!m) return;
-      parsePts(svg.dataset.pts).forEach(([x, y]) => {
+      const here = parsePts(svg.dataset.pts).map(([x, y]) => {
         const p = new DOMPoint(x, y).matrixTransform(m);
-        out.push([(p.x - sr.left) / z, (p.y - sr.top) / z]);
+        return [(p.x - sr.left) / z, (p.y - sr.top) / z];
       });
+      here.forEach((p) => all.push({ p, others: here.filter((q) => q !== p) }));
     });
-    return out;
+    return all;
   }
 
-  function toggleProtractor() {
-    const btn = bar.querySelector('[data-act="protractor"]');
-    if (tool) { tool.remove(); tool = null; btn?.classList.remove("is-on"); return; }
-    btn?.classList.add("is-on");
-    tool = document.createElement("div");
-    tool.className = "wb-tool";
-    tool.tabIndex = 0;
-    tool.setAttribute("aria-label", "Protractor. Drag to move, drag the knob to turn, arrow keys turn it by a degree.");
-    tool.innerHTML = protractor + `<span class="wb-tool__knob" title="Turn"></span><span class="wb-tool__deg"></span>`;
-    scaler.appendChild(tool);
+  const angleDiff = (a, b) => ((((a - b) % 360) + 540) % 360) - 180;
 
-    /* the instrument's own geometry, read off its SVG: centre dot and size */
-    const svg = tool.querySelector("svg");
-    const vb = svg.viewBox.baseVal;
-    const dot = svg.querySelector("circle[r='1']");
-    const cx = (dot ? +dot.getAttribute("cx") : vb.width / 2) * MM;
-    const cy = (dot ? +dot.getAttribute("cy") : vb.height - 6) * MM;
-    tool.style.transformOrigin = `${cx}px ${cy}px`;
+  /* Turn a tool sitting on corner `c` so that an edge within TURN_SNAP of a
+     side from that corner lies along it. */
+  function lineUp(t, c) {
+    if (!c) return;
+    let best = null;
+    c.others.forEach((q) => {
+      const dir = (Math.atan2(q[1] - c.p[1], q[0] - c.p[0]) * 180) / Math.PI;
+      t.spec.edges.forEach((e) => {
+        [0, ...(e.both ? [180] : [])].forEach((flip) => {
+          const d = angleDiff(dir, t.st.rot + e.deg + flip);
+          if (Math.abs(d) < TURN_SNAP && (best === null || Math.abs(d) < Math.abs(best))) best = d;
+        });
+      });
+    });
+    if (best !== null) t.st.rot += best;
+  }
 
-    /* start where the reader is looking: the top of the visible paper */
+  function openTool(spec, k) {
+    const el = document.createElement("div");
+    el.className = `wb-tool wb-tool--${spec.id}`;
+    el.tabIndex = 0;
+    el.setAttribute("aria-label", `${spec.label}. Drag to move, drag the round knob to turn; the arrow keys turn it by a degree.`);
+    el.innerHTML = spec.svg +
+      `<span class="wb-tool__knob" title="Turn"></span>` +
+      (spec.readout ? `<span class="wb-tool__deg"></span>` : "");
+    scaler.appendChild(el);
+    const px = spec.pivot.map((v) => v * MM);
+    /* the direction the knob lies in from the pivot, on the tool itself */
+    const knobAt = (Math.atan2(spec.knob[1] - spec.pivot[1], spec.knob[0] - spec.pivot[0]) * 180) / Math.PI;
+    const knob = el.querySelector(".wb-tool__knob");
+    knob.style.left = `${spec.knob[0] * MM}px`;
+    knob.style.top = `${spec.knob[1] * MM}px`;
+    el.style.transformOrigin = `${px[0]}px ${px[1]}px`;
+
+    /* Out where the reader is looking — under the pinned tools at the top of
+       what is on screen — each one a little lower than the last. */
     const vr = viewport.getBoundingClientRect();
     const sr = scaler.getBoundingClientRect();
     const z = zoom();
+    const head = document.querySelector(".wb-modal.is-open .wb-modal__head, .wb-livebar");
+    const top = Math.max(vr.top, head ? head.getBoundingClientRect().bottom : 90);
     const st = {
-      x: (vr.left - sr.left) / z + scaler.offsetWidth / 2,
-      y: (Math.max(vr.top, 90) - sr.top) / z + 200,
+      x: (Math.max(vr.left, 0) - sr.left) / z + scaler.offsetWidth * 0.18 + px[0],
+      y: (top - sr.top) / z + 40 + k * 70 + px[1],
       rot: 0,
+      on: null,
     };
+    const t = { el, st, spec };
     const place = () => {
-      tool.style.left = `${st.x - cx}px`;
-      tool.style.top = `${st.y - cy}px`;
-      tool.style.transform = `rotate(${st.rot}deg)`;
-      const d = ((st.rot % 360) + 360) % 360;
-      tool.querySelector(".wb-tool__deg").textContent = `${Math.round(d > 180 ? d - 360 : d)}°`;
+      el.style.left = `${st.x - px[0]}px`;
+      el.style.top = `${st.y - px[1]}px`;
+      el.style.transform = `rotate(${st.rot}deg)`;
+      const deg = el.querySelector(".wb-tool__deg");
+      if (deg) {
+        const d = ((st.rot % 360) + 360) % 360;
+        deg.textContent = `${Math.round(d > 180 ? d - 360 : d)}°`;
+      }
     };
+    t.place = place;
     place();
 
     let mode = null;
-    let start = null;
-    tool.addEventListener("pointerdown", (e) => {
+    let from = null;
+    el.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      tool.setPointerCapture(e.pointerId);
-      tool.focus({ preventScroll: true });
+      el.setPointerCapture(e.pointerId);
+      el.focus({ preventScroll: true });
+      /* the one picked up goes on top */
+      Object.values(out).forEach((o) => o.el.classList.toggle("is-top", o === t));
       mode = e.target.classList.contains("wb-tool__knob") ? "turn" : "move";
-      start = { px: e.clientX, py: e.clientY, x: st.x, y: st.y };
+      from = { px: e.clientX, py: e.clientY, x: st.x, y: st.y };
     });
-    tool.addEventListener("pointermove", (e) => {
+    el.addEventListener("pointermove", (e) => {
       if (!mode) return;
       const z2 = zoom();
       if (mode === "move") {
-        st.x = start.x + (e.clientX - start.px) / z2;
-        st.y = start.y + (e.clientY - start.py) / z2;
+        st.x = from.x + (e.clientX - from.px) / z2;
+        st.y = from.y + (e.clientY - from.py) / z2;
+        st.on = null;
       } else {
         const s2 = scaler.getBoundingClientRect();
-        const ax = s2.left + st.x * z2;
-        const ay = s2.top + st.y * z2;
-        /* the knob sits at the right-hand end of the flat edge: 0° */
-        st.rot = (Math.atan2(e.clientY - ay, e.clientX - ax) * 180) / Math.PI;
+        /* point the knob at the pointer */
+        st.rot = (Math.atan2(e.clientY - (s2.top + st.y * z2), e.clientX - (s2.left + st.x * z2)) * 180) / Math.PI - knobAt;
       }
       place();
     });
-    tool.addEventListener("pointerup", () => {
+    el.addEventListener("pointerup", () => {
       if (mode === "move") {
-        const snapPx = SNAP_MM * MM * 1.4;
-        let best = null;
-        let d = snapPx;
-        corners().forEach(([x, y]) => {
-          const e2 = Math.hypot(x - st.x, y - st.y);
-          if (e2 < d) { d = e2; best = [x, y]; }
+        let d = SNAP_MM * MM * 1.4;
+        st.on = null;
+        corners().forEach((c) => {
+          const e2 = Math.hypot(c.p[0] - st.x, c.p[1] - st.y);
+          if (e2 < d) { d = e2; st.on = c; }
         });
-        if (best) { st.x = best[0]; st.y = best[1]; place(); }
+        if (st.on) { st.x = st.on.p[0]; st.y = st.on.p[1]; }
       }
+      if (mode) lineUp(t, st.on);
+      place();
       mode = null;
     });
-    tool.addEventListener("keydown", (e) => {
+    el.addEventListener("keydown", (e) => {
       const step = e.shiftKey ? 5 : 1;
       if (e.key === "ArrowLeft") { st.rot -= step; place(); e.preventDefault(); }
       if (e.key === "ArrowRight") { st.rot += step; place(); e.preventDefault(); }
     });
+    return t;
+  }
+
+  function toggleTool(id) {
+    const btn = bar.querySelector(`[data-tool="${id}"]`);
+    if (out[id]) {
+      out[id].el.remove();
+      delete out[id];
+      btn?.classList.remove("is-on");
+      btn?.setAttribute("aria-pressed", "false");
+      return;
+    }
+    const k = TOOLS.findIndex((s) => s.id === id);
+    out[id] = openTool(TOOLS[k], k);
+    btn?.classList.add("is-on");
+    btn?.setAttribute("aria-pressed", "true");
+  }
+
+  function putToolsAway() {
+    Object.keys(out).forEach(toggleTool);
   }
 
   /* ── in and out ────────────────────────────────────────────────────────*/
@@ -1075,7 +1144,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     toggle.textContent = "Make interactive";
     toggle.classList.remove("is-on");
     bar.hidden = true;
-    if (tool) toggleProtractor();
+    putToolsAway();
     items().forEach(deaden);
     checked = false;
     showing = false;
