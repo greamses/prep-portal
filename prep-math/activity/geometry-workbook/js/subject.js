@@ -14,6 +14,7 @@ export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", s
 const CHAPTERS = {
   1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles",
   3: "Chapter 3: Pyramids and prisms", 4: "Chapter 4: Pythagoras' rule",
+  5: "Chapter 5: 2D transformations",
 };
 
 export const SUBJECT = {
@@ -37,6 +38,9 @@ export const SUBJECT = {
       parts.push(`shapes up to ${L.maxSides} sides`);
     }
     if (found.has(4)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
+    if (found.has(5)) {
+      parts.push({ gentle: "mirrors along the grid, half and quarter turns, scale factors 2 and 3", middle: "diagonal mirrors, turns about any point", stretch: "y = −x, hidden centres, fractional scale factors" }[L.id]);
+    }
     parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
     return parts.join(" · ");
   },

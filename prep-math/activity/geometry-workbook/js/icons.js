@@ -92,6 +92,18 @@ export const ICON = {
   pyDiff: line(`<path d="M4 4h16v16H4z"/><path d="M4 12h8v8" stroke-dasharray="1.6 1.3"/><path d="M14.5 8h3"/>`),
   /* Short, short, long: the rule as three bars and an equals sign. */
   pyFormula: line(`<path d="M3.5 7h5M3.5 12h7M13 9.5h2.5M13 11.5h2.5M18 6v8"/><path d="M3.5 17h17"/>`),
+  /* ── chapter 5 ── */
+  /* A shape and a blue copy of it: object and image. */
+  tfIntro: line(`<path d="M3 17l4-8 4 8z"/><path d="M13 17l4-8 4 8z" stroke-dasharray="1.6 1.2"/>`),
+  /* A triangle, a dashed mirror, its reflection. */
+  tfReflect: line(`<path d="M12 3v18" stroke-dasharray="1.8 1.4"/><path d="M9.5 7 4 16h5.5zM14.5 7 20 16h-5.5z"/>`),
+  /* A curved arrow round a centre. */
+  tfRotate: line(`<circle cx="12" cy="12" r=".9"/><path d="M19 12a7 7 0 1 1-2.05-4.95"/><path d="M17.5 3.5v3.8h-3.8"/>`),
+  /* A small square and a big one from the same corner. */
+  tfScale: line(`<path d="M4 20V14h6v6zM4 20V6h14v14z"/><path d="M4 20 18 6" stroke-dasharray="1.4 1.2"/>`),
+  /* Lines of writing beside a shape: say it in full. */
+  tfDescribe: line(`<path d="M3 17l4-8 4 8z"/><path d="M14 8h7M14 12h7M14 16h5"/>`),
+
   /* Three, four and five dots in a row: a triple. */
   triples: line(`<circle cx="5" cy="6" r=".8"/><circle cx="8" cy="6" r=".8"/><circle cx="11" cy="6" r=".8"/>` +
     `<circle cx="5" cy="12" r=".8"/><circle cx="8" cy="12" r=".8"/><circle cx="11" cy="12" r=".8"/><circle cx="14" cy="12" r=".8"/>` +

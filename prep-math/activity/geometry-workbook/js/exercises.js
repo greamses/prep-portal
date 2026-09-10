@@ -10,6 +10,7 @@
      ex-transversals.js  chapter 2, all of it
      ex-solids.js        chapter 3, all of it (drawn by solid.js)
      ex-pythagoras.js    chapter 4, all of it (drawn by pythag.js)
+     ex-transform.js     chapter 5, all of it (drawn by transform.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -39,6 +40,10 @@
      squares from the sides · sum of sides · difference of sides · the
      Pythagorean formula · Pythagorean triples
 
+   Chapter 5 — 2D transformations
+     what a transformation is · reflection · rotation · scaling
+     (enlargement) · describe the transformation
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -56,6 +61,7 @@ import { WORD_GROUPS, WORD_EXERCISES } from "./ex-words.js";
 import { TRANS_GROUPS, TRANS_EXERCISES } from "./ex-transversals.js";
 import { SOLID_GROUPS, SOLID_EXERCISES } from "./ex-solids.js";
 import { PY_GROUPS, PY_EXERCISES } from "./ex-pythagoras.js";
+import { TF_GROUPS, TF_EXERCISES } from "./ex-transform.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -69,6 +75,7 @@ export const GROUPS = [
   ...TRANS_GROUPS,
   ...SOLID_GROUPS,
   ...PY_GROUPS,
+  ...TF_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -82,13 +89,15 @@ export const EXERCISES = [
   ...TRANS_EXERCISES,
   ...SOLID_EXERCISES,
   ...PY_EXERCISES,
+  ...TF_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 4. */
+/** Which chapter an exercise belongs to: 1 to 5. */
 const CHAPTER = new Map([
   ...TRANS_GROUPS.map((g) => [g.id, 2]),
   ...SOLID_GROUPS.map((g) => [g.id, 3]),
   ...PY_GROUPS.map((g) => [g.id, 4]),
+  ...TF_GROUPS.map((g) => [g.id, 5]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
