@@ -231,6 +231,7 @@ export function mountBuilder(cfg) {
         `<p class="wb-empty">Nothing chosen yet — tick an exercise and the paper appears.</p>`;
       $("wb-pages").textContent = "no pages";
       $("wb-print").disabled = true;
+      modal?.count("Nothing ticked yet", false);
       fit();
       return;
     }
@@ -238,6 +239,7 @@ export function mountBuilder(cfg) {
     const pages = renderWorkbook(sheet(), o, subject);
     $("wb-pages").textContent = pages === 1 ? "1 page" : `${pages} pages`;
     $("wb-print").disabled = false;
+    modal?.count($("wb-pages").textContent, true);
     if (pass) pass.update(o, { pages, sections: o.chosen.length, code: $("wb-seedcode").value });
     if (live) workbookKey(store, o).then((k) => live.afterRender(k));
     pageRule(o.paper);
@@ -278,6 +280,84 @@ export function mountBuilder(cfg) {
     tag.textContent = `@page { size: ${paper.w}mm ${paper.h}mm; margin: 0; }`;
   }
 
+  /* ── the booklet opens in a modal ───────────────────────────────────────
+     The setup is the page; the booklet is built behind it as the setup
+     changes, and opens over it — the paper, its toolbar, and interactive
+     mode — from the bar at the foot of the setup. Closed, the booklet is
+     still laid out (off screen, invisible, inert), because pagination
+     measures the pages: a booklet hidden with display:none would measure
+     nothing. The print styles put the paper back in any case. */
+  let modal = null;
+  function mountModal() {
+    const preview = document.querySelector(".wb-work > .wb-preview");
+    const toolbar = preview?.querySelector(".wb-toolbar");
+    if (!preview || !toolbar || !document.querySelector(".wb-rail")) return null;
+
+    /* the toolbar and (once it is mounted) the interactive tools stay in
+       reach at the top of the booklet as it scrolls */
+    const head = document.createElement("div");
+    head.className = "wb-modal__head";
+    toolbar.before(head);
+    head.appendChild(toolbar);
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "pp-btn wb-tint-4 wb-modal__close";
+    close.textContent = "Close";
+    toolbar.appendChild(close);
+
+    preview.classList.add("wb-modal");
+    preview.setAttribute("role", "dialog");
+    preview.setAttribute("aria-modal", "true");
+    preview.setAttribute("aria-label", "The workbook");
+    preview.inert = true;
+    const backdrop = document.createElement("div");
+    backdrop.className = "wb-modal__backdrop";
+    backdrop.hidden = true;
+    document.body.appendChild(backdrop);
+
+    /* Floats at the foot of the window, so it is in reach from anywhere in
+       the setup. On the body, not in the setup card: the card's paper clips,
+       and a sticky bar inside it never sticks. */
+    const bar = document.createElement("div");
+    bar.className = "wb-openbar";
+    bar.innerHTML =
+      `<span class="wb-openbar__count"><span data-icon="page"></span><span class="wb-openbar__pages"></span></span>` +
+      `<button type="button" class="pp-btn wb-tint-2 wb-openbar__go">Open the workbook</button>`;
+    document.body.appendChild(bar);
+    document.documentElement.classList.add("wb-has-openbar");
+    const go = bar.querySelector(".wb-openbar__go");
+
+    const open = () => {
+      preview.inert = false;
+      preview.classList.add("is-open");
+      backdrop.hidden = false;
+      document.documentElement.classList.add("wb-modal-on");
+      requestAnimationFrame(() => { fit(); close.focus({ preventScroll: true }); });
+    };
+    const shut = () => {
+      preview.classList.remove("is-open");
+      preview.inert = true;
+      backdrop.hidden = true;
+      document.documentElement.classList.remove("wb-modal-on");
+      go.focus({ preventScroll: true });
+    };
+    go.addEventListener("click", open);
+    close.addEventListener("click", shut);
+    backdrop.addEventListener("click", shut);
+    document.addEventListener("keydown", (e) => {
+      /* the payment and assign dialogs close themselves first */
+      if (e.key !== "Escape" || !preview.classList.contains("is-open") || document.querySelector(".wb-pay")) return;
+      shut();
+    });
+    return {
+      open, shut,
+      count(text, ready) {
+        bar.querySelector(".wb-openbar__pages").textContent = text;
+        go.disabled = !ready;
+      },
+    };
+  }
+
   /* Typing in the title box should not rebuild six pages per keystroke. */
   let pending = 0;
   const schedule = () => {
@@ -305,6 +385,9 @@ export function mountBuilder(cfg) {
       [...printBtn.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
       printBtn.insertAdjacentHTML("afterbegin", `<span class="wb-print__label">Print</span> `);
     }
+    /* before the print pass, the assign button and the interactive tools are
+       mounted, so they are made inside the modal's head */
+    modal = mountModal();
     if (cfg.print) {
       pass = printPass(cfg.print);
       guardPrinting(pass);

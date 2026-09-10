@@ -149,7 +149,7 @@ const triTear = {
     );
   },
   key() {
-    return [want.text("straight", "a straight line", "straight line"), want.num(180)];
+    return [want.stick(), want.text("straight", "a straight line", "straight line"), want.num(180)];
   },
   answer() {
     return ["a straight line — 180°, whatever the triangle"];

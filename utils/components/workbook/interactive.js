@@ -68,7 +68,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   bar.hidden = true;
   bar.innerHTML = `
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
-    <button type="button" class="pp-btn wb-tint-5" data-act="full">Full screen</button>
     ${protractor ? `<button type="button" class="pp-btn wb-tint-3" data-act="protractor">Protractor</button>` : ""}
     <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
     <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
@@ -85,40 +84,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
     if (act === "clear") clearAll();
     if (act === "protractor") toggleProtractor();
-    if (act === "full") setFull(!full);
-  });
-
-  /* ── full screen ───────────────────────────────────────────────────────
-     Interactive mode is a workspace: the paper and its tools fill the
-     window, the builder rail and the site around it are out of the way. The
-     window is filled by the page itself (so it works on a phone, where the
-     browser will not make an element full screen) and, where the browser
-     allows it, the browser's own full screen hides its bars as well. Esc, or
-     the button, puts the window back; "Back to paper" does both. */
-  let full = false;
-  const preview = toolbar.closest(".wb-preview") || sheet.closest(".wb-preview");
-  const fullBtn = bar.querySelector('[data-act="full"]');
-  function setFull(on) {
-    full = on;
-    preview?.classList.toggle("wb-full", on);
-    document.documentElement.classList.toggle("wb-full-on", on);
-    fullBtn.textContent = on ? "Leave full screen" : "Full screen";
-    try {
-      if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
-      if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-    } catch { /* a browser that says no is still a full window */ }
-    requestAnimationFrame(refit);
-  }
-  document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && full) {
-      /* Esc left the browser's full screen: the window stays the workspace,
-         the button says so */
-      fullBtn.textContent = "Full screen";
-      full = false;
-      preview?.classList.remove("wb-full");
-      document.documentElement.classList.remove("wb-full-on");
-    }
-    requestAnimationFrame(refit);
   });
 
   /* ── the questions on the paper ────────────────────────────────────────*/
@@ -135,10 +100,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   const colourSvgs = (node) => [...node.querySelectorAll(".wb-item__body svg")].filter((v) => v.querySelector("[data-part]"));
   const rec = (i) => {
     const r = (store[i] ||= {});
-    r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
+    r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= []; r.stuck ||= [];
     return r;
   };
-  const MARKED = (e) => !["free", "pen"].includes(e.kind);
+  const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
 
   let saving = 0;
   const save = () => {
@@ -195,6 +160,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "colour") makeColourable(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
+      if (e.kind === "stick") makeStickable(node, idx);
     });
   }
 
@@ -203,7 +169,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-colourable]").forEach((v) => v.removeAttribute("data-colourable"));
     node.querySelectorAll("[data-pen]").forEach((v) => v.removeAttribute("data-pen"));
     node.querySelectorAll(".wb-match li").forEach((li) => { li.onclick = null; li.classList.remove("is-picked"); });
-    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines").forEach((n) => n.remove());
+    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
+    node.querySelectorAll("svg[data-stickable]").forEach((s) => s.removeAttribute("data-stickable"));
+    node.querySelectorAll("svg[data-paste]").forEach((s) => s.classList.remove("has-stuck"));
+    node.querySelectorAll("[data-corner]").forEach((p) => {
+      p.classList.remove("is-torn"); p.removeAttribute("tabindex"); p.removeAttribute("role"); p.removeAttribute("transform");
+    });
     node.querySelectorAll(".is-live, .is-right, .is-wrong, .is-on, .is-want").forEach((n) =>
       n.classList.remove("is-live", "is-right", "is-wrong", "is-on", "is-want"));
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
@@ -456,6 +427,144 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     paint();
   }
 
+  /* ── tearing corners off and sticking them down ──────────────────────────
+     Tap a coloured corner of the figure — or drag it onto the line — and it
+     comes away, leaving a pale gap, and is stuck with its point on the dot,
+     against the corners already there: the first along the line to the left
+     of the dot, each next one round the top. The three corners of a triangle
+     finish exactly on the line on the other side, which is the whole lesson.
+     Tap a stuck corner to take it off again. The figure says each corner's
+     angle and colour (svg[data-tear]); the line says where its dot is
+     (svg[data-paste]). */
+  function makeStickable(node, idx) {
+    const tear = node.querySelector("svg[data-tear]");
+    const paste = node.querySelector("svg[data-paste]");
+    if (!tear || !paste) return;
+    tear.dataset.stickable = "1";
+    const angles = tear.dataset.tear.split(",").map(Number);
+    const cols = (tear.dataset.tearCols || "").split(",");
+    const [ox, oy] = paste.dataset.paste.split(",").map(Number);
+    const R = Math.min(12, oy - 1);
+    const pieces = [...tear.querySelectorAll("[data-corner]")];
+    const stuck = () => rec(idx).stuck;
+    const rad = (d) => (d * Math.PI) / 180;
+    const at = (deg, r = R) => [ox + r * Math.cos(rad(180 + deg)), oy + r * Math.sin(rad(180 + deg))];
+    const f = (n) => n.toFixed(2);
+
+    const paint = () => {
+      const on = stuck();
+      pieces.forEach((p) => {
+        const i = Number(p.dataset.corner);
+        const torn = on.includes(i);
+        p.classList.toggle("is-torn", torn);
+        p.setAttribute("role", "button");
+        p.setAttribute("tabindex", torn ? "-1" : "0");
+        p.setAttribute("aria-label", `Tear off corner ${String.fromCharCode(65 + i)} and stick it on the line`);
+      });
+      paste.querySelector(":scope > .wb-stuck")?.remove();
+      const g = document.createElementNS(SVGNS, "g");
+      g.setAttribute("class", "wb-stuck");
+      let start = 0;
+      on.forEach((i) => {
+        const a = angles[i];
+        const [x0, y0] = at(start);
+        const [x1, y1] = at(start + a);
+        const piece = document.createElementNS(SVGNS, "path");
+        piece.setAttribute("d", `M${f(ox)} ${f(oy)} L${f(x0)} ${f(y0)} A${R} ${R} 0 ${a > 180 ? 1 : 0} 1 ${f(x1)} ${f(y1)} Z`);
+        piece.setAttribute("fill", cols[i] || "#f4c95d");
+        piece.setAttribute("class", "wb-stuck__piece");
+        piece.dataset.stuck = i;
+        g.appendChild(piece);
+        const [tx, ty] = at(start + a / 2, R * 0.6);
+        const t = document.createElementNS(SVGNS, "text");
+        t.setAttribute("x", f(tx)); t.setAttribute("y", f(ty + 1.1));
+        t.setAttribute("class", "wb-stuck__name");
+        t.textContent = String.fromCharCode(65 + i);
+        g.appendChild(t);
+        start += a;
+      });
+      /* the dot on top, so the three points are seen to meet on it */
+      const dot = document.createElementNS(SVGNS, "circle");
+      dot.setAttribute("cx", ox); dot.setAttribute("cy", oy); dot.setAttribute("r", 1.1);
+      dot.setAttribute("class", "wb-stuck__dot");
+      g.appendChild(dot);
+      paste.appendChild(g);
+      paste.classList.toggle("has-stuck", on.length > 0);
+    };
+    const stick = (i) => {
+      if (stuck().includes(i)) return;
+      stuck().push(i);
+      paint(); dirty(node); save();
+    };
+    tear.__wbStickPaint = paint;
+    paint();
+
+    /* Bound once per figure, like the ruled lines. */
+    if (!tear.__wbStickBound) {
+      tear.__wbStickBound = true;
+      let drag = null;
+      /* Which corner is under the pointer, by its shape — the corner's letter
+         and its tear line are drawn over it, right where a finger lands. */
+      const cornerAt = (e) => {
+        const [x, y] = svgPoint(tear, e.clientX, e.clientY);
+        const pt = new DOMPoint(x, y);
+        return pieces.find((p) => !p.classList.contains("is-torn") && p.isPointInFill?.(pt))
+          || e.target.closest?.("[data-corner]");
+      };
+      tear.addEventListener("pointerdown", (e) => {
+        const p = cornerAt(e);
+        if (!tear.dataset.stickable || !p || p.classList.contains("is-torn")) return;
+        e.preventDefault();
+        tear.setPointerCapture(e.pointerId);
+        const m = tear.getScreenCTM();
+        drag = { p, x: e.clientX, y: e.clientY, k: m ? m.a : 1, moved: false };
+        tear.classList.add("is-dragging");
+      });
+      tear.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.x;
+        const dy = e.clientY - drag.y;
+        if (Math.hypot(dx, dy) > 6) drag.moved = true;
+        drag.p.setAttribute("transform", `translate(${f(dx / drag.k)} ${f(dy / drag.k)})`);
+      });
+      const drop = (e, cancelled) => {
+        if (!drag) return;
+        const { p, moved } = drag;
+        drag = null;
+        p.removeAttribute("transform");
+        tear.classList.remove("is-dragging");
+        if (cancelled) return;
+        const r = paste.getBoundingClientRect();
+        const over = e.clientX >= r.left - 12 && e.clientX <= r.right + 12 && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12;
+        /* a tap sticks it; a drag sticks it where it was let go over the line */
+        if (!moved || over) stick(Number(p.dataset.corner));
+      };
+      tear.addEventListener("pointerup", (e) => drop(e, false));
+      tear.addEventListener("pointercancel", (e) => drop(e, true));
+      tear.addEventListener("keydown", (e) => {
+        const p = e.target.closest?.("[data-corner]");
+        if (!tear.dataset.stickable || !p || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        stick(Number(p.dataset.corner));
+      });
+      paste.addEventListener("click", (e) => {
+        const s = e.target.closest("[data-stuck]");
+        if (!tear.dataset.stickable || !s) return;
+        const list = stuck();
+        const at2 = list.indexOf(Number(s.dataset.stuck));
+        if (at2 >= 0) list.splice(at2, 1);
+        tear.__wbStickPaint(); dirty(node); save();
+      });
+    }
+
+    drawbar(hostOf(paste), (d) => {
+      const list = stuck();
+      if (d === "undo") list.pop();
+      if (d === "wipe") list.length = 0;
+      tear.__wbStickPaint(); dirty(node); save();
+    });
+  }
+
   /* ── a pencil ──────────────────────────────────────────────────────────
      For the things a child does to a picture that are not marked — ringing
      groups, drawing counters into trays, drawing blocks. Strokes are kept
@@ -562,7 +671,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           if (box) box.dataset.want = sayWant(entry);
           return;
         }
-        if (entry.kind === "pen") return;
+        if (entry.kind === "pen" || entry.kind === "stick") return;
         if (entry.kind === "draw") {
           const svg = drawSvg(node, entry);
           const fig = svg ? { pts: parsePts(svg.dataset.pts), par: parseSegs(svg.dataset.par) } : { pts: [], par: [] };
@@ -753,7 +862,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function enter() {
     live = true;
-    setFull(true);
     sheet.classList.add("wb-live");
     toggle.textContent = "Back to paper";
     toggle.classList.add("is-on");
@@ -765,7 +873,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function leave() {
     live = false;
-    setFull(false);
     sheet.classList.remove("wb-live");
     toggle.textContent = "Make interactive";
     toggle.classList.remove("is-on");

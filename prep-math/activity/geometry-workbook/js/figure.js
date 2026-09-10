@@ -388,22 +388,27 @@ export function tearTriangle(A, B, C, { tilt = 0 } = {}) {
     const a = add(V, mul(u, r));
     const b = add(V, mul(v, r));
     const cross = u[0] * v[1] - u[1] * v[0];
-    body += `<path d="M${f(V[0])} ${f(V[1])} L${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])} Z" fill="${cols[i]}" fill-opacity="0.75" stroke="none"/>`;
+    /* data-corner: on screen this piece can be torn off and stuck on the
+       paste line (interactive.js, want.stick) */
+    body += `<path data-corner="${i}" d="M${f(V[0])} ${f(V[1])} L${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])} Z" fill="${cols[i]}" fill-opacity="0.75" stroke="none"/>`;
     body += `<path d="M${f(a[0])} ${f(a[1])} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${f(b[0])} ${f(b[1])}" fill="none" stroke="${INK}" stroke-width="0.4" stroke-dasharray="1.2 0.9"/>`;
     const bis = unit(add(u, v));
     const t = add(V, mul(bis, 7));
     body += `<text x="${f(t[0])}" y="${f(t[1] + 1.2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3.6" font-weight="700" fill="${INK}">${String.fromCharCode(65 + i)}</text>`;
   });
-  return `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" aria-label="A triangle to cut out, with its corners marked">${body}</svg>`;
+  /* data-tear: each corner's angle, its colour, and how far the tear runs
+     from the point — what a torn-off corner looks like when it is stuck */
+  return `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" class="gw-fig" role="img" aria-label="A triangle to cut out, with its corners marked" data-tear="${A},${B},${C}" data-tear-cols="${cols.join(",")}">${body}</svg>`;
 }
 
-/** A straight line with a dot in the middle, to stick the three corners on. */
+/** A straight line with a dot in the middle, to stick the three corners on.
+    data-paste is the dot, and the line runs left from it. */
 export function pasteLine() {
   return (
-    `<svg viewBox="0 0 90 16" width="90mm" height="16mm" class="gw-fig" role="img" aria-label="A straight line to stick the corners on">` +
+    `<svg viewBox="0 0 90 16" width="90mm" height="16mm" class="gw-fig" role="img" aria-label="A straight line to stick the corners on" data-paste="45,13">` +
     `<line x1="2" y1="13" x2="88" y2="13" stroke="${INK}" stroke-width="0.7"/>` +
     `<circle cx="45" cy="13" r="1.1" fill="${ARC}"/>` +
-    `<text x="45" y="5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3" fill="#6b655c">stick the three points on this dot</text>` +
+    `<text class="gw-paste-say" x="45" y="5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3" fill="#6b655c">stick the three points on this dot</text>` +
     `</svg>`
   );
 }

@@ -351,26 +351,109 @@ body {
 .wb-livebar .pp-btn { margin-top: 0.15rem; }
 .wb-livebar .pp-btn.is-on { --pp-note-bg: #fff3a8; box-shadow: inset 0 0 0 2px rgba(20, 19, 15, 0.35); }
 
-/* THE WORKSPACE. Interactive mode fills the window with the paper and its
-   tools (interactive.js setFull) — the rail, the hero and the site nav are
-   underneath, out of the way. */
-.wb-preview.wb-full {
+/* ── THE BOOKLET, IN A MODAL (rail.js mountModal) ─────────────────────────
+   Closed, it is laid out off screen — pagination measures the pages, so it
+   must never be display:none. Open, it is a panel over a dimmed page, the
+   toolbar and the interactive tools pinned at its top. */
+.wb-preview.wb-modal:not(.is-open) {
+  position: fixed;
+  left: -200vw;
+  top: 0;
+  width: 940px;
+  visibility: hidden;
+  pointer-events: none;
+}
+.wb-preview.wb-modal.is-open {
+  position: fixed;
+  z-index: 10041;
+  top: 3vh;
+  bottom: 3vh;
+  left: max(1rem, calc((100vw - 980px) / 2));
+  right: max(1rem, calc((100vw - 980px) / 2));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 0 clamp(0.6rem, 2vw, 1.4rem) 2rem;
+  box-sizing: border-box;
+  background: var(--app-bg, #faf6ee);
+  border: var(--border-subtle);
+  box-shadow: 0 24px 60px -12px rgba(20, 19, 15, 0.45);
+}
+@media (max-width: 700px) {
+  .wb-preview.wb-modal.is-open { inset: 0; border: 0; }
+}
+.wb-modal__backdrop {
   position: fixed;
   inset: 0;
   z-index: 10040;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--app-bg, #faf6ee);
-  padding: 0.8rem clamp(0.6rem, 3vw, 2rem) 3rem;
-  box-sizing: border-box;
+  background: rgba(20, 19, 15, 0.45);
 }
-.wb-full .wb-livebar { top: 0; }
-.wb-full .wb-note { display: none; }
-html.wb-full-on { overflow: hidden; }
+.wb-modal__backdrop[hidden] { display: none; }
+.wb-modal__head {
+  position: sticky;
+  top: 0;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 calc(-1 * clamp(0.6rem, 2vw, 1.4rem));
+  padding: 0.7rem clamp(0.6rem, 2vw, 1.4rem) 0.6rem;
+  background: var(--app-bg, #faf6ee);
+}
+.wb-modal__head .wb-livebar { position: static; }
+html.wb-modal-on { overflow: hidden; }
 /* .wb-main is positioned with a z-index, which makes it a stacking context of
-   its own — the workspace's z-index would only count inside it, and the site
-   nav would sit on top. Lifted while the workspace is open. */
-html.wb-full-on .wb-main { z-index: auto; }
+   its own — the modal's z-index would only count inside it, and the site nav
+   would sit on top. Lifted while the booklet is open. */
+html.wb-modal-on .wb-main { z-index: auto; }
+
+/* The bar that opens the booklet: how long it is, and the button. It floats
+   at the foot of the window, so the setup can be scrolled end to end with it
+   in reach; the page leaves room under the setup for it. */
+.wb-openbar {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: calc(100vw - 2rem);
+  box-sizing: border-box;
+  padding: 1rem 1rem 0.7rem 1.2rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  box-shadow: 0 12px 28px -8px rgba(20, 19, 15, 0.35);
+}
+html.wb-has-openbar .wb-main { padding-bottom: 6rem; }
+html.wb-modal-on .wb-openbar { visibility: hidden; }
+@media print { .wb-openbar { display: none !important; } }
+.wb-openbar__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.wb-openbar__count svg { width: 15px; height: 15px; }
+
+/* Corners torn off a figure and stuck round a dot (interactive.js
+   makeStickable). */
+.wb-live svg[data-stickable] { touch-action: none; }
+/* the letters and tear lines over the corners let the pointer through */
+.wb-live svg[data-stickable] > :not([data-corner]) { pointer-events: none; }
+.wb-live svg[data-stickable] [data-corner] { cursor: grab; }
+.wb-live svg[data-stickable] [data-corner]:hover,
+.wb-live svg[data-stickable] [data-corner]:focus-visible { fill-opacity: 1; stroke: #2a2723; stroke-width: 0.6; outline: none; }
+.wb-live svg[data-stickable] [data-corner].is-torn { fill-opacity: 0.14; cursor: default; stroke: none; }
+svg[data-stickable].is-dragging { overflow: visible; position: relative; z-index: 8; cursor: grabbing; }
+svg[data-paste].has-stuck > text { visibility: hidden; }
+.wb-stuck__piece { stroke: #2a2723; stroke-width: 0.45; cursor: pointer; }
+.wb-stuck__name { font-family: "JetBrains Mono", monospace; font-size: 3px; font-weight: 700; fill: #2a2723; text-anchor: middle; pointer-events: none; }
+.wb-stuck__dot { fill: #c0453f; pointer-events: none; }
 /* On a phone the bar is one short row that scrolls sideways, so pinned under
    the nav it still leaves the page to work on. */
 @media (max-width: 700px) {

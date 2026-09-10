@@ -51,6 +51,10 @@ export const want = {
   match: (pairs, says = "") => ({ kind: "match", pairs, says }),
   /** A pencil on the pictures for what is not marked — ringing, sharing. */
   pen: (on = null) => ({ kind: "pen", on }),
+  /** Corners torn off a figure (svg[data-tear]) and stuck round the dot of
+      another (svg[data-paste]). Not marked: it is the experiment, and the
+      places after it say what it showed. Covers no places. */
+  stick: () => ({ kind: "stick" }),
 };
 
 /* ── judging, shared by the page and the Node checks ─────────────────────────*/
@@ -133,7 +137,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {

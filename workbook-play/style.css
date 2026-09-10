@@ -1,6 +1,6 @@
 /* ============================================================================
    The assignment player — only what the builder page does not already have.
-   The paper, the toolbar, the interactive workspace and the sticky notes are
+   The paper, the toolbar, the interactive tools and the sticky notes are
    /utils/components/workbook.css and sticky-ui.css.
    ========================================================================== */
 
@@ -10,7 +10,6 @@
 
 .wp-msg { margin: 0; min-height: 1.2em; font-size: 0.8rem; color: var(--text-secondary); }
 .wp-msg.is-bad { color: var(--accent-danger, #c0453f); }
-.wb-full .wp-msg { margin-top: 0.4rem; }
 
 /* the teacher's scores, on a receipt */
 .wp-results { max-width: 760px; margin: 0 auto 1.6rem; }

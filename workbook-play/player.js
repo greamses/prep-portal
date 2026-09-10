@@ -148,11 +148,7 @@ async function start() {
   live.afterRender(`assign-${code}`);
   live.enter();
   say(a.owner ? "" : "Your answers are kept on this device until you check them.");
-  if (a.owner) {
-    /* the teacher needs the scores, not the full-screen paper, first */
-    document.querySelector('[data-act="full"]')?.click();
-    showResults();
-  }
+  if (a.owner) showResults();
 }
 
 start();
