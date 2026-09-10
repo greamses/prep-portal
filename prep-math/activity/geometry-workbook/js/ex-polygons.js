@@ -472,7 +472,6 @@ const polyRegularBack = {
     "outside angles make 360°. So 360 ÷ the outside angle is the number of corners.",
   cols: 2,
   defaultCount: 4,
-  hardest: true,
   make(r, o, k, i) {
     const n = dealBack(r, regularFor(o).filter((m) => m >= 4), i);
     return { n, each: ((n - 2) * 180) / n };

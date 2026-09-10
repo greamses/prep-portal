@@ -334,7 +334,6 @@ const triAlgebra = {
     "set the total equal to 180, and find x. Then work out each angle.",
   cols: 2,
   defaultCount: 3,
-  hardest: true,
   make(r, o) {
     let guard = 0;
     for (;;) {
@@ -493,7 +492,6 @@ const extRegular = {
     "make one whole turn. So each one is 360° shared between the corners.",
   cols: 2,
   defaultCount: 4,
-  hardest: true,
   make(r, o, k, i) {
     return { n: dealExtRegular(r, regularFor(o), i) };
   },

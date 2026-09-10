@@ -6,7 +6,7 @@
    — builds exactly the same paper from the same options.
    ========================================================================== */
 
-import { EXERCISES, levelOf, helpOf, unavailable, exerciseById, chapterOf } from "./exercises.js";
+import { EXERCISES, levelOf, helpOf, exerciseById, chapterOf } from "./exercises.js";
 import { protractorSvg } from "../../maths-workbook/js/protractor.js";
 
 export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", style: "/prep-math/activity/geometry-workbook/style.css" };
@@ -31,7 +31,6 @@ export const SUBJECT = {
     return `${step} · shapes up to ${L.maxSides} sides · ${help}`;
   },
   exercises: EXERCISES,
-  unavailable,
   /* The protractor is not an example, it is the instrument the questions tell
      you to cut out — so it prints at every level. Everything else that has a
      worked example shows it at Show me only, at the head of its own section. */

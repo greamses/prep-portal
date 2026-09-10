@@ -84,10 +84,4 @@ export function exerciseById(id) {
   return EXERCISES.find((e) => e.id === id) || null;
 }
 
-/** Why an exercise cannot run at this level, said rather than hidden. */
-export function unavailable(ex, o) {
-  if (ex.hardest && o.level === "gentle") return "needs Middle or Stretch";
-  return null;
-}
-
 export const GROUP_IDS = GROUPS.map((g) => g.id);

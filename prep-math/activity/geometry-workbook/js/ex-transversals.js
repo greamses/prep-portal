@@ -694,7 +694,6 @@ function algebraEx({ id, group, label, heading, rels }) {
       "angles that make 180° give one + the other = 180. Solve for x, then find the angles.",
     cols: 2,
     defaultCount: 3,
-    hardest: true,
     make(r, o, k, i) {
       const rel = deal(r, rels, i);
       const equal = REL[rel].equal;
@@ -819,7 +818,6 @@ const voAlgebra = {
     "expressions equal and solve for x. Then work out the angle.",
   cols: 2,
   defaultCount: 3,
-  hardest: true,
   make(r, o) {
     const P = exprPair(r, o, true);
     const k = r.int(1, 4);

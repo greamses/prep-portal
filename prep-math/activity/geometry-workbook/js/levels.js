@@ -25,7 +25,7 @@ export const LEVELS = {
   },
   stretch: {
     id: "stretch",
-    label: "Stretch — any whole degree, up to twelve sides, and a little algebra",
+    label: "Stretch — any whole degree, up to twelve sides",
     step: 1, maxSides: 12, minAngle: 20, maxAngle: 135,
   },
 };

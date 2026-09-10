@@ -647,9 +647,9 @@ const ruleUse = {
     "— where n is the number of sides of the base.",
   cols: 2,
   defaultCount: 4,
-  hardest: true,
   make(r, o) {
-    return { kind: r.pick(["prism", "pyramid"]), n: r.pick([7, 8, 9, 10, 12, 15, 20]) };
+    const ns = levelOf(o).id === "gentle" ? [7, 8, 9, 10] : [7, 8, 9, 10, 12, 15, 20];
+    return { kind: r.pick(["prism", "pyramid"]), n: r.pick(ns) };
   },
   render(item) {
     return ask(`<b>A ${item.kind}</b> whose base has <b>${item.n}</b> sides.`) +
@@ -676,7 +676,6 @@ const ruleEuler = {
     "the number that is missing.",
   cols: 2,
   defaultCount: 4,
-  hardest: true,
   make(r, o) {
     const kind = r.pick(["prism", "pyramid"]);
     const n = r.int(3, 12);
@@ -853,12 +852,13 @@ const saFormula = {
     "of the base, as tall as the prism. So surface area = 2 × base area + perimeter × height.",
   cols: 1,
   defaultCount: 4,
-  hardest: true,
   make(r, o) {
+    /* Gentle keeps every number small enough to multiply in the head. */
+    const g = levelOf(o).id === "gentle";
     const n = r.pick([3, 4, 5, 6, 8]);
-    const side0 = r.int(2, 9);
-    const A = r.int(6, 60);
-    return { n, side: side0, A, h: r.int(3, 15) };
+    const side0 = r.int(2, g ? 5 : 9);
+    const A = r.int(6, g ? 30 : 60);
+    return { n, side: side0, A, h: r.int(g ? 2 : 3, g ? 10 : 15) };
   },
   render(item) {
     const P = item.n * item.side;
@@ -1228,11 +1228,11 @@ const frArea = {
     "parallel sides added) × the slant height.",
   cols: 1,
   defaultCount: 2,
-  hardest: true,
   make(r, o) {
-    const a = r.int(6, 14);
+    const g = levelOf(o).id === "gentle";
+    const a = r.int(g ? 4 : 6, g ? 8 : 14);
     const b = r.int(2, a - 2);
-    let s = r.int(3, 9);
+    let s = r.int(g ? 2 : 3, g ? 6 : 9);
     if (((a + b) * s) % 2) s++;
     return { a, b, s };
   },
@@ -1267,7 +1267,6 @@ const frVolume = {
     "(⅓ × base area × height) and take the small one away.",
   cols: 1,
   defaultCount: 2,
-  hardest: true,
   make(r) {
     /* similar pyramids: the small one's base and height are k/K of the big one's */
     const K = r.pick([2, 3]);
