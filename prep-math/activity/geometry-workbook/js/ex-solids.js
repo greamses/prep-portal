@@ -1054,7 +1054,7 @@ const realWords = {
   },
   render(item) {
     return `<p class="wb-ask wb-ask--lead gw-word">${item.text}</p>` +
-      `<span class="wb-work" style="--wb-lines:3"><span class="wb-work__rule" style="top:33.3%"></span><span class="wb-work__rule" style="top:66.6%"></span></span>` +
+      `<span class="wb-workbox" style="--wb-lines:3"><span class="wb-workbox__rule" style="top:33.3%"></span><span class="wb-workbox__rule" style="top:66.6%"></span></span>` +
       ask(slot("Answer"));
   },
   key(item) {

@@ -40,8 +40,11 @@ function fit() {
   const sheet = $("wb-sheet");
   const width = viewport.clientWidth;
   if (!width) return;
-  const zoom = Math.min(1, width / (sheet.offsetWidth || 1));
+  const natural = sheet.offsetWidth || 1;
+  const zoom = Math.min(1, width / natural);
   scaler.style.transform = `scale(${zoom})`;
+  /* the paper sits in the middle when there is room either side of it */
+  scaler.style.left = `${Math.max(0, (width - natural * zoom) / 2)}px`;
   viewport.style.height = `${sheet.offsetHeight * zoom}px`;
 }
 

@@ -102,32 +102,43 @@ body {
 }
 .wb-sister a:hover { color: var(--ink); }
 
-/* ── the two columns ───────────────────────────────────────────────────── */
+/* ── the bench: the builder on top, the paper under it ─────────────────── */
 
 .wb-work {
   display: grid;
-  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(1rem, 2.4vw, 2rem);
   align-items: start;
 }
-@media (max-width: 900px) {
-  .wb-work { grid-template-columns: minmax(0, 1fr); }
-}
 
-/* ── the builder rail ──────────────────────────────────────────────────── */
+/* ── the builder ──────────────────────────────────────────────────────────
+   Laid out in three columns across the page, so the whole of it is seen at
+   once instead of scrolled through: the dials three to a row, then the list
+   of exercises last and full width, itself in three columns, each chapter's
+   heading across all three. Two columns on a narrow screen, one on a phone. */
 
-.wb-rail { position: sticky; top: 88px; }
-@media (max-width: 900px) { .wb-rail { position: static; } }
-
-.wb-rail__paper {
+/* Two classes, to outrank .pp-receipt__paper's display: block. */
+.wb-rail .wb-rail__paper {
+  --wb-rail-cols: 3;
   padding: 1.5rem 1.35rem 1.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(var(--wb-rail-cols), minmax(0, 1fr));
+  gap: 1.15rem 1.6rem;
+  align-items: start;
 }
-@media (max-width: 900px) { .wb-rail__paper { max-height: none; } }
+@media (max-width: 1100px) { .wb-rail .wb-rail__paper { --wb-rail-cols: 2; } }
+@media (max-width: 700px) { .wb-rail .wb-rail__paper { --wb-rail-cols: 1; } }
+.wb-rail__paper > .wb-rail__title,
+.wb-rail__paper > .wb-fieldset--picks { grid-column: 1 / -1; }
+.wb-rail__paper > .wb-fieldset--picks { order: 1; }
+
+#wb-picks {
+  columns: var(--wb-rail-cols);
+  column-gap: 1.6rem;
+  padding-top: 0.5rem;
+}
+/* A group's heading and its rows stay in one column. */
+.wb-group { break-inside: avoid; display: flex; flex-direction: column; gap: 0.55rem; padding-bottom: 0.7rem; }
 
 .wb-rail__title {
   display: flex;
@@ -218,7 +229,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.5rem 0 0.1rem;
+  margin: 0 0 0.1rem;
   font-size: var(--text-mono-xs, 0.7rem);
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -228,7 +239,8 @@ body {
 .wb-group__name svg { width: 14px; height: 14px; }
 /* Where a chapter starts, in a workbook that has more than one. */
 .wb-chapter__name {
-  margin: 1.1rem 0 0.2rem;
+  column-span: all;
+  margin: 1.1rem 0 0.7rem;
   padding-bottom: 0.25rem;
   border-bottom: 1px dashed var(--border-subtle, rgba(0, 0, 0, 0.15));
   font-family: var(--font-display);
@@ -834,7 +846,8 @@ html.wb-full-on .wb-main { z-index: auto; }
 /* ── a box to work in: ruled, not blank. A child asked to "show your working"
    in an empty rectangle writes one line in the middle and stops; the rules
    say how much is expected. ──────────────────────────────────────────── */
-.wb-work {
+/* Not .wb-work: that is the bench's layout, and sharing the name broke it. */
+.wb-workbox {
   display: block;
   position: relative;
   height: calc(var(--wb-lines, 4) * 8mm);
@@ -842,7 +855,7 @@ html.wb-full-on .wb-main { z-index: auto; }
   border: 0.4mm solid var(--wb-ink);
   background: #fffdf8;
 }
-.wb-work__rule {
+.wb-workbox__rule {
   position: absolute;
   left: 2mm;
   right: 2mm;

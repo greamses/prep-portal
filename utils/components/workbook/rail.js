@@ -65,10 +65,15 @@ export function mountBuilder(cfg) {
         ch.textContent = g.chapter;
         host.appendChild(ch);
       }
+      /* A group is one box, so the list's columns never part a heading from
+         its rows. */
+      const group = document.createElement("div");
+      group.className = "wb-group";
+      host.appendChild(group);
       const head = document.createElement("p");
       head.className = "wb-group__name";
       head.innerHTML = `${glyphs[g.id] || ""}${g.label}`;
-      host.appendChild(head);
+      group.appendChild(head);
 
       exercises.filter((e) => e.group === g.id).forEach((ex) => {
         const row = document.createElement("label");
@@ -83,7 +88,7 @@ export function mountBuilder(cfg) {
           `</span>` +
           `<input class="wb-pick__count" data-role="count" type="number" min="1" max="40" ` +
           `value="${n || ex.defaultCount}" aria-label="How many ${ex.label} questions" />`;
-        host.appendChild(row);
+        group.appendChild(row);
       });
     });
   }
@@ -192,6 +197,8 @@ export function mountBuilder(cfg) {
     const natural = sheet().offsetWidth || 1;
     const zoom = Math.min(1, width / natural);
     scaler.style.transform = `scale(${zoom})`;
+    /* the paper sits in the middle when there is room either side of it */
+    scaler.style.left = `${Math.max(0, (width - natural * zoom) / 2)}px`;
     viewport.style.height = `${sheet().offsetHeight * zoom}px`;
   }
 
