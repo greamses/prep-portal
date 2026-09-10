@@ -121,3 +121,12 @@
 
 /* A word problem reads as a paragraph, not a heading. */
 .gw-word { font-weight: 400; line-height: 1.55; }
+
+/* ── chapter 3 ─────────────────────────────────────────────────────────────
+   A measurement said in words under a figure (a slant height, a height that
+   is not an edge), and the area table's narrower columns. */
+.wb-sheet .gw-note { margin: 0.5mm 0 0; font-size: 8.5pt; color: #6b655c; }
+.gw-table--area td:first-child { text-align: left; }
+.gw-table--area th,
+.gw-table--area td { height: 9mm; font-size: 9.5pt; }
+.gw-net { display: block; }

@@ -194,7 +194,7 @@ const NAV_CONFIG = [
           { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "Blocks, abacuses, algebra tiles and charts" },
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Printable — number, fractions, time and angles" },
-          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Printable — polygon angles and angles on parallel lines" },
+          { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Printable — angles, parallel lines, pyramids and prisms" },
           { text: "Polynomial Remainder Theorem", href: "/prep-math/activity/remainder-theorem-workbook/index.html", description: "Printable — P(x) divided by (x − a)" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },

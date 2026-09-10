@@ -11,13 +11,15 @@ import { protractorSvg } from "../../maths-workbook/js/protractor.js";
 
 export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", style: "/prep-math/activity/geometry-workbook/style.css" };
 
-const CHAPTERS = { 1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles" };
+const CHAPTERS = { 1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles", 3: "Chapter 3: Pyramids and prisms" };
 
 export const SUBJECT = {
   /* Names the chapter the paper is from — or both, when it mixes them. */
   eyebrow: (o) => {
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
-    const which = found.size === 1 ? CHAPTERS[[...found][0]] : "Chapters 1 and 2: Angles";
+    const list = [...found].sort();
+    const which = list.length === 1 ? CHAPTERS[list[0]]
+      : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
     return `Mathematics · Geometry · ${which}`;
   },
   subtitle: (o) => {

@@ -56,4 +56,26 @@ export const ICON = {
   multiTrans: line(`<path d="M3 8h18M3 16h18M5 20 10 4M13 20 20 4"/>`),
   /* A triangle standing between two parallels. */
   triTrans: line(`<path d="M3 5h18M3 19h18"/><path d="M12 5 6 19M12 5 18 19"/>`),
+
+  /* ── chapter 3 ── */
+  /* A cube: the front square, the top and the side. */
+  cube: line(`<path d="M4 9h11v11H4zM4 9l5-5h11l-5 5M15 20l5-5V4"/>`),
+  /* A skeleton: sticks and blobs. */
+  sticks: line(`<path d="M5 9h10v10H5zM5 9l4-4h10l-4 4M15 19l4-4V5"/><circle cx="5" cy="9" r="1"/><circle cx="15" cy="9" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="15" cy="19" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="19" cy="15" r="1"/>`),
+  /* A cylinder: a curved surface and two flat faces. */
+  cylinder: line(`<ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6"/>`),
+  /* A triangular prism, its two ends. */
+  prismBase: line(`<path d="M4 18 8 10l4 8zM12 18h8M8 10h8l4 8M4 18l0 0"/>`),
+  /* A square pyramid. */
+  pyramid: line(`<path d="M12 3 4 17l6 3 10-4zM12 3l-2 17M12 3l8 13"/>`),
+  /* A net: a cross of squares. */
+  net: line(`<path d="M9 3h6v18H9zM3 9h18v6H3z"/>`),
+  /* A rule: n + 2. */
+  rule: line(`<path d="M4 7h16M4 12h10M4 17h13"/>`),
+  /* An open box: no lid. */
+  openBox: line(`<path d="M4 9v11h11V9M15 20l5-5V4M4 9l5-5M9 4h11M9 4v5"/>`),
+  /* A tube, open at both ends. */
+  tube: line(`<ellipse cx="6" cy="12" rx="2.5" ry="6"/><path d="M6 6h12M6 18h12"/><ellipse cx="18" cy="12" rx="2.5" ry="6"/>`),
+  /* A frustum: a pyramid with its top cut off. */
+  frustum: line(`<path d="M8 6h8l4 13H4zM8 6l-1 13M16 6l1 13"/>`),
 };
