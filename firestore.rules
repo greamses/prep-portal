@@ -96,7 +96,14 @@ service cloud.firestore {
     // than denied in a match of their own.
     function isServerOnly(col) {
       return col in ['paymentEvents', 'workbookPrints', 'workbookOrders', 'workbookAssignments',
+                     'tutor-bookings', 'tutorOrders',
                      'partners', 'referralCodes', 'earnings', 'payouts'];
+    }
+
+    // Tutor bookings are written by the server from a verified Paystack charge
+    // (server/lib/tutor-bookings.js). A parent may read their own.
+    match /tutor-bookings/{ref} {
+      allow read: if isLoggedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /{postCollection}/{postId} {

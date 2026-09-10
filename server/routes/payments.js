@@ -13,6 +13,10 @@
  * `applyCharge` is idempotent on the transaction reference (a re-delivered
  * webhook or a double verify is a no-op) and writes a `paymentEvents/{ref}`
  * record. Phase 2 (referral commissions) will hook in right where noted below.
+ *
+ * Two other kinds of charge share the webhook and are never premium: workbook
+ * prints (lib/workbook-prints.js) and tutoring sessions (lib/tutor-bookings.js,
+ * ordered and confirmed through /tutor/order and /tutor/verify here).
  */
 
 const express = require("express");
@@ -20,6 +24,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const { authenticate } = require("../middleware/auth");
 const prints = require("../lib/workbook-prints");
+const tutors = require("../lib/tutor-bookings");
 
 // Paystack plan code → our plan metadata (mirrors payment-manager.js PLANS).
 // priceKobo is what one charge of the plan costs; monthlyEqKobo is the
@@ -116,6 +121,7 @@ module.exports = function () {
     /* A ₦5,000 workbook print is not a subscription. It never grants premium,
        whichever door it comes in by (see lib/workbook-prints.js). */
     if (meta.kind === prints.KIND) return { applied: false, premium: false };
+    if (meta.kind === tutors.KIND) return { applied: false, premium: false, rejected: "That payment was for tutoring sessions, not a plan." };
     const email = (tx.customer && tx.customer.email) || meta.email || null;
     const uid = await resolveUid(meta.uid, email);
     if (!uid) { console.warn("[payments] no uid for ref", reference); return { applied: false, premium: false }; }
@@ -251,6 +257,43 @@ module.exports = function () {
     }
   });
 
+  // ── POST /api/payments/tutor/order ──────────────────────────
+  // The server prices a block of tutoring sessions and files the order the
+  // browser then pays (see lib/tutor-bookings.js).
+  router.post("/tutor/order", authenticate, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const want = {
+        packageId: String(b.packageId || ""),
+        sessions: Number(b.sessions),
+        children: Number(b.children),
+      };
+      const problem = tutors.problemWith(want);
+      if (problem) return res.status(400).json({ error: problem });
+      const order = await tutors.openOrder({ uid: req.user.uid, email: req.user.email, ...want });
+      res.json({ ok: true, ...order, email: req.user.email || null });
+    } catch (e) {
+      console.error("[/api/payments/tutor/order]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /api/payments/tutor/verify ─────────────────────────
+  router.post("/tutor/verify", authenticate, async (req, res) => {
+    try {
+      const reference = req.body && req.body.reference;
+      if (!reference) return res.status(400).json({ error: "reference required" });
+      const tx = await paystackVerify(reference);
+      if (!tx) return res.status(400).json({ ok: false, error: "Payment not found." });
+      const out = await tutors.applyTutorCharge(tx, req.user.uid);
+      if (!out.ok) return res.status(400).json(out);
+      res.json(out);
+    } catch (e) {
+      console.error("[/api/payments/tutor/verify]", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── POST /api/payments/apply-code ───────────────────────────
   // A learner attaches a partner's referral code to their account before paying.
   // Locked once a commission has been paid, to stop code-swapping after the fact.
@@ -286,7 +329,10 @@ module.exports = function () {
       const event = JSON.parse(raw.toString("utf8"));
       if (event.event === "charge.success" && event.data) {
         if (prints.isPrintCharge(event.data)) await prints.applyPrintCharge(event.data);
-        else await applyCharge(event.data);
+        else if (tutors.isTutorCharge(event.data)) {
+          const out = await tutors.applyTutorCharge(event.data);
+          if (!out.ok) console.warn("[payments] tutor booking not made:", event.data.reference, out.error);
+        } else await applyCharge(event.data);
       }
       // Other events (subscription.create, invoice.*, charge refunds) can be
       // handled in later phases. Always 200 so Paystack stops retrying.

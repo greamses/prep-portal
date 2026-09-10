@@ -1,12 +1,13 @@
 import { PLANS } from "/payment-manager.js";
-import { auth, db } from "/firebase-init.js";
-import { doc, setDoc } from "firebase/firestore";
+import { auth } from "/firebase-init.js";
 import { heroPaint } from "/utils/components/nav-icons.js";
 
 const PK = "pk_live_f4ddce00cea983792c801c129d875e64086d68da";
 
 // ─── TUTOR PACKAGES ───────────────────────────────────────────
 // Price is per hour. Each extra child beyond the first gets 5% off.
+// The server charges from its own copy (server/lib/tutor-bookings.js
+// PACKAGES) — change a price in both places.
 const TUTOR_PACKAGES = [
   {
     id: "math-only",
@@ -74,6 +75,23 @@ function loadSDK() {
     s.onload = resolve;
     document.head.appendChild(s);
   });
+}
+
+// POST to our own API as the signed-in user. Resolves to the JSON body, or
+// throws an Error carrying the server's message.
+async function postApi(path, body) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please sign in first.");
+  const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok || d.ok === false) throw new Error(d.error || "Something went wrong.");
+  return d;
 }
 
 function showToast(msg, type = "info") {
@@ -347,17 +365,36 @@ async function chargeTutor(pkg) {
   const total      = calcTotal(pkg.ratePerHour, sessions, children);
 
   const btn = document.getElementById("tp-pay-btn");
+  const reset = () => {
+    const b = document.getElementById("tp-pay-btn");
+    if (b) { b.disabled = false; b.innerHTML = `<span>Pay &#8358;${fmt(total)}</span>${ARROW}`; }
+  };
   if (btn) { btn.disabled = true; btn.innerHTML = `<span>Opening payment&hellip;</span>`; }
+
+  /* The server prices the booking and hands back the reference to pay; the
+     booking itself is written by the server once Paystack confirms the charge
+     (here, or by the webhook if this tab is closed first). */
+  let order;
+  try {
+    order = await postApi("/api/payments/tutor/order", { packageId: pkg.id, sessions, children });
+  } catch (err) {
+    showToast(err.message, "error");
+    reset();
+    return;
+  }
 
   await loadSDK();
 
+  let paid = false;
   const handler = window.PaystackPop.setup({
     key:      PK,
-    email:    user.email,
-    amount:   total * 100,
+    email:    order.email || user.email,
+    amount:   order.amountKobo,
     currency: "NGN",
-    ref:      `pp_tutor_${pkg.id}_${Date.now()}`,
+    ref:      order.reference,
     metadata: {
+      kind: order.kind,
+      uid:  user.uid,
       custom_fields: [
         { display_name: "Package",  variable_name: "package",  value: pkg.name },
         { display_name: "Sessions", variable_name: "sessions", value: String(sessions) },
@@ -365,39 +402,21 @@ async function chargeTutor(pkg) {
       ],
     },
     callback: (response) => {
-      setDoc(
-        doc(db, "tutor-bookings", response.reference),
-        {
-          userId:            user.uid,
-          email:             user.email,
-          packageId:         pkg.id,
-          packageName:       pkg.name,
-          subjects:          pkg.tagline,
-          ratePerHour:       pkg.ratePerHour,
-          sessionsPerChild:  sessions,
-          childCount:        children,
-          sessionsRemaining: sessions * children,
-          amountPaid:        total,
-          paymentRef:        response.reference,
-          status:            "active",
-          purchasedAt:       new Date().toISOString(),
-        }
-      ).then(() => {
-        closeTutorCheckout();
-        const who = children > 1 ? `${children} children` : "1 child";
-        showToast(`Booked! ${sessions} sessions × ${who} — ready to schedule.`, "success");
-      }).catch((err) => {
-        console.error("Firestore error:", err);
-        showToast("Payment received. Contact support to activate your sessions.", "error");
-      });
-    },
-    onClose: () => {
+      paid = true;
       const b = document.getElementById("tp-pay-btn");
-      if (b) {
-        b.disabled = false;
-        b.innerHTML = `<span>Pay &#8358;${fmt(total)}</span>${ARROW}`;
-      }
+      if (b) b.innerHTML = `<span>Payment received &mdash; confirming&hellip;</span>`;
+      postApi("/api/payments/tutor/verify", { reference: response.reference })
+        .then((r) => {
+          closeTutorCheckout();
+          const who = r.children > 1 ? `${r.children} children` : "1 child";
+          showToast(`Booked! ${r.sessions} sessions × ${who} — ready to schedule.`, "success");
+        })
+        .catch(() => {
+          showToast(`Payment received. Your sessions will appear shortly — quote ${response.reference} to support if they don't.`, "error");
+          reset();
+        });
     },
+    onClose: () => { if (!paid) reset(); },
   });
 
   handler.openIframe();
@@ -441,25 +460,12 @@ async function applyReferral(code, statusEl, btn) {
   if (!c) return;
   btn.disabled = true;
   try {
-    const base = window.location.port === "5500" ? "http://127.0.0.1:5000" : "";
-    const token = await user.getIdToken();
-    const res = await fetch(`${base}/api/payments/apply-code`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ code: c }),
-      credentials: "include",
-    });
-    const d = await res.json().catch(() => ({}));
-    if (res.ok && d.ok) {
-      statusEl.textContent = `Code ${d.code} applied — your referrer earns when you subscribe.`;
-      statusEl.className = "sp-ref__status sp-ref__status--ok";
-      try { localStorage.setItem("pp_ref_code", d.code); } catch (_) {}
-    } else {
-      statusEl.textContent = d.error || "Couldn't apply that code.";
-      statusEl.className = "sp-ref__status sp-ref__status--err";
-    }
-  } catch (_) {
-    statusEl.textContent = "Network error — please try again.";
+    const d = await postApi("/api/payments/apply-code", { code: c });
+    statusEl.textContent = `Code ${d.code} applied — your referrer earns when you subscribe.`;
+    statusEl.className = "sp-ref__status sp-ref__status--ok";
+    try { localStorage.setItem("pp_ref_code", d.code); } catch (_) {}
+  } catch (err) {
+    statusEl.textContent = err.message === "Failed to fetch" ? "Network error — please try again." : err.message;
     statusEl.className = "sp-ref__status sp-ref__status--err";
   } finally {
     btn.disabled = false;
