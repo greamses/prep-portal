@@ -22,16 +22,47 @@ const { authenticate } = require("../middleware/auth");
 const prints = require("../lib/workbook-prints");
 
 // Paystack plan code → our plan metadata (mirrors payment-manager.js PLANS).
-// monthlyEqKobo is the per-month value (used to size the yearly commission as a
-// 6-month equivalent — see creditReferral below).
+// priceKobo is what one charge of the plan costs; monthlyEqKobo is the
+// per-month value (used to size the yearly commission as a 6-month
+// equivalent — see creditReferral below).
+//
+// A charge ONLY grants premium when it names one of these plans and paid at
+// least that plan's price, in naira. Anything else — a charge with no plan, an
+// unknown plan, a plan paid for with less money, a tutoring booking, a
+// workbook print — is not a subscription and changes nothing. Before this,
+// any successful charge of any amount was applied as premium.
 const PLAN_BY_CODE = {
-  PLN_3mghi8hr1mxg5lk: { name: "Pro",        tier: "pro",        billing: "monthly", monthlyEqKobo: 1000000 },
-  PLN_knvr81r8t903ria: { name: "Pro",        tier: "pro",        billing: "yearly",  monthlyEqKobo: 1000000 },
-  PLN_xodc0xq5eki6vyg: { name: "Premium",    tier: "premium",    billing: "monthly", monthlyEqKobo: 3000000 },
-  PLN_3os05kpnhpauvav: { name: "Premium",    tier: "premium",    billing: "yearly",  monthlyEqKobo: 2850000 },
-  PLN_la6q8cp6ryy2alq: { name: "Enterprise", tier: "enterprise", billing: "monthly", monthlyEqKobo: 15000000 },
-  PLN_bbypkk64rsyacww: { name: "Enterprise", tier: "enterprise", billing: "yearly",  monthlyEqKobo: 13500000 },
+  PLN_3mghi8hr1mxg5lk: { name: "Pro",        tier: "pro",        billing: "monthly", priceKobo: 1000000,   monthlyEqKobo: 1000000 },
+  PLN_knvr81r8t903ria: { name: "Pro",        tier: "pro",        billing: "yearly",  priceKobo: 12000000,  monthlyEqKobo: 1000000 },
+  PLN_xodc0xq5eki6vyg: { name: "Premium",    tier: "premium",    billing: "monthly", priceKobo: 3000000,   monthlyEqKobo: 3000000 },
+  PLN_3os05kpnhpauvav: { name: "Premium",    tier: "premium",    billing: "yearly",  priceKobo: 34200000,  monthlyEqKobo: 2850000 },
+  PLN_la6q8cp6ryy2alq: { name: "Enterprise", tier: "enterprise", billing: "monthly", priceKobo: 15000000,  monthlyEqKobo: 15000000 },
+  PLN_bbypkk64rsyacww: { name: "Enterprise", tier: "enterprise", billing: "yearly",  priceKobo: 162000000, monthlyEqKobo: 13500000 },
 };
+
+/**
+ * Is this verified Paystack transaction really a subscription payment?
+ * Returns { plan, code } or { reason } saying why not.
+ */
+function subscriptionOf(tx, planCode) {
+  if (!tx || tx.status !== "success") return { reason: "The payment did not succeed." };
+  if (String(tx.currency || "").toUpperCase() !== "NGN") return { reason: "The payment was not in naira." };
+  const plan = PLAN_BY_CODE[planCode];
+  if (!plan) return { reason: "That payment was not for a subscription plan." };
+  /* The price is Paystack's own record of the plan when the transaction
+     carries it (it comes from Paystack, not the browser), so a price changed
+     in the dashboard does not turn real subscribers away; our table is the
+     fallback. */
+  const po = (tx.plan_object && tx.plan_object.plan_code === planCode && tx.plan_object)
+    || (tx.plan && typeof tx.plan === "object" && tx.plan.plan_code === planCode && tx.plan) || null;
+  const paystackPrice = po ? Number(po.amount) || 0 : 0;
+  if (paystackPrice && paystackPrice !== plan.priceKobo) {
+    console.warn(`[payments] Paystack says ${planCode} costs ${paystackPrice} kobo; PLAN_BY_CODE says ${plan.priceKobo}`);
+  }
+  const price = paystackPrice || plan.priceKobo;
+  if ((Number(tx.amount) || 0) < price) return { reason: "The amount paid is less than the plan's price." };
+  return { plan, code: planCode };
+}
 
 // Partner commission: 10% of each subscription, for the first 6 months.
 //   monthly plan → 10% of each charge, capped at 6 charges (6 cycles).
@@ -89,12 +120,13 @@ module.exports = function () {
     const uid = await resolveUid(meta.uid, email);
     if (!uid) { console.warn("[payments] no uid for ref", reference); return { applied: false, premium: false }; }
 
-    const code = planCodeOf(tx, meta);
-    const plan = PLAN_BY_CODE[code] || {
-      name: meta.plan || "Premium",
-      tier: meta.planTier || "premium",
-      billing: meta.billing || "monthly",
-    };
+    /* Only a real plan, paid in full, is a subscription (see PLAN_BY_CODE). */
+    const sub = subscriptionOf(tx, planCodeOf(tx, meta));
+    if (!sub.plan) {
+      console.warn("[payments] not applied as premium:", reference, sub.reason);
+      return { applied: false, premium: false, rejected: sub.reason };
+    }
+    const { plan, code } = sub;
     const amountKobo = Number(tx.amount) || 0;
 
     const evRef = db().collection("paymentEvents").doc(String(reference));
@@ -211,6 +243,7 @@ module.exports = function () {
       tx.metadata = normalizeMeta(tx.metadata);
       tx.metadata.uid = req.user.uid;
       const out = await applyCharge(tx);
+      if (out.rejected) return res.status(400).json({ ok: false, error: out.rejected });
       res.json({ ok: true, premium: !!out.premium });
     } catch (e) {
       console.error("[/api/payments/verify]", e.message);
@@ -264,5 +297,5 @@ module.exports = function () {
     }
   }
 
-  return { router, webhook };
+  return { router, webhook, applyCharge };
 };
