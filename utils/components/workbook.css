@@ -563,6 +563,124 @@ body {
   font-weight: 700;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SHARED MARKS — the things a child writes into or draws on, which every
+   workbook uses and none of them owns.
+
+   They lived beside the workbook that first needed them, and then a second
+   workbook used them by class name and was quietly unstyled, because the
+   stylesheet that defined them was never linked on its page. So they are
+   here, under wb-, and a workbook that wants a tick box or a pair of columns
+   to join gets it by linking this file and nothing else.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── an answer, asked for the same way round every time: the word, then the
+   space. A page where sometimes the box comes first is read twice. ─────── */
+.wb-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 2mm;
+  margin-right: 8mm;
+}
+.wb-slot em { font-style: normal; font-size: 9pt; color: #4a453d; }
+.wb-answer {
+  display: inline-block;
+  width: 15mm;
+  height: 9mm;
+  border: 0.45mm solid var(--wb-ink);
+  background: #fffdf8;
+  vertical-align: -2.4mm;
+}
+
+/* ── one done for you: the same organiser as the questions under it, filled
+   in, tinted and tagged so nobody writes in it ─────────────────────────── */
+.wb-worked {
+  margin: 3.5mm 0 1mm 11mm;
+  padding: 3mm 4mm 3.5mm;
+  border: 0.35mm dashed #9c958a;
+  background: #f7f4ec;
+}
+.wb-worked__tag {
+  margin: 0 0 1.5mm;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b655c;
+}
+.wb-worked .wb-ask { font-size: 10pt; }
+.wb-worked__say { color: #4a453d; font-style: italic; }
+
+/* ── boxes to tick ─────────────────────────────────────────────────────── */
+.wb-tick {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2mm 7mm;
+  vertical-align: middle;
+}
+.wb-tick__one {
+  display: inline-flex;
+  align-items: center;
+  gap: 1mm;
+  /* Never shrink: a box squeezed narrower than its label wraps the label off
+     the end of it, and then the word belongs to the box after it. */
+  flex: 0 0 auto;
+  font-size: 9.5pt;
+  white-space: nowrap;
+}
+/* The shared box is sized for a digit; here it is only ever ticked. */
+.wb-tick .wb-box { width: 6.5mm; height: 6.5mm; margin: 0 1mm 0 0; vertical-align: -1.6mm; }
+
+/* ── two columns to join with lines ──────────────────────────────────────
+   The gutter is the exercise: wide enough to draw a line that clearly starts
+   at one dot and ends at another, narrow enough that the columns are read as
+   a pair. The dots FACE EACH OTHER across it — a dot on the far side of its
+   own label is a dot you draw through the words to reach. */
+.wb-match {
+  display: grid;
+  grid-template-columns: 1fr 30mm 1fr;
+  max-width: 128mm;
+  margin: 2mm 0 1mm;
+}
+.wb-match__side { list-style: none; margin: 0; padding: 0; font-size: 12pt; }
+.wb-match__side li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3mm;
+  min-height: 11mm;
+}
+.wb-match__side li .wb-match__dot { order: 2; }
+.wb-match__side--right { grid-column: 3; }
+.wb-match__side--right li { justify-content: flex-start; }
+.wb-match__side--right li .wb-match__dot { order: 0; }
+.wb-match__dot {
+  width: 2.2mm;
+  height: 2.2mm;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--wb-ink);
+}
+
+/* ── a box to work in: ruled, not blank. A child asked to "show your working"
+   in an empty rectangle writes one line in the middle and stops; the rules
+   say how much is expected. ──────────────────────────────────────────── */
+.wb-work {
+  display: block;
+  position: relative;
+  height: calc(var(--wb-lines, 4) * 8mm);
+  margin: 2mm 0;
+  border: 0.4mm solid var(--wb-ink);
+  background: #fffdf8;
+}
+.wb-work__rule {
+  position: absolute;
+  left: 2mm;
+  right: 2mm;
+  height: 0;
+  border-top: 0.25mm solid #ded8cc;
+}
+
 /* ── the answer key ────────────────────────────────────────────────────── */
 
 .wb-answers { break-inside: avoid; margin-bottom: 3mm; }

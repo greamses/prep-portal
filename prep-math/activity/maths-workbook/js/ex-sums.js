@@ -57,6 +57,15 @@ const digitsOf = (n, places) => {
 
 const fromDigits = (d) => d.reduce((s, k, i) => s + k * Math.pow(10, i), 0);
 
+/* The biggest a sum's numbers may be. Two places: anything. Three places: no
+   more than 399, because every question here is DRAWN in blocks, and 801 + 381
+   is eleven hundred-flats — a picture too big to fit on the page with its
+   section's worked example, and too many flats for a child to count anyway.
+   The same rule the place-value blocks follow: the top place is capped, the
+   rest run their full range. */
+const topOf = (places) => (places >= 3 ? 399 : 99);
+const lowOf = (places) => Math.pow(10, places - 1);
+
 /** An addition where no column reaches ten. */
 function drawAddPlain(r, o) {
   const { places } = shapeOf(o);
@@ -64,8 +73,9 @@ function drawAddPlain(r, o) {
   const B = [];
   for (let p = 0; p < places; p++) {
     /* Split a digit under ten into two parts, so the column cannot carry. */
-    const total = r.int(p === places - 1 ? 2 : 1, 9);
-    const a = r.int(p === places - 1 ? 1 : 0, total - 1);
+    const top = p === places - 1;
+    const total = r.int(top ? 2 : 1, top && places >= 3 ? 3 : 9);
+    const a = r.int(top ? 1 : 0, total - 1);
     A.push(a);
     B.push(total - a);
   }
@@ -80,8 +90,8 @@ function drawAddCarry(r, o) {
   let b;
   let guard = 0;
   do {
-    a = r.int(Math.pow(10, places - 1), Math.pow(10, places) - 1);
-    b = r.int(Math.pow(10, places - 1), Math.pow(10, places) - 1);
+    a = r.int(lowOf(places), topOf(places));
+    b = r.int(lowOf(places), topOf(places));
     guard++;
   } while (!carries(a, b, places) && guard < 80);
   return { a, b, places };
@@ -99,7 +109,7 @@ function drawSubPlain(r, o) {
   const A = [];
   const B = [];
   for (let p = 0; p < places; p++) {
-    const a = r.int(p === places - 1 ? 2 : 1, 9);
+    const a = r.int(p === places - 1 ? 2 : 1, p === places - 1 && places >= 3 ? 3 : 9);
     A.push(a);
     B.push(r.int(p === places - 1 ? 1 : 0, a)); // never more than the digit above
   }
@@ -113,8 +123,8 @@ function drawSubBorrow(r, o) {
   let b;
   let guard = 0;
   do {
-    a = r.int(Math.pow(10, places - 1) + 1, Math.pow(10, places) - 1);
-    b = r.int(Math.pow(10, places - 1), a - 1);
+    a = r.int(lowOf(places) + 1, topOf(places));
+    b = r.int(lowOf(places), a - 1);
     guard++;
   } while (!borrows(a, b, places) && guard < 80);
   return { a, b, places };
@@ -129,7 +139,8 @@ function borrows(a, b, places) {
 /* ── the pictures ──────────────────────────────────────────────────────────*/
 
 /** The blocks for a number, capped at the three places blocks are drawn in. */
-const pileOf = (n, places) => blocksSvg(digitsOf(n, Math.min(places, 3)), 10, { maxCells: 30, cellMm: 2.4 });
+const pileOf = (n, places) =>
+  blocksSvg(digitsOf(n, Math.min(places, 3)), 10, { maxCells: 30, cellMm: places >= 3 ? 1.8 : 2.4 });
 
 /** Two piles with a plus between them — an addition, drawn. */
 function addPicture(a, b, places) {

@@ -1,0 +1,106 @@
+/* ============================================================================
+   Geometry Workbook — what THIS workbook draws
+   ----------------------------------------------------------------------------
+   The paper, the bench, the byline, the watermark and every shared mark — the
+   answer boxes, the tick boxes, the ruled working box, the worked-example box
+   — come from /utils/components/workbook.css. What is left here is only the
+   figures and the two organisers this chapter is built on: the four-box flow
+   (sides → triangles → × 180 → total) and the pattern table.
+
+   Every colour is a fixed hex, like the rest of the paper: see the note at the
+   top of workbook.css.
+   ========================================================================== */
+
+/* The paper's type runs a little larger than the smallest it could be — it is
+   drawn on and written in, not only read. */
+.wb-sheet .wb-ask { font-size: 10.5pt; }
+.wb-sheet .wb-ask--lead { font-size: 12pt; }
+
+.gw-art { margin: 2mm 0; }
+.gw-art svg { display: block; }
+
+/* A figure and its working side by side, on a full-width question: the shape
+   on the left where the eye starts, the thing to fill in on the right. */
+.gw-side {
+  display: flex;
+  align-items: center;
+  gap: 7mm;
+  flex-wrap: wrap;
+}
+.gw-lines { flex: 1 1 60mm; min-width: 0; }
+/* Sentences with several boxes in them: narrower boxes, so a sentence stays on
+   one line instead of breaking after "=". */
+.gw-lines .wb-answer { width: 12mm; }
+
+/* ── the four-box flow ─────────────────────────────────────────────────────
+   Sides, triangles, times 180, the total — with an arrow between each, so it
+   is a path to follow with a finger rather than a formula to remember. The
+   label sits over each box and says what goes in it; at the "let me try"
+   level the labels are left off and only the path remains. */
+.gw-flow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5mm 2.5mm;
+  margin: 2mm 0 1mm;
+}
+.gw-flow__step {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8mm;
+  font-size: 11pt;
+  font-weight: 700;
+}
+.gw-flow__step em {
+  font-style: normal;
+  font-size: 7pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #6b655c;
+}
+.gw-flow__val { display: inline-flex; align-items: center; gap: 1.2mm; }
+.gw-flow__step .wb-answer { width: 13mm; }
+.gw-flow__arrow { padding-bottom: 2.4mm; color: #8f887c; font-size: 12pt; }
+/* A value the paper has already filled in, sitting where a box would be. */
+.gw-given {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 13mm;
+  height: 9mm;
+  border: 0.45mm solid #b6afa4;
+  background: #f7f4ee;
+}
+
+/* ── the pattern table ─────────────────────────────────────────────────────
+   Ruled like the place-value chart, and read DOWN the columns once it is full:
+   the triangles are always the sides take away two. */
+.gw-table { width: 100%; border-collapse: collapse; margin: 2mm 0; table-layout: fixed; }
+.gw-table th,
+.gw-table td {
+  border: 0.3mm solid #b6afa4;
+  padding: 1.2mm 2mm;
+  text-align: center;
+  font-size: 10.5pt;
+  height: 13mm;
+}
+.gw-table th {
+  height: auto;
+  background: #f2ede3;
+  font-size: 7.5pt;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4a453d;
+}
+.gw-table td:nth-child(2) { text-align: left; }
+.gw-table__shape svg { display: block; margin: 0 auto; }
+/* The last row, at the stretch level, asks for the rule itself. */
+.gw-table__rule td { background: #eaf5ea; font-weight: 700; }
+
+/* The cut-out protractor's box says "cut this out" with a dashed edge rather
+   than a tint. */
+.gw-cut { border-style: dashed; border-width: 0.4mm; background: none; }
+
+/* A word problem reads as a paragraph, not a heading. */
+.gw-word { font-weight: 400; line-height: 1.55; }

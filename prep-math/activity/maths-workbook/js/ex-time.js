@@ -330,15 +330,15 @@ const matchTime = {
   },
   render(item) {
     const left = item.times
-      .map((t) => `<li><span class="rt-match__dot"></span><span>${clockSvg(t.h, t.m, { mm: 34 })}</span></li>`)
+      .map((t) => `<li><span class="wb-match__dot"></span><span>${clockSvg(t.h, t.m, { mm: 34 })}</span></li>`)
       .join("");
     const right = item.right
-      .map((t) => `<li><span class="rt-match__dot"></span><span>${timeWords(t.h, t.m)}</span></li>`)
+      .map((t) => `<li><span class="wb-match__dot"></span><span>${timeWords(t.h, t.m)}</span></li>`)
       .join("");
     return (
-      `<div class="rt-match mt-match">` +
-      `<ul class="rt-match__side">${left}</ul>` +
-      `<ul class="rt-match__side rt-match__side--right">${right}</ul>` +
+      `<div class="wb-match mt-match">` +
+      `<ul class="wb-match__side">${left}</ul>` +
+      `<ul class="wb-match__side wb-match__side--right">${right}</ul>` +
       `</div>`
     );
   },

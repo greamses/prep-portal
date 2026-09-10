@@ -110,6 +110,7 @@ export const FEATURES = [
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, sums, remainders, fractions, time, angles)", path: "/prep-math/activity/maths-workbook" },
+      { id: "geometry-workbook", label: "Geometry Workbook (printable — chapter 1: angles)", path: "/prep-math/activity/geometry-workbook" },
       { id: "remainder-theorem-workbook", label: "Polynomial Remainder Theorem Workbook (printable)", path: "/prep-math/activity/remainder-theorem-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },

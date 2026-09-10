@@ -138,10 +138,10 @@ const sortAngles = {
   render(item) {
     return (
       `<div class="ma-art">${angleSvg(item.deg, { tilt: item.tilt })}</div>` +
-      `<span class="rt-tick">` +
-      `<span class="rt-tick__one"><span class="wb-box"></span>smaller</span>` +
-      `<span class="rt-tick__one"><span class="wb-box"></span>exactly</span>` +
-      `<span class="rt-tick__one"><span class="wb-box"></span>bigger</span>` +
+      `<span class="wb-tick">` +
+      `<span class="wb-tick__one"><span class="wb-box"></span>smaller</span>` +
+      `<span class="wb-tick__one"><span class="wb-box"></span>exactly</span>` +
+      `<span class="wb-tick__one"><span class="wb-box"></span>bigger</span>` +
       `</span>`
     );
   },

@@ -461,7 +461,7 @@ thead .pv-chart__side {
 .mt-key__hand--min { width: 14mm; height: 1.1mm; background: #2f6ea8; }
 
 /* The joining exercise has clocks on one side, so its rows are tall. */
-.mt-match .rt-match__side li { height: auto; padding: 1.5mm 0; }
+.mt-match .wb-match__side li { height: auto; padding: 1.5mm 0; }
 .mt-match { max-width: 150mm; }
 
 /* ══ ANGLES ════════════════════════════════════════════════════════════════ */
