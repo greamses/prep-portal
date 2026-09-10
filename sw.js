@@ -1,4 +1,4 @@
-const CACHE_NAME = "prepportal-v12";
+const CACHE_NAME = "prepportal-v13";
 const PRECACHE_URLS = [
   "/",
   "/index.html",

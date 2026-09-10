@@ -27,7 +27,8 @@
 
    ── THE SUBJECT ────────────────────────────────────────────────────────────
    {
-     eyebrow      "Mathematics · Place value" — the small line above the title
+     eyebrow      "Mathematics · Place value" — the small line above the title;
+                  or eyebrow(o), for a workbook whose chapters it should name
      subtitle(o)  the line under it, saying what this paper is set to
      exercises    the registry: [{ id, group, heading, instruction(o), cols,
                   groupSize, make(r,o,k), render(item,o), answer(item,o) }]
@@ -148,7 +149,7 @@ function coverBlock(o, subject) {
   return el(
     "header",
     "wb-cover",
-    `<p class="wb-cover__eyebrow">${subject.eyebrow}</p>
+    `<p class="wb-cover__eyebrow">${typeof subject.eyebrow === "function" ? subject.eyebrow(o) : subject.eyebrow}</p>
      <h1 class="wb-cover__title">${escapeHtml(o.title)}</h1>
      <p class="wb-cover__sub">${subject.subtitle(o)}</p>
      <p class="wb-cover__by">${AUTHOR} &nbsp;·&nbsp; ${SITE}</p>

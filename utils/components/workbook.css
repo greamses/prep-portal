@@ -226,6 +226,17 @@ body {
   font-weight: 600;
 }
 .wb-group__name svg { width: 14px; height: 14px; }
+/* Where a chapter starts, in a workbook that has more than one. */
+.wb-chapter__name {
+  margin: 1.1rem 0 0.2rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--border-subtle, rgba(0, 0, 0, 0.15));
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wb-chapter__name:first-child { margin-top: 0.2rem; }
 
 .wb-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; cursor: pointer; }
 /* The class sets display, which outranks the UA sheet's [hidden] rule — so a

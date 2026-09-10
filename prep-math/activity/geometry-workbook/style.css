@@ -102,5 +102,22 @@
    than a tint. */
 .gw-cut { border-style: dashed; border-width: 0.4mm; background: none; }
 
+/* A box for an angle's NUMBER (∠5), or a count — narrower than a box for
+   degrees, so four of them sit on one line in a half column. */
+.wb-sheet .gw-num { width: 10mm; margin-right: 1.5mm; }
+.gw-lines .wb-tick { margin: 0.5mm 0 1.5mm; }
+/* Several answer slots in a row that wraps: room between the rows too. */
+.gw-lines .wb-slot { margin-bottom: 1.6mm; }
+
+/* Across and up-or-down for each line on the dot grid. */
+.gw-steps { border-collapse: collapse; margin: 1mm 0 2mm; }
+.gw-steps th,
+.gw-steps td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
+.gw-steps th { font-size: 8pt; font-weight: 600; color: #4a453d; }
+.gw-steps .gw-num { margin: 0; }
+
+/* A row of tick boxes with words after it. */
+.gw-tickrow { margin: 0 0 1.6mm; font-size: 10pt; }
+
 /* A word problem reads as a paragraph, not a heading. */
 .gw-word { font-weight: 400; line-height: 1.55; }

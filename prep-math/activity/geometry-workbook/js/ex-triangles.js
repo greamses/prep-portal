@@ -42,6 +42,7 @@ const tiltOf = (r) => r.pick([-20, -10, 0, 0, 10, 20]);
 export const TRI_GROUPS = [
   {
     id: "tri-sum",
+    chapter: "Chapter 1 · Polygon angles",
     label: "Angles in a triangle add up to 180°",
     blurb: "Find it out first: measure with a protractor, then tear the corners off.",
   },

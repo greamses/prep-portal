@@ -44,6 +44,14 @@ export function mountBuilder(cfg) {
     const host = $("wb-picks");
     host.innerHTML = "";
     groups.forEach((g) => {
+      /* A workbook that has grown chapters marks where each one starts: the
+         first group of a chapter carries `chapter`, and the rest follow it. */
+      if (g.chapter) {
+        const ch = document.createElement("p");
+        ch.className = "wb-chapter__name";
+        ch.textContent = g.chapter;
+        host.appendChild(ch);
+      }
       const head = document.createElement("p");
       head.className = "wb-group__name";
       head.innerHTML = `${glyphs[g.id] || ""}${g.label}`;

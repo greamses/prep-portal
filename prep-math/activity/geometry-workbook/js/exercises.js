@@ -4,12 +4,14 @@
    The engine, the builder and the answer key read this file and nothing else;
    the families live in their own files only because they are long.
 
-     ex-triangles.js   the triangle sum, angles inside, angles outside
-     ex-polygons.js    cutting shapes into triangles, the polygon sum, each angle
-     ex-words.js       word problems
+     ex-triangles.js     the triangle sum, angles inside, angles outside
+     ex-polygons.js      cutting shapes into triangles, the polygon sum, each angle
+     ex-words.js         word problems
+     ex-transversals.js  chapter 2, all of it
 
-   THE ORDER IS THE CHAPTER, and it is the order it was asked for:
+   THE ORDER IS THE BOOK, and it is the order it was asked for.
 
+   Chapter 1 — Polygon angles
      1  angles in a triangle add up to 180° — found with a protractor and by
         tearing the corners off, before it is ever called a rule
      2  cutting shapes into triangles — the idea everything after depends on
@@ -19,11 +21,16 @@
      6  word problems
      7  exterior angles of a triangle
 
-   The section letters printed on the paper follow this list, so a workbook
-   printed with every section ticked reads front to back as a chapter.
+   Chapter 2 — Transversal angles
+     parallel lines · transversal lines · the eight angles · acute or obtuse ·
+     vertically opposite · corresponding · alternate · consecutive interior ·
+     consecutive exterior · multiple transversals · triangles on transversals
 
-   This is chapter one — Angles — of a geometry workbook that is meant to grow.
-   A second chapter is new group entries and a new ex-file, and nothing else.
+   The section letters printed on the paper follow this list, so a workbook
+   printed with every section ticked reads front to back as a book. A group
+   that carries `chapter` starts a chapter in the rail.
+
+   A third chapter is new group entries and a new ex-file, and nothing else.
    ========================================================================== */
 
 import {
@@ -33,6 +40,7 @@ import {
   DECOMP_GROUPS, DECOMP_EXERCISES, POLY_GROUPS, POLY_SUM_EXERCISES, POLY_EACH_EXERCISES,
 } from "./ex-polygons.js";
 import { WORD_GROUPS, WORD_EXERCISES } from "./ex-words.js";
+import { TRANS_GROUPS, TRANS_EXERCISES } from "./ex-transversals.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -43,6 +51,7 @@ export const GROUPS = [
   ...POLY_GROUPS,
   ...WORD_GROUPS,
   ...EXT_GROUPS,
+  ...TRANS_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -53,7 +62,12 @@ export const EXERCISES = [
   ...POLY_EACH_EXERCISES,
   ...WORD_EXERCISES,
   ...EXT_EXERCISES,
+  ...TRANS_EXERCISES,
 ];
+
+/** Which chapter an exercise belongs to: 1 or 2. */
+const CHAPTER_TWO = new Set(TRANS_GROUPS.map((g) => g.id));
+export const chapterOf = (ex) => (CHAPTER_TWO.has(ex.group) ? 2 : 1);
 
 export function exerciseById(id) {
   return EXERCISES.find((e) => e.id === id) || null;

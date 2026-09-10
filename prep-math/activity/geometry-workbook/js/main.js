@@ -8,7 +8,9 @@
    it is an instrument and not an example.
    ========================================================================== */
 
-import { EXERCISES, GROUPS, LEVELS, HELP, levelOf, helpOf, unavailable } from "./exercises.js";
+import {
+  EXERCISES, GROUPS, LEVELS, HELP, levelOf, helpOf, unavailable, exerciseById, chapterOf,
+} from "./exercises.js";
 import { ICON } from "./icons.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
 import { onAdmin } from "/utils/components/workbook/admin.js";
@@ -40,8 +42,15 @@ function fillMenu(id, table) {
   });
 }
 
+const CHAPTERS = { 1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles" };
+
 const SUBJECT = {
-  eyebrow: "Mathematics · Geometry · Chapter 1: Angles",
+  /* Names the chapter the paper is from — or both, when it mixes them. */
+  eyebrow: (o) => {
+    const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
+    const which = found.size === 1 ? CHAPTERS[[...found][0]] : "Chapters 1 and 2: Angles";
+    return `Mathematics · Geometry · ${which}`;
+  },
   subtitle: (o) => {
     const L = levelOf(o);
     const H = helpOf(o);
@@ -77,6 +86,17 @@ mountBuilder({
     "poly-each": ICON.each,
     "geo-words": ICON.words,
     exterior: ICON.exterior,
+    parallel: ICON.parallel,
+    transversal: ICON.transversal,
+    "tr-angles": ICON.trAngles,
+    "acute-obtuse": ICON.acuteObtuse,
+    "vert-opp": ICON.vertOpp,
+    corresponding: ICON.corresponding,
+    alternate: ICON.alternate,
+    "co-interior": ICON.coInterior,
+    "co-exterior": ICON.coExterior,
+    "multi-trans": ICON.multiTrans,
+    "tri-trans": ICON.triTrans,
   },
   icons: ICON,
   title: "Geometry — Angles",
