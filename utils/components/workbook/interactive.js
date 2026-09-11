@@ -1012,8 +1012,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     el.setAttribute("aria-label", `${spec.label}. Drag to move, drag the round knob to turn; the arrow keys turn it by a degree.`);
     el.innerHTML = spec.svg +
       `<span class="wb-tool__knob" title="Turn"></span>` +
+      `<button type="button" class="wb-tool__close" title="Put it away" aria-label="Put the ${spec.label.toLowerCase()} away">${TOOL_ICONS.close}</button>` +
       (spec.readout ? `<span class="wb-tool__deg"></span>` : "");
     scaler.appendChild(el);
+    /* the × puts it back in the box */
+    const close = el.querySelector(".wb-tool__close");
+    const at = spec.close || [2, 2];
+    close.style.left = `${at[0] * MM}px`;
+    close.style.top = `${at[1] * MM}px`;
+    close.addEventListener("click", (e) => { e.stopPropagation(); toggleTool(spec.id); });
     const px = spec.pivot.map((v) => v * MM);
     /* the direction the knob lies in from the pivot, on the tool itself */
     const knobAt = (Math.atan2(spec.knob[1] - spec.pivot[1], spec.knob[0] - spec.pivot[0]) * 180) / Math.PI;
@@ -1052,6 +1059,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     let mode = null;
     let from = null;
     el.addEventListener("pointerdown", (e) => {
+      /* a press on the × is a click on the ×, not the start of a drag */
+      if (e.target.closest(".wb-tool__close")) return;
       e.preventDefault();
       el.setPointerCapture(e.pointerId);
       el.focus({ preventScroll: true });
@@ -1092,6 +1101,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       const step = e.shiftKey ? 5 : 1;
       if (e.key === "ArrowLeft") { st.rot -= step; place(); e.preventDefault(); }
       if (e.key === "ArrowRight") { st.rot += step; place(); e.preventDefault(); }
+      if (e.key === "Delete" || e.key === "Backspace") { toggleTool(spec.id); e.preventDefault(); }
     });
     return t;
   }

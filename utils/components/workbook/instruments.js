@@ -16,6 +16,8 @@
      edges   the directions, from the pivot, that line up with a side: the
              ruler's measuring edge, the protractor's baseline (either way),
              the set square's two square edges.
+     close   where the × that puts it back in the box sits — clear of the
+             scale and of the knob.
 
    The protractor is the workbook's own (it is also printed, to cut out), so
    it is passed in; the ruler and the set square are the same everywhere.
@@ -33,6 +35,7 @@ export const TOOL_ICONS = {
   ruler: glyph(`<path d="M2.5 8h19v8h-19z"/><path d="M6 8v3M9.5 8v2M13 8v3M16.5 8v2M20 8v3"/>`),
   protractor: glyph(`<path d="M3 17a9 9 0 0 1 18 0z"/><path d="M12 17V13M7.2 12.2l1.6 1.6M16.8 12.2l-1.6 1.6"/>`),
   setsquare: glyph(`<path d="M4 20V4l16 16z"/><path d="M7.5 16.5V12l4.5 4.5z"/>`),
+  close: glyph(`<path d="M7 7l10 10M17 7 7 17"/>`),
 };
 
 /* ── the ruler ─────────────────────────────────────────────────────────────*/
@@ -112,6 +115,8 @@ function protractorSpec(svg) {
     svg,
     pivot,
     knob: [vb[2] + 1, pivot[1]],
+    /* top right: the angle it is turned to is shown top left */
+    close: [vb[2] - 4, 4],
     edges: [{ deg: 0, both: true }],
     readout: true,
   };
@@ -131,6 +136,8 @@ export function instruments({ protractor = null } = {}) {
     /* halfway along, on the plain lower edge: a knob past the 15 is off the
        paper as often as not */
     knob: [RULER_END + len / 2, 12],
+    /* just past the far end of the ruler */
+    close: [RULER_END * 2 + len + 4, 7.5],
     edges: [{ deg: 0, both: false }],
     readout: false,
   }];
@@ -141,6 +148,8 @@ export function instruments({ protractor = null } = {}) {
     svg: setSquareSvg(),
     pivot: [SQ_PAD, SQ_PAD + SQ_LEG],
     knob: [SQ_PAD + SQ_LEG + 4, SQ_PAD + SQ_LEG],
+    /* up by the top corner, where the triangle is narrow and nothing is printed */
+    close: [SQ_PAD + 6, SQ_PAD + 16],
     edges: [{ deg: 0, both: false }, { deg: -90, both: false }],
     readout: false,
   });

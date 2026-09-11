@@ -1238,6 +1238,24 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   border: 0.5mm solid #2a2723;
   cursor: alias;
 }
+/* the × that puts an instrument back in the box — placed by interactive.js */
+.wb-tool__close {
+  position: absolute;
+  width: 6mm;
+  height: 6mm;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: #fffdf8;
+  border: 0.45mm solid #2a2723;
+  color: #2a2723;
+  cursor: pointer;
+}
+.wb-tool__close svg { width: 3.6mm; height: 3.6mm; display: block; }
+.wb-tool__close:hover,
+.wb-tool__close:focus-visible { background: #c0453f; border-color: #c0453f; color: #fffdf8; outline: none; }
 .wb-tool__deg {
   position: absolute;
   left: 1mm;
