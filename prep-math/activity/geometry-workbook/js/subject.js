@@ -15,6 +15,7 @@ const CHAPTERS = {
   1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles",
   3: "Chapter 3: Pyramids and prisms", 4: "Chapter 4: Pythagoras' rule",
   5: "Chapter 5: 2D transformations", 6: "Chapter 6: Circle theorems",
+  7: "Chapter 7: Lines and angles",
 };
 
 export const SUBJECT = {
@@ -33,7 +34,7 @@ export const SUBJECT = {
     const H = helpOf(o);
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
     const parts = [];
-    const angles = found.has(1) || found.has(2) || found.has(6) || !found.size;
+    const angles = found.has(1) || found.has(2) || found.has(6) || found.has(7) || !found.size;
     if (angles) parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
     if (found.has(1) || found.has(2) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
     if (found.has(4)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");

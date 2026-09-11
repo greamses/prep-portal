@@ -128,6 +128,28 @@ export const ICON = {
   /* A circle and lines of writing: the reason. */
   ciReason: line(`<circle cx="7.5" cy="12" r="5"/><path d="M15 8h6M15 12h6M15 16h4"/>`),
 
+  /* ── chapter 7 ── */
+  /* A line, a ray, a segment. */
+  laPaths: line(`<path d="M3 6h18M19 4.5 21 6l-2 1.5M5 4.5 3 6l2 1.5"/><path d="M4 12h16M18 10.5l2 1.5-2 1.5"/><circle cx="4" cy="12" r=".9"/><path d="M4 18h12"/><circle cx="4" cy="18" r=".9"/><circle cx="16" cy="18" r=".9"/>`),
+  /* An angle with its three letters' points. */
+  laName: line(`<path d="M5 19 19 19M5 19 15 6"/><path d="M9.5 19a4.5 4.5 0 0 0-1.7-3.5"/><circle cx="19" cy="19" r=".9"/><circle cx="15" cy="6" r=".9"/><circle cx="5" cy="19" r=".9"/>`),
+  /* An acute arm and a reflex arc. */
+  laKinds: line(`<path d="M12 12h9M12 12l6-6"/><path d="M8.5 12a3.5 3.5 0 1 0 1-2.5"/>`),
+  /* A straight line with a ray off it: 180. */
+  laLine: line(`<path d="M3 16h18M12 16 17 6"/><path d="M15 16a3 3 0 0 0-1.6-2.7M9 16a3 3 0 0 1 3.3-3"/>`),
+  /* Rays all the way round a point: 360. */
+  laPoint: line(`<path d="M12 12h9M12 12 6 5M12 12l-2 9"/><circle cx="12" cy="12" r="3"/>`),
+  /* Two lines crossing, the opposite pair marked. */
+  laVo: line(`<path d="M4 6 20 18M4 18 20 6"/><path d="M8.5 9.4a3.5 3.5 0 0 0 0 5.2M15.5 14.6a3.5 3.5 0 0 0 0-5.2"/>`),
+  /* A right angle cut in two. */
+  laComp: line(`<path d="M5 19h15M5 19V4M5 19l10-9"/><path d="M5 15.5h3.5V19"/>`),
+  /* Two lines at right angles, two side by side. */
+  laPerp: line(`<path d="M4 20 12 12M12 12l-6-6M14 20l7-7M14 13l7 0" /><path d="M9.2 14.8l2.8-2.8"/>`),
+  /* Angles on a line written with x. */
+  laAlgebra: line(`<path d="M3 17h18M12 17l4-9"/><path d="M5 11l3 3M8 11l-3 3M17 12l3 3M20 12l-3 3"/>`),
+  /* Lines of writing: the reason. */
+  laReason: line(`<path d="M3 17h8M7 17l3-6"/><path d="M14 8h7M14 12h7M14 16h5"/>`),
+
   /* Three, four and five dots in a row: a triple. */
   triples: line(`<circle cx="5" cy="6" r=".8"/><circle cx="8" cy="6" r=".8"/><circle cx="11" cy="6" r=".8"/>` +
     `<circle cx="5" cy="12" r=".8"/><circle cx="8" cy="12" r=".8"/><circle cx="11" cy="12" r=".8"/><circle cx="14" cy="12" r=".8"/>` +

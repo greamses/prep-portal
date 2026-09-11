@@ -12,6 +12,7 @@
      ex-pythagoras.js    chapter 4, all of it (drawn by pythag.js)
      ex-transform.js     chapter 5, all of it (drawn by transform.js)
      ex-circles.js       chapter 6, all of it (drawn by circle.js)
+     ex-lines.js         chapter 7, all of it (drawn by rays.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -51,6 +52,12 @@
      quadrilaterals · tangents · chords · the alternate segment theorem ·
      give the reason
 
+   Chapter 7 — Lines and angles
+     points, lines, rays and segments · naming angles · kinds of angles ·
+     angles on a straight line · angles at a point · vertically opposite
+     angles · complementary and supplementary · perpendicular and parallel ·
+     angles written with x · give the reason
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -70,6 +77,7 @@ import { SOLID_GROUPS, SOLID_EXERCISES } from "./ex-solids.js";
 import { PY_GROUPS, PY_EXERCISES } from "./ex-pythagoras.js";
 import { TF_GROUPS, TF_EXERCISES } from "./ex-transform.js";
 import { CI_GROUPS, CI_EXERCISES } from "./ex-circles.js";
+import { LA_GROUPS, LA_EXERCISES } from "./ex-lines.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -85,6 +93,7 @@ export const GROUPS = [
   ...PY_GROUPS,
   ...TF_GROUPS,
   ...CI_GROUPS,
+  ...LA_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -100,15 +109,17 @@ export const EXERCISES = [
   ...PY_EXERCISES,
   ...TF_EXERCISES,
   ...CI_EXERCISES,
+  ...LA_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 6. */
+/** Which chapter an exercise belongs to: 1 to 7. */
 const CHAPTER = new Map([
   ...TRANS_GROUPS.map((g) => [g.id, 2]),
   ...SOLID_GROUPS.map((g) => [g.id, 3]),
   ...PY_GROUPS.map((g) => [g.id, 4]),
   ...TF_GROUPS.map((g) => [g.id, 5]),
   ...CI_GROUPS.map((g) => [g.id, 6]),
+  ...LA_GROUPS.map((g) => [g.id, 7]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
