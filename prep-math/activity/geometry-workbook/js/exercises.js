@@ -41,8 +41,8 @@
      Pythagorean formula · Pythagorean triples
 
    Chapter 5 — 2D transformations
-     what a transformation is · reflection · rotation · scaling
-     (enlargement) · describe the transformation
+     what a transformation is · translation · reflection · rotation ·
+     scaling (enlargement) · describe the transformation
 
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group

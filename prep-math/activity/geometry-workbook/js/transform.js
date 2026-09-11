@@ -75,9 +75,24 @@ export function enlarge([x, y], [cx, cy], k) {
   return [cx + k * (x - cx), cy + k * (y - cy)];
 }
 
+/** Slide by the vector [a, b]: a across (right is +), b up (up is +). */
+export function translate([x, y], [a, b]) {
+  return [x + a, y + b];
+}
+
 /** −3 printed with a real minus sign. */
 export const num = (v) => (v < 0 ? `−${-v}` : String(v));
 export const pt = ([x, y]) => `(${num(x)}, ${num(y)})`;
+
+/** A column vector as it is written: the across over the up, in brackets. */
+export const vec = ([a, b]) => `<span class="gw-vec"><span>${num(a)}</span><span>${num(b)}</span></span>`;
+
+/** A slide said in words: "3 right and 2 down". */
+export function slideWords([a, b]) {
+  const across = a ? `${Math.abs(a)} ${Math.abs(a) === 1 ? "square" : "squares"} ${a > 0 ? "right" : "left"}` : "";
+  const up = b ? `${Math.abs(b)} ${Math.abs(b) === 1 ? "square" : "squares"} ${b > 0 ? "up" : "down"}` : "";
+  return [across, up].filter(Boolean).join(" and ");
+}
 
 /* ── the paper ─────────────────────────────────────────────────────────────*/
 

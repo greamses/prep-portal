@@ -130,3 +130,25 @@
 .gw-table--area th,
 .gw-table--area td { height: 9mm; font-size: 9.5pt; }
 .gw-net { display: block; }
+
+/* ── chapter 5 ─────────────────────────────────────────────────────────────
+   A column vector: the across over the up, in tall round brackets — or two
+   answer boxes, one over the other, when the child writes it. */
+.gw-vec {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6mm;
+  min-width: 5mm;
+  margin: 0 1mm;
+  padding: 0.6mm 1.6mm;
+  vertical-align: middle;
+  border-left: 0.35mm solid #2a2723;
+  border-right: 0.35mm solid #2a2723;
+  border-radius: 2.4mm / 50%;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.wb-sheet .gw-vec .gw-num { margin: 0; }
+.gw-mini { display: block; }

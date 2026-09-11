@@ -2,11 +2,15 @@
    Geometry Workbook — CHAPTER 5: 2D transformations
    ----------------------------------------------------------------------------
    Reflection, rotation and scaling — in that order, as asked — with a short
-   way in and a way out:
+   way in, translation (the simplest of the four, added on request) before
+   them, and a way out:
 
      0. what a transformation is     object and image, A → A′; congruent
                                      (same shape, same size) and similar
                                      (same shape, a different size)
+     ·  translation                  slide it (in words) · the column vector ·
+                                     read the vector · coordinates · two
+                                     slides in one, and back again
      1. reflection                   complete a symmetrical picture · reflect
                                      a shape in a mirror line · reflect points
                                      · the rules for the axes and y = ±x ·
@@ -38,7 +42,7 @@
    ========================================================================== */
 
 import {
-  reflect, rotate, enlarge, lineName, lineForms, num, pt, frame, boundsOf, tfGrid, edgesRuled, edgesOf, miniShape,
+  reflect, rotate, enlarge, translate, lineName, lineForms, num, pt, vec, slideWords, frame, boundsOf, tfGrid, edgesRuled, edgesOf, miniShape,
 } from "./transform.js";
 import { levelOf, dealer } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
@@ -121,6 +125,7 @@ const turnName = (deg) => ({ 90: "90° anticlockwise", "-90": "90° clockwise", 
 
 export const TF_GROUPS = [
   { id: "tf-intro", chapter: "Chapter 5 · 2D transformations", label: "What a transformation is" },
+  { id: "tf-translate", label: "Translation" },
   { id: "tf-reflect", label: "Reflection" },
   { id: "tf-rotate", label: "Rotation" },
   { id: "tf-scale", label: "Scaling (enlargement)" },
@@ -176,6 +181,211 @@ const tfSame = {
   },
   answer(item) {
     return [{ congruent: "congruent — same shape, same size", similar: "similar — same shape, bigger", neither: "neither — stretched one way only, so a different shape" }[item.kind]];
+  },
+};
+
+/* ═══ translation ══════════════════════════════════════════════════════════
+   The simplest of the four: every point slides the same distance the same
+   way. Nothing turns, nothing flips, nothing grows. Met first in words ("3
+   right and 2 up"), then as the column vector that says the same thing, then
+   read back off a picture, done to coordinates, and put together. */
+
+/** A slide a level uses: Gentle small, the others bigger and any way. */
+function slideOf(r, o) {
+  const most = at(o, [4, 6, 7]);
+  for (;;) {
+    const v = [r.int(-most, most), r.int(-most, most)];
+    if (tier(o) === "gentle" && (Math.abs(v[0]) > 4 || Math.abs(v[1]) > 4)) continue;
+    if (v[0] || v[1]) return v;
+  }
+}
+
+/** An object and its slide by v, on a grid that holds both. */
+function slid(r, o, pickV = slideOf) {
+  for (let g = 0; g < 80; g++) {
+    const v = pickV(r, o);
+    const obj = oriented(r);
+    const image = obj.map((p) => translate(p, v));
+    const bounds = boundsOf([...obj, ...image]);
+    if (fits(bounds)) return { v, obj, image, bounds };
+  }
+  const obj = [[0, 0], [2, 0], [0, 3]];
+  return { v: [3, 1], obj, image: obj.map((p) => translate(p, [3, 1])), bounds: boundsOf([...obj, [5, 4]]) };
+}
+
+const tfSlide = {
+  id: "tf-slide",
+  group: "tf-translate",
+  label: "Slide the shape",
+  blurb: "Every corner moves the same way, the same distance. Nothing turns.",
+  heading: "Slide the shape",
+  instruction: () =>
+    "A TRANSLATION slides a shape. Every corner moves the same number of squares across and the " +
+    "same number up or down — the shape does not turn, flip or change size, so the image is " +
+    "congruent and faces the same way. Move each corner as it says, mark it, and join the corners " +
+    "in the same order.",
+  cols: 2,
+  defaultCount: 4,
+  make(r, o) {
+    return slid(r, o);
+  },
+  render(item) {
+    return art(tfGrid({ bounds: item.bounds, shapes: [{ pts: item.obj, names: NAMES }] })) +
+      ask(`Slide it <b>${slideWords(item.v)}</b>.`);
+  },
+  worked() {
+    const obj = [[0, 0], [2, 0], [0, 2]];
+    const v = [4, 1];
+    const img = obj.map((p) => translate(p, v));
+    return worked("One done for you", side(
+      art(tfGrid({ bounds: boundsOf([...obj, ...img]), shapes: [{ pts: obj, names: NAMES }, { pts: img, image: true, names: PRIMES }] })),
+      say("4 squares right and 1 up. From A, count 4 right and 1 up: that is A′. Do the same from B " +
+        "and from C, and join them. The image is the same shape, the same size, the same way up.")));
+  },
+  key(item) {
+    return [drawKey(item, `every corner ${slideWords(item.v)}`)];
+  },
+  answer(item) {
+    return [`every corner ${slideWords(item.v)}`];
+  },
+};
+
+const tfVecDraw = {
+  id: "tf-vec-draw",
+  group: "tf-translate",
+  label: "Translate by a column vector",
+  blurb: "The top number is across (right is +), the bottom is up (up is +).",
+  heading: "Translate the shape by the vector",
+  instruction: () =>
+    "A translation is written as a COLUMN VECTOR: two numbers in tall brackets, one over the other. " +
+    "The TOP number is how far across — positive to the right, negative to the left. The BOTTOM " +
+    "number is how far up — positive up, negative down. So the vector with 3 over −2 means 3 right " +
+    "and 2 down.",
+  cols: 2,
+  defaultCount: 4,
+  make(r, o) {
+    return slid(r, o);
+  },
+  render(item) {
+    return art(tfGrid({ bounds: item.bounds, shapes: [{ pts: item.obj, names: NAMES }] })) +
+      ask(`Translate it by ${vec(item.v)}`);
+  },
+  worked() {
+    return worked("One done for you", say(
+      `${vec([-3, 2])} means 3 squares LEFT (the top is negative) and 2 squares UP (the bottom is ` +
+      "positive). Move every corner 3 left and 2 up, and join them."));
+  },
+  key(item) {
+    return [drawKey(item, `every corner ${slideWords(item.v)}`)];
+  },
+  answer(item) {
+    return [`every corner ${slideWords(item.v)}`];
+  },
+};
+
+const tfVecRead = {
+  id: "tf-vec-read",
+  group: "tf-translate",
+  label: "What is the vector?",
+  blurb: "From a corner to its image: how far across, how far up — with the signs.",
+  heading: "Write the translation as a column vector",
+  instruction: () =>
+    "Pick one corner of the object and find the same corner on the image. Count how far across it " +
+    "has moved (right is +, left is −) and how far up (up is +, down is −). Write the across on top " +
+    "and the up underneath. Every corner gives the same answer — check with a second one.",
+  cols: 2,
+  defaultCount: 4,
+  make(r, o) {
+    return slid(r, o);
+  },
+  render(item) {
+    return art(tfGrid({ bounds: item.bounds, shapes: [{ pts: item.obj, names: NAMES }, { pts: item.image, image: true, names: PRIMES }] })) +
+      ask(`The vector is <span class="gw-vec">${small()}${small()}</span>`);
+  },
+  worked() {
+    return worked("One done for you", say(
+      `A is at 1 across; A′ is at 5 across: it moved 4 to the RIGHT, so the top is 4. A was 3 up, A′ ` +
+      `is 1 up: it moved 2 DOWN, so the bottom is −2. The vector is ${vec([4, -2])}.`));
+  },
+  key(item) {
+    return [want.num(item.v[0]), want.num(item.v[1])];
+  },
+  answer(item) {
+    return [`${vec(item.v)} — ${slideWords(item.v)}`];
+  },
+};
+
+const tfVecPts = {
+  id: "tf-vec-pts",
+  group: "tf-translate",
+  label: "Translate coordinates",
+  blurb: "Add the top number to x and the bottom number to y.",
+  heading: "Translate each point by the vector",
+  instruction: () =>
+    "With coordinates a translation is only adding: add the vector's top number to the x (across) " +
+    "and its bottom number to the y (up). Adding a negative number is taking away.",
+  cols: 2,
+  defaultCount: 4,
+  make(r, o) {
+    const v = slideOf(r, o);
+    const pts = [];
+    while (pts.length < 4) {
+      const p = [r.int(-6, 6), r.int(-6, 6)];
+      if (pts.some((u) => u[0] === p[0] && u[1] === p[1])) continue;
+      pts.push(p);
+    }
+    return { v, pts };
+  },
+  render(item) {
+    return `<p class="wb-ask wb-ask--lead">Translate by ${vec(item.v)}</p>` +
+      item.pts.map((p) => ask(`${pt(p)} → (&nbsp;${small()},&nbsp;${small()})`)).join("");
+  },
+  worked() {
+    return worked("One done for you", say(
+      `(2, 5) translated by ${vec([3, -4])}: 2 + 3 = 5 and 5 + (−4) = 1, so it goes to <b>(5, 1)</b>.`));
+  },
+  key(item) {
+    return item.pts.flatMap((p) => translate(p, item.v).map((v) => want.num(v)));
+  },
+  answer(item) {
+    return [item.pts.map((p) => `${pt(p)} → ${pt(translate(p, item.v))}`).join(", ")];
+  },
+};
+
+const tfVecJoin = {
+  id: "tf-vec-join",
+  group: "tf-translate",
+  label: "Two slides in one, and back again",
+  blurb: "Add the tops and add the bottoms. To go back, change both signs.",
+  heading: "Put two translations together",
+  instruction: () =>
+    "Slide a shape by one vector and then by another, and it has moved as if by one vector: add " +
+    "the two top numbers for the new top, and the two bottom numbers for the new bottom. To slide " +
+    "it back to where it started, use the same vector with both signs changed.",
+  cols: 2,
+  defaultCount: 4,
+  make(r, o) {
+    const u = slideOf(r, o);
+    const w = slideOf(r, o);
+    return { u, w };
+  },
+  render(item) {
+    const blank = `<span class="gw-vec">${small()}${small()}</span>`;
+    return ask(`${vec(item.u)} then ${vec(item.w)} is the same as ${blank}`) +
+      ask(`To go back after ${vec(item.u)}, use ${blank}`);
+  },
+  worked() {
+    return worked("One done for you", say(
+      `${vec([3, 1])} then ${vec([-5, 2])}: 3 + (−5) = −2 across, 1 + 2 = 3 up, so it is ${vec([-2, 3])} ` +
+      `altogether. To undo ${vec([3, 1])}, go ${vec([-3, -1])}: 3 left and 1 down.`));
+  },
+  key(item) {
+    const { u, w } = item;
+    return [want.num(u[0] + w[0]), want.num(u[1] + w[1]), want.num(-u[0]), want.num(-u[1])];
+  },
+  answer(item) {
+    const { u, w } = item;
+    return [`together ${vec([u[0] + w[0], u[1] + w[1]])}; back ${vec([-u[0], -u[1]])}`];
   },
 };
 
@@ -966,6 +1176,7 @@ const tfFindCentre = {
 /* ═══ 4. describe it fully ═════════════════════════════════════════════════*/
 
 const dealDescribe = dealer();
+const KINDS = ["translation", "reflection", "rotation", "enlargement"];
 const tfDescribe = {
   id: "tf-describe",
   group: "tf-describe",
@@ -973,16 +1184,20 @@ const tfDescribe = {
   blurb: "Name it, and give everything needed to do it again.",
   heading: "Describe the transformation fully",
   instruction: () =>
-    "First decide: has it been flipped (a REFLECTION), turned (a ROTATION), or changed size (an " +
-    "ENLARGEMENT)? Then 'fully' means everything someone would need to do it again: a reflection " +
-    "needs its mirror line; a rotation its angle, direction and centre; an enlargement its scale " +
-    "factor and centre.",
+    "First decide: has it only slid (a TRANSLATION), been flipped (a REFLECTION), turned (a " +
+    "ROTATION), or changed size (an ENLARGEMENT)? Then 'fully' means everything someone would need " +
+    "to do it again: a translation needs its vector; a reflection its mirror line; a rotation its " +
+    "angle, direction and centre; an enlargement its scale factor and centre.",
   cols: 1,
   defaultCount: 3,
   make(r, o, k, i) {
-    const kind = dealDescribe(r, ["reflection", "rotation", "enlargement"], i);
+    const kind = dealDescribe(r, KINDS, i);
     for (let g = 0; g < 100; g++) {
-      if (kind === "reflection") {
+      if (kind === "translation") {
+        const v = slideOf(r, { level: "gentle" });
+        const res = onAxes(r, o, (obj) => ({ image: obj.map((p) => translate(p, v)) }));
+        if (res) return { kind, v, ...res, says: `a translation by the vector ${vec(v)} (${slideWords(v)})` };
+      } else if (kind === "reflection") {
         const L = at(o, FIND_LINES)(r);
         const res = onAxes(r, o, (obj) => (oneSide(obj, L) ? { image: obj.map((p) => reflect(p, L)) } : null));
         if (res) return { kind, L, ...res, says: `a reflection in the line ${lineName(L)}` };
@@ -1009,16 +1224,17 @@ const tfDescribe = {
       bounds: [-5, 5, -5, 5], axes: true,
       shapes: [{ pts: item.obj, names: NAMES }, { pts: item.image, image: true, names: PRIMES }],
     });
-    return side(art(fig), ask("It is") + tick("a reflection", "a rotation", "an enlargement") + ask("In full:") + ask(line()));
+    return side(art(fig), ask("It is") + tick("a translation", "a reflection", "a rotation", "an enlargement") + ask("In full:") + ask(line()));
   },
   worked() {
     return worked("What 'fully' means", say(
+      `Not just 'a translation' but '<b>a translation by ${vec([3, -1])}</b>' (3 right, 1 down). ` +
       "Not just 'a rotation' but '<b>a rotation 90° clockwise about (1, 0)</b>'. Not just 'an " +
       "enlargement' but '<b>an enlargement, scale factor 2, centre (0, 0)</b>'. Not just 'a " +
       "reflection' but '<b>a reflection in the line y = x</b>'."));
   },
   key(item) {
-    return [want.tick(["reflection", "rotation", "enlargement"].indexOf(item.kind)), want.free()];
+    return [want.tick(KINDS.indexOf(item.kind)), want.free()];
   },
   answer(item) {
     return [item.says];
@@ -1027,6 +1243,7 @@ const tfDescribe = {
 
 export const TF_EXERCISES = [
   tfSame,
+  tfSlide, tfVecDraw, tfVecRead, tfVecPts, tfVecJoin,
   tfSym, tfReflectDraw, tfReflectPts, tfReflectRule, tfMirrorFind,
   tfTurn, tfRotateDraw, tfRotatePts, tfRotateDescribe, tfRotSym,
   tfSf, tfEnlargeDraw, tfEnlargeCentre, tfEnlargePts, tfEffects, tfFindCentre,

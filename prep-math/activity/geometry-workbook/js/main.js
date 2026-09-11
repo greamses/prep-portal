@@ -92,6 +92,7 @@ mountBuilder({
     "py-formula": ICON.pyFormula,
     "py-triples": ICON.triples,
     "tf-intro": ICON.tfIntro,
+    "tf-translate": ICON.tfTranslate,
     "tf-reflect": ICON.tfReflect,
     "tf-rotate": ICON.tfRotate,
     "tf-scale": ICON.tfScale,

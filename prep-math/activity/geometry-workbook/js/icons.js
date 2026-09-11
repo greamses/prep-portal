@@ -95,6 +95,8 @@ export const ICON = {
   /* ── chapter 5 ── */
   /* A shape and a blue copy of it: object and image. */
   tfIntro: line(`<path d="M3 17l4-8 4 8z"/><path d="M13 17l4-8 4 8z" stroke-dasharray="1.6 1.2"/>`),
+  /* A triangle and the same triangle slid along: an arrow between them. */
+  tfTranslate: line(`<path d="M3 13l3-6 3 6z"/><path d="M15 19l3-6 3 6z"/><path d="M8 15.5l6 2.2M11.6 18.4l2.4-.7-1.5-2"/>`),
   /* A triangle, a dashed mirror, its reflection. */
   tfReflect: line(`<path d="M12 3v18" stroke-dasharray="1.8 1.4"/><path d="M9.5 7 4 16h5.5zM14.5 7 20 16h-5.5z"/>`),
   /* A curved arrow round a centre. */
