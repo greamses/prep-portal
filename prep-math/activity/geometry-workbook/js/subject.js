@@ -14,7 +14,7 @@ export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", s
 const CHAPTERS = {
   1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles",
   3: "Chapter 3: Pyramids and prisms", 4: "Chapter 4: Pythagoras' rule",
-  5: "Chapter 5: 2D transformations",
+  5: "Chapter 5: 2D transformations", 6: "Chapter 6: Circle theorems",
 };
 
 export const SUBJECT = {
@@ -33,10 +33,9 @@ export const SUBJECT = {
     const H = helpOf(o);
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
     const parts = [];
-    if (found.has(1) || found.has(2) || !found.size) {
-      parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
-      parts.push(`shapes up to ${L.maxSides} sides`);
-    }
+    const angles = found.has(1) || found.has(2) || found.has(6) || !found.size;
+    if (angles) parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
+    if (found.has(1) || found.has(2) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
     if (found.has(4)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
     if (found.has(5)) {
       parts.push({ gentle: "mirrors along the grid, half and quarter turns, scale factors 2 and 3", middle: "diagonal mirrors, turns about any point", stretch: "y = −x, hidden centres, fractional scale factors" }[L.id]);

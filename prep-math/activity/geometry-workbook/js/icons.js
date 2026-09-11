@@ -106,6 +106,28 @@ export const ICON = {
   /* Lines of writing beside a shape: say it in full. */
   tfDescribe: line(`<path d="M3 17l4-8 4 8z"/><path d="M14 8h7M14 12h7M14 16h5"/>`),
 
+  /* ── chapter 6 ── */
+  /* A circle with its centre and a radius. */
+  ciParts: line(`<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r=".9"/><path d="M12 12l6-6"/>`),
+  /* Two radii and the chord between them: an isosceles triangle. */
+  ciIso: line(`<circle cx="12" cy="12" r="8.5"/><path d="M12 12 5 17M12 12l7 5M5 17h14"/>`),
+  /* The angle at the centre and at the edge on the same arc. */
+  ciCentre: line(`<circle cx="12" cy="12" r="8.5"/><path d="M6 18l6-6 6 6M6 18 12 3.5 18 18"/>`),
+  /* A diameter and a point on the circle: the right angle. */
+  ciSemi: line(`<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M3.5 12 16 5.2 20.5 12"/>`),
+  /* Two angles on the same chord. */
+  ciSame: line(`<circle cx="12" cy="12" r="8.5"/><path d="M5 16h14M5 16 8 5M19 16 8 5M5 16l11-11M19 16 16 5"/>`),
+  /* A quadrilateral with its corners on the circle. */
+  ciCyclic: line(`<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12-1 1.5 9-11 5z"/>`),
+  /* A circle and a line touching it. */
+  ciTangent: line(`<circle cx="11" cy="11" r="7.5"/><path d="M2 18.5h20"/><path d="M11 11v7.5"/>`),
+  /* A chord and the line from the centre halving it. */
+  ciChord: line(`<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r=".9"/><path d="M5 16h14M12 12v4"/>`),
+  /* A tangent, a chord, and the angle in the other segment. */
+  ciAlt: line(`<circle cx="12" cy="11" r="7.5"/><path d="M2 18.5h20M12 18.5 18.5 7.3M12 18.5 7 5.5M7 5.5l11.5 1.8"/>`),
+  /* A circle and lines of writing: the reason. */
+  ciReason: line(`<circle cx="7.5" cy="12" r="5"/><path d="M15 8h6M15 12h6M15 16h4"/>`),
+
   /* Three, four and five dots in a row: a triple. */
   triples: line(`<circle cx="5" cy="6" r=".8"/><circle cx="8" cy="6" r=".8"/><circle cx="11" cy="6" r=".8"/>` +
     `<circle cx="5" cy="12" r=".8"/><circle cx="8" cy="12" r=".8"/><circle cx="11" cy="12" r=".8"/><circle cx="14" cy="12" r=".8"/>` +
