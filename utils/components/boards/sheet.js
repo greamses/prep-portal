@@ -51,7 +51,7 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
             ? `<select class="bd-sum__in" data-n="${f.n}" aria-label="${f.aria}">
                  ${f.pick.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}
                </select>`
-            : `<input class="bd-sum__in" data-n="${f.n}" type="text" inputmode="decimal"
+            : `<input class="bd-sum__in" data-n="${f.n}" type="text" inputmode="${f.mode || "decimal"}"
                       autocomplete="off" spellcheck="false" aria-label="${f.aria}" />`}
         </label>`).join("")}
       <button class="pp-btn bd-act bd-act--set" type="submit">${ICONS.set} Set it</button>

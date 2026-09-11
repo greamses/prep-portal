@@ -84,10 +84,15 @@ export function createSheetPanel(ctx, view, stage, {
   let built = null;
 
   function buildSum(variant, sheet) {
-    const boxes = sheet.fields.map((f) => `
+    const boxes = sheet.fields.map((f) => (f.pick
+      /* an operation to pick rather than a number to type — the fraction board's,
+         where "/" is already the fraction bar and cannot also mean divide */
+      ? `<select class="bb-sheetpanel__num bb-sheetpanel__pick" data-n="${f.n}"
+                 aria-label="${f.aria}">${f.pick.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>`
+      : `
       <input class="bb-sheetpanel__num${f.wide ? " bb-sheetpanel__num--wide" : ""}"
-             data-n="${f.n}" inputmode="numeric" autocomplete="off"
-             spellcheck="false" aria-label="${f.aria}" />`);
+             data-n="${f.n}" inputmode="${f.mode || "numeric"}" autocomplete="off"
+             spellcheck="false" aria-label="${f.aria}" />`));
     const sep = sheet.sep
       ? `<span class="bb-sheetpanel__op" aria-hidden="true">${sheet.sep}</span>`
       : "";
@@ -223,7 +228,9 @@ export function createSheetPanel(ctx, view, stage, {
 
     const q = sheet.ask(board);
     /* What the folded line says: the sum, so you still know which page this is. */
-    foldEl.textContent = sheet.fields.map((f) => showing[f.n]).join(` ${sheet.sep} `).trim();
+    foldEl.textContent = sheet.said
+      ? sheet.said(board)
+      : sheet.fields.map((f) => showing[f.n]).join(` ${sheet.sep} `).trim();
     askEl.textContent = q.text;
     /* Where it goes is said apart from what it is, because the two are answered
        in different places: the question is read here, and the answer is written

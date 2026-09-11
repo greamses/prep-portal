@@ -114,13 +114,13 @@ function catchUp(thing) {
   if (!store.sync || !thing) return;
   const lead = store.things.find(
     (t) => t.id !== thing.id
-      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t))
+      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t)?.setValue)
   );
   const n = lead ? valueOf(lead) : store.blocks.reduce((s, b) => s + b.l * b.w * b.h, 0);
   const sheet = sheetFor(thing);
   if (thing.kind === "abacus") setAbacusValue(thing, n);
   else if (thing.variant === "place") setChartValue(thing, n);
-  else if (sheet) sheet.setValue(thing, n);
+  else if (sheet?.setValue) sheet.setValue(thing, n);
 }
 
 /* ── a sum worked out on a frame ──────────────────────────────────────────── */
@@ -461,6 +461,7 @@ function placeTool(tool) {
 
 /** The sum a sheet is set to, said the way that method writes it. */
 function sumOf(sheet, board) {
+  if (sheet.said) return sheet.said(board);
   const showing = sheet.read(board);
   return sheet.fields.map((f) => showing[f.n]).join(` ${sheet.sep} `).trim();
 }

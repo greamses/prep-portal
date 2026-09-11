@@ -284,7 +284,7 @@ export function ask(thing) {
     return {
       done: false, kind: "z",
       text: `Nothing times ${writeNum(plan.multiplicand, 0, b)} is nothing — what goes in the row?`,
-      where: rowName(e.run, plan),
+      where: `in ${rowName(e.run, plan)}`,
     };
   }
   if (e.kind === "m") {
@@ -292,7 +292,7 @@ export function ask(thing) {
       return {
         done: false, kind: "m",
         text: `Nothing left to multiply — only the ${writeNum(e.carryIn, 0, b)} carried. What goes down?`,
-        where: rowName(e.run, plan),
+        where: `in ${rowName(e.run, plan)}`,
       };
     }
     const times = `${writeNum(e.d, 0, b)} × ${writeNum(e.a, 0, b)}`;
@@ -301,7 +301,7 @@ export function ask(thing) {
       text: e.carryIn
         ? `${times}, and the ${writeNum(e.carryIn, 0, b)} carried — what goes down?`
         : `${times} — what goes down?`,
-      where: rowName(e.run, plan),
+      where: `in ${rowName(e.run, plan)}`,
     };
   }
   if (e.kind === "mc") {

@@ -419,7 +419,22 @@ const PIECES = [
   "", "whole ones", "halves", "thirds", "quarters", "fifths", "sixths",
   "sevenths", "eighths", "ninths", "tenths", "elevenths", "twelfths",
 ];
-const pieces = (d, base) => PIECES[d] || `${writeNum(d, 0, base)}ths`;
+const ONE = [
+  "", "whole one", "half", "third", "quarter", "fifth", "sixth",
+  "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth",
+];
+/* The name of a size of piece. With a count it agrees with the count — one
+   twelfth, seven twelfths — and without one it is the plural, the way a size
+   is talked about ("quarters and sixths are different sizes"). */
+const pieces = (d, base, count) => (count === 1
+  ? ONE[d] || `${writeNum(d, 0, base)}th`
+  : PIECES[d] || `${writeNum(d, 0, base)}ths`);
+const wholes = (n) => (n === 1 ? "whole one" : "whole ones");
+
+/** The sum as it is written — "3/4 + 5/6" — for a heading or a folded strip. */
+export function writtenSum(thing) {
+  return `${writeFraction(thing.a, thing.base)} ${SIGN[thing.op]} ${writeFraction(thing.b, thing.base)}`;
+}
 
 function said(plan) {
   const base = plan.base;
@@ -439,8 +454,8 @@ export function ask(thing) {
       done: false, kind: e.kind,
       text: e.was.d === 1
         ? `${writeFraction(e.was, base)} is a whole number, and a whole number goes over 1. What goes on top?`
-        : `${writeFraction(e.was, base)} — ${N(e.was.w)} whole ones is `
-          + `${N(e.was.w * e.was.d)} ${pieces(e.was.d, base)}. What goes on top altogether?`,
+        : `${writeFraction(e.was, base)} — ${N(e.was.w)} ${wholes(e.was.w)} is `
+          + `${N(e.was.w * e.was.d)} ${pieces(e.was.d, base, e.was.w * e.was.d)}. What goes on top altogether?`,
       where: "on the next line",
     };
   }
@@ -542,7 +557,7 @@ function nudge(e, plan, given) {
   if (e.kind === "change") {
     if (given === e.was.n) {
       return `The bottom changed, so the top has to change with it — `
-        + `${writeFraction(e.was, base)} is not ${N(e.was.n)} ${pieces(e.L, base)}.`;
+        + `${writeFraction(e.was, base)} is not ${N(e.was.n)} ${pieces(e.L, base, e.was.n)}.`;
     }
     return `Not that — ${N(e.was.d)} goes into ${N(e.L)} ${N(e.L / e.was.d)} times, `
       + `so the top is multiplied by ${N(e.L / e.was.d)} too.`;
@@ -560,8 +575,9 @@ function nudge(e, plan, given) {
       + `${N(x.n)} ${SIGN[e.op]} ${N(y.n)} of them.`;
   }
   if (e.kind === "improper") {
-    return `Not quite — ${N(e.was.w)} whole ones is ${N(e.was.w)} × ${N(e.was.d)} `
-      + `= ${N(e.was.w * e.was.d)} ${pieces(e.was.d, base)}, and there are ${N(e.was.n)} more.`;
+    return `Not quite — ${N(e.was.w)} ${wholes(e.was.w)} is ${N(e.was.w)} × ${N(e.was.d)} `
+      + `= ${N(e.was.w * e.was.d)} ${pieces(e.was.d, base, e.was.w * e.was.d)}, and there `
+      + `${e.was.n === 1 ? "is" : "are"} ${N(e.was.n)} more.`;
   }
   if (e.kind === "flipTop" || e.kind === "flipBottom") {
     return "Not quite — upside down means the top and the bottom swap over.";
@@ -584,11 +600,11 @@ function nudge(e, plan, given) {
 function told(e, plan) {
   const base = plan.base;
   const N = (n) => writeNum(n, 0, base);
-  if (e.kind === "improper") return `${writeFraction(e.was, base)} is ${N(e.value)} ${pieces(e.was.d, base)}.`;
+  if (e.kind === "improper") return `${writeFraction(e.was, base)} is ${N(e.value)} ${pieces(e.was.d, base, e.value)}.`;
   if (e.kind === "flipTop") return "Upside down, and the sign turns into a times.";
   if (e.kind === "flipBottom") return "Now it is a multiplication like any other.";
   if (e.kind === "common") return `Both of them can be written in ${pieces(e.value, base)}.`;
-  if (e.kind === "change") return `${writeFraction(e.was, base)} is ${N(e.value)} ${pieces(e.L, base)}.`;
+  if (e.kind === "change") return `${writeFraction(e.was, base)} is ${N(e.value)} ${pieces(e.L, base, e.value)}.`;
   if (e.kind === "top") return `${N(e.value)} on top.`;
   if (e.kind === "bottom") {
     return e.op === "*"
@@ -597,9 +613,9 @@ function told(e, plan) {
   }
   if (e.kind === "hcf") return `${N(e.value)} goes into both, so both can be cut down by it.`;
   if (e.kind === "cutTop" || e.kind === "cutBottom") return `${N(e.value)}.`;
-  if (e.kind === "wholeOnly") return `${N(e.value)} whole ones, and no part left over.`;
-  if (e.kind === "wholes") return `${N(e.value)} whole ones.`;
-  return `and ${N(e.value)} ${pieces(plan.answer.d, base)} left over.`;
+  if (e.kind === "wholeOnly") return `${N(e.value)} ${wholes(e.value)}, and no part left over.`;
+  if (e.kind === "wholes") return `${N(e.value)} ${wholes(e.value)}.`;
+  return `and ${N(e.value)} ${pieces(plan.answer.d, base, e.value)} left over.`;
 }
 
 function finish(plan) {

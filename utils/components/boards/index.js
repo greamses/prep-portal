@@ -103,9 +103,10 @@ export const BOARDS = {
     blurb: "The same amount written again and again until it is tidy.",
     make: fraction.makeFraction,
     fields: [
-      { n: "a", label: "First fraction", aria: "The first fraction, like 3/4 or 2 3/4" },
+      /* typed with a "/" and a space, which a number pad has neither of */
+      { n: "a", label: "First fraction", aria: "The first fraction, like 3/4 or 2 3/4", mode: "text" },
       { n: "op", label: "Do what", aria: "What to do with them", pick: fraction.OPS },
-      { n: "b", label: "Second fraction", aria: "The second fraction, like 5/6" },
+      { n: "b", label: "Second fraction", aria: "The second fraction, like 5/6", mode: "text" },
     ],
     read: (t) => ({
       a: fraction.writeFraction(t.a, t.base),

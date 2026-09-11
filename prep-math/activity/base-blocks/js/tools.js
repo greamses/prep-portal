@@ -10,7 +10,7 @@
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
-  longDivideArt, columnAddArt, columnTimesArt,
+  longDivideArt, columnAddArt, columnTimesArt, fractionArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -198,6 +198,20 @@ export const GROUPS = [
           + "in its own column — or refuses it and says why. Set any sum you "
           + "like, in any base you are working in.",
         art: longDivideArt,
+      },
+      {
+        id: "fraction-sum",
+        kind: "board",
+        variant: "fraction",
+        label: "Fraction Sums",
+        short: "Fractions",
+        blurb:
+          "Add, take away, multiply or divide two fractions, worked down the "
+          + "page a line at a time — each line the same amount written again, "
+          + "until it is as tidy as it goes. Put them over one bottom, put the "
+          + "tops together, cut it down, and turn it back into whole ones. Add "
+          + "the bottoms and it tells you why not.",
+        art: fractionArt,
       },
       {
         id: "division",

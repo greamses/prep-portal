@@ -31,7 +31,9 @@ import { occupancy, findSpot, fits, mark, footprint, arrange } from "./layout.js
 function targets(exceptId) {
   return store.things.filter(
     (t) => t.id !== exceptId
-      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t))
+      /* a written sheet takes part only if it can show a number it is handed —
+         the fraction board cannot, and says nothing rather than make one up */
+      && (t.kind === "abacus" || t.variant === "place" || !!sheetFor(t)?.setValue)
   );
 }
 
@@ -40,7 +42,7 @@ export function valueOf(thing) {
   if (thing.kind === "abacus") return abacusValue(thing);
   if (thing.variant === "place") return placeReading(thing, store.blocks, store.base).total;
   const sheet = sheetFor(thing);
-  if (sheet) return sheet.value(thing);
+  if (sheet) return sheet.value ? sheet.value(thing) : null;
   return 0;
 }
 

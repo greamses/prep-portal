@@ -33,6 +33,7 @@ import * as longdiv from "./longdiv.js";
 import { stageOf, layStage, stageSentence, groupNote, setAside } from "./divblocks.js";
 import * as column from "./column.js";
 import * as times from "./times.js";
+import * as fraction from "./fraction.js";
 
 export const SHEETS = {
   longdiv: {
@@ -111,6 +112,36 @@ export const SHEETS = {
        number a tool is working ON. */
     value: times.multiplicandOf,
     setValue: times.setProduct,
+  },
+  fraction: {
+    name: "fraction sum",
+    sep: "",
+    /* The operation is picked, not typed: "/" is already the fraction bar. And
+       the two fractions are typed with a "/" and a space, which a number pad
+       has neither of. */
+    fields: [
+      { n: "a", aria: "The first fraction, like 3/4 or 2 3/4", mode: "text" },
+      { n: "op", aria: "What to do with them", pick: fraction.OPS },
+      { n: "b", aria: "The second fraction, like 5/6", mode: "text" },
+    ],
+    read: (t) => ({
+      a: fraction.writeFraction(t.a, t.base),
+      op: t.op,
+      b: fraction.writeFraction(t.b, t.base),
+    }),
+    /* The sum said in one line, sign and all — joining the boxes would say the
+       operation's internal name, and "3/4 * 5/6" is not how anyone writes it. */
+    said: fraction.writtenSum,
+    set: (t, v) => fraction.setWritten(t, v.a, v.op, v.b),
+    ask: fraction.ask,
+    answer: fraction.answer,
+    showNext: fraction.showNext,
+    reset: fraction.resetWork,
+    cells: fraction.cellsOf,
+    /* No setValue, on purpose: sync hands round a whole number, and a fraction
+       sum does not hold one. Anything it offered the blocks would be made up,
+       so it stays out of sync altogether (sync.js `targets`). */
+    value: () => null,
   },
 };
 

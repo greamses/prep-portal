@@ -1464,6 +1464,9 @@ body.bb-locked { overflow: hidden; }
 /* One box holding a whole sum — "269 + 182" — rather than one number, so it is
    read from the left like writing instead of from the middle like a figure. */
 .bb-sheetpanel__num--wide { flex: 1 1 100%; text-align: left; letter-spacing: 0.04em; }
+/* The fraction board's operation, picked rather than typed: "/" is already the
+   fraction bar, so it cannot also mean divide. */
+.bb-sheetpanel__pick { flex: 0 0 auto; text-align: left; cursor: pointer; }
 .bb-sheetpanel__num:focus-visible {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 1px;

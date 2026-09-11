@@ -135,6 +135,9 @@ function clone(t) {
   if (t.focus) copy.focus = { ...t.focus };
   if (t.counters) copy.counters = [...t.counters];
   if (t.addends) copy.addends = [...t.addends];
+  // the fraction board's two fractions
+  if (t.a) copy.a = { ...t.a };
+  if (t.b) copy.b = { ...t.b };
   if (t.blockFrame) copy.blockFrame = { ...t.blockFrame };
   return copy;
 }

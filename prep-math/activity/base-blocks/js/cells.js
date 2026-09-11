@@ -98,7 +98,9 @@ export function createCellLayer(ctx, view, stage, {
    * applied about its centre, so a cell of a board lying at an angle is found
    * at an angle too.
    */
-  function cellBox(board, grid, row, col) {
+  /* `rows` is for a box that stands across more than one row — the whole ones
+     beside a fraction, which belong to the top and the bottom alike. */
+  function cellBox(board, grid, row, col, rows = 1) {
     const BJS = B();
     const fw = board.l - INSET;
     const fh = board.w - INSET;
@@ -116,7 +118,7 @@ export function createCellLayer(ctx, view, stage, {
     const u0 = (grid.gutter + col) / grid.cols;
     const u1 = (grid.gutter + col + 1) / grid.cols;
     const v0 = row / grid.rows;
-    const v1 = (row + 1) / grid.rows;
+    const v1 = (row + rows) / grid.rows;
 
     let left = Infinity;
     let right = -Infinity;
@@ -329,7 +331,7 @@ export function createCellLayer(ctx, view, stage, {
       return;
     }
     open.cells.forEach((c, i) => {
-      if (boxes[i]) lay(boxes[i], cellBox(board, open.grid, c.row, c.col));
+      if (boxes[i]) lay(boxes[i], cellBox(board, open.grid, c.row, c.col, open.span || 1));
     });
   }
 

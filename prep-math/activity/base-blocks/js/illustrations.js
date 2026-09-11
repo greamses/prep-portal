@@ -351,6 +351,33 @@ export function columnTimesArt() {
   );
 }
 
+/**
+ * The fraction board: two fractions and a sign, and the next line down with its
+ * equals sign, the bottom already written and the top waiting to be worked out.
+ */
+export function fractionArt() {
+  const fig = (x, y, text, size = 13, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+  const bar = (x, y, w) =>
+    `<path d="M${x - w / 2} ${y}H${x + w / 2}" stroke="${LINE}" stroke-width="1.5"
+       stroke-linecap="round" fill="none"/>`;
+
+  return svg(
+    // 3/4 + 5/6
+    fig(46, 13, "3") + bar(46, 22, 12) + fig(46, 31, "4") +
+    fig(64, 22, "+", 12, FAINT) +
+    fig(82, 13, "5") + bar(82, 22, 12) + fig(82, 31, "6") +
+    // = ?/12, the top still to come
+    fig(34, 58, "=", 12, FAINT) +
+    `<rect x="45" y="41" width="18" height="14" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>` +
+    bar(54, 58, 20) + fig(54, 68, "12")
+  );
+}
+
 export function columnAddArt() {
   const cw = 14;
   const right = 96;                        // the ones column

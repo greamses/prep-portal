@@ -18,6 +18,25 @@ import { buildTile, placeTile, tileShape, clearTileMaterials } from "./tiles.js"
 
 const B = () => window.BABYLON;
 
+/**
+ * Everything a written sum IS, as one string — every board's own numbers.
+ *
+ * The slab is rebuilt and the page repainted only when this changes, so it has
+ * to name every field any of the boards keeps its sum in. It once named only
+ * the division's and the addition's, and a multiplication, a sum that only
+ * moved its point (12.5 against 125), or a fraction board set to a new sum
+ * went on showing the old one on a slab of the old size, while the boxes to
+ * type in were laid out for the new one.
+ */
+function writtenOn(t) {
+  return JSON.stringify([
+    t.dividend, t.divisor, t.dpA, t.dpB,     // the division, and its points
+    t.addends, t.dp,                         // the addition
+    t.multiplicand, t.multiplier,            // the multiplication (dpA/dpB above)
+    t.a, t.op, t.b,                          // the fraction board
+  ]);
+}
+
 export function createView(ctx) {
   const meshes = new Map(); // blockId → mesh
   const rigs = new Map();   // thingId → { parts, kind }
@@ -86,8 +105,7 @@ export function createView(ctx) {
         /* A written sum's board is cut to fit the sum on it, so the numbers
            are part of its SHAPE and not merely of its drawing: set a longer
            sum and the slab itself has to be built again. */
-        : [t.places ?? "", t.base ?? "", t.dividend ?? "", t.divisor ?? "",
-           (t.addends || []).join("+")].join("/");
+        : [t.places ?? "", t.base ?? "", writtenOn(t)].join("/");
       /* How big the page was before it was recut, so the new one can grow into
          its size rather than blink into it. */
       let was = null;
@@ -169,9 +187,8 @@ export function createView(ctx) {
         JSON.stringify(t.focus || null),
         // the swept array is painted into the face, so the face repaints for it
         JSON.stringify(t.array || null),
-        // and so is how far a written sum has been worked
-        t.done ?? "", t.dividend ?? "", t.divisor ?? "",
-        (t.addends || []).join("+")].join("~");
+        // and so is how far a written sum has been worked, and what the sum is
+        t.done ?? "", writtenOn(t)].join("~");
     }
     const r = placeReading(t, store.blocks, store.base);
     return ["place", store.base, t.places, r.digits.join(","), r.strays,
