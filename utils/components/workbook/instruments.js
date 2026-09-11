@@ -41,6 +41,7 @@ export const TOOL_ICONS = {
   longdiv: glyph(`<path d="M9 7.5h11"/><path d="M9 7.5v11"/><path d="M4.5 10c1.5 0 2.2 1 2.2 2.8s-.7 2.8-2.2 2.8"/><path d="M12 4.5h5"/><path d="M12 12h4M12 16h6"/>`),
   column: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M5 8.5v4M3 10.5h4"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
   times: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M3.4 8.9 6.6 12.1M6.6 8.9 3.4 12.1"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
+  fraction: glyph(`<path d="M4.5 12h15"/><path d="M7.5 4.5h3.5M9.2 4.5v4.5"/><path d="M13 15.2a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z"/><path d="M13.2 4.8 17 9.2"/>`),
   gm: glyph(`<path d="M3.5 18.5c3.4 0 3-13 6.4-13s3 13 6.4 13"/><path d="M14 11.5h7"/>`),
   side: glyph(`<path d="M3.5 4.5h17v15h-17z"/><path d="M9 4.5v15"/>`),
 };

@@ -953,8 +953,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      ruler dropped on A and turned towards B reads the length of AB, and a
      protractor's baseline lies down along an arm. See instruments.js.
 
-     SHEETS — the long division, the table addition, the table multiplication
-     and the algebra canvas — are working paper instead. They are not laid on
+     SHEETS — the long division, the table addition, the table multiplication,
+     the fraction board and the algebra canvas — are working paper instead. They are not laid on
      the figure, they sit beside the question in a panel that can be dragged
      out of the way while the answer is typed on the page. The written boards
      are the same boards the manipulatives canvas uses (utils/components/
@@ -966,7 +966,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   /* the working paper, in the order a child would reach for it */
   const SHEETS = [
-    ...["longdiv", "column", "times"].map((id) => ({
+    ...["longdiv", "column", "times", "fraction"].map((id) => ({
       id,
       label: BOARDS[id].name,
       icon: TOOL_ICONS[id],

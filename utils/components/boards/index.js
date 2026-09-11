@@ -1,16 +1,17 @@
 /* ============================================================================
-   THE WRITTEN BOARDS — the three of them, as one kind of thing
+   THE WRITTEN BOARDS — the four of them, as one kind of thing
    ----------------------------------------------------------------------------
-   A long division, a column addition and a column multiplication are the same
-   object seen three times: a sheet of paper with a method printed on it, that
-   knows the whole sum from the first moment, shows only as far as the working
-   has got, asks for one figure at a time and says why a wrong one is wrong.
+   A long division, a column addition, a column multiplication and a fraction
+   sum are the same object seen four times: a sheet of paper with a method
+   printed on it, that knows the whole sum from the first moment, shows only as
+   far as the working has got, asks for one thing at a time and says why a wrong
+   answer is wrong.
 
    Everything above is identical between them. What differs is only the method
    itself and how the sum is TYPED — two boxes with a sign between them, or one
    box holding "269 + 182". So anything that shows a board is written once
-   against this registry, and a fourth method later is a new module and an entry
-   here, not a fourth panel.
+   against this registry, and another method later is a new module and an entry
+   here, not another panel.
 
    The manipulatives canvas keeps its own registry (base-blocks/js/sheets.js)
    because a board there is also a slab with a size and a painter, and it can
@@ -20,6 +21,7 @@
 import * as longdiv from "./longdiv.js";
 import * as column from "./column.js";
 import * as times from "./times.js";
+import * as fraction from "./fraction.js";
 import { writeNum } from "./num.js";
 
 export const BOARDS = {
@@ -91,6 +93,32 @@ export const BOARDS = {
     reset: times.resetWork,
     cells: times.cellsOf,
     sheet: times.sheetOf,
+  },
+  fraction: {
+    id: "fraction",
+    name: "Fractions",
+    short: "Fractions",
+    /* No sign between the boxes: which one it is is the middle box. */
+    sign: "",
+    blurb: "The same amount written again and again until it is tidy.",
+    make: fraction.makeFraction,
+    fields: [
+      { n: "a", label: "First fraction", aria: "The first fraction, like 3/4 or 2 3/4" },
+      { n: "op", label: "Do what", aria: "What to do with them", pick: fraction.OPS },
+      { n: "b", label: "Second fraction", aria: "The second fraction, like 5/6" },
+    ],
+    read: (t) => ({
+      a: fraction.writeFraction(t.a, t.base),
+      op: t.op,
+      b: fraction.writeFraction(t.b, t.base),
+    }),
+    set: (t, v) => fraction.setWritten(t, v.a, v.op, v.b),
+    ask: fraction.ask,
+    answer: fraction.answer,
+    showNext: fraction.showNext,
+    reset: fraction.resetWork,
+    cells: fraction.cellsOf,
+    sheet: fraction.sheetOf,
   },
 };
 

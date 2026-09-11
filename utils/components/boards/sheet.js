@@ -44,11 +44,15 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
   el.innerHTML = `
     <form class="bd-sum" novalidate>
       ${kind.fields.map((f, i) => `
-        ${i ? `<span class="bd-sum__sign" aria-hidden="true">${kind.sign}</span>` : ""}
-        <label class="bd-sum__field${f.wide ? " bd-sum__field--wide" : ""}">
+        ${i && kind.sign ? `<span class="bd-sum__sign" aria-hidden="true">${kind.sign}</span>` : ""}
+        <label class="bd-sum__field${f.wide ? " bd-sum__field--wide" : ""}${f.pick ? " bd-sum__field--pick" : ""}">
           <span>${f.label}</span>
-          <input class="bd-sum__in" data-n="${f.n}" type="text" inputmode="decimal"
-                 autocomplete="off" spellcheck="false" aria-label="${f.aria}" />
+          ${f.pick
+            ? `<select class="bd-sum__in" data-n="${f.n}" aria-label="${f.aria}">
+                 ${f.pick.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}
+               </select>`
+            : `<input class="bd-sum__in" data-n="${f.n}" type="text" inputmode="decimal"
+                      autocomplete="off" spellcheck="false" aria-label="${f.aria}" />`}
         </label>`).join("")}
       <button class="pp-btn bd-act bd-act--set" type="submit">${ICONS.set} Set it</button>
     </form>
@@ -115,10 +119,12 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
     paper.innerHTML = "";
     boxes = [];
 
-    const put = (cls, row, col, span = 1) => {
+    /* `span` is columns across, `tall` is rows down — a sign between two
+       fractions, or the whole number beside one, stands across both rows. */
+    const put = (cls, row, col, span = 1, tall = 1) => {
       const n = document.createElement("div");
       n.className = cls;
-      n.style.gridRow = String(grow(row));
+      n.style.gridRow = tall > 1 ? `${grow(row)} / span ${tall}` : String(grow(row));
       n.style.gridColumn = `${gcol(col)} / span ${span}`;
       paper.appendChild(n);
       return n;
@@ -139,7 +145,10 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
     }
 
     for (const m of sheet.marks) {
-      const n = put(`bd-mark${m.tone === "carry" ? " is-carry" : m.tone === "soft" ? " is-soft" : ""}`, m.row, m.col);
+      const n = put(
+        `bd-mark${m.tone === "carry" ? " is-carry" : m.tone === "soft" ? " is-soft" : ""}`,
+        m.row, m.col, m.cols || 1, m.span || 1,
+      );
       n.textContent = m.ch;
     }
     for (const p of sheet.points || []) put("bd-point", p.row, p.col);
@@ -180,7 +189,7 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
         box.maxLength = 1;
         box.setAttribute("aria-label", open.cells.length === 1
           ? "The figure that goes here" : `Figure ${i + 1} of ${open.cells.length}`);
-        box.style.gridRow = String(grow(c.row));
+        box.style.gridRow = open.span > 1 ? `${grow(c.row)} / span ${open.span}` : String(grow(c.row));
         box.style.gridColumn = String(gcol(c.col));
         box.addEventListener("input", () => {
           if (!box.value) return;

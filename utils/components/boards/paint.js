@@ -1,10 +1,12 @@
 /* ============================================================================
    THE WRITTEN BOARDS — painting one, on a canvas
    ----------------------------------------------------------------------------
-   All three boards hand back the SAME kind of page — a grid of cells with marks
-   in them, some lines, some signs, a point or two, and the cell the next figure
-   goes in — so there is one painter and not three. Feed it the sheet any of
-   them returns.
+   Every board hands back the SAME kind of page — a grid of cells with marks in
+   them, some lines, some signs, a point or two, and the cell the next figure
+   goes in — so there is one painter and not one each. Feed it the sheet any of
+   them returns. A mark may stand across more than one cell (`cols`, `span`):
+   a number on the fraction board is one mark, where a figure in a column of a
+   division is one each.
 
    It knows nothing about the site: every colour is passed in, so the same
    function paints onto the 3D canvas in the manipulatives (where the colours
@@ -73,15 +75,16 @@ export function drawSheet(g, W, H, sheet, c) {
      the same fact seen twice. */
   if (sheet.ask) {
     const y = rowY(sheet.ask.row);
+    const h = rh * (sheet.ask.span || 1) - rh * 0.24;
     for (const col of sheet.ask.cols) {
       const x = colX(col);
       g.fillStyle = rgba(accent, 0.16);
-      g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.fillRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, h);
       g.save();
       g.strokeStyle = rgba(accent, 0.9);
       g.lineWidth = Math.max(2, rh * 0.05);
       g.setLineDash([rh * 0.12, rh * 0.1]);
-      g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, rh * 0.76);
+      g.strokeRect(x + cw * 0.1, y + rh * 0.12, cw * 0.8, h);
       g.restore();
     }
   }
@@ -94,9 +97,14 @@ export function drawSheet(g, W, H, sheet, c) {
   g.textBaseline = "middle";
   for (const m of sheet.marks) {
     const carried = m.tone === "carry";
+    /* A mark may stand across more than one row — the sign between two
+       fractions, or the whole number beside one — and then it is centred over
+       all of them rather than over the first. */
+    const tall = m.span || 1;
+    const wide = m.cols || 1;
     g.font = `600 ${carried ? Math.round(size * 0.62) : size}px "JetBrains Mono", monospace`;
     g.fillStyle = carried ? rgba(accent, 0.95) : m.tone === "soft" ? soft : ink;
-    g.fillText(m.ch, colX(m.col) + cw / 2, rowY(m.row) + rh * (carried ? 0.62 : 0.5) + 1);
+    g.fillText(m.ch, colX(m.col) + (cw * wide) / 2, rowY(m.row) + rh * (carried ? 0.62 : tall / 2) + 1);
   }
 
   g.font = `600 ${size}px "JetBrains Mono", monospace`;

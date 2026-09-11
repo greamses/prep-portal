@@ -39,6 +39,10 @@
   min-width: 0;
 }
 .bd-sum__field--wide { flex: 1 1 13rem; }
+/* the box that says which sum it is — a fraction board picks the operation
+   rather than having it typed, because "/" is already the fraction bar */
+.bd-sum__field--pick { flex: 0 0 9rem; }
+select.bd-sum__in { cursor: pointer; }
 .bd-sum__field > span {
   font-size: 0.64rem;
   letter-spacing: 0.04em;
@@ -201,7 +205,14 @@
 .bd-act svg { vertical-align: -2px; margin-right: 0.15rem; }
 .bd-act[disabled] { opacity: 0.45; pointer-events: none; }
 
+/* The fraction board writes numbers, not figures in columns, so its cells are
+   only as wide as the writing needs — a twelve that straddles two wide columns
+   reads as a one and a two. */
+.bd-board--fraction { --bd-cell: 1.25rem; }
+.bd-board--fraction .bd-paper { padding: 0.7rem 0.6rem; }
+
 @media (max-width: 520px) {
   .bd-board { --bd-cell: 1.45rem; }
+  .bd-board--fraction { --bd-cell: 1.15rem; }
   .bd-mark, .bd-in { font-size: 0.85rem; }
 }
