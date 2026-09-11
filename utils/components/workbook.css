@@ -350,11 +350,156 @@ body {
 .wb-livebar__score { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
 .wb-livebar .pp-btn { margin-top: 0.15rem; }
 .wb-livebar .pp-btn.is-on { --pp-note-bg: #fff3a8; box-shadow: inset 0 0 0 2px rgba(20, 19, 15, 0.35); }
-/* The toolbox: one note that opens a row of three — ruler, protractor, set
-   square — each one taking its instrument out or putting it back. */
 .wb-livebar .pp-btn svg { vertical-align: -3px; margin-right: 0.15rem; }
-.wb-toolbox { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
-.wb-toolbox[hidden] { display: none; }
+
+/* ── THE SIDEBAR (interactive.js) ─────────────────────────────────────────
+   One rail down the left of the window holding everything there is to reach
+   for: the instruments that are laid on the paper, then — under a rule,
+   because they are a different kind of thing — the working sheets that open
+   in a panel beside it. Fixed, so it is in reach wherever the child has
+   scrolled to, and above the booklet modal, which it stands beside. */
+.wb-side {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10060;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  max-height: 92vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.55rem 0.4rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-left: 0;
+  border-radius: 0 0.7rem 0.7rem 0;
+  box-shadow: 0 10px 28px -10px rgba(20, 19, 15, 0.4);
+}
+.wb-side[hidden] { display: none; }
+.wb-side__cap {
+  font-family: var(--font-display);
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.wb-side__rule {
+  height: 1px;
+  margin: 0.2rem 0.25rem;
+  background: var(--border-color, rgba(42, 39, 35, 0.16));
+}
+.wb-side__btn {
+  display: grid;
+  place-items: center;
+  gap: 0.1rem;
+  width: 4.1rem;
+  padding: 0.4rem 0.2rem 0.3rem;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.wb-side__btn em {
+  font-style: normal;
+  font-size: 0.5rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  color: var(--text-secondary);
+}
+.wb-side__btn svg { width: 19px; height: 19px; }
+.wb-side__btn:hover { background: var(--surface-secondary, rgba(42, 39, 35, 0.06)); }
+.wb-side__btn:focus-visible { outline: 2px solid #f4c95d; outline-offset: 1px; }
+.wb-side__btn.is-on {
+  background: #fff3a8;
+  border-color: rgba(20, 19, 15, 0.35);
+}
+.wb-side__btn.is-on em { color: #2a2723; }
+
+/* ── THE PANELS a sheet opens in (panels.js) ──────────────────────────────
+   A little window over the page: dragged by its head, put away with its ×,
+   brought to the front by touching it. Never modal — the whole point is to
+   work the sum out here and type the answer in over there. */
+.wb-panel {
+  position: fixed;
+  z-index: 10070;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 0.7rem;
+  box-shadow: 0 18px 44px -12px rgba(20, 19, 15, 0.45);
+}
+.wb-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  padding: 0.45rem 0.45rem 0.45rem 0.75rem;
+  background: var(--surface-secondary, rgba(42, 39, 35, 0.05));
+  border-bottom: var(--border-subtle);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.wb-panel__head:active { cursor: grabbing; }
+.wb-panel__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.wb-panel__close {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1.5px solid var(--border-color, rgba(42, 39, 35, 0.22));
+  border-radius: 50%;
+  cursor: pointer;
+}
+.wb-panel__close:hover,
+.wb-panel__close:focus-visible { background: #c0453f; border-color: #c0453f; color: #fffdf8; outline: none; }
+.wb-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.8rem;
+}
+/* the algebra canvas brings its own paper and fills the panel edge to edge */
+.wb-panel__body--bare { padding: 0; overflow: hidden; }
+
+@media (max-width: 700px) {
+  .wb-side {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    flex-direction: row;
+    align-items: center;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 0;
+    border-left: var(--border-subtle);
+  }
+  .wb-side__cap { display: none; }
+  .wb-side__rule { width: 1px; height: 1.8rem; margin: 0 0.15rem; }
+  .wb-side__btn { flex: 0 0 auto; width: 3.9rem; }
+}
 
 /* ── THE BOOKLET, IN A MODAL (rail.js mountModal) ─────────────────────────
    Closed, it is laid out off screen — pagination measures the pages, so it
@@ -373,7 +518,8 @@ body {
   z-index: 10041;
   top: 3vh;
   bottom: 3vh;
-  left: max(1rem, calc((100vw - 980px) / 2));
+  /* the sidebar stands to the left of it, not over it */
+  left: max(5.8rem, calc((100vw - 980px) / 2));
   right: max(1rem, calc((100vw - 980px) / 2));
   overflow-y: auto;
   overflow-x: hidden;
@@ -389,7 +535,10 @@ body {
    nothing left to scroll. They keep their own heights and the modal scrolls. */
 .wb-preview.wb-modal.is-open > * { flex-shrink: 0; }
 @media (max-width: 700px) {
+  /* on a phone the rail is a strip along the bottom, so the room it needs is
+     under the booklet and not beside it */
   .wb-preview.wb-modal.is-open { inset: 0; border: 0; }
+  html.wb-side-on .wb-preview.wb-modal.is-open { bottom: 4.2rem; }
 }
 .wb-modal__backdrop {
   position: fixed;
@@ -482,7 +631,6 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
     padding: 0.8rem 0.5rem 0.45rem;
   }
   .wb-livebar__say { display: none; }
-  .wb-toolbox { flex: 0 0 auto; flex-wrap: nowrap; gap: 0.4rem; }
   .wb-livebar .pp-btn { flex: 0 0 auto; white-space: nowrap; font-size: 0.7rem; padding: 0.4rem 0.65rem; }
   .wb-livebar__score { flex: 0 0 auto; white-space: nowrap; font-size: 0.78rem; }
   /* the button that matters first, where the thumb is */
@@ -1288,5 +1436,6 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-matchline.is-wrong { stroke: #c0453f; }
 
 @media print {
-  .wb-tool, .wb-drawbar, .wb-want, .wb-livebar, .wb-live-toggle { display: none !important; }
+  .wb-tool, .wb-drawbar, .wb-want, .wb-livebar, .wb-live-toggle,
+  .wb-side, .wb-panel { display: none !important; }
 }

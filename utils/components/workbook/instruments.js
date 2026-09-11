@@ -36,6 +36,13 @@ export const TOOL_ICONS = {
   protractor: glyph(`<path d="M3 17a9 9 0 0 1 18 0z"/><path d="M12 17V13M7.2 12.2l1.6 1.6M16.8 12.2l-1.6 1.6"/>`),
   setsquare: glyph(`<path d="M4 20V4l16 16z"/><path d="M7.5 16.5V12l4.5 4.5z"/>`),
   close: glyph(`<path d="M7 7l10 10M17 7 7 17"/>`),
+  /* the written boards, and the algebra sheet — the tools that are not
+     instruments but working paper */
+  longdiv: glyph(`<path d="M9 7.5h11"/><path d="M9 7.5v11"/><path d="M4.5 10c1.5 0 2.2 1 2.2 2.8s-.7 2.8-2.2 2.8"/><path d="M12 4.5h5"/><path d="M12 12h4M12 16h6"/>`),
+  column: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M5 8.5v4M3 10.5h4"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
+  times: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M3.4 8.9 6.6 12.1M6.6 8.9 3.4 12.1"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
+  gm: glyph(`<path d="M3.5 18.5c3.4 0 3-13 6.4-13s3 13 6.4 13"/><path d="M14 11.5h7"/>`),
+  side: glyph(`<path d="M3.5 4.5h17v15h-17z"/><path d="M9 4.5v15"/>`),
 };
 
 /* ── the ruler ─────────────────────────────────────────────────────────────*/

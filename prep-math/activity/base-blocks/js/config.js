@@ -132,49 +132,12 @@ export const TAGS = [
   { id: 5, name: "Mint", hex: "#7fd7c6" },
 ];
 
-/** Digits for bases above ten — 10 reads as A, 11 as B. */
-export const DIGITS = "0123456789AB";
-
-/** Write a base-ten count in the working base. */
-export function toBase(n, base) {
-  if (n === 0) return "0";
-  let s = "";
-  let v = Math.abs(Math.round(n));
-  while (v > 0) {
-    s = DIGITS[v % base] + s;
-    v = Math.floor(v / base);
-  }
-  return s;
-}
-
-/**
- * Read a number WRITTEN in the working base back into a plain count.
- *
- * Strict on purpose: null for anything that is not a number in this base, so
- * typing 8 into a base-five sum is refused rather than quietly taken as eight.
- * A slip of the finger looks the same as the misunderstanding, and the boards
- * that use this exist to catch the misunderstanding.
- */
-export function fromBase(text, base) {
-  const s = String(text ?? "").trim().toUpperCase().replace(/\s+/g, "");
-  if (!s) return null;
-  let n = 0;
-  for (const ch of s) {
-    const d = DIGITS.indexOf(ch);
-    if (d < 0 || d >= base) return null;
-    n = n * base + d;
-  }
-  return n;
-}
-
-/** Spoken name of a base, for labels like "base five". */
-const BASE_WORDS = [
-  "", "", "two", "three", "four", "five", "six",
-  "seven", "eight", "nine", "ten", "eleven", "twelve",
-];
-export function baseWord(base) {
-  return BASE_WORDS[base] || String(base);
-}
+/* The digits, the two ways of writing a number in a base, and the name of a
+   base all live with the written boards now — /utils/components/boards/num.js —
+   because the workbook needs them too and there must not be two of them. They
+   are re-exported here so everything in this activity keeps asking config.js
+   for them, which is where they have always been. */
+export { DIGITS, toBase, fromBase, baseWord, readNum, writeNum } from "/utils/components/boards/num.js";
 
 /** Read a CSS custom property off the page (so we follow light/dark). */
 export function cssVar(name, fallback) {

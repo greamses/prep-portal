@@ -20,6 +20,9 @@
 
 import { judge, placesOf, sayWant } from "./want.js";
 import { instruments, TOOL_ICONS } from "./instruments.js";
+import { needCss, openPanel } from "./panels.js";
+import { BOARDS } from "/utils/components/boards/index.js";
+import { mountBoard } from "/utils/components/boards/sheet.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -69,9 +72,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   bar.hidden = true;
   bar.innerHTML = `
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
-    <button type="button" class="pp-btn wb-tint-3 wb-toolbox-btn" data-act="toolbox" aria-expanded="false">${TOOL_ICONS.box} Toolbox</button>
-    <span class="wb-toolbox" hidden>${instruments({ protractor }).map((s) =>
-      `<button type="button" class="pp-btn wb-tint-5" data-tool="${s.id}" aria-pressed="false">${TOOL_ICONS[s.id] || ""} ${s.label}</button>`).join("")}</span>
     <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
     <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
     <span class="wb-livebar__score" role="status"></span>
@@ -86,14 +86,6 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (act === "check") check();
     if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
     if (act === "clear") clearAll();
-    if (act === "toolbox") {
-      const tray = bar.querySelector(".wb-toolbox");
-      tray.hidden = !tray.hidden;
-      e.target.closest("[data-act]").setAttribute("aria-expanded", String(!tray.hidden));
-      e.target.closest("[data-act]").classList.toggle("is-on", !tray.hidden);
-    }
-    const tool = e.target.closest("[data-tool]")?.dataset.tool;
-    if (tool) toggleTool(tool);
   });
 
   /* ── the questions on the paper ────────────────────────────────────────*/
@@ -947,20 +939,114 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     items().forEach((node, i) => { deaden(node); enliven(node, i); });
   }
 
-  /* ── the toolbox: a ruler, a protractor, a set square ────────────────────
-     Each lives in the scaler, so it is drawn at the paper's own scale and
-     measures what the paper measures. Drag one by its body; turn it by the
-     knob (or the arrow keys once it has been touched). Let go with its pivot
-     — the ruler's 0, the protractor's centre, the set square's square corner
-     — near a corner of a figure and the pivot goes onto the corner; and while
-     it sits on a corner, an edge turned to within a few degrees of a side
-     from that corner lies along it. So a ruler dropped on A and turned
-     towards B reads the length of AB, and a protractor's baseline lies down
-     along an arm. See instruments.js for what each one is. */
+  /* ── the sidebar: everything there is to reach for ───────────────────────
+     One rail down the side of the window, in reach wherever the child has
+     scrolled to. It holds two kinds of thing, and the difference matters.
+
+     INSTRUMENTS — ruler, protractor, set square — live in the scaler, so they
+     are drawn at the paper's own scale and MEASURE what the paper measures.
+     Drag one by its body; turn it by the knob (or the arrow keys once it has
+     been touched). Let go with its pivot — the ruler's 0, the protractor's
+     centre, the set square's square corner — near a corner of a figure and the
+     pivot goes onto the corner; and while it sits on a corner, an edge turned
+     to within a few degrees of a side from that corner lies along it. So a
+     ruler dropped on A and turned towards B reads the length of AB, and a
+     protractor's baseline lies down along an arm. See instruments.js.
+
+     SHEETS — the long division, the table addition, the table multiplication
+     and the algebra canvas — are working paper instead. They are not laid on
+     the figure, they sit beside the question in a panel that can be dragged
+     out of the way while the answer is typed on the page. The written boards
+     are the same boards the manipulatives canvas uses (utils/components/
+     boards), so a sum worked here is worked the way it is worked there. */
 
   const TOOLS = instruments({ protractor });
   const out = {};                     // id -> { el, st, spec }
   const TURN_SNAP = 4;                // degrees
+
+  /* the working paper, in the order a child would reach for it */
+  const SHEETS = [
+    ...["longdiv", "column", "times"].map((id) => ({
+      id,
+      label: BOARDS[id].name,
+      icon: TOOL_ICONS[id],
+      size: { w: 460, h: 430 },
+      open: (body) => {
+        needCss("/utils/components/boards.css");
+        mountBoard(body, { variant: id, base: 10 });
+      },
+    })),
+    {
+      id: "gm",
+      label: "Algebra moves",
+      icon: TOOL_ICONS.gm,
+      size: { w: 880, h: 620 },
+      /* The whole Algebra Moves workspace, mounted here rather than copied:
+         one canvas, one set of moves, one verifier. It is fetched the first
+         time it is asked for, because most workbooks never open it. */
+      open: async (body) => {
+        needCss("/prep-math/activity/algebra-moves/style.css");
+        body.classList.add("wb-panel__body--bare");
+        const frame = document.createElement("div");
+        frame.className = "am-frame am-frame--in";
+        body.appendChild(frame);
+        const { mountAlgebraMoves } = await import("/prep-math/activity/algebra-moves/js/workspace.js");
+        await mountAlgebraMoves(frame, { drawer: false });
+      },
+    },
+  ];
+
+  const side = document.createElement("aside");
+  side.className = "wb-side";
+  side.hidden = true;
+  side.setAttribute("aria-label", "Tools");
+  side.innerHTML = `
+    <span class="wb-side__cap">Tools</span>
+    ${TOOLS.map((t) => (
+      `<button type="button" class="wb-side__btn" data-tool="${t.id}" aria-pressed="false" title="${t.label}">`
+      + `${TOOL_ICONS[t.id] || ""}<em>${t.label}</em></button>`)).join("")}
+    <span class="wb-side__rule" role="presentation"></span>
+    ${SHEETS.map((t) => (
+      `<button type="button" class="wb-side__btn" data-sheet="${t.id}" aria-pressed="false" title="${t.label}">`
+      + `${t.icon || ""}<em>${t.label}</em></button>`)).join("")}`;
+  document.body.appendChild(side);
+  side.addEventListener("click", (e) => {
+    const hit = e.target.closest("[data-tool], [data-sheet]");
+    if (!hit) return;
+    if (hit.dataset.tool) toggleTool(hit.dataset.tool);
+    else togglePanel(hit.dataset.sheet);
+  });
+
+  const panels = {};                  // id -> the panel that is open
+
+  function togglePanel(id) {
+    const btn = side.querySelector(`[data-sheet="${id}"]`);
+    if (panels[id]) {
+      panels[id].close();
+      return;
+    }
+    const spec = SHEETS.find((t) => t.id === id);
+    if (!spec) return;
+    const panel = openPanel({
+      title: spec.label,
+      size: spec.size,
+      onClose: () => {
+        delete panels[id];
+        btn?.classList.remove("is-on");
+        btn?.setAttribute("aria-pressed", "false");
+      },
+    });
+    panels[id] = panel;
+    btn?.classList.add("is-on");
+    btn?.setAttribute("aria-pressed", "true");
+    Promise.resolve(spec.open(panel.body)).catch(() => {
+      panel.body.textContent = "That tool could not be fetched — check the connection and try again.";
+    });
+  }
+
+  function putSheetsAway() {
+    Object.values(panels).forEach((p) => p.close());
+  }
 
   function zoom() {
     const r = scaler.getBoundingClientRect();
@@ -1107,7 +1193,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   }
 
   function toggleTool(id) {
-    const btn = bar.querySelector(`[data-tool="${id}"]`);
+    const btn = side.querySelector(`[data-tool="${id}"]`);
     if (out[id]) {
       out[id].el.remove();
       delete out[id];
@@ -1143,6 +1229,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     toggle.textContent = "Back to paper";
     toggle.classList.add("is-on");
     bar.hidden = false;
+    side.hidden = false;
+    document.documentElement.classList.add("wb-side-on");
     store = load();
     items().forEach((node, i) => enliven(node, i));
     keyPages(true);
@@ -1154,7 +1242,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     toggle.textContent = "Make interactive";
     toggle.classList.remove("is-on");
     bar.hidden = true;
+    side.hidden = true;
+    document.documentElement.classList.remove("wb-side-on");
     putToolsAway();
+    putSheetsAway();
     items().forEach(deaden);
     checked = false;
     showing = false;

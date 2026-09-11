@@ -1,0 +1,207 @@
+/* ============================================================================
+   THE WRITTEN BOARDS — one of them, on a page
+   ----------------------------------------------------------------------------
+   The DOM half of utils/components/boards (see sheet.js). Everything on the
+   page is a cell of one grid — a figure, a carry, the line under a column, the
+   point in its gap, the bus stop round a division, the box the next figure is
+   typed into — so nothing here positions anything by hand.
+
+   It is paper, not theme: ink on cream, one monospaced hand, because a column
+   of figures has to BE a column and a proportional face drifts.
+   ========================================================================== */
+
+.bd-board {
+  --bd-cell: 1.75rem;
+  --bd-ink: #2a2723;
+  --bd-paper: #fffdf8;
+  --bd-accent: #6fb7e8;
+  --bd-done: #3f8f4f;
+  --bd-no: #c0453f;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+/* ── the sum row ─────────────────────────────────────────────────────────── */
+
+.bd-sum {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.bd-sum__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 0 1 7.5rem;
+  min-width: 0;
+}
+.bd-sum__field--wide { flex: 1 1 13rem; }
+.bd-sum__field > span {
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #6b6459);
+}
+.bd-sum__in {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  font: 700 0.9rem/1.2 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--bd-ink);
+  background: var(--bd-paper);
+  border: 1.5px solid rgba(42, 39, 35, 0.35);
+  border-radius: 0.3rem;
+}
+.bd-sum__in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
+.bd-sum__sign {
+  align-self: center;
+  padding-bottom: 0.35rem;
+  font: 700 1rem "JetBrains Mono", ui-monospace, monospace;
+  color: rgba(42, 39, 35, 0.6);
+}
+
+/* ── the page ────────────────────────────────────────────────────────────── */
+
+.bd-paper {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--bd-cols, 8), var(--bd-cell));
+  grid-template-rows: repeat(var(--bd-rows, 6), var(--bd-cell));
+  justify-content: center;
+  align-content: start;
+  padding: 0.6rem 0.4rem;
+  background: var(--bd-paper);
+  border: 1.5px solid rgba(42, 39, 35, 0.18);
+  border-radius: 0.4rem;
+  overflow-x: auto;
+}
+
+.bd-mark {
+  display: grid;
+  place-items: center;
+  font: 700 1rem/1 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--bd-ink);
+}
+/* A carry is a note to the writer about the next column, not a figure of the
+   sum — smaller, in the accent, and sitting at the top of its cell. */
+.bd-mark.is-carry {
+  align-items: start;
+  padding-top: 0.1rem;
+  font-size: 0.68rem;
+  color: #1f6ea8;
+}
+/* A nought that holds a place, or one fetched from past the point: written,
+   but not worked out. */
+.bd-mark.is-soft { color: rgba(42, 39, 35, 0.42); }
+
+.bd-sign {
+  display: grid;
+  place-items: center;
+  font: 700 0.95rem/1 "JetBrains Mono", ui-monospace, monospace;
+  color: rgba(42, 39, 35, 0.72);
+}
+/* the minus leans up against what it is taking away */
+.bd-sign--minus { justify-items: end; padding-right: 0.1rem; }
+
+/* the line under a column, and the line of a sum */
+.bd-rule,
+.bd-underline {
+  align-self: end;
+  height: 0;
+  margin-bottom: 0.16rem;
+  border-bottom: 2px solid var(--bd-ink);
+  border-radius: 2px;
+}
+.bd-underline { border-bottom-color: var(--bd-done); }
+
+/* the bus stop: a line over what is being divided and one down its side */
+.bd-bracket {
+  border-left: 2px solid var(--bd-ink);
+  border-top: 2px solid var(--bd-ink);
+  border-top-left-radius: 3px;
+  pointer-events: none;
+}
+
+/* the point, in the gap between two columns */
+.bd-point {
+  align-self: end;
+  justify-self: end;
+  width: 4px;
+  height: 4px;
+  margin: 0 -2px 0.3rem 0;
+  border-radius: 50%;
+  background: var(--bd-ink);
+}
+
+/* the remainder, said on the answer line once there is an answer to say it on */
+.bd-tail {
+  display: grid;
+  place-items: center start;
+  padding-left: 0.25rem;
+  font: 700 0.72rem/1 "JetBrains Mono", ui-monospace, monospace;
+  color: rgba(42, 39, 35, 0.55);
+  white-space: nowrap;
+}
+
+/* the box the next figure goes in */
+.bd-in {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  text-align: center;
+  font: 700 1rem/1 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--bd-ink);
+  background: rgba(111, 183, 232, 0.16);
+  border: 2px dashed var(--bd-accent);
+  border-radius: 0.25rem;
+}
+.bd-in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
+/* the count of places at the end of a decimal multiplication: a note about the
+   answer, so it stands in the air beside it rather than in its columns */
+.bd-in--count { border-style: solid; background: rgba(244, 201, 93, 0.22); border-color: #d9a72f; }
+
+/* the one step that is fetched rather than worked out */
+.bd-bring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding: 0;
+  color: var(--bd-ink);
+  background: #fff3a8;
+  border: 1.5px solid var(--bd-ink);
+  border-radius: 0.25rem;
+  cursor: grab;
+}
+.bd-bring em {
+  font: 700 0.9rem/1 "JetBrains Mono", ui-monospace, monospace;
+  font-style: normal;
+}
+.bd-bring svg { width: 12px; height: 12px; }
+.bd-bring:hover { background: #ffe775; }
+
+/* ── what it is saying, and what you can ask it ──────────────────────────── */
+
+.bd-say {
+  margin: 0;
+  min-height: 2.4em;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary, #2a2723);
+}
+.bd-say.is-ok { color: var(--bd-done); }
+.bd-say.is-no { color: var(--bd-no); }
+
+.bd-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.bd-act.pp-btn { font-size: 0.72rem; }
+.bd-act svg { vertical-align: -2px; margin-right: 0.15rem; }
+.bd-act[disabled] { opacity: 0.45; pointer-events: none; }
+
+@media (max-width: 520px) {
+  .bd-board { --bd-cell: 1.45rem; }
+  .bd-mark, .bd-in { font-size: 0.85rem; }
+}

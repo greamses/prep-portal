@@ -28,10 +28,11 @@
    typed says so there too, and answers to `bring`.
    ========================================================================== */
 
-import { toBase, fromBase } from "./config.js";
+import { writeNum } from "./config.js";
 import * as longdiv from "./longdiv.js";
 import { stageOf, layStage, stageSentence, groupNote, setAside } from "./divblocks.js";
 import * as column from "./column.js";
+import * as times from "./times.js";
 
 export const SHEETS = {
   longdiv: {
@@ -41,8 +42,13 @@ export const SHEETS = {
       { n: "dividend", aria: "The number being divided" },
       { n: "divisor", aria: "What you are dividing by" },
     ],
-    read: (t) => ({ dividend: toBase(t.dividend, t.base), divisor: toBase(t.divisor, t.base) }),
-    set: (t, v) => longdiv.setSum(t, fromBase(v.dividend, t.base), fromBase(v.divisor, t.base)),
+    /* Written, not counted: a sum may have a point in it, and "12.5" has to
+       come back out of the box the way it went in. */
+    read: (t) => ({
+      dividend: writeNum(t.dividend, t.dpA || 0, t.base),
+      divisor: writeNum(t.divisor, t.dpB || 0, t.base),
+    }),
+    set: (t, v) => longdiv.setWritten(t, v.dividend, v.divisor),
     ask: longdiv.ask,
     answer: longdiv.answer,
     showNext: longdiv.showNext,
@@ -71,15 +77,40 @@ export const SHEETS = {
        the sum: "48 + 96 + 7" is a sum a column can do, and a fixed pair of
        boxes would be a rule against it. */
     fields: [{ n: "sum", aria: "The numbers to add, with + between them", wide: true }],
-    read: (t) => ({ sum: t.addends.map((n) => toBase(n, t.base)).join(" + ") }),
-    set: (t, v) => column.setSum(t, column.readSum(v.sum, t.base)),
+    read: (t) => ({ sum: t.addends.map((n) => writeNum(n, t.dp || 0, t.base)).join(" + ") }),
+    set: (t, v) => column.setWritten(t, v.sum),
     ask: column.ask,
     answer: column.answer,
     showNext: column.showNext,
     reset: column.resetWork,
     cells: column.cellsOf,
-    value: (t) => t.addends.reduce((s, n) => s + n, 0),
+    /* What the board is working on is what the sum comes to. Sync hands round
+       whole numbers, so a sum with a point in it is rounded on the way out and
+       lands as a whole sum on the way back in. */
+    value: (t) => Math.round(t.addends.reduce((s, n) => s + n, 0) / Math.pow(t.base, t.dp || 0)),
     setValue: column.setTotal,
+  },
+  times: {
+    name: "column multiplication",
+    sep: "×",
+    fields: [
+      { n: "multiplicand", aria: "The number being multiplied" },
+      { n: "multiplier", aria: "What you are multiplying it by" },
+    ],
+    read: (t) => ({
+      multiplicand: writeNum(t.multiplicand, t.dpA || 0, t.base),
+      multiplier: writeNum(t.multiplier, t.dpB || 0, t.base),
+    }),
+    set: (t, v) => times.setWritten(t, v.multiplicand, v.multiplier),
+    ask: times.ask,
+    answer: times.answer,
+    showNext: times.showNext,
+    reset: times.resetWork,
+    cells: times.cellsOf,
+    /* The number being multiplied, not the answer — sync passes round the
+       number a tool is working ON. */
+    value: times.multiplicandOf,
+    setValue: times.setProduct,
   },
 };
 

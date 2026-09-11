@@ -23,6 +23,7 @@ import { footprint } from "./layout.js";
 import { TRACK, FRAME_SIDE } from "./frame.js";
 import { makeLongDiv, rebaseLongDiv, drawLongDiv } from "./longdiv.js";
 import { makeColumn, rebaseColumn, drawColumn } from "./column.js";
+import { makeTimes, rebaseTimes, drawTimes } from "./times.js";
 
 const B = () => window.BABYLON;
 
@@ -87,6 +88,7 @@ export function makeBoard(variant, base) {
      so they are made and drawn in their own modules and only PLACED here. */
   if (variant === "longdiv") return makeLongDiv(base);
   if (variant === "column") return makeColumn(base);
+  if (variant === "times") return makeTimes(base);
   if (variant === "place") {
     const places = PLACES.length;
     return {
@@ -142,6 +144,7 @@ export function rebaseBoard(thing, base) {
      the sum is rather than from how far the table runs. */
   if (thing.variant === "longdiv") return rebaseLongDiv(thing, base);
   if (thing.variant === "column") return rebaseColumn(thing, base);
+  if (thing.variant === "times") return rebaseTimes(thing, base);
   const max = tableMax(base);
   thing.base = base;
   thing.max = max;
@@ -314,6 +317,7 @@ export function paintBoard(thing, parts, opts = {}) {
   else if (thing.variant === "area") drawArea(g, W, H, thing, { ink, soft });
   else if (thing.variant === "longdiv") drawLongDiv(g, W, H, thing, { ink, soft });
   else if (thing.variant === "column") drawColumn(g, W, H, thing, { ink, soft });
+  else if (thing.variant === "times") drawTimes(g, W, H, thing, { ink, soft });
   else drawTable(g, W, H, thing, opts, { ink, soft });
 
   // invertY: a 2D canvas counts rows downward and the ground's V runs upward,

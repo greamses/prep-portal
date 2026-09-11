@@ -317,6 +317,40 @@ export function longDivideArt() {
  * as a MOMENT rather than a finished sum, because a sum standing complete on a
  * card says "watch"; one half-worked says "your turn".
  */
+/**
+ * Column multiplication: the two numbers, a line, the row for the ones figure
+ * and the row for the tens with its place-holding nought, and the answer.
+ * Small enough to read at a glance, which is the whole job of a door picture.
+ */
+export function columnTimesArt() {
+  const cw = 12;
+  const right = 100;                       // the ones column
+  const col = (p) => right - p * cw;       // p counted from the ones end
+
+  const fig = (x, y, text, size = 12, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+
+  return svg(
+    // 24 × 13, the smallest sum that shows the whole method
+    fig(col(1), 12, "2") + fig(col(0), 12, "4") +
+    fig(col(2) + 1, 27, "×", 11, FAINT) +
+    fig(col(1), 27, "1") + fig(col(0), 27, "3") +
+    `<path d="M${col(2) - 3} 36H${col(0) + 6}" stroke="${LINE}" stroke-width="1.5"
+       stroke-linecap="round" fill="none"/>` +
+    // the ones row, then the tens row with the nought that holds its place
+    fig(col(1), 47, "7") + fig(col(0), 47, "2") +
+    fig(col(2), 62, "2") + fig(col(1), 62, "4") + fig(col(0), 62, "0", 12, FAINT) +
+    `<path d="M${col(2) - 3} 70H${col(0) + 6}" stroke="${LINE}" stroke-width="1.5"
+       stroke-linecap="round" fill="none"/>` +
+    // and the answer, one cell of it still waiting
+    `<rect x="${col(0) - 6}" y="73" width="12" height="14" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>`
+  );
+}
+
 export function columnAddArt() {
   const cw = 14;
   const right = 96;                        // the ones column

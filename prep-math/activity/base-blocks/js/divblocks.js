@@ -179,6 +179,9 @@ function heapAt(plan, done) {
 export function stageOf(thing) {
   const plan = planOf(thing);
   if (plan.divisor < 2 || plan.divisor > MAX_GROUPS) return null;
+  /* Blocks count whole things. A sum with a point in it is still worked on the
+     written board, but there is no pile of tenths to lay out. */
+  if (plan.point > 0 || plan.moved > 0) return null;
 
   const e = plan.entries[thing.done];
   const done = !e;

@@ -57,6 +57,15 @@
    be given back — otherwise the sheet starts below a band of nothing. */
 .am-frame:fullscreen,
 .am-frame:-webkit-full-screen { inset: 0; }
+/* Mounted in a panel instead of filling the window — the workbooks' sidebar
+   opens the same workspace in a floating sheet. */
+.am-frame--in {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
 
 /* The paper itself: an endless sheet, ruled, that pans under the cards. */
 .am-canvas {

@@ -10,7 +10,7 @@
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
-  longDivideArt, columnAddArt,
+  longDivideArt, columnAddArt, columnTimesArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -171,6 +171,20 @@ export const GROUPS = [
           + "and writes the carry small above the column it goes into. Add up "
           + "to four numbers, in any base you are working in.",
         art: columnAddArt,
+      },
+      {
+        id: "column-multiplication",
+        kind: "board",
+        variant: "times",
+        label: "Column Multiplication",
+        short: "Multiplying",
+        blurb:
+          "Long multiplication, set out the way it is written: a row for every "
+          + "figure you multiply by, the nought that holds the place, and an "
+          + "addition to finish. It asks what goes down and then what carries, "
+          + "and rubs the carries out between rows. Decimals too — the last "
+          + "thing it asks is how many figures go after the point.",
+        art: columnTimesArt,
       },
       {
         id: "long-division",
