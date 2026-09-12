@@ -1709,3 +1709,62 @@ body.bb-locked { overflow: hidden; }
 .bb-stage.is-picking .bb-pop,
 .bb-stage.is-picking .bb-board,
 .bb-stage.is-picking .bb-sheetpanel { cursor: default; }
+
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOOLS INSIDE TOOLS
+   One key showing, a corner arrow saying there is more, and the rest of the
+   family a press away — see js/stacks.js for which keys stack and why.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* A REAL box, standing in the kit's grid where the key used to. Not
+   `display: contents`: the stack has to be the thing the arrow and the flyout
+   are positioned against, and a box with no box positions nothing. */
+.bb-stack {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+/* the flyout is hung on the rail, so the rail is what it is measured from */
+.bb-rail__paper { position: relative; }
+.bb-stack > .bb-tool { width: 100%; }
+
+/* the corner arrow, over the key it opens */
+.bb-stack__more {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink, #2a2723);
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  opacity: 0.5;
+}
+.bb-stack__more:hover,
+.bb-stack__more:focus-visible,
+.bb-stack__more[aria-expanded="true"] { opacity: 1; }
+
+/* the rest of the family, opening beside the rail — where exactly is measured
+   when it opens (stacks.js), because the rail is one width on the page and
+   another in a workbook panel */
+.bb-stack__fly {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  background: var(--surface-primary, #fffdf8);
+  border: 1.5px solid var(--border-subtle-color, rgba(42, 39, 35, 0.16));
+  border-radius: 0.55rem;
+  box-shadow: 0 10px 26px -8px rgba(20, 19, 15, 0.34);
+}
+.bb-stack__fly[hidden] { display: none; }
+.bb-stack__fly .bb-tool { width: auto; }

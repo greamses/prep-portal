@@ -23,6 +23,7 @@ import { createRegroupPrompt } from "./prompt.js";
 import { mountUI, paintIcons } from "./ui.js";
 import { buildShelf, createCanvasView, buildDock } from "./shell.js";
 import { canvasShellHTML } from "./canvas-shell.js";
+import { stackRail } from "./stacks.js";
 import { GROUPS } from "./tools.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
@@ -889,6 +890,10 @@ export async function mountBaseBlocks(host, { shelf = null, tool = null, onBack 
   canvas = host.querySelector("#bb-canvas");
   ghost = createDotGhost(stage);
   paintIcons(host);
+  /* Fold the rail's alternatives into stacks — one showing, the rest behind a
+     corner arrow. Done after the icons are painted, so a stacked key keeps the
+     picture it was given. */
+  stackRail(host.querySelector(".bb-rail"));
 
   canvasView = createCanvasView(viewEl, {
     onOpen: () => setTimeout(() => engine?.resize(), 40),
