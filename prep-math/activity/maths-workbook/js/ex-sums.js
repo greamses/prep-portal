@@ -28,6 +28,7 @@ import { want } from "/utils/components/workbook/want.js";
 
 export const SUM_GROUPS = [
   {
+    chapter: "Chapter 2 · Adding and taking away",
     id: "add",
     label: "Adding with blocks",
     blurb: "Two piles pushed together, written across and written down.",

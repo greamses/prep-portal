@@ -32,6 +32,7 @@ const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
 
 export const ANGLE_GROUPS = [
   {
+    chapter: "Chapter 6 · Angles",
     id: "angle-name",
     label: "Naming angles",
     blurb: "Smaller than a right angle, exactly one, or bigger. Before any measuring.",

@@ -115,7 +115,7 @@ const fig = (n, o) => want.text(figures(n, o.base));
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
 export const PLACE_GROUPS = [
-  { id: "blocks", label: "Number blocks", blurb: "The concrete stage: pieces you can count, trade and draw." },
+  { id: "blocks", chapter: "Chapter 1 · Place value", label: "Number blocks", blurb: "The concrete stage: pieces you can count, trade and draw." },
   { id: "charts", label: "Place value charts", blurb: "The bridge: a column for each place, to write into and read off." },
   { id: "numbers", label: "The number on its own", blurb: "The abstract stage: expanded form, words, stepping, rounding, comparing and ordering." },
 ];

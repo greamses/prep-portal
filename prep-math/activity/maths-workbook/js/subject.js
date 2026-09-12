@@ -6,7 +6,7 @@
    builds exactly the same paper from the same options.
    ========================================================================== */
 
-import { EXERCISES, levelOf, helpOf, unavailable, placesFor } from "./exercises.js";
+import { EXERCISES, levelOf, helpOf, unavailable, placesFor, exerciseById, chapterOf } from "./exercises.js";
 import { placeName, placeWorth } from "./numbers.js";
 import { blocksKey } from "./blocks.js";
 import { baseWord } from "../../base-blocks/js/config.js";
@@ -16,18 +16,44 @@ export const WORKBOOK = { id: "maths-workbook", label: "Maths Workbook", style: 
 
 /* ── the subject ───────────────────────────────────────────────────────────*/
 
+const CHAPTERS = {
+  1: "Chapter 1: Place value", 2: "Chapter 2: Adding and taking away",
+  3: "Chapter 3: Dividing and remainders", 4: "Chapter 4: Fractions",
+  5: "Chapter 5: Counting in fives and telling the time", 6: "Chapter 6: Angles",
+};
+
+/** The chapters the chosen exercises actually come from, in order. */
+const chaptersOn = (o) => [...new Set((o.chosen || [])
+  .map((c) => exerciseById(c.id))
+  .filter(Boolean)
+  .map(chapterOf))].sort((a, b) => a - b);
+
 export const SUBJECT = {
-  eyebrow: "Mathematics · A workbook to print",
+  /* Names the chapter the paper is from — or all of them, when it mixes. */
+  eyebrow: (o) => {
+    const list = chaptersOn(o);
+    const which = !list.length ? "A workbook to print"
+      : list.length === 1 ? CHAPTERS[list[0]]
+        : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+    return `Mathematics · ${which}`;
+  },
+  /* Says what the dials mean for the chapters actually on the paper. The
+     places belong to place value and the base moves only there; "up to N
+     things" is only true where there are things to count. */
   subtitle: (o) => {
     const L = levelOf(o);
     const H = helpOf(o);
-    const help =
-      H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named";
-    const place =
-      o.base === 10
+    const found = chaptersOn(o);
+    const has = (n) => !found.length || found.includes(n);
+    const parts = [];
+    if (has(1)) {
+      parts.push(o.base === 10
         ? `${o.places} places`
-        : `base ${baseWord(o.base)} · ${o.places} places`;
-    return `${place} · up to ${L.max} things · ${help}`;
+        : `base ${baseWord(o.base)} · ${o.places} places`);
+    }
+    if (has(1) || has(2) || has(3)) parts.push(`up to ${L.max} things`);
+    parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
+    return parts.join(" · ");
   },
   exercises: EXERCISES,
   unavailable,

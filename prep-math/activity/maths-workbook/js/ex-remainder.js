@@ -37,7 +37,7 @@ const box = () => `<span class="rw-answer"></span>`;
 const slot = (label) => `<span class="rw-slot"><em>${label}</em>${box()}</span>`;
 
 export const REM_GROUPS = [
-  { id: "group", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
+  { id: "group", chapter: "Chapter 3 · Dividing and remainders", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
   { id: "bars", label: "Fraction bars", blurb: "Mixed numbers and improper fractions, coloured in." },

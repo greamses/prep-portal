@@ -1,7 +1,9 @@
 /* ============================================================================
    Maths Workbook — the ONE registry
    ----------------------------------------------------------------------------
-   Four families, one list. The engine, the builder and the answer key all read
+   Six families, one list, and a CHAPTER each — the paper is built and picked
+   from a chapter at a time, the way the Geometry Workbook is. The engine, the
+   builder and the answer key all read
    this file and nothing else; the families live beside it only because eight
    hundred lines of exercises in one file is a file nobody edits.
 
@@ -64,6 +66,23 @@ export const EXERCISES = [
   ...tenOnly(TIME_EXERCISES),
   ...tenOnly(ANGLE_EXERCISES),
 ];
+
+/**
+ * Which chapter an exercise belongs to: 1 to 6, one per family.
+ *
+ * The rail shows one chapter at a time behind a row of tabs — the first group
+ * of each family carries `chapter`, and the rest follow it — and the cover
+ * names the chapters the paper was actually built from (subject.js).
+ */
+const CHAPTER = new Map([
+  ...SUM_GROUPS.map((g) => [g.id, 2]),
+  ...REM_GROUPS.map((g) => [g.id, 3]),
+  ...FRAC_GROUPS.map((g) => [g.id, 4]),
+  ...TIME_GROUPS.map((g) => [g.id, 5]),
+  ...ANGLE_GROUPS.map((g) => [g.id, 6]),
+]);
+/* Place value is the first chapter, so it is what is left over. */
+export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
   return EXERCISES.find((e) => e.id === id) || null;
