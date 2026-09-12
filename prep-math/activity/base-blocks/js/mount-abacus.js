@@ -117,14 +117,9 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
     thing = makeAbacus(now.variant, own, now.rods);
     parts = buildAbacus(ctx, thing);
 
-    /* The schoty is built with its wires running AWAY from the reader — right
-       for a frame lying on the manipulatives desk among other things, but in a
-       panel of its own it reads as standing sideways-on. Turn the instrument a
-       quarter so its wires run across the view, like the other two frames. The
-       HUB is turned and not the root, so the sticky note above it — which hangs
-       off the root — goes on facing the reader.
-       (The camera fits the frame's diagonal, so the turn needs no new sums.) */
-    if (!SPECS[now.variant].upright) parts.hub.rotation.y = Math.PI / 2;
+    /* No turning here any more: the schoty stands up like the other two in
+       abacus.js itself, so the canvas and this panel agree. Turning it in the
+       wrapper only ever fixed the panel. */
 
     frame();
     tell();
@@ -156,7 +151,7 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
   });
   grow.observe(host);
 
-  return {
+  const api = {
     canvas,
     setVariant(v) {
       if (!SPECS[v] || v === now.variant) return;
@@ -181,6 +176,37 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
       frame();
     },
     isFlat: () => !!ctx.flat,
+    /* What the view is actually doing — the camera's own numbers, and where a
+       bead really is in the world. Guessing at either from a screenshot is how
+       a "fixed" frame stayed broken. */
+    view() {
+      const m = parts.beads[0];
+      m.computeWorldMatrix(true);
+      const at = m.getAbsolutePosition();
+      /* EVERY bead, not the first one: a value of 3 moves the units rod, which
+         is the LAST rod, so watching bead nought says "nothing moved" about a
+         frame that moved perfectly well. */
+      const beads = parts.beads.map((k) => {
+        k.computeWorldMatrix(true);
+        const q = k.getAbsolutePosition();
+        return { x: +q.x.toFixed(2), y: +q.y.toFixed(2), z: +q.z.toFixed(2) };
+      });
+      return {
+        variant: now.variant,
+        flat: !!ctx.flat,
+        mode: ctx.camera.mode,            // 0 perspective, 1 orthographic
+        beta: +ctx.camera.beta.toFixed(3),
+        alpha: +ctx.camera.alpha.toFixed(3),
+        radius: +ctx.camera.radius.toFixed(1),
+        hubY: +parts.hub.rotation.y.toFixed(3),
+        size: { w: +parts.size.width.toFixed(1), d: +parts.size.depth.toFixed(1) },
+        // in the flat view the camera shows a box this tall, so the frame
+        // should be a decent share of it and not a speck in the middle
+        orthoH: +(ctx.camera.radius).toFixed(1),
+        bead0: { x: +at.x.toFixed(2), y: +at.y.toFixed(2), z: +at.z.toFixed(2) },
+        beads,
+      };
+    },
     setValue(n) {
       const ok = setAbacusValue(thing, n);
       syncAbacus(thing, parts);
@@ -201,4 +227,9 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
       canvas.remove();
     },
   };
+
+  /* The canvas carries its own frame, the way a drawn pile carries its own
+     blocks — so anything holding the element can ask it what it is doing. */
+  canvas.__abacus = api;
+  return api;
 }

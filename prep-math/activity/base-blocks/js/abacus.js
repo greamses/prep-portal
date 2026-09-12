@@ -7,10 +7,10 @@
    either brings it in (count becomes i+1) or sends it and everything outside it
    away (count becomes i) — which is exactly how a real one behaves.
 
-   The Chinese and Japanese frames stand their rods across the canvas with a bar
-   between the fives and the ones; the Russian schoty runs its wires the other
-   way with ten beads apiece and no bar at all, the middle pair darkened so you
-   can see five without counting to it.
+   All three stand their rods across the canvas and slide their beads up them.
+   The Chinese and Japanese frames have a bar between the fives and the ones;
+   the Russian schoty has ten plain beads apiece and no bar at all, the middle
+   pair darkened so you can see five without counting to it.
 
    All three lie FLAT on the paper, the way they lie on a desk, which is also
    what makes the 2D view read correctly for them.
@@ -69,7 +69,12 @@ export const SPECS = {
     tiers: { heaven: { n: 2, worth: 5 }, earth: { n: 5, worth: 1 } },
   },
   schoty: {
-    label: "Schoty", upright: false, rods: 7,
+    /* Upright like the other two: its wires run across the frame and its beads
+       slide UP it. They used to run the other way — true to a schoty lying on a
+       desk, but on screen the beads then slid sideways while every other frame
+       counted upwards, and one instrument disagreeing with the rest about which
+       way "more" is teaches the wrong thing. */
+    label: "Schoty", upright: true, rods: 7,
     tiers: { earth: { n: 10, worth: 1 } },
   },
 };
@@ -370,7 +375,10 @@ export function buildAbacus(ctx, thing) {
      It is the frame's own timber a few shades down, not a black bar: on a real
      soroban the beam is part of the frame, and painting it black made it read
      as a wall across the middle rather than as the thing you count against. */
-  if (spec.upright) {
+  /* A frame has a reckoning bar because it has FIVES to separate from ones, not
+     because of which way it lies — the schoty has ten plain beads to a wire and
+     no bar at all. Keyed on the tier, which is the thing that decides it. */
+  if (spec.tiers.heaven) {
     const bar = BJS.MeshBuilder.CreateBox("bar",
       { width: size.width - RAIL * 2, depth: 0.22, height: FRAME_H }, scene);
     bar.material = mat(scene, "--accent-warning", "#f0a868", 0.72);
