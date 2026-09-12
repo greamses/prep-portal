@@ -29,12 +29,48 @@ const TEN_NAMES = [
   "Millions", "Ten Millions", "Hundred Millions",
 ];
 
+/* Where a place sits INSIDE its period: the ones, the tens, the hundreds of
+   that period. Written short — H, T, U — because that is how it is taught and
+   how it fits over a figure. */
+export const HTU = ["U", "T", "H"];
+
+/** H, T or U — which of the three a place is, whatever period it is in. */
+export function htuOf(power) {
+  return HTU[power % 3];
+}
+
+/**
+ * The place a figure stands in, said the way it is taught: H, T or U, and
+ * then the period it belongs to. "H thousand", "T million", "U" for the ones.
+ *
+ * This is what makes a long number sayable at all. There is no English name
+ * for the eleventh place, and there does not need to be one: every place is a
+ * hundred, a ten or a one OF SOME PERIOD, and the periods have names as far as
+ * anyone counts.
+ */
+export function placeValueName(power, base = 10) {
+  if (base !== 10) return placeName(power, base);
+  const period = PERIODS[Math.floor(power / 3)] || "";
+  return period ? `${htuOf(power)} ${period}` : htuOf(power);
+}
+
 /**
  * What the column at this power is called, in this base.
  * See the note at the top of the file for why base ten is special-cased.
+ *
+ * The written-out names run out at hundred millions, which is nine places —
+ * and the words work reaches eighteen. Past the table, base ten composes the
+ * name out of the place and the period ("Hundred Thousands" is exactly what
+ * "H" and "thousand" say together), so there is no place this cannot name.
  */
 export function placeName(power, base) {
   if (base === 10 && power < TEN_NAMES.length) return TEN_NAMES[power];
+  if (base === 10) {
+    const period = PERIODS[Math.floor(power / 3)] || "";
+    const which = ["", "Ten ", "Hundred "][power % 3];
+    const named = period.charAt(0).toUpperCase() + period.slice(1);
+    return period ? `${which}${named}s` : TEN_NAMES[power % 3];
+  }
   const p = placeAt(power);
   return power === 0 ? "Units" : p.plural;
 }
@@ -188,6 +224,34 @@ export function wordsOf(s) {
  */
 export function inWords(n) {
   return wordsOf(String(Math.round(n)));
+}
+
+/**
+ * A number written out as periods and figures, each figure knowing where it
+ * stands — which period it is in, and whether it is the H, the T or the U of
+ * that period.
+ *
+ * Written this way so that a label can be hung over it without the exercise
+ * having to know anything about labels: the place value of a figure is its
+ * H/T/U and its period name together, and both are on the figure itself.
+ *
+ * Base ten only, and deliberately: "thousand" is a fact about English
+ * numerals, so every other base gets the plain figures it has always had.
+ */
+export function figuresHtml(digits, base = 10) {
+  const t = onlyDigits(digits);
+  if (base !== 10) return `<span class="wb-num">${t}</span>`;
+  const parts = periodsOf(t);
+  const top = parts.length - 1;
+  const body = parts.map((chunk, i) => {
+    const period = PERIODS[top - i] || "";
+    const figs = [...chunk].map((ch, k) => {
+      const power = (top - i) * 3 + (chunk.length - 1 - k);
+      return `<b class="wb-fig__d" data-htu="${htuOf(power)}">${ch}</b>`;
+    }).join("");
+    return `<span class="wb-fig__p" data-period="${period}">${figs}</span>`;
+  }).join("");
+  return `<span class="wb-num wb-fig">${body}</span>`;
 }
 
 /**

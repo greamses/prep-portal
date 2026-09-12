@@ -33,6 +33,7 @@
 
 import {
   wordsOf, groupDigits, periodsOf, periodName, drawDigits, onlyDigits, PERIODS,
+  figuresHtml,
 } from "./numbers.js";
 import { levelOf, helpOf } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
@@ -44,7 +45,10 @@ const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
    its answer place is a ruled box rather than a rule — one place still, so it
    is marked as one answer. */
 const write = (lines = 2) => `<span class="wb-line wb-line--write" style="--wb-lines:${lines}"></span>`;
-const fig = (d) => `<span class="wb-num">${groupDigits(d)}</span>`;
+/* Every number the child reads off this chapter is written as periods and
+   figures that know their own place, so that interactive mode can label them
+   — see figuresHtml. On paper it is the same number it always was. */
+const fig = (d) => figuresHtml(d);
 const said = (w) => `<em class="wb-words">${w}</em>`;
 
 /* Both spellings of every answer in words. The marker keeps letters and

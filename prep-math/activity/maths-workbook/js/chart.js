@@ -21,12 +21,20 @@
    ========================================================================== */
 
 import { placeFill } from "./blocks.js";
-import { placeName, placeWorth, digitChar } from "./numbers.js";
+import { placeName, placeWorth, digitChar, PERIODS as PERIOD_WORDS } from "./numbers.js";
 
-/* The three periods a base-ten chart ever reaches on this site. Only base ten
-   gets a period band: "thousands" is an English word about English numerals,
-   and there is no word for base-five's third period. */
-const PERIODS = ["Ones", "Thousands", "Millions"];
+/* The periods a base-ten chart bands across the top. Only base ten gets a
+   period band: "thousands" is an English word about English numerals, and
+   there is no word for base-five's third period.
+
+   Taken from the one list of period names (numbers.js) rather than kept here,
+   so a chart and the labels over a figure can never disagree about what the
+   fourth period is called. The ones period has no name of its own in that
+   list — it is the one every other period is counted from — so it is named
+   here, where a chart needs a heading over it. */
+const PERIODS = PERIOD_WORDS.map((w, i) => (
+  i === 0 ? "Ones" : w.charAt(0).toUpperCase() + w.slice(1) + "s"
+));
 
 /**
  * Build a chart.

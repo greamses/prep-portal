@@ -970,6 +970,58 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-given { letter-spacing: 0.02em; }
 .wb-words { font-style: italic; font-size: 10pt; }
 
+/* ── a number that knows its places (numbers.js figuresHtml) ──────────────
+   Printed, it is the number it always was: periods set a little apart, and
+   nothing else. On screen, interactive mode can hang a label over each period
+   and over each figure — what period this is, and whether the figure is the
+   H, the T or the U of it. The two together are what the place is CALLED. */
+.wb-fig { display: inline-flex; align-items: flex-end; gap: 0.45em; }
+.wb-fig__p { display: inline-flex; position: relative; }
+.wb-fig__d { position: relative; font-weight: inherit; }
+
+/* The labels, on screen only.
+
+   A period's NAME is far wider than the three figures it sits over —
+   "million" against 563 — so switching the names on also pushes the periods
+   apart far enough to hold them. Without that the names run into each other
+   and read as one long word. */
+.wb-live.wb-periods .wb-fig,
+.wb-live.wb-htu .wb-fig { margin-top: 4.5mm; }
+.wb-live.wb-periods .wb-fig { gap: 2.4em; }
+.wb-live.wb-periods .wb-fig__p[data-period=""]::before,
+.wb-live.wb-periods .wb-fig__p::before {
+  content: attr(data-period);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 2.6mm;
+  text-align: center;
+  font: 600 5.4pt/1 var(--font-mono, "JetBrains Mono", monospace);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1f4f86;
+  white-space: nowrap;
+}
+/* the ones period has no name of its own — it is what the others are counted
+   from — so nothing is written over it */
+.wb-live.wb-periods .wb-fig__p[data-period=""]::before { content: "ones"; opacity: 0.55; }
+.wb-live.wb-htu .wb-fig__d::before {
+  content: attr(data-htu);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 0.6mm;
+  text-align: center;
+  font: 700 6.5pt/1 var(--font-mono, "JetBrains Mono", monospace);
+  color: #8a6d1f;
+}
+/* both at once: the period name sits above the H T U, not on top of it */
+.wb-live.wb-periods.wb-htu .wb-fig { margin-top: 8mm; }
+.wb-live.wb-periods.wb-htu .wb-fig__p::before { margin-bottom: 5.2mm; }
+.wb-livebar .wb-labelbtn[hidden] { display: none; }
+
 /* The digit that has been ringed, in the exercise that asks what it is worth.
    A ring and not a highlighter: it has to survive a black-and-white printer.
    Its own letter-spacing is zero — the spread number's tracking would otherwise
@@ -1473,4 +1525,7 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 @media print {
   .wb-tool, .wb-drawbar, .wb-want, .wb-livebar, .wb-live-toggle,
   .wb-side, .wb-panel { display: none !important; }
+  /* the labels are a thing you switch on to read the screen with, never paper */
+  .wb-fig__p::before, .wb-fig__d::before { content: none !important; }
+  .wb-fig { margin-top: 0 !important; }
 }

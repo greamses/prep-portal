@@ -72,6 +72,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   bar.hidden = true;
   bar.innerHTML = `
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
+    <button type="button" class="pp-btn wb-tint-5 wb-labelbtn" data-act="periods" aria-pressed="false" hidden>Period names</button>
+    <button type="button" class="pp-btn wb-tint-5 wb-labelbtn" data-act="htu" aria-pressed="false" hidden>H T U</button>
     <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
     <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
     <span class="wb-livebar__score" role="status"></span>
@@ -86,6 +88,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (act === "check") check();
     if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
     if (act === "clear") clearAll();
+    /* Labels over the figures: what period this is, and whether a figure is
+       the hundred, the ten or the unit OF that period. Together they are what
+       a place is called — "H thousand" — which is the thing this chapter is
+       about. On screen only; paper keeps the number plain. */
+    if (act === "periods" || act === "htu") {
+      const on = sheet.classList.toggle(act === "periods" ? "wb-periods" : "wb-htu");
+      const btn = e.target.closest("[data-act]");
+      btn.setAttribute("aria-pressed", String(on));
+      btn.classList.toggle("is-on", on);
+    }
   });
 
   /* ── the questions on the paper ────────────────────────────────────────*/
@@ -1244,6 +1256,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     document.documentElement.classList.add("wb-side-on");
     store = load();
     items().forEach((node, i) => enliven(node, i));
+    /* Offered only when the paper has numbers built to carry a label. */
+    const labelled = !!sheet.querySelector(".wb-fig");
+    bar.querySelectorAll(".wb-labelbtn").forEach((b) => { b.hidden = !labelled; });
     keyPages(true);
   }
 
@@ -1253,6 +1268,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     toggle.textContent = "Make interactive";
     toggle.classList.remove("is-on");
     bar.hidden = true;
+    sheet.classList.remove("wb-periods", "wb-htu");
+    bar.querySelectorAll(".wb-labelbtn").forEach((b) => {
+      b.classList.remove("is-on");
+      b.setAttribute("aria-pressed", "false");
+    });
     side.hidden = true;
     document.documentElement.classList.remove("wb-side-on");
     putToolsAway();
