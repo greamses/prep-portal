@@ -36,6 +36,12 @@ export const TOOL_ICONS = {
   protractor: glyph(`<path d="M3 17a9 9 0 0 1 18 0z"/><path d="M12 17V13M7.2 12.2l1.6 1.6M16.8 12.2l-1.6 1.6"/>`),
   setsquare: glyph(`<path d="M4 20V4l16 16z"/><path d="M7.5 16.5V12l4.5 4.5z"/>`),
   close: glyph(`<path d="M7 7l10 10M17 7 7 17"/>`),
+  /* A ruled chart: the band across the top, then the columns a figure stands
+     in — which is what a place-value chart is before anything is written on it. */
+  chart: glyph(`<path d="M3.5 5.5h17v13h-17zM3.5 9.5h17"/><path d="M9 9.5v9M15 9.5v9"/>`),
+  /* A counting frame: two rails, the reckoning bar across, and beads on a rod
+     above and below it. */
+  abacus: glyph(`<path d="M4 4.5v15M20 4.5v15"/><path d="M4 11h16"/><path d="M8 7.5h1.6M8 14.2h1.6M14.4 7.5H16M14.4 14.2H16"/><path d="M8.8 5.9v3.2M15.2 5.9v3.2M8.8 12.6v3.2M15.2 12.6v3.2"/>`),
   /* the written boards, and the algebra sheet — the tools that are not
      instruments but working paper */
   longdiv: glyph(`<path d="M9 7.5h11"/><path d="M9 7.5v11"/><path d="M4.5 10c1.5 0 2.2 1 2.2 2.8s-.7 2.8-2.2 2.8"/><path d="M12 4.5h5"/><path d="M12 12h4M12 16h6"/>`),

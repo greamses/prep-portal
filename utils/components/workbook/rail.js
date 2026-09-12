@@ -409,6 +409,8 @@ export function mountBuilder(cfg) {
            own modules, so the workbook hands the drawing in, the way it already
            hands in its protractor. */
         blocks: cfg.interactive.blocks || null,
+        /* …and its place-value chart, on the same terms as the blocks. */
+        chart: cfg.interactive.chart || null,
       });
     }
 

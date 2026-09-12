@@ -51,7 +51,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *     locked       interactive for good: no "Back to paper" (the player)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, onCheck = null, locked = false }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, locked = false }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -1136,6 +1136,36 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         mountBoard(body, { variant: id, base: 10 });
       },
     })),
+    /* The place-value chart, but ONLY where there is place value: the workbook
+       hands its own chart in, the way it hands in its blocks, so a geometry
+       paper is never offered one. Its setting is the range of places, which is
+       the whole of what a chart is — so it is a number of columns. */
+    ...(chart ? [{
+      id: "chart",
+      label: "Place value chart",
+      icon: TOOL_ICONS.chart,
+      size: { w: 620, h: 400 },
+      /* --bare, like the abacus: the tool carries its own padding, and a
+         padded body made `width: 100%` resolve to the panel's full width while
+         sitting inset from it — 620px of tool hanging 13px off the edge. */
+      open: (body) => {
+        body.classList.add("wb-panel__body--bare");
+        mountChart(body, chart);
+      },
+    }] : []),
+    {
+      id: "abacus",
+      label: "Abacus",
+      icon: TOOL_ICONS.abacus,
+      size: { w: 620, h: 470 },
+      /* The real frames off the Manipulatives canvas, one of them on a canvas
+         of its own — fetched the first time it is asked for, exactly as the
+         algebra workspace below is. */
+      open: async (body) => {
+        body.classList.add("wb-panel__body--bare");
+        await mountAbacusTool(body);
+      },
+    },
     {
       id: "gm",
       label: "Algebra moves",
@@ -1155,6 +1185,133 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     },
   ];
+
+  /* ── the two tools that have something to set ──────────────────────────
+     Both wear the same strip of sticky notes above them: what to work with,
+     then the tool itself. The chart's setting is how many places it has, which
+     is the only thing a chart IS; the abacus's is which frame and how many
+     rods — and a rod is a place, so that is the same setting in beads. */
+
+  const note = (label, on, data) =>
+    `<button type="button" class="pp-sticky pp-note-btn wb-tool__opt" ${data}`
+    + ` aria-pressed="${on}">${label}</button>`;
+
+  const CHART_PLACES = [3, 4, 6, 9, 12, 15];
+
+  function mountChart(body, chartFn) {
+    let places = 4;
+
+    const wrap = document.createElement("div");
+    wrap.className = "wb-tool";
+    wrap.innerHTML = `<div class="wb-tool__set"></div>`
+      + `<div class="wb-tool__body wb-tool__chart"></div>`
+      + `<p class="wb-tool__say" role="status" aria-live="polite"></p>`;
+    body.appendChild(wrap);
+
+    const set = wrap.querySelector(".wb-tool__set");
+    const paper = wrap.querySelector(".wb-tool__chart");
+    const say = wrap.querySelector(".wb-tool__say");
+
+    const boxes = () => [...paper.querySelectorAll(".wb-cell input")];
+
+    function read() {
+      const written = boxes().some((b) => b.value.trim());
+      if (!written) { say.textContent = ""; return; }
+      /* An empty column is a nought — that is what a place-value chart says. */
+      const figures = boxes().map((b) => (/[0-9]/.test(b.value) ? b.value : "0")).join("");
+      say.textContent = `The chart reads ${Number(figures).toLocaleString("en-GB")}.`;
+    }
+
+    function draw() {
+      /* Highest place first, the way a number is written and a chart is read. */
+      const powers = Array.from({ length: places }, (_, i) => places - 1 - i);
+      paper.innerHTML = chartFn({ powers, base: 10, rows: [{ digits: null }] });
+      /* How wide the chart needs to be is a thing we KNOW — one column per
+         place — so it is said outright rather than left to the layout to work
+         out from the content, which resolves to a nonsense width here. */
+      paper.style.setProperty("--pv-cols", String(places));
+      paper.querySelectorAll(".wb-cell").forEach((cell) => {
+        cell.textContent = "";
+        const box = document.createElement("input");
+        box.type = "text";
+        box.inputMode = "numeric";
+        box.autocomplete = "off";
+        box.maxLength = 1;
+        cell.appendChild(box);
+      });
+      set.innerHTML = `<span class="wb-tool__cap">Places</span>`
+        + CHART_PLACES.map((n) => note(n, n === places, `data-places="${n}"`)).join("")
+        + note("Rub it out", false, `data-clear="1"`);
+      read();
+    }
+
+    paper.addEventListener("input", (e) => {
+      const box = e.target.closest("input");
+      if (!box) return;
+      // one figure to a column, and the last one typed is the one that stays
+      box.value = box.value.replace(/[^0-9]/g, "").slice(-1);
+      if (box.value) {
+        const all = boxes();
+        all[all.indexOf(box) + 1]?.focus();
+      }
+      read();
+    });
+
+    set.addEventListener("click", (e) => {
+      const hit = e.target.closest("[data-places], [data-clear]");
+      if (!hit) return;
+      if (hit.dataset.clear) { boxes().forEach((b) => { b.value = ""; }); read(); return; }
+      places = Number(hit.dataset.places);
+      draw();
+    });
+
+    draw();
+  }
+
+  async function mountAbacusTool(body) {
+    const { mountAbacus, FRAMES, RODS } =
+      await import("/prep-math/activity/base-blocks/js/mount-abacus.js");
+
+    const wrap = document.createElement("div");
+    wrap.className = "wb-tool";
+    wrap.innerHTML = `<div class="wb-tool__set"></div>`
+      + `<div class="wb-tool__body wb-tool__body--canvas"></div>`
+      + `<p class="wb-tool__say" role="status" aria-live="polite"></p>`;
+    body.appendChild(wrap);
+
+    const set = wrap.querySelector(".wb-tool__set");
+    const stage = wrap.querySelector(".wb-tool__body");
+    const say = wrap.querySelector(".wb-tool__say");
+
+    let variant = "soroban";
+    let rods = 9;
+
+    const frame = await mountAbacus(stage, {
+      variant, base: 10, rods,
+      onRead: ({ sentence }) => { say.textContent = sentence || ""; },
+    });
+
+    function dials() {
+      set.innerHTML = `<span class="wb-tool__cap">Frame</span>`
+        + FRAMES.map((f) => note(f.label, f.id === variant, `data-frame="${f.id}" title="${f.hint}"`)).join("")
+        + `<span class="wb-tool__cap">Places</span>`
+        + RODS.map((n) => note(n, n === rods, `data-rods="${n}"`)).join("")
+        + note("Clear", false, `data-clear="1"`);
+    }
+    dials();
+
+    set.addEventListener("click", (e) => {
+      const hit = e.target.closest("[data-frame], [data-rods], [data-clear]");
+      if (!hit) return;
+      if (hit.dataset.clear) { frame.clear(); return; }
+      if (hit.dataset.frame) { variant = hit.dataset.frame; frame.setVariant(variant); }
+      else { rods = Number(hit.dataset.rods); frame.setRods(rods); }
+      dials();
+    });
+
+    /* handed back to togglePanel: closing the panel stops the render loop */
+    return () => frame.dispose();
+  }
 
   const side = document.createElement("aside");
   side.className = "wb-side";
@@ -1187,6 +1344,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     }
     const spec = SHEETS.find((t) => t.id === id);
     if (!spec) return;
+    /* A tool may hand back a way to put itself away. Most do not need one — a
+       board is markup and goes when the panel goes — but the abacus brings a
+       3D canvas with a render loop running against it, and a render loop nobody
+       stops is a panel you closed that is still drawing. */
+    let bye = null;
     const panel = openPanel({
       title: spec.label,
       size: spec.size,
@@ -1194,12 +1356,20 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         delete panels[id];
         btn?.classList.remove("is-on");
         btn?.setAttribute("aria-pressed", "false");
+        try { bye?.(); } catch { /* a tool that cannot tidy must not jam the x */ }
+        bye = null;
       },
     });
     panels[id] = panel;
     btn?.classList.add("is-on");
     btn?.setAttribute("aria-pressed", "true");
-    Promise.resolve(spec.open(panel.body)).catch(() => {
+    Promise.resolve(spec.open(panel.body)).then((off) => {
+      if (typeof off !== "function") return;
+      /* Opened and shut again before it had finished fetching: the tool is
+         built by now and nothing is left to close it, so close it here. */
+      if (!panels[id]) { try { off(); } catch { /* nothing to be done */ } return; }
+      bye = off;
+    }).catch(() => {
       panel.body.textContent = "That tool could not be fetched — check the connection and try again.";
     });
   }

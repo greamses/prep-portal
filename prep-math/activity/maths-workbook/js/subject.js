@@ -9,6 +9,7 @@
 import { EXERCISES, levelOf, helpOf, unavailable, placesFor, exerciseById, chapterOf } from "./exercises.js";
 import { placeName, placeWorth } from "./numbers.js";
 import { blocksKey, blocksSvg } from "./blocks.js";
+import { chartHtml } from "./chart.js";
 import { baseWord } from "../../base-blocks/js/config.js";
 import { protractorSvg } from "./protractor.js";
 
@@ -99,4 +100,9 @@ export const LIVE = {
      protractor is. A workbook with no blocks hands nothing and the engine
      simply never offers it. */
   blocks: blocksSvg,
+  /* And how it draws a place-value chart, handed in for the same reason: the
+     chart on the tool rail is THIS workbook's chart, the one the questions are
+     answered on, not a second one drawn to look like it. A workbook with no
+     place value hands nothing and the rail never offers the chart. */
+  chart: chartHtml,
 };

@@ -508,6 +508,150 @@ body {
 .wb-panel__body--bare { padding: 0; overflow: hidden; }
 .wb-panel__body--bare > .am-frame { height: 100%; min-height: 0; }
 
+/* ── a tool with settings above it ────────────────────────────────────────
+   The chart and the abacus both have something to set — how many places to
+   work in, and which frame — so both wear the same strip: sticky notes for
+   the choices, and the tool itself filling whatever is left. */
+.wb-tool {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* PINNED to the panel, not merely allowed to shrink into it. `min-width: 0`
+     only permits shrinking and `max-width: 100%` is measured against a parent
+     that has already grown — with either alone, a chart of nine place names
+     took the tool 300px out past the panel's edge (measured). An explicit
+     100% of a definite 620px panel is 620px whatever the content wants, and
+     the scrolling is then done by .wb-tool__chart inside it. */
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+/* --bare strips the body's padding so a canvas can reach the edges; a tool
+   with dials above it still needs room round them */
+.wb-panel__body--bare > .wb-tool { padding: 0.5rem 0.8rem 0.7rem; }
+.wb-tool__set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  padding: 0.15rem 0 0.6rem;
+}
+.wb-tool__cap {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b645a);
+  margin-right: 0.1rem;
+}
+/* a sticky note, like every other button on the bench — .pp-note-btn dresses
+   it, and only the size is ours */
+.wb-tool__set .wb-tool__opt {
+  --pp-note-bg: #f0ece2;
+  min-height: 1.9rem;
+  padding: 0.3rem 0.7rem 0.35rem;
+  font-size: 0.78rem;
+  color: #6b645a;
+}
+.wb-tool__set .wb-tool__opt[aria-pressed="true"] { --pp-note-bg: #fff3a8; color: #14130f; }
+
+.wb-tool__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
+/* the abacus brings a canvas, which has to be told how big to be */
+.wb-tool__body--canvas { overflow: hidden; }
+.wb-tool__body--canvas .ab-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+}
+
+/* the chart, on working paper rather than on the sheet */
+.wb-tool__chart { padding: 0.2rem 0.1rem 0.6rem; }
+/* A chart is built for the width of a page. Squeezed into a panel, nine place
+   names have nowhere to go and "Thousands" and "Hundreds" print on top of one
+   another — so the chart keeps the width its headings need and the panel
+   scrolls to it instead of crushing them. */
+.wb-tool__chart {
+  overflow-x: auto;
+  /* the scroller is the panel's width and the chart inside it is wider */
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+/* The chart keeps the width its headings need, and the panel scrolls to it —
+   nine place names will not fit across 600px and squeezing them makes
+   "Hundred Millions" spill out of its own column.
+
+   This is safe ONLY because the cell inputs below are a fixed width. With a
+   percentage there, this line and that one asked each other the same question
+   — the table sizing to its cells while the cells sized to the table — and it
+   resolved into a tool one million pixels across (measured). One fixed width
+   breaks the cycle; both halves together are what went wrong. */
+.wb-tool__chart .pv-chart {
+  margin: 0 auto;
+  /* NOT max-content. Measured twice: that resolves to exactly 1,000,000px on
+     this table — an intrinsic-sizing sentinel, not a content width — and drags
+     the whole tool out past the panel with it. Fixing the inputs to a set
+     width did not change it, so the cause was never a cycle between the two.
+     The column count is KNOWN in JavaScript, so mountChart() publishes it as
+     --pv-cols and the width is simply stated. */
+  /* Narrow columns, and let the NAME wrap instead. Widening the column until
+     "Hundred Thousands" fitted on one line pushed the chart to 1200px, so at
+     nine places only four and a half columns were on screen and the ones
+     column — the one every reading starts from — was off the edge. A chart you
+     have to scroll to read is not a place-value chart. */
+  min-width: calc(var(--pv-cols, 4) * 4rem);
+}
+/* Two lines for a long name beats one line nobody can see: "Hundred
+   Thousands" sets over two rows in a 4rem column and every place stays on
+   screen together. */
+.wb-tool__chart .pv-chart__place {
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+  white-space: normal;
+}
+.wb-tool__chart .pv-chart__name {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.15;
+}
+/* Every blank cell is somewhere to write. The sheet's own typing layer only
+   reaches the paper, so the panel gives its cells their own boxes. */
+.wb-tool__chart .wb-cell { padding: 0; }
+.wb-tool__chart .wb-cell input {
+  /* A set width, so a column is a column whatever is typed in it. (An earlier
+     note here blamed a percentage width for the runaway table above; that was
+     wrong — the measurement showed max-content blowing up with this fixed
+     width already in place.) */
+  width: 2.3rem;
+  height: 1.9rem;
+  padding: 0;
+  font: inherit;
+  font-size: 1rem;
+  text-align: center;
+  color: var(--wb-ink, #2a2723);
+  background: none;
+  border: 0;
+  outline: none;
+}
+.wb-tool__chart .wb-cell input:focus { background: #fff7e2; }
+.wb-tool__say {
+  flex: 0 0 auto;
+  margin: 0.45rem 0 0;
+  min-height: 1.3em;
+  font-family: "Shantell Sans", "Segoe Print", cursive;
+  font-size: 0.86rem;
+  color: var(--text-secondary, #55504a);
+}
+
 @media (max-width: 700px) {
   .wb-side {
     top: auto;

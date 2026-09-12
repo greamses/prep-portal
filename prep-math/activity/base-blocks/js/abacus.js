@@ -89,18 +89,24 @@ export function worksInBase(variant, base) {
  * a bead above the bar worth FIVE, which is a fact about ten and not about the
  * frame; they stay in base ten and are not offered anywhere else.
  */
-export function specOf(variant, base = 10) {
+export function specOf(variant, base = 10, rods = 0) {
   const s = SPECS[variant];
-  if (variant !== "schoty") return s;
-  return { ...s, tiers: { earth: { n: base, worth: 1 } } };
+  /* A frame may be built wider than the table says. How many rods there are is
+     how many PLACES it can hold, so widening one is the abacus's version of
+     "work with bigger numbers" — the tiers, and everything that depends on
+     them, are untouched. `0` means "however many this frame usually has", so
+     every existing caller gets exactly what it always got. */
+  const wide = rods && rods !== s.rods ? { ...s, rods } : s;
+  if (variant !== "schoty") return wide;
+  return { ...wide, tiers: { earth: { n: base, worth: 1 } } };
 }
 
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
-export function makeAbacus(variant, base = 10) {
+export function makeAbacus(variant, base = 10, rods = 0) {
   // a frame carries the base it counts in, so a canvas may hold more than one
   const own = worksInBase(variant, base) ? base : 10;
-  const spec = specOf(variant, own);
+  const spec = specOf(variant, own, rods);
   const size = frameSize(spec);
   return {
     kind: "abacus",
@@ -127,7 +133,7 @@ export function makeAbacus(variant, base = 10) {
 export function rebaseAbacus(thing, base) {
   if (!worksInBase(thing.variant, base) || thing.base === base) return false;
   thing.base = base;
-  const size = frameSize(specOf(thing.variant, base));
+  const size = frameSize(specOf(thing.variant, base, thing.rods.length));
   thing.l = Math.ceil(size.width);
   thing.w = Math.ceil(size.depth + READ_PAD);
   clearAbacus(thing);
@@ -175,7 +181,7 @@ function offsetOf(index, count) {
 
 /** The digit a rod is showing. */
 export function rodValue(thing, r) {
-  const spec = specOf(thing.variant, thing.base || 10);
+  const spec = specOf(thing.variant, thing.base || 10, thing.rods.length);
   const rod = thing.rods[r];
   const heaven = spec.tiers.heaven ? rod.heaven * spec.tiers.heaven.worth : 0;
   return heaven + rod.earth * spec.tiers.earth.worth;
@@ -197,8 +203,8 @@ export function abacusValue(thing) {
  */
 export function setAbacusValue(thing, n) {
   const base = thing.base || 10;
-  const spec = specOf(thing.variant, base);
   const rods = thing.rods;
+  const spec = specOf(thing.variant, base, rods.length);
   const digits = [];
   let v = Math.max(0, Math.round(n));
   while (v > 0) { digits.unshift(v % base); v = Math.floor(v / base); }
@@ -293,7 +299,7 @@ function norm(hex) {
 export function buildAbacus(ctx, thing) {
   const BJS = B();
   const scene = ctx.scene;
-  const spec = specOf(thing.variant, thing.base || 10);
+  const spec = specOf(thing.variant, thing.base || 10, thing.rods.length);
   const size = frameSize(spec);
   const root = new BJS.TransformNode("ab" + thing.id, scene);
 
