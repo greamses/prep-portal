@@ -78,7 +78,6 @@ function deal() {
   drawBoard();
   drawDeck();
   say("");
-  tell();
 }
 
 function drawBoard() {
@@ -86,7 +85,7 @@ function drawBoard() {
   board.style.setProperty("--nm-cols", S.round.range.cols);
   board.innerHTML = S.round.grid
     .map((n) => `<button type="button" class="nm-cell" data-n="${n}">`
-      + `<b class="nm-cell__n">${n}</b><span class="nm-cell__chips"></span></button>`)
+      + `<b class="nm-cell__n">${n}</b></button>`)
     .join("");
 }
 
@@ -111,11 +110,16 @@ function cardHtml(card) {
     + `${face}<em class="nm-card__tag">${card.label}</em></button>`;
 }
 
+/**
+ * ONE note at a time.
+ *
+ * A wall of notes is a sorting job before it is a number job — the eye picks
+ * the easy ones off and the hard ones are left in a heap. One note, one
+ * decision: what does THIS say, and where does it go.
+ */
 function drawDeck() {
-  $("#nm-deck").innerHTML = S.round.cards
-    .filter((c) => !S.placed.has(c.id))
-    .map(cardHtml)
-    .join("");
+  const next = S.round.cards.find((c) => !S.placed.has(c.id));
+  $("#nm-deck").innerHTML = next ? cardHtml(next) : "";
 }
 
 /* ── putting a note down ──────────────────────────────────────────────────*/
@@ -150,22 +154,22 @@ function place(cardId, n) {
 
   S.placed.set(cardId, n);
   hold(null);
-  if (noteEl) noteEl.remove();
 
-  const chips = cell.querySelector(".nm-cell__chips");
-  const chip = document.createElement("span");
-  chip.className = "nm-chip";
-  chip.style.setProperty("--nm-chip", paperOf(card.form));
-  chips.appendChild(chip);
-
-  const wanted = S.round.perTarget.get(n) || 0;
-  const got = [...S.placed.values()].filter((v) => v === n).length;
-  cell.classList.toggle("is-complete", got >= wanted);
-  cell.setAttribute("aria-label", `${n} — ${got} of ${wanted} notes`);
-
-  if (got >= wanted) say(`${n} has all its notes.`);
-  else say("");
-  tell();
+  /* The note is STUCK ON the number, not swapped for a dot. What was matched
+     stays there to be read: the square ends up saying the same thing twice,
+     once in figures and once the other way, which is the whole point. */
+  if (noteEl) {
+    noteEl.classList.remove("is-dragging", "is-held");
+    noteEl.removeAttribute("style");
+    noteEl.style.setProperty("--pp-note-tilt", `${tiltOf(card.id)}deg`);
+    noteEl.classList.add("is-stuck");
+    noteEl.disabled = true;
+    cell.appendChild(noteEl);
+  }
+  cell.classList.add("is-complete");
+  cell.setAttribute("aria-label", `${n} — ${card.label}`);
+  say("");
+  drawDeck();
 
   if (isDone(S.round, S.placed)) {
     say(S.slips
@@ -173,10 +177,6 @@ function place(cardId, n) {
       : "All of them home, and not one slip.", true);
   }
 }
-
-/* the paper a form is written on, for the chip that stands for it */
-const PAPERS = ["#fff3a8", "#e8c8ff", "#c8f0c0", "#bfe3ff", "#ffd7a3", "#b8ece2"];
-const paperOf = (formId) => PAPERS[FORM_IDS.indexOf(formId) % PAPERS.length];
 
 function hold(cardId) {
   S.held = cardId;
@@ -191,17 +191,6 @@ function say(words, win = false) {
   const el = $("#nm-say");
   el.textContent = words;
   el.classList.toggle("nm-say--win", !!(words && win));
-}
-
-function tell() {
-  const home = S.placed.size;
-  const all = S.round.cards.length;
-  const done = S.round.targets.filter((n) => {
-    const wanted = S.round.perTarget.get(n) || 0;
-    return [...S.placed.values()].filter((v) => v === n).length >= wanted;
-  }).length;
-  $("#nm-score").innerHTML =
-    `<b>${home}</b> of <b>${all}</b> notes home · <b>${done}</b> of <b>${S.round.targets.length}</b> numbers gathered`;
 }
 
 /* ── dragging ─────────────────────────────────────────────────────────────*/

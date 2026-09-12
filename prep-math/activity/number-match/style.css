@@ -47,13 +47,6 @@ body { overflow-anchor: none; }
 }
 .nm-title em { color: var(--accent, #f4c95d); font-style: normal; }
 
-.nm-lead {
-  margin: 0;
-  max-width: 62ch;
-  color: var(--text-secondary, #55504a);
-  line-height: 1.55;
-}
-
 /* ── the bar: how it is going, and what you can do about it ───────────────*/
 
 .nm-bar {
@@ -63,14 +56,6 @@ body { overflow-anchor: none; }
   gap: 0.7rem;
   margin: 1.1rem 0 1.3rem;
 }
-
-.nm-score {
-  flex: 1 1 14rem;
-  min-width: 0;
-  font-size: 0.92rem;
-  color: var(--text-secondary, #55504a);
-}
-.nm-score b { color: var(--ink, #2a2723); }
 
 /* the finishing line, and the note that says a slip was made */
 .nm-say {
@@ -137,22 +122,35 @@ body { overflow-anchor: none; }
   line-height: 1;
 }
 
-/* Which notes have landed here. One chip per note, in the note's own colour,
-   so a finished number shows the whole group it gathered. */
-.nm-cell__chips {
+/* A matched note is STUCK ON its square — small, tilted, still a note, still
+   readable. It covers the figure it belongs to, which is the answer: the
+   square now says the same number twice, each way once. */
+.nm-cell .nm-card.is-stuck {
+  /* It is out of the deck now, so the deck's layout rule no longer reaches it
+     and .pp-sticky's inline-block would take over. Said again here. */
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 2px;
-  min-height: 7px;
+  position: absolute;
+  inset: 1px;
+  z-index: 2;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  gap: 0;
+  padding: 0.15rem 0.2rem;
+  cursor: default;
+  overflow: hidden;
 }
-.nm-chip {
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  background: var(--nm-chip, #f4c95d);
-  box-shadow: 0 0 0 1px rgba(20, 19, 15, 0.16);
+.nm-cell .nm-card.is-stuck .nm-card__text {
+  font-size: 0.56rem;
+  line-height: 1.05;
 }
+.nm-cell .nm-card.is-stuck .nm-card__art { min-height: 0; }
+.nm-cell .nm-card.is-stuck .nm-card__art svg { max-height: 1.9rem; }
+/* the form's name is a caption on a big note and clutter on a small one */
+.nm-cell .nm-card.is-stuck .nm-card__tag { display: none; }
 
 /* A cell that can be dropped on right now — shown while a note is held, so
    tap-to-place tells you where taps will go. */
@@ -181,13 +179,14 @@ body { overflow-anchor: none; }
 
 /* ── the notes ────────────────────────────────────────────────────────────*/
 
+/* One note at a time, so it gets the room to be read properly. */
 .nm-deck {
   display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  align-items: flex-start;
+  justify-content: center;
   gap: 0.9rem 0.8rem;
   min-height: 8rem;
-  padding: 0.7rem 0.5rem 1rem;
+  padding: 1.4rem 0.5rem 1rem;
   /* Belt and braces with .nm-gap: whatever happens to this deck's height, the
      browser must not answer it by moving the scroll position, because the
      board would slide under the finger halfway through a drag. */
@@ -213,11 +212,12 @@ body { overflow-anchor: none; }
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  /* big enough for a thumb, and never so wide it stops being a note */
-  min-width: 6.6rem;
-  max-width: 11rem;
-  min-height: 4.4rem;
-  padding: 0.75rem 0.9rem 0.6rem;
+  /* One note at a time now, so it is given the room to be read properly —
+     never so wide it stops being a note. */
+  min-width: 9rem;
+  max-width: 13rem;
+  min-height: 4.8rem;
+  padding: 1rem 1.2rem 0.8rem;
   font: inherit;
   text-align: center;
   cursor: grab;

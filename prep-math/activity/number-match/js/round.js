@@ -55,11 +55,11 @@ export function shuffle(rng, list) {
 /**
  * Draw the targets for a round.
  *
- * A number is only worth drawing if at least two of the chosen forms can carry
- * it — one lone note is a matching exercise with nothing to group.
+ * A number needs one of the chosen forms to be able to carry it — one note per
+ * number now, so one form is enough.
  */
 export function pickTargets(rng, range, forms, count) {
-  const able = gridOf(range).filter((n) => formsFor(n, forms).length >= 2);
+  const able = gridOf(range).filter((n) => formsFor(n, forms).length >= 1);
   const bag = shuffle(rng, able);
   return bag.slice(0, Math.min(count, bag.length)).sort((a, b) => a - b);
 }
@@ -80,12 +80,19 @@ export function buildRound({ range = RANGES[0], forms = FORM_IDS, count = 4, see
   const rng = makeRng(seed);
   const targets = pickTargets(rng, r, use, count);
 
+  /* ONE note per number, in one of the ways it can be written. A number is
+     never on two notes: the same value twice is two chances at one square and
+     nothing more to think about. */
   const cards = [];
   const perTarget = new Map();
   for (const n of targets) {
-    const mine = formsFor(n, use).map((f) => cardFor(n, f.id)).filter(Boolean);
-    perTarget.set(n, mine.length);
-    cards.push(...mine);
+    const mine = formsFor(n, use);
+    if (!mine.length) continue;
+    const pick = mine[Math.floor(rng.float() * mine.length)];
+    const card = cardFor(n, pick.id);
+    if (!card) continue;
+    perTarget.set(n, 1);
+    cards.push(card);
   }
 
   return { range: r, grid: gridOf(r), targets, cards: shuffle(rng, cards), perTarget };

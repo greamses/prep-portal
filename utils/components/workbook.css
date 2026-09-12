@@ -945,19 +945,12 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-assign__row span:last-child { color: var(--text-secondary); white-space: nowrap; }
 .wb-pay__actions a.pp-btn { text-decoration: none; }
 
-/* THE PREVIEW MARK. An unpaid workbook's pages carry PREVIEW across them, over
-   the writing, so a screenshot of the preview is not a clean worksheet. Faint
-   enough to read the questions through. */
-.wb-preview-mark .wb-page::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='230'><text x='170' y='128' text-anchor='middle' transform='rotate(-28 170 115)' font-family='Arial,sans-serif' font-size='44' font-weight='700' letter-spacing='6' fill='%23c0453f' fill-opacity='0.16'>PREVIEW</text></svg>");
-  background-size: 88mm 60mm;
-  background-repeat: repeat;
-}
+/* The PREVIEW mark that used to lie across an unpaid workbook's pages has
+   been taken off: it was over the writing on screen the whole time you were
+   working, which is a nuisance for the person who owns the thing. Printing is
+   still gated — the print stylesheet blanks a workbook without a pass — so
+   what a pass buys is unchanged. */
+
 /* sticky-ui.css already pins the icon; all this needs is the tape's headroom. */
 .wb-toolbar .pp-btn { margin-top: 0.15rem; }
 

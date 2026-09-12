@@ -83,7 +83,10 @@ export function printPass({ workbook, label }) {
   function apply() {
     const ok = !!state.paid;
     root.classList.toggle("wb-print-ok", ok);
-    root.classList.toggle("wb-preview-mark", !ok);
+    /* No PREVIEW wash over the pages any more — see workbook.css. The print
+       stylesheet still blanks an unpaid workbook, which is the gate that
+       matters; this only ever made the thing unpleasant to look at while it
+       was being built. */
     root.style.setProperty(
       "--wb-licence",
       ok && !state.admin ? JSON.stringify(`  ·  Printed for ${state.buyer}  ·  ${state.order}`) : '""'
