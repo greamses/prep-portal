@@ -116,6 +116,7 @@ export const FEATURES = [
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },
       { id: "transversals", label: "Transversals", path: "/prep-math/activity/transversals" },
+      { id: "number-match", label: "Number Match (match every way of writing a number to the numeral)", path: "/prep-math/activity/number-match" },
     ],
   },
   {

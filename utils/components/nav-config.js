@@ -181,6 +181,7 @@ const NAV_CONFIG = [
              top of each page (utils/components/geometry-tabs.js), rather than
              four sibling entries the reader has to tell apart. */
           { text: "Geometry", href: "/prep-math/activity/polygon-angles/index.html", description: "Angles, transversals, Pythagoras and surface area" },
+          { text: "Number Match", href: "/prep-math/activity/number-match/index.html", description: "Match words, tallies and blocks to the number" },
         ],
       },
       {

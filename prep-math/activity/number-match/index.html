@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Number Match</title>
+    <meta
+      name="description"
+      content="Match every way of writing a number to the numeral it means. A board of numbers and a deck of sticky notes — the number in words, its places added together, how many tens and ones it has, tally marks counted in fives, and base-ten blocks — dragged or tapped onto the number they all stand for. Choose the range (1 to 20, 20 to 50, 50 to 100), choose which ways of writing to use, and work it with a finger on a tablet."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "number-match" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <!-- The site-wide sheet that dresses .pp-btn and friends as sticky notes.
+         Every other activity page links it; without it .pp-btn is the bare
+         accent button out of components.css, which is not what this bench
+         looks like. It is linked BEFORE our own sheet on purpose — it owns the
+         paper, and this page only adds layout on top. -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- the guards resolve firebase by bare specifier -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Match</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="nm-page">
+      <header class="nm-head">
+        <span class="nm-eyebrow">
+          <span id="nm-eyebrow-icon"></span>
+          Mathematics · Number
+        </span>
+        <h1 class="nm-title">Number Match<em>.</em></h1>
+        <p class="nm-lead">
+          Every note on the right says a number — but never in figures. Put each
+          one on the number it means, and watch a number gather its whole
+          family: its words, its places, its addition, its tally, its blocks.
+        </p>
+      </header>
+
+      <section class="nm-bar">
+        <p class="nm-score" id="nm-score"></p>
+        <!-- The recipe in components.css is pp-sticky + pp-note-btn + a paper
+             colour. NOT pp-btn: that one paints on the accent and a hard
+             border, and being defined later it beats the note's own paper. -->
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c2" id="nm-again"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3" id="nm-open-settings"></button>
+        <p class="nm-say" id="nm-say" role="status" aria-live="polite"></p>
+      </section>
+
+      <div class="nm-work">
+        <section class="nm-panel" aria-labelledby="nm-board-label">
+          <span class="nm-panel__label" id="nm-board-label">The numbers</span>
+          <div class="nm-grid" id="nm-grid"></div>
+        </section>
+
+        <section class="nm-panel" aria-labelledby="nm-deck-label">
+          <span class="nm-panel__label" id="nm-deck-label">The notes</span>
+          <div class="nm-deck" id="nm-deck"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="nm-modal" id="nm-settings" role="dialog" aria-modal="true"
+         aria-labelledby="nm-settings-title" hidden>
+      <div class="nm-modal__back" data-close></div>
+      <div class="pp-receipt nm-modal__card">
+        <div class="pp-receipt__paper nm-modal__paper">
+          <header class="nm-modal__head">
+            <h2 class="nm-modal__title" id="nm-settings-title">Settings</h2>
+            <button type="button" class="pp-sticky pp-note-btn nm-modal__close"
+                    data-close aria-label="Put the settings away"></button>
+          </header>
+
+          <div class="nm-modal__body">
+            <div class="nm-set">
+              <span class="nm-set__label">Which numbers</span>
+              <p class="nm-set__note">The stretch of the number line on the board.</p>
+              <div class="nm-opts" id="nm-ranges"></div>
+            </div>
+
+            <div class="nm-set">
+              <span class="nm-set__label">Ways of writing</span>
+              <p class="nm-set__note">
+                The figures themselves are never on a note — they are what the
+                board is for. Keep at least two ways switched on.
+              </p>
+              <div class="nm-opts" id="nm-forms"></div>
+            </div>
+
+            <div class="nm-set">
+              <span class="nm-set__label">How many at once</span>
+              <p class="nm-set__note">How many numbers to gather in one round.</p>
+              <div class="nm-opts" id="nm-counts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
