@@ -432,19 +432,43 @@ body {
   z-index: 10070;
   display: flex;
   flex-direction: column;
+  /* The panel itself is only a position: the receipt inside it is the paper,
+     and the receipt brings its own edge, shadow and torn top. */
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+/* TWO CLASSES, on purpose. The element is `pp-receipt wb-panel__paper`, and
+   components.css says `.pp-receipt { display: block }` — same specificity,
+   loaded later, so a one-class rule here loses and the panel's whole height
+   chain stops dead at this element: paper 620px as a block, head 51, body 0,
+   and whatever was inside it drawn at no height at all. */
+.wb-panel .wb-panel__paper {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+}
+.wb-panel .wb-panel__paper > .pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  /* a flex child will not shrink past its content without this, and the body
+     inside it is the part that is meant to scroll */
+  min-height: 0;
+  padding: 0;
   overflow: hidden;
-  background: var(--surface-primary);
-  border: var(--border-subtle);
   border-radius: 0.7rem;
-  box-shadow: 0 18px 44px -12px rgba(20, 19, 15, 0.45);
 }
 .wb-panel__head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex: 0 0 auto;
-  padding: 0.45rem 0.45rem 0.45rem 0.75rem;
-  background: var(--surface-secondary, rgba(42, 39, 35, 0.05));
+  /* room at the top for the tape over the sticky note, as the toolbar has */
+  padding: 0.85rem 0.6rem 0.5rem 0.9rem;
+  background: none;
   border-bottom: var(--border-subtle);
   cursor: grab;
   touch-action: none;
@@ -458,28 +482,31 @@ body {
   font-size: 0.74rem;
   font-weight: 700;
 }
-.wb-panel__close {
+/* A sticky note, like every other button on the bench (sticky-ui.css dresses
+   .pp-btn); only the size is ours, because it holds one small mark. */
+.wb-panel__close.pp-btn {
+  --pp-note-bg: #ffd7a3;
+  --pp-note-tilt: 2deg;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.9rem;
+  height: 1.7rem;
   padding: 0;
-  color: var(--text-primary);
-  background: transparent;
-  border: 1.5px solid var(--border-color, rgba(42, 39, 35, 0.22));
-  border-radius: 50%;
-  cursor: pointer;
+  margin-top: 0.1rem;
 }
-.wb-panel__close:hover,
-.wb-panel__close:focus-visible { background: #c0453f; border-color: #c0453f; color: #fffdf8; outline: none; }
+.wb-panel__close.pp-btn:hover { --pp-note-bg: #ffbf7a; }
+.wb-panel__close svg { display: block; }
 .wb-panel__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: 0.8rem;
 }
-/* the algebra canvas brings its own paper and fills the panel edge to edge */
+/* the algebra canvas brings its own paper and fills the panel edge to edge —
+   and it is sized against this box, so the height has to reach it */
 .wb-panel__body--bare { padding: 0; overflow: hidden; }
+.wb-panel__body--bare > .am-frame { height: 100%; min-height: 0; }
 
 @media (max-width: 700px) {
   .wb-side {

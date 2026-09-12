@@ -365,10 +365,19 @@ thead .pv-chart__side {
 /* The carry box is printed only for a sum that carries. On one that does not,
    it is a box a child dutifully writes a 0 in. */
 .ms-down__carry td { height: 6mm; text-align: center; }
+/* Wide enough for TWO figures, because taking away puts two there.
+
+   Carrying writes one figure — the 1 of a twelve. Regrouping writes what the
+   column BECOMES: trade a ten into the ones and the ones are twelve. A box
+   built for one figure did not refuse the second, it just had nowhere to show
+   it, which from the writer's side looks exactly like being refused.
+
+   Still inside the 11mm column, so the columns stay in line — and the columns
+   being in line is the whole argument the method is making. */
 .ms-down__carrybox {
   display: inline-block;
-  width: 5.5mm;
-  height: 5mm;
+  width: 9.5mm;
+  height: 5.4mm;
   border: 0.3mm dashed #8f887c;
 }
 

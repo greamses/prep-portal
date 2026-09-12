@@ -15,8 +15,8 @@
    ========================================================================== */
 
 const ICON_CLOSE =
-  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" '
-  + 'stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" '
+  + 'stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
 
 let top = 0;
 
@@ -35,12 +35,20 @@ export function openPanel({ title, size = { w: 460, h: 400 }, at = null, onClose
   el.className = "wb-panel";
   el.setAttribute("role", "dialog");
   el.setAttribute("aria-label", title);
+  /* Dressed as every other piece of paper the site hands you: the receipt
+     wrapper carries the shadow and the torn edge, the paper inside carries the
+     writing. The x is a sticky note, like every other button on the bench. */
   el.innerHTML = `
-    <header class="wb-panel__head">
-      <h2 class="wb-panel__title">${title}</h2>
-      <button type="button" class="wb-panel__close" aria-label="Put the ${title.toLowerCase()} away">${ICON_CLOSE}</button>
-    </header>
-    <div class="wb-panel__body"></div>`;
+    <div class="pp-receipt wb-panel__paper">
+      <div class="pp-receipt__paper">
+        <header class="wb-panel__head">
+          <h2 class="wb-panel__title">${title}</h2>
+          <button type="button" class="pp-btn pp-sticky pp-note-btn wb-panel__close"
+                  aria-label="Put the ${title.toLowerCase()} away">${ICON_CLOSE}</button>
+        </header>
+        <div class="wb-panel__body"></div>
+      </div>
+    </div>`;
 
   const w = Math.min(size.w, Math.max(260, window.innerWidth - 24));
   const h = Math.min(size.h, Math.max(220, window.innerHeight - 24));
