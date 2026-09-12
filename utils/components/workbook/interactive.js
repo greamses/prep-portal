@@ -120,7 +120,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (slot.classList.contains("wb-tick")) {
       return [...slot.querySelectorAll(".wb-tick__one")].findIndex((o) => o.classList.contains("is-on"));
     }
-    return slot.querySelector("input")?.value ?? "";
+    /* A pad is a textarea, not an input — a number written out in words needs
+       a paragraph to write in. Both are `.wb-in`, and both are read here: a
+       marker that only knew about inputs would mark every written-out number
+       wrong however carefully it was written. */
+    return slot.querySelector("input, textarea")?.value ?? "";
   }
 
   function enliven(node, idx) {
@@ -146,14 +150,21 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         }
         return;
       }
-      const input = document.createElement("input");
+      /* A place ruled for a paragraph — a number written out in words — is
+         written on rather than filled in, so it gets a pad and not a line.
+         Same class, so it is read, saved and marked like any other answer. */
+      const roomy = slot.classList.contains("wb-line--write");
+      const input = document.createElement(roomy ? "textarea" : "input");
       input.className = "wb-in";
-      input.type = "text";
+      if (roomy) input.rows = 2; else input.type = "text";
       input.autocomplete = "off";
       input.spellcheck = false;
       input.setAttribute("aria-label", "answer");
       input.value = r.v[k] ?? "";
       input.addEventListener("input", () => { r.v[k] = input.value; dirty(node); save(); });
+      /* Enter is a new line on a pad everywhere else on this site; here the
+         answer is one number, so it ends the answer instead of growing it. */
+      if (roomy) input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
       slot.appendChild(input);
     });
 

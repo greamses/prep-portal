@@ -28,7 +28,7 @@ const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
 
 export const TIME_GROUPS = [
   {
-    chapter: "Chapter 5 · Counting in fives and telling the time",
+    chapter: "Chapter 6 · Counting in fives and telling the time",
     id: "fives",
     label: "Counting in fives",
     blurb: "Five, ten, fifteen — and then the same numbers round a clock face.",

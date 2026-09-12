@@ -998,6 +998,22 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-line--md { width: 34mm; }
 .wb-line--lg { width: 100%; max-width: 120mm; }
 .wb-line--fill { flex: 1 1 auto; min-width: 12mm; }
+/* A number written out in words is a paragraph, not a rule — "one quadrillion
+   two hundred and thirty-four trillion…" runs past any line you could draw on
+   an A4 page. It is still ONE answer, so it stays ONE place: a ruled box the
+   size of what is expected, marked as a single thing. */
+.wb-line--write {
+  display: block;
+  width: 100%;
+  height: calc(var(--wb-lines, 2) * 8mm);
+  margin: 1mm 0 2mm;
+  border-bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(8mm - 0.4mm),
+    var(--wb-rule) calc(8mm - 0.4mm) 8mm
+  );
+}
 
 .wb-box {
   display: inline-block;
@@ -1267,6 +1283,25 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   outline: none;
 }
 .wb-live .wb-line .wb-in { bottom: -0.6mm; text-align: left; }
+/* Typed into, the roomy place is a sticky note: the paper, the hand and the
+   shadow every note on this site wears (sticky-note.css). A long answer wants
+   a pad to write on, not a hairline to balance on. */
+.wb-live .wb-line--write .wb-in {
+  inset: 0;
+  bottom: 0;
+  padding: 0.8mm 2mm;
+  text-align: left;
+  font: 500 12pt/8mm "Shantell Sans", "Segoe Print", cursive;
+  color: #14130f;
+  background: #fff3a8;
+  border-radius: 0.8mm;
+  box-shadow:
+    0 0.3mm 0.6mm rgba(20, 19, 15, 0.18),
+    1mm 1.6mm 2.4mm -0.6mm rgba(20, 19, 15, 0.28);
+  resize: none;
+  overflow: hidden;
+}
+.wb-live .wb-line--write .wb-in:focus { background: #ffe775; }
 .wb-live .wb-in:focus { background: rgba(244, 201, 93, 0.25); }
 .wb-live .wb-cell.is-live { cursor: text; }
 

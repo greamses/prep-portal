@@ -93,6 +93,9 @@ mountBuilder({
     blocks: ICON.blocks,
     charts: ICON.table,
     numbers: ICON.figures,
+    /* saying a number out loud, and writing it both ways */
+    say: ICON.sentence,
+    wordfig: ICON.figures,
     add: ICON.plus,
     sub: ICON.minus,
     group: ICON.ring,

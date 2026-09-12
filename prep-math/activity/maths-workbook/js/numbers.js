@@ -118,24 +118,101 @@ function under1000(n) {
   return n % 100 ? h + " and " + under1000(n % 100) : h;
 }
 
+/* ── periods, and numbers too big to be numbers ────────────────────────────
+   English reads a long number in PERIODS of three figures: it says the three
+   figures, then the period's name, and moves on. That is the whole of reading
+   a big number, and it is why this file works in DIGIT STRINGS from here down.
+
+   It has to. The quadrillions period ends at eighteen figures, and a plain
+   JavaScript number stops being exact at 9 007 199 254 740 991 — sixteen. A
+   number past that would come back off the page as a different number, which
+   on a place-value sheet is the one mistake that cannot be allowed. A string
+   of digits is exact however long it is. */
+
+export const PERIODS = ["", "thousand", "million", "billion", "trillion", "quadrillion"];
+
+/** As many figures as this workbook will write: six periods of three. */
+export const MAX_FIGURES = PERIODS.length * 3;
+
+/** Just the figures, with any leading noughts taken off. */
+export function onlyDigits(s) {
+  const t = String(s ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  return t || "0";
+}
+
+/** A digit string cut into its periods, biggest first: "1234567" → ["1","234","567"]. */
+export function periodsOf(s) {
+  const t = onlyDigits(s);
+  const out = [];
+  for (let end = t.length; end > 0; end -= 3) out.unshift(t.slice(Math.max(0, end - 3), end));
+  return out;
+}
+
+/** A digit string with a space every three figures, counted from the right. */
+export function groupDigits(s) {
+  return periodsOf(s).join(" ");
+}
+
+/** The name of the period a place belongs to — place 0 is the ones. */
+export function periodName(power) {
+  return PERIODS[Math.floor(power / 3)] || "";
+}
+
+/**
+ * A digit string in English words, exact at any length up to the quadrillions.
+ *
+ * One rule per period and one rule at the end: a period whose three figures are
+ * all noughts is not said at all (that is what makes "two million and six" so
+ * much harder to read than it looks), and a bare tens-and-ones tail after
+ * anything bigger takes an "and" in front of it.
+ */
+export function wordsOf(s) {
+  const t = onlyDigits(s);
+  if (t === "0") return "zero";
+  const chunks = periodsOf(t);
+  const top = chunks.length - 1;
+  const parts = [];
+  chunks.forEach((c, i) => {
+    const v = Number(c);
+    const p = top - i;                     // which period this chunk is
+    if (!v) return;                        // an empty period is not said
+    if (p) parts.push(`${under1000(v)} ${PERIODS[p]}`);
+    else parts.push(parts.length && v < 100 ? "and " + under1000(v) : under1000(v));
+  });
+  return parts.join(" ");
+}
+
 /**
  * n in English words. Only ever asked in base ten — English has no word for
  * "one two-five" — and the exercise that asks for words says so.
  */
 export function inWords(n) {
-  if (n === 0) return "zero";
-  const parts = [];
-  const millions = Math.floor(n / 1e6);
-  const thousands = Math.floor(n / 1e3) % 1000;
-  const rest = n % 1000;
-  if (millions) parts.push(under1000(millions) + " million");
-  if (thousands) parts.push(under1000(thousands) + " thousand");
-  if (rest) {
-    /* "one thousand and six", not "one thousand six" — the rule that puts an
-       "and" in front of a bare tens-and-ones tail after a bigger part. */
-    parts.push(parts.length && rest < 100 ? "and " + under1000(rest) : under1000(rest));
+  return wordsOf(String(Math.round(n)));
+}
+
+/**
+ * A digit string of exactly `figures` figures, drawn off the seeded stream.
+ *
+ * The same two dials `drawNumber` has — the leading figure is never a nought,
+ * and `zeros` says how willing we are to put one inside — plus one this needs
+ * and that does not: `hole` empties a whole period, which is the shape that
+ * makes a long number hard to read and hard to write down.
+ */
+export function drawDigits(r, figures, { zeros = 0.25, hole = 0 } = {}) {
+  const d = [];
+  for (let i = 0; i < figures; i++) {
+    if (i === 0) d.push(r.int(1, 9));
+    else d.push(r.chance(zeros) ? 0 : r.int(1, 9));
   }
-  return parts.join(" ");
+  if (hole && figures > 6) {
+    /* A whole period of noughts, never the biggest one (that would just make
+       a shorter number) and never the ones (that is an easier shape). */
+    const periods = Math.ceil(figures / 3);
+    const which = r.int(1, periods - 2);            // counted from the ones end
+    const end = figures - which * 3;
+    for (let i = Math.max(0, end - 3); i < end; i++) d[i] = 0;
+  }
+  return d.join("");
 }
 
 /* ── drawing a number to a shape ──────────────────────────────────────────── */

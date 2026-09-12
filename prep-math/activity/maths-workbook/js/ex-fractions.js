@@ -28,7 +28,7 @@ import { want } from "/utils/components/workbook/want.js";
 
 export const FRAC_GROUPS = [
   {
-    chapter: "Chapter 4 · Fractions",
+    chapter: "Chapter 5 · Fractions",
     id: "frac-what",
     label: "What a fraction is",
     blurb: "Equal parts, some coloured. Read one off, then colour one in.",

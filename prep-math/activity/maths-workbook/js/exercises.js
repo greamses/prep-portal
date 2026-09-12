@@ -1,13 +1,14 @@
 /* ============================================================================
    Maths Workbook — the ONE registry
    ----------------------------------------------------------------------------
-   Six families, one list, and a CHAPTER each — the paper is built and picked
+   Seven families, one list, and a CHAPTER each — the paper is built and picked
    from a chapter at a time, the way the Geometry Workbook is. The engine, the
    builder and the answer key all read
    this file and nothing else; the families live beside it only because eight
    hundred lines of exercises in one file is a file nobody edits.
 
      ex-place.js       place value — blocks, charts, the number on its own
+     ex-words.js       saying a number, and words ⇄ figures to the quadrillions
      ex-sums.js        adding and taking away, with and without regrouping
      ex-remainder.js   dividing, what is left over, and fraction bars
      ex-fractions.js   what a fraction is, and adding the ones that match
@@ -30,6 +31,7 @@
    ========================================================================== */
 
 import { PLACE_GROUPS, PLACE_EXERCISES, placesFor } from "./ex-place.js";
+import { WORD_GROUPS, WORD_EXERCISES } from "./ex-words.js";
 import { SUM_GROUPS, SUM_EXERCISES } from "./ex-sums.js";
 import { REM_GROUPS, REM_EXERCISES } from "./ex-remainder.js";
 import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
@@ -45,6 +47,7 @@ export { placesFor };
    is told where they are. */
 export const GROUPS = [
   ...PLACE_GROUPS,
+  ...WORD_GROUPS,
   ...SUM_GROUPS,
   ...REM_GROUPS,
   ...FRAC_GROUPS,
@@ -60,6 +63,9 @@ const tenOnly = (list) => list.map((ex) => ({ ...ex, tenOnly: true }));
 
 export const EXERCISES = [
   ...PLACE_EXERCISES,
+  /* Already base ten, each of them, and they say so on their own entry:
+     English has no word for a base-five number. */
+  ...WORD_EXERCISES,
   ...tenOnly(SUM_EXERCISES),
   ...tenOnly(REM_EXERCISES),
   ...tenOnly(FRAC_EXERCISES),
@@ -68,18 +74,19 @@ export const EXERCISES = [
 ];
 
 /**
- * Which chapter an exercise belongs to: 1 to 6, one per family.
+ * Which chapter an exercise belongs to: 1 to 7, one per family.
  *
  * The rail shows one chapter at a time behind a row of tabs — the first group
  * of each family carries `chapter`, and the rest follow it — and the cover
  * names the chapters the paper was actually built from (subject.js).
  */
 const CHAPTER = new Map([
-  ...SUM_GROUPS.map((g) => [g.id, 2]),
-  ...REM_GROUPS.map((g) => [g.id, 3]),
-  ...FRAC_GROUPS.map((g) => [g.id, 4]),
-  ...TIME_GROUPS.map((g) => [g.id, 5]),
-  ...ANGLE_GROUPS.map((g) => [g.id, 6]),
+  ...WORD_GROUPS.map((g) => [g.id, 2]),
+  ...SUM_GROUPS.map((g) => [g.id, 3]),
+  ...REM_GROUPS.map((g) => [g.id, 4]),
+  ...FRAC_GROUPS.map((g) => [g.id, 5]),
+  ...TIME_GROUPS.map((g) => [g.id, 6]),
+  ...ANGLE_GROUPS.map((g) => [g.id, 7]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

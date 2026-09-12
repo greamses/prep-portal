@@ -17,9 +17,10 @@ export const WORKBOOK = { id: "maths-workbook", label: "Maths Workbook", style: 
 /* ── the subject ───────────────────────────────────────────────────────────*/
 
 const CHAPTERS = {
-  1: "Chapter 1: Place value", 2: "Chapter 2: Adding and taking away",
-  3: "Chapter 3: Dividing and remainders", 4: "Chapter 4: Fractions",
-  5: "Chapter 5: Counting in fives and telling the time", 6: "Chapter 6: Angles",
+  1: "Chapter 1: Place value", 2: "Chapter 2: Words and figures",
+  3: "Chapter 3: Adding and taking away", 4: "Chapter 4: Dividing and remainders",
+  5: "Chapter 5: Fractions", 6: "Chapter 6: Counting in fives and telling the time",
+  7: "Chapter 7: Angles",
 };
 
 /** The chapters the chosen exercises actually come from, in order. */
@@ -51,7 +52,8 @@ export const SUBJECT = {
         ? `${o.places} places`
         : `base ${baseWord(o.base)} · ${o.places} places`);
     }
-    if (has(1) || has(2) || has(3)) parts.push(`up to ${L.max} things`);
+    /* the chapters that count things: place value, adding, dividing */
+    if (has(1) || has(3) || has(4)) parts.push(`up to ${L.max} things`);
     parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
     return parts.join(" · ");
   },
