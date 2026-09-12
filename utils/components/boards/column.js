@@ -45,8 +45,11 @@
 
 import { DIGITS, baseWord, digitsOf, pow, readNum, writeNum } from "./num.js";
 
-/* The column the + sign stands in, to the left of every figure. */
+/* The column the sign stands in, to the left of every figure. */
 export const GUTTER = 1;
+
+/* How each sum is written. The minus is the real one, not a hyphen. */
+const SIGN = { "+": "+", "-": "−" };
 
 /* As long a sum as the board will take. Past six figures the columns are
    narrower than the pen and the point has long been made. */
@@ -63,12 +66,16 @@ export const MAX_PLACES = 3;
  * misunderstanding the board exists to catch.
  */
 export function readSum(text, base) {
-  const parts = String(text ?? "").split(/[+,]|\s+/).filter((s) => s.trim());
+  const raw = String(text ?? "").replace(/[−–—]/g, "-");
+  /* A minus between two numbers makes it a subtraction; a minus in FRONT of the
+     first would make it a negative number, which this board does not take. */
+  const takeAway = /\d\s*-/.test(raw);
+  const parts = raw.split(/[+,-]|\s+/).filter((s) => s.trim());
   if (!parts.length) return null;
   const ns = parts.map((p) => readNum(p, base));
   if (ns.some((n) => n === null)) return null;
   const dp = Math.max(...ns.map((n) => n.dp));
-  return { addends: ns.map((n) => n.n * pow(base, dp - n.dp)), dp };
+  return { addends: ns.map((n) => n.n * pow(base, dp - n.dp)), dp, op: takeAway ? "-" : "+" };
 }
 
 /* ── the sum the board opens on ───────────────────────────────────────────── */
@@ -107,7 +114,8 @@ export function defaultSum(base) {
  * 269 + 182 is three columns, 900 + 900 is four, and the fourth column's
  * question is "there is nothing left to add but the carried 1".
  */
-export function workOut(addends, base, dp = 0) {
+export function workOut(addends, base, dp = 0, op = "+") {
+  if (op === "-") return takeAway(addends, base, dp);
   const total = addends.reduce((s, n) => s + n, 0);
   const figures = addends.map((n) => digitsOf(n, base));
   /* Room for a figure before the point on the answer and on every number being
@@ -143,7 +151,66 @@ export function workOut(addends, base, dp = 0) {
     carry = col.carry;
   }
 
-  return { addends, base, dp, total, figures, width, rows, cols, columns, entries };
+  return { addends, base, dp, op: "+", total, figures, width, rows, cols, columns, entries };
+}
+
+/**
+ * Taking away, set out in the same columns — but it is not adding with a
+ * different sign, and the board does not pretend it is.
+ *
+ * Where adding CARRIES into the next column, taking away EXCHANGES out of it:
+ * you cannot take 9 from 7, so one ten comes across and the 7 becomes 17. The
+ * ten it came from is crossed out and written one smaller above — which is why
+ * this method needs a mark the adding never does.
+ *
+ *   ── the nought in the middle is the whole difficulty ──────────────────
+ *   400 − 176 cannot borrow from the tens, because the tens are empty. It
+ *   borrows from the hundreds, the tens become nine, and THEN the ones can
+ *   take their ten. Every one of those is a separate step here, asked for
+ *   separately, because a board that did the cascade silently would be
+ *   hiding the only part anybody gets wrong.
+ */
+function takeAway(addends, base, dp) {
+  const [from, less] = addends;
+  const width = Math.max(digitsOf(from, base).length, dp + 1);
+  const top = [];
+  const bottom = [];
+  for (let p = 0; p < width; p++) {
+    top.push(Math.floor(from / pow(base, p)) % base);
+    bottom.push(Math.floor(less / pow(base, p)) % base);
+  }
+  /* Rows: the exchanges are written above the top number, then the two
+     numbers, then the answer. */
+  const rows = 4;
+  const columns = [];
+  const entries = [];
+  const now = top.slice();          // what each column holds as the working goes
+
+  for (let p = 0; p < width; p++) {
+    if (now[p] < bottom[p]) {
+      /* the nearest column to the left with anything in it to lend */
+      let q = p + 1;
+      while (q < width && now[q] === 0) q += 1;
+      /* The lender drops by one, every empty column between becomes one less
+         than the base, and this column gains a whole base. */
+      entries.push({ kind: "xq", value: now[q] - 1, row: 0, place: q, was: now[q], from: p });
+      now[q] -= 1;
+      for (let m = q - 1; m > p; m -= 1) {
+        entries.push({ kind: "xm", value: base - 1, row: 0, place: m, was: 0, from: p });
+        now[m] = base - 1;
+      }
+      entries.push({ kind: "xp", value: now[p] + base, row: 0, place: p, was: now[p], from: p });
+      now[p] += base;
+    }
+    const col = { p, top: now[p], bottom: bottom[p], took: now[p] - bottom[p], plain: top[p] };
+    columns.push(col);
+    entries.push({ kind: "d", col, value: col.took, row: rows - 1, place: p });
+  }
+
+  return {
+    addends, base, dp, op: "-", total: from - less, figures: [top, bottom].map((d) => d.slice().reverse()),
+    width, rows, cols: GUTTER + width, columns, entries, top, bottom,
+  };
 }
 
 /* Plans are pure and small, and the drawing asks for one on every repaint —
@@ -151,10 +218,10 @@ export function workOut(addends, base, dp = 0) {
 const PLANS = new Map();
 
 export function planOf(thing) {
-  const key = `${thing.addends.join("+")}.${thing.dp || 0}/${thing.base}`;
+  const key = `${thing.addends.join("+")}${thing.op || "+"}.${thing.dp || 0}/${thing.base}`;
   let plan = PLANS.get(key);
   if (!plan) {
-    plan = workOut(thing.addends, thing.base, thing.dp || 0);
+    plan = workOut(thing.addends, thing.base, thing.dp || 0, thing.op || "+");
     if (PLANS.size > 40) PLANS.clear();
     PLANS.set(key, plan);
   }
@@ -166,7 +233,7 @@ export function planOf(thing) {
 export function makeColumn(base) {
   return {
     kind: "board", variant: "column", tag: null, x: 0, z: 0, angle: 0,
-    base, addends: defaultSum(base), dp: 0,
+    base, addends: defaultSum(base), dp: 0, op: "+",
     done: 0,      // how many of the plan's entries have been written
     slips: 0,     // wrong answers so far, so the board can offer to show one
   };
@@ -176,7 +243,28 @@ export function makeColumn(base) {
  * Whether a sum can be set on the board, and why not if it cannot.
  * Checked here rather than in the panel so the rule has one home.
  */
-export function checkSum(addends, base, dp = 0) {
+export function checkSum(addends, base, dp = 0, op = "+") {
+  if (op === "-") {
+    if (!addends || addends.some((n) => n === null)) {
+      return { ok: false, message: `Write the numbers in base ${baseWord(base)} — digits 0 to ${DIGITS[base - 1]}.` };
+    }
+    if (addends.length !== 2) {
+      return { ok: false, message: "Taking away is one number from one other — write two, with a − between them." };
+    }
+    if (addends[1] > addends[0]) {
+      return {
+        ok: false,
+        message: `${writeNum(addends[1], dp, base)} is bigger than ${writeNum(addends[0], dp, base)} — `
+          + "this board takes the smaller one away from the bigger one.",
+      };
+    }
+    if (addends[0] < 1) return { ok: false, message: "There has to be something to take from." };
+    if (dp > MAX_PLACES) return { ok: false, message: `Up to ${MAX_PLACES} figures after the point.` };
+    if (Math.max(digitsOf(addends[0], base).length, dp + 1) > MAX_DIGITS) {
+      return { ok: false, message: `That is more than ${MAX_DIGITS} figures in base ${baseWord(base)} — the columns would be narrower than the pen.` };
+    }
+    return { ok: true };
+  }
   if (!addends || addends.some((n) => n === null)) {
     return { ok: false, message: `Write the numbers in base ${baseWord(base)} — digits 0 to ${DIGITS[base - 1]}.` };
   }
@@ -200,22 +288,29 @@ export function checkSum(addends, base, dp = 0) {
 }
 
 /** Put a new sum on the board and rub out whatever was worked on the old one. */
-export function setSum(thing, addends, dp = 0) {
-  const check = checkSum(addends, thing.base, dp);
+export function setSum(thing, addends, dp = 0, op = "+") {
+  const check = checkSum(addends, thing.base, dp, op);
   if (!check.ok) return check;
   if (addends.length === thing.addends.length && dp === (thing.dp || 0)
-    && addends.every((n, i) => n === thing.addends[i])) {
+    && op === (thing.op || "+") && addends.every((n, i) => n === thing.addends[i])) {
     return { ok: false, message: "That is the sum it is already showing." };
   }
   thing.addends = addends.slice();
   thing.dp = dp;
+  thing.op = op;
   thing.done = 0;
   thing.slips = 0;
-  const b = thing.base;
   return {
     ok: true, changed: true,
-    message: `${addends.map((n) => writeNum(n, dp, b)).join(" + ")} — ${ask(thing).text}`,
+    message: `${written(thing)} — ${ask(thing).text}`,
   };
+}
+
+/** The sum as it is written, sign and all. */
+export function written(thing) {
+  const b = thing.base;
+  const dp = thing.dp || 0;
+  return thing.addends.map((n) => writeNum(n, dp, b)).join(` ${SIGN[thing.op || "+"]} `);
 }
 
 /** Read a sum written in one line — "2.5 + 1.25" — and set it. */
@@ -224,7 +319,7 @@ export function setWritten(thing, text) {
   if (!read) {
     return { ok: false, message: `Write the numbers in base ${baseWord(thing.base)} — digits 0 to ${DIGITS[thing.base - 1]}.` };
   }
-  return setSum(thing, read.addends, read.dp);
+  return setSum(thing, read.addends, read.dp, read.op);
 }
 
 /**
@@ -238,9 +333,10 @@ export function setWritten(thing, text) {
  */
 export function rebaseColumn(thing, base) {
   thing.base = base;
-  if (!checkSum(thing.addends, base, thing.dp || 0).ok) {
+  if (!checkSum(thing.addends, base, thing.dp || 0, thing.op || "+").ok) {
     thing.addends = defaultSum(base);
     thing.dp = 0;
+    thing.op = "+";
   }
   thing.done = 0;
   thing.slips = 0;
@@ -260,7 +356,13 @@ export function resetWork(thing) {
 
 const ORD = ["", "second", "third", "fourth", "fifth", "sixth", "seventh"];
 
-/** Which column, said without leaning on base ten's names for the places. */
+/**
+ * Which column, said without leaning on base ten's names for the places.
+ *
+ * Counted from the POINT when there is one, and from the right when there is
+ * not — "the third column from the point" is a strange thing to say about
+ * 400 − 176, which has no point anywhere in it.
+ */
 function columnName(p, dp) {
   if (p === dp) return "the ones column";
   if (p < dp) {
@@ -269,7 +371,8 @@ function columnName(p, dp) {
       : `the ${ORD[k - 1] || `${k}th`} column past the point`;
   }
   const k = p - dp;
-  return `the ${ORD[k] || `${k + 1}th`} column from the point`;
+  const where = dp ? "from the point" : "from the right";
+  return `the ${ORD[k] || `${k + 1}th`} column ${where}`;
 }
 
 /** The figures being added in this column, said out loud. */
@@ -293,9 +396,10 @@ export function ask(thing) {
   if (!e) {
     return {
       done: true, kind: null, where: "",
-      text: `${plan.addends.map((n) => writeNum(n, dp, b)).join(" + ")} = ${writeNum(plan.total, dp, b)}.`,
+      text: `${plan.addends.map((n) => writeNum(n, dp, b)).join(` ${SIGN[plan.op || "+"]} `)} = ${writeNum(plan.total, dp, b)}.`,
     };
   }
+  if (plan.op === "-") return askTake(plan, e, b, dp);
   const col = e.col;
   if (e.kind === "c") {
     return {
@@ -325,9 +429,69 @@ export function ask(thing) {
   };
 }
 
+/** The questions taking away asks, which are not the questions adding asks. */
+function askTake(plan, e, b, dp) {
+  const N = (n) => writeNum(n, 0, b);
+  if (e.kind === "xq") {
+    return {
+      done: false, kind: e.kind,
+      text: `You cannot take ${N(plan.bottom[e.from])} from ${N(plan.top[e.from])}, so one comes `
+        + `across from ${columnName(e.place, dp)}. Cross the ${N(e.was)} out — what is left there?`,
+      where: `above ${columnName(e.place, dp)}`,
+    };
+  }
+  if (e.kind === "xm") {
+    return {
+      done: false, kind: e.kind,
+      text: `${columnName(e.place, dp)} is empty, so what came across stops here on its way. `
+        + `What does the nought become?`,
+      where: `above ${columnName(e.place, dp)}`,
+    };
+  }
+  if (e.kind === "xp") {
+    return {
+      done: false, kind: e.kind,
+      text: `And what does the ${N(e.was)} become, now a whole ${baseWord(b)} has come across?`,
+      where: `above ${columnName(e.place, dp)}`,
+    };
+  }
+  const col = e.col;
+  return {
+    done: false, kind: "d",
+    text: `${N(col.top)} take away ${N(col.bottom)} — what goes under the line?`,
+    where: `in ${columnName(e.place, dp)}`,
+  };
+}
+
 /* Why a wrong answer is wrong. Each of the ways of missing a column has its own
    sentence, because each is a different misunderstanding. */
+function nudgeTake(e, plan, given) {
+  const b = plan.base;
+  const N = (n) => writeNum(n, 0, b);
+  if (e.kind === "xq") {
+    if (given === e.was) return "One has gone across to the column on its right, so it cannot be what it was.";
+    return `Not that — one is taken away from ${N(e.was)}, and one only.`;
+  }
+  if (e.kind === "xm") {
+    return `Not that — an empty column lends one and is left with one less than a whole `
+      + `${baseWord(b)}, which is ${N(plan.base - 1)}.`;
+  }
+  if (e.kind === "xp") {
+    return `Not that — a whole ${baseWord(b)} came across, so ${N(e.was)} becomes `
+      + `${N(e.was)} and ${N(b)} more.`;
+  }
+  const col = e.col;
+  /* The commonest wrong answer in the whole method: taking the small figure
+     from the big one whichever way round they are. */
+  if (given === Math.abs(col.plain - col.bottom) && col.plain < col.bottom) {
+    return `You have taken the ${N(col.plain)} from the ${N(col.bottom)}. It is the other way `
+      + `round — and that is why a ${baseWord(b)} was brought across first.`;
+  }
+  return `Not that — take ${N(col.bottom)} from ${N(col.top)}.`;
+}
+
 function nudge(e, plan, given) {
+  if (plan.op === "-") return nudgeTake(e, plan, given);
   const b = plan.base;
   const col = e.col;
   if (e.kind === "c") {
@@ -370,6 +534,16 @@ function nudge(e, plan, given) {
    it names what has just been proved rather than what to do next. */
 function told(e, plan) {
   const b = plan.base;
+  if (plan.op === "-") {
+    const N = (n) => writeNum(n, 0, b);
+    if (e.kind === "xq") return `${N(e.was)} lends one and is left with ${N(e.value)}.`;
+    if (e.kind === "xm") return `The empty column is ${N(e.value)} now.`;
+    if (e.kind === "xp") return `${N(e.was)} with a whole ${baseWord(b)} across it is ${N(e.value)}.`;
+    const point = plan.dp && e.place === plan.dp
+      ? " The point comes straight down from the points above it."
+      : "";
+    return `${N(e.col.top)} − ${N(e.col.bottom)} = ${N(e.value)}.` + point;
+  }
   const col = e.col;
   if (e.kind === "c") return `The ${writeNum(col.carry, 0, b)} carries into ${columnName(e.place, plan.dp)}.`;
   const list = adding(col, b);
@@ -388,7 +562,8 @@ function told(e, plan) {
 function finish(plan) {
   const b = plan.base;
   const dp = plan.dp;
-  return `Done — ${plan.addends.map((n) => writeNum(n, dp, b)).join(" + ")} = ${writeNum(plan.total, dp, b)}.`;
+  const sign = SIGN[plan.op || "+"];
+  return `Done — ${plan.addends.map((n) => writeNum(n, dp, b)).join(` ${sign} `)} = ${writeNum(plan.total, dp, b)}.`;
 }
 
 /* ── writing a figure on the page ─────────────────────────────────────────── */
@@ -466,10 +641,15 @@ export function cellsOf(thing) {
   const plan = planOf(thing);
   const e = plan.entries[thing.done];
   if (!e) return null;
+  /* Nearly every figure this method asks for is ONE figure. The exception is
+     the column that has just been lent to: 7 with a whole ten across it is 17,
+     and it is written as two figures in the one column, small, the way a hand
+     writes it. So the cell says how much room the answer needs. */
+  const len = writeNum(e.value, 0, thing.base).length;
   return {
     mode: "type",
     grid: { cols: plan.cols, rows: plan.rows, gutter: GUTTER },
-    cells: [{ row: e.row, col: plan.width - 1 - e.place }],
+    cells: [{ row: e.row, col: plan.width - 1 - e.place, len }],
   };
 }
 
@@ -502,14 +682,26 @@ export function sheetOf(thing) {
 
   // everything that has actually been written
   let onesDone = false;
+  /* The row above the sum holds one figure per column — a carry coming in, or
+     what a column became when it lent or borrowed. A column can be exchanged
+     TWICE (in 1101 − 902 the hundreds lend to the tens and then have to borrow
+     themselves), so the last thing written in a column is what stands there. */
+  const above = new Map();
+  const struck = new Set();
   for (let n = 0; n < thing.done; n++) {
     const done = plan.entries[n];
-    marks.push({
-      row: done.row, col: colOf(done.place),
-      ch: writeNum(done.value, 0, b), tone: done.kind === "c" ? "carry" : "ink",
-    });
-    if (done.kind === "s" && done.place >= dp) onesDone = true;
+    const exchange = done.kind === "xq" || done.kind === "xm" || done.kind === "xp";
+    if (done.kind === "c" || exchange) {
+      above.set(done.place, writeNum(done.value, 0, b));
+      /* what it WAS is crossed out, the way a hand crosses it out */
+      if (exchange) struck.add(done.place);
+    } else {
+      marks.push({ row: done.row, col: colOf(done.place), ch: writeNum(done.value, 0, b), tone: "ink" });
+    }
+    if ((done.kind === "s" || done.kind === "d") && done.place >= dp) onesDone = true;
   }
+  above.forEach((ch, place) => marks.push({ row: 0, col: colOf(place), ch, tone: "carry" }));
+  const strikes = [...struck].map((place) => ({ row: 1, col: colOf(place) }));
   /* The point in the answer, drawn as the ones column is written — which is
      where a hand writing this puts it, straight down from the ones above. */
   if (dp && onesDone) points.push({ row: plan.rows - 1, col: colOf(dp) });
@@ -522,12 +714,14 @@ export function sheetOf(thing) {
     /* the line of the sum, drawn under the last number and back through the
        sign, because the sign is part of the sum and not a note beside it */
     rules: [{ row: plan.addends.length, from: -GUTTER, to: plan.width - 1 }],
-    signs: [{ row: plan.addends.length, col: -GUTTER, ch: "+" }],
+    signs: [{ row: plan.addends.length, col: -GUTTER, ch: SIGN[plan.op || "+"] }],
+    /* a figure that lent one to its right, crossed out where it stands */
+    strikes,
     underline: finished ? { row: plan.rows - 1, from: 0, to: plan.width - 1 } : null,
     // a list, because the division's page asks for two cells at once
     ask: e ? { row: e.row, cols: [colOf(e.place)] } : null,
     finished,
     total: plan.total,
-    sum: `${plan.addends.map((n) => writeNum(n, dp, b)).join(" + ")} = ${writeNum(plan.total, dp, b)}`,
+    sum: `${plan.addends.map((n) => writeNum(n, dp, b)).join(` ${SIGN[plan.op || "+"]} `)} = ${writeNum(plan.total, dp, b)}`,
   };
 }

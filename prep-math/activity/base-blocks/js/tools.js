@@ -162,14 +162,16 @@ export const GROUPS = [
         id: "column-addition",
         kind: "board",
         variant: "column",
-        label: "Column Addition",
-        short: "Adding up",
+        label: "Column Addition and Subtraction",
+        short: "Add, take away",
         blurb:
           "Numbers stacked, a line, and the answer written a column at a time "
-          + "from the right. It asks what goes under the line and then what "
-          + "carries — two questions, because they are two different facts — "
-          + "and writes the carry small above the column it goes into. Add up "
-          + "to four numbers, in any base you are working in.",
+          + "from the right. Adding, it asks what goes under the line and then "
+          + "what carries — two questions, because they are two different "
+          + "facts. Taking away, it exchanges instead: you cannot take 9 from "
+          + "7, so a ten comes across, the ten it came from is crossed out, and "
+          + "a column of noughts has to be walked through one at a time. Any "
+          + "base you are working in, and decimals.",
         art: columnAddArt,
       },
       {

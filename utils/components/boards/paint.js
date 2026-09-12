@@ -109,6 +109,19 @@ export function drawSheet(g, W, H, sheet, c) {
 
   g.font = `600 ${size}px "JetBrains Mono", monospace`;
 
+  /* A figure crossed out: it lent one to the column on its right, and what it
+     is worth now is written small above it. Only taking away draws these. */
+  if ((sheet.strikes || []).length) {
+    g.strokeStyle = rgba(ink, 0.85);
+    g.lineWidth = Math.max(1.2, rh * 0.045);
+    g.beginPath();
+    for (const k of sheet.strikes) {
+      g.moveTo(colX(k.col) + cw * 0.2, rowY(k.row) + rh * 0.72);
+      g.lineTo(colX(k.col) + cw * 0.8, rowY(k.row) + rh * 0.28);
+    }
+    g.stroke();
+  }
+
   // the point, in the gap between two columns
   g.fillStyle = ink;
   for (const p of sheet.points || []) {

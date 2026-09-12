@@ -306,7 +306,9 @@ export function createCellLayer(ctx, view, stage, {
       box.inputMode = "numeric";
       box.autocomplete = "off";
       box.spellcheck = false;
-      box.maxLength = 1;
+      /* one figure, unless the method says otherwise — a column that has been
+         lent to holds two (7 becomes 17) */
+      box.maxLength = c.len || 1;
       box.setAttribute("aria-label",
         cells.cells.length === 1 ? "The figure that goes here"
           : `Figure ${i + 1} of ${cells.cells.length}`);

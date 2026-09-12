@@ -53,16 +53,16 @@ export const BOARDS = {
   },
   column: {
     id: "column",
-    name: "Table addition",
-    short: "Adding",
+    name: "Adding and taking away",
+    short: "Add, take away",
     sign: "+",
-    blurb: "Numbers stacked, a line, and the carrying shown.",
+    blurb: "Numbers stacked, a line, and the carrying — or the exchange — shown.",
     make: column.makeColumn,
     /* One box and not two, because the number of things being added is part of
        the sum: "48 + 96 + 7" is a sum a column can do, and a fixed pair of
        boxes would be a rule against it. */
-    fields: [{ n: "sum", label: "The numbers to add", aria: "The numbers to add, with + between them", wide: true }],
-    read: (t) => ({ sum: t.addends.map((n) => writeNum(n, t.dp || 0, t.base)).join(" + ") }),
+    fields: [{ n: "sum", label: "The sum", aria: "The numbers, with + or − between them", wide: true }],
+    read: (t) => ({ sum: column.written(t) }),
     set: (t, v) => column.setWritten(t, v.sum),
     ask: column.ask,
     answer: column.answer,

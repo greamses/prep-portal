@@ -72,13 +72,13 @@ export const SHEETS = {
     bring: longdiv.bringDown,
   },
   column: {
-    name: "column addition",
+    name: "column addition and subtraction",
     sep: "",
     /* One box and not two, because the number of things being added is part of
        the sum: "48 + 96 + 7" is a sum a column can do, and a fixed pair of
        boxes would be a rule against it. */
-    fields: [{ n: "sum", aria: "The numbers to add, with + between them", wide: true }],
-    read: (t) => ({ sum: t.addends.map((n) => writeNum(n, t.dp || 0, t.base)).join(" + ") }),
+    fields: [{ n: "sum", aria: "The numbers, with + or − between them", wide: true }],
+    read: (t) => ({ sum: column.written(t) }),
     set: (t, v) => column.setWritten(t, v.sum),
     ask: column.ask,
     answer: column.answer,

@@ -152,6 +152,8 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
       n.textContent = m.ch;
     }
     for (const p of sheet.points || []) put("bd-point", p.row, p.col);
+    /* a figure that lent one to the column on its right, crossed out */
+    for (const k of sheet.strikes || []) put("bd-strike", k.row, k.col);
     /* The minus goes in FRONT of what is being taken away, in the empty column
        the bus stop leaves for it — not on top of its first figure. */
     for (const m of sheet.minus || []) put("bd-sign bd-sign--minus", m.row, m.col - 1).textContent = "−";
@@ -186,7 +188,9 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
         box.inputMode = "numeric";
         box.autocomplete = "off";
         box.spellcheck = false;
-        box.maxLength = 1;
+        /* one figure, unless the method says otherwise — a column that has
+           been lent to holds two (7 becomes 17) */
+        box.maxLength = c.len || 1;
         box.setAttribute("aria-label", open.cells.length === 1
           ? "The figure that goes here" : `Figure ${i + 1} of ${open.cells.length}`);
         box.style.gridRow = open.span > 1 ? `${grow(c.row)} / span ${open.span}` : String(grow(c.row));

@@ -129,6 +129,29 @@ select.bd-sum__in { cursor: pointer; }
   pointer-events: none;
 }
 
+/* A figure crossed out, because it lent one to the column on its right. Drawn
+   over the cell rather than through the text, so it reads as a pen stroke
+   across the working and not as a font with a line in it. */
+.bd-strike {
+  position: relative;
+  pointer-events: none;
+}
+.bd-strike::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 28%;
+  bottom: 28%;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.8px),
+    var(--bd-ink) calc(50% - 0.8px),
+    var(--bd-ink) calc(50% + 0.8px),
+    transparent calc(50% + 0.8px)
+  );
+}
+
 /* the point, in the gap between two columns */
 .bd-point {
   align-self: end;
