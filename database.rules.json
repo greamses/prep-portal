@@ -1,0 +1,48 @@
+// Live rooms — see docs/live.md.
+//
+// Comments are line comments, not "//" keys: Firebase reads any key that is not
+// a rule name as a CHILD PATH, so a "//" key would be a node named "//" and the
+// deploy would refuse it. The CLI strips these.
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "live": {
+      "$ns": {
+        "$code": {
+          // A room is readable and writable by anyone signed in who has the
+          // code. The code IS the key — an assignment code is already the thing
+          // that says who may open that workbook — and a room nobody has the
+          // code for cannot be found by guessing at a namespace.
+          ".read": "auth != null",
+
+          "state": {
+            ".write": "auth != null"
+          },
+
+          "presence": {
+            "$who": {
+              // You may only write your OWN presence: the key has to begin with
+              // your uid. So the `me.id` handed to joinRoom must start with it —
+              // the uid itself, or uid + ":" + tab where one person can be in
+              // two tabs at once.
+              ".write": "auth != null && $who.beginsWith(auth.uid)",
+              ".validate": "!newData.exists() || newData.hasChildren(['id', 'role'])"
+            }
+          },
+
+          "wire": {
+            "$channel": {
+              "$who": {
+                // A shout is yours alone to make, on the same rule as presence.
+                ".write": "auth != null && $who.beginsWith(auth.uid)",
+                ".validate": "!newData.exists() || newData.hasChild('at')"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

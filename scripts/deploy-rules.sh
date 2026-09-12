@@ -45,5 +45,21 @@ echo "→ deploying firestore.rules to $PROJECT…"
 GOOGLE_APPLICATION_CREDENTIALS="$PWD/$KEY" \
   firebase deploy --only firestore:rules --project "$PROJECT" --non-interactive
 
+# The live rooms' rules, if there is a database to put them on. The Realtime
+# Database has to be created in the console before this can work, and not
+# having one yet must never stop the Firestore rules going out — so a failure
+# here is said out loud and shrugged off.
+if [ -f database.rules.json ]; then
+  echo
+  echo "→ deploying database.rules.json to $PROJECT…"
+  if GOOGLE_APPLICATION_CREDENTIALS="$PWD/$KEY"       firebase deploy --only database --project "$PROJECT" --non-interactive; then
+    echo "✓ live-room rules deployed."
+  else
+    echo "⚠  the database rules did not go out — most likely there is no Realtime"
+    echo "   Database in this project yet. Make one in the console (see docs/live.md)"
+    echo "   and run this again. The Firestore rules above DID deploy."
+  fi
+fi
+
 echo
 echo "✓ deployed. Read it back with: node scripts/show-live-rules.mjs"
