@@ -530,13 +530,56 @@ body {
 /* --bare strips the body's padding so a canvas can reach the edges; a tool
    with dials above it still needs room round them */
 .wb-panel__body--bare > .wb-tool { padding: 0.5rem 0.8rem 0.7rem; }
-.wb-tool__set {
+/* the settings sheet is laid OVER the tool, so the tool is what it is
+   laid on */
+.wb-tool { position: relative; }
+/* the bar: the gear at one end, what the tool reads along the rest */
+.wb-tool__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  padding: 0.1rem 0 0.5rem;
+}
+.wb-tool .wb-tool__gear {
+  --pp-note-bg: #bfe3ff;
+  --pp-note-tilt: -3deg;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 1.95rem;
+  padding: 0;
+}
+.wb-tool .wb-tool__gear:hover { --pp-note-bg: #a3d6ff; }
+.wb-tool .wb-tool__gear[aria-expanded="true"] { --pp-note-bg: #fff3a8; }
+
+/* the sheet the gear lays over the tool */
+.wb-tool__pop {
+  position: absolute;
+  z-index: 3;
+  top: 2.6rem;
+  left: 0.2rem;
+  right: 0.2rem;
+  max-height: calc(100% - 3.2rem);
+  overflow: auto;
+  padding: 0.7rem 0.8rem 0.8rem;
+  background: var(--surface-primary, #fffdf8);
+  border: 1.5px solid var(--border-subtle-color, rgba(42, 39, 35, 0.16));
+  border-radius: 0.6rem;
+  box-shadow: 0 10px 26px -8px rgba(20, 19, 15, 0.34);
+}
+.wb-tool__pop[hidden] { display: none; }
+.wb-tool__group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  flex: 0 0 auto;
-  padding: 0.15rem 0 0.6rem;
+  gap: 0.45rem;
+}
+.wb-tool__group + .wb-tool__group {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border-subtle-color, rgba(42, 39, 35, 0.14));
 }
 .wb-tool__cap {
   font-size: 0.62rem;
@@ -548,14 +591,14 @@ body {
 }
 /* a sticky note, like every other button on the bench — .pp-note-btn dresses
    it, and only the size is ours */
-.wb-tool__set .wb-tool__opt {
+.wb-tool__pop .wb-tool__opt {
   --pp-note-bg: #f0ece2;
   min-height: 1.9rem;
   padding: 0.3rem 0.7rem 0.35rem;
   font-size: 0.78rem;
   color: #6b645a;
 }
-.wb-tool__set .wb-tool__opt[aria-pressed="true"] { --pp-note-bg: #fff3a8; color: #14130f; }
+.wb-tool__pop .wb-tool__opt[aria-pressed="true"] { --pp-note-bg: #fff3a8; color: #14130f; }
 
 .wb-tool__body {
   flex: 1 1 auto;
@@ -603,12 +646,12 @@ body {
      width did not change it, so the cause was never a cycle between the two.
      The column count is KNOWN in JavaScript, so mountChart() publishes it as
      --pv-cols and the width is simply stated. */
-  /* Narrow columns, and let the NAME wrap instead. Widening the column until
-     "Hundred Thousands" fitted on one line pushed the chart to 1200px, so at
-     nine places only four and a half columns were on screen and the ones
-     column — the one every reading starts from — was off the edge. A chart you
-     have to scroll to read is not a place-value chart. */
-  min-width: calc(var(--pv-cols, 4) * 4rem);
+  /* Both numbers come from mountChart: how many columns, and how wide one has
+     to be. H, T and U need almost nothing; a merged period holds three figures
+     and needs room for all three. (Widening a column until "Hundred Thousands"
+     fitted on one line is what pushed the ones column off the edge — the names
+     are single letters now, so that pressure is gone.) */
+  min-width: calc(var(--pv-cols, 4) * var(--pv-colw, 3rem));
 }
 /* Two lines for a long name beats one line nobody can see: "Hundred
    Thousands" sets over two rows in a 4rem column and every place stays on
@@ -643,9 +686,16 @@ body {
   outline: none;
 }
 .wb-tool__chart .wb-cell input:focus { background: #fff7e2; }
+/* three figures to a cell when the periods are merged */
+.wb-tool__chart .pv-chart--periods .wb-cell input { width: 4.4rem; letter-spacing: 0.06em; }
+/* H T U is one letter, so a heading no longer needs to wrap or crowd */
+.wb-tool__chart .pv-chart__name { white-space: nowrap; }
+.wb-tool__chart .pv-chart--periods .pv-chart__name { white-space: normal; }
+.wb-tool__chart .pv-chart__worth sup { font-size: 0.72em; }
 .wb-tool__say {
-  flex: 0 0 auto;
-  margin: 0.45rem 0 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   min-height: 1.3em;
   font-family: "Shantell Sans", "Segoe Print", cursive;
   font-size: 0.86rem;

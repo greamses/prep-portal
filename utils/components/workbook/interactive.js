@@ -1187,125 +1187,194 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   ];
 
   /* ── the two tools that have something to set ──────────────────────────
-     Both wear the same strip of sticky notes above them: what to work with,
-     then the tool itself. The chart's setting is how many places it has, which
-     is the only thing a chart IS; the abacus's is which frame and how many
-     rods — and a rod is a place, so that is the same setting in beads. */
+     Settings live behind a GEAR rather than in a row of tabs across the top:
+     they are set once, and after that they are in the way of the thing the
+     tool was opened for. The gear lays a small sheet of sticky notes over the
+     tool; a press anywhere else puts it away. */
+
+  const ICON_GEAR =
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" '
+    + 'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<circle cx="12" cy="12" r="3.1"/>'
+    + '<path d="M12 2.6v2.5M12 18.9v2.5M21.4 12h-2.5M5.1 12H2.6'
+    + 'M18.6 5.4 16.8 7.2M7.2 16.8 5.4 18.6M18.6 18.6 16.8 16.8M7.2 7.2 5.4 5.4"/></svg>';
 
   const note = (label, on, data) =>
     `<button type="button" class="pp-sticky pp-note-btn wb-tool__opt" ${data}`
     + ` aria-pressed="${on}">${label}</button>`;
 
-  const CHART_PLACES = [3, 4, 6, 9, 12, 15];
-
-  function mountChart(body, chartFn) {
-    let places = 4;
-
+  /** The shell both tools wear: a bar carrying the gear and the reading, the
+      sheet the gear opens, and the tool itself underneath. */
+  function toolShell(host, bodyClass) {
     const wrap = document.createElement("div");
     wrap.className = "wb-tool";
-    wrap.innerHTML = `<div class="wb-tool__set"></div>`
-      + `<div class="wb-tool__body wb-tool__chart"></div>`
-      + `<p class="wb-tool__say" role="status" aria-live="polite"></p>`;
-    body.appendChild(wrap);
+    wrap.innerHTML =
+      `<div class="wb-tool__bar">`
+      + `<button type="button" class="pp-sticky pp-note-btn wb-tool__gear"`
+      + ` aria-expanded="false" aria-label="Settings" title="Settings">${ICON_GEAR}</button>`
+      + `<p class="wb-tool__say" role="status" aria-live="polite"></p></div>`
+      + `<div class="wb-tool__pop" hidden></div>`
+      + `<div class="wb-tool__body ${bodyClass}"></div>`;
+    host.appendChild(wrap);
 
-    const set = wrap.querySelector(".wb-tool__set");
-    const paper = wrap.querySelector(".wb-tool__chart");
-    const say = wrap.querySelector(".wb-tool__say");
+    const gear = wrap.querySelector(".wb-tool__gear");
+    const pop = wrap.querySelector(".wb-tool__pop");
+    const shut = () => { pop.hidden = true; gear.setAttribute("aria-expanded", "false"); };
 
+    gear.addEventListener("click", () => {
+      pop.hidden = !pop.hidden;
+      gear.setAttribute("aria-expanded", String(!pop.hidden));
+    });
+    /* A press off the sheet puts it away — but NOT one inside it, or every
+       choice would shut the thing you are choosing in. */
+    wrap.addEventListener("click", (e) => {
+      if (!e.target.closest(".wb-tool__pop, .wb-tool__gear")) shut();
+    });
+    wrap.addEventListener("keydown", (e) => { if (e.key === "Escape") shut(); });
+
+    return {
+      wrap, pop, gear, shut,
+      say: wrap.querySelector(".wb-tool__say"),
+      body: wrap.querySelector(".wb-tool__body"),
+    };
+  }
+
+  /* How far the chart reaches, named by its BIGGEST PERIOD rather than by a
+     count of columns: "up to quadrillions" is how the range is spoken about,
+     and asking for a period can never leave a chart cut off in the middle of
+     one. Three places to a period, so the count follows from the choice. */
+  const CHART_UPTO = [
+    { periods: 1, label: "Ones" },
+    { periods: 2, label: "Thousands" },
+    { periods: 3, label: "Millions" },
+    { periods: 4, label: "Billions" },
+    { periods: 5, label: "Trillions" },
+    { periods: 6, label: "Quadrillions" },
+  ];
+
+  function mountChart(host, chartFn) {
+    let periods = 2;             // up to thousands
+    let merged = false;          // one cell per period instead of one per place
+
+    const ui = toolShell(host, "wb-tool__chart");
+    const paper = ui.body;
     const boxes = () => [...paper.querySelectorAll(".wb-cell input")];
 
     function read() {
-      const written = boxes().some((b) => b.value.trim());
-      if (!written) { say.textContent = ""; return; }
-      /* An empty column is a nought — that is what a place-value chart says. */
-      const figures = boxes().map((b) => (/[0-9]/.test(b.value) ? b.value : "0")).join("");
-      say.textContent = `The chart reads ${Number(figures).toLocaleString("en-GB")}.`;
+      const all = boxes();
+      if (!all.some((b) => b.value.trim())) { ui.say.textContent = ""; return; }
+      /* An empty column is a nought — that is what a place-value chart says.
+         A merged cell stands for a whole period, so an empty one is three. */
+      const figures = all.map((b, i) => {
+        const v = b.value.replace(/[^0-9]/g, "");
+        if (!merged) return v || "0";
+        return i === 0 ? (v || "0") : v.padStart(3, "0");
+      }).join("");
+      ui.say.textContent = `The chart reads ${Number(figures).toLocaleString("en-GB")}.`;
+    }
+
+    function dials() {
+      ui.pop.innerHTML =
+        `<div class="wb-tool__group"><span class="wb-tool__cap">Up to</span>`
+        + CHART_UPTO.map((u) => note(u.label, u.periods === periods, `data-upto="${u.periods}"`)).join("")
+        + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Columns</span>`
+        + note("H T U", !merged, `data-merge="0" title="A column for each place"`)
+        + note("One per period", merged, `data-merge="1" title="256 in one cell, not three"`)
+        + `</div><div class="wb-tool__group">`
+        + note("Rub it out", false, `data-clear="1"`)
+        + `</div>`;
     }
 
     function draw() {
-      /* Highest place first, the way a number is written and a chart is read. */
+      const places = periods * 3;
+      // highest place first, the way a number is written and a chart is read
       const powers = Array.from({ length: places }, (_, i) => places - 1 - i);
-      paper.innerHTML = chartFn({ powers, base: 10, rows: [{ digits: null }] });
-      /* How wide the chart needs to be is a thing we KNOW — one column per
-         place — so it is said outright rather than left to the layout to work
-         out from the content, which resolves to a nonsense width here. */
-      paper.style.setProperty("--pv-cols", String(places));
+      paper.innerHTML = chartFn({
+        powers, base: 10, rows: [{ digits: null }],
+        names: "htu", merge: merged,
+      });
+      /* How wide it needs to be is KNOWN — a column per place, or one per
+         period — so it is stated outright rather than worked out from the
+         content, which resolves to a nonsense width on this table. A merged
+         cell holds three figures, so it is given room for three. */
+      paper.style.setProperty("--pv-cols", String(merged ? periods : places));
+      paper.style.setProperty("--pv-colw", merged ? "5.6rem" : "3rem");
       paper.querySelectorAll(".wb-cell").forEach((cell) => {
         cell.textContent = "";
         const box = document.createElement("input");
         box.type = "text";
         box.inputMode = "numeric";
         box.autocomplete = "off";
-        box.maxLength = 1;
+        box.maxLength = merged ? 3 : 1;
         cell.appendChild(box);
       });
-      set.innerHTML = `<span class="wb-tool__cap">Places</span>`
-        + CHART_PLACES.map((n) => note(n, n === places, `data-places="${n}"`)).join("")
-        + note("Rub it out", false, `data-clear="1"`);
+      dials();
       read();
     }
 
     paper.addEventListener("input", (e) => {
       const box = e.target.closest("input");
       if (!box) return;
-      // one figure to a column, and the last one typed is the one that stays
-      box.value = box.value.replace(/[^0-9]/g, "").slice(-1);
-      if (box.value) {
+      const room = merged ? 3 : 1;
+      // one place to a column; the last figure typed is the one that stays
+      box.value = merged
+        ? box.value.replace(/[^0-9]/g, "").slice(0, room)
+        : box.value.replace(/[^0-9]/g, "").slice(-1);
+      if (box.value.length >= room) {
         const all = boxes();
         all[all.indexOf(box) + 1]?.focus();
       }
       read();
     });
 
-    set.addEventListener("click", (e) => {
-      const hit = e.target.closest("[data-places], [data-clear]");
+    ui.pop.addEventListener("click", (e) => {
+      const hit = e.target.closest("[data-upto], [data-merge], [data-clear]");
       if (!hit) return;
       if (hit.dataset.clear) { boxes().forEach((b) => { b.value = ""; }); read(); return; }
-      places = Number(hit.dataset.places);
+      if (hit.dataset.upto) periods = Number(hit.dataset.upto);
+      else merged = hit.dataset.merge === "1";
       draw();
     });
 
     draw();
   }
 
-  async function mountAbacusTool(body) {
+  async function mountAbacusTool(host) {
     const { mountAbacus, FRAMES, RODS } =
       await import("/prep-math/activity/base-blocks/js/mount-abacus.js");
 
-    const wrap = document.createElement("div");
-    wrap.className = "wb-tool";
-    wrap.innerHTML = `<div class="wb-tool__set"></div>`
-      + `<div class="wb-tool__body wb-tool__body--canvas"></div>`
-      + `<p class="wb-tool__say" role="status" aria-live="polite"></p>`;
-    body.appendChild(wrap);
-
-    const set = wrap.querySelector(".wb-tool__set");
-    const stage = wrap.querySelector(".wb-tool__body");
-    const say = wrap.querySelector(".wb-tool__say");
-
+    const ui = toolShell(host, "wb-tool__body--canvas");
     let variant = "soroban";
     let rods = 9;
+    let flat = false;
 
-    const frame = await mountAbacus(stage, {
+    const frame = await mountAbacus(ui.body, {
       variant, base: 10, rods,
-      onRead: ({ sentence }) => { say.textContent = sentence || ""; },
+      onRead: ({ sentence }) => { ui.say.textContent = sentence || ""; },
     });
 
     function dials() {
-      set.innerHTML = `<span class="wb-tool__cap">Frame</span>`
+      ui.pop.innerHTML =
+        `<div class="wb-tool__group"><span class="wb-tool__cap">Frame</span>`
         + FRAMES.map((f) => note(f.label, f.id === variant, `data-frame="${f.id}" title="${f.hint}"`)).join("")
-        + `<span class="wb-tool__cap">Places</span>`
+        + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Places</span>`
         + RODS.map((n) => note(n, n === rods, `data-rods="${n}"`)).join("")
-        + note("Clear", false, `data-clear="1"`);
+        + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Looking</span>`
+        + note("3D", !flat, `data-flat="0" title="Round the frame"`)
+        + note("Flat", flat, `data-flat="1" title="Straight down, for counting"`)
+        + `</div><div class="wb-tool__group">`
+        + note("Clear", false, `data-clear="1"`)
+        + `</div>`;
     }
     dials();
 
-    set.addEventListener("click", (e) => {
-      const hit = e.target.closest("[data-frame], [data-rods], [data-clear]");
+    ui.pop.addEventListener("click", (e) => {
+      const hit = e.target.closest("[data-frame], [data-rods], [data-flat], [data-clear]");
       if (!hit) return;
       if (hit.dataset.clear) { frame.clear(); return; }
       if (hit.dataset.frame) { variant = hit.dataset.frame; frame.setVariant(variant); }
-      else { rods = Number(hit.dataset.rods); frame.setRods(rods); }
+      else if (hit.dataset.rods) { rods = Number(hit.dataset.rods); frame.setRods(rods); }
+      else { flat = hit.dataset.flat === "1"; frame.setFlat(flat); }
       dials();
     });
 

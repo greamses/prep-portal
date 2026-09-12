@@ -12,7 +12,7 @@
    panel disposes the lot.
    ========================================================================== */
 
-import { createEngine, createScene } from "./scene.js";
+import { createEngine, createScene, setFlatView } from "./scene.js";
 import {
   SPECS, makeAbacus, buildAbacus, syncAbacus, tapBead,
   abacusValue, setAbacusValue, clearAbacus, worksInBase, abacusSentence,
@@ -96,8 +96,12 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
     ctx.camera.setTarget(new window.BABYLON.Vector3(0, 1, 0));
     // and a tenth again, so nothing sits hard against the edge
     ctx.camera.radius = Math.max(14, Math.max(needTall, needWide) * 1.1);
-    ctx.camera.alpha = -Math.PI / 2;
-    ctx.camera.beta = 0.86;
+    /* Flat view owns the angles — it animates them and then pins them — so
+       while it is on, only the distance is set here. */
+    if (!ctx.flat) {
+      ctx.camera.alpha = -Math.PI / 2;
+      ctx.camera.beta = 0.86;
+    }
   }
 
   function build() {
@@ -112,6 +116,16 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
     const own = worksInBase(now.variant, now.base) ? now.base : 10;
     thing = makeAbacus(now.variant, own, now.rods);
     parts = buildAbacus(ctx, thing);
+
+    /* The schoty is built with its wires running AWAY from the reader — right
+       for a frame lying on the manipulatives desk among other things, but in a
+       panel of its own it reads as standing sideways-on. Turn the instrument a
+       quarter so its wires run across the view, like the other two frames. The
+       HUB is turned and not the root, so the sticky note above it — which hangs
+       off the root — goes on facing the reader.
+       (The camera fits the frame's diagonal, so the turn needs no new sums.) */
+    if (!SPECS[now.variant].upright) parts.hub.rotation.y = Math.PI / 2;
+
     frame();
     tell();
   }
@@ -160,6 +174,13 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
       now.base = b;
       build();
     },
+    /* 2D or 3D — the same flattening the manipulatives canvas does, for when
+       the perspective is in the way of counting beads. */
+    setFlat(on) {
+      setFlatView(ctx, !!on);
+      frame();
+    },
+    isFlat: () => !!ctx.flat,
     setValue(n) {
       const ok = setAbacusValue(thing, n);
       syncAbacus(thing, parts);
