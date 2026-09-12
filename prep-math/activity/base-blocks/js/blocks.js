@@ -82,10 +82,19 @@ function norm(hex) {
   return "#f4c95d";
 }
 
-/** Forget the cached materials (called when the theme flips). */
+/**
+ * Forget the cached materials (the theme flipping, or the scene going away).
+ *
+ * The groove TEXTURE goes too. It is one module-level object bound to whichever
+ * scene first asked for it, so a canvas that is disposed and built again — a
+ * workbook panel closed and reopened — got blocks wearing a texture belonging
+ * to a scene that no longer exists, and drew them as ghosts.
+ */
 export function clearMaterials() {
   matCache.forEach((m) => m.dispose());
   matCache = new Map();
+  try { grooveTex?.dispose(); } catch { /* already gone with its scene */ }
+  grooveTex = null;
 }
 
 /**

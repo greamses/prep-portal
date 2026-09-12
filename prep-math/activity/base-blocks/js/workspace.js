@@ -54,6 +54,9 @@ import {
   hitPlace, moveCounter, dropCounter, counterColour,
 } from "./grids.js";
 import { createDotGhost } from "./dots.js";
+import { clearMaterials } from "./blocks.js";
+import { clearTileMaterials } from "./tiles.js";
+import { clearAbacusMaterials } from "./abacus.js";
 import { frames, readFrame, frameSentence, frameSquare } from "./frame.js";
 import { syncFrom as spread, afterBlocks, valueOf, setChartValue } from "./sync.js";
 
@@ -855,6 +858,12 @@ function toolById(id) {
  * nobody stops is a panel you shut that is still drawing.
  */
 function teardown() {
+  /* Every cached material belongs to the scene that made it. Kept across a
+     teardown they are handed to the NEXT scene, which draws them as ghosts —
+     which is exactly what closing a tool panel and opening it again did. */
+  try { clearMaterials(); } catch { /* nothing cached yet */ }
+  try { clearTileMaterials(); } catch { /* the same */ }
+  try { clearAbacusMaterials(); } catch { /* the same */ }
   try { sizeWatch?.disconnect(); } catch { /* already gone */ }
   if (onWindowResize) window.removeEventListener("resize", onWindowResize);
   sizeWatch = null;

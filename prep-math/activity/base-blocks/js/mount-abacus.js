@@ -16,6 +16,7 @@ import { createEngine, createScene, setFlatView } from "./scene.js";
 import {
   SPECS, makeAbacus, buildAbacus, syncAbacus, tapBead,
   abacusValue, setAbacusValue, clearAbacus, worksInBase, abacusSentence,
+  clearAbacusMaterials,
 } from "./abacus.js";
 
 const BABYLON_URL = "https://cdn.jsdelivr.net/npm/babylonjs@7/babylon.js";
@@ -220,6 +221,10 @@ export async function mountAbacus(host, { variant = "soroban", base = 10, rods =
     },
     read: () => ({ value: abacusValue(thing), sentence: abacusSentence(thing), rods: now.rods, variant: now.variant }),
     dispose() {
+      /* The bead materials are cached per COLOUR, not per scene, so leaving
+         them behind hands the next frame materials belonging to a scene that
+         has been disposed — and it draws as a ghost of itself. */
+      try { clearAbacusMaterials(); } catch { /* nothing cached */ }
       grow.disconnect();
       engine.stopRenderLoop();
       ctx.scene.dispose();

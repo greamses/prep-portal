@@ -1407,16 +1407,140 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   side.className = "wb-side";
   side.hidden = true;
   side.setAttribute("aria-label", "Tools");
-  side.innerHTML = `
-    <span class="wb-side__cap">Tools</span>
-    ${TOOLS.map((t) => (
-      `<button type="button" class="wb-side__btn" data-tool="${t.id}" aria-pressed="false" title="${t.label}">`
-      + `${TOOL_ICONS[t.id] || ""}<em>${t.label}</em></button>`)).join("")}
-    <span class="wb-side__rule" role="presentation"></span>
-    ${SHEETS.map((t) => (
-      `<button type="button" class="wb-side__btn" data-sheet="${t.id}" aria-pressed="false" title="${t.label}">`
-      + `${t.icon || ""}<em>${t.label}</em></button>`)).join("")}`;
+  /* ── the rail, in families ──────────────────────────────────────────────
+     Eleven keys down the side is a list to be read before anything can be
+     picked. They go in FAMILIES instead — what you draw with, what you work a
+     sum out on, what you count with — one key showing per family and the rest
+     behind a small corner arrow, the way a photo editor's toolbar does it. The
+     slot then remembers whichever you last reached for.
+
+     Grouped by WHAT THEY ARE FOR, not by how they are built: the ruler and the
+     set square are instruments laid on the paper and the boards are working
+     paper in a panel, but a child looking for something to draw a line with
+     does not care which of those it is. */
+  const asTool = (id) => {
+    const t = TOOLS.find((x) => x.id === id);
+    return t && { id: t.id, label: t.label, icon: TOOL_ICONS[t.id] || "", attr: "data-tool" };
+  };
+  const asSheet = (id) => {
+    const t = SHEETS.find((x) => x.id === id);
+    return t && { id: t.id, label: t.label, icon: t.icon || "", attr: "data-sheet" };
+  };
+
+  const FAMILIES = [
+    /* Pencil, eraser and compass would belong here too — there are none yet. */
+    { id: "draw", label: "Drawing", of: [asTool("ruler"), asTool("protractor"), asTool("setsquare")] },
+    { id: "work", label: "Working out", of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
+    { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("abacus"), asSheet("bench")] },
+    { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
+  ]
+    .map((f) => ({ ...f, of: f.of.filter(Boolean) }))
+    .filter((f) => f.of.length);
+
+  const ARROW =
+    '<svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true" class="wb-side__tick">'
+    + '<path d="M8 8H2.6L8 2.6Z" fill="currentColor"/></svg>';
+
+  const keyHtml = (k) =>
+    `<button type="button" class="wb-side__btn" ${k.attr}="${k.id}" aria-pressed="false"`
+    + ` title="${k.label}">${k.icon}<em>${k.label}</em></button>`;
+
+  side.innerHTML = `<span class="wb-side__cap">Tools</span>`
+    + FAMILIES.map((f) => {
+      const [face, ...rest] = f.of;
+      return `<div class="wb-side__fam" data-fam="${f.id}">`
+        + keyHtml(face)
+        + (rest.length
+          ? `<button type="button" class="wb-side__more" aria-expanded="false"`
+            + ` aria-label="More ${f.label.toLowerCase()} tools"`
+            + ` title="More ${f.label.toLowerCase()} tools">${ARROW}</button>`
+            /* the flyout itself is NOT here — see below */
+          : "")
+        + `</div>`;
+    }).join("");
   document.body.appendChild(side);
+
+  /* ── the flyouts ────────────────────────────────────────────────────────
+     On the BODY, not inside the rail. The rail scrolls when it is taller than
+     the window (`overflow-y: auto`), and a scroller clips both axes — so a
+     flyout opening beside the rail had a box, a size and a position, and was
+     cut away to nothing. It is positioned from its family when it opens, and
+     it does its own clicking, since it is no longer inside the rail for the
+     rail's delegation to catch. */
+  const flies = new Map();      // family id → its flyout
+  FAMILIES.forEach((f) => {
+    const rest = f.of.slice(1);
+    if (!rest.length) return;
+    const fly = document.createElement("div");
+    fly.className = "wb-side__fly";
+    fly.dataset.fam = f.id;
+    fly.hidden = true;
+    fly.innerHTML = rest.map(keyHtml).join("");
+    document.body.appendChild(fly);
+    flies.set(f.id, fly);
+  });
+
+  /* ── opening a family ───────────────────────────────────────────────────*/
+  const shutFamilies = () => {
+    flies.forEach((f) => { f.hidden = true; });
+    side.querySelectorAll(".wb-side__more").forEach((m) => m.setAttribute("aria-expanded", "false"));
+  };
+
+  side.addEventListener("click", (e) => {
+    const more = e.target.closest(".wb-side__more");
+    if (!more) return;
+    /* the arrow opens the family; it never opens a tool */
+    e.stopPropagation();
+    const fam = more.closest(".wb-side__fam");
+    const fly = flies.get(fam.dataset.fam);
+    if (!fly) return;
+    const wasShut = fly.hidden;
+    shutFamilies();
+    if (!wasShut) return;
+    /* Beside the rail and level with its own key. Fixed to the WINDOW, because
+       that is what the rail is fixed to, and measured on opening: the rail is
+       one width on a wide screen and a strip along the bottom on a narrow one. */
+    const railBox = side.getBoundingClientRect();
+    const famBox = fam.getBoundingClientRect();
+    fly.hidden = false;
+    fly.style.top = `${Math.round(famBox.top)}px`;
+    fly.style.left = `${Math.round(railBox.right + 8)}px`;
+    /* and never off the bottom of the window */
+    const flyBox = fly.getBoundingClientRect();
+    const over = flyBox.bottom - (window.innerHeight - 8);
+    if (over > 0) fly.style.top = `${Math.round(famBox.top - over)}px`;
+    more.setAttribute("aria-expanded", "true");
+  });
+
+  /* Picking one out of a family brings it to the front, as a photo editor
+     does — the slot remembers what you last reached for. The click carries on
+     to the handler below and opens the tool as usual; the swap waits a turn so
+     the DOM is not rearranged mid-dispatch. */
+  flies.forEach((fly, famId) => {
+    fly.addEventListener("click", (e) => {
+      const picked = e.target.closest("[data-tool], [data-sheet]");
+      if (!picked) return;
+      const fam = side.querySelector(`.wb-side__fam[data-fam="${famId}"]`);
+      shutFamilies();
+      /* It is outside the rail, so the rail's delegation never sees it: the
+         tool is opened from here. */
+      if (picked.dataset.tool) toggleTool(picked.dataset.tool);
+      else togglePanel(picked.dataset.sheet);
+      /* and it comes to the front, as a photo editor's slot does — after the
+         click, so the DOM is not rearranged mid-dispatch */
+      setTimeout(() => {
+        const face = fam.querySelector(":scope > [data-tool], :scope > [data-sheet]");
+        if (!face || face === picked) return;
+        fly.append(face);
+        fam.insertBefore(picked, fam.querySelector(".wb-side__more"));
+      }, 0);
+    });
+  });
+
+  document.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".wb-side__fam, .wb-side__fly")) return;
+    shutFamilies();
+  });
   side.addEventListener("click", (e) => {
     const hit = e.target.closest("[data-tool], [data-sheet]");
     if (!hit) return;
@@ -1671,6 +1795,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       b.setAttribute("aria-pressed", "false");
     });
     side.hidden = true;
+    shutFamilies();
     document.documentElement.classList.remove("wb-side-on");
     putToolsAway();
     putSheetsAway();
