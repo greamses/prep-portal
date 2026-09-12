@@ -39,6 +39,9 @@ export const TOOL_ICONS = {
   /* A ruled chart: the band across the top, then the columns a figure stands
      in — which is what a place-value chart is before anything is written on it. */
   chart: glyph(`<path d="M3.5 5.5h17v13h-17zM3.5 9.5h17"/><path d="M9 9.5v9M15 9.5v9"/>`),
+  /* Blocks: a flat, a rod and a unit standing together — the whole workbench
+     in the three pieces it is built from. */
+  bench: glyph(`<path d="M3.5 10.5h7v9h-7zM3.5 14h7M7 10.5v9"/><path d="M13 6.5h2.6v13H13z"/><path d="M18.5 16.5h2.5v3h-2.5z"/>`),
   /* A counting frame: two rails, the reckoning bar across, and beads on a rod
      above and below it. */
   abacus: glyph(`<path d="M4 4.5v15M20 4.5v15"/><path d="M4 11h16"/><path d="M8 7.5h1.6M8 14.2h1.6M14.4 7.5H16M14.4 14.2H16"/><path d="M8.8 5.9v3.2M15.2 5.9v3.2M8.8 12.6v3.2M15.2 12.6v3.2"/>`),

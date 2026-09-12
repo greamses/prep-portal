@@ -1153,6 +1153,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         mountChart(body, chart);
       },
     }] : []),
+    /* The WHOLE manipulatives canvas, mounted here rather than copied — one
+       set of tools, one canvas, fetched the first time it is asked for, the
+       same way the algebra workspace below is. Blocks, the counting frames,
+       the tiles, the charts and the written boards, all of it. */
+    {
+      id: "bench",
+      label: "Manipulatives",
+      icon: TOOL_ICONS.bench,
+      size: { w: 940, h: 660 },
+      open: async (body) => {
+        needCss("/prep-math/activity/base-blocks/style.css");
+        body.classList.add("wb-panel__body--bare");
+        const host = document.createElement("div");
+        host.className = "bb-canvas-view wb-bench";
+        body.appendChild(host);
+        const { mountBaseBlocks } = await import("/prep-math/activity/base-blocks/js/workspace.js");
+        const bench = await mountBaseBlocks(host, { tool: "base-blocks" });
+        /* handed back to togglePanel: shutting the panel stops the render loop */
+        return () => bench?.dispose?.();
+      },
+    },
     {
       id: "abacus",
       label: "Abacus",

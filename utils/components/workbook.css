@@ -606,6 +606,20 @@ body {
   min-width: 0;
   overflow: auto;
 }
+/* The manipulatives canvas is built to cover the window — fixed, inset 0, over
+   everything. In a panel it is just the panel's contents. */
+.wb-panel .wb-bench {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.wb-panel .wb-bench .bb-frame,
+.wb-panel .wb-bench .bb-stage { height: 100%; }
+
 /* the abacus brings a canvas, which has to be told how big to be */
 .wb-tool__body--canvas { overflow: hidden; }
 .wb-tool__body--canvas .ab-canvas {
