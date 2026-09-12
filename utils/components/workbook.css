@@ -1504,6 +1504,32 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 }
 .wb-tool:focus-visible { outline: 0.5mm dashed #f4c95d; }
 
+/* ── blocks you can take apart (interactive.js makeBlocks) ────────────────
+   Only on screen, and only while interactive. Splitting a piece is a way of
+   thinking about the number — ten rods ARE a flat — so the pile that comes
+   back is worth exactly what it was worth before. Nothing here is draggable:
+   a block that slides about is a block that ends up somewhere meaningless. */
+.wb-live svg[data-blocks] .pv-piece { cursor: zoom-in; }
+.wb-live svg[data-blocks] .pv-piece[data-place="0"] { cursor: default; }
+.wb-live svg[data-blocks] .pv-piece:hover rect,
+.wb-live svg[data-blocks] .pv-piece:hover polygon { stroke-width: 2.6; }
+.wb-live svg[data-blocks] .pv-piece:focus-visible { outline: none; }
+.wb-live svg[data-blocks] .pv-piece:focus-visible rect,
+.wb-live svg[data-blocks] .pv-piece:focus-visible polygon { stroke: #f4c95d; stroke-width: 3; }
+/* a pile a child may take blocks out of — only where taking away is the
+   method, said by the exercise and never assumed */
+.wb-live svg[data-blocks][data-take] .pv-piece { cursor: pointer; }
+.wb-live svg[data-blocks] .pv-piece.is-gone { opacity: 0.18; }
+.wb-live svg[data-blocks] .pv-piece.is-gone rect,
+.wb-live svg[data-blocks] .pv-piece.is-gone polygon { fill: none; stroke-dasharray: 3 2.4; }
+.wb-blocksay {
+  display: block;
+  margin: 0.4mm 0 0;
+  font: 600 7pt/1.3 var(--font-mono, "JetBrains Mono", monospace);
+  color: #1f4f86;
+}
+@media print { .wb-blocksay { display: none !important; } }
+
 /* colouring parts in, crossing them out */
 .wb-live svg[data-colourable] [data-part] { cursor: pointer; }
 .wb-live svg[data-colourable="fill"] [data-part]:not([data-shaded]):hover { fill-opacity: 0.8; stroke-width: 0.8; }

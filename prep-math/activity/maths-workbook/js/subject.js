@@ -8,7 +8,7 @@
 
 import { EXERCISES, levelOf, helpOf, unavailable, placesFor, exerciseById, chapterOf } from "./exercises.js";
 import { placeName, placeWorth } from "./numbers.js";
-import { blocksKey } from "./blocks.js";
+import { blocksKey, blocksSvg } from "./blocks.js";
 import { baseWord } from "../../base-blocks/js/config.js";
 import { protractorSvg } from "./protractor.js";
 
@@ -93,4 +93,10 @@ export const SUBJECT = {
 export const LIVE = {
   protractor: protractorSvg(),
   places: ".wb-box, .rw-answer, .rw-fill, .rw-sentence__blank, .mt-track__cell--gap, .ms-across__box, .ms-down__carrybox",
+  /* How this workbook draws a pile of blocks. Splitting a flat into ten rods
+     means drawing the pile again, and only this workbook knows how — so the
+     drawing is handed to the engine rather than reached for, the same way the
+     protractor is. A workbook with no blocks hands nothing and the engine
+     simply never offers it. */
+  blocks: blocksSvg,
 };

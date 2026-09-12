@@ -51,7 +51,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *     locked       interactive for good: no "Back to paper" (the player)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", onCheck = null, locked = false }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, onCheck = null, locked = false }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -115,6 +115,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   const rec = (i) => {
     const r = (store[i] ||= {});
     r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
+    r.blocks ||= {};   // piles that have been broken up or taken from
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -180,6 +181,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       slot.appendChild(input);
     });
 
+    /* Blocks come apart wherever there are blocks — it is not an answer, so
+       it is not driven by the key. */
+    if (blocks) {
+      node.querySelectorAll("svg[data-blocks]:not([data-still])")
+        .forEach((svg, k) => makeBlocks(node, idx, svg, k));
+    }
+
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
@@ -204,6 +212,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       n.classList.remove("is-live", "is-right", "is-wrong", "is-on", "is-want"));
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
     node.querySelectorAll("svg[data-drawable]").forEach((s) => s.removeAttribute("data-drawable"));
+    node.querySelectorAll("svg[data-blocks]").forEach((s) => { if (s.__wbPile) s.innerHTML = s.__wbPile; });
     node.classList.remove("is-marked-right", "is-marked-wrong");
   }
 
@@ -851,6 +860,134 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         save();
       });
     });
+  }
+
+  /* ── blocks that come apart ────────────────────────────────────────────
+     A flat IS ten rods. Double-click one and it becomes them, in place — the
+     pile is worth exactly what it was worth a moment before, which is the
+     whole idea and the reason this changes no answer and marks nothing.
+
+     Where the question TAKES AWAY, a block can also be taken out of the pile;
+     nowhere else, because everywhere else the pile is the question and a
+     question you can dismantle is not a question.
+
+     Nothing is draggable. A block that slides about ends up somewhere that
+     means nothing, and the argument here is entirely about what a piece is
+     worth, never about where it sits. */
+
+  function makeBlocks(node, idx, svg, k) {
+    const base = Number(svg.dataset.blocks) || 10;
+    const canTake = svg.hasAttribute("data-take");
+    if (!svg.__wbPile) svg.__wbPile = svg.innerHTML;      // the pile as it was set
+
+    /* What the pile is holding now, by place. Kept per question, so leaving
+       and coming back finds it as it was left — and a rebuild of the paper
+       puts back the pile the question was set with. */
+    const counts = () => {
+      const r = rec(idx);
+      r.blocks ||= {};
+      if (!r.blocks[k]) {
+        r.blocks[k] = [...svg.querySelectorAll(".pv-piece")].reduce((out, g) => {
+          const p = Number(g.dataset.place) || 0;
+          out[p] = (out[p] || 0) + 1;
+          return out;
+        }, []);
+        for (let i = 0; i < r.blocks[k].length; i++) r.blocks[k][i] ||= 0;
+      }
+      return r.blocks[k];
+    };
+
+    const paint = () => {
+      const c = counts();
+      const label = svg.getAttribute("aria-label") || "Base blocks";
+      /* Drawn again to the SAME width and the same square size it was first
+         given. Guessing either one re-packs the pile: a wide pile squeezed
+         into a narrow one wraps onto rows the page left no room for, and runs
+         into the writing underneath. */
+      const drawn = blocks(c, base, {
+        maxCells: Number(svg.dataset.cells) || 55,
+        cellMm: Number(svg.dataset.mm) || undefined,
+        label,
+        take: canTake,
+      });
+      /* Only the insides are replaced: the element itself carries the pen's
+         strokes and its bindings, and both must survive a piece being split. */
+      const box = document.createElement("div");
+      box.innerHTML = drawn;
+      const fresh = box.querySelector("svg");
+      if (!fresh) return;
+      const pen = svg.querySelector(":scope > .wb-pen");
+      svg.setAttribute("viewBox", fresh.getAttribute("viewBox"));
+      /* the drawing is measured in millimetres on the paper, so the new size
+         comes across with it or the pile keeps the old one and distorts */
+      if (fresh.getAttribute("width")) svg.setAttribute("width", fresh.getAttribute("width"));
+      if (fresh.getAttribute("height")) svg.setAttribute("height", fresh.getAttribute("height"));
+      svg.innerHTML = fresh.innerHTML;
+      if (pen) svg.appendChild(pen);
+      wire();
+      save();
+    };
+
+    function wire() {
+      svg.querySelectorAll(".pv-piece").forEach((g) => {
+        /* A piece that does not say which place it is cannot be reasoned
+           about, so it is left inert rather than guessed at. */
+        if (g.dataset.place === undefined || g.dataset.place === "") return;
+        const place = Number(g.dataset.place);
+        if (!Number.isInteger(place) || place < 0) return;
+        g.tabIndex = 0;
+        g.setAttribute("role", "button");
+        const worth = Math.pow(base, place);
+        g.setAttribute("aria-label", canTake
+          ? `A block worth ${worth}. Double-click to break it up, click to take it away.`
+          : `A block worth ${worth}. Double-click to break it up.`);
+        /* The pen draws on this same picture — "cross out 5" is printed on the
+           paper — so a press that lands on a BLOCK must not also start a line. */
+        g.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+        g.addEventListener("dblclick", (ev) => { ev.preventDefault(); split(place); });
+        g.addEventListener("click", (ev) => { ev.preventDefault(); if (canTake) take(place); });
+        g.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") { ev.preventDefault(); split(place); }
+          if ((ev.key === "Delete" || ev.key === "Backspace") && canTake) { ev.preventDefault(); take(place); }
+        });
+      });
+    }
+
+    /* One piece of this place becomes `base` of the place below. A unit has no
+       place below it and simply does not answer. */
+    function split(place) {
+      if (place <= 0) return;
+      const c = counts();
+      if (!c[place]) return;
+      c[place] -= 1;
+      c[place - 1] = (c[place - 1] || 0) + base;
+      paint();
+      say(node, `Broken up — still worth the same.`);
+    }
+
+    function take(place) {
+      const c = counts();
+      if (!c[place]) return;
+      c[place] -= 1;
+      paint();
+      say(node, "Taken away.");
+    }
+
+    /* A word under the pile, so what just happened is said and not only seen. */
+    function say(host, text) {
+      const holder = hostOf(svg);
+      let line = holder.querySelector(":scope > .wb-blocksay");
+      if (!line) {
+        line = document.createElement("span");
+        line.className = "wb-blocksay";
+        line.setAttribute("role", "status");
+        holder.appendChild(line);
+      }
+      line.textContent = text;
+    }
+
+    counts();
+    wire();
   }
 
   /* ── marking ───────────────────────────────────────────────────────────*/

@@ -403,6 +403,12 @@ export function mountBuilder(cfg) {
         refit: fit,
         protractor: cfg.interactive.protractor,
         places: cfg.interactive.places || "",
+        /* How THIS workbook draws a pile of blocks, if it draws one at all.
+           Splitting a flat into ten rods means drawing the pile again, and only
+           the workbook knows how — the engine must not reach into a workbook's
+           own modules, so the workbook hands the drawing in, the way it already
+           hands in its protractor. */
+        blocks: cfg.interactive.blocks || null,
       });
     }
 

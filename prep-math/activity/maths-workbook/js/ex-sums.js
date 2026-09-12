@@ -140,17 +140,25 @@ function borrows(a, b, places) {
 
 /* ── the pictures ──────────────────────────────────────────────────────────*/
 
-/** The blocks for a number, capped at the three places blocks are drawn in. */
-const pileOf = (n, places) =>
-  blocksSvg(digitsOf(n, Math.min(places, 3)), 10, { maxCells: 30, cellMm: places >= 3 ? 1.8 : 2.4 });
+/**
+ * The blocks for a number, capped at the three places blocks are drawn in.
+ *
+ * `take` says the pile is one a child may take blocks OUT of — true only where
+ * taking away is the method being drawn. On an addition the pile is the
+ * question, and a question you can dismantle is not a question.
+ */
+const pileOf = (n, places, take = false, still = false) =>
+  blocksSvg(digitsOf(n, Math.min(places, 3)), 10, {
+    maxCells: 30, cellMm: places >= 3 ? 1.8 : 2.4, take, still,
+  });
 
 /** Two piles with a plus between them — an addition, drawn. */
-function addPicture(a, b, places) {
+function addPicture(a, b, places, still = false) {
   return (
     `<div class="ms-piles">` +
-    `<span class="ms-piles__one">${pileOf(a, places)}</span>` +
+    `<span class="ms-piles__one">${pileOf(a, places, false, still)}</span>` +
     `<span class="ms-piles__op">+</span>` +
-    `<span class="ms-piles__one">${pileOf(b, places)}</span>` +
+    `<span class="ms-piles__one">${pileOf(b, places, false, still)}</span>` +
     `</div>`
   );
 }
@@ -160,10 +168,10 @@ function addPicture(a, b, places) {
  * is what an addition looks like, and a subtraction drawn like an addition is
  * where "which one do I take from which" comes from.
  */
-function subPicture(a, b, places) {
+function subPicture(a, b, places, still = false) {
   return (
     `<div class="ms-piles ms-piles--sub">` +
-    `<span class="ms-piles__one">${pileOf(a, places)}</span>` +
+    `<span class="ms-piles__one">${pileOf(a, places, !still, still)}</span>` +
     `<span class="ms-piles__cross">cross out ${b}</span>` +
     `</div>`
   );
@@ -216,7 +224,7 @@ const addNoRegroup = {
   worked() {
     return (
       `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      addPicture(23, 14, 2) +
+      addPicture(23, 14, 2, true) +
       bothWays(23, 14, "+", { places: 2, answer: 37 }) +
       `<p class="wb-ask rw-worked__say">Three ones and four ones is seven ones. ` +
       `Two tens and one ten is three tens. Nothing reached ten, so nothing is carried.</p></div>`
@@ -255,7 +263,7 @@ const addRegroup = {
   worked() {
     return (
       `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      addPicture(27, 15, 2) +
+      addPicture(27, 15, 2, true) +
       bothWays(27, 15, "+", { places: 2, carries: true, answer: 42 }) +
       `<p class="wb-ask rw-worked__say">Seven ones and five ones is twelve ones — that is ` +
       `one ten and two ones. The two stays in the ones column and the one goes in the ` +
@@ -292,7 +300,7 @@ const subNoRegroup = {
   worked() {
     return (
       `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      subPicture(48, 23, 2) +
+      subPicture(48, 23, 2, true) +
       bothWays(48, 23, "-", { places: 2, answer: 25 }) +
       `<p class="wb-ask rw-worked__say">Eight ones take away three ones is five ones. ` +
       `Four tens take away two tens is two tens. There was enough in both columns.</p></div>`
@@ -331,7 +339,7 @@ const subRegroup = {
   worked() {
     return (
       `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      subPicture(42, 17, 2) +
+      subPicture(42, 17, 2, true) +
       bothWays(42, 17, "-", { places: 2, carries: true, answer: 25 }) +
       `<p class="wb-ask rw-worked__say">Two ones will not give up seven. So break one of ` +
       `the four tens into ten ones: three tens left, and twelve ones. Twelve take away ` +

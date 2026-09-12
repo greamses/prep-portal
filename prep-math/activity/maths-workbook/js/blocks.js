@@ -115,25 +115,41 @@ function bundleUnits(count) {
   if (!count) return [];
   const cols = Math.min(3, count);
   const rows = Math.ceil(count / cols);
-  return [{
-    w: cols + (cols - 1) * 0.18,
-    h: rows + (rows - 1) * 0.18,
-    draw: (x, y) => {
-      let out = "";
-      for (let i = 0; i < count; i++) {
-        const c = i % cols;
-        const rFromBottom = Math.floor(i / cols);
-        const px = x + c * 1.18 * CELL;
-        const py = y + (rows - 1 - rFromBottom) * 1.18 * CELL;
-        out += slab(px, py, 1, 1, PERIOD[0]);
-      }
-      return out;
-    },
-  }];
+  const w = cols + (cols - 1) * 0.18;
+  const h = rows + (rows - 1) * 0.18;
+  /* ONE PIECE PER UNIT, not one piece for the bundle.
+
+     The stack is a layout decision and it stays — nine units in a row read as
+     a rod somebody has cut up, and nine in a three-by-three read as nine. But
+     each unit has to be a piece of its own or it cannot be addressed: a pile
+     of seven would count as one block worth one, and on a taking-away question
+     you could only take the whole bundle or nothing.
+
+     So each unit carries where it sits INSIDE the bundle (`dx`, `dy`), and
+     only the first one carries the bundle's width — the packer advances on
+     that and the rest stack into the space it claimed. */
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const c = i % cols;
+    const rFromBottom = Math.floor(i / cols);
+    const dx = c * 1.18;
+    const dy = (rows - 1 - rFromBottom) * 1.18;
+    out.push({
+      w: i === 0 ? w : 0,
+      h,
+      dx,
+      dy,
+      draw: (x, y) => slab(x + dx * CELL, y + dy * CELL, 1, 1, PERIOD[0]),
+    });
+  }
+  return out;
 }
 
-const GROUP_GAP = 1.4;  // cells between one place and the next
-const ITEM_GAP = 0.45;  // cells between two pieces of the same place
+/* Close together, because a pile is one thing. Far enough apart that a flat
+   and the rod beside it do not read as one shape, and no further: a pile with
+   air in it reads as several piles. */
+const GROUP_GAP = 0.8;  // cells between one place and the next
+const ITEM_GAP = 0.25;  // cells between two pieces of the same place
 const ROW_GAP = 1.0;    // cells between wrapped rows
 
 /**
@@ -143,13 +159,16 @@ const ROW_GAP = 1.0;    // cells between wrapped rows
  * the number of flats — and may hold MORE than base-1 of a place, which is the
  * whole point of the trading exercises.
  */
-export function blocksSvg(counts, base, { maxCells = 55, label = "", cellMm = CELL_MM } = {}) {
+export function blocksSvg(counts, base, { maxCells = 55, label = "", cellMm = CELL_MM, take = false, still = false } = {}) {
   /* Highest place first, left to right, the way the number is written. */
   const groups = [];
   for (let p = counts.length - 1; p >= 0; p--) {
     const n = counts[p] || 0;
     if (!n) continue;
-    groups.push(p === 0 ? bundleUnits(n) : piecesFor(p, n, base));
+    /* The place travels with the pieces, so that every piece drawn can say
+       which place it belongs to — that is what lets one be split into the
+       place below it without the drawing having to be read back. */
+    groups.push({ place: p, pieces: p === 0 ? bundleUnits(n) : piecesFor(p, n, base) });
   }
   if (!groups.length) {
     return `<svg viewBox="0 0 ${CELL * 8} ${CELL * 4}" class="pv-blocks" role="img" aria-label="No blocks"></svg>`;
@@ -158,19 +177,27 @@ export function blocksSvg(counts, base, { maxCells = 55, label = "", cellMm = CE
   /* Pack into rows, bottom-aligned, wrapping when a row runs off the paper. */
   const rows = [[]];
   let x = 0;
+  let lastAt = 0;        // where the piece that claimed the room was laid
   let firstInRow = true;
-  groups.forEach((pieces, gi) => {
+  groups.forEach(({ place, pieces }, gi) => {
     pieces.forEach((piece, pi) => {
-      const gap = firstInRow ? 0 : pi === 0 ? GROUP_GAP : ITEM_GAP;
-      if (!firstInRow && x + gap + piece.w > maxCells) {
+      /* A piece of no width is one of the units stacked into the bundle the
+         first unit already claimed the room for: it is laid at the same x and
+         the row does not advance for it. */
+      const stacked = piece.w === 0;
+      const gap = stacked ? 0 : firstInRow ? 0 : pi === 0 ? GROUP_GAP : ITEM_GAP;
+      if (!stacked && !firstInRow && x + gap + piece.w > maxCells) {
         rows.push([]);
         x = 0;
         firstInRow = true;
       }
-      const at = firstInRow ? x : x + gap;
-      rows[rows.length - 1].push({ ...piece, x: at, group: gi });
-      x = at + piece.w;
-      firstInRow = false;
+      const at = stacked ? lastAt : firstInRow ? x : x + gap;
+      rows[rows.length - 1].push({ ...piece, x: at, group: gi, place });
+      if (!stacked) {
+        lastAt = at;
+        x = at + piece.w;
+        firstInRow = false;
+      }
     });
   });
 
@@ -184,7 +211,12 @@ export function blocksSvg(counts, base, { maxCells = 55, label = "", cellMm = CE
     row.forEach((p) => {
       /* Bottom-aligned: a rod and a flat stand on the same line, the way they
          would on a desk. */
-      body += p.draw(p.x * CELL, (yCell + rowH[i] - p.h) * CELL);
+      /* Each piece in its own group, named by its place. Nothing here makes
+         it interactive; it makes it ADDRESSABLE, which is what interactive
+         mode needs to split one into the place below. */
+      body += `<g class="pv-piece" data-place="${p.place}">`
+        + p.draw(p.x * CELL, (yCell + rowH[i] - p.h) * CELL)
+        + "</g>";
     });
     yCell += rowH[i] + ROW_GAP;
   });
@@ -197,6 +229,19 @@ export function blocksSvg(counts, base, { maxCells = 55, label = "", cellMm = CE
     `width="${round(totalW * cellMm + 0.8 * cellMm)}mm" ` +
     `height="${round(totalH * cellMm + 0.8 * cellMm)}mm" ` +
     `class="pv-blocks" preserveAspectRatio="xMidYMid meet" role="img" ` +
+    /* What interactive mode may do with this pile. Splitting is a way of
+       thinking and is offered wherever there are blocks; taking one away is
+       only the method on a question that takes away, so it is asked for by
+       the exercise and never assumed. */
+    /* `still` is a pile that is not there to be handled — the key at the top
+       of the sheet, which explains what a piece is worth. Breaking the
+       explanation up would leave nothing explaining anything. */
+    /* The room the pile was given, and the size its squares were drawn at.
+       Splitting a piece draws the pile AGAIN, and it has to be drawn to the
+       same width or it wraps onto rows the page never left space for and
+       runs into the writing underneath. */
+    `data-blocks="${base}" data-cells="${maxCells}" data-mm="${cellMm}"` +
+    `${take ? ' data-take="1"' : ""}${still ? ' data-still="1"' : ""} ` +
     `aria-label="${label || "Base blocks"}">${body}</svg>`
   );
 }
@@ -243,7 +288,7 @@ export function blocksKey(base, names, worths) {
     counts[p] = 1;
     return (
       `<div class="pv-key__item">` +
-      `<div class="pv-key__art">${blocksSvg(counts, base, { maxCells: base + 6, cellMm: KEY_CELL_MM })}</div>` +
+      `<div class="pv-key__art">${blocksSvg(counts, base, { maxCells: base + 6, cellMm: KEY_CELL_MM, still: true })}</div>` +
       `<div class="pv-key__name">${names[p]}</div>` +
       `<div class="pv-key__worth">${p === 0 ? "1" : "= " + worths[p]}</div>` +
       `</div>`

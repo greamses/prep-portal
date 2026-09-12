@@ -33,7 +33,7 @@
 
 import {
   wordsOf, groupDigits, periodsOf, periodName, drawDigits, onlyDigits, PERIODS,
-  figuresHtml,
+  figuresHtml, placeValueName, htuOf,
 } from "./numbers.js";
 import { levelOf, helpOf } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
@@ -180,6 +180,81 @@ export const WORD_EXERCISES = [
     },
     key(item) { return [asWords(item.name)]; },
     answer(item) { return [item.name]; },
+  },
+
+  {
+    id: "w-which-place",
+    group: "say",
+    label: "Which place is it in?",
+    blurb: "Point at a figure and say where it stands: the H, T or U — and of which period.",
+    heading: "Which place is the marked figure in?",
+    instruction: () => "One figure in each number is marked. Write which place it stands in — H, T or U, and then the period: like `H thousand`, or `T` for the ones.",
+    cols: 2,
+    defaultCount: 6,
+    tenOnly: true,
+    make(r, o) {
+      const d = drawSpan(r, o, 4, 18);
+      /* never the leading figure: that one is given away by being first */
+      const at = r.int(0, d.length - 2);
+      return { d, at, said: placeValueName(at, 10) };
+    },
+    render(item) {
+      const figure = item.d[item.d.length - 1 - item.at];
+      return `<p class="wb-ask">${fig(item.d)} &nbsp;—&nbsp; the <u>${figure}</u> is in the ${line("md")} place</p>`;
+    },
+    key(item) { return [asWords(item.said, item.said.replace(/ /g, ""))]; },
+    answer(item) { return [item.said]; },
+  },
+
+  {
+    id: "w-which-figure",
+    group: "say",
+    label: "Which figure is in that place?",
+    blurb: "The other way round: given the place, find the figure standing in it.",
+    heading: "Which figure is in that place?",
+    instruction: () => "Write the figure that stands in the place named.",
+    cols: 2,
+    defaultCount: 6,
+    tenOnly: true,
+    make(r, o) {
+      const d = drawSpan(r, o, 4, 18);
+      const at = r.int(0, d.length - 1);
+      return { d, at, said: placeValueName(at, 10), fig: Number(d[d.length - 1 - at]) };
+    },
+    render(item) {
+      /* the place's name is two words and must not break across a line: "U
+         thousand" split over a line break reads as two different places */
+      return `<p class="wb-ask">${fig(item.d)} &nbsp;—&nbsp; the figure in the `
+        + `<span class="wb-keep">${item.said}</span> place is ${line("xs")}</p>`;
+    },
+    key(item) { return [want.num(item.fig)]; },
+    answer(item) { return [String(item.fig)]; },
+  },
+
+  {
+    id: "w-worth",
+    group: "say",
+    label: "What is the figure worth?",
+    blurb: "The 7 in 4 070 506 is not seven. It is seventy thousand, and that is the whole idea.",
+    heading: "What is the marked figure worth?",
+    instruction: () => "A figure is worth what it says AND where it stands. Write what the marked figure is worth, in figures.",
+    cols: 2,
+    defaultCount: 5,
+    tenOnly: true,
+    make(r, o) {
+      const d = drawSpan(r, o, 4, 12);
+      /* a nought is worth nothing wherever it stands, which is a different
+         lesson and not this one */
+      let at = r.int(0, d.length - 1);
+      for (let k = 0; k < d.length && d[d.length - 1 - at] === "0"; k++) at = (at + 1) % d.length;
+      const worth = d[d.length - 1 - at] + "0".repeat(at);
+      return { d, at, worth, said: placeValueName(at, 10) };
+    },
+    render(item) {
+      return `<p class="wb-ask">${fig(item.d)} &nbsp;—&nbsp; the <u>${item.d[item.d.length - 1 - item.at]}</u> is worth ${line("md")}</p>`;
+    },
+    key(item) { return [asFigures(item.worth)]; },
+    answer(item) { return [groupDigits(item.worth)]; },
   },
 
   {
@@ -346,6 +421,56 @@ export const WORD_EXERCISES = [
     },
     key(item) { return [asFigures(item.d)]; },
     answer(item) { return [groupDigits(item.d)]; },
+  },
+
+  {
+    id: "w-missing-period",
+    group: "wordfig",
+    label: "Which period is missing?",
+    blurb: "Two million and six says nothing at all about thousands. Name the period that was not said.",
+    heading: "Which period is not said?",
+    instruction: () => "Every one of these skips a period, because that period is all noughts. Write the name of the period that is not said.",
+    cols: 2,
+    defaultCount: 5,
+    tenOnly: true,
+    make(r, o) {
+      const d = drawSpan(r, o, 7, 15, { hole: 1, zeros: 0.2 });
+      const parts = periodsOf(d);
+      const top = parts.length - 1;
+      const gap = parts.findIndex((c, i) => i && Number(c) === 0);
+      return { d, said: PERIODS[top - gap] };
+    },
+    render(item) {
+      return `<p class="wb-ask">${said(wordsOf(item.d))} &nbsp;—&nbsp; the missing period is the ${line("md")}</p>`;
+    },
+    key(item) { return [asWords(item.said)]; },
+    answer(item) { return [item.said]; },
+  },
+
+  {
+    id: "w-fill-gap",
+    group: "wordfig",
+    label: "Fill the gap with noughts",
+    blurb: "The period that was not said still takes three figures. This is where they come from.",
+    heading: "Write the missing period",
+    instruction: () => "The period that is not said is all noughts — but it still takes three figures in the number. Write the three figures that belong in the gap.",
+    cols: 2,
+    defaultCount: 5,
+    tenOnly: true,
+    make(r, o) {
+      const d = drawSpan(r, o, 7, 15, { hole: 1, zeros: 0.2 });
+      const parts = periodsOf(d);
+      const top = parts.length - 1;
+      const gap = parts.findIndex((c, i) => i && Number(c) === 0);
+      const shown = parts.map((c, i) => (i === gap ? line("sm") : c)).join(" ");
+      return { d, shown, said: PERIODS[top - gap] };
+    },
+    render(item) {
+      return `<p class="wb-ask">${said(wordsOf(item.d))}</p>`
+        + `<p class="wb-ask wb-ask--lead"><span class="wb-num">${item.shown}</span></p>`;
+    },
+    key() { return [asFigures("000")]; },
+    answer() { return ["000"]; },
   },
 
   {
