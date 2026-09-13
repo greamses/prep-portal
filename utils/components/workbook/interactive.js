@@ -1165,9 +1165,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       label: "Place value chart",
       icon: TOOL_ICONS.chart,
       size: { w: 620, h: 400 },
-      /* --bare, like the abacus: the tool carries its own padding, and a
-         padded body made `width: 100%` resolve to the panel's full width while
-         sitting inset from it — 620px of tool hanging 13px off the edge. */
+      /* --bare: the tool carries its own padding, and a padded body made
+         `width: 100%` resolve to the panel's full width while sitting inset
+         from it — 620px of tool hanging 13px off the edge. */
       open: (body) => {
         body.classList.add("wb-panel__body--bare");
         mountChart(body, chart);
@@ -1194,19 +1194,53 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         return () => bench?.dispose?.();
       },
     },
-    {
-      id: "abacus",
-      label: "Abacus",
-      icon: TOOL_ICONS.abacus,
-      size: { w: 620, h: 470 },
-      /* The real frames off the Manipulatives canvas, one of them on a canvas
-         of its own — fetched the first time it is asked for, exactly as the
-         algebra workspace below is. */
-      open: async (body) => {
+    /* The geometry studios and the grapher, each in a frame of its own.
+       NOT mounted the way Algebra Moves and the canvas are: those were split
+       into a shell and a workspace so one copy of the code serves a page and a
+       panel. These five are single-script pages wired straight to their own
+       document, and the grapher wraps GeoGebra, which wants its own globals.
+       A frame gives the whole studio with nothing rewritten, and takes its
+       globals away with it when the panel shuts. */
+    ...[
+      { id: "angles", label: "Polygon angles", at: "/prep-math/activity/polygon-angles/index.html" },
+      { id: "transversal", label: "Transversal angles", at: "/prep-math/activity/transversals/index.html" },
+      { id: "pythagoras", label: "Pythagoras", at: "/prep-math/activity/pythagoras/index.html" },
+      { id: "surface", label: "Surface area", at: "/prep-math/activity/surface-area/index.html" },
+      { id: "graph", label: "Graphing", at: "/prep-math/graphing/index.html" },
+    ].map((g) => ({
+      id: g.id,
+      label: g.label,
+      icon: TOOL_ICONS[g.id] || TOOL_ICONS.shapes,
+      size: { w: 960, h: 680 },
+      open: (body) => {
         body.classList.add("wb-panel__body--bare");
-        await mountAbacusTool(body);
+        const frame = document.createElement("iframe");
+        frame.className = "wb-studio";
+        frame.title = g.label;
+        /* Inside a panel the site's own nav is noise, and a second nav bar in
+           a window inside the page is a maze. The geometry shells already have
+           a fullscreen dress — html.pp-geo-fs, in utils/components/game-tabs.css
+           — so the panel simply puts it on; the two rules are written in as
+           well for the grapher, which is not a geometry shell. Same origin, so
+           this is reading into our own page, not somebody else's. */
+        frame.addEventListener("load", () => {
+          try {
+            const doc = frame.contentDocument;
+            if (!doc) return;
+            doc.documentElement.classList.add("pp-geo-fs", "pp-in-panel");
+            const dress = doc.createElement("style");
+            dress.textContent =
+              "html.pp-in-panel .site-nav { display: none !important; }"
+              + "html.pp-in-panel body { padding-top: 0 !important; }";
+            doc.head.appendChild(dress);
+          } catch { /* leave a frame we cannot read into dressed as it is */ }
+        });
+        frame.src = g.at;
+        body.appendChild(frame);
+        /* the frame takes the whole studio with it when the panel shuts */
+        return () => frame.remove();
       },
-    },
+    })),
     {
       id: "gm",
       label: "Algebra moves",
@@ -1227,7 +1261,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     },
   ];
 
-  /* ── the two tools that have something to set ──────────────────────────
+  /* ── the tool that has something to set ────────────────────────────────
      Settings live behind a GEAR rather than in a row of tabs across the top:
      they are set once, and after that they are in the way of the thing the
      tool was opened for. The gear lays a small sheet of sticky notes over the
@@ -1380,53 +1414,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     draw();
   }
 
-  async function mountAbacusTool(host) {
-    const { mountAbacus, FRAMES, RODS } =
-      await import("/prep-math/activity/base-blocks/js/mount-abacus.js");
-
-    const ui = toolShell(host, "wb-tool__body--canvas");
-    let variant = "soroban";
-    let rods = 9;
-    let flat = false;
-
-    const frame = await mountAbacus(ui.body, {
-      variant, base: 10, rods,
-      onRead: ({ sentence }) => { ui.say.textContent = sentence || ""; },
-    });
-
-    function dials() {
-      ui.pop.innerHTML =
-        `<div class="wb-tool__group"><span class="wb-tool__cap">Frame</span>`
-        + FRAMES.map((f) => note(f.label, f.id === variant, `data-frame="${f.id}" title="${f.hint}"`)).join("")
-        + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Places</span>`
-        + RODS.map((n) => note(n, n === rods, `data-rods="${n}"`)).join("")
-        + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Looking</span>`
-        + note("3D", !flat, `data-flat="0" title="Round the frame"`)
-        + note("Flat", flat, `data-flat="1" title="Straight down, for counting"`)
-        + `</div><div class="wb-tool__group">`
-        + note("Clear", false, `data-clear="1"`)
-        + `</div>`;
-    }
-    dials();
-
-    ui.pop.addEventListener("click", (e) => {
-      const hit = e.target.closest("[data-frame], [data-rods], [data-flat], [data-clear]");
-      if (!hit) return;
-      if (hit.dataset.clear) { frame.clear(); return; }
-      if (hit.dataset.frame) { variant = hit.dataset.frame; frame.setVariant(variant); }
-      else if (hit.dataset.rods) { rods = Number(hit.dataset.rods); frame.setRods(rods); }
-      else { flat = hit.dataset.flat === "1"; frame.setFlat(flat); }
-      dials();
-    });
-
-    /* handed back to togglePanel: closing the panel stops the render loop */
-    return () => frame.dispose();
-  }
-
   const side = document.createElement("aside");
   side.className = "wb-side";
   side.hidden = true;
   side.setAttribute("aria-label", "Tools");
+
   /* ── the rail, in families ──────────────────────────────────────────────
      Eleven keys down the side is a list to be read before anything can be
      picked. They go in FAMILIES instead — what you draw with, what you work a
@@ -1451,7 +1443,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* Pencil, eraser and compass would belong here too — there are none yet. */
     { id: "draw", label: "Drawing", of: [asTool("ruler"), asTool("protractor"), asTool("setsquare")] },
     { id: "work", label: "Working out", of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
-    { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("abacus"), asSheet("bench")] },
+    /* No abacus of its own: the three frames are on the Manipulatives canvas,
+       which is right here in the same family, and a second copy of them in a
+       panel of its own was one more thing to keep working for no more that a
+       child could do with it. */
+    { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("bench")] },
+    { id: "shapes", label: "Shapes and graphs", of: [
+      asSheet("angles"), asSheet("transversal"), asSheet("pythagoras"),
+      asSheet("surface"), asSheet("graph"),
+    ] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
   ]
     .map((f) => ({ ...f, of: f.of.filter(Boolean) }))

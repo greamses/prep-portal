@@ -1851,3 +1851,75 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
     flex-wrap: wrap;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE RAIL SAYS ITS NAMES ON HOVER
+   Nineteen names down the side is a column of reading. The name floats clear
+   of the rail when you are on the key, exactly as it does on the manipulatives
+   canvas (.bb-tool em) — so the rail is a strip of pictures and costs the
+   height of the pictures.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wb-side__btn { position: relative; }
+.wb-side__btn em {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10063;
+  padding: 0.24rem 0.5rem;
+  font-style: normal;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--surface-primary, #fffdf8);
+  background: var(--ink, #2a2723);
+  border-radius: 0.3rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.wb-side__btn:hover em,
+.wb-side__btn:focus-visible em { opacity: 1; }
+
+/* and with the names out of it, a key is as wide as its picture */
+.wb-side .wb-side__btn { width: 2.35rem; padding: 0.38rem 0.2rem; }
+
+@media (max-width: 700px) {
+  /* the rail is a strip along the bottom there, so a name beside the last key
+     would be off the right edge: it sits above the key instead. */
+  .wb-side .wb-side__btn { width: 2.3rem; }
+  .wb-side .wb-side__btn em {
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+  }
+}
+
+/* …but a FLYOUT keeps its names. It is a list of things to choose between,
+   and a column of unlabelled pictures is a guessing game. */
+.wb-side__fly .wb-side__btn { display: flex; align-items: center; gap: 0.45rem; }
+.wb-side__fly .wb-side__btn em {
+  position: static;
+  transform: none;
+  opacity: 1;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+/* a studio in a frame of its own */
+.wb-studio {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--surface-primary, #fffdf8);
+}

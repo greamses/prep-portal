@@ -42,9 +42,13 @@ export const TOOL_ICONS = {
   /* Blocks: a flat, a rod and a unit standing together — the whole workbench
      in the three pieces it is built from. */
   bench: glyph(`<path d="M3.5 10.5h7v9h-7zM3.5 14h7M7 10.5v9"/><path d="M13 6.5h2.6v13H13z"/><path d="M18.5 16.5h2.5v3h-2.5z"/>`),
-  /* A counting frame: two rails, the reckoning bar across, and beads on a rod
-     above and below it. */
-  abacus: glyph(`<path d="M4 4.5v15M20 4.5v15"/><path d="M4 11h16"/><path d="M8 7.5h1.6M8 14.2h1.6M14.4 7.5H16M14.4 14.2H16"/><path d="M8.8 5.9v3.2M15.2 5.9v3.2M8.8 12.6v3.2M15.2 12.6v3.2"/>`),
+  /* the geometry studios, and the grapher */
+  shapes: glyph(`<path d="M12 3.5 20.5 19h-17z"/>`),
+  angles: glyph(`<path d="M4 19.5h16"/><path d="M4 19.5 17 6"/><path d="M9.5 19.5a5.5 5.5 0 0 0 1.7-3.9"/>`),
+  transversal: glyph(`<path d="M3 8.5h18M3 15.5h18"/><path d="M7.5 4.5 16 19.5"/>`),
+  pythagoras: glyph(`<path d="M5 19.5h11V8.5z"/><path d="M5 16.2h3.3v3.3"/>`),
+  surface: glyph(`<path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/>`),
+  graph: glyph(`<path d="M4 20V4"/><path d="M4 20h16"/><path d="M4.5 16.5c4-1 5-9 8.5-9s4.5 5 6.5 6"/>`),
   /* the written boards, and the algebra sheet — the tools that are not
      instruments but working paper */
   longdiv: glyph(`<path d="M9 7.5h11"/><path d="M9 7.5v11"/><path d="M4.5 10c1.5 0 2.2 1 2.2 2.8s-.7 2.8-2.2 2.8"/><path d="M12 4.5h5"/><path d="M12 12h4M12 16h6"/>`),
