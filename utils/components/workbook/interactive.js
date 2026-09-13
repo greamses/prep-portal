@@ -47,11 +47,14 @@ const SVGNS = "http://www.w3.org/2000/svg";
  *     places       this workbook's own answer boxes, as a selector, added to
  *                  the shared ones (".rw-answer, .rw-fill" …)
  *     onCheck      called with { right, total } after every "Check my answers"
+ *     onProgress   called with { filled, total } as the paper is worked, a
+ *                  quarter second after the last keystroke — what a teacher
+ *                  watching live is watching
  *                  (the assignment player sends it to the teacher)
  *     locked       interactive for good: no "Back to paper" (the player)
  *   → { afterRender(key) }   call after every rebuild of the paper
  */
-export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, locked = false }) {
+export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, protractor, places = "", blocks = null, chart = null, onCheck = null, onProgress = null, locked = false }) {
   let live = false;
   let key = null;
   let store = {};                     // itemIndex -> { v: [...], lines: [...] }
@@ -121,9 +124,26 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
 
   let saving = 0;
+  /** How far along the paper is: how many answer places have something in them. */
+  const progress = () => {
+    const slots = [...sheet.querySelectorAll(ALL.join(", "))];
+    const filled = slots.filter((slot) => {
+      const v = valueOf(slot);
+      return v !== "" && v !== -1 && v !== null && v !== undefined;
+    }).length;
+    return { filled, total: slots.length };
+  };
+
   const save = () => {
     clearTimeout(saving);
-    saving = setTimeout(() => { try { localStorage.setItem(`wb-live:${key}`, JSON.stringify(store)); } catch { /* private window */ } }, 250);
+    saving = setTimeout(() => {
+      try { localStorage.setItem(`wb-live:${key}`, JSON.stringify(store)); } catch { /* private window */ }
+      /* …and say how far along it is, for anyone watching. Every change comes
+         through here and it is already waiting a quarter second, so a watcher
+         is fed at the speed a person types rather than the speed a key
+         repeats. */
+      if (onProgress) { try { onProgress(progress()); } catch { /* the page's business */ } }
+    }, 250);
   };
   const load = () => {
     try { return JSON.parse(localStorage.getItem(`wb-live:${key}`) || "{}") || {}; } catch { return {}; }

@@ -31,3 +31,63 @@
 .wp-num { font-family: var(--font-mono, "JetBrains Mono", monospace); white-space: nowrap; }
 .wp-small { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; }
 .wp-results .pp-btn { margin-top: 0.3rem; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WATCHING, LIVE
+   Who is on the paper now and how far along — a glance at a class working,
+   not a second marking screen. The marks below are the record.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wp-live {
+  margin: 0 0 1.4rem;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--surface-primary, #fffdf8);
+  border: var(--border-subtle);
+  border-radius: 0.7rem;
+}
+.wp-live__cap {
+  margin: 0 0 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b645a);
+}
+.wp-live__none { margin: 0; font-size: 0.9rem; color: var(--text-secondary, #55504a); }
+
+.wp-live__one {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0;
+}
+.wp-live__one + .wp-live__one { border-top: 1px dashed var(--border-subtle-color, rgba(42, 39, 35, 0.14)); }
+.wp-live__one b { flex: 0 0 9rem; font-size: 0.92rem; }
+
+.wp-live__bar {
+  flex: 1 1 6rem;
+  height: 7px;
+  min-width: 4rem;
+  background: rgba(42, 39, 35, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.wp-live__bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent, #f4c95d);
+  transition: width 0.3s ease;
+}
+.wp-live__pct { flex: 0 0 auto; font-size: 0.8rem; color: var(--text-secondary, #55504a); }
+.wp-live__marked {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1c6b3a;
+}
+
+@media (max-width: 560px) {
+  .wp-live__one { flex-wrap: wrap; }
+  .wp-live__one b { flex-basis: 100%; }
+}

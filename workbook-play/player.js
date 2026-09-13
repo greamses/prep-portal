@@ -19,7 +19,8 @@
 
 import { renderWorkbook } from "/utils/components/workbook/engine.js";
 import { mountInteractive } from "/utils/components/workbook/interactive.js";
-import { api } from "/utils/components/workbook/account.js";
+import { api, currentUser } from "/utils/components/workbook/account.js";
+import { openRoom, idFor } from "/utils/live/index.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -125,6 +126,35 @@ async function start() {
   fit();
   window.addEventListener("resize", fit);
 
+  /* ── watching, live ─────────────────────────────────────────────────────
+     The student's paper says how far along it is as they work; the teacher who
+     set it watches the same room. Nothing here is the SCORE — that still goes
+     through /api/workbooks/a/:code/result and lives in Firestore. This is the
+     chatty half: where somebody is up to, worth seconds, never worth storing.
+
+     Until the Realtime Database exists this is the memory transport, so it
+     joins, throttles and merges exactly as it will, and reaches no further
+     than this tab. See utils/live/index.js. */
+  /* NOT awaited. currentUser() settles when Firebase answers, and if Firebase
+     never answers it never settles — awaiting it here held up the whole paper
+     behind a question nobody needs answered to start working. The room turns
+     up when it turns up; everything that uses it says `room?`. */
+  let room = null;
+  let me = null;
+  (async () => {
+    me = await currentUser().catch(() => null);
+    room = await openRoom({
+      ns: "wb",
+      code,
+      role: a.owner ? "teacher" : "student",
+      me: { id: idFor(me?.uid), name: me?.displayName || "Someone" },
+    }).catch(() => null);
+    if (!room) return;
+    room.presence.set({ on: a.owner ? "watching" : "the paper" });
+    window.addEventListener("pagehide", () => { room.leave(); });
+    if (a.owner) watchTheRoom(room);
+  })();
+
   let saving = null;
   const live = mountInteractive({
     sheet: $("wb-sheet"),
@@ -135,7 +165,12 @@ async function start() {
     protractor: LIVE.protractor,
     places: LIVE.places || "",
     locked: true,
+    /* as they work: how far along, for whoever is watching */
+    onProgress: ({ filled, total }) => {
+      room?.state.patch({ [room.id]: { name: me?.displayName || "Someone", filled, total } });
+    },
     onCheck: ({ right, total }) => {
+      room?.state.patch({ [room.id]: { name: me?.displayName || "Someone", right, marked: total } });
       if (a.owner) { say("This is your own assignment — your score is not recorded."); return; }
       clearTimeout(saving);
       saving = setTimeout(() => {
@@ -149,6 +184,48 @@ async function start() {
   live.enter();
   say(a.owner ? "" : "Your answers are kept on this device until you check them.");
   if (a.owner) showResults();
+}
+
+/**
+ * The teacher's live view: who is on the paper now, and how far along.
+ *
+ * Deliberately thin. It is a glance at a class working, not a second marking
+ * screen — the marks are below, and they are the record.
+ */
+function watchTheRoom(room) {
+  const box = document.createElement("section");
+  box.className = "wp-live";
+  box.innerHTML = `<h2 class="wp-live__cap">Working now</h2><div class="wp-live__who"></div>`;
+  const results = document.querySelector(".wp-results") || document.querySelector("main");
+  results?.prepend(box);
+  const list = box.querySelector(".wp-live__who");
+
+  let here = [];
+  let work = {};
+
+  const paint = () => {
+    const others = here.filter((p) => p.role === "student");
+    if (!others.length) {
+      list.innerHTML = `<p class="wp-live__none">Nobody is on it at the moment.</p>`;
+      return;
+    }
+    list.innerHTML = others.map((p) => {
+      const w = work[p.id] || {};
+      const done = w.total ? Math.round((w.filled / w.total) * 100) : 0;
+      const marked = w.right !== undefined && w.marked
+        ? `<em class="wp-live__marked">checked: ${w.right} of ${w.marked}</em>` : "";
+      return `<div class="wp-live__one">`
+        + `<b>${esc(w.name || p.name)}</b>`
+        + `<span class="wp-live__bar"><i style="width:${done}%"></i></span>`
+        + `<span class="wp-live__pct">${w.total ? `${w.filled} of ${w.total}` : "just arrived"}</span>`
+        + marked
+        + `</div>`;
+    }).join("");
+  };
+
+  room.on("presence", (people) => { here = people; paint(); });
+  room.on("state", (s) => { work = s || {}; paint(); });
+  paint();
 }
 
 start();
