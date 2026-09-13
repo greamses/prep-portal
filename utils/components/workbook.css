@@ -1688,8 +1688,57 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   outline: none;
 }
 .wb-tool:active { cursor: grabbing; }
+/* An instrument laid on the paper is its drawing and no bigger. It shares the
+   .wb-tool name with the panel tools (the chart), and those are pinned to
+   `height: 100%` of their panel — which, on an instrument, made the ruler's
+   invisible box reach far down the page and swallow every press under it:
+   pencil lines, answer boxes, blocks. */
+.wb-tool[class*="wb-tool--"] { display: block; width: auto; height: auto; min-height: 0; }
 .wb-tool.is-top { z-index: 21; }
 .wb-tool svg { display: block; }
+/* ── the compass ───────────────────────────────────────────────────────────
+   Its box is as wide as the widest it can open, and most of that box is empty
+   paper. Only the legs, the hinge and the two handles take a press; the rest
+   lets it through, so the compass never sits on top of a question it is not
+   touching. */
+.wb-tool.wb-tool--compass { pointer-events: none; opacity: 0.96; }
+.wb-tool--compass svg line,
+.wb-tool--compass svg circle { pointer-events: visiblePainted; }
+.wb-tool--compass .wb-tool__close { pointer-events: auto; }
+/* the red top: twist it and the pencil draws */
+.wb-compass__head {
+  position: absolute;
+  width: 8mm;
+  height: 8mm;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: grab;
+}
+/* the pencil end: drag it out or in to set the opening */
+.wb-compass__pencil {
+  position: absolute;
+  width: 6mm;
+  height: 6mm;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 0.4mm dashed rgba(42, 39, 35, 0.55);
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+.wb-compass__r {
+  position: absolute;
+  padding: 0.3mm 1.2mm;
+  font: 700 7.5pt/1 "JetBrains Mono", monospace;
+  color: #2a2723;
+  background: rgba(255, 253, 248, 0.92);
+  border-radius: 1mm;
+  white-space: nowrap;
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+@media print { .wb-compass__r { display: none; } }
+
 /* placed by interactive.js at the instrument's own knob point */
 .wb-tool__knob {
   position: absolute;

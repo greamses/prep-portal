@@ -19,7 +19,7 @@
    ========================================================================== */
 
 import { judge, placesOf, sayWant } from "./want.js";
-import { instruments, TOOL_ICONS } from "./instruments.js";
+import { instruments, TOOL_ICONS, compassSvg, hingeRise, COMPASS } from "./instruments.js";
 import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
@@ -1471,6 +1471,61 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   /** How near a stroke has to pass to be rubbed out, in millimetres. */
   const RUB_MM = 2.6;
 
+  /* ── a pencil against a ruler ───────────────────────────────────────────
+     Start a line within RULE_SNAP_MM of a straight edge — the ruler's, either
+     square edge of the set square, the protractor's baseline — and the pencil
+     is held against that edge for the whole stroke: the line comes out dead
+     straight and exactly along it, from wherever it was started to wherever
+     the hand stops, and never past either end of the edge. That is what a
+     ruler is FOR, and without it a line "drawn with the ruler" on screen was a
+     wobble next to one.
+
+     Only at the start of a stroke. A line begun out in the open is freehand
+     all the way, even if it wanders past a ruler — being yanked onto an edge
+     halfway through a drawing is not help. */
+  const RULE_SNAP_MM = 4;
+
+  /** Every straight edge laid on the paper, in window pixels. */
+  function straightEdges() {
+    const sr = scaler.getBoundingClientRect();
+    const z = zoom();
+    const all = [];
+    Object.values(out).forEach((t) => (t.spec.rules || []).forEach((r) => {
+      const a = ((t.st.rot + r.deg) * Math.PI) / 180;
+      all.push({
+        cx: sr.left + t.st.x * z,
+        cy: sr.top + t.st.y * z,
+        ux: Math.cos(a),
+        uy: Math.sin(a),
+        from: r.from * MM * z,
+        to: r.to * MM * z,
+      });
+    }));
+    return all;
+  }
+
+  /** The edge this point is close enough to be pulled onto, if any. */
+  function edgeNear(x, y) {
+    const reach = RULE_SNAP_MM * MM * zoom();
+    let best = null;
+    let bestD = reach;
+    straightEdges().forEach((e) => {
+      const dx = x - e.cx;
+      const dy = y - e.cy;
+      const along = dx * e.ux + dy * e.uy;
+      if (along < e.from - reach || along > e.to + reach) return;
+      const d = Math.abs(dy * e.ux - dx * e.uy);
+      if (d <= bestD) { bestD = d; best = e; }
+    });
+    return best;
+  }
+
+  /** The point on the edge nearest to (x, y), kept between its two ends. */
+  function onEdge(e, x, y) {
+    const t = Math.max(e.from, Math.min(e.to, (x - e.cx) * e.ux + (y - e.cy) * e.uy));
+    return { x: e.cx + t * e.ux, y: e.cy + t * e.uy };
+  }
+
   function wireScribbling(page) {
     const svg = scribbles(page);
     if (svg.__wbBound) return;
@@ -1497,7 +1552,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       svg.setPointerCapture(e.pointerId);
       const p = at(e);
       if (holding === "eraser") { cur = "rubbing"; if (rub(p)) { paintScribbles(page); save(); } return; }
-      cur = [p];
+      const edge = edgeNear(e.clientX, e.clientY);
+      if (edge) {
+        const q = onEdge(edge, e.clientX, e.clientY);
+        cur = [svgPoint(svg, q.x, q.y).map((v) => +v.toFixed(2))];
+        cur.edge = edge;
+      } else {
+        cur = [p];
+      }
       line = document.createElementNS(SVGNS, "polyline");
       svg.appendChild(line);
     });
@@ -1506,6 +1568,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (!cur) return;
       const p = at(e);
       if (cur === "rubbing") { if (rub(p)) { paintScribbles(page); save(); } return; }
+      if (cur.edge) {
+        /* against the edge: one straight line from where it started to here */
+        const q = onEdge(cur.edge, e.clientX, e.clientY);
+        cur.length = 1;
+        cur.push(svgPoint(svg, q.x, q.y).map((v) => +v.toFixed(2)));
+        line.setAttribute("points", cur.map((c) => c.join(",")).join(" "));
+        return;
+      }
       const q = cur[cur.length - 1];
       /* a tenth of a millimetre of travel before a point is kept: without it a
          still hand lays hundreds of points on one spot */
@@ -1516,7 +1586,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     const end = () => {
       if (!cur) return;
-      if (cur !== "rubbing" && cur.length > 1) strokesOn(page).push(cur);
+      if (cur !== "rubbing" && cur.length > 1) strokesOn(page).push([...cur]);
       cur = null;
       line = null;
       paintScribbles(page);
@@ -1859,7 +1929,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        without being told to, and the measuring tools are behind it. */
     { id: "draw", label: "Drawing", of: [
       asMode("pencil"), asMode("eraser"),
-      asTool("ruler"), asTool("protractor"), asTool("setsquare"),
+      asTool("compass"), asTool("ruler"), asTool("protractor"), asTool("setsquare"),
     ] },
     { id: "work", label: "Working out", of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
     /* No abacus of its own: the three frames are on the Manipulatives canvas,
@@ -2126,9 +2196,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const el = document.createElement("div");
     el.className = `wb-tool wb-tool--${spec.id}`;
     el.tabIndex = 0;
-    el.setAttribute("aria-label", `${spec.label}. Drag to move, drag the round knob to turn; the arrow keys turn it by a degree.`);
+    el.setAttribute("aria-label", spec.compass
+      ? "Compass. Drag a leg to move it, drag the pencil to open or close it, twist the red top to draw; plus and minus change the opening by a millimetre."
+      : `${spec.label}. Drag to move, drag the round knob to turn; the arrow keys turn it by a degree.`);
     el.innerHTML = spec.svg +
-      `<span class="wb-tool__knob" title="Turn"></span>` +
+      (spec.knob ? `<span class="wb-tool__knob" title="Turn"></span>` : "") +
+      (spec.compass
+        ? `<span class="wb-compass__head" title="Twist the top to draw"></span>`
+          + `<span class="wb-compass__pencil" title="Drag the pencil to open or close"></span>`
+          + `<span class="wb-compass__r"></span>`
+        : "") +
       `<button type="button" class="wb-tool__close" title="Put it away" aria-label="Put the ${spec.label.toLowerCase()} away">${TOOL_ICONS.close}</button>` +
       (spec.readout ? `<span class="wb-tool__deg"></span>` : "");
     scaler.appendChild(el);
@@ -2140,10 +2217,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     close.addEventListener("click", (e) => { e.stopPropagation(); toggleTool(spec.id); });
     const px = spec.pivot.map((v) => v * MM);
     /* the direction the knob lies in from the pivot, on the tool itself */
-    const knobAt = (Math.atan2(spec.knob[1] - spec.pivot[1], spec.knob[0] - spec.pivot[0]) * 180) / Math.PI;
+    const knobAt = spec.knob
+      ? (Math.atan2(spec.knob[1] - spec.pivot[1], spec.knob[0] - spec.pivot[0]) * 180) / Math.PI
+      : 0;
     const knob = el.querySelector(".wb-tool__knob");
-    knob.style.left = `${spec.knob[0] * MM}px`;
-    knob.style.top = `${spec.knob[1] * MM}px`;
+    if (knob) {
+      knob.style.left = `${spec.knob[0] * MM}px`;
+      knob.style.top = `${spec.knob[1] * MM}px`;
+    }
     el.style.transformOrigin = `${px[0]}px ${px[1]}px`;
 
     /* Out where the reader is looking — under the pinned tools at the top of
@@ -2158,12 +2239,33 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       y: (top - sr.top) / z + 40 + k * 70 + px[1],
       rot: 0,
       on: null,
+      r: COMPASS.START,          // the compass's opening, in mm
+      drawnR: COMPASS.START,
     };
     const t = { el, st, spec };
     const place = () => {
       el.style.left = `${st.x - px[0]}px`;
       el.style.top = `${st.y - px[1]}px`;
       el.style.transform = `rotate(${st.rot}deg)`;
+      if (spec.compass) {
+        /* a different opening is a different drawing */
+        if (st.drawnR !== st.r) {
+          el.querySelector(":scope > svg").outerHTML = compassSvg(st.r);
+          st.drawnR = st.r;
+        }
+        const base = COMPASS.PAD + hingeRise(0);
+        const head = el.querySelector(".wb-compass__head");
+        head.style.left = `${(COMPASS.PAD + st.r / 2) * MM}px`;
+        head.style.top = `${(base - hingeRise(st.r)) * MM}px`;
+        const pen = el.querySelector(".wb-compass__pencil");
+        pen.style.left = `${(COMPASS.PAD + st.r) * MM}px`;
+        pen.style.top = `${base * MM}px`;
+        const said = el.querySelector(".wb-compass__r");
+        said.style.left = `${(COMPASS.PAD + st.r) * MM}px`;
+        said.style.top = `${(base + 4) * MM}px`;
+        said.style.transform = `translateX(-50%) rotate(${-st.rot}deg)`;
+        said.textContent = `${(st.r / 10).toFixed(1)} cm`;
+      }
       const deg = el.querySelector(".wb-tool__deg");
       if (deg) {
         const d = ((st.rot % 360) + 360) % 360;
@@ -2175,6 +2277,74 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     let mode = null;
     let from = null;
+
+    /* ── drawing with the compass ────────────────────────────────────────
+       Twisting the top turns the compass about its needle, and its pencil
+       lays the arc onto the page the needle is standing on — into the same
+       layer the pencil draws on, so the eraser rubs an arc out like any other
+       line and it is saved with the rest. Between two positions of the hand
+       the arc is filled in every two degrees, so a quick twist is still a
+       curve and not a handful of chords. */
+    let arc = null;
+
+    const pivotOnScreen = () => {
+      const s2 = scaler.getBoundingClientRect();
+      const z2 = zoom();
+      return { x: s2.left + st.x * z2, y: s2.top + st.y * z2, z: z2 };
+    };
+
+    const nibAt = (deg) => {
+      const c = pivotOnScreen();
+      const a = (deg * Math.PI) / 180;
+      return { x: c.x + Math.cos(a) * st.r * MM * c.z, y: c.y + Math.sin(a) * st.r * MM * c.z };
+    };
+
+    function startArc(e) {
+      const c = pivotOnScreen();
+      const inside = (pt) => [...sheet.querySelectorAll(".wb-page")].find((pg) => {
+        const r = pg.getBoundingClientRect();
+        return pt.x >= r.left && pt.x <= r.right && pt.y >= r.top && pt.y <= r.bottom;
+      });
+      const page = inside(c) || inside(nibAt(st.rot));
+      const aim = (Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180) / Math.PI;
+      arc = { page, aim, pts: [], line: null, svg: null };
+      if (!page) return;
+      arc.svg = scribbles(page);
+      wireScribbling(page);
+      arc.line = document.createElementNS(SVGNS, "polyline");
+      arc.svg.appendChild(arc.line);
+      addNib(st.rot);
+    }
+
+    function addNib(deg) {
+      if (!arc?.svg) return;
+      const n = nibAt(deg);
+      const p = svgPoint(arc.svg, n.x, n.y).map((v) => +v.toFixed(2));
+      const q = arc.pts[arc.pts.length - 1];
+      if (q && Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.25) return;
+      arc.pts.push(p);
+      arc.line.setAttribute("points", arc.pts.map((c) => c.join(",")).join(" "));
+    }
+
+    function swingArc(e) {
+      const c = pivotOnScreen();
+      const aim = (Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180) / Math.PI;
+      const turn = angleDiff(aim, arc.aim);
+      arc.aim = aim;
+      const steps = Math.max(1, Math.ceil(Math.abs(turn) / 2));
+      for (let i = 1; i <= steps; i++) addNib(st.rot + (turn * i) / steps);
+      st.rot += turn;
+    }
+
+    function endArc() {
+      if (arc?.page && arc.pts.length > 1) {
+        strokesOn(arc.page).push(arc.pts);
+        save();
+      }
+      if (arc?.page) paintScribbles(arc.page);
+      arc = null;
+    }
+
     el.addEventListener("pointerdown", (e) => {
       /* a press on the × is a click on the ×, not the start of a drag */
       if (e.target.closest(".wb-tool__close")) return;
@@ -2184,7 +2354,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       /* the one picked up goes on top */
       Object.values(out).forEach((o) => o.el.classList.toggle("is-top", o === t));
       mode = e.target.classList.contains("wb-tool__knob") ? "turn" : "move";
+      if (spec.compass && e.target.closest(".wb-compass__head")) mode = "swing";
+      if (spec.compass && e.target.closest(".wb-compass__pencil")) mode = "open";
       from = { px: e.clientX, py: e.clientY, x: st.x, y: st.y };
+      if (mode === "swing") startArc(e);
     });
     el.addEventListener("pointermove", (e) => {
       if (!mode) return;
@@ -2193,6 +2366,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         st.x = from.x + (e.clientX - from.px) / z2;
         st.y = from.y + (e.clientY - from.py) / z2;
         st.on = null;
+      } else if (mode === "swing") {
+        swingArc(e);
+      } else if (mode === "open") {
+        /* the pencil leg follows the hand: how far out, and which way */
+        const s2 = scaler.getBoundingClientRect();
+        const dx = e.clientX - (s2.left + st.x * z2);
+        const dy = e.clientY - (s2.top + st.y * z2);
+        st.r = Math.max(COMPASS.MIN, Math.min(COMPASS.MAX, Math.round(Math.hypot(dx, dy) / (MM * z2))));
+        st.rot = (Math.atan2(dy, dx) * 180) / Math.PI;
       } else {
         const s2 = scaler.getBoundingClientRect();
         /* point the knob at the pointer */
@@ -2201,6 +2383,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       place();
     });
     el.addEventListener("pointerup", () => {
+      if (mode === "swing") endArc();
       if (mode === "move") {
         let d = SNAP_MM * MM * 1.4;
         st.on = null;
@@ -2218,6 +2401,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       const step = e.shiftKey ? 5 : 1;
       if (e.key === "ArrowLeft") { st.rot -= step; place(); e.preventDefault(); }
       if (e.key === "ArrowRight") { st.rot += step; place(); e.preventDefault(); }
+      if (spec.compass && (e.key === "+" || e.key === "=" || e.key === "-")) {
+        st.r = Math.max(COMPASS.MIN, Math.min(COMPASS.MAX, st.r + (e.key === "-" ? -step : step)));
+        place();
+        e.preventDefault();
+      }
       if (e.key === "Delete" || e.key === "Backspace") { toggleTool(spec.id); e.preventDefault(); }
     });
     return t;

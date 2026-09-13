@@ -38,6 +38,7 @@ export const TOOL_ICONS = {
   close: glyph(`<path d="M7 7l10 10M17 7 7 17"/>`),
   /* A pencil, nib down the way it is held; and an eraser, the block with the
      sleeve round it that every school one has. */
+  compass: glyph(`<circle cx="12" cy="5.2" r="1.9"/><path d="M11.1 6.9 6.2 20"/><path d="m12.9 6.9 4.9 13.1"/><path d="M8.3 14.4h7.4"/><path d="m17.8 20 .6 1.4"/>`),
   pencil: glyph(`<path d="M4 20l1.2-4.2L16 5a2.1 2.1 0 0 1 3 3L8.2 18.8Z"/><path d="M14.2 6.8 17.2 9.8"/><path d="m5.2 15.8 3 3"/>`),
   eraser: glyph(`<path d="m9 19-5-5a1.6 1.6 0 0 1 0-2.3l7.4-7.4a1.6 1.6 0 0 1 2.3 0l4.7 4.7a1.6 1.6 0 0 1 0 2.3L15 19Z"/><path d="M9 19h10.5"/><path d="m7.6 10.6 5.8 5.8"/>`),
   /* A ruled chart: the band across the top, then the columns a figure stands
@@ -128,6 +129,62 @@ function setSquareSvg() {
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm" role="img" aria-label="A 45 degree set square">${body}</svg>`;
 }
 
+/* ── the compass ───────────────────────────────────────────────────────────
+   Two legs hinged at the top: a needle on one, a pencil on the other. It
+   draws with its OWN pencil — nothing has to be picked up off the rail first —
+   because that is what a compass is: set the opening, put the needle down,
+   twist the top, and the circle is the compass's doing, not the child's hand.
+
+   Drawn from above and a little in front, so the hinge stands up between the
+   two points. The picture is redrawn whenever the opening changes, which is
+   why this one is a function of the radius and not a fixed drawing. */
+
+export const COMPASS = {
+  PAD: 8,            // mm of room round the two points
+  LEG: 70,           // mm, each leg
+  MIN: 5,            // mm, the narrowest it will close to
+  MAX: 130,          // mm, the widest it will open
+  START: 40,         // mm, how wide it comes out of the box
+  RISE: 0.3,         // how much of the hinge's height shows from this angle
+};
+
+/** How high the hinge stands, in the drawing, for an opening of r mm. */
+export function hingeRise(r) {
+  const half = Math.min(r / 2, COMPASS.LEG - 1);
+  return COMPASS.RISE * Math.sqrt(COMPASS.LEG * COMPASS.LEG - half * half);
+}
+
+/** The compass opened to r millimetres: needle at the pivot, pencil r to its right. */
+export function compassSvg(r) {
+  const { PAD, MAX } = COMPASS;
+  const top = PAD + hingeRise(0);          // the pivot sits under the tallest hinge
+  const W = PAD + MAX + PAD + 4;
+  const H = top + PAD;
+  const N = [PAD, top];
+  const P = [PAD + r, top];
+  const Hg = [PAD + r / 2, top - hingeRise(r)];
+  /* the pencil: the last 13 mm of the right leg, butter yellow with a dark tip */
+  const len = Math.hypot(P[0] - Hg[0], P[1] - Hg[1]) || 1;
+  const back = Math.min(13, len * 0.45);
+  const B = [P[0] - ((P[0] - Hg[0]) / len) * back, P[1] - ((P[1] - Hg[1]) / len) * back];
+  const T = [P[0] - ((P[0] - Hg[0]) / len) * 2.2, P[1] - ((P[1] - Hg[1]) / len) * 2.2];
+  const leg = (a, b, w, c) =>
+    `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const body =
+    /* needle leg */
+    leg(Hg, N, 2.6, INK) + leg(Hg, N, 1.6, "#9aa6b4") +
+    `<circle cx="${f(N[0])}" cy="${f(N[1])}" r="1.1" fill="#fffdf8" stroke="${INK}" stroke-width="0.4"/>` +
+    `<circle cx="${f(N[0])}" cy="${f(N[1])}" r="0.35" fill="#c0453f"/>` +
+    /* pencil leg */
+    leg(Hg, B, 2.6, INK) + leg(Hg, B, 1.6, "#9aa6b4") +
+    leg(B, T, 3.2, INK) + leg(B, T, 2.3, "#f4c95d") +
+    leg(T, P, 1.2, INK) +
+    /* the hinge and the handle on top of it */
+    `<circle cx="${f(Hg[0])}" cy="${f(Hg[1])}" r="3.1" fill="#c0453f" stroke="${INK}" stroke-width="0.5"/>` +
+    `<circle cx="${f(Hg[0])}" cy="${f(Hg[1])}" r="1" fill="#fffdf8"/>`;
+  return `<svg viewBox="0 0 ${f(W)} ${f(H)}" width="${f(W)}mm" height="${f(H)}mm" role="img" aria-label="A pair of compasses opened to ${f(r / 10)} centimetres">${body}</svg>`;
+}
+
 /* ── the protractor, whatever the workbook printed ─────────────────────────*/
 
 function protractorSpec(svg) {
@@ -143,6 +200,8 @@ function protractorSpec(svg) {
     /* top right: the angle it is turned to is shown top left */
     close: [vb[2] - 4, 4],
     edges: [{ deg: 0, both: true }],
+    /* the straight edges a pencil can be run along, in mm from the pivot */
+    rules: [{ deg: 0, from: -pivot[0], to: vb[2] - pivot[0] }],
     readout: true,
   };
 }
@@ -164,6 +223,7 @@ export function instruments({ protractor = null } = {}) {
     /* just past the far end of the ruler */
     close: [RULER_END * 2 + len + 4, 7.5],
     edges: [{ deg: 0, both: false }],
+    rules: [{ deg: 0, from: -RULER_END, to: len + RULER_END }],
     readout: false,
   }];
   if (protractor) out.push(protractorSpec(protractor));
@@ -176,7 +236,21 @@ export function instruments({ protractor = null } = {}) {
     /* up by the top corner, where the triangle is narrow and nothing is printed */
     close: [SQ_PAD + 6, SQ_PAD + 16],
     edges: [{ deg: 0, both: false }, { deg: -90, both: false }],
+    rules: [{ deg: 0, from: 0, to: SQ_LEG }, { deg: -90, from: 0, to: SQ_LEG }],
     readout: false,
+  });
+  const top = COMPASS.PAD + hingeRise(0);
+  out.push({
+    id: "compass",
+    label: "Compass",
+    svg: compassSvg(COMPASS.START),
+    pivot: [COMPASS.PAD, top],
+    knob: null,
+    close: [COMPASS.PAD, top + 5.5],
+    edges: [],
+    rules: [],
+    readout: false,
+    compass: true,
   });
   return out;
 }
