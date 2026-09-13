@@ -1758,6 +1758,66 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 }
 @media print { .wb-blocksay { display: none !important; } }
 
+/* ── the block in your hand ────────────────────────────────────────────────
+   A picked block, and the strip of moves that belongs to it. On screen only:
+   none of it is on the paper, and the paper's height must not change when a
+   block is picked up — the questions were paginated at the height they print
+   at, so the strip is laid OVER the picture's corner rather than under it. */
+.wb-live svg[data-blocks] .pv-piece { cursor: pointer; }
+.wb-live svg[data-blocks] .pv-piece.is-picked rect,
+.wb-live svg[data-blocks] .pv-piece.is-picked polygon {
+  stroke: #1f4f86;
+  stroke-width: 2.6;
+}
+.wb-blockbar {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 4;
+  display: flex;
+  gap: 1.2mm;
+  margin-top: 1mm;
+  white-space: nowrap;
+}
+.wb-blockbar[hidden] { display: none; }
+.wb-blockbar__key,
+.wb-pilejoin {
+  font: 600 7pt/1.2 var(--font-mono, "JetBrains Mono", monospace);
+  padding: 1mm 2mm;
+}
+
+/* On a block sum the host is the PAIR of piles, which is a flex row — so the
+   word under the pile and the strip of moves are lifted out of that row and
+   stacked under the picture, the say first because it is one short line. */
+.ms-piles > .wb-blocksay {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 1mm;
+}
+.ms-piles > .wb-blockbar { margin-top: 5.5mm; }
+
+/* "Push them together", on an addition drawn in blocks */
+.wb-pilejoin {
+  align-self: flex-end;
+  margin-left: 3mm;
+}
+.wb-pilejoin[hidden] { display: none; }
+/* …and once they are together there is one pile, so the second box and the
+   plus between them have nothing left to say. The empty one is NAMED rather
+   than reached for by position: the bar, the strip and the key are siblings of
+   the piles, so ":last-of-type" would pick one of those. */
+.ms-piles.is-joined > .ms-piles__op,
+.ms-piles > .ms-piles__one.is-empty { display: none; }
+
+@media print {
+  .wb-blockbar, .wb-pilejoin { display: none !important; }
+  /* a pile pushed together is a thing done on screen; the paper prints the
+     question as it was set */
+  .ms-piles.is-joined > .ms-piles__op,
+  .ms-piles > .ms-piles__one.is-empty { display: revert !important; }
+}
+
 /* colouring parts in, crossing them out */
 .wb-live svg[data-colourable] [data-part] { cursor: pointer; }
 .wb-live svg[data-colourable="fill"] [data-part]:not([data-shaded]):hover { fill-opacity: 0.8; stroke-width: 0.8; }
@@ -1777,8 +1837,8 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-matchline.is-wrong { stroke: #c0453f; }
 
 @media print {
-  .wb-tool, .wb-drawbar, .wb-want, .wb-livebar, .wb-live-toggle,
-  .wb-side, .wb-panel { display: none !important; }
+  .wb-tool, .wb-drawbar, .wb-blockbar, .wb-pilejoin, .wb-want, .wb-livebar,
+  .wb-live-toggle, .wb-side, .wb-panel { display: none !important; }
   /* the labels are a thing you switch on to read the screen with, never paper */
   .wb-fig__p::before, .wb-fig__d::before { content: none !important; }
   .wb-fig { margin-top: 0 !important; }

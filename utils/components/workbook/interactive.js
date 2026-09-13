@@ -206,6 +206,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     if (blocks) {
       node.querySelectorAll("svg[data-blocks]:not([data-still])")
         .forEach((svg, k) => makeBlocks(node, idx, svg, k));
+      makeJoinable(node, idx);
     }
 
     (keyOf(node) || []).forEach((e) => {
@@ -222,7 +223,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-colourable]").forEach((v) => v.removeAttribute("data-colourable"));
     node.querySelectorAll("[data-pen]").forEach((v) => v.removeAttribute("data-pen"));
     node.querySelectorAll(".wb-match li").forEach((li) => { li.onclick = null; li.classList.remove("is-picked"); });
-    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
+    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-blockbar, .wb-pilejoin, .wb-blocksay, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
+    node.querySelectorAll(".ms-piles.is-joined").forEach((v) => v.classList.remove("is-joined"));
+    node.querySelectorAll(".ms-piles__one.is-empty").forEach((v) => v.classList.remove("is-empty"));
+    node.querySelectorAll(".pv-piece.is-picked").forEach((v) => v.classList.remove("is-picked"));
     node.querySelectorAll("svg[data-stickable]").forEach((s) => s.removeAttribute("data-stickable"));
     node.querySelectorAll("svg[data-paste]").forEach((s) => s.classList.remove("has-stuck", "is-fitted"));
     node.querySelectorAll("[data-corner]").forEach((p) => {
@@ -232,7 +236,18 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       n.classList.remove("is-live", "is-right", "is-wrong", "is-on", "is-want"));
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
     node.querySelectorAll("svg[data-drawable]").forEach((s) => s.removeAttribute("data-drawable"));
-    node.querySelectorAll("svg[data-blocks]").forEach((s) => { if (s.__wbPile) s.innerHTML = s.__wbPile; });
+    node.querySelectorAll("svg[data-blocks]").forEach((s) => {
+      if (!s.__wbPile) return;
+      s.innerHTML = s.__wbPile;
+      /* and at the size it was printed at — the millimetres are attributes,
+         not markup, so putting the pile back without them leaves it at
+         whatever size the last splitting left behind */
+      if (s.__wbBox) {
+        s.setAttribute("viewBox", s.__wbBox.viewBox);
+        if (s.__wbBox.width) s.setAttribute("width", s.__wbBox.width);
+        if (s.__wbBox.height) s.setAttribute("height", s.__wbBox.height);
+      }
+    });
     node.classList.remove("is-marked-right", "is-marked-wrong");
   }
 
@@ -325,6 +340,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       svg.addEventListener("pointerup", (e) => {
         if (from === null) return;
         const lines = rec(idx).lines;
+        const had = lines.length;
         const p = svgPoint(svg, e.clientX, e.clientY);
         if (draw.free) {
           if (Math.hypot(p[0] - from[0], p[1] - from[1]) > 3) {
@@ -338,6 +354,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         from = null;
         ghost?.remove();
         ghost = null;
+        /* only when a line really went down: a press that landed on nothing is
+           not a step to take back */
+        if (lines.length > had) {
+          step(hostOf(svg), () => {
+            rec(idx).lines.pop();
+            svg.__wbPaint();
+            dirty(node);
+            save();
+          });
+        }
         svg.__wbPaint();
         dirty(node);
         save();
@@ -348,10 +374,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     /* Undo and clear sit over the figure's corner, so the question keeps the
        exact height it was paginated at. */
-    drawbar(hostOf(svg), (d) => {
-      const lines = rec(idx).lines;
-      if (d === "undo") lines.pop();
-      if (d === "wipe") lines.length = 0;
+    drawbar(hostOf(svg), () => {
+      rec(idx).lines.length = 0;
       svg.__wbPaint();
       dirty(node);
       save();
@@ -359,22 +383,138 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   }
 
   /* Where the Undo / Clear buttons and the marks for a figure go: the element
-     that holds the figure, shrunk to it. */
+     that holds the figure, shrunk to it.
+
+     `.ms-piles` is the pair of piles in a block sum, and it is named here so
+     that BOTH piles share one host. Without it each pile was its own host and
+     an addition carried two Undos and two Clears, neither of which knew what
+     the other had done. */
   function hostOf(svg) {
-    const host = svg.closest(".gw-art, .wb-art, .rw-art, .pv-art, .mt-art, .mf-art, .ma-art") || svg.parentElement;
+    const host = svg.closest(".ms-piles, .gw-art, .wb-art, .rw-art, .pv-art, .mt-art, .mf-art, .ma-art")
+      || svg.parentElement;
     host.classList.add("wb-drawhost");
     return host;
   }
 
+  /* ── stepping back ──────────────────────────────────────────────────────
+     Undo and Clear belong to the FIGURE, not to whichever tool happened to put
+     them there. A child who breaks a flat into ten rods, takes two of those
+     away and then rings a group has done three things to one picture, and
+     "undo" means the last of them, whichever kind it was.
+
+     Before this the bar was the pen's alone: it stepped back through pen
+     strokes and could not touch the blocks at all, so on the block sums —
+     adding and taking away — Undo and Clear did nothing to the very thing the
+     question asks you to do.
+
+     The list is NOT saved. The work is; the path taken to it is not, and an
+     undo that reached back past a reload would be taking back something the
+     child cannot remember doing. */
+  const steps = new WeakMap();      // host → how to take each move back, in order
+
+  function step(host, back) {
+    if (!host) return;
+    const list = steps.get(host) || [];
+    list.push(back);
+    steps.set(host, list);
+  }
+
+  function stepBack(host) {
+    const list = steps.get(host);
+    const back = list && list.pop();
+    if (back) back();
+    return !!back;
+  }
+
   function drawbar(host, act) {
-    if (host.querySelector(":scope > .wb-drawbar")) return;
-    const tools = document.createElement("span");
-    tools.className = "wb-drawbar";
-    tools.innerHTML =
-      `<button type="button" class="pp-btn wb-tint-3" data-d="undo">Undo</button>` +
-      `<button type="button" class="pp-btn wb-tint-4" data-d="wipe">Clear</button>`;
-    tools.addEventListener("click", (e) => { if (e.target.dataset.d) act(e.target.dataset.d); });
-    host.appendChild(tools);
+    let tools = host.querySelector(":scope > .wb-drawbar");
+    if (!tools) {
+      /* A fresh bar starts a fresh list: `deaden` took the old bar away and
+         `enliven` wires everything again, so the old handlers are gone with
+         the elements they were closed over. */
+      host.__wbWipes = [];
+      steps.delete(host);
+      tools = document.createElement("span");
+      tools.className = "wb-drawbar";
+      tools.innerHTML =
+        `<button type="button" class="pp-btn wb-tint-3" data-d="undo">Undo</button>` +
+        `<button type="button" class="pp-btn wb-tint-4" data-d="wipe">Clear</button>`;
+      tools.addEventListener("click", (e) => {
+        const d = e.target.dataset.d;
+        if (!d) return;
+        if (d === "undo") { stepBack(host); return; }
+        /* Clear means the picture as it was PRINTED — every kind of move on
+           it, not the pen's share of it. */
+        steps.delete(host);
+        (host.__wbWipes || []).forEach((w) => w("wipe"));
+      });
+      host.appendChild(tools);
+    }
+    host.__wbWipes.push(act);
+  }
+
+  /* ── pushing the two piles together ────────────────────────────────────
+     "Push the two piles together" is the first line of what an addition with
+     blocks asks a child to do, and until now it was a sentence with nothing
+     behind it: you could break a block up, but not do the one thing the
+     question opens with. The piles become one, laid out the way every pile
+     here is laid out — biggest first, grouped by size — so that it can be
+     counted.
+
+     It does NOT trade ten ones for a ten. That trade is the regrouping the
+     question is asking for, and a button that did it would be answering. What
+     this does is rearrange, which is all "easy to count" needs.
+
+     Only where there are exactly two piles and the question is an addition.
+     A taking-away is drawn as ONE pile on purpose (see ex-sums.js), and there
+     is nothing to push together. */
+  function makeJoinable(node, idx) {
+    node.querySelectorAll(".ms-piles:not(.ms-piles--sub)").forEach((piles) => {
+      const svgs = [...piles.querySelectorAll("svg[data-blocks]")];
+      if (svgs.length !== 2) return;
+      const [a, b] = svgs.map((v) => v.__wbBlocks);
+      if (!a || !b) return;
+      if (piles.querySelector(":scope > .wb-pilejoin")) return;
+
+      const key = document.createElement("button");
+      key.type = "button";
+      key.className = "pp-sticky pp-note-btn wb-pilejoin";
+      key.textContent = "Push them together";
+      key.title = "Put both piles in one place, sorted by size, so they are easy to count";
+
+      const join = () => {
+        const ca = a.counts();
+        const cb = b.counts();
+        const wasA = ca.slice();
+        const wasB = cb.slice();
+        for (let i = 0; i < wasB.length; i++) ca[i] = (ca[i] || 0) + (wasB[i] || 0);
+        cb.length = 0;
+        show(true);
+        step(hostOf(svgs[0]), () => {
+          const nowA = a.counts();
+          const nowB = b.counts();
+          nowA.length = 0; wasA.forEach((n, i) => { nowA[i] = n; });
+          nowB.length = 0; wasB.forEach((n, i) => { nowB[i] = n; });
+          show(false);
+        });
+      };
+
+      const show = (joined) => {
+        piles.classList.toggle("is-joined", joined);
+        /* Said outright rather than left to CSS to work out which box is the
+           empty one: the bar, the strip and this key are all siblings of the
+           piles now, so ":last-of-type" picks one of THEM. */
+        svgs[1].closest(".ms-piles__one")?.classList.toggle("is-empty", joined);
+        key.hidden = joined;
+        a.paint();
+        b.paint();
+      };
+
+      key.addEventListener("click", join);
+      piles.appendChild(key);
+      /* Clear is the picture as printed, and two piles is how it was printed. */
+      drawbar(hostOf(svgs[0]), () => show(false));
+    });
   }
 
   /* ── colouring parts in (or crossing them out) ─────────────────────────
@@ -603,6 +743,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       const [x, y] = at || [ox + [-44, 44, -22][n % 3], oy - 12];
       st.pieces[i] = { x, y, rot: 0 };
       st.log.push(`p${i}`);
+      step(hostOf(paste), () => {
+        const now = S();
+        now.log.pop();
+        delete now.pieces[i];
+        changed();
+      });
       changed();
     };
 
@@ -739,6 +885,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         if (hit.kind === "new-ray") {
           st.rays.push({ ang: 270, len: 0 });
           st.log.push("r");
+          step(hostOf(paste), () => {
+            const now = S();
+            now.log.pop();
+            now.rays.pop();
+            changed();
+          });
           op = { kind: "ray", k: st.rays.length - 1 };
         } else if (hit.kind === "move") {
           const p = st.pieces[hit.i];
@@ -804,15 +956,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
     }
 
-    /* Undo takes back the last corner laid or line drawn; Clear, everything. */
-    drawbar(hostOf(paste), (d) => {
+    /* Clear takes the whole picture back to how it was printed. Stepping back
+       one move at a time is registered where each move is made — see `step`. */
+    drawbar(hostOf(paste), () => {
       const st = S();
-      if (d === "undo") {
-        const t = st.log.pop();
-        if (t === "r") st.rays.pop();
-        else if (t) delete st.pieces[t.slice(1)];
-      }
-      if (d === "wipe") { st.pieces = {}; st.rays = []; st.log = []; }
+      st.pieces = {};
+      st.rays = [];
+      st.log = [];
       changed();
     });
   }
@@ -863,7 +1013,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         });
         const end = () => {
           if (!cur) return;
-          if (cur.length > 1) strokes().push(cur);
+          if (cur.length > 1) {
+            strokes().push(cur);
+            step(hostOf(svg), () => { strokes().pop(); svg.__wbPenPaint(); save(); });
+          }
           cur = null;
           svg.__wbPenPaint();
           save();
@@ -873,9 +1026,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       }
       const penHost = hostOf(svg);
       penHost.classList.add("is-pen-host");
-      drawbar(penHost, (d) => {
-        if (d === "undo") strokes().pop();
-        if (d === "wipe") strokes().length = 0;
+      drawbar(penHost, () => {
+        strokes().length = 0;
         svg.__wbPenPaint();
         save();
       });
@@ -896,9 +1048,21 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      worth, never about where it sits. */
 
   function makeBlocks(node, idx, svg, k) {
+    const host = hostOf(svg);
     const base = Number(svg.dataset.blocks) || 10;
     const canTake = svg.hasAttribute("data-take");
-    if (!svg.__wbPile) svg.__wbPile = svg.innerHTML;      // the pile as it was set
+    if (!svg.__wbPile) {
+      svg.__wbPile = svg.innerHTML;                       // the pile as it was set
+      /* …and the box it was set at. A pile is measured in millimetres on the
+         paper, and those live in attributes rather than in the markup, so
+         putting the pile back without them leaves it at whatever size the last
+         splitting left behind. */
+      svg.__wbBox = {
+        viewBox: svg.getAttribute("viewBox"),
+        width: svg.getAttribute("width"),
+        height: svg.getAttribute("height"),
+      };
+    }
 
     /* What the pile is holding now, by place. Kept per question, so leaving
        and coming back finds it as it was left — and a rebuild of the paper
@@ -965,9 +1129,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
            paper — so a press that lands on a BLOCK must not also start a line. */
         g.addEventListener("pointerdown", (ev) => ev.stopPropagation());
         g.addEventListener("dblclick", (ev) => { ev.preventDefault(); split(place); });
-        g.addEventListener("click", (ev) => { ev.preventDefault(); if (canTake) take(place); });
+        g.addEventListener("click", (ev) => { ev.preventDefault(); pick(g, place); });
         g.addEventListener("keydown", (ev) => {
-          if (ev.key === "Enter") { ev.preventDefault(); split(place); }
+          if (ev.key === "Enter") { ev.preventDefault(); pick(g, place); }
           if ((ev.key === "Delete" || ev.key === "Backspace") && canTake) { ev.preventDefault(); take(place); }
         });
       });
@@ -975,12 +1139,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     /* One piece of this place becomes `base` of the place below. A unit has no
        place below it and simply does not answer. */
+    /** Put the pile back as it was before this move, and say so no more. */
+    function remember() {
+      const was = counts().slice();
+      step(host, () => {
+        const now = counts();
+        now.length = 0;
+        was.forEach((n, i) => { now[i] = n; });
+        unpick();
+        paint();
+        say(node, "");
+      });
+    }
+
     function split(place) {
       if (place <= 0) return;
       const c = counts();
       if (!c[place]) return;
+      remember();
       c[place] -= 1;
       c[place - 1] = (c[place - 1] || 0) + base;
+      unpick();
       paint();
       say(node, `Broken up — still worth the same.`);
     }
@@ -988,23 +1167,103 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     function take(place) {
       const c = counts();
       if (!c[place]) return;
+      remember();
       c[place] -= 1;
+      unpick();
       paint();
       say(node, "Taken away.");
     }
 
+    /** Back to the pile the question was printed with. */
+    function reset() {
+      const r = rec(idx);
+      delete r.blocks[k];
+      const pen = svg.querySelector(":scope > .wb-pen");
+      svg.innerHTML = svg.__wbPile;
+      if (svg.__wbBox) {
+        svg.setAttribute("viewBox", svg.__wbBox.viewBox);
+        if (svg.__wbBox.width) svg.setAttribute("width", svg.__wbBox.width);
+        if (svg.__wbBox.height) svg.setAttribute("height", svg.__wbBox.height);
+      }
+      if (pen) svg.appendChild(pen);
+      unpick();
+      counts();
+      wire();
+      say(node, "");
+      save();
+    }
+
     /* A word under the pile, so what just happened is said and not only seen. */
-    function say(host, text) {
-      const holder = hostOf(svg);
-      let line = holder.querySelector(":scope > .wb-blocksay");
+    function say(where, text) {
+      let line = host.querySelector(":scope > .wb-blocksay");
       if (!line) {
         line = document.createElement("span");
         line.className = "wb-blocksay";
         line.setAttribute("role", "status");
-        holder.appendChild(line);
+        host.appendChild(line);
       }
       line.textContent = text;
     }
+
+    /* ── the block in your hand ──────────────────────────────────────────
+       Pressing a block picks it UP rather than doing something to it, and what
+       can be done with it appears on a strip under the pile — the same idea as
+       the manipulatives canvas's block bar.
+
+       Breaking a block up was a double-click and nothing said so: the only
+       place it was written down was an aria-label, which is to say nowhere a
+       child would ever find it. A picked block now says what it can do.
+
+       Regroup is offered for any block with a place BELOW it to break into —
+       in base ten that is a rod, a flat or a cube, every block worth ten or
+       more. A unit has nothing below it and is offered nothing. */
+    function unpick() {
+      host.querySelectorAll(".pv-piece.is-picked").forEach((g) => g.classList.remove("is-picked"));
+      const strip = host.querySelector(":scope > .wb-blockbar");
+      if (strip) { strip.hidden = true; strip.innerHTML = ""; }
+    }
+
+    function pick(g, place) {
+      unpick();
+      const worth = Math.pow(base, place);
+      const moves = [];
+      if (place > 0) {
+        moves.push(["regroup", "Regroup",
+          `Break this ${worth} into ${base} ${Math.pow(base, place - 1)}s — still worth the same`]);
+      }
+      if (canTake) moves.push(["take", "Take it away", `Take this ${worth} out of the pile`]);
+      if (!moves.length) return;
+      g.classList.add("is-picked");
+      let strip = host.querySelector(":scope > .wb-blockbar");
+      if (!strip) {
+        strip = document.createElement("span");
+        strip.className = "wb-blockbar";
+        host.appendChild(strip);
+      }
+      strip.innerHTML = moves
+        .map(([m, label, hint]) => `<button type="button" class="pp-sticky pp-note-btn wb-blockbar__key"`
+          + ` data-m="${m}" title="${hint}">${label}</button>`).join("");
+      strip.hidden = false;
+      strip.onclick = (ev) => {
+        const key = ev.target.closest("[data-m]");
+        if (!key) return;
+        if (key.dataset.m === "regroup") split(place);
+        else take(place);
+      };
+    }
+
+    /* A press on bare paper puts the block down again. A press on a BLOCK
+       never reaches here — the piece stops it, so that drawing on the picture
+       and picking a block up stay two different things. */
+    svg.addEventListener("pointerdown", unpick);
+
+    /* Clear puts the pile back as printed; stepping back one move at a time is
+       registered by the moves themselves. */
+    drawbar(host, () => reset());
+
+    /* What the pile holds and how to redraw it, for anything that has to work
+       on two piles at once — see makeJoinable. */
+    svg.__wbBlocks = { counts, paint, reset, host };
 
     counts();
     wire();
