@@ -1827,7 +1827,9 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   position: fixed;
   z-index: 10062;          /* over the rail (10060), under the panels (10070) */
   display: flex;
-  flex-direction: column;
+  /* A ROW, reading away from the rail: the keys are pictures, so a column of
+     them would be a second rail rather than a shelf pulled out of the first. */
+  flex-direction: row;
   gap: 0.25rem;
   padding: 0.35rem;
   background: var(--surface-primary, #fffdf8);
@@ -1839,15 +1841,12 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 
 /* On a narrow screen the rail is a strip along the bottom, so a family opens
    UPWARDS out of it rather than off the side of the window. */
-/* On a narrow screen the rail is a strip along the bottom, so a family opens
-   UPWARDS out of it rather than off the side of the window. */
 @media (max-width: 700px) {
   .wb-side__fly {
     left: 0.5rem !important;
     right: 0.5rem;
     top: auto !important;
     bottom: calc(var(--wb-side-h, 4.5rem) + 8px);
-    flex-direction: row;
     flex-wrap: wrap;
   }
 }
@@ -1899,20 +1898,17 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   }
 }
 
-/* …but a FLYOUT keeps its names. It is a list of things to choose between,
-   and a column of unlabelled pictures is a guessing game. */
-.wb-side__fly .wb-side__btn { display: flex; align-items: center; gap: 0.45rem; }
+/* A flyout is pictures too, and it says its names the same way. The name goes
+   ABOVE the key there rather than beside it: the keys sit in a row, so a name
+   to the right of one would be laid over the next. */
 .wb-side__fly .wb-side__btn em {
-  position: static;
-  transform: none;
-  opacity: 1;
-  padding: 0;
-  background: none;
-  color: inherit;
-  font-family: inherit;
-  font-size: 0.72rem;
-  letter-spacing: 0;
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
 }
+.wb-side__fly .wb-side__btn:hover em,
+.wb-side__fly .wb-side__btn:focus-visible em { opacity: 1; }
 
 /* a studio in a frame of its own */
 .wb-studio {
