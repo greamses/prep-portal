@@ -9,21 +9,18 @@
 #
 # Usage:  npm run deploy
 #
-# Requires CLOUDFLARE_API_TOKEN (and optionally CLOUDFLARE_ZONE_ID) in a
-# gitignored .env at the repo root. Without a token the deploy still runs and
-# only the purge is skipped — a missing token must never block shipping.
+# The token is looked for in a gitignored .env at the repo root and then in the
+# Vercel project's production environment — see scripts/cf-token.sh. Without one
+# the deploy still runs and only the purge is skipped: a missing token must
+# never block shipping.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 DEFAULT_ZONE_ID="d00c024daea9b2b2206bc8891662210f" # prepportal.com.ng
 
-if [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env
-  set +a
-fi
+# shellcheck disable=SC1091
+. scripts/cf-token.sh
 
 # Stamp content-hash versions onto the game pages' module URLs BEFORE deploying.
 # index.html is always fresh (max-age=0) but the JS it points at can come from a
@@ -51,13 +48,16 @@ echo ""
 echo "▲ Deploying to production…"
 vercel --prod
 
+find_cloudflare_token || true
 ZONE_ID="${CLOUDFLARE_ZONE_ID:-$DEFAULT_ZONE_ID}"
 
 if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
   echo ""
-  echo "⚠  CLOUDFLARE_API_TOKEN not set — skipping the edge purge."
-  echo "   Add it to a gitignored .env at the repo root to enable it:"
-  echo "     CLOUDFLARE_API_TOKEN=your_token_here"
+  echo "⚠  No Cloudflare API token — skipping the edge purge."
+  echo "   Looked in .env at the repo root and in the Vercel project's"
+  echo "   production environment. Put it in EITHER and this runs by itself:"
+  echo "     vercel env add CLOUDFLARE_API_TOKEN production"
+  echo "     …or a gitignored .env:  CLOUDFLARE_API_TOKEN=your_token_here"
   exit 0
 fi
 

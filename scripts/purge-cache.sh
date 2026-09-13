@@ -3,28 +3,28 @@
 #
 # Usage:  npm run purge
 #
-# Reads CLOUDFLARE_API_TOKEN (and optionally CLOUDFLARE_ZONE_ID) from a
-# gitignored .env at the repo root. `npm run deploy` already does this at the
-# end of a deploy — this is for purging on its own.
+# Finds CLOUDFLARE_API_TOKEN (and optionally CLOUDFLARE_ZONE_ID) in a gitignored
+# .env at the repo root, or in the Vercel project's production environment —
+# see scripts/cf-token.sh. `npm run deploy` already purges at the end of a
+# deploy; this is for purging on its own.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 DEFAULT_ZONE_ID="d00c024daea9b2b2206bc8891662210f" # prepportal.com.ng
 
-if [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env
-  set +a
-fi
+# shellcheck disable=SC1091
+. scripts/cf-token.sh
 
+find_cloudflare_token || true
 ZONE_ID="${CLOUDFLARE_ZONE_ID:-$DEFAULT_ZONE_ID}"
 
 if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-  echo "✗ CLOUDFLARE_API_TOKEN not set."
-  echo "  Add it to a gitignored .env at the repo root:"
-  echo "    CLOUDFLARE_API_TOKEN=your_token_here"
+  echo "✗ No Cloudflare API token."
+  echo "  Looked in .env at the repo root and in the Vercel project's"
+  echo "  production environment. Put it in either:"
+  echo "    vercel env add CLOUDFLARE_API_TOKEN production"
+  echo "    …or a gitignored .env:  CLOUDFLARE_API_TOKEN=your_token_here"
   exit 1
 fi
 
