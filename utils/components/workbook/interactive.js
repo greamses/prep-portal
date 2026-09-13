@@ -2151,7 +2151,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   function zoom() {
     const r = scaler.getBoundingClientRect();
-    return r.width / (scaler.offsetWidth || 1) || 1;
+    /* The layout width UNROUNDED. offsetWidth is rounded to a whole pixel, so
+       at a true zoom of 1 a sheet 794.3px wide read as 0.9996 — nothing on
+       screen, but every position is multiplied by it, and four thousand pixels
+       down a booklet it put a compass needle 1.6px off the corner it had
+       snapped to. The computed width is the layout width before any transform,
+       to the fraction of a pixel. */
+    const w = parseFloat(getComputedStyle(scaler).width) || scaler.offsetWidth || 1;
+    return r.width / w || 1;
   }
 
   /* Every corner of every figure (not the dot grids: every dot is a point

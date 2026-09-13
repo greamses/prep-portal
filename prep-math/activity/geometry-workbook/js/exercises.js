@@ -13,6 +13,7 @@
      ex-transform.js     chapter 5, all of it (drawn by transform.js)
      ex-circles.js       chapter 6, all of it (drawn by circle.js)
      ex-lines.js         chapter 7, all of it (drawn by rays.js)
+     ex-constructions.js chapter 8, all of it (drawn by construct.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -58,6 +59,13 @@
      angles · complementary and supplementary · perpendicular and parallel ·
      angles written with x · give the reason
 
+   Chapter 8 — Constructions
+     a circle from its radius · copying a length · triangles from three sides,
+     two sides and the angle between, two angles and the side between ·
+     bisecting a line · bisecting an angle · a perpendicular from a point ·
+     60° and 30°, 90° and 45° with compasses — each one MEASURED afterwards,
+     and the measurement is what is marked
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -78,6 +86,7 @@ import { PY_GROUPS, PY_EXERCISES } from "./ex-pythagoras.js";
 import { TF_GROUPS, TF_EXERCISES } from "./ex-transform.js";
 import { CI_GROUPS, CI_EXERCISES } from "./ex-circles.js";
 import { LA_GROUPS, LA_EXERCISES } from "./ex-lines.js";
+import { CO_GROUPS, CO_EXERCISES } from "./ex-constructions.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -94,6 +103,7 @@ export const GROUPS = [
   ...TF_GROUPS,
   ...CI_GROUPS,
   ...LA_GROUPS,
+  ...CO_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -110,9 +120,10 @@ export const EXERCISES = [
   ...TF_EXERCISES,
   ...CI_EXERCISES,
   ...LA_EXERCISES,
+  ...CO_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 7. */
+/** Which chapter an exercise belongs to: 1 to 8. */
 const CHAPTER = new Map([
   ...TRANS_GROUPS.map((g) => [g.id, 2]),
   ...SOLID_GROUPS.map((g) => [g.id, 3]),
@@ -120,6 +131,7 @@ const CHAPTER = new Map([
   ...TF_GROUPS.map((g) => [g.id, 5]),
   ...CI_GROUPS.map((g) => [g.id, 6]),
   ...LA_GROUPS.map((g) => [g.id, 7]),
+  ...CO_GROUPS.map((g) => [g.id, 8]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

@@ -167,3 +167,13 @@
 .gw-reasons .wb-tick__one > span:last-child { min-width: 0; padding-top: 0.9mm; }
 .gw-reasons .wb-box { flex: 0 0 auto; }
 .gw-mini { display: block; }
+
+/* ══ CHAPTER 8 · CONSTRUCTIONS ═════════════════════════════════════════════
+   The space is drawn at true size and must never be scaled to fit a column:
+   a line printed 6 cm has to measure 6 cm, so the figure keeps its millimetres
+   and the column is wide enough for it (the spaces are 150 mm). */
+.co-art svg { max-width: none; }
+.co-worked { display: flex; gap: 5mm; align-items: flex-start; }
+.co-worked .co-art { flex: 0 0 auto; margin: 0; }
+.co-worked__steps { flex: 1 1 auto; min-width: 0; }
+.co-worked__steps .wb-ask { margin: 0 0 1.4mm; font-size: 9.5pt; line-height: 1.4; }
