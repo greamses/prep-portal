@@ -27,6 +27,8 @@
  * A transport is four functions and a close:
  *
  *   watch(sub, cb) → stop      cb(value) whenever `sub` changes, and once now
+ *   watchEach(sub, cb) → stop  the same view, built from CHILD changes — only
+ *                              the slot that moved comes down the wire
  *   write(sub, value)          replace what is at `sub`
  *   merge(sub, patch)          merge fields into what is at `sub`
  *   clearOnLeave(sub)          delete `sub` when this client goes away
@@ -142,21 +144,31 @@ export async function joinRoom({
      bill for storage that grows while somebody waggles a mouse. */
   const shouts = new Map();     // event → throttled sender
 
+  /* Every channel here is a MAP OF PEOPLE — presence/<id>, state/<id>,
+     wire/<event>/<id> — so every one of them listens per child rather than to
+     the whole node. Watching the node sends all of it on every change, and the
+     traffic then goes up with the square of the class; watching the children
+     sends only the slot that moved. See transport-rtdb's watchEach for the
+     arithmetic. `watch` is kept for a transport that has no cheap listener. */
+  const listen = bus.watchEach
+    ? (sub, cb) => bus.watchEach(sub, cb)
+    : (sub, cb) => bus.watch(sub, (v) => cb(v || {}));
+
   const on = (channel, cb) => {
     let stop;
     if (channel === "presence") {
-      stop = bus.watch("presence", (all) => {
-        cb(Object.values(all || {}).filter(Boolean));
+      stop = listen("presence", (all) => {
+        cb(Object.values(all).filter(Boolean));
       });
     } else if (channel === "state") {
-      stop = bus.watch("state", (value) => cb(value || {}));
+      stop = listen("state", (value) => cb(value));
     } else {
       /* A shout is { at, payload } per person. `at` is what makes a repeat of
          the same value still count as a new shout. */
       const heard = new Map();
       let arriving = true;
-      stop = bus.watch(`wire/${channel}`, (all) => {
-        for (const [id, entry] of Object.entries(all || {})) {
+      stop = listen(`wire/${channel}`, (all) => {
+        for (const [id, entry] of Object.entries(all)) {
           if (!entry || id === who.id) continue;       // never hear yourself
           if (heard.get(id) === entry.at) continue;    // already heard
           heard.set(id, entry.at);

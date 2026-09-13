@@ -44,10 +44,36 @@ Firestore's free tier stops at **20,000 writes a day** — one lesson would go
 through it nine times over. RTDB is not write-capped. What it caps is:
 
 * **100 simultaneous connections** — about three classes at once,
-* **1 GB stored**, **10 GB/month out** — thousands of lessons at these sizes.
+* **1 GB stored**, **10 GB/month out**.
 
 So: **RTDB for the live path, Firestore for the durable one.** Submissions,
 scores and assignment records stay exactly where they are.
+
+### What it actually costs to run
+
+RTDB does not bill reads. It bills **traffic out**, and the shape of the
+listener decides how much there is of it.
+
+A slot — one person's line of "where I am up to" — is about **120 bytes** on
+the wire once the key, the name and the JSON framing are counted. Listening to
+the whole `presence` or `state` node sends **all** the slots to **all** the
+tabs on **every** change, so the traffic climbs with the *square* of the class.
+Listening to the node's **children** sends only the slot that moved.
+
+For a class of thirty over a forty-minute lesson:
+
+| listening to | a child fills a box every 10s | flat out at the 400ms throttle |
+| --- | --- | --- |
+| the whole node | 740 MB · **13 lessons**/month | 18 GB · **0 lessons**/month |
+| its children | 25 MB · **400 lessons**/month | 618 MB · **16 lessons**/month |
+
+So `room.js` listens per child on all three channels, through the transport's
+`watchEach`. The view the caller gets is identical; what changes is what came
+down the wire to build it. The arithmetic is worked, and checked, in the live
+check (`live.mjs`).
+
+Reads on the **durable** side are unchanged and are Firestore's: a submission
+written once and read by the teacher once, which is what it has always been.
 
 RTDB also brings `onDisconnect`, which is the fiddliest part of presence and
 the main reason not to hand-roll this on a socket: a closed tab, a shut laptop,

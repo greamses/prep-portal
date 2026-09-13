@@ -67,22 +67,32 @@ export function memoryTransport() {
   const mine = [];          // paths to clear when this client goes
   const watching = [];      // [path, cb] so they can be taken off
 
+  const watch = (sub, cb) => {
+    if (!room) return () => {};
+    if (!room.watchers.has(sub)) room.watchers.set(sub, new Set());
+    room.watchers.get(sub).add(cb);
+    watching.push([sub, cb]);
+    /* the first call is what is there now, so a latecomer is not blind */
+    try { cb(at(room.data, sub) ?? null); } catch { /* as above */ }
+    return () => {
+      room.watchers.get(sub)?.delete(cb);
+    };
+  };
+
   return {
     open(path) {
       room = roomAt(path);
       return Promise.resolve();
     },
 
-    watch(sub, cb) {
-      if (!room) return () => {};
-      if (!room.watchers.has(sub)) room.watchers.set(sub, new Set());
-      room.watchers.get(sub).add(cb);
-      watching.push([sub, cb]);
-      /* the first call is what is there now, so a latecomer is not blind */
-      try { cb(at(room.data, sub) ?? null); } catch { /* as above */ }
-      return () => {
-        room.watchers.get(sub)?.delete(cb);
-      };
+    watch,
+
+    /* The same door as the database's, and here it is the same thing: nothing
+       travels, so there is nothing to save by sending less of it. It exists so
+       that room.js has ONE path through both transports — the cheap listener
+       is the one the tests exercise, not a branch that only production takes. */
+    watchEach(sub, cb) {
+      return watch(sub, (value) => cb(value || {}));
     },
 
     write(sub, value) {
