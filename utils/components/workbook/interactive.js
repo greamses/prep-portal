@@ -1376,6 +1376,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     showBtn.textContent = "Show the answers";
     score.textContent = "";
     items().forEach((node, i) => { deaden(node); enliven(node, i); });
+    /* the store went with it, so the margins are empty now and have to be
+       painted again to show it */
+    paintAllScribbles();
   }
 
   /* ── the sidebar: everything there is to reach for ───────────────────────
@@ -1400,6 +1403,155 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      boards), so a sum worked here is worked the way it is worked there. */
 
   const TOOLS = instruments({ protractor });
+
+  /* ── the pencil and the eraser ──────────────────────────────────────────
+     A third kind of thing on the rail, and the difference is worth naming.
+     An INSTRUMENT is an object laid on the paper; a SHEET is working paper in
+     a panel; a MODE is something you are HOLDING, and while you hold it the
+     paper answers to it and to nothing else.
+
+     That is why turning the pencil on stops you typing in the answer boxes:
+     it is a pencil in your hand, not a second cursor. Put it down and the
+     page is a page again.
+
+     The pencil draws on the whole SHEET rather than on one figure. The pen in
+     `makePen` is a different thing and stays: that one belongs to a question
+     that ASKS to be drawn on — ring the groups, cross the blocks out — and is
+     marked with it. This one is for a child's own working in the margin, which
+     no key has an opinion about.
+
+     Strokes are kept per page and saved with everything else, so working out
+     survives a refresh. The eraser takes away whole strokes rather than
+     nibbling at them: a half-rubbed-out line is a worse drawing than either
+     one, and "the stroke you touched" is a rule a child can predict. */
+  const MODES = [
+    { id: "pencil", label: "Pencil", icon: TOOL_ICONS.pencil },
+    { id: "eraser", label: "Eraser", icon: TOOL_ICONS.eraser },
+  ];
+
+  let holding = null;                 // "pencil" | "eraser" | null
+
+  /** Every page's scribble layer, made on demand and painted from the store. */
+  function scribbles(page) {
+    let svg = page.querySelector(":scope > .wb-scribble");
+    if (!svg) {
+      /* The page is measured in millimetres and so is this, so a stroke keeps
+         its place at any zoom and after any re-render. */
+      const cs = getComputedStyle(page);
+      const w = parseFloat(cs.getPropertyValue("--wb-w")) || 210;
+      const h = parseFloat(cs.getPropertyValue("--wb-h")) || 297;
+      svg = document.createElementNS(SVGNS, "svg");
+      svg.setAttribute("class", "wb-scribble");
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("aria-hidden", "true");
+      page.appendChild(svg);
+    }
+    return svg;
+  }
+
+  const pageKey = (page) => String([...sheet.querySelectorAll(".wb-page")].indexOf(page));
+  const strokesOn = (page) => {
+    store.pencil ||= {};
+    return (store.pencil[pageKey(page)] ||= []);
+  };
+
+  function paintScribbles(page) {
+    const svg = scribbles(page);
+    svg.innerHTML = "";
+    strokesOn(page).forEach((pts) => {
+      const pl = document.createElementNS(SVGNS, "polyline");
+      pl.setAttribute("points", pts.map((q) => q.join(",")).join(" "));
+      svg.appendChild(pl);
+    });
+  }
+
+  const paintAllScribbles = () => sheet.querySelectorAll(".wb-page").forEach(paintScribbles);
+
+  /** How near a stroke has to pass to be rubbed out, in millimetres. */
+  const RUB_MM = 2.6;
+
+  function wireScribbling(page) {
+    const svg = scribbles(page);
+    if (svg.__wbBound) return;
+    svg.__wbBound = true;
+
+    let cur = null;
+    let line = null;
+
+    const at = (e) => svgPoint(svg, e.clientX, e.clientY).map((v) => +v.toFixed(2));
+
+    /** Whichever stroke passes within RUB_MM of this point, latest first. */
+    const rub = (p) => {
+      const all = strokesOn(page);
+      for (let i = all.length - 1; i >= 0; i--) {
+        const near = all[i].some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) <= RUB_MM);
+        if (near) { all.splice(i, 1); return true; }
+      }
+      return false;
+    };
+
+    svg.addEventListener("pointerdown", (e) => {
+      if (!holding) return;
+      e.preventDefault();
+      svg.setPointerCapture(e.pointerId);
+      const p = at(e);
+      if (holding === "eraser") { cur = "rubbing"; if (rub(p)) { paintScribbles(page); save(); } return; }
+      cur = [p];
+      line = document.createElementNS(SVGNS, "polyline");
+      svg.appendChild(line);
+    });
+
+    svg.addEventListener("pointermove", (e) => {
+      if (!cur) return;
+      const p = at(e);
+      if (cur === "rubbing") { if (rub(p)) { paintScribbles(page); save(); } return; }
+      const q = cur[cur.length - 1];
+      /* a tenth of a millimetre of travel before a point is kept: without it a
+         still hand lays hundreds of points on one spot */
+      if (Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.35) return;
+      cur.push(p);
+      line.setAttribute("points", cur.map((c) => c.join(",")).join(" "));
+    });
+
+    const end = () => {
+      if (!cur) return;
+      if (cur !== "rubbing" && cur.length > 1) strokesOn(page).push(cur);
+      cur = null;
+      line = null;
+      paintScribbles(page);
+      save();
+    };
+    svg.addEventListener("pointerup", end);
+    svg.addEventListener("pointercancel", end);
+  }
+
+  /**
+   * Pick the pencil up, or put it down. One at a time: you cannot draw and rub
+   * out with the same hand, and a rail that let you would only ever be
+   * answering the question "which one am I holding?".
+   */
+  function toggleMode(id) {
+    holding = holding === id ? null : id;
+    MODES.forEach((m) => {
+      const on = holding === m.id;
+      [...document.querySelectorAll(`[data-mode="${m.id}"]`)].forEach((b) => {
+        b.classList.toggle("is-on", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+    });
+    document.documentElement.classList.toggle("wb-holding", !!holding);
+    document.documentElement.dataset.wbHolding = holding || "";
+    sheet.querySelectorAll(".wb-page").forEach((page) => {
+      scribbles(page);
+      wireScribbling(page);
+      paintScribbles(page);
+    });
+  }
+
+  function putModesAway() {
+    if (holding) toggleMode(holding);
+  }
   const out = {};                     // id -> { el, st, spec }
   const TURN_SNAP = 4;                // degrees
 
@@ -1697,10 +1849,18 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const t = SHEETS.find((x) => x.id === id);
     return t && { id: t.id, label: t.label, icon: t.icon || "", attr: "data-sheet" };
   };
+  const asMode = (id) => {
+    const m = MODES.find((x) => x.id === id);
+    return m && { id: m.id, label: m.label, icon: m.icon || "", attr: "data-mode" };
+  };
 
   const FAMILIES = [
-    /* Pencil, eraser and compass would belong here too — there are none yet. */
-    { id: "draw", label: "Drawing", of: [asTool("ruler"), asTool("protractor"), asTool("setsquare")] },
+    /* The pencil first: it is the one thing on this rail a child reaches for
+       without being told to, and the measuring tools are behind it. */
+    { id: "draw", label: "Drawing", of: [
+      asMode("pencil"), asMode("eraser"),
+      asTool("ruler"), asTool("protractor"), asTool("setsquare"),
+    ] },
     { id: "work", label: "Working out", of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
     /* No abacus of its own: the three frames are on the Manipulatives canvas,
        which is right here in the same family, and a second copy of them in a
@@ -1797,18 +1957,19 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      the DOM is not rearranged mid-dispatch. */
   flies.forEach((fly, famId) => {
     fly.addEventListener("click", (e) => {
-      const picked = e.target.closest("[data-tool], [data-sheet]");
+      const picked = e.target.closest("[data-tool], [data-sheet], [data-mode]");
       if (!picked) return;
       const fam = side.querySelector(`.wb-side__fam[data-fam="${famId}"]`);
       shutFamilies();
       /* It is outside the rail, so the rail's delegation never sees it: the
          tool is opened from here. */
       if (picked.dataset.tool) toggleTool(picked.dataset.tool);
+      else if (picked.dataset.mode) toggleMode(picked.dataset.mode);
       else togglePanel(picked.dataset.sheet);
       /* and it comes to the front, as a photo editor's slot does — after the
          click, so the DOM is not rearranged mid-dispatch */
       setTimeout(() => {
-        const face = fam.querySelector(":scope > [data-tool], :scope > [data-sheet]");
+        const face = fam.querySelector(":scope > [data-tool], :scope > [data-sheet], :scope > [data-mode]");
         if (!face || face === picked) return;
         fly.append(face);
         fam.insertBefore(picked, fam.querySelector(".wb-side__more"));
@@ -1821,9 +1982,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     shutFamilies();
   });
   side.addEventListener("click", (e) => {
-    const hit = e.target.closest("[data-tool], [data-sheet]");
+    const hit = e.target.closest("[data-tool], [data-sheet], [data-mode]");
     if (!hit) return;
     if (hit.dataset.tool) toggleTool(hit.dataset.tool);
+    else if (hit.dataset.mode) toggleMode(hit.dataset.mode);
     else togglePanel(hit.dataset.sheet);
   });
 
@@ -2056,6 +2218,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     document.documentElement.classList.add("wb-side-on");
     store = load();
     items().forEach((node, i) => enliven(node, i));
+    /* Whatever was drawn in the margins last time, back on the page. The layer
+       takes no presses until something is picked up off the rail. */
+    sheet.querySelectorAll(".wb-page").forEach((page) => {
+      scribbles(page);
+      wireScribbling(page);
+      paintScribbles(page);
+    });
     /* Offered only when the paper has numbers built to carry a label. */
     const labelled = !!sheet.querySelector(".wb-fig");
     bar.querySelectorAll(".wb-labelbtn").forEach((b) => { b.hidden = !labelled; });
@@ -2078,6 +2247,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     document.documentElement.classList.remove("wb-side-on");
     putToolsAway();
     putSheetsAway();
+    putModesAway();
+    /* The working stays SAVED — it is in the store like every answer — but it
+       comes off the paper with the rest of interactive mode, because on paper
+       this page is the printed question again. */
+    sheet.querySelectorAll(".wb-scribble").forEach((v) => v.remove());
     items().forEach(deaden);
     checked = false;
     showing = false;

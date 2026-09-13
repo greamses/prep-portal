@@ -1823,6 +1823,44 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-live svg[data-colourable="fill"] [data-part]:not([data-shaded]):hover { fill-opacity: 0.8; stroke-width: 0.8; }
 .wb-cross line { stroke: #c0453f; stroke-width: 0.8; stroke-linecap: round; }
 
+/* ── the pencil and the eraser, over the whole page ────────────────────────
+   A sheet of glass over each page. It lies there taking no presses at all —
+   so typing, picking a block up and drawing on a figure all work exactly as
+   they did — until something is picked up off the rail, and then it takes the
+   presses and nothing under it does. That is the whole of "you are holding a
+   pencil": while you are, the page answers to the pencil.
+
+   Not printed with `display: none` but with `visibility`, so a page that has
+   been drawn on still measures the same — the workbook is paginated to the
+   millimetre and a layer that changes size at print time is a page that
+   reflows on its way to the printer. In fact it prints: a child's working in
+   the margin is theirs, and they asked for it on the paper. */
+.wb-scribble {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  pointer-events: none;
+  overflow: visible;
+}
+.wb-scribble polyline {
+  fill: none;
+  stroke: #6b655c;
+  stroke-width: 0.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* While one is held, the glass is live and the whole paper says which. */
+html.wb-holding .wb-scribble { pointer-events: auto; touch-action: none; }
+html[data-wb-holding="pencil"] .wb-scribble { cursor: crosshair; }
+html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
+/* and the rail key shows it is the thing in your hand */
+.wb-side__btn[data-mode].is-on {
+  background: #fff3a8;
+  border-color: rgba(20, 19, 15, 0.35);
+}
+
 /* the pencil */
 .wb-live svg[data-pen] { touch-action: none; cursor: crosshair; }
 .wb-pen polyline { fill: none; stroke: #1f4f86; stroke-width: 0.7; stroke-linecap: round; stroke-linejoin: round; }
