@@ -14,6 +14,7 @@
      ex-fractions.js   what a fraction is, and adding the ones that match
      ex-time.js        counting in fives, and then telling the time
      ex-angles.js      naming angles, and a protractor to measure them with
+     ex-multiply.js    multiplying, from equal groups up to long multiplication
 
    THE ORDER OF THE FAMILIES IS THE ORDER OF THE YEARS. A child works out what
    a number IS before they add two of them; adds before they share out; shares
@@ -37,6 +38,7 @@ import { REM_GROUPS, REM_EXERCISES } from "./ex-remainder.js";
 import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
 import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
 import { ANGLE_GROUPS, ANGLE_EXERCISES } from "./ex-angles.js";
+import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
@@ -53,6 +55,9 @@ export const GROUPS = [
   ...FRAC_GROUPS,
   ...TIME_GROUPS,
   ...ANGLE_GROUPS,
+  /* Added after the seven as chapter 8, so no chapter already printed on a
+     paper changes its number. */
+  ...MUL_GROUPS,
 ];
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
@@ -71,10 +76,11 @@ export const EXERCISES = [
   ...tenOnly(FRAC_EXERCISES),
   ...tenOnly(TIME_EXERCISES),
   ...tenOnly(ANGLE_EXERCISES),
+  ...tenOnly(MUL_EXERCISES),
 ];
 
 /**
- * Which chapter an exercise belongs to: 1 to 7, one per family.
+ * Which chapter an exercise belongs to: 1 to 8, one per family.
  *
  * The rail shows one chapter at a time behind a row of tabs — the first group
  * of each family carries `chapter`, and the rest follow it — and the cover
@@ -87,6 +93,7 @@ const CHAPTER = new Map([
   ...FRAC_GROUPS.map((g) => [g.id, 5]),
   ...TIME_GROUPS.map((g) => [g.id, 6]),
   ...ANGLE_GROUPS.map((g) => [g.id, 7]),
+  ...MUL_GROUPS.map((g) => [g.id, 8]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

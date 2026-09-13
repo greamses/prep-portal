@@ -541,3 +541,72 @@ thead .pv-chart__side {
    instruction is "cut this out", and a dashed edge says so without a word. */
 .ma-cut { border-style: dashed; border-width: 0.4mm; background: none; }
 .ma-cut .ma-art { margin: 1mm 0 0; }
+
+/* ══ MULTIPLYING ═══════════════════════════════════════════════════════════ */
+
+.mm-art { margin: 2mm 0; }
+.mm-art svg { display: block; }
+
+/* the plates: a group you can see the edge of is a group */
+.mm-plates { display: flex; flex-wrap: wrap; align-items: center; gap: 3mm; }
+.mm-plate { display: block; }
+
+/* blocks in rows, each row numbered so the rows are counted, not the blocks */
+.mm-rows { display: flex; flex-direction: column; gap: 1.6mm; }
+.mm-rows__one { display: flex; align-items: flex-end; gap: 3mm; }
+.mm-rows__n { width: 4mm; font: 700 8pt/1 "JetBrains Mono", monospace; color: #8f887c; }
+
+/* six facts in two columns */
+.mm-facts { display: grid; grid-template-columns: repeat(2, max-content); column-gap: 8mm; }
+.mm-facts .wb-ask { margin: 1mm 0; }
+
+/* the grid method: the parts are headings, the products are the boxes */
+.mm-grid { border-collapse: collapse; font: 700 13pt/1 "JetBrains Mono", monospace; }
+.mm-grid th, .mm-grid td {
+  min-width: 20mm;
+  height: 11mm;
+  padding: 1mm 2mm;
+  text-align: center;
+  border: 0.45mm solid #2a2723;
+}
+.mm-grid th { background: #fff3a8; }
+.mm-grid .mm-grid__corner { background: #fffdf8; min-width: 11mm; }
+.mm-grid td .rw-answer { width: 19mm; }
+
+/* long multiplication: the rows of partial products are written in */
+.mm-part .ms-down__cell {
+  height: 10mm;
+  background: #fffdf8;
+  border: 0.4mm solid #2a2723;
+}
+.mm-part--last .ms-down__cell,
+.mm-part--last .ms-down__sign { border-bottom: 0.7mm solid #2a2723; }
+.mm-long .ms-down__answer .ms-down__cell { border-top: 0; }
+
+/* the lattice: a diagonal through every cell, tens above it and ones below */
+.mm-lat { border-collapse: collapse; font: 700 13pt/1 "JetBrains Mono", monospace; }
+.mm-lat th { width: 16mm; height: 8mm; text-align: center; }
+.mm-lat tr > th:last-child { width: 8mm; }
+.mm-lat__cell { padding: 0; border: 0.45mm solid #2a2723; }
+.mm-lat__in {
+  display: grid;
+  grid-template: 1fr 1fr / 1fr 1fr;
+  width: 16mm;
+  height: 16mm;
+  background: linear-gradient(to bottom right, transparent calc(50% - 0.25mm), #2a2723 calc(50% - 0.25mm), #2a2723 calc(50% + 0.25mm), transparent calc(50% + 0.25mm));
+}
+.mm-lat__t, .mm-lat__o {
+  display: grid;
+  place-items: center;
+  width: 6.4mm;
+  height: 6.4mm;
+  font-size: 10pt;
+}
+.mm-lat__t { grid-area: 1 / 1; margin: 0.8mm 0 0 0.8mm; }
+.mm-lat__o { grid-area: 2 / 2; justify-self: end; align-self: end; margin: 0 0.8mm 0.8mm 0; }
+.mm-lat__t.wb-cell, .mm-lat__o.wb-cell { border: 0.3mm dashed #8f887c; background: #fffdf8; }
+.mm-lat__ans { width: 9mm; height: 9mm; text-align: center; }
+.mm-lat__ans.wb-cell { border: 0.4mm solid #2a2723; background: #fffdf8; }
+
+/* room to work a word problem out */
+.mm-work { height: 22mm; border-bottom: 0.25mm dashed #cfc8bb; margin-top: 1mm; }

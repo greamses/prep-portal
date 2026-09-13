@@ -59,6 +59,11 @@ const SHAPES = {
 
 export const SHAPE_NAMES = Object.keys(SHAPES);
 
+/** One shape's drawing (in its 100-unit box) and the paper colour for index i —
+    for pictures that are not a pile to ring, like multiplying's plates. */
+export const shapeDraw = (name) => (SHAPES[name] || SHAPES.circle)();
+export const paperColour = (i) => PAPER_COLOURS[((i % PAPER_COLOURS.length) + PAPER_COLOURS.length) % PAPER_COLOURS.length];
+
 /** What a pile of these is called in the sentence above it. */
 export const SHAPE_WORDS = {
   circle: "counters",

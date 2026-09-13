@@ -26,6 +26,16 @@ export const ICON = {
   plus: line(`<path d="M8 6.5v7M4.5 10h7M3.5 16.5h17M14.5 19.5h6"/>`),
   /* And the same drawing with a minus in it. */
   minus: line(`<path d="M4.5 10h7M3.5 16.5h17M14.5 19.5h6"/>`),
+  /* A times sign in a box of dots: equal rows, which is what multiplying is. */
+  array: line(
+    `<circle cx="6" cy="6.5" r="1.5"/><circle cx="12" cy="6.5" r="1.5"/><circle cx="18" cy="6.5" r="1.5"/>` +
+      `<circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>` +
+      `<circle cx="6" cy="17.5" r="1.5"/><circle cx="12" cy="17.5" r="1.5"/><circle cx="18" cy="17.5" r="1.5"/>`
+  ),
+  /* A times sign over a rule — a multiplication, written down the page. */
+  times: line(`<path d="M5 6.6 10.4 12M10.4 6.6 5 12M3.5 16.5h17M14.5 19.5h6"/>`),
+  /* A square cut by its diagonals into cells: the lattice. */
+  lattice: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1"/><path d="M12 3.5v17M3.5 12h17M3.5 20.5 20.5 3.5M3.5 12 12 3.5M12 20.5l8.5-8.5"/>`),
   /* Things with a ring drawn round some of them. */
   ring: line(
     `<circle cx="7" cy="8" r="1.9"/><circle cx="12.6" cy="8" r="1.9"/>` +
