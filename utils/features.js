@@ -111,7 +111,7 @@ export const FEATURES = [
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, sums, remainders, fractions, time, angles)", path: "/prep-math/activity/maths-workbook" },
       { id: "geometry-workbook", label: "Geometry Workbook (printable — polygon angles, transversal angles, pyramids and prisms)", path: "/prep-math/activity/geometry-workbook" },
-      { id: "remainder-theorem-workbook", label: "Polynomial Remainder Theorem Workbook (printable)", path: "/prep-math/activity/remainder-theorem-workbook" },
+      { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the remainder theorem)", path: "/prep-math/activity/algebra-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

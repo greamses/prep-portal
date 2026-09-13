@@ -25,4 +25,10 @@ export const ICON = {
   ),
   /* Speech, because section D is the rule said out loud. */
   said: line(`<path d="M4 5.2h16v11H9.8L5.4 20v-3.8H4z"/><path d="M8 9.2h8M8 12.4h5"/>`),
+
+  /* ── chapter 1 ── */
+  /* An empty box with a question mark in it: the unknown. */
+  unknown: line(`<rect x="3.5" y="4.5" width="15" height="15" rx="1.6"/><path d="M8.6 10.2a2.4 2.4 0 1 1 3.3 2.2c-.7.3-.9.8-.9 1.5"/><path d="M11 17v0"/>`),
+  /* A line that goes up and down next to one that stays flat: what varies and what does not. */
+  vary: line(`<path d="M3.5 9.5c2.5-5 5-5 7.5 0s5 5 9 0"/><path d="M3.5 17.5h17" stroke-dasharray="2 1.6"/>`),
 };

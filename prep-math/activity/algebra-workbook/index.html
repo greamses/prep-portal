@@ -7,13 +7,13 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
     <meta name="theme-color" content="#f4c95d" />
-    <title>Prep Portal | Remainder Theorem Workbook</title>
+    <title>Prep Portal | Algebra Workbook</title>
     <meta
       name="description"
-      content="Build a printable remainder-theorem workbook with graphic organisers: a four-step frame, a swap ladder with a row for every term, and a zero box — plus matching, factor-theorem and true-or-false practice, with a worked example and an answer key. Made for reinforcement and for learners who need the method drawn on the page."
+      content="A printable algebra workbook. Chapter one, basic concepts: known and unknown amounts in a story, a letter for the unknown, the box and the letter, what varies and what stays the same, variables, coefficients and constants in an expression, watching a variable vary in a table, and the words that go with them. Chapter two, the polynomial remainder theorem, with graphic organisers: a four-step frame, a swap ladder with a row for every term, and a zero box — plus matching, factor-theorem and true-or-false practice. With worked examples, an answer key and an interactive mode."
     />
 
-    <!-- Page access gate: feature "prep-math-activities", part "remainder-theorem-workbook" -->
+    <!-- Page access gate: feature "prep-math-activities", part "algebra-workbook" -->
     <script type="module" src="/utils/auth/premium-guard.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -71,17 +71,18 @@
     <main class="wb-main">
       <header class="wb-hero">
         <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
-        <h1 class="wb-title">Remainder Theorem Workbook<em>.</em></h1>
+        <h1 class="wb-title">Algebra Workbook<em>.</em></h1>
         <p class="wb-lead">
-          One method, split into steps small enough to finish, and drawn on the
-          page so nobody has to hold it in their head. Find the zero of the
-          bracket. Swap x for it, a row at a time. Then both together, in a
-          four-step frame that never changes.
+          The words first — known and unknown, what varies and what stays the
+          same — then the methods, split into steps small enough to finish and
+          drawn on the page so nobody has to hold them in their head.
         </p>
         <p class="wb-sister">
           Built for reinforcement — say the word, do the step, do it again. The
           same bench builds the
-          <a href="/prep-math/activity/maths-workbook/index.html">Maths Workbook</a>.
+          <a href="/prep-math/activity/maths-workbook/index.html">Maths Workbook</a>
+          and the
+          <a href="/prep-math/activity/geometry-workbook/index.html">Geometry Workbook</a>.
         </p>
       </header>
 
@@ -95,25 +96,25 @@
               <label class="wb-field">
                 <span>Title on the front</span>
                 <input class="wb-input" id="wb-title" type="text" maxlength="52"
-                       value="The Remainder Theorem" autocomplete="off" />
+                       value="Algebra" autocomplete="off" />
               </label>
 
               <label class="wb-field">
                 <span>How much help</span>
-                <select class="wb-select" id="rt-help"></select>
+                <select class="wb-select" id="aw-help"></select>
                 <span class="wb-field__hint">
-                  The organiser is the same every time; what changes is how much
-                  of it is already written. Start at <strong>Show me</strong> and
+                  The questions are the same every time; what changes is how much
+                  is already written. Start at <strong>Show me</strong> and
                   move down a step only when a whole page comes back right.
                 </span>
               </label>
 
               <label class="wb-field">
                 <span>How hard</span>
-                <select class="wb-select" id="rt-level"></select>
+                <select class="wb-select" id="aw-level"></select>
                 <span class="wb-field__hint">
                   The numbers stay small at every level. This is a workbook about
-                  a method, and a method lost in the middle of a big
+                  ideas and methods, and an idea lost in the middle of a big
                   multiplication was not taught.
                 </span>
               </label>
@@ -139,6 +140,12 @@
                 <label class="wb-toggle">
                   <input type="checkbox" id="wb-answers" checked />
                   Answer key at the back
+                </label>
+                <!-- Revealed only for the account the logo belongs to. See
+                     /utils/components/workbook/admin.js. -->
+                <label class="wb-toggle" id="aw-watermark-row" hidden>
+                  <input type="checkbox" id="aw-watermark" checked />
+                  Logo watermark on every page
                 </label>
               </fieldset>
 

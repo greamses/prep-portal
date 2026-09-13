@@ -168,15 +168,17 @@ export function zeroEquation(a) {
  */
 export const LEVELS = {
   gentle: {
-    id: "gentle", label: "Gentle — squares, and x is swapped for a positive number",
+    /* The labels speak for both chapters: the concepts chapter reads only the
+       id (small numbers, adding only), the remainder theorem reads the rest. */
+    id: "gentle", label: "Gentle — small numbers, adding only; squares with positive brackets",
     degree: 2, coef: 3, constant: 6, roots: [1, 2, 3, 4, 5], gaps: false, cap: 45,
   },
   middle: {
-    id: "middle", label: "Middle — cubes, and brackets like (x + 2)",
+    id: "middle", label: "Middle — adding and taking away; cubes, and brackets like (x + 2)",
     degree: 3, coef: 4, constant: 9, roots: [-3, -2, -1, 1, 2, 3, 4], gaps: false, cap: 75,
   },
   stretch: {
-    id: "stretch", label: "Stretch — bigger numbers, and a power may be missing",
+    id: "stretch", label: "Stretch — minus signs and times; bigger numbers, and a power may be missing",
     degree: 3, coef: 5, constant: 12,
     roots: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5], gaps: true, cap: 110,
   },

@@ -1,10 +1,11 @@
 /* ============================================================================
-   Remainder Theorem Workbook — the exercises, as one registry
+   Algebra Workbook — CHAPTER 2: the polynomial remainder theorem
    ----------------------------------------------------------------------------
-   ONE list, read by the builder (which offers them), the engine (which prints
-   them) and the answer key (which marks them) — the same shape as the
-   place-value workbook's registry, so a new exercise is an entry here and
-   nothing else.
+   This was the Remainder Theorem Workbook, a page of its own. It moved into the
+   Algebra Workbook as a chapter, unchanged: the registry now lives in
+   exercises.js and this file is only the chapter. Everything below about the
+   ORDER and the WORDS still stands — it was written for a special-needs learner
+   and the design is the feature.
 
    THE ORDER IS THE TEACHING, and it is the whole design of this paper:
 
@@ -36,11 +37,14 @@ import {
 
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
 
-export const GROUPS = [
-  { id: "zero", label: "A · The bracket and its zero", blurb: "One step on its own: what number makes the bracket zero?" },
-  { id: "swap", label: "B · Swapping x for a number", blurb: "The arithmetic, with a row for every term." },
-  { id: "theorem", label: "C · The remainder theorem", blurb: "The two steps together, in the four-step frame." },
-  { id: "say", label: "D · Saying the rule", blurb: "The words, so the method is still there next week." },
+/* The letters the sections used to carry are gone from the labels: the paper
+   letters its sections itself, and in a workbook with a chapter in front of this
+   one "A" is no longer the bracket and its zero. */
+export const RT_GROUPS = [
+  { id: "zero", chapter: "Chapter 2 · The remainder theorem", label: "The bracket and its zero", blurb: "One step on its own: what number makes the bracket zero?" },
+  { id: "swap", label: "Swapping x for a number", blurb: "The arithmetic, with a row for every term." },
+  { id: "theorem", label: "The remainder theorem", blurb: "The two steps together, in the four-step frame." },
+  { id: "say", label: "Saying the rule", blurb: "The words, so the method is still there next week." },
 ];
 
 /* ── A. the bracket and its zero ───────────────────────────────────────────*/
@@ -468,22 +472,12 @@ const trueFalse = {
 
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
-export const EXERCISES = [
+export const RT_EXERCISES = [
   zeroFind, zeroMatch, zeroWrite,
   swapLadder, swapQuick,
   frameEx, remainderEx, factorEx, findK,
   ruleFill, trueFalse,
 ];
-
-export function exerciseById(id) {
-  return EXERCISES.find((e) => e.id === id) || null;
-}
-
-/** Why an exercise cannot run under these settings, or null. */
-export function unavailable(ex, o) {
-  if (ex.hardest && o.level === "gentle") return "needs Middle or Stretch";
-  return null;
-}
 
 /** The one-line working the answer key quotes back for the frame. */
 function shortestWorking(item) {

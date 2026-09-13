@@ -1,5 +1,6 @@
 /* ============================================================================
-   Remainder Theorem Workbook — what THIS workbook draws
+   Algebra Workbook — what THIS workbook draws (the basic-concepts marks are at
+   the end; everything above was the Remainder Theorem Workbook's)
    ----------------------------------------------------------------------------
    The paper itself, the bench around it and every mark a child writes into come
    from /utils/components/workbook.css. What is left here is the organisers —
@@ -292,3 +293,24 @@
   line-height: 1.45;
   color: var(--text-tertiary);
 }
+
+/* ══ CHAPTER 1 · BASIC CONCEPTS ════════════════════════════════════════════ */
+
+/* the empty box a number goes in, printed as a shape so it reads as one */
+.bc-box { font-size: 1.25em; line-height: 1; vertical-align: -0.08em; }
+
+/* a variable given values, and what the expression comes to each time */
+.bc-table { border-collapse: collapse; margin: 2mm 0 2.5mm; font-size: 12pt; font-weight: 700; }
+.bc-table th, .bc-table td {
+  min-width: 18mm;
+  height: 10mm;
+  padding: 1mm 2mm;
+  text-align: center;
+  border: 0.45mm solid #2a2723;
+}
+.bc-table th { background: #fff3a8; white-space: nowrap; }
+.bc-table td .wb-answer { width: 15mm; }
+
+/* the words, and what they mean: the meanings are long, so the right side is wide */
+.bc-match { max-width: 165mm; }
+.bc-match .wb-match__side--right li { font-size: 10pt; }

@@ -6,6 +6,10 @@
       "includeFiles": "{tts-cache/**,utils/features.js,prep-math/activity/algebra-moves/js/**}"
     }
   },
+  "redirects": [
+    { "source": "/prep-math/activity/remainder-theorem-workbook", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
+    { "source": "/prep-math/activity/remainder-theorem-workbook/:path*", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
     { "source": "/w/:code", "destination": "/writing/index.html" },
