@@ -151,6 +151,24 @@ export function digital(h, m) {
 }
 
 /**
+ * A digital clock to look at: the panel a cooker or a microwave has, with
+ * whatever is handed in standing in it.
+ *
+ * HTML and not SVG, unlike the round face, and for a reason: half of what this
+ * is for is a clock with the figures MISSING, and the place a child writes an
+ * answer is a real box on the page — part of the same run of answers that gets
+ * read, saved and marked — not a shape in a drawing.
+ *
+ * `show` is what stands in the panel: the figures, or boxes to write them in.
+ */
+export function digitalFace(show, label = "") {
+  return (
+    `<span class="mt-digital"${label ? ` role="img" aria-label="${label}"` : ""}>` +
+    `<span class="mt-digital__panel">${show}</span></span>`
+  );
+}
+
+/**
  * "half past three", "quarter to four", "twenty-five past three".
  *
  * Past up to and including half, TO after it — and the hour changes when it

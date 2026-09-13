@@ -469,6 +469,53 @@ thead .pv-chart__side {
 .mt-key__hand--hour { width: 8mm; height: 2.4mm; background: #c0453f; }
 .mt-key__hand--min { width: 14mm; height: 1.1mm; background: #2f6ea8; }
 
+/* ── the digital clock ─────────────────────────────────────────────────────
+   The panel off a cooker: a dark window with the figures standing in it. It is
+   drawn in fixed ink rather than theme tokens for the same reason everything
+   else on this paper is — the workbook is paper, and it must come out of a
+   dark-mode browser looking the way it comes out of a light one. */
+.mt-digital {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+.mt-digital__panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6mm;
+  min-width: 24mm;
+  padding: 1.6mm 3mm;
+  justify-content: center;
+  font: 700 15pt/1 var(--font-mono, "JetBrains Mono", monospace);
+  letter-spacing: 0.06em;
+  color: #2a2723;
+  background: #fffdf8;
+  border: 0.6mm solid #2a2723;
+  border-radius: 1.6mm;
+}
+.mt-digital__colon { font-weight: 700; padding: 0 0.4mm; }
+/* The two boxes the figures are written into, sized to the figures that would
+   have stood there — the hour takes two, the minutes always take two. */
+.mt-digital__box {
+  display: inline-block;
+  min-width: 9mm;
+  height: 7mm;
+  border-bottom: 0.5mm solid #2a2723;
+}
+
+/* A clock and its digital twin. They are ONE thing — the point of the exercise
+   is that they are the same time — so they are kept together and read across
+   where there is room, and stack where there is not, which on a two-column
+   page is most of the time. */
+.mt-pair {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  flex-wrap: wrap;
+  margin: 2.5mm 0 2mm;
+}
+.mt-pair .mt-art { margin: 0; }
+
 /* The joining exercise has clocks on one side, so its rows are tall. */
 .mt-match .wb-match__side li { height: auto; padding: 1.5mm 0; }
 .mt-match { max-width: 150mm; }
