@@ -1925,9 +1925,8 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   position: fixed;
   z-index: 10062;          /* over the rail (10060), under the panels (10070) */
   display: flex;
-  /* A ROW, reading away from the rail: the keys are pictures, so a column of
-     them would be a second rail rather than a shelf pulled out of the first. */
-  flex-direction: row;
+  /* a column, beside the key it came out of */
+  flex-direction: column;
   gap: 0.25rem;
   padding: 0.35rem;
   background: var(--surface-primary, #fffdf8);
@@ -1952,61 +1951,55 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    THE RAIL SAYS ITS NAMES ON HOVER
-   Nineteen names down the side is a column of reading. The name floats clear
-   of the rail when you are on the key, exactly as it does on the manipulatives
-   canvas (.bb-tool em) — so the rail is a strip of pictures and costs the
-   height of the pictures.
+   Every key is a picture, in the rail and in every flyout, and its name is
+   shown by ONE tooltip (.wb-tip) that lives on the body — see showTip in
+   interactive.js.
+
+   The name inside each key is kept, for a screen reader, but it takes no room
+   and hangs out of nothing. It used to be `position: absolute` beside the key,
+   and because the rail scrolls (overflow-y: auto, so overflow-x computes to
+   auto too) every one of those names was overflow: the rail grew a horizontal
+   scrollbar. Nothing inside a scroller can stick out of it.
    ══════════════════════════════════════════════════════════════════════════ */
 
 .wb-side__btn { position: relative; }
 .wb-side__btn em {
   position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10063;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* the rail never scrolls sideways, whatever is in it */
+.wb-side { overflow-x: hidden; }
+
+/* a key is as wide as its picture */
+.wb-side .wb-side__btn { width: 2.35rem; padding: 0.38rem 0.2rem; }
+@media (max-width: 700px) {
+  .wb-side .wb-side__btn { width: 2.3rem; }
+  /* the strip along the bottom is the one place the rail scrolls sideways on
+     purpose — there are more keys than a phone is wide */
+  .wb-side { overflow-x: auto; }
+}
+
+.wb-tip {
+  position: fixed;
+  z-index: 10080;
   padding: 0.24rem 0.5rem;
-  font-style: normal;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.62rem;
+  font: 500 0.62rem/1.2 var(--font-mono, monospace);
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--surface-primary, #fffdf8);
   background: var(--ink, #2a2723);
   border-radius: 0.3rem;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s ease;
 }
-.wb-side__btn:hover em,
-.wb-side__btn:focus-visible em { opacity: 1; }
-
-/* and with the names out of it, a key is as wide as its picture */
-.wb-side .wb-side__btn { width: 2.35rem; padding: 0.38rem 0.2rem; }
-
-@media (max-width: 700px) {
-  /* the rail is a strip along the bottom there, so a name beside the last key
-     would be off the right edge: it sits above the key instead. */
-  .wb-side .wb-side__btn { width: 2.3rem; }
-  .wb-side .wb-side__btn em {
-    left: 50%;
-    top: auto;
-    bottom: calc(100% + 6px);
-    transform: translateX(-50%);
-  }
-}
-
-/* A flyout is pictures too, and it says its names the same way. The name goes
-   ABOVE the key there rather than beside it: the keys sit in a row, so a name
-   to the right of one would be laid over the next. */
-.wb-side__fly .wb-side__btn em {
-  left: 50%;
-  top: auto;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-}
-.wb-side__fly .wb-side__btn:hover em,
-.wb-side__fly .wb-side__btn:focus-visible em { opacity: 1; }
+.wb-tip[hidden] { display: none; }
+@media print { .wb-tip { display: none !important; } }
 
 /* a studio in a frame of its own */
 .wb-studio {

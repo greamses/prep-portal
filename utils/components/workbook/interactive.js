@@ -1884,20 +1884,66 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     `<button type="button" class="wb-side__btn" ${k.attr}="${k.id}" aria-pressed="false"`
     + ` title="${k.label}">${k.icon}<em>${k.label}</em></button>`;
 
-  side.innerHTML = `<span class="wb-side__cap">Tools</span>`
-    + FAMILIES.map((f) => {
+  side.innerHTML = FAMILIES.map((f) => {
       const [face, ...rest] = f.of;
-      return `<div class="wb-side__fam" data-fam="${f.id}">`
-        + keyHtml(face)
-        + (rest.length
-          ? `<button type="button" class="wb-side__more" aria-expanded="false"`
-            + ` aria-label="More ${f.label.toLowerCase()} tools"`
-            + ` title="More ${f.label.toLowerCase()} tools">${ARROW}</button>`
-            /* the flyout itself is NOT here — see below */
-          : "")
-        + `</div>`;
-    }).join("");
+    return `<div class="wb-side__fam" data-fam="${f.id}">`
+      + keyHtml(face)
+      + (rest.length
+        ? `<button type="button" class="wb-side__more" aria-expanded="false"`
+          + ` aria-label="More ${f.label.toLowerCase()} tools"`
+          + ` title="More ${f.label.toLowerCase()} tools">${ARROW}</button>`
+          /* the flyout itself is NOT here — see below */
+        : "")
+      + `</div>`;
+  }).join("");
   document.body.appendChild(side);
+
+  /* ── the name of the key under the pointer ──────────────────────────────
+     ONE tooltip, on the body, moved to whichever key is being pointed at.
+
+     It was a `position: absolute` span inside each key, and that made the rail
+     scroll sideways: `.wb-side` is `overflow-y: auto`, which makes overflow-x
+     compute to auto as well, and a name sticking out to the right of a key is
+     overflow — so every key grew a horizontal scrollbar under it. Nothing
+     inside a scroller can hang outside it. It lives out here instead, fixed to
+     the window like the flyouts and for the same reason.
+
+     Beside the key, or above it when there is no room to the right, which is
+     what happens on a phone where the rail is a strip along the bottom. */
+  const tip = document.createElement("span");
+  tip.className = "wb-tip";
+  tip.hidden = true;
+  document.body.appendChild(tip);
+
+  function showTip(key) {
+    const name = key.querySelector("em")?.textContent.trim() || key.title;
+    if (!name) return;
+    tip.textContent = name;
+    tip.hidden = false;
+    const k = key.getBoundingClientRect();
+    const t = tip.getBoundingClientRect();
+    const right = k.right + 8;
+    if (right + t.width < window.innerWidth - 4) {
+      tip.style.left = `${Math.round(right)}px`;
+      tip.style.top = `${Math.round(k.top + (k.height - t.height) / 2)}px`;
+    } else {
+      tip.style.left = `${Math.round(Math.max(4, k.left + (k.width - t.width) / 2))}px`;
+      tip.style.top = `${Math.round(k.top - t.height - 8)}px`;
+    }
+  }
+
+  const hideTip = () => { tip.hidden = true; };
+
+  /* On the document, because the flyouts are not inside the rail. */
+  document.addEventListener("pointerover", (e) => {
+    const key = e.target.closest?.(".wb-side__btn");
+    if (key) showTip(key); else hideTip();
+  });
+  document.addEventListener("focusin", (e) => {
+    const key = e.target.closest?.(".wb-side__btn");
+    if (key) showTip(key); else hideTip();
+  });
+  document.addEventListener("pointerdown", hideTip);
 
   /* ── the flyouts ────────────────────────────────────────────────────────
      On the BODY, not inside the rail. The rail scrolls when it is taller than
@@ -2244,6 +2290,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     });
     side.hidden = true;
     shutFamilies();
+    hideTip();
     document.documentElement.classList.remove("wb-side-on");
     putToolsAway();
     putSheetsAway();
