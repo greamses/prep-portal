@@ -420,20 +420,20 @@ function getEmbedUrl(url, type) {
 }
 
 const I = {
-  calendar: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="16" height="18" rx="2"></rect><line x1="8" y1="2" x2="8" y2="6"></line><line x1="16" y1="2" x2="16" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
-  clock: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
-  eye: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
-  cpu: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>`,
-  heart: `<svg style="width:12px;height:12px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
-  heartFill: `<svg style="width:12px;height:12px;flex-shrink:0" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
-  share: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`,
-  chat: `<svg style="width:18px;height:18px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
-  arrow: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
-  reply: `<svg style="width:11px;height:11px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>`,
-  link: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
-  video: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`,
-  practice: `<svg style="width:13px;height:13px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`,
-  trash: `<svg style="width:11px;height:11px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`,
+  calendar: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="meta-icon"><rect x="3" y="4.4" width="18" height="16.6" rx="2.4" fill="var(--accent-secondary)"/><path d="M3 6.8a2.4 2.4 0 0 1 2.4-2.4h13.2A2.4 2.4 0 0 1 21 6.8v3H3z" fill="var(--accent-danger)"/><rect x="7" y="2.2" width="2.4" height="4.6" rx="1.2" fill="var(--accent-primary)"/><rect x="14.6" y="2.2" width="2.4" height="4.6" rx="1.2" fill="var(--accent-primary)"/><rect x="6.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/><rect x="10.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/><rect x="14.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="meta-icon"><circle cx="12" cy="12" r="9.5" fill="var(--accent-warning)"/><circle cx="12" cy="12" r="6.8" fill="#fff"/><path d="M12 7.5v4.8l3.4 2" fill="none" stroke="var(--accent-warning)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  eye: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="meta-icon"><path d="M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z" fill="var(--accent-secondary)"/><circle cx="12" cy="12" r="4.4" fill="#fff"/><circle cx="12" cy="12" r="2.3" fill="var(--accent-danger)"/></svg>`,
+  cpu: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="meta-icon"><rect x="5.4" y="1.8" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="5.4" y="18.2" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="11" y="1.8" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="11" y="18.2" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="16.6" y="1.8" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="16.6" y="18.2" width="2" height="4" rx="1" fill="var(--text-tertiary)"/><rect x="1.8" y="5.4" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="18.2" y="5.4" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="1.8" y="11" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="18.2" y="11" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="1.8" y="16.6" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="18.2" y="16.6" width="4" height="2" rx="1" fill="var(--text-tertiary)"/><rect x="4.6" y="4.6" width="14.8" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><rect x="8.6" y="8.6" width="6.8" height="6.8" rx="1.2" fill="var(--accent-primary)"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:12px;height:12px;flex-shrink:0"><path d="M12 20.6 3.9 12.8a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2z" fill="var(--text-tertiary)"/><path d="M12 17.8 5.7 11.6a2.6 2.6 0 0 1 3.7-3.7l2.6 2.6 2.6-2.6a2.6 2.6 0 0 1 3.7 3.7z" fill="#fff"/></svg>`,
+  heartFill: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:12px;height:12px;flex-shrink:0"><path d="M12 20.6 3.9 12.8a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2z" fill="var(--accent-danger)"/><circle cx="8.2" cy="9.2" r="1.6" fill="#fff"/></svg>`,
+  share: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><rect x="10.8" y="7" width="2.4" height="10" rx="1.2" fill="var(--accent-secondary)"/><path d="M6 8.6h12L12 2.2z" fill="var(--accent-danger)"/><path d="M3.4 14.4h2.8v4.2h11.6v-4.2h2.8v5.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6z" fill="var(--accent-primary)"/></svg>`,
+  chat: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:18px;height:18px;flex-shrink:0"><path d="M3.4 5.6a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-8l-4.8 4v-4h-.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="6.2" y="7.2" width="11.6" height="1.8" rx="0.9" fill="#fff"/><rect x="6.2" y="10.6" width="7.2" height="1.8" rx="0.9" fill="#fff"/></svg>`,
+  arrow: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`,
+  reply: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:11px;height:11px;flex-shrink:0"><path d="M9.6 4.4v4.4h4.2a7.4 7.4 0 0 1 7.4 7.4v3.4h-2.8v-3.4a4.6 4.6 0 0 0-4.6-4.6H9.6v4.4L2.6 10.2z" fill="var(--accent-secondary)"/></svg>`,
+  link: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>`,
+  video: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>`,
+  practice: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><rect x="2.4" y="3.4" width="19.2" height="13.4" rx="2" fill="var(--accent-secondary)"/><path d="M10 7v6l5-3z" fill="#fff"/><rect x="10.8" y="16.8" width="2.4" height="2.8" rx="0" fill="var(--text-tertiary)"/><rect x="7" y="19.2" width="10" height="2.4" rx="1.2" fill="var(--accent-primary)"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:11px;height:11px;flex-shrink:0"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>`,
 };
 
 // ─── CARD RENDER ──────────────────────────────────────────
@@ -673,7 +673,7 @@ function showSinglePost(post) {
         ? `
     <div class="resource-links-section">
       <div class="resource-links-heading">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
         Learning Resources
       </div>
       <div class="resource-links-grid">
@@ -689,7 +689,7 @@ function showSinglePost(post) {
             ${
               videoThumb
                 ? `<img src="${escHtml(videoThumb)}" alt="Video thumbnail" loading="lazy" onerror="this.parentElement.style.background='#222'">`
-                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111"><svg style="width:40px;height:40px;color:#fff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg></div>`
+                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:40px;height:40px;color:#fff"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg></div>`
             }
             <div class="video-play-overlay">
               <svg viewBox="0 0 50 50" fill="none">
@@ -700,7 +700,7 @@ function showSinglePost(post) {
           </div>
           <div class="resource-card-footer">
             <span class="resource-type-label">Watch Video</span>
-            <svg class="resource-open-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="resource-open-arrow"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
           </div>
         </div>`
             : ""
@@ -722,11 +722,7 @@ function showSinglePost(post) {
               onerror="this.src='https://www.google.com/s2/favicons?domain=${escHtml(practiceDomain)}&sz=128'; this.onerror=null;">
             <div class="practice-platform-tag">${escHtml(practiceDomain)}</div>
             <div class="video-play-overlay">
-              <svg style="width:40px;height:40px;color:rgba(255, 255, 255, 0.9)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:40px;height:40px;color:rgba(255, 255, 255, 0.9)"><rect x="2.4" y="3.4" width="19.2" height="13.4" rx="2" fill="var(--accent-secondary)"/><path d="M10 7v6l5-3z" fill="#fff"/><rect x="10.8" y="16.8" width="2.4" height="2.8" rx="0" fill="var(--text-tertiary)"/><rect x="7" y="19.2" width="10" height="2.4" rx="1.2" fill="var(--accent-primary)"/></svg>
             </div>
           </div>
           <div class="practice-card-body">
@@ -737,7 +733,7 @@ function showSinglePost(post) {
           </div>
           <div class="resource-card-footer">
             <span class="resource-type-label">Open Lab</span>
-            <svg class="resource-open-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="resource-open-arrow"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
           </div>
         </div>`
             : ""

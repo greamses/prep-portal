@@ -327,4 +327,132 @@ Object.assign(UI, {
   target: svg(dot(12, 12, 9.6, LOUD) + dot(12, 12, 6.6, "#fff") + dot(12, 12, 3.6, LOUD) + dot(12, 12, 1.4, "#fff")),
 });
 
+/* ── the rest of the site: exams, games, blogs, the dashboard, admin ─────── */
+
+Object.assign(UI, {
+  eyeOff: svg(
+    tri("M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z", QUIET) + dot(12, 12, 4.4, "#fff") + dot(12, 12, 2.3, QUIET) +
+      bar(3.4, 3.4, 20.6, 20.6, 2.8, LOUD)
+  ),
+  search: svg(bar(15.4, 15.4, 20.8, 20.8, 3.4, GOLD) + dot(10.4, 10.4, 7.6, PAPER) + dot(10.4, 10.4, 4.6, "#fff")),
+  info: svg(dot(12, 12, 9.4, PAPER) + r(10.7, 10.4, 2.6, 7, "#fff", 1.3) + dot(12, 7.4, 1.6, "#fff")),
+  alert: svg(dot(12, 12, 9.4, WARM) + r(10.7, 6.4, 2.6, 7.4, "#fff", 1.3) + dot(12, 16.8, 1.6, "#fff")),
+  list: svg(
+    dot(4.4, 6, 1.9, LOUD) + r(8, 4.6, 13, 2.8, PAPER, 1.4) +
+      dot(4.4, 12, 1.9, GOLD) + r(8, 10.6, 13, 2.8, PAPER, 1.4) +
+      dot(4.4, 18, 1.9, LEAF) + r(8, 16.6, 9, 2.8, PAPER, 1.4)
+  ),
+  external: svg(
+    tri("M3 7.2a2 2 0 0 1 2-2h6v2.8H5.8v10.2H16v-5.2h2.8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", PAPER) +
+      bar(10.6, 13.4, 19.2, 4.8, 2.6, LOUD) + tri("M13.4 2.6h8v8z", LOUD)
+  ),
+  calendar: svg(
+    r(3, 4.4, 18, 16.6, PAPER, 2.4) + tri("M3 6.8a2.4 2.4 0 0 1 2.4-2.4h13.2A2.4 2.4 0 0 1 21 6.8v3H3z", LOUD) +
+      r(7, 2.2, 2.4, 4.6, GOLD, 1.2) + r(14.6, 2.2, 2.4, 4.6, GOLD, 1.2) +
+      r(6.4, 12.4, 3.2, 3, "#fff", 0.6) + r(10.4, 12.4, 3.2, 3, "#fff", 0.6) + r(14.4, 12.4, 3.2, 3, "#fff", 0.6)
+  ),
+  clock: svg(dot(12, 12, 9.5, WARM) + dot(12, 12, 6.8, "#fff") + `<path d="M12 7.5v4.8l3.4 2" fill="none" stroke="${WARM}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`),
+  heart: svg(tri("M12 20.6 3.9 12.8a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2z", QUIET) + tri("M12 17.8 5.7 11.6a2.6 2.6 0 0 1 3.7-3.7l2.6 2.6 2.6-2.6a2.6 2.6 0 0 1 3.7 3.7z", "#fff")),
+  heartFill: svg(tri("M12 20.6 3.9 12.8a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2z", LOUD) + dot(8.2, 9.2, 1.6, "#fff")),
+  reply: svg(tri("M9.6 4.4v4.4h4.2a7.4 7.4 0 0 1 7.4 7.4v3.4h-2.8v-3.4a4.6 4.6 0 0 0-4.6-4.6H9.6v4.4L2.6 10.2z", PAPER)),
+  monitor: svg(r(2.4, 3.4, 19.2, 13.4, PAPER, 2) + r(5, 6, 14, 8.2, "#fff", 1) + r(10.8, 16.8, 2.4, 2.8, QUIET, 0) + r(7, 19.2, 10, 2.4, GOLD, 1.2)),
+  cpu: svg(
+    [6.4, 12, 17.6].map((x) => r(x - 1, 1.8, 2, 4, QUIET, 1) + r(x - 1, 18.2, 2, 4, QUIET, 1)).join("") +
+      [6.4, 12, 17.6].map((y) => r(1.8, y - 1, 4, 2, QUIET, 1) + r(18.2, y - 1, 4, 2, QUIET, 1)).join("") +
+      r(4.6, 4.6, 14.8, 14.8, PAPER, 2.4) + r(8.6, 8.6, 6.8, 6.8, GOLD, 1.2)
+  ),
+  pulse: svg(`<path d="M2.4 12.4h4l2.6-6.4 4.8 12 2.6-5.6h5.2" fill="none" stroke="${LOUD}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`),
+  skip: svg(tri("M4 4.4 15.4 12 4 19.6z", PAPER) + r(16.8, 4.4, 3.2, 15.2, LOUD, 1.6)),
+  chevronsUp: svg(tri("M12 2.8 20 10.6h-4.4L12 7.2l-3.6 3.4H4z", PAPER) + tri("M12 11 20 18.8h-4.4L12 15.4l-3.6 3.4H4z", LOUD)),
+  chevronsDown: svg(tri("M12 21.2 4 13.4h4.4L12 16.8l3.6-3.4H20z", PAPER) + tri("M12 13 4 5.2h4.4L12 8.6l3.6-3.4H20z", LOUD)),
+  palette: svg(
+    tri("M12 2.4a9.6 9.6 0 0 0 0 19.2c1.4 0 2-1 2-1.9 0-1.3-1-1.6-1-2.8a2 2 0 0 1 2-2h2.6a4.6 4.6 0 0 0 4.4-4.6C22 5.8 17.6 2.4 12 2.4z", WARM) +
+      dot(7, 11, 1.8, LOUD) + dot(9.4, 6.6, 1.8, GOLD) + dot(14.4, 6.2, 1.8, PAPER) + dot(18, 9.6, 1.8, LEAF)
+  ),
+  backspace: svg(tri("M8.4 4.4h11.2a2.4 2.4 0 0 1 2.4 2.4v10.4a2.4 2.4 0 0 1-2.4 2.4H8.4L2 12z", PAPER) + bar(11, 9, 17, 15, 2.2, LOUD) + bar(17, 9, 11, 15, 2.2, LOUD)),
+  enter: svg(r(16.4, 3.6, 2.8, 10.6, PAPER, 1.4) + r(8.4, 11.4, 10.8, 2.8, PAPER, 1.4) + tri("M2.8 12.8 9.6 7.2v11.2z", LOUD)),
+  keypad: svg([4.6, 10.6, 16.6].map((y, i) => [4.6, 10.6, 16.6].map((x) => r(x - 2.4, y - 2.4, 4.8, 4.8, i === 1 ? GOLD : PAPER, 1.2)).join("")).join("")),
+  keyboard: svg(
+    r(1.8, 5.4, 20.4, 13.2, PAPER, 2.4) +
+      [5.6, 9.4, 13.2, 17].map((x) => r(x - 1.1, 8, 2.2, 2.2, "#fff", 0.5) + r(x - 1.1, 11.4, 2.2, 2.2, "#fff", 0.5)).join("") +
+      r(7.4, 14.8, 9.2, 2, LOUD, 1)
+  ),
+  controller: svg(
+    tri("M7.5 7.5h9a4.7 4.7 0 0 1 4.6 3.8l.7 3.7A2.5 2.5 0 0 1 17 16.6L15.8 15H8.2L7 16.6A2.5 2.5 0 0 1 2.2 15l.7-3.7A4.7 4.7 0 0 1 7.5 7.5z", PAPER) +
+      r(4.9, 10.7, 1.6, 4, "#fff", 0.8) + r(3.7, 11.9, 4, 1.6, "#fff", 0.8) +
+      dot(16.2, 11.6, 1.2, LOUD) + dot(18.5, 13, 1.2, GOLD) + dot(14.4, 13, 1.2, "#fff")
+  ),
+  cube: svg(tri("M12 12.6 20.8 7.8V16L12 20.8z", WARM) + tri("M12 12.6 3.2 7.8V16L12 20.8z", PAPER) + tri("M12 3.2 20.8 7.8 12 12.6 3.2 7.8z", GOLD)),
+  lock: svg(
+    `<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" fill="none" stroke="${QUIET}" stroke-width="2.4" stroke-linecap="round"/>` +
+      r(4, 10.5, 16, 10.4, GOLD, 2.6) + dot(12, 15, 1.7, "#fff") + r(11.2, 15.6, 1.6, 2.6, "#fff", 0.8)
+  ),
+  maze: svg(
+    r(2.6, 2.6, 18.8, 18.8, PAPER, 2) +
+      r(5.4, 5.4, 13.2, 2, "#fff", 1) + r(5.4, 5.4, 2, 9, "#fff", 1) + r(9.6, 9.6, 9, 2, "#fff", 1) +
+      r(9.6, 9.6, 2, 9, "#fff", 1) + r(13.8, 13.8, 4.8, 2, "#fff", 1) + dot(16.4, 17.4, 1.5, LOUD)
+  ),
+  users: svg(
+    dot(9, 8, 3.6, PAPER) + tri("M2.6 20.5c0-3.9 3-6.4 6.4-6.4s6.4 2.5 6.4 6.4z", PAPER) +
+      dot(17, 9.4, 2.8, LOUD) + tri("M13.6 20.5c.2-3 2.3-5.2 5-5.2 2.6 0 4.6 2 4.9 4.6v.6z", LOUD)
+  ),
+  trophy: svg(
+    tri("M7 4h10v4a5 5 0 0 1-10 0z", GOLD) +
+      tri("M7 5H4.4v1.6A3 3 0 0 0 7 9.5V7.2A1 1 0 0 1 7 7zm10 0v2c0 .07 0 .14-.01.2v2.3A3 3 0 0 0 19.6 6.6V5z", GOLD) +
+      r(10.7, 12.4, 2.6, 3.1, GOLD, 0) + r(7.4, 15, 9.2, 2.3, PAPER, 1.15) + r(8.4, 17.7, 7.2, 2.5, PAPER, 1.25) +
+      tri("M12 5.3l.85 1.75 1.9.25-1.4 1.3.35 1.9L12 9.4l-1.7.95.35-1.9-1.4-1.3 1.9-.25z", "#fff")
+  ),
+  ticket: svg(tri("M2.6 7.4a2 2 0 0 1 2-2h14.8a2 2 0 0 1 2 2v2.2a2.4 2.4 0 0 0 0 4.8v2.2a2 2 0 0 1-2 2H4.6a2 2 0 0 1-2-2v-2.2a2.4 2.4 0 0 0 0-4.8z", GOLD) + tri("M12 8.2l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z", LOUD)),
+  speaker: svg(
+    tri("M4 9.4h2.7l3.8-3.2a0.8 0.8 0 0 1 1.32 0.6v10.4a0.8 0.8 0 0 1-1.32 0.6L6.7 14.6H4a1 1 0 0 1-1-1v-3.2a1 1 0 0 1 1-1z", PAPER) +
+      `<path d="M15.3 9.1a4 4 0 0 1 0 5.8" fill="none" stroke="${LEAF}" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="M17.6 6.6a7.4 7.4 0 0 1 0 10.8" fill="none" stroke="${WARM}" stroke-width="2" stroke-linecap="round"/>`
+  ),
+  shield: svg(tri("M12 2.4l8 2.7v6.3c0 5-3.4 8.5-8 10.6-4.6-2.1-8-5.6-8-10.6V5.1z", PAPER) + `<path d="M8.4 12l2.6 2.6 4.8-5" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>`),
+  coin: svg(dot(12, 12, 9.6, GOLD) + dot(12, 12, 6.8, WARM) + r(10.9, 7.4, 2.2, 9.2, "#fff", 1.1) + r(8.6, 9.6, 6.8, 1.8, "#fff", 0.9) + r(8.6, 12.6, 6.8, 1.8, "#fff", 0.9)),
+  /* a star that is simply on — a heading mark, not a rating */
+  starOn: UI.star(true),
+  /* the annotation tools: draw a box, draw a ring */
+  box: svg(r(3, 3, 18, 18, PAPER, 2.6) + r(6.6, 6.6, 10.8, 10.8, "#fff", 1.2)),
+  ring: svg(dot(12, 12, 9.4, PAPER) + dot(12, 12, 5.8, "#fff")),
+  camera: svg(tri("M8.5 7l1.6-2.6h3.8L15.5 7z", PAPER) + r(2.5, 7, 19, 13, PAPER, 3) + dot(12, 13.4, 4.1, "#fff") + dot(12, 13.4, 2.3, GOLD)),
+  moon: svg(tri("M20.8 14.6A8.6 8.6 0 0 1 9.4 3.2a8.4 8.4 0 1 0 11.4 11.4z", GOLD) + dot(15.2, 7, 1.2, PAPER) + dot(18.4, 10.4, 0.9, PAPER)),
+  instagram: svg(r(2.4, 2.4, 19.2, 19.2, LOUD, 5.4) + dot(12, 12, 4.8, "#fff") + dot(12, 12, 2.8, LOUD) + dot(17.2, 6.8, 1.4, "#fff")),
+  youtube: svg(r(1.8, 5, 20.4, 14, LOUD, 4.2) + tri("M9.8 8.8v6.4l5.6-3.2z", "#fff")),
+  facebook: svg(dot(12, 12, 10, PAPER) + tri("M13.4 21.8v-7.4h2.5l.4-2.9h-2.9V9.7c0-.8.3-1.4 1.5-1.4h1.5V5.7a19 19 0 0 0-2.2-.1c-2.2 0-3.6 1.3-3.6 3.7v2.2H8.1v2.9h2.5v7.4z", "#fff")),
+  signout: svg(
+    r(3, 3, 9, 18, PAPER, 2.6) + dot(8.6, 12, 1.1, "#fff") +
+      `<path d="M21 12h-7m0 0 3-3m-3 3 3 3" fill="none" stroke="${LOUD}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`
+  ),
+  window: svg(r(2.6, 3.4, 18.8, 17.2, PAPER, 2) + tri("M2.6 5.4a2 2 0 0 1 2-2h14.8a2 2 0 0 1 2 2v3.2H2.6z", GOLD) + dot(5.6, 6, 1, "#fff") + dot(8.4, 6, 1, "#fff")),
+  minimize: svg(r(4, 16.6, 16, 3.2, PAPER, 1.6)),
+  rotateDevice: svg(
+    r(3, 7, 12.6, 10, PAPER, 2) + r(5, 9, 8.6, 6, "#fff", 0.8) +
+      `<path d="M17.8 7.6a6.4 6.4 0 0 1 3.4 5.6" fill="none" stroke="${GOLD}" stroke-width="2.6" stroke-linecap="round"/>` + tri("M19 15.6 21.2 12.2l2 3.4z", LOUD)
+  ),
+  dice: svg(
+    r(2.6, 2.6, 18.8, 18.8, PAPER, 4.2) + dot(8.2, 8.2, 1.75, "#fff") + dot(15.8, 8.2, 1.75, "#fff") +
+      dot(12, 12, 1.75, GOLD) + dot(8.2, 15.8, 1.75, "#fff") + dot(15.8, 15.8, 1.75, "#fff")
+  ),
+  fire: svg(tri("M12 2.2c1.4 3.4 5.6 5.2 5.6 10.4a5.6 5.6 0 0 1-11.2 0c0-2.6 1.4-4.2 2.8-5.4.3 2.6 2.8 2.6 2.8 0z", WARM) + tri("M12 11.4c.8 1.8 2.8 2.6 2.8 5a2.8 2.8 0 0 1-5.6 0c0-1.4.8-2.4 1.4-3 .2 1.2 1.4 1.2 1.4 0z", GOLD)),
+  snake: svg(
+    `<path d="M6 6.8a2.8 2.8 0 0 1 5.6 0c0 3.4-6.6 3.2-6.6 7.4a4.4 4.4 0 0 0 8.8.6c.2-2.8 3.2-3.8 5.8-2" fill="none" stroke="${LEAF}" stroke-width="3.2" stroke-linecap="round"/>` +
+      dot(7.8, 6.2, 1, "#fff")
+  ),
+  ladder: svg(r(5.6, 2.6, 2.6, 18.8, WARM, 1.3) + r(15.8, 2.6, 2.6, 18.8, WARM, 1.3) + [6.4, 11, 15.6].map((y) => r(8.2, y, 7.6, 2.2, GOLD, 1.1)).join("")),
+  think: svg(dot(12, 12, 9.6, PAPER) + `<path d="M9.4 9.4a2.7 2.7 0 0 1 5.1 1.2c0 1.8-2.4 2.1-2.4 3.6" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/>` + dot(12.1, 17.2, 1.3, "#fff")),
+  crossBadge: svg(dot(12, 12, 9.6, LOUD) + bar(8.6, 8.6, 15.4, 15.4, 2.3, "#fff") + bar(15.4, 8.6, 8.6, 15.4, 2.3, "#fff")),
+  sparkles: svg(tri("M11 2.4l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z", GOLD) + tri("M18 13.4l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z", LOUD) + dot(5, 18, 1.6, PAPER)),
+  halfCircle: svg(dot(12, 12, 9.6, PAPER) + tri("M12 2.4a9.6 9.6 0 0 1 0 19.2z", GOLD) + dot(12, 12, 3.4, "#fff")),
+  undoCircle: svg(circleArrow(false)),
+  /* a monitor with a play mark: a practice site */
+  practice: svg(r(2.4, 3.4, 19.2, 13.4, PAPER, 2) + tri("M10 7v6l5-3z", "#fff") + r(10.8, 16.8, 2.4, 2.8, QUIET, 0) + r(7, 19.2, 10, 2.4, GOLD, 1.2)),
+  /* the eye on the drone HUD toggle: its parts carry ids the page's script shows and hides */
+  hudEye: (size) =>
+    `<svg viewBox="0 0 24 24"${size ? ` width="${size}" height="${size}"` : ""} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">` +
+    `<path id="dr-hud-toggle-eye" d="M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z" fill="${PAPER}"/>` +
+    `<circle cx="12" cy="12" r="4.4" fill="#fff"/><circle cx="12" cy="12" r="2.3" fill="${LOUD}"/>` +
+    `<rect id="dr-hud-toggle-slash" x="10.6" y="-0.4" width="2.8" height="24.8" rx="1.4" fill="${LOUD}" transform="rotate(-45 12 12)" style="display:none"/></svg>`,
+});
+
 export default UI;

@@ -144,12 +144,12 @@
     }
 
     // ── Icons for the transport controls ────────────────────────────────
-    const ICON_PREV = '<svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 2L3.5 6l4 4"/></svg>';
-    const ICON_NEXT = '<svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2l4 4-4 4"/></svg>';
-    const ICON_RESTART = '<svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 6a3.8 3.8 0 1 0 1.2-2.75"/><path d="M3 1.4v2.2h2.2"/></svg>';
+    const ICON_PREV = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="13" height="13" aria-hidden="true"><g transform="rotate(180 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>';
+    const ICON_NEXT = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="13" height="13" aria-hidden="true"><g transform="rotate(0 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>';
+    const ICON_RESTART = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="13" height="13" aria-hidden="true"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>';
     const ICON_PAUSE = '<svg width="13" height="13" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2.5 1.5h2.2v9H2.5zM7.3 1.5h2.2v9H7.3z"/></svg>';
-    const ICON_EXPAND = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 1H1v4M9 13h4V9M13 5V1H9M1 9v4h4"/></svg>';
-    const ICON_CHAT = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 8A1.5 1.5 0 0 1 11 9.5H5L2 12V3.5A1.5 1.5 0 0 1 3.5 2h7A1.5 1.5 0 0 1 12.5 3.5z"/></svg>';
+    const ICON_EXPAND = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="13" height="13" aria-hidden="true"><path d="M3 9.4V4.6A1.6 1.6 0 0 1 4.6 3h4.8v2.8H5.8v3.6zM21 9.4V4.6A1.6 1.6 0 0 0 19.4 3h-4.8v2.8h3.6v3.6zM3 14.6v4.8A1.6 1.6 0 0 0 4.6 21h4.8v-2.8H5.8v-3.6zM21 14.6v4.8a1.6 1.6 0 0 1-1.6 1.6h-4.8v-2.8h3.6v-3.6z" fill="var(--accent-secondary)"/></svg>';
+    const ICON_CHAT = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="13" height="13" aria-hidden="true"><path d="M3.4 5.6a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-8l-4.8 4v-4h-.4a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><rect x="6.2" y="7.2" width="11.6" height="1.8" rx="0.9" fill="#fff"/><rect x="6.2" y="10.6" width="7.2" height="1.8" rx="0.9" fill="#fff"/></svg>';
 
     // ── Modal ───────────────────────────────────────────────────────────
     let overlay, stage, stepsEl, titleEl, hintEl, built = false;
@@ -419,8 +419,7 @@
                         '<button type="button" class="mathanim-pill" id="mathanim-discuss" title="Discuss this with PrepBot">' + ICON_CHAT + '<span>Ask PrepBot</span></button>' +
                         '<button type="button" class="mathanim-x" id="mathanim-expand" title="Full view" aria-label="Expand to full view">' + ICON_EXPAND + '</button>' +
                         '<button type="button" class="mathanim-x" id="mathanim-close" aria-label="Close">' +
-                            '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" ' +
-                            'stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11"/></svg>' +
+                            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="12" height="12" aria-hidden="true"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>' +
                         '</button>' +
                     '</div>' +
                 '</div>' +

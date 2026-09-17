@@ -8,23 +8,19 @@
      user) — chunky multicolour "sticker" glyphs in the same language as
      utils/components/nav-icons.js. Fills use theme accent tokens so they
      re-tint in light/dark.
-   • UI CHROME (close, arrow, eye/eyeOff) — single-stroke, drawn in
-     `currentColor` so CSS controls the colour. Same split nav-icons.js uses
-     for its own utility glyphs (SVG_SUN / SVG_MOON / SVG_CAMERA).
+   • UI CHROME (close, arrow, eye/eyeOff) — the same filled house style, from
+     utils/components/ui-icons.js; there is no single-stroke exception any more.
 ========================================================================= */
-
-const line = (paths) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 
 const svg = (paths) =>
   `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paths}</svg>`;
 
 export const AUTH_ICONS = {
-  // ── UI chrome (plain stroke, same convention as nav-icons.js SVG_SUN/SVG_MOON) ──
-  close: line(`<path d="M18 6 6 18"/><path d="M6 6l12 12"/>`),
-  arrow: line(`<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>`),
-  eye: line(`<path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>`),
-  eyeOff: line(`<path d="M2.5 12S6 5 12 5c2 0 3.8.6 5.4 1.5M21.5 12S18 19 12 19c-2 0-3.8-.6-5.4-1.5"/><path d="M4 4l16 16"/><path d="M9.7 9.7a3 3 0 0 0 4.2 4.2"/>`),
+  // ── UI chrome ──
+  close: "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(45 12 12)\"/><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(-45 12 12)\"/></svg>",
+  arrow: "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><g transform=\"rotate(90 12 12)\"><rect x=\"10.6\" y=\"9\" width=\"2.8\" height=\"12\" rx=\"1.4\" fill=\"var(--accent-secondary)\"/><path d=\"M12 2.6 19.4 11H4.6z\" fill=\"var(--accent-danger)\"/></g></svg>",
+  eye: "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><path d=\"M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z\" fill=\"var(--accent-secondary)\"/><circle cx=\"12\" cy=\"12\" r=\"4.4\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"2.3\" fill=\"var(--accent-danger)\"/></svg>",
+  eyeOff: "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><path d=\"M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z\" fill=\"var(--text-tertiary)\"/><circle cx=\"12\" cy=\"12\" r=\"4.4\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"2.3\" fill=\"var(--text-tertiary)\"/><rect x=\"-0.16\" y=\"10.60\" width=\"24.32\" height=\"2.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(45.00 12.00 12.00)\"/></svg>",
 
   // ── Field marks — multicolour stickers, same language as nav-icons.js ──
   email: svg(

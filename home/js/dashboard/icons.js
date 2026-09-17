@@ -4,15 +4,12 @@
    Content glyphs (papers, users, star…) are chunky multicolour "stickers" in
    the same language as utils/components/nav-icons.js — 24×24, 2–3 palette
    colours + white highlights, token-based fills so they re-tint in light/dark.
-   Pure UI chrome (arrow, chevrons) stays single-stroke `currentColor`, same
-   split nav-icons.js itself uses for its utility glyphs (SVG_SUN/SVG_MOON).
+   Chrome (arrow, chevrons) is in the same filled style — there is no
+   single-stroke exception any more (utils/components/ui-icons.js).
 ========================================================================= */
 
 const svg = (paths) =>
   `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paths}</svg>`;
-
-const line = (paths) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 
 export const I = {
   // Past papers — stacked sheets
@@ -46,8 +43,8 @@ export const I = {
       `<circle cx="12" cy="10.4" r="1.9" fill="#fff" opacity="0.85"/>`,
   ),
 
-  // "View all" chrome arrow — stays a plain stroke glyph
-  arrow: line(`<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`),
+  // "View all" arrow
+  arrow: "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><g transform=\"rotate(90 12 12)\"><rect x=\"10.6\" y=\"9\" width=\"2.8\" height=\"12\" rx=\"1.4\" fill=\"var(--accent-secondary)\"/><path d=\"M12 2.6 19.4 11H4.6z\" fill=\"var(--accent-danger)\"/></g></svg>",
 
   // Classes / manage users — two people
   users: svg(
@@ -140,6 +137,6 @@ export const I = {
   ),
 
   // Calendar nav chrome — plain chevrons
-  chevronLeft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`,
-  chevronRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`,
+  chevronLeft: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(180 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`,
+  chevronRight: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(0 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`,
 };

@@ -473,8 +473,8 @@ let mapOffsets = null;
 let mapSnapTol = 52;
 let mapDrag = null;
 
-const FS_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
-const FS_COMPRESS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const FS_EXPAND = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 9.4V4.6A1.6 1.6 0 0 1 4.6 3h4.8v2.8H5.8v3.6zM21 9.4V4.6A1.6 1.6 0 0 0 19.4 3h-4.8v2.8h3.6v3.6zM3 14.6v4.8A1.6 1.6 0 0 0 4.6 21h4.8v-2.8H5.8v-3.6zM21 14.6v4.8a1.6 1.6 0 0 1-1.6 1.6h-4.8v-2.8h3.6v-3.6z" fill="var(--accent-secondary)"/></svg>';
+const FS_COMPRESS = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9.4 3v4.8A1.6 1.6 0 0 1 7.8 9.4H3V6.6h3.6V3zM14.6 3v4.8a1.6 1.6 0 0 0 1.6 1.6H21V6.6h-3.6V3zM9.4 21v-4.8a1.6 1.6 0 0 0-1.6-1.6H3v2.8h3.6V21zM14.6 21v-4.8a1.6 1.6 0 0 1 1.6-1.6H21v2.8h-3.6V21z" fill="var(--accent-danger)"/></svg>';
 
 function buildMapGrid() {
   gridEl.classList.add('mapjig-grid');

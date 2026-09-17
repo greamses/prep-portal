@@ -43,14 +43,9 @@ const LEGACY_PHOTO_KEYS = ['drillAvatarCustom', 'puzzleAvatarCustom', 'geoAvatar
 
 const stickyColor = (i) => `pp-sticky--c${i % 6}`;
 
-const UPLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1-1.6A1.5 1.5 0 0 1 10.4 3.6h3.2a1.5 1.5 0 0 1 1.3.8l1 1.6h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linejoin="round"/>
-  <circle cx="12" cy="12.5" r="3.4" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6"/>
-</svg>`;
+const UPLOAD_ICON_SVG = "<svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><path d=\"M8.5 7l1.6-2.6h3.8L15.5 7z\" fill=\"var(--accent-secondary)\"/><rect x=\"2.5\" y=\"7\" width=\"19\" height=\"13\" rx=\"3\" fill=\"var(--accent-secondary)\"/><circle cx=\"12\" cy=\"13.4\" r=\"4.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"13.4\" r=\"2.3\" fill=\"var(--accent-primary)\"/></svg>";
 
-const REMOVE_ICON_SVG = `<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
-  <path d="M3 3 L9 9 M9 3 L3 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-</svg>`;
+const REMOVE_ICON_SVG = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(45 12 12)\"/><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(-45 12 12)\"/></svg>";
 
 // A pencil over a spark — "PrepBot draws this one".
 const DRAW_ICON_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">

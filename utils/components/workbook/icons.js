@@ -87,16 +87,6 @@ export function wedge(at, from, to, r = 6, fill = LOUD) {
   return `<path d="${d}Z" fill="${fill}"/>`;
 }
 
-/**
- * The old single-stroke wrapper. Nothing in the house style uses it any more —
- * it is kept because a workbook may still want a hairline INSIDE a filled
- * shape (the way the nav's tick is a white stroke on a green disc), and
- * because deleting an export is how you break a page you forgot about.
- */
-export const line = (d) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ` +
-  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-
 export const ICON = {
   /* A sheet feeding through a press and coming out the front — the thing a
      workbook page exists to do. */

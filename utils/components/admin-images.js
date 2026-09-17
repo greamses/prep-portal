@@ -116,7 +116,7 @@ function injectStyles() {
   document.head.appendChild(el);
 }
 
-const PENCIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const PENCIL = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="var(--accent-primary)"/><path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="var(--accent-danger)"/><path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="var(--accent-warning)"/><rect x="12" y="19" width="9.4" height="2.4" rx="1.2" fill="var(--text-tertiary)"/></svg>';
 
 let openPop = null;
 function closePop() { if (openPop) { openPop.remove(); openPop = null; document.removeEventListener('click', onDocClick, true); } }

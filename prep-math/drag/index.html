@@ -115,9 +115,7 @@
         <footer class="builder-footer">
           <span class="setup-status">Mathematics &middot; Algebra Lab</span>
           <button id="gen-btn" class="builder-cta" onclick="generateQuestion()">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><path d="M11 2.4l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z" fill="var(--accent-primary)"/><path d="M18 13.4l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="var(--accent-danger)"/></svg>
             Generate Equation &rarr;
           </button>
         </footer>
@@ -131,23 +129,15 @@
 
     <header class="fs-hdr" id="fs-hdr">
       <button id="fs-new-btn" class="fs-new-btn" onclick="generateQuestion()">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1.5 6.5a5 5 0 1 1 5 5" />
-          <path d="M1.5 3.5v3h3" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M13.6 7.2l6.4-3.4.4 6.8z" fill="var(--accent-danger)"/></svg>
         New
       </button>
       <button id="fs-canvas-toggle-btn" class="fs-canvas-toggle-btn" onclick="toggleCanvas()" title="Hide canvas">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="1" y="1" width="11" height="11" rx="1" />
-          <path d="M1 4.5h11" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><rect x="2.6" y="3.4" width="18.8" height="17.2" rx="2" fill="var(--accent-secondary)"/><path d="M2.6 5.4a2 2 0 0 1 2-2h14.8a2 2 0 0 1 2 2v3.2H2.6z" fill="var(--accent-primary)"/><circle cx="5.6" cy="6" r="1" fill="#fff"/><circle cx="8.4" cy="6" r="1" fill="#fff"/></svg>
         Canvas
       </button>
       <button class="fs-close-btn" onclick="closeOverlay()" aria-label="Close overlay">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M1 1l10 10M11 1L1 11" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="12"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
       </button>
     </header>
 
@@ -161,22 +151,15 @@
         <span id="fs-hint-text" class="fs-hint-txt"></span>
       </div>
       <button id="wp-modal-btn" class="fs-wp-btn" onclick="toggleWordProblemModal()" style="display:none" aria-label="Show problem">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x=".9" y=".9" width="11.2" height="11.2" />
-          <path d="M3 4.5h7M3 7.5h5" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>
         Problem
       </button>
       <button id="fs-mark-done-btn" class="fs-wp-btn fs-mark-done-btn" onclick="markExpressionDone()" style="display:none" aria-label="Mark expression done">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M2 6.5l3.5 3.5 5.5-5.5" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Done
       </button>
       <button class="fs-dismiss-btn" onclick="closeOverlay()">
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 1l9 9M10 1L1 10" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="11" height="11"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
         Close
       </button>
     </footer>
@@ -188,14 +171,10 @@
         <div class="wp-hdr">
           <span id="wp-modal-title" class="wp-title">Word Problem</span>
           <button class="wp-hdr-btn wp-hdr-minimize" id="wp-minimize-btn" onclick="minimizeWordProblemModal()" aria-label="Minimize">
-            <svg width="10" height="2" viewBox="0 0 10 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-              <path d="M0 1h10" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="10" height="2"><rect x="4" y="16.6" width="16" height="3.2" rx="1.6" fill="var(--accent-secondary)"/></svg>
           </button>
           <button class="wp-hdr-btn wp-hdr-close" onclick="closeWordProblemModal()" aria-label="Close word problem">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-              <path d="M1 1l8 8M9 1L1 9" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="10" height="10"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
           </button>
         </div>
         <div class="wp-modal-body">
@@ -204,9 +183,7 @@
         </div>
         <div class="wp-modal-foot">
           <button class="wp-modal-solved-btn" onclick="markSolvedFromModal()">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <path d="M1.5 6.5l3 3 6-6" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="12"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Mark Solved
           </button>
         </div>
@@ -216,10 +193,7 @@
   </div><!-- /fs-overlay -->
 
   <button id="open-fab" class="open-fab" onclick="openOverlay()">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5">
-      <rect x="1.5" y="1.5" width="13" height="13" />
-      <path d="M8 4.5v7M4.5 8h7" />
-    </svg>
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><rect x="10.5" y="4" width="3" height="16" rx="1.5" fill="var(--accent-success)"/><rect x="4" y="10.5" width="16" height="3" rx="1.5" fill="var(--accent-success)"/></svg>
     Open Canvas
   </button>
 

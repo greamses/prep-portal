@@ -99,7 +99,7 @@ export function buildBlank(seg, passageIdx) {
   trigger.className = "pp-select-trigger";
   trigger.type = "button";
   trigger.setAttribute("aria-label", `Choose: ${group.label}`);
-  trigger.innerHTML = `<span class="pp-select-val">pick…</span><svg class="pp-select-chevron chevron-svg" viewBox="0 0 10 6" width="10" height="10" fill="none" aria-hidden="true"><polyline points="1,1 5,5.5 9,1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  trigger.innerHTML = `<span class="pp-select-val">pick…</span><svg class="pp-select-chevron chevron-svg" width="10" height="10" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
 
   trigger.addEventListener("mousedown", (e) => e.stopPropagation());
   trigger.addEventListener("touchstart", (e) => e.stopPropagation(), {

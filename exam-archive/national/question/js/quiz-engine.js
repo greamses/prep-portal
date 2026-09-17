@@ -1959,7 +1959,7 @@ const Quiz = (() => {
     const sb = document.getElementById("submit-btn");
     if (sb) {
       sb.disabled = false;
-      sb.innerHTML = `Submit <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6h8M7 3l3 3-3 3"/></svg>`;
+      sb.innerHTML = `Submit <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="12"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
     }
 
     if (typeof PrepBot !== "undefined" && PrepBot.showFAB) PrepBot.showFAB();

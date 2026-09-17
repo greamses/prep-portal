@@ -105,7 +105,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Detective's Trick
           </div>
           <ol class="exp-steps">
@@ -239,7 +239,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Detective's Trick
           </div>
           <ol class="exp-steps">
@@ -357,7 +357,7 @@ const UNITS = [
         <p class="exp-intro">One rule to spot them all:</p>
         <div class="exp-secret-box">
           <p class="exp-secret-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14"><path d="M12 2.4l8 2.7v6.3c0 5-3.4 8.5-8 10.6-4.6-2.1-8-5.6-8-10.6V5.1z" fill="var(--accent-secondary)"/><path d="M8.4 12l2.6 2.6 4.8-5" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
             The Big Secret
           </p>
           <p class="exp-secret-body">When there is an apostrophe&nbsp;(<strong>'</strong>), it means letters have been removed and two words joined together.</p>
@@ -372,7 +372,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Full-Form Test
           </div>
           <p class="exp-trick-desc">Swap the word with the full form. Does the sentence still make sense?</p>
@@ -523,7 +523,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Detective's Trick
           </div>
           <ol class="exp-steps">
@@ -654,7 +654,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Detective's Trick
           </div>
           <ol class="exp-steps">
@@ -772,7 +772,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Detective's Trick
           </div>
           <ol class="exp-steps">
@@ -875,7 +875,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Test
           </div>
           <ol class="exp-steps">
@@ -959,7 +959,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Comma Test
           </div>
           <ol class="exp-steps">
@@ -1049,7 +1049,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The 3-Step Check
           </div>
           <ol class="exp-steps">
@@ -1136,7 +1136,7 @@ const UNITS = [
       rightHTML: `
         <div class="exp-trick-box">
           <div class="exp-trick-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="14.28" y="16.40" width="7.64" height="3.4" rx="1.7" fill="var(--accent-primary)" transform="rotate(45.00 18.10 18.10)"/><circle cx="10.4" cy="10.4" r="7.6" fill="var(--accent-secondary)"/><circle cx="10.4" cy="10.4" r="4.6" fill="#fff"/></svg>
             The Test
           </div>
           <ol class="exp-steps">

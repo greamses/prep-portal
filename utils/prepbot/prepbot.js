@@ -738,7 +738,7 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     bar1.className = "prepbot-action-bar";
     const thisQBtn = document.createElement("button");
     thisQBtn.className = "prepbot-pill prepbot-pill--primary";
-    thisQBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="5"/><path d="M6 5v4M6 3h.01"/></svg> Q${idx + 1} — Ask about this question`;
+    thisQBtn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="11" height="11"><circle cx="12" cy="12" r="9.4" fill="var(--accent-secondary)"/><rect x="10.7" y="10.4" width="2.6" height="7" rx="1.3" fill="#fff"/><circle cx="12" cy="7.4" r="1.6" fill="#fff"/></svg> Q${idx + 1} — Ask about this question`;
     thisQBtn.addEventListener("click", () => injectCurrentQuestion());
     bar1.appendChild(thisQBtn);
     messages.insertBefore(bar1, messages.firstChild);

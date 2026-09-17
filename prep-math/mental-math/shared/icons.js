@@ -18,26 +18,18 @@ export const ICON_PAUSE = svg(
   `<rect x="13.6" y="4.5" width="4.4" height="15" rx="1.4" fill="currentColor"/>`,
 );
 
-export const ICON_PREV = svg(
-  `<path d="M15 5.5L8 12l7 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-);
+export const ICON_PREV = "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><g transform=\"rotate(180 12 12)\"><path d=\"M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z\" fill=\"var(--accent-secondary)\"/></g></svg>";
 
-export const ICON_NEXT = svg(
-  `<path d="M9 5.5l7 6.5-7 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-);
+export const ICON_NEXT = "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><g transform=\"rotate(0 12 12)\"><path d=\"M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z\" fill=\"var(--accent-secondary)\"/></g></svg>";
 
 export const ICON_CHECK = svg(
   `<circle cx="12" cy="12" r="9.2" fill="var(--accent-success)"/>` +
   `<path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
 
-export const ICON_CLOSE = svg(
-  `<path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
-);
+export const ICON_CLOSE = "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(45 12 12)\"/><rect x=\"10.6\" y=\"3.5999999999999996\" width=\"2.8\" height=\"16.8\" rx=\"1.4\" fill=\"var(--accent-danger)\" transform=\"rotate(-45 12 12)\"/></svg>";
 
-export const ICON_FULLSCREEN = svg(
-  `<path d="M4 9V5.6A1.6 1.6 0 0 1 5.6 4H9M20 9V5.6A1.6 1.6 0 0 0 18.4 4H15M4 15v3.4A1.6 1.6 0 0 0 5.6 20H9M20 15v3.4a1.6 1.6 0 0 1-1.6 1.6H15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
-);
+export const ICON_FULLSCREEN = "<svg viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><path d=\"M3 9.4V4.6A1.6 1.6 0 0 1 4.6 3h4.8v2.8H5.8v3.6zM21 9.4V4.6A1.6 1.6 0 0 0 19.4 3h-4.8v2.8h3.6v3.6zM3 14.6v4.8A1.6 1.6 0 0 0 4.6 21h4.8v-2.8H5.8v-3.6zM21 14.6v4.8a1.6 1.6 0 0 1-1.6 1.6h-4.8v-2.8h3.6v-3.6z\" fill=\"var(--accent-secondary)\"/></svg>";
 
 // PrepBot's hover menu — no circular chip backgrounds, bare glyphs only.
 export const ICON_ASK = svg(

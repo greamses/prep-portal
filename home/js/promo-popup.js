@@ -59,13 +59,9 @@
 
   // Our own coin / commission glyph (matches the partner page + home doorway).
   const COIN_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' +
-      '<circle cx="12" cy="12" r="9"/><path d="M12 7v10"/>' +
-      '<path d="M14.5 9.2c0-1-1.1-1.7-2.5-1.7s-2.5.7-2.5 1.7.9 1.4 2.5 1.8 2.5.8 2.5 1.8-1.1 1.7-2.5 1.7-2.5-.7-2.5-1.7"/>' +
-    '</svg>';
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="var(--accent-primary)"/><circle cx="12" cy="12" r="6.8" fill="var(--accent-warning)"/><rect x="10.9" y="7.4" width="2.2" height="9.2" rx="1.1" fill="#fff"/><rect x="8.6" y="9.6" width="6.8" height="1.8" rx="0.9" fill="#fff"/><rect x="8.6" y="12.6" width="6.8" height="1.8" rx="0.9" fill="#fff"/></svg>';
   const ARROW_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
-      '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>';
 
   function build() {
     if (shown || document.getElementById("pp-promo")) return;

@@ -12,8 +12,8 @@
    screen — so the builder's logic keeps working untouched.
 ═══════════════════════════════════════════════════════ */
 
-const ARROW_L = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`;
-const ARROW_R = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`;
+const ARROW_L = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="15" height="15" aria-hidden="true"><g transform="rotate(180 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
+const ARROW_R = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="15" height="15" aria-hidden="true"><g transform="rotate(0 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
 
 // The four live steps, in order. (Step 5 is hidden by relabelCbtSteps() — the
 // CBT bank's papers are fixed-size, so "number of questions" no longer applies.)

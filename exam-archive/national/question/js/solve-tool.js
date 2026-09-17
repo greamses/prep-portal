@@ -579,29 +579,22 @@
         panel.id = 'solve-panel';
 
         const closeSVG =
-            '<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" ' +
-            'stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
-            '<path d="M1 1l10 10M11 1L1 11"/></svg>';
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="11" height="11" aria-hidden="true"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>';
         const docSVG =
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 4.4a2 2 0 0 1 2-2h8.4L20 8v11.6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--accent-secondary)"/><path d="M14.4 2.4 20 8h-4.4a1.2 1.2 0 0 1-1.2-1.2z" fill="var(--accent-primary)"/><rect x="7.4" y="11.4" width="9" height="1.8" rx="0.9" fill="#fff"/><rect x="7.4" y="15" width="6" height="1.8" rx="0.9" fill="#fff"/></svg>';
         const chevSVG =
-            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" aria-hidden="true"><path d="M2 8l4-4 4 4"/></svg>';
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(270 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>';
         const prevSVG =
-            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 2L3.5 6l4 4"/></svg>';
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(180 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>';
         const nextSVG =
-            '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2l4 4-4 4"/></svg>';
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(0 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>';
         // Annotation tool icons.
-        const hlSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l4-4 3 3-4 4H3z"/><path d="M9 3.5l1.5 1.5"/><path d="M2.5 12.5h5"/></svg>';
-        const boxSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2.5" y="2.5" width="9" height="9" rx="1.4"/></svg>';
-        const circleSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/></svg>';
-        const undoSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5a3 3 0 1 1 0 6H6"/><path d="M4 5l2-2M4 5l2 2"/></svg>';
-        const clearSVG = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h8"/><path d="M5 4.5V3.2h4v1.3"/><path d="M4 4.5l.6 6.3a1 1 0 0 0 1 .9h2.8a1 1 0 0 0 1-.9L10 4.5"/></svg>';
-        const underlineSVG = '<svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><text x="3" y="9.5" font-size="9" font-family="Georgia, serif" fill="currentColor">U</text><path d="M2.5 12h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        const hlSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="var(--accent-primary)"/><path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="var(--accent-danger)"/><path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="var(--accent-warning)"/><rect x="12" y="19" width="9.4" height="2.4" rx="1.2" fill="var(--text-tertiary)"/></svg>';
+        const boxSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.6" fill="var(--accent-secondary)"/><rect x="6.6" y="6.6" width="10.8" height="10.8" rx="1.2" fill="#fff"/></svg>';
+        const circleSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="var(--accent-secondary)"/><circle cx="12" cy="12" r="5.8" fill="#fff"/></svg>';
+        const undoSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.6 8.6h6a5.9 5.9 0 0 1 0 11.8H9.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><path d="M3 8.6 9.4 4.4v8.4z" fill="var(--accent-danger)"/></svg>';
+        const clearSVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/><rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/><path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/><rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/><rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/></svg>';
+        const underlineSVG = '<svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><text x="3" y="9.5" font-size="9" font-family="Georgia, serif" fill="currentColor">U</text><rect x="2.2" y="11.2" width="9.6" height="2" rx="1" fill="var(--accent-danger)"/></svg>';
 
         panel.innerHTML =
             '<div class="solve-panel__bar">' +

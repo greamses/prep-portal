@@ -128,10 +128,10 @@ export const PLANS = {
   }
 
   // ── shared SVGs ───────────────────────────────────────────
-  const CHECK_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-  const ARROW_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
-  const BACK_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`;
-  const LOCK_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+  const CHECK_SVG  = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ARROW_SVG  = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
+  const BACK_SVG   = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(270 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
+  const LOCK_SVG   = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" fill="none" stroke="var(--text-tertiary)" stroke-width="2.4" stroke-linecap="round"/><rect x="4" y="10.5" width="16" height="10.4" rx="2.6" fill="var(--accent-primary)"/><circle cx="12" cy="15" r="1.7" fill="#fff"/><rect x="11.2" y="15.6" width="1.6" height="2.6" rx="0.8" fill="#fff"/></svg>`;
 
   // ── view builders ─────────────────────────────────────────
   // NOTE: the multi-plan "grid" view has been removed. Plan selection now
@@ -150,7 +150,7 @@ export const PLANS = {
         <span class="pm-saving">${pricing.saving}</span>
       </div>` : "";
 
-    const CAL_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+    const CAL_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13" style="flex-shrink:0"><rect x="3" y="4.4" width="18" height="16.6" rx="2.4" fill="var(--accent-secondary)"/><path d="M3 6.8a2.4 2.4 0 0 1 2.4-2.4h13.2A2.4 2.4 0 0 1 21 6.8v3H3z" fill="var(--accent-danger)"/><rect x="7" y="2.2" width="2.4" height="4.6" rx="1.2" fill="var(--accent-primary)"/><rect x="14.6" y="2.2" width="2.4" height="4.6" rx="1.2" fill="var(--accent-primary)"/><rect x="6.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/><rect x="10.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/><rect x="14.4" y="12.4" width="3.2" height="3" rx="0.6" fill="#fff"/></svg>`;
 
     return `
       <div class="pm-checkout">
@@ -214,8 +214,8 @@ export const PLANS = {
       <div class="pm-success">
         <div class="pm-success-icon">
           <svg viewBox="0 0 52 52" fill="none">
-            <circle class="pm-success-circle" cx="26" cy="26" r="24" stroke="currentColor" stroke-width="3"/>
-            <polyline class="pm-success-check" points="14 27 22 35 38 18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="pm-success-circle" cx="26" cy="26" r="24" fill="var(--accent-success)" stroke="var(--accent-success)" stroke-width="3"/>
+            <polyline class="pm-success-check" points="14 27 22 35 38 18" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <h2 class="pm-success-heading">You're all set!</h2>
@@ -234,7 +234,7 @@ export const PLANS = {
       <div id="pm-overlay" class="pm-overlay" role="dialog" aria-modal="true" aria-label="Order summary">
         <div class="pm-sheet pm-sheet--narrow">
           <button class="pm-close" id="pm-close" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
           </button>
           <div id="pm-body"></div>
         </div>

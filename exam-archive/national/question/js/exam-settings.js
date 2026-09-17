@@ -283,9 +283,7 @@
                     <button type="button" class="btn" id="es-back">← Back</button>
                     <button type="button" class="btn btn-ink es-start-btn" id="es-start">
                         Start Exam
-                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M2 6h8M7 3l3 3-3 3"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>
                     </button>
                 </div>
             </div>`;

@@ -234,10 +234,7 @@ export function injectDynamicUI() {
     state.luckyCardOverlay.innerHTML = `
       <div class="lc-box">
         <div class="lc-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z"/>
-            <path d="M14 6v12" stroke-dasharray="2 2"/>
-          </svg>
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 7.4a2 2 0 0 1 2-2h14.8a2 2 0 0 1 2 2v2.2a2.4 2.4 0 0 0 0 4.8v2.2a2 2 0 0 1-2 2H4.6a2 2 0 0 1-2-2v-2.2a2.4 2.4 0 0 0 0-4.8z" fill="var(--accent-primary)"/><path d="M12 8.2l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z" fill="var(--accent-danger)"/></svg>
         </div>
         <h3 id="lc-title">Lucky Strike!</h3>
         <p  id="lc-desc">Move forward 2 spaces.</p>
