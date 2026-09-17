@@ -8,7 +8,10 @@
                        and constants, the parts of an expression, the words
      ex-bars.js        chapter 2, the bar model — linear equations drawn as
                        strips of paper before they are rearranged (barart.js)
-     ex-remainder.js   chapter 3, the polynomial remainder theorem — moved here
+     ex-balance.js     chapter 3, the balance scale — the same equations as a
+                       level scale, where the MOVE is what is being taught
+                       (balanceart.js)
+     ex-remainder.js   chapter 4, the polynomial remainder theorem — moved here
                        whole from the page it used to be (drawn by organiser.js
                        and poly.js)
 
@@ -20,23 +23,30 @@
 
    A group that carries `chapter` starts a chapter in the rail. A new chapter is
    new group entries and a new ex-file, and nothing else.
+
+   THE BAR MODEL AND THE BALANCE ARE NOT THE SAME LESSON, which is why they are
+   two chapters and in this order. The bar says what an equation MEANS; the
+   balance says what you may DO to it, and it is the one that can draw an
+   unknown on both sides.
    ========================================================================== */
 
 import { BC_GROUPS, BC_EXERCISES } from "./ex-concepts.js";
 import { BM_GROUPS, BM_EXERCISES } from "./ex-bars.js";
+import { BS_GROUPS, BS_EXERCISES } from "./ex-balance.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...RT_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...RT_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES];
 
-/** Which chapter an exercise belongs to: 1 to 3. */
+/** Which chapter an exercise belongs to: 1 to 4. */
 const CHAPTER = new Map([
   ...BM_GROUPS.map((g) => [g.id, 2]),
-  ...RT_GROUPS.map((g) => [g.id, 3]),
+  ...BS_GROUPS.map((g) => [g.id, 3]),
+  ...RT_GROUPS.map((g) => [g.id, 4]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 

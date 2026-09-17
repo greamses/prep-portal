@@ -13,7 +13,8 @@ export const WORKBOOK = { id: "algebra-workbook", label: "Algebra Workbook", sty
 const CHAPTERS = {
   1: "Chapter 1: Basic concepts",
   2: "Chapter 2: The bar model",
-  3: "Chapter 3: The remainder theorem",
+  3: "Chapter 3: The balance scale",
+  4: "Chapter 4: The remainder theorem",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])
@@ -35,7 +36,7 @@ export const SUBJECT = {
     const H = helpOf(o);
     const found = chaptersOn(o);
     const parts = [];
-    if (!found.length || found.includes(3)) {
+    if (!found.length || found.includes(4)) {
       parts.push(L.degree === 2 ? "squares" : "cubes");
       parts.push(L.roots.some((a) => a < 0) ? "brackets both ways" : "positive brackets");
     }

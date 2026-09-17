@@ -76,6 +76,37 @@ export const ICON = {
       `<rect x="11.2" y="8" width="1.4" height="8" fill="#fff"/>` +
       `<rect x="2.4" y="18.4" width="19.2" height="2.2" rx="1.1" fill="${QUIET}"/>`
   ),
+  /* ── chapter 3, the balance scale ──
+     All three are the same scale, so the loud part is what each section is
+     about: what is ON the pans, the move between them, the pencil. */
+  /* A level beam with a bag on one pan and a weight on the other. */
+  scale: svg(
+    `<path d="M4.4 8.6h5.2l-2.6 4.6z" fill="${GOLD}"/>` +
+      `<path d="M14.4 8.6h5.2l-2.6 4.6z" fill="${PAPER}"/>` +
+      `<rect x="3.4" y="7" width="17.2" height="2.2" rx="1.1" fill="${QUIET}"/>` +
+      `<rect x="10.9" y="8.4" width="2.2" height="9.6" rx="1.1" fill="${QUIET}"/>` +
+      `<rect x="6.4" y="18" width="11.2" height="2.4" rx="1.2" fill="${QUIET}"/>` +
+      `<circle cx="12" cy="8.1" r="1.9" fill="${LOUD}"/>`
+  ),
+  /* The move: the same taken off both pans, so both arrows are the loud part. */
+  scaleMove: svg(
+    `<rect x="3.4" y="7" width="17.2" height="2.2" rx="1.1" fill="${QUIET}"/>` +
+      `<rect x="10.9" y="8.4" width="2.2" height="9.6" rx="1.1" fill="${QUIET}"/>` +
+      `<rect x="6.4" y="18" width="11.2" height="2.4" rx="1.2" fill="${QUIET}"/>` +
+      `<path d="M4.2 15.4h5.2l-2.6-4.6z" fill="${LOUD}"/>` +
+      `<path d="M14.6 15.4h5.2l-2.6-4.6z" fill="${LOUD}"/>` +
+      `<circle cx="12" cy="8.1" r="1.9" fill="${GOLD}"/>`
+  ),
+  /* The scale with a pencil over it: put the equation on it yourself. */
+  pencilScale: svg(
+    `<rect x="2.6" y="9.6" width="12.6" height="2" rx="1" fill="${QUIET}"/>` +
+      `<rect x="7.9" y="10.8" width="2" height="7.6" rx="1" fill="${QUIET}"/>` +
+      `<rect x="3.6" y="18.4" width="10.6" height="2.2" rx="1.1" fill="${QUIET}"/>` +
+      `<path d="M16.4 4.6l3 3-7.2 7.2-3-3z" fill="${GOLD}"/>` +
+      `<path d="M17.8 3.2a1.9 1.9 0 0 1 2.7 2.7l-.9.9-3-3z" fill="${LEAF}"/>` +
+      `<path d="M9.2 11.8l3 3-4.1 1.1z" fill="${LOUD}"/>`
+  ),
+
   /* A strip with a pencil over it: draw the model yourself. */
   pencilBar: svg(
     `<rect x="2.4" y="13.4" width="13.6" height="6.4" rx="1.2" fill="${PAPER}"/>` +

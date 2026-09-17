@@ -323,3 +323,23 @@
 .ab-art { margin: 2.5mm 0 2mm; }
 .ab-art svg { display: block; max-width: none; }
 .ab-bar { overflow: visible; }
+
+/* ══ CHAPTER 3 · THE BALANCE SCALE ═════════════════════════════════════════
+   The scale is drawn at the paper's own size by balanceart.js, like the bars,
+   and for the same reason: two bags that are meant to weigh the same must be
+   drawn the same. */
+.ab-bal { overflow: visible; }
+
+/* One move to judge: what it is, and the two boxes to tick. They sit on one
+   line at a comfortable width, so three moves under one scale read as three
+   and not as a paragraph. */
+.ab-move {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46mm;
+  align-items: center;
+  gap: 1mm 4mm;
+  max-width: 150mm;
+  padding: 0.6mm 0;
+}
+.ab-move + .ab-move { border-top: 0.25mm solid #ded8cc; }
+.ab-move .wb-ask { margin: 0; }

@@ -196,7 +196,7 @@ const NAV_CONFIG = [
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Printable — number, fractions, time and angles" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Printable — angles, parallel lines, pyramids and prisms" },
-          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Printable — variables and constants, known and unknown, the remainder theorem" },
+          { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Printable — variables and constants, the bar model, the balance scale, the remainder theorem" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
           { text: "AI Flashcards", href: "/flashcards/library.html", description: "Remember everything fast" },
