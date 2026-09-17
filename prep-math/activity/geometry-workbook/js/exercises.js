@@ -12,7 +12,9 @@
      ex-pythagoras.js    chapter 4, all of it (drawn by pythag.js)
      ex-transform.js     chapter 5, all of it (drawn by transform.js)
      ex-circles.js       chapter 6, all of it (drawn by circle.js)
-     ex-lines.js         chapter 7, all of it (drawn by rays.js)
+     ex-lines.js         chapter 1, all of it (drawn by rays.js)
+     ex-angles.js        chapter 2, naming and measuring (protractor.js) —
+                         moved here from the Maths Workbook
      ex-constructions.js chapter 8, all of it (drawn by construct.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
@@ -86,11 +88,14 @@ import { PY_GROUPS, PY_EXERCISES } from "./ex-pythagoras.js";
 import { TF_GROUPS, TF_EXERCISES } from "./ex-transform.js";
 import { CI_GROUPS, CI_EXERCISES } from "./ex-circles.js";
 import { LA_GROUPS, LA_EXERCISES } from "./ex-lines.js";
+import { ANGLE_GROUPS, ANGLE_EXERCISES } from "./ex-angles.js";
 import { CO_GROUPS, CO_EXERCISES } from "./ex-constructions.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
 export const GROUPS = [
+  ...LA_GROUPS,
+  ...ANGLE_GROUPS,
   ...TRI_GROUPS,
   ...DECOMP_GROUPS,
   ...INSIDE_GROUPS,
@@ -98,15 +103,16 @@ export const GROUPS = [
   ...WORD_GROUPS,
   ...EXT_GROUPS,
   ...TRANS_GROUPS,
-  ...SOLID_GROUPS,
   ...PY_GROUPS,
   ...TF_GROUPS,
   ...CI_GROUPS,
-  ...LA_GROUPS,
+  ...SOLID_GROUPS,
   ...CO_GROUPS,
 ];
 
 export const EXERCISES = [
+  ...LA_EXERCISES,
+  ...ANGLE_EXERCISES,
   ...TRI_EXERCISES,
   ...DECOMP_EXERCISES,
   ...INSIDE_EXERCISES,
@@ -115,24 +121,30 @@ export const EXERCISES = [
   ...WORD_EXERCISES,
   ...EXT_EXERCISES,
   ...TRANS_EXERCISES,
-  ...SOLID_EXERCISES,
   ...PY_EXERCISES,
   ...TF_EXERCISES,
   ...CI_EXERCISES,
-  ...LA_EXERCISES,
+  ...SOLID_EXERCISES,
   ...CO_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 8. */
+/** Which chapter an exercise belongs to: 1 to 9. */
 const CHAPTER = new Map([
-  ...TRANS_GROUPS.map((g) => [g.id, 2]),
-  ...SOLID_GROUPS.map((g) => [g.id, 3]),
-  ...PY_GROUPS.map((g) => [g.id, 4]),
-  ...TF_GROUPS.map((g) => [g.id, 5]),
-  ...CI_GROUPS.map((g) => [g.id, 6]),
-  ...LA_GROUPS.map((g) => [g.id, 7]),
-  ...CO_GROUPS.map((g) => [g.id, 8]),
+  ...ANGLE_GROUPS.map((g) => [g.id, 2]),
+  ...TRI_GROUPS.map((g) => [g.id, 3]),
+  ...DECOMP_GROUPS.map((g) => [g.id, 3]),
+  ...INSIDE_GROUPS.map((g) => [g.id, 3]),
+  ...POLY_GROUPS.map((g) => [g.id, 3]),
+  ...WORD_GROUPS.map((g) => [g.id, 3]),
+  ...EXT_GROUPS.map((g) => [g.id, 3]),
+  ...TRANS_GROUPS.map((g) => [g.id, 4]),
+  ...PY_GROUPS.map((g) => [g.id, 5]),
+  ...TF_GROUPS.map((g) => [g.id, 6]),
+  ...CI_GROUPS.map((g) => [g.id, 7]),
+  ...SOLID_GROUPS.map((g) => [g.id, 8]),
+  ...CO_GROUPS.map((g) => [g.id, 9]),
 ]);
+/* Lines and angles is the first chapter now, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {

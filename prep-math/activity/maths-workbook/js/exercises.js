@@ -13,14 +13,16 @@
      ex-remainder.js   dividing, what is left over, and fraction bars
      ex-fractions.js   what a fraction is, and adding the ones that match
      ex-time.js        counting in fives, and then telling the time
-     ex-angles.js      naming angles, and a protractor to measure them with
      ex-multiply.js    multiplying, from equal groups up to long multiplication
+
+   THE GEOMETRY IS NOT HERE. Naming and measuring angles moved to the Geometry
+   Workbook — it is geometry, and a child looking for angles should find them in
+   one book, not two. Multiplying takes the chapter number it left behind.
 
    THE ORDER OF THE FAMILIES IS THE ORDER OF THE YEARS. A child works out what
    a number IS before they add two of them; adds before they share out; shares
    out before the leftover becomes a fraction. Counting in fives sits directly
-   in front of telling the time because it is the whole of it, and the angles
-   come last because they are the only thing here that needs an instrument.
+   in front of telling the time because it is the whole of it.
    The letters printed on the paper follow this list, so section A is always
    the earliest thing on the sheet.
 
@@ -37,7 +39,6 @@ import { SUM_GROUPS, SUM_EXERCISES } from "./ex-sums.js";
 import { REM_GROUPS, REM_EXERCISES } from "./ex-remainder.js";
 import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
 import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
-import { ANGLE_GROUPS, ANGLE_EXERCISES } from "./ex-angles.js";
 import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
@@ -54,7 +55,6 @@ export const GROUPS = [
   ...REM_GROUPS,
   ...FRAC_GROUPS,
   ...TIME_GROUPS,
-  ...ANGLE_GROUPS,
   /* Added after the seven as chapter 8, so no chapter already printed on a
      paper changes its number. */
   ...MUL_GROUPS,
@@ -75,12 +75,11 @@ export const EXERCISES = [
   ...tenOnly(REM_EXERCISES),
   ...tenOnly(FRAC_EXERCISES),
   ...tenOnly(TIME_EXERCISES),
-  ...tenOnly(ANGLE_EXERCISES),
   ...tenOnly(MUL_EXERCISES),
 ];
 
 /**
- * Which chapter an exercise belongs to: 1 to 8, one per family.
+ * Which chapter an exercise belongs to: 1 to 7, one per family.
  *
  * The rail shows one chapter at a time behind a row of tabs — the first group
  * of each family carries `chapter`, and the rest follow it — and the cover
@@ -92,8 +91,7 @@ const CHAPTER = new Map([
   ...REM_GROUPS.map((g) => [g.id, 4]),
   ...FRAC_GROUPS.map((g) => [g.id, 5]),
   ...TIME_GROUPS.map((g) => [g.id, 6]),
-  ...ANGLE_GROUPS.map((g) => [g.id, 7]),
-  ...MUL_GROUPS.map((g) => [g.id, 8]),
+  ...MUL_GROUPS.map((g) => [g.id, 7]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

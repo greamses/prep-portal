@@ -63,7 +63,7 @@ const angleAt = (a, b, c) => Math.round((Math.acos((b * b + c * c - a * a) / (2 
 /* ── the groups ────────────────────────────────────────────────────────────*/
 
 export const CO_GROUPS = [
-  { id: "cn-compass", chapter: "Chapter 8 · Constructions", label: "Using the compass" },
+  { id: "cn-compass", chapter: "Chapter 9 · Constructions", label: "Using the compass" },
   { id: "cn-triangles", label: "Constructing triangles" },
   { id: "cn-bisect", label: "Bisecting lines and angles" },
   { id: "cn-angles", label: "Special angles" },

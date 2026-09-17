@@ -124,7 +124,7 @@ const turnName = (deg) => ({ 90: "90° anticlockwise", "-90": "90° clockwise", 
 /* ── the groups ────────────────────────────────────────────────────────────*/
 
 export const TF_GROUPS = [
-  { id: "tf-intro", chapter: "Chapter 5 · 2D transformations", label: "What a transformation is" },
+  { id: "tf-intro", chapter: "Chapter 6 · 2D transformations", label: "What a transformation is" },
   { id: "tf-translate", label: "Translation" },
   { id: "tf-reflect", label: "Reflection" },
   { id: "tf-rotate", label: "Rotation" },

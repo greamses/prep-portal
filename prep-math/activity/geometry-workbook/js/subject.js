@@ -7,15 +7,16 @@
    ========================================================================== */
 
 import { EXERCISES, levelOf, helpOf, exerciseById, chapterOf } from "./exercises.js";
-import { protractorSvg } from "../../maths-workbook/js/protractor.js";
+import { protractorSvg } from "./protractor.js";
 
 export const WORKBOOK = { id: "geometry-workbook", label: "Geometry Workbook", style: "/prep-math/activity/geometry-workbook/style.css" };
 
 const CHAPTERS = {
-  1: "Chapter 1: Polygon angles", 2: "Chapter 2: Transversal angles",
-  3: "Chapter 3: Pyramids and prisms", 4: "Chapter 4: Pythagoras' rule",
-  5: "Chapter 5: 2D transformations", 6: "Chapter 6: Circle theorems",
-  7: "Chapter 7: Lines and angles", 8: "Chapter 8: Constructions",
+  1: "Chapter 1: Lines and angles", 2: "Chapter 2: Measuring angles",
+  3: "Chapter 3: Polygon angles", 4: "Chapter 4: Transversal angles",
+  5: "Chapter 5: Pythagoras' rule", 6: "Chapter 6: 2D transformations",
+  7: "Chapter 7: Circle theorems", 8: "Chapter 8: Pyramids and prisms",
+  9: "Chapter 9: Constructions",
 };
 
 export const SUBJECT = {
@@ -34,14 +35,15 @@ export const SUBJECT = {
     const H = helpOf(o);
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
     const parts = [];
-    const angles = found.has(1) || found.has(2) || found.has(6) || found.has(7) || !found.size;
+    /* the chapters whose questions are angles in degrees */
+    const angles = [1, 2, 3, 4, 7].some((n) => found.has(n)) || !found.size;
     if (angles) parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
-    if (found.has(1) || found.has(2) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
-    if (found.has(8)) {
+    if (found.has(3) || found.has(4) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
+    if (found.has(9)) {
       parts.push({ gentle: "lengths in whole centimetres", middle: "lengths in half centimetres", stretch: "lengths to the millimetre" }[L.id]);
     }
-    if (found.has(4)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
-    if (found.has(5)) {
+    if (found.has(5)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
+    if (found.has(6)) {
       parts.push({ gentle: "mirrors along the grid, half and quarter turns, scale factors 2 and 3", middle: "diagonal mirrors, turns about any point", stretch: "y = −x, hidden centres, fractional scale factors" }[L.id]);
     }
     parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");

@@ -70,7 +70,7 @@ const reasonTick = (keys) =>
 /* ── the groups ────────────────────────────────────────────────────────────*/
 
 export const LA_GROUPS = [
-  { id: "la-paths", chapter: "Chapter 7 · Lines and angles", label: "Points, lines, rays and segments" },
+  { id: "la-paths", chapter: "Chapter 1 · Lines and angles", label: "Points, lines, rays and segments" },
   { id: "la-name", label: "Naming angles" },
   { id: "la-kinds", label: "Kinds of angles" },
   { id: "la-line", label: "Angles on a straight line" },

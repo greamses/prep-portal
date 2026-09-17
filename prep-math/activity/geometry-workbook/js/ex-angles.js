@@ -1,7 +1,10 @@
 /* ============================================================================
-   Maths Workbook — ANGLES, and the protractor
+   Geometry Workbook — CHAPTER 2: measuring angles, and the protractor
    ----------------------------------------------------------------------------
-   The last family on the paper, and the one that needs an instrument.
+   Moved here from the Maths Workbook, where it was the last chapter: it is
+   geometry, and it belongs with the rest of the geometry. It sits second,
+   straight after lines and angles — a child names an angle before measuring it,
+   and measures one before any chapter asks what it adds up to.
 
    NAMING COMES BEFORE MEASURING. A child who can say "that one is obtuse"
    already knows it is more than ninety before they measure it, which is what
@@ -24,7 +27,7 @@
    ========================================================================== */
 
 import { angleSvg, protractorSvg, KINDS, kindOf, kindNamed } from "./protractor.js";
-import { levelOf } from "./ex-remainder.js";
+import { levelOf } from "./levels.js";
 import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="rw-answer"></span>`;
@@ -32,7 +35,7 @@ const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
 
 export const ANGLE_GROUPS = [
   {
-    chapter: "Chapter 7 · Angles",
+    chapter: "Chapter 2 · Measuring angles",
     id: "angle-name",
     label: "Naming angles",
     blurb: "Smaller than a right angle, exactly one, or bigger. Before any measuring.",
@@ -50,8 +53,7 @@ export const ANGLE_GROUPS = [
    reading 43 off it are different lessons and only one of them is about
    protractors. */
 function step(o) {
-  const L = levelOf(o);
-  return L.max <= 20 ? 10 : L.max <= 34 ? 5 : 1;
+  return levelOf(o).step;
 }
 
 /** An angle that is unambiguously one kind — never 89 when the answer is acute. */

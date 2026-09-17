@@ -137,7 +137,7 @@ function flow(steps, o) {
 /* ── the groups: one per section, the first carrying the chapter ───────────*/
 
 export const PY_GROUPS = [
-  { id: "py-right", chapter: "Chapter 4 · Pythagoras' rule", label: "Right-angled triangles" },
+  { id: "py-right", chapter: "Chapter 5 · Pythagoras' rule", label: "Right-angled triangles" },
   { id: "py-sides", label: "Sides of a right-angled triangle" },
   { id: "py-squares", label: "Forming squares from the sides" },
   { id: "py-sum", label: "Sum of sides" },

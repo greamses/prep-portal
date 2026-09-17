@@ -106,8 +106,6 @@ mountBuilder({
     "frac-add": ICON.frac,
     fives: ICON.fives,
     time: ICON.clock,
-    "angle-name": ICON.angle,
-    "angle-measure": ICON.protractor,
     "mul-groups": ICON.ring,
     "mul-arrays": ICON.array,
     "mul-facts": ICON.times,

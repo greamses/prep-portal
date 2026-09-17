@@ -154,4 +154,13 @@ export const ICON = {
   triples: line(`<circle cx="5" cy="6" r=".8"/><circle cx="8" cy="6" r=".8"/><circle cx="11" cy="6" r=".8"/>` +
     `<circle cx="5" cy="12" r=".8"/><circle cx="8" cy="12" r=".8"/><circle cx="11" cy="12" r=".8"/><circle cx="14" cy="12" r=".8"/>` +
     `<circle cx="5" cy="18" r=".8"/><circle cx="8" cy="18" r=".8"/><circle cx="11" cy="18" r=".8"/><circle cx="14" cy="18" r=".8"/><circle cx="17" cy="18" r=".8"/>`),
+
+  /* ── chapter 2, moved in from the Maths Workbook ── */
+  /* Two arms and the arc between them: an angle. */
+  angle: line(`<path d="M4 19.5h16M4 19.5 16.5 5.5"/><path d="M11.4 19.5A7.4 7.4 0 0 0 9.6 14.9"/>`),
+  /* The half disc, with its baseline and a tick or two. */
+  protractor: line(
+    `<path d="M3.2 16.5a8.8 8.8 0 0 1 17.6 0z"/>` +
+      `<path d="M3.2 16.5h17.6M7 16.5v-2.2M12 16.5v-3M17 16.5v-2.2"/>`
+  ),
 };

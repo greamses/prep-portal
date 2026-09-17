@@ -25,7 +25,7 @@ import {
   figureSvg, trianglePoints, regularPoints, tearTriangle, pasteLine, cornersOnLine, NAMES,
 } from "./figure.js";
 import { levelOf, helpOf, stepped, triangleAngles, dealer, regularFor } from "./levels.js";
-import { protractorSvg } from "../../maths-workbook/js/protractor.js";
+import { protractorSvg } from "./protractor.js";
 import { want } from "/utils/components/workbook/want.js";
 
 const box = () => `<span class="wb-answer"></span>`;
@@ -43,7 +43,7 @@ const tiltOf = (r) => r.pick([-20, -10, 0, 0, 10, 20]);
 export const TRI_GROUPS = [
   {
     id: "tri-sum",
-    chapter: "Chapter 1 · Polygon angles",
+    chapter: "Chapter 3 · Polygon angles",
     label: "Angles in a triangle add up to 180°",
     blurb: "Find it out first: measure with a protractor, then tear the corners off.",
   },

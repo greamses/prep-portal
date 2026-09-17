@@ -52,6 +52,9 @@ mountBuilder({
   store: "gw-workbook-v1",
   groups: GROUPS,
   glyphs: {
+    /* chapter 2, moved in from the Maths Workbook */
+    "angle-name": ICON.angle,
+    "angle-measure": ICON.protractor,
     "tri-sum": ICON.triangle,
     decomp: ICON.cut,
     "tri-inside": ICON.missing,

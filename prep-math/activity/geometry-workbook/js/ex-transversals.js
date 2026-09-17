@@ -154,7 +154,7 @@ const phiFor = (n, v) => (familyOf(n) === "A" ? 180 - v : v);
 /* Every section's heading and blurb, for the rail. The first carries the
    chapter, so the rail marks where chapter two starts. */
 export const TRANS_GROUPS = [
-  { id: "parallel", chapter: "Chapter 2 · Transversal angles", label: "Parallel lines" },
+  { id: "parallel", chapter: "Chapter 4 · Transversal angles", label: "Parallel lines" },
   { id: "transversal", label: "Transversal lines" },
   { id: "tr-angles", label: "Transversal angles" },
   { id: "acute-obtuse", label: "Acute or obtuse on a transversal" },

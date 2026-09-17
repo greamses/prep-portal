@@ -11,7 +11,6 @@ import { placeName, placeWorth } from "./numbers.js";
 import { blocksKey, blocksSvg } from "./blocks.js";
 import { chartHtml } from "./chart.js";
 import { baseWord } from "../../base-blocks/js/config.js";
-import { protractorSvg } from "./protractor.js";
 
 export const WORKBOOK = { id: "maths-workbook", label: "Maths Workbook", style: "/prep-math/activity/maths-workbook/style.css" };
 
@@ -21,7 +20,7 @@ const CHAPTERS = {
   1: "Chapter 1: Place value", 2: "Chapter 2: Words and figures",
   3: "Chapter 3: Adding and taking away", 4: "Chapter 4: Dividing and remainders",
   5: "Chapter 5: Fractions", 6: "Chapter 6: Counting in fives and telling the time",
-  7: "Chapter 7: Angles", 8: "Chapter 8: Multiplying",
+  7: "Chapter 7: Multiplying",
 };
 
 /** The chapters the chosen exercises actually come from, in order. */
@@ -92,7 +91,6 @@ export const SUBJECT = {
    sentence, the fraction blanks, the gaps in a track of fives, the parts of a
    written sum — are answer places too. */
 export const LIVE = {
-  protractor: protractorSvg(),
   places: ".wb-box, .rw-answer, .rw-fill, .rw-sentence__blank, .mt-track__cell--gap, .ms-across__box, .ms-down__carrybox",
   /* How this workbook draws a pile of blocks. Splitting a flat into ten rods
      means drawing the pile again, and only this workbook knows how — so the

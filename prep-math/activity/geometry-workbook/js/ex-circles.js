@@ -76,7 +76,7 @@ const turnOf = (r, o, classic) => (tier(o) === "gentle" ? classic : classic + r.
 /* ── the groups ────────────────────────────────────────────────────────────*/
 
 export const CI_GROUPS = [
-  { id: "ci-parts", chapter: "Chapter 6 · Circle theorems", label: "Parts of a circle" },
+  { id: "ci-parts", chapter: "Chapter 7 · Circle theorems", label: "Parts of a circle" },
   { id: "ci-iso", label: "Radii and isosceles triangles" },
   { id: "ci-centre", label: "The angle at the centre" },
   { id: "ci-semi", label: "The angle in a semicircle" },

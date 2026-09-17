@@ -82,7 +82,7 @@ const yawOf = (r) => r.pick([22, 28, 34, 40, -24, -32]);
 
 /* Groups: one per section, the first carrying the chapter. */
 export const SOLID_GROUPS = [
-  { id: "fev", chapter: "Chapter 3 · Pyramids and prisms", label: "Faces, edges and corners" },
+  { id: "fev", chapter: "Chapter 8 · Pyramids and prisms", label: "Faces, edges and corners" },
   { id: "sticks", label: "Stick shapes" },
   { id: "surfaces", label: "Faces and surfaces" },
   { id: "bases", label: "Side faces and base faces" },
