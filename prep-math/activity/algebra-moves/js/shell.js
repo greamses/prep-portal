@@ -6,6 +6,7 @@
    sidebar. One template, so the two can never drift apart.
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 /** Everything inside the frame: the canvas, the rail and the keypad drawer. */
 export function shellHTML() {
   return `
@@ -22,35 +23,29 @@ export function shellHTML() {
           <button class="pp-sticky pp-note-btn am-tool am-tool--key" type="button" id="am-add"
                   aria-expanded="false" aria-controls="am-drawer"
                   title="Put a problem on the canvas" aria-label="Put a problem on the canvas">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            ${UI.plus(17)}
             <em>New</em>
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--do" type="button" id="am-work"
                   title="How many steps are left?" aria-label="How many steps are left?">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+            ${UI.steps(17)}
             <em>Steps left</em>
           </button>
         </div>
 
         <div class="am-rail__group">
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-out" title="Zoom out" aria-label="Zoom out">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-4.3-4.3"/></svg>
+            ${UI.zoomOut(17)}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-in" title="Zoom in" aria-label="Zoom in">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-4.3-4.3"/></svg>
+            ${UI.zoomIn(17)}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-zoom-reset" title="Back to the middle" aria-label="Back to the middle">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
+            ${UI.recentre(17)}
           </button>
           <button class="pp-sticky pp-note-btn am-tool am-tool--plain" type="button" id="am-full" aria-pressed="false"
                   title="Fill the screen" aria-label="Fill the screen">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
+            ${UI.expand(17)}
           </button>
         </div>
 
@@ -67,8 +62,7 @@ export function shellHTML() {
          <div class="pp-receipt__paper">
           <div class="am-drawer__roll">
           <button class="pp-sticky pp-note-btn am-drawer__close" type="button" id="am-drawer-close" aria-label="Put the keypad away">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            ${UI.close(16)}
           </button>
 
           <!-- Two ways in: type your own, or take a formula and say what you

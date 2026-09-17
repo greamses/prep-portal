@@ -8,6 +8,7 @@
    enforced server-side by firestore.rules.
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { state, enterPuzzle, loadShape, setShapes, allPoints } from "./state.js";
 import {
   listPuzzles,
@@ -127,7 +128,7 @@ function card(doc) {
   if (prepbotPick) {
     const draw = document.createElement("button");
     draw.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--accent";
-    draw.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.4" fill="currentColor" stroke="none"/></svg> Draw this`;
+    draw.innerHTML = `${UI.draw()} Draw this`;
     draw.addEventListener("click", () => { const fn = prepbotPick; closePicker(); fn?.(doc); });
     actions.appendChild(draw);
     return wrap;
@@ -142,7 +143,7 @@ function card(doc) {
   if (admin && !doc.builtin) {
     const edit = document.createElement("button");
     edit.className = "ca-soft-btn ca-soft-btn--sm";
-    edit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg> Edit`;
+    edit.innerHTML = `${UI.edit()} Edit`;
     edit.addEventListener("click", () => {
       if (Array.isArray(doc.shapes) && doc.shapes.length) {
         loadShape({ shapes: doc.shapes, grid: doc.grid });
@@ -157,7 +158,7 @@ function card(doc) {
 
     const del = document.createElement("button");
     del.className = "ca-soft-btn ca-soft-btn--sm ca-soft-btn--danger ca-soft-btn--icon";
-    del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
+    del.innerHTML = `${UI.trash()}`;
     del.title = "Delete puzzle";
     del.addEventListener("click", async () => {
       if (!confirm(`Delete "${doc.title}"?`)) return;

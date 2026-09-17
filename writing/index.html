@@ -102,29 +102,18 @@
               <!-- Copies ?prompt=&video=&form= — one task for a whole class
                    without anybody retyping it (js/own-task.js). -->
               <button class="topic-share" id="topic-share-btn" type="button" title="Copy a link to this task" style="display: none">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
                 Share
               </button>
               <!-- Teachers only: puts this task in a student's own "assigned to
                    me" list rather than handing out a link (js/assign.js). The
                    roster call behind it is a teachers-only endpoint. -->
               <button class="topic-assign" id="topic-assign-btn" type="button" title="Assign this task to your class" style="display: none">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M19 8v6M22 11h-6" />
-                </svg>
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><circle cx="9" cy="7.6" r="3.8" fill="var(--accent-secondary)"/><path d="M2.4 20.6c0-4.2 3-6.8 6.6-6.8s6.6 2.6 6.6 6.8z" fill="var(--accent-secondary)"/><rect x="17.9" y="7.6" width="2.4" height="9" rx="1.2" fill="var(--accent-success)"/><rect x="14.6" y="10.9" width="9" height="2.4" rx="1.2" fill="var(--accent-success)"/></svg>
                 Assign
               </button>
               <button class="topic-refresh" id="topic-refresh-btn" type="button" title="Generate a new prompt" style="display: none">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="23 4 23 10 17 10" />
-                  <polyline points="1 20 1 14 7 14" />
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                </svg>
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="13" height="13"><path d="M4.6 10A7.8 7.8 0 0 1 18 6.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3" stroke-linecap="round"/><path d="M21.2 3.2 20.6 10l-6.4-2.4z" fill="var(--accent-danger)"/><path d="M19.4 14A7.8 7.8 0 0 1 6 17.6" fill="none" stroke="var(--accent-primary)" stroke-width="3" stroke-linecap="round"/><path d="M2.8 20.8 3.4 14l6.4 2.4z" fill="var(--accent-danger)"/></svg>
               </button>
             </div>
             <div class="topic-body">
@@ -175,10 +164,7 @@
       <div class="modal-wrap">
         <div class="modal-hdr">
           <span class="mhdr-mark" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="var(--accent-primary)"/><path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="var(--accent-danger)"/><path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="var(--accent-warning)"/><rect x="12" y="19" width="9.4" height="2.4" rx="1.2" fill="var(--text-tertiary)"/></svg>
           </span>
           <div class="mhdr-id">
             <span class="mhdr-subject">Writing Evaluator</span>
@@ -186,10 +172,7 @@
           </div>
           <span class="mhdr-phase" id="mhdr-phase">Write</span>
           <button class="mhdr-close" id="modal-close" aria-label="Close">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/><rect x="10.6" y="3.5999999999999996" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>
           </button>
         </div>
 
@@ -485,10 +468,7 @@
             <div class="mftr-wc" id="lesson-gate">Read to the end to start writing</div>
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="lesson-video-btn" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="2.5" y="5" width="19" height="14" rx="2" />
-                <path d="M10 9.5v5l4.5-2.5z" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>
               Watch a video
             </button>
             <button class="btn btn-primary" id="start-writing-btn" type="button" disabled>Start Writing →</button>
@@ -503,21 +483,14 @@
                  button that lived only in that footer now travels (js/ui.js
                  moves the one panel into whichever section is on screen). -->
             <button class="btn btn-ghost" id="organize-video-btn" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="2.5" y="5" width="19" height="14" rx="2" />
-                <path d="M10 9.5v5l4.5-2.5z" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>
               Watch a video
             </button>
             <!-- Only appears once a draft on the sheet has been edited by hand:
                  the way back that does not touch what they wrote. -->
             <button class="btn btn-ghost" id="keep-paragraph-btn" type="button" style="display: none">Keep my draft →</button>
             <button class="btn btn-primary" id="to-paragraph-btn" type="button" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 6h10" />
-                <path d="M4 12h16" />
-                <path d="M4 18h13" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="4.6" width="12" height="3" rx="1.5" fill="var(--accent-secondary)"/><rect x="3" y="10.5" width="18" height="3" rx="1.5" fill="var(--accent-secondary)"/><rect x="3" y="16.4" width="14.6" height="3" rx="1.5" fill="var(--accent-primary)"/></svg>
               <span id="to-paragraph-label">Turn into a paragraph →</span>
             </button>
           </div>
@@ -526,21 +499,14 @@
             <div class="mftr-wc" id="plan-tally">0 of 0 boxes</div>
             <div class="mftr-space"></div>
             <button class="btn btn-ghost" id="plan-video-btn" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="2.5" y="5" width="19" height="14" rx="2" />
-                <path d="M10 9.5v5l4.5-2.5z" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.4" fill="var(--accent-secondary)"/><path d="M9.6 8.4v7.2l6-3.6z" fill="#fff"/></svg>
               Watch a video
             </button>
             <button class="btn btn-ghost" id="plan-skip-btn" type="button">Straight to the sheet →</button>
             <!-- Only appears once a draft on the sheet has been edited by hand. -->
             <button class="btn btn-ghost" id="plan-keep-btn" type="button" style="display: none">Keep my draft →</button>
             <button class="btn btn-primary" id="plan-to-sheet-btn" type="button" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 6h10" />
-                <path d="M4 12h16" />
-                <path d="M4 18h13" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="4.6" width="12" height="3" rx="1.5" fill="var(--accent-secondary)"/><rect x="3" y="10.5" width="18" height="3" rx="1.5" fill="var(--accent-secondary)"/><rect x="3" y="16.4" width="14.6" height="3" rx="1.5" fill="var(--accent-primary)"/></svg>
               <span id="plan-to-sheet-label">Put it on the sheet →</span>
             </button>
           </div>
@@ -551,11 +517,7 @@
             <button class="btn btn-ghost" id="back-to-organizer-btn" type="button" style="display: none">← Back to the Organiser</button>
             <button class="btn btn-ghost" id="new-topic-btn" type="button">← Change Topic</button>
             <button class="btn btn-primary" id="submit-btn" type="button" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 15h7" />
-                <path d="M4.5 11 7 4.5 9.5 11" />
-                <path d="m13 15.5 2.5 2.5 5.5-6" />
-              </svg>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 18.4 6.6 5.4h2.8l4 13h-2.8l-.9-3H6.3l-.9 3zM7 13h2.9L8.5 8.2z" fill="var(--accent-secondary)"/><circle cx="17.4" cy="16.4" r="5.2" fill="var(--accent-success)"/><path d="M15 16.6l1.6 1.6 3.2-3.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Submit &amp; Grade
             </button>
           </div>

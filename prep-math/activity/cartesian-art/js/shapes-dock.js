@@ -8,6 +8,7 @@
    the graph and is draggable like the other docks (so it never covers the top).
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import {
   state, subscribe, activeShape, setActiveShape, deleteShape,
   startNewShape, setActivePoints, setStroke, setFill,
@@ -57,7 +58,7 @@ function renderList() {
     del.type = "button";
     del.className = "ca-icon-btn ca-icon-btn--sm";
     del.title = "Delete shape";
-    del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
+    del.innerHTML = `${UI.trash()}`;
     del.addEventListener("click", () => {
       if (state.shapes.length === 1 && !s.points.length) return;
       deleteShape(s.id);
@@ -105,7 +106,7 @@ function buildSwatchRow(hostSel, onPick, withNone) {
     none.type = "button";
     none.className = "ca-swatch ca-swatch--none";
     none.title = "No fill";
-    none.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14"/></svg>`;
+    none.innerHTML = `${UI.noFill()}`;
     none.addEventListener("click", () => onPick(null));
     host.appendChild(none);
   }

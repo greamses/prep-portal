@@ -556,10 +556,7 @@ function modelStubHtml(form) {
     <p class="lesson-model">${esc(form.lesson.model).replace(/\n\n/g, '<br><br>')}</p>
     <div class="lmodel__ask">
       <button class="btn btn-ghost lmodel__btn" id="lesson-model-btn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 5h11" /><path d="M4 10h16" /><path d="M4 15h9" />
-          <path d="m15.5 20 5-5" /><path d="M18 17.5 20.5 20" />
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.6" y="3.8" width="11" height="2.8" rx="1.4" fill="var(--accent-secondary)"/><rect x="2.6" y="9" width="17" height="2.8" rx="1.4" fill="var(--accent-secondary)"/><rect x="2.6" y="14.2" width="8.4" height="2.8" rx="1.4" fill="var(--accent-primary)"/><rect x="13.12" y="16.10" width="8.77" height="2.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45.00 17.50 17.50)"/></svg>
         Write me a full model
       </button>
       <span class="lmodel__note">On a different task in the same form — never on your own prompt.</span>

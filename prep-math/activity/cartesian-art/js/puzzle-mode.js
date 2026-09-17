@@ -7,6 +7,7 @@
    with a star result. Free mode hides all of this.
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { state, subscribe, scoreAttempt, clearPoints, allPoints } from "./state.js";
 import { layers, toPx, onRender } from "./grid.js";
 
@@ -56,7 +57,7 @@ function setBodyState() {
 
 /* ── result overlay ────────────────────────────────────────────────────── */
 const STAR = (filled) =>
-  `<svg viewBox="0 0 24 24" class="ca-star ${filled ? "is-on" : ""}" fill="${filled ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l2.7 6.1 6.6.6-5 4.4 1.5 6.5L12 18.4 5.7 21.1 7.2 14.6l-5-4.4 6.6-.6z"/></svg>`;
+  `${UI.star(filled)().replace("<svg ", `<svg class="ca-star ${filled ? "is-on" : ""}" `)}`;
 
 export function showResult() {
   const s = scoreAttempt();

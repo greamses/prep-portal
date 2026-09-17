@@ -1748,12 +1748,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      tool was opened for. The gear lays a small sheet of sticky notes over the
      tool; a press anywhere else puts it away. */
 
+  /* a gear, in the house style (see icons.js) */
   const ICON_GEAR =
-    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" '
-    + 'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-    + '<circle cx="12" cy="12" r="3.1"/>'
-    + '<path d="M12 2.6v2.5M12 18.9v2.5M21.4 12h-2.5M5.1 12H2.6'
-    + 'M18.6 5.4 16.8 7.2M7.2 16.8 5.4 18.6M18.6 18.6 16.8 16.8M7.2 7.2 5.4 5.4"/></svg>';
+    '<svg viewBox="0 0 24 24" width="15" height="15" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<g fill="var(--accent-secondary)">'
+    + [0, 45, 90, 135, 180, 225, 270, 315]
+      .map((d) => `<rect x="10.6" y="1.6" width="2.8" height="4.4" rx="1.2" transform="rotate(${d} 12 12)"/>`).join("")
+    + '</g><circle cx="12" cy="12" r="6.6" fill="var(--accent-secondary)"/>'
+    + '<circle cx="12" cy="12" r="3.4" fill="#fff"/><circle cx="12" cy="12" r="1.7" fill="var(--accent-danger)"/></svg>';
 
   const note = (label, on, data) =>
     `<button type="button" class="pp-sticky pp-note-btn wb-tool__opt" ${data}`

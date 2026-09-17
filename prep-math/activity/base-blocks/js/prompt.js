@@ -17,16 +17,14 @@
    the highlighted meshes, because the camera can orbit under it.
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { store, emit, say } from "./state.js";
 import { regroupCheck, regroupSentence, regroupSelected } from "./ops.js";
 import { ICON } from "./icons.js";
 
 const B = () => window.BABYLON;
 
-const ARROWS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M8 4v16"/><path d="m4.5 7.5 3.5-3.5 3.5 3.5"/>
-  <path d="M16 20V4"/><path d="m12.5 16.5 3.5 3.5 3.5-3.5"/></svg>`;
+const ARROWS = UI.upDown(15);
 
 /* What the card offers, as a glyph. The sentence above it already says it in
    words; the button only has to say "do it", and an icon does that in a corner

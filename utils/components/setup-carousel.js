@@ -12,8 +12,11 @@
 
 let uid = 0;
 
-const ARROW_L = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`;
-const ARROW_R = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`;
+import { UI } from "/utils/components/ui-icons.js";
+
+/* back and next, in the site's one icon language (utils/components/ui-icons.js) */
+const ARROW_L = UI.chevronLeft(15);
+const ARROW_R = UI.chevronRight(15);
 
 export function createCarousel(mountEl) {
   mountEl.classList.add('pp-carousel');

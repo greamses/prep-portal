@@ -3,6 +3,7 @@ import chatbotcss from "./prepbotcss.js";
 import { auth, db } from "/firebase-init.js";
 import { doc, getDoc } from "firebase/firestore";
 import { heroPaint } from "/utils/components/nav-icons.js";
+import { UI } from "/utils/components/ui-icons.js";
 import { GEMINI_MODELS_UI, GROQ_MODELS, CLAUDE_MODELS } from "/utils/ai-models.js";
 import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSitePageMatch } from "/utils/components/site-map.js";
 
@@ -419,10 +420,10 @@ import { SITE_INFO, SITE_PAGES, siteOverviewForPrompt, searchSitePages, bestSite
     video: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.4" y="5" width="19.2" height="14" rx="3.4" fill="var(--accent-secondary)"/><path d="M10 9.1 15.2 12 10 14.9z" fill="#fff"/><circle cx="5.8" cy="8.2" r="1" fill="var(--accent-primary)"/><circle cx="18.2" cy="15.8" r="1" fill="var(--accent-danger)"/></svg>`,
     // Sparkle
     sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l1.9 5.3 5.3 1.9-5.3 1.9L12 16.8l-1.9-5.3-5.3-1.9 5.3-1.9z" fill="var(--accent-primary)"/><circle cx="18.5" cy="5.5" r="1.4" fill="var(--accent-secondary)"/><circle cx="5.5" cy="17.5" r="1.1" fill="var(--accent-danger)"/></svg>`,
-    // Close — clean rounded cross (inherits the button's colour)
-    close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`,
-    // Power — "sleep" the assistant (inherits the button's colour)
-    power: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2v8.2"/><path d="M6.5 6.6a8 8 0 1 0 11 0"/></svg>`,
+    // Close — the site's shared filled cross (utils/components/ui-icons.js)
+    close: UI.close(),
+    // Power — "sleep" the assistant: the ring broken at the top, and the switch
+    power: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6.5 6.6a8 8 0 1 0 11 0" fill="none" stroke="var(--accent-secondary)" stroke-width="3.2" stroke-linecap="round"/><rect x="10.6" y="2.2" width="2.8" height="10" rx="1.4" fill="var(--accent-danger)"/></svg>`,
     // Robot mascot — AWAKE (eyes open). Themed + rounded corners, ported from
     // the polygon-activity teacher bot. Uses theme vars so it recolours in dark.
     robotAwake: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><line x1="32" y1="7" x2="32" y2="16" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="32" cy="6" r="3.2" fill="var(--accent-warning)"/><rect x="4" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="52" y="27" width="8" height="13" rx="4" fill="var(--accent-primary)"/><rect x="11" y="16" width="42" height="38" rx="14" fill="var(--accent-secondary)"/><rect x="17" y="22" width="30" height="19" rx="9.5" fill="var(--ink)"/><circle cx="26" cy="31.5" r="3.1" fill="var(--accent-warning)"/><circle cx="38" cy="31.5" r="3.1" fill="var(--accent-warning)"/><rect x="24" y="46" width="16" height="4.4" rx="2.2" fill="var(--ink)"/></svg>`,

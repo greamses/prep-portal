@@ -12,25 +12,14 @@
    what a tap does and the whole activity works without a pointer at all.
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { FORMS, FORM_IDS } from "./forms.js";
 import { RANGES, buildRound, isDone } from "./round.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
 /* Our own marks, drawn here — never an emoji, never a borrowed icon set. */
-const ICON = {
-  again: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" '
-    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-    + '<path d="M19.6 12a7.6 7.6 0 1 1-2.3-5.4"/><path d="M19.8 3.6v4.4h-4.4"/></svg>',
-  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" '
-    + 'stroke-linecap="round" aria-hidden="true">'
-    + '<path d="M4 7h8M16.5 7H20M4 17h3.5M12 17h8M14 4.6v4.8M9.5 14.6v4.8"/></svg>',
-  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
-    + 'stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>',
-  cards: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" '
-    + 'stroke-linejoin="round" aria-hidden="true">'
-    + '<rect x="3" y="6" width="11" height="14" rx="1.6"/><path d="M8 6V4.6a1.6 1.6 0 0 1 1.9-1.57l9 1.6A1.6 1.6 0 0 1 20.2 6.4l-2 11.3"/></svg>',
-};
+const ICON = { again: UI.again(), settings: UI.settings(), close: UI.close(), cards: UI.cards() };
 
 const KEEP = "prep-portal:number-match";
 

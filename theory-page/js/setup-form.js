@@ -294,7 +294,7 @@ function _buildSlot(i, { text = '', marks = '', compulsory = false } = {}) {
         <span class="compulsory-text">Compulsory</span>
       </label>
       <button class="q-autogen-btn" type="button" data-idx="${i}" ${!(state.st.cls && state.st.subject) ? 'disabled' : ''}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="11" height="11"><path d="M13.6 1.8 4.2 13.8h6.4l-1.2 8.4 10.4-12.4h-6.4z" fill="var(--accent-primary)"/></svg>
         Auto-gen
       </button>
     </div>
@@ -418,7 +418,7 @@ async function _autoGenOne(idx) {
   
   btn.disabled = false;
   btn.classList.remove('loading');
-  btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Auto-gen`;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="11" height="11"><path d="M13.6 1.8 4.2 13.8h6.4l-1.2 8.4 10.4-12.4h-6.4z" fill="var(--accent-primary)"/></svg> Auto-gen`;
 }
 
 /* ── Select instances ── */
@@ -537,7 +537,7 @@ export function initSetupForm() {
     
     const btn = document.getElementById('autogen-all-btn');
     btn.disabled = true;
-    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg> Generating all questions…`;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="11" height="11"><circle cx="12" cy="12" r="8.4" fill="none" stroke="var(--text-tertiary)" stroke-width="3.2" opacity="0.35"/><path d="M12 3.6a8.4 8.4 0 0 1 8.4 8.4" fill="none" stroke="var(--accent-danger)" stroke-width="3.2" stroke-linecap="round"/></svg> Generating all questions…`;
     
     TheoryAnalyser.init({
       subject: state.st.subject,
@@ -582,6 +582,6 @@ export function initSetupForm() {
     }
     
     btn.disabled = false;
-    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Auto-generate All`;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="12" height="12"><path d="M13.6 1.8 4.2 13.8h6.4l-1.2 8.4 10.4-12.4h-6.4z" fill="var(--accent-primary)"/></svg> Auto-generate All`;
   });
 }

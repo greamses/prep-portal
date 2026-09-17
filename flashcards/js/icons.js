@@ -26,10 +26,12 @@ export const ICON_CHECK = svg(
   `<path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
 
-// Flip hint — two chasing arrows (same stroke language as signin/signout).
+// Flip hint — two chasing arrows: the card turning over.
 export const ICON_FLIP = svg(
-  `<path d="M4 9a8 8 0 0 1 13.8-5.3M20 3.7v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
-  `<path d="M20 15a8 8 0 0 1-13.8 5.3M4 20.3v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  `<path d="M4.6 10A7.8 7.8 0 0 1 18 6.4" fill="none" stroke="var(--accent-secondary)" stroke-width="3" stroke-linecap="round"/>` +
+  `<path d="M21.2 3.2 20.6 10l-6.4-2.4z" fill="var(--accent-danger)"/>` +
+  `<path d="M19.4 14A7.8 7.8 0 0 1 6 17.6" fill="none" stroke="var(--accent-primary)" stroke-width="3" stroke-linecap="round"/>` +
+  `<path d="M2.8 20.8 3.4 14l6.4 2.4z" fill="var(--accent-danger)"/>`,
 );
 
 // Edit — a pencil (echoes the Editorials nav icon's diagonal-strokes build).
@@ -89,8 +91,11 @@ export const ICON_EASY = svg(
   `<path d="M13 2.2 4.4 13.8h5.7l-1 8 8.5-11.6h-5.7z" fill="#fff"/>`,
 );
 
-// Delete — a plain trash can (currentColor, tints danger-red on hover via CSS).
+// Delete — a trash can in the house style: the lid is the loud part.
 export const ICON_DELETE = svg(
-  `<path d="M4 7h16M9 7V4.8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M6.5 7l1 12.3a2 2 0 0 0 2 1.9h5a2 2 0 0 0 2-1.9L17.5 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` +
-  `<path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+  `<rect x="8.6" y="2.4" width="6.8" height="2.6" rx="1.3" fill="var(--accent-danger)"/>` +
+  `<rect x="3" y="5" width="18" height="3.2" rx="1.6" fill="var(--accent-danger)"/>` +
+  `<path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="var(--accent-secondary)"/>` +
+  `<rect x="9.1" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/>` +
+  `<rect x="13" y="11.9" width="1.9" height="6.2" rx="0.95" fill="#fff"/>`,
 );

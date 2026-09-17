@@ -8,6 +8,7 @@
    a per-user subcollection — not enabled yet).
    ========================================================================== */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { state, loadShape, allPoints } from "./state.js";
 import { buildThumb, normalizeShapes } from "./thumb.js";
 
@@ -89,7 +90,7 @@ function card(item) {
   del.type = "button";
   del.className = "ca-icon-btn ca-icon-btn--sm";
   del.title = "Delete";
-  del.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
+  del.innerHTML = `${UI.trash()}`;
   del.addEventListener("click", () => {
     if (!confirm(`Delete "${item.title}"?`)) return;
     persist(load().filter((e) => e.id !== item.id));

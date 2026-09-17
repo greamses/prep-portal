@@ -14,9 +14,11 @@
    out here and type the answer in over there.
    ========================================================================== */
 
+/* the put-away cross, in the house style (see icons.js): two filled bars */
 const ICON_CLOSE =
-  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" '
-  + 'stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+  '<svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+  + '<rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(45 12 12)"/>'
+  + '<rect x="10.6" y="3.6" width="2.8" height="16.8" rx="1.4" fill="var(--accent-danger)" transform="rotate(-45 12 12)"/></svg>';
 
 let top = 0;
 

@@ -39,9 +39,7 @@ const wordsIn = (s) => String(s || '').trim().split(/\s+/).filter(Boolean);
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const SWAP = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>`;
+const SWAP = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14" aria-hidden="true"><rect x="3.4" y="6.6" width="14.4" height="2.6" rx="1.3" fill="var(--accent-secondary)"/><path d="M14.6 4.2 20.6 7.9l-6 3.7z" fill="var(--accent-danger)"/><rect x="6.2" y="14.8" width="14.4" height="2.6" rx="1.3" fill="var(--accent-primary)"/><path d="M9.4 12.4 3.4 16.1l6 3.7z" fill="var(--accent-danger)"/></svg>`;
 
 const hide = () => { hideTip(); target = null; range = null; };
 

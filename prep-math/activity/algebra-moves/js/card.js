@@ -10,6 +10,7 @@
    Only the last row is live; the ones above it are what you already did.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+import { UI } from "/utils/components/ui-icons.js";
 import { buildRow, paintRow, flipInto } from "./render.js";
 import { plain } from "./layout.js";
 import { preservesSolutions } from "./verify.js";
@@ -72,16 +73,13 @@ export function createCard(eq, { x, y, given = null, title = "", find = "", onPi
   tools.className = "am-card__tools";
   tools.innerHTML = `
     <button type="button" class="am-card__btn" data-act="back" title="Step back" aria-label="Step back" disabled>
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
-           stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      ${UI.undo(15)}
     </button>
     <button type="button" class="am-card__btn" data-act="forward" title="Step forward again" aria-label="Step forward again" disabled>
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
-           stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+      ${UI.redo(15)}
     </button>
     <button type="button" class="am-card__btn" data-act="close" title="Take it off the canvas" aria-label="Take it off the canvas">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1"
-           stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      ${UI.close(15)}
     </button>`;
   grip.appendChild(tools);
 

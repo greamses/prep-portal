@@ -47,12 +47,8 @@ const words = (s) => String(s || '').trim().split(/\s+/).filter((w) => /[a-z0-9]
 const wordCount = (s) => words(s).length;
 const paraCount = (s) => String(s || '').split(/\n+/).map((p) => p.trim()).filter(Boolean).length;
 
-const CHEVRON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-  stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
-const BULB = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-  stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M9 18h6"/><path d="M10 21.5h4"/>
-  <path d="M12 2.5a6 6 0 0 0-3.5 10.9c.6.5.9 1.1 1 1.8h5c.1-.7.4-1.3 1-1.8A6 6 0 0 0 12 2.5Z"/></svg>`;
+const CHEVRON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14" aria-hidden="true"><g transform="rotate(90 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
+const BULB = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14" aria-hidden="true"><path d="M12 2.4a6.6 6.6 0 0 1 3.9 11.9c-.5.4-.8.9-.8 1.5H8.9c0-.6-.3-1.1-.8-1.5A6.6 6.6 0 0 1 12 2.4z" fill="var(--accent-primary)"/><path d="M10.3 6.1A3.4 3.4 0 0 1 13 5.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none"/><rect x="9.1" y="16.4" width="5.8" height="1.9" rx="0.95" fill="var(--accent-warning)"/><path d="M9.9 18.7h4.2v.5a1.5 1.5 0 0 1-1.5 1.5h-1.2a1.5 1.5 0 0 1-1.5-1.5z" fill="var(--accent-warning)"/></svg>`;
 
 /* THE flag for "is there a planner for this task?". A form the student
    brought themselves has no mnemonic, so there is nothing to plan against and

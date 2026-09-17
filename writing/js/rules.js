@@ -257,10 +257,8 @@ export function justClosedSentence(text, { grew = true } = {}) {
 
 /* ── The checklist under the sheet ──────────────────────── */
 
-const TICK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>`;
-const OPEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
-  stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>`;
+const TICK = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const OPEN = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="var(--text-tertiary)" opacity="0.35"/><circle cx="12" cy="12" r="5.6" fill="#fff"/></svg>`;
 
 const esc = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

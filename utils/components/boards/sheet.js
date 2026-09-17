@@ -14,15 +14,25 @@
 
 import { boardFor } from "./index.js";
 
+/* The board's buttons, in the site's one icon language — filled shapes in the
+   theme's accent tokens (utils/components/workbook/icons.js states the rule). */
 const SVG = (inner) =>
-  `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" `
-  + `stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  `<svg viewBox="0 0 24 24" width="15" height="15" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${inner}</svg>`;
 
 const ICONS = {
-  set: SVG('<path d="M5 12l4.5 4.5L19 7"/>'),
-  show: SVG('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/>'),
-  rub: SVG('<path d="M8 20h12"/><path d="M15.5 4.5 4.5 15.5a2 2 0 0 0 0 2.8l1.2 1.2a2 2 0 0 0 2.8 0L19.5 8.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0Z"/>'),
-  down: SVG('<path d="M12 5v13M7 13.5 12 19l5-5.5"/>'),
+  /* set it: the green badge with the tick, as everywhere else */
+  set: SVG('<circle cx="12" cy="12" r="9.6" fill="var(--accent-success)"/>'
+    + '<path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>'),
+  /* show the working: an eye */
+  show: SVG('<path d="M1.8 12S5.6 4.8 12 4.8 22.2 12 22.2 12 18.4 19.2 12 19.2 1.8 12 1.8 12z" fill="var(--accent-secondary)"/>'
+    + '<circle cx="12" cy="12" r="4.4" fill="#fff"/><circle cx="12" cy="12" r="2.3" fill="var(--accent-danger)"/>'),
+  /* rub it out */
+  rub: SVG('<path d="M4.2 13.4 11.6 6a1.8 1.8 0 0 1 2.5 0l4.9 4.9a1.8 1.8 0 0 1 0 2.5L14 18.4H9.2z" fill="var(--accent-danger)"/>'
+    + '<path d="M8 9.6 14.4 16 12 18.4H9.2l-5-5z" fill="var(--accent-secondary)"/>'
+    + '<rect x="9.2" y="19.4" width="11.6" height="2" rx="1" fill="var(--text-tertiary)"/>'),
+  /* bring the next figure down */
+  down: SVG('<rect x="10.6" y="3" width="2.8" height="11" rx="1.4" fill="var(--accent-secondary)"/>'
+    + '<path d="M5.8 12.6h12.4L12 20.6z" fill="var(--accent-danger)"/>'),
 };
 
 /**

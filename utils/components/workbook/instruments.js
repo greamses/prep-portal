@@ -23,45 +23,124 @@
    it is passed in; the ruler and the set square are the same everywhere.
    ========================================================================== */
 
+import { bar, wedge, LOUD, QUIET, PAPER, GOLD, LEAF, WARM, INK as LEAD } from "./icons.js";
+
 const INK = "#2a2723";
 const f = (n) => n.toFixed(2);
 
-/* our own glyphs, for the toolbox buttons — 24 × 24, drawn in currentColor */
+/* Our own glyphs for the tool rail. They are in the site's one icon language —
+   see utils/components/workbook/icons.js, which also states the loud/quiet rule
+   they follow. An instrument is painted the colour the instrument itself is on
+   the paper: the ruler butter, the set square sky with its cut-out parallel to
+   its edges, the compass carrying its own pencil. */
 const glyph = (inner) =>
-  `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" ` +
-  `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  `<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${inner}</svg>`;
+const r = (x, y, w, h, fill, rx = 1) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}"/>`;
+/* a written board: three rows of figures and the rule under the sum */
+const board = (sign) =>
+  r(11, 3.6, 10, 3.2, GOLD, 1.6) + r(11, 8.8, 10, 3.2, GOLD, 1.6) + sign +
+  r(2.6, 14.2, 18.8, 1.9, QUIET, 0.95) + r(9, 17.8, 12, 3.2, LEAF, 1.6);
+
 export const TOOL_ICONS = {
-  box: glyph(`<path d="M3.5 9h17v10.5h-17zM8.5 9V6.5h7V9"/><path d="M3.5 13h17"/>`),
-  ruler: glyph(`<path d="M2.5 8h19v8h-19z"/><path d="M6 8v3M9.5 8v2M13 8v3M16.5 8v2M20 8v3"/>`),
-  protractor: glyph(`<path d="M3 17a9 9 0 0 1 18 0z"/><path d="M12 17V13M7.2 12.2l1.6 1.6M16.8 12.2l-1.6 1.6"/>`),
-  setsquare: glyph(`<path d="M4 20V4l16 16z"/><path d="M7.5 16.5V12l4.5 4.5z"/>`),
-  close: glyph(`<path d="M7 7l10 10M17 7 7 17"/>`),
-  /* A pencil, nib down the way it is held; and an eraser, the block with the
-     sleeve round it that every school one has. */
-  compass: glyph(`<circle cx="12" cy="5.2" r="1.9"/><path d="M11.1 6.9 6.2 20"/><path d="m12.9 6.9 4.9 13.1"/><path d="M8.3 14.4h7.4"/><path d="m17.8 20 .6 1.4"/>`),
-  pencil: glyph(`<path d="M4 20l1.2-4.2L16 5a2.1 2.1 0 0 1 3 3L8.2 18.8Z"/><path d="M14.2 6.8 17.2 9.8"/><path d="m5.2 15.8 3 3"/>`),
-  eraser: glyph(`<path d="m9 19-5-5a1.6 1.6 0 0 1 0-2.3l7.4-7.4a1.6 1.6 0 0 1 2.3 0l4.7 4.7a1.6 1.6 0 0 1 0 2.3L15 19Z"/><path d="M9 19h10.5"/><path d="m7.6 10.6 5.8 5.8"/>`),
-  /* A ruled chart: the band across the top, then the columns a figure stands
-     in — which is what a place-value chart is before anything is written on it. */
-  chart: glyph(`<path d="M3.5 5.5h17v13h-17zM3.5 9.5h17"/><path d="M9 9.5v9M15 9.5v9"/>`),
-  /* Blocks: a flat, a rod and a unit standing together — the whole workbench
-     in the three pieces it is built from. */
-  bench: glyph(`<path d="M3.5 10.5h7v9h-7zM3.5 14h7M7 10.5v9"/><path d="M13 6.5h2.6v13H13z"/><path d="M18.5 16.5h2.5v3h-2.5z"/>`),
-  /* the geometry studios, and the grapher */
-  shapes: glyph(`<path d="M12 3.5 20.5 19h-17z"/>`),
-  angles: glyph(`<path d="M4 19.5h16"/><path d="M4 19.5 17 6"/><path d="M9.5 19.5a5.5 5.5 0 0 0 1.7-3.9"/>`),
-  transversal: glyph(`<path d="M3 8.5h18M3 15.5h18"/><path d="M7.5 4.5 16 19.5"/>`),
-  pythagoras: glyph(`<path d="M5 19.5h11V8.5z"/><path d="M5 16.2h3.3v3.3"/>`),
-  surface: glyph(`<path d="M4 8 12 4l8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/>`),
-  graph: glyph(`<path d="M4 20V4"/><path d="M4 20h16"/><path d="M4.5 16.5c4-1 5-9 8.5-9s4.5 5 6.5 6"/>`),
-  /* the written boards, and the algebra sheet — the tools that are not
-     instruments but working paper */
-  longdiv: glyph(`<path d="M9 7.5h11"/><path d="M9 7.5v11"/><path d="M4.5 10c1.5 0 2.2 1 2.2 2.8s-.7 2.8-2.2 2.8"/><path d="M12 4.5h5"/><path d="M12 12h4M12 16h6"/>`),
-  column: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M5 8.5v4M3 10.5h4"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
-  times: glyph(`<path d="M11 6h8M11 10.5h8"/><path d="M3.4 8.9 6.6 12.1M6.6 8.9 3.4 12.1"/><path d="M3.5 14h16"/><path d="M11 18h8"/>`),
-  fraction: glyph(`<path d="M4.5 12h15"/><path d="M7.5 4.5h3.5M9.2 4.5v4.5"/><path d="M13 15.2a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z"/><path d="M13.2 4.8 17 9.2"/>`),
-  gm: glyph(`<path d="M3.5 18.5c3.4 0 3-13 6.4-13s3 13 6.4 13"/><path d="M14 11.5h7"/>`),
-  side: glyph(`<path d="M3.5 4.5h17v15h-17z"/><path d="M9 4.5v15"/>`),
+  box: glyph(
+    r(3, 9, 18, 11.6, WARM, 2) + r(3, 9, 18, 3.4, GOLD, 1.6) +
+      `<path d="M8.4 9V6.6a1.6 1.6 0 0 1 1.6-1.6h4a1.6 1.6 0 0 1 1.6 1.6V9h-2.4V7.4h-2.4V9z" fill="${PAPER}"/>` +
+      r(10.6, 11.4, 2.8, 2.6, "#fff", 0.6)
+  ),
+  ruler: glyph(
+    r(2.2, 7.6, 19.6, 8.8, GOLD, 2) +
+      [5.6, 9, 12.4, 15.8, 19.2].map((x, i) => r(x - 0.7, 7.6, 1.4, i % 2 ? 3 : 4.6, "#fff", 0.7)).join("")
+  ),
+  protractor: glyph(
+    `<path d="M3 17a9 9 0 0 1 18 0z" fill="${PAPER}"/>` +
+      r(11.3, 10.2, 1.4, 5.2, "#fff", 0.7) +
+      bar(7.4, 12.4, 8.8, 13.8, 1.4, "#fff") + bar(16.6, 12.4, 15.2, 13.8, 1.4, "#fff") +
+      r(2.4, 16, 19.2, 2.6, LOUD, 1.3)
+  ),
+  setsquare: glyph(
+    `<path d="M4 20V4l16 16z" fill="${PAPER}"/>` +
+      `<path d="M7.4 16.6V12.2l4.4 4.4z" fill="#fff"/>`
+  ),
+  close: glyph(bar(6.4, 6.4, 17.6, 17.6, 2.8, LOUD) + bar(17.6, 6.4, 6.4, 17.6, 2.8, LOUD)),
+  /* the compass carries its own pencil: the needle leg is quiet, the pencil
+     leg is the loud one, because it is the leg that draws */
+  compass: glyph(
+    bar(11.2, 6.6, 6.2, 20.4, 2.2, QUIET) +
+      bar(12.8, 6.6, 16.6, 17, 2.6, WARM) +
+      `<path d="M15.4 16.2 18.2 17.2 18.4 21.4z" fill="${LOUD}"/>` +
+      bar(8.4, 14.4, 15.4, 14.4, 1.6, QUIET) +
+      `<circle cx="12" cy="5" r="2.6" fill="${GOLD}"/>`
+  ),
+  pencil: glyph(
+    `<path d="M14.6 6.2 17.8 9.4 8.4 18.8 5.2 15.6z" fill="${GOLD}"/>` +
+      `<path d="M16 4.8a2.2 2.2 0 0 1 3.2 3.2l-1.4 1.4-3.2-3.2z" fill="${LOUD}"/>` +
+      `<path d="M5.2 15.6 8.4 18.8 3.6 20.4z" fill="${WARM}"/>` +
+      `<path d="M3.6 20.4 4.1 18.9 5.1 19.9z" fill="${LEAD}"/>`
+  ),
+  eraser: glyph(
+    `<path d="M4.2 13.4 11.6 6a1.8 1.8 0 0 1 2.5 0l4.9 4.9a1.8 1.8 0 0 1 0 2.5L14 18.4H9.2z" fill="${LOUD}"/>` +
+      `<path d="M8 9.6 14.4 16 12 18.4H9.2l-5-5z" fill="${PAPER}"/>` +
+      r(9.2, 19.4, 11.6, 2, QUIET, 1)
+  ),
+  chart: glyph(
+    r(2.8, 4.4, 18.4, 15.2, PAPER, 1.8) +
+      `<path d="M2.8 6.2a1.8 1.8 0 0 1 1.8-1.8h14.8a1.8 1.8 0 0 1 1.8 1.8v3.2H2.8z" fill="${GOLD}"/>` +
+      r(8.4, 9.4, 1.4, 10.2, "#fff", 0) + r(14.2, 9.4, 1.4, 10.2, "#fff", 0)
+  ),
+  /* blocks: a flat, a rod and a unit — painted as the blocks are painted */
+  bench: glyph(
+    r(2.6, 9.6, 8.4, 10.8, PAPER, 1) + r(6.1, 9.6, 1.2, 10.8, "#fff", 0) + r(2.6, 14.4, 8.4, 1.2, "#fff", 0) +
+      r(12.8, 5.6, 3.2, 14.8, GOLD, 1) +
+      r(17.8, 16.8, 3.6, 3.6, LOUD, 0.8)
+  ),
+  shapes: glyph(
+    r(2.8, 3.2, 8, 8, GOLD, 1.8) + `<circle cx="17" cy="7.2" r="4" fill="${PAPER}"/>` +
+      `<path d="M7 12.8l4.4 8H2.6z" fill="${LOUD}"/>` + r(13.2, 13, 7.8, 7.8, LEAF, 1.8)
+  ),
+  angles: glyph(
+    bar(4, 19.4, 20.4, 19.4, 1.8, QUIET) + bar(4, 19.4, 17, 6, 1.8, QUIET) +
+      wedge([4, 19.4], [1, 0], [0.696, -0.718], 6.6)
+  ),
+  transversal: glyph(
+    bar(2.4, 8.4, 21.6, 8.4, 1.8, QUIET) + bar(2.4, 15.6, 21.6, 15.6, 1.8, QUIET) +
+      bar(7.6, 21, 16.4, 3, 2.8, LOUD)
+  ),
+  pythagoras: glyph(
+    `<path d="M4.6 19.6h14.2V5.4z" fill="${PAPER}"/>` + r(14.6, 15.4, 3.4, 3.4, LOUD, 0.5)
+  ),
+  surface: glyph(
+    `<path d="M12 12.4 20.4 8v8.4L12 20.8z" fill="${WARM}"/>` +
+      `<path d="M12 12.4 3.6 8v8.4l8.4 4.4z" fill="${PAPER}"/>` +
+      `<path d="M12 3.4 20.4 8 12 12.4 3.6 8z" fill="${GOLD}"/>`
+  ),
+  graph: glyph(
+    r(3.2, 3.2, 2, 17.6, QUIET, 1) + r(3.2, 18.8, 17.6, 2, QUIET, 1) +
+      `<path d="M5.6 16c4-1.2 4.6-8.4 8-8.4s4 4.8 6 5.6" fill="none" stroke="${LOUD}" stroke-width="2.6" stroke-linecap="round"/>`
+  ),
+  /* the written boards and the algebra sheet — working paper, not instruments */
+  longdiv: glyph(
+    r(10.2, 3, 10.4, 3, GOLD, 1.5) +
+      `<path d="M7.2 8.2h14.2v2.4H9.8c.6 1.2.9 2.6.9 4.2s-.3 3-.9 4.2H7.2c.8-1.2 1.2-2.6 1.2-4.2s-.4-3-1.2-4.2z" fill="${LOUD}"/>` +
+      r(11.4, 12.6, 9, 2.6, PAPER, 1.3) + r(11.4, 17, 6.4, 2.6, PAPER, 1.3) +
+      r(2.4, 12.8, 3.6, 3, PAPER, 1.2)
+  ),
+  column: glyph(board(r(4.2, 5.9, 5.2, 2.2, LOUD, 1.1) + r(5.7, 4.4, 2.2, 5.2, LOUD, 1.1))),
+  times: glyph(board(bar(4, 5, 8.6, 9.6, 2.2, LOUD) + bar(8.6, 5, 4, 9.6, 2.2, LOUD))),
+  fraction: glyph(
+    r(7.4, 3, 9.2, 6, GOLD, 1.6) + r(3.4, 10.9, 17.2, 2.2, LOUD, 1.1) + r(7.4, 15, 9.2, 6, PAPER, 1.6)
+  ),
+  /* Algebra Moves: an unknown box, and the move that keeps both sides level */
+  gm: glyph(
+    r(2.6, 6.4, 8, 11.2, GOLD, 1.6) +
+      bar(4.6, 9.4, 8.6, 14.6, 1.8, LOUD) + bar(8.6, 9.4, 4.6, 14.6, 1.8, LOUD) +
+      r(12.4, 9.4, 3.4, 1.8, QUIET, 0.9) + r(12.4, 12.8, 3.4, 1.8, QUIET, 0.9) +
+      r(17.4, 8.2, 4, 7.6, PAPER, 1.4)
+  ),
+  side: glyph(
+    r(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
+      `<path d="M4.6 4.2h4.2v15.6H4.6a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z" fill="${GOLD}"/>`
+  ),
 };
 
 /* ── the ruler ─────────────────────────────────────────────────────────────*/
