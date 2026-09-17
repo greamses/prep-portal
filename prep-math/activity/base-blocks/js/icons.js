@@ -1,86 +1,289 @@
 /* ============================================================================
    Base Blocks — our own inline SVG glyphs (no icon fonts, no emoji)
+   ----------------------------------------------------------------------------
+   The house style and the loud/quiet rule come from
+   /utils/components/workbook/icons.js — 24×24, filled shapes in the theme's
+   accent tokens, white only where a coloured shape encloses it, and the thing
+   that tells a glyph from its neighbour drawn loud.
+
+   TWO RULES ARE THIS CANVAS'S OWN, and they beat prettiness:
+
+   NO TWO PRESSABLE THINGS SHARE A GLYPH. Split and merge are one drawing read
+   two ways; so are undo and redo, and lift and lower. That is deliberate and
+   it is not sharing — each pair is one idea and its reverse, and the arrows
+   point opposite ways. Everything else draws the thing it does.
+
+   A GLYPH THAT STANDS FOR A PIECE IS PAINTED THE PIECE'S OWN COLOUR. On the
+   canvas a rod and the ten units it breaks into are the SAME colour, because
+   that is how a child sees the quantity has not changed. So `regroup` draws
+   both in butter and puts the loud mark on the link between them — colouring
+   them differently would have the glyph contradict the manipulative.
    ========================================================================== */
 
-const line = (d, extra = "") =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+import {
+  svg, bar, LOUD, QUIET, PAPER, GOLD, LEAF, WARM,
+} from "/utils/components/workbook/icons.js";
+
+/** A dashed run, drawn as real dashes so it survives at 22px. */
+function dashes(x1, y1, x2, y2, n = 4, w = 1.8, fill = LOUD) {
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const a = (i * 2) / (n * 2 - 1);
+    const b = (i * 2 + 1) / (n * 2 - 1);
+    out += bar(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b, w, fill);
+  }
+  return out;
+}
+
+/** A block arrowhead pointing along (dx,dy) from (x,y). */
+function head(x, y, dx, dy, s = 4.4, fill = LOUD) {
+  const n = Math.hypot(dx, dy);
+  const ux = dx / n;
+  const uy = dy / n;
+  const f = (v) => v.toFixed(2);
+  return (
+    `<path d="M${f(x + ux * s)} ${f(y + uy * s)}` +
+    `L${f(x + uy * s * 0.66)} ${f(y - ux * s * 0.66)}` +
+    `L${f(x - uy * s * 0.66)} ${f(y + ux * s * 0.66)}z" fill="${fill}"/>`
+  );
+}
+
+const rect = (x, y, w, h, fill, r = 1) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}"/>`;
+
+const plus = (cx, cy, s = 12, w = 2.8, fill = LOUD) =>
+  rect(cx - w / 2, cy - s / 2, w, s, fill, w / 2) + rect(cx - s / 2, cy - w / 2, s, w, fill, w / 2);
 
 export const ICON = {
-  split: line(`<rect x="2.5" y="6" width="7" height="12" rx="1"/><rect x="14.5" y="6" width="7" height="12" rx="1"/><path d="M12 3.5v17" stroke-dasharray="2 2.4"/>`),
   /* split and merge are opposites, so they are the same drawing read the two
-     ways: a piece cut apart by a dashed line, and two pieces pushed together. */
-  merge: line(`<rect x="1.8" y="6" width="6" height="12" rx="1"/><rect x="16.2" y="6" width="6" height="12" rx="1"/><path d="M10 12h4M11.4 10.6 10 12l1.4 1.4M12.6 10.6 14 12l-1.4 1.4"/>`),
-  regroup: line(`<rect x="2.5" y="14" width="4" height="6.5" rx="0.8"/><rect x="8.2" y="14" width="4" height="6.5" rx="0.8"/><rect x="13.9" y="14" width="4" height="6.5" rx="0.8"/><rect x="6" y="3.5" width="12" height="6.5" rx="0.8"/><path d="M12 12.4v-1.2" stroke-dasharray="1.6 1.6"/>`),
-  crumbs: line(`<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/>`),
-  rows: line(`<rect x="3" y="4" width="18" height="4.2" rx="1"/><rect x="3" y="10" width="12" height="4.2" rx="1"/><rect x="3" y="16" width="7" height="4.2" rx="1"/>`),
-  trash: line(`<path d="M4 6.5h16M9.5 6.5V4.2h5v2.3M6.5 6.5 7.4 20h9.2l.9-13.5M10.2 10v6.4M13.8 10v6.4"/>`),
-  undo: line(`<path d="M4 9.5h9.5a5.5 5.5 0 0 1 0 11H8M4 9.5 8 5.6M4 9.5l4 4"/>`),
+     ways: one piece cut apart, and two pieces pushed together. Both halves are
+     the SAME colour — it is one piece halved, not two different pieces. */
+  split: svg(
+    rect(2.4, 5.6, 7.6, 12.8, PAPER, 1.4) +
+      rect(14, 5.6, 7.6, 12.8, PAPER, 1.4) +
+      dashes(12, 2.6, 12, 21.4, 4, 1.8)
+  ),
+  merge: svg(
+    rect(1.6, 5.6, 6.4, 12.8, PAPER, 1.4) +
+      rect(16, 5.6, 6.4, 12.8, PAPER, 1.4) +
+      head(9.2, 12, 1, 0, 3.6) +
+      head(14.8, 12, -1, 0, 3.6)
+  ),
+  /* one ten becoming ten ones: both are butter, because both are the same
+     amount — the loud part is the link, which is the move being made */
+  regroup: svg(
+    rect(5.4, 3, 13.2, 6.6, GOLD, 1.4) +
+      rect(2.4, 14.2, 5.6, 7, GOLD, 1.2) +
+      rect(9.2, 14.2, 5.6, 7, GOLD, 1.2) +
+      rect(16, 14.2, 5.6, 7, GOLD, 1.2) +
+      rect(11.1, 10.4, 1.8, 3, LOUD, 0.9)
+  ),
+  /* many little ones, loose */
+  crumbs: svg(
+    [0, 1, 2].map((r) => [0, 1, 2].map((c) =>
+      rect(2.8 + c * 6.6, 2.8 + r * 6.6, 5.2, 5.2, (r + c) % 2 ? GOLD : PAPER, 1)
+    ).join("")).join("")
+  ),
+  /* laid out in rows, longest first */
+  rows: svg(
+    rect(2.6, 3.6, 18.8, 4.6, PAPER, 2.3) +
+      rect(2.6, 9.7, 12.6, 4.6, GOLD, 2.3) +
+      rect(2.6, 15.8, 7, 4.6, LEAF, 2.3)
+  ),
+  trash: svg(
+    rect(8.6, 2.4, 6.8, 2.6, LOUD, 1.3) +
+      rect(3, 5, 18, 3.2, LOUD, 1.6) +
+      `<path d="M5.4 9.4h13.2l-1.1 10.4a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z" fill="${PAPER}"/>` +
+      rect(9.1, 11.9, 1.9, 6.2, "#fff", 0.95) +
+      rect(13, 11.9, 1.9, 6.2, "#fff", 0.95)
+  ),
   /* redo is undo read the other way — the same arrow, mirrored, the way split
      and merge are one drawing read two ways */
-  redo: line(`<path d="M20 9.5h-9.5a5.5 5.5 0 0 0 0 11H16M20 9.5 16 5.6M20 9.5l-4 4"/>`),
-  lasso: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5" stroke-dasharray="3 2.6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>`),
+  undo: svg(
+    `<path d="M7.6 8.6h6a5.9 5.9 0 0 1 0 11.8H9.4" fill="none" stroke="${PAPER}" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<path d="M3 8.6 9.4 4.4v8.4z" fill="${LOUD}"/>`
+  ),
+  redo: svg(
+    `<path d="M16.4 8.6h-6a5.9 5.9 0 0 0 0 11.8h4.2" fill="none" stroke="${PAPER}" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<path d="M21 8.6 14.6 4.4v8.4z" fill="${LOUD}"/>`
+  ),
+  /* a ring thrown round whatever is inside it */
+  lasso: svg(
+    dashes(3.4, 3.4, 20.6, 3.4, 4, 1.8) +
+      dashes(20.6, 3.4, 20.6, 20.6, 4, 1.8) +
+      dashes(20.6, 20.6, 3.4, 20.6, 4, 1.8) +
+      dashes(3.4, 20.6, 3.4, 3.4, 4, 1.8) +
+      `<circle cx="12" cy="12" r="2.6" fill="${PAPER}"/>`
+  ),
   /* "pick every one this size": one piece in hand and two more of the same
      answering to it — not two rectangles side by side, which read as merge */
-  match: line(`<rect x="2.6" y="8.4" width="7.4" height="9.4" rx="1" fill="currentColor" stroke="none"/><rect x="12.6" y="3.4" width="7.4" height="9.4" rx="1"/><rect x="12.6" y="14.6" width="7.4" height="6" rx="1" stroke-dasharray="2.4 2"/>`),
-  plus: line(`<path d="M12 5v14M5 12h14"/>`),
-  eraser: line(`<path d="M4 20h16M6.6 16.8 15 8.4a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8l-4 4H8.2z"/>`),
-  brush: line(`<path d="M6.5 14.5 14 7a2.6 2.6 0 0 1 3.7 3.7l-7.5 7.5-4.4 1.1z"/><path d="M12.4 8.6l3 3"/>`),
-  base: line(`<path d="M4 19V9.5M4 19h16M9.5 19V6M15 19v-8.5M20.5 19V4"/>`),
-  ruler: line(`<rect x="2.5" y="8" width="19" height="8" rx="1.2"/><path d="M6.5 8v3M10 8v4.4M13.5 8v3M17 8v4.4"/>`),
-  expand: line(`<path d="M4 9V5.2a1 1 0 0 1 1-1H9M20 9V5.2a1 1 0 0 0-1-1H15M4 15v3.8a1 1 0 0 0 1 1H9M20 15v3.8a1 1 0 0 1-1 1H15"/>`),
-  fit: line(`<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><rect x="8.6" y="8.6" width="6.8" height="6.8" rx="1"/>`),
-  zoomIn: line(`<circle cx="10.5" cy="10.5" r="6.6"/><path d="m15.4 15.4 5.1 5.1M7.8 10.5h5.4M10.5 7.8v5.4"/>`),
-  zoomOut: line(`<circle cx="10.5" cy="10.5" r="6.6"/><path d="m15.4 15.4 5.1 5.1M7.8 10.5h5.4"/>`),
-  /* A pointer with a corner of card behind it. Nothing else on this canvas is
-     an arrow, which is the rule: no two pressable things share a glyph. */
+  match: svg(
+    rect(2.4, 8.2, 7.6, 9.6, LOUD, 1.2) +
+      rect(12.4, 3.2, 7.6, 9.6, PAPER, 1.2) +
+      dashes(12.4, 15.4, 20, 15.4, 3, 1.8, PAPER) +
+      dashes(12.4, 20.6, 20, 20.6, 3, 1.8, PAPER) +
+      bar(12.4, 15.4, 12.4, 20.6, 1.8, PAPER) +
+      bar(20, 15.4, 20, 20.6, 1.8, PAPER)
+  ),
+  plus: svg(plus(12, 12, 14, 3)),
+  eraser: svg(
+    `<path d="M6.6 16.8 14.6 8.8a2.2 2.2 0 0 1 3.1 0l2.4 2.4a2.2 2.2 0 0 1 0 3.1l-4.4 4.4H8.4z" fill="${LOUD}"/>` +
+      `<path d="M11.2 12.2 16.6 17.6l-1.1 1.1H8.4l-1.8-1.9z" fill="${PAPER}"/>` +
+      rect(2.6, 19.8, 18.8, 2.2, QUIET, 1.1)
+  ),
+  brush: svg(
+    `<path d="M13.4 6.6 17 3a2.8 2.8 0 0 1 4 4l-3.6 3.6z" fill="${GOLD}"/>` +
+      `<path d="M6.4 14.6 13.4 7.6l3 3-7 7z" fill="${WARM}"/>` +
+      `<path d="M6.4 14.6 9.4 17.6 4 19.4z" fill="${LOUD}"/>`
+  ),
+  /* the place-value columns, each one ten times the last */
+  base: svg(
+    rect(2.6, 15.4, 3.8, 5.4, PAPER, 1) +
+      rect(8, 11.4, 3.8, 9.4, GOLD, 1) +
+      rect(13.4, 7.4, 3.8, 13.4, LEAF, 1) +
+      rect(18.8, 3.4, 3.8, 17.4, LOUD, 1)
+  ),
+  ruler: svg(
+    rect(2.4, 7.6, 19.2, 8.8, WARM, 2) +
+      rect(6, 7.6, 1.5, 3.4, "#fff", 0.75) +
+      rect(9.6, 7.6, 1.5, 4.8, "#fff", 0.75) +
+      rect(13.2, 7.6, 1.5, 3.4, "#fff", 0.75) +
+      rect(16.8, 7.6, 1.5, 4.8, "#fff", 0.75)
+  ),
+  expand: svg(
+    `<path d="M3 9.4V4.6a1.6 1.6 0 0 1 1.6-1.6h4.8v2.8H5.8v3.6zM21 9.4V4.6A1.6 1.6 0 0 0 19.4 3h-4.8v2.8h3.6v3.6zM3 14.6v4.8A1.6 1.6 0 0 0 4.6 21h4.8v-2.8H5.8v-3.6zM21 14.6v4.8a1.6 1.6 0 0 1-1.6 1.6h-4.8v-2.8h3.6v-3.6z" fill="${PAPER}"/>`
+  ),
+  fit: svg(
+    rect(3.4, 3.4, 17.2, 17.2, PAPER, 1.8) +
+      rect(8.4, 8.4, 7.2, 7.2, GOLD, 1.2)
+  ),
+  zoomIn: svg(
+    bar(15.4, 15.4, 20.6, 20.6, 3.4, GOLD) +
+      `<circle cx="10.6" cy="10.6" r="7.6" fill="${PAPER}"/>` +
+      `<circle cx="10.6" cy="10.6" r="4.7" fill="#fff"/>` +
+      plus(10.6, 10.6, 5.6, 1.7, PAPER)
+  ),
+  zoomOut: svg(
+    bar(15.4, 15.4, 20.6, 20.6, 3.4, GOLD) +
+      `<circle cx="10.6" cy="10.6" r="7.6" fill="${PAPER}"/>` +
+      `<circle cx="10.6" cy="10.6" r="4.7" fill="#fff"/>` +
+      rect(7.8, 9.75, 5.6, 1.7, PAPER, 0.85)
+  ),
   /* A chevron folding down onto a line: the panel goes away into its own edge.
      Turned over by CSS when it is already folded, which is one pressable thing
      in two states and not two things sharing a glyph. */
-  fold: line(`<path d="M5 19.5h14"/><path d="M8 9.5l4 4 4-4"/><path d="M12 4v9"/>`),
+  fold: svg(
+    rect(4.6, 18.6, 14.8, 2.4, QUIET, 1.2) +
+      rect(10.8, 3.4, 2.4, 9.6, PAPER, 1.2) +
+      head(12, 12.4, 0, 1, 4.4)
+  ),
   /* Something said, with a line through it. */
-  quiet: line(`<path d="M20.5 14a2.5 2.5 0 0 1-2.5 2.5H9.2L5 20V6.5A2.5 2.5 0 0 1 7.5 4h7"/><path d="M3.5 3l17 17"/>`),
-  pick: line(`<path d="M14.5 4.5h5v5"/><path d="M5.2 3.6l6.1 15.2 2.2-5.5 5.5-2.2z"/>`),
-  hand: line(`<path d="M8.6 11.4V5.9a1.45 1.45 0 0 1 2.9 0v4.7m0-1.1a1.45 1.45 0 0 1 2.9 0v1.1m0-.8a1.45 1.45 0 0 1 2.9 0v4.4a5.4 5.4 0 0 1-5.4 5.4h-.8a4.9 4.9 0 0 1-4.2-2.4l-2.2-3.7a1.45 1.45 0 0 1 2.3-1.7l1 1.2"/>`),
-  turn: line(`<path d="M20 5.5v5h-5"/><path d="M19.6 10.5a7.8 7.8 0 1 0-1.2 6"/>`),
-  chevron: line(`<path d="m8 5 7 7-7 7"/>`),
-  close: line(`<path d="M6 6l12 12M18 6 6 18"/>`),
-  info: line(`<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.9"/>`),
-  check: line(`<path d="m5 12.5 4.6 4.6L19 7.8"/>`),
-  back: line(`<path d="M19 12H5M5 12l6-6M5 12l6 6"/>`),
+  quiet: svg(
+    `<path d="M3.4 6.6a2.2 2.2 0 0 1 2.2-2.2h12.8a2.2 2.2 0 0 1 2.2 2.2v7.2a2.2 2.2 0 0 1-2.2 2.2H9.6L5 20v-4z" fill="${PAPER}"/>` +
+      bar(3, 3, 21, 21, 2.6, LOUD)
+  ),
+  pick: svg(
+    `<path d="M4.6 3 11.4 19.8l2.4-6.2 6.2-2.4z" fill="${PAPER}"/>` +
+      `<path d="M13.8 13.6 20 11.2l-1.6 4.2-4.6-1.8z" fill="${LOUD}"/>`
+  ),
+  hand: svg(
+    `<path d="M8.4 11.6V5.9a1.6 1.6 0 0 1 3.2 0v4.6a1.6 1.6 0 0 1 3.1 0v.8a1.6 1.6 0 0 1 3.1 0v3.9a5.8 5.8 0 0 1-5.8 5.8h-.8a5.2 5.2 0 0 1-4.5-2.6l-2.3-3.9a1.6 1.6 0 0 1 2.6-1.8z" fill="${PAPER}"/>`
+  ),
+  turn: svg(
+    `<path d="M19.6 11.4a7.8 7.8 0 1 1-2.4-5.6" fill="none" stroke="${PAPER}" stroke-width="3.2" stroke-linecap="round"/>` +
+      `<path d="M13.6 6.4 20.2 3l.6 7z" fill="${LOUD}"/>`
+  ),
+  chevron: svg(
+    `<path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="${PAPER}"/>`
+  ),
+  close: svg(bar(6, 6, 18, 18, 3, LOUD) + bar(18, 6, 6, 18, 3, LOUD)),
+  info: svg(
+    `<circle cx="12" cy="12" r="9.2" fill="${PAPER}"/>` +
+      rect(10.7, 10.6, 2.6, 6.4, "#fff", 1.3) +
+      `<circle cx="12" cy="7.6" r="1.5" fill="#fff"/>`
+  ),
+  check: svg(
+    `<circle cx="12" cy="12" r="9.6" fill="${LEAF}"/>` +
+      `<path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>`
+  ),
+  back: svg(rect(6.6, 10.6, 14.8, 2.8, PAPER, 1.4) + head(7, 12, -1, 0, 4.6)),
   /* 2D is not "a grid" — the Charts tab and To-units are grids too. It is
      LOOKING STRAIGHT DOWN at the paper, so it is an arrow dropping onto a sheet. */
-  flat: line(`<rect x="4" y="10.6" width="16" height="9.4" rx="1.2"/><path d="M12 2.4v5.6M9.3 5.6 12 8.3l2.7-2.7"/>`),
-  solid: line(`<path d="M12 3.2 20.5 8v8L12 20.8 3.5 16V8z"/><path d="m3.5 8 8.5 4.6L20.5 8M12 12.6v8.2"/>`),
-
+  flat: svg(
+    rect(3.4, 12.4, 17.2, 8.2, PAPER, 1.6) +
+      rect(10.8, 2.4, 2.4, 6.4, GOLD, 1.2) +
+      head(12, 8.2, 0, 1, 4.4)
+  ),
+  solid: svg(
+    `<path d="M12 12.6 20.8 7.8V16L12 20.8z" fill="${WARM}"/>` +
+      `<path d="M12 12.6 3.2 7.8V16L12 20.8z" fill="${PAPER}"/>` +
+      `<path d="M12 3.2 20.8 7.8 12 12.6 3.2 7.8z" fill="${GOLD}"/>`
+  ),
   /* the readout: what the canvas comes to, as a number. An "=" in a card —
      Tidy already owns the stack of bars, and no two keys may share a glyph. */
-  reading: line(`<rect x="2.8" y="4.2" width="18.4" height="15.6" rx="1.4"/><path d="M7.4 10h9.2M7.4 14h9.2"/>`),
-
+  reading: svg(
+    rect(2.8, 4.2, 18.4, 15.6, PAPER, 1.8) +
+      rect(7.2, 9.4, 9.6, 2.2, "#fff", 1.1) +
+      rect(7.2, 13.4, 9.6, 2.2, "#fff", 1.1)
+  ),
   /* sync: two links of a chain, because that is what it does to the tools */
-  sync: line(`<path d="M9.6 14.4 14.4 9.6"/><path d="M11.2 7.4 13 5.6a3.7 3.7 0 0 1 5.3 5.3l-1.8 1.8"/><path d="M12.8 16.6 11 18.4a3.7 3.7 0 0 1-5.3-5.3l1.8-1.8"/>`),
-
+  sync: svg(
+    `<path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="${PAPER}"/>` +
+      `<path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="${PAPER}"/>` +
+      bar(9.4, 14.6, 14.6, 9.4, 2.6, LOUD)
+  ),
   /* type a number: a field with a caret waiting in it */
-  keyin: line(`<rect x="2.4" y="6.6" width="19.2" height="10.8" rx="1.3"/><path d="M12 9.2v5.6"/><path d="M10.2 9.2h3.6M10.2 14.8h3.6"/>`),
-
+  keyin: svg(
+    rect(2.4, 6.6, 19.2, 10.8, PAPER, 1.8) +
+      rect(11.1, 8.8, 1.8, 6.4, LOUD, 0.9) +
+      rect(9.4, 8.8, 5.2, 1.6, LOUD, 0.8) +
+      rect(9.4, 13.6, 5.2, 1.6, LOUD, 0.8)
+  ),
   /* build it: courses of brickwork — what pressing it makes, not "confirm",
      which is the own-size button's tick */
-  bricks: line(`<rect x="2.6" y="5" width="18.8" height="14" rx="1.2"/><path d="M2.6 12h18.8M9.4 5v7M14.6 12v7"/>`),
-
+  bricks: svg(
+    rect(2.6, 5, 18.8, 14, PAPER, 1.6) +
+      rect(9.2, 5, 1.4, 7, "#fff") +
+      rect(2.6, 11.3, 18.8, 1.4, "#fff") +
+      rect(14.2, 12.7, 1.4, 6.3, "#fff")
+  ),
   /* a sticky note: the paper, the strip of tape it is stuck on by, and a couple
      of lines of writing. The tape is what tells it from Reading, which is a card
      of ruled lines and nothing else. */
-  note: line(`<rect x="4" y="5.4" width="16" height="15" rx="1.2"/><path d="m7.4 2.9 9.2 2.6"/><path d="M8.4 11h7.2M8.4 14.8h4.6"/>`),
-
+  note: svg(
+    rect(4, 5.4, 16, 15.2, GOLD, 1.4) +
+      bar(7.2, 2.8, 16.8, 5.4, 2.6, LOUD) +
+      rect(7.4, 10.4, 9.2, 1.8, "#fff", 0.9) +
+      rect(7.4, 14, 5.6, 1.8, "#fff", 0.9)
+  ),
   /* work it out: a play triangle, because that is what it does — it runs the
      addition through the frame a move at a time instead of landing on it */
-  play: line(`<path d="M8 5.4 19 12 8 18.6z"/>`),
+  play: svg(`<path d="M7.6 4.8 19.6 12 7.6 19.2z" fill="${LEAF}"/>`),
 
   /* the three families, for the dock's tabs */
-  blocks: line(`<path d="M8 2.8 14.2 6v6.4L8 15.6 1.8 12.4V6z"/><path d="m1.8 6 6.2 3.2L14.2 6M8 9.2v6.4"/><rect x="14" y="14" width="7.5" height="7.5" rx="0.8"/>`),
-  abacus: line(`<rect x="2.4" y="3.4" width="19.2" height="17.2" rx="1.4"/><path d="M2.4 8.6h19.2M2.4 15.4h19.2"/><circle cx="7.4" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="14" cy="8.6" r="2.5" fill="currentColor" stroke="none"/><circle cx="10.2" cy="15.4" r="2.5" fill="currentColor" stroke="none"/><circle cx="16.8" cy="15.4" r="2.5" fill="currentColor" stroke="none"/>`),
+  blocks: svg(
+    `<path d="M8 9.2 14.2 6v6.4L8 15.6z" fill="${WARM}"/>` +
+      `<path d="M8 9.2 1.8 6v6.4L8 15.6z" fill="${PAPER}"/>` +
+      `<path d="M8 2.8 14.2 6 8 9.2 1.8 6z" fill="${GOLD}"/>` +
+      rect(14, 14, 7.6, 7.6, LOUD, 1)
+  ),
+  abacus: svg(
+    rect(2.4, 3.4, 19.2, 17.2, WARM, 1.8) +
+      rect(2.4, 7.8, 19.2, 1.6, "#fff") +
+      rect(2.4, 14.6, 19.2, 1.6, "#fff") +
+      `<circle cx="7.4" cy="8.6" r="2.6" fill="${LOUD}"/>` +
+      `<circle cx="14" cy="8.6" r="2.6" fill="${LOUD}"/>` +
+      `<circle cx="10.2" cy="15.4" r="2.6" fill="${PAPER}"/>` +
+      `<circle cx="16.8" cy="15.4" r="2.6" fill="${PAPER}"/>`
+  ),
   /* algebra tiles: a big square, a long tile and a small one — the three sizes
      the family is made of, which no other key here draws */
-  algebra: line(`<rect x="2.6" y="2.8" width="10" height="10" rx="0.8"/><rect x="14.8" y="2.8" width="6.6" height="10" rx="0.8"/><rect x="2.6" y="15.4" width="5.4" height="5.4" rx="0.8"/><rect x="10.4" y="15.4" width="5.4" height="5.4" rx="0.8" stroke-dasharray="2.2 1.8"/>`),
+  algebra: svg(
+    rect(2.6, 2.8, 10, 10, PAPER, 1) +
+      rect(14.8, 2.8, 6.6, 10, GOLD, 1) +
+      rect(2.6, 15.4, 5.4, 5.4, LOUD, 1) +
+      rect(10.4, 15.4, 5.4, 5.4, LEAF, 1)
+  ),
 
   /* ── the third dimension, and how a piece lands ──────────────────────────
      No two pressable things on this canvas may share a glyph, so each of these
@@ -88,31 +291,64 @@ export const ICON = {
 
   /* lift: a piece held above the paper, with the paper drawn as the line it is
      no longer touching */
-  lift: line(`<rect x="3.2" y="7.6" width="10" height="6.6" rx="1"/><path d="M2.6 20.2h18.8" stroke-dasharray="2.6 2.4"/><path d="M17.6 16.6V7.9M15.2 10.3l2.4-2.4 2.4 2.4"/>`),
-
+  lift: svg(
+    rect(3.2, 7.4, 10, 6.6, PAPER, 1.2) +
+      dashes(2.6, 20.2, 21.4, 20.2, 5, 2.2, QUIET) +
+      rect(16.4, 9.4, 2.4, 7.6, GOLD, 1.2) +
+      head(17.6, 9.4, 0, -1, 4.2)
+  ),
   /* let it down: the same drawing read the other way, the way merge is split
      backwards — the piece on its way onto a paper that is solid again because
      it is about to be touched */
-  lower: line(`<rect x="3.2" y="9.6" width="10" height="6.6" rx="1"/><path d="M2.6 20.2h18.8"/><path d="M17.6 7.6v8.8M15.2 14l2.4 2.4 2.4-2.4"/>`),
-
+  lower: svg(
+    rect(3.2, 9.4, 10, 6.6, PAPER, 1.2) +
+      rect(2.6, 19.2, 18.8, 2.2, QUIET, 1.1) +
+      rect(16.4, 6.6, 2.4, 7.6, GOLD, 1.2) +
+      head(17.6, 14.2, 0, 1, 4.2)
+  ),
   /* tip: the same piece lying down and standing up, and the little arc that
      takes it from one to the other */
-  tip: line(`<path d="M2.4 20.6h19.2"/><rect x="3.2" y="16.2" width="8.6" height="4.4" rx="0.8"/><rect x="15.2" y="7.4" width="4.4" height="13.2" rx="0.8"/><path d="M12.9 12.9a5.4 5.4 0 0 1 2.1-3.6"/>`),
-
+  tip: svg(
+    rect(2.4, 19.4, 19.2, 2.2, QUIET, 1.1) +
+      rect(3.2, 14.6, 8.6, 4.4, PAPER, 1) +
+      rect(15.2, 5.8, 4.4, 13.2, GOLD, 1) +
+      `<path d="M12.6 12.8a6 6 0 0 1 2.2-4" fill="none" stroke="${LOUD}" stroke-width="2.4" stroke-linecap="round"/>`
+  ),
   /* snap to the squares: a piece sitting exactly on a ruling, and the other
      crossings of that ruling waiting for one */
-  grid: line(`<rect x="2.8" y="2.8" width="7.6" height="7.6" rx="0.8" fill="currentColor" stroke="none"/><path d="M14.4 6.6h3M15.9 5.1v3M14.4 16.4h3M15.9 14.9v3M4.8 16.4h3M6.3 14.9v3"/>`),
-
+  grid: svg(
+    rect(2.8, 2.8, 7.6, 7.6, LOUD, 1) +
+      [[15.9, 6.6], [15.9, 16.4], [6.3, 16.4]]
+        .map(([x, y]) => plus(x, y, 5.6, 1.8, QUIET)).join("")
+  ),
   /* flush: a magnet, which is what an edge that pulls another edge level with
      itself actually is */
-  flush: line(`<path d="M6.4 3.4v9.4a5.6 5.6 0 0 0 11.2 0V3.4"/><path d="M6.4 8.6h5M12.6 8.6h5"/>`),
-
+  flush: svg(
+    `<path d="M4.8 3.4h4.2v9.4a3 3 0 0 0 6 0V3.4h4.2v9.4a7.2 7.2 0 0 1-14.4 0z" fill="${LOUD}"/>` +
+      rect(4.8, 3.4, 4.2, 4, PAPER, 0.6) +
+      rect(15, 3.4, 4.2, 4, PAPER, 0.6)
+  ),
   /* the keys: a keyboard, with a space bar nothing else here has */
-  keys: line(`<rect x="2.2" y="5.8" width="19.6" height="12.4" rx="1.6"/><path d="M6.2 9.6h.01M9.8 9.6h.01M13.4 9.6h.01M17 9.6h.01M6.2 13h.01M9.8 13h.01M13.4 13h.01M17 13h.01M8.4 16.2h7.2"/>`),
-
+  keys: svg(
+    rect(2.2, 5.8, 19.6, 12.4, PAPER, 2) +
+      [6.2, 9.8, 13.4, 17].map((x) => rect(x - 1, 8.6, 2, 2, "#fff", 0.5)).join("") +
+      [6.2, 9.8, 13.4, 17].map((x) => rect(x - 1, 12, 2, 2, "#fff", 0.5)).join("") +
+      rect(8, 15.2, 8, 2, "#fff", 1)
+  ),
   /* the number card: a piece of paper with a number on it and the same number
      written out underneath — which is the whole of what the card does */
-  card: line(`<rect x="2.6" y="3.6" width="18.8" height="16.8" rx="1.6"/><path d="M6.6 9.4h4.2M6.6 14.4h10.8M6.6 17.2h7.4"/><path d="M14.6 7.2h3.4v4.4h-3.4z"/>`),
-
-  table: line(`<rect x="2.8" y="3.5" width="18.4" height="17" rx="1.4"/><path d="M2.8 9h18.4M2.8 15h18.4M9 3.5v17M15 3.5v17"/>`),
+  card: svg(
+    rect(2.6, 3.6, 18.8, 16.8, PAPER, 2) +
+      rect(14, 6.6, 4.6, 5.4, LOUD, 0.8) +
+      rect(6, 8.4, 5.4, 1.9, "#fff", 0.95) +
+      rect(6, 14.4, 12, 1.9, "#fff", 0.95) +
+      rect(6, 17.4, 8, 1.9, "#fff", 0.95)
+  ),
+  table: svg(
+    rect(2.8, 3.4, 18.4, 17.2, PAPER, 1.8) +
+      `<path d="M2.8 5.2a1.8 1.8 0 0 1 1.8-1.8h14.8a1.8 1.8 0 0 1 1.8 1.8v3.6H2.8z" fill="${GOLD}"/>` +
+      rect(2.8, 14, 18.4, 1.4, "#fff") +
+      rect(8.4, 8.8, 1.4, 11.8, "#fff") +
+      rect(14.4, 8.8, 1.4, 11.8, "#fff")
+  ),
 };
