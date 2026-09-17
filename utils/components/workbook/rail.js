@@ -24,9 +24,9 @@
        extra     { ids, read(), write(saved), onInput(e) } — the page's own
                  controls: which element ids to listen to, how to read them
                  into the options, how to put a saved workbook back into them
-     print     { workbook, label } — this workbook is sold per print: the
-                 Print button goes through the ₦5,000 pass (print-pass.js).
-                 Without it the workbook prints free.
+     print     { workbook, label } — printing this workbook needs a
+                 subscription (print-pass.js). Without it the workbook prints
+                 free for anyone.
      interactive  { protractor } — the paper can be done on screen and
                  marked (interactive.js); `protractor` is the instrument's SVG
      })
@@ -45,8 +45,8 @@ const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 export function mountBuilder(cfg) {
   const { subject, store, glyphs = {}, groups, title, starter = {}, extra = {} } = cfg;
   const exercises = subject.exercises;
-  /* A workbook sold per print gets the pass; any other prints free, so its
-     pages are always cleared for the printer. */
+  /* A workbook whose printing needs a subscription gets the check; any other
+     prints free, so its pages are always cleared for the printer. */
   let pass = null;
   let live = null;
   if (!cfg.print) document.documentElement.classList.add("wb-print-ok");
@@ -378,20 +378,20 @@ export function mountBuilder(cfg) {
     $("wb-answers").checked = saved?.answers !== false;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);
 
-    /* The button's words change with the pass ("Print · ₦5,000"), its icon
-       does not, so the words get their own span. */
+    /* The button's icon and its word are separate: the word used to carry the
+       price, and the span it lived in is what the rest of the CSS sizes. */
     const printBtn = $("wb-print");
     if (!printBtn.querySelector(".wb-print__label")) {
       [...printBtn.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
       printBtn.insertAdjacentHTML("afterbegin", `<span class="wb-print__label">Print</span> `);
     }
-    /* before the print pass, the assign button and the interactive tools are
+    /* before the print check, the assign button and the interactive tools are
        mounted, so they are made inside the modal's head */
     modal = mountModal();
     if (cfg.print) {
       pass = printPass(cfg.print);
       guardPrinting(pass);
-      /* a workbook that is sold can also be set for a class — teachers only */
+      /* the same workbook can be set for a class — teachers only */
       mountAssign({ workbook: cfg.print.workbook, label: cfg.print.label, getOptions: readOptions });
     }
     if (cfg.interactive) {

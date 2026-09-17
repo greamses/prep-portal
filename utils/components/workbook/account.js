@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    Self-contained, like premium-guard.js: full gstatic URLs rather than bare
    specifiers, so a page without an import map still works. Everything that
-   needs the account — the admin's watermark switch, the print pass — asks
+   needs the account — the admin's watermark switch, the print check — asks
    here, and Firebase is started once.
    ========================================================================== */
 

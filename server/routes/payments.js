@@ -118,8 +118,9 @@ module.exports = function () {
     if (!reference) return { applied: false, premium: false };
 
     const meta = normalizeMeta(tx.metadata);
-    /* A ₦5,000 workbook print is not a subscription. It never grants premium,
-       whichever door it comes in by (see lib/workbook-prints.js). */
+    /* Workbook prints are no longer sold, but the charges people made while
+       they were are still in Paystack's history, and a re-delivered webhook
+       for one must never grant premium (see lib/workbook-prints.js). */
     if (meta.kind === prints.KIND) return { applied: false, premium: false };
     if (meta.kind === tutors.KIND) return { applied: false, premium: false, rejected: "That payment was for tutoring sessions, not a plan." };
     const email = (tx.customer && tx.customer.email) || meta.email || null;
@@ -328,8 +329,11 @@ module.exports = function () {
 
       const event = JSON.parse(raw.toString("utf8"));
       if (event.event === "charge.success" && event.data) {
-        if (prints.isPrintCharge(event.data)) await prints.applyPrintCharge(event.data);
-        else if (tutors.isTutorCharge(event.data)) {
+        /* An old workbook-print charge grants nothing now — printing comes
+           with the subscription — but it must still not be read as a plan. */
+        if (prints.isPrintCharge(event.data)) {
+          console.warn("[payments] ignoring a legacy workbook-print charge:", event.data.reference);
+        } else if (tutors.isTutorCharge(event.data)) {
           const out = await tutors.applyTutorCharge(event.data);
           if (!out.ok) console.warn("[payments] tutor booking not made:", event.data.reference, out.error);
         } else await applyCharge(event.data);

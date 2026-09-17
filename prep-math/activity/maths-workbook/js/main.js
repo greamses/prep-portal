@@ -84,7 +84,7 @@ fillMenu("mw-help", HELP);
 
 mountBuilder({
   subject: SUBJECT,
-  /* sold per print — see /utils/components/workbook/print-pass.js */
+  /* printing needs a subscription — see /utils/components/workbook/print-pass.js */
   print: { workbook: WORKBOOK.id, label: WORKBOOK.label },
   interactive: LIVE,
   store: "mw-workbook-v1",

@@ -873,7 +873,7 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   .wb-livebar__score { order: -1; }
 }
 
-/* ── the print pass (print-pass.js) ────────────────────────────────────── */
+/* ── may this person print? (print-pass.js) ────────────────────────────── */
 
 .wb-pass {
   font-size: 0.74rem;
@@ -1012,8 +1012,8 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
    the byline and the page number. Three parts, so none of them ever has to be
    read past another. */
 .wb-page__mark { flex: 1 1 auto; text-align: center; }
-/* A paid print carries its buyer and order code after the title and seed
-   code (print-pass.js sets the variable; unpaid it is empty). */
+/* A printed page carries the subscriber's name after the title and seed code
+   (print-pass.js sets the variable; on screen it is empty). */
 .wb-page__mark::after { content: var(--wb-licence, ""); white-space: pre-wrap; }
 .wb-page__by { white-space: nowrap; }
 .wb-page__no { white-space: nowrap; }
@@ -1524,14 +1524,14 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   }
   .wb-page:last-child { break-after: auto; page-break-after: auto; }
 
-  /* NO PASS, NO PAGES. Whatever started the print — the button, Ctrl+P, the
-     browser's own menu, Save as PDF — an unpaid workbook comes out as a single
+  /* NO SUBSCRIPTION, NO PAGES. Whatever started the print — the button,
+     Ctrl+P, the browser's own menu, Save as PDF — it comes out as a single
      page that says where the real one is. The class is set only from the
      server's answer (print-pass.js). */
   html:not(.wb-print-ok) body > * { display: none !important; }
   html:not(.wb-print-ok) .wb-sheet { display: none !important; }
   html:not(.wb-print-ok) body::before {
-    content: "This workbook has not been paid for, so it does not print.\A\A Printing a workbook is ₦5,000 — buy the print pass on the workbook page at prepportal.com.ng. Every paid copy carries the buyer’s name.";
+    content: "This workbook does not print without a subscription.\A\A A subscription prints every workbook on prepportal.com.ng, as often as you need. Every printed copy carries the subscriber’s name.";
     display: block;
     white-space: pre-wrap;
     padding: 60mm 25mm;

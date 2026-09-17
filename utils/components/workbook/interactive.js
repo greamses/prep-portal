@@ -14,7 +14,7 @@
    does on paper and a child who has done it on screen recognises it printed.
 
    What is typed is kept in this browser against the workbook's fingerprint
-   (the same one the print pass uses), so closing the tab does not lose a
+   (the same one the print check uses), so closing the tab does not lose a
    half-finished page — and a different workbook starts blank.
    ========================================================================== */
 

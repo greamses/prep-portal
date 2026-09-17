@@ -10,7 +10,7 @@
    ========================================================================== */
 
 import { GROUPS, LEVELS, HELP } from "./exercises.js";
-import { SUBJECT, LIVE } from "./subject.js";
+import { SUBJECT, LIVE, WORKBOOK } from "./subject.js";
 import { ICON } from "./icons.js";
 import { mountBuilder } from "/utils/components/workbook/rail.js";
 import { onAdmin } from "/utils/components/workbook/admin.js";
@@ -46,6 +46,8 @@ fillMenu("aw-help", HELP);
 
 mountBuilder({
   subject: SUBJECT,
+  /* printing needs a subscription — see /utils/components/workbook/print-pass.js */
+  print: { workbook: WORKBOOK.id, label: WORKBOOK.label },
   interactive: LIVE,
   store: "aw-workbook-v1",
   groups: GROUPS,

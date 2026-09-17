@@ -10,8 +10,8 @@
    Free: a student needs an account and the link, not a subscription. So this
    page lives outside /prep-math/activity (which the premium guard covers) and
    loads the workbook's modules, not its page. It never prints — the paper's
-   print stylesheet blanks itself without a print pass, and nothing here gives
-   one.
+   print stylesheet blanks itself without the subscriber's clearance, and
+   nothing here gives one.
 
    The teacher who set it, opening the same link, sees every student's score
    above the paper, and can try it themselves.
