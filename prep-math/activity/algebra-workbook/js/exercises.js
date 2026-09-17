@@ -6,30 +6,38 @@
 
      ex-concepts.js    chapter 1, basic concepts — known and unknown, variables
                        and constants, the parts of an expression, the words
-     ex-remainder.js   chapter 2, the polynomial remainder theorem — moved here
+     ex-bars.js        chapter 2, the bar model — linear equations drawn as
+                       strips of paper before they are rearranged (barart.js)
+     ex-remainder.js   chapter 3, the polynomial remainder theorem — moved here
                        whole from the page it used to be (drawn by organiser.js
                        and poly.js)
 
    THE ORDER IS THE BOOK. The words come first because every later instruction
    is written in them: "swap x for a number" means nothing to a child who has
-   not been told that x is a variable.
+   not been told that x is a variable. Then the bar model, which is a linear
+   equation you can point at — and a child who has solved 3x + 4 = 19 by
+   drawing it has done the arithmetic the remainder theorem will ask for.
 
    A group that carries `chapter` starts a chapter in the rail. A new chapter is
    new group entries and a new ex-file, and nothing else.
    ========================================================================== */
 
 import { BC_GROUPS, BC_EXERCISES } from "./ex-concepts.js";
+import { BM_GROUPS, BM_EXERCISES } from "./ex-bars.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...RT_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...RT_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...RT_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...RT_EXERCISES];
 
-/** Which chapter an exercise belongs to: 1 or 2. */
-const CHAPTER = new Map(RT_GROUPS.map((g) => [g.id, 2]));
+/** Which chapter an exercise belongs to: 1 to 3. */
+const CHAPTER = new Map([
+  ...BM_GROUPS.map((g) => [g.id, 2]),
+  ...RT_GROUPS.map((g) => [g.id, 3]),
+]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {

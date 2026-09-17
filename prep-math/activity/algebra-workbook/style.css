@@ -314,3 +314,12 @@
 /* the words, and what they mean: the meanings are long, so the right side is wide */
 .bc-match { max-width: 165mm; }
 .bc-match .wb-match__side--right li { font-size: 10pt; }
+
+/* ══ CHAPTER 2 · THE BAR MODEL ═════════════════════════════════════════════
+   The bars are drawn at the paper's own size by barart.js, so nothing here
+   scales them — a bar squeezed to fit a column would make two boxes that are
+   meant to be identical look different, which is the one thing the model
+   cannot afford to say. */
+.ab-art { margin: 2.5mm 0 2mm; }
+.ab-art svg { display: block; max-width: none; }
+.ab-bar { overflow: visible; }

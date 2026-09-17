@@ -41,7 +41,7 @@ const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
    letters its sections itself, and in a workbook with a chapter in front of this
    one "A" is no longer the bracket and its zero. */
 export const RT_GROUPS = [
-  { id: "zero", chapter: "Chapter 2 · The remainder theorem", label: "The bracket and its zero", blurb: "One step on its own: what number makes the bracket zero?" },
+  { id: "zero", chapter: "Chapter 3 · The remainder theorem", label: "The bracket and its zero", blurb: "One step on its own: what number makes the bracket zero?" },
   { id: "swap", label: "Swapping x for a number", blurb: "The arithmetic, with a row for every term." },
   { id: "theorem", label: "The remainder theorem", blurb: "The two steps together, in the four-step frame." },
   { id: "say", label: "Saying the rule", blurb: "The words, so the method is still there next week." },

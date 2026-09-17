@@ -12,7 +12,8 @@ export const WORKBOOK = { id: "algebra-workbook", label: "Algebra Workbook", sty
 
 const CHAPTERS = {
   1: "Chapter 1: Basic concepts",
-  2: "Chapter 2: The remainder theorem",
+  2: "Chapter 2: The bar model",
+  3: "Chapter 3: The remainder theorem",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])
@@ -24,7 +25,8 @@ export const SUBJECT = {
   eyebrow: (o) => {
     const list = chaptersOn(o);
     const which = !list.length ? "Something to print"
-      : list.length === 1 ? CHAPTERS[list[0]] : "Chapters 1 and 2";
+      : list.length === 1 ? CHAPTERS[list[0]]
+        : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
     return `Mathematics · Algebra · ${which}`;
   },
   /* Says what the dials mean for the chapters actually on the paper. */
@@ -33,7 +35,7 @@ export const SUBJECT = {
     const H = helpOf(o);
     const found = chaptersOn(o);
     const parts = [];
-    if (!found.length || found.includes(2)) {
+    if (!found.length || found.includes(3)) {
       parts.push(L.degree === 2 ? "squares" : "cubes");
       parts.push(L.roots.some((a) => a < 0) ? "brackets both ways" : "positive brackets");
     }
