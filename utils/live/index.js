@@ -4,20 +4,20 @@
    Pages ask for a room here rather than choosing a transport themselves, so
    that switching the whole site from one to the other is a single line.
 
-   RIGHT NOW IT IS THE MEMORY TRANSPORT, because the project has no Realtime
-   Database yet — there is no databaseURL in the Firebase config and nothing to
-   connect to. Everything below joins a room, keeps presence, merges state and
-   throttles its writes exactly as it will when the database exists; what it
-   does not do is reach another device.
+   IT IS ON (2026-09-16). The Realtime Database exists, in europe-west1, and is
+   running the rules in database.rules.json. A page that joins a room talks to
+   it — presence, state and shouts reach other devices.
 
-   To turn it on: make the database (docs/live.md has the three steps), then
-   set LIVE_READY to true. Nothing else changes.
+   The memory transport is still the fallback, and still does something real:
+   a page whose import map has no firebase/database, or a browser that cannot
+   reach Firebase, keeps working with everyone in that one tab rather than
+   throwing. Set LIVE_READY back to false to put the whole site on it.
    ========================================================================== */
 
 import { joinRoom } from "./room.js";
 
 /** Flip to true once the Realtime Database exists. See docs/live.md. */
-export const LIVE_READY = false;
+export const LIVE_READY = true;
 
 /**
  * A room, on the best transport this site can currently reach.

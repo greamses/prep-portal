@@ -21,6 +21,21 @@
     <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
     <link rel="stylesheet" href="/workbook-play/style.css" />
 
+    <!-- The nav resolves the signed-in user through bare firebase specifiers,
+         and the live room reaches the Realtime Database through this one:
+         without "firebase/database" here the room quietly falls back to the
+         one-tab transport and nothing says why. See utils/live/. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/database": "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js"
+        }
+      }
+    </script>
+
     <script src="/utils/components/loader.js"></script>
     <!-- A free account is all this needs: no premium guard. -->
     <script type="module" src="/utils/auth/login-guard.js"></script>

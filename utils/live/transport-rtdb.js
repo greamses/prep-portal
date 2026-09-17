@@ -34,7 +34,11 @@ import {
 const FIREBASE = {
   apiKey: "AIzaSyA2N3uI_XfSIVsto2Ku1g_qSezmD3qFmbk",
   authDomain: "prep-portal-2026.firebaseapp.com",
-  databaseURL: "https://prep-portal-2026-default-rtdb.firebaseio.com",
+  /* europe-west1, not firebaseio.com: a database made outside the United
+     States answers on its own hostname, and the default one 404s — which
+     looks exactly like a broken feature. `node scripts/deploy-db-rules.mjs`
+     prints the real URL. */
+  databaseURL: "https://prep-portal-2026-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "prep-portal-2026",
   storageBucket: "prep-portal-2026.firebasestorage.app",
   messagingSenderId: "837672918701",

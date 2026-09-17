@@ -45,20 +45,19 @@ echo "→ deploying firestore.rules to $PROJECT…"
 GOOGLE_APPLICATION_CREDENTIALS="$PWD/$KEY" \
   firebase deploy --only firestore:rules --project "$PROJECT" --non-interactive
 
-# The live rooms' rules, if there is a database to put them on. The Realtime
-# Database has to be created in the console before this can work, and not
-# having one yet must never stop the Firestore rules going out — so a failure
-# here is said out loud and shrugged off.
+# The live rooms' rules. NOT `firebase deploy --only database`: that cannot
+# deploy with a service account — it dies with "An unexpected error has
+# occurred", and this script used to blame a missing database for it, which
+# sent a whole session looking for a database that was there all along. The
+# REST deployer uses the same key, finds the database wherever in the world it
+# was made, and reads the rules back after writing them.
+#
+# A failure must never stop the Firestore rules going out, so it is said out
+# loud and shrugged off.
 if [ -f database.rules.json ]; then
   echo
   echo "→ deploying database.rules.json to $PROJECT…"
-  if GOOGLE_APPLICATION_CREDENTIALS="$PWD/$KEY"       firebase deploy --only database --project "$PROJECT" --non-interactive; then
-    echo "✓ live-room rules deployed."
-  else
-    echo "⚠  the database rules did not go out — most likely there is no Realtime"
-    echo "   Database in this project yet. Make one in the console (see docs/live.md)"
-    echo "   and run this again. The Firestore rules above DID deploy."
-  fi
+  node scripts/deploy-db-rules.mjs || echo "⚠  the database rules did not go out. The Firestore rules above DID deploy."
 fi
 
 echo
