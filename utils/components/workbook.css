@@ -139,17 +139,33 @@ body {
 }
 
 /* One tab per chapter (rail.js), the site's sticky-note tabs from
-   game-tabs.css. The number is how many exercises are ticked in it. */
-.wb-tabs { justify-content: flex-start; margin: 0 0 1.1rem; }
-.wb-tabs .builder-tab { display: inline-flex; align-items: center; gap: 0.4rem; }
+   game-tabs.css — an ICON each, its name in the tooltip, so four chapters sit
+   on one row instead of wrapping onto two. The number rides on the corner and
+   says how many of that chapter's exercises are ticked. */
+.wb-tabs { justify-content: flex-start; margin: 0 0 1.1rem; flex-wrap: nowrap; }
+.wb-tabs .builder-tab {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+.wb-tab__ico { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; }
+.wb-tab__ico svg { width: 100%; height: 100%; display: block; }
 .wb-tab__n {
-  min-width: 1.2rem;
-  padding: 0 0.3rem;
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  min-width: 1.05rem;
+  padding: 0 0.22rem;
   border-radius: 999px;
-  background: rgba(20, 19, 15, 0.12);
+  background: #2a2723;
+  color: #fffdf8;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  line-height: 1.2rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.05rem;
   text-align: center;
 }
 /* A group's heading and its rows stay in one column. */
@@ -358,12 +374,28 @@ body {
    because they are a different kind of thing — the working sheets that open
    in a panel beside it. Fixed, so it is in reach wherever the child has
    scrolled to, and above the booklet modal, which it stands beside. */
-.wb-side {
+/* It is a RECEIPT, not a box: the shared .pp-receipt paper, torn top and
+   bottom, the same sheet the bench's other panels are printed on. The wrapper
+   is only position and shadow; the paper inside holds the keys and does the
+   scrolling, so the teeth stay at the ends of the rail rather than sliding
+   away with the tools. A smaller --tooth than a full receipt, because the rail
+   is a narrow strip and full-sized teeth would eat half of it. */
+/* `.wb-side.pp-receipt` and not `.wb-side`: the receipt component sets
+   `position: relative`, and at equal specificity whichever sheet loads last
+   wins — which left the rail relative, a block as wide as the window, lying
+   over the page at z-index 10060 and swallowing clicks. Two classes settle it
+   wherever the sheets are linked. `width: max-content` keeps the wrapper the
+   width of the tools, so nothing of it hangs over the paper. */
+.wb-side.pp-receipt {
   position: fixed;
   left: 0;
   top: 50%;
+  width: max-content;
   transform: translateY(-50%);
   z-index: 10060;
+}
+.wb-side__paper {
+  --tooth: 7px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -371,12 +403,7 @@ body {
   max-height: 92vh;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0.55rem 0.4rem;
-  background: var(--surface-primary);
-  border: var(--border-subtle);
-  border-left: 0;
-  border-radius: 0 0.7rem 0.7rem 0;
-  box-shadow: 0 10px 28px -10px rgba(20, 19, 15, 0.4);
+  padding: 0.75rem 0.4rem;
 }
 .wb-side[hidden] { display: none; }
 .wb-side__cap {
@@ -717,19 +744,32 @@ body {
 }
 
 @media (max-width: 700px) {
-  .wb-side {
+  .wb-side.pp-receipt {
     top: auto;
     bottom: 0;
     left: 0;
     right: 0;
+    width: auto;
     transform: none;
+  }
+  /* A strip along the bottom, so the paper is torn down its SIDES instead —
+     the same receipt, turned a quarter. */
+  .wb-side__paper {
+    --tooth: 6px;
     flex-direction: row;
     align-items: center;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
-    border-radius: 0;
-    border-left: var(--border-subtle);
+    padding: 0.4rem 0.75rem;
+    -webkit-mask:
+      conic-gradient(from 45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / var(--tooth) var(--tooth) repeat-y,
+      conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / var(--tooth) var(--tooth) repeat-y,
+      linear-gradient(#000 0 0) center / calc(100% - 2 * var(--tooth) + 2px) 100% no-repeat;
+    mask:
+      conic-gradient(from 45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / var(--tooth) var(--tooth) repeat-y,
+      conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / var(--tooth) var(--tooth) repeat-y,
+      linear-gradient(#000 0 0) center / calc(100% - 2 * var(--tooth) + 2px) 100% no-repeat;
   }
   .wb-side__cap { display: none; }
   .wb-side__rule { width: 1px; height: 1.8rem; margin: 0 0.15rem; }
@@ -1971,17 +2011,26 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    opening beside it had a box, a size and a position, and was cut away to
    nothing. */
 .wb-side__fly {
+  --tooth: 7px;
   position: fixed;
   z-index: 10062;          /* over the rail (10060), under the panels (10070) */
   display: flex;
   /* a column, beside the key it came out of */
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.35rem;
-  background: var(--surface-primary, #fffdf8);
-  border: var(--border-subtle);
-  border-radius: 0.6rem;
-  box-shadow: 0 10px 26px -8px rgba(20, 19, 15, 0.34);
+  /* torn off the same roll as the rail it came out of: the receipt's paper and
+     teeth, and its drop shadow, rather than a rounded box */
+  padding: 0.6rem 0.35rem;
+  background: var(--pp-paper, var(--surface-primary, #fffdf8));
+  filter: drop-shadow(0 8px 18px rgba(20, 19, 15, 0.22));
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
 }
 .wb-side__fly[hidden] { display: none; }
 

@@ -46,40 +46,59 @@ const GAP = 0.9;
 const BAG_W = 10;
 const BAG_H = 11;
 const CUBE = 4.2;
+const CUBE_MAX = 30;        // more than this on a pan is not a thing to count
 const BLOCK_H = 8.4;
 const blockW = (n) => 8 + String(n).length * 2.6;
 
 /* ── the things that stand on a pan ──────────────────────────────────────── */
 
 function bagShape(x, y, letter) {
-  /* a sack with a tied neck: the top pinched, the body round */
+  /* A sack: gathered at the neck, tied with a band, sitting heavy at the
+     bottom. The letter is written across the belly where there is room for it,
+     and the same sack is drawn whatever it weighs — see the rule at the top. */
   const w = BAG_W;
   const h = BAG_H;
+  const cx = x + w / 2;
   return (
-    `<path d="M${f(x + w * 0.34)} ${f(y + 2.6)}` +
-    `C${f(x + 0.2)} ${f(y + 4.4)} ${f(x - 0.4)} ${f(y + h)} ${f(x + w / 2)} ${f(y + h)}` +
-    `C${f(x + w + 0.4)} ${f(y + h)} ${f(x + w - 0.2)} ${f(y + 4.4)} ${f(x + w * 0.66)} ${f(y + 2.6)}Z" ` +
-    `fill="${BAG}" stroke="${INK}" stroke-width="0.45"/>` +
-    `<path d="M${f(x + w * 0.3)} ${f(y + 0.6)}L${f(x + w * 0.5)} ${f(y + 2.7)}L${f(x + w * 0.7)} ${f(y + 0.6)}" ` +
-    `fill="none" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
-    `<text x="${f(x + w / 2)}" y="${f(y + h - 2.3)}" text-anchor="middle" font-family="JetBrains Mono, monospace" ` +
+    /* the body. `ab-bag` marks it so a check can measure the sack off the page
+       and prove every one is the same size, whatever it holds. */
+    `<path class="ab-bag" d="M${f(x + w * 0.31)} ${f(y + 3.4)}` +
+    `C${f(x - 0.3)} ${f(y + 5.6)} ${f(x - 0.1)} ${f(y + h)} ${f(cx)} ${f(y + h)}` +
+    `C${f(x + w + 0.1)} ${f(y + h)} ${f(x + w + 0.3)} ${f(y + 5.6)} ${f(x + w * 0.69)} ${f(y + 3.4)}Z" ` +
+    `fill="${BAG}" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    /* the light down its left side, so it reads as round and not as a blob */
+    `<path d="M${f(x + w * 0.34)} ${f(y + 4.2)}C${f(x + 1)} ${f(y + 6.2)} ${f(x + 1.1)} ${f(y + h - 1.6)} ${f(x + w * 0.42)} ${f(y + h - 0.9)}" ` +
+    `fill="none" stroke="#fffdf8" stroke-width="0.8" stroke-linecap="round" opacity="0.85"/>` +
+    /* the gathered neck above the tie */
+    `<path d="M${f(x + w * 0.33)} ${f(y + 3.2)}l${f(w * 0.06)} -2.3h${f(w * 0.22)}l${f(w * 0.06)} 2.3z" ` +
+    `fill="${BAG}" stroke="${INK}" stroke-width="0.4" stroke-linejoin="round"/>` +
+    /* the tie */
+    `<rect x="${f(x + w * 0.29)}" y="${f(y + 2.7)}" width="${f(w * 0.42)}" height="1.1" rx="0.55" fill="${GREY}"/>` +
+    `<text x="${f(cx)}" y="${f(y + h - 2.6)}" text-anchor="middle" font-family="JetBrains Mono, monospace" ` +
     `font-size="4.2" font-weight="700" fill="${INK}">${letter}</text>`
   );
 }
 
 function cubeShape(x, y) {
-  return `<rect x="${f(x)}" y="${f(y)}" width="${CUBE}" height="${CUBE}" rx="0.5" fill="${WEIGHT}" stroke="${INK}" stroke-width="0.35"/>`;
+  /* a 1: a cube with a lighter top face, so a row of them counts by eye */
+  return (
+    `<rect x="${f(x)}" y="${f(y)}" width="${CUBE}" height="${CUBE}" rx="0.6" fill="${WEIGHT}" stroke="${INK}" stroke-width="0.35"/>` +
+    `<rect x="${f(x + 0.6)}" y="${f(y + 0.6)}" width="${f(CUBE - 1.2)}" height="1" rx="0.5" fill="#fffdf8" opacity="0.75"/>`
+  );
 }
 
 function blockShape(x, y, n) {
-  /* the classroom weight: a trapezoid with a little handle, the number on it */
+  /* The classroom weight: a trapezoid, heavier at the foot, with a handle to
+     lift it by and the number cast into its face. */
   const w = blockW(n);
   const h = BLOCK_H;
   return (
-    `<path d="M${f(x + w * 0.38)} ${f(y + 1.8)}v${f(-1.2)}h${f(w * 0.24)}v1.2" fill="none" stroke="${INK}" stroke-width="0.45"/>` +
-    `<path d="M${f(x + 1.4)} ${f(y + 1.8)}H${f(x + w - 1.4)}L${f(x + w)} ${f(y + h)}H${f(x)}Z" ` +
+    `<path d="M${f(x + w * 0.36)} ${f(y + 2)}v-1.1a0.9 0.9 0 0 1 0.9-0.9h${f(w * 0.28)}a0.9 0.9 0 0 1 0.9 0.9v1.1" ` +
+    `fill="none" stroke="${INK}" stroke-width="0.5" stroke-linejoin="round"/>` +
+    `<path d="M${f(x + 1.6)} ${f(y + 2)}H${f(x + w - 1.6)}L${f(x + w)} ${f(y + h)}H${f(x)}Z" ` +
     `fill="${WEIGHT}" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
-    `<text x="${f(x + w / 2)}" y="${f(y + h - 1.9)}" text-anchor="middle" font-family="JetBrains Mono, monospace" ` +
+    `<path d="M${f(x + 2)} ${f(y + 2.7)}H${f(x + w - 2)}" stroke="#fffdf8" stroke-width="0.7" stroke-linecap="round" opacity="0.8"/>` +
+    `<text x="${f(x + w / 2)}" y="${f(y + h - 1.8)}" text-anchor="middle" font-family="JetBrains Mono, monospace" ` +
     `font-size="3.8" font-weight="700" fill="${INK}">${n}</text>`
   );
 }
@@ -132,23 +151,49 @@ function panContents(list, cx, floor) {
 
 const contentHeight = (list) => rows(list).reduce((s, r) => s + r.h + GAP, 0);
 
-/** The scale itself, with its pans at `panY`. Always level. */
+/**
+ * The scale itself, with its pans at `panY`. Always level.
+ *
+ * It is drawn as a real object rather than a diagram of one — a plinth with a
+ * shadow under it, a tapered column, a beam thick enough to look like it could
+ * carry a pan, and a tray with a rim so the things on it read as standing IN
+ * something. The one piece of instrumentation is at the pivot: a needle
+ * between two marks, showing the beam is centred, because "level" is the whole
+ * claim the picture is making.
+ */
 function frame(panY) {
-  const beamY = panY + 7;
-  const baseY = beamY + 14;
+  const beamY = panY + 9;
+  const baseY = beamY + 17;
+  const HALF = PAN_W / 2;
+
+  /* a tray: the floor, a rim turned up at each end, and the stem to the beam */
   const pan = (cx) =>
-    `<rect x="${f(cx - 1.1)}" y="${f(panY + 1.6)}" width="2.2" height="${f(beamY - panY - 1.6)}" fill="${METAL}" stroke="${GREY}" stroke-width="0.3"/>` +
-    `<path d="M${f(cx - PAN_W / 2)} ${f(panY)}H${f(cx + PAN_W / 2)}l-3 2.4H${f(cx - PAN_W / 2 + 3)}Z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>`;
+    `<rect x="${f(cx - 1.4)}" y="${f(panY + 2)}" width="2.8" height="${f(beamY - panY - 1.4)}" rx="1.4" fill="${METAL}" stroke="${GREY}" stroke-width="0.35"/>` +
+    `<path d="M${f(cx - HALF)} ${f(panY - 2.2)}v1.4a1.1 1.1 0 0 0 .5.9l2.4 1.5h${f(PAN_W - 5.8)}l2.4-1.5a1.1 1.1 0 0 0 .5-.9v-1.4h1.6v1.4a2.6 2.6 0 0 1-1.2 2.2l-2.6 1.6H${f(cx - HALF + 3.2)}l-2.6-1.6a2.6 2.6 0 0 1-1.2-2.2v-1.4z" fill="${GREY}" opacity="0.5"/>` +
+    `<path d="M${f(cx - HALF + 0.8)} ${f(panY)}H${f(cx + HALF - 0.8)}l-2.6 2.3H${f(cx - HALF + 3.4)}Z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
+    /* the shadow the tray casts on itself, so it reads as a dish and not a line */
+    `<rect x="${f(cx - HALF + 1.2)}" y="${f(panY)}" width="${f(PAN_W - 2.4)}" height="0.7" fill="${INK}" opacity="0.12"/>`;
+
+  const bossY = beamY - 0.2;
   return {
     body:
+      /* the plinth first, so everything stands on it */
+      `<ellipse cx="${f(W / 2)}" cy="${f(baseY + 4.6)}" rx="22" ry="1.5" fill="${INK}" opacity="0.1"/>` +
+      `<path d="M${f(W / 2 - 21)} ${f(baseY + 4)}a1.4 1.4 0 0 1-1.3-1.8l1-3.1A2 2 0 0 1 ${f(W / 2 - 19.4)} ${f(baseY - 2.4)}h${38.8}a2 2 0 0 1 1.9 1.4l1 3.1a1.4 1.4 0 0 1-1.3 1.9z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
+      /* the column, a little wider at the foot than at the pivot */
+      `<path d="M${f(W / 2 - 2.1)} ${f(baseY - 2.4)}l0.7-${f(baseY - beamY - 2.4)}h${2.8}l0.7 ${f(baseY - beamY - 2.4)}z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
       pan(PAN_L) + pan(PAN_R) +
-      `<rect x="${f(PAN_L - 3)}" y="${f(beamY - 1.3)}" width="${f(PAN_R - PAN_L + 6)}" height="2.6" rx="1.3" fill="${METAL}" stroke="${GREY}" stroke-width="0.4"/>` +
-      `<rect x="${f(W / 2 - 1.5)}" y="${f(beamY)}" width="3" height="${f(baseY - beamY)}" fill="${METAL}" stroke="${GREY}" stroke-width="0.35"/>` +
-      `<path d="M${f(W / 2 - 17)} ${f(baseY + 3)}L${f(W / 2 - 11)} ${f(baseY)}H${f(W / 2 + 11)}L${f(W / 2 + 17)} ${f(baseY + 3)}Z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
-      /* the pointer at the pivot, straight up: this scale is level, and says so */
-      `<path d="M${f(W / 2)} ${f(beamY - 6.2)}l1.3 4.4h-2.6z" fill="${INK}"/>` +
-      `<circle cx="${f(W / 2)}" cy="${f(beamY)}" r="2" fill="${INK}"/>`,
-    height: baseY + 3.5,
+      /* the beam, with a knob where each stem hangs from it */
+      `<rect x="${f(PAN_L - 4)}" y="${f(beamY - 1.7)}" width="${f(PAN_R - PAN_L + 8)}" height="3.4" rx="1.7" fill="${METAL}" stroke="${GREY}" stroke-width="0.45"/>` +
+      `<circle cx="${f(PAN_L)}" cy="${f(beamY)}" r="1.5" fill="${GREY}" opacity="0.55"/>` +
+      `<circle cx="${f(PAN_R)}" cy="${f(beamY)}" r="1.5" fill="${GREY}" opacity="0.55"/>` +
+      /* the gauge: two marks, and the needle standing exactly between them */
+      `<rect x="${f(W / 2 - 4.4)}" y="${f(beamY - 8.6)}" width="1" height="2.6" rx="0.5" fill="${GREY}"/>` +
+      `<rect x="${f(W / 2 + 3.4)}" y="${f(beamY - 8.6)}" width="1" height="2.6" rx="0.5" fill="${GREY}"/>` +
+      `<path d="M${f(W / 2)} ${f(beamY - 9.4)}l1.5 7.4h-3z" fill="${INK}"/>` +
+      `<circle cx="${f(W / 2)}" cy="${f(bossY)}" r="2.6" fill="${METAL}" stroke="${GREY}" stroke-width="0.45"/>` +
+      `<circle cx="${f(W / 2)}" cy="${f(bossY)}" r="1" fill="${INK}"/>`,
+    height: baseY + 6.5,
   };
 }
 
@@ -163,8 +208,13 @@ const svg = (h, body, label, data = "") =>
  *   cubes         draw each 1 as a cube (the counting stage) rather than a block
  */
 export function balanceSvg(left, right, { letter = "x", cubes = false, label = "A balance scale" } = {}) {
-  const L = items(left, { letter, cubes });
-  const R = items(right, { letter, cubes });
+  /* Cubes are for COUNTING, so they stop being cubes once there are more than
+     a child would count: past that the pan takes a labelled weight however the
+     caller asked, and the drawing says which it did in data-cubes. Without
+     this a big number piles up rows until the scale is taller than the page. */
+  const countable = cubes && left.n <= CUBE_MAX && right.n <= CUBE_MAX;
+  const L = items(left, { letter, cubes: countable });
+  const R = items(right, { letter, cubes: countable });
   const room = Math.max(contentHeight(L), contentHeight(R), BAG_H);
   const panY = 3 + room;
   const a = panContents(L, PAN_L, panY - 0.3);
@@ -172,7 +222,7 @@ export function balanceSvg(left, right, { letter = "x", cubes = false, label = "
   const fr = frame(panY);
   /* the equation the picture says, kept on the drawing so a check can prove
      that every scale printed is one that really balances */
-  const data = ` data-left="${left.bags},${left.n}" data-right="${right.bags},${right.n}" data-cubes="${cubes ? 1 : 0}"`;
+  const data = ` data-left="${left.bags},${left.n}" data-right="${right.bags},${right.n}" data-cubes="${countable ? 1 : 0}"`;
   return svg(fr.height, fr.body + a.body + b.body, label, data);
 }
 

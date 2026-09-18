@@ -102,14 +102,21 @@ export function mountBuilder(cfg) {
       bar.className = "builder-tabs builder-tabs--compact wb-tabs";
       bar.setAttribute("role", "tablist");
       chapters.forEach((ch, j) => {
-        /* "Chapter 2 · Transversal angles" — the tab says the topic */
+        /* THE TAB IS AN ICON, and its name is the tooltip — the same rule the
+           tool rail follows. A chapter wears the glyph of its first section,
+           which is the group that carries `chapter`, so a new chapter brings
+           its own tab picture with it and there is nothing extra to configure.
+           The number is how many of its exercises are ticked, and that is not
+           a name, so it stays. */
         const [num, topic] = ch.name.includes(" · ") ? ch.name.split(" · ") : ["", ch.name];
         const tab = document.createElement("button");
         tab.type = "button";
-        tab.className = "pp-pill builder-tab";
+        tab.className = "pp-pill builder-tab wb-tab";
         tab.setAttribute("role", "tab");
         tab.title = ch.name;
-        tab.innerHTML = `${topic}<b class="wb-tab__n" hidden></b>`;
+        tab.innerHTML =
+          `<span class="wb-tab__ico" aria-hidden="true">${glyphs[ch.groups[0]?.id] || ICON.page}</span>` +
+          `<b class="wb-tab__n" hidden></b>`;
         tab.setAttribute("aria-label", `${num} ${topic}`.trim());
         tab.addEventListener("click", () => showTab(j));
         bar.appendChild(tab);
@@ -119,7 +126,8 @@ export function mountBuilder(cfg) {
     chapters.forEach((ch) => {
       const flow = document.createElement("div");
       flow.className = "wb-picks__flow";
-      if (tabbed) flow.setAttribute("role", "tabpanel");
+      /* No role on the panels: the tab bar is the ONE tablist on the page and
+         its buttons are the only things with a tab role. */
       host.appendChild(flow);
       ch.groups.forEach((g) => fillGroup(flow, g, chosen));
     });

@@ -1898,7 +1898,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   }
 
   const side = document.createElement("aside");
-  side.className = "wb-side";
+  side.className = "wb-side pp-receipt";
   side.hidden = true;
   side.setAttribute("aria-label", "Tools");
 
@@ -1956,7 +1956,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     `<button type="button" class="wb-side__btn" ${k.attr}="${k.id}" aria-pressed="false"`
     + ` title="${k.label}">${k.icon}<em>${k.label}</em></button>`;
 
-  side.innerHTML = FAMILIES.map((f) => {
+  /* The rail is a piece of the site's receipt paper — torn top and bottom, no
+     box round it — like every other sheet the bench hands you. The wrapper
+     carries the shadow and the teeth; the paper inside is what scrolls, so the
+     torn edges stay put when there are more tools than window. */
+  side.innerHTML = `<div class="wb-side__paper pp-receipt__paper">` + FAMILIES.map((f) => {
       const [face, ...rest] = f.of;
     return `<div class="wb-side__fam" data-fam="${f.id}">`
       + keyHtml(face)
@@ -1967,7 +1971,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           /* the flyout itself is NOT here — see below */
         : "")
       + `</div>`;
-  }).join("");
+  }).join("") + `</div>`;
   document.body.appendChild(side);
 
   /* ── the name of the key under the pointer ──────────────────────────────
