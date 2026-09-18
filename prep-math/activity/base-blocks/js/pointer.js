@@ -35,6 +35,8 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
      was and decides. */
   const onDouble = hooks.onDouble || (() => {});
   const onBead = hooks.onBead || (() => {});
+  /* A piece lying in a balance scale's pan: tapping it turns it over. */
+  const onPan = hooks.onPan || (() => {});
   const onBoard = hooks.onBoard || (() => {});
   /* A press on a board face may be the start of dragging a counter about. The
      hook says whether there is anything to drag under the finger; if there is,
@@ -69,6 +71,7 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   }
 
   const isBead = (m) => !!m.metadata?.bead;
+  const isPan = (m) => !!m.metadata?.pan;
   const isFace = (m) => !!m.metadata?.boardFace;
   const isItem = (m) => m.metadata?.itemId != null && !m.metadata.boardFace;
 
@@ -110,7 +113,12 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
          live ones have already been moved by every pointermove so far, and
          adding the move to them again would count it twice over. */
       ghosts: moving.map((b) => ({ ...b })),
-      grid: occupancy(store.blocks.concat(store.things), ids),
+      /* A block may be carried OVER a balance scale — that is how it gets into
+         a pan — so while blocks are moving the scale is not in their way. What
+         is let go of over the scale but not in a pan is put down beside it. */
+      grid: occupancy(store.blocks.concat(store.things.filter((t) =>
+        t.kind !== "scale" || moving.some((m) => m.kind)
+      )), ids),
       free: moving.every((b) => b.kind === "tile"),
       /* Everything a freely-moving piece could land against, worked out once at
          the start of the drag rather than on every pointermove. */
@@ -167,7 +175,19 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
   function endDrag() {
     if (!state.drag) return;
     if (state.drag.moved) {
-      onDrop(state.drag.moving);
+      /* What is under the FINGER, not under the piece: a scale's pans stand
+         well above the paper, so where a block meets the paper and where you
+         see it over a pan are a hand's width apart in any view but the flat
+         one. The pieces being carried are left out of the pick. */
+      const at = state.drag.at;
+      const carried = new Set(state.drag.moving.map((b) => b.id));
+      const hit = at ? pickAny(at.x, at.y, (m) => {
+        const md = m.metadata;
+        return !!(md?.dish || md?.pan) && !carried.has(md.itemId);
+      }) : null;
+      const md = hit?.pickedMesh.metadata;
+      const pan = md ? (md.dish || md.pan) : null;
+      onDrop(state.drag.moving, pan ? { thingId: pan.thingId, side: pan.side } : null);
       onChange({ animate: false });
     }
     state.drag = null;
@@ -241,6 +261,10 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
     const beadHit = pickAny(pt.x, pt.y, isBead);
     if (beadHit) { onBead(beadHit.pickedMesh.metadata.bead, e); return; }
 
+    // and a piece in a scale's pan is a piece to turn over, not the scale
+    const panHit = pickAny(pt.x, pt.y, isPan);
+    if (panHit) { onPan(panHit.pickedMesh.metadata.pan, e); return; }
+
     // so is a square of a table
     const faceHit = pickAny(pt.x, pt.y, isFace);
     if (faceHit) {
@@ -307,14 +331,15 @@ export function createPointer(ctx, view, canvas, hooks = {}) {
       return;
     }
     if (state.drag) {
+      state.drag.at = { x: pt.x, y: pt.y };
       dragTo(groundCell(pt.x, pt.y));
       return;
     }
     if (e.pointerType !== "touch") {
       if (state.pan) { canvas.style.cursor = "grab"; return; }
-      const over = pickAny(pt.x, pt.y, (m) => isBead(m) || isFace(m) || isItem(m));
+      const over = pickAny(pt.x, pt.y, (m) => isBead(m) || isPan(m) || isFace(m) || isItem(m));
       canvas.style.cursor = over
-        ? (isBead(over.pickedMesh) || isFace(over.pickedMesh) ? "pointer" : "grab")
+        ? (isBead(over.pickedMesh) || isPan(over.pickedMesh) || isFace(over.pickedMesh) ? "pointer" : "grab")
         : state.lasso ? "crosshair" : "";
     }
   }

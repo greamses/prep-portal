@@ -39,6 +39,10 @@ export const store = {
      because at that moment the way forward is a way that no longer exists. */
   future: [],
   message: null, // { text, kind } — one line of feedback for the HUD
+  /* What x weighs on the balance scale (js/scale.js). Five to begin with, and
+     reset only by balancing it against blocks. The store's, not a scale's: x
+     is one letter, whichever scale is weighing it. */
+  xValue: 5,
 };
 
 const listeners = new Set();
@@ -102,6 +106,7 @@ function capture() {
   return {
     base: store.base,
     seq: store.seq,
+    xValue: store.xValue,
     blocks: store.blocks.map((b) => ({ ...b })),
     things: store.things.map((t) => clone(t)),
     selection: [...store.selection],
@@ -111,6 +116,7 @@ function capture() {
 function restore(s) {
   store.base = s.base;
   store.seq = s.seq;
+  store.xValue = s.xValue ?? store.xValue;
   store.blocks = s.blocks;
   store.things = s.things;
   const live = new Set(items().map((b) => b.id));
@@ -139,6 +145,9 @@ function clone(t) {
   if (t.a) copy.a = { ...t.a };
   if (t.b) copy.b = { ...t.b };
   if (t.blockFrame) copy.blockFrame = { ...t.blockFrame };
+  // the balance scale's two pans
+  if (t.left) copy.left = t.left.map((p) => ({ ...p }));
+  if (t.right) copy.right = t.right.map((p) => ({ ...p }));
   return copy;
 }
 

@@ -10,7 +10,7 @@
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
-  longDivideArt, columnAddArt, columnTimesArt, fractionArt,
+  longDivideArt, columnAddArt, columnTimesArt, fractionArt, balanceArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -30,6 +30,18 @@ export const GROUPS = [
           "parts, trade a handful back into one, or size a cuboid of your own — " +
           "in any base from two to twelve.",
         art: blocksArt,
+      },
+      {
+        id: "balance-scale",
+        kind: "scale",
+        label: "Balance Scale",
+        short: "Balance",
+        blurb:
+          "x on one pan, blocks on the other, and the beam leans towards " +
+          "whichever is heavier. Tap a block in a pan to turn it negative — a " +
+          "piece and its opposite cancel — then press the balance to make it " +
+          "level, and x becomes whatever the blocks weigh.",
+        art: balanceArt,
       },
     ],
   },

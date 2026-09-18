@@ -12,7 +12,7 @@
    you built is yours, and the paper should still have it on when you come back.
    ========================================================================== */
 
-import { CFG, placeDims } from "./config.js";
+import { CFG, placeDims, toBase } from "./config.js";
 import {
   createEngine, createScene, retheme, fitView, setFlatView, paintMat,
   zoomBy, panBy, setPanTool,
@@ -28,7 +28,12 @@ import { GROUPS } from "./tools.js";
 import { store, subscribe, emit, say, nextId, snapshot, selectedItems } from "./state.js";
 import { planSum, applyStep, canWorkSums } from "./sums.js";
 import { splitSelected, addPlace, addThing, addTile, addCard, rotateSelected,
-  settleThings, cancelOverlapping } from "./ops.js";
+  settleThings, cancelOverlapping, addBlock } from "./ops.js";
+import {
+  makeScale, scales, addToPan, flipInPan, hasPair, cancelPans, emptyPans,
+  balanceX, panUnder, pieceWord, scaleSentence, clearScaleMaterials,
+} from "./scale.js";
+import { createScaleBar } from "./scalebar.js";
 import { refreshCards, setNotation } from "./card.js";
 import { createCardPicker } from "./cardui.js";
 import { createBlockBar } from "./blockbar.js";
@@ -43,6 +48,7 @@ import * as sync from "./sync.js";
 import * as sheets from "./sheets.js";
 import * as sceneMod from "./scene.js";
 import * as layoutMod from "./layout.js";
+import * as scaleMod from "./scale.js";
 import { makeNote } from "./notes.js";
 import { createNoteEditor } from "./noteedit.js";
 import { createTurnHandle } from "./turn.js";
@@ -82,6 +88,7 @@ let dock = null;
 let sheetPanel = null;
 let cellLayer = null;
 let pickTool = null;
+let scaleBar = null;
 let booting = null;
 let ghost = null;                   // made once the stage is known
 let sizeWatch = null;               // the stage's ResizeObserver, so it can go
@@ -327,6 +334,155 @@ function announceFrames() {
   }
 }
 
+/* ── the balance scale ────────────────────────────────────────────────────── */
+
+const sideWord = (s) => (s === "left" ? "left-hand" : "right-hand");
+const num = (n) => (n < 0 ? "−" : "") + toBase(Math.abs(n), store.base);
+
+/** What a scale says now, as the end of a sentence. */
+function scaleSays(thing) {
+  const s = scaleSentence(thing, store.xValue, store.base);
+  return s.level
+    ? `${s.text} — level.`
+    : `${s.text} — press the balance to make it level.`;
+}
+
+/* A piece and its opposite are left lying together for a moment before they
+   cancel, so the cancelling is something you see happen. One timer for the
+   whole canvas: a second flip inside the moment simply waits for the first. */
+let cancelTimer = 0;
+function cancelSoon(thing) {
+  clearTimeout(cancelTimer);
+  cancelTimer = setTimeout(() => {
+    if (!store.things.includes(thing)) return;
+    const n = cancelPans(thing);
+    if (!n) return;
+    say(`${n === 1 ? "A block and its opposite" : `${n} pairs of opposites`} `
+      + `cancel out — together they weigh nothing. ${scaleSays(thing)}`, "ok");
+    emit();
+  }, 700);
+}
+
+/**
+ * Blocks let go of over a scale's pan leave the paper and go into it.
+ *
+ * `target` is the pan under the FINGER when it let go, if there was one — the
+ * pans stand above the paper, so that is the honest answer to "which pan did
+ * you put it in". Without one (the flat view, a test) the pan is found under
+ * the piece itself. Blocks let go of over the scale but not in a pan are put
+ * down beside it, since they were carried over it to get there.
+ */
+function dropOnScale(moved, target) {
+  const blocks = moved.filter((b) => !b.kind);
+  const all = scales(store.things);
+  if (!blocks.length || !all.length) return false;
+
+  const aimed = target ? all.find((t) => t.id === target.thingId) : null;
+  const gone = new Set();
+  let last = null;
+  let full = false;
+  for (const b of blocks) {
+    let thing = aimed;
+    let pan = aimed ? target.side : null;
+    if (!thing) {
+      for (const s of all) {
+        pan = panUnder(s, b);
+        if (pan) { thing = s; break; }
+      }
+    }
+    if (!thing) continue;
+    if (!addToPan(thing, pan, b)) { full = true; continue; }
+    gone.add(b.id);
+    last = { thing, pan, b };
+  }
+
+  if (gone.size) {
+    store.blocks = store.blocks.filter((b) => !gone.has(b.id));
+    store.selection = new Set([...store.selection].filter((id) => !gone.has(id)));
+    const what = gone.size === 1
+      ? `A ${pieceWord({ ...last.b, sign: 1 }, store.base)}`
+      : `${gone.size} blocks`;
+    say(`${what} on the ${sideWord(last.pan)} pan: ${scaleSays(last.thing)}`
+      + " Tap a block in a pan to make it negative.", "ok");
+    if (hasPair(last.thing)) cancelSoon(last.thing);
+  }
+  if (full) say("That pan is full — tip it out or cancel some pieces first.", "warn");
+
+  /* Anything left standing through the scale is moved the least distance that
+     clears it. */
+  const through = store.blocks.filter((b) => blocks.includes(b) && all.some((s) => overlaps(b, s)));
+  if (through.length) settleThings(through);
+  return gone.size > 0;
+}
+
+function overlaps(a, b) {
+  const fa = footprint(a);
+  const fb = footprint(b);
+  return a.x < b.x + fb.l && b.x < a.x + fa.l && a.z < b.z + fb.w && b.z < a.z + fa.w;
+}
+
+/** A piece in a pan tapped: it turns over. The x box says what it weighs. */
+function tapPan(ref) {
+  const thing = store.things.find((t) => t.id === ref.thingId);
+  if (!thing) return;
+  if (ref.index < 0) {
+    say(`That is x. It weighs ${num(store.xValue)} just now — put blocks on the `
+      + "other pan and press the balance to weigh it again.");
+    emit();
+    return;
+  }
+  snapshot();
+  const p = flipInPan(thing, ref.side, ref.index);
+  if (!p) { store.history.pop(); return; }
+  say(`Turned over: a ${pieceWord(p, store.base)} on the ${sideWord(ref.side)} pan. `
+    + scaleSays(thing), "ok");
+  if (hasPair(thing)) cancelSoon(thing);
+  emit();
+}
+
+/**
+ * Make the scale level by letting x weigh what the blocks say: the right-hand
+ * pan, less whatever blocks stand beside x on the left.
+ */
+function balanceScale(thing) {
+  const n = balanceX(thing);
+  if (n == null) {
+    say("Put some blocks on the right-hand pan first — x is weighed against them.", "warn");
+    emit();
+    return;
+  }
+  if (n === store.xValue) {
+    say(`Already level — x = ${num(n)}.`, "ok");
+    emit();
+    return;
+  }
+  snapshot();
+  const was = store.xValue;
+  store.xValue = n;
+  const s = scaleSentence(thing, n, store.base);
+  say(s.extra
+    ? `Level: ${s.text}, so x = ${num(n)} now (it was ${num(was)}).`
+    : `Level: x weighs the same as the blocks, so x = ${num(n)} now (it was ${num(was)}).`, "ok");
+  emit();
+}
+
+/** Tip both pans out: the blocks go back on the paper, the negatives go. */
+function emptyScale(thing) {
+  if (!thing.left.length && !thing.right.length) return;
+  snapshot();
+  const out = emptyPans(thing);
+  let back = 0;
+  let red = 0;
+  const f = footprint(thing);
+  for (const p of out) {
+    if (p.sign < 0) { red += 1; continue; }
+    if (addBlock(p.l, p.w, p.h, { near: { x: thing.x + f.l / 2, z: thing.z - 2 } })) back += 1;
+  }
+  say(`Pans empty — ${back} block${back === 1 ? "" : "s"} back on the paper`
+    + (red ? `, and ${red} negative${red === 1 ? "" : "s"} put away.` : "."));
+  emit();
+}
+
 /* ── the hand tool ────────────────────────────────────────────────────────── */
 
 let handOn = false;
@@ -429,6 +585,15 @@ function placeTool(tool) {
     /* The Tiles card is a door to the family, not one tile: which piece you
        want is the only question, and the panel is where it is asked. */
     say("Algebra tiles — pick a piece from the panel, cubes first. A red one is its negative.");
+    return;
+  }
+  if (tool.kind === "scale") {
+    const thing = addThing(makeScale());
+    if (!store.blocks.length) seedBlocks();
+    arrange(store.blocks, store.things);
+    say(`A balance scale, with x on the left pan — x weighs ${num(store.xValue)}. `
+      + "Drag blocks onto the right-hand pan, then press the balance.");
+    fitView(ctx, store.blocks.concat([thing]));
     return;
   }
   if (tool.kind === "card") {
@@ -577,7 +742,8 @@ async function bootCanvas() {
       onDouble: doubleTap,
       /* Let go of a tile over its opposite and the pair cancels itself: the
          zero pair made physical, with no key to press. */
-      onDrop: (moved) => cancelOverlapping(moved),
+      onDrop: (moved, pan) => { dropOnScale(moved, pan); cancelOverlapping(moved); },
+      onPan: tapPan,
       onBead: (ref) => {
         const thing = store.things.find((t) => t.id === ref.thingId);
         if (!thing) return;
@@ -767,6 +933,7 @@ async function bootCanvas() {
     noteEditor = createNoteEditor(ctx, view, stage,
       { onInput: () => emit(), onCommit: afterNote });
     const turn = createTurnHandle(ctx, view, stage, () => emit());
+    scaleBar = createScaleBar(ctx, stage, { onBalance: balanceScale, onEmpty: emptyScale });
     subscribe((s) => {
       view.sync(s);
       trade.refresh();
@@ -776,6 +943,7 @@ async function bootCanvas() {
       sheetPanel.refresh();
       cellLayer.refresh();
       pickTool.refresh();
+      scaleBar.refresh();
     });
     turn.refresh();
 
@@ -822,7 +990,7 @@ async function bootCanvas() {
          and the heavier the call the likelier it is. Reaching them off one
          object costs nothing and makes that whole class of flake go away. */
       window.__bb = { store, valueOf, view, ctx, emit, say, ops, sync, sheets,
-        scene: sceneMod, layout: layoutMod };
+        scene: sceneMod, layout: layoutMod, scale: scaleMod };
     }
 
     veilOff();
@@ -864,6 +1032,9 @@ function teardown() {
   try { clearMaterials(); } catch { /* nothing cached yet */ }
   try { clearTileMaterials(); } catch { /* the same */ }
   try { clearAbacusMaterials(); } catch { /* the same */ }
+  try { clearScaleMaterials(); } catch { /* the same */ }
+  try { scaleBar?.destroy(); } catch { /* already gone */ }
+  scaleBar = null;
   try { sizeWatch?.disconnect(); } catch { /* already gone */ }
   if (onWindowResize) window.removeEventListener("resize", onWindowResize);
   sizeWatch = null;

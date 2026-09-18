@@ -405,3 +405,42 @@ export function columnAddArt() {
     fig(col(0), 68, "1")
   );
 }
+
+/**
+ * The balance scale: x on the left pan outweighing a rod and two units on the
+ * right, so the beam is caught leaning — the one picture that says a scale
+ * weighs something.
+ */
+export function balanceArt() {
+  const WOOD = "var(--accent-warning, #f0a868)";
+  const BLUE = "var(--accent-secondary, #6fb7e8)";
+  const SKY = "var(--accent-secondary, #6fb7e8)";
+  const BUTTER = "var(--accent-primary, #f4c95d)";
+  const t = -0.16; // the lean: the left end down
+  const px = 60, py = 26, arm = 36;
+  const lx = px - arm * Math.cos(t), ly = py - arm * Math.sin(t);
+  const rx = px + arm * Math.cos(t), ry = py + arm * Math.sin(t);
+  const f = (v) => v.toFixed(1);
+  const pan = (cx, cy) =>
+    `<path d="M${f(cx - 17)} ${f(cy)}H${f(cx + 17)}l-4 6H${f(cx - 13)}z"
+       fill="${PAPER}" stroke="${LINE}" stroke-width="1.3" stroke-linejoin="round"/>` +
+    `<path d="M${f(cx)} ${f(cy)}V${f(cy - 6)}" stroke="${LINE}" stroke-width="1.6"/>`;
+  const cell = (x, y, w, h, fill) =>
+    `<rect x="${f(x)}" y="${f(y)}" width="${w}" height="${h}" fill="${fill}"
+       stroke="${LINE}" stroke-width="1.1"/>`;
+  const lpy = ly + 12, rpy = ry + 12;
+  return svg(
+    `<rect x="44" y="68" width="32" height="5" rx="1.5" fill="${WOOD}" stroke="${LINE}" stroke-width="1.3"/>` +
+    `<rect x="58" y="${py}" width="4" height="${68 - py}" fill="${WOOD}" stroke="${LINE}" stroke-width="1.2"/>` +
+    `<path d="M${f(lx)} ${f(ly)}L${f(rx)} ${f(ry)}" stroke="${LINE}" stroke-width="3.2" stroke-linecap="round"/>` +
+    `<circle cx="${px}" cy="${py}" r="3" fill="${LINE}"/>` +
+    pan(lx, lpy) + pan(rx, rpy) +
+    cell(lx - 7, lpy - 14, 14, 14, BLUE) +
+    `<text x="${f(lx)}" y="${f(lpy - 7)}" fill="${LINE}" font-size="11" font-style="italic"
+       font-weight="700" text-anchor="middle" dominant-baseline="central"
+       font-family="STIX Two Text, Cambria Math, serif">x</text>` +
+    cell(rx - 15, rpy - 4, 20, 4, SKY) +
+    cell(rx + 7, rpy - 4, 4, 4, BUTTER) +
+    cell(rx + 7, rpy - 8, 4, 4, BUTTER)
+  );
+}

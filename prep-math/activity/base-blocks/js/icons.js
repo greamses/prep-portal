@@ -344,6 +344,24 @@ export const ICON = {
       rect(6, 14.4, 12, 1.9, "#fff", 0.95) +
       rect(6, 17.4, 8, 1.9, "#fff", 0.95)
   ),
+  /* the balance: a beam level on its pillar with a pan at each end — pressed,
+     it is what makes the scale level, so it is drawn level */
+  balance: svg(
+    rect(10.8, 5.6, 2.4, 14.6, WARM, 1) +
+      rect(6.6, 19.2, 10.8, 2.6, WARM, 1.2) +
+      rect(2.4, 6.2, 19.2, 2.2, LOUD, 1.1) +
+      `<path d="M1.6 12.6h7.6a3.8 3.8 0 0 1-7.6 0z" fill="${PAPER}"/>` +
+      `<path d="M14.8 12.6h7.6a3.8 3.8 0 0 1-7.6 0z" fill="${PAPER}"/>` +
+      rect(4.8, 8.2, 1.2, 4.6, QUIET, 0.6) +
+      rect(18, 8.2, 1.2, 4.6, QUIET, 0.6)
+  ),
+  /* empty the pans: a pan tipped up, and the pieces coming out of it */
+  unload: svg(
+    `<path d="M2.4 9.6 15.4 4.2l1.4 3.4a6.8 6.8 0 0 1-12.4 5.2z" fill="${PAPER}"/>` +
+      rect(15.2, 13.4, 4.2, 4.2, GOLD, 0.8) +
+      rect(9.6, 17.6, 4.2, 4.2, GOLD, 0.8) +
+      head(20.6, 20.4, 0.4, 1, 3.4)
+  ),
   table: svg(
     rect(2.8, 3.4, 18.4, 17.2, PAPER, 1.8) +
       `<path d="M2.8 5.2a1.8 1.8 0 0 1 1.8-1.8h14.8a1.8 1.8 0 0 1 1.8 1.8v3.6H2.8z" fill="${GOLD}"/>` +

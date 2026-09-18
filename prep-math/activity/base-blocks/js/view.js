@@ -15,6 +15,7 @@ import {
 } from "./grids.js";
 import { buildNote, placeNote, noteShape } from "./notes.js";
 import { buildTile, placeTile, tileShape, clearTileMaterials } from "./tiles.js";
+import { buildScale, placeScale, syncScale, scaleShape, clearScaleMaterials } from "./scale.js";
 
 const B = () => window.BABYLON;
 
@@ -102,6 +103,7 @@ export function createView(ctx) {
          the same signature — what it SAYS is what tells the view it changed. */
       const shape = t.kind === "note" || t.kind === "card" ? noteShape(t)
         : t.kind === "tile" ? tileShape(t)
+        : t.kind === "scale" ? scaleShape(t)
         /* A written sum's board is cut to fit the sum on it, so the numbers
            are part of its SHAPE and not merely of its drawing: set a longer
            sum and the slab itself has to be built again. */
@@ -123,6 +125,7 @@ export function createView(ctx) {
         const parts = t.kind === "abacus" ? buildAbacus(ctx, t)
           : t.kind === "note" || t.kind === "card" ? buildNote(ctx, t)
           : t.kind === "tile" ? buildTile(ctx, t)
+          : t.kind === "scale" ? buildScale(ctx, t)
           : buildBoard(ctx, t, store.base);
         rig = { parts, kind: t.kind, signature: "", shape, size: { l: t.l, w: t.w } };
         rigs.set(t.id, rig);
@@ -136,6 +139,11 @@ export function createView(ctx) {
         placeNote(rig.parts, t);
       } else if (t.kind === "tile") {
         placeTile(rig.parts, t);
+      } else if (t.kind === "scale") {
+        placeScale(rig.parts, t);
+        syncScale(ctx, t, rig.parts, {
+          base: store.base, xValue: store.xValue, animate: animate && !built,
+        });
       } else {
         /* Under sync a board slides to where it now belongs, like everything
            else on the canvas; while it is being dragged, `placeItem` snaps it. */
@@ -210,6 +218,7 @@ export function createView(ctx) {
     clearMaterials();
     clearAbacusMaterials();
     clearTileMaterials();
+    clearScaleMaterials();
     for (const b of store.blocks) {
       const mesh = meshes.get(b.id);
       if (!mesh) continue;
@@ -242,6 +251,7 @@ export function createView(ctx) {
     if (rig.kind === "abacus") placeAbacus(rig.parts, item);
     else if (rig.kind === "note" || rig.kind === "card") placeNote(rig.parts, item);
     else if (rig.kind === "tile") placeTile(rig.parts, item);
+    else if (rig.kind === "scale") placeScale(rig.parts, item);
     else placeBoard(rig.parts, item);
   }
 

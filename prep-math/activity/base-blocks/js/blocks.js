@@ -113,8 +113,21 @@ export function colourOf(block, base) {
 /* ── mesh ─────────────────────────────────────────────────────────────────── */
 
 export function buildMesh(ctx, block, base) {
+  const mesh = blockBox(ctx.scene, block, colourOf(block, base), "b" + block.id);
+  mesh.metadata = { itemId: block.id };
+  mesh.receiveShadows = true;
+  ctx.shadows.addShadowCaster(mesh);
+  place(mesh, block);
+  return mesh;
+}
+
+/**
+ * One grooved box, l × w × h, in the given colour — a block's body with no
+ * block behind it. The balance scale's pans hold pieces like this: they are
+ * blocks to look at, but they live in the pan and not on the paper.
+ */
+export function blockBox(scene, { l, w, h }, hex, name = "blk") {
   const BJS = B();
-  const { l, w, h } = block;
   const V4 = BJS.Vector4;
   const faceUV = [
     new V4(0, 0, l, h), // back
@@ -124,9 +137,8 @@ export function buildMesh(ctx, block, base) {
     new V4(0, 0, l, w), // top
     new V4(0, 0, l, w), // bottom
   ];
-
   const mesh = BJS.MeshBuilder.CreateBox(
-    "b" + block.id,
+    name,
     {
       width: l - CFG.inset,
       depth: w - CFG.inset,
@@ -134,13 +146,9 @@ export function buildMesh(ctx, block, base) {
       faceUV,
       wrap: true,
     },
-    ctx.scene
+    scene
   );
-  mesh.material = materialFor(ctx.scene, colourOf(block, base));
-  mesh.metadata = { itemId: block.id };
-  mesh.receiveShadows = true;
-  ctx.shadows.addShadowCaster(mesh);
-  place(mesh, block);
+  mesh.material = materialFor(scene, hex);
   return mesh;
 }
 

@@ -127,6 +127,9 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, on
     );
 
     if (g.id === "blocks") {
+      /* The balance scale is a thing you put blocks ON, so it is offered after
+         the pieces, across the whole panel the way the area frame is. */
+      const scale = g.tools.find((t) => t.kind === "scale");
       panelEl.innerHTML = `
         ${["unit", "rod", "flat", "cube"]
           .map(
@@ -141,7 +144,12 @@ export function buildDock(tabsEl, panelEl, { onPlace, onPiece, onTile, onOwn, on
                 aria-haspopup="dialog" aria-expanded="false">
           <i class="bb-piece__swatch bb-swatch--custom"></i>
           <span>Own size</span><em data-size="own">3×2×2</em>
-        </button>`;
+        </button>` + (scale ? `
+        <button class="bb-piece bb-piece--wide" type="button" data-tool="${scale.id}"
+                title="${scale.blurb}">
+          <i class="bb-piece__swatch bb-swatch--rod"></i>
+          <span>${scale.label}</span>
+        </button>` : "");
     } else if (g.id === "tiles") {
       /* Ten pieces and a red one of each — the cubes first, then the flats and
          the rods, the way an expression is written. The negatives are a SECOND

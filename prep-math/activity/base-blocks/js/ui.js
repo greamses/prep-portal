@@ -16,6 +16,7 @@ import { toggleSync, afterBlocks, totalUnits, buildNumber } from "./sync.js";
 import { tilesReading } from "./tiles.js";
 import { SHORTCUTS, keyMap } from "./keys.js";
 import { frames, readFrame, frameSentence, frameSquare } from "./frame.js";
+import { scales, scaleSentence } from "./scale.js";
 import { math, setMath, typesetIn, numTex } from "./maths.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -546,6 +547,16 @@ export function mountUI({
         : asked.kind === "off" ? "not yet"
         : asked.kind === "asked" ? "fill the frame in"
         : "in the frame";
+    } else if (scales(store.things).length) {
+      /* A balance scale is a question too: the pill says what it is showing,
+         x + 2 > 9, and whether it is level yet. */
+      const said = scaleSentence(scales(store.things)[0], store.xValue, base);
+      setMath(el.count, said.tex, said.text);
+      const xs = math(numTex(toBase(Math.abs(store.xValue), base), base),
+        String(store.xValue));
+      el.countSub.innerHTML = said.level
+        ? (said.extra ? `level · x = ${store.xValue < 0 ? "−" : ""}${xs}` : "level")
+        : `on the scale · x is ${store.xValue < 0 ? "−" : ""}${xs} · press the balance`;
     } else if (tiles.length) {
       const read = tilesReading(tiles);
       setMath(el.count, read.tex, read.text);
