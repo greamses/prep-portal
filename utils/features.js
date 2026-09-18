@@ -113,7 +113,7 @@ export const FEATURES = [
          printing: /api/workbooks/pass asks this same part before it clears a
          subscriber's pages (server/routes/workbooks.js). */
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, words, sums, remainders, fractions, time, multiplying)", path: "/prep-math/activity/maths-workbook" },
-      { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to constructions)", path: "/prep-math/activity/geometry-workbook" },
+      { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to area of triangles)", path: "/prep-math/activity/geometry-workbook" },
       { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem)", path: "/prep-math/activity/algebra-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },

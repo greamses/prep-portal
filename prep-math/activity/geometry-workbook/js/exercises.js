@@ -16,6 +16,7 @@
      ex-angles.js        chapter 2, naming and measuring (protractor.js) —
                          moved here from the Maths Workbook
      ex-constructions.js chapter 8, all of it (drawn by construct.js)
+     ex-area.js          chapter 10, all of it (drawn by areaart.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -68,6 +69,11 @@
      60° and 30°, 90° and 45° with compasses — each one MEASURED afterwards,
      and the measurement is what is marked
 
+   Chapter 10 — Area and perimeter of triangles
+     kinds of triangle · perimeter · area · area and perimeter with ratio ·
+     with Pythagoras · shapes made of triangles only — every section from a
+     ruler or squares to count, to a labelled drawing, to words alone
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -90,6 +96,7 @@ import { CI_GROUPS, CI_EXERCISES } from "./ex-circles.js";
 import { LA_GROUPS, LA_EXERCISES } from "./ex-lines.js";
 import { ANGLE_GROUPS, ANGLE_EXERCISES } from "./ex-angles.js";
 import { CO_GROUPS, CO_EXERCISES } from "./ex-constructions.js";
+import { AR_GROUPS, AR_EXERCISES } from "./ex-area.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -108,6 +115,7 @@ export const GROUPS = [
   ...CI_GROUPS,
   ...SOLID_GROUPS,
   ...CO_GROUPS,
+  ...AR_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -126,9 +134,10 @@ export const EXERCISES = [
   ...CI_EXERCISES,
   ...SOLID_EXERCISES,
   ...CO_EXERCISES,
+  ...AR_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 9. */
+/** Which chapter an exercise belongs to: 1 to 10. */
 const CHAPTER = new Map([
   ...ANGLE_GROUPS.map((g) => [g.id, 2]),
   ...TRI_GROUPS.map((g) => [g.id, 3]),
@@ -143,6 +152,7 @@ const CHAPTER = new Map([
   ...CI_GROUPS.map((g) => [g.id, 7]),
   ...SOLID_GROUPS.map((g) => [g.id, 8]),
   ...CO_GROUPS.map((g) => [g.id, 9]),
+  ...AR_GROUPS.map((g) => [g.id, 10]),
 ]);
 /* Lines and angles is the first chapter now, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

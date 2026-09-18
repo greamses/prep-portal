@@ -486,4 +486,43 @@ export const ICON = {
       `<rect x="16.2" y="11.4" width="1.4" height="4.4" rx="0.7" fill="#fff"/>` +
       `<rect x="2.4" y="15.6" width="19.2" height="2.6" rx="1.3" fill="${LOUD}"/>`
   ),
+
+  /* ── area and perimeter of triangles ── */
+  /* A triangle with two equal sides, and the ticks that say so. */
+  arKinds: svg(
+    `<path d="M12 3.2 20.6 20.4H3.4z" fill="${PAPER}"/>` +
+      bar(5.6, 10.4, 9.6, 12.8, 1.7, LOUD) +
+      bar(18.4, 10.4, 14.4, 12.8, 1.7, LOUD)
+  ),
+  /* The way round the edge: the rim is the thing, the inside is kept back. */
+  arPerim: svg(
+    `<path d="M12 3.2 21 20.4H3z" fill="${PAPER}"/>` +
+      bar(12, 3.6, 20.6, 20.2, 2.2, LOUD) +
+      bar(20.6, 20.2, 3.4, 20.2, 2.2, LOUD) +
+      bar(3.4, 20.2, 12, 3.6, 2.2, LOUD)
+  ),
+  /* Half of its rectangle: the triangle filled, the rectangle behind it. */
+  arArea: svg(
+    `<rect x="3" y="4.4" width="18" height="15.6" rx="0.8" fill="${PAPER}"/>` +
+      `<path d="M9 4.4 21 20H3z" fill="${GOLD}"/>` +
+      bar(9, 5.4, 9, 19, 1.5, LOUD)
+  ),
+  /* A triangle and the same triangle made bigger. */
+  arRatio: svg(
+    `<path d="M3.2 20.6V13.4h5.4z" fill="${LOUD}"/>` +
+      `<path d="M10.6 20.6V4h11.4z" fill="${GOLD}"/>`
+  ),
+  /* An isosceles triangle cut down the middle: two right-angled halves. */
+  arPy: svg(
+    `<path d="M12 3.2 21 20.4H3z" fill="${GOLD}"/>` +
+      `<path d="M12 3.2V20.4H3z" fill="${PAPER}"/>` +
+      sq(12, 17, 3.2, LOUD)
+  ),
+  /* A kite made of four triangles, coloured part by part. */
+  arComp: svg(
+    `<path d="M12 12h9L12 3z" fill="${GOLD}"/>` +
+      `<path d="M12 12H3l9-9z" fill="${PAPER}"/>` +
+      `<path d="M12 12H3l9 9.4z" fill="${LEAF}"/>` +
+      `<path d="M12 12h9l-9 9.4z" fill="${LOUD}"/>`
+  ),
 };

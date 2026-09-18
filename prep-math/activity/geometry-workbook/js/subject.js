@@ -16,14 +16,14 @@ const CHAPTERS = {
   3: "Chapter 3: Polygon angles", 4: "Chapter 4: Transversal angles",
   5: "Chapter 5: Pythagoras' rule", 6: "Chapter 6: 2D transformations",
   7: "Chapter 7: Circle theorems", 8: "Chapter 8: Pyramids and prisms",
-  9: "Chapter 9: Constructions",
+  9: "Chapter 9: Constructions", 10: "Chapter 10: Area and perimeter of triangles",
 };
 
 export const SUBJECT = {
   /* Names the chapter the paper is from — or both, when it mixes them. */
   eyebrow: (o) => {
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
-    const list = [...found].sort();
+    const list = [...found].sort((a, b) => a - b);
     const which = list.length === 1 ? CHAPTERS[list[0]]
       : `Chapters ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
     return `Mathematics · Geometry · ${which}`;
@@ -39,7 +39,7 @@ export const SUBJECT = {
     const angles = [1, 2, 3, 4, 7].some((n) => found.has(n)) || !found.size;
     if (angles) parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
     if (found.has(3) || found.has(4) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
-    if (found.has(9)) {
+    if (found.has(9) || found.has(10)) {
       parts.push({ gentle: "lengths in whole centimetres", middle: "lengths in half centimetres", stretch: "lengths to the millimetre" }[L.id]);
     }
     if (found.has(5)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
