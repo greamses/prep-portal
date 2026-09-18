@@ -518,6 +518,79 @@ export const ICON = {
       `<path d="M12 3.2V20.4H3z" fill="${PAPER}"/>` +
       sq(12, 17, 3.2, LOUD)
   ),
+  /* ── properties of polygons ── */
+  /* A parallelogram: its one slant side is the thing, the rest kept back. */
+  prSides: svg(
+    `<path d="M2.6 18.6h13.2l5.6-13.2H8.2z" fill="${PAPER}"/>` +
+      bar(2.6, 18.6, 8.2, 5.4, 2.4, LOUD)
+  ),
+  /* A four-sided shape with one corner's angle filled in. */
+  prAngles: svg(
+    `<path d="M2.6 19.4h15.6l3.2-12.6L6.4 4.6z" fill="${PAPER}"/>` +
+      wedge([2.6, 19.4], RIGHT, [0.36, -0.93], 7.4)
+  ),
+  /* A leaning shape and its height, straight up, with the square at its foot. */
+  prHeights: svg(
+    `<path d="M2.4 19.4h12.8l6.4-14.6H8.8z" fill="${PAPER}"/>` +
+      bar(8.8, 5.2, 8.8, 19, 2.2, LOUD) +
+      sq(9.8, 15.8, 2.6, "#fff")
+  ),
+  /* Corner to corner, both ways. */
+  prDiags: svg(
+    `<path d="M3.4 4.6h17.2v14.8H3.4z" fill="${PAPER}"/>` +
+      bar(4.4, 5.6, 19.6, 18.4, 2, LOUD) +
+      bar(19.6, 5.6, 4.4, 18.4, 2, LOUD)
+  ),
+  /* A shape folded along its line: one half down, the other turned over. */
+  prSym: svg(
+    `<path d="M12 2.6 3 11.2 6.4 21H12z" fill="${PAPER}"/>` +
+      `<path d="M12 2.6 21 11.2 17.6 21H12z" fill="${GOLD}"/>` +
+      bar(12, 1.8, 12, 22, 1.8, LOUD)
+  ),
+  /* A property card: a shape, and its rows ticked off. */
+  prAll: svg(
+    `<path d="M2.4 9.6 7 3.2h14.6l-4.6 6.4z" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="13" width="3.6" height="3.6" rx="0.6" fill="${LEAF}"/>` +
+      `<rect x="2.6" y="18.2" width="3.6" height="3.6" rx="0.6" fill="${LEAF}"/>` +
+      `<rect x="8.4" y="14" width="13" height="1.8" rx="0.9" fill="${QUIET}"/>` +
+      `<rect x="8.4" y="19.2" width="13" height="1.8" rx="0.9" fill="${QUIET}"/>`
+  ),
+
+  /* ── parts of a circle ── */
+  /* The centre, and a radius out to the edge. */
+  pcCentre: svg(disc() + bar(12, 12, 21, 12, 2.2, LOUD) + dot(12, 12, 2.2, GOLD)),
+  /* A chord across, and a tangent touching at the bottom. */
+  pcLines: svg(
+    disc(12, 11, 8) +
+      bar(5.4, 6.6, 18.6, 6.6, 2.2, LOUD) +
+      bar(2, 19, 22, 19, 2.2, GOLD)
+  ),
+  /* A sector and a segment: two ways of cutting a piece off. */
+  pcRegions: svg(
+    disc() +
+      `<path d="M12 12V3a9 9 0 0 1 9 9z" fill="${GOLD}"/>` +
+      `<path d="M4.6 17.2a9 9 0 0 0 14.8 0z" fill="${LOUD}"/>`
+  ),
+  /* Part of the rim, picked out. */
+  pcArcs: svg(
+    disc() +
+      `<path d="M3 12a9 9 0 0 1 9-9" fill="none" stroke="${LOUD}" stroke-width="3" stroke-linecap="round"/>` +
+      dot(12, 12, 1.6, QUIET)
+  ),
+  /* A semicircle: its curved edge and its straight edge both counted. */
+  pcMore: svg(
+    `<path d="M2.6 15.4a9.4 9.4 0 0 1 18.8 0z" fill="${PAPER}"/>` +
+      bar(2.6, 15.4, 21.4, 15.4, 2.4, LOUD) +
+      `<rect x="2.6" y="18.6" width="18.8" height="2.4" rx="1.2" fill="${GOLD}"/>`
+  ),
+  /* The circle with its parts lettered. */
+  pcAll: svg(
+    disc(10.6, 12, 8) +
+      bar(10.6, 12, 18.6, 12, 2, LOUD) +
+      dot(10.6, 12, 1.8, GOLD) +
+      `<rect x="18" y="3" width="4.2" height="4.2" rx="0.8" fill="${LEAF}"/>`
+  ),
+
   /* A kite made of four triangles, coloured part by part. */
   arComp: svg(
     `<path d="M12 12h9L12 3z" fill="${GOLD}"/>` +

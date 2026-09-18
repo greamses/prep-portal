@@ -1757,6 +1757,22 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-draw__line--minute { stroke: #2f6ea8; stroke-width: 1.1; }
 .wb-draw__ghost { stroke: #1f4f86; stroke-width: 0.6; stroke-dasharray: 1.4 1; stroke-linecap: round; }
 .wb-draw__spot { fill: rgba(31, 79, 134, 0.12); stroke: rgba(31, 79, 134, 0.35); stroke-width: 0.25; }
+/* Folding (fold.js): a dashed line on a shape that folds is a wide, invisible
+   strip to tap; while a fold is held the figure says whether it fitted. */
+.wb-foldhit { stroke: transparent; stroke-width: 5; pointer-events: stroke; cursor: pointer; }
+svg[data-foldable] line[data-foldline] { stroke: #2f6ea8; }
+svg[data-foldable]:hover line[data-foldline] { stroke-width: 0.9; }
+[data-folded] { position: relative; }
+[data-folded]::after {
+  /* just under the figure: its top is where Undo and Clear sit, and the
+     badge only shows while a fold is held */
+  position: absolute; bottom: 0; left: 0; transform: translateY(100%); z-index: 2; white-space: nowrap;
+  padding: 0.6mm 1.8mm; border-radius: 1mm;
+  font: 700 8pt/1.3 var(--font-body, system-ui, sans-serif);
+  color: #fff; pointer-events: none;
+}
+[data-folded="fits"]::after { content: "The halves match"; background: #3f8f4f; }
+[data-folded="misses"]::after { content: "The halves do not match"; background: #c0453f; }
 .wb-drawbar {
   position: absolute;
   top: 0;

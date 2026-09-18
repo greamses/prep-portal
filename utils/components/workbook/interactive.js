@@ -26,6 +26,7 @@ import { mountTooltips, hideTip } from "/utils/components/tooltip.js";
 import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
+import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -215,6 +216,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       makeJoinable(node, idx);
     }
 
+    /* a shape that says what its outline is can be folded along its lines */
+    node.querySelectorAll("svg[data-fold]").forEach((svg) => makeFoldable(svg));
+
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
@@ -242,6 +246,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       n.classList.remove("is-live", "is-right", "is-wrong", "is-on", "is-want"));
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
     node.querySelectorAll("svg[data-drawable]").forEach((s) => s.removeAttribute("data-drawable"));
+    node.querySelectorAll("svg[data-fold]").forEach((s) => unFoldable(s));
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -363,6 +368,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         /* only when a line really went down: a press that landed on nothing is
            not a step to take back */
         if (lines.length > had) {
+          /* a line ruled on a shape that folds is folded along, straight away:
+             that is how a line of symmetry is tested */
+          if (svg.dataset.fold) {
+            const [fa, fb] = at(lines[lines.length - 1]);
+            if (fa && fb) foldAlong(svg, fa, fb);
+          }
           step(hostOf(svg), () => {
             rec(idx).lines.pop();
             svg.__wbPaint();

@@ -199,3 +199,15 @@
    instruction is "cut this out", and a dashed edge says so without a word. */
 .ma-cut { border-style: dashed; border-width: 0.4mm; background: none; }
 .ma-cut .ma-art { margin: 1mm 0 0; }
+
+/* A property card: the property on the left, yes/no on the right, one per row. */
+.gw-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3mm;
+  font-size: 10pt;
+  padding: 0.6mm 0;
+  border-bottom: 0.2mm dotted #cfc8bb;
+}
+.gw-card-row .wb-tick { margin: 0; }

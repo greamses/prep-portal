@@ -17,6 +17,8 @@
                          moved here from the Maths Workbook
      ex-constructions.js chapter 8, all of it (drawn by construct.js)
      ex-area.js          chapter 10, all of it (drawn by areaart.js)
+     ex-props.js         chapter 11, all of it (drawn by shapeart.js)
+     ex-parts.js         chapter 12, all of it (drawn by ringart.js)
 
    THE ORDER IS THE BOOK, and it is the order it was asked for.
 
@@ -74,6 +76,15 @@
      with Pythagoras · shapes made of triangles only — every section from a
      ruler or squares to count, to a labelled drawing, to words alone
 
+   Chapter 11 — Properties of polygons
+     sides, slant and straight · angles · heights of slant shapes ·
+     diagonals · lines of symmetry (folded, on screen) · all together
+
+   Chapter 12 — Parts of a circle
+     centre, radius and diameter · chords, diameters and tangents ·
+     semicircles, quadrants, sectors and segments · arcs and the
+     circumference · arc length, perimeter and area · all the parts
+
    The section letters printed on the paper follow this list, so a workbook
    printed with every section ticked reads front to back as a book. A group
    that carries `chapter` starts a chapter in the rail.
@@ -97,6 +108,8 @@ import { LA_GROUPS, LA_EXERCISES } from "./ex-lines.js";
 import { ANGLE_GROUPS, ANGLE_EXERCISES } from "./ex-angles.js";
 import { CO_GROUPS, CO_EXERCISES } from "./ex-constructions.js";
 import { AR_GROUPS, AR_EXERCISES } from "./ex-area.js";
+import { PR_GROUPS, PR_EXERCISES } from "./ex-props.js";
+import { PC_GROUPS, PC_EXERCISES } from "./ex-parts.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
@@ -116,6 +129,8 @@ export const GROUPS = [
   ...SOLID_GROUPS,
   ...CO_GROUPS,
   ...AR_GROUPS,
+  ...PR_GROUPS,
+  ...PC_GROUPS,
 ];
 
 export const EXERCISES = [
@@ -135,9 +150,11 @@ export const EXERCISES = [
   ...SOLID_EXERCISES,
   ...CO_EXERCISES,
   ...AR_EXERCISES,
+  ...PR_EXERCISES,
+  ...PC_EXERCISES,
 ];
 
-/** Which chapter an exercise belongs to: 1 to 10. */
+/** Which chapter an exercise belongs to: 1 to 12. */
 const CHAPTER = new Map([
   ...ANGLE_GROUPS.map((g) => [g.id, 2]),
   ...TRI_GROUPS.map((g) => [g.id, 3]),
@@ -153,6 +170,8 @@ const CHAPTER = new Map([
   ...SOLID_GROUPS.map((g) => [g.id, 8]),
   ...CO_GROUPS.map((g) => [g.id, 9]),
   ...AR_GROUPS.map((g) => [g.id, 10]),
+  ...PR_GROUPS.map((g) => [g.id, 11]),
+  ...PC_GROUPS.map((g) => [g.id, 12]),
 ]);
 /* Lines and angles is the first chapter now, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

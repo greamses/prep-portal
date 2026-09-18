@@ -17,6 +17,7 @@ const CHAPTERS = {
   5: "Chapter 5: Pythagoras' rule", 6: "Chapter 6: 2D transformations",
   7: "Chapter 7: Circle theorems", 8: "Chapter 8: Pyramids and prisms",
   9: "Chapter 9: Constructions", 10: "Chapter 10: Area and perimeter of triangles",
+  11: "Chapter 11: Properties of polygons", 12: "Chapter 12: Parts of a circle",
 };
 
 export const SUBJECT = {
@@ -36,16 +37,17 @@ export const SUBJECT = {
     const found = new Set((o.chosen || []).map((c) => exerciseById(c.id)).filter(Boolean).map(chapterOf));
     const parts = [];
     /* the chapters whose questions are angles in degrees */
-    const angles = [1, 2, 3, 4, 7].some((n) => found.has(n)) || !found.size;
+    const angles = [1, 2, 3, 4, 7, 11].some((n) => found.has(n)) || !found.size;
     if (angles) parts.push(L.step === 1 ? "any whole degree" : `whole ${L.step === 10 ? "tens" : "fives"}`);
     if (found.has(3) || found.has(4) || !found.size) parts.push(`shapes up to ${L.maxSides} sides`);
-    if (found.has(9) || found.has(10)) {
+    if (found.has(9) || found.has(10) || found.has(11) || found.has(12)) {
       parts.push({ gentle: "lengths in whole centimetres", middle: "lengths in half centimetres", stretch: "lengths to the millimetre" }[L.id]);
     }
     if (found.has(5)) parts.push(L.id === "stretch" ? "some sides to one decimal place" : "whole-number sides");
     if (found.has(6)) {
       parts.push({ gentle: "mirrors along the grid, half and quarter turns, scale factors 2 and 3", middle: "diagonal mirrors, turns about any point", stretch: "y = −x, hidden centres, fractional scale factors" }[L.id]);
     }
+    if (found.has(12)) parts.push(L.id === "gentle" ? "π as 22/7" : "π as 3.14, one decimal place");
     parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
     return parts.join(" · ");
   },
