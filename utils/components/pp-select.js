@@ -45,8 +45,19 @@ export function enhanceSelect(sel, opts = {}) {
   const span = document.createElement("span");
   trigger.appendChild(span);
   trigger.insertAdjacentHTML("beforeend", CHEVRON);
+  /* The open list is a RECEIPT — the one .pp-receipt component, in its two
+     parts: the wrapper casts the shadow, the paper carries the torn edge and the
+     punched holes (a shadow under a mask on the same element is clipped away,
+     which is why they cannot share one). The choices sit in a third element
+     that does the scrolling, so the holes stay put when the list is long. */
   const menu = document.createElement("div");
-  menu.className = "pp-select-menu";
+  menu.className = "pp-select-menu pp-receipt";
+  const paper = document.createElement("div");
+  paper.className = "pp-select-paper pp-receipt__paper";
+  const list = document.createElement("div");
+  list.className = "pp-select-list";
+  paper.appendChild(list);
+  menu.appendChild(paper);
   root.appendChild(trigger);
   root.appendChild(menu);
 
@@ -58,8 +69,11 @@ export function enhanceSelect(sel, opts = {}) {
     const cur = VALUE_DESC.get.call(sel);
     const chosen = sel.selectedOptions[0];
     span.textContent = chosen ? chosen.textContent.trim() : "";
+    /* a long choice is cut short in the trigger, so its whole name is the
+       tooltip (the site's one tooltip, utils/components/tooltip.js) */
+    if (chosen) trigger.dataset.tip = chosen.textContent.trim(); else delete trigger.dataset.tip;
     root.classList.toggle("has-value", cur !== "" && cur != null);
-    menu.innerHTML = [...sel.options]
+    list.innerHTML = [...sel.options]
       .map((o) => `<div class="pp-select-item ${o.value === cur ? "active" : ""}" data-value="${esc(o.value)}">${esc(o.textContent.trim())}</div>`)
       .join("");
   }

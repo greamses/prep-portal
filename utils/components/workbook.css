@@ -131,6 +131,17 @@ body {
 .wb-rail__paper > .wb-rail__title,
 .wb-rail__paper > .wb-fieldset--picks { grid-column: 1 / -1; }
 .wb-rail__paper > .wb-fieldset--picks { order: 1; }
+/* The dials (rail.js gathers them): columns, not grid rows, so an uneven set
+   of fields packs instead of leaving a hole beside the tallest one. */
+.wb-rail__dials {
+  grid-column: 1 / -1;
+  columns: var(--wb-rail-cols);
+  column-gap: 1.6rem;
+}
+.wb-rail__dials > * {
+  break-inside: avoid;
+  margin: 0 0 1.15rem;
+}
 
 #wb-picks { padding-top: 0.5rem; }
 .wb-picks__flow {
@@ -421,16 +432,22 @@ body {
   transform: translateY(-50%);
   z-index: 10060;
 }
+/* The paper is the .pp-receipt__paper as it comes — its teeth, its punched
+   holes — with smaller teeth for a narrow strip and room either side for the
+   holes (they sit 6px in). It does NOT scroll: the keys inside it do, so the
+   holes stay where they are punched. */
 .wb-side__paper {
   --tooth: 7px;
+  padding: 0.75rem 0.95rem;
+}
+.wb-side__keys {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.3rem;
-  max-height: 92vh;
+  max-height: calc(92vh - 1.5rem);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0.75rem 0.4rem;
 }
 .wb-side[hidden] { display: none; }
 .wb-side__cap {
@@ -779,24 +796,16 @@ body {
     width: auto;
     transform: none;
   }
-  /* A strip along the bottom, so the paper is torn down its SIDES instead —
-     the same receipt, turned a quarter. */
-  .wb-side__paper {
-    --tooth: 6px;
+  /* A strip along the bottom: the same receipt, unchanged — torn along its top
+     and bottom edges with the holes at its ends — and the keys run in a row
+     that scrolls sideways inside it. */
+  .wb-side__paper { --tooth: 6px; padding: 0.55rem 1rem; }
+  .wb-side__keys {
     flex-direction: row;
     align-items: center;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0.4rem 0.75rem;
-    -webkit-mask:
-      conic-gradient(from 45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / var(--tooth) var(--tooth) repeat-y,
-      conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / var(--tooth) var(--tooth) repeat-y,
-      linear-gradient(#000 0 0) center / calc(100% - 2 * var(--tooth) + 2px) 100% no-repeat;
-    mask:
-      conic-gradient(from 45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / var(--tooth) var(--tooth) repeat-y,
-      conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / var(--tooth) var(--tooth) repeat-y,
-      linear-gradient(#000 0 0) center / calc(100% - 2 * var(--tooth) + 2px) 100% no-repeat;
   }
   .wb-side__cap { display: none; }
   .wb-side__rule { width: 1px; height: 1.8rem; margin: 0 0.15rem; }
@@ -2060,40 +2069,35 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    when it is taller than the window, and a scroller clips BOTH axes — a flyout
    opening beside it had a box, a size and a position, and was cut away to
    nothing. */
-.wb-side__fly {
-  --tooth: 7px;
+/* The same receipt as the rail it comes out of, the component as it is: the
+   wrapper sits fixed and casts the shadow, the paper inside carries the teeth
+   and the holes and holds the keys. Two classes on the wrapper, so .pp-receipt's
+   `position: relative` cannot win on load order. */
+.wb-side__fly.pp-receipt {
   position: fixed;
   z-index: 10062;          /* over the rail (10060), under the panels (10070) */
+}
+.wb-side__flypaper {
+  --tooth: 7px;
   display: flex;
   /* a column, beside the key it came out of */
   flex-direction: column;
   gap: 0.25rem;
-  /* torn off the same roll as the rail it came out of: the receipt's paper and
-     teeth, and its drop shadow, rather than a rounded box */
-  padding: 0.6rem 0.35rem;
-  background: var(--pp-paper, var(--surface-primary, #fffdf8));
-  filter: drop-shadow(0 8px 18px rgba(20, 19, 15, 0.22));
-  -webkit-mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
-    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
-  mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
-    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
+  /* room either side for the punched holes */
+  padding: 0.65rem 0.95rem;
 }
 .wb-side__fly[hidden] { display: none; }
 
 /* On a narrow screen the rail is a strip along the bottom, so a family opens
    UPWARDS out of it rather than off the side of the window. */
 @media (max-width: 700px) {
-  .wb-side__fly {
+  .wb-side__fly.pp-receipt {
     left: 0.5rem !important;
     right: 0.5rem;
     top: auto !important;
     bottom: calc(var(--wb-side-h, 4.5rem) + 8px);
-    flex-wrap: wrap;
   }
+  .wb-side__flypaper { flex-direction: row; flex-wrap: wrap; }
 }
 
 
@@ -2134,20 +2138,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   .wb-side { overflow-x: auto; }
 }
 
-.wb-tip {
-  position: fixed;
-  z-index: 10080;
-  padding: 0.24rem 0.5rem;
-  font: 500 0.62rem/1.2 var(--font-mono, monospace);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  color: var(--surface-primary, #fffdf8);
-  background: var(--ink, #2a2723);
-  border-radius: 0.3rem;
-  pointer-events: none;
-}
-.wb-tip[hidden] { display: none; }
-@media print { .wb-tip { display: none !important; } }
+/* The key's name is shown by the site's one tooltip — .pp-tip, from
+   utils/components/tooltip.js and components.css. The rail's own .wb-tip, which
+   that component was made from, is gone. */
 
 /* a studio in a frame of its own */
 .wb-studio {

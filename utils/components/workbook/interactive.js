@@ -22,6 +22,7 @@ import { judge, placesOf, sayWant } from "./want.js";
 import { instruments, TOOL_ICONS, compassSvg, hingeRise, COMPASS } from "./instruments.js";
 import { ICON, faceOf } from "./icons.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { mountTooltips, hideTip } from "/utils/components/tooltip.js";
 import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
@@ -485,7 +486,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       key.type = "button";
       key.className = "pp-sticky pp-note-btn wb-pilejoin";
       key.textContent = "Push them together";
-      key.title = "Put both piles in one place, sorted by size, so they are easy to count";
+      key.dataset.tip = "Put both piles in one place, sorted by size, so they are easy to count";
 
       const join = () => {
         const ca = a.counts();
@@ -1247,7 +1248,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       }
       strip.innerHTML = moves
         .map(([m, label, hint]) => `<button type="button" class="pp-sticky pp-note-btn wb-blockbar__key"`
-          + ` data-m="${m}" title="${hint}">${label}</button>`).join("");
+          + ` data-m="${m}" data-tip="${hint}">${label}</button>`).join("");
       strip.hidden = false;
       strip.onclick = (ev) => {
         const key = ev.target.closest("[data-m]");
@@ -1774,7 +1775,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     wrap.innerHTML =
       `<div class="wb-tool__bar">`
       + `<button type="button" class="pp-sticky pp-note-btn wb-tool__gear"`
-      + ` aria-expanded="false" aria-label="Settings" title="Settings">${ICON_GEAR}</button>`
+      + ` aria-expanded="false" aria-label="Settings" data-tip="Settings">${ICON_GEAR}</button>`
       + `<p class="wb-tool__say" role="status" aria-live="polite"></p></div>`
       + `<div class="wb-tool__pop" hidden></div>`
       + `<div class="wb-tool__body ${bodyClass}"></div>`;
@@ -1841,8 +1842,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         `<div class="wb-tool__group"><span class="wb-tool__cap">Up to</span>`
         + CHART_UPTO.map((u) => note(u.label, u.periods === periods, `data-upto="${u.periods}"`)).join("")
         + `</div><div class="wb-tool__group"><span class="wb-tool__cap">Columns</span>`
-        + note("H T U", !merged, `data-merge="0" title="A column for each place"`)
-        + note("One per period", merged, `data-merge="1" title="256 in one cell, not three"`)
+        + note("H T U", !merged, `data-merge="0" data-tip="A column for each place"`)
+        + note("One per period", merged, `data-merge="1" data-tip="256 in one cell, not three"`)
         + `</div><div class="wb-tool__group">`
         + note("Rub it out", false, `data-clear="1"`)
         + `</div>`;
@@ -1957,74 +1958,37 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     '<svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true" class="wb-side__tick">'
     + '<path d="M8 8H2.6L8 2.6Z" fill="currentColor"/></svg>';
 
+  /* the name is the site's tooltip (tooltip.js), beside the key — to its right,
+     where the rail leaves room */
   const keyHtml = (k) =>
     `<button type="button" class="wb-side__btn" ${k.attr}="${k.id}" aria-pressed="false"`
-    + ` title="${k.label}">${k.icon}<em>${k.label}</em></button>`;
+    + ` aria-label="${k.label}" data-tip="${k.label}" data-tip-side="right">${k.icon}<em>${k.label}</em></button>`;
 
-  /* The rail is a piece of the site's receipt paper — torn top and bottom, no
-     box round it — like every other sheet the bench hands you. The wrapper
-     carries the shadow and the teeth; the paper inside is what scrolls, so the
-     torn edges stay put when there are more tools than window. */
-  side.innerHTML = `<div class="wb-side__paper pp-receipt__paper">` + FAMILIES.map((f) => {
+  /* The rail is the site's receipt — the one .pp-receipt component, used as it
+     is meant to be used, in three parts: the wrapper (`side`) casts the shadow,
+     the paper carries the torn edge and the punched holes, and the keys sit in
+     a third element that does the scrolling, so neither the teeth nor the holes
+     slide away when there are more tools than window. */
+  side.innerHTML = `<div class="wb-side__paper pp-receipt__paper"><div class="wb-side__keys">` + FAMILIES.map((f) => {
       const [face, ...rest] = f.of;
     return `<div class="wb-side__fam" data-fam="${f.id}">`
       + keyHtml(face)
       + (rest.length
         ? `<button type="button" class="wb-side__more" aria-expanded="false"`
           + ` aria-label="More ${f.label.toLowerCase()} tools"`
-          + ` title="More ${f.label.toLowerCase()} tools">${ARROW}</button>`
+          + ` data-tip="More ${f.label.toLowerCase()} tools" data-tip-side="right">${ARROW}</button>`
           /* the flyout itself is NOT here — see below */
         : "")
       + `</div>`;
-  }).join("") + `</div>`;
+  }).join("") + `</div></div>`;
   document.body.appendChild(side);
 
   /* ── the name of the key under the pointer ──────────────────────────────
-     ONE tooltip, on the body, moved to whichever key is being pointed at.
-
-     It was a `position: absolute` span inside each key, and that made the rail
-     scroll sideways: `.wb-side` is `overflow-y: auto`, which makes overflow-x
-     compute to auto as well, and a name sticking out to the right of a key is
-     overflow — so every key grew a horizontal scrollbar under it. Nothing
-     inside a scroller can hang outside it. It lives out here instead, fixed to
-     the window like the flyouts and for the same reason.
-
-     Beside the key, or above it when there is no room to the right, which is
-     what happens on a phone where the rail is a strip along the bottom. */
-  const tip = document.createElement("span");
-  tip.className = "wb-tip";
-  tip.hidden = true;
-  document.body.appendChild(tip);
-
-  function showTip(key) {
-    const name = key.querySelector("em")?.textContent.trim() || key.title;
-    if (!name) return;
-    tip.textContent = name;
-    tip.hidden = false;
-    const k = key.getBoundingClientRect();
-    const t = tip.getBoundingClientRect();
-    const right = k.right + 8;
-    if (right + t.width < window.innerWidth - 4) {
-      tip.style.left = `${Math.round(right)}px`;
-      tip.style.top = `${Math.round(k.top + (k.height - t.height) / 2)}px`;
-    } else {
-      tip.style.left = `${Math.round(Math.max(4, k.left + (k.width - t.width) / 2))}px`;
-      tip.style.top = `${Math.round(k.top - t.height - 8)}px`;
-    }
-  }
-
-  const hideTip = () => { tip.hidden = true; };
-
-  /* On the document, because the flyouts are not inside the rail. */
-  document.addEventListener("pointerover", (e) => {
-    const key = e.target.closest?.(".wb-side__btn");
-    if (key) showTip(key); else hideTip();
-  });
-  document.addEventListener("focusin", (e) => {
-    const key = e.target.closest?.(".wb-side__btn");
-    if (key) showTip(key); else hideTip();
-  });
-  document.addEventListener("pointerdown", hideTip);
+     The site's ONE tooltip (utils/components/tooltip.js), through `data-tip`.
+     This rail used to keep a private one; it was the pattern the component was
+     made from — a single element on the body, because a name hanging out of a
+     key inside a scroller is overflow and made the rail scroll sideways. */
+  mountTooltips();
 
   /* ── the flyouts ────────────────────────────────────────────────────────
      On the BODY, not inside the rail. The rail scrolls when it is taller than
@@ -2037,11 +2001,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   FAMILIES.forEach((f) => {
     const rest = f.of.slice(1);
     if (!rest.length) return;
+    /* the same receipt as the rail it comes out of: wrapper for the shadow,
+       paper for the teeth and the holes */
     const fly = document.createElement("div");
-    fly.className = "wb-side__fly";
+    fly.className = "wb-side__fly pp-receipt";
     fly.dataset.fam = f.id;
     fly.hidden = true;
-    fly.innerHTML = rest.map(keyHtml).join("");
+    fly.innerHTML = `<div class="wb-side__flypaper pp-receipt__paper">${rest.map(keyHtml).join("")}</div>`;
     document.body.appendChild(fly);
     flies.set(f.id, fly);
   });
@@ -2098,7 +2064,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       setTimeout(() => {
         const face = fam.querySelector(":scope > [data-tool], :scope > [data-sheet], :scope > [data-mode]");
         if (!face || face === picked) return;
-        fly.append(face);
+        /* onto the flyout's PAPER, not the flyout: the wrapper is only the
+           shadow, and a key put there would sit outside the receipt */
+        (fly.querySelector(".wb-side__flypaper") || fly).append(face);
         fam.insertBefore(picked, fam.querySelector(".wb-side__more"));
       }, 0);
     });
@@ -2218,13 +2186,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       ? "Compass. Drag a leg to move it, drag the pencil to open or close it, twist the red top to draw; plus and minus change the opening by a millimetre."
       : `${spec.label}. Drag to move, drag the round knob to turn; the arrow keys turn it by a degree.`);
     el.innerHTML = spec.svg +
-      (spec.knob ? `<span class="wb-tool__knob" title="Turn"></span>` : "") +
+      (spec.knob ? `<span class="wb-tool__knob" data-tip="Turn"></span>` : "") +
       (spec.compass
-        ? `<span class="wb-compass__head" title="Twist the top to draw"></span>`
-          + `<span class="wb-compass__pencil" title="Drag the pencil to open or close"></span>`
+        ? `<span class="wb-compass__head" data-tip="Twist the top to draw"></span>`
+          + `<span class="wb-compass__pencil" data-tip="Drag the pencil to open or close"></span>`
           + `<span class="wb-compass__r"></span>`
         : "") +
-      `<button type="button" class="wb-tool__close" title="Put it away" aria-label="Put the ${spec.label.toLowerCase()} away">${TOOL_ICONS.close}</button>` +
+      `<button type="button" class="wb-tool__close" data-tip="Put it away" aria-label="Put the ${spec.label.toLowerCase()} away">${TOOL_ICONS.close}</button>` +
       (spec.readout ? `<span class="wb-tool__deg"></span>` : "");
     scaler.appendChild(el);
     /* the × puts it back in the box */

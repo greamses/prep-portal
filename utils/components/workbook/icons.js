@@ -93,13 +93,19 @@ export function wedge(at, from, to, r = 6, fill = LOUD) {
  * controls. The words stay in the markup, clipped to a pixel, because a
  * screen reader still has to be able to say what the button does.
  *
+ * The tooltip is the site's one component (/utils/components/tooltip.js),
+ * reached through `data-tip` — NOT `title`, which would have the browser draw
+ * a second, unstyled tooltip on top of it.
+ *
  *   faceOf(printBtn, ICON.print, "Print")
  */
-export function faceOf(btn, glyph, name) {
+export function faceOf(btn, glyph, name, side) {
   if (!btn) return btn;
   btn.innerHTML = `<span class="wb-btn__ico" aria-hidden="true">${glyph}</span><em class="wb-btn__name">${name}</em>`;
-  btn.title = name;
+  btn.dataset.tip = name;
+  if (side) btn.dataset.tipSide = side;
   btn.setAttribute("aria-label", name);
+  btn.removeAttribute("title");
   return btn;
 }
 

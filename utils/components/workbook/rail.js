@@ -40,6 +40,7 @@ import { mountInteractive } from "./interactive.js";
 import { mountAssign } from "./assign.js";
 import { enhanceSelects } from "/utils/components/pp-select.js";
 import { UI } from "/utils/components/ui-icons.js";
+import { mountTooltips } from "/utils/components/tooltip.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -115,11 +116,12 @@ export function mountBuilder(cfg) {
         tab.type = "button";
         tab.className = "pp-pill builder-tab wb-tab";
         tab.setAttribute("role", "tab");
-        tab.title = ch.name;
+        tab.dataset.tip = ch.name;
         tab.innerHTML =
           `<span class="wb-tab__ico" aria-hidden="true">${glyphs[ch.groups[0]?.id] || ICON.page}</span>` +
           `<b class="wb-tab__n" hidden></b>`;
-        tab.setAttribute("aria-label", `${num} ${topic}`.trim());
+        /* the same words as the tooltip, so a screen reader hears them once */
+        tab.setAttribute("aria-label", ch.name || `${num} ${topic}`.trim());
         tab.addEventListener("click", () => showTab(j));
         bar.appendChild(tab);
       });
@@ -430,6 +432,27 @@ export function mountBuilder(cfg) {
        native element as the source of truth, so `sel.value = …` and every
        change listener on this page go on working. */
     enhanceSelects(document.querySelector(".wb-rail"), { className: "pp-select--sm" });
+
+    /* every glyph-only control here — the chapter tabs, the paper page's row,
+       the tool rail — names itself through the site's one tooltip */
+    mountTooltips();
+
+    /* The dials FLOW as columns rather than sitting in a grid. A grid row is as
+       tall as its tallest field, and with the advice paragraphs gone the fields
+       are very uneven — a short dial beside the paper-and-checkboxes fieldset
+       left a hole the height of that fieldset. In columns a short field packs
+       under the one above it. The title and the exercise list still span the
+       whole card. Moving the nodes keeps every listener on them. */
+    const card = document.querySelector(".wb-rail__paper");
+    if (card && !card.querySelector(".wb-rail__dials")) {
+      const dials = document.createElement("div");
+      dials.className = "wb-rail__dials";
+      [...card.children]
+        .filter((el) => !el.matches(".wb-rail__title, .wb-fieldset--picks"))
+        .forEach((el) => dials.appendChild(el));
+      const titleEl = card.querySelector(".wb-rail__title");
+      if (titleEl) titleEl.after(dials); else card.prepend(dials);
+    }
 
     /* One listener on the rail: every control in it means the same thing —
        rebuild the paper. */

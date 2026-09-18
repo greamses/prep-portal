@@ -136,6 +136,39 @@
 .pp-receipt__paper::before { left: 6px; }
 .pp-receipt__paper::after { right: 6px; }
 
+/* ── TOOLTIP (tooltip.js) ───────────────────────────────────────────────
+   One ink chip on the body for every [data-tip] on the page, with a small
+   pointer on the side that faces what it names. Theme tokens, so it flips in
+   dark mode with everything else (--ink goes light, the paper goes dark). */
+.pp-tip {
+  position: fixed;
+  z-index: 100000;
+  width: max-content;
+  max-width: 16rem;
+  padding: 0.3rem 0.55rem;
+  font: 600 0.66rem/1.3 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.02em;
+  color: var(--surface-primary, #fffdf8);
+  background: var(--ink, #2a2723);
+  border-radius: 0.3rem;
+  box-shadow: 0 4px 12px -4px rgba(var(--shadow-color, 42, 39, 35), 0.4);
+  pointer-events: none;
+}
+.pp-tip[hidden] { display: none; }
+.pp-tip::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+.pp-tip[data-side="top"]::after { bottom: -3px; left: calc(50% - 3.5px); }
+.pp-tip[data-side="bottom"]::after { top: -3px; left: calc(50% - 3.5px); }
+.pp-tip[data-side="right"]::after { left: -3px; top: calc(50% - 3.5px); }
+.pp-tip[data-side="left"]::after { right: -3px; top: calc(50% - 3.5px); }
+@media print { .pp-tip { display: none !important; } }
+
 /* Status variants for the pill (tinted by accent) */
 .pp-pill--ok { --tile: var(--accent-success, #7cc47c); color: var(--accent-success, #7cc47c); }
 .pp-pill--warn { --tile: var(--accent-warning, #f0a868); color: var(--accent-warning, #f0a868); }

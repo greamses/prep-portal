@@ -44,6 +44,17 @@
   color: var(--ink);
 }
 
+/* A long choice ends in an ellipsis rather than pushing the chevron onto a
+   line of its own. The whole label is still in the open list, and in the
+   trigger's tooltip. */
+.pp-select-trigger > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pp-select-trigger > svg { flex: 0 0 auto; }
+
 .pp-select-trigger:hover,
 .pp-select.open .pp-select-trigger {
   transform: translate(-1px, -1px);
@@ -67,51 +78,75 @@
 }
 
 /* ── Menu panel ───────────────────────────────────────────
-   It is a RECEIPT, like every other sheet the site hands you (.pp-receipt in
-   components.css): torn top and bottom, no box round it, the shadow cast by
-   the paper's own shape rather than by a rectangle. A mask cannot be combined
-   with a box-shadow — the shadow would be drawn round the box the mask just
-   cut away — so the shadow is a `filter` on the paper instead.
-
-   The list scrolls when there are more choices than fit; the teeth stay where
-   they are, because they are painted on this element and only its CONTENT
-   moves. */
+   A menu a page builds by hand (items straight inside .pp-select-menu) keeps
+   this plain panel. */
 .pp-select-menu {
-  --tooth: 8px;
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--pp-paper, var(--surface-primary, var(--bg)));
-  border: 0;
-  border-radius: 0;
-  filter: drop-shadow(0 8px 18px rgba(var(--shadow-color, 42, 39, 35), 0.2));
+  background: var(--bg);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   z-index: 300;
   max-height: 260px;
   overflow-y: auto;
   display: none;
   flex-direction: column;
-  padding: 0.75rem 0.4rem;
+  padding: 0.4rem;
   gap: 0.15rem;
   box-sizing: border-box;
-  -webkit-mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
-    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
-  mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) var(--tooth) repeat-x,
-    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 2px) no-repeat;
+}
+.pp-select.open .pp-select-menu { display: flex; }
+
+/* The menu pp-select.js builds is a RECEIPT, and the receipt is the one
+   .pp-receipt component in components.css — not a copy of its mask. It comes
+   in three parts, and each has one job:
+
+     .pp-select-menu.pp-receipt       where it sits, and the drop shadow
+     .pp-select-paper.pp-receipt__paper   the torn edge and the punched holes
+     .pp-select-list                  the choices, and the scrolling
+
+   The shadow and the mask cannot share an element (a filter under a mask is
+   clipped away with it), and the list scrolls INSIDE the paper so the holes
+   stay put when there are more choices than fit.
+
+   Two classes on the wrapper, not one: .pp-receipt sets `position: relative`
+   and `display: block`, and at equal specificity whichever sheet loaded last
+   would win. */
+.pp-select-menu.pp-receipt {
+  position: absolute;
+  display: none;
+  top: calc(100% + 6px);
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.pp-select.open .pp-select-menu.pp-receipt { display: block; }
+.pp-select-paper {
+  --tooth: 8px;
+  /* room either side for the punched holes, which sit 6px in */
+  padding: 0.7rem 1.05rem;
+}
+.pp-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 240px;
+  overflow-y: auto;
 }
 
-.pp-select-menu::-webkit-scrollbar { width: 4px; }
-.pp-select-menu::-webkit-scrollbar-thumb {
+.pp-select-menu::-webkit-scrollbar,
+.pp-select-list::-webkit-scrollbar { width: 4px; }
+.pp-select-menu::-webkit-scrollbar-thumb,
+.pp-select-list::-webkit-scrollbar-thumb {
   background: var(--ink);
   border-radius: 4px;
-}
-
-.pp-select.open .pp-select-menu {
-  display: flex;
 }
 
 /* ── Items ──────────────────────────────────────────────── */
