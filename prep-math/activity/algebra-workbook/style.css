@@ -285,14 +285,7 @@
 .rt-worked .rt-zero { margin-bottom: 0; }
 .rt-worked .wb-ask { font-size: 10pt; }
 
-/* ── the bench: this workbook's own two controls ───────────────────────────*/
-
-.rt-help-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  color: var(--text-tertiary);
-}
+/* The bench's own hint paragraph is gone with the rest of them. */
 
 /* ══ CHAPTER 1 · BASIC CONCEPTS ════════════════════════════════════════════ */
 

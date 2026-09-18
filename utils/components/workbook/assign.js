@@ -12,6 +12,8 @@
    ========================================================================== */
 
 import { api, onUser } from "./account.js";
+import { faceOf } from "./icons.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const COSMETIC = new Set(["paper", "nameLine", "answers", "watermark", "title"]);
@@ -26,7 +28,7 @@ export function mountAssign({ workbook, label, getOptions }) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "pp-btn wb-tint-2 wb-assign-btn";
-  btn.textContent = "Assign to my class";
+  faceOf(btn, UI.userPlus(), "Assign to my class");
   btn.hidden = true;
   toolbar.querySelector(".wb-toolbar__spacer")?.after(btn);
 

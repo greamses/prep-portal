@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="/utils/components/game-tabs.css" />
     <!-- The paper, the bench and every mark a child writes into. This page's
          own sheet adds only the pictures. -->
+    <link rel="stylesheet" href="/utils/components/select.css" />
     <link rel="stylesheet" href="/utils/components/workbook.css" />
     <link rel="stylesheet" href="./style.css" />
     <!-- Turns every .pp-btn on the bench into a sticky note. Loaded last, as
@@ -105,32 +106,16 @@
                   <option value="0.25" selected>Some — a zero here and there</option>
                   <option value="0.45">Plenty — zeros are the point</option>
                 </select>
-                <span class="wb-field__hint">
-                  An empty place is the hardest thing about place value. This is
-                  how often one turns up inside a number. Base and places only
-                  change the place-value questions; everything else on the sheet
-                  is base ten and says so.
-                </span>
               </label>
 
               <label class="wb-field">
                 <span>How much help</span>
                 <select class="wb-select" id="mw-help"></select>
-                <span class="wb-field__hint">
-                  The pictures are the same every time; what changes is how much
-                  is already done. Start at <strong>Show me</strong> and move
-                  down a step only when a whole page comes back right.
-                </span>
               </label>
 
               <label class="wb-field">
                 <span>How hard</span>
                 <select class="wb-select" id="mw-level"></select>
-                <span class="wb-field__hint">
-                  The numbers stay small at every level. This is a workbook about
-                  an idea, and an idea lost in the middle of a big division was
-                  not taught.
-                </span>
               </label>
 
               <fieldset class="wb-fieldset wb-fieldset--picks">
@@ -178,11 +163,6 @@
                     <span data-icon="dice"></span>
                   </button>
                 </div>
-                <span class="wb-field__hint">
-                  The same code always builds the same workbook. Print the same
-                  paper again next week and it is the same questions in the same
-                  order — which is the point of practice.
-                </span>
               </div>
             </div>
           </div>

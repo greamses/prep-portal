@@ -87,6 +87,22 @@ export function wedge(at, from, to, r = 6, fill = LOUD) {
   return `<path d="${d}Z" fill="${fill}"/>`;
 }
 
+/**
+ * Put a glyph on a button and move its words into the tooltip — the rule the
+ * tool rail and the chapter tabs already follow, now for the bench's own
+ * controls. The words stay in the markup, clipped to a pixel, because a
+ * screen reader still has to be able to say what the button does.
+ *
+ *   faceOf(printBtn, ICON.print, "Print")
+ */
+export function faceOf(btn, glyph, name) {
+  if (!btn) return btn;
+  btn.innerHTML = `<span class="wb-btn__ico" aria-hidden="true">${glyph}</span><em class="wb-btn__name">${name}</em>`;
+  btn.title = name;
+  btn.setAttribute("aria-label", name);
+  return btn;
+}
+
 export const ICON = {
   /* A sheet feeding through a press and coming out the front — the thing a
      workbook page exists to do. */

@@ -34,10 +34,12 @@
 
 import { renderWorkbook, PAPERS } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
-import { ICON } from "./icons.js";
+import { ICON, faceOf } from "./icons.js";
 import { printPass, guardPrinting, workbookKey } from "./print-pass.js";
 import { mountInteractive } from "./interactive.js";
 import { mountAssign } from "./assign.js";
+import { enhanceSelects } from "/utils/components/pp-select.js";
+import { UI } from "/utils/components/ui-icons.js";
 
 const $ = (id) => document.getElementById(id);
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -310,7 +312,7 @@ export function mountBuilder(cfg) {
     const close = document.createElement("button");
     close.type = "button";
     close.className = "pp-btn wb-tint-4 wb-modal__close";
-    close.textContent = "Close";
+    faceOf(close, UI.close(), "Close");
     toolbar.appendChild(close);
 
     preview.classList.add("wb-modal");
@@ -386,13 +388,9 @@ export function mountBuilder(cfg) {
     $("wb-answers").checked = saved?.answers !== false;
     $("wb-seedcode").value = saved?.code || seedCode((Math.random() * 0xffffffff) >>> 0);
 
-    /* The button's icon and its word are separate: the word used to carry the
-       price, and the span it lived in is what the rest of the CSS sizes. */
-    const printBtn = $("wb-print");
-    if (!printBtn.querySelector(".wb-print__label")) {
-      [...printBtn.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
-      printBtn.insertAdjacentHTML("afterbegin", `<span class="wb-print__label">Print</span> `);
-    }
+    /* Every control on the paper page is a glyph with its name in the tooltip
+       (icons.js faceOf), so they all sit on one row. */
+    faceOf($("wb-print"), ICON.print, "Print");
     /* before the print check, the assign button and the interactive tools are
        mounted, so they are made inside the modal's head */
     modal = mountModal();
@@ -425,6 +423,13 @@ export function mountBuilder(cfg) {
     document.querySelectorAll("[data-icon]").forEach((el) => {
       el.innerHTML = (cfg.icons || ICON)[el.dataset.icon] || "";
     });
+
+    /* The dials are the site's own dropdown, not the browser's: a native
+       <select>'s open list is drawn by the operating system and cannot be
+       given the paper everything else here is printed on. pp-select keeps the
+       native element as the source of truth, so `sel.value = …` and every
+       change listener on this page go on working. */
+    enhanceSelects(document.querySelector(".wb-rail"), { className: "pp-select--sm" });
 
     /* One listener on the rail: every control in it means the same thing —
        rebuild the paper. */

@@ -20,6 +20,8 @@
 
 import { judge, placesOf, sayWant } from "./want.js";
 import { instruments, TOOL_ICONS, compassSvg, hingeRise, COMPASS } from "./instruments.js";
+import { ICON, faceOf } from "./icons.js";
+import { UI } from "/utils/components/ui-icons.js";
 import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
@@ -66,7 +68,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "pp-btn wb-tint-1 wb-live-toggle";
-  toggle.textContent = "Make interactive";
+  faceOf(toggle, UI.pen(), "Make interactive");
   toolbar.querySelector(".wb-toolbar__spacer")?.after(toggle);
   if (locked) toggle.hidden = true;
 
@@ -77,19 +79,22 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     <span class="wb-livebar__say">Type in the boxes, tick, draw on the shapes.</span>
     <button type="button" class="pp-btn wb-tint-5 wb-labelbtn" data-act="periods" aria-pressed="false" hidden>Period names</button>
     <button type="button" class="pp-btn wb-tint-5 wb-labelbtn" data-act="htu" aria-pressed="false" hidden>H T U</button>
-    <button type="button" class="pp-btn wb-tint-4" data-act="clear">Clear</button>
-    <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden>Show the answers</button>
+    <button type="button" class="pp-btn wb-tint-4" data-act="clear"></button>
+    <button type="button" class="pp-btn wb-tint-2" data-act="show" hidden></button>
     <span class="wb-livebar__score" role="status"></span>
-    <button type="button" class="pp-btn" data-act="check">Check my answers</button>`;
+    <button type="button" class="pp-btn" data-act="check"></button>`;
   toolbar.after(bar);
   const score = bar.querySelector(".wb-livebar__score");
   const showBtn = bar.querySelector('[data-act="show"]');
+  faceOf(bar.querySelector('[data-act="clear"]'), UI.again(), "Clear");
+  faceOf(showBtn, UI.eye(), "Show the answers");
+  faceOf(bar.querySelector('[data-act="check"]'), ICON.check, "Check my answers");
 
   toggle.addEventListener("click", () => (live ? leave() : enter()));
   bar.addEventListener("click", (e) => {
     const act = e.target.closest("[data-act]")?.dataset.act;
     if (act === "check") check();
-    if (act === "show") { showing = !showing; paintWants(); showBtn.textContent = showing ? "Hide the answers" : "Show the answers"; }
+    if (act === "show") { showing = !showing; paintWants(); faceOf(showBtn, showing ? UI.eyeOff() : UI.eye(), showing ? "Hide the answers" : "Show the answers"); }
     if (act === "clear") clearAll();
     /* Labels over the figures: what period this is, and whether a figure is
        the hundred, the ten or the unit OF that period. Together they are what
@@ -1373,7 +1378,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     checked = false;
     showing = false;
     showBtn.hidden = true;
-    showBtn.textContent = "Show the answers";
+    faceOf(showBtn, UI.eye(), "Show the answers");
     score.textContent = "";
     items().forEach((node, i) => { deaden(node); enliven(node, i); });
     /* the store went with it, so the margins are empty now and have to be
@@ -2458,7 +2463,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   function enter() {
     live = true;
     sheet.classList.add("wb-live");
-    toggle.textContent = "Back to paper";
+    faceOf(toggle, UI.arrowLeft(), "Back to paper");
     toggle.classList.add("is-on");
     bar.hidden = false;
     side.hidden = false;
@@ -2481,7 +2486,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
   function leave() {
     live = false;
     sheet.classList.remove("wb-live");
-    toggle.textContent = "Make interactive";
+    faceOf(toggle, UI.pen(), "Make interactive");
     toggle.classList.remove("is-on");
     bar.hidden = true;
     sheet.classList.remove("wb-periods", "wb-htu");

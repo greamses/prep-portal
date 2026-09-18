@@ -191,13 +191,9 @@ body {
   color: var(--text-secondary);
   font-weight: 600;
 }
-.wb-field__hint {
-  font-size: 0.72rem;
-  color: var(--text-tertiary);
-  text-transform: none;
-  letter-spacing: 0;
-  line-height: 1.45;
-}
+/* There is no `.wb-field__hint` any more: the paragraph of advice under every
+   dial was taken out of all three setups. A control that needs a paragraph to
+   explain it is a control that is named wrong. */
 
 .wb-input,
 .wb-select {
@@ -363,6 +359,37 @@ body {
 }
 .wb-livebar[hidden] { display: none; }
 .wb-livebar__say { font-size: 0.74rem; color: var(--text-secondary); flex: 1 1 14rem; }
+
+/* ── the bench's buttons are glyphs ────────────────────────────────────────
+   Print, Make interactive, Clear, Show the answers, Check, Assign, Close: an
+   icon each, the name in the tooltip (icons.js `faceOf`), so the whole paper
+   page fits on ONE row. The name stays in the markup, clipped to a pixel, for
+   anything that reads the page aloud. */
+.wb-btn__ico {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.wb-btn__ico svg { width: 100%; height: 100%; display: block; }
+.wb-btn__name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.wb-toolbar .pp-btn,
+.wb-livebar .pp-btn {
+  display: inline-grid;
+  place-items: center;
+  padding: 0.42rem;
+  line-height: 0;
+}
 .wb-livebar__score { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
 .wb-livebar .pp-btn { margin-top: 0.15rem; }
 .wb-livebar .pp-btn.is-on { --pp-note-bg: #fff3a8; box-shadow: inset 0 0 0 2px rgba(20, 19, 15, 0.35); }
@@ -822,18 +849,41 @@ body {
   background: rgba(20, 19, 15, 0.45);
 }
 .wb-modal__backdrop[hidden] { display: none; }
+/* ONE ROW. The toolbar and the live bar used to stack; now that every control
+   on them is a glyph they sit side by side, and the head scrolls sideways
+   rather than wrapping if a narrow window cannot hold them. */
 .wb-modal__head {
   position: sticky;
   top: 0;
   z-index: 31;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
   margin: 0 calc(-1 * clamp(0.6rem, 2vw, 1.4rem));
   padding: 0.7rem clamp(0.6rem, 2vw, 1.4rem) 0.6rem;
   background: var(--app-bg, #faf6ee);
+  overflow-x: auto;
+  overflow-y: visible;
 }
-.wb-modal__head .wb-livebar { position: static; }
+.wb-modal__head .wb-toolbar,
+.wb-modal__head .wb-livebar {
+  position: static;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  padding: 0.55rem 0.4rem 0.4rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+/* the spacer pushed Print to the far end of a bar of its own; in one row it
+   would push everything after it off the end */
+.wb-modal__head .wb-toolbar__spacer { display: none; }
+/* the sentence is what the tooltips now say, and a sentence in a row of
+   glyphs is what stops it being a row */
+.wb-modal__head .wb-livebar__say { display: none; }
 html.wb-modal-on { overflow: hidden; }
 /* .wb-main is positioned with a z-index, which makes it a stacking context of
    its own — the modal's z-index would only count inside it, and the site nav
