@@ -131,16 +131,22 @@ body {
 .wb-rail__paper > .wb-rail__title,
 .wb-rail__paper > .wb-fieldset--picks { grid-column: 1 / -1; }
 .wb-rail__paper > .wb-fieldset--picks { order: 1; }
-/* The dials (rail.js gathers them): columns, not grid rows, so an uneven set
-   of fields packs instead of leaving a hole beside the tallest one. */
+/* The dials (rail.js packDials): real column boxes side by side, each field
+   dealt into the shortest one, so an uneven set packs with no holes. NOT CSS
+   `columns` — an open dropdown inside a multi-column box is fragmented by the
+   browser and carries on in the next column. */
 .wb-rail__dials {
   grid-column: 1 / -1;
-  columns: var(--wb-rail-cols);
-  column-gap: 1.6rem;
+  display: grid;
+  grid-template-columns: repeat(var(--wb-rail-cols), minmax(0, 1fr));
+  gap: 0 1.6rem;
+  align-items: start;
 }
-.wb-rail__dials > * {
-  break-inside: avoid;
-  margin: 0 0 1.15rem;
+.wb-rail__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  min-width: 0;
 }
 
 #wb-picks { padding-top: 0.5rem; }

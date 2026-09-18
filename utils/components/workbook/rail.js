@@ -379,6 +379,46 @@ export function mountBuilder(cfg) {
 
   /* ── go ─────────────────────────────────────────────────────────────────*/
 
+  /* ── the dials, packed into columns ────────────────────────────────────
+     The setup card's dials (everything but the title and the exercise list)
+     are dealt into REAL column boxes, each field into whichever column is
+     shortest so far, so an uneven set packs with no holes.
+
+     Not CSS `columns`, which this was for one release: an open dropdown is
+     absolutely positioned, and inside a multi-column box the browser
+     FRAGMENTS it like text — the list split and carried on at the top of the
+     next column. Ordinary boxes side by side never do that.
+
+     Dealt again only when the number of columns changes (the card goes from
+     three to two to one as the window narrows). Moving the nodes keeps every
+     listener on them. */
+  let dialItems = null;
+  function packDials() {
+    const card = document.querySelector(".wb-rail__paper");
+    if (!card) return;
+    let dials = card.querySelector(".wb-rail__dials");
+    if (!dials) {
+      dials = document.createElement("div");
+      dials.className = "wb-rail__dials";
+      dialItems = [...card.children].filter((el) => !el.matches(".wb-rail__title, .wb-fieldset--picks"));
+      const titleEl = card.querySelector(".wb-rail__title");
+      if (titleEl) titleEl.after(dials); else card.prepend(dials);
+    }
+    const n = Math.max(1, parseInt(getComputedStyle(card).getPropertyValue("--wb-rail-cols"), 10) || 1);
+    if (Number(dials.dataset.cols) === n) return;
+    dials.dataset.cols = String(n);
+    const cols = Array.from({ length: n }, () => {
+      const c = document.createElement("div");
+      c.className = "wb-rail__col";
+      return c;
+    });
+    dials.replaceChildren(...cols);
+    for (const el of dialItems) {
+      const shortest = cols.reduce((a, b) => (b.offsetHeight < a.offsetHeight ? b : a));
+      shortest.appendChild(el);
+    }
+  }
+
   function start() {
     const saved = load();
     if (extra.write) extra.write(saved || {});
@@ -437,22 +477,8 @@ export function mountBuilder(cfg) {
        the tool rail — names itself through the site's one tooltip */
     mountTooltips();
 
-    /* The dials FLOW as columns rather than sitting in a grid. A grid row is as
-       tall as its tallest field, and with the advice paragraphs gone the fields
-       are very uneven — a short dial beside the paper-and-checkboxes fieldset
-       left a hole the height of that fieldset. In columns a short field packs
-       under the one above it. The title and the exercise list still span the
-       whole card. Moving the nodes keeps every listener on them. */
-    const card = document.querySelector(".wb-rail__paper");
-    if (card && !card.querySelector(".wb-rail__dials")) {
-      const dials = document.createElement("div");
-      dials.className = "wb-rail__dials";
-      [...card.children]
-        .filter((el) => !el.matches(".wb-rail__title, .wb-fieldset--picks"))
-        .forEach((el) => dials.appendChild(el));
-      const titleEl = card.querySelector(".wb-rail__title");
-      if (titleEl) titleEl.after(dials); else card.prepend(dials);
-    }
+    packDials();
+    window.addEventListener("resize", packDials, { passive: true });
 
     /* One listener on the rail: every control in it means the same thing —
        rebuild the paper. */
