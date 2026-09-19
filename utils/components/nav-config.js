@@ -197,6 +197,7 @@ const NAV_CONFIG = [
           { text: "Maths Workbook", href: "/prep-math/activity/maths-workbook/index.html", description: "Printable — number, fractions, time and angles" },
           { text: "Geometry Workbook", href: "/prep-math/activity/geometry-workbook/index.html", description: "Printable — angles, parallel lines, pyramids and prisms" },
           { text: "Algebra Workbook", href: "/prep-math/activity/algebra-workbook/index.html", description: "Printable — variables and constants, the bar model, the balance scale, the remainder theorem" },
+          { text: "Statistics Workbook", href: "/prep-math/activity/statistics-workbook/index.html", description: "Printable — pictograms, tallies and keys, built by tapping on screen" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
           { text: "AI Flashcards", href: "/flashcards/library.html", description: "Remember everything fast" },

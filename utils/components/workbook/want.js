@@ -47,6 +47,9 @@ export const want = {
   /** Parts of the question's nth cut-up shape to colour in (mode "fill") or to
       cross out (mode "cross") — how many, not which. Covers no places. */
   colour: ({ count, nth = 0, mode = "fill", says = "" }) => ({ kind: "colour", count, nth, mode, says }),
+  /** A pictogram built by tapping (picto.js): the half-symbols each row should
+      hold, or null for a row the question drew itself. Covers no places. */
+  picto: ({ rows, nth = 0, says = "" }) => ({ kind: "picto", rows, nth, says }),
   /** Two columns to join: the right [left, right] pairs. Covers no places. */
   match: (pairs, says = "") => ({ kind: "match", pairs, says }),
   /** A pencil on the pictures for what is not marked — ringing, sharing. */
@@ -137,7 +140,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -153,6 +156,7 @@ export function sayWant(entry, tickLabels = []) {
     case "words": return entry.accept[0];
     case "colour": return entry.says || `${entry.count} ${entry.mode === "cross" ? "crossed out" : "coloured"}`;
     case "match": return entry.says || "";
+    case "picto": return entry.says || "";
     default: return "";
   }
 }

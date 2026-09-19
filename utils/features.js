@@ -109,12 +109,13 @@ export const FEATURES = [
       { id: "base-blocks", label: "Manipulatives (blocks, abacus, tiles, grids)", path: "/prep-math/activity/base-blocks" },
       { id: "cartesian-art", label: "Cartesian Art", path: "/prep-math/activity/cartesian-art" },
       { id: "equivalent-fractions", label: "Equivalent Fractions", path: "/prep-math/activity/equivalent-fractions" },
-      /* The three printable workbooks. Turning one off here also stops it
+      /* The printable workbooks. Turning one off here also stops it
          printing: /api/workbooks/pass asks this same part before it clears a
          subscriber's pages (server/routes/workbooks.js). */
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, words, sums, remainders, fractions, time, multiplying)", path: "/prep-math/activity/maths-workbook" },
       { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to parts of a circle)", path: "/prep-math/activity/geometry-workbook" },
       { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities)", path: "/prep-math/activity/algebra-workbook" },
+      { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

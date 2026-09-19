@@ -1,0 +1,39 @@
+/* ============================================================================
+   Statistics Workbook — what THIS workbook draws
+   ----------------------------------------------------------------------------
+   The paper, the bench and every mark a child writes into come from
+   /utils/components/workbook.css (the pictogram boxes you tap too — .pc-cell).
+   What is left here is a figure beside its questions, the data tables, the
+   blank tally column and the list of raw answers. Fixed hex colours, like the
+   rest of the paper: it prints the same in either theme.
+   ========================================================================== */
+
+.wb-sheet .wb-ask { font-size: 10.5pt; }
+.wb-sheet .wb-ask--lead { font-size: 12pt; }
+
+.sw-art { margin: 2mm 0; }
+.sw-art svg { display: block; max-width: none; }
+
+/* a figure and its questions side by side, wrapping when there is no room */
+.sw-side { display: flex; align-items: flex-start; gap: 6mm; flex-wrap: wrap; }
+.sw-lines { flex: 1 1 55mm; min-width: 0; }
+.sw-lines .wb-answer { width: 13mm; }
+
+.sw-icon { display: inline-block; vertical-align: -1.2mm; }
+
+.sw-table { border-collapse: collapse; margin: 2mm 0 2.5mm; font-size: 10.5pt; }
+.sw-table th, .sw-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3mm; text-align: left; vertical-align: middle; }
+.sw-table th { background: #fff3a8; font-weight: 700; white-space: nowrap; }
+.sw-table td .wb-answer { width: 14mm; }
+/* the tally column is left empty, wide, to be written in */
+.sw-tallycell { display: inline-block; width: 38mm; height: 6mm; }
+
+/* the raw answers, to be gone through once and crossed off */
+.sw-list {
+  font-size: 11pt; line-height: 1.9; margin: 1mm 0 2mm;
+  padding: 2mm 3mm; border: 0.3mm dashed #8a837a; border-radius: 1.5mm;
+}
+
+/* a table and a pictogram beside it: each keeps its size, and they wrap */
+.sw-pair { display: flex; align-items: flex-start; gap: 6mm; flex-wrap: wrap; }
+.sw-pair > * { flex: 0 0 auto; }

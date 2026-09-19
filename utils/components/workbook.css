@@ -1769,6 +1769,19 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
+/* A pictogram built by tapping (picto.js): an empty box shows its dashed
+   outline; a box shows its whole symbol or its half by data-state. On paper
+   (no state) every box is empty, to be drawn in by hand. */
+.pc-cell .pc-whole, .pc-cell .pc-half { display: none; }
+.pc-cell[data-state="2"] .pc-whole { display: inline; }
+.pc-cell[data-state="1"] .pc-half { display: inline; }
+svg[data-picto-live] .pc-cell { cursor: pointer; }
+svg[data-picto-live] .pc-cell:hover .pc-slot { stroke: #2f6ea8; }
+svg[data-picto-live] .pc-cell:focus-visible { outline: 0.5mm solid #2f6ea8; }
+.pc-row-mark { fill: none; }
+.pc-row-mark.is-right { fill: #3f8f4f; }
+.pc-row-mark.is-wrong { fill: #c0453f; }
+
 /* A balance scale played with (balance.js): pieces can be picked up, and one
    carried off the drawing says it is about to go. */
 svg[data-bal-live] .ab-piece { cursor: grab; }

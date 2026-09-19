@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Statistics Workbook</title>
+    <meta
+      name="description"
+      content="A printable statistics workbook. Chapter one, pictograms, from simple to complex: sorting a jumble of shapes and counting each kind (tap each one on screen as you count it), tally marks in gates of five and making a tally chart from a list, reading a pictogram where one symbol is one thing, keys where a symbol stands for 2, 5, 10 or more, what half and a quarter of a symbol are worth, building a pictogram from a table (tapped into place on screen and marked row by row), finishing a half-drawn pictogram, choosing the best key, and problems — money, fractions of the total, working backwards, and pictograms that mislead. With worked examples, an answer key and an interactive mode."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "statistics-workbook" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <!-- The chapter tabs over the exercise list, when a workbook has chapters. -->
+    <link rel="stylesheet" href="/utils/components/game-tabs.css" />
+    <!-- The paper, the bench and every mark a child writes into. This page's
+         own sheet adds only the graphic organisers. -->
+    <link rel="stylesheet" href="/utils/components/select.css" />
+    <link rel="stylesheet" href="/utils/components/workbook.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <!-- Turns every .pp-btn on the bench into a sticky note. Loaded last, as
+         its own header asks, so it wins without anything needing !important. -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+
+    <!-- The nav resolves the signed-in user through bare firebase specifiers. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Workbook</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="wb-paint" aria-hidden="true"></div>
+
+    <main class="wb-main">
+      <header class="wb-hero">
+        <span class="wb-eyebrow"><span data-icon="print"></span> Mathematics · Something to print</span>
+        <h1 class="wb-title">Statistics Workbook<em>.</em></h1>
+        <p class="wb-lead">
+          Data, from counting things to reading a chart — every idea met with
+          something to count first, then its picture, then the numbers.
+        </p>
+        <p class="wb-sister">
+          On screen, a pictogram is built by tapping and marked row by row. The
+          same bench builds the
+          <a href="/prep-math/activity/maths-workbook/index.html">Maths Workbook</a>,
+          the <a href="/prep-math/activity/geometry-workbook/index.html">Geometry Workbook</a>
+          and the <a href="/prep-math/activity/algebra-workbook/index.html">Algebra Workbook</a>.
+        </p>
+      </header>
+
+      <div class="wb-work">
+        <!-- ═══ THE BUILDER ═══ -->
+        <aside class="wb-rail">
+          <div class="pp-receipt">
+            <div class="pp-receipt__paper wb-rail__paper">
+              <h2 class="wb-rail__title"><span data-icon="sliders"></span> Build the workbook</h2>
+
+              <label class="wb-field">
+                <span>Title on the front</span>
+                <input class="wb-input" id="wb-title" type="text" maxlength="52"
+                       value="Statistics" autocomplete="off" />
+              </label>
+
+              <label class="wb-field">
+                <span>How much help</span>
+                <select class="wb-select" id="sw-help"></select>
+              </label>
+
+              <label class="wb-field">
+                <span>How hard</span>
+                <select class="wb-select" id="sw-level"></select>
+              </label>
+
+              <fieldset class="wb-fieldset wb-fieldset--picks">
+                <legend>What goes on the paper</legend>
+                <div id="wb-picks"></div>
+              </fieldset>
+
+              <fieldset class="wb-fieldset">
+                <legend>The sheet itself</legend>
+                <label class="wb-field">
+                  <span>Paper</span>
+                  <select class="wb-select" id="wb-paper">
+                    <option value="a4" selected>A4</option>
+                    <option value="letter">US Letter</option>
+                  </select>
+                </label>
+                <label class="wb-toggle">
+                  <input type="checkbox" id="wb-nameline" checked />
+                  Name, class and date line
+                </label>
+                <label class="wb-toggle">
+                  <input type="checkbox" id="wb-answers" checked />
+                  Answer key at the back
+                </label>
+                <!-- Revealed only for the account the logo belongs to. See
+                     /utils/components/workbook/admin.js. -->
+                <label class="wb-toggle" id="sw-watermark-row" hidden>
+                  <input type="checkbox" id="sw-watermark" checked />
+                  Logo watermark on every page
+                </label>
+              </fieldset>
+
+              <div class="wb-field">
+                <span>Workbook code</span>
+                <div class="wb-seed">
+                  <input class="wb-input wb-seed__code" id="wb-seedcode" type="text"
+                         maxlength="5" autocomplete="off" spellcheck="false"
+                         aria-label="Workbook code — the same code always makes the same workbook" />
+                  <button class="pp-btn pp-btn--ghost" id="wb-reseed" type="button"
+                          title="Make a different workbook">
+                    <span data-icon="dice"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ═══ THE PAPER ═══ -->
+        <section class="wb-preview">
+          <div class="wb-toolbar">
+            <span class="wb-toolbar__count">
+              <span data-icon="page"></span>
+              <span id="wb-pages">—</span>
+            </span>
+            <span class="wb-toolbar__spacer"></span>
+            <button class="pp-btn" id="wb-print" type="button">
+              Print <span data-icon="print"></span>
+            </button>
+          </div>
+
+          <p class="wb-note">
+            The print dialog is also how you save a PDF — pick
+            <strong>Save as PDF</strong> as the destination. Turn
+            <strong>Headers and footers</strong> off and set margins to
+            <strong>None</strong>: the workbook carries its own margins, page
+            numbers and code.
+          </p>
+
+          <div class="wb-viewport" id="wb-viewport">
+            <div class="wb-scaler" id="wb-scaler">
+              <div class="wb-sheet" id="wb-sheet"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".wb-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

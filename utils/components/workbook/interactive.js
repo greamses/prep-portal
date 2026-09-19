@@ -28,6 +28,7 @@ import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
+import { mountPicto, rowRight } from "./picto.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -128,6 +129,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
     r.blocks ||= {};   // piles that have been broken up or taken from
     r.bal ||= {};      // balance scales with pieces moved or taken off
+    r.picto ||= {};    // pictograms built by tapping
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -228,6 +230,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
+      if (e.kind === "picto") makePictoLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -254,6 +257,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-drawable]").forEach((s) => s.removeAttribute("data-drawable"));
     node.querySelectorAll("svg[data-fold]").forEach((s) => unFoldable(s));
     node.querySelectorAll("svg[data-balance]").forEach((s) => { s.__wbBal?.dispose(); s.__wbBal = null; });
+    node.querySelectorAll("svg[data-picto]").forEach((s) => { s.__wbPicto?.dispose(); s.__wbPicto = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -512,6 +516,26 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       say("");
       save();
     });
+  }
+
+  /* ── a pictogram, built by tapping ─────────────────────────────────────
+     picto.js cycles each box empty → whole → half; this keeps the work with
+     the question, makes each tap one Undo step, and Clear empties it. */
+  function makePictoLive(node, idx, e) {
+    const k = e.nth || 0;
+    const svg = node.querySelectorAll("svg[data-picto]")[k];
+    if (!svg) return;
+    const host = hostOf(svg);
+    svg.__wbPicto = mountPicto(svg, {
+      saved: rec(idx).picto[k] || null,
+      onChange: (now, before) => {
+        rec(idx).picto[k] = now;
+        step(host, () => { rec(idx).picto[k] = before; svg.__wbPicto?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(host, () => { delete rec(idx).picto[k]; svg.__wbPicto?.clear(); dirty(node); save(); });
   }
 
   /* ── pushing the two piles together ────────────────────────────────────
@@ -1354,6 +1378,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           host?.classList.add(ok ? "is-right" : "is-wrong");
           if (host) host.dataset.want = sayWant(entry);
           total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "picto") {
+          /* every row the child builds is one mark */
+          const svg = node.querySelectorAll("svg[data-picto]")[entry.nth || 0];
+          const got = rec(idx).picto[entry.nth || 0] || [];
+          let rowsRight = 0;
+          let rows = 0;
+          entry.rows.forEach((want, r) => {
+            if (want == null) return;
+            rows++;
+            const ok = rowRight(got[r] || [], want);
+            if (ok) rowsRight++;
+            svg?.querySelectorAll(`.pc-row-mark[data-row="${r}"]`).forEach((m) => { m.classList.remove("is-right", "is-wrong"); m.classList.add(ok ? "is-right" : "is-wrong"); });
+          });
+          const host = svg && hostOf(svg);
+          host?.classList.remove("is-right", "is-wrong");
+          host?.classList.add(rowsRight === rows ? "is-right" : "is-wrong");
+          if (host) host.dataset.want = sayWant(entry);
+          right += rowsRight; total += rows;
+          if (rowsRight < rows) allRight = false;
           return;
         }
         if (entry.kind === "match") {
