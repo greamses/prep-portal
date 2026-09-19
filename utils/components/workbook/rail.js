@@ -32,7 +32,7 @@
      })
    ========================================================================== */
 
-import { renderWorkbook, PAPERS } from "./engine.js";
+import { renderWorkbook, PAPERS, whenMath } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
 import { ICON, faceOf } from "./icons.js";
 import { printPass, guardPrinting, workbookKey } from "./print-pass.js";
@@ -537,6 +537,8 @@ export function mountBuilder(cfg) {
         .then(render);
     }
     render();
+    /* built again, set, if MathJax arrives after the first build */
+    whenMath(render);
   }
 
   if (document.readyState === "loading") {

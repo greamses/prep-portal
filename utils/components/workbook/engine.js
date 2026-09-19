@@ -47,6 +47,13 @@ import { stream, seedFrom, seedCode } from "./seed.js";
    that, typed back in, built a different workbook. */
 const codeOf = (o) => (o.code ? String(o.code).toUpperCase() : seedCode(o.seed));
 import { ICON } from "./icons.js";
+import { mathify, loadMath } from "./mathify.js";
+export { whenMath, loadMath } from "./mathify.js";
+
+/* Every number and expression on the paper is set by MathJax (mathify.js).
+   Asked for as soon as the engine is, so it is usually there by the first
+   build; a page that builds before it arrives is built again when it does. */
+if (typeof window !== "undefined") loadMath();
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -345,5 +352,9 @@ export function paginate(sheet, blocks, o) {
 /** Build and paginate in one call — what a page's rail actually wants. */
 export function renderWorkbook(sheet, o, subject) {
   const sections = buildSections(o, subject);
-  return paginate(sheet, blocksOf(sections, o, subject), o);
+  const blocks = blocksOf(sections, o, subject);
+  /* typeset BEFORE pagination measures: a set formula is not the height of
+     the plain text it replaces */
+  blocks.forEach((b) => mathify(b.node));
+  return paginate(sheet, blocks, o);
 }

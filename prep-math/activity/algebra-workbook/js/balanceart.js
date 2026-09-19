@@ -106,13 +106,20 @@ function blockShape(x, y, n) {
 /** What one side of an equation puts on a pan: `bags` of the unknown, and `n` known. */
 function items(side, { letter, cubes }) {
   const out = [];
-  for (let i = 0; i < side.bags; i++) out.push({ bag: true, w: BAG_W, h: BAG_H, draw: (x, y) => bagShape(x, y, letter) });
+  for (let i = 0; i < side.bags; i++) out.push({ kind: "bag", v: 1, w: BAG_W, h: BAG_H, draw: (x, y) => bagShape(x, y, letter) });
   if (side.n > 0) {
-    if (cubes) for (let i = 0; i < side.n; i++) out.push({ w: CUBE, h: CUBE, draw: (x, y) => cubeShape(x, y) });
-    else out.push({ w: blockW(side.n), h: BLOCK_H, draw: (x, y) => blockShape(x, y, side.n) });
+    if (cubes) for (let i = 0; i < side.n; i++) out.push({ kind: "cube", v: 1, w: CUBE, h: CUBE, draw: (x, y) => cubeShape(x, y) });
+    else out.push({ kind: "block", v: side.n, w: blockW(side.n), h: BLOCK_H, draw: (x, y) => blockShape(x, y, side.n) });
   }
   return out;
 }
+
+/* Each thing on a pan is its own group, drawn at its own origin and moved into
+   place — so on screen it can be picked up, put on the other pan or taken off
+   (utils/components/workbook/balance.js), and laid out again the same way. */
+const piece = (it, x, y) =>
+  `<g class="ab-piece" data-kind="${it.kind}" data-v="${it.v}" data-w="${it.w}" data-h="${it.h}" transform="translate(${f(x)} ${f(y)})">` +
+  it.draw(0, 0) + `</g>`;
 
 /**
  * Lay a pan's things out in rows from the pan up, bags first and weights after
@@ -141,7 +148,7 @@ function panContents(list, cx, floor) {
   for (const row of rows(list)) {
     let x = cx - row.w / 2;
     for (const it of row.items) {
-      body += it.draw(x, y - it.h);
+      body += piece(it, x, y - it.h);
       x += it.w + GAP;
     }
     y -= row.h + GAP;
@@ -182,7 +189,10 @@ function frame(panY) {
       `<path d="M${f(W / 2 - 21)} ${f(baseY + 4)}a1.4 1.4 0 0 1-1.3-1.8l1-3.1A2 2 0 0 1 ${f(W / 2 - 19.4)} ${f(baseY - 2.4)}h${38.8}a2 2 0 0 1 1.9 1.4l1 3.1a1.4 1.4 0 0 1-1.3 1.9z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
       /* the column, a little wider at the foot than at the pivot */
       `<path d="M${f(W / 2 - 2.1)} ${f(baseY - 2.4)}l0.7-${f(baseY - beamY - 2.4)}h${2.8}l0.7 ${f(baseY - beamY - 2.4)}z" fill="${METAL}" stroke="${GREY}" stroke-width="0.4" stroke-linejoin="round"/>` +
-      pan(PAN_L) + pan(PAN_R) +
+      /* each pan in its own group: a beam that tips on screen lifts one and
+         lowers the other, and what stands on a pan goes with it */
+      `<g class="ab-pan" data-side="L">${pan(PAN_L)}</g>` + `<g class="ab-pan" data-side="R">${pan(PAN_R)}</g>` +
+      `<g class="ab-beam">` +
       /* the beam, with a knob where each stem hangs from it */
       `<rect x="${f(PAN_L - 4)}" y="${f(beamY - 1.7)}" width="${f(PAN_R - PAN_L + 8)}" height="3.4" rx="1.7" fill="${METAL}" stroke="${GREY}" stroke-width="0.45"/>` +
       `<circle cx="${f(PAN_L)}" cy="${f(beamY)}" r="1.5" fill="${GREY}" opacity="0.55"/>` +
@@ -191,9 +201,12 @@ function frame(panY) {
       `<rect x="${f(W / 2 - 4.4)}" y="${f(beamY - 8.6)}" width="1" height="2.6" rx="0.5" fill="${GREY}"/>` +
       `<rect x="${f(W / 2 + 3.4)}" y="${f(beamY - 8.6)}" width="1" height="2.6" rx="0.5" fill="${GREY}"/>` +
       `<path d="M${f(W / 2)} ${f(beamY - 9.4)}l1.5 7.4h-3z" fill="${INK}"/>` +
+      `</g>` +
       `<circle cx="${f(W / 2)}" cy="${f(bossY)}" r="2.6" fill="${METAL}" stroke="${GREY}" stroke-width="0.45"/>` +
       `<circle cx="${f(W / 2)}" cy="${f(bossY)}" r="1" fill="${INK}"/>`,
     height: baseY + 6.5,
+    pivot: [W / 2, bossY],
+    base: baseY,
   };
 }
 
@@ -221,9 +234,12 @@ export function balanceSvg(left, right, { letter = "x", cubes = false, label = "
   const b = panContents(R, PAN_R, panY - 0.3);
   const fr = frame(panY);
   /* the equation the picture says, kept on the drawing so a check can prove
-     that every scale printed is one that really balances */
-  const data = ` data-left="${left.bags},${left.n}" data-right="${right.bags},${right.n}" data-cubes="${countable ? 1 : 0}"`;
-  return svg(fr.height, fr.body + a.body + b.body, label, data);
+     that every scale printed is one that really balances — and, for the
+     screen, where the pans are, so pieces can be laid out on them again */
+  const data = ` data-left="${left.bags},${left.n}" data-right="${right.bags},${right.n}" data-cubes="${countable ? 1 : 0}"` +
+    ` data-balance="${PAN_L},${PAN_R},${f(panY - 0.3)},${FLOW},${GAP}" data-pivot="${f(fr.pivot[0])},${f(fr.pivot[1])}" data-base="${f(fr.base)}"`;
+  const load = (side, body) => `<g class="ab-load" data-side="${side}">${body}</g>`;
+  return svg(fr.height, fr.body + load("L", a.body) + load("R", b.body), label, data);
 }
 
 /** An empty level balance with room on both pans to draw what goes on them. */

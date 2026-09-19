@@ -27,6 +27,7 @@ import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
+import { mountBalance } from "./balance.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -126,6 +127,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const r = (store[i] ||= {});
     r.v ||= []; r.lines ||= []; r.colours ||= {}; r.pens ||= {}; r.pairs ||= [];
     r.blocks ||= {};   // piles that have been broken up or taken from
+    r.bal ||= {};      // balance scales with pieces moved or taken off
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -219,6 +221,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* a shape that says what its outline is can be folded along its lines */
     node.querySelectorAll("svg[data-fold]").forEach((svg) => makeFoldable(svg));
 
+    /* a balance scale's pieces can be moved and taken off — not marked, like
+       the blocks: it is the experiment, and the boxes say what it showed */
+    node.querySelectorAll("svg[data-balance]").forEach((svg, k) => makeBalanceLive(node, idx, svg, k));
+
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
@@ -247,6 +253,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll(".wb-tick__one").forEach((o) => { o.onclick = null; o.onkeydown = null; o.removeAttribute("role"); o.removeAttribute("tabindex"); });
     node.querySelectorAll("svg[data-drawable]").forEach((s) => s.removeAttribute("data-drawable"));
     node.querySelectorAll("svg[data-fold]").forEach((s) => unFoldable(s));
+    node.querySelectorAll("svg[data-balance]").forEach((s) => { s.__wbBal?.dispose(); s.__wbBal = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -468,6 +475,43 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       host.appendChild(tools);
     }
     host.__wbWipes.push(act);
+  }
+
+  /* ── a balance scale, played with ───────────────────────────────────────
+     balance.js does the moving and the tipping; this keeps the work with the
+     question, makes every move one step of the figure's Undo, and puts the
+     scale back as printed on Clear. */
+  function makeBalanceLive(node, idx, svg, k) {
+    const host = hostOf(svg);
+    const say = (text) => {
+      let line = host.querySelector(":scope > .wb-blocksay");
+      if (!line) {
+        line = document.createElement("span");
+        line.className = "wb-blocksay";
+        line.setAttribute("role", "status");
+        host.appendChild(line);
+      }
+      line.textContent = text;
+    };
+    svg.__wbBal = mountBalance(svg, {
+      saved: rec(idx).bal[k] || null,
+      say,
+      onMove: (now, before) => {
+        rec(idx).bal[k] = now;
+        step(host, () => {
+          rec(idx).bal[k] = svg.__wbBal.set(before);
+          say("");
+          save();
+        });
+        save();
+      },
+    });
+    drawbar(host, () => {
+      delete rec(idx).bal[k];
+      svg.__wbBal?.reset();
+      say("");
+      save();
+    });
   }
 
   /* ── pushing the two piles together ────────────────────────────────────

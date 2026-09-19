@@ -17,7 +17,7 @@
    above the paper, and can try it themselves.
    ========================================================================== */
 
-import { renderWorkbook } from "/utils/components/workbook/engine.js";
+import { renderWorkbook, loadMath, whenMath } from "/utils/components/workbook/engine.js";
 import { mountInteractive } from "/utils/components/workbook/interactive.js";
 import { api, currentUser } from "/utils/components/workbook/account.js";
 import { openRoom, idFor } from "/utils/live/index.js";
@@ -121,6 +121,9 @@ async function start() {
     answers: false,
     watermark: true,
   };
+  /* the mathematics is typeset before the pages are cut; wait for MathJax a
+     little, and build again below if it comes later than that */
+  await Promise.race([loadMath(), new Promise((r) => setTimeout(r, 5000))]);
   const pages = renderWorkbook($("wb-sheet"), o, SUBJECT);
   $("wb-pages").textContent = pages === 1 ? "1 page" : `${pages} pages`;
   fit();
@@ -181,6 +184,11 @@ async function start() {
     },
   });
   live.afterRender(`assign-${code}`);
+  whenMath(() => {
+    renderWorkbook($("wb-sheet"), o, SUBJECT);
+    live.afterRender(`assign-${code}`);
+    fit();
+  });
   live.enter();
   say(a.owner ? "" : "Your answers are kept on this device until you check them.");
   if (a.owner) showResults();

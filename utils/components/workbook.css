@@ -1757,6 +1757,25 @@ svg[data-paste].is-fitted > line { stroke: #3c8d4f; stroke-width: 1.1; }
 .wb-draw__line--minute { stroke: #2f6ea8; stroke-width: 1.1; }
 .wb-draw__ghost { stroke: #1f4f86; stroke-width: 0.6; stroke-dasharray: 1.4 1; stroke-linecap: round; }
 .wb-draw__spot { fill: rgba(31, 79, 134, 0.12); stroke: rgba(31, 79, 134, 0.35); stroke-width: 0.25; }
+/* Mathematics set by MathJax (mathify.js): one formula, kept on one line,
+   sitting on the baseline of the words round it — MathJax's own SVG carries
+   its size in ex and its drop below the line in vertical-align. */
+.wb-m { white-space: nowrap; }
+.wb-m { position: relative; }
+.wb-m > svg { display: inline; overflow: visible; }
+/* the words the formula stands for: read out and copied, never seen */
+.wb-m__src {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* A balance scale played with (balance.js): pieces can be picked up, and one
+   carried off the drawing says it is about to go. */
+svg[data-bal-live] .ab-piece { cursor: grab; }
+svg[data-bal-live] .ab-piece:focus-visible { outline: 0.5mm solid #2f6ea8; outline-offset: 0.5mm; }
+svg[data-bal-live] .ab-piece.is-carried { cursor: grabbing; filter: drop-shadow(0 1mm 1mm rgba(0, 0, 0, 0.25)); }
+svg[data-bal-live] .ab-piece.is-leaving { opacity: 0.4; }
+
 /* Folding (fold.js): a dashed line on a shape that folds is a wide, invisible
    strip to tap; while a fold is held the figure says whether it fitted. */
 .wb-foldhit { stroke: transparent; stroke-width: 5; pointer-events: stroke; cursor: pointer; }
