@@ -139,9 +139,9 @@ const fnRun = {
   blurb: "Do each job in order, and write what comes out.",
   heading: "Put the numbers through",
   instruction: (o) =>
-    "Each number goes IN on the left and has the machine's jobs done to it, in order, left to right. What " +
-    "comes out on the right is its OUT." +
-    (tier(o) === "gentle" ? "" : " Write down the number between the jobs too, so you can check each step."),
+    "Each number climbs aboard at IN and rides through the train: every coach does its job to it, in order, " +
+    "left to right. What steps off at OUT is its answer." +
+    (tier(o) === "gentle" ? "" : " Write down the number after the first coach too, so you can check each step."),
   cols: 1,
   defaultCount: 2,
   make(r, o) {

@@ -1838,15 +1838,23 @@ svg[data-foldable]:hover line[data-foldline] { stroke-width: 0.9; }
 /* a grid to plot on by tapping: the same — above it, off the squares */
 .wb-drawhost:has(> svg[data-dotplot]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
 
-/* the paper's own little sticky notes: smaller, with a smaller strip of tape */
+/* the paper's own little sticky notes: smaller, with a smaller strip of tape,
+   an icon each (the name in the tooltip) */
 .wb-drawbar .pp-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 7.5mm;
+  height: 6.5mm;
   font-size: 7.5pt;
-  padding: 0.9mm 2mm 1mm;
+  padding: 0;
   box-shadow: 0 0.3mm 0.3mm rgba(20, 19, 15, 0.1), 0.8mm 1.2mm 1.8mm -0.6mm rgba(20, 19, 15, 0.3);
 }
 .wb-drawbar .pp-btn::before { width: 5mm; height: 2mm; top: -1.2mm; }
 .wb-drawhost.is-right svg { outline: 0.6mm solid #3f8f4f; outline-offset: 1mm; }
 .wb-drawhost.is-wrong svg { outline: 0.6mm solid #c0453f; outline-offset: 1mm; }
+/* …the figure is marked, never the Undo / Clear icons beside it */
+.wb-drawbar svg { outline: none !important; }
+.wb-drawbar .wb-btn__ico { width: 4.2mm; height: 4.2mm; }
 
 /* the protractor to pick up: drawn at the paper's own scale */
 .wb-tool {
@@ -2242,27 +2250,34 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .fm-io em { font-style: normal; font-size: 7pt; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .fm-io b { font-size: 12pt; font-weight: 800; min-height: 1.2em; }
 /* the track: a rail under the wheels, sleepers across it */
+/* the wheels stand on the rail's top edge, 1.4mm above the bottom; the
+   sleepers run under it */
 .fm-train {
   position: relative; display: inline-flex; align-items: flex-end; flex: 0 0 auto;
-  padding: 0 1mm 2.2mm;
+  padding: 0 1mm 1.4mm;
   background:
-    linear-gradient(#8a837a, #8a837a) left calc(100% - 0.6mm) / 100% 0.5mm no-repeat,
-    repeating-linear-gradient(90deg, #b8b0a3 0 0.7mm, transparent 0.7mm 3mm) left bottom / 100% 1.6mm no-repeat;
+    linear-gradient(#6b645a, #6b645a) left calc(100% - 0.9mm) / 100% 0.5mm no-repeat,
+    repeating-linear-gradient(90deg, #b8b0a3 0 0.8mm, transparent 0.8mm 3.2mm) left bottom / 100% 1.4mm no-repeat;
 }
 .fm-coach {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  min-width: 17mm; height: 10.5mm; padding: 0 1.4mm; margin-bottom: 1.6mm;
+  min-width: 17mm; height: 10.5mm; padding: 0 1.4mm; margin-bottom: 1.6mm; margin-top: 1.2mm;
   background: #dcefff; border: 0.45mm solid #2a2723; border-radius: 1.8mm 1.8mm 1mm 1mm;
 }
-/* a roof line, and two wheels under every coach */
+/* a roof, a frame along the bottom, and two spoked wheels on the rail */
 .fm-coach::before { content: ""; position: absolute; left: 1.2mm; right: 1.2mm; top: -1.2mm; height: 1.2mm; background: #2a2723; border-radius: 1mm 1mm 0 0; }
-.fm-coach::after {
-  content: ""; position: absolute; bottom: -2.4mm; left: 2mm; right: 2mm; height: 2.6mm;
-  background: radial-gradient(circle at 1.3mm 1.3mm, #2a2723 1.1mm, transparent 1.2mm) left / 2.6mm 2.6mm no-repeat,
-    radial-gradient(circle at 1.3mm 1.3mm, #2a2723 1.1mm, transparent 1.2mm) right / 2.6mm 2.6mm no-repeat;
+.fm-coach::after { content: ""; position: absolute; left: 0.6mm; right: 0.6mm; bottom: -0.9mm; height: 0.9mm; background: #2a2723; border-radius: 0 0 0.5mm 0.5mm; }
+.fm-wheel {
+  position: absolute; z-index: 1; bottom: -1.8mm; width: 3.4mm; height: 3.4mm; border-radius: 50%;
+  background:
+    radial-gradient(circle, #f4c95d 0 0.45mm, #2a2723 0.5mm 0.65mm, transparent 0.7mm),
+    conic-gradient(from 0deg, #2a2723 0 8deg, #6b645a 8deg 60deg, #2a2723 60deg 68deg, #6b645a 68deg 120deg, #2a2723 120deg 128deg, #6b645a 128deg 180deg, #2a2723 180deg 188deg, #6b645a 188deg 240deg, #2a2723 240deg 248deg, #6b645a 248deg 300deg, #2a2723 300deg 308deg, #6b645a 308deg 360deg);
+  box-shadow: inset 0 0 0 0.5mm #2a2723;
 }
-.fm-link { display: inline-block; width: 2.2mm; height: 0.8mm; margin-bottom: 3.6mm; background: #2a2723; flex: 0 0 auto; }
-.fm-engine { display: block; flex: 0 0 auto; margin-bottom: 0.2mm; }
+.fm-wheel--a { left: 1.6mm; }
+.fm-wheel--b { right: 1.6mm; }
+.fm-link { display: inline-block; width: 2.4mm; height: 0.9mm; margin-bottom: 2.2mm; background: #2a2723; border-radius: 0.4mm; flex: 0 0 auto; }
+.fm-engine { display: block; flex: 0 0 auto; margin-bottom: 0; }
 .fm-slot {
   display: inline-flex; align-items: center; justify-content: center; min-width: 12mm; height: 7mm; padding: 0 1.4mm;
   font-size: 12pt; font-weight: 800; color: #1d4f7c; white-space: nowrap;
@@ -2278,7 +2293,8 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .fm-type::placeholder { font-size: 8pt; font-weight: 600; color: #a39b8e; }
 .fm-coach.is-chosen .fm-type { box-shadow: 0 0 0 0.6mm #f4c95d; }
 .fm-coach.is-bad .fm-type { border-color: #c0453f; background: #fdecea; }
-.fm-coach.is-passed { background: #fff3a8; transition: background 0.15s ease; }
+.fm-coach.is-passed { background: #eaf6e6; transition: background 0.15s ease; }
+.fm-coach.is-here { background: #fff3a8; box-shadow: 0 0 0 0.7mm #f4c95d; transition: background 0.15s ease; }
 .fm-in {
   width: 12mm; height: 6.6mm; margin-top: 0.4mm; text-align: center;
   font: 800 12pt/1 "JetBrains Mono", monospace; color: #2a2723;
@@ -2290,16 +2306,24 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .fm-io--out.is-new b { animation: fm-pop 0.45s ease; }
 @keyframes fm-no { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-1mm); } 60% { transform: translateX(1mm); } }
 @keyframes fm-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-/* the number on its way through: a card riding the train */
+/* the number on its way through: a card riding above the train. It stops at
+   each coach, where the job is done ON it — "7", then "× 4", then "7 × 4 =
+   28" — and it can be dragged on from there. */
 .fm-token {
-  position: absolute; z-index: 3; display: none; pointer-events: none;
-  transform: translate(-50%, -135%) rotate(-3deg);
-  min-width: 9mm; padding: 0.8mm 2mm; text-align: center;
-  font: 800 12pt/1.2 "JetBrains Mono", monospace; color: #2a2723;
+  position: absolute; z-index: 3; display: none; cursor: grab; touch-action: none;
+  transform: translate(-50%, -128%) rotate(-3deg);
+  min-width: 10mm; padding: 0.8mm 2mm; text-align: center; white-space: nowrap;
+  font-family: "JetBrains Mono", monospace; color: #2a2723;
   background: #fff3a8; border: 0.4mm solid #2a2723; border-radius: 1.2mm;
   box-shadow: 0.6mm 1mm 1.4mm rgba(20, 19, 15, 0.3);
 }
 .fm-token.is-on { display: block; }
+.fm-token.is-moving { pointer-events: none; cursor: grabbing; }
+.fm-token small { display: block; font-size: 7.5pt; font-weight: 700; color: #6b645a; line-height: 1.2; }
+.fm-token b { display: block; font-size: 12pt; font-weight: 800; line-height: 1.2; }
+.fm-token.is-working { background: #dcefff; }
+.fm-token.is-working b { color: #1d4f7c; }
+.fm-token.is-pop b { animation: fm-pop 0.45s ease; }
 .fm-controls { display: flex; gap: 1.6mm; align-items: center; }
 .fm-controls .pp-btn { display: inline-grid; place-items: center; width: 8.5mm; height: 7mm; padding: 0; }
 .fm-controls .pp-btn:disabled { opacity: 0.4; cursor: default; }

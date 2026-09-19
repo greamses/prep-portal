@@ -478,11 +478,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       steps.delete(host);
       tools = document.createElement("span");
       tools.className = "wb-drawbar";
+      /* icons, the names in their tooltips — like every other button on the bench */
       tools.innerHTML =
-        `<button type="button" class="pp-btn wb-tint-3" data-d="undo">Undo</button>` +
-        `<button type="button" class="pp-btn wb-tint-4" data-d="wipe">Clear</button>`;
+        `<button type="button" class="pp-btn wb-tint-3" data-d="undo"></button>` +
+        `<button type="button" class="pp-btn wb-tint-4" data-d="wipe"></button>`;
+      faceOf(tools.querySelector('[data-d="undo"]'), UI.undo(), "Undo");
+      faceOf(tools.querySelector('[data-d="wipe"]'), UI.eraser(), "Clear");
       tools.addEventListener("click", (e) => {
-        const d = e.target.dataset.d;
+        const d = e.target.closest("[data-d]")?.dataset.d;
         if (!d) return;
         if (d === "undo") { stepBack(host); return; }
         /* Clear means the picture as it was PRINTED — every kind of move on
