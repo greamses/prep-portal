@@ -1,7 +1,7 @@
 /* ============================================================================
    NUMBER MATCH
    ----------------------------------------------------------------------------
-   Two things on the page: a BOARD of numerals and a DECK of notes. Everything
+   One thing on the page: a BOARD of numerals with every note POURED over it. Everything
    here serves one question — can this be worked with a finger on a tablet? So
    every cell and every note is at least a finger wide, nothing depends on
    hover, and a note can be dragged OR tapped twice, because a child who cannot
@@ -17,7 +17,7 @@
 body { overflow-anchor: none; }
 
 .nm-page {
-  max-width: 1180px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 1.5rem 1rem 5rem;
 }
@@ -70,16 +70,8 @@ body { overflow-anchor: none; }
 
 /* ── board and deck ───────────────────────────────────────────────────────*/
 
-.nm-work {
-  display: grid;
-  gap: 1.4rem;
-  grid-template-columns: minmax(0, 1fr);
-}
-@media (min-width: 1000px) {
-  /* The board is the thing being read and the deck the thing being handled,
-     so they sit side by side where there is room for both. */
-  .nm-work { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
-}
+/* One thing on the page: the table, the whole width, with the notes on it. */
+.nm-work { display: block; }
 
 .nm-panel__label {
   display: block;
@@ -100,6 +92,18 @@ body { overflow-anchor: none; }
 .nm-board.pp-receipt { display: block; }
 .nm-board__paper { padding: 1.1rem 1.4rem 1.4rem; }
 
+/* The table: the grid, and the heap of notes lying over it. The heap is a
+   layer the size of the grid that lets taps through to the squares, except
+   where a note lies — so a square can be tapped wherever the paper shows. */
+.nm-table { position: relative; }
+.nm-heap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* a note dragged to the edge stays on the paper, never under the next page */
+  overflow: visible;
+}
+
 .nm-grid {
   display: grid;
   grid-template-columns: repeat(var(--nm-cols, 5), minmax(0, 1fr));
@@ -113,8 +117,9 @@ body { overflow-anchor: none; }
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  /* a finger, not a mouse pointer — and room for the pinned note */
-  min-height: 4.6rem;
+  /* a finger, not a mouse pointer — and room for the pinned notes, now the
+     table has the whole width */
+  min-height: 7rem;
   padding: 3px 3px 5px;
   font: inherit;
   color: var(--ink, #2a2723);
@@ -167,10 +172,10 @@ body { overflow-anchor: none; }
   position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
   filter: drop-shadow(0 1px 1px rgba(20, 19, 15, 0.3));
 }
-.nm-deck .nm-pin { display: none; }
-.nm-cell .nm-card.is-stuck .nm-card__text { font-size: 0.56rem; line-height: 1.1; }
+.nm-heap .nm-pin { display: none; }
+.nm-cell .nm-card.is-stuck .nm-card__text { font-size: 0.72rem; line-height: 1.15; }
 .nm-cell .nm-card.is-stuck .nm-card__art { min-height: 0; }
-.nm-cell .nm-card.is-stuck .nm-card__art svg { max-height: 1.9rem; max-width: 100%; }
+.nm-cell .nm-card.is-stuck .nm-card__art svg { max-height: 2.6rem; max-width: 100%; }
 /* the form's name is a caption on a big note and clutter on a small one */
 .nm-cell .nm-card.is-stuck .nm-card__tag { display: none; }
 
@@ -195,48 +200,31 @@ body { overflow-anchor: none; }
 
 /* ── the notes ────────────────────────────────────────────────────────────*/
 
-/* One note at a time, so it gets the room to be read properly. */
-.nm-deck {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.9rem 0.8rem;
-  min-height: 8rem;
-  padding: 1.4rem 0.5rem 1rem;
-  /* Belt and braces with .nm-gap: whatever happens to this deck's height, the
-     browser must not answer it by moving the scroll position, because the
-     board would slide under the finger halfway through a drag. */
-  overflow-anchor: none;
-}
+/* A loose note, lying on the table where it was poured or put down: its
+   CENTRE is at (left, top), so a note can be set down anywhere and a share of
+   the table is where it stays, however wide the screen.
 
-/* the space a carried note leaves behind, so the deck does not reflow */
-.nm-gap {
-  display: block;
-  flex: 0 0 auto;
-  pointer-events: none;
-}
-
-/* TWO CLASSES, on purpose. A note is `nm-card pp-sticky`, and components.css
+   TWO CLASSES, on purpose. A note is `nm-card pp-sticky`, and components.css
    says `.pp-sticky { display: inline-block }` — same specificity, and the
    loader pulls that sheet in after this one, so a single-class rule here loses
-   and the note stops being a column: the form's tag then runs straight into
-   the writing and the card reads "ninety-eightWORD FORM". */
-.nm-deck .nm-card {
-  position: relative;
+   and the note stops being a column. */
+.nm-heap .nm-card {
+  position: absolute;
+  translate: -50% -50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  /* One note at a time now, so it is given the room to be read properly —
-     never so wide it stops being a note. */
-  min-width: 9rem;
-  max-width: 13rem;
-  min-height: 4.8rem;
-  padding: 1rem 1.2rem 0.8rem;
+  gap: 0.25rem;
+  min-width: 6.4rem;
+  max-width: 10rem;
+  min-height: 3.8rem;
+  padding: 0.75rem 0.85rem 0.6rem;
   font: inherit;
   text-align: center;
   cursor: grab;
+  pointer-events: auto;
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.16), 4px 7px 10px -5px rgba(20, 19, 15, 0.3);
   /* a drag must not scroll the page under the finger */
   touch-action: none;
   -webkit-user-select: none;
@@ -246,7 +234,7 @@ body { overflow-anchor: none; }
 
 .nm-card__text {
   font-family: "Shantell Sans", "Segoe Print", cursive;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.25;
   color: #14130f;
@@ -281,10 +269,8 @@ body { overflow-anchor: none; }
 
 /* carried by a finger: it follows the pointer and lets the board be seen
    through it, so the cell underneath can be found */
-.nm-card.is-dragging {
-  position: fixed;
-  z-index: 9000;
-  margin: 0;
+.nm-heap .nm-card.is-dragging {
+  z-index: 9000 !important;
   pointer-events: none;
   transform: rotate(-4deg) scale(1.05);
   box-shadow: 0 3px 5px rgba(20, 19, 15, 0.16), 14px 20px 28px -8px rgba(20, 19, 15, 0.4);
@@ -409,6 +395,7 @@ body { overflow-anchor: none; }
   .nm-grid { grid-template-columns: repeat(min(var(--nm-cols, 5), 5), minmax(0, 1fr)); }
   .nm-cell { min-height: 4rem; }
   .nm-board__paper { padding: 0.9rem 1.1rem 1.1rem; }
-  .nm-card { min-width: 5.6rem; padding: 0.6rem 0.7rem 0.5rem; }
-  .nm-card__text { font-size: 0.94rem; }
+  .nm-heap .nm-card { min-width: 4.6rem; max-width: 7rem; padding: 0.5rem 0.55rem 0.45rem; }
+  .nm-card__text { font-size: 0.8rem; }
+  .nm-cell { min-height: 5.4rem; }
 }

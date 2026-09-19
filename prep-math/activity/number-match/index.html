@@ -80,24 +80,22 @@
         <p class="nm-say" id="nm-say" role="status" aria-live="polite"></p>
       </section>
 
-      <div class="nm-work">
-        <section class="nm-panel" aria-labelledby="nm-board-label">
-          <span class="nm-panel__label" id="nm-board-label">The numbers</span>
-          <!-- The board is receipt paper (the ONE .pp-receipt, used whole) with
-               the class calendar's hairline grid on it: each numeral a day,
-               each matched note pinned into its square. -->
-          <div class="pp-receipt nm-board">
-            <div class="pp-receipt__paper nm-board__paper">
+      <section class="nm-work" aria-labelledby="nm-board-label">
+        <span class="nm-panel__label" id="nm-board-label">The table · <span id="nm-count">0 home</span></span>
+        <!-- The board is receipt paper (the ONE .pp-receipt, used whole) with
+             the class calendar's hairline grid on it: each numeral a day, each
+             matched note pinned into its square. Every note is POURED onto the
+             table itself — the way the map jigsaw pours its states onto the map
+             — so the whole width is table, with no deck beside it. -->
+        <div class="pp-receipt nm-board">
+          <div class="pp-receipt__paper nm-board__paper">
+            <div class="nm-table" id="nm-table">
               <div class="nm-grid" id="nm-grid"></div>
+              <div class="nm-heap" id="nm-heap"></div>
             </div>
           </div>
-        </section>
-
-        <section class="nm-panel" aria-labelledby="nm-deck-label">
-          <span class="nm-panel__label" id="nm-deck-label">The notes · <span id="nm-count">0 home</span></span>
-          <div class="nm-deck" id="nm-deck"></div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
 
     <!-- ═══ SETTINGS ═══ -->

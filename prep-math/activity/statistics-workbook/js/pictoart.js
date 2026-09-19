@@ -132,22 +132,23 @@ export function scatter(r, counts, { w = 96, h = 44, size = 8 } = {}) {
   return out;
 }
 
-/** The scatter drawn: each shape a data-part, so it can be tapped. */
-export function scatterSvg(items, { w = 96, h = 44, size = 8 } = {}) {
+/** The scatter drawn: each shape a data-part, so it can be tapped. `blank`:
+    every shape left white, for a question where the child does the colouring. */
+export function scatterSvg(items, { w = 96, h = 44, size = 8, blank = false } = {}) {
   let body = `<rect x="0.3" y="0.3" width="${f(w - 0.6)}" height="${f(h - 0.6)}" rx="2" fill="#fffdf8" stroke="${GREY}" stroke-width="0.3" stroke-dasharray="1.2 1"/>`;
   items.forEach((p, i) => {
     const s = SHAPES[p.kind];
     const k = size / 10;
     body += `<g transform="translate(${f(p.x)} ${f(p.y)}) scale(${f(k)}) rotate(${p.turn} 5 5)">` +
-      s.draw().replace("/>", ` data-part="${i}" data-kind="${p.kind}" fill="${s.fill}" stroke="${INK}" stroke-width="0.5" stroke-linejoin="round"/>`) + `</g>`;
+      s.draw().replace("/>", ` data-part="${i}" data-kind="${p.kind}" fill="${blank ? "#ffffff" : s.fill}" stroke="${INK}" stroke-width="0.5" stroke-linejoin="round"/>`) + `</g>`;
   });
   return svg(w, h, body, "A jumble of shapes to sort and count");
 }
 
 /** One shape, small, to stand in a table beside its name. */
-export const shapeIcon = (kind, size = 5) =>
+export const shapeIcon = (kind, size = 5, blank = false) =>
   `<svg class="sw-icon" viewBox="0 0 10 10" width="${size}mm" height="${size}mm" aria-hidden="true">` +
-  SHAPES[kind].draw().replace("/>", ` fill="${SHAPES[kind].fill}" stroke="${INK}" stroke-width="0.6"/>`) + `</svg>`;
+  SHAPES[kind].draw().replace("/>", ` fill="${blank ? "#ffffff" : SHAPES[kind].fill}" stroke="${INK}" stroke-width="0.6"/>`) + `</svg>`;
 
 /* ── tally marks ──────────────────────────────────────────────────────────── */
 

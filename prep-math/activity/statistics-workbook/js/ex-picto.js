@@ -118,8 +118,9 @@ const pgTap = {
   },
   render(item) {
     const s = SHAPES[item.target];
-    return art(scatterSvg(item.items, { h: item.h })) +
-      ask(`Colour every ${s.name} ${shapeIcon(item.target)}. There are ${box()} ${s.plural}.`);
+    /* uncoloured: the colouring is the child's, as they count */
+    return art(scatterSvg(item.items, { h: item.h, blank: true })) +
+      ask(`Colour every ${s.name} ${shapeIcon(item.target, 5, true)}. There are ${box()} ${s.plural}.`);
   },
   worked() {
     return worked(say("Start at the top left and work across, like reading. Colour each circle as you " +

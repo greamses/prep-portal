@@ -1,7 +1,7 @@
 /* ============================================================================
    NUMBER MATCH — the page
    ----------------------------------------------------------------------------
-   A board of numerals and a deck of notes. Every note says a number some way
+   A board of numerals with every note poured over it. Every note says a number some way
    OTHER than its numeral, and the work is putting each note on the numeral it
    means — so a number gathers its whole group: its words, its places, its
    addition, its tally, its blocks.
@@ -39,6 +39,7 @@ const S = {
   placed: new Map(),   // card id → the numeral it was put on
   held: null,          // the note picked up by a tap
   slips: 0,
+  top: 0,             // the highest note on the heap, so the one touched comes up
 };
 
 /* ── remembering how this teacher likes it set ────────────────────────────*/
@@ -72,7 +73,7 @@ function deal() {
   S.held = null;
   S.slips = 0;
   drawBoard();
-  drawDeck();
+  pour();
   tally();
   say("");
 }
@@ -118,45 +119,82 @@ function cardHtml(card) {
 }
 
 /**
- * ONE note at a time.
+ * EVERY note, poured onto the table.
  *
- * A wall of notes is a sorting job before it is a number job — the eye picks
- * the easy ones off and the hard ones are left in a heap. One note, one
- * decision: what does THIS say, and where does it go.
+ * The way the map jigsaw pours its states onto the map: all of them at once,
+ * scattered and overlapping, lying ON the board rather than in a deck beside
+ * it — so the page is all table. A note is picked up, moved anywhere, put
+ * down anywhere; it only pins itself into a square when that square is its
+ * own number. The heap is seeded by the round, so a note lands in the same
+ * place every time the round is drawn.
  */
-function drawDeck() {
-  const next = S.round.cards.find((c) => !S.placed.has(c.id));
-  $("#nm-deck").innerHTML = next ? cardHtml(next) : "";
+function pour() {
+  const heap = $("#nm-heap");
+  const rnd = seeded(S.seed ^ 0x5eed);
+  const loose = S.round.cards.filter((c) => !S.placed.has(c.id));
+  heap.innerHTML = loose.map(cardHtml).join("");
+  S.top = 0;
+  const r = heap.getBoundingClientRect();
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  [...heap.querySelectorAll(".nm-card")].forEach((el, i) => {
+    /* the centre of each note, spread over the whole table; the edges kept
+       clear so a note is never more than half off the paper */
+    const x = 7 + rnd() * 86;
+    const y = 4 + rnd() * 92;
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
+    el.style.zIndex = String(++S.top);
+    /* poured: each note falls from the top middle of the table to its place,
+       one after another, so you see the heap made */
+    if (el.animate && !still) {
+      const dx = ((50 - x) / 100) * r.width;
+      const dy = ((6 - y) / 100) * r.height;
+      el.animate(
+        [{ translate: `calc(-50% + ${dx}px) calc(-50% + ${dy}px)`, opacity: 0 }, { translate: "-50% -50%", opacity: 1 }],
+        { duration: 520, delay: Math.min(i * 18, 900), easing: "cubic-bezier(.2,.8,.3,1)", fill: "backwards" },
+      );
+    }
+  });
+}
+
+/** A small seeded random stream, for the heap only. */
+function seeded(n) {
+  let a = n >>> 0 || 1;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 /* ── putting a note down ──────────────────────────────────────────────────*/
 
 const cellFor = (n) => $(`.nm-cell[data-n="${n}"]`);
 
+const shake = (...els) => els.forEach((el) => {
+  if (!el) return;
+  el.classList.remove("is-wrong");
+  void el.offsetWidth;      // restart the animation
+  el.classList.add("is-wrong");
+  setTimeout(() => el.classList.remove("is-wrong"), 480);
+});
+
+/** Put a note on a number. True when it was that number's note. */
 function place(cardId, n) {
   const card = S.round.cards.find((c) => c.id === cardId);
-  if (!card || S.placed.has(cardId)) return;
+  if (!card || S.placed.has(cardId)) return false;
   const cell = cellFor(n);
   const noteEl = $(`.nm-card[data-card="${cardId}"]`);
 
   if (card.n !== n) {
     S.slips += 1;
-    /* Wrong, and said so on the spot: the note stays in the deck and both it
-       and the cell shake, because a child needs to see WHICH pair was refused. */
-    [cell, noteEl].forEach((el) => {
-      if (!el) return;
-      el.classList.remove("is-wrong");
-      void el.offsetWidth;      // restart the animation
-      el.classList.add("is-wrong");
-      setTimeout(() => el.classList.remove("is-wrong"), 480);
-    });
-    /* The note stays HELD after a refusal. A child who guesses wrong reaches
-       for the same note again, and if the refusal had quietly put it down that
-       second tap would pick it up again rather than trying another number —
-       two taps to get back to where they already were. */
-    hold(cardId);
+    /* Wrong, and said so on the spot: both the note and the square shake,
+       because a child needs to see WHICH pair was refused. */
+    shake(cell, noteEl);
     say(`That note is not ${n}. Read it again — what number is it saying?`);
-    return;
+    return false;
   }
 
   S.placed.set(cardId, n);
@@ -177,7 +215,6 @@ function place(cardId, n) {
   cell.classList.add("is-complete");
   cell.setAttribute("aria-label", `${n} — ${card.label}`);
   say("");
-  drawDeck();
   tally();
 
   if (isDone(S.round, S.placed)) {
@@ -185,12 +222,14 @@ function place(cardId, n) {
       ? `All of them home, with ${S.slips} slip${S.slips === 1 ? "" : "s"} on the way.`
       : "All of them home, and not one slip.", true);
   }
+  return true;
 }
 
 function hold(cardId) {
   S.held = cardId;
-  document.querySelectorAll(".nm-card").forEach((el) => {
+  document.querySelectorAll(".nm-heap .nm-card").forEach((el) => {
     el.classList.toggle("is-held", el.dataset.card === cardId);
+    if (el.dataset.card === cardId) el.style.zIndex = String(++S.top);
   });
   /* Every cell shows it can take the note, so tapping has somewhere to go. */
   document.querySelectorAll(".nm-cell").forEach((el) => el.classList.toggle("is-armed", !!cardId));
@@ -202,18 +241,15 @@ function say(words, win = false) {
   el.classList.toggle("nm-say--win", !!(words && win));
 }
 
-/* ── dragging ─────────────────────────────────────────────────────────────*/
+/* ── dragging, on the table ───────────────────────────────────────────────*/
 
 let drag = null;
 
 /**
  * The cell under the finger.
  *
- * The whole STACK at that point is read, not just the topmost thing. A pointer
- * that has been captured goes on being delivered to the note it captured
- * whatever `pointer-events` says, so the note being carried may well be the
- * top of the stack — looking only at the top would find the note and never the
- * cell underneath it.
+ * The whole STACK at that point is read, not just the topmost thing: other
+ * loose notes lie on the table too, and the square is found under all of them.
  */
 function cellAt(x, y) {
   const stack = document.elementsFromPoint
@@ -233,31 +269,36 @@ function overCell(cell) {
   if (cell) cell.classList.add("is-over");
 }
 
-function wireDeck() {
-  const deck = $("#nm-deck");
+/** Put a note's centre at a point on screen, as a share of the table, kept on the paper. */
+function setAt(el, px, py) {
+  const r = $("#nm-heap").getBoundingClientRect();
+  const x = Math.max(0, Math.min(100, ((px - r.left) / r.width) * 100));
+  const y = Math.max(0, Math.min(100, ((py - r.top) / r.height) * 100));
+  el.style.left = `${x}%`;
+  el.style.top = `${y}%`;
+}
 
-  deck.addEventListener("pointerdown", (e) => {
+function wireTable() {
+  const heap = $("#nm-heap");
+
+  heap.addEventListener("pointerdown", (e) => {
     const el = e.target.closest(".nm-card");
-    if (!el) return;
+    if (!el || el.disabled) return;
     e.preventDefault();
     const r = el.getBoundingClientRect();
-    /* No pointer capture: the note is given `pointer-events: none` the moment
-       it is lifted, so that the board can be hit-tested through it, and a
-       capture on an element that cannot be hit is not a thing to rely on. The
-       rest of the gesture is listened for on the document instead. */
+    /* where on the note it was taken, so it does not jump to the finger */
     drag = {
       el, id: el.dataset.card, pointer: e.pointerId,
       x0: e.clientX, y0: e.clientY,
-      dx: e.clientX - r.left, dy: e.clientY - r.top,
-      w: r.width, h: r.height, moved: false,
+      dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - (r.top + r.height / 2),
+      moved: false,
     };
+    el.style.zIndex = String(++S.top);
   });
 
-  /* Once a note is in the air the gesture belongs to the whole document, not
-     to the deck it came from. Listening on the deck means the release has to
-     find its way back there to be heard — and it does not: the note under the
-     finger is transparent to pointers by then, so the thing actually under it
-     is a CELL, which is in the board and never bubbles to the deck at all. */
+  /* Once a note is in the air the gesture belongs to the whole document: the
+     note is transparent to pointers while it is carried (so the square under
+     it can be found), and the release lands on whatever is beneath. */
   document.addEventListener("pointermove", (e) => {
     if (!drag || e.pointerId !== drag.pointer) return;
     if (!drag.moved) {
@@ -265,41 +306,25 @@ function wireDeck() {
          because a finger never lands perfectly still. */
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
       drag.moved = true;
-      /* The note is about to leave the deck's flow to follow the finger, and
-         the deck would close the hole behind it — a shorter deck, a shorter
-         page, and the browser re-anchoring the scroll to compensate. The board
-         then slides under the finger and the note lands on the wrong number.
-         So the note leaves a gap exactly its own size and nothing reflows. */
-      const gap = document.createElement("span");
-      gap.className = "nm-gap";
-      gap.style.width = `${drag.w}px`;
-      gap.style.height = `${drag.h}px`;
-      drag.el.after(gap);
-      drag.gap = gap;
-
-      drag.el.style.width = `${drag.w}px`;
-      drag.el.style.height = `${drag.h}px`;
       drag.el.classList.add("is-dragging");
       document.body.classList.add("nm-dragging");
       hold(null);
     }
-    drag.el.style.left = `${e.clientX - drag.dx}px`;
-    drag.el.style.top = `${e.clientY - drag.dy}px`;
+    setAt(drag.el, e.clientX - drag.dx, e.clientY - drag.dy);
     overCell(cellAt(e.clientX, e.clientY));
   });
 
   const drop = (e) => {
     if (!drag || e.pointerId !== drag.pointer) return;
-    const { el, id, moved, gap } = drag;
+    const { el, id, moved } = drag;
     drag = null;
-    if (gap) gap.remove();
     if (!moved) { hold(S.held === id ? null : id); return; }
-
     const cell = cellAt(e.clientX, e.clientY);
     overCell(null);
     el.classList.remove("is-dragging");
     document.body.classList.remove("nm-dragging");
-    el.style.cssText = el.style.cssText.replace(/(left|top|width|height):[^;]*;?/g, "");
+    /* Put down where it was let go: on its own square it pins itself in;
+       anywhere else it just lies there, like a state dropped off its spot. */
     if (cell) place(id, Number(cell.dataset.n));
   };
   document.addEventListener("pointerup", drop);
@@ -307,7 +332,7 @@ function wireDeck() {
 
   /* Enter or Space on a note. A keyboard press has no pointer behind it, which
      is exactly what detail 0 means — so this never doubles up with a tap. */
-  deck.addEventListener("click", (e) => {
+  heap.addEventListener("click", (e) => {
     const el = e.target.closest(".nm-card");
     if (!el || e.detail !== 0) return;
     hold(S.held === el.dataset.card ? null : el.dataset.card);
@@ -319,10 +344,13 @@ function wireBoard() {
     const cell = e.target.closest(".nm-cell");
     if (!cell) return;
     if (!S.held) {
-      say("Pick a note first, then tap the number it means.");
+      say("Pick a note up off the table first, then tap the number it means.");
       return;
     }
-    place(S.held, Number(cell.dataset.n));
+    const id = S.held;
+    /* A refused tap keeps the note HELD: the child reaches for the same note
+       again, and a second tap should try another number, not pick it up. */
+    if (!place(id, Number(cell.dataset.n))) hold(id);
   });
 }
 
@@ -380,7 +408,7 @@ function start() {
   $("#nm-eyebrow-icon").innerHTML = ICON.cards;
 
   recall();
-  wireDeck();
+  wireTable();
   wireBoard();
   wireSettings();
   $("#nm-again").addEventListener("click", deal);

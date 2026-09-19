@@ -138,6 +138,13 @@ export const NAV_ICONS = {
       `<path d="M9.9 18.7h4.2v.5a1.5 1.5 0 0 1-1.5 1.5h-1.2a1.5 1.5 0 0 1-1.5-1.5z" fill="var(--accent-warning)"/>`,
   ),
 
+  /* An open workbook: two pages, the right one ruled. */
+  workbooks: svg(
+    `<path d="M2.6 5.4c3-.9 6-.6 8.6 1v13.2c-2.6-1.6-5.6-1.9-8.6-1z" fill="var(--accent-secondary)"/>` +
+      `<path d="M21.4 5.4c-3-.9-6-.6-8.6 1v13.2c2.6-1.6 5.6-1.9 8.6-1z" fill="var(--accent-primary)"/>` +
+      `<path d="M14.8 9.6c1.4-.5 2.8-.6 4.4-.3M14.8 12.6c1.4-.5 2.8-.6 4.4-.3M14.8 15.6c1.4-.5 2.8-.6 4.4-.3" stroke="#fff" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.9"/>`,
+  ),
+
   /* ── Profile menu ───────────────────────────────────────────────────── */
 
   // Dashboard — little house
