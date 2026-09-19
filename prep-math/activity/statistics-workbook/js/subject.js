@@ -13,6 +13,7 @@ export const WORKBOOK = { id: "statistics-workbook", label: "Statistics Workbook
 const CHAPTERS = {
   1: "Chapter 1: Pictograms",
   2: "Chapter 2: Bar charts",
+  3: "Chapter 3: Line graphs",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

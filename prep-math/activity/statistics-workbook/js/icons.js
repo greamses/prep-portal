@@ -79,6 +79,39 @@ export const ICON = {
       `<rect x="17.1" y="5.2" width="1.8" height="4" rx="0.9" fill="${LOUD}"/><circle cx="18" cy="11" r="0.95" fill="${LOUD}"/>`
   ),
 
+  /* ── chapter 3 ── */
+  /* Bars with a line across their tops. */
+  lnIntro: svg(
+    `<rect x="3" y="13" width="4.6" height="8" fill="${PAPER}"/><rect x="9.6" y="8" width="4.6" height="13" fill="${PAPER}"/><rect x="16.2" y="11" width="4.6" height="10" fill="${PAPER}"/>` +
+      bar(5.3, 13, 11.9, 8, 1.6, LOUD) + bar(11.9, 8, 18.5, 11, 1.6, LOUD)
+  ),
+  /* A line with its dots. */
+  lnRead: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      bar(5, 16, 10, 9, 1.6, LOUD) + bar(10, 9, 15, 12, 1.6, LOUD) + bar(15, 12, 20, 5, 1.6, LOUD) +
+      [[5, 16], [10, 9], [15, 12], [20, 5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${GOLD}"/>`).join("")
+  ),
+  /* Up from the axis to the line, then across: reading between. */
+  lnBetween: svg(
+    bar(3, 21, 21, 21, 1.4, QUIET) + bar(4, 18, 20, 6, 1.8, PAPER) +
+      `<rect x="11.3" y="12" width="1.4" height="9" rx="0.7" fill="${LOUD}"/><rect x="3" y="11.3" width="9.7" height="1.4" rx="0.7" fill="${LOUD}"/>`
+  ),
+  /* A pencil ruling from one dot to the next. */
+  lnDraw: svg(
+    bar(3, 21, 21, 21, 1.4, QUIET) +
+      `<circle cx="5" cy="15" r="1.8" fill="${GOLD}"/><circle cx="11" cy="9" r="1.8" fill="${GOLD}"/>` + bar(5, 15, 11, 9, 1.6, PAPER) +
+      `<path d="M14 11l4.6-4.6 2 2-4.6 4.6z" fill="${LOUD}"/><path d="M14 11l-.9 2.9 2.9-.9z" fill="${LOUD}"/>`
+  ),
+  /* Two lines crossing. */
+  lnTrend: svg(
+    bar(3, 21, 21, 21, 1.4, QUIET) + bar(4, 17, 20, 6, 1.8, LOUD) + bar(4, 7, 20, 16, 1.8, PAPER)
+  ),
+  /* A straight line from the corner: a conversion graph, with a coin. */
+  lnSolve: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) + bar(3, 21, 15, 7, 1.8, PAPER) +
+      `<circle cx="18" cy="7" r="4.2" fill="${GOLD}"/><rect x="17.1" y="4.6" width="1.8" height="4.8" rx="0.9" fill="${LOUD}"/>`
+  ),
+
   /* A pictogram and a coin: a problem to solve with it. */
   pgSolve: svg(
     [4.4, 8.6].map((x) => face(x, 6, 1.8, PAPER)).join("") +
