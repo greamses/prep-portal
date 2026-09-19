@@ -146,6 +146,38 @@ export const ICON = {
       `<rect x="14.6" y="14.6" width="6.4" height="6.4" fill="${PAPER}"/>`
   ),
 
+  /* ── chapter 6 ── */
+  /* A machine: a box with a hopper, a number going in. */
+  fnMachine: svg(
+    `<rect x="6" y="8" width="12" height="10" rx="2" fill="${LOUD}"/>` +
+      `<path d="M8.5 8 10 4.5h4L15.5 8z" fill="${QUIET}"/>` +
+      `<circle cx="9.4" cy="13" r="1.4" fill="${PAPER}"/><circle cx="14.6" cy="13" r="1.4" fill="${PAPER}"/>` +
+      bar(2, 20.5, 6, 20.5, 1.6, GOLD) + bar(18, 20.5, 22, 20.5, 1.6, GOLD)
+  ),
+  /* The machine with an arrow running back through it. */
+  fnBack: svg(
+    `<rect x="6" y="6" width="12" height="12" rx="2" fill="${PAPER}"/>` +
+      bar(21, 12, 4, 12, 2, LOUD) + `<path d="M3 12l4.4-3.6v7.2z" fill="${LOUD}"/>`
+  ),
+  /* Two empty boxes and a card going into one. */
+  fnRule: svg(
+    `<rect x="3" y="11" width="8" height="8" rx="1.4" fill="${PAPER}"/><rect x="13" y="11" width="8" height="8" rx="1.4" fill="${PAPER}"/>` +
+      `<rect x="12" y="2.5" width="8" height="6" rx="1" fill="${GOLD}" transform="rotate(-8 16 5.5)"/>` +
+      bar(5, 15, 9, 15, 1.4, LOUD) + bar(7, 13, 7, 17, 1.4, LOUD)
+  ),
+  /* f(x) written out. */
+  fnWrite: svg(
+    `<path d="M7 20V9a3 3 0 0 1 3-3h1.4" fill="none" stroke="${LOUD}" stroke-width="2" stroke-linecap="round"/>` +
+      bar(4.5, 12, 10.5, 12, 1.8, LOUD) +
+      `<path d="M14 7c-2 3-2 9 0 12M20 7c2 3 2 9 0 12" fill="none" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>` +
+      bar(15.4, 10.4, 18.6, 15.6, 1.6, GOLD) + bar(18.6, 10.4, 15.4, 15.6, 1.6, GOLD)
+  ),
+  /* Two ovals joined by arrows: a mapping. */
+  fnMap: svg(
+    `<ellipse cx="6" cy="12" rx="4" ry="9" fill="${PAPER}"/><ellipse cx="18" cy="12" rx="4" ry="9" fill="${GOLD}"/>` +
+      bar(7, 7, 16, 9, 1.4, LOUD) + bar(7, 12, 16, 15, 1.4, LOUD) + bar(7, 17, 16, 15, 1.4, LOUD)
+  ),
+
   /* A strip with a pencil over it: draw the model yourself. */
   pencilBar: svg(
     `<rect x="2.4" y="13.4" width="13.6" height="6.4" rx="1.2" fill="${PAPER}"/>` +

@@ -56,6 +56,9 @@ export const want = {
   /** Points plotted by tapping (dotplot.js): [[x, y], …], all of them and no
       others. Covers no places. */
   dots: ({ points, nth = 0, says = "" }) => ({ kind: "dots", points, nth, says }),
+  /** A function machine built from job cards (machine.js): right when it turns
+      every input into its output, whichever jobs do it. Covers no places. */
+  machine: ({ ins, outs, nth = 0, says = "" }) => ({ kind: "machine", ins, outs, nth, says }),
   /** Two columns to join: the right [left, right] pairs. Covers no places. */
   match: (pairs, says = "") => ({ kind: "match", pairs, says }),
   /** A pencil on the pictures for what is not marked — ringing, sharing. */
@@ -146,7 +149,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -165,6 +168,7 @@ export function sayWant(entry, tickLabels = []) {
     case "picto": return entry.says || "";
     case "bars": return entry.says || "";
     case "dots": return entry.says || "";
+    case "machine": return entry.says || "";
     default: return "";
   }
 }

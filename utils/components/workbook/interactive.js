@@ -31,6 +31,7 @@ import { mountBalance } from "./balance.js";
 import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
+import { mountMachine, machineRight } from "./machine.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -134,6 +135,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.picto ||= {};    // pictograms built by tapping
     r.bars ||= {};     // bar charts drawn by tapping
     r.dots ||= {};     // scatter points plotted by tapping
+    r.machine ||= {};  // function machines built from job cards
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -237,6 +239,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "picto") makePictoLive(node, idx, e);
       if (e.kind === "bars") makeBarsLive(node, idx, e);
       if (e.kind === "dots") makeDotsLive(node, idx, e);
+      if (e.kind === "machine") makeMachineLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -266,6 +269,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-picto]").forEach((s) => { s.__wbPicto?.dispose(); s.__wbPicto = null; });
     node.querySelectorAll("svg[data-barbuild]").forEach((s) => { s.__wbBars?.dispose(); s.__wbBars = null; });
     node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
+    node.querySelectorAll("[data-machine]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -584,6 +588,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(host, () => { delete rec(idx).dots[k]; svg.__wbDots?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a function machine, built from job cards ──────────────────────────
+     machine.js puts a job in a box (or takes it out) and shows what the
+     machine gives; this keeps the boxes, makes each move one Undo step, and
+     Clear empties the machine. The machine is its own host for the bar. */
+  function makeMachineLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll("[data-machine]")[k];
+    if (!wrap) return;
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbMachine = mountMachine(wrap, {
+      saved: rec(idx).machine[k] || null,
+      onChange: (now, before) => {
+        rec(idx).machine[k] = now;
+        step(wrap, () => { rec(idx).machine[k] = before; wrap.__wbMachine?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).machine[k]; wrap.__wbMachine?.clear(); dirty(node); save(); });
   }
 
   /* ── pushing the two piles together ────────────────────────────────────
@@ -1468,6 +1493,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           if (host) host.dataset.want = sayWant(entry);
           right += ok; total += n;
           if (ok < n) allRight = false;
+          return;
+        }
+        if (entry.kind === "machine") {
+          /* marked by what it does: every input turned into its output */
+          const wrap = node.querySelectorAll("[data-machine]")[entry.nth || 0];
+          const ok = machineRight(rec(idx).machine[entry.nth || 0] || [], entry.ins, entry.outs);
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
           return;
         }
         if (entry.kind === "dots") {

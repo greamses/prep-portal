@@ -348,3 +348,15 @@
 .ap-table th, .ap-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3mm; text-align: center; min-width: 18mm; }
 .ap-table th { background: #fff3a8; white-space: nowrap; font-weight: 700; }
 .wb-sheet .ap-eq { white-space: nowrap; }
+
+/* ── chapter 6: functions ────────────────────────────────────────────────────
+   The machine itself is the shared one (workbook.css .fm-*); here only its
+   in/out table and a mapping diagram beside things. */
+.fn-side { display: flex; align-items: flex-start; gap: 6mm; flex-wrap: wrap; }
+.fn-lines { flex: 1 1 60mm; min-width: 0; }
+.fn-table { border-collapse: collapse; margin: 1.5mm 0 2.5mm; font-size: 11pt; }
+.fn-table th, .fn-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3.5mm; text-align: center; vertical-align: middle; }
+.fn-table th { background: #fff3a8; font-weight: 700; white-space: nowrap; }
+.fn-table td .wb-answer { width: 14mm; }
+.fn-map { display: block; }
+.fn-match { max-width: 90mm; }
