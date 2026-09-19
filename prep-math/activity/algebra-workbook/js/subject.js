@@ -17,6 +17,7 @@ const CHAPTERS = {
   4: "Chapter 4: The remainder theorem",
   5: "Chapter 5: Properties and identities",
   6: "Chapter 6: Functions",
+  7: "Chapter 7: Graphs of functions",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

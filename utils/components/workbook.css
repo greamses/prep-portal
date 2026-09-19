@@ -1835,6 +1835,8 @@ svg[data-foldable]:hover line[data-foldline] { stroke-width: 0.9; }
 /* and so do a dot grid's: its dots reach the corner too, and a dot under the
    buttons is a dot that cannot be ruled from */
 .wb-drawhost:has(> svg[data-grid]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
+/* a grid to plot on by tapping: the same — above it, off the squares */
+.wb-drawhost:has(> svg[data-dotplot]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
 
 /* the paper's own little sticky notes: smaller, with a smaller strip of tape */
 .wb-drawbar .pp-btn {

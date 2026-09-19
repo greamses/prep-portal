@@ -326,7 +326,9 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
       if (!draw.free) pts.forEach((p) => {
         const c = document.createElementNS(NS, "circle");
-        c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", 1.6);
+        /* a grid where every corner is a snap point gets small spots: full-size
+           ones would touch each other and hide the squares */
+        c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", svg.dataset.grid ? 0.55 : 1.6);
         c.setAttribute("class", "wb-draw__spot");
         g.appendChild(c);
       });

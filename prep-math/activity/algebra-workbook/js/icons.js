@@ -178,6 +178,37 @@ export const ICON = {
       bar(7, 7, 16, 9, 1.4, LOUD) + bar(7, 12, 16, 15, 1.4, LOUD) + bar(7, 17, 16, 15, 1.4, LOUD)
   ),
 
+  /* ── chapter 7 ── */
+  /* Axes and a row of points going up in a line. */
+  grPlot: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) +
+      [[8, 16], [12, 12.5], [16, 9], [20, 5.5]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${i % 2 ? GOLD : LOUD}"/>`).join("")
+  ),
+  /* A ruled line through the points. */
+  grLine: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + bar(5, 18, 21, 4, 1.8, LOUD) +
+      [[9, 14.5], [15, 9.3]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${GOLD}"/>`).join("")
+  ),
+  /* Up from the x axis to the line, then across. */
+  grRead: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + bar(5, 18, 21, 5, 1.6, PAPER) +
+      bar(14, 20, 14, 11, 1.4, LOUD) + bar(14, 11, 4, 11, 1.4, LOUD)
+  ),
+  /* A step up the line: one across, m up. */
+  grMc: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + bar(4, 17, 20, 5, 1.8, LOUD) +
+      bar(9, 13.3, 14.5, 13.3, 1.4, GOLD) + bar(14.5, 13.3, 14.5, 9.2, 1.4, GOLD)
+  ),
+  /* Two lines crossing, the crossing ringed. */
+  grSolve: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + bar(5, 18, 20, 5, 1.6, LOUD) + bar(5, 7, 20, 16, 1.6, PAPER) +
+      `<circle cx="12.4" cy="11.6" r="2.4" fill="${GOLD}"/>`
+  ),
+  /* A U-shaped curve. */
+  grCurve: svg(
+    bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + `<path d="M6 4c2 12 4 14 6.5 14S17 16 19 4" fill="none" stroke="${LOUD}" stroke-width="2" stroke-linecap="round"/>`
+  ),
+
   /* A strip with a pencil over it: draw the model yourself. */
   pencilBar: svg(
     `<rect x="2.4" y="13.4" width="13.6" height="6.4" rx="1.2" fill="${PAPER}"/>` +

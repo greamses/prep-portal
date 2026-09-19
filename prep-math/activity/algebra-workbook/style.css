@@ -360,3 +360,10 @@
 .fn-table td .wb-answer { width: 14mm; }
 .fn-map { display: block; }
 .fn-match { max-width: 90mm; }
+
+/* ── chapter 7: graphs ───────────────────────────────────────────────────────
+   The table of a graph lies on its side: x across the top, y beneath. */
+.gr-table th { background: #fff3a8; width: 7mm; }
+.gr-table td { min-width: 9mm; padding: 1.2mm 2mm; }
+.gr-table td .wb-answer { width: 10mm; }
+.gr-fig { display: block; max-width: none; }
