@@ -112,6 +112,61 @@ export const ICON = {
       `<circle cx="18" cy="7" r="4.2" fill="${GOLD}"/><rect x="17.1" y="4.6" width="1.8" height="4.8" rx="0.9" fill="${LOUD}"/>`
   ),
 
+  /* ── chapter 4 ── */
+  /* A circle in quarters, one coloured in. */
+  piWhole: svg(
+    `<circle cx="12" cy="12" r="9" fill="${PAPER}"/><path d="M12 12L12 3A9 9 0 0 1 21 12Z" fill="${LOUD}"/>` +
+      bar(12, 3, 12, 21, 1.2, QUIET) + bar(3, 12, 21, 12, 1.2, QUIET)
+  ),
+  /* A pie chart with three slices. */
+  piRead: svg(
+    `<path d="M12 12L12 2.5A9.5 9.5 0 0 1 16.75 20.23Z" fill="${LOUD}"/><path d="M12 12L16.75 20.23A9.5 9.5 0 0 1 2.64 13.65Z" fill="${GOLD}"/><path d="M12 12L2.64 13.65A9.5 9.5 0 0 1 12 2.5Z" fill="${PAPER}"/>`
+  ),
+  /* A slice with its angle marked by an arc. */
+  piAngles: svg(
+    `<circle cx="12" cy="12" r="9.5" fill="${PAPER}"/><path d="M12 12L12 2.5A9.5 9.5 0 0 1 20.93 15.25Z" fill="${LOUD}"/><path d="M12 12L12 7.8A4.2 4.2 0 0 1 15.95 13.44Z" fill="${GOLD}"/>`
+  ),
+  /* A circle with a radius being ruled by a pencil. */
+  piDraw: svg(
+    `<circle cx="10" cy="13" r="8" fill="${PAPER}"/>` + bar(10, 13, 10, 5, 1.4, QUIET) + bar(10, 13, 16.6, 17.4, 1.4, LOUD) +
+      `<path d="M16 9l4-4 2 2-4 4z" fill="${LOUD}"/><path d="M16 9l-.8 2.8 2.8-.8z" fill="${LOUD}"/>`
+  ),
+  /* A straight line from the corner beside a small pie: proportion. */
+  piProp: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) + bar(3, 21, 12, 8, 1.8, LOUD) +
+      `<circle cx="17" cy="8" r="4.4" fill="${PAPER}"/><path d="M17 8L17 3.6A4.4 4.4 0 0 1 20.81 10.2Z" fill="${GOLD}"/>`
+  ),
+
+  /* ── chapter 5 ── */
+  /* Axes, and a cross going on. */
+  scPlot: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      bar(9, 15, 17, 7, 2, GOLD) + bar(9, 7, 17, 15, 2, LOUD)
+  ),
+  /* Crosses, one read down to the axis. */
+  scRead: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      [[7, 15], [11, 13], [18, 6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.7" fill="${PAPER}"/>`).join("") +
+      `<circle cx="14" cy="9" r="2.1" fill="${LOUD}"/>` + bar(14, 11, 14, 21, 1.2, GOLD)
+  ),
+  /* Crosses climbing together. */
+  scCorr: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      [[6, 17], [9, 15], [11, 12], [14, 11], [16, 8], [19, 5]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="1.7" fill="${i % 2 ? GOLD : LOUD}"/>`).join("")
+  ),
+  /* A line through the middle of the crosses. */
+  scFit: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      [[6, 14], [9, 16], [12, 10], [15, 11], [18, 5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${PAPER}"/>`).join("") +
+      bar(5, 17, 20, 5, 1.8, LOUD)
+  ),
+  /* A pattern of crosses, and one far away from it. */
+  scSolve: svg(
+    bar(3, 3, 3, 21, 1.4, QUIET) + bar(3, 21, 21, 21, 1.4, QUIET) +
+      [[6, 17], [9, 14], [12, 12], [15, 9], [18, 7]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${PAPER}"/>`).join("") +
+      `<circle cx="9" cy="6" r="2.4" fill="${GOLD}"/><circle cx="9" cy="6" r="1" fill="${LOUD}"/>`
+  ),
+
   /* A pictogram and a coin: a problem to solve with it. */
   pgSolve: svg(
     [4.4, 8.6].map((x) => face(x, 6, 1.8, PAPER)).join("") +

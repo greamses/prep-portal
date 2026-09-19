@@ -1792,6 +1792,12 @@ svg[data-bar-live] .bb-hit:hover { fill: rgba(47, 110, 168, 0.12); }
 .bb-mark.is-right { fill: #3f8f4f; }
 .bb-mark.is-wrong { fill: #c0453f; }
 
+/* Points plotted by tapping (dotplot.js): each gridpoint a small target, only
+   seen when hovered; the crosses are drawn by the script. */
+.dp-hit { fill: transparent; }
+svg[data-dot-live] .dp-hit { cursor: pointer; }
+svg[data-dot-live] .dp-hit:hover { fill: rgba(47, 110, 168, 0.25); }
+
 /* A balance scale played with (balance.js): pieces can be picked up, and one
    carried off the drawing says it is about to go. */
 svg[data-bal-live] .ab-piece { cursor: grab; }

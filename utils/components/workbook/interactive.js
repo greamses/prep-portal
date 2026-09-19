@@ -30,6 +30,7 @@ import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
+import { mountDots, dotsRight } from "./dotplot.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -132,6 +133,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.bal ||= {};      // balance scales with pieces moved or taken off
     r.picto ||= {};    // pictograms built by tapping
     r.bars ||= {};     // bar charts drawn by tapping
+    r.dots ||= {};     // scatter points plotted by tapping
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -234,6 +236,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "colour") makeColourable(node, idx, e);
       if (e.kind === "picto") makePictoLive(node, idx, e);
       if (e.kind === "bars") makeBarsLive(node, idx, e);
+      if (e.kind === "dots") makeDotsLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -262,6 +265,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-balance]").forEach((s) => { s.__wbBal?.dispose(); s.__wbBal = null; });
     node.querySelectorAll("svg[data-picto]").forEach((s) => { s.__wbPicto?.dispose(); s.__wbPicto = null; });
     node.querySelectorAll("svg[data-barbuild]").forEach((s) => { s.__wbBars?.dispose(); s.__wbBars = null; });
+    node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -560,6 +564,26 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(host, () => { delete rec(idx).bars[k]; svg.__wbBars?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a scatter graph, plotted by tapping ───────────────────────────────
+     dotplot.js puts a cross on a tapped gridpoint (or takes it off); this
+     keeps the work, makes each tap one Undo step, and Clear rubs them out. */
+  function makeDotsLive(node, idx, e) {
+    const k = e.nth || 0;
+    const svg = node.querySelectorAll("svg[data-dotplot]")[k];
+    if (!svg) return;
+    const host = hostOf(svg);
+    svg.__wbDots = mountDots(svg, {
+      saved: rec(idx).dots[k] || null,
+      onChange: (now, before) => {
+        rec(idx).dots[k] = now;
+        step(host, () => { rec(idx).dots[k] = before; svg.__wbDots?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(host, () => { delete rec(idx).dots[k]; svg.__wbDots?.clear(); dirty(node); save(); });
   }
 
   /* ── pushing the two piles together ────────────────────────────────────
@@ -1444,6 +1468,17 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           if (host) host.dataset.want = sayWant(entry);
           right += ok; total += n;
           if (ok < n) allRight = false;
+          return;
+        }
+        if (entry.kind === "dots") {
+          /* every point plotted, and no others: one mark for the whole graph */
+          const svg = node.querySelectorAll("svg[data-dotplot]")[entry.nth || 0];
+          const ok = dotsRight(rec(idx).dots[entry.nth || 0] || [], entry.points);
+          const host = svg && hostOf(svg);
+          host?.classList.remove("is-right", "is-wrong");
+          host?.classList.add(ok ? "is-right" : "is-wrong");
+          if (host) host.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
           return;
         }
         if (entry.kind === "match") {

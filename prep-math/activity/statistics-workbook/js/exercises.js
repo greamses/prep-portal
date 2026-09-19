@@ -14,6 +14,14 @@
                     between the points, drawing one (ruled on screen with the
                     workbook's own ruler), trends, two lines, conversion graphs
                     and misleading ones (drawn by lineart.js)
+     ex-pie.js      chapter 4, pie charts and proportion — equal slices, the
+                    hundred-square, reading fractions / percentages / angles,
+                    drawing one (radii ruled on screen), bars vs pies, the
+                    share-is-not-the-number trap, and direct proportion as a
+                    straight line through 0 (drawn by pieart.js)
+     ex-scatter.js  chapter 5, scatter graphs — plotting (tapped on screen,
+                    dotplot.js), reading, correlation, the line of best fit
+                    (chosen, used, ruled), outliers and cautions (scatterart.js)
 
    THE ORDER IS THE BOOK: things counted before they are pictured, a picture
    of one-for-one before a key, and reading before building. A new chapter is
@@ -23,14 +31,17 @@
 import { PG_GROUPS, PG_EXERCISES } from "./ex-picto.js";
 import { BR_GROUPS, BR_EXERCISES } from "./ex-bars.js";
 import { LN_GROUPS, LN_EXERCISES } from "./ex-line.js";
+import { PI_GROUPS, PI_EXERCISES } from "./ex-pie.js";
+import { SC_GROUPS, SC_EXERCISES } from "./ex-scatter.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS];
-export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES];
+export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS, ...PI_GROUPS, ...SC_GROUPS];
+export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES, ...PI_EXERCISES, ...SC_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
-const CHAPTER = new Map([...PG_GROUPS.map((g) => [g.id, 1]), ...BR_GROUPS.map((g) => [g.id, 2]), ...LN_GROUPS.map((g) => [g.id, 3])]);
+const CHAPTER = new Map([...PG_GROUPS.map((g) => [g.id, 1]), ...BR_GROUPS.map((g) => [g.id, 2]), ...LN_GROUPS.map((g) => [g.id, 3]),
+  ...PI_GROUPS.map((g) => [g.id, 4]), ...SC_GROUPS.map((g) => [g.id, 5])]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
