@@ -91,82 +91,98 @@ body { overflow-anchor: none; }
   color: var(--text-muted, #6b645a);
 }
 
+/* THE BOARD: receipt paper with the class calendar's grid on it
+   (home/js/dashboard/calendar-client.js) — no boxes, only hairlines; the
+   numeral sits in its square's corner the way a date does, and a matched note
+   is pinned into the square the way a class is pinned onto its day. The
+   receipt is the ONE .pp-receipt component, used whole: the wrapper carries
+   the shadow, the paper its torn edges and punched holes. */
+.nm-board.pp-receipt { display: block; }
+.nm-board__paper { padding: 1.1rem 1.4rem 1.4rem; }
+
 .nm-grid {
   display: grid;
   grid-template-columns: repeat(var(--nm-cols, 5), minmax(0, 1fr));
-  gap: 0.4rem;
+  border-right: 1px solid rgba(20, 19, 15, 0.14);
+  border-bottom: 1px solid rgba(20, 19, 15, 0.14);
 }
 
 .nm-cell {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  /* a finger, not a mouse pointer */
-  min-height: 3.1rem;
-  padding: 0.35rem 0.2rem 0.3rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  /* a finger, not a mouse pointer — and room for the pinned note */
+  min-height: 4.6rem;
+  padding: 3px 3px 5px;
   font: inherit;
   color: var(--ink, #2a2723);
-  background: var(--surface-primary, #fffdf8);
-  border: 1.5px solid var(--border-subtle-color, rgba(42, 39, 35, 0.14));
-  border-radius: 0.55rem;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(20, 19, 15, 0.14);
+  border-left: 1px solid rgba(20, 19, 15, 0.14);
+  border-radius: 0;
   cursor: pointer;
-  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+  transition: background 0.14s ease, box-shadow 0.14s ease;
 }
+/* the numeral, in the corner, like a date */
 .nm-cell__n {
+  align-self: flex-end;
+  padding: 1px 3px;
   font-family: var(--font-display, "Unbounded", system-ui, sans-serif);
-  font-size: clamp(0.85rem, 2.1vw, 1.05rem);
+  font-size: clamp(0.72rem, 1.6vw, 0.86rem);
   font-weight: 700;
   line-height: 1;
+  color: #14130f;
 }
+.nm-cell__notes { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+/* a number no chosen way of writing can carry: shaded like a calendar's
+   days from another month, not like a square still to do */
+.nm-cell--none { background: rgba(20, 19, 15, 0.035); }
+.nm-cell--none .nm-cell__n { color: rgba(20, 19, 15, 0.4); }
 
-/* A matched note is STUCK ON its square — small, tilted, still a note, still
-   readable. It covers the figure it belongs to, which is the answer: the
-   square now says the same number twice, each way once. */
+/* A matched note is PINNED into its square — small, tilted, still a note,
+   still readable, under the numeral it belongs to: the square now says the
+   same number twice, each way once. */
 .nm-cell .nm-card.is-stuck {
-  /* It is out of the deck now, so the deck's layout rule no longer reaches it
-     and .pp-sticky's inline-block would take over. Said again here. */
+  /* out of the deck now, so .pp-sticky's inline-block would take over: said again */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  inset: 1px;
-  z-index: 2;
   min-width: 0;
   max-width: none;
   min-height: 0;
   gap: 0;
-  padding: 0.15rem 0.2rem;
+  padding: 9px 4px 4px;
+  border-radius: 3px;
+  transform-origin: 50% 0;
   cursor: default;
-  overflow: hidden;
+  overflow: visible;
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.22);
 }
-.nm-cell .nm-card.is-stuck .nm-card__text {
-  font-size: 0.56rem;
-  line-height: 1.05;
+.nm-pin {
+  position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+  filter: drop-shadow(0 1px 1px rgba(20, 19, 15, 0.3));
 }
+.nm-deck .nm-pin { display: none; }
+.nm-cell .nm-card.is-stuck .nm-card__text { font-size: 0.56rem; line-height: 1.1; }
 .nm-cell .nm-card.is-stuck .nm-card__art { min-height: 0; }
-.nm-cell .nm-card.is-stuck .nm-card__art svg { max-height: 1.9rem; }
+.nm-cell .nm-card.is-stuck .nm-card__art svg { max-height: 1.9rem; max-width: 100%; }
 /* the form's name is a caption on a big note and clutter on a small one */
 .nm-cell .nm-card.is-stuck .nm-card__tag { display: none; }
 
 /* A cell that can be dropped on right now — shown while a note is held, so
    tap-to-place tells you where taps will go. */
-.nm-cell.is-armed {
-  border-color: var(--accent, #f4c95d);
-  border-style: dashed;
-}
-.nm-cell.is-over {
-  transform: scale(1.06);
-  background: #fff7e2;
-  border-color: var(--accent, #f4c95d);
-  border-style: solid;
-}
-.nm-cell.is-complete {
-  background: #eaf7ea;
-  border-color: #7cc47c;
+.nm-cell.is-armed { background: rgba(255, 255, 255, 0.5); }
+.nm-cell.is-over { background: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 2px #6fb7e8; }
+.nm-cell.is-complete .nm-cell__n {
+  /* done: the numeral is ringed, like today's date on the calendar */
+  min-width: 1.35rem; height: 1.35rem; padding: 0 0.3rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: #7cc47c; color: #fff;
 }
 .nm-cell.is-wrong { animation: nm-no 0.42s ease; }
 
@@ -391,7 +407,8 @@ body { overflow-anchor: none; }
      too small to read. Half the columns, twice the rows: the board gets longer
      and every number stays a target a finger can actually land on. */
   .nm-grid { grid-template-columns: repeat(min(var(--nm-cols, 5), 5), minmax(0, 1fr)); }
-  .nm-cell { min-height: 2.9rem; border-radius: 0.45rem; }
+  .nm-cell { min-height: 4rem; }
+  .nm-board__paper { padding: 0.9rem 1.1rem 1.1rem; }
   .nm-card { min-width: 5.6rem; padding: 0.6rem 0.7rem 0.5rem; }
   .nm-card__text { font-size: 0.94rem; }
 }

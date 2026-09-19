@@ -21,12 +21,19 @@ const $ = (sel, root = document) => root.querySelector(sel);
 /* Our own marks, drawn here — never an emoji, never a borrowed icon set. */
 const ICON = { again: UI.again(), settings: UI.settings(), close: UI.close(), cards: UI.cards() };
 
+/* The thumbtack the dashboard's class calendar pins its notes with — the same
+   pin, so a matched note is pinned to its number the way a class is pinned to
+   its day. */
+const PIN = `<svg class="nm-pin" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">`
+  + `<circle cx="12" cy="12" r="7" fill="#e07a5f"/>`
+  + `<circle cx="12" cy="12" r="7" fill="none" stroke="#b9543c" stroke-width="1.2"/>`
+  + `<circle cx="9.6" cy="9.6" r="2" fill="rgba(255,255,255,.75)"/></svg>`;
+
 const KEEP = "prep-portal:number-match";
 
 const S = {
   rangeId: RANGES[0].id,
   forms: FORM_IDS.slice(),
-  count: 4,
   seed: 1,
   round: null,
   placed: new Map(),   // card id → the numeral it was put on
@@ -38,7 +45,7 @@ const S = {
 
 function remember() {
   try {
-    localStorage.setItem(KEEP, JSON.stringify({ rangeId: S.rangeId, forms: S.forms, count: S.count }));
+    localStorage.setItem(KEEP, JSON.stringify({ rangeId: S.rangeId, forms: S.forms }));
   } catch { /* a browser that refuses storage still plays perfectly */ }
 }
 
@@ -52,7 +59,6 @@ function recall() {
       /* Two forms is the floor: with one there is nothing to group. */
       if (kept.length >= 2) S.forms = kept;
     }
-    if ([3, 4, 5, 6].includes(was.count)) S.count = was.count;
   } catch { /* the same */ }
 }
 
@@ -60,21 +66,33 @@ function recall() {
 
 function deal() {
   S.seed = (Math.floor(Math.random() * 999983) + 1) >>> 0;
-  S.round = buildRound({ range: S.rangeId, forms: S.forms, count: S.count, seed: S.seed });
+  /* every number on the board gets its note */
+  S.round = buildRound({ range: S.rangeId, forms: S.forms, seed: S.seed });
   S.placed = new Map();
   S.held = null;
   S.slips = 0;
   drawBoard();
   drawDeck();
+  tally();
   say("");
+}
+
+/** How many notes are home, beside the deck. */
+function tally() {
+  const home = S.placed.size;
+  const all = S.round.cards.length;
+  $("#nm-count").textContent = `${home} of ${all} home`;
 }
 
 function drawBoard() {
   const board = $("#nm-grid");
   board.style.setProperty("--nm-cols", S.round.range.cols);
+  /* A number no chosen form can write (7 has no expanded form) gets no note,
+     and says so by being quieter — it is not a square left undone. */
+  const have = new Set(S.round.cards.map((c) => c.n));
   board.innerHTML = S.round.grid
-    .map((n) => `<button type="button" class="nm-cell" data-n="${n}">`
-      + `<b class="nm-cell__n">${n}</b></button>`)
+    .map((n) => `<button type="button" class="nm-cell${have.has(n) ? "" : " nm-cell--none"}" data-n="${n}">`
+      + `<b class="nm-cell__n">${n}</b><span class="nm-cell__notes"></span></button>`)
     .join("");
 }
 
@@ -153,12 +171,14 @@ function place(cardId, n) {
     noteEl.style.setProperty("--pp-note-tilt", `${tiltOf(card.id)}deg`);
     noteEl.classList.add("is-stuck");
     noteEl.disabled = true;
-    cell.appendChild(noteEl);
+    noteEl.insertAdjacentHTML("afterbegin", PIN);
+    (cell.querySelector(".nm-cell__notes") || cell).appendChild(noteEl);
   }
   cell.classList.add("is-complete");
   cell.setAttribute("aria-label", `${n} — ${card.label}`);
   say("");
   drawDeck();
+  tally();
 
   if (isDone(S.round, S.placed)) {
     say(S.slips
@@ -318,8 +338,6 @@ function drawSettings() {
     .map((r) => optHtml("range", r.id, r.label, S.rangeId === r.id)).join("");
   $("#nm-forms").innerHTML = FORMS
     .map((f) => optHtml("form", f.id, f.label, S.forms.includes(f.id), f.hint)).join("");
-  $("#nm-counts").innerHTML = [3, 4, 5, 6]
-    .map((c) => optHtml("count", c, `${c} numbers`, S.count === c)).join("");
 }
 
 function wireSettings() {
@@ -337,7 +355,6 @@ function wireSettings() {
     const { opt, val } = btn.dataset;
 
     if (opt === "range") S.rangeId = val;
-    if (opt === "count") S.count = Number(val);
     if (opt === "form") {
       const on = S.forms.includes(val);
       /* Never below two: one form deals one note per number, and a lone note

@@ -37,3 +37,8 @@
 /* a table and a pictogram beside it: each keeps its size, and they wrap */
 .sw-pair { display: flex; align-items: flex-start; gap: 6mm; flex-wrap: wrap; }
 .sw-pair > * { flex: 0 0 auto; }
+
+/* three block graphs to choose between, lettered */
+.sw-options { display: flex; gap: 5mm; flex-wrap: wrap; margin: 2mm 0; }
+.sw-option { display: flex; align-items: flex-start; gap: 1.5mm; }
+.sw-option > b { font-size: 11pt; }

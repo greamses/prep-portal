@@ -44,6 +44,41 @@ export const ICON = {
     [3, 9.2, 15.4].map((x, i) => `<rect x="${x}" y="8.4" width="5.6" height="7.2" rx="1" fill="${i < 2 ? GOLD : PAPER}"/>`).join("") +
       `<path d="M9.2 8.4h2.8v7.2H9.2z" fill="${LOUD}"/>`
   ),
+  /* ── chapter 2 ── */
+  /* Columns of squares: a block graph. */
+  brBlocks: svg(
+    [[3, 3], [9.6, 5], [16.2, 2]].map(([x, n]) => Array.from({ length: n }, (_, k) =>
+      `<rect x="${x}" y="${19.4 - (k + 1) * 3.6}" width="5" height="3.1" rx="0.5" fill="${n === 5 ? LOUD : PAPER}"/>`).join("")).join("") +
+      bar(2, 20.4, 22, 20.4, 1.4, QUIET)
+  ),
+  /* A bar and the line across from its top to the scale. */
+  brRead: svg(
+    bar(3, 3, 3, 21, 1.6, QUIET) + bar(3, 21, 21, 21, 1.6, QUIET) +
+      `<rect x="12" y="8" width="6" height="12.2" rx="0.6" fill="${GOLD}"/>` +
+      bar(3.8, 8, 11.4, 8, 1.4, LOUD)
+  ),
+  /* Bars being raised, a pencil at the top of one. */
+  brDraw: svg(
+    bar(3, 21, 21, 21, 1.6, QUIET) +
+      `<rect x="4.4" y="12" width="4.4" height="8.2" rx="0.5" fill="${PAPER}"/>` +
+      `<rect x="10.4" y="7" width="4.4" height="13.2" rx="0.5" fill="${GOLD}"/>` +
+      `<path d="M16.6 13.2l3-3 1.8 1.8-3 3z" fill="${LOUD}"/>` +
+      `<path d="M16.6 13.2l-.9 2.7 2.7-.9z" fill="${LOUD}"/>`
+  ),
+  /* Two bars side by side for each label. */
+  brCompare: svg(
+    bar(3, 21, 21, 21, 1.6, QUIET) +
+      `<rect x="4" y="9" width="3.6" height="11.2" fill="${PAPER}"/><rect x="7.6" y="13" width="3.6" height="7.2" fill="${LOUD}"/>` +
+      `<rect x="13" y="12" width="3.6" height="8.2" fill="${PAPER}"/><rect x="16.6" y="5" width="3.6" height="15.2" fill="${LOUD}"/>`
+  ),
+  /* A bar chart with a question on it: a problem. */
+  brSolve: svg(
+    bar(3, 21, 14, 21, 1.6, QUIET) +
+      `<rect x="4" y="12" width="3.6" height="8.2" fill="${PAPER}"/><rect x="9" y="8" width="3.6" height="12.2" fill="${PAPER}"/>` +
+      `<circle cx="18" cy="8" r="4.6" fill="${GOLD}"/>` +
+      `<rect x="17.1" y="5.2" width="1.8" height="4" rx="0.9" fill="${LOUD}"/><circle cx="18" cy="11" r="0.95" fill="${LOUD}"/>`
+  ),
+
   /* A pictogram and a coin: a problem to solve with it. */
   pgSolve: svg(
     [4.4, 8.6].map((x) => face(x, 6, 1.8, PAPER)).join("") +

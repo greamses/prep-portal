@@ -1,9 +1,10 @@
 /* ============================================================================
    NUMBER MATCH — a round
    ----------------------------------------------------------------------------
-   A round is: a stretch of the number line laid out as a grid of numerals, a
-   handful of TARGETS drawn from it, and every chosen form of every target
-   shuffled into a deck of notes. The player puts each note on the numeral it
+   A round is: a stretch of the number line laid out as a grid of numerals,
+   and a note for EVERY number on it (that a chosen form can write) shuffled
+   into a deck. It used to be a handful of targets — three to six — and the
+   rest of the board was scenery; now every numeral is matched. The player puts each note on the numeral it
    belongs to; a target is done when all of its notes are home, which is the
    "group all the cards that mean the same value" the activity is for.
 
@@ -69,12 +70,12 @@ export function pickTargets(rng, range, forms, count) {
  *
  *   range   one of RANGES, or its id
  *   forms   which representations to use (never the numeral — see forms.js)
- *   count   how many numbers to find at once
+ *   count   how many numbers to find at once — every one, unless a test asks
  *   seed    the stream this round is drawn from
  *
  * → { range, grid, targets, cards, perTarget }
  */
-export function buildRound({ range = RANGES[0], forms = FORM_IDS, count = 4, seed = 1 } = {}) {
+export function buildRound({ range = RANGES[0], forms = FORM_IDS, count = Infinity, seed = 1 } = {}) {
   const r = typeof range === "string" ? rangeById(range) : range;
   const use = FORM_IDS.filter((id) => forms.includes(id));
   const rng = makeRng(seed);

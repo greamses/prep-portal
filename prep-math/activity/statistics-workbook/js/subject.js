@@ -12,6 +12,7 @@ export const WORKBOOK = { id: "statistics-workbook", label: "Statistics Workbook
 
 const CHAPTERS = {
   1: "Chapter 1: Pictograms",
+  2: "Chapter 2: Bar charts",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])
@@ -31,7 +32,7 @@ export const SUBJECT = {
     const L = levelOf(o);
     const H = helpOf(o);
     const parts = [];
-    parts.push(L.id === "gentle" ? "a symbol stands for 1 or 2" : L.id === "middle" ? "keys of 2, 5 and 10, half symbols" : "bigger keys, halves and quarters");
+    parts.push(L.id === "gentle" ? "a symbol stands for 1 or 2, scales of 1" : L.id === "middle" ? "keys of 2, 5 and 10, half symbols, scales of 2 and 10" : "bigger keys and scales, halves and quarters");
     parts.push(H.id === "show" ? "one done for you" : H.id === "help" ? "no examples" : "nothing named");
     return parts.join(" · ");
   },

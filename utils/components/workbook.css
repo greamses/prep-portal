@@ -1782,6 +1782,16 @@ svg[data-picto-live] .pc-cell:focus-visible { outline: 0.5mm solid #2f6ea8; }
 .pc-row-mark.is-right { fill: #3f8f4f; }
 .pc-row-mark.is-wrong { fill: #c0453f; }
 
+/* A bar chart drawn by tapping (barbuild.js): the bands to tap are invisible
+   until hovered; each bar's mark shows green or red once it is checked. */
+.bb-hit { fill: transparent; }
+svg[data-bar-live] .bb-hit { cursor: pointer; }
+svg[data-bar-live] .bb-hit:hover { fill: rgba(47, 110, 168, 0.12); }
+.bb-bar { transition: y 0.18s ease, height 0.18s ease, width 0.18s ease; }
+.bb-mark { fill: none; }
+.bb-mark.is-right { fill: #3f8f4f; }
+.bb-mark.is-wrong { fill: #c0453f; }
+
 /* A balance scale played with (balance.js): pieces can be picked up, and one
    carried off the drawing says it is about to go. */
 svg[data-bal-live] .ab-piece { cursor: grab; }

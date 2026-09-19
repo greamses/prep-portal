@@ -83,11 +83,18 @@
       <div class="nm-work">
         <section class="nm-panel" aria-labelledby="nm-board-label">
           <span class="nm-panel__label" id="nm-board-label">The numbers</span>
-          <div class="nm-grid" id="nm-grid"></div>
+          <!-- The board is receipt paper (the ONE .pp-receipt, used whole) with
+               the class calendar's hairline grid on it: each numeral a day,
+               each matched note pinned into its square. -->
+          <div class="pp-receipt nm-board">
+            <div class="pp-receipt__paper nm-board__paper">
+              <div class="nm-grid" id="nm-grid"></div>
+            </div>
+          </div>
         </section>
 
         <section class="nm-panel" aria-labelledby="nm-deck-label">
-          <span class="nm-panel__label" id="nm-deck-label">The notes</span>
+          <span class="nm-panel__label" id="nm-deck-label">The notes · <span id="nm-count">0 home</span></span>
           <div class="nm-deck" id="nm-deck"></div>
         </section>
       </div>
@@ -121,11 +128,6 @@
               <div class="nm-opts" id="nm-forms"></div>
             </div>
 
-            <div class="nm-set">
-              <span class="nm-set__label">How many at once</span>
-              <p class="nm-set__note">How many numbers to gather in one round.</p>
-              <div class="nm-opts" id="nm-counts"></div>
-            </div>
           </div>
         </div>
       </div>
