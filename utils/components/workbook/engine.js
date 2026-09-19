@@ -48,7 +48,7 @@ import { stream, seedFrom, seedCode } from "./seed.js";
 const codeOf = (o) => (o.code ? String(o.code).toUpperCase() : seedCode(o.seed));
 import { ICON } from "./icons.js";
 import { mathify, loadMath } from "./mathify.js";
-export { whenMath, loadMath } from "./mathify.js";
+export { whenMath, loadMath, mathify } from "./mathify.js";
 
 /* Every number and expression on the paper is set by MathJax (mathify.js).
    Asked for as soon as the engine is, so it is usually there by the first

@@ -32,7 +32,7 @@
      })
    ========================================================================== */
 
-import { renderWorkbook, PAPERS, whenMath } from "./engine.js";
+import { renderWorkbook, PAPERS, whenMath, mathify } from "./engine.js";
 import { seedCode, seedFrom } from "./seed.js";
 import { ICON, faceOf } from "./icons.js";
 import { printPass, guardPrinting, workbookKey } from "./print-pass.js";
@@ -226,6 +226,9 @@ export function mountBuilder(cfg) {
       const blurb = row.querySelector(".wb-pick__blurb");
       if (ex) blurb.innerHTML = why ? `<em>${why}</em> — ${ex.blurb}` : ex.blurb;
     });
+    /* the exercise list is set like the paper: names, blurbs, group labels
+       (what is already set is skipped, and every formula is cached) */
+    mathify($("wb-picks"));
   }
 
   /* ── build + fit ────────────────────────────────────────────────────────*/

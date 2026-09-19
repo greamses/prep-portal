@@ -33,7 +33,7 @@
 
 const SRC = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
 const SKIP = "svg, input, textarea, script, style, code, [contenteditable], .wb-answer, .wb-cell, .wb-line, " +
-  ".wb-item__no, .wb-sec__letter, .wb-answers__no, .wb-nomath, [data-nomath], .wb-m";
+  ".wb-item__no, .wb-sec__letter, .wb-answers__no, .wb-tab__n, .wb-nomath, [data-nomath], .wb-m";
 
 /** Is MathJax up and able to set a formula this instant? */
 export const mathReady = () => typeof window !== "undefined" && typeof window.MathJax?.tex2svg === "function";
@@ -131,6 +131,9 @@ export function splitMath(s) {
     }
     if (isLetter(c) && !isLetter(s[j - 1]) && !isLetter(s[j + 1]) && !isDigit(s[j + 1]) && /[a-zA-Z]/.test(c)) return ["var", c, c, j + 1];
     if (c === "%") return ["post", c, "\\%", j + 1];
+    /* a colon is a ratio only with room either side (3 : 4); straight after a
+       word or a number it is punctuation ("In 3x + 7: x is …") */
+    if (c === ":" && !(s[j - 1] === " " && s[j + 1] === " ")) return null;
     if (c in OPS) return ["op", c, OPS[c], j + 1];
     if (c === "-" && (isDigit(s[j + 1]) || s[j + 1] === " ") && (j === 0 || s[j - 1] === " " || isDigit(s[j - 1]))) return ["op", c, "-", j + 1];
     if (c === "/") return ["slash", c, "/", j + 1];
