@@ -1,8 +1,8 @@
 /* ============================================================================
    Algebra Workbook — CHAPTER 6: functions and function machines
    ----------------------------------------------------------------------------
-   A function is a machine: a number goes in, the same jobs are done to it
-   every time, one number comes out. The chapter keeps that picture from the
+   A function is a machine — drawn here as a TRAIN: a number climbs aboard at
+   IN, every coach does its job to it, and one number steps off at OUT. The chapter keeps that picture from the
    first page to the last, concrete to abstract:
 
      the machine          a machine with its jobs written on it: put numbers
@@ -25,7 +25,7 @@
 import { levelOf } from "./poly.js";
 import { helpOf } from "./organiser.js";
 import { want } from "/utils/components/workbook/want.js";
-import { opText, runOps } from "/utils/components/workbook/machine.js";
+import { opText, runOps, trainHtml } from "/utils/components/workbook/machine.js";
 
 const box = () => `<span class="wb-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -43,30 +43,9 @@ const tier = (o) => levelOf(o).id;
 const named = (o) => helpOf(o).id !== "try";
 const num = (v) => (v < 0 ? `−${-v}` : String(v));
 
-/* ── the machine, drawn ─────────────────────────────────────────────────── */
+/* ── the machine, drawn: a train (utils/components/workbook/machine.js) ── */
 
-const ARROW = `<svg class="fm-arrow" viewBox="0 0 12 6" aria-hidden="true"><path d="M0.5 3h9M7 0.8 10.8 3 7 5.2" stroke="#2a2723" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-/**
- * A function machine.
- *   given   its jobs, written on it — or
- *   slots   how many empty boxes, to BUILD it from the tray (on screen: live)
- *   ins     the inputs its test row runs (a machine to build)
- *   tray    the job cards to choose from
- *   inVal, outVal   a number written at IN / OUT
- */
-function machine({ given = null, slots = 0, ins = [], tray = [], inVal = null, outVal = null }) {
-  const boxes = given
-    ? given.map((op) => `<span class="fm-slot fm-slot--given">${opText(op)}</span>`)
-    : Array.from({ length: slots }, (_, i) => `<span class="fm-slot" data-slot="${i}"></span>`);
-  const io = (word, v) => `<span class="fm-io">${word}${v === null ? "" : `<b>${v}</b>`}</span>`;
-  const row = `${io("In", inVal)}${ARROW}<span class="fm-body">${boxes.join(ARROW)}</span>${ARROW}${io("Out", outVal)}`;
-  const cards = tray.length
-    ? `<div class="fm-tray"><span class="fm-tray__tag">Job cards</span>${tray.map((op) => `<span class="fm-op" data-op="${op}">${opText(op)}</span>`).join("")}</div>`
-    : "";
-  /* plain bold figures, not typeset: the boxes are filled in on screen */
-  return `<div class="fm-wrap wb-nomath"${given ? "" : ` data-machine="1" data-ins="${ins.join(",")}"`}><div class="fm-row">${row}</div>${cards}</div>`;
-}
+const machine = (opts) => trainHtml(opts);
 
 /* ── jobs, by level ─────────────────────────────────────────────────────── */
 
@@ -146,7 +125,7 @@ export function formulaOf(ops, v = "x") {
 export const FN_GROUPS = [
   { id: "fn-machine", chapter: "Chapter 6 · Functions", label: "Function machines", blurb: "A number in, the same jobs every time, one number out." },
   { id: "fn-back", label: "Working backwards", blurb: "Out to in: undo every job, in the other order." },
-  { id: "fn-rule", label: "Find the rule", blurb: "Build the machine from job cards — and test it." },
+  { id: "fn-rule", label: "Find the rule", blurb: "Build the train, coach by coach — and test it." },
   { id: "fn-write", label: "Writing a function", blurb: "The machine as a formula; the order of the jobs matters." },
   { id: "fn-map", label: "Mappings and f(x)", blurb: "Join ins to outs; one out for every in; f(x) notation." },
 ];
@@ -178,7 +157,7 @@ const fnRun = {
   worked() {
     return worked(machine({ given: ["*3", "+2"], inVal: 4, outVal: 14 }) +
       say("4 goes in. The first job is × 3: 4 × 3 = 12. The next job is + 2: 12 + 2 = 14. So 4 goes in and 14 " +
-        "comes out. The machine always does the SAME jobs in the SAME order — that is what makes it a function."));
+        "comes out. The train always does the SAME jobs in the SAME order — that is what makes it a function."));
   },
   key(item) {
     const two = item.ops.length > 1;
@@ -199,8 +178,9 @@ const fnBack = {
   heading: "Work backwards",
   instruction: () =>
     "To find what went in, run the machine BACKWARDS: start at the out, undo the last job first, then the " +
-    "one before. Undo + with −, and × with ÷. Then build the machine that undoes it from the job cards — on " +
-    "screen, tap a card and then a box.",
+    "one before. Undo + with −, and × with ÷. Then build the train that undoes it: write a job in each coach. " +
+    "On screen, type the job into a coach (or tap a job card), add or take off coaches with + and −, then type " +
+    "a number on IN and drag it along the train to test it.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -212,13 +192,13 @@ const fnBack = {
   render(item) {
     const rows = item.outs.map((y) => [box(), num(y)]);
     return side(machine({ given: item.ops }), table(["In", "Out"], rows)) +
-      ask("The machine that undoes it: out goes in, in comes out.") +
+      ask("The train that undoes it: out climbs aboard, in steps off.") +
       machine({ slots: item.ops.length, ins: item.outs, tray: item.tray });
   },
   worked() {
     return worked(machine({ given: ["*2", "+5"], inVal: "?", outVal: 17 }) +
       say("17 came out. The last job was + 5, so undo it first: 17 − 5 = 12. The job before was × 2: undo it, " +
-        "12 ÷ 2 = 6. So 6 went in — check: 6 × 2 + 5 = 17. The machine that undoes it is − 5 then ÷ 2."));
+        "12 ÷ 2 = 6. So 6 went in — check: 6 × 2 + 5 = 17. The train that undoes it is − 5 then ÷ 2."));
   },
   key(item) {
     return [
@@ -236,14 +216,15 @@ const fnBack = {
 const fnRule = {
   id: "fn-rule",
   group: "fn-rule",
-  label: "Build the machine",
+  label: "Build the train",
   blurb: "A table of ins and outs: which jobs make them?",
-  heading: "Find the rule — build the machine",
+  heading: "Find the rule — build the train",
   instruction: (o) =>
     "Look at how each in becomes its out. Is it more each time by the same amount (+), or so many times " +
     "bigger (×)?" + (tier(o) === "gentle" ? "" : " With two jobs, try a × first, then see what you must add or take away.") +
-    " Choose job cards for the boxes; on screen the row under the machine shows what YOUR machine gives, " +
-    "so you can test it. Then use it on a new number.",
+    " Write a job in each coach. On screen, type it into the coach or tap a job card, use + and − for more or " +
+    "fewer coaches, then type a number on IN and drag it along the train: test your train on the table before " +
+    "you trust it. Then use it on a new number.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -264,7 +245,7 @@ const fnRule = {
   worked() {
     return worked(say("In 1, 2, 3 — out 5, 8, 11. The outs go up by 3 each time the in goes up by 1, so there " +
       "is a × 3. But 1 × 3 is 3, not 5: 2 more is needed, so the second job is + 2. Test it on 3: 3 × 3 + 2 = 11. " +
-      "Right — the machine is × 3 then + 2."));
+      "Right — the train is × 3 then + 2."));
   },
   key(item) {
     return [

@@ -2224,34 +2224,85 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   background: var(--surface-primary, #fffdf8);
 }
 
-/* ── a function machine (machine.js) ─────────────────────────────────────────
-   IN, the machine's casing with a box for each job, OUT; under it the job
-   cards to choose from. On paper the boxes are written in and the cards are
-   there to copy from (their dashed edge is a cut line); on screen a card is
-   tapped (or dragged) into a box, and the row underneath says what the
-   machine gives. Fixed hex colours, like the rest of the paper. */
+/* ── a function machine, as a TRAIN (machine.js) ──────────────────────────────
+   IN on its platform card, the coaches — each carrying one job — coupled to
+   an engine, and OUT at the front; under it the job cards to copy from (their
+   dashed edge is a cut line). On screen a train to build is live: the coaches
+   are typed in, + and − add and take them off, and the IN card is dragged
+   along the track. Fixed hex colours, like the rest of the paper. */
 .fm-wrap { display: inline-flex; flex-direction: column; gap: 2mm; margin: 1.5mm 0; padding: 1mm; }
-.fm-row { display: flex; align-items: center; gap: 1.6mm; flex-wrap: wrap; }
+.fm-row { position: relative; display: flex; align-items: flex-end; gap: 1.6mm; flex-wrap: nowrap; padding-top: 1mm; }
 .fm-io {
-  font-size: 8pt; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 1mm 2mm; border: 0.35mm solid #2a2723; border-radius: 999px; background: #fff3a8; color: #2a2723;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; flex: 0 0 auto;
+  min-width: 13mm; min-height: 12mm; padding: 1mm 1.6mm; margin-bottom: 1.4mm;
+  border: 0.4mm solid #2a2723; border-radius: 1.6mm; background: #fff3a8; color: #2a2723;
+  box-shadow: 0.4mm 0.6mm 0 rgba(20, 19, 15, 0.18);
 }
-.fm-io b { font-size: 11pt; letter-spacing: 0; margin-left: 1mm; }
-.fm-arrow { width: 6mm; height: 3mm; flex: 0 0 auto; }
-.fm-body {
-  display: flex; align-items: center; gap: 1.6mm;
-  padding: 1.6mm 2.2mm; border: 0.5mm solid #2a2723; border-radius: 2.5mm;
-  background: #dcefff;
-  background-image: radial-gradient(circle at 2mm 2mm, #2a2723 0.5mm, transparent 0.6mm),
-    radial-gradient(circle at calc(100% - 2mm) 2mm, #2a2723 0.5mm, transparent 0.6mm);
+.fm-io--out { background: #c8f0c0; }
+.fm-io em { font-style: normal; font-size: 7pt; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.fm-io b { font-size: 12pt; font-weight: 800; min-height: 1.2em; }
+/* the track: a rail under the wheels, sleepers across it */
+.fm-train {
+  position: relative; display: inline-flex; align-items: flex-end; flex: 0 0 auto;
+  padding: 0 1mm 2.2mm;
+  background:
+    linear-gradient(#8a837a, #8a837a) left calc(100% - 0.6mm) / 100% 0.5mm no-repeat,
+    repeating-linear-gradient(90deg, #b8b0a3 0 0.7mm, transparent 0.7mm 3mm) left bottom / 100% 1.6mm no-repeat;
 }
+.fm-coach {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 17mm; height: 10.5mm; padding: 0 1.4mm; margin-bottom: 1.6mm;
+  background: #dcefff; border: 0.45mm solid #2a2723; border-radius: 1.8mm 1.8mm 1mm 1mm;
+}
+/* a roof line, and two wheels under every coach */
+.fm-coach::before { content: ""; position: absolute; left: 1.2mm; right: 1.2mm; top: -1.2mm; height: 1.2mm; background: #2a2723; border-radius: 1mm 1mm 0 0; }
+.fm-coach::after {
+  content: ""; position: absolute; bottom: -2.4mm; left: 2mm; right: 2mm; height: 2.6mm;
+  background: radial-gradient(circle at 1.3mm 1.3mm, #2a2723 1.1mm, transparent 1.2mm) left / 2.6mm 2.6mm no-repeat,
+    radial-gradient(circle at 1.3mm 1.3mm, #2a2723 1.1mm, transparent 1.2mm) right / 2.6mm 2.6mm no-repeat;
+}
+.fm-link { display: inline-block; width: 2.2mm; height: 0.8mm; margin-bottom: 3.6mm; background: #2a2723; flex: 0 0 auto; }
+.fm-engine { display: block; flex: 0 0 auto; margin-bottom: 0.2mm; }
 .fm-slot {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 16mm; height: 10mm; padding: 0 2mm;
+  display: inline-flex; align-items: center; justify-content: center; min-width: 12mm; height: 7mm; padding: 0 1.4mm;
   font-size: 12pt; font-weight: 800; color: #1d4f7c; white-space: nowrap;
-  background: #ffffff; border: 0.4mm dashed #2a2723; border-radius: 1.6mm;
+  background: #ffffff; border: 0.35mm dashed #2a2723; border-radius: 1mm;
 }
-.fm-slot.is-full, .fm-slot--given { border-style: solid; }
+.fm-coach--given .fm-slot { border-style: solid; border-color: #8aa9c4; }
+/* on screen, a coach you type into */
+.fm-type {
+  width: 13mm; height: 7mm; padding: 0 1mm; text-align: center;
+  font: 800 12pt/1 "JetBrains Mono", monospace; color: #1d4f7c;
+  background: #ffffff; border: 0.35mm solid #2a2723; border-radius: 1mm; outline: none;
+}
+.fm-type::placeholder { font-size: 8pt; font-weight: 600; color: #a39b8e; }
+.fm-coach.is-chosen .fm-type { box-shadow: 0 0 0 0.6mm #f4c95d; }
+.fm-coach.is-bad .fm-type { border-color: #c0453f; background: #fdecea; }
+.fm-coach.is-passed { background: #fff3a8; transition: background 0.15s ease; }
+.fm-in {
+  width: 12mm; height: 6.6mm; margin-top: 0.4mm; text-align: center;
+  font: 800 12pt/1 "JetBrains Mono", monospace; color: #2a2723;
+  background: #ffffff; border: 0.35mm solid #2a2723; border-radius: 1mm; outline: none;
+}
+.fm-io--live { cursor: grab; touch-action: none; }
+.fm-io--live em::before { content: "⠿ "; letter-spacing: 0; }
+.fm-io.is-wrong { animation: fm-no 0.4s ease; }
+.fm-io--out.is-new b { animation: fm-pop 0.45s ease; }
+@keyframes fm-no { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-1mm); } 60% { transform: translateX(1mm); } }
+@keyframes fm-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+/* the number on its way through: a card riding the train */
+.fm-token {
+  position: absolute; z-index: 3; display: none; pointer-events: none;
+  transform: translate(-50%, -135%) rotate(-3deg);
+  min-width: 9mm; padding: 0.8mm 2mm; text-align: center;
+  font: 800 12pt/1.2 "JetBrains Mono", monospace; color: #2a2723;
+  background: #fff3a8; border: 0.4mm solid #2a2723; border-radius: 1.2mm;
+  box-shadow: 0.6mm 1mm 1.4mm rgba(20, 19, 15, 0.3);
+}
+.fm-token.is-on { display: block; }
+.fm-controls { display: flex; gap: 1.6mm; align-items: center; }
+.fm-controls .pp-btn { display: inline-grid; place-items: center; width: 8.5mm; height: 7mm; padding: 0; }
+.fm-controls .pp-btn:disabled { opacity: 0.4; cursor: default; }
 .fm-tray { display: flex; align-items: center; gap: 1.6mm; flex-wrap: wrap; }
 .fm-tray__tag { font-size: 8pt; font-weight: 700; color: #6b645a; margin-right: 1mm; }
 .fm-op {
@@ -2260,20 +2311,16 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
   font-size: 10.5pt; font-weight: 800; color: #2a2723; white-space: nowrap;
   background: #fffdf3; border: 0.3mm dashed #8a837a; border-radius: 1mm;
 }
-.wb-live [data-machine-live] .fm-op, .wb-live [data-machine-live] .fm-slot { cursor: pointer; touch-action: none; user-select: none; }
-.wb-live [data-machine-live] .fm-op { border-style: solid; background: #fff7c7; box-shadow: 0 0.4mm 0.8mm rgba(20, 19, 15, 0.18); }
-.fm-op.is-held { outline: 0.7mm solid #f4c95d; outline-offset: 0.5mm; transform: translateY(-0.6mm); }
-.fm-wrap.is-holding .fm-slot { box-shadow: inset 0 0 0 0.5mm #6fb7e8; }
+.wb-live [data-machine-live] .fm-op { cursor: pointer; touch-action: none; user-select: none; border-style: solid; background: #fff7c7; box-shadow: 0 0.4mm 0.8mm rgba(20, 19, 15, 0.18); }
 .fm-run { display: flex; flex-wrap: wrap; gap: 1mm 3mm; font-size: 9pt; color: #55504a; }
 .fm-run__tag { font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; font-size: 7.5pt; }
 .fm-run__one b { color: #1d4f7c; }
 .fm-ghost { position: fixed; z-index: 10070; pointer-events: none; transform: translate(-50%, -50%) rotate(-3deg); background: #fff7c7; border-style: solid; }
-/* Undo / Clear inside the machine, bottom right, under the test row — above it
-   they would sit on the words that introduce the machine */
-.wb-live .fm-wrap[data-machine-live] { padding-bottom: 8mm; min-width: 70mm; }
-.fm-wrap > .wb-drawbar { top: auto; bottom: 1mm; right: 1.5mm; margin: 0; }
-/* the marking outline is the machine's, never its little arrows' */
+/* Undo / Clear beside + and −, bottom right of the train */
+.wb-live .fm-wrap[data-machine-live] { padding-bottom: 1mm; min-width: 80mm; }
+.fm-controls > .wb-drawbar { position: static; margin-left: auto; }
+/* the marking outline is the train's, never its engine's */
 .wb-drawhost.fm-wrap.is-right svg, .wb-drawhost.fm-wrap.is-wrong svg { outline: none; }
 .wb-drawhost.fm-wrap.is-right { outline: 0.6mm solid #3f8f4f; outline-offset: 0.6mm; border-radius: 2mm; }
 .wb-drawhost.fm-wrap.is-wrong { outline: 0.6mm solid #c0453f; outline-offset: 0.6mm; border-radius: 2mm; }
-@media print { .fm-run { display: none; } }
+@media print { .fm-run, .fm-controls, .fm-token { display: none; } }

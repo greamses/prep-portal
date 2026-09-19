@@ -611,6 +611,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).machine[k]; wrap.__wbMachine?.clear(); dirty(node); save(); });
+    /* Undo and Clear join the train's own row of buttons (+, −, play), not
+       floating over its job cards */
+    const bar = wrap.querySelector(":scope > .wb-drawbar");
+    wrap.querySelector(".fm-controls")?.appendChild(bar);
   }
 
   /* ── pushing the two piles together ────────────────────────────────────
