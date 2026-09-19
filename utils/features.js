@@ -114,7 +114,7 @@ export const FEATURES = [
          subscriber's pages (server/routes/workbooks.js). */
       { id: "maths-workbook", label: "Maths Workbook (printable — place value, words, sums, remainders, fractions, time, multiplying)", path: "/prep-math/activity/maths-workbook" },
       { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to parts of a circle)", path: "/prep-math/activity/geometry-workbook" },
-      { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem)", path: "/prep-math/activity/algebra-workbook" },
+      { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities)", path: "/prep-math/activity/algebra-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },

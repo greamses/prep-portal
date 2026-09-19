@@ -15,6 +15,7 @@ const CHAPTERS = {
   2: "Chapter 2: The bar model",
   3: "Chapter 3: The balance scale",
   4: "Chapter 4: The remainder theorem",
+  5: "Chapter 5: Properties and identities",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

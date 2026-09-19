@@ -107,6 +107,45 @@ export const ICON = {
       `<path d="M9.2 11.8l3 3-4.1 1.1z" fill="${LOUD}"/>`
   ),
 
+  /* ── chapter 5 ── */
+  /* Two things changing places across an equals sign. */
+  apComm: svg(
+    `<rect x="2.6" y="5" width="7" height="5.4" rx="1.2" fill="${GOLD}"/>` +
+      `<rect x="14.4" y="5" width="7" height="5.4" rx="1.2" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="13.6" width="7" height="5.4" rx="1.2" fill="${PAPER}"/>` +
+      `<rect x="14.4" y="13.6" width="7" height="5.4" rx="1.2" fill="${GOLD}"/>` +
+      `<rect x="10.8" y="10.4" width="2.4" height="1.2" rx="0.6" fill="${LOUD}"/>` +
+      `<rect x="10.8" y="12.4" width="2.4" height="1.2" rx="0.6" fill="${LOUD}"/>`
+  ),
+  /* Three counters, two of them in a ring. */
+  apAssoc: svg(
+    `<rect x="2" y="6.4" width="13.4" height="11.2" rx="5.6" fill="${LEAF}"/>` +
+      `<circle cx="6.4" cy="12" r="2.8" fill="${GOLD}"/>` +
+      `<circle cx="11" cy="12" r="2.8" fill="${GOLD}"/>` +
+      `<circle cx="19" cy="12" r="2.8" fill="${LOUD}"/>`
+  ),
+  /* A rectangle cut in two: k(a + b) is ka and kb. */
+  apDist: svg(
+    `<rect x="2.6" y="5.4" width="11" height="13.2" rx="1" fill="${GOLD}"/>` +
+      `<rect x="14.8" y="5.4" width="6.6" height="13.2" rx="1" fill="${PAPER}"/>` +
+      bar(14.2, 3.6, 14.2, 20.4, 1.6, LOUD)
+  ),
+  /* A yellow and a red counter: a zero pair. */
+  apZero: svg(
+    `<circle cx="7.6" cy="12" r="5.2" fill="${GOLD}"/>` +
+      `<circle cx="16.4" cy="12" r="5.2" fill="${LOUD}"/>` +
+      `<rect x="5.2" y="11.1" width="4.8" height="1.8" rx="0.9" fill="#fff"/>` +
+      `<rect x="6.7" y="9.6" width="1.8" height="4.8" rx="0.9" fill="#fff"/>` +
+      `<rect x="14" y="11.1" width="4.8" height="1.8" rx="0.9" fill="#fff"/>`
+  ),
+  /* (a + b)²: the big square, its a² and b², and the two rectangles between. */
+  apIdent: svg(
+    `<rect x="3" y="3" width="11" height="11" fill="${GOLD}"/>` +
+      `<rect x="14.6" y="3" width="6.4" height="11" fill="${LOUD}"/>` +
+      `<rect x="3" y="14.6" width="11" height="6.4" fill="${LOUD}"/>` +
+      `<rect x="14.6" y="14.6" width="6.4" height="6.4" fill="${PAPER}"/>`
+  ),
+
   /* A strip with a pencil over it: draw the model yourself. */
   pencilBar: svg(
     `<rect x="2.4" y="13.4" width="13.6" height="6.4" rx="1.2" fill="${PAPER}"/>` +

@@ -336,3 +336,15 @@
 }
 .ab-move + .ab-move { border-top: 0.25mm solid #ded8cc; }
 .ab-move .wb-ask { margin: 0; }
+
+/* ── chapter 5: properties and identities ─────────────────────────────────
+   A drawing and its sentences side by side, like the geometry workbook's
+   gw-side; and the table of values an identity is checked against. */
+.ap-side { display: flex; align-items: center; gap: 6mm; flex-wrap: wrap; }
+.ap-side .ab-art { display: flex; gap: 6mm; align-items: flex-end; flex-wrap: wrap; }
+.ap-lines { flex: 1 1 55mm; min-width: 0; }
+.ap-lines .wb-answer { width: 13mm; }
+.ap-table { border-collapse: collapse; margin: 2mm 0 2.5mm; font-size: 11pt; }
+.ap-table th, .ap-table td { border: 0.3mm solid #2a2723; padding: 1.2mm 3mm; text-align: center; min-width: 18mm; }
+.ap-table th { background: #fff3a8; white-space: nowrap; font-weight: 700; }
+.wb-sheet .ap-eq { white-space: nowrap; }

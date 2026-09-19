@@ -129,6 +129,20 @@ export function splitMath(s) {
       const text = s.slice(j, k);
       return ["num", text, text.replace(/,/g, "{,}"), k];
     }
+    /* two or three letters written together between operators are a product
+       of letters — "ab − ac", "xy = yx" — but only with an operator (or a
+       bracket, or the end) on BOTH sides, so "the answer is −2" keeps "is" */
+    if (/[a-z]/.test(c) && !isLetter(s[j - 1]) && /[a-z]/.test(s[j + 1] || "")) {
+      let k = j;
+      while (k < n && /[a-z]/.test(s[k])) k++;
+      if (k - j <= 3 && !isLetter(s[k]) && !isDigit(s[k])) {
+        const before = s.slice(0, j).trimEnd();
+        const after = s.slice(k).trimStart();
+        const opBefore = !before || /[=+−×(]$/.test(before);
+        const opAfter = !after || /^[=+−×)]/.test(after);
+        if (opBefore && opAfter && (before || after)) return ["var", s.slice(j, k), s.slice(j, k), k];
+      }
+    }
     if (isLetter(c) && !isLetter(s[j - 1]) && !isLetter(s[j + 1]) && !isDigit(s[j + 1]) && /[a-zA-Z]/.test(c)) return ["var", c, c, j + 1];
     if (c === "%") return ["post", c, "\\%", j + 1];
     /* a colon is a ratio only with room either side (3 : 4); straight after a
@@ -150,7 +164,10 @@ export function splitMath(s) {
 
   while (i < n) {
     const first = token(i);
-    if (!first || first[0] === "close" || first[0] === "sup" || first[0] === "deg" || first[0] === "slash" || first[0] === "post" ||
+    /* a run may open with ")" only where the text itself begins — straight
+       after an answer box, as in "(x + ▢)(x − ▢)" */
+    const atStart = !s.slice(0, i).trim();
+    if (!first || (first[0] === "close" && !atStart) || first[0] === "sup" || first[0] === "deg" || first[0] === "slash" || first[0] === "post" ||
         (first[0] === "op" && !["−", "-", "=", "<", ">", "≈", "≤", "≥", "≠"].includes(first[1]))) {
       plain += s[i];
       i++;
@@ -165,7 +182,7 @@ export function splitMath(s) {
       if (toks.length && s[k] === " ") k++;
       const t = token(k);
       if (!t) break;
-      if (t[0] === "close" && depth === 0) break;
+      if (t[0] === "close" && depth === 0 && !atStart) break;
       /* a space then a letter that starts a WORD ends the run */
       if (t[0] === "var" && toks.length && k > j && !["op", "open", "slash"].includes(toks[toks.length - 1][0]) && !LONE.has(t[1])) break;
       /* two terms side by side with a space and nothing between them are two
@@ -188,9 +205,18 @@ export function splitMath(s) {
     const hasNum = toks.some((t) => t[0] === "num");
     const hasOp = toks.some((t) => t[0] === "op" || t[0] === "slash");
     const vars = toks.filter((t) => t[0] === "var");
-    const balanced = toks.filter((t) => t[0] === "open").length === toks.filter((t) => t[0] === "close").length;
+    /* brackets must match — unless the run meets the edge of its text, where
+       an answer box sits inside the bracket: "(x + ▢)" is "(x +", ▢, ")" */
+    const runEnd = toks.length ? toks[toks.length - 1][3] : i;
+    const atEnd = !s.slice(runEnd).trim();
+    const opens = toks.filter((t) => t[0] === "open").length;
+    const closes = toks.filter((t) => t[0] === "close").length;
+    /* an unclosed ( only where the text stops (a box follows it); an unopened
+       ) only where the text starts (a box came before it) */
+    const balanced = opens === closes || (opens > closes && atEnd) || (closes > opens && atStart);
     const ok = toks.length && balanced && (hasNum || (vars.length && hasOp) || (toks.length === 1 && vars.length === 1 && LONE.has(vars[0][1])) ||
-      (vars.length && toks.some((t) => t[0] === "sup")));
+      (vars.length && toks.some((t) => t[0] === "sup")) ||
+      (atStart && toks[0]?.[0] === "close" && toks.some((t) => t[0] === "sup")));
     if (!ok) {
       plain += s[i];
       i++;
@@ -278,7 +304,7 @@ export function mathify(root) {
   if (!mathReady() || !root) return 0;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (t) => {
-      if (!t.nodeValue || !/[0-9½¼¾⅓⅔πxyzn√=+−×÷]/.test(t.nodeValue)) return NodeFilter.FILTER_REJECT;
+      if (!t.nodeValue || !/[0-9½¼¾⅓⅔πxyzn√=+−×÷()]/.test(t.nodeValue)) return NodeFilter.FILTER_REJECT;
       return t.parentElement?.closest(SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
     },
   });
@@ -286,7 +312,12 @@ export function mathify(root) {
   while (walker.nextNode()) texts.push(walker.currentNode);
   let set = 0;
   for (const t of texts) {
-    const parts = splitMath(t.nodeValue);
+    /* a bracket on its own between two answer boxes — "▢(▢x + ▢)" — is part of
+       the expression either side of it, and is set like it */
+    const lone = /^(\s*)([()]+)(\s*)$/.exec(t.nodeValue);
+    const parts = lone
+      ? [lone[1] && { math: false, text: lone[1] }, { math: true, text: lone[2], tex: lone[2] }, lone[3] && { math: false, text: lone[3] }].filter(Boolean)
+      : splitMath(t.nodeValue);
     if (!parts.some((p) => p.math)) continue;
     const frag = document.createDocumentFragment();
     for (const p of parts) {
