@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+    <title>Prep Portal | Two Scales</title>
+    <meta
+      name="description"
+      content="Two balance scales, side by side, for systems of two equations. Solve one scale — send a block across and it changes sign, put blocks together, share both pans equally — and then carry what it says a letter is worth onto the other scale and swap it in. That is substitution, done with your hands: start by simply evaluating with a letter whose value is given, then solve one scale first, then take on two unknowns."
+    />
+
+    <!-- Page access gate: feature "prep-math-activities", part "two-scales" -->
+    <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Shantell+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <!-- the site-wide sheet that dresses .pp-btn and .pp-sticky as paper -->
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- the guards resolve firebase by bare specifier -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
+      }
+    </script>
+
+    <script src="/utils/components/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>Balance</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <script type="module" src="/utils/auth/login-guard.js"></script>
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <main class="ts-page">
+      <header class="ts-head">
+        <span class="ts-eyebrow">
+          <span id="ts-eyebrow-icon"></span>
+          Mathematics · Algebra
+        </span>
+        <h1 class="ts-title">Two Scales<em>.</em></h1>
+        <p class="ts-lede">
+          Two scales, two equations. Solve what you can on one scale, then carry
+          what it says a letter is worth over to the other and swap it in.
+        </p>
+      </header>
+
+      <section class="ts-bar">
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c2" id="ts-again"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c1" id="ts-undo"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c4" id="ts-reset"></button>
+        <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3" id="ts-open-settings"></button>
+        <span class="ts-goal" id="ts-goal"></span>
+        <span class="ts-moves" id="ts-moves"></span>
+        <p class="ts-say" id="ts-say" role="status" aria-live="polite"></p>
+      </section>
+
+      <div class="pp-receipt ts-board">
+        <div class="pp-receipt__paper ts-board__paper">
+          <div class="ts-scales" id="ts-board"></div>
+        </div>
+      </div>
+
+      <section class="ts-help">
+        <h2 class="ts-help__title">The four moves</h2>
+        <ul class="ts-help__list">
+          <li><b>Across.</b> Tap a block (or drag it to the other pan of its own scale): it crosses over, and its sign turns over with it.</li>
+          <li><b>Together.</b> Drag a block onto another in the same pan: numbers add up, and a block and its opposite leave nothing.</li>
+          <li><b>Share.</b> When both pans cut into equal helpings, share them and keep one helping each side.</li>
+          <li><b>Swap.</b> When a scale has a letter on its own, it says what that letter is worth: drag its chip onto the same letter on the other scale.</li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="ts-modal" id="ts-settings" role="dialog" aria-modal="true"
+         aria-labelledby="ts-settings-title" hidden>
+      <div class="ts-modal__back" data-close></div>
+      <div class="pp-receipt ts-modal__card">
+        <div class="pp-receipt__paper ts-modal__paper">
+          <header class="ts-modal__head">
+            <h2 class="ts-modal__title" id="ts-settings-title">Settings</h2>
+            <button type="button" class="pp-sticky pp-note-btn ts-modal__close"
+                    data-close aria-label="Put the settings away"></button>
+          </header>
+          <div class="ts-modal__body">
+            <div class="ts-set">
+              <span class="ts-set__label">How hard</span>
+              <p class="ts-set__note">
+                Start where substitution is the whole job, and work up to a pair
+                of equations with two unknowns.
+              </p>
+              <div class="ts-opts" id="ts-levels"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/utils/components/nav-builder.js"></script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

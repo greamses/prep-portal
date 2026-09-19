@@ -182,6 +182,7 @@ const NAV_CONFIG = [
              four sibling entries the reader has to tell apart. */
           { text: "Geometry", href: "/prep-math/activity/polygon-angles/index.html", description: "Angles, transversals, Pythagoras and surface area" },
           { text: "Number Match", href: "/prep-math/activity/number-match/index.html", description: "Match words, tallies and blocks to the number" },
+          { text: "Two Scales", href: "/prep-math/activity/two-scales/index.html", description: "Two equations on two balances: solve one, substitute into the other" },
         ],
       },
       /* The workbooks have grown into a shelf of their own: printable, and
