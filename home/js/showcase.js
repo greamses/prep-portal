@@ -10,6 +10,11 @@
    not a photograph, not an icon, but a little scene a person recognises when
    they get there — and the whole card is the link to it.
 
+   The CARD is the one this site already has — the games hub's and the blog's
+   (.science-card on receipt paper, a sticky note for the tag, blogs/css/
+   blog.css) — because a second card design is a second thing to keep in step.
+   Only the snapshot is new, and it sits where a photograph would.
+
    Every snapshot is drawn from the site's own tokens, so it re-tints with the
    theme, and each is one function returning SVG: nothing to load, nothing to
    go missing, and a new card is one entry in the list below.
@@ -133,32 +138,38 @@ const ART = {
 /* ── what is on the wall ─────────────────────────────────────────────────── */
 
 export const SHOWCASE = [
-  { art: "balance", tag: "Algebra", title: "Balance scales", line: "Take the same off both pans and watch it stay level. Two scales for two equations.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "tiles", tag: "Algebra", title: "Completing the square", line: "Lay the tiles, fill the corner, and see why the middle number is halved.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "train", tag: "Functions", title: "Function machines", line: "A coach for every job. Send a number along the train and watch it change.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "graph", tag: "Graphs", title: "Graphs of functions", line: "Plot the points by tapping, rule the line, read it back.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "stats", tag: "Statistics", title: "Charts you build", line: "Pictograms, bars, pie charts and scatter graphs — tapped into place and marked.", href: "/prep-math/activity/statistics-workbook/index.html" },
-  { art: "print", tag: "Workbooks", title: "Printable workbooks", line: "Maths, geometry, algebra and statistics — a fresh paper every time, with answers.", href: "/prep-math/activity/maths-workbook/index.html" },
-  { art: "blocks", tag: "Number", title: "Manipulatives", line: "Blocks, abacuses, place-value charts and written boards on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
-  { art: "notes", tag: "Number", title: "Number Match", line: "Every way of writing a number, poured onto the table to be matched.", href: "/prep-math/activity/number-match/index.html" },
-  { art: "map", tag: "Puzzles", title: "Map of Nigeria jigsaw", line: "Drag all 37 states home — and slider puzzles, tangrams and shikaku beside it.", href: "/exam-archive/national/puzzles/index.html" },
-  { art: "game", tag: "Games", title: "Games that drill", line: "Races against the clock and 3D worlds where the maths is the controls.", href: "/home/games/index.html" },
-  { art: "writing", tag: "English", title: "Writing evaluator", line: "Plan it, write it, and get it marked paragraph by paragraph in red pen.", href: "/writing/index.html" },
-  { art: "exam", tag: "Exams", title: "Past papers & CBT", line: "Exam-style questions by class, subject and topic, timed like the real thing.", href: "/exam-archive/national/exams/index.html" },
+  { art: "balance", tag: "Algebra", title: "Balance scales", line: "Take the same off both pans. The beam never lies.", href: "/prep-math/activity/algebra-workbook/index.html" },
+  { art: "tiles", tag: "Algebra", title: "Completing the square", line: "Lay the tiles and fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/index.html" },
+  { art: "train", tag: "Functions", title: "Function machines", line: "Send a number along the train, coach by coach.", href: "/prep-math/activity/algebra-workbook/index.html" },
+  { art: "graph", tag: "Graphs", title: "Graphs of functions", line: "Tap the points, rule the line, read it back.", href: "/prep-math/activity/algebra-workbook/index.html" },
+  { art: "stats", tag: "Statistics", title: "Charts you build", line: "Pictograms, bars, pie charts and scatter graphs.", href: "/prep-math/activity/statistics-workbook/index.html" },
+  { art: "print", tag: "Workbooks", title: "Printable workbooks", line: "A fresh paper every time, with the answers.", href: "/prep-math/activity/maths-workbook/index.html" },
+  { art: "blocks", tag: "Number", title: "Manipulatives", line: "Blocks, abacuses and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
+  { art: "notes", tag: "Number", title: "Number Match", line: "Every way of writing a number, poured on a table.", href: "/prep-math/activity/number-match/index.html" },
+  { art: "map", tag: "Puzzles", title: "Map of Nigeria jigsaw", line: "Drag all 37 states home. Tangrams and shikaku too.", href: "/exam-archive/national/puzzles/index.html" },
+  { art: "game", tag: "Games", title: "Games that drill", line: "Races against the clock, and 3D worlds to play in.", href: "/home/games/index.html" },
+  { art: "writing", tag: "English", title: "Writing evaluator", line: "Plan it, write it, and get it marked in red pen.", href: "/writing/index.html" },
+  { art: "exam", tag: "Exams", title: "Past papers & CBT", line: "Exam-style questions, timed like the real thing.", href: "/exam-archive/national/exams/index.html" },
 ];
 
-/** Draw the wall into `.showcase-grid`. */
+/* the same arrow the games hub ends its cards with */
+const ARROW = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
+
+/** Draw the wall into `.showcase-grid` — the site's own card, one per thing. */
 export function mountShowcase(root = document) {
   const grid = root.querySelector(".showcase-grid");
   if (!grid) return 0;
-  grid.innerHTML = SHOWCASE.map((s) => (
-    `<a class="shot" href="${s.href}">` +
-    `<span class="shot__frame">${(ART[s.art] || ART.exam)()}</span>` +
-    `<span class="shot__tag">${s.tag}</span>` +
-    `<span class="shot__title">${s.title}</span>` +
-    `<span class="shot__line">${s.line}</span>` +
-    `</a>`
-  )).join("");
+  grid.innerHTML = SHOWCASE.map((s, i) => {
+    const c = i % 6;
+    return `<a class="science-card pp-receipt science-card--p${c} shot" href="${s.href}">` +
+      `<div class="card-inner pp-receipt__paper">` +
+      `<span class="shot__frame">${(ART[s.art] || ART.exam)()}</span>` +
+      `<div class="card-badges"><span class="pp-sticky pp-sticky--c${c}">${s.tag}</span></div>` +
+      `<h3 class="card-title">${s.title}</h3>` +
+      `<p class="card-excerpt">${s.line}</p>` +
+      `<div class="read-more">Open it ${ARROW}</div>` +
+      `</div></a>`;
+  }).join("");
   return SHOWCASE.length;
 }
 

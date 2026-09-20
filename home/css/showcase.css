@@ -1,10 +1,13 @@
 /* ============================================================================
    HOME — the wall of snapshots
    ----------------------------------------------------------------------------
-   A card is the whole link: a little drawing of the thing, what it is called,
-   and one line about it. Cards are paper — the site's own soft card, a hair of
-   a border and a shadow that lifts on hover — and the drawings re-tint with
-   the theme because they are drawn from its tokens.
+   The CARD is not defined here. It is the one the games hub and the blog
+   already use — `.science-card` on receipt paper with a sticky note for its
+   tag (blogs/css/blog.css, linked by this page) — so there is one card design
+   on this site and not two.
+
+   What IS here: the section around the wall, and the frame the little drawing
+   sits in, where a photograph would sit on a blog card.
    ========================================================================== */
 
 .showcase-section {
@@ -14,62 +17,27 @@
 }
 .showcase-head { max-width: 46rem; margin: 0 auto clamp(1.5rem, 3vw, 2.5rem); text-align: center; }
 
+/* the same grid as the games hub, a little tighter: these cards are shorter */
 .showcase-grid {
   display: grid;
-  gap: clamp(0.9rem, 2vw, 1.4rem);
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  grid-template-columns: repeat(auto-fill, minmax(min(270px, 100%), 1fr));
 }
 
-.shot {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.75rem 0.75rem 1rem;
-  border-radius: 1.1rem;
-  background: var(--surface-primary, #fffdf8);
-  border: 1px solid rgba(20, 19, 15, 0.08);
-  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.05);
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-}
-.shot:hover, .shot:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px -12px rgba(20, 19, 15, 0.35);
-  border-color: rgba(20, 19, 15, 0.16);
-  outline: none;
-}
-.shot__frame {
+/* the snapshot, where a blog card carries its picture */
+.showcase-grid .shot__frame {
   display: block;
-  border-radius: 0.8rem;
+  margin-bottom: 0.85rem;
+  border: var(--border-subtle, 1px solid rgba(20, 19, 15, 0.12));
+  border-radius: 0.5rem;
   overflow: hidden;
-  background: rgba(20, 19, 15, 0.03);
+  background: var(--surface-secondary);
 }
-.shot__art { display: block; width: 100%; height: auto; }
-.shot__tag {
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent-secondary);
-  margin-top: 0.45rem;
-}
-.shot__title {
-  font-family: var(--font-display, "Unbounded", system-ui, sans-serif);
-  font-size: 0.98rem;
-  font-weight: 800;
-  line-height: 1.25;
-  color: var(--ink);
-}
-.shot__line {
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
+.showcase-grid .shot__art { display: block; width: 100%; height: auto; }
 
-@media (prefers-reduced-motion: reduce) {
-  .shot { transition: none; }
-  .shot:hover, .shot:focus-visible { transform: none; }
-}
+/* the card's own paper does the lifting; these only keep it compact */
+.showcase-grid .card-inner { padding: 1rem 1.05rem 1.15rem; }
+.showcase-grid .card-title { font-size: 1.02rem; margin-bottom: 0.4rem; }
+/* three lines here rather than the blog's two: these read as captions, and a
+   sentence cut in half mid-word is worse than a line more */
+.showcase-grid .card-excerpt { margin-bottom: 0.7rem; -webkit-line-clamp: 3; line-clamp: 3; }
