@@ -238,12 +238,60 @@ function texOf(toks) {
     const [kind, , t, , spaced] = toks[k];
     /* 3 407: a space between two numbers is a digit-group space */
     if (spaced && kind === "num" && toks[k - 1]?.[0] === "num") tex += "\\,";
-    if (kind === "slash" && toks[k - 1]?.[0] === "num" && toks[k + 1]?.[0] === "num" && !toks[k][4] && !toks[k + 1][4]) {
-      /* 22/7 → a small stacked fraction: take back the numerator */
-      const top = toks[k - 1][2];
-      tex = tex.slice(0, tex.length - top.length) + `\\tfrac{${top}}{${toks[k + 1][2]}}`;
-      k++;
-      continue;
+    /* A fraction is written with a line ACROSS, not a slash: 22/7, x/5 and
+       (x + 2)/3 all stack. Either side may be a number, a letter or a
+       bracketed group; a slash with a space round it is left alone, and so
+       is a unit like km/h (which never becomes a run of mathematics at all,
+       since "km" is not a term). */
+    if (kind === "slash" && !toks[k][4] && toks[k + 1] && !toks[k + 1][4]) {
+      const prev = toks[k - 1];
+      const next = toks[k + 1];
+      const simple = (t) => t && (t[0] === "num" || t[0] === "var");
+      let top = null;
+      let took = 0;
+      let group = false;
+      if (prev && prev[0] === "close") {
+        /* the bracketed group that ends just before the slash */
+        let d = 0;
+        let m = k - 1;
+        for (; m >= 0; m--) {
+          if (toks[m][0] === "close") d++;
+          if (toks[m][0] === "open") d--;
+          if (d === 0) break;
+        }
+        if (m >= 0) {
+          const span = toks.slice(m, k);
+          took = span.reduce((w, t) => w + t[2].length, 0);
+          top = span.slice(1, -1).map((t) => t[2]).join("");
+          group = true;
+        }
+      } else if (simple(prev)) {
+        top = prev[2];
+        took = prev[2].length;
+      }
+      let bottom = null;
+      let skip = k + 1;
+      if (next[0] === "open") {
+        let d = 0;
+        let m = k + 1;
+        for (; m < toks.length; m++) {
+          if (toks[m][0] === "open") d++;
+          if (toks[m][0] === "close") d--;
+          if (d === 0) break;
+        }
+        if (m < toks.length) {
+          bottom = toks.slice(k + 2, m).map((t) => t[2]).join("");
+          skip = m;
+          group = true;
+        }
+      } else if (simple(next)) {
+        bottom = next[2];
+      }
+      if (top !== null && bottom !== null && tex.length >= took) {
+        tex = tex.slice(0, tex.length - took) + "\\" + (group ? "" : "t") + "frac{" + top + "}{" + bottom + "}";
+        k = skip;
+        continue;
+      }
     }
     if (kind === "sqrt") {
       const next = toks[k + 1];

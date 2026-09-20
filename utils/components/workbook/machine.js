@@ -126,7 +126,13 @@ export function trainHtml({ given = null, slots = 0, ins = [], tray = [], inVal 
   const cards = tray.length
     ? `<div class="fm-tray"><span class="fm-tray__tag">Job cards</span>${tray.map((op) => `<span class="fm-op" data-op="${op}">${opText(op)}</span>`).join("")}</div>`
     : "";
-  return `<div class="fm-wrap wb-nomath"${given ? "" : ` data-machine="1" data-ins="${ins.join(",")}" data-slots="${slots}"`}>` +
+  /* A train with its jobs written on it still carries them in `data-ops`, and
+     — unless a number is already printed on its IN card — says so with
+     `data-ride`: on screen a child may type a number on IN and send it
+     through, to try one of their own. A train to BUILD says `data-machine`
+     instead, and is marked. */
+  const rides = given ? ` data-ops="${given.join(",")}"${inVal === null ? ' data-ride="1"' : ""}` : "";
+  return `<div class="fm-wrap wb-nomath"${given ? rides : ` data-machine="1" data-ins="${ins.join(",")}" data-slots="${slots}"`}>` +
     `<div class="fm-row">${io("in", "In", inVal)}<span class="fm-train">${coaches.join(`<i class="fm-link"></i>`)}<i class="fm-link"></i>${ENGINE}</span>${io("out", "Out", outVal)}</div>` +
     `${cards}</div>`;
 }
@@ -142,14 +148,18 @@ const ICON = {
 };
 
 /**
- *   mountMachine(wrap, { saved, onChange })
+ *   mountMachine(wrap, { saved, onChange, build })
  *     saved     the job in each coach from before ["+3", null, …], or null
+ *     build     false for a train whose jobs are already written on it: its
+ *               coaches cannot be changed, and all it gives is the ride
  *   → { ops(), set(list), clear(), dispose() }
  */
-export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
+export function mountMachine(wrap, { saved = null, onChange = () => {}, build = true } = {}) {
   const printed = wrap.innerHTML;
   const start = Number(wrap.dataset.slots) || wrap.querySelectorAll(".fm-coach").length || 1;
-  let ops = saved && saved.length ? saved.slice(0, MAX) : Array.from({ length: start }, () => null);
+  let ops = build
+    ? (saved && saved.length ? saved.slice(0, MAX) : Array.from({ length: start }, () => null))
+    : (wrap.dataset.ops || "").split(",").filter(Boolean);
   let typed = ops.map((op) => (op ? opText(op) : ""));   // what is written in each coach, right or not
   let chosen = 0;                                          // the coach a tapped card goes into
   let rides = [];
@@ -168,8 +178,10 @@ export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
   const bar = document.createElement("div");
   bar.className = "fm-controls";
   bar.innerHTML =
-    `<button type="button" class="pp-btn wb-tint-4 fm-less" data-tip="Take the last coach off" aria-label="Take the last coach off">${ICON.less}</button>` +
-    `<button type="button" class="pp-btn wb-tint-2 fm-add" data-tip="Add a coach" aria-label="Add a coach">${ICON.add}</button>` +
+    (build
+      ? `<button type="button" class="pp-btn wb-tint-4 fm-less" data-tip="Take the last coach off" aria-label="Take the last coach off">${ICON.less}</button>` +
+        `<button type="button" class="pp-btn wb-tint-2 fm-add" data-tip="Add a coach" aria-label="Add a coach">${ICON.add}</button>`
+      : "") +
     `<button type="button" class="pp-btn wb-tint-1 fm-go" data-tip="Move the card on to the next coach" aria-label="Move the card on to the next coach">${ICON.play}</button>`;
   row.after(bar);
   const log = document.createElement("div");
@@ -181,7 +193,7 @@ export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
   token.setAttribute("aria-hidden", "true");
   row.appendChild(token);
 
-  const commit = (before) => { halt(); onChange(ops.slice(), before); };
+  const commit = (before) => { halt(); if (build) onChange(ops.slice(), before); };
 
   const paintLog = () => {
     log.innerHTML = rides.length
@@ -194,6 +206,7 @@ export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
     const coaches = typed.map((t, i) =>
       `<span class="fm-coach fm-coach--live${ops[i] === null && t.trim() ? " is-bad" : ""}${i === chosen ? " is-chosen" : ""}" data-slot="${i}">` +
       `<input class="fm-type" type="text" value="${t.replace(/"/g, "&quot;")}" placeholder="job" maxlength="7" aria-label="The job in coach ${i + 1}" spellcheck="false">${WHEELS}</span>`);
+    if (!build) return;   // the jobs are printed on this one: nothing to draw
     train.innerHTML = coaches.join(`<i class="fm-link"></i>`) + `<i class="fm-link"></i>` + ENGINE;
     bar.querySelector(".fm-less").disabled = typed.length <= MIN;
     bar.querySelector(".fm-add").disabled = typed.length >= MAX;
@@ -246,6 +259,8 @@ export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
   };
   const onClick = (e) => {
     if (wrap.__fmSwallow) return;
+    if (e.target.closest(".fm-go")) { forward(); return; }
+    if (!build) return;
     const card = e.target.closest(".fm-op");
     if (card) { cardInto(card.dataset.op); return; }
     if (e.target.closest(".fm-add") && typed.length < MAX) {
@@ -443,6 +458,7 @@ export function mountMachine(wrap, { saved = null, onChange = () => {} } = {}) {
 
   const reset = (list) => {
     halt();
+    if (!build) return;
     ops = list.slice(0, MAX).map((o) => o || null);
     if (!ops.length) ops = [null];
     typed = ops.map((op) => (op ? opText(op) : ""));

@@ -226,6 +226,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       makeJoinable(node, idx);
     }
 
+    /* a train with its jobs already written on it: not an answer, but a child
+       may still type a number on its IN card and send it through, to try one
+       of their own — the same ride, without the coaches being editable */
+    node.querySelectorAll("[data-ride]:not([data-machine])").forEach((wrap) => {
+      wrap.__wbMachine = mountMachine(wrap, { build: false });
+    });
+
     /* a shape that says what its outline is can be folded along its lines */
     node.querySelectorAll("svg[data-fold]").forEach((svg) => makeFoldable(svg));
 
@@ -269,7 +276,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-picto]").forEach((s) => { s.__wbPicto?.dispose(); s.__wbPicto = null; });
     node.querySelectorAll("svg[data-barbuild]").forEach((s) => { s.__wbBars?.dispose(); s.__wbBars = null; });
     node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
-    node.querySelectorAll("[data-machine]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
