@@ -230,6 +230,21 @@ export const ICON = {
     bar(4, 3, 4, 21, 1.4, QUIET) + bar(3, 20, 21, 20, 1.4, QUIET) + `<path d="M6 4c2 12 4 14 6.5 14S17 16 19 4" fill="none" stroke="${LOUD}" stroke-width="2" stroke-linecap="round"/>`
   ),
 
+  /* ── chapter 8 ── */
+  /* A square of tiles with its corner waiting. */
+  csTiles: svg(
+    `<rect x="3" y="3" width="11" height="11" rx="1" fill="${PAPER}"/>` +
+      `<rect x="15" y="3" width="6" height="11" rx="1" fill="${LEAF}"/>` +
+      `<rect x="3" y="15" width="11" height="6" rx="1" fill="${LEAF}"/>` +
+      `<rect x="15" y="15" width="6" height="6" rx="1" fill="none" stroke="${LOUD}" stroke-width="1.6" stroke-dasharray="2 1.6"/>`
+  ),
+  /* Half of the middle, squared: a bracket with a little square. */
+  csWrite: svg(
+    `<path d="M8 3c-3 4-3 14 0 18M16 3c3 4 3 14 0 18" fill="none" stroke="${QUIET}" stroke-width="1.8" stroke-linecap="round"/>` +
+      bar(9.4, 12, 14.6, 12, 1.8, LOUD) +
+      `<rect x="16.6" y="2.4" width="5.4" height="5.4" rx="1" fill="${GOLD}"/>`
+  ),
+
   /* A strip with a pencil over it: draw the model yourself. */
   pencilBar: svg(
     `<rect x="2.4" y="13.4" width="13.6" height="6.4" rx="1.2" fill="${PAPER}"/>` +

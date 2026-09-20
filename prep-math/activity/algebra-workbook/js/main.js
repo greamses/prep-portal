@@ -84,6 +84,8 @@ mountBuilder({
     "gr-mc": ICON.grMc,
     "gr-solve": ICON.grSolve,
     "gr-curve": ICON.grCurve,
+    "cs-tiles": ICON.csTiles,
+    "cs-write": ICON.csWrite,
   },
   icons: ICON,
   title: "Algebra Workbook",

@@ -32,6 +32,7 @@ import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
 import { mountMachine, machineRight } from "./machine.js";
+import { mountTiles, tilesRight } from "./tiles.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -136,6 +137,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.bars ||= {};     // bar charts drawn by tapping
     r.dots ||= {};     // scatter points plotted by tapping
     r.machine ||= {};  // function machines built from job cards
+    r.tiles ||= {};    // squares completed with algebra tiles
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -247,6 +249,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "bars") makeBarsLive(node, idx, e);
       if (e.kind === "dots") makeDotsLive(node, idx, e);
       if (e.kind === "machine") makeMachineLive(node, idx, e);
+      if (e.kind === "tiles") makeTilesLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -277,6 +280,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-barbuild]").forEach((s) => { s.__wbBars?.dispose(); s.__wbBars = null; });
     node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
     node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-tiles]").forEach((t) => { t.__wbTiles?.dispose(); t.__wbTiles = null; t.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -600,6 +604,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(host, () => { delete rec(idx).dots[k]; svg.__wbDots?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a square completed with algebra tiles ─────────────────────────────
+     tiles.js lays a tile in a place in the frame (and takes it out again);
+     this keeps the work, makes each tile one Undo step, and Clear empties
+     the frame back to what the paper printed. */
+  function makeTilesLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll("[data-tiles]")[k];
+    if (!wrap) return;
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbTiles = mountTiles(wrap, {
+      saved: rec(idx).tiles[k] || null,
+      onChange: (now, before) => {
+        rec(idx).tiles[k] = now;
+        step(wrap, () => { rec(idx).tiles[k] = before; wrap.__wbTiles?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).tiles[k]; wrap.__wbTiles?.clear(); dirty(node); save(); });
   }
 
   /* ── a function machine, built from job cards ──────────────────────────
@@ -1509,6 +1534,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           if (host) host.dataset.want = sayWant(entry);
           right += ok; total += n;
           if (ok < n) allRight = false;
+          return;
+        }
+        if (entry.kind === "tiles") {
+          /* the square is finished when every place holds its own tile */
+          const wrap = node.querySelectorAll("[data-tiles]")[entry.nth || 0];
+          const ok = tilesRight(rec(idx).tiles[entry.nth || 0] || {}, entry.a, entry.sign);
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
           return;
         }
         if (entry.kind === "machine") {
