@@ -2354,4 +2354,3 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    says a piece is a minus one (balance.js) */
 .wb-live .ab-flip { cursor: pointer; opacity: 0.45; transition: opacity 0.12s ease; }
 .wb-live .ab-piece:hover .ab-flip, .wb-live .ab-piece:focus-within .ab-flip { opacity: 1; }
-.wb-live .ab-piece.is-minus { opacity: 0.94; }

@@ -34,6 +34,17 @@
 /* A piece may be turned round: a bag of −x, a weight of −3. It is the same
    piece with a minus badge on it, so "take 3 off both pans" and "that 3 is
    now a −3" are plainly the same block, told apart at a glance. */
+/* A piece turned round is a different STATE of the same thing, so it is a
+   different colour: the sky weight, the butter x bag and the leaf y bag all go
+   rose when they are minus, and come back to their own colour when they are
+   turned back. The shape, the letter and the number never change — it is the
+   same block, owed rather than held. */
+const MINUS_FILL = "#f2b7ae";
+const BODY_FILLS = new Set(["#bfe3ff", "#fff3a8", "#c8f0c0"]);
+const rosy = (g) => g.querySelectorAll("[fill]").forEach((el) => {
+  if (BODY_FILLS.has((el.getAttribute("fill") || "").toLowerCase())) el.setAttribute("fill", MINUS_FILL);
+});
+
 const MINUS_BADGE =
   '<g class="ab-neg" pointer-events="none">' +
   '<circle cx="1.8" cy="1.6" r="2" fill="#c0453f" stroke="#2a2723" stroke-width="0.35"/>' +
@@ -202,7 +213,9 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
         g.setAttribute("role", "button");
         const sign = here[j].__sign;
         const named = p.kind === "bag" ? `a ${p.letter} bag` : p.kind === "cube" ? "a cube, 1" : `a weight, ${p.v}`;
-        if (sign < 0) { g.classList.add("is-minus"); g.insertAdjacentHTML("beforeend", MINUS_BADGE); }
+        /* rosy() first, then the badges: the ± handle is butter itself, and
+           would be caught by the recolouring */
+        if (sign < 0) { g.classList.add("is-minus"); rosy(g); g.insertAdjacentHTML("beforeend", MINUS_BADGE); }
         /* a cube is barely wider than the handle itself: on those, turning
            round is shift-click (or the − key), and the corner stays grabbable */
         if (p.w >= 7) g.insertAdjacentHTML("beforeend", flipHandle(p.w));
