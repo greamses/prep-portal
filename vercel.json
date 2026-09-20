@@ -8,7 +8,9 @@
   },
   "redirects": [
     { "source": "/prep-math/activity/remainder-theorem-workbook", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
-    { "source": "/prep-math/activity/remainder-theorem-workbook/:path*", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true }
+    { "source": "/prep-math/activity/remainder-theorem-workbook/:path*", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
+    { "source": "/prep-math/activity/two-scales", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true },
+    { "source": "/prep-math/activity/two-scales/:path*", "destination": "/prep-math/activity/algebra-workbook/index.html", "permanent": true }
   ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },

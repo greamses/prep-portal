@@ -30,6 +30,7 @@
 
 const INK = "#2a2723";
 const BAG = "#fff3a8";      // butter: the unknown, the same as the bar model's box
+const BAG_Y = "#c8f0c0";    // leaf: the SECOND unknown, where a question has two
 const WEIGHT = "#bfe3ff";   // sky: a weight we were told
 const METAL = "#d8d2c6";    // the scale itself — quiet, so what is ON it reads first
 const GREY = "#8a837a";
@@ -52,7 +53,7 @@ const blockW = (n) => 8 + String(n).length * 2.6;
 
 /* ── the things that stand on a pan ──────────────────────────────────────── */
 
-function bagShape(x, y, letter) {
+function bagShape(x, y, letter, fill = BAG) {
   /* A sack: gathered at the neck, tied with a band, sitting heavy at the
      bottom. The letter is written across the belly where there is room for it,
      and the same sack is drawn whatever it weighs — see the rule at the top. */
@@ -65,13 +66,13 @@ function bagShape(x, y, letter) {
     `<path class="ab-bag" d="M${f(x + w * 0.31)} ${f(y + 3.4)}` +
     `C${f(x - 0.3)} ${f(y + 5.6)} ${f(x - 0.1)} ${f(y + h)} ${f(cx)} ${f(y + h)}` +
     `C${f(x + w + 0.1)} ${f(y + h)} ${f(x + w + 0.3)} ${f(y + 5.6)} ${f(x + w * 0.69)} ${f(y + 3.4)}Z" ` +
-    `fill="${BAG}" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    `fill="${fill}" stroke="${INK}" stroke-width="0.45" stroke-linejoin="round"/>` +
     /* the light down its left side, so it reads as round and not as a blob */
     `<path d="M${f(x + w * 0.34)} ${f(y + 4.2)}C${f(x + 1)} ${f(y + 6.2)} ${f(x + 1.1)} ${f(y + h - 1.6)} ${f(x + w * 0.42)} ${f(y + h - 0.9)}" ` +
     `fill="none" stroke="#fffdf8" stroke-width="0.8" stroke-linecap="round" opacity="0.85"/>` +
     /* the gathered neck above the tie */
     `<path d="M${f(x + w * 0.33)} ${f(y + 3.2)}l${f(w * 0.06)} -2.3h${f(w * 0.22)}l${f(w * 0.06)} 2.3z" ` +
-    `fill="${BAG}" stroke="${INK}" stroke-width="0.4" stroke-linejoin="round"/>` +
+    `fill="${fill}" stroke="${INK}" stroke-width="0.4" stroke-linejoin="round"/>` +
     /* the tie */
     `<rect x="${f(x + w * 0.29)}" y="${f(y + 2.7)}" width="${f(w * 0.42)}" height="1.1" rx="0.55" fill="${GREY}"/>` +
     `<text x="${f(cx)}" y="${f(y + h - 2.6)}" text-anchor="middle" font-family="JetBrains Mono, monospace" ` +
@@ -103,10 +104,14 @@ function blockShape(x, y, n) {
   );
 }
 
-/** What one side of an equation puts on a pan: `bags` of the unknown, and `n` known. */
+/**
+ * What one side of an equation puts on a pan: `bags` of the unknown, `ybags`
+ * of a second unknown where a question has two, and `n` known.
+ */
 function items(side, { letter, cubes }) {
   const out = [];
-  for (let i = 0; i < side.bags; i++) out.push({ kind: "bag", v: 1, w: BAG_W, h: BAG_H, draw: (x, y) => bagShape(x, y, letter) });
+  for (let i = 0; i < side.bags; i++) out.push({ kind: "bag", v: 1, letter, w: BAG_W, h: BAG_H, draw: (x, y) => bagShape(x, y, letter) });
+  for (let i = 0; i < (side.ybags || 0); i++) out.push({ kind: "bag", v: 1, letter: "y", w: BAG_W, h: BAG_H, draw: (x, y) => bagShape(x, y, "y", BAG_Y) });
   if (side.n > 0) {
     if (cubes) for (let i = 0; i < side.n; i++) out.push({ kind: "cube", v: 1, w: CUBE, h: CUBE, draw: (x, y) => cubeShape(x, y) });
     else out.push({ kind: "block", v: side.n, w: blockW(side.n), h: BLOCK_H, draw: (x, y) => blockShape(x, y, side.n) });
@@ -118,7 +123,7 @@ function items(side, { letter, cubes }) {
    place — so on screen it can be picked up, put on the other pan or taken off
    (utils/components/workbook/balance.js), and laid out again the same way. */
 const piece = (it, x, y) =>
-  `<g class="ab-piece" data-kind="${it.kind}" data-v="${it.v}" data-w="${it.w}" data-h="${it.h}" transform="translate(${f(x)} ${f(y)})">` +
+  `<g class="ab-piece" data-kind="${it.kind}" data-v="${it.v}"${it.letter ? ` data-letter="${it.letter}"` : ""} data-w="${it.w}" data-h="${it.h}" transform="translate(${f(x)} ${f(y)})">` +
   it.draw(0, 0) + `</g>`;
 
 /**
@@ -220,7 +225,7 @@ const svg = (h, body, label, data = "") =>
  *   letter        what is written on each bag
  *   cubes         draw each 1 as a cube (the counting stage) rather than a block
  */
-export function balanceSvg(left, right, { letter = "x", cubes = false, label = "A balance scale" } = {}) {
+export function balanceSvg(left, right, { letter = "x", cubes = false, label = "A balance scale", worth = null, name = "" } = {}) {
   /* Cubes are for COUNTING, so they stop being cubes once there are more than
      a child would count: past that the pan takes a labelled weight however the
      caller asked, and the drawing says which it did in data-cubes. Without
@@ -236,7 +241,10 @@ export function balanceSvg(left, right, { letter = "x", cubes = false, label = "
   /* the equation the picture says, kept on the drawing so a check can prove
      that every scale printed is one that really balances — and, for the
      screen, where the pans are, so pieces can be laid out on them again */
-  const data = ` data-left="${left.bags},${left.n}" data-right="${right.bags},${right.n}" data-cubes="${countable ? 1 : 0}"` +
+  /* a scale with TWO letters on it cannot say what a bag weighs on its own,
+     so the question that printed it says: data-worth="x,y" */
+  const data = ` data-left="${left.bags},${left.ybags || 0},${left.n}" data-right="${right.bags},${right.ybags || 0},${right.n}" data-cubes="${countable ? 1 : 0}"` +
+    (worth ? ` data-worth="${worth.x},${worth.y ?? worth.x}"` : "") + (name ? ` data-name="${name}"` : "") +
     ` data-balance="${PAN_L},${PAN_R},${f(panY - 0.3)},${FLOW},${GAP}" data-pivot="${f(fr.pivot[0])},${f(fr.pivot[1])}" data-base="${f(fr.base)}"`;
   const load = (side, body) => `<g class="ab-load" data-side="${side}">${body}</g>`;
   return svg(fr.height, fr.body + load("L", a.body) + load("R", b.body), label, data);
@@ -256,6 +264,7 @@ export function blankBalanceSvg({ room = 26 } = {}) {
 export function sideText(side, letter = "x") {
   const parts = [];
   if (side.bags) parts.push(side.bags === 1 ? letter : `${side.bags}${letter}`);
+  if (side.ybags) parts.push(side.ybags === 1 ? "y" : `${side.ybags}y`);
   if (side.n || !side.bags) parts.push(String(side.n));
   return parts.join(" + ");
 }

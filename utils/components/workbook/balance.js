@@ -36,10 +36,19 @@ const LEAVE_MM = 3;          // let go this far outside the drawing and the piec
 
 const num = (s) => String(s || "").split(",").map(Number);
 
-/** The weight of one bag, from the level equation the scale was printed with. */
+/* Every scale that is live just now. Two scales in one question are two
+   equations, and solving a pair means carrying what ONE of them works out
+   onto the other — so a scale has to be able to see its neighbour. */
+const LIVE = new Set();
+
+/**
+ * The weight of one bag, from the level equation the scale was printed with:
+ * left = [bags, ybags, n]. A scale with a second letter on it cannot say (two
+ * unknowns, one equation) — the question writes data-worth instead.
+ */
 export function bagWeight(left, right) {
-  const [lb, ln] = left;
-  const [rb, rn] = right;
+  const [lb, , ln] = left.length > 2 ? left : [left[0], 0, left[1]];
+  const [rb, , rn] = right.length > 2 ? right : [right[0], 0, right[1]];
   if (lb === rb) return 1;                  // bags that cancel: any weight keeps it level
   const x = (rn - ln) / (lb - rb);
   return Number.isFinite(x) && x > 0 ? x : 1;
@@ -93,13 +102,22 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   if (!svg.__wbBalOrig) svg.__wbBalOrig = svg.innerHTML;
   const [panL, panR, floor, flow, gap] = num(svg.dataset.balance);
   const [px, py] = num(svg.dataset.pivot);
-  const x = bagWeight(num(svg.dataset.left), num(svg.dataset.right));
+  /* what each letter is worth: said by the question when there are two of
+     them, worked out from the equation when there is only one */
+  /* an empty attribute is NOT a worth of nothing: num("") gives [0], which
+     would make every bag weigh nothing and no scale ever look level */
+  const told = svg.dataset.worth ? num(svg.dataset.worth) : [];
+  const x = told.length && Number.isFinite(told[0])
+    ? told[0]
+    : bagWeight(num(svg.dataset.left), num(svg.dataset.right));
+  const worth = { x, y: told.length > 1 && Number.isFinite(told[1]) ? told[1] : x };
 
   /* the pieces the question was printed with, each by its number */
   const printed = [...svg.querySelectorAll(".ab-piece")].map((g, id) => ({
     id,
     side: g.closest(".ab-load")?.dataset.side || "L",
     kind: g.dataset.kind,
+    letter: g.dataset.letter || "x",
     v: Number(g.dataset.v) || 1,
     w: Number(g.dataset.w),
     h: Number(g.dataset.h),
@@ -139,7 +157,7 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
 
   function weights() {
     const w = { L: 0, R: 0 };
-    state.forEach((s) => { const p = printed[s.id]; w[s.side] += p.kind === "bag" ? x : p.v; });
+    state.forEach((s) => { const p = printed[s.id]; w[s.side] += p.kind === "bag" ? (worth[p.letter] ?? x) : p.v; });
     return w;
   }
 
@@ -232,7 +250,9 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       }
       drag.g.setAttribute("transform", `translate(${(x1 - drag.dx).toFixed(2)} ${(y1 - drag.dy).toFixed(2)})`);
       /* say where it will go: off the drawing, it is about to be taken away */
-      drag.g.classList.toggle("is-leaving", outside(e.clientX, e.clientY));
+      /* over a bag on the other scale it is not leaving, it is arriving */
+      const over = [...LIVE].some((o) => o !== svg.__wbBalApi && o.bagAt(e.clientX, e.clientY));
+      drag.g.classList.toggle("is-leaving", !over && outside(e.clientX, e.clientY));
     });
     const outside = (cx, cy) => {
       const r = svg.getBoundingClientRect();
@@ -247,6 +267,22 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       if (!d.moved) return;               // a press, or half of a double-click
       svg.releasePointerCapture?.(e.pointerId);
       d.g.remove();
+      /* let go over a bag on ANOTHER scale: when this scale has worked out
+         what that letter is worth, the bag there is swapped for it, and
+         nothing moves here — the weight was carried across only to show it */
+      const mine = svg.__wbBalApi;
+      const worked = mine?.solved();
+      if (worked && printed[d.id].kind !== "bag") {
+        for (const other of LIVE) {
+          if (other === mine) continue;
+          const bag = other.bagAt(e.clientX, e.clientY);
+          if (!bag) continue;
+          if (bag.letter === worked.letter) other.swapBag(bag.id, worked.pieces, mine.name());
+          else say(`That is a ${bag.letter} bag, and this scale says what ${worked.letter} is worth.`);
+          draw();
+          return;
+        }
+      }
       if (outside(e.clientX, e.clientY)) { remove(d.id); return; }
       const [x1] = toSvg(e.clientX, e.clientY);
       moveTo(d.id, x1 < px ? "L" : "R");
@@ -272,12 +308,67 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
     });
   }
 
-  draw();
+  /* ── one scale to another: substitution ───────────────────────────────
+     A scale is SOLVED for a letter when one pan holds that one bag and
+     nothing else; what the other pan holds is then what the bag is worth. A
+     bag of that letter on ANOTHER scale may be swapped for it — which is
+     what substitution is, done with the hands. */
+  const solved = () => {
+    for (const side of ["L", "R"]) {
+      const here = state.filter((s) => s.side === side).map((s) => printed[s.id]);
+      const there = state.filter((s) => s.side !== side).map((s) => printed[s.id]);
+      if (here.length !== 1 || here[0].kind !== "bag") continue;
+      const letter = here[0].letter;
+      /* what the other pan holds is what the bag is worth — weights, or
+         another letter's bag and some weights, which is just as good to
+         carry across ("y is worth an x and 2") */
+      if (!there.length || there.some((p) => p.kind === "bag" && p.letter === letter)) continue;
+      return { letter, pieces: there };
+    }
+    return null;
+  };
 
-  return {
+  /** The bag under a point, if this scale has one there. */
+  const bagAt = (cx, cy) => {
+    const r = svg.getBoundingClientRect();
+    if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+    for (const g of svg.querySelectorAll(".ab-piece")) {
+      if (g.dataset.id === undefined) continue;
+      const b = g.getBoundingClientRect();
+      if (cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom) {
+        const p = printed[Number(g.dataset.id)];
+        if (p?.kind === "bag") return { id: Number(g.dataset.id), letter: p.letter };
+      }
+    }
+    return null;
+  };
+
+  /** Swap a bag for what the other scale says it is worth: its very pieces. */
+  const swapBag = (id, pieces, from) => {
+    const was = state.find((s) => s.id === id);
+    if (!was) return false;
+    const bag = printed[id];
+    const made = pieces.map((p) => {
+      const copy = { ...p, id: printed.length };
+      printed.push(copy);
+      return { id: copy.id, side: was.side };
+    });
+    const worthWords = pieces.map((p) => (p.kind === "bag" ? `a ${p.letter} bag` : String(p.v))).join(" and ");
+    commit([...state.filter((s) => s.id !== id), ...made],
+      `The ${bag.letter} bag swapped for ${worthWords} — what ${from} says it is worth.`);
+    return true;
+  };
+
+  const api = {
+    solved,
+    bagAt,
+    swapBag,
+    name: () => svg.dataset.name || "the other scale",
     set(next) { state = next.map((s) => ({ ...s })); draw(); return state.map((s) => ({ ...s })); },
     reset() { state = start(); draw(); },
     dispose() {
+      LIVE.delete(api);
+      svg.__wbBalApi = null;
       svg.innerHTML = svg.__wbBalOrig;
       svg.removeAttribute("data-bal-live");
       svg.removeAttribute("data-level");
@@ -285,4 +376,9 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       svg.style.overflow = "";
     },
   };
+
+  svg.__wbBalApi = api;
+  LIVE.add(api);
+  draw();
+  return api;
 }

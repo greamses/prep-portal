@@ -121,7 +121,6 @@ export const FEATURES = [
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },
       { id: "transversals", label: "Transversals", path: "/prep-math/activity/transversals" },
       { id: "number-match", label: "Number Match (match every way of writing a number to the numeral)", path: "/prep-math/activity/number-match" },
-      { id: "two-scales", label: "Two Scales (systems of equations on two linked balances)", path: "/prep-math/activity/two-scales" },
     ],
   },
   {

@@ -11,10 +11,9 @@
      ex-balance.js     chapter 3, the balance scale — the same equations as a
                        level scale, where the MOVE is what is being taught
                        (balanceart.js)
-     ex-two.js         chapter 3's last section: TWO linked scales — two
-                       equations at once, solved by carrying what one scale
-                       says into the other (the shared
-                       utils/components/workbook/scales.js, blocks and all)
+     ex-two.js         chapter 3's last section: TWO of the chapter's own
+                       balances at once — two equations, solved by swapping a
+                       bag for what the other scale says it is worth
      ex-remainder.js   chapter 4, the polynomial remainder theorem — moved here
                        whole from the page it used to be (drawn by organiser.js
                        and poly.js)
