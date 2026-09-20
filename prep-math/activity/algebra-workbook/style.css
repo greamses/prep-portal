@@ -367,3 +367,8 @@
 .gr-table td { min-width: 9mm; padding: 1.2mm 2mm; }
 .gr-table td .wb-answer { width: 10mm; }
 .gr-fig { display: block; max-width: none; }
+
+/* ── chapter 6: growing patterns (seqart.js) ─────────────────────────────── */
+.sq-row { display: flex; align-items: flex-end; gap: 5mm; flex-wrap: wrap; margin: 1.5mm 0 2mm; }
+.sq-one { display: flex; flex-direction: column; align-items: center; }
+.sq-fig { display: block; }

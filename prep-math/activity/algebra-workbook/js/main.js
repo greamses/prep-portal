@@ -75,6 +75,8 @@ mountBuilder({
     "fn-rule": ICON.fnRule,
     "fn-write": ICON.fnWrite,
     "fn-map": ICON.fnMap,
+    "sq-place": ICON.sqPlace,
+    "sq-rule": ICON.sqRule,
     "gr-plot": ICON.grPlot,
     "gr-line": ICON.grLine,
     "gr-read": ICON.grRead,

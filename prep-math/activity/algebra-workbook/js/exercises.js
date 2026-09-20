@@ -21,6 +21,10 @@
                        backwards and BUILT from job cards (the shared
                        utils/components/workbook/machine.js), formulas, the
                        order of the jobs, mappings, f(x) and composition
+     ex-seq.js         chapter 6 again, its last two sections: sequences — the
+                       machine fed with the PLACE of a term (growing patterns
+                       drawn by seqart.js, the rule built as a train, the 50th
+                       term, and whether a number is in the sequence at all)
      ex-graphs.js      chapter 7, graphs of functions — rule → table → points
                        (tapped, the shared dotplot.js), ruling the line, reading
                        it, gradient and intercept, solving with graphs, and a
@@ -47,14 +51,15 @@ import { BS_GROUPS, BS_EXERCISES } from "./ex-balance.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
+import { SQ_GROUPS, SQ_EXERCISES } from "./ex-seq.js";
 import { GR_GROUPS, GR_EXERCISES } from "./ex-graphs.js";
 
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...GR_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...GR_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES];
 
 /** Which chapter an exercise belongs to: 1 to 5. */
 const CHAPTER = new Map([
@@ -62,7 +67,7 @@ const CHAPTER = new Map([
   ...BS_GROUPS.map((g) => [g.id, 3]),
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...AP_GROUPS.map((g) => [g.id, 5]),
-  ...FN_GROUPS.map((g) => [g.id, 6]),
+  ...FN_GROUPS.map((g) => [g.id, 6]), ...SQ_GROUPS.map((g) => [g.id, 6]),
   ...GR_GROUPS.map((g) => [g.id, 7]),
 ]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

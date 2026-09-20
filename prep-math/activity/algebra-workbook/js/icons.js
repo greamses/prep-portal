@@ -178,6 +178,20 @@ export const ICON = {
       bar(7, 7, 16, 9, 1.4, LOUD) + bar(7, 12, 16, 15, 1.4, LOUD) + bar(7, 17, 16, 15, 1.4, LOUD)
   ),
 
+  /* Three growing stacks: a pattern that adds one lot each place. */
+  sqPlace: svg(
+    `<rect x="3" y="14" width="4.4" height="7" rx="0.8" fill="${PAPER}"/>` +
+      `<rect x="9.8" y="9" width="4.4" height="12" rx="0.8" fill="${PAPER}"/>` +
+      `<rect x="16.6" y="4" width="4.4" height="17" rx="0.8" fill="${PAPER}"/>` +
+      `<rect x="3" y="9" width="4.4" height="4.4" rx="0.8" fill="${GOLD}"/><rect x="9.8" y="4" width="4.4" height="4.4" rx="0.8" fill="${GOLD}"/>`
+  ),
+  /* The place going in at the top of a list, its term coming out. */
+  sqRule: svg(
+    `<circle cx="6" cy="6" r="3.4" fill="${GOLD}"/>` + bar(6, 10, 6, 18, 1.6, QUIET) +
+      `<path d="M6 21.4 2.8 16.6h6.4z" fill="${QUIET}"/>` +
+      `<rect x="12" y="3.4" width="9" height="4" rx="1.2" fill="${PAPER}"/><rect x="12" y="10" width="9" height="4" rx="1.2" fill="${LOUD}"/><rect x="12" y="16.6" width="9" height="4" rx="1.2" fill="${PAPER}"/>`
+  ),
+
   /* ── chapter 7 ── */
   /* Axes and a row of points going up in a line. */
   grPlot: svg(
