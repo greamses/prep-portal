@@ -31,6 +31,22 @@
    thing that moves on the paper.
    ========================================================================== */
 
+/* A piece may be turned round: a bag of −x, a weight of −3. It is the same
+   piece with a minus badge on it, so "take 3 off both pans" and "that 3 is
+   now a −3" are plainly the same block, told apart at a glance. */
+const MINUS_BADGE =
+  '<g class="ab-neg" pointer-events="none">' +
+  '<circle cx="1.8" cy="1.6" r="2" fill="#c0453f" stroke="#2a2723" stroke-width="0.35"/>' +
+  '<rect x="0.7" y="1.15" width="2.2" height="0.9" rx="0.45" fill="#fffdf8"/></g>';
+
+/* the handle that turns a piece round, in its top right corner */
+const flipHandle = (w) =>
+  `<g class="ab-flip" data-flip="1" transform="translate(${(w - 1.6).toFixed(2)} 0)">` +
+  '<circle cx="0" cy="1.6" r="2.1" fill="#fff3a8" stroke="#2a2723" stroke-width="0.35"/>' +
+  '<rect x="-1.2" y="0.35" width="2.4" height="0.62" rx="0.31" fill="#2a2723"/>' +
+  '<rect x="-0.31" y="-0.54" width="0.62" height="2.4" rx="0.31" fill="#2a2723"/>' +
+  '<rect x="-1.2" y="2.25" width="2.4" height="0.62" rx="0.31" fill="#2a2723"/></g>';
+
 const MAX_TILT = 8;          // degrees: a scale that tips over is a toy, not a balance
 const LEAVE_MM = 3;          // let go this far outside the drawing and the piece is gone
 
@@ -123,12 +139,13 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
     h: Number(g.dataset.h),
     html: g.outerHTML,
   }));
-  const start = () => printed.map(({ id, side }) => ({ id, side }));
-  let state = saved && Array.isArray(saved) ? saved.map((s) => ({ ...s })) : start();
+  const start = () => printed.map(({ id, side }) => ({ id, side, sign: 1 }));
+  /* a state kept from before this piece knew about signs has none: it is a plus */
+  let state = saved && Array.isArray(saved) ? saved.map((s) => ({ sign: 1, ...s })) : start();
 
   svg.dataset.balLive = "1";
   svg.style.overflow = "visible";
-  svg.setAttribute("data-tip", "Drag a piece to the other pan, or off the scale to take it away");
+  svg.setAttribute("data-tip", "Drag a piece to the other pan, off the scale to take it away, or onto a bag on the other scale to swap it. Shift-click (or the ± handle) turns a piece round.");
 
   const beam = svg.querySelector(".ab-beam");
   const groups = (cls, side) => svg.querySelector(`.${cls}[data-side="${side}"]`);
@@ -138,7 +155,8 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       const load = groups("ab-load", side);
       if (!load) continue;
       load.replaceChildren();
-      const here = state.filter((s) => s.side === side).map((s) => printed[s.id]);
+      const mine = state.filter((s) => s.side === side);
+      const here = mine.map((s) => ({ ...printed[s.id], __sign: s.sign ?? 1 }));
       const at = layoutPan(here, side === "L" ? panL : panR, floor, flow, gap);
       here.forEach((p, j) => {
         const box = document.createElementNS(NS, "g");
@@ -148,7 +166,13 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
         g.dataset.id = p.id;
         g.setAttribute("tabindex", "0");
         g.setAttribute("role", "button");
-        g.setAttribute("aria-label", `${p.kind === "bag" ? "A bag" : p.kind === "cube" ? "A cube, 1" : `A weight, ${p.v}`} on the ${side === "L" ? "left" : "right"} pan`);
+        const sign = here[j].__sign;
+        const named = p.kind === "bag" ? `a ${p.letter} bag` : p.kind === "cube" ? "a cube, 1" : `a weight, ${p.v}`;
+        if (sign < 0) { g.classList.add("is-minus"); g.insertAdjacentHTML("beforeend", MINUS_BADGE); }
+        /* a cube is barely wider than the handle itself: on those, turning
+           round is shift-click (or the − key), and the corner stays grabbable */
+        if (p.w >= 7) g.insertAdjacentHTML("beforeend", flipHandle(p.w));
+        g.setAttribute("aria-label", `${sign < 0 ? "Minus " : ""}${named} on the ${side === "L" ? "left" : "right"} pan`);
         load.appendChild(g);
       });
     }
@@ -157,7 +181,10 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
 
   function weights() {
     const w = { L: 0, R: 0 };
-    state.forEach((s) => { const p = printed[s.id]; w[s.side] += p.kind === "bag" ? (worth[p.letter] ?? x) : p.v; });
+    state.forEach((s) => {
+      const p = printed[s.id];
+      w[s.side] += (s.sign ?? 1) * (p.kind === "bag" ? (worth[p.letter] ?? x) : p.v);
+    });
     return w;
   }
 
@@ -192,6 +219,15 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   }
 
   const remove = (id) => commit(state.filter((s) => s.id !== id), "Taken off.");
+  /** Turn a piece round: +3 becomes −3, an x bag becomes a minus x bag. */
+  const flip = (id) => {
+    const was = state.find((s) => s.id === id);
+    if (!was) return;
+    const p = printed[id];
+    const now = -(was.sign ?? 1);
+    commit(state.map((s) => (s.id === id ? { ...s, sign: now } : s)),
+      `Turned round: that is ${now < 0 ? "now" : "back to"} ${now < 0 ? "−" : ""}${p.kind === "bag" ? p.letter : p.v}.`);
+  };
   const moveTo = (id, side) => {
     const was = state.find((s) => s.id === id);
     if (!was) return;
@@ -207,9 +243,16 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   };
   let drag = null;
 
-  if (!svg.__wbBalBound) {
-    svg.__wbBalBound = true;
-    svg.addEventListener("pointerdown", (e) => {
+  /* Every mount binds its own handlers and takes the last mount's away: they
+     close over THIS pile of pieces, and an old one would be moving things that
+     are no longer on the scale (leaving interactive mode and coming back keeps
+     the same drawing, so the listeners must be replaced, not doubled). */
+  svg.__wbBalOff?.();
+  {
+    const bound = [];
+    const on = (name, fn) => { svg.addEventListener(name, fn); bound.push([name, fn]); };
+    svg.__wbBalOff = () => { bound.forEach(([name, fn]) => svg.removeEventListener(name, fn)); svg.__wbBalOff = null; };
+    on("pointerdown", (e) => {
       if (!svg.dataset.balLive) return;
       const g = e.target.closest?.(".ab-piece");
       if (!g) return;
@@ -217,6 +260,8 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       /* the pen draws on this same picture: a press on a piece is not a line */
       e.stopPropagation();
       const id = Number(g.dataset.id);
+      /* the ± handle, or shift-click anywhere on it: the piece turns round */
+      if (e.target.closest?.(".ab-flip") || e.shiftKey || e.altKey) { flip(id); return; }
       const [sx, sy] = toSvg(e.clientX, e.clientY);
       drag = { g, id, moved: false, sx, sy, pointer: e.pointerId };
     });
@@ -241,7 +286,7 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       d.moved = true;
       svg.setPointerCapture?.(d.pointer);
     };
-    svg.addEventListener("pointermove", (e) => {
+    on("pointermove", (e) => {
       if (!drag) return;
       const [x1, y1] = toSvg(e.clientX, e.clientY);
       if (!drag.moved) {
@@ -251,7 +296,7 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       drag.g.setAttribute("transform", `translate(${(x1 - drag.dx).toFixed(2)} ${(y1 - drag.dy).toFixed(2)})`);
       /* say where it will go: off the drawing, it is about to be taken away */
       /* over a bag on the other scale it is not leaving, it is arriving */
-      const over = [...LIVE].some((o) => o !== svg.__wbBalApi && o.bagAt(e.clientX, e.clientY));
+      const over = [...LIVE].some((o) => o !== svg.__wbBalApi && o.holds(e.clientX, e.clientY));
       drag.g.classList.toggle("is-leaving", !over && outside(e.clientX, e.clientY));
     });
     const outside = (cx, cy) => {
@@ -267,41 +312,56 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       if (!d.moved) return;               // a press, or half of a double-click
       svg.releasePointerCapture?.(e.pointerId);
       d.g.remove();
-      /* let go over a bag on ANOTHER scale: when this scale has worked out
-         what that letter is worth, the bag there is swapped for it, and
-         nothing moves here — the weight was carried across only to show it */
+      /* Let go over ANOTHER scale. Nothing is ever lost there: either it is a
+         swap — substitution — or the piece goes straight back where it was.
+
+         Both ways round work, because both are the same thought:
+           · carry what a solved scale weighs onto a bag over there, or
+           · carry a bag over to the scale that has worked that letter out. */
       const mine = svg.__wbBalApi;
-      const worked = mine?.solved();
-      if (worked && printed[d.id].kind !== "bag") {
-        for (const other of LIVE) {
-          if (other === mine) continue;
-          const bag = other.bagAt(e.clientX, e.clientY);
-          if (!bag) continue;
-          if (bag.letter === worked.letter) other.swapBag(bag.id, worked.pieces, mine.name());
-          else say(`That is a ${bag.letter} bag, and this scale says what ${worked.letter} is worth.`);
-          draw();
+      const onOther = [...LIVE].find((o) => o !== mine && o.holds(e.clientX, e.clientY));
+      if (onOther) {
+        const worked = mine?.solved();
+        const bag = onOther.bagAt(e.clientX, e.clientY);
+        const carried = printed[d.id];
+        const theirs = onOther.solved();
+        if (worked && bag && bag.letter === worked.letter) {
+          onOther.swapBag(bag.id, worked.pieces, mine.name());
+        } else if (carried.kind === "bag" && theirs && theirs.letter === carried.letter) {
+          /* a bag taken to the scale that knows it: it is swapped HERE */
+          const me = state.find((q) => q.id === d.id);
+          swapBag(d.id, theirs.pieces, onOther.name(), me?.sign ?? 1);
           return;
+        } else if (worked && bag) {
+          say(`That is a ${bag.letter} bag, and this scale says what ${worked.letter} is worth.`);
+        } else if (carried.kind === "bag") {
+          say(`That scale has not worked out what ${carried.letter} is worth yet.`);
+        } else {
+          say("Let a weight go on a bag over there to swap it — once this scale has a bag on its own.");
         }
+        draw();
+        return;
       }
       if (outside(e.clientX, e.clientY)) { remove(d.id); return; }
       const [x1] = toSvg(e.clientX, e.clientY);
       moveTo(d.id, x1 < px ? "L" : "R");
     };
-    svg.addEventListener("pointerup", drop);
-    svg.addEventListener("pointercancel", () => {
+    on("pointerup", drop);
+    on("pointercancel", () => {
       if (drag?.moved) { drag.g.remove(); draw(); }
       drag = null;
     });
-    svg.addEventListener("dblclick", (e) => {
+    on("dblclick", (e) => {
       if (!svg.dataset.balLive) return;
       const g = e.target.closest?.(".ab-piece");
       if (g && g.dataset.id !== undefined) { e.preventDefault(); remove(Number(g.dataset.id)); }
     });
-    svg.addEventListener("keydown", (e) => {
+    on("keydown", (e) => {
       if (!svg.dataset.balLive) return;
       const g = e.target.closest?.(".ab-piece");
       if (!g || g.dataset.id === undefined) return;
       const id = Number(g.dataset.id);
+      if (e.key === "-" || e.key === "+" || e.key === "s") { e.preventDefault(); flip(id); }
       if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); remove(id); }
       if (e.key === "ArrowLeft") { e.preventDefault(); moveTo(id, "L"); }
       if (e.key === "ArrowRight") { e.preventDefault(); moveTo(id, "R"); }
@@ -315,9 +375,11 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
      what substitution is, done with the hands. */
   const solved = () => {
     for (const side of ["L", "R"]) {
-      const here = state.filter((s) => s.side === side).map((s) => printed[s.id]);
-      const there = state.filter((s) => s.side !== side).map((s) => printed[s.id]);
-      if (here.length !== 1 || here[0].kind !== "bag") continue;
+      const mineHere = state.filter((s) => s.side === side);
+      const here = mineHere.map((s) => printed[s.id]);
+      const there = state.filter((s) => s.side !== side).map((s) => ({ ...printed[s.id], sign: s.sign ?? 1 }));
+      /* a MINUS bag alone says what −x is, which is not what we are after */
+      if (here.length !== 1 || here[0].kind !== "bag" || (mineHere[0].sign ?? 1) !== 1) continue;
       const letter = here[0].letter;
       /* what the other pan holds is what the bag is worth — weights, or
          another letter's bag and some weights, which is just as good to
@@ -329,9 +391,14 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   };
 
   /** The bag under a point, if this scale has one there. */
-  const bagAt = (cx, cy) => {
+  /** Is this point on this scale's drawing at all? */
+  const holds = (cx, cy) => {
     const r = svg.getBoundingClientRect();
-    if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+    return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+  };
+
+  const bagAt = (cx, cy) => {
+    if (!holds(cx, cy)) return null;
     for (const g of svg.querySelectorAll(".ab-piece")) {
       if (g.dataset.id === undefined) continue;
       const b = g.getBoundingClientRect();
@@ -344,16 +411,19 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   };
 
   /** Swap a bag for what the other scale says it is worth: its very pieces. */
-  const swapBag = (id, pieces, from) => {
+  const swapBag = (id, pieces, from, sign = null) => {
     const was = state.find((s) => s.id === id);
     if (!was) return false;
     const bag = printed[id];
+    /* a minus bag is swapped for minus what it is worth */
+    const turn = (sign ?? was.sign ?? 1);
     const made = pieces.map((p) => {
       const copy = { ...p, id: printed.length };
       printed.push(copy);
-      return { id: copy.id, side: was.side };
+      return { id: copy.id, side: was.side, sign: turn * (p.sign ?? 1) };
     });
-    const worthWords = pieces.map((p) => (p.kind === "bag" ? `a ${p.letter} bag` : String(p.v))).join(" and ");
+    /* "an x bag", but "a y bag": the letter is read aloud, not spelled */
+    const worthWords = pieces.map((p) => (p.kind === "bag" ? `${"aefhilmnorsx".includes(p.letter) ? "an" : "a"} ${p.letter} bag` : String(p.v))).join(" and ");
     commit([...state.filter((s) => s.id !== id), ...made],
       `The ${bag.letter} bag swapped for ${worthWords} — what ${from} says it is worth.`);
     return true;
@@ -362,11 +432,13 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   const api = {
     solved,
     bagAt,
+    holds,
     swapBag,
     name: () => svg.dataset.name || "the other scale",
     set(next) { state = next.map((s) => ({ ...s })); draw(); return state.map((s) => ({ ...s })); },
     reset() { state = start(); draw(); },
     dispose() {
+      svg.__wbBalOff?.();
       LIVE.delete(api);
       svg.__wbBalApi = null;
       svg.innerHTML = svg.__wbBalOrig;

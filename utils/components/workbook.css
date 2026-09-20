@@ -2349,3 +2349,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-drawhost.fm-wrap.is-wrong { outline: 0.6mm solid #c0453f; outline-offset: 0.6mm; border-radius: 2mm; }
 @media print { .fm-run, .fm-controls, .fm-token { display: none; } }
 
+
+/* the ± handle that turns a piece round on a live balance, and the badge that
+   says a piece is a minus one (balance.js) */
+.wb-live .ab-flip { cursor: pointer; opacity: 0.45; transition: opacity 0.12s ease; }
+.wb-live .ab-piece:hover .ab-flip, .wb-live .ab-piece:focus-within .ab-flip { opacity: 1; }
+.wb-live .ab-piece.is-minus { opacity: 0.94; }
