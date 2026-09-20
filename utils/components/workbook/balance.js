@@ -47,6 +47,41 @@ const flipHandle = (w) =>
   '<rect x="-0.31" y="-0.54" width="0.62" height="2.4" rx="0.31" fill="#2a2723"/>' +
   '<rect x="-1.2" y="2.25" width="2.4" height="0.62" rx="0.31" fill="#2a2723"/></g>';
 
+/* The two weights a pan can hold, drawn exactly as balanceart.js draws them —
+   a cube for 1 and a classroom weight for the rest. A piece BROKEN into ones,
+   or ones JOINED back into a weight, is made here, on screen, after the paper
+   was printed, so the drawing has to be made here too. */
+const CUBE = 4.2;
+const BLOCK_H = 8.4;
+const blockW = (n) => 8 + String(n).length * 2.6;
+
+const cubeArt = () =>
+  `<rect x="0" y="0" width="${CUBE}" height="${CUBE}" rx="0.6" fill="#bfe3ff" stroke="#2a2723" stroke-width="0.35"/>` +
+  `<rect x="0.6" y="0.6" width="${(CUBE - 1.2).toFixed(2)}" height="1" rx="0.5" fill="#fffdf8" opacity="0.75"/>`;
+
+const blockArt = (n) => {
+  const w = blockW(n);
+  const h = BLOCK_H;
+  return `<path d="M${(w * 0.36).toFixed(2)} 2v-1.1a0.9 0.9 0 0 1 0.9-0.9h${(w * 0.28).toFixed(2)}a0.9 0.9 0 0 1 0.9 0.9v1.1" fill="none" stroke="#2a2723" stroke-width="0.5" stroke-linejoin="round"/>` +
+    `<path d="M1.6 2H${(w - 1.6).toFixed(2)}L${w.toFixed(2)} ${h}H0Z" fill="#bfe3ff" stroke="#2a2723" stroke-width="0.45" stroke-linejoin="round"/>` +
+    `<path d="M2 2.7H${(w - 2).toFixed(2)}" stroke="#fffdf8" stroke-width="0.7" stroke-linecap="round" opacity="0.8"/>` +
+    `<text x="${(w / 2).toFixed(2)}" y="${(h - 1.8).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3.8" font-weight="700" fill="#2a2723">${n}</text>`;
+};
+
+/** A weight made on screen: one cube, or a block worth n. */
+const madePiece = (n) => (n === 1
+  ? { kind: "cube", letter: "x", v: 1, w: CUBE, h: CUBE, html: `<g class="ab-piece" data-kind="cube" data-v="1" data-w="${CUBE}" data-h="${CUBE}">${cubeArt()}</g>` }
+  : { kind: "block", letter: "x", v: n, w: blockW(n), h: BLOCK_H, html: `<g class="ab-piece" data-kind="block" data-v="${n}" data-w="${blockW(n)}" data-h="${BLOCK_H}">${blockArt(n)}</g>` });
+
+/* the handle that BREAKS a weight into ones, in its top left corner */
+const breakHandle = () =>
+  '<g class="ab-break" data-break="1" transform="translate(1.6 0)">' +
+  '<circle cx="0" cy="1.6" r="2.1" fill="#dcefff" stroke="#2a2723" stroke-width="0.35"/>' +
+  '<rect x="-1.3" y="0.35" width="1.1" height="1.1" rx="0.25" fill="#2a2723"/>' +
+  '<rect x="0.2" y="0.35" width="1.1" height="1.1" rx="0.25" fill="#2a2723"/>' +
+  '<rect x="-1.3" y="1.75" width="1.1" height="1.1" rx="0.25" fill="#2a2723"/>' +
+  '<rect x="0.2" y="1.75" width="1.1" height="1.1" rx="0.25" fill="#2a2723"/></g>';
+
 const MAX_TILT = 8;          // degrees: a scale that tips over is a toy, not a balance
 const LEAVE_MM = 3;          // let go this far outside the drawing and the piece is gone
 
@@ -145,7 +180,6 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
 
   svg.dataset.balLive = "1";
   svg.style.overflow = "visible";
-  svg.setAttribute("data-tip", "Drag a piece to the other pan, off the scale to take it away, or onto a bag on the other scale to swap it. Shift-click (or the ± handle) turns a piece round.");
 
   const beam = svg.querySelector(".ab-beam");
   const groups = (cls, side) => svg.querySelector(`.${cls}[data-side="${side}"]`);
@@ -172,6 +206,8 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
         /* a cube is barely wider than the handle itself: on those, turning
            round is shift-click (or the − key), and the corner stays grabbable */
         if (p.w >= 7) g.insertAdjacentHTML("beforeend", flipHandle(p.w));
+        /* and a weight worth more than 1 can be broken into that many ones */
+        if (p.kind === "block" && Math.abs(p.v) > 1) g.insertAdjacentHTML("beforeend", breakHandle());
         g.setAttribute("aria-label", `${sign < 0 ? "Minus " : ""}${named} on the ${side === "L" ? "left" : "right"} pan`);
         load.appendChild(g);
       });
@@ -219,6 +255,67 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   }
 
   const remove = (id) => commit(state.filter((s) => s.id !== id), "Taken off.");
+  /**
+   * Break a weight into ones: a 5 becomes five 1s, on the same pan and the
+   * same way round. Nothing is added or taken away, so the beam does not move
+   * — which is the point: 5 and 1+1+1+1+1 are the same weight.
+   */
+  const breakUp = (id) => {
+    const was = state.find((s) => s.id === id);
+    if (!was) return;
+    const p = printed[id];
+    const many = Math.abs(p.v);
+    if (p.kind === "bag" || many < 2) return;
+    const made = [];
+    for (let i = 0; i < many; i++) {
+      const one = { ...madePiece(1), id: printed.length };
+      printed.push(one);
+      made.push({ id: one.id, side: was.side, sign: was.sign ?? 1 });
+    }
+    commit([...state.filter((s) => s.id !== id), ...made], `Broken into ${many} ones.`);
+  };
+
+  /**
+   * Join one piece to its neighbour in the same pan:
+   *   two weights        one weight worth both together (1 and 1 make 2)
+   *   a piece and its opposite   nothing at all: they cancel
+   * Bags of the same letter cancel the same way; two of the same bag stay two
+   * bags, because 2x is not a thing to stand on a pan.
+   */
+  const join = (id, onto) => {
+    const a = state.find((s) => s.id === id);
+    const b = state.find((s) => s.id === onto);
+    /* a piece let go on one in the OTHER pan is not a joining: it is a move,
+       and the caller does that. Joining is between neighbours. */
+    if (!a || !b || a.side !== b.side) return false;
+    const pa = printed[a.id];
+    const pb = printed[b.id];
+    const sa = (a.sign ?? 1) * (pa.kind === "bag" ? 1 : pa.v);
+    const sb = (b.sign ?? 1) * (pb.kind === "bag" ? 1 : pb.v);
+    const rest = state.filter((s) => s.id !== id && s.id !== onto);
+    if (pa.kind === "bag" || pb.kind === "bag") {
+      if (pa.kind !== pb.kind || pa.letter !== pb.letter) {
+        say("Only the same kind of thing goes together — a bag with the same bag, a weight with a weight.");
+        draw();
+        return true;
+      }
+      if (sa + sb !== 0) {
+        say(`Two ${pa.letter} bags stay two bags — there is no one bag worth two of them.`);
+        draw();
+        return true;
+      }
+      commit(rest, `An ${pa.letter} bag and a minus ${pa.letter} bag cancel: nothing left.`);
+      return true;
+    }
+    const total = sa + sb;
+    if (total === 0) { commit(rest, `${Math.abs(sa)} and −${Math.abs(sa)} cancel: nothing left.`); return true; }
+    const made = { ...madePiece(Math.abs(total)), id: printed.length };
+    printed.push(made);
+    commit([...rest, { id: made.id, side: a.side, sign: Math.sign(total) }],
+      `Joined: that is ${total < 0 ? "−" : ""}${Math.abs(total)}.`);
+    return true;
+  };
+
   /** Turn a piece round: +3 becomes −3, an x bag becomes a minus x bag. */
   const flip = (id) => {
     const was = state.find((s) => s.id === id);
@@ -262,6 +359,8 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
       const id = Number(g.dataset.id);
       /* the ± handle, or shift-click anywhere on it: the piece turns round */
       if (e.target.closest?.(".ab-flip") || e.shiftKey || e.altKey) { flip(id); return; }
+      /* the other handle breaks a weight into ones */
+      if (e.target.closest?.(".ab-break")) { breakUp(id); return; }
       const [sx, sy] = toSvg(e.clientX, e.clientY);
       drag = { g, id, moved: false, sx, sy, pointer: e.pointerId };
     });
@@ -343,6 +442,9 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
         return;
       }
       if (outside(e.clientX, e.clientY)) { remove(d.id); return; }
+      /* let go ON a neighbour in the same pan: they go together (or cancel) */
+      const neighbour = mine?.pieceAt(e.clientX, e.clientY, d.id);
+      if (neighbour !== null && neighbour !== undefined && join(d.id, neighbour)) return;
       const [x1] = toSvg(e.clientX, e.clientY);
       moveTo(d.id, x1 < px ? "L" : "R");
     };
@@ -397,6 +499,19 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
     return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
   };
 
+  /** Any piece under a point, other than the one being carried. */
+  const pieceAt = (cx, cy, not = null) => {
+    if (!holds(cx, cy)) return null;
+    for (const g of svg.querySelectorAll(".ab-piece")) {
+      if (g.dataset.id === undefined) continue;
+      const id = Number(g.dataset.id);
+      if (id === not) continue;
+      const b = g.getBoundingClientRect();
+      if (cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom) return id;
+    }
+    return null;
+  };
+
   const bagAt = (cx, cy) => {
     if (!holds(cx, cy)) return null;
     for (const g of svg.querySelectorAll(".ab-piece")) {
@@ -432,6 +547,7 @@ export function mountBalance(svg, { saved = null, onMove = () => {}, say = () =>
   const api = {
     solved,
     bagAt,
+    pieceAt,
     holds,
     swapBag,
     name: () => svg.dataset.name || "the other scale",

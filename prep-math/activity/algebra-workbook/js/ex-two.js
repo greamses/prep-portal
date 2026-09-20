@@ -97,7 +97,9 @@ const twSolve = {
   instruction: () =>
     "Scale A is not solved yet. Take the same off BOTH pans until only the bags are left, then take the same " +
     "share off both — half off each side, or a third — until one x bag stands alone. NOW Scale A says what an " +
-    "x bag weighs: swap it into Scale B and read off the y bag.",
+    "x bag weighs: swap it into Scale B and read off the y bag. On screen a weight comes apart into ones with " +
+    "the handle in its corner, and ones go back together by dragging one onto another, so exactly the same can " +
+    "be taken off both pans.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
@@ -146,7 +148,8 @@ const twSystem = {
   instruction: () =>
     "Scale B has a y bag alone on a pan: it says a y bag weighs the same as what is on the other pan — an x " +
     "bag and a weight. Swap the y bag on Scale A for exactly that, and Scale A is all x bags and weights. " +
-    "Solve it the way the chapter does, then go back to Scale B for y.",
+    "Solve it the way the chapter does, then go back to Scale B for y. A piece and its opposite — a 3 and a " +
+    "−3, an x bag and a minus x bag — cancel when they are put together, and leave nothing.",
   cols: 1,
   defaultCount: 2,
   make(r, o) {
