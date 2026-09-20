@@ -66,122 +66,12 @@ body { overflow-anchor: none; }
   color: var(--text-muted, #6b645a);
 }
 
-/* the beam and its stand, drawn behind the pans: the pans hang from the ends
-   of the beam, the pivot sits under its middle, and the post goes down between
-   them to the foot. The beam is always level — every move keeps it true. */
-.ts-frame { position: relative; padding-top: 3.4rem; padding-bottom: 1.7rem; }
-.ts-beam { position: absolute; inset: 0; pointer-events: none; }
-.ts-beam__bar {
-  position: absolute; top: 1.1rem; left: 25%; right: 25%; height: 6px;
-  background: #2a2723; border-radius: 3px;
-}
-/* the pivot: a triangle with its point on the middle of the beam */
-.ts-beam__pivot {
-  position: absolute; top: calc(1.1rem + 6px); left: 50%; transform: translateX(-50%);
-  width: 0; height: 0;
-  border-left: 0.85rem solid transparent; border-right: 0.85rem solid transparent;
-  border-top: 1.5rem solid #f4c95d;
-}
-.ts-beam__post {
-  position: absolute; top: calc(2.6rem + 6px); left: 50%; transform: translateX(-50%);
-  width: 10px; bottom: 0.8rem; background: #dcd6ca; border: 2px solid #2a2723; border-radius: 3px;
-}
-.ts-beam__foot {
-  position: absolute; bottom: 0.2rem; left: 50%; transform: translateX(-50%);
-  width: 6.5rem; height: 9px; background: #2a2723; border-radius: 4.5px;
-}
-.ts-pans { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; }
-
-.ts-pan {
-  position: relative;
-  width: min(100%, 15rem); margin: 0 auto;
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  min-height: 7.8rem; padding: 0.7rem 0.55rem 1.1rem;
-  /* a pan, not a box: the sides fall in and the bottom is a bowl */
-  border-radius: 0.3rem 0.3rem 46% 46% / 0.3rem 0.3rem 24% 24%;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: inset 0 0 0 2px rgba(20, 19, 15, 0.18);
-  transition: background 0.14s ease, box-shadow 0.14s ease;
-}
-/* the rim of the pan, and the chain up to the beam's end */
-.ts-pan::before {
-  content: ""; position: absolute; left: -0.35rem; right: -0.35rem; top: -3px; height: 6px;
-  background: #2a2723; border-radius: 3px;
-}
-.ts-pan__hook { position: absolute; top: -2.3rem; left: 50%; width: 2px; height: 2.3rem; background: #2a2723; }
-/* the chain's two slanting stays, from the beam's end to the rim */
-.ts-pan__hook::before, .ts-pan__hook::after {
-  content: ""; position: absolute; bottom: 0; left: 1px; width: 2px; height: 1.15rem; background: #2a2723;
-  transform-origin: 50% 100%;
-}
-.ts-pan__hook::before { transform: rotate(26deg); }
-.ts-pan__hook::after { transform: rotate(-26deg); }
-.ts-pan__dish { display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 0.4rem; width: 100%; margin-top: 0.3rem; }
-.ts-pan.is-over { background: #fff7c7; box-shadow: inset 0 0 0 2px #f4c95d; }
-
-/* ── the blocks ───────────────────────────────────────────────────────────*/
-
-.ts-block {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 2.6rem; height: 2.6rem; padding: 0 0.6rem;
-  font-family: "JetBrains Mono", monospace; font-size: 1.15rem; font-weight: 800;
-  color: #14130f; background: #dcefff;
-  border: 2px solid #2a2723; border-radius: 0.5rem;
-  box-shadow: 0 2px 0 rgba(20, 19, 15, 0.25);
-  cursor: grab; touch-action: none; user-select: none;
-}
-.ts-block--x { background: #bfe3ff; }
-.ts-block--y { background: #c8f0c0; }
-.ts-block--n { background: #fff3a8; }
-/* a minus block: the same block, hatched, so it reads as "taking away" even
-   in black and white */
-.ts-block.is-minus {
-  background-image: repeating-linear-gradient(45deg, rgba(176, 60, 48, 0.28) 0 5px, transparent 5px 10px);
-  color: #8e2f2a;
-}
-.ts-block.is-over { outline: 3px solid #f4c95d; outline-offset: 2px; }
-.ts-block.is-lifted { opacity: 0.35; }
-.ts-block.is-no { animation: ts-no 0.4s ease; }
-.ts-block.is-mini {
-  min-width: 1.7rem; height: 1.7rem; padding: 0 0.3rem; font-size: 0.85rem;
-  border-width: 1.5px; box-shadow: none; cursor: inherit;
-}
-@keyframes ts-no {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-2px); }
-}
-
-/* the chip a solved scale hands over: "x = 8" to carry to the other scale */
-.ts-rule {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.25rem 0.55rem;
-  font-family: "JetBrains Mono", monospace; font-size: 0.95rem; font-weight: 800;
-  color: #14130f; background: #ffd7a3;
-  border: 2px dashed #2a2723; border-radius: 0.6rem;
-  cursor: grab; touch-action: none; user-select: none;
-}
-.ts-rule b { font-style: italic; }
-.ts-rule__op { font-weight: 800; }
-.ts-rule.is-held { outline: 3px solid #f4c95d; outline-offset: 2px; }
-.ts-rule.is-no { animation: ts-no 0.4s ease; }
-.ts-rule.is-lifted { opacity: 0.35; }
-
-.ts-ghost {
-  position: fixed; z-index: 9000; margin: 0; pointer-events: none;
-  transform: rotate(-4deg) scale(1.06);
-  box-shadow: 0 3px 5px rgba(20, 19, 15, 0.18), 12px 18px 26px -8px rgba(20, 19, 15, 0.4);
-}
-
-/* the equation under each scale, and the sharing note */
-.ts-eq {
-  margin: 0.6rem 0 0; text-align: center;
-  font-family: "JetBrains Mono", monospace; font-size: 1.05rem; font-weight: 700;
-  color: var(--ink, #2a2723);
-}
-.ts-acts { display: flex; justify-content: center; margin-top: 0.5rem; min-height: 2.2rem; }
-.ts-acts .ts-share { font-size: 0.85rem; }
+/* The scales, their pans and the blocks are the shared piece's own
+   (utils/components/workbook/scales.css). The bench only says how big they
+   are here and gives them room. */
+.ts-scales .sc-wrap { font-size: 1.15rem; gap: 1.8rem; }
+.ts-scales .sc-pan { width: min(100%, 12em); }
+@media (max-width: 560px) { .ts-scales .sc-wrap { font-size: 1rem; } }
 
 /* ── what the moves are ───────────────────────────────────────────────────*/
 

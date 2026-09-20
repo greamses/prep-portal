@@ -11,6 +11,10 @@
      ex-balance.js     chapter 3, the balance scale — the same equations as a
                        level scale, where the MOVE is what is being taught
                        (balanceart.js)
+     ex-two.js         chapter 3's last section: TWO linked scales — two
+                       equations at once, solved by carrying what one scale
+                       says into the other (the shared
+                       utils/components/workbook/scales.js, blocks and all)
      ex-remainder.js   chapter 4, the polynomial remainder theorem — moved here
                        whole from the page it used to be (drawn by organiser.js
                        and poly.js)
@@ -48,6 +52,7 @@
 import { BC_GROUPS, BC_EXERCISES } from "./ex-concepts.js";
 import { BM_GROUPS, BM_EXERCISES } from "./ex-bars.js";
 import { BS_GROUPS, BS_EXERCISES } from "./ex-balance.js";
+import { TW_GROUPS, TW_EXERCISES } from "./ex-two.js";
 import { RT_GROUPS, RT_EXERCISES } from "./ex-remainder.js";
 import { AP_GROUPS, AP_EXERCISES } from "./ex-laws.js";
 import { FN_GROUPS, FN_EXERCISES } from "./ex-func.js";
@@ -57,14 +62,14 @@ import { GR_GROUPS, GR_EXERCISES } from "./ex-graphs.js";
 export { LEVELS, levelOf } from "./poly.js";
 export { HELP, helpOf } from "./organiser.js";
 
-export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS];
+export const GROUPS = [...BC_GROUPS, ...BM_GROUPS, ...BS_GROUPS, ...TW_GROUPS, ...RT_GROUPS, ...AP_GROUPS, ...FN_GROUPS, ...SQ_GROUPS, ...GR_GROUPS];
 
-export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES];
+export const EXERCISES = [...BC_EXERCISES, ...BM_EXERCISES, ...BS_EXERCISES, ...TW_EXERCISES, ...RT_EXERCISES, ...AP_EXERCISES, ...FN_EXERCISES, ...SQ_EXERCISES, ...GR_EXERCISES];
 
 /** Which chapter an exercise belongs to: 1 to 5. */
 const CHAPTER = new Map([
   ...BM_GROUPS.map((g) => [g.id, 2]),
-  ...BS_GROUPS.map((g) => [g.id, 3]),
+  ...BS_GROUPS.map((g) => [g.id, 3]), ...TW_GROUPS.map((g) => [g.id, 3]),
   ...RT_GROUPS.map((g) => [g.id, 4]),
   ...AP_GROUPS.map((g) => [g.id, 5]),
   ...FN_GROUPS.map((g) => [g.id, 6]), ...SQ_GROUPS.map((g) => [g.id, 6]),

@@ -32,6 +32,7 @@ import { mountPicto, rowRight } from "./picto.js";
 import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
 import { mountMachine, machineRight } from "./machine.js";
+import { mountScales } from "./scales.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -233,6 +234,32 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       wrap.__wbMachine = mountMachine(wrap, { build: false });
     });
 
+    /* two linked balance scales with blocks to pick up: the experiment, like
+       the single balance — nothing here is marked, and the boxes underneath
+       say what it showed. Each move is one Undo step; Clear puts the blocks
+       back where they were printed. */
+    node.querySelectorAll("[data-scales]").forEach((root) => {
+      root.classList.add("wb-drawhost");
+      let line = root.nextElementSibling?.classList?.contains("wb-scalesay") ? root.nextElementSibling : null;
+      if (!line) {
+        line = document.createElement("p");
+        line.className = "wb-scalesay";
+        line.setAttribute("role", "status");
+        root.after(line);
+      }
+      let before = null;
+      root.__wbScales = mountScales(root, {
+        onSay: (words, kind) => { line.textContent = words || ""; line.dataset.kind = kind || ""; },
+        onChange: (now) => {
+          const was = before;
+          before = now;
+          if (!was) return;   // the first draw is the paper itself
+          step(root, () => { before = was; root.__wbScales?.set(was); });
+        },
+      });
+      drawbar(root, () => { root.__wbScales?.reset(); line.textContent = ""; });
+    });
+
     /* a shape that says what its outline is can be folded along its lines */
     node.querySelectorAll("svg[data-fold]").forEach((svg) => makeFoldable(svg));
 
@@ -258,7 +285,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-colourable]").forEach((v) => v.removeAttribute("data-colourable"));
     node.querySelectorAll("[data-pen]").forEach((v) => v.removeAttribute("data-pen"));
     node.querySelectorAll(".wb-match li").forEach((li) => { li.onclick = null; li.classList.remove("is-picked"); });
-    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-blockbar, .wb-pilejoin, .wb-blocksay, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
+    node.querySelectorAll(".wb-in, .wb-want, .wb-drawbar, .wb-blockbar, .wb-pilejoin, .wb-blocksay, .wb-scalesay, .wb-draw, .wb-cross, .wb-pen, .wb-matchlines, .wb-stuck").forEach((n) => n.remove());
     node.querySelectorAll(".ms-piles.is-joined").forEach((v) => v.classList.remove("is-joined"));
     node.querySelectorAll(".ms-piles__one.is-empty").forEach((v) => v.classList.remove("is-empty"));
     node.querySelectorAll(".pv-piece.is-picked").forEach((v) => v.classList.remove("is-picked"));
@@ -277,6 +304,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-barbuild]").forEach((s) => { s.__wbBars?.dispose(); s.__wbBars = null; });
     node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
     node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-scales]").forEach((s) => { s.__wbScales?.dispose(); s.__wbScales = null; s.classList.remove("wb-drawhost"); });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;

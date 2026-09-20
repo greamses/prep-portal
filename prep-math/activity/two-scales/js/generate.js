@@ -19,7 +19,7 @@
    nothing is ever below zero at Evaluate.
    ========================================================================== */
 
-import { block, scale } from "./model.js";
+import { block, scale } from "/utils/components/workbook/scales.js";
 import { stream } from "/utils/components/workbook/seed.js";
 
 const ones = (n) => (n ? [block("n", n)] : []);

@@ -146,6 +146,13 @@ export const ICON = {
       `<rect x="14.6" y="14.6" width="6.4" height="6.4" fill="${PAPER}"/>`
   ),
 
+  /* Two little scales side by side, linked by what one of them knows. */
+  twoScales: svg(
+    bar(2, 7, 10, 7, 1.6, QUIET) + `<path d="M6 8.4 3.6 13.4h4.8z" fill="${PAPER}"/>` + bar(4, 20, 8, 20, 1.6, QUIET) + bar(6, 8, 6, 20, 1.4, QUIET) +
+      bar(14, 7, 22, 7, 1.6, QUIET) + `<path d="M18 8.4 15.6 13.4h4.8z" fill="${GOLD}"/>` + bar(16, 20, 20, 20, 1.6, QUIET) + bar(18, 8, 18, 20, 1.4, QUIET) +
+      `<rect x="9.4" y="2.6" width="5.2" height="3.4" rx="1" fill="${LOUD}"/>`
+  ),
+
   /* ── chapter 6 ── */
   /* A machine: a box with a hopper, a number going in. */
   fnMachine: svg(

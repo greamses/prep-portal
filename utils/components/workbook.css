@@ -25,6 +25,10 @@
      /prep-math/activity/algebra-workbook/
    ========================================================================== */
 
+/* Two linked balance scales, blocks and all: one piece, used by this paper and
+   by the Two Scales bench (utils/components/workbook/scales.js). */
+@import "./workbook/scales.css";
+
 body {
   margin: 0;
   background: var(--app-bg);
@@ -2348,3 +2352,14 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .wb-drawhost.fm-wrap.is-right { outline: 0.6mm solid #3f8f4f; outline-offset: 0.6mm; border-radius: 2mm; }
 .wb-drawhost.fm-wrap.is-wrong { outline: 0.6mm solid #c0453f; outline-offset: 0.6mm; border-radius: 2mm; }
 @media print { .fm-run, .fm-controls, .fm-token { display: none; } }
+
+
+/* what two linked scales say back when a block is moved (scales.js) */
+.wb-scalesay {
+  margin: 1mm 0 0;
+  min-height: 1.2em;
+  font-size: 9.5pt;
+  color: #55504a;
+}
+.wb-scalesay[data-kind="no"] { color: #b2493f; }
+@media print { .wb-scalesay { display: none; } }

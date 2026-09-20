@@ -1,0 +1,132 @@
+/* ============================================================================
+   TWO LINKED BALANCE SCALES (scales.js)
+   ----------------------------------------------------------------------------
+   Used on the paper (the Algebra Workbook's balance chapter) and on the Two
+   Scales bench, so every size here is in EM: the page sets the font size and
+   the scales follow it. Fixed hex colours, like everything that prints.
+
+   The beam is always level, because every move the piece allows keeps both
+   scales true. What changes is what lies in the pans.
+   ========================================================================== */
+
+/* the two scales stand side by side and must fit the paper's width, so the
+   whole piece is sized from one font-size: 9pt on the page, bigger on a bench */
+.sc-inner { display: contents; }
+.sc-wrap {
+  display: grid;
+  gap: 1em;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  font-size: 9pt;
+  margin: 0.4em 0;
+}
+@media (max-width: 620px) { .sc-wrap { grid-template-columns: minmax(0, 1fr); } }
+
+.sc-scale { min-width: 0; }
+.sc-scale__head { display: flex; align-items: center; gap: 0.5em; min-height: 1.9em; margin-bottom: 0.2em; }
+.sc-scale__name {
+  font-size: 0.64em; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #6b645a;
+}
+
+/* the beam, its pivot and the stand: the pans hang from the beam's ends */
+.sc-frame { position: relative; padding-top: 3em; padding-bottom: 1.5em; }
+.sc-beam { position: absolute; inset: 0; pointer-events: none; }
+.sc-beam__bar { position: absolute; top: 1em; left: 25%; right: 25%; height: 0.32em; background: #2a2723; border-radius: 0.16em; }
+.sc-beam__pivot {
+  position: absolute; top: 1.32em; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 0.8em solid transparent; border-right: 0.8em solid transparent; border-top: 1.35em solid #f4c95d;
+}
+.sc-beam__post {
+  position: absolute; top: 2.45em; left: 50%; transform: translateX(-50%);
+  width: 0.5em; bottom: 0.7em; background: #dcd6ca; border: 0.12em solid #2a2723; border-radius: 0.15em;
+}
+.sc-beam__foot { position: absolute; bottom: 0.2em; left: 50%; transform: translateX(-50%); width: 5.5em; height: 0.42em; background: #2a2723; border-radius: 0.21em; }
+
+.sc-pans { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0.9em; }
+.sc-pan {
+  position: relative;
+  width: min(100%, 9.5em); margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 6.2em; padding: 0.55em 0.4em 0.9em;
+  border-radius: 0.25em 0.25em 46% 46% / 0.25em 0.25em 24% 24%;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 0.12em rgba(20, 19, 15, 0.2);
+  transition: background 0.14s ease, box-shadow 0.14s ease;
+}
+/* the rim of the pan, and the chain up to the beam's end */
+.sc-pan::before { content: ""; position: absolute; left: -0.3em; right: -0.3em; top: -0.15em; height: 0.32em; background: #2a2723; border-radius: 0.16em; }
+.sc-pan__hook { position: absolute; top: -2em; left: 50%; width: 0.12em; height: 2em; background: #2a2723; }
+.sc-pan__hook::before, .sc-pan__hook::after {
+  content: ""; position: absolute; bottom: 0; left: 0; width: 0.12em; height: 1em; background: #2a2723; transform-origin: 50% 100%;
+}
+.sc-pan__hook::before { transform: rotate(26deg); }
+.sc-pan__hook::after { transform: rotate(-26deg); }
+.sc-pan__dish { display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 0.3em; width: 100%; margin-top: 0.25em; }
+.sc-pan.is-over { background: #fff7c7; box-shadow: inset 0 0 0 0.14em #f4c95d; }
+
+/* ── the blocks ─────────────────────────────────────────────────────────── */
+
+.sc-block {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2.1em; height: 2.1em; padding: 0 0.45em;
+  font-family: "JetBrains Mono", monospace; font-size: 1em; font-weight: 800; line-height: 1;
+  color: #14130f; background: #dcefff;
+  border: 0.14em solid #2a2723; border-radius: 0.3em;
+  box-shadow: 0 0.12em 0 rgba(20, 19, 15, 0.25);
+  cursor: default; touch-action: none; user-select: none;
+}
+.sc-block--x { background: #bfe3ff; }
+.sc-block--y { background: #c8f0c0; }
+.sc-block--n { background: #fff3a8; }
+/* a minus block reads as "taking away" even photocopied */
+.sc-block.is-minus {
+  background-image: repeating-linear-gradient(45deg, rgba(176, 60, 48, 0.28) 0 0.3em, transparent 0.3em 0.6em);
+  color: #8e2f2a;
+}
+.sc-block.is-mini { min-width: 1.5em; height: 1.5em; padding: 0 0.25em; font-size: 0.8em; border-width: 0.1em; box-shadow: none; }
+[data-scales-live] .sc-block[data-id] { cursor: grab; }
+.sc-block.is-over { outline: 0.16em solid #f4c95d; outline-offset: 0.1em; }
+.sc-block.is-lifted { opacity: 0.35; }
+.sc-block.is-no, .sc-rule.is-no { animation: sc-no 0.4s ease; }
+@keyframes sc-no {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-0.2em); }
+  50% { transform: translateX(0.2em); }
+  75% { transform: translateX(-0.1em); }
+}
+
+/* the chip a solved scale hands over, to carry to the other scale */
+.sc-rule {
+  display: inline-flex; align-items: center; gap: 0.25em;
+  padding: 0.2em 0.45em;
+  font-family: "JetBrains Mono", monospace; font-size: 0.9em; font-weight: 800;
+  color: #14130f; background: #ffd7a3;
+  border: 0.14em dashed #2a2723; border-radius: 0.4em;
+  cursor: default; touch-action: none; user-select: none;
+}
+[data-scales-live] .sc-rule { cursor: grab; }
+.sc-rule b { font-style: italic; }
+.sc-rule__op { font-weight: 800; }
+.sc-rule.is-held { outline: 0.16em solid #f4c95d; outline-offset: 0.1em; }
+.sc-rule.is-lifted { opacity: 0.35; }
+
+.sc-ghost {
+  position: fixed; z-index: 10070; margin: 0; pointer-events: none;
+  transform: rotate(-4deg) scale(1.06);
+  box-shadow: 0 0.2em 0.3em rgba(20, 19, 15, 0.18), 0.6em 0.9em 1.3em -0.4em rgba(20, 19, 15, 0.4);
+}
+
+/* the equation under each scale, and the sharing note */
+.sc-eq {
+  margin: 0.5em 0 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-size: 0.95em; font-weight: 700; color: #2a2723;
+}
+.sc-acts { display: flex; justify-content: center; margin-top: 0.35em; min-height: 1.9em; }
+.sc-share {
+  font: inherit; font-size: 0.8em; font-weight: 700;
+  padding: 0.3em 0.7em; color: #14130f; background: #fff3a8;
+  border: 0.12em solid #2a2723; border-radius: 0.35em; cursor: pointer;
+}
+.sc-share:hover { background: #ffe873; }
+
+/* on paper there is nothing to press and nothing to share */
+@media print { .sc-acts { display: none; } }

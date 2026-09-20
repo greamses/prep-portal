@@ -61,6 +61,7 @@ mountBuilder({
     "bs-read": ICON.scale,
     "bs-solve": ICON.scaleMove,
     "bs-make": ICON.pencilScale,
+    "bs-two": ICON.twoScales,
     zero: ICON.bracket,
     swap: ICON.swap,
     theorem: ICON.frame,
