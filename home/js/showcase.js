@@ -1,175 +1,293 @@
 /* ============================================================================
-   HOME — what is actually inside
+   HOME — what is actually inside, sorted into its trades
    ----------------------------------------------------------------------------
    Someone landing on the front page sees a hero, some faces and a price list,
-   and leaves believing this is a tutoring sign-up. It is a workshop: balances
-   you take weights off, trains you send numbers through, squares you build out
-   of tiles, maps you drag states onto, workbooks that print.
+   and leaves believing this is a shop for past questions. It is a workshop:
+   balances you take weights off, trains you send numbers through, squares you
+   build out of tiles, maps you drag states onto, a 3D lab bench, workbooks
+   that print.
 
-   So: a wall of SNAPSHOTS. Each one is a small drawing of the thing itself —
-   not a photograph, not an icon, but a little scene a person recognises when
-   they get there — and the whole card is the link to it.
+   So: a wall of SNAPSHOTS, in BANDS — one band per kind of thing, because a
+   flat grid of a dozen cards says "a pile" and the bands say "a workshop with
+   rooms in it". Each band has its heading on a sticky note and a line saying
+   what that room is for.
 
-   The CARD is the one this site already has — the games hub's and the blog's
-   (.science-card on receipt paper, a sticky note for the tag, blogs/css/
-   blog.css) — because a second card design is a second thing to keep in step.
-   Only the snapshot is new, and it sits where a photograph would.
+   Two rules hold this file down:
 
-   Every snapshot is drawn from the site's own tokens, so it re-tints with the
-   theme, and each is one function returning SVG: nothing to load, nothing to
-   go missing, and a new card is one entry in the list below.
+   1. The CARD is the one this site already has — the games hub's and the
+      blog's (.science-card on receipt paper, a sticky note for the tag,
+      blogs/css/blog.css) — never a second card design.
+   2. The PICTURE is the activity's OWN drawing, imported from the activity
+      itself: the real balance from balanceart.js, the real train from
+      machine.js, the real tiles, plane, clock, pie, pattern, map, lab bench.
+      Nothing here is drawn twice. Where a thing has no drawing of its own
+      (the exam CBT, the games hub, the blogs) the nav's section scene stands
+      in, and where there is not even that, one of our own icons does.
+
+   The drawings are fetched only when their band comes near the fold, so the
+   front page still loads as a front page and not as six activities at once.
    ========================================================================== */
 
-const INK = "var(--ink)";
-const GOLD = "var(--accent-primary)";
-const PAPER = "var(--accent-secondary)";
-const LOUD = "var(--accent-danger)";
-const LEAF = "var(--accent-success)";
-const QUIET = "var(--text-tertiary)";
+import NAV_CONFIG from "/utils/components/nav-config.js";
+import UI from "/utils/components/ui-icons.js";
+import { NAV_ICONS as I } from "/utils/components/nav-icons.js";
 
-const frame = (body, tint) =>
-  `<svg class="shot__art" viewBox="0 0 120 76" role="img" aria-hidden="true">` +
-  `<rect x="0" y="0" width="120" height="76" rx="6" fill="${tint}" opacity="0.22"/>${body}</svg>`;
+/* the big section illustration the nav already draws for a whole section */
+const navScene = (text) => () => ({ svg: NAV_CONFIG.find((s) => s.text === text)?.image || "" });
+/* One of our own icons, shown large, for a thing that has no drawing yet.
+   A ui-icon is a function of its size (nav icons are plain strings), so both
+   kinds are asked for the same way. */
+const iconShot = (icon) => () => ({ icon: typeof icon === "function" ? icon() : icon });
 
-const r = (x, y, w, h, fill, rx = 2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}"/>`;
-const line = (x1, y1, x2, y2, col, w = 2.4) =>
-  `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
-const dot = (cx, cy, rad, fill) => `<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${fill}"/>`;
+const WB_CSS = "/utils/components/workbook.css";
 
-/* ── the snapshots ───────────────────────────────────────────────────────── */
+/* ── the snapshots: each one asks the activity for its own picture ───────── */
 
-const ART = {
-  /* a balance with a bag on one pan and weights on the other */
-  balance: () => frame(
-    line(20, 30, 100, 30, INK, 3) + line(60, 30, 60, 58, QUIET, 3) + r(46, 58, 28, 4, INK, 2) +
-    line(20, 30, 20, 40, QUIET, 1.6) + line(100, 30, 100, 40, QUIET, 1.6) +
-    r(8, 40, 24, 3, INK, 1.5) + r(88, 40, 24, 3, INK, 1.5) +
-    `<path d="M16 40c0-6 3-9 4-12h4c1 3 4 6 4 12z" fill="${GOLD}" stroke="${INK}" stroke-width="1.2"/>` +
-    r(90, 30, 9, 10, PAPER, 1.5) + r(101, 32, 8, 8, PAPER, 1.5),
-    PAPER,
-  ),
-  /* a train of coaches with a number card above it */
-  train: () => frame(
-    r(6, 60, 108, 2.4, QUIET, 1.2) +
-    r(14, 38, 26, 18, PAPER, 3) + r(46, 38, 26, 18, PAPER, 3) +
-    r(78, 34, 30, 22, LOUD, 4) + r(96, 24, 7, 10, INK, 1.5) +
-    dot(22, 58, 3.6, INK) + dot(34, 58, 3.6, INK) + dot(54, 58, 3.6, INK) + dot(66, 58, 3.6, INK) + dot(88, 58, 4.2, INK) + dot(100, 58, 4.2, INK) +
-    r(20, 8, 26, 16, GOLD, 3) + `<text x="33" y="20" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="800" fill="${INK}">7</text>`,
-    GOLD,
-  ),
-  /* the square of algebra tiles, one corner still empty */
-  tiles: () => frame(
-    r(16, 10, 34, 34, PAPER, 2) +
-    r(54, 10, 10, 34, LEAF, 2) + r(68, 10, 10, 34, LEAF, 2) +
-    r(16, 48, 34, 10, LEAF, 2) + r(16, 62, 34, 10, LEAF, 2) +
-    r(54, 48, 10, 10, GOLD, 2) + r(68, 48, 10, 10, GOLD, 2) +
-    `<rect x="54" y="62" width="24" height="10" rx="2" fill="none" stroke="${LOUD}" stroke-width="2" stroke-dasharray="3 3"/>`,
-    LEAF,
-  ),
-  /* axes with a line and its points */
-  graph: () => frame(
-    line(18, 62, 106, 62, QUIET, 2) + line(18, 10, 18, 62, QUIET, 2) +
-    line(24, 56, 98, 18, LOUD, 3) +
-    dot(38, 48, 3.4, GOLD) + dot(60, 37, 3.4, GOLD) + dot(82, 26, 3.4, GOLD),
-    LOUD,
-  ),
-  /* a pie beside two bars */
-  stats: () => frame(
-    `<circle cx="36" cy="40" r="24" fill="${PAPER}"/>` +
-    `<path d="M36 40 36 16a24 24 0 0 1 20.8 36z" fill="${GOLD}"/>` +
-    r(72, 30, 12, 32, LEAF, 2) + r(90, 18, 12, 44, LOUD, 2) + line(66, 62, 110, 62, QUIET, 2),
-    GOLD,
-  ),
-  /* sticky notes pinned on a grid */
-  notes: () => frame(
-    r(10, 10, 100, 56, "#fffdf8", 4) +
-    line(10, 28, 110, 28, QUIET, 1) + line(10, 47, 110, 47, QUIET, 1) +
-    line(43, 10, 43, 66, QUIET, 1) + line(76, 10, 76, 66, QUIET, 1) +
-    `<g transform="rotate(-6 26 20)">${r(14, 12, 24, 16, GOLD, 2)}</g>` +
-    `<g transform="rotate(5 60 40)">${r(48, 32, 24, 16, LEAF, 2)}</g>` +
-    `<g transform="rotate(-3 93 58)">${r(81, 50, 24, 14, PAPER, 2)}</g>`,
-    PAPER,
-  ),
-  /* base-ten blocks: a flat, a rod and ones */
-  blocks: () => frame(
-    r(12, 22, 34, 34, PAPER, 2) +
-    r(54, 22, 10, 34, LEAF, 2) +
-    r(72, 22, 9, 9, GOLD, 1.5) + r(84, 22, 9, 9, GOLD, 1.5) + r(72, 34, 9, 9, GOLD, 1.5) + r(84, 34, 9, 9, GOLD, 1.5) + r(72, 46, 9, 9, GOLD, 1.5),
-    PAPER,
-  ),
-  /* a map with a piece being dropped in */
-  map: () => frame(
-    `<path d="M14 20h40l10 8h36v34H24l-10-9z" fill="${LEAF}" opacity="0.8" stroke="${INK}" stroke-width="1.6"/>` +
-    `<path d="M58 28h24v20H58z" fill="${GOLD}" stroke="${INK}" stroke-width="1.6"/>` +
-    dot(96, 18, 5, LOUD),
-    LEAF,
-  ),
-  /* a gamepad */
-  game: () => frame(
-    `<path d="M26 26h68a18 18 0 0 1 17 14l3 14a10 10 0 0 1-18 7l-5-7H29l-5 7a10 10 0 0 1-18-7l3-14a18 18 0 0 1 17-14z" fill="${PAPER}"/>` +
-    r(30, 40, 18, 5, "#fff", 2.5) + r(36, 34, 5, 17, "#fff", 2.5) +
-    dot(84, 38, 5, LOUD) + dot(96, 46, 5, GOLD) + dot(72, 46, 5, "#fff"),
-    LOUD,
-  ),
-  /* a sheet of paper coming out of a press: the printable workbooks */
-  print: () => frame(
-    r(34, 8, 52, 20, "#fffdf8", 2) + line(42, 16, 78, 16, QUIET, 2) + line(42, 22, 66, 22, QUIET, 2) +
-    r(22, 30, 76, 22, PAPER, 4) + dot(86, 41, 3.4, GOLD) +
-    r(34, 52, 52, 18, "#fffdf8", 2) + line(42, 60, 78, 60, QUIET, 2) + line(42, 66, 60, 66, QUIET, 2),
-    GOLD,
-  ),
-  /* a marked-up piece of writing */
-  writing: () => frame(
-    r(20, 8, 80, 60, "#fffdf8", 3) +
-    line(28, 22, 92, 22, QUIET, 2) + line(28, 32, 92, 32, QUIET, 2) + line(28, 42, 76, 42, QUIET, 2) + line(28, 52, 92, 52, QUIET, 2) +
-    `<path d="M30 40c8 6 16 6 24 0" fill="none" stroke="${LOUD}" stroke-width="2.4" stroke-linecap="round"/>` +
-    `<path d="M66 48l10-10 5 5-10 10z" fill="${GOLD}"/>`,
-    LOUD,
-  ),
-  /* an exam paper with a tick */
-  exam: () => frame(
-    r(26, 6, 68, 64, "#fffdf8", 3) + r(26, 6, 68, 12, PAPER, 3) +
-    line(36, 30, 84, 30, QUIET, 2) + line(36, 40, 84, 40, QUIET, 2) + line(36, 50, 70, 50, QUIET, 2) +
-    `<path d="M62 54l8 8 16-18" fill="none" stroke="${LEAF}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`,
-    PAPER,
-  ),
+const SHOT = {
+  /* the balance the Algebra Workbook prints: 2 bags and 1 = 7, so a bag is 3 */
+  balance: async () => {
+    const { balanceSvg } = await import("/prep-math/activity/algebra-workbook/js/balanceart.js");
+    return { svg: balanceSvg({ bags: 2, n: 1 }, { bags: 0, n: 7 }, { letter: "x", worth: { x: 3 }, label: "A balance scale: two bags and a 1 against a 7" }) };
+  },
+  /* the function-machine train, with a number already through it */
+  train: async () => {
+    const { trainHtml } = await import("/utils/components/workbook/machine.js");
+    return { html: trainHtml({ given: ["*2", "+3"], inVal: 4, outVal: 11 }), css: WB_CSS };
+  },
+  /* x² and six x laid out, the corner waiting to be filled */
+  tiles: async () => {
+    const { tilesHtml } = await import("/utils/components/workbook/tiles.js");
+    return { html: tilesHtml({ a: 3, given: { x2: true, strips: true }, label: "Algebra tiles with the corner empty" }), css: WB_CSS };
+  },
+  /* the plane the graphs chapter plots on */
+  graph: async () => {
+    const { planeSvg } = await import("/prep-math/activity/algebra-workbook/js/gridart.js");
+    return { svg: planeSvg({ x: [-1, 6], y: [-1, 9], cell: 4.4, lines: [{ m: 1, c: 2, name: "y = x + 2" }], pts: [[0, 2], [2, 4], [4, 6]] }) };
+  },
+  /* base blocks: 2 hundreds, 3 tens, 4 ones */
+  blocks: async () => {
+    const { blocksSvg } = await import("/prep-math/activity/maths-workbook/js/blocks.js");
+    return { svg: blocksSvg([4, 3, 2], 10, { maxCells: 34, label: "Base-ten blocks: two hundreds, three tens and four ones" }) };
+  },
+  /* tallies — one of the ways Number Match asks you to write a number */
+  tally: async () => {
+    const { tallySvg } = await import("/prep-math/activity/statistics-workbook/js/pictoart.js");
+    return { svg: tallySvg(17, { h: 9 }) };
+  },
+  /* the clock the Maths Workbook tells the time on */
+  clock: async () => {
+    const { clockSvg } = await import("/prep-math/activity/maths-workbook/js/clock.js");
+    return { svg: clockSvg(3, 20, { fives: true, label: "A clock face at twenty past three" }) };
+  },
+  /* a solid from the Geometry Workbook's chapter on prisms */
+  solid: async () => {
+    const { roundSvg } = await import("/prep-math/activity/geometry-workbook/js/solid.js");
+    return { svg: roundSvg("cylinder", { w: 44, h: 46 }) };
+  },
+  /* the growing pattern the Algebra Workbook builds a rule from */
+  pattern: async () => {
+    const { patternSvg } = await import("/prep-math/activity/algebra-workbook/js/seqart.js");
+    return { svg: patternSvg(3, 2, 4, { cell: 4.6, label: "Place 4" }) };
+  },
+  /* a pie chart with its key, straight out of the Statistics Workbook */
+  pie: async () => {
+    const { pieSvg } = await import("/prep-math/activity/statistics-workbook/js/pieart.js");
+    return { svg: pieSvg({ angles: [120, 90, 60, 90], names: ["Maize", "Yam", "Rice", "Beans"], title: "What the farm grew" }) };
+  },
+  /* the lab hub's own bench, now that the scene lives in a module */
+  lab: async () => {
+    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
+    return { svg: LAB_SCENES.chemistry() };
+  },
+  bench: async () => {
+    const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
+    return { svg: LAB_SCENES.biology() };
+  },
+  /* the map the jigsaw drops its 37 states into */
+  map: async () => {
+    const { mapFrameSvg } = await import("/exam-archive/national/puzzles/js/mapjig.js");
+    return { svg: mapFrameSvg(true) };
+  },
+  /* the seeded picture a slider puzzle is cut out of */
+  scene: async () => {
+    const { sceneSvg } = await import("/exam-archive/national/puzzles/js/art.js");
+    return { svg: sceneSvg("front-page") };
+  },
+  exams: navScene("Exams"),
+  blogs: navScene("Blogs"),
+  play: navScene("Activities"),
+  writing: iconShot(UI.edit),
+  theory: iconShot(I.tools),
+  cards: iconShot(UI.cards),
+  words: iconShot(I.competitions),
 };
 
-/* ── what is on the wall ─────────────────────────────────────────────────── */
+/* ── the wall, in bands ──────────────────────────────────────────────────── */
 
-export const SHOWCASE = [
-  { art: "balance", tag: "Algebra", title: "Balance scales", line: "Take the same off both pans. The beam never lies.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "tiles", tag: "Algebra", title: "Completing the square", line: "Lay the tiles and fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "train", tag: "Functions", title: "Function machines", line: "Send a number along the train, coach by coach.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "graph", tag: "Graphs", title: "Graphs of functions", line: "Tap the points, rule the line, read it back.", href: "/prep-math/activity/algebra-workbook/index.html" },
-  { art: "stats", tag: "Statistics", title: "Charts you build", line: "Pictograms, bars, pie charts and scatter graphs.", href: "/prep-math/activity/statistics-workbook/index.html" },
-  { art: "print", tag: "Workbooks", title: "Printable workbooks", line: "A fresh paper every time, with the answers.", href: "/prep-math/activity/maths-workbook/index.html" },
-  { art: "blocks", tag: "Number", title: "Manipulatives", line: "Blocks, abacuses and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
-  { art: "notes", tag: "Number", title: "Number Match", line: "Every way of writing a number, poured on a table.", href: "/prep-math/activity/number-match/index.html" },
-  { art: "map", tag: "Puzzles", title: "Map of Nigeria jigsaw", line: "Drag all 37 states home. Tangrams and shikaku too.", href: "/exam-archive/national/puzzles/index.html" },
-  { art: "game", tag: "Games", title: "Games that drill", line: "Races against the clock, and 3D worlds to play in.", href: "/home/games/index.html" },
-  { art: "writing", tag: "English", title: "Writing evaluator", line: "Plan it, write it, and get it marked in red pen.", href: "/writing/index.html" },
-  { art: "exam", tag: "Exams", title: "Past papers & CBT", line: "Exam-style questions, timed like the real thing.", href: "/exam-archive/national/exams/index.html" },
+export const BANDS = [
+  {
+    tag: "Maths you can pick up",
+    note: "Nothing to read first. Tip the beam, send a number down the line, lay the tiles out with your hands.",
+    cards: [
+      { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/index.html" },
+      { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/index.html" },
+      { art: "tiles", title: "Completing the square", tag: "Algebra", line: "Lay x² and its strips, then fill the corner that is missing.", href: "/prep-math/activity/algebra-workbook/index.html" },
+      { art: "graph", title: "Graphs of functions", tag: "Graphs", line: "Tap the points, rule the line, read the rule back off it.", href: "/prep-math/activity/algebra-workbook/index.html" },
+      { art: "blocks", title: "Manipulatives", tag: "Number", line: "Blocks, abacuses, tiles and charts on one endless table.", href: "/prep-math/activity/base-blocks/index.html" },
+      { art: "tally", title: "Number Match", tag: "Number", line: "Every way of writing one number, poured out as notes.", href: "/prep-math/activity/number-match/index.html" },
+    ],
+  },
+  {
+    tag: "Workbooks that print",
+    note: "Four books of fresh exercises. Print a paper, or do it on screen and have it marked as you go.",
+    cards: [
+      { art: "clock", title: "Maths Workbook", tag: "Number", line: "Place value, sums, remainders, fractions, time, multiplying.", href: "/prep-math/activity/maths-workbook/index.html" },
+      { art: "solid", title: "Geometry Workbook", tag: "Geometry", line: "Angles, polygons, Pythagoras, circles, solids and area.", href: "/prep-math/activity/geometry-workbook/index.html" },
+      { art: "pattern", title: "Algebra Workbook", tag: "Algebra", line: "Bar models, balance scales, sequences, completing the square.", href: "/prep-math/activity/algebra-workbook/index.html" },
+      { art: "pie", title: "Statistics Workbook", tag: "Statistics", line: "Pictograms, bar charts, line graphs, pie charts, scatter.", href: "/prep-math/activity/statistics-workbook/index.html" },
+    ],
+  },
+  {
+    tag: "Science you walk into",
+    note: "A bench in 3D, in first or third person — and the reading that goes with it.",
+    cards: [
+      { art: "lab", title: "Virtual Chemistry Lab", tag: "3D lab", line: "Mix reagents, run a titration, watch it react on a real bench.", href: "/virtual-lab/chemistry/index.html" },
+      { art: "bench", title: "Physics & Biology benches", tag: "3D lab", line: "Pendulums, springs, cells and slides — being built now.", href: "/virtual-lab/index.html" },
+      { art: "blogs", title: "Science & study blogs", tag: "Reading", line: "Animals, plants, the human body, and how to revise them.", href: "/blogs/index.html" },
+    ],
+  },
+  {
+    tag: "Words and writing",
+    note: "Plan it, write it, get it marked in red pen — then play for the words themselves.",
+    cards: [
+      { art: "writing", title: "Writing evaluator", tag: "Writing", line: "Six families of writing, planned in a mnemonic and marked paragraph by paragraph.", href: "/writing/index.html" },
+      { art: "words", title: "Word games", tag: "Words", line: "Hangman on science and maths words, and proof-reading races.", href: "/exam-archive/national/vocab/index.html" },
+      { art: "theory", title: "Theory practice", tag: "Marked", line: "Write a full answer and have the marks explained, one by one.", href: "/theory-page/index.html" },
+    ],
+  },
+  {
+    tag: "Races and puzzles",
+    note: "Timed, seeded and multiplayer: the same puzzle for everyone in the room, bots filling the empty seats.",
+    cards: [
+      { art: "map", title: "Map of Nigeria jigsaw", tag: "Jigsaw", line: "Drag all 37 states home before the clock runs out.", href: "/exam-archive/national/puzzles/index.html" },
+      { art: "scene", title: "Sliders, tangrams, shikaku", tag: "Puzzles", line: "A fresh picture cut up every game, and no two rooms alike.", href: "/exam-archive/national/puzzles/index.html" },
+      { art: "play", title: "Games that drill", tag: "Games", line: "Times tables against the clock, and 3D worlds to play in.", href: "/home/games/index.html" },
+    ],
+  },
+  {
+    tag: "Exam practice",
+    note: "Original, exam-style questions — timed like the real paper, marked like a teacher would.",
+    cards: [
+      { art: "exams", title: "CBT papers", tag: "Exams", line: "Common Entrance, WASSCE, UTME, SAT and IGCSE style, on a clock.", href: "/exam-archive/national/exams/index.html" },
+      { art: "cards", title: "AI flashcards", tag: "Revision", line: "A deck made from whatever you are revising, and kept.", href: "/flashcards/library.html" },
+    ],
+  },
 ];
+
+/** Every card on the wall, band by band — what the checks count. */
+export const SHOWCASE = BANDS.flatMap((b) => b.cards.map((c) => ({ ...c, band: b.tag })));
 
 /* the same arrow the games hub ends its cards with */
 const ARROW = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0"><g transform="rotate(90 12 12)"><rect x="10.6" y="9" width="2.8" height="12" rx="1.4" fill="var(--accent-secondary)"/><path d="M12 2.6 19.4 11H4.6z" fill="var(--accent-danger)"/></g></svg>`;
 
-/** Draw the wall into `.showcase-grid` — the site's own card, one per thing. */
+const cardHtml = (s, c) =>
+  `<a class="science-card pp-receipt science-card--p${c} shot" href="${s.href}">` +
+  `<div class="card-inner pp-receipt__paper">` +
+  `<span class="shot__frame" data-shot="${s.art}"></span>` +
+  `<div class="card-badges"><span class="pp-sticky pp-sticky--c${c}">${s.tag}</span></div>` +
+  `<h3 class="card-title">${s.title}</h3>` +
+  `<p class="card-excerpt">${s.line}</p>` +
+  `<div class="read-more">Open it ${ARROW}</div>` +
+  `</div></a>`;
+
+const bandHtml = (b, i) =>
+  `<section class="band">` +
+  `<header class="band__head">` +
+  `<h3 class="band__tag pp-sticky pp-sticky--c${i % 6}">${b.tag}</h3>` +
+  `<p class="band__note">${b.note}</p>` +
+  `</header>` +
+  `<div class="science-grid showcase-grid">${b.cards.map((card, j) => cardHtml(card, (i + j) % 6)).join("")}</div>` +
+  `</section>`;
+
+/* ── filling in the pictures ─────────────────────────────────────────────── */
+
+/**
+ * An HTML picture (the train, the tiles) needs the workbook's own stylesheet,
+ * and that sheet styles `body`. So it goes in a shadow root: the sheet applies
+ * to the picture and to nothing else on the page. The picture is drawn at
+ * paper size, so it is then scaled down to the width of the card.
+ */
+function mountHtmlArt(frame, { html, css }) {
+  const root = frame.attachShadow({ mode: "open" });
+  root.innerHTML =
+    `<link rel="stylesheet" href="${css}">` +
+    `<style>:host{display:block;position:relative;overflow:hidden}` +
+    `.fit{position:absolute;top:0;left:0;transform-origin:top left;width:max-content}` +
+    /* a snapshot shows the thing, not the tray of spare pieces beside it */
+    `.tl-tray,.fm-tray{display:none}</style>` +
+    `<div class="fit">${html}</div>`;
+  const box = root.querySelector(".fit");
+  const fit = () => {
+    const w = box.scrollWidth;
+    const h = box.scrollHeight;
+    const room = frame.clientWidth;
+    const tall = frame.clientHeight;
+    if (!w || !h || !room || !tall) return;
+    /* the frame is a fixed window, so the picture is fitted both ways */
+    const k = Math.min(1, (room - 8) / w, (tall - 8) / h);
+    box.style.transform = `scale(${k})`;
+    box.style.left = `${Math.max(0, (room - w * k) / 2)}px`;
+    box.style.top = `${Math.max(0, (tall - h * k) / 2)}px`;
+  };
+  root.querySelector("link").addEventListener("load", () => requestAnimationFrame(fit));
+  /* the sheet may already be cached, in which case load never fires late */
+  requestAnimationFrame(fit);
+  setTimeout(fit, 400);
+  addEventListener("resize", fit, { passive: true });
+}
+
+/** Ask one frame's activity for its drawing. */
+export async function drawShot(frame) {
+  const make = SHOT[frame.dataset.shot];
+  if (!make || frame.dataset.drawn) return false;
+  frame.dataset.drawn = "1";
+  try {
+    const art = await make();
+    if (art.icon) {
+      frame.innerHTML = `<span class="shot__icon">${art.icon}</span>`;
+    } else if (art.svg) {
+      frame.innerHTML = art.svg;
+    } else if (art.html) {
+      mountHtmlArt(frame, art);
+    }
+    frame.classList.add("is-drawn");
+    return true;
+  } catch (err) {
+    /* a picture that will not load must not take the card with it */
+    frame.remove();
+    return false;
+  }
+}
+
+/** Draw the wall into `.showcase-bands` — the site's own card, one per thing. */
 export function mountShowcase(root = document) {
-  const grid = root.querySelector(".showcase-grid");
-  if (!grid) return 0;
-  grid.innerHTML = SHOWCASE.map((s, i) => {
-    const c = i % 6;
-    return `<a class="science-card pp-receipt science-card--p${c} shot" href="${s.href}">` +
-      `<div class="card-inner pp-receipt__paper">` +
-      `<span class="shot__frame">${(ART[s.art] || ART.exam)()}</span>` +
-      `<div class="card-badges"><span class="pp-sticky pp-sticky--c${c}">${s.tag}</span></div>` +
-      `<h3 class="card-title">${s.title}</h3>` +
-      `<p class="card-excerpt">${s.line}</p>` +
-      `<div class="read-more">Open it ${ARROW}</div>` +
-      `</div></a>`;
-  }).join("");
+  const wall = root.querySelector(".showcase-bands");
+  if (!wall) return 0;
+  wall.innerHTML = BANDS.map(bandHtml).join("");
+
+  const frames = [...wall.querySelectorAll(".shot__frame")];
+  if (typeof IntersectionObserver === "function") {
+    const eye = new IntersectionObserver((rows, obs) => {
+      rows.forEach((row) => {
+        if (!row.isIntersecting) return;
+        obs.unobserve(row.target);
+        drawShot(row.target);
+      });
+    }, { rootMargin: "400px 0px" });
+    frames.forEach((f) => eye.observe(f));
+  } else {
+    frames.forEach(drawShot);
+  }
   return SHOWCASE.length;
 }
 
