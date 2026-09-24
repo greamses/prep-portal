@@ -627,3 +627,116 @@ body {
 
 /* the shared nav is a fixed 76px bar, so the page starts below it */
 body { padding-top: 76px; }
+
+/* ── the furniture, softened ─────────────────────────────────────────────────
+   The last of the neo-brutalism on this page: ink outlines and offset block
+   shadows. This site's controls are rounded and lifted instead, and its
+   buttons are sticky notes (utils/components/sticky-ui.css, which the page
+   now loads: it dresses .btn, .btn-primary, .option-btn and .hero-stat by
+   itself). What is left here is the boards, the tiles and the pickers. */
+
+/* the topic picker */
+.pp-dropdown-header,
+.pp-dropdown-list {
+  border: var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+.pp-dropdown-list { box-shadow: var(--shadow-md); overflow: hidden; }
+.pp-dropdown-item:hover,
+.pp-dropdown-item.selected { background: var(--surface-secondary); }
+
+/* the one big button */
+.btn-start {
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-md);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.btn-start:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.btn-start:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+
+/* the little ones */
+.btn-secondary,
+.btn-icon,
+.btn-control,
+.modal-header .btn {
+  border: var(--border-subtle) !important;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-primary);
+  color: var(--ink);
+}
+.btn-secondary:hover,
+.btn-icon:hover,
+.btn-control:hover,
+.modal-header .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-secondary:active:not(:disabled),
+.btn-control:active { transform: translateY(0); box-shadow: none; }
+
+/* the hero's little numbers: pills, not boxes with ink edges */
+.ph-stats { border: 0; padding: 0; background: none; box-shadow: none; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.ph-stat {
+  border: var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+  padding: 0.6rem 1.1rem;
+}
+
+/* the board, and what sits on it */
+.flip-grid,
+.slider-grid,
+.tiles-container,
+.board {
+  border: var(--border-subtle);
+  border-radius: 18px;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+.flip-card-inner,
+.slider-tile,
+.tile,
+.cell:not(.empty) {
+  border: var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.slider-tile:active,
+.tile:active { box-shadow: none; transform: translateY(1px); }
+
+/* the modal's little streak counter, and the timer */
+.modal-streak,
+.timer {
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-primary);
+}
+
+/* the ticker that runs under the nav */
+.ticker { border-block: var(--border-subtle); }
+
+/* a checkbox is a small piece of paper too */
+.checkbox-label input[type="checkbox"] {
+  border: var(--border-subtle);
+  border-radius: 6px;
+}
+
+/* the rules that divide the page: a hairline, not a 2px ink bar */
+.pg-header,
+.ticker,
+.modal-header,
+.gp-feedback,
+.settings-panel { border-color: color-mix(in srgb, var(--ink) 12%, transparent) !important; }
+.pg-header, .ticker { border-width: 1px !important; }
+.modal-header { border-bottom: var(--border-subtle) !important; }
+
+/* the grid: paper cells, ink figures */
+.cell:not(.empty) { background: var(--surface-primary) !important; color: var(--ink) !important; }
+.cell.fixed { background: var(--surface-secondary) !important; }
+.tile { background: var(--accent-primary) !important; color: var(--text-on-accent) !important; }

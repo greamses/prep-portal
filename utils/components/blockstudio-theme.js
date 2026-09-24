@@ -115,6 +115,45 @@
     return best[1];
   }
 
+
+  /* ── the workspace itself ──────────────────────────────────────────────
+     Blockly paints its own canvas, flyout and scrollbars from a theme
+     object handed to inject(), not from CSS, and the two studios had the
+     charcoal colours written into theirs. This builds one from whatever the
+     page's theme says right now, so a studio follows the site into dark mode
+     without either studio knowing the colours. */
+  function token(name, fallback) {
+    if (typeof getComputedStyle === "undefined") return fallback;
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+
+  function theme() {
+    const B = global.Blockly;
+    if (!B || !B.Theme) return null;
+    return B.Theme.defineTheme("prepportal" + Math.random().toString(36).slice(2, 6), {
+      base: B.Themes && B.Themes.Zelos,
+      componentStyles: {
+        workspaceBackgroundColour: token("--app-bg", "#f0ece3"),
+        flyoutBackgroundColour: token("--surface-secondary", "#f4f0e8"),
+        flyoutForegroundColour: token("--text-secondary", "#6b655c"),
+        flyoutOpacity: 1,
+        scrollbarColour: token("--text-tertiary", "#9a948a"),
+        scrollbarOpacity: 0.4,
+        insertionMarkerColour: token("--ink", "#2a2723"),
+        insertionMarkerOpacity: 0.3,
+        markerColour: token("--accent-primary", "#f4c95d"),
+        cursorColour: token("--accent-primary", "#f4c95d"),
+      },
+      fontStyle: { family: token("--font-mono", "monospace"), weight: "600", size: 11 },
+    });
+  }
+
+  /** The options every studio workspace is injected with. */
+  function options(extra) {
+    return Object.assign({ renderer: "zelos", theme: theme() }, extra || {});
+  }
+
   function dress(Blockly) {
     const proto = Blockly && Blockly.Block && Blockly.Block.prototype;
     if (!proto || proto.__ppDressed) return false;
@@ -135,5 +174,5 @@
     }, 50);
   }
 
-  global.BlockStudioTheme = { ours, wash, accent, hueOf, MAP };
+  global.BlockStudioTheme = { ours, wash, accent, hueOf, theme, options, MAP };
 })(typeof window !== "undefined" ? window : globalThis);

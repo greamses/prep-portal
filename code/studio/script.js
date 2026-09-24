@@ -683,14 +683,11 @@ function initBlockly() {
     }))
   });
   
+  /* The canvas, the flyout and the scrollbars come from the site's theme
+     (utils/components/blockstudio-theme.js), so the studio follows the page
+     into dark mode. It used to name a charcoal of its own here. */
   const baseConfig = {
-    renderer: 'zelos',
-    theme: {
-      componentStyles: {
-        workspaceBackgroundColour: '#3c3c3c',
-        flyoutBackgroundColour: '#2e2e2e'
-      }
-    },
+    ...BlockStudioTheme.options(),
     scrollbars: true,
     trashcan: true,
     zoom: {

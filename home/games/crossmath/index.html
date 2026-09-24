@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/utils/components/nav.css">
-  <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="../../../theory-page/style.css">
+  <link rel="stylesheet" href="./style.css">
   <script src="/utils/components/loader.js"></script>
   <script type="importmap">
     {
@@ -23,6 +23,10 @@
       }
     }
   </script>
+  <!-- Every button on this page becomes a sticky note; loaded last, as
+       that sheet asks, so it wins without anything needing !important. -->
+  <link rel="stylesheet" href="/utils/components/components.css" />
+  <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
 </head>
 <body>
     <div id="loader">

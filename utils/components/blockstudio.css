@@ -1044,3 +1044,95 @@ header {
 [data-theme="dark"] #code-output .ca { color: #eab97a; }
 [data-theme="dark"] #code-output .cv { color: #f0b0a4; }
 [data-theme="dark"] #code-output .ce { color: #c9b6f0; }
+
+/* ── the blocks are sticky notes ──────────────────────────────────────────
+   Zelos already rounds them; what makes a block read as paper on this site is
+   the soft lift and the ink written on it (the pastel itself comes from
+   blockstudio-theme.js). A tilt is out: Blockly positions every block with a
+   transform of its own, and rotating on top of that breaks the drag maths. */
+.blocklyDraggable > .blocklyPath {
+  filter: drop-shadow(0 1px 1px rgba(20, 19, 15, 0.12)) drop-shadow(2px 4px 6px rgba(20, 19, 15, 0.16));
+}
+.blocklyDragging > .blocklyPath {
+  filter: drop-shadow(0 2px 2px rgba(20, 19, 15, 0.16)) drop-shadow(4px 8px 12px rgba(20, 19, 15, 0.26));
+}
+.blocklyFlyout .blocklyDraggable > .blocklyPath {
+  filter: drop-shadow(1px 2px 4px rgba(20, 19, 15, 0.14));
+}
+
+/* ── the panels are receipts ──────────────────────────────────────────────
+   blockstudio-ui.js wraps each overlay panel in the site's receipt, so the
+   writing and the code sit on torn paper like every other sheet here. */
+.overlay-panel.pp-receipt { background: none; }
+.overlay-panel > .pp-receipt__paper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.overlay-panel > .pp-receipt__paper > .code-lines,
+.overlay-panel > .pp-receipt__paper > #preview-iframe,
+.overlay-panel > .pp-receipt__paper > .preview-empty { flex: 1; min-height: 0; }
+/* the receipt's punched edges are decoration: never over the writing */
+.overlay-panel > .pp-receipt__paper::before,
+.overlay-panel > .pp-receipt__paper::after { opacity: 0.5; }
+
+/* ── the full-screen note, and the dress it puts on ───────────────────────── */
+.pp-studio-fs {
+  position: absolute;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 6px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--pp-note-bg, #c8f0c0);
+  color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transform: rotate(-1.6deg);
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1), 4px 6px 10px -4px rgba(20, 19, 15, 0.3);
+  transition: transform 0.18s ease;
+}
+.pp-studio-fs::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 30px;
+  height: 11px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.14);
+  pointer-events: none;
+}
+.pp-studio-fs:hover { transform: rotate(-1.6deg) translateY(-2px); }
+.pp-studio-fs b { font-weight: 700; }
+@media (max-width: 620px) { .pp-studio-fs b { display: none; } }
+
+/* THE CANVAS, FULL SCREEN. Everything that is not blocks steps out of the
+   way: the site's nav, the studio's header, the mode bar and the tabs. The
+   note itself stays, because it is the way back. */
+html.pp-studio-full .site-nav,
+html.pp-studio-full #main-header,
+html.pp-studio-full .bottom-tabs { display: none !important; }
+html.pp-studio-full #editor-view { top: 0 !important; bottom: 0 !important; }
+html.pp-studio-full .editor-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+  z-index: 2200;
+}
+html.pp-studio-full .editor-header > * { pointer-events: auto; }
+html.pp-studio-full .lang-toggler { box-shadow: var(--shadow-md); background: var(--surface-primary); }
+html.pp-studio-full .workspace-area { position: absolute; inset: 0; }
+html.pp-studio-full .overlay-panel { top: 44px; }
