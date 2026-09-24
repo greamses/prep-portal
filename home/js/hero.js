@@ -26,13 +26,14 @@ if (footerPaint) footerPaint.innerHTML = heroPaint();
    Typewriter — cycle the things a person can actually DO here.
 
    It used to cycle synonyms for "tutor", which told a visitor this was a
-   sign-up page for lessons. Each phrase below is one of the rooms on the wall
-   under the hero, so the headline and the wall say the same thing. Keep them
-   short: the line is centred and a long phrase wraps on a phone.
+   sign-up page for lessons. Each word below is something a person does in one
+   of the rooms on the wall under the hero, so the headline and the wall say
+   the same thing. ONE WORD each: the word has a line of the headline to
+   itself, and two words would wrap it.
 ========================================================================= */
 const typeEl = document.querySelector(".hero-type");
 if (typeEl) {
-  const words = ["tip a balance", "ride the train", "fill the square", "mix a reagent", "plot a line", "print a paper"];
+  const words = ["build", "plot", "mix", "print", "race", "solve"];
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reduce) {
