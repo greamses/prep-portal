@@ -1,8 +1,6 @@
 /* game.css - Slider Game Styles */
 
 :root {
-  --ink: #1a1a1a;
-  --bg: #f5f0e8;
   --off: #ede7dd;
   --yellow: #ffe500;
   --blue: #0055ff;
@@ -10,13 +8,10 @@
   --red: #ff2200;
   --muted: #777;
   --ruled: rgba(0, 0, 0, 0.1);
-  --font-display: 'Unbounded', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
   --tw: 0.12em;
   --surface-1: #f5f0e8;
   --surface-2: #ede7dd;
   --surface-3: #e5ddd1;
-  --border: #1a1a1a;
   --accent: #0055ff;
   --accent-hover: #0044cc;
   --shadow-sm: 3px 3px 0 var(--ink);
@@ -41,15 +36,9 @@ body {
 }
 
 /* NAV */
-.site-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  height: 56px;
-  background: var(--ink);
-  border-bottom: 2px solid var(--ink);
-}
+/* The nav is the site's own now (utils/components/nav.css, built by
+   nav-builder.js). This page used to draw a black 56px bar here and leave it
+   empty, which is what made the nav look different from every other page. */
 
 /* TICKER */
 .ticker {
@@ -904,3 +893,28 @@ button,
     text-align: center;
     margin-top: 4px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOFT-UI ALIGNMENT — the same bridge /theory-page/style.css already carries.
+   This page was written before the soft-UI redesign, in a palette of its own
+   (--ink #1a1a1a, --bg #f5f0e8, --yellow #ffe500) with hard borders and
+   offset block shadows. Worse, those names are the SITE's names: redefining
+   --ink and --bg at :root restyled the shared nav bar sitting above the page,
+   which is how this page ended up with an old-looking nav. So the legacy
+   vocabulary is aliased onto theme.css here, and the page keeps its own
+   layout. Appended last, so it wins the cascade over the rules above.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --off: var(--surface-secondary);
+  --yellow: var(--accent-primary);
+  --blue: var(--accent-secondary);
+  --green: var(--accent-success);
+  --red: var(--accent-danger);
+  --muted: var(--text-secondary);
+  --ruled: color-mix(in srgb, var(--ink) 12%, transparent);
+  --paper: var(--surface-primary);
+  --surface-1: var(--surface-primary);
+}
+
+/* the shared nav is a fixed 76px bar, so the page starts below it */
+body { padding-top: 76px; }

@@ -1,5 +1,5 @@
-/* Import Algebra Lab theme */
-@import url('../../utils/theme/theme.css');
+/* The theme comes from utils/components/theme.css, which nav.css imports;
+   the file this used to pull in was deleted long ago. */
 
 /* ========== MODAL HEADER ========== */
 .modal-header {
@@ -516,3 +516,188 @@ mjx-container * {
     height: 16px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SOFT-UI ALIGNMENT — the same bridge /theory-page/style.css already carries.
+   This page was written before the soft-UI redesign, in a palette of its own
+   (--ink #1a1a1a, --bg #f5f0e8, --yellow #ffe500) with hard borders and
+   offset block shadows. Worse, those names are the SITE's names: redefining
+   --ink and --bg at :root restyled the shared nav bar sitting above the page,
+   which is how this page ended up with an old-looking nav. So the legacy
+   vocabulary is aliased onto theme.css here, and the page keeps its own
+   layout. Appended last, so it wins the cascade over the rules above.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --off: var(--surface-secondary);
+  --yellow: var(--accent-primary);
+  --blue: var(--accent-secondary);
+  --green: var(--accent-success);
+  --red: var(--accent-danger);
+  --muted: var(--text-secondary);
+  --ruled: color-mix(in srgb, var(--ink) 12%, transparent);
+  --paper: var(--surface-primary);
+  --surface-1: var(--surface-primary);
+}
+
+/* the shared nav is a fixed 76px bar, so the page starts below it */
+body { padding-top: 76px; }
+
+/* ── the furniture, softened ─────────────────────────────────────────────────
+   Ink outlines and offset block shadows are the old look; this site's controls
+   are rounded, pastel and lifted by a soft shadow. The rules above are left as
+   they were written — these simply come after them. */
+
+/* the one big button: our sticky-note yellow, not a block with a hard edge */
+.gp-btn-start {
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  background: var(--accent-primary);
+  /* --ink flips in dark mode; text on an accent must not */
+  color: var(--text-on-accent);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.6rem;
+}
+.gp-btn-start:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.gp-btn-start:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+
+/* the topic picker */
+.gp-custom-dropdown-header,
+.gp-custom-dropdown-list {
+  border: var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+}
+.gp-custom-dropdown-list { box-shadow: var(--shadow-md); overflow: hidden; }
+.gp-custom-dropdown-item:hover,
+.gp-custom-dropdown-item.selected { background: var(--surface-secondary); }
+.gp-custom-dropdown-label { color: var(--text-secondary); }
+
+/* the dashboard card */
+.gp-dashboard {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* the fullscreen practice modal: paper, and a bar that matches the page */
+.gp-modal-overlay { background: var(--app-bg); }
+.modal-header {
+  background: var(--surface-secondary);
+  border-bottom: var(--border-subtle);
+}
+.modal-header .btn,
+.modal-header .btn.btn-secondary {
+  background: var(--accent-primary) !important;
+  border: var(--border-subtle) !important;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.modal-header .btn.btn-secondary { background: var(--surface-primary) !important; }
+.modal-header .btn.btn-secondary svg { stroke: var(--ink) !important; }
+.modal-header .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.modal-header .btn:active { transform: translateY(0); box-shadow: none; }
+.modal-header .btn svg { stroke: var(--text-on-accent) !important; stroke-linecap: round; stroke-linejoin: round; }
+
+/* the answer box, the keyboard and the status line */
+.gp-answer-input,
+.gp-virtual-keyboard,
+.gp-keyboard-tabs {
+  border: var(--border-subtle) !important;
+  border-radius: 14px;
+  box-shadow: none;
+}
+.gp-key {
+  border: var(--border-subtle) !important;
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-primary);
+  color: var(--ink);
+}
+.gp-key:active { box-shadow: none; transform: translateY(1px); }
+.status-bar {
+  border-radius: 999px;
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+/* nothing on this page is a hard block any more */
+.gp-dash-body, .gp-graph-wrap, .gp-panel {
+  border-radius: 18px;
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── the page itself ─────────────────────────────────────────────────────────
+   The root main.css this page used to link held its margins and its hero
+   layout; it has not existed for a long time, so the page ran flush to the
+   left edge with its stats in hard little boxes. This is that layout, in the
+   site's own measurements. */
+body { background: transparent; }
+.pg-header,
+.gp-dashboard,
+#gp-status-bar {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin-inline: auto;
+}
+.pg-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 2rem) clamp(1rem, 2vw, 1.5rem);
+}
+.ph-left { flex: 1 1 22rem; }
+.ph-right { flex: 1 1 20rem; }
+.ph-right p { color: var(--text-secondary); max-width: 34rem; }
+.pg-eyebrow { color: var(--text-tertiary); }
+/* it is a heading, not a hoarding: enough that it cannot run under the stats */
+.pg-title { font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 0.95; }
+
+/* the two little numbers: our pills, not boxes with ink edges */
+.ph-stats {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  /* the group had a box of its own around the two pills */
+  border: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.ph-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 1.1rem;
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.ph-stat strong { font-family: var(--font-display); font-size: 1.2rem; line-height: 1; }
+.ph-stat span { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); }
+
+.gp-dashboard { margin-bottom: clamp(2rem, 6vw, 4rem); padding: clamp(1.25rem, 3vw, 2rem); }
+/* the inner body was a box inside a box */
+.gp-dash-body { border: 0; box-shadow: none; border-radius: 0; max-width: 34rem; }
+.gp-dash-desc { color: var(--text-secondary); }
+
+/* The practice modal is the whole screen — a graph, an answer line and a
+   keyboard — so it goes over the site's nav rather than starting under it and
+   losing its own toolbar behind the bar. Its Exit button is the way out, the
+   same as every other full-screen activity here. */
+.gp-modal-overlay { z-index: 10000; }

@@ -895,8 +895,11 @@ header {
 }
 #main-header .header-label { color: var(--text-secondary); }
 
-/* the site's own fonts win over the studio's mono default for our chrome */
-.site-nav, .site-nav * { font-family: inherit; }
+/* The studio sets a mono face on * , which reaches into the nav as well. The
+   nav is not this page's to restyle — except that it has to be rescued from
+   that rule — so its own fonts are put back, and the menu notes are left
+   alone entirely (nav.css writes them in the sticky-note hand). */
+.site-nav, .site-nav *:not(.nav-main-label) { font-family: inherit; }
 
 
 /* ═══════════════════════════════════════════════

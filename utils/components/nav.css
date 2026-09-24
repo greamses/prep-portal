@@ -1007,3 +1007,64 @@ body {
     transition: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE MENU ITEMS ARE STICKY NOTES
+   ---------------------------------------------------------------------------
+   This used to live in utils/components/sticky-ui.css, which most pages load
+   but not all — the games, the virtual lab and the workbenches deliberately
+   leave that sheet off, because it turns every .btn on a page into paper and
+   that fights a tool rail. The NAV, though, should be the same object on
+   every page of the site, so its dress lives here, in the sheet that comes
+   with the nav itself.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.nav-main-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem 0.45rem;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #14130f;
+  background: var(--pp-note-bg, #fff3a8);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  transform: rotate(var(--pp-note-tilt, -2deg));
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.nav-links > li:nth-child(1) .nav-main-label { --pp-note-bg: #fff3a8; }
+.nav-links > li:nth-child(2) .nav-main-label { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
+.nav-links > li:nth-child(3) .nav-main-label { --pp-note-bg: #c8f0c0; }
+.nav-links > li:nth-child(4) .nav-main-label { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
+.nav-links > li:nth-child(5) .nav-main-label { --pp-note-bg: #ffd7a3; }
+/* the strip of tape */
+.nav-main-label::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 38px;
+  height: 13px;
+  transform: translateX(-50%) rotate(-3.5deg);
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(20, 19, 15, 0.14);
+  pointer-events: none;
+}
+.nav-links > li:hover .nav-main-label,
+.nav-links > li.open .nav-main-label {
+  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
+  outline: 2.5px solid var(--ink, #2a2723);
+  outline-offset: -2.5px;
+}
+/* No headroom rule here: .site-nav .nav-links is already padding:0 with the
+   items centred in a 76px bar, which leaves the tape its 10px. The version of
+   this block in sticky-ui.css carried a `.nav-links { padding-top: 10px }`
+   that never won that cascade either. */

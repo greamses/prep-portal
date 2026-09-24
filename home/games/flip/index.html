@@ -10,10 +10,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/utils/components/nav.css">
   <link rel="stylesheet" href="./game.css">
-  <link rel="stylesheet" href="../../../main.css">
   <link rel="stylesheet" href="../../../theory-page/style.css">
-  <script src="../../../utils/loader/loader.js"></script>
+  <script src="/utils/components/loader.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
 </head>
 
 <body>
@@ -25,7 +35,7 @@
     <div class="loader-bar"></div>
   </div>
   
-  <nav class="site-nav"></nav>
+  <nav class="site-nav" data-nav="main"></nav>
   
   <!-- Ticker -->
   <div class="ticker" aria-hidden="true">
@@ -157,7 +167,7 @@
   </div>
   
   <script src="./game.js"></script>
-  <script type="module" src="../nav/nav.js"></script>
+  <script type="module" src="/utils/components/nav-builder.js"></script>
 </body>
 
 </html>

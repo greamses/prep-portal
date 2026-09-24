@@ -21,7 +21,6 @@
 .btn-ink,
 .option-btn,
 .hero-stat,
-.nav-main-label,
 .hero-btn,
 .section-cta,
 .pricing-cta,
@@ -210,42 +209,10 @@ button.ghost {
 }
 
 /* ── Nav ────────────────────────────────────────────────────────────────
-   The top-level menu items are notes; the dropdown leaves stay plain text so
-   a long menu doesn't turn into a wall of paper. */
-.nav-main-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  letter-spacing: 0;
-  text-transform: none;
-  padding: 0.4rem 0.8rem 0.45rem;
-}
-.nav-links > li:nth-child(1) .nav-main-label { --pp-note-bg: #fff3a8; }
-.nav-links > li:nth-child(2) .nav-main-label { --pp-note-bg: #e8c8ff; --pp-note-tilt: 1.5deg; }
-.nav-links > li:nth-child(3) .nav-main-label { --pp-note-bg: #c8f0c0; }
-.nav-links > li:nth-child(4) .nav-main-label { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.2deg; }
-.nav-links > li:nth-child(5) .nav-main-label { --pp-note-bg: #ffd7a3; }
-.nav-main-label::before {
-  content: "";
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  width: 38px;
-  height: 13px;
-  transform: translateX(-50%) rotate(-3.5deg);
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
-  pointer-events: none;
-}
-.nav-links > li:hover .nav-main-label,
-.nav-links > li.open .nav-main-label {
-  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px);
-  outline: 2.5px solid var(--ink, #2a2723);
-  outline-offset: -2.5px;
-}
-/* The nav needs headroom now that each item carries tape above it. */
-.nav-links { padding-top: 10px; }
+   The top-level menu items are notes too — but that dress now lives in
+   utils/components/nav.css, which EVERY page with a nav loads, rather than
+   here, which only 48 of the 62 do. That is what made the same bar look like
+   two different bars depending on the page you were on. */
 
 /* ── Chips ──────────────────────────────────────────────────────────────
    The hero stat chips sat as the last outlined pills next to a wall of
