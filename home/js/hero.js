@@ -23,11 +23,16 @@ const footerPaint = document.querySelector(".footer-paint");
 if (footerPaint) footerPaint.innerHTML = heroPaint();
 
 /* =========================================================================
-   Typewriter — cycle tutor synonyms in the highlighted headline word.
+   Typewriter — cycle the things a person can actually DO here.
+
+   It used to cycle synonyms for "tutor", which told a visitor this was a
+   sign-up page for lessons. Each phrase below is one of the rooms on the wall
+   under the hero, so the headline and the wall say the same thing. Keep them
+   short: the line is centred and a long phrase wraps on a phone.
 ========================================================================= */
 const typeEl = document.querySelector(".hero-type");
 if (typeEl) {
-  const words = ["Tutors", "Mentors", "Coaches", "Guides"];
+  const words = ["tip a balance", "ride the train", "fill the square", "mix a reagent", "plot a line", "print a paper"];
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reduce) {

@@ -147,7 +147,11 @@
   max-width: 15ch;
   font-family: var(--font-display);
   font-size: clamp(2.6rem, 8.5vw, 5rem);
-  line-height: 0.95;
+  /* the headline wraps now that it names a thing you do, and the highlight
+     behind the typed phrase needs the room: at 0.95 the marker on the second
+     line sat over the tails of the first */
+  line-height: 1.06;
+  text-wrap: balance;
   letter-spacing: -0.035em;
   font-weight: var(--weight-black);
   color: var(--ink);
