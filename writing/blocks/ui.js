@@ -8,7 +8,7 @@ function buildSidebar() {
     .map(
       (c, i) => `
       <div class="side-item ${i === 0 ? 'active' : ''}" onclick="selectCat(${i}, '${lang}')">
-        <div class="side-sq" style="background:${c.color};box-shadow:0 4px 0 ${c.shadow}">
+        <div class="side-sq" style="background:${(window.BlockStudioTheme && BlockStudioTheme.accent(c.color)) || c.color}">
           <svg viewBox="0 0 24 24">${c.svg}</svg>
         </div>
       </div>

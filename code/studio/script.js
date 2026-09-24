@@ -574,7 +574,7 @@ function rebuildSidebarForLang(lang) {
   
   sb.innerHTML = icons.map((ic, idx) => `
     <div class="side-item ${idx === 0 ? 'active' : ''}" onclick="selectCatByIndex(${idx}, '${lang}')">
-      <div class="side-sq" style="background:${ic.color};box-shadow:0 4px 0 ${ic.shadow}">
+      <div class="side-sq" style="background:${(window.BlockStudioTheme && BlockStudioTheme.accent(ic.color)) || ic.color}">
         <svg viewBox="0 0 24 24">${ic.svg}</svg>
       </div>
       <span class="side-label">${ic.label || ''}</span>

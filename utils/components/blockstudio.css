@@ -1,19 +1,23 @@
 :root {
-  --yellow: #FFB800;
-  --blue: #0055ff;
-  --ink: #0a0a0a;
-  --white: #ffffff;
-  --grey: #f0f0ee;
-  --light: #fafaf8;
-  --bg-editor: #3c3c3c;
-  --sidebar-bg: #f8f8f8;
-  --border: 2.5px solid var(--ink);
-  --shadow: 4px 4px 0 var(--ink);
-  --shadow-sm: 2px 2px 0 var(--ink);
-  --shadow-lg: 6px 6px 0 var(--ink);
-  --font-head: 'Unbounded', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --transition: 0.18s ease;
+  /* The studio's own names, pointed at the site's theme (utils/components/
+     theme.css, imported by nav.css). Nothing here is a token the rest of the
+     site uses: the studio used to redefine --ink, --border, --shadow-sm and
+     --font-mono at :root, which quietly restyled the nav above it. */
+  --st-gold: var(--accent-primary);
+  --st-blue: var(--accent-secondary);
+  --st-ink: var(--ink);
+  --st-paper: var(--surface-primary);
+  --st-grey: var(--surface-secondary);
+  --st-light: var(--bg);
+  --st-canvas: var(--app-bg);
+  --st-rail: var(--surface-secondary);
+  --st-border: var(--border-subtle);
+  --st-shadow: var(--shadow-md);
+  --st-shadow-sm: var(--shadow-sm);
+  --st-shadow-lg: var(--shadow-lg);
+  --st-head: var(--font-display);
+  --st-mono: var(--font-mono);
+  --st-transition: var(--transition-base, 0.15s) ease;
   --sidebar-w: 72px;
   --header-h: 52px;
   --tabs-h: 52px;
@@ -26,7 +30,7 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
 }
 
 html,
@@ -40,7 +44,7 @@ body {
   overflow: hidden;
   overscroll-behavior-y: none;
   
-  background: var(--white);
+  background: var(--st-paper);
 }
 
 .hidden {
@@ -54,8 +58,8 @@ header {
   left: 0;
   right: 0;
   height: var(--header-h);
-  background: var(--ink);
-  border-bottom: var(--border);
+  background: var(--st-ink);
+  border-bottom: var(--st-border);
   padding: 0 16px;
   display: flex;
   align-items: center;
@@ -73,41 +77,41 @@ header {
 .logo {
   font-size: 0.72rem;
   font-weight: 900;
-  color: var(--white);
+  color: var(--st-paper);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .logo em {
-  color: var(--yellow);
+  color: var(--st-gold);
   font-style: normal;
 }
 
 .badge {
-  background: var(--yellow);
-  color: var(--ink);
-  font-family: var(--font-mono);
+  background: var(--st-gold);
+  color: var(--st-ink);
+  font-family: var(--st-mono);
   font-size: 0.58rem;
   font-weight: 700;
   padding: 3px 8px;
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--st-ink);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .header-label {
   color: rgba(255, 255, 255, 0.5);
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .back-btn {
-  background: var(--yellow);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  font-family: var(--font-head);
+  background: var(--st-gold);
+  border: 2px solid var(--st-ink);
+  box-shadow: 2px 2px 0 var(--st-ink);
+  font-family: var(--st-head);
   font-size: 0.6rem;
   font-weight: 900;
   padding: 6px 12px;
@@ -156,9 +160,9 @@ header {
 }
 
 .module-header {
-  background: var(--blue);
-  border: var(--border);
-  box-shadow: var(--shadow-lg);
+  background: var(--st-blue);
+  border: var(--st-border);
+  box-shadow: var(--st-shadow-lg);
   padding: 14px 20px;
   margin-bottom: 0;
   border-radius: 8px;
@@ -171,7 +175,7 @@ header {
 }
 
 .module-header.locked-module {
-  background: var(--grey);
+  background: var(--st-grey);
   box-shadow: 0 4px 0 rgba(10, 10, 10, 0.15);
   border-color: rgba(10, 10, 10, 0.25);
 }
@@ -185,8 +189,8 @@ header {
 }
 
 .module-header h2 {
-  color: var(--white);
-  font-family: var(--font-head);
+  color: var(--st-paper);
+  font-family: var(--st-head);
   font-size: 1.05rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -194,8 +198,8 @@ header {
 }
 
 .module-header p {
-  color: var(--yellow);
-  font-family: var(--font-mono);
+  color: var(--st-gold);
+  font-family: var(--st-mono);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -207,15 +211,15 @@ header {
   top: -36px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--white);
-  border: var(--border);
+  background: var(--st-paper);
+  border: var(--st-border);
   padding: 5px 12px;
-  font-family: var(--font-head);
+  font-family: var(--st-head);
   font-size: 0.6rem;
   font-weight: 900;
-  color: var(--blue);
+  color: var(--st-blue);
   border-radius: 6px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--st-shadow-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -231,22 +235,22 @@ header {
   transform: translateX(-50%) rotate(45deg);
   width: 8px;
   height: 8px;
-  background: var(--white);
-  border-bottom: var(--border);
-  border-right: var(--border);
+  background: var(--st-paper);
+  border-bottom: var(--st-border);
+  border-right: var(--st-border);
 }
 
 @keyframes pulse-current {
   0% {
-    box-shadow: 0 5px 0 var(--ink), 0 0 0 0 rgba(0, 85, 255, 0.4);
+    box-shadow: 0 5px 0 var(--st-ink), 0 0 0 0 rgba(0, 85, 255, 0.4);
   }
   
   70% {
-    box-shadow: 0 5px 0 var(--ink), 0 0 0 12px rgba(0, 85, 255, 0);
+    box-shadow: 0 5px 0 var(--st-ink), 0 0 0 12px rgba(0, 85, 255, 0);
   }
   
   100% {
-    box-shadow: 0 5px 0 var(--ink), 0 0 0 0 rgba(0, 85, 255, 0);
+    box-shadow: 0 5px 0 var(--st-ink), 0 0 0 0 rgba(0, 85, 255, 0);
   }
 }
 
@@ -358,7 +362,7 @@ header {
 }
 
 .side-label {
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 7.5px;
   font-weight: 700;
   margin-top: 4px;
@@ -383,7 +387,7 @@ header {
   left: 2px;
   width: 3px;
   height: 28px;
-  background: var(--ink);
+  background: var(--st-ink);
   border-radius: 0 2px 2px 0;
 }
 
@@ -423,7 +427,7 @@ header {
 }
 
 .blocklyText {
-  font-family: var(--font-mono) !important;
+  font-family: var(--st-mono) !important;
   font-weight: 700 !important;
   font-size: 13px !important;
 }
@@ -434,12 +438,12 @@ header {
 
 .blocklyEditableText>text {
   fill: #111 !important;
-  font-family: var(--font-mono) !important;
+  font-family: var(--st-mono) !important;
   font-size: 12px !important;
 }
 
 .blocklyFlyoutLabelText {
-  font-family: var(--font-head) !important;
+  font-family: var(--st-head) !important;
   font-size: 13px !important;
   fill: #ccc !important;
   font-weight: 700 !important;
@@ -504,7 +508,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.6rem;
   color: #666;
   margin: 0 8px;
@@ -533,7 +537,7 @@ header {
 }
 
 .preview-empty p {
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.65rem;
   text-align: center;
 }
@@ -559,7 +563,7 @@ header {
 }
 
 .code-toolbar span {
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.6rem;
   color: #666;
   letter-spacing: 0.05em;
@@ -580,7 +584,7 @@ header {
   padding: 16px 0 16px 8px;
   text-align: right;
   user-select: none;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.72rem;
   color: #404040;
   line-height: 1.65;
@@ -595,7 +599,7 @@ header {
 #code-output {
   flex: 1;
   padding: 16px 16px 16px 12px;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.72rem;
   color: #d4d4d4;
   white-space: pre;            
@@ -632,7 +636,7 @@ header {
 /* ── Bottom Tabs ──────────────────────────────── */
 .bottom-tabs {
   height: var(--tabs-h);
-  background: var(--white);
+  background: var(--st-paper);
   border-top: 1.5px solid #e0e0e0;
   display: flex;
   align-items: stretch;
@@ -644,7 +648,7 @@ header {
   flex: 1;
   background: none;
   border: none;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.65rem;
   font-weight: 700;
   color: #aaa;
@@ -670,7 +674,7 @@ header {
 }
 
 .tab-btn.active {
-  color: var(--ink);
+  color: var(--st-ink);
 }
 
 .tab-btn.active::after {
@@ -680,7 +684,7 @@ header {
   left: 25%;
   width: 50%;
   height: 3px;
-  background: var(--ink);
+  background: var(--st-ink);
   border-radius: 3px 3px 0 0;
 }
 
@@ -710,9 +714,9 @@ header {
   bottom: calc(var(--tabs-h) + 16px);
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--ink);
+  background: var(--st-ink);
   color: white;
-  font-family: var(--font-mono);
+  font-family: var(--st-mono);
   font-size: 0.65rem;
   font-weight: 700;
   padding: 8px 18px;
@@ -752,7 +756,7 @@ header {
 /* ── NEW: EDITOR HEADER & TOGGLER ─────────────── */
 .editor-header {
   height: 46px;
-  background: var(--sidebar-bg);
+  background: var(--st-rail);
   border-bottom: 1.5px solid #d8d8d8;
   display: flex;
   align-items: center;
@@ -774,7 +778,7 @@ header {
   border: none;
   padding: 6px 20px;
   border-radius: 16px;
-  font-family: var(--font-head);
+  font-family: var(--st-head);
   font-size: 0.65rem;
   font-weight: 700;
   cursor: pointer;
@@ -783,8 +787,8 @@ header {
 }
 
 .lang-toggler button.active {
-  background: var(--white);
-  color: var(--ink);
+  background: var(--st-paper);
+  color: var(--st-ink);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
@@ -826,7 +830,7 @@ header {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: var(--bg-editor);
+  background: var(--st-canvas);
 }
 
 /* The .overlay-panel styles stay unchanged (covers the workspace) */
@@ -886,10 +890,154 @@ header {
 /* the studio's header is the site's paper, not a black bar, now that the nav
    above it carries the brand */
 #main-header {
-  background: var(--surface-secondary, #f0efe9);
-  border-bottom: 1px solid rgba(20, 19, 15, 0.14);
+  background: var(--surface-secondary);
+  border-bottom: var(--border-subtle);
 }
-#main-header .header-label { color: var(--text-secondary, #6b645a); }
+#main-header .header-label { color: var(--text-secondary); }
 
 /* the site's own fonts win over the studio's mono default for our chrome */
 .site-nav, .site-nav * { font-family: inherit; }
+
+
+/* ═══════════════════════════════════════════════
+   WEARING THE SITE'S CLOTHES
+   -----------------------------------------------
+   The studio arrived in a hard-edged "neo" style: black bars, 2.5px ink
+   borders and offset block shadows on a charcoal canvas. Prep Portal is soft
+   paper and pastel (utils/components/theme.css), so everything below turns
+   the furniture over to the theme's tokens — which also means the studio
+   follows the site into dark mode instead of staying bright white.
+
+   The BLOCKS are recoloured in JavaScript, not here: Blockly paints them from
+   each block's own colour, so utils/components/blockstudio-theme.js maps the
+   studio's Material palette onto ours before a block is defined.
+   ═══════════════════════════════════════════════ */
+
+/* ── the canvas and the flyout ──────────────────────────────────────────── */
+.blocklyMainBackground { fill: var(--app-bg) !important; }
+.blocklyFlyoutBackground,
+.blocklyFlyout > .blocklyScrollbarHorizontal,
+.blocklyFlyout > .blocklyScrollbarVertical { fill: var(--surface-secondary) !important; }
+.blockly-container { background: var(--app-bg); }
+/* pastel blocks want ink on them, the way our sticky notes do */
+.blocklyText { fill: var(--ink) !important; font-family: var(--font-mono) !important; }
+.blocklyFlyoutLabelText { fill: var(--text-secondary) !important; font-family: var(--font-display) !important; }
+.blocklyEditableText > rect { fill: var(--surface-primary) !important; }
+.blocklyEditableText > text { fill: var(--ink) !important; }
+.blocklyPath { stroke: rgba(42, 39, 35, 0.22) !important; }
+.blocklyDropdownMenu, .blocklyWidgetDiv .goog-menu {
+  background: var(--surface-primary) !important;
+  border: var(--border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.blocklyTooltipDiv {
+  background: var(--ink) !important;
+  color: var(--surface-primary) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-mono) !important;
+  opacity: 1 !important;
+}
+
+/* ── the rail of categories ─────────────────────────────────────────────── */
+.sidebar-container {
+  background: var(--surface-secondary);
+  border-right: var(--border-subtle);
+  box-shadow: none;
+}
+.side-sq {
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm) !important;
+}
+/* the category glyphs are drawn white, so their square keeps a mid-tone
+   accent (blockstudio-theme.js picks it by hue) rather than a pale one */
+.side-item.active .side-sq { box-shadow: var(--shadow-md) !important; }
+.side-item.active::before { background: var(--accent-primary); }
+.side-item:hover { background: rgba(42, 39, 35, 0.05); }
+
+/* ── the two bars: modes above, panels below ────────────────────────────── */
+.editor-header {
+  background: var(--surface-secondary);
+  border-bottom: var(--border-subtle);
+}
+.lang-toggler {
+  background: rgba(42, 39, 35, 0.06);
+  border-radius: 999px;
+}
+.lang-toggler button {
+  font-family: var(--font-display);
+  color: var(--text-secondary);
+  border-radius: 999px;
+}
+.lang-toggler button.active {
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+.bottom-tabs {
+  background: var(--surface-primary);
+  border-top: var(--border-subtle);
+}
+.tab-btn { color: var(--text-tertiary); font-family: var(--font-display); }
+.tab-btn.active { color: var(--ink); }
+.tab-btn.active::after { background: var(--accent-primary); }
+.bottom-tabs::before, .bottom-tabs::after { background: rgba(42, 39, 35, 0.1); }
+
+/* ── the writing / code panel: the workbook's console, on paper ─────────── */
+.overlay-panel { background: var(--surface-primary); }
+.code-toolbar {
+  background: var(--surface-secondary);
+  border-bottom: var(--border-subtle);
+  color: var(--text-secondary);
+}
+.code-toolbar .file-name { color: var(--text-secondary); }
+.code-lines { background: var(--surface-primary); }
+#line-nums { background: var(--surface-primary); border-right: var(--border-subtle); color: var(--text-tertiary); }
+#code-output { color: var(--ink); font-family: var(--font-mono); }
+#code-output .empty { color: var(--text-tertiary); }
+/* The colours code is read in — ours, not a dark editor's. The class names
+   are the studio's own: ct a tag, ca an attribute, cv a value, cc a comment,
+   ce an entity. */
+#code-output .ct { color: #2f6fa8; }
+#code-output .ca { color: #8a6d1f; }
+#code-output .cv { color: #a2564a; }
+#code-output .cc { color: var(--text-tertiary); font-style: italic; }
+#code-output .ce { color: #6b4fa8; }
+#code-output .empty { color: var(--text-tertiary); }
+
+/* ── the preview, framed like a little browser ──────────────────────────── */
+.browser-bar { background: var(--surface-secondary); border-bottom: var(--border-subtle); }
+.url-pill {
+  background: var(--surface-primary);
+  border: var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: 999px;
+}
+.preview-empty { color: var(--text-tertiary); }
+
+/* ── the odds and ends ──────────────────────────────────────────────────── */
+#toast {
+  background: var(--ink);
+  color: var(--surface-primary);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-mono);
+}
+::-webkit-scrollbar-thumb { background: rgba(42, 39, 35, 0.18); }
+.back-btn, .badge {
+  border: var(--border-subtle);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── dark mode: the theme flips, and so does the studio ─────────────────── */
+[data-theme="dark"] .blocklyPath { stroke: rgba(255, 255, 255, 0.16) !important; }
+[data-theme="dark"] .blocklyText { fill: #1c1a17 !important; }
+[data-theme="dark"] .side-item:hover { background: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] .lang-toggler { background: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .bottom-tabs::before,
+[data-theme="dark"] .bottom-tabs::after { background: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] #code-output .ct { color: #8ec2e2; }
+[data-theme="dark"] #code-output .ca { color: #eab97a; }
+[data-theme="dark"] #code-output .cv { color: #f0b0a4; }
+[data-theme="dark"] #code-output .ce { color: #c9b6f0; }
