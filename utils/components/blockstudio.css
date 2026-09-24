@@ -1,0 +1,895 @@
+:root {
+  --yellow: #FFB800;
+  --blue: #0055ff;
+  --ink: #0a0a0a;
+  --white: #ffffff;
+  --grey: #f0f0ee;
+  --light: #fafaf8;
+  --bg-editor: #3c3c3c;
+  --sidebar-bg: #f8f8f8;
+  --border: 2.5px solid var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow-lg: 6px 6px 0 var(--ink);
+  --font-head: 'Unbounded', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --transition: 0.18s ease;
+  --sidebar-w: 72px;
+  --header-h: 52px;
+  --tabs-h: 52px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-mono);
+}
+
+html,
+body {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  
+  background: var(--white);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-h);
+  background: var(--ink);
+  border-bottom: var(--border);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 3000;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.logo em {
+  color: var(--yellow);
+  font-style: normal;
+}
+
+.badge {
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border: 1.5px solid var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.header-label {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.back-btn {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--font-head);
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 6px 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.back-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* ── LAYOUT ──────────────────────────────────────── */
+.app {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════
+   ROADMAP — STRAIGHT TWO‑LANE ROAD
+   ═══════════════════════════════════════════════ */
+.path-section {
+  flex: 1;
+  background: radial-gradient(rgba(10, 10, 10, 0.08) 2px, transparent 2px) 0 0/28px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 20px 120px 20px;
+  z-index: 50;
+}
+
+.module-group {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.module-header {
+  background: var(--blue);
+  border: var(--border);
+  box-shadow: var(--shadow-lg);
+  padding: 14px 20px;
+  margin-bottom: 0;
+  border-radius: 8px;
+  position: sticky;
+  top: 10px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.module-header.locked-module {
+  background: var(--grey);
+  box-shadow: 0 4px 0 rgba(10, 10, 10, 0.15);
+  border-color: rgba(10, 10, 10, 0.25);
+}
+
+.module-header.locked-module h2 {
+  color: rgba(10, 10, 10, 0.5);
+}
+
+.module-header.locked-module p {
+  color: rgba(10, 10, 10, 0.4);
+}
+
+.module-header h2 {
+  color: var(--white);
+  font-family: var(--font-head);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.module-header p {
+  color: var(--yellow);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Tooltip */
+.current-tooltip {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: var(--border);
+  padding: 5px 12px;
+  font-family: var(--font-head);
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: var(--blue);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  animation: float-tip 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+.current-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--white);
+  border-bottom: var(--border);
+  border-right: var(--border);
+}
+
+@keyframes pulse-current {
+  0% {
+    box-shadow: 0 5px 0 var(--ink), 0 0 0 0 rgba(0, 85, 255, 0.4);
+  }
+  
+  70% {
+    box-shadow: 0 5px 0 var(--ink), 0 0 0 12px rgba(0, 85, 255, 0);
+  }
+  
+  100% {
+    box-shadow: 0 5px 0 var(--ink), 0 0 0 0 rgba(0, 85, 255, 0);
+  }
+}
+
+@keyframes float-tip {
+  
+  0%,
+  100% {
+    top: -36px;
+  }
+  
+  50% {
+    top: -42px;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   WEBLOCK NEO EDITOR VIEW
+   ═══════════════════════════════════════════════ */
+#editor-view {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#editor-view.hidden {
+  display: none !important;
+}
+
+.workspace-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Icon Sidebar ─────────────────────────────── */
+#icon-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: rgba(248, 248, 248, 0.97);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 4px;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+#icon-sidebar::-webkit-scrollbar {
+  width: 0;
+}
+
+.side-item {
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+}
+
+.side-item:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.side-sq {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+
+.side-sq::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+}
+
+.side-sq svg {
+  width: 22px;
+  height: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.side-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: #999;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.side-item.active .side-sq {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.side-item.active .side-label {
+  color: #111;
+}
+
+.side-item.active::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  width: 3px;
+  height: 28px;
+  background: var(--ink);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Blockly ──────────────────────────────────── */
+#blocklyDiv {
+  width: 100%;
+  height: 100%;
+}
+
+.blocklyToolboxDiv {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.blocklyFlyout {
+  transform: translateX(var(--sidebar-w)) !important;
+}
+
+.blocklyFlyoutBackground,
+.blocklyFlyout>.blocklyScrollbarHorizontal,
+.blocklyFlyout>.blocklyScrollbarVertical {
+  fill: #2e2e2e !important;
+  fill-opacity: 1 !important;
+}
+
+.blocklyMainBackground {
+  fill: #3c3c3c !important;
+  fill-opacity: 1 !important;
+}
+
+.blocklyFlyoutScrollbar,
+.blocklyFlyout .blocklyScrollbarBackground,
+.blocklyFlyout .blocklyScrollbarKnob {
+  display: none !important;
+}
+
+.blocklyText {
+  font-family: var(--font-mono) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+.blocklyEditableText>rect {
+  fill: rgba(255, 255, 255, 0.9) !important;
+}
+
+.blocklyEditableText>text {
+  fill: #111 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+
+.blocklyFlyoutLabelText {
+  font-family: var(--font-head) !important;
+  font-size: 13px !important;
+  fill: #ccc !important;
+  font-weight: 700 !important;
+}
+
+
+/* Mobile Improvements */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: 64px;
+  }
+  
+  .blocklyToolboxDiv {
+    width: 64px !important;
+    min-width: 64px !important;
+  }
+  
+  .blocklyText {
+    font-size: 13px !important;
+  }
+}
+
+/* ── Overlay Panels ───────────────────────────── */
+.overlay-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;
+}
+
+#preview-panel {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-w);
+}
+
+.browser-bar {
+  height: 38px;
+  background: #f0f0f0;
+  border-bottom: 1.5px solid #d8d8d8;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.win-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.url-pill {
+  flex: 1;
+  background: #ddd;
+  border-radius: 20px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: #666;
+  margin: 0 8px;
+  letter-spacing: 0.02em;
+}
+
+#preview-iframe {
+  flex: 1;
+  border: none;
+  width: 100%;
+}
+
+.preview-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #bbb;
+}
+
+.preview-empty .empty-icon {
+  width: 80px;
+  height: 80px;
+}
+
+.preview-empty p {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+#code-panel {
+  background: #1a1a1a;
+  overflow: auto;
+  padding: 0;
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+}
+
+.code-toolbar {
+  height: 36px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.code-toolbar span {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: #666;
+  letter-spacing: 0.05em;
+}
+
+.code-toolbar .file-name {
+  color: #aaa;
+  font-weight: 700;
+}
+
+.code-lines {
+  display: flex;
+  flex: 1;
+  overflow: auto;
+}
+
+#line-nums {
+  padding: 16px 0 16px 8px;
+  text-align: right;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #404040;
+  line-height: 1.65;
+  min-width: 36px;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  white-space: pre;
+  overflow: hidden;        
+  border-right: 1px solid #2a2a2a;
+}
+
+#code-output {
+  flex: 1;
+  padding: 16px 16px 16px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #d4d4d4;
+  white-space: pre;            
+  line-height: 1.65;
+  overflow: auto;              
+  margin: 0;                   
+}
+
+#code-output .ct {
+  color: #569cd6;
+}
+
+#code-output .ca {
+  color: #9cdcfe;
+}
+
+#code-output .cv {
+  color: #ce9178;
+}
+
+#code-output .cc {
+  color: #6a9955;
+}
+
+#code-output .ce {
+  color: #d7ba7d;
+}
+
+#code-output .empty {
+  color: #404040;
+  font-style: italic;
+}
+
+/* ── Bottom Tabs ──────────────────────────────── */
+.bottom-tabs {
+  height: var(--tabs-h);
+  background: var(--white);
+  border-top: 1.5px solid #e0e0e0;
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.tab-btn:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tab-btn.active {
+  color: var(--ink);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 3px;
+  background: var(--ink);
+  border-radius: 3px 3px 0 0;
+}
+
+.bottom-tabs::before {
+  content: '';
+  position: absolute;
+  left: 33.33%;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: #e8e8e8;
+}
+
+.bottom-tabs::after {
+  content: '';
+  position: absolute;
+  left: 66.66%;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: #e8e8e8;
+}
+
+/* ── Toast ────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: calc(var(--tabs-h) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  z-index: 9000;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Scrollbar ────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+
+
+/* Update these within your style.css mapping */
+
+/* ── NEW: EDITOR HEADER & TOGGLER ─────────────── */
+.editor-header {
+  height: 46px;
+  background: var(--sidebar-bg);
+  border-bottom: 1.5px solid #d8d8d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2000;
+  position: relative;
+}
+
+.lang-toggler {
+  display: flex;
+  background: #e0e0e0;
+  border-radius: 20px;
+  padding: 4px;
+}
+
+.lang-toggler button {
+  background: transparent;
+  border: none;
+  padding: 6px 20px;
+  border-radius: 16px;
+  font-family: var(--font-head);
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.lang-toggler button.active {
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* ── SIDEBAR CONTAINER (Replaces #icon-sidebar) ── */
+.sidebar-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: rgba(248, 248, 248, 0.97);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 4px;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-container::-webkit-scrollbar {
+  width: 0;
+}
+
+/* ── BLOCKLY CONTAINER (Replaces #blocklyDiv) ── */
+.blockly-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Other core rules unchanged, ensuring mobile stability */
+.workspace-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-editor);
+}
+
+/* The .overlay-panel styles stay unchanged (covers the workspace) */
+.overlay-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1500;
+  margin-left: var(--sidebar-w);
+}
+
+/* Force dropdown fields to stay on one line */
+.blocklyDropdownText,
+.blocklyText {
+  white-space: nowrap !important;
+  text-overflow: ellipsis;
+  overflow: visible !important;
+}
+
+
+/* Prevent dropdown text from wrapping — force wider field */
+.blocklyDropdownText {
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+}
+
+/* Make the dropdown field wider so text fits */
+.blocklyEditableText>rect {
+  min-width: 120px !important;
+  width: auto !important;
+}
+
+
+/* Let the combinator block expand */
+ .blocklyBlockCanvas .blocklyPath[data-block-type="css_selector_combinator"] {
+  width: fit-content !important;
+  min-width: fit-content !important;
+}
+
+
+
+/* ═══════════════════════════════════════════════
+   ON PREP PORTAL
+   -----------------------------------------------
+   The studio was built as a whole page of its own. Here the site's nav sits
+   above it, so everything starts below the bar — the studio's own slim header
+   included. The nav is a fixed 76px at every width (utils/components/nav.css).
+   ═══════════════════════════════════════════════ */
+:root { --site-nav-h: 76px; }
+
+#main-header { top: var(--site-nav-h); }
+.app, #editor-view { top: calc(var(--site-nav-h) + var(--header-h)); }
+
+/* the studio's header is the site's paper, not a black bar, now that the nav
+   above it carries the brand */
+#main-header {
+  background: var(--surface-secondary, #f0efe9);
+  border-bottom: 1px solid rgba(20, 19, 15, 0.14);
+}
+#main-header .header-label { color: var(--text-secondary, #6b645a); }
+
+/* the site's own fonts win over the studio's mono default for our chrome */
+.site-nav, .site-nav * { font-family: inherit; }

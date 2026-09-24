@@ -119,6 +119,8 @@ console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
     const { sceneSvg } = await import("/exam-archive/national/puzzles/js/art.js");
     return { svg: sceneSvg("front-page") };
   },
+  studio: iconShot(I.editorial),
+  blocks: iconShot(I.games),
   exams: navScene("Exams"),
   blogs: navScene("Blogs"),
   play: navScene("Activities"),
@@ -149,7 +151,6 @@ export const BANDS = [
       { art: "solid", title: "Geometry Workbook", tag: "Geometry", line: "Angles, polygons, Pythagoras, circles, solids and area.", href: "/prep-math/activity/geometry-workbook/index.html" },
       { art: "pattern", title: "Algebra Workbook", tag: "Algebra", line: "Bar models, balance scales, sequences, completing the square.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "pie", title: "Statistics Workbook", tag: "Statistics", line: "Pictograms, bar charts, line graphs, pie charts, scatter.", href: "/prep-math/activity/statistics-workbook/index.html" },
-      { art: "codebox", title: "JavaScript Workbook", tag: "Code", line: "Learn to code: an editor and a console on the page.", href: "/prep-math/activity/js-workbook/index.html" },
     ],
   },
   {
@@ -161,11 +162,19 @@ export const BANDS = [
     ],
   },
   {
+    tag: "Code",
+    cards: [
+      { art: "codebox", title: "JavaScript Workbook", tag: "Types", line: "Learn to code: an editor and a console on every page.", href: "/prep-math/activity/js-workbook/index.html" },
+      { art: "blocks", title: "Game Studio", tag: "Blocks", line: "Build a page and a game out of blocks, and watch it run.", href: "/code/studio/index.html" },
+    ],
+  },
+  {
     tag: "Writing",
     cards: [
       { art: "writing", title: "Writing evaluator", tag: "Essays", line: "Six families of writing, planned in a mnemonic and marked paragraph by paragraph.", href: "/writing/index.html" },
       { art: "words", title: "Word games", tag: "Words", line: "Hangman on science and maths words, and proof-reading races.", href: "/exam-archive/national/vocab/index.html" },
       { art: "theory", title: "Theory practice", tag: "Marked", line: "Write a full answer and have the marks explained, one by one.", href: "/theory-page/index.html" },
+      { art: "studio", title: "Sentence Studio", tag: "Blocks", line: "Snap words into sentences, sentences into a whole composition.", href: "/writing/blocks/index.html" },
     ],
   },
   {

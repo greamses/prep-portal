@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+  <meta name="theme-color" content="#f4c95d" />
+  <title>Prep Portal | Sentence Studio</title>
+  <meta name="description" content="Build English writing out of blocks: snap subjects, verbs and phrases into a sentence, sentences into a paragraph, and paragraphs into a whole composition — narrative, descriptive, persuasive, expository, recount, procedure or explanation. The writing you build is written out beside the blocks as you go." />
+
+  <!-- Page access gate: feature "studios", part "writeblock" -->
+  <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/utils/components/nav.css" />
+  <!-- The studio's own chrome, shared by both block studios. -->
+  <link rel="stylesheet" href="/utils/components/blockstudio.css">
+
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+
+  <script src="/utils/components/loader.js"></script>
+</head>
+
+<body>
+  <script type="module" src="/utils/auth/login-guard.js"></script>
+  <nav class="site-nav" data-nav="main"></nav>
+
+  
+  <!-- ══════════ HEADER ══════════ -->
+  <header id="main-header">
+    <div class="header-left">
+      
+      <span class="header-label" id="header-label">Sentence Studio</span>
+    </div>
+  </header>
+  
+  <div class="app">
+    
+    <!-- ════════════════════════════════════════ -->
+    <!-- 2. WRITEBLOCK EDITOR VIEW                -->
+    <!-- ════════════════════════════════════════ -->
+    <section id="editor-view">
+      
+      <!-- Language Toggler: Sentences ↔ Paragraphs ↔ Composition -->
+      <div class="editor-header">
+        <div class="lang-toggler">
+          <button id="btn-lang-sentences" class="active" onclick="setLangMode('sentences')">Sentences</button>
+          <button id="btn-lang-paragraphs" onclick="setLangMode('paragraphs')">Paragraphs</button>
+          <button id="btn-lang-composition" onclick="setLangMode('composition')">Full Text</button>
+        </div>
+      </div>
+      
+      <div class="workspace-area">
+        
+        <!-- Triple Icon Sidebars -->
+        <div id="icon-sidebar-sentences" class="sidebar-container"></div>
+        <div id="icon-sidebar-paragraphs" class="sidebar-container hidden"></div>
+        <div id="icon-sidebar-composition" class="sidebar-container hidden"></div>
+        
+        <!-- Triple Blockly Canvas Containers -->
+        <div id="blocklyDiv-sentences" class="blockly-container"></div>
+        <div id="blocklyDiv-paragraphs" class="blockly-container hidden"></div>
+        <div id="blocklyDiv-composition" class="blockly-container hidden"></div>
+        
+        
+        <!-- Writing / Code Panel -->
+        <div id="code-panel" class="overlay-panel hidden">
+          <div class="code-toolbar">
+            <span class="file-name">sentences.txt</span>
+            <span style="flex:1"></span>
+            <span id="code-line-count">0 lines</span>
+          </div>
+          <div class="code-lines">
+            <div id="line-nums"></div>
+            <pre id="code-output"><span class="empty">// Place blocks to generate your writing…</span></pre>
+          </div>
+        </div>
+        
+        
+        <!-- Preview Panel -->
+        <div id="preview-panel" class="overlay-panel hidden">
+          <div class="browser-bar">
+            <div class="win-dot" style="background:#ff5f57"></div>
+            <div class="win-dot" style="background:#febc2e"></div>
+            <div class="win-dot" style="background:#28c840"></div>
+            <div class="url-pill">◎ &nbsp;preview.html</div>
+          </div>
+          <div class="preview-empty" id="preview-empty">
+            <svg class="empty-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="8" width="60" height="44" rx="4" stroke="#ccc" stroke-width="2.5" fill="none" />
+              <rect x="14" y="12" width="52" height="36" rx="2" fill="#e8e8e8" />
+              <rect x="20" y="18" width="24" height="3" rx="1.5" fill="#ccc" />
+              <rect x="20" y="24" width="32" height="3" rx="1.5" fill="#ddd" />
+              <rect x="20" y="30" width="18" height="3" rx="1.5" fill="#ddd" />
+              <rect x="20" y="36" width="28" height="3" rx="1.5" fill="#ddd" />
+              <rect x="32" y="52" width="16" height="6" rx="2" fill="#ccc" />
+              <rect x="28" y="56" width="24" height="4" rx="2" fill="#ddd" />
+            </svg>
+            <p>Add writing blocks to see<br>your text appear here!</p>
+          </div>
+          <iframe id="preview-iframe" sandbox="allow-scripts" style="display:none"></iframe>
+        </div>
+        
+      </div>
+      
+      <!-- Bottom Tabs -->
+      <div class="bottom-tabs">
+        <button class="tab-btn active" id="tab-blocks" onclick="switchTab('blocks')">
+          <span class="tab-icon">⬡</span>Blocks
+        </button>
+        <button class="tab-btn" id="tab-code" onclick="switchTab('code')">
+          <span class="tab-icon">⟨/⟩</span>Writing
+        </button>
+        <button class="tab-btn" id="tab-preview" onclick="switchTab('preview')">
+          <span class="tab-icon">◎</span>Preview
+        </button>
+      </div>
+    </section>
+    
+  </div>
+  
+  <!-- Toast -->
+  <div id="toast"></div>
+  
+
+  <!-- Blockly, pinned: "latest" would change the block API under the studio -->
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/blockly_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/blocks_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/msg/en.js"></script>
+
+
+<!-- ════════════════════════════════════════ -->
+<!-- Sentence Block Modules (7 files)        -->
+<!-- ════════════════════════════════════════ -->
+<script src="./modules/sentences/clear-all-blocks.js"></script>
+<script src="./modules/sentences/sentences-core.js"></script>
+<script src="./modules/sentences/sentence-parts.js"></script>
+<script src="./modules/sentences/phrase-blocks.js"></script>
+<script src="./modules/sentences/words-pills.js"></script>
+<script src="./modules/sentences/figures-of-speech.js"></script>
+<script src="./modules/sentences/parts-of-speech.js"></script>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Paragraph Block Modules                 -->
+<!-- ════════════════════════════════════════ -->
+<!-- Paragraph modules (5 files) -->
+<script src="./modules/paragraphs/paragraph-core.js"></script>
+<script src="./modules/paragraphs/paragraph-narrative.js"></script>
+<script src="./modules/paragraphs/paragraph-descriptive.js"></script>
+<script src="./modules/paragraphs/paragraph-persuasive.js"></script>
+<script src="./modules/paragraphs/paragraph-expository.js"></script>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Composition Block Modules (9 files)     -->
+<!-- ════════════════════════════════════════ -->
+<script src="./modules/compositions/composition-core.js"></script>
+<script src="./modules/compositions/composition-narrative.js"></script>
+<script src="./modules/compositions/composition-descriptive.js"></script>
+<script src="./modules/compositions/composition-persuasive.js"></script>
+<script src="./modules/compositions/composition-expository.js"></script>
+<script src="./modules/compositions/composition-balancedreport.js"></script>
+<script src="./modules/compositions/composition-recount.js"></script>
+<script src="./modules/compositions/composition-procedure.js"></script>
+<script src="./modules/compositions/composition-explanation.js"></script>
+
+<!-- ════════════════════════════════════════ -->
+<!-- App Logic (5 split modules)            -->
+<!-- ════════════════════════════════════════ -->
+<script src="./config.js"></script>
+<script src="./workspaces.js"></script>
+<script src="./text-engine.js"></script>
+<script src="./ui.js"></script>
+<script src="./main.js"></script>
+  <script type="module" src="/utils/components/nav-builder.js"></script>
+</body>
+
+</html>

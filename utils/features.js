@@ -125,6 +125,20 @@ export const FEATURES = [
     ],
   },
   {
+    id: "studios",
+    label: "Block Studios",
+    desc: "Building things out of blocks: writing in the Sentence Studio, a web page and a game in the Game Studio",
+    group: "Learning Labs",
+    default: "premium",
+    /* No feature-level paths: the two studios live in different trees and the
+       PARTS carry the paths. A feature path of the same length as its part's
+       would win the longest-prefix match and hide which studio was asked for. */
+    parts: [
+      { id: "writeblock", label: "Sentence Studio (words → sentences → paragraphs → a whole composition)", path: "/writing/blocks" },
+      { id: "game-studio", label: "Game Studio (HTML, CSS, JavaScript and Phaser, built out of blocks)", path: "/code/studio" },
+    ],
+  },
+  {
     id: "games-3d",
     label: "3D Games",
     desc: "Immersive 3D practice games (Bearing Courier, 3D Maze, Grand Chess, etc.)",

@@ -208,6 +208,8 @@ const NAV_CONFIG = [
              not with the activities. */
           { text: "Manipulatives", href: "/prep-math/activity/base-blocks/index.html", description: "Blocks, abacuses, algebra tiles and charts" },
           { text: "Cartesian Art", href: "/prep-math/activity/cartesian-art/index.html", description: "Plot points to draw, then paint" },
+          { text: "Sentence Studio", href: "/writing/blocks/index.html", description: "Build writing out of blocks: sentences, paragraphs, whole compositions" },
+          { text: "Game Studio", href: "/code/studio/index.html", description: "Build a web page and a game out of blocks: HTML, CSS, JavaScript, Phaser" },
           { text: "Writing Evaluator", href: "/writing/index.html", description: "Grade essays with red pen feedback" },
           { text: "Theory Practice", href: "/theory-page/index.html", description: "AI-marked theory & essay questions" },
           { text: "AI Flashcards", href: "/flashcards/library.html", description: "Remember everything fast" },

@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+  <meta name="theme-color" content="#f4c95d" />
+  <title>Prep Portal | Game Studio</title>
+  <meta name="description" content="Build a web page and a game out of blocks: HTML for what is on the page, CSS for how it looks, JavaScript for what it does, and a Phaser extension for sprites, physics and input. The code you build is written out beside the blocks, and the preview runs it." />
+
+  <!-- Page access gate: feature "studios", part "game-studio" -->
+  <script type="module" src="/utils/auth/premium-guard.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/utils/components/nav.css" />
+  <!-- The studio's own chrome, shared by both block studios. -->
+  <link rel="stylesheet" href="/utils/components/blockstudio.css">
+    <style>
+    /* ── + button in lang-toggler ──────────────── */
+    #btn-extensions {
+      background: transparent;
+      border: none;
+      padding: 6px 20px;
+      border-radius: 16px;
+      font-family: var(--font-head);
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.2s ease;
+    
+    }
+    
+#btn-extensions:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink, #1a1a1a);
+}
+    
+    /* ══════════════════════════════════════════════
+   Extension Modal — Scratch-Style Layout
+══════════════════════════════════════════════ */
+    .weblock-ext-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 20px;
+      /* Safety padding for small screens */
+    }
+    
+    .weblock-ext-modal-overlay.hidden {
+      display: none;
+    }
+    
+    .weblock-ext-modal-box {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+      /* Wider to accommodate the grid */
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg, #fafafa);
+      border: 2.5px solid var(--ink, #1a1a1a);
+      border-radius: 12px;
+      box-shadow: 7px 7px 0 var(--ink, #1a1a1a);
+      overflow: hidden;
+    }
+    
+    /* Modal Header */
+    .weblock-ext-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--yellow, #FFE500);
+      border-bottom: 2.5px solid var(--ink, #1a1a1a);
+      flex-shrink: 0;
+    }
+    
+    .weblock-ext-modal-header h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--ink, #1a1a1a);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    
+    .weblock-ext-close-icon {
+      background: transparent;
+      border: none;
+      color: var(--ink, #1a1a1a);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    
+    .weblock-ext-close-icon:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    
+    /* ── Extensions Grid ──────────────────────── */
+    .weblock-ext-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    /* ── Scratch-Style Card ───────────────────── */
+    .weblock-ext-item {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 2.5px solid var(--ink, #1a1a1a);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s;
+      box-shadow: 4px 4px 0 var(--ink, #1a1a1a);
+      position: relative;
+    }
+    
+    .weblock-ext-item:hover {
+      transform: translateY(-3px);
+    }
+    
+    /* Top Illustration Area */
+    .weblock-ext-banner {
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-bottom: 2.5px solid var(--ink, #1a1a1a);
+    }
+    
+    .weblock-ext-banner-bg svg {
+      width: 70px;
+      height: 70px;
+      opacity: 0.9;
+      color: #fff;
+    }
+    
+    /* Floating Corner Icon */
+    .weblock-ext-overlap-icon {
+      position: absolute;
+      bottom: -18px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      background: #fff;
+      border: 2.5px solid var(--ink, #1a1a1a);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    
+    .weblock-ext-overlap-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--ink, #1a1a1a);
+    }
+    
+    /* Content Area */
+    .weblock-ext-content {
+      padding: 24px 14px 14px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .weblock-ext-content strong {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 13px;
+      margin-bottom: 6px;
+      display: block;
+    }
+    
+    .weblock-ext-content p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #666;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      flex-grow: 1;
+    }
+    
+    /* Footer (Requires/Collaboration) */
+    .weblock-ext-footer {
+      border-top: 1.5px dashed #eee;
+      padding-top: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    
+    .ext-info-label {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 8px;
+      text-transform: uppercase;
+      color: #aaa;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .ext-req-icons {
+      display: flex;
+      gap: 6px;
+      color: #666;
+    }
+    
+    .ext-req-icons svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .ext-collab-name {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 9px;
+      color: #444;
+      font-weight: 600;
+    }
+    
+    /* Toggle Logic */
+    .weblock-ext-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      border-radius: 6px;
+      font-family: 'Unbounded', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 10px;
+      border: 2.5px solid var(--ink, #1a1a1a);
+      background: var(--yellow, #FFE500);
+      color: var(--ink, #1a1a1a);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--ink, #1a1a1a);
+      transition: transform .1s, box-shadow .1s, background .2s;
+      text-transform: uppercase;
+    }
+    
+    .weblock-ext-toggle:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--ink, #1a1a1a);
+    }
+    
+    .weblock-ext-active {
+      background: #ff5f57;
+      color: #fff;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+      }
+    }
+  </script>
+
+  <script src="/utils/components/loader.js"></script>
+</head>
+
+<body>
+  <script type="module" src="/utils/auth/login-guard.js"></script>
+  <nav class="site-nav" data-nav="main"></nav>
+
+  
+  <header id="main-header">
+    <div class="header-left">
+      
+      <span class="header-label" id="header-label">Game Studio</span>
+    </div>
+  </header>
+  
+  <div class="app">
+    
+    <section id="editor-view">
+      
+      <div class="editor-header">
+        <div class="lang-toggler">
+          <button id="btn-lang-html" class="active" onclick="setLangMode('html')">HTML</button>
+          <button id="btn-lang-css" onclick="setLangMode('css')">CSS</button>
+          <button id="btn-lang-js" onclick="setLangMode('js')">JS</button>
+        </div>
+      </div>
+      
+      <div class="workspace-area">
+        
+        <div id="icon-sidebar-html" class="sidebar-container"></div>
+        <div id="icon-sidebar-css" class="sidebar-container hidden"></div>
+        <div id="icon-sidebar-js" class="sidebar-container hidden"></div>
+        
+        <div id="blocklyDiv-html" class="blockly-container"></div>
+        <div id="blocklyDiv-css" class="blockly-container hidden"></div>
+        <div id="blocklyDiv-js" class="blockly-container hidden"></div>
+        
+        <div id="code-panel" class="overlay-panel hidden">
+          <div class="code-toolbar">
+            <span class="file-name">index.html</span>
+            <span style="flex:1"></span>
+            <span id="code-line-count">0 lines</span>
+          </div>
+          <div class="code-lines">
+            <div id="line-nums"></div>
+            <pre id="code-output"><span class="empty">// Place blocks to generate code…</span></pre>
+          </div>
+        </div>
+        
+        <div id="preview-panel" class="overlay-panel hidden">
+          <div class="browser-bar">
+            <div class="win-dot" style="background:#ff5f57"></div>
+            <div class="win-dot" style="background:#febc2e"></div>
+            <div class="win-dot" style="background:#28c840"></div>
+            <div class="url-pill">◎ &nbsp;preview.html</div>
+          </div>
+          <div class="preview-empty" id="preview-empty">
+            <svg class="empty-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="8" width="60" height="44" rx="4" stroke="#ccc" stroke-width="2.5" fill="none" />
+              <rect x="14" y="12" width="52" height="36" rx="2" fill="#e8e8e8" />
+              <rect x="20" y="18" width="24" height="3" rx="1.5" fill="#ccc" />
+              <rect x="20" y="24" width="32" height="3" rx="1.5" fill="#ddd" />
+              <rect x="20" y="30" width="18" height="3" rx="1.5" fill="#ddd" />
+              <rect x="20" y="36" width="28" height="3" rx="1.5" fill="#ddd" />
+              <rect x="28" y="24" width="2" height="10" rx="1" fill="#bbb" />
+              <rect x="32" y="52" width="16" height="6" rx="2" fill="#ccc" />
+              <rect x="28" y="56" width="24" height="4" rx="2" fill="#ddd" />
+              <path d="M6 28V52" stroke="#bbb" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M6 28h4M6 52h4" stroke="#bbb" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M74 28V52" stroke="#bbb" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M74 28h-4M74 52h-4" stroke="#bbb" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+            <p>Add blocks to see<br>your page live here!</p>
+          </div>
+          <iframe id="preview-iframe" sandbox="allow-scripts" style="display:none"></iframe>
+        </div>
+        
+      </div>
+      
+      <div class="bottom-tabs">
+        <button class="tab-btn active" id="tab-blocks" onclick="switchTab('blocks')">
+          <span class="tab-icon">⬡</span>Blocks
+        </button>
+        <button class="tab-btn" id="tab-code" onclick="switchTab('code')">
+          <span class="tab-icon">⟨/⟩</span>Code
+        </button>
+        <button class="tab-btn" id="tab-preview" onclick="switchTab('preview')">
+          <span class="tab-icon">◎</span>Preview
+        </button>
+      </div>
+    </section>
+    
+  </div>
+  
+  <div id="toast"></div>
+  <!-- Blockly, pinned: "latest" would change the block API under the studio -->
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/blockly_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/blocks_compressed.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.1/msg/en.js"></script>
+
+  
+  <script src="./extensions/extension-registry.js"></script>
+  
+  <script src="./modules/html/page.js"></script>
+  <script src="./modules/html/content.js"></script>
+  <script src="./modules/html/attributes.js"></script>
+  <script src="./modules/html/links.js"></script>
+  <script src="./modules/html/image.js"></script>
+  <script src="./modules/html/lists.js"></script>
+  <script src="./modules/html/table.js"></script>
+  <script src="./modules/html/form.js"></script>
+  <script src="./modules/html/style.js"></script>
+  
+  <script src="./modules/css/css-selectors.js"></script>
+  <script src="./modules/css/css-layout.js"></script>
+  <script src="./modules/css/css-color.js"></script>
+  <script src="./modules/css/css-animation.js"></script>
+  
+  <script src="./modules/js/js-variables.js"></script>
+  <script src="./modules/js/js-dom.js"></script>
+  <script src="./modules/js/js-control.js"></script>
+  <script src="./modules/js/js-functions.js"></script>
+  <script src="./modules/js/js-events.js"></script>
+  <script src="./modules/js/js-math.js"></script>
+  <script src="./modules/js/js-string.js"></script>
+  <script src="./modules/js/js-array.js"></script>
+  <script src="./modules/js/js-object.js"></script>
+  
+  <script src="./extensions/phaser/phaser-scene.js"></script>
+  <script src="./extensions/phaser/phaser-assets.js"></script>
+  <script src="./extensions/phaser/phaser-display.js"></script>
+  <script src="./extensions/phaser/phaser-physics.js"></script>
+  <script src="./extensions/phaser/phaser-input.js"></script>
+  <script src="./extensions/phaser/phaser-fx.js"></script>
+  
+  <script src="./extensions/phaser/phaser-extension.js"></script>
+  
+<script src="html-generator.js"></script>
+<script src="css-generator.js"></script>
+<script src="js-generator.js"></script>
+<script src="script.js"></script>
+  
+  <script type="module" src="/utils/components/nav-builder.js"></script>
+</body>
+

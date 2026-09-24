@@ -116,6 +116,7 @@ then "not premium") — the server is the real enforcement.
 | activities | premium | author, attempt | page guard + `/api/activities` |
 | flashcards | premium | — | page guard + `/api/ai/image` (card art) |
 | prep-math-activities | premium | algebra-moves, base-blocks, cartesian-art, equivalent-fractions, geometry-workbook, maths-workbook, number-match, polygon-angles, algebra-workbook, statistics-workbook, js-workbook, pythagoras, surface-area, transversals | page guard (per sub-app) + `/api/workbooks/pass` for the printable workbooks — printing one is part of the subscription (it used to be sold at ₦5,000 a workbook), so turning a workbook's part off also stops it printing |
+| studios | premium | writeblock, game-studio | page guard (per studio) — the two Blockly workbenches: /writing/blocks and /code/studio |
 | games-3d | premium | aliens, chess, free-throw, drone, maze, rubiks-cube | page guard (per game) |
 | prepbot | premium | chat, voice, images | inline + `/api/ai/chat`, `/api/tts/elevenlabs`, `/api/ai/image` (`images` = the avatar picker's "PrepBot draws your character" tile) |
 | cbt-written | premium | short, theory | inline (quiz-engine, per format) |
