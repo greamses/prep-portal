@@ -37,14 +37,6 @@
   font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   flex: 0 0 auto;
 }
-.band__note {
-  margin: 0;
-  flex: 1 1 18rem;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-  line-height: 1.45;
-}
-
 /* the same grid as the games hub, a little tighter: these cards are shorter */
 .showcase-grid {
   display: grid;

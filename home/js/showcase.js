@@ -9,8 +9,8 @@
 
    So: a wall of SNAPSHOTS, in BANDS — one band per kind of thing, because a
    flat grid of a dozen cards says "a pile" and the bands say "a workshop with
-   rooms in it". Each band has its heading on a sticky note and a line saying
-   what that room is for.
+   rooms in it". A band is a name on a sticky note and nothing else — the
+   cards under it say what is in the room better than a sentence would.
 
    Two rules hold this file down:
 
@@ -126,8 +126,7 @@ const SHOT = {
 
 export const BANDS = [
   {
-    tag: "Maths you can pick up",
-    note: "Nothing to read first. Tip the beam, send a number down the line, lay the tiles out with your hands.",
+    tag: "Maths",
     cards: [
       { art: "balance", title: "Balance scales", tag: "Algebra", line: "Take the same off both pans and the bag gives itself up.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "train", title: "Function machines", tag: "Functions", line: "Put a number on the card and ride it coach by coach.", href: "/prep-math/activity/algebra-workbook/index.html" },
@@ -138,8 +137,7 @@ export const BANDS = [
     ],
   },
   {
-    tag: "Workbooks that print",
-    note: "Four books of fresh exercises. Print a paper, or do it on screen and have it marked as you go.",
+    tag: "Workbooks",
     cards: [
       { art: "clock", title: "Maths Workbook", tag: "Number", line: "Place value, sums, remainders, fractions, time, multiplying.", href: "/prep-math/activity/maths-workbook/index.html" },
       { art: "solid", title: "Geometry Workbook", tag: "Geometry", line: "Angles, polygons, Pythagoras, circles, solids and area.", href: "/prep-math/activity/geometry-workbook/index.html" },
@@ -148,37 +146,33 @@ export const BANDS = [
     ],
   },
   {
-    tag: "Science you walk into",
-    note: "A bench in 3D, in first or third person — and the reading that goes with it.",
+    tag: "Science",
     cards: [
-      { art: "lab", title: "Virtual Chemistry Lab", tag: "3D lab", line: "Mix reagents, run a titration, watch it react on a real bench.", href: "/virtual-lab/chemistry/index.html" },
-      { art: "bench", title: "Physics & Biology benches", tag: "3D lab", line: "Pendulums, springs, cells and slides — being built now.", href: "/virtual-lab/index.html" },
+      { art: "lab", title: "Virtual Chemistry Lab", tag: "Chemistry", line: "Mix reagents, run a titration, watch it react on a real bench.", href: "/virtual-lab/chemistry/index.html" },
+      { art: "bench", title: "Physics & Biology benches", tag: "Physics", line: "Pendulums, springs, cells and slides — being built now.", href: "/virtual-lab/index.html" },
       { art: "blogs", title: "Science & study blogs", tag: "Reading", line: "Animals, plants, the human body, and how to revise them.", href: "/blogs/index.html" },
     ],
   },
   {
-    tag: "Words and writing",
-    note: "Plan it, write it, get it marked in red pen — then play for the words themselves.",
+    tag: "Writing",
     cards: [
-      { art: "writing", title: "Writing evaluator", tag: "Writing", line: "Six families of writing, planned in a mnemonic and marked paragraph by paragraph.", href: "/writing/index.html" },
+      { art: "writing", title: "Writing evaluator", tag: "Essays", line: "Six families of writing, planned in a mnemonic and marked paragraph by paragraph.", href: "/writing/index.html" },
       { art: "words", title: "Word games", tag: "Words", line: "Hangman on science and maths words, and proof-reading races.", href: "/exam-archive/national/vocab/index.html" },
       { art: "theory", title: "Theory practice", tag: "Marked", line: "Write a full answer and have the marks explained, one by one.", href: "/theory-page/index.html" },
     ],
   },
   {
-    tag: "Races and puzzles",
-    note: "Timed, seeded and multiplayer: the same puzzle for everyone in the room, bots filling the empty seats.",
+    tag: "Puzzles",
     cards: [
       { art: "map", title: "Map of Nigeria jigsaw", tag: "Jigsaw", line: "Drag all 37 states home before the clock runs out.", href: "/exam-archive/national/puzzles/index.html" },
-      { art: "scene", title: "Sliders, tangrams, shikaku", tag: "Puzzles", line: "A fresh picture cut up every game, and no two rooms alike.", href: "/exam-archive/national/puzzles/index.html" },
+      { art: "scene", title: "Sliders, tangrams, shikaku", tag: "Sliders", line: "A fresh picture cut up every game, and no two rooms alike.", href: "/exam-archive/national/puzzles/index.html" },
       { art: "play", title: "Games that drill", tag: "Games", line: "Times tables against the clock, and 3D worlds to play in.", href: "/home/games/index.html" },
     ],
   },
   {
-    tag: "Exam practice",
-    note: "Original, exam-style questions — timed like the real paper, marked like a teacher would.",
+    tag: "Exams",
     cards: [
-      { art: "exams", title: "CBT papers", tag: "Exams", line: "Common Entrance, WASSCE, UTME, SAT and IGCSE style, on a clock.", href: "/exam-archive/national/exams/index.html" },
+      { art: "exams", title: "CBT papers", tag: "CBT", line: "Common Entrance, WASSCE, UTME, SAT and IGCSE style, on a clock.", href: "/exam-archive/national/exams/index.html" },
       { art: "cards", title: "AI flashcards", tag: "Revision", line: "A deck made from whatever you are revising, and kept.", href: "/flashcards/library.html" },
     ],
   },
@@ -204,8 +198,7 @@ const bandHtml = (b, i) =>
   `<section class="band">` +
   `<header class="band__head">` +
   `<h3 class="band__tag pp-sticky pp-sticky--c${i % 6}">${b.tag}</h3>` +
-  `<p class="band__note">${b.note}</p>` +
-  `</header>` +
+    `</header>` +
   `<div class="science-grid showcase-grid">${b.cards.map((card, j) => cardHtml(card, (i + j) % 6)).join("")}</div>` +
   `</section>`;
 
