@@ -94,6 +94,12 @@ const SHOT = {
     const { pieSvg } = await import("/prep-math/activity/statistics-workbook/js/pieart.js");
     return { svg: pieSvg({ angles: [120, 90, 60, 90], names: ["Maize", "Yam", "Rice", "Beans"], title: "What the farm grew" }) };
   },
+  /* the code box the JavaScript Workbook writes in, with its console */
+  codebox: async () => {
+    const { codeHtml } = await import("/utils/components/workbook/code.js");
+    return { html: codeHtml({ src: `let age = 14;
+console.log(typeof age);`, file: "types.js", out: 1 }), css: WB_CSS };
+  },
   /* the lab hub's own bench, now that the scene lives in a module */
   lab: async () => {
     const { LAB_SCENES } = await import("/virtual-lab/js/scenes.js");
@@ -143,6 +149,7 @@ export const BANDS = [
       { art: "solid", title: "Geometry Workbook", tag: "Geometry", line: "Angles, polygons, Pythagoras, circles, solids and area.", href: "/prep-math/activity/geometry-workbook/index.html" },
       { art: "pattern", title: "Algebra Workbook", tag: "Algebra", line: "Bar models, balance scales, sequences, completing the square.", href: "/prep-math/activity/algebra-workbook/index.html" },
       { art: "pie", title: "Statistics Workbook", tag: "Statistics", line: "Pictograms, bar charts, line graphs, pie charts, scatter.", href: "/prep-math/activity/statistics-workbook/index.html" },
+      { art: "codebox", title: "JavaScript Workbook", tag: "Code", line: "Learn to code: an editor and a console on the page.", href: "/prep-math/activity/js-workbook/index.html" },
     ],
   },
   {

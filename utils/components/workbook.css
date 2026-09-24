@@ -2432,3 +2432,85 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .tl-tray .tl-tile--one { width: 7mm; height: 7mm; }
 /* on paper there is nothing to drag: the tray is what a child cuts out or copies */
 @media print { .tl-tray__note, .tl-flip { display: none; } }
+
+/* ── a listing, an editor and a console (code.js) ─────────────────────────────
+   On paper this is a listing with its line numbers and a ruled console box to
+   write what the program will print. On screen the listing becomes an editor
+   and the console fills itself. Fixed hex, like the rest of the paper: a
+   printed page has no theme. */
+.js-box {
+  margin: 2mm 0;
+  border: 0.4mm solid #2a2723;
+  border-radius: 1.8mm;
+  overflow: hidden;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  break-inside: avoid;
+}
+.js-bar {
+  display: flex; align-items: center; gap: 1.6mm;
+  padding: 1mm 2mm;
+  background: #eae4d8;
+  border-bottom: 0.4mm solid #2a2723;
+}
+.js-bar__gap { flex: 1 1 auto; }
+.js-file { font-size: 8pt; font-weight: 700; letter-spacing: 0.04em; color: #6b645a; }
+
+.js-src { margin: 0; padding: 1.6mm 2mm; font-size: 9.5pt; line-height: 1.55; }
+.js-ln { display: flex; gap: 2.4mm; white-space: pre; }
+.js-ln b { min-width: 3.6mm; text-align: right; font-weight: 500; color: #a39b8e; }
+.js-ln code { font: inherit; color: #2a2723; }
+
+.js-console { padding: 1.6mm 2mm 2mm; border-top: 0.4mm dashed #b8b0a3; background: #f6f1e6; }
+.js-console__tag {
+  display: block; margin-bottom: 1mm;
+  font-size: 7pt; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6b645a;
+}
+.js-out { display: flex; flex-direction: column; gap: 1.2mm; min-height: 6mm; font-size: 9.5pt; }
+/* the lines a child writes the answer on, when this is paper */
+.js-rule { display: block; height: 5mm; border-bottom: 0.3mm solid #b8b0a3; }
+.js-line { white-space: pre-wrap; word-break: break-word; color: #2a2723; }
+.js-line.is-bad { color: #c0453f; }
+.js-line.is-warn { color: #a5720f; }
+.js-line.is-quiet { color: #a39b8e; }
+
+/* ── on screen ───────────────────────────────────────────────────────────── */
+.js-btn {
+  display: inline-flex; align-items: center; gap: 1.2mm;
+  padding: 0.8mm 2mm;
+  border: 0.3mm solid #2a2723; border-radius: 1.4mm;
+  background: #fff3a8; cursor: pointer;
+  font: inherit; font-size: 8.5pt; font-weight: 700; color: #2a2723;
+}
+.js-btn--back { background: #e7f0f8; }
+.js-btn:hover { filter: brightness(1.04); }
+.js-pad { padding: 0; }
+.js-edit {
+  display: block; width: 100%; box-sizing: border-box;
+  padding: 1.6mm 2mm;
+  border: 0; outline: none; resize: none;
+  background: transparent;
+  font: inherit; font-size: 9.5pt; line-height: 1.55; color: #2a2723;
+  tab-size: 2;
+}
+.js-edit[readonly] { color: #4a443c; }
+.js-box.is-live .js-edit:focus { background: #fffef9; box-shadow: inset 0 0 0 0.4mm #f4c95d; }
+/* while it runs, and while what is typed has not been run yet */
+.js-box.is-running .js-console { opacity: 0.55; }
+.js-box.is-stale .js-console__tag::after { content: " · not run yet"; color: #a5720f; }
+
+/* marked, like every other piece on the paper */
+.js-box.is-right { box-shadow: 0 0 0 0.7mm #7fae6a; }
+.js-box.is-wrong { box-shadow: 0 0 0 0.7mm #c0453f; }
+
+/* printing: the editor's furniture is not paper */
+@media print {
+  .js-btn, .js-box.is-stale .js-console__tag::after { display: none; }
+  .js-edit { min-height: 0; }
+}
+
+/* Undo and Clear join the code box's own bar, beside Run — so they sit in the
+   row rather than floating over it the way they do on a drawing. */
+.js-bar .wb-drawbar { position: static; margin-left: 1mm; }
+.js-bar { flex-wrap: nowrap; padding-right: 3mm; }
+.js-box.wb-drawhost { position: relative; }

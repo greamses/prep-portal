@@ -62,6 +62,10 @@ export const want = {
   /** A square completed with algebra tiles (tiles.js): every place in the
       frame filled with the right tile, the right way round. Covers no places. */
   tiles: ({ a, sign = 1, nth = 0, says = "" }) => ({ kind: "tiles", a, sign, nth, says }),
+  /** A program written in a code box (code.js): right when RUNNING it prints
+      these console lines, in this order — however the program is written.
+      Covers no places. */
+  code: ({ prints, must = [], nth = 0, says = "" }) => ({ kind: "code", prints, must, nth, says }),
   /** Two columns to join: the right [left, right] pairs. Covers no places. */
   match: (pairs, says = "") => ({ kind: "match", pairs, says }),
   /** A pencil on the pictures for what is not marked — ringing, sharing. */
@@ -152,7 +156,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -173,6 +177,7 @@ export function sayWant(entry, tickLabels = []) {
     case "dots": return entry.says || "";
     case "machine": return entry.says || "";
     case "tiles": return entry.says || "";
+    case "code": return entry.says || (entry.prints || []).join(" · ");
     default: return "";
   }
 }

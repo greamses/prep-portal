@@ -33,6 +33,7 @@ import { mountBars, barsRight } from "./barbuild.js";
 import { mountDots, dotsRight } from "./dotplot.js";
 import { mountMachine, machineRight } from "./machine.js";
 import { mountTiles, tilesRight } from "./tiles.js";
+import { mountCode, codeRight } from "./code.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -138,6 +139,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.dots ||= {};     // scatter points plotted by tapping
     r.machine ||= {};  // function machines built from job cards
     r.tiles ||= {};    // squares completed with algebra tiles
+    r.code ||= {};     // programs written in a code box, and what they printed
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -235,6 +237,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       wrap.__wbMachine = mountMachine(wrap, { build: false });
     });
 
+    /* a code box the question printed to be RUN rather than written: the
+       child may still change it and see what happens, but it is not an answer
+       (the answer is what they typed in the boxes beside it) */
+    node.querySelectorAll("[data-try]").forEach((box) => { box.__wbCode = mountCode(box, {}); });
+
     /* a shape that says what its outline is can be folded along its lines */
     node.querySelectorAll("svg[data-fold]").forEach((svg) => makeFoldable(svg));
 
@@ -250,6 +257,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "dots") makeDotsLive(node, idx, e);
       if (e.kind === "machine") makeMachineLive(node, idx, e);
       if (e.kind === "tiles") makeTilesLive(node, idx, e);
+      if (e.kind === "code") makeCodeLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -281,6 +289,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("svg[data-dotplot]").forEach((s) => { s.__wbDots?.dispose(); s.__wbDots = null; });
     node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-tiles]").forEach((t) => { t.__wbTiles?.dispose(); t.__wbTiles = null; t.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -625,6 +634,30 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).tiles[k]; wrap.__wbTiles?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a program, written and run ───────────────────────────────────────
+     code.js turns the listing into an editor with a console under it and
+     runs what is typed in a sandbox. Each run is one Undo step, and Clear
+     puts back the program the paper printed. */
+  function makeCodeLive(node, idx, e) {
+    const k = e.nth || 0;
+    const box = node.querySelectorAll("[data-code]")[k];
+    if (!box) return;
+    box.classList.add("wb-drawhost");
+    box.__wbCode = mountCode(box, {
+      saved: rec(idx).code[k] || null,
+      onChange: (now, before) => {
+        rec(idx).code[k] = now;
+        step(box, () => { rec(idx).code[k] = before; box.__wbCode?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(box, () => { delete rec(idx).code[k]; box.__wbCode?.clear(); dirty(node); save(); });
+    /* Undo and Clear belong on the box's own bar, beside Run */
+    const bar = box.querySelector(":scope > .wb-drawbar");
+    box.querySelector(".js-bar")?.appendChild(bar);
   }
 
   /* ── a function machine, built from job cards ──────────────────────────
@@ -1543,6 +1576,18 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           wrap?.classList.remove("is-right", "is-wrong");
           wrap?.classList.add(ok ? "is-right" : "is-wrong");
           if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "code") {
+          /* marked by what it PRINTS: the console lines the program produced,
+             in order. How it is written is the child's business. */
+          const box = node.querySelectorAll("[data-code]")[entry.nth || 0];
+          const run = rec(idx).code[entry.nth || 0] || null;
+          const ok = codeRight(run, entry.prints, box?.__wbCode ? box.__wbCode.src() : null, entry.must);
+          box?.classList.remove("is-right", "is-wrong");
+          box?.classList.add(ok ? "is-right" : "is-wrong");
+          if (box) box.dataset.want = sayWant(entry);
           total++; if (ok) right++; else allRight = false;
           return;
         }

@@ -116,6 +116,7 @@ export const FEATURES = [
       { id: "geometry-workbook", label: "Geometry Workbook (printable — lines and angles through to parts of a circle)", path: "/prep-math/activity/geometry-workbook" },
       { id: "algebra-workbook", label: "Algebra Workbook (printable — basic concepts, the bar model, the balance scale, the remainder theorem, properties and identities)", path: "/prep-math/activity/algebra-workbook" },
       { id: "statistics-workbook", label: "Statistics Workbook (printable — pictograms: sorting, tallies, keys, building one, problems)", path: "/prep-math/activity/statistics-workbook" },
+      { id: "js-workbook", label: "JavaScript Workbook (printable — data types, with an editor and a console that runs the programs)", path: "/prep-math/activity/js-workbook" },
       { id: "polygon-angles", label: "Polygon Angles", path: "/prep-math/activity/polygon-angles" },
       { id: "pythagoras", label: "Pythagoras (squares on the sides)", path: "/prep-math/activity/pythagoras" },
       { id: "surface-area", label: "Surface Area", path: "/prep-math/activity/surface-area" },
