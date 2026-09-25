@@ -35,6 +35,9 @@
         opacity: 0; transform: translateY(14px) scale(.98); pointer-events: none;
         transition: opacity .25s ease, transform .3s cubic-bezier(.16,1,.3,1); }
       #pp-promo.show { opacity: 1; transform: none; pointer-events: auto; }
+      /* Step aside while a nav menu is open, or it sits on top of it. */
+      body:has(.nav-links.open, .nav-links > li.open, .user-menu.open) #pp-promo.show {
+        opacity: 0; pointer-events: none; }
       #pp-promo .pp-receipt { width: min(230px, calc(100vw - 36px)); }
       .pp-promo__paper { text-align: center; padding: 1.1rem 1rem .95rem; font-family: var(--font-mono, ui-monospace, monospace); }
       .pp-promo__close { position: absolute; top: .35rem; right: .5rem; width: 26px; height: 26px;

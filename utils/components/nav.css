@@ -1117,6 +1117,14 @@ body {
   outline: 2.5px solid var(--ink, #2a2723);
   outline-offset: -2.5px;
 }
+/* Hover/open/active keep the note's own paper. The older soft-tint rules
+   above (and the phone accordion's) mix the tint into --surface-primary,
+   which goes dark in dark mode under the note's fixed dark ink. */
+.site-nav .nav-links > li:hover > .nav-main-label,
+.site-nav .nav-links > li.open > .nav-main-label,
+.site-nav .nav-links > li.active > .nav-main-label {
+  background: var(--pp-note-bg, #fff3a8);
+}
 /* No headroom rule here: .site-nav .nav-links is already padding:0 with the
    items centred in a 76px bar, which leaves the tape its 10px. The version of
    this block in sticky-ui.css carried a `.nav-links { padding-top: 10px }`
