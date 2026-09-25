@@ -71,12 +71,32 @@
 }
 
 /* ============================================================
-   PROFILE CARD DROPDOWN
+   PROFILE CARD DROPDOWN — a RECEIPT (the one .pp-receipt component)
+     .profile-dropdown.pp-receipt          where it sits + the drop shadow
+     .profile-dropdown-paper.pp-receipt__paper   torn edge + punched holes
+   Two classes on the wrapper: .pp-receipt sets `position: relative` and
+   `display: block`, and at equal specificity load order would decide.
    ============================================================ */
-.profile-dropdown {
-  min-width: 270px;
+.profile-dropdown.pp-receipt {
+  position: absolute;
+  display: none;
+  width: 270px;
+  min-width: 0;
   padding: 0;
-  overflow: hidden;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+.open > .profile-dropdown.pp-receipt { display: block; }
+
+.profile-dropdown .profile-dropdown-paper {
+  display: flex;
+  flex-direction: column;
+  /* room either side for the punched holes, which sit 6px in */
+  padding: 1.35rem 1.1rem 1.2rem;
+  box-sizing: border-box;
 }
 
 .profile-dropdown-header {
@@ -84,14 +104,9 @@
   flex-direction: column;
   align-items: center;
   gap: 0.55rem;
-  padding: 1.5rem 1rem 1.2rem;
+  padding: 0.35rem 0.25rem 1rem;
   text-align: center;
-  background: radial-gradient(
-    125% 90% at 50% -12%,
-    color-mix(in srgb, var(--accent-secondary) 26%, var(--surface-secondary)),
-    var(--surface-secondary)
-  );
-  border-bottom: var(--border-subtle);
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
 .profile-avatar-wrap {
@@ -157,15 +172,15 @@
 }
 
 .profile-dropdown-items {
-  padding: 0.5rem;
+  padding: 0.6rem 0 0.4rem;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
 .profile-dropdown-footer {
-  padding: 0.5rem;
-  border-top: var(--border-subtle);
+  padding: 0.6rem 0 0;
+  border-top: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
 /* Profile menu rows reuse the nav blob icon, sized down for a list row */

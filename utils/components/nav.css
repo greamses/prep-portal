@@ -1,4 +1,6 @@
 @import url("/utils/components/theme.css");
+/* .pp-receipt — both nav dropdowns are receipts, and some pages skip loader.js */
+@import url("/utils/components/components.css");
 @import url("/utils/components/dropdown.css");
 @import url("/utils/components/select.css");
 
@@ -250,32 +252,55 @@ body {
 }
 
 /* =============================================
-   MEGA PANEL (FLOATING SOFT CARD)
+   MEGA PANEL — a RECEIPT (the one .pp-receipt component)
+   ---------------------------------------------
+     .mega-panel.pp-receipt              where it sits + the drop shadow
+     .mega-panel__paper.pp-receipt__paper   torn edge + punched holes
+     .mega-panel__scroll                 the content, and the scrolling
+   Two classes on the wrapper: .pp-receipt sets `position: relative`, and at
+   equal specificity load order would decide.
    ============================================= */
-.mega-panel {
+.mega-panel.pp-receipt {
   position: fixed;
+  display: block;
   top: 76px;
   left: 50%;
   transform: translateX(-50%) translateY(14px);
   width: 100%;
   max-width: min(1100px, 96vw);
-  max-height: calc(100vh - 150px);
-  background: var(--surface-primary);
-  border: var(--border-subtle);
-  border-radius: 24px;
-  padding: 1.75rem;
   margin-top: 0.6rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  box-shadow: var(--shadow-xl);
   transition:
     opacity var(--duration-normal) var(--ease-default),
     transform var(--duration-normal) var(--ease-bounce),
     visibility var(--duration-normal) var(--ease-default);
   z-index: 9998;
-  overflow-y: auto;
   box-sizing: border-box;
+}
+
+.mega-panel .mega-panel__paper {
+  padding: 1.9rem 1.9rem;
+  box-sizing: border-box;
+}
+/* holes above the paint wash */
+.mega-panel__paper::before,
+.mega-panel__paper::after {
+  z-index: 2;
+}
+
+.mega-panel__scroll {
+  position: relative;
+  z-index: 1;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mega-panel__scroll::-webkit-scrollbar { width: 4px; }
+.mega-panel__scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 4px;
 }
 
 .nav-links > li.open .mega-panel {
@@ -742,9 +767,10 @@ body {
   }
 }
 
-/* Profile dropdown open state — layout handled by dropdown.css */
+/* Profile dropdown open state — layout handled by dropdown.css (a receipt:
+   the wrapper is a block, the paper inside lays the rows out) */
 .user-menu.open .neo-dropdown {
-  display: flex;
+  display: block;
 }
 
 /* Dynamic display states depending on Auth status */
@@ -808,12 +834,15 @@ body {
    INTERMEDIATE SCREENS (769px – 1100px)
    ============================================= */
 @media (max-width: 1100px) and (min-width: 769px) {
-  .mega-panel {
+  .mega-panel.pp-receipt {
     width: 96vw;
     max-width: 96vw;
     left: 2vw;
     transform: translateY(14px);
-    padding: 1.4rem;
+  }
+
+  .mega-panel .mega-panel__paper {
+    padding: 1.6rem 1.5rem;
   }
 
   .nav-links > li.open .mega-panel {
@@ -838,12 +867,15 @@ body {
     display: none;
   }
 
-  .mega-panel {
+  .mega-panel.pp-receipt {
     width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
     left: 10px;
     transform: translateY(14px);
-    padding: 1.4rem;
+  }
+
+  .mega-panel .mega-panel__paper {
+    padding: 1.6rem 1.5rem;
   }
 
   .nav-links > li.open .mega-panel {
@@ -926,8 +958,29 @@ body {
     content: "\2212";
   }
 
-  /* Mega panel → accordion (relative so the paint wash stays inside it) */
-  .mega-panel {
+  /* Mega panel → accordion (relative so the paint wash stays inside it).
+     Inside the open phone menu it is a plain fold-out, not a receipt. */
+  .mega-panel.pp-receipt {
+    filter: none;
+    left: auto;
+    top: auto;
+  }
+  .mega-panel .mega-panel__paper {
+    -webkit-mask: none;
+    mask: none;
+    padding: 0;
+    background: transparent;
+  }
+  .mega-panel .mega-panel__paper::before,
+  .mega-panel .mega-panel__paper::after {
+    display: none;
+  }
+  .mega-panel__scroll {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .mega-panel.pp-receipt {
     position: relative;
     width: 100%;
     max-width: none;

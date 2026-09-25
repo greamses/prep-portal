@@ -443,11 +443,20 @@ function buildMegaMenu() {
        MEGA PANEL
     ========================= */
     if (hasChildren) {
+      // The panel is a receipt — the one .pp-receipt component: the wrapper
+      // carries the shadow, the paper the torn edge + punched holes, and the
+      // content scrolls INSIDE the paper so the holes stay put.
       const panel = document.createElement("div");
-      panel.className = "mega-panel";
+      panel.className = "mega-panel pp-receipt";
+
+      const paper = document.createElement("div");
+      paper.className = "mega-panel__paper pp-receipt__paper";
 
       // Faint paint-print wash, tinted by the section accent (seeded per section).
-      panel.insertAdjacentHTML("afterbegin", paintLayer(index * 5 + 2));
+      paper.insertAdjacentHTML("afterbegin", paintLayer(index * 5 + 2));
+
+      const scroll = document.createElement("div");
+      scroll.className = "mega-panel__scroll";
 
       const inner = document.createElement("div");
       inner.className = "mega-panel-content";
@@ -509,7 +518,9 @@ function buildMegaMenu() {
       inner.appendChild(tree);
       if (stage) inner.appendChild(stage);
 
-      panel.appendChild(inner);
+      scroll.appendChild(inner);
+      paper.appendChild(scroll);
+      panel.appendChild(paper);
       li.appendChild(panel);
     }
 
@@ -595,7 +606,12 @@ function buildUserMenu() {
 
   // ── Dropdown card ─────────────────────────────────────────
   const dropdown = document.createElement("div");
-  dropdown.className = "neo-dropdown profile-dropdown";
+  dropdown.className = "neo-dropdown profile-dropdown pp-receipt";
+
+  // Receipt paper: the torn edge and punched holes (components.css).
+  const paper = document.createElement("div");
+  paper.className = "profile-dropdown-paper pp-receipt__paper";
+  dropdown.appendChild(paper);
 
   // Profile header
   const header = document.createElement("div");
@@ -612,7 +628,7 @@ function buildUserMenu() {
   const cameraOverlay = document.createElement("div");
   cameraOverlay.className = "profile-avatar-camera auth-only";
   cameraOverlay.innerHTML = SVG_CAMERA;
-  cameraOverlay.title = "Change profile photo";
+  cameraOverlay.setAttribute("aria-label", "Change profile photo");
 
   const photoInput = document.createElement("input");
   photoInput.type = "file";
@@ -645,7 +661,7 @@ function buildUserMenu() {
   profileInfo.appendChild(ddPlan);
   header.appendChild(avatarWrap);
   header.appendChild(profileInfo);
-  dropdown.appendChild(header);
+  paper.appendChild(header);
 
   // Menu items
   const items = document.createElement("div");
@@ -674,7 +690,7 @@ function buildUserMenu() {
   });
   items.appendChild(loginBtn);
 
-  dropdown.appendChild(items);
+  paper.appendChild(items);
 
   // Footer (sign out)
   const footer = document.createElement("div");
@@ -694,7 +710,7 @@ function buildUserMenu() {
     }
   });
   footer.appendChild(logoutBtn);
-  dropdown.appendChild(footer);
+  paper.appendChild(footer);
 
   menuDiv.appendChild(dropdown);
 
