@@ -1,3 +1,5 @@
+@import url("/utils/components/buttons.css");
+
 /* =========================================================================
    STICKY-NOTE UI — site-wide
    -------------------------------------------------------------------------
@@ -7,8 +9,10 @@
    facing site so a button is the same object everywhere.
 
    Loaded AFTER each page's own stylesheet, so it wins without every page
-   needing !important. Deliberately NOT loaded on the 3D game HUDs, the
-   virtual-lab tool rails or the admin panels — notes would fight those UIs.
+   needing !important. Loaded on EVERY page (2026-09-24: "All buttons site
+   wide should use the sticky notes design") — the games, the labs, the
+   workbenches and the admin panels included. buttons.css, imported below,
+   is the catch-all for every button class this sheet doesn't name.
 
    The paper itself lives in .pp-note; everything below just points a page's
    existing button class at it.
@@ -303,8 +307,8 @@ button.ghost {
    DASHBOARD + SETTINGS / SETUP SURFACES
    Each of these pages had its own button vocabulary. They all point at the
    same paper now, so a control is the same object wherever you meet it.
-   Icon-only close buttons (×) are left alone — a note with a tape strip
-   makes no sense at 24px in the corner of a modal.
+   Icon-only buttons (×, fullscreen, gear…) are notes too since 2026-09-24 —
+   buttons.css dresses them, with a tape strip scaled to their size.
    ══════════════════════════════════════════════════════════════════════ */
 
 /* The shared .pp-btn (partner, activity, prepbot…). Qualified with the element
@@ -331,6 +335,7 @@ button.pp-btn,
 .pt-copy,
 /* Activity */
 .paper-video-btn,
+.builder-cta,
 /* Dashboard */
 .db-action,
 .db-pill,
@@ -371,6 +376,7 @@ button.pp-btn,
 .sp-kindtab::before,
 .pt-copy::before,
 .paper-video-btn::before,
+.builder-cta::before,
 .db-action::before,
 .db-pill::before,
 .db-child-tab::before,
@@ -400,6 +406,7 @@ button.pp-btn,
 .sp-kindtab:hover,
 .pt-copy:hover,
 .paper-video-btn:hover,
+.builder-cta:hover:not(:disabled),
 .db-action:hover,
 .db-child-tab:hover,
 .db-calendar-nav-btn:hover,
