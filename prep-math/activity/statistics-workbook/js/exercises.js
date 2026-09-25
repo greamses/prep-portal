@@ -22,6 +22,10 @@
      ex-scatter.js  chapter 5, scatter graphs — plotting (tapped on screen,
                     dotplot.js), reading, correlation, the line of best fit
                     (chosen, used, ruled), outliers and cautions (scatterart.js)
+     ex-prob.js     chapter 6, probability — the words, one die, the
+                    experiment ROLLED on screen with its tally filling itself
+                    (the shared utils/components/workbook/chance.js), a pack of
+                    52 cards drawn from, P(not it), and the 36 ways two dice land
 
    THE ORDER IS THE BOOK: things counted before they are pictured, a picture
    of one-for-one before a key, and reading before building. A new chapter is
@@ -33,15 +37,17 @@ import { BR_GROUPS, BR_EXERCISES } from "./ex-bars.js";
 import { LN_GROUPS, LN_EXERCISES } from "./ex-line.js";
 import { PI_GROUPS, PI_EXERCISES } from "./ex-pie.js";
 import { SC_GROUPS, SC_EXERCISES } from "./ex-scatter.js";
+import { PB_GROUPS, PB_EXERCISES } from "./ex-prob.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS, ...PI_GROUPS, ...SC_GROUPS];
-export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES, ...PI_EXERCISES, ...SC_EXERCISES];
+export const GROUPS = [...PG_GROUPS, ...BR_GROUPS, ...LN_GROUPS, ...PI_GROUPS, ...SC_GROUPS, ...PB_GROUPS];
+export const EXERCISES = [...PG_EXERCISES, ...BR_EXERCISES, ...LN_EXERCISES, ...PI_EXERCISES, ...SC_EXERCISES, ...PB_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
 const CHAPTER = new Map([...PG_GROUPS.map((g) => [g.id, 1]), ...BR_GROUPS.map((g) => [g.id, 2]), ...LN_GROUPS.map((g) => [g.id, 3]),
-  ...PI_GROUPS.map((g) => [g.id, 4]), ...SC_GROUPS.map((g) => [g.id, 5])]);
+  ...PI_GROUPS.map((g) => [g.id, 4]), ...SC_GROUPS.map((g) => [g.id, 5]),
+  ...PB_GROUPS.map((g) => [g.id, 6])]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {

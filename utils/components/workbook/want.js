@@ -74,6 +74,11 @@ export const want = {
       another (svg[data-paste]). Not marked: it is the experiment, and the
       places after it say what it showed. Covers no places. */
   stick: () => ({ kind: "stick" }),
+  /** Dice rolled or cards drawn (chance.js). Not marked either, and for the
+      same reason: an experiment that came out the same every time would be
+      teaching the opposite of the lesson. What the child READS off it is
+      marked, in the boxes beside it. Covers no places. */
+  chance: ({ says = "" } = {}) => ({ kind: "chance", says }),
 };
 
 /* ── judging, shared by the page and the Node checks ─────────────────────────*/
@@ -156,7 +161,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -178,6 +183,7 @@ export function sayWant(entry, tickLabels = []) {
     case "machine": return entry.says || "";
     case "tiles": return entry.says || "";
     case "code": return entry.says || (entry.prints || []).join(" · ");
+    case "chance": return entry.says || "";
     default: return "";
   }
 }

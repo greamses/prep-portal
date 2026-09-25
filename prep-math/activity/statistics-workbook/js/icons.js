@@ -11,6 +11,8 @@ import {
 } from "/utils/components/workbook/icons.js";
 
 const face = (cx, cy, r, fill) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
+const slab = (x, y, w, h, fill, rx = 1) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}"/>`;
 
 export const ICON = {
   ...BASE,
@@ -173,5 +175,41 @@ export const ICON = {
       [4.4, 8.6, 12.8].map((x) => face(x, 12, 1.8, PAPER)).join("") +
       face(17.2, 17, 4.4, GOLD) +
       `<rect x="16.3" y="14.2" width="1.8" height="5.6" rx="0.9" fill="${LOUD}"/>`
+  ),
+
+  /* ── Chapter 6: probability ─────────────────────────────────────────── */
+  /* The scale from cannot to certain, with the marker in the middle. */
+  pbWords: svg(
+    slab(2.4, 10.4, 19.2, 3.2, PAPER, 1.6) + slab(2.4, 10.4, 9.6, 3.2, LEAF, 1.6) + face(12, 12, 3.4, LOUD)
+  ),
+  /* One die, showing three. */
+  pbDie: svg(
+    `<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="4" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.6"/>` +
+      face(8, 8, 1.7, LOUD) + face(12, 12, 1.7, LOUD) + face(16, 16, 1.7, LOUD)
+  ),
+  /* A die with the bars of a tally growing beside it. */
+  pbRoll: svg(
+    `<rect x="2.4" y="6" width="10" height="10" rx="2.6" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
+      face(5.6, 9.2, 1.4, GOLD) + face(9.2, 12.8, 1.4, GOLD) +
+      slab(14.6, 15.4, 2.6, 5.6, PAPER, 1.3) + slab(18.2, 11.4, 2.6, 9.6, LOUD, 1.3)
+  ),
+  /* Two cards, one of them a heart. */
+  pbCards: svg(
+    `<g transform="rotate(-12 9 12)"><rect x="3.4" y="4.4" width="10.4" height="15.2" rx="2" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/></g>` +
+      `<rect x="10.6" y="4.4" width="10.4" height="15.2" rx="2" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
+      `<path d="M15.8 15.6c-2.6-2-4-3.2-4-4.8a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 1.6-1.4 2.8-4 4.8z" fill="${LOUD}"/>`
+  ),
+  /* A die face crossed out: the chance of NOT. */
+  pbNot: svg(
+    `<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="4" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.6"/>` +
+      face(12, 12, 2, PAPER) +
+      `<path d="M5.4 18.6 18.6 5.4" stroke="${LOUD}" stroke-width="2.6" stroke-linecap="round"/>`
+  ),
+  /* Two dice side by side. */
+  pbTwo: svg(
+    `<rect x="1.6" y="6" width="10" height="10" rx="2.6" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
+      face(6.6, 11, 1.6, LOUD) +
+      `<rect x="12.4" y="8" width="10" height="10" rx="2.6" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.5"/>` +
+      face(15.4, 11, 1.5, GOLD) + face(19.4, 15, 1.5, GOLD)
   ),
 };

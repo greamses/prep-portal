@@ -2514,3 +2514,58 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 .js-bar .wb-drawbar { position: static; margin-left: 1mm; }
 .js-bar { flex-wrap: nowrap; padding-right: 3mm; }
 .js-box.wb-drawhost { position: relative; }
+
+/* ── dice and a pack of cards (chance.js) ────────────────────────────────────
+   On paper: the die drawn blank, a tally chart with boxes to fill in by hand,
+   and the back of a card. On screen the die rolls, the tally fills itself and
+   the pack deals. Fixed hex, like the rest of the paper. */
+.ch-roll { display: flex; flex-direction: column; gap: 2mm; margin: 2mm 0; }
+.ch-roll__stage { display: flex; gap: 2.4mm; align-items: center; min-height: 18mm; }
+.ch-roll__bar { display: flex; align-items: center; gap: 2mm; flex-wrap: wrap; }
+.ch-die { display: block; }
+.ch-roll.is-rolling .ch-die { animation: ch-shake 0.12s linear infinite; }
+@keyframes ch-shake {
+  0% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(5deg) translateY(-1mm); }
+  100% { transform: rotate(-6deg) translateY(0); }
+}
+
+.ch-tally { border-collapse: collapse; font-size: 9.5pt; width: fit-content; min-width: 54mm; }
+.ch-tally th, .ch-tally td { padding: 0.8mm 2.4mm; text-align: left; }
+.ch-tally thead th {
+  font-size: 7.5pt; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6b645a; border-bottom: 0.4mm solid #2a2723;
+}
+.ch-tally tbody th { font-weight: 700; width: 12mm; }
+.ch-tally tbody tr + tr th, .ch-tally tbody tr + tr td { border-top: 0.3mm dashed #b8b0a3; }
+/* a box to write the count in — ruled like a cell, but not an answer */
+.ch-write {
+  min-width: 14mm;
+  height: 5mm;
+  border-bottom: 0.3mm solid #b8b0a3;
+}
+.ch-bar { width: 42mm; }
+.ch-bar span { display: block; height: 3.2mm; border-radius: 1.6mm; background: #bfe3ff; }
+
+.ch-card { display: block; }
+.ch-pack { display: flex; gap: 2.4mm; align-items: flex-start; min-height: 32mm; }
+.ch-drawn { display: flex; flex-wrap: wrap; gap: 1.2mm; margin-top: 1.6mm; }
+.ch-count { font-size: 8.5pt; color: #6b645a; }
+
+/* the buttons are the paper's own sticky notes */
+.ch-btn {
+  display: inline-flex; align-items: center; gap: 1.4mm;
+  padding: 1mm 2.4mm;
+  border: 0; border-radius: 1mm;
+  background: #fff3a8; color: #14130f;
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-size: 8.5pt; font-weight: 700;
+  cursor: pointer;
+  transform: rotate(-1.4deg);
+  box-shadow: 0 0.3mm 0.3mm rgba(20, 19, 15, 0.1), 1.2mm 1.8mm 2.6mm -1mm rgba(20, 19, 15, 0.3);
+}
+.ch-btn--quiet { background: #e7f0f8; transform: rotate(1.2deg); }
+.ch-btn:hover { transform: translateY(-0.6mm) rotate(-1.4deg); }
+
+/* on paper there is nothing to press, and the bar is not part of the sheet */
+@media print { .ch-roll__bar, .ch-count { display: none; } }

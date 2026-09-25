@@ -34,6 +34,7 @@ import { mountDots, dotsRight } from "./dotplot.js";
 import { mountMachine, machineRight } from "./machine.js";
 import { mountTiles, tilesRight } from "./tiles.js";
 import { mountCode, codeRight } from "./code.js";
+import { mountChance, mountPack } from "./chance.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -140,6 +141,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.machine ||= {};  // function machines built from job cards
     r.tiles ||= {};    // squares completed with algebra tiles
     r.code ||= {};     // programs written in a code box, and what they printed
+    r.chance ||= {};   // dice rolled, and cards drawn
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -237,6 +239,29 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       wrap.__wbMachine = mountMachine(wrap, { build: false });
     });
 
+    /* dice to roll and a pack to draw from: the experiment itself, never
+       marked — what the child reads off it is marked in the boxes beside it */
+    node.querySelectorAll("[data-roll]").forEach((box, k) => {
+      box.__wbChance = mountChance(box, {
+        saved: rec(idx).chance[`d${k}`] || null,
+        onChange: (now, before) => {
+          rec(idx).chance[`d${k}`] = now;
+          step(box, () => { rec(idx).chance[`d${k}`] = before; box.__wbChance?.set(before); dirty(node); save(); });
+          dirty(node); save();
+        },
+      });
+    });
+    node.querySelectorAll("[data-pack]").forEach((box, k) => {
+      box.__wbPack = mountPack(box, {
+        saved: rec(idx).chance[`p${k}`] || null,
+        onChange: (now, before) => {
+          rec(idx).chance[`p${k}`] = now;
+          step(box, () => { rec(idx).chance[`p${k}`] = before; box.__wbPack?.set(before); dirty(node); save(); });
+          dirty(node); save();
+        },
+      });
+    });
+
     /* a code box the question printed to be RUN rather than written: the
        child may still change it and see what happens, but it is not an answer
        (the answer is what they typed in the boxes beside it) */
@@ -290,6 +315,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-tiles]").forEach((t) => { t.__wbTiles?.dispose(); t.__wbTiles = null; t.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
+    node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
       if (!s.__wbPile) return;
       s.innerHTML = s.__wbPile;
@@ -1996,7 +2023,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        NOT mounted the way Algebra Moves and the canvas are: those were split
        into a shell and a workspace so one copy of the code serves a page and a
        panel. These five are single-script pages wired straight to their own
-       document, and the grapher wraps GeoGebra, which wants its own globals.
+       document, each with globals of its own.
        A frame gives the whole studio with nothing rewritten, and takes its
        globals away with it when the panel shuts. */
     ...[
@@ -2004,7 +2031,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       { id: "transversal", label: "Transversal angles", at: "/prep-math/activity/transversals/index.html" },
       { id: "pythagoras", label: "Pythagoras", at: "/prep-math/activity/pythagoras/index.html" },
       { id: "surface", label: "Surface area", at: "/prep-math/activity/surface-area/index.html" },
-      { id: "graph", label: "Graphing", at: "/prep-math/graphing/index.html" },
+      { id: "art", label: "Cartesian Art", at: "/prep-math/activity/cartesian-art/index.html" },
     ].map((g) => ({
       id: g.id,
       label: g.label,
@@ -2019,7 +2046,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
            a window inside the page is a maze. The geometry shells already have
            a fullscreen dress — html.pp-geo-fs, in utils/components/game-tabs.css
            — so the panel simply puts it on; the two rules are written in as
-           well for the grapher, which is not a geometry shell. Same origin, so
+           well for the art studio, which is not a geometry shell. Same origin, so
            this is reading into our own page, not somebody else's. */
         frame.addEventListener("load", () => {
           try {
@@ -2258,7 +2285,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     { id: "count", label: "Counting", of: [asSheet("chart"), asSheet("bench")] },
     { id: "shapes", label: "Shapes and graphs", of: [
       asSheet("angles"), asSheet("transversal"), asSheet("pythagoras"),
-      asSheet("surface"), asSheet("graph"),
+      asSheet("surface"), asSheet("art"),
     ] },
     { id: "algebra", label: "Algebra", of: [asSheet("gm")] },
   ]

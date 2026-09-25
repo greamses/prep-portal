@@ -114,9 +114,13 @@ export const TOOL_ICONS = {
       `<path d="M12 12.4 3.6 8v8.4l8.4 4.4z" fill="${PAPER}"/>` +
       `<path d="M12 3.4 20.4 8 12 12.4 3.6 8z" fill="${GOLD}"/>`
   ),
-  graph: glyph(
+  /* Cartesian Art: the plane, and a picture drawn by plotting on it */
+  art: glyph(
     r(3.2, 3.2, 2, 17.6, QUIET, 1) + r(3.2, 18.8, 17.6, 2, QUIET, 1) +
-      `<path d="M5.6 16c4-1.2 4.6-8.4 8-8.4s4 4.8 6 5.6" fill="none" stroke="${LOUD}" stroke-width="2.6" stroke-linecap="round"/>`
+      `<path d="M7.4 16.6 12 7.2l4.6 9.4z" fill="${GOLD}"/>` +
+      `<circle cx="7.4" cy="16.6" r="1.5" fill="${LOUD}"/>` +
+      `<circle cx="12" cy="7.2" r="1.5" fill="${LOUD}"/>` +
+      `<circle cx="16.6" cy="16.6" r="1.5" fill="${LOUD}"/>`
   ),
   /* the written boards and the algebra sheet — working paper, not instruments */
   longdiv: glyph(

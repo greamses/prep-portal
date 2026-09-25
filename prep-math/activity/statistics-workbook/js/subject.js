@@ -16,6 +16,7 @@ const CHAPTERS = {
   3: "Chapter 3: Line graphs",
   4: "Chapter 4: Pie charts and proportion",
   5: "Chapter 5: Scatter graphs",
+  6: "Chapter 6: Probability",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])
