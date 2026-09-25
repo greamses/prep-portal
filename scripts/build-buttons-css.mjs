@@ -15,8 +15,18 @@ const BUTTONS = [
   'a[class*="-cta"]',
 ];
 
+// BARE — icon buttons that are deliberately just a glyph sitting on
+// something else (the user asked for these, 2026-09-25): PrepBot's robot
+// button and its sleep/wake, the × on its speech-bubble popup, the icons in
+// the lesson bot's thought-bubble menu, the TV remote buttons on the ×11
+// lessons. Their own page styles draw them.
+const BARE = [
+  "#chat-fab", "#chat-fab-dismiss", "#chat-fab-restore", ".prepbot-popup-close",
+  ".mm-prepbot-menu-btn", ".mm-tv-btn",
+];
+
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
-const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]'];
+const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE];
 
 // Already notes, each with its own `transform` tilt and tape — a second tilt
 // would double it. A new note class that tilts itself belongs here.

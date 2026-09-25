@@ -272,34 +272,34 @@
 
 .mm-tv-btns { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; margin-right: auto; }
 
+/* Bare glyphs on the set, no chip behind them (buttons.css leaves these
+   out of the sticky-note dress on purpose). Ink is --bg: the set itself is
+   --ink, so this is the opposite shade in either theme. */
 .mm-tv-btn {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  padding: 0;
   border: none;
-  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
-  color: var(--ink);
+  background: none;
+  box-shadow: none;
+  color: var(--bg);
   cursor: pointer;
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.25);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease;
 }
-.mm-tv-btn svg { width: 15px; height: 15px; }
-.mm-tv-btn:hover { transform: translateY(-1px); }
-.mm-tv-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.mm-tv-btn svg { width: 18px; height: 18px; }
+.mm-tv-btn:hover { transform: scale(1.15); }
+.mm-tv-btn:active { transform: scale(0.95); }
 .mm-tv-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+.mm-tv-btn:focus-visible { outline: 2px dashed var(--bg); outline-offset: 2px; }
 
 .mm-tv-btn--play {
   width: 40px;
   height: 40px;
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
 }
 .mm-tv-btn--play svg,
-.mm-tv-btn--play span svg { width: 17px; height: 17px; }
+.mm-tv-btn--play span svg { width: 24px; height: 24px; }
 
 /* ── Stand: a thin "stem" holding the set up on a flat foot, like a
    wine glass in silhouette. ────────────────────────────────────────── */
