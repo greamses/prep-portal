@@ -2569,3 +2569,48 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 /* on paper there is nothing to press, and the bar is not part of the sheet */
 @media print { .ch-roll__bar, .ch-count { display: none; } }
+
+/* ── fraction bars you cut up yourself (fracbar.js) ──────────────────────────
+   Two bars, one per fraction, each with a row of scissors: cut every part in
+   two, in three, in four, in five, or put the bar back. The bars agree when
+   their denominators match, and only then does the sum beside them count. */
+.fb-wrap { display: flex; flex-direction: column; gap: 1.6mm; margin: 2mm 0; }
+.fb-row { display: flex; align-items: center; gap: 2.4mm; flex-wrap: wrap; }
+.fb-stage { display: block; }
+.fb-op { font-size: 13pt; font-weight: 800; padding-left: 7mm; }
+
+/* the fraction written the way the paper writes it */
+.fb-name { display: inline-flex; flex-direction: column; align-items: center; min-width: 8mm; font-size: 10pt; font-weight: 700; }
+.fb-name i { display: block; width: 5mm; height: 0.4mm; background: #2a2723; margin: 0.4mm 0; }
+
+.fb-cuts { display: inline-flex; gap: 1mm; flex-wrap: wrap; }
+.fb-cut {
+  display: inline-flex; align-items: center; gap: 0.6mm;
+  padding: 0.6mm 1.4mm;
+  border: 0.3mm solid #2a2723; border-radius: 1.2mm;
+  background: #fffdf8; cursor: pointer;
+  font: inherit; font-size: 8pt; font-weight: 700; color: #2a2723;
+}
+.fb-cut:hover { background: #fff3a8; }
+.fb-cut--undo { background: #e7f0f8; }
+.fb-cut.is-no { animation: fb-no 0.4s ease; }
+@keyframes fb-no {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1mm); }
+  75% { transform: translateX(1mm); }
+}
+
+.fb-say { margin: 0; font-size: 8.5pt; color: #6b645a; }
+.fb-wrap.is-same .fb-say { color: #3f8f4f; }
+.fb-wrap.is-same .fb-bar { outline: 0.5mm solid #7fae6a; outline-offset: 0.6mm; }
+.fb-wrap.is-right { box-shadow: 0 0 0 0.7mm #7fae6a; border-radius: 2mm; }
+.fb-wrap.is-wrong { box-shadow: 0 0 0 0.7mm #c0453f; border-radius: 2mm; }
+
+/* Undo and Clear sit ABOVE the bars, not over the scissors: the row of cuts
+   runs to the right edge of the host, which is where the drawbar lands by
+   default (the same rule the pen hosts and the dot grids already use). */
+.fb-wrap.wb-drawhost > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 1.2mm; }
+.fb-wrap.wb-drawhost { padding-top: 7mm; }
+
+/* on paper the scissors are not part of the sheet: the child draws the cuts */
+@media print { .fb-cuts { display: none; } }

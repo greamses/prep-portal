@@ -35,6 +35,7 @@ import { mountMachine, machineRight } from "./machine.js";
 import { mountTiles, tilesRight } from "./tiles.js";
 import { mountCode, codeRight } from "./code.js";
 import { mountChance, mountPack } from "./chance.js";
+import { mountSplit, splitRight } from "./fracbar.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -142,6 +143,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.tiles ||= {};    // squares completed with algebra tiles
     r.code ||= {};     // programs written in a code box, and what they printed
     r.chance ||= {};   // dice rolled, and cards drawn
+    r.split ||= {};    // fraction bars cut to the same denominator
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -283,6 +285,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "machine") makeMachineLive(node, idx, e);
       if (e.kind === "tiles") makeTilesLive(node, idx, e);
       if (e.kind === "code") makeCodeLive(node, idx, e);
+      if (e.kind === "split") makeSplitLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -315,6 +318,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-machine], [data-ride]").forEach((m) => { m.__wbMachine?.dispose(); m.__wbMachine = null; m.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-tiles]").forEach((t) => { t.__wbTiles?.dispose(); t.__wbTiles = null; t.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-split]").forEach((c) => { c.__wbSplit?.dispose(); c.__wbSplit = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
@@ -661,6 +665,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).tiles[k]; wrap.__wbTiles?.clear(); dirty(node); save(); });
+  }
+
+  /* ── two fraction bars, cut until they match ───────────────────────────
+     fracbar.js cuts every part of a bar in two, three, four or five; this
+     keeps the cuts, makes each one an Undo step, and Clear puts both bars
+     back the way the paper printed them. */
+  function makeSplitLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll("[data-split]")[k];
+    if (!wrap) return;
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbSplit = mountSplit(wrap, {
+      saved: rec(idx).split[k] || null,
+      onChange: (now, before) => {
+        rec(idx).split[k] = now;
+        step(wrap, () => { rec(idx).split[k] = before; wrap.__wbSplit?.set(before); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).split[k]; wrap.__wbSplit?.clear(); dirty(node); save(); });
   }
 
   /* ── a program, written and run ───────────────────────────────────────
@@ -1600,6 +1625,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           /* the square is finished when every place holds its own tile */
           const wrap = node.querySelectorAll("[data-tiles]")[entry.nth || 0];
           const ok = tilesRight(rec(idx).tiles[entry.nth || 0] || {}, entry.a, entry.sign);
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "split") {
+          /* the bars have to agree before the sum beside them means anything */
+          const wrap = node.querySelectorAll("[data-split]")[entry.nth || 0];
+          const ok = splitRight(rec(idx).split[entry.nth || 0] || { a: 1, b: 1 }, entry);
           wrap?.classList.remove("is-right", "is-wrong");
           wrap?.classList.add(ok ? "is-right" : "is-wrong");
           if (wrap) wrap.dataset.want = sayWant(entry);

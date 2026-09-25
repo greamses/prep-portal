@@ -131,4 +131,29 @@ export const ICON = {
       bar(12, 12, 12, 7.4, 1.9, LOUD) +
       bar(12, 12, 15.8, 14.2, 1.9, LOUD)
   ),
+
+  /* ── chapter 5's new sections ────────────────────────────────────────── */
+  /* One bar over another with twice the cuts: the same amount, another name. */
+  equal: svg(
+    `<rect x="2.6" y="4.4" width="18.8" height="5.6" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="4.4" width="9.4" height="5.6" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="14" width="18.8" height="5.6" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="14" width="9.4" height="5.6" fill="${PAPER}"/>` +
+      `<path d="M7.3 14v5.6M12 14v5.6M16.7 14v5.6" stroke="${QUIET}" stroke-width="0.9"/>`
+  ),
+  /* A whole bar and a part bar: mixed numbers. */
+  mixed: svg(
+    `<rect x="2.6" y="5" width="18.8" height="5.2" rx="1" fill="${PAPER}" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="13.4" width="18.8" height="5.2" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="13.4" width="6.2" height="5.2" fill="${PAPER}"/>` +
+      `<path d="M8.8 13.4v5.2M15 13.4v5.2" stroke="${QUIET}" stroke-width="0.9"/>`
+  ),
+  /* Scissors over two bars cut differently: the unlike denominators. */
+  cut: svg(
+    `<rect x="2.6" y="4" width="18.8" height="5" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="4" width="9.4" height="5" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="15" width="18.8" height="5" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
+      `<rect x="2.6" y="15" width="6.2" height="5" fill="${LEAF}"/>` +
+      `<path d="M7 10.6 17 13.4M17 10.6 7 13.4" stroke="${LOUD}" stroke-width="1.6" stroke-linecap="round"/>`
+  ),
 };

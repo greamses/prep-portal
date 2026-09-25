@@ -74,6 +74,10 @@ export const want = {
       another (svg[data-paste]). Not marked: it is the experiment, and the
       places after it say what it showed. Covers no places. */
   stick: () => ({ kind: "stick" }),
+  /** Two fraction bars cut until their parts are the same size (fracbar.js):
+      right when both bars end on the same denominator, however the child got
+      there. Covers no places — the boxes beside it are marked as usual. */
+  split: ({ a, b, nth = 0, says = "" }) => ({ kind: "split", a, b, nth, says }),
   /** Dice rolled or cards drawn (chance.js). Not marked either, and for the
       same reason: an experiment that came out the same every time would be
       teaching the opposite of the lesson. What the child READS off it is
@@ -161,7 +165,7 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -184,6 +188,7 @@ export function sayWant(entry, tickLabels = []) {
     case "tiles": return entry.says || "";
     case "code": return entry.says || (entry.prints || []).join(" · ");
     case "chance": return entry.says || "";
+    case "split": return entry.says || "both bars cut to the same parts";
     default: return "";
   }
 }

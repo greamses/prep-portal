@@ -40,7 +40,6 @@ export const REM_GROUPS = [
   { id: "group", chapter: "Chapter 4 · Dividing and remainders", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
-  { id: "bars", label: "Fraction bars", blurb: "Mixed numbers and improper fractions, coloured in." },
 ];
 
 /* ── how hard ──────────────────────────────────────────────────────────────
@@ -374,168 +373,12 @@ const leftoverFraction = {
 /* ── D. fraction bars ──────────────────────────────────────────────────────*/
 
 /** A mixed number small enough to draw. */
-function drawMixed(r, o) {
-  const L = levelOf(o);
-  const den = r.pick(L.dens);
-  const whole = r.int(1, L.maxWhole);
-  const num = r.int(1, den - 1);
-  return { whole, num, den, top: whole * den + num };
-}
-
-const barsRead = {
-  id: "bars-read",
-  group: "bars",
-  label: "Read the bars",
-  blurb: "Bars already coloured; write it both ways.",
-  heading: "Read the bars",
-  instruction: () =>
-    "Count the whole bars, then the coloured parts of the last one. Write it both ways.",
-  cols: 1,
-  defaultCount: 3,
-  make(r, o) {
-    return drawMixed(r, o);
-  },
-  render(item) {
-    return (
-      `<div class="rw-art">${barsSvg(item.den, item.top, item.whole + 1)}</div>` +
-      `<p class="wb-ask">As a mixed number ${mixed(null, null, null, { blank: true })}` +
-      `<span class="rw-gap"></span>` +
-      `As an improper fraction ${improper(null, null, { blank: true })}</p>`
-    );
-  },
-  worked() {
-    return (
-      `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      `<div class="rw-art">${barsSvg(4, 9, 3)}</div>` +
-      `<p class="wb-ask">Two whole bars and 1 out of 4 more: ${mixed(2, 1, 4)}.` +
-      `<span class="rw-gap"></span>` +
-      `Nine quarters altogether: ${improper(9, 4)}.</p></div>`
-    );
-  },
-  key(item) {
-    return [want.num(item.whole), want.num(item.num), want.num(item.den), want.num(item.top), want.num(item.den)];
-  },
-  answer(item) {
-    return [`${item.whole} ${item.num}/${item.den} = ${item.top}/${item.den}`];
-  },
-};
-
-const mixedToImproper = {
-  id: "mixed-to-improper",
-  group: "bars",
-  label: "Mixed into improper",
-  blurb: "Colour the bars in, then count every part.",
-  heading: "Mixed number into improper fraction",
-  instruction: () =>
-    "Colour in the bars to show the number. Then count ALL the coloured parts — " +
-    "that is the top of the improper fraction.",
-  cols: 1,
-  defaultCount: 3,
-  make(r, o) {
-    return drawMixed(r, o);
-  },
-  render(item) {
-    return (
-      `<p class="wb-ask wb-ask--lead">Colour in ${mixed(item.whole, item.num, item.den)}.</p>` +
-      `<div class="rw-art">${barsSvg(item.den, 0, item.whole + 1)}</div>` +
-      `<p class="wb-ask">${mixed(item.whole, item.num, item.den)} = ` +
-      `${improper(null, null, { blank: true })}</p>`
-    );
-  },
-  key(item) {
-    return [want.colour({ count: item.top, says: `colour ${item.top} parts` }), want.num(item.top), want.num(item.den)];
-  },
-  answer(item) {
-    return [`${item.top}/${item.den}`];
-  },
-};
-
-const improperToMixed = {
-  id: "improper-to-mixed",
-  group: "bars",
-  label: "Improper into mixed",
-  blurb: "The same picture read the other way — and it is a division with a remainder.",
-  heading: "Improper fraction into mixed number",
-  instruction: () =>
-    "Colour in that many parts, filling one bar before you start the next. " +
-    "The full bars are the whole number.",
-  cols: 1,
-  defaultCount: 3,
-  make(r, o) {
-    return drawMixed(r, o);
-  },
-  render(item) {
-    return (
-      `<p class="wb-ask wb-ask--lead">Colour in ${improper(item.top, item.den)}.</p>` +
-      `<div class="rw-art">${barsSvg(item.den, 0, item.whole + 1)}</div>` +
-      `<p class="wb-ask">${improper(item.top, item.den)} = ` +
-      `${mixed(null, null, null, { blank: true })}</p>`
-    );
-  },
-  worked() {
-    return (
-      `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>` +
-      `<p class="wb-ask wb-ask--lead">Colour in ${improper(7, 3)}.</p>` +
-      `<div class="rw-art">${barsSvg(3, 7, 3)}</div>` +
-      `<p class="wb-ask">Seven thirds fills two whole bars and one third more: ` +
-      `${improper(7, 3)} = ${mixed(2, 1, 3)}.` +
-      `<span class="rw-gap"></span>` +
-      `It is 7 ÷ 3 = 2 remainder 1 — the same sum.</p></div>`
-    );
-  },
-  key(item) {
-    return [
-      want.colour({ count: item.top, says: `colour ${item.top} parts` }),
-      want.num(item.whole), want.num(item.num), want.num(item.den),
-    ];
-  },
-  answer(item) {
-    return [`${item.whole} ${item.num}/${item.den}`];
-  },
-};
-
-const convertQuick = {
-  id: "convert-quick",
-  group: "bars",
-  label: "Both ways, no bars",
-  blurb: "Once the bars are not needed. Mixed one way, improper the other.",
-  heading: "Change them over",
-  instruction: () =>
-    "Where you are given a mixed number, write the improper fraction. " +
-    "Where you are given an improper fraction, write the mixed number.",
-  cols: 2,
-  defaultCount: 8,
-  make(r, o) {
-    return { ...drawMixed(r, o), toImproper: r.chance(0.5) };
-  },
-  render(item) {
-    return item.toImproper
-      ? `<p class="wb-ask wb-ask--lead">${mixed(item.whole, item.num, item.den)} = ` +
-          `${improper(null, null, { blank: true })}</p>`
-      : `<p class="wb-ask wb-ask--lead">${improper(item.top, item.den)} = ` +
-          `${mixed(null, null, null, { blank: true })}</p>`;
-  },
-  key(item) {
-    return item.toImproper
-      ? [want.num(item.top), want.num(item.den)]
-      : [want.num(item.whole), want.num(item.num), want.num(item.den)];
-  },
-  answer(item) {
-    return [
-      item.toImproper
-        ? `${item.top}/${item.den}`
-        : `${item.whole} ${item.num}/${item.den}`,
-    ];
-  },
-};
-
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
 export const REM_EXERCISES = [
   ringGroups, shareOut,
   pictureSentence, nameTheParts, divideWrite, buildBack,
   leftoverFraction,
-  barsRead, mixedToImproper, improperToMixed, convertQuick,
 ];
 
 export { line, box, slot };

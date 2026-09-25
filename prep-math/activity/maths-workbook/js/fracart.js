@@ -131,8 +131,13 @@ export function kindsFor(den) {
 /* ── a fraction, written ───────────────────────────────────────────────────*/
 
 /** 3/4, or a blank one to fill in. Shares its look with bars.js. */
+/**
+ * A fraction, written the way this paper writes it.
+ *   blank: true   both parts are boxes to fill in
+ *   num or den null   just that part is a box — "2/☐ = 8/12" asks one thing
+ */
 export function frac(num, den, { blank = false, big = false } = {}) {
-  const b = (v) => (blank ? `<span class="rw-fill"></span>` : v);
+  const b = (v) => (blank || v === null || v === undefined ? `<span class="rw-fill"></span>` : v);
   return (
     `<span class="rw-frac${big ? " rw-frac--big" : ""}">` +
     `<span class="rw-frac__top">${b(num)}</span>` +
