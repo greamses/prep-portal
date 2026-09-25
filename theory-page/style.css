@@ -479,7 +479,7 @@ body {
 
 .name-input::placeholder {
   font-family: 'Caveat', cursive;
-  color: rgba(0, 0, 0, .28);
+  color: var(--text-tertiary, rgba(0, 0, 0, .28));
 }
 
 /* track row */

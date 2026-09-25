@@ -88,11 +88,18 @@
 .btn-ink:active:not(:disabled) {
   transform: rotate(var(--pp-note-tilt, -2deg)) translateY(0);
 }
+/* Disabled is faded paper at full opacity. Pages grey a disabled button with
+   theme tokens (color-mix of --ink into --surface-secondary), which goes dark
+   in dark mode under the note's dark ink; and a half-opacity pastel over the
+   dark theme turns to mud. Same paper as buttons.css. */
 .btn:disabled,
 .btn-primary:disabled,
 .btn-yellow:disabled,
 .btn-ink:disabled {
-  opacity: 0.5;
+  background: #ebe7dc;
+  color: #857f73;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1);
+  opacity: 1;
   cursor: not-allowed;
   transform: rotate(var(--pp-note-tilt, -2deg));
 }
@@ -416,8 +423,12 @@ button.pp-btn,
 .pp-btn:disabled,
 .btn-blue:disabled,
 .autogen-all-btn:disabled,
+.builder-cta:disabled,
 .brutal-btn-flat:disabled {
-  opacity: 0.5;
+  background: #ebe7dc;
+  color: #857f73;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1);
+  opacity: 1;
   cursor: not-allowed;
   transform: rotate(var(--pp-note-tilt, -2deg));
 }

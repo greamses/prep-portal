@@ -33,6 +33,23 @@
     opacity 0.2s ease;
 }
 
+/* A note is paper in every theme, so what's drawn ON it must be too. Icons
+   and labels inside buttons reach for --ink / --text-secondary / the
+   surfaces, which flip to cream in dark mode and vanish on a pastel. Every
+   note re-declares the light values for its own contents. Zero weight: it
+   only has to beat inheritance from :root. */
+:where(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], a[class*="btn"], a[class*="-cta"], .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn):where(:not(.pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"])) {
+  --ink: #2a2723;
+  --text-primary: #2a2723;
+  --text-secondary: #6b655c;
+  --text-tertiary: #9a948a;
+  --surface-primary: #fffdf8;
+  --surface-secondary: #f4f0e8;
+  --border-color: #2a2723;
+  --border-subtle: 1px solid rgba(42, 39, 35, 0.12);
+  --shadow-color: 42, 39, 35;
+}
+
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
@@ -231,7 +248,7 @@
   .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
   .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
   .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
-):not(#pp-plain):is(.active, .is-active, .is-on, .on, .selected, .is-selected, .checked, .is-checked, .current, .is-current, [aria-pressed="true"], [aria-selected="true"], [aria-checked="true"], [aria-current="page"], [class*="--active"], [class*="--selected"]) {
+):not(#pp-plain):is(.active, .is-active, .is-on, .on, .selected, .is-selected, .checked, .is-checked, .current, .is-current, [aria-pressed="true"], [aria-selected="true"], [aria-checked="true"], [aria-current="page"], [class*="--active"], [class*="--selected"], [aria-expanded="true"]) {
   outline: 2.5px solid #14130f;
   outline-offset: -2.5px;
   translate: 0 -2px;
@@ -354,6 +371,11 @@
   .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
   .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain)[aria-disabled="true"] {
-  opacity: 0.5;
+  /* Faded paper at full opacity, not a see-through note: at half opacity a
+     pastel over the dark theme turns to mud. */
+  background: #ebe7dc;
+  color: #857f73;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1);
+  opacity: 1;
   cursor: not-allowed;
 }

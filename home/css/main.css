@@ -2294,22 +2294,11 @@
   gap: clamp(0.9rem, 2vw, 1.25rem);
 }
 
+/* The question is a sticky note (buttons.css), so the item around it is no
+   longer a card — a card behind a tilted note shows its edges, and its
+   overflow clipped the tape. The answer opens on the page beneath it. */
 .faq-item {
-  background: var(--surface-secondary);
-  border: var(--border-subtle);
-  border-radius: 16px;
-  overflow: hidden;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.faq-item--open {
-  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface-secondary));
-  border-color: color-mix(in srgb, var(--accent-secondary) 45%, transparent);
+  padding-top: 8px; /* room for the note's tape */
 }
 
 .faq-q {
@@ -2366,7 +2355,7 @@
 }
 
 .faq-a p {
-  padding: 0 1.2rem 1.15rem;
+  padding: 0.9rem 1.2rem 0.4rem;
   font-family: var(--font-mono);
   font-size: var(--text-mono-sm);
   color: var(--text-secondary);

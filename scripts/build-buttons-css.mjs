@@ -39,7 +39,7 @@ const NOTE_ALREADY = `
 
 const CHOSEN = `.active .is-active .is-on .on .selected .is-selected .checked .is-checked
   .current .is-current [aria-pressed="true"] [aria-selected="true"]
-  [aria-checked="true"] [aria-current="page"] [class*="--active"] [class*="--selected"]`.trim().split(/\s+/);
+  [aria-checked="true"] [aria-current="page"] [class*="--active"] [class*="--selected"] [aria-expanded="true"]`.trim().split(/\s+/);
 const RIGHT = `.correct .correct-ans .is-correct .right .is-right .matched .is-matched
   .solved .is-solved .success`.trim().split(/\s+/);
 const WRONG = `.wrong .wrong-ans .is-wrong .incorrect .is-incorrect .error .is-error`
@@ -91,6 +91,23 @@ const css = `@import url("https://fonts.googleapis.com/css2?family=Shantell+Sans
     rotate var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
     translate var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
     opacity 0.2s ease;
+}
+
+/* A note is paper in every theme, so what's drawn ON it must be too. Icons
+   and labels inside buttons reach for --ink / --text-secondary / the
+   surfaces, which flip to cream in dark mode and vanish on a pastel. Every
+   note re-declares the light values for its own contents. Zero weight: it
+   only has to beat inheritance from :root. */
+:where(${BUTTONS.join(", ")}, ${NOTE_ALREADY.join(", ")}):where(:not(${SKIP.join(", ")})) {
+  --ink: #2a2723;
+  --text-primary: #2a2723;
+  --text-secondary: #6b655c;
+  --text-tertiary: #9a948a;
+  --surface-primary: #fffdf8;
+  --surface-secondary: #f4f0e8;
+  --border-color: #2a2723;
+  --border-subtle: 1px solid rgba(42, 39, 35, 0.12);
+  --shadow-color: 42, 39, 35;
 }
 
 ${B} {
@@ -174,7 +191,12 @@ ${sel(is(DANGER))} {
 ${sel(":disabled")},
 ${sel(".disabled")},
 ${sel('[aria-disabled="true"]')} {
-  opacity: 0.5;
+  /* Faded paper at full opacity, not a see-through note: at half opacity a
+     pastel over the dark theme turns to mud. */
+  background: #ebe7dc;
+  color: #857f73;
+  box-shadow: 0 1px 1px rgba(20, 19, 15, 0.1);
+  opacity: 1;
   cursor: not-allowed;
 }
 `;
