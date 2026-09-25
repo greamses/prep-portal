@@ -25,7 +25,7 @@
    Blockly's chrome, and `.pp-plain`, the opt-out.
    ========================================================================= */
 
-:where(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], a[class*="btn"], a[class*="-cta"]):where(:not(.pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab, #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn)) {
+:where(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], a[class*="btn"], a[class*="-cta"]):where(:not(.pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab, #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn, .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn)) {
   position: relative;
   transition:
     rotate var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
@@ -38,7 +38,7 @@
    surfaces, which flip to cream in dark mode and vanish on a pastel. Every
    note re-declares the light values for its own contents. Zero weight: it
    only has to beat inheritance from :root. */
-:where(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], a[class*="btn"], a[class*="-cta"], .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn):where(:not(.pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab, #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn)) {
+:where(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], a[class*="btn"], a[class*="-cta"], .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn):where(:not(.pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab, #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn, .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn)) {
   --ink: #2a2723;
   --text-primary: #2a2723;
   --text-secondary: #6b655c;
@@ -55,18 +55,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain) {
   --pp-auto-bg: #fff3a8;
   --pp-auto-tilt: -2deg;
@@ -94,54 +95,57 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):nth-child(4n + 2) { --pp-auto-bg: #bfe3ff; --pp-auto-tilt: 1.5deg; }
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):nth-child(4n + 3) { --pp-auto-bg: #e8c8ff; --pp-auto-tilt: 1.2deg; }
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):nth-child(4n + 4) { --pp-auto-bg: #ffd7a3; --pp-auto-tilt: -1.4deg; }
 
 /* The strip of tape — scaled down on a small button so it never swamps a
@@ -151,18 +155,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain)::before {
   content: "";
   position: absolute;
@@ -185,54 +190,57 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):hover:not(:disabled) { translate: 0 -2px; }
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):active:not(:disabled) { translate: 0 0; }
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):focus-visible {
   outline: 2.5px dashed #14130f;
   outline-offset: 2px;
@@ -245,18 +253,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):is(.active, .is-active, .is-on, .on, .selected, .is-selected, .checked, .is-checked, .current, .is-current, [aria-pressed="true"], [aria-selected="true"], [aria-checked="true"], [aria-current="page"], [class*="--active"], [class*="--selected"], [aria-expanded="true"]) {
   outline: 2.5px solid #14130f;
   outline-offset: -2.5px;
@@ -269,18 +278,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):is(.correct, .correct-ans, .is-correct, .right, .is-right, .matched, .is-matched, .solved, .is-solved, .success) {
   background: #9fe39a;
   outline: 2.5px solid #2f7a3f;
@@ -291,18 +301,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):is(.wrong, .wrong-ans, .is-wrong, .incorrect, .is-incorrect, .error, .is-error) {
   background: #ffb0b0;
   outline: 2.5px solid #a33;
@@ -315,18 +326,19 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):is(.danger, .is-danger, .btn-danger, [class*="--danger"]) {
   background: #ffc9c9;
   color: #7a1f1f;
@@ -337,54 +349,57 @@
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain):disabled,
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain).disabled,
 :is(
   button, input[type="button"], input[type="submit"], input[type="reset"],
   [role="button"], a[class*="btn"], a[class*="-cta"]
 ):not(
   .pp-plain, .pp-select-trigger, .pp-receipt, svg *, [class*="blockly"], #chat-fab,
-  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .pp-note,
-  .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary, .btn-yellow,
-  .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat, .section-cta,
-  .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip, .topic-refresh,
-  .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn, .sp-kindtab,
-  .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab, .db-calendar-nav-btn,
-  .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta, .builder-share,
-  .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn, .drill-start-btn,
-  .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn, .grammar-start-btn,
-  .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn, .vocab-start-btn,
-  .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn, .fs-dismiss-btn,
-  .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
+  #chat-fab-dismiss, #chat-fab-restore, .prepbot-popup-close, .mm-prepbot-menu-btn, .mm-tv-btn, .wb-side__btn,
+  .wb-side__more, .wb-side__fam, .wb-tool, .bb-tool, .bb-kit__btn, .wb-drawbar .pp-btn,
+  .pp-note, .pp-sticky, .pp-note-btn, .pp-btn, .btn, .btn-primary,
+  .btn-yellow, .btn-ink, .btn-blue, .option-btn, .hero-btn, .hero-stat,
+  .section-cta, .pricing-cta, .pricing-toggle-btn, .footer-social-btn, .autogen-all-btn, .topic-chip,
+  .topic-refresh, .topic-share, .topic-assign, .cards-tab, .grade-btn, .sp-billing-btn,
+  .sp-kindtab, .pt-copy, .paper-video-btn, .db-action, .db-pill, .db-child-tab,
+  .db-calendar-nav-btn, .brutal-btn-flat, .nav-main-label, .anim-mode-btn, .builder-assign, .builder-cta,
+  .builder-share, .builder-tab, .cat-tab, .custom-chip, .drill-again-btn, .drill-cancel-btn,
+  .drill-start-btn, .geo-again-btn, .geo-cancel-btn, .geo-start-btn, .grammar-again-btn, .grammar-cancel-btn,
+  .grammar-start-btn, .puzzle-again-btn, .puzzle-cancel-btn, .puzzle-start-btn, .vocab-again-btn, .vocab-cancel-btn,
+  .vocab-start-btn, .pp-again-btn, .pp-cancel-btn, .pp-start-btn, .pp-studio-fs, .fs-canvas-toggle-btn,
+  .fs-dismiss-btn, .fs-new-btn, .fs-wp-btn, .wp-modal-solved-btn
 ):not(#pp-plain)[aria-disabled="true"] {
   /* Faded paper at full opacity, not a see-through note: at half opacity a
      pastel over the dark theme turns to mud. */

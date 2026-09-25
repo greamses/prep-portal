@@ -554,7 +554,11 @@ button.pp-btn,
 .pp-receipt__paper .pp-btn:has(> [data-icon]:only-child)::before,
 .pp-receipt__paper .pp-btn:has(> svg:only-child)::before,
 .pp-receipt__paper button:has(> [data-icon]:only-child)::before,
-.pp-receipt__paper button:has(> svg:only-child)::before { display: none; }
+.pp-receipt__paper button:has(> svg:only-child)::before {
+  /* `content: none` so the tape is never generated, not merely hidden */
+  content: none;
+  display: none;
+}
 .pp-receipt__paper .pp-btn:has(> [data-icon]:only-child):hover,
 .pp-receipt__paper .pp-btn:has(> svg:only-child):hover,
 .pp-receipt__paper button:has(> [data-icon]:only-child):hover,
@@ -563,3 +567,4 @@ button.pp-btn,
   transform: none;
   box-shadow: var(--shadow-sm);
 }
+

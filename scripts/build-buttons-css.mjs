@@ -25,8 +25,18 @@ const BARE = [
   ".mm-prepbot-menu-btn", ".mm-tv-btn",
 ];
 
+// TOOLS — a rail of tools is not a pad of notes. These are icon tiles sitting
+// ON receipt paper (the workbook's instrument rail, the manipulatives canvas
+// rail): every tile dressed as a note gave a wall of tape, paper on paper
+// twenty times over. The user asked for these to be plain, 2026-09-25 — their
+// own sheets draw them, lit when they are the tool in use.
+const TOOLS = [
+  ".wb-side__btn", ".wb-side__more", ".wb-side__fam", ".wb-tool", ".bb-tool",
+  ".bb-kit__btn", ".wb-drawbar .pp-btn",
+];
+
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.
-const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE];
+const SKIP = [".pp-plain", ".pp-select-trigger", ".pp-receipt", "svg *", '[class*="blockly"]', ...BARE, ...TOOLS];
 
 // Already notes, each with its own `transform` tilt and tape — a second tilt
 // would double it. A new note class that tilts itself belongs here.
