@@ -133,6 +133,8 @@ export function shiftTable(n, factor, { answer = false } = {}) {
   const rowA = `<tr><td class="ms-down__sign"></td>${cols.map((p) => `<td class="ms-down__cell">${p < top.length ? top[p] : ""}</td>`).join("")}</tr>`;
   const rowB = `<tr class="ms-down__answer"><td class="ms-down__sign">×${factor}</td>${cols
     .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? res[p] : ""}</td>`).join("")}</tr>`;
+  /* multiplying by ten shifts the figures; they are read across, not worked
+     from the right, so this table opens all at once */
   return `<table class="ms-down mm-shift">${head}${rowA}${rowB}</table>`;
 }
 
@@ -189,7 +191,8 @@ export function shortCol(a, b, { answer = false } = {}) {
     .map((p) => `<td class="ms-down__cell">${p === 0 ? b : ""}</td>`).join("")}</tr>`;
   const rowR = `<tr class="ms-down__answer"><td></td>${cols
     .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? (p <= topR ? R[p] : "") : ""}</td>`).join("")}</tr>`;
-  return `<table class="ms-down mm-col">${head}${carry}${rowA}${rowB}${rowR}</table>`;
+  /* one box at a time, from the right, like the board in the tool panel */
+  return `<table class="ms-down mm-col" data-steps="rtl">${head}${carry}${rowA}${rowB}${rowR}</table>`;
 }
 
 /* ── long multiplication ───────────────────────────────────────────────────*/
@@ -223,7 +226,8 @@ export function longCol(a, b, { answer = false } = {}) {
   const topR = String(a * b).length - 1;
   const rowR = `<tr class="ms-down__answer"><td></td>${cols
     .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? (p <= topR ? R[p] : "") : ""}</td>`).join("")}</tr>`;
-  return `<table class="ms-down mm-col mm-long">${head}${rowA}${rowB}${parts}${rowR}</table>`;
+  /* each partial product right to left, then the total the same way */
+  return `<table class="ms-down mm-col mm-long" data-steps="rows-rtl">${head}${rowA}${rowB}${parts}${rowR}</table>`;
 }
 
 /* ── the lattice ───────────────────────────────────────────────────────────*/

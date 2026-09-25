@@ -2614,3 +2614,20 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 
 /* on paper the scissors are not part of the sheet: the child draws the cuts */
 @media print { .fb-cuts { display: none; } }
+
+/* ── one box at a time (interactive.js stepwise) ─────────────────────────────
+   A written sum is worked in an order, and a table with every box open invites
+   a child to write the answer straight across — the one thing the method is
+   there to stop. So the box being asked for is lit, the ones after it wait,
+   and the ones already answered stay open to be corrected. */
+.wb-live .wb-cell.is-waiting,
+.wb-live .wb-answer.is-waiting { opacity: 0.35; }
+.wb-live .wb-cell.is-waiting input,
+.wb-live .wb-answer.is-waiting input { cursor: not-allowed; background: transparent; }
+.wb-live .wb-cell.is-now,
+.wb-live .wb-answer.is-now { box-shadow: 0 0 0 0.6mm #f4c95d; border-radius: 0.8mm; }
+/* on paper every box is simply a box */
+@media print {
+  .wb-cell.is-waiting, .wb-answer.is-waiting { opacity: 1; }
+  .wb-cell.is-now, .wb-answer.is-now { box-shadow: none; }
+}

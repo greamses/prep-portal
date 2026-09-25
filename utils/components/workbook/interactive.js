@@ -226,6 +226,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       slot.appendChild(input);
     });
 
+    /* A written sum is worked in an ORDER — ones first, then tens — and a
+       table with every box open invites a child to write the answer straight
+       across from left to right, which is the one thing the method exists to
+       stop. So a table that says `data-steps` opens one box at a time, the
+       way the written boards in the tool panel do: the next box appears when
+       the one before it has a figure in it, and a box already answered stays
+       open so a mistake can be gone back to. */
+    node.querySelectorAll("[data-steps]").forEach((table) => stepwise(table));
+
     /* Blocks come apart wherever there are blocks — it is not an answer, so
        it is not driven by the key. */
     if (blocks) {
@@ -665,6 +674,74 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).tiles[k]; wrap.__wbTiles?.clear(); dirty(node); save(); });
+  }
+
+
+  /**
+   * One box at a time, in the order the method is worked.
+   *   data-steps="rtl"        right to left across the whole table (a column
+   *                           sum: ones, then tens, then hundreds)
+   *   data-steps="rows-rtl"   row by row down, right to left within each row
+   *                           (a long multiplication: each partial product,
+   *                           then the total)
+   *   data-steps="ltr"        as it is written (rare, but the attribute says
+   *                           so rather than leaving it to chance)
+   */
+  function stepwise(table) {
+    const how = table.dataset.steps || "rtl";
+    const boxes = [...table.querySelectorAll(".wb-cell, .wb-answer")];
+    if (boxes.length < 2) return;
+
+    /* the order the figures are written in */
+    let order = boxes;
+    if (how === "rtl") {
+      order = boxes.slice().reverse();
+    } else if (how === "rows-rtl") {
+      const rows = new Map();
+      boxes.forEach((b) => {
+        const row = b.closest("tr") || table;
+        if (!rows.has(row)) rows.set(row, []);
+        rows.get(row).push(b);
+      });
+      order = [...rows.values()].flatMap((row) => row.slice().reverse());
+    }
+
+    const filled = (b) => {
+      const input = b.querySelector("input, textarea");
+      return !!(input && String(input.value).trim());
+    };
+
+    const show = () => {
+      /* everything up to and including the first empty box is open; what
+         comes after it waits its turn */
+      let open = true;
+      order.forEach((b) => {
+        const isNext = open && !filled(b);
+        b.classList.toggle("is-waiting", !open);
+        b.classList.toggle("is-now", isNext);
+        const input = b.querySelector("input, textarea");
+        if (input) input.disabled = !open;
+        if (isNext) open = false;
+      });
+      /* a table with every box filled has no "now" */
+      table.classList.toggle("is-done", order.every(filled));
+    };
+
+    order.forEach((b) => {
+      const input = b.querySelector("input, textarea");
+      if (!input || input.__wbStep) return;
+      input.__wbStep = true;
+      input.addEventListener("input", show);
+      /* moving on with the keyboard: Enter jumps to the box that just opened */
+      input.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        show();
+        const next = order.find((b2) => b2.classList.contains("is-now"));
+        next?.querySelector("input, textarea")?.focus();
+      });
+    });
+    show();
   }
 
   /* ── two fraction bars, cut until they match ───────────────────────────
@@ -1718,6 +1795,16 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       node.classList.toggle("is-marked-wrong", !allRight);
     });
     checked = true;
+    /* Once the paper has been marked, every box opens: the order mattered
+       while the sum was being worked, and now the child is going back over
+       what they got wrong. */
+    sheet.querySelectorAll("[data-steps]").forEach((table) => {
+      table.querySelectorAll(".wb-cell, .wb-answer").forEach((b) => {
+        b.classList.remove("is-waiting", "is-now");
+        const input = b.querySelector("input, textarea");
+        if (input) input.disabled = false;
+      });
+    });
     showBtn.hidden = false;
     const pct = total ? Math.round((100 * right) / total) : 0;
     score.textContent = total ? `${right} / ${total} right · ${pct}%` : "Nothing to mark yet";

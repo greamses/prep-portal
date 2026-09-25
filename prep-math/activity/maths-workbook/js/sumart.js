@@ -112,7 +112,9 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
     `</tr>`;
 
   return (
-    `<table class="ms-down">` + head + carryRow + rowA + rowB + rowS + `</table>`
+    /* worked ones first: interactive.js opens one box at a time from the
+       right (the same way the written board in the tool panel asks) */
+    `<table class="ms-down" data-steps="rtl">` + head + carryRow + rowA + rowB + rowS + `</table>`
   );
 }
 

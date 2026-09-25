@@ -527,3 +527,39 @@ button.pp-btn,
    the rotation continues here rather than in five copies of the same file. */
 .builder-tabs .builder-tab:nth-child(5) { --pp-note-bg: #ffd7a3; }
 .builder-tabs .builder-tab:nth-child(6) { --pp-note-bg: #b8ece2; --pp-note-tilt: -1.4deg; }
+
+/* ── icons on receipt paper are not notes ─────────────────────────────────
+   A sticky note is a thing you write on and stick to something. An icon
+   button sitting ON a receipt is a control on the paper, and dressing paper
+   in paper reads as clutter — tape over tape, two tilts fighting. So a button
+   whose whole content is an icon loses the note dress inside a receipt and
+   becomes what it is: a small outlined control.
+
+   Buttons with WORDS on them keep the note: a label is something written, and
+   that is what a note is for. */
+.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child),
+.pp-receipt__paper .pp-btn:has(> svg:only-child),
+.pp-receipt__paper button:has(> [data-icon]:only-child),
+.pp-receipt__paper button:has(> svg:only-child) {
+  background: transparent;
+  color: var(--ink, #2a2723);
+  border: var(--border-subtle, 1px solid rgba(42, 39, 35, 0.12));
+  border-radius: 10px;
+  box-shadow: none;
+  transform: none;
+  /* not `inherit`: a parent that is itself a note would hand down the marker
+     face, and these are controls, not writing */
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child)::before,
+.pp-receipt__paper .pp-btn:has(> svg:only-child)::before,
+.pp-receipt__paper button:has(> [data-icon]:only-child)::before,
+.pp-receipt__paper button:has(> svg:only-child)::before { display: none; }
+.pp-receipt__paper .pp-btn:has(> [data-icon]:only-child):hover,
+.pp-receipt__paper .pp-btn:has(> svg:only-child):hover,
+.pp-receipt__paper button:has(> [data-icon]:only-child):hover,
+.pp-receipt__paper button:has(> svg:only-child):hover {
+  background: var(--surface-secondary, #f4f0e8);
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
