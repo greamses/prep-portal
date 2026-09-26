@@ -304,6 +304,124 @@ export function longCol(a, b, { answer = false } = {}) {
   return sheet.html("mm-col mm-long");
 }
 
+/* ── one table of the distribution ─────────────────────────────────────────*/
+
+/**
+ * ONE of the tables a long multiplication is really made of: `a` times a single
+ * place of the multiplier — 42 x 30, or 42 x 2 — written as a column sum of its
+ * own, with its own carries and its own answer.
+ *
+ * Long multiplication writes these two under one another and asks a child to
+ * keep track of which row they are on. Split apart they are two ordinary
+ * multiplications, each true on its own, and the adding at the end is an
+ * ordinary addition. The 0 in 42 x 30 is printed, not left off: it is the
+ * reason that row is ten times the other.
+ */
+export function timesRow(a, d, k, { answer = false } = {}) {
+  const v = a * d * 10 ** k;
+  const da = String(a).length;
+  const mul = d * 10 ** k;
+  const dm = String(mul).length;
+  const top = topOf(v);
+  const cols = Math.max(da, dm, top + 1);
+  const A = figuresOf(a, cols);
+  const M = figuresOf(mul, cols);
+  const V = figuresOf(v, cols);
+  const carries = timesCarries(figuresOf(a, da), d, k);
+  const carrying = carries.some((c) => c != null);
+
+  /* every column is named: unlike an addition, a product is EXPECTED to reach
+     further than the number it started from */
+  const sheet = colSheet({ cols, steps: answer ? null : "rtl" });
+  sheet.tags();
+  let row = 1;
+  const carryRow = carrying ? row++ : -1;
+  const rowA = row++;
+  const rowB = row++;
+  const rowV = row++;
+  if (carrying) sheet.carries(carryRow, carries, { under: rowV, show: answer });
+  for (let p = 0; p < da; p++) sheet.mark(rowA, p, A[p]);
+  sheet.sign(rowB, "×");
+  for (let p = 0; p < dm; p++) sheet.mark(rowB, p, M[p], p < k ? "is-soft" : "");
+  sheet.rule(rowB, { heavy: true });
+  if (!answer) sheet.boxes(rowV, top);
+  else for (let p = top; p >= 0; p--) sheet.mark(rowV, p, V[p]);
+  return sheet.html("mm-col");
+}
+
+/** Where that table carries — for the exercise key, which must count the boxes. */
+export const timesRowCarries = (a, d, k) => timesCarries(figuresOf(a, String(a).length), d, k);
+
+/**
+ * THE ADDING UP AT THE END of a split multiplication. The two products are
+ * written in by the child — they are the answers they have just worked out,
+ * brought down — so this sheet is boxes all the way: the two rows and the
+ * total.
+ */
+export function sumUp(x, y, { answer = false } = {}) {
+  const total = x + y;
+  const top = topOf(total);
+  const cols = Math.max(topOf(x), topOf(y), top) + 1;
+  const carries = addCarries([figuresOf(x, cols), figuresOf(y, cols)], cols);
+  const carrying = carries.some((c) => c != null);
+
+  const sheet = colSheet({ cols, steps: answer ? null : "rtl" });
+  sheet.tags();
+  let row = 1;
+  const carryRow = carrying ? row++ : -1;
+  const rowX = row++;
+  const rowY = row++;
+  const rowT = row++;
+  if (carrying) sheet.carries(carryRow, carries, { under: rowT, show: answer });
+  const put = (row, v) => {
+    const F = figuresOf(v, cols);
+    const high = topOf(v);
+    if (!answer) sheet.boxes(row, high);
+    else for (let p = high; p >= 0; p--) sheet.mark(row, p, F[p]);
+  };
+  put(rowX, x);
+  sheet.sign(rowY, "+");
+  put(rowY, y);
+  sheet.rule(rowY, { heavy: true });
+  put(rowT, total);
+  return sheet.html("mm-col mm-sumup");
+}
+
+/** Where that addition carries — for the key. */
+export const sumUpCarries = (x, y) => {
+  const cols = Math.max(topOf(x), topOf(y), topOf(x + y)) + 1;
+  return addCarries([figuresOf(x, cols), figuresOf(y, cols)], cols);
+};
+
+/* ── criss-cross ───────────────────────────────────────────────────────────*/
+
+/**
+ * The crossing picture: two numbers one above the other and the three passes
+ * drawn over them — straight down the ones, across both ways, straight down the
+ * tens. Each pass is a colour, and the same colour names the box its answer
+ * goes in, so the picture and the working are one thing.
+ */
+export function crissSvg(a, b) {
+  const [a1, a0] = String(a).split("").map(Number);
+  const [b1, b0] = String(b).split("").map(Number);
+  const COL = ["#c0453f", "#2a6ca8", "#3f8f4f"];    // ones, cross, tens
+  const x = [14, 34];                               // tens, ones
+  const y = [10, 31];
+  const dig = (v, i, j) => `<text x="${x[i]}" y="${y[j] + 3.4}" text-anchor="middle"`
+    + ` font-size="9" font-weight="700" fill="#2a2723">${v}</text>`;
+  const line = (x1, y1, x2, y2, c) =>
+    `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="${c}" stroke-width="1.1" stroke-linecap="round" opacity="0.85"/>`;
+  return `<svg viewBox="0 0 48 44" width="32mm" height="29mm" class="mm-criss" role="img"`
+    + ` aria-label="${a} times ${b}, the three passes of the criss-cross">`
+    + line(x[1], y[0] + 5, x[1], y[1] - 5, COL[0])
+    + line(x[0], y[0] + 5, x[1], y[1] - 5, COL[1]) + line(x[1], y[0] + 5, x[0], y[1] - 5, COL[1])
+    + line(x[0], y[0] + 5, x[0], y[1] - 5, COL[2])
+    + dig(a1, 0, 0) + dig(a0, 1, 0) + dig(b1, 0, 1) + dig(b0, 1, 1)
+    + `<path d="M6 ${y[1] + 7}H42" stroke="#2a2723" stroke-width="1"/>`
+    + `<text x="4" y="${y[1] + 3.4}" text-anchor="middle" font-size="8" fill="#6b655c">×</text>`
+    + `</svg>`;
+}
+
 /* ── the lattice ───────────────────────────────────────────────────────────*/
 
 /**

@@ -26,6 +26,7 @@ import { mountTooltips, hideTip } from "/utils/components/tooltip.js";
 import { needCss, openPanel } from "./panels.js";
 import { BOARDS } from "/utils/components/boards/index.js";
 import { mountBoard } from "/utils/components/boards/sheet.js";
+import { mountCounters } from "./counters.js";
 import { makeFoldable, unFoldable, foldAlong } from "./fold.js";
 import { mountBalance } from "./balance.js";
 import { mountPicto, rowRight } from "./picto.js";
@@ -144,6 +145,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.code ||= {};     // programs written in a code box, and what they printed
     r.chance ||= {};   // dice rolled, and cards drawn
     r.split ||= {};    // fraction bars cut to the same denominator
+    r.counters ||= {}; // tens and ones taken out and pushed about
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -252,6 +254,19 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
     /* dice to roll and a pack to draw from: the experiment itself, never
        marked — what the child reads off it is marked in the boxes beside it */
+    /* counters: a ten and a one, taken out of the tray as often as you like.
+       Working, never marked — what it comes to goes in a box beside it. */
+    node.querySelectorAll("[data-counters]").forEach((box, k) => {
+      box.__wbCounters = mountCounters(box, {
+        saved: rec(idx).counters[`c${k}`] || null,
+        onChange: (now, before) => {
+          rec(idx).counters[`c${k}`] = now;
+          step(box, () => { rec(idx).counters[`c${k}`] = before; box.__wbCounters?.set(before); dirty(node); save(); });
+          dirty(node); save();
+        },
+      });
+    });
+
     node.querySelectorAll("[data-roll]").forEach((box, k) => {
       box.__wbChance = mountChance(box, {
         saved: rec(idx).chance[`d${k}`] || null,
@@ -328,6 +343,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-tiles]").forEach((t) => { t.__wbTiles?.dispose(); t.__wbTiles = null; t.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-split]").forEach((c) => { c.__wbSplit?.dispose(); c.__wbSplit = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-counters]").forEach((c) => { c.__wbCounters?.dispose(); c.__wbCounters = null; });
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
@@ -742,7 +758,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
          table it is the next row under it that is written in, so a table with a
          carry row over every row keeps them apart. */
       if (box.dataset.crow != null) {
-        return { box, after: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col - 1}"]`) };
+        return {
+          box,
+          after: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col - 1}"]`),
+          /* the box the carry is carried INTO: once that is written the carry
+             has been used up */
+          into: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col}"]`),
+        };
       }
       let row = (box.closest("tr") || box).nextElementSibling;
       while (row && !row.querySelector("[data-col]")) row = row.nextElementSibling;
@@ -769,8 +791,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         if (isNext) open = false;
       });
       spare.forEach((b) => { shut(b, true); b.classList.remove("is-now", "is-written"); });
-      carries.forEach(({ box, after }) => {
-        const ready = !after || filled(after);
+      carries.forEach(({ box, after, into }) => {
+        /* A carry is a note to yourself about the next column, and once that
+           column has been written it has been USED. It goes away then, the way
+           the board in the tool panel rubs its carries out between rows: a
+           figure still sitting over a column that is already answered is read
+           as part of the answer. */
+        const ready = (!after || filled(after)) && !(into && filled(into));
         shut(box, !ready);
         box.classList.toggle("is-written", ready && filled(box));
       });

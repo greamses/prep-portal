@@ -2615,6 +2615,73 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* on paper the scissors are not part of the sheet: the child draws the cuts */
 @media print { .fb-cuts { display: none; } }
 
+/* ── counters: a ten and a one ─────────────────────────────────────────────
+   A tray you take from and a mat you push them about on (counters.js). Printed,
+   it is the tray, the two counters and an empty mat, so the same question can
+   be done with real counters on a table. */
+.ct-wrap { margin: 2mm 0 3mm; width: fit-content; }
+.ct-tray {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  padding: 1.4mm 2mm;
+  background: #f4f0e8;
+  border: 0.3mm solid #ded8cc;
+  border-radius: 1.2mm;
+}
+.ct-take { padding: 0; background: none; border: 0; line-height: 0; cursor: pointer; }
+.ct-take:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 1mm; }
+.ct-tray__say {
+  font-family: var(--font-mono), monospace;
+  font-size: 7.5pt;
+  color: #6b655c;
+}
+.ct-mat {
+  position: relative;
+  width: 118mm;
+  height: var(--ct-h, 44mm);
+  margin-top: 1.5mm;
+  background:
+    radial-gradient(circle at 1mm 1mm, rgba(42, 39, 35, 0.12) 0.25mm, transparent 0.3mm) 0 0 / 6mm 6mm;
+  border: 0.35mm dashed #b8b1a4;
+  border-radius: 1.6mm;
+  touch-action: none;
+}
+.ct-piece {
+  position: absolute;
+  line-height: 0;
+  cursor: grab;
+  user-select: none;
+}
+.ct-piece.is-held { cursor: grabbing; filter: drop-shadow(0 1mm 1.4mm rgba(20, 19, 15, 0.3)); z-index: 3; }
+.ct-piece.is-trade { animation: ct-nudge 1.6s ease-in-out infinite; }
+.ct-piece:focus-visible { outline: 0.5mm solid #f4c95d; outline-offset: 0.6mm; border-radius: 50%; }
+.ct-piece__n {
+  position: absolute;
+  right: -1mm;
+  bottom: -0.6mm;
+  padding: 0 0.8mm;
+  font: 700 7pt/1.5 var(--font-mono), monospace;
+  color: #14130f;
+  background: #fffdf8;
+  border: 0.25mm solid #2a2723;
+  border-radius: 1mm;
+}
+.ct-read {
+  margin: 1.2mm 0 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 9pt;
+  font-weight: 700;
+  color: #2a6ca8;
+  min-height: 4mm;
+}
+@keyframes ct-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.8mm); }
+}
+/* on paper the mat is empty and says nothing — the counters go on it by hand */
+@media print { .ct-read { display: none; } }
+
 /* ── one box at a time (interactive.js stepwise) ─────────────────────────────
    A written sum is worked in an ORDER, and a table of empty boxes invites a
    child to fill it straight across — the one thing the column method is there

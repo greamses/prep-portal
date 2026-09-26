@@ -28,10 +28,12 @@
 import {
   digitsOf, groupsHtml, arraySvg, jumpsSvg, shiftTable, blockRowsHtml, partsOf,
   gridTable, shortCol, longCol, latticeTable, carriesOf,
+  timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg,
 } from "./mulart.js";
 import { traysSvg, SHAPE_NAMES } from "./shapes.js";
 import { levelOf } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
+import { mat } from "/utils/components/workbook/counters.js";
 
 const box = () => `<span class="rw-answer"></span>`;
 const ask = (html) => `<p class="wb-ask">${html}</p>`;
@@ -65,10 +67,13 @@ export const MUL_GROUPS = [
   { id: "mul-groups", chapter: "Chapter 8 · Multiplying", label: "Equal groups" },
   { id: "mul-arrays", label: "Arrays and jumps" },
   { id: "mul-facts", label: "Times tables and tens" },
-  { id: "mul-blocks", label: "Multiplying with blocks" },
+  { id: "mul-table", label: "Building the table" },
+  { id: "mul-blocks", label: "Blocks and counters" },
   { id: "mul-grid", label: "The grid method" },
   { id: "mul-column", label: "Short and long multiplication" },
+  { id: "mul-split", label: "Splitting the multiplier" },
   { id: "mul-lattice", label: "The lattice method" },
+  { id: "mul-criss", label: "Criss-cross" },
   { id: "mul-words", label: "Word problems" },
 ];
 
@@ -599,19 +604,271 @@ const mulWords = {
   },
 };
 
+/* ═══ counters ═════════════════════════════════════════════════════════════
+   The blocks show ten; a counter only SAYS ten. Going from one to the other is
+   the step from counting to place value, and multiplying is where it pays off:
+   four lots of 13 is four tens and twelve ones, and the twelve ones will not
+   stay twelve — ten of them trade for another ten. A child who has done that
+   trade with their hands has met carrying before it is ever written down. */
+
+const mulCounters = {
+  id: "mul-counters",
+  group: "mul-blocks",
+  label: "Multiplying with counters",
+  blurb: "Take tens and ones out of the tray, make the lots, and trade ten ones for a ten.",
+  heading: "Make it with counters",
+  instruction: () =>
+    "Take counters out of the tray and lay out every lot. Push two counters together to "
+    + "pile them up. When ten ones are in one pile, tap it: they trade for a single ten.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o) {
+    const lots = r.int(2, tier(o) === "gentle" ? 3 : tier(o) === "middle" ? 4 : 5);
+    const t = r.int(1, tier(o) === "gentle" ? 2 : 3);
+    const u = r.int(tier(o) === "gentle" ? 2 : 4, 9);
+    return { lots, t, u };
+  },
+  render(item) {
+    const each = item.t * 10 + item.u;
+    return lead(`${item.lots} × ${each}`)
+      + ask(`Lay out <b>${item.lots}</b> lots of <b>${each}</b> — that is ${item.t} ten${item.t === 1 ? "" : "s"} `
+        + `and ${item.u} ones, ${item.lots} times over.`)
+      + mat({ say: `a ten and a one — take as many as you need`, mm: 52 })
+      + ask(`${item.lots} × ${each} = ${box()}`);
+  },
+  worked() {
+    return worked(
+      lead(`4 × 13`)
+      + say(`Four lots of 1 ten and 3 ones: four tens, and twelve ones. Twelve ones will not `
+        + `stay twelve — ten of them trade for one more ten. Five tens and two ones. 4 × 13 = 52.`));
+  },
+  key(item) {
+    return [want.num(item.lots * (item.t * 10 + item.u))];
+  },
+  answer(item) {
+    const each = item.t * 10 + item.u;
+    return [`${item.lots} × ${each} = ${item.lots * each}`];
+  },
+};
+
+/* ═══ building the table ═══════════════════════════════════════════════════
+   Before you multiply BY a number you write ITS table out — 42, 84, 126, 168 —
+   and every row after the first is the row above it and another 42. That is
+   what a times table is, and a child who has built one has a ready reckoner
+   beside them for the multiplication that follows. It is also the honest answer
+   to "I do not know my 42 times table": nobody does. You build it. */
+
+const tableRows = (o) => ({ gentle: 5, middle: 7, stretch: 9 }[tier(o)]);
+
+const mulTableBuild = {
+  id: "mul-table-build",
+  group: "mul-table",
+  label: "Build the table",
+  blurb: "Write out the table of a number — each row is the one above and another one of it.",
+  heading: "Build the table",
+  instruction: () =>
+    "Fill the table in from the top. Every row is the row above it ADD the number again, "
+    + "so you never multiply twice — you add.",
+  cols: 2,
+  defaultCount: 2,
+  make(r, o) {
+    return { n: numOf(r, o, 2), rows: tableRows(o) };
+  },
+  render(item) {
+    const rows = Array.from({ length: item.rows }, (_, i) => i + 1).map((k) => `
+      <li class="mm-build__row">
+        <span class="mm-build__say">${item.n} × ${k}</span>
+        <span class="mm-build__is">=</span>
+        ${box()}
+      </li>`).join("");
+    return lead(`The table of ${item.n}`) + `<ol class="mm-build">${rows}</ol>`;
+  },
+  worked() {
+    const n = 14;
+    return worked(
+      lead(`The table of ${n}`)
+      + `<ol class="mm-build">${[1, 2, 3].map((k) => `
+        <li class="mm-build__row"><span class="mm-build__say">${n} × ${k}</span>
+        <span class="mm-build__is">=</span><b>${n * k}</b></li>`).join("")}</ol>`
+      + say(`14. Then 14 and 14 is 28. Then 28 and 14 is 42 — never a new sum, `
+        + `always the last one and one more 14.`));
+  },
+  key(item) {
+    return Array.from({ length: item.rows }, (_, i) => want.num(item.n * (i + 1)));
+  },
+  answer(item) {
+    return [Array.from({ length: item.rows }, (_, i) => item.n * (i + 1)).join(", ")];
+  },
+};
+
+/* ═══ splitting the multiplier ═════════════════════════════════════════════
+   42 × 32 is 42 × 30 and 42 × 2. Written out long, those two are rows of one
+   sum and a child has to keep hold of which row they are on. Written out here
+   they are two ordinary multiplications, each finished before the next begins,
+   and one ordinary addition at the end: the same working, in three pieces a
+   child can each be right about. */
+
+function splitEx(id, da, label, count) {
+  return {
+    id,
+    group: "mul-split",
+    label,
+    blurb: "Break the multiplier into its places, do each table on its own, then add.",
+    heading: "Split the multiplier",
+    instruction: () =>
+      "The multiplier is two numbers stuck together: 32 is 30 and 2. Do the two "
+      + "multiplications SEPARATELY, then write both answers into the last sum and add them.",
+    cols: 1,
+    defaultCount: count,
+    make(r, o) {
+      let b = numOf(r, o, 2);
+      while (b % 10 === 0) b = numOf(r, o, 2);
+      return { a: numOf(r, o, da), b };
+    },
+    render(item) {
+      const t = Math.floor(item.b / 10);
+      const u = item.b % 10;
+      return lead(`${item.a} × ${item.b}`)
+        + ask(`${item.b} is <b>${t * 10}</b> and <b>${u}</b>.`)
+        + `<div class="mm-split">`
+        + `<div class="mm-split__one"><p class="mm-split__tag">${item.a} × ${t * 10}</p>`
+        + `${timesRow(item.a, t, 1)}</div>`
+        + `<div class="mm-split__one"><p class="mm-split__tag">${item.a} × ${u}</p>`
+        + `${timesRow(item.a, u, 0)}</div>`
+        + `<div class="mm-split__one"><p class="mm-split__tag">Add them</p>`
+        + `${sumUp(item.a * t * 10, item.a * u)}</div>`
+        + `</div>`;
+    },
+    worked() {
+      const [a, b] = da === 2 ? [42, 32] : [213, 24];
+      const t = Math.floor(b / 10);
+      const u = b % 10;
+      return worked(
+        lead(`${a} × ${b}`)
+        + `<div class="mm-split">`
+        + `<div class="mm-split__one"><p class="mm-split__tag">${a} × ${t * 10}</p>`
+        + `${timesRow(a, t, 1, { answer: true })}</div>`
+        + `<div class="mm-split__one"><p class="mm-split__tag">${a} × ${u}</p>`
+        + `${timesRow(a, u, 0, { answer: true })}</div>`
+        + `<div class="mm-split__one"><p class="mm-split__tag">Add them</p>`
+        + `${sumUp(a * t * 10, a * u, { answer: true })}</div>`
+        + `</div>`
+        + say(`${a} × ${t * 10} = ${a * t * 10} and ${a} × ${u} = ${a * u}. `
+          + `${a * t * 10} + ${a * u} = ${a * b}, which is ${a} × ${b}.`));
+    },
+    key(item) {
+      const t = Math.floor(item.b / 10);
+      const u = item.b % 10;
+      const out = [];
+      const figures = (v) => {
+        const V = digitsOf(v, String(v).length);
+        for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
+      };
+      const frees = (where) => where.forEach((c) => { if (c != null) out.push(want.free()); });
+      frees(timesRowCarries(item.a, t, 1));
+      figures(item.a * t * 10);
+      frees(timesRowCarries(item.a, u, 0));
+      figures(item.a * u);
+      /* the adding up: its carries, then the two products brought down and the
+         total — every box on that sheet is the child's to write */
+      const x = item.a * t * 10;
+      const y = item.a * u;
+      frees(sumUpCarries(x, y));
+      figures(x);
+      figures(y);
+      figures(x + y);
+      return out;
+    },
+    answer(item) {
+      return [`${item.a} × ${item.b} = ${item.a * item.b}`];
+    },
+  };
+}
+
+/* ═══ criss-cross ══════════════════════════════════════════════════════════
+   Straight down the ones, across both ways, straight down the tens: three
+   passes and the answer falls out. It is the grid method with the boxes taken
+   away — the cross IS the two middle boxes added — and it is the quickest way
+   to multiply two two-figure numbers in your head, which is the reason to
+   teach it. */
+
+const mulCriss = {
+  id: "mul-criss-22",
+  group: "mul-criss",
+  label: "Criss-cross — 2-digit × 2-digit",
+  blurb: "Down the ones, across both ways, down the tens.",
+  heading: "Criss-cross",
+  instruction: () =>
+    "Three passes. DOWN the ones: multiply them. ACROSS: multiply both ways and add the "
+    + "two. DOWN the tens: multiply them. Then put the three together — ones, tens, "
+    + "hundreds — carrying anything over ten into the next one.",
+  cols: 2,
+  defaultCount: 3,
+  make(r, o) {
+    let a = numOf(r, o, 2);
+    let b = numOf(r, o, 2);
+    if (a % 10 === 0) a += 1;
+    if (b % 10 === 0) b += 1;
+    return { a, b };
+  },
+  render(item) {
+    const [a1, a0] = String(item.a).split("").map(Number);
+    const [b1, b0] = String(item.b).split("").map(Number);
+    return lead(`${item.a} × ${item.b}`)
+      + `<div class="mm-crissart">${crissSvg(item.a, item.b)}`
+      + `<ol class="mm-passes">`
+      + `<li class="mm-pass mm-pass--ones"><span>Down the ones: ${a0} × ${b0}</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--cross"><span>Across: (${a1} × ${b0}) + (${a0} × ${b1})</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--tens"><span>Down the tens: ${a1} × ${b1}</span> = ${box()}</li>`
+      + `</ol></div>`
+      + ask(`Put them together: ${item.a} × ${item.b} = ${box()}`);
+  },
+  worked() {
+    const [a, b] = [42, 32];
+    return worked(
+      lead(`${a} × ${b}`)
+      + `<div class="mm-crissart">${crissSvg(a, b)}`
+      + `<ol class="mm-passes">`
+      + `<li class="mm-pass mm-pass--ones"><span>Down the ones: 2 × 2</span> = <b>4</b></li>`
+      + `<li class="mm-pass mm-pass--cross"><span>Across: (4 × 2) + (2 × 3)</span> = <b>14</b></li>`
+      + `<li class="mm-pass mm-pass--tens"><span>Down the tens: 4 × 3</span> = <b>12</b></li>`
+      + `</ol></div>`
+      + say(`4 ones. 14 tens — that is 4 tens and one hundred carried. 12 hundreds and `
+        + `the 1 carried is 13 hundreds. So 1344.`));
+  },
+  key(item) {
+    const [a1, a0] = String(item.a).split("").map(Number);
+    const [b1, b0] = String(item.b).split("").map(Number);
+    return [
+      want.num(a0 * b0),
+      want.num(a1 * b0 + a0 * b1),
+      want.num(a1 * b1),
+      want.num(item.a * item.b),
+    ];
+  },
+  answer(item) {
+    return [`${item.a} × ${item.b} = ${item.a * item.b}`];
+  },
+};
+
+
 export const MUL_EXERCISES = [
   mulEqualGroups, mulDrawGroups,
   mulArray, mulJumps,
   mulFacts, mulTens,
-  mulBlocks,
+  mulBlocks, mulCounters,
   gridEx("mul-grid-21", 2, 1, "Grid — 2-digit × 1-digit", 4),
   gridEx("mul-grid-22", 2, 2, "Grid — 2-digit × 2-digit", 3),
   gridEx("mul-grid-32", 3, 2, "Grid — 3-digit × 2-digit", 2),
   shortEx("mul-short-21", 2, "Short — 2-digit × 1-digit", 4),
   shortEx("mul-short-31", 3, "Short — 3-digit × 1-digit", 4),
   shortEx("mul-short-41", 4, "Short — 4-digit × 1-digit", 4),
+  mulTableBuild,
   longEx("mul-long-22", 2, "Long — 2-digit × 2-digit", 3),
   longEx("mul-long-32", 3, "Long — 3-digit × 2-digit", 2),
+  splitEx("mul-split-22", 2, "Split — 2-digit × 2-digit", 2),
+  splitEx("mul-split-32", 3, "Split — 3-digit × 2-digit", 2),
+  mulCriss,
   latticeEx("mul-lattice-22", 2, "Lattice — 2-digit × 2-digit", 3),
   latticeEx("mul-lattice-32", 3, "Lattice — 3-digit × 2-digit", 2),
   mulWords,

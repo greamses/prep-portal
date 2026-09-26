@@ -33,6 +33,10 @@ const BARE = [
 const TOOLS = [
   ".wb-side__btn", ".wb-side__more", ".wb-side__fam", ".wb-tool", ".bb-tool",
   ".bb-kit__btn", ".wb-drawbar .pp-btn",
+  /* a counter on the mat: a token worth ten or one, which the child pushes
+     about. It answers to the keyboard, so it is a button as far as the browser
+     is concerned, and paper and tape on it made it a note worth 10 */
+  ".ct-piece",
 ];
 
 // Not buttons, or must not be paper. `.pp-plain` is the opt-out.

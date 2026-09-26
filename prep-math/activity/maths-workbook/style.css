@@ -645,6 +645,81 @@ thead .pv-chart__side {
 .mm-part--last .ms-down__sign { border-bottom: 0.7mm solid #2a2723; }
 .mm-long .ms-down__answer .ms-down__cell { border-top: 0; }
 
+/* ── building the table ────────────────────────────────────────────────────
+   A ready reckoner, written down the page: every row the one above it and
+   another of the same number. */
+.mm-build {
+  list-style: none;
+  margin: 2mm 0 1mm;
+  padding: 0;
+  display: grid;
+  gap: 1.4mm;
+  width: fit-content;
+}
+.mm-build__row {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  font-size: 12pt;
+  font-weight: 700;
+}
+.mm-build__say { min-width: 22mm; text-align: right; }
+.mm-build__is { color: #6b655c; }
+.mm-build__row .rw-answer { width: 20mm; }
+
+/* ── splitting the multiplier ──────────────────────────────────────────────
+   Three sums side by side where the paper is wide enough and one under
+   another where it is not — the two tables, then the adding up. */
+.mm-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6mm;
+  margin: 2mm 0;
+}
+.mm-split__tag {
+  margin: 0 0 1mm;
+  font-family: var(--font-mono), monospace;
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #6b655c;
+}
+/* the 0 that holds the place in 42 x 30: written, but not worked out */
+.ms-col__mark.is-soft { color: rgba(42, 39, 35, 0.45); }
+
+/* ── criss-cross ───────────────────────────────────────────────────────────
+   The picture and the three passes it draws, the pass and its line in the same
+   colour so the working and the picture are one thing. */
+.mm-crissart {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  flex-wrap: wrap;
+  margin: 2mm 0 1mm;
+}
+.mm-passes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.6mm;
+}
+.mm-pass {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  font-size: 11pt;
+  font-weight: 700;
+  padding-left: 3mm;
+  border-left: 1.2mm solid currentColor;
+}
+.mm-pass span { color: #2a2723; }
+.mm-pass .rw-answer { width: 18mm; }
+.mm-pass--ones { color: #c0453f; }
+.mm-pass--cross { color: #2a6ca8; }
+.mm-pass--tens { color: #3f8f4f; }
+
 /* the lattice: a diagonal through every cell, tens above it and ones below */
 .mm-lat { border-collapse: collapse; font: 700 13pt/1 "JetBrains Mono", monospace; }
 .mm-lat th { width: 16mm; height: 8mm; text-align: center; }
