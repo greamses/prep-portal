@@ -74,7 +74,14 @@ const wrap = (list, n = 6) => {
 
 // id-level weight: `:not(#pp-plain)` matches everything and counts as an id,
 // so the paper beats a page's `.ctrl-btn { background: #333 }`.
-const B = `:is(\n${wrap(BUTTONS, 4)}\n):not(\n${wrap([...SKIP, ...NOTE_ALREADY])}\n):not(#pp-plain)`;
+// WHERE THE CATCH-ALL DOES NOT GO. A page that says `data-plain-buttons` on its
+// <html> keeps the buttons it draws itself — the games, which are drawn as the
+// game they are (a HUD, a keypad, a board) and were dressed as a pad of notes
+// by a change meant for the rest of the site. Written with :where() so it costs
+// no specificity: every rule below lands exactly as hard as it did.
+const HERE = `:where(html:not([data-plain-buttons]))`;
+
+const B = `${HERE} :is(\n${wrap(BUTTONS, 4)}\n):not(\n${wrap([...SKIP, ...NOTE_ALREADY])}\n):not(#pp-plain)`;
 const sel = (suffix) => B + suffix;
 const is = (list) => `:is(${list.join(", ")})`;
 
@@ -102,10 +109,12 @@ const css = `@import url("https://fonts.googleapis.com/css2?family=Shantell+Sans
 
    Left alone: classes that are notes already (their own tilt — a second
    would double it), dropdown triggers, receipt cards, SVG hit areas,
-   Blockly's chrome, and \`.pp-plain\`, the opt-out.
+   Blockly's chrome, \`.pp-plain\` (the opt-out for one button), and any page
+   whose <html> says \`data-plain-buttons\` — the games, which keep the
+   controls they were drawn with.
    ========================================================================= */
 
-:where(${BUTTONS.join(", ")}):where(:not(${SKIP.join(", ")})) {
+${HERE} :where(${BUTTONS.join(", ")}):where(:not(${SKIP.join(", ")})) {
   position: relative;
   transition:
     rotate var(--duration-smooth, 0.2s) var(--ease-bounce, ease),
@@ -118,7 +127,7 @@ const css = `@import url("https://fonts.googleapis.com/css2?family=Shantell+Sans
    surfaces, which flip to cream in dark mode and vanish on a pastel. Every
    note re-declares the light values for its own contents. Zero weight: it
    only has to beat inheritance from :root. */
-:where(${BUTTONS.join(", ")}, ${NOTE_ALREADY.join(", ")}):where(:not(${SKIP.join(", ")})) {
+${HERE} :where(${BUTTONS.join(", ")}, ${NOTE_ALREADY.join(", ")}):where(:not(${SKIP.join(", ")})) {
   --ink: #2a2723;
   --text-primary: #2a2723;
   --text-secondary: #6b655c;
