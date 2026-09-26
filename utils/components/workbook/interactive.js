@@ -2171,7 +2171,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
 
   /* the working paper, in the order a child would reach for it */
   const SHEETS = [
-    ...["longdiv", "column", "times", "fraction"].map((id) => ({
+    ...["column", "times", "criss", "shortdiv", "longdiv", "fraction"].map((id) => ({
       id,
       label: BOARDS[id].name,
       icon: TOOL_ICONS[id],
@@ -2480,7 +2480,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     /* The four written boards all show, none of them behind the arrow: they are
        what a child is sent to the rail FOR, and a multiplication hidden one
        click inside an addition is a multiplication nobody finds. */
-    { id: "work", label: "Working out", all: true, of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
+    { id: "work", label: "Working out", all: true, of: [
+      asSheet("column"), asSheet("times"), asSheet("criss"),
+      asSheet("shortdiv"), asSheet("longdiv"), asSheet("fraction"),
+    ] },
     /* No abacus of its own: the three frames are on the Manipulatives canvas,
        which is right here in the same family, and a second copy of them in a
        panel of its own was one more thing to keep working for no more that a

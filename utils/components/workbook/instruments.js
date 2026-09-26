@@ -134,6 +134,19 @@ export const TOOL_ICONS = {
   fraction: glyph(
     r(7.4, 3, 9.2, 6, GOLD, 1.6) + r(3.4, 10.9, 17.2, 2.2, LOUD, 1.1) + r(7.4, 15, 9.2, 6, PAPER, 1.6)
   ),
+  /* criss-cross: the two passes, with the crossing marked */
+  criss: glyph(board(
+    bar(4, 5, 8.6, 9.6, 1.9, LOUD) + bar(8.6, 5, 4, 9.6, 1.9, QUIET)
+      + `<circle cx="6.3" cy="7.3" r="1.5" fill="${LEAF}"/>`
+  )),
+  /* short division: the bus stop, with the carried figure under the bar */
+  shortdiv: glyph(
+    r(10.2, 3, 10.4, 3, GOLD, 1.5) +
+      `<path d="M7.2 8.2h14.2v2.4H9.8c.6 1.2.9 2.6.9 4.2s-.3 3-.9 4.2H7.2c.8-1.2 1.2-2.6 1.2-4.2s-.4-3-1.2-4.2z" fill="${LOUD}"/>` +
+      r(11.4, 12.6, 9, 3.4, PAPER, 1.4) +
+      `<circle cx="13.2" cy="18.4" r="1.6" fill="${LEAF}"/>` +
+      r(2.4, 12.8, 3.6, 3, PAPER, 1.2)
+  ),
   /* Algebra Moves: an unknown box, and the move that keeps both sides level */
   gm: glyph(
     r(2.6, 6.4, 8, 11.2, GOLD, 1.6) +

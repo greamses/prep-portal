@@ -1842,7 +1842,9 @@ svg[data-foldable]:hover line[data-foldline] { stroke-width: 0.9; }
    the very blocks the question is about — and they are the thing to be counted.
    Above the picture, with room made for it. (Descendant, not child: a block sum
    is two piles inside one host.) */
-.wb-drawhost:has(svg[data-blocks]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
+/* Room is MADE for it rather than taken from the question above: the host
+   grows a strip at the top and the bar sits in that, so it is clear of the
+   blocks without landing on the line of the question before it. */
 .wb-live .wb-drawhost:has(svg[data-blocks]) { padding-top: 8mm; }
 
 /* the paper's own little sticky notes: smaller, with a smaller strip of tape,

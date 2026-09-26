@@ -22,6 +22,8 @@ import * as longdiv from "./longdiv.js";
 import * as column from "./column.js";
 import * as times from "./times.js";
 import * as fraction from "./fraction.js";
+import * as criss from "./criss.js";
+import * as shortdiv from "./shortdiv.js";
 import { writeNum } from "./num.js";
 
 export const BOARDS = {
@@ -93,6 +95,46 @@ export const BOARDS = {
     reset: times.resetWork,
     cells: times.cellsOf,
     sheet: times.sheetOf,
+  },
+  criss: {
+    id: "criss",
+    name: "Criss-cross",
+    short: "Criss-cross",
+    sign: "×",
+    blurb: "Down the ones, across both ways, down the tens — a column of the answer at a time.",
+    make: criss.makeCriss,
+    fields: [
+      { n: "a", label: "Number", aria: "The number being multiplied" },
+      { n: "b", label: "Times", aria: "What you are multiplying by" },
+    ],
+    read: (t) => ({ a: writeNum(t.a, 0, t.base), b: writeNum(t.b, 0, t.base) }),
+    set: (t, v) => criss.setWritten(t, v.a, v.b),
+    ask: criss.ask,
+    answer: criss.answer,
+    showNext: criss.showNext,
+    reset: criss.resetWork,
+    cells: criss.cellsOf,
+    sheet: criss.sheetOf,
+  },
+  shortdiv: {
+    id: "shortdiv",
+    name: "Short division",
+    short: "Short division",
+    sign: "÷",
+    blurb: "Divide one figure at a time and carry what is left into the next.",
+    make: shortdiv.makeShortDiv,
+    fields: [
+      { n: "dividend", label: "Number being divided", aria: "The number being divided" },
+      { n: "divisor", label: "Divided by", aria: "What you are dividing by — one figure" },
+    ],
+    read: (t) => ({ dividend: writeNum(t.n, 0, t.base), divisor: writeNum(t.d, 0, t.base) }),
+    set: (t, v) => shortdiv.setWritten(t, v.dividend, v.divisor),
+    ask: shortdiv.ask,
+    answer: shortdiv.answer,
+    showNext: shortdiv.showNext,
+    reset: shortdiv.resetWork,
+    cells: shortdiv.cellsOf,
+    sheet: shortdiv.sheetOf,
   },
   fraction: {
     id: "fraction",
