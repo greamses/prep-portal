@@ -9,7 +9,10 @@
    Everything above is identical between them. What differs is only the method
    itself and how the sum is TYPED — two boxes with a ÷ between them, or one box
    holding "269 + 182". So the panel is written once against this registry, and
-   a third method later is a new module and an entry here, not a third panel.
+   another method later is a new module and an entry here, not another panel.
+   Two of the six are a second way to work a sum one of the others already does
+   — short division beside the long one, the criss-cross beside the column — and
+   that is what the registry is FOR.
 
    `read` and `set` are the pair that make the sum row work: read puts the sum
    the board is showing into the boxes, set takes what was typed and puts it on
@@ -33,6 +36,8 @@ import * as longdiv from "./longdiv.js";
 import { stageOf, layStage, stageSentence, groupNote, setAside } from "./divblocks.js";
 import * as column from "./column.js";
 import * as times from "./times.js";
+import * as criss from "./criss.js";
+import * as shortdiv from "./shortdiv.js";
 import * as fraction from "./fraction.js";
 
 export const SHEETS = {
@@ -112,6 +117,44 @@ export const SHEETS = {
        number a tool is working ON. */
     value: times.multiplicandOf,
     setValue: times.setProduct,
+  },
+  criss: {
+    name: "criss-cross",
+    sep: "×",
+    fields: [
+      { n: "a", aria: "The number being multiplied" },
+      { n: "b", aria: "What you are multiplying by" },
+    ],
+    read: (t) => ({ a: writeNum(t.a, 0, t.base), b: writeNum(t.b, 0, t.base) }),
+    set: (t, v) => criss.setWritten(t, v.a, v.b),
+    ask: criss.ask,
+    answer: criss.answer,
+    showNext: criss.showNext,
+    reset: criss.resetWork,
+    cells: criss.cellsOf,
+    /* The number being multiplied, not the answer — sync passes round the
+       number a tool is working ON. */
+    value: criss.multiplicandOf,
+    setValue: criss.setMultiplicand,
+  },
+  shortdiv: {
+    name: "short division",
+    sep: "÷",
+    fields: [
+      { n: "dividend", aria: "The number being divided" },
+      { n: "divisor", aria: "What you are dividing by — one figure" },
+    ],
+    read: (t) => ({ dividend: writeNum(t.n, 0, t.base), divisor: writeNum(t.d, 0, t.base) }),
+    set: (t, v) => shortdiv.setWritten(t, v.dividend, v.divisor),
+    ask: shortdiv.ask,
+    answer: shortdiv.answer,
+    showNext: shortdiv.showNext,
+    reset: shortdiv.resetWork,
+    cells: shortdiv.cellsOf,
+    /* Not the dividend: what is still to be divided, which shrinks as the sum
+       is worked — the same as the long division's. */
+    value: shortdiv.leftToDivide,
+    setValue: shortdiv.setDividend,
   },
   fraction: {
     name: "fraction sum",

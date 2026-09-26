@@ -71,6 +71,23 @@ export function drawSheet(g, W, H, sheet, c) {
   }
   g.stroke();
 
+  /* A line drawn from one figure to another, because the method is about the
+     PAIR and not about either of them: the crossings of a criss-cross. Under
+     the figures rather than over them, so the pen never runs through a numeral,
+     and in the same accent as the cell being asked for — the lines say which
+     pairs the question is about and the box says where the answer goes. */
+  for (const k of sheet.links || []) {
+    g.save();
+    g.strokeStyle = rgba(accent, 0.75);
+    g.lineWidth = Math.max(1.6, rh * 0.045);
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(colX(k.from.col) + cw / 2, rowY(k.from.row) + rh * 0.78);
+    g.lineTo(colX(k.to.col) + cw / 2, rowY(k.to.row) + rh * 0.22);
+    g.stroke();
+    g.restore();
+  }
+
   /* Where the next figure goes, so the question and the place on the page are
      the same fact seen twice. */
   if (sheet.ask) {

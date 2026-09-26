@@ -2477,7 +2477,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       asMode("pencil"), asMode("eraser"),
       asTool("compass"), asTool("ruler"), asTool("protractor"), asTool("setsquare"),
     ] },
-    /* The four written boards all show, none of them behind the arrow: they are
+    /* Every written board shows, none of them behind the arrow: they are
        what a child is sent to the rail FOR, and a multiplication hidden one
        click inside an addition is a multiplication nobody finds. */
     { id: "work", label: "Working out", all: true, of: [

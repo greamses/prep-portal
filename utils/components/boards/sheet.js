@@ -39,7 +39,8 @@ const ICONS = {
  * Put a board on the page.
  *
  *   host      where it goes
- *   variant   "longdiv" | "column" | "times"
+ *   variant   any key of BOARDS — "longdiv", "shortdiv", "column", "times",
+ *             "criss", "fraction"
  *   base      the working base (ten unless you are somewhere strange)
  *
  * → { el, board, destroy() }
@@ -154,6 +155,39 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
         sheet.underline.to - sheet.underline.from + 1);
     }
 
+    /* Lines from one figure to another — the crossings of a criss-cross. They
+       cannot be cells, because they run diagonally BETWEEN cells, so they are
+       one stretched SVG laid over exactly the cells they span: the viewBox is
+       measured in cells, which makes a line from the middle of one figure to
+       the middle of another a line from x+0.5 to x+0.5 and nothing to measure
+       in pixels. Drawn before the marks, so the figures sit on top of the pen
+       rather than under it. */
+    const links = sheet.links || [];
+    if (links.length) {
+      const rows = links.flatMap((k) => [k.from.row, k.to.row]);
+      const cols = links.flatMap((k) => [k.from.col, k.to.col]);
+      const r0 = Math.min(...rows);
+      const c0 = Math.min(...cols);
+      const w = Math.max(...cols) - c0 + 1;
+      const h = Math.max(...rows) - r0 + 1;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "bd-links");
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("aria-hidden", "true");
+      svg.style.gridRow = `${grow(r0)} / span ${h}`;
+      svg.style.gridColumn = `${gcol(c0)} / span ${w}`;
+      svg.innerHTML = links.map((k) => {
+        const x1 = k.from.col - c0 + 0.5;
+        const x2 = k.to.col - c0 + 0.5;
+        const y1 = k.from.row - r0 + 0.78;
+        const y2 = k.to.row - r0 + 0.22;
+        return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"`
+          + ' vector-effect="non-scaling-stroke" />';
+      }).join("");
+      paper.appendChild(svg);
+    }
+
     for (const m of sheet.marks) {
       const n = put(
         `bd-mark${m.tone === "carry" ? " is-carry" : m.tone === "soft" ? " is-soft" : ""}`,
@@ -207,6 +241,12 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
         box.style.gridColumn = String(gcol(c.col));
         box.addEventListener("input", () => {
           if (!box.value) return;
+          /* A box that still has room in it is not an answer yet. Most cells
+             hold one figure and so this is the same as typing one, but a column
+             that has been lent to holds 17 and a criss-cross carry holds more
+             still: submitting on the 1 would mark it wrong before the 7 was
+             even typed. Enter offers whatever is in the box, always. */
+          if (box.value.length < box.maxLength) return;
           const next = boxes[i + 1];
           if (next) return next.focus();
           offer(boxes.map((b) => b.value).join(""));

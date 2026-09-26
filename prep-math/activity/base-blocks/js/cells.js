@@ -172,17 +172,24 @@ export function createCellLayer(ctx, view, stage, {
     onWrite(board, text);
   }
 
+  /* A box holds one figure unless the method asked for room for more, and one
+     with room left in it is not an answer yet: a column that has been lent to
+     holds 17, and a criss-cross carry can be bigger still. */
+  const full = (b) => b.value.length >= (b.maxLength || 1);
+
   function onType(i) {
     const box = boxes[i];
-    /* One character to a box: a paste or a fast typist can put two in, and the
-       one that belongs here is the last one they meant. */
-    if (box.value.length > 1) box.value = box.value.slice(-1);
-    if (!box.value) return;
+    /* As many characters as this cell holds and no more: a paste or a fast
+       typist can put in extra, and the ones that belong here are the last ones
+       they meant. */
+    const room = box.maxLength || 1;
+    if (box.value.length > room) box.value = box.value.slice(-room);
+    if (!box.value || !full(box)) return;
     /* Full is full, whichever box was filled last — someone who went back to
        correct the first figure should not have to walk past the second one
        again to send it. */
-    if (boxes.every((b) => b.value)) { submit(); return; }
-    const next = boxes.slice(i + 1).find((b) => !b.value) || boxes.find((b) => !b.value);
+    if (boxes.every(full)) { submit(); return; }
+    const next = boxes.slice(i + 1).find((b) => !full(b)) || boxes.find((b) => !full(b));
     next?.focus();
     next?.select();
   }
@@ -190,8 +197,8 @@ export function createCellLayer(ctx, view, stage, {
   function keyed(e, i) {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (boxes.every((b) => b.value)) submit();
-      else (boxes.find((b) => !b.value) || boxes[0]).focus();
+      if (boxes.every(full)) submit();
+      else (boxes.find((b) => !full(b)) || boxes[0]).focus();
       return;
     }
     if (e.key === "Backspace" && !boxes[i].value && i > 0) {

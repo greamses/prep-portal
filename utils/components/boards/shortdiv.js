@@ -26,7 +26,10 @@
 
 import { DIGITS, digitsOf, writeNum, readNum, baseWord } from "./num.js";
 
-export const GUTTER = 2;           // room for the divisor outside the bracket
+/* One column outside the bracket, and one is enough: what you divide by here is
+   always a single figure, so a second column would only stand the divisor away
+   from the bar it belongs against. The long division board needs two. */
+export const GUTTER = 1;
 export const MAX_DIGITS = 7;       // as long a dividend as the paper holds
 
 /* ── the sum, worked out before a figure is written ────────────────────────*/
@@ -42,11 +45,19 @@ export function workOut(n, d, base) {
   const digits = digitsOf(n, base);          // left to right, as they are written
   const entries = [];
   let carry = 0;
+  /* A nought at the FRONT of the answer is not a figure of the answer: "3 into 1
+     won't go" is worth asking and worth writing, but 142 written 0142 is a
+     different number. So it is remembered as a place-holder, written faintly,
+     and the line that says "this is the answer" starts after it — which is where
+     the long division board starts writing at all. */
+  let seen = false;
   digits.forEach((digit, k) => {
     const standing = carry * base + digit;
     const q = Math.floor(standing / d);
     const left = standing - q * d;
-    entries.push({ kind: "q", row: 0, col: k, value: q, standing, carryIn: carry });
+    const holder = !seen && q === 0;
+    if (q) seen = true;
+    entries.push({ kind: "q", row: 0, col: k, value: q, standing, carryIn: carry, holder });
     if (left && k < digits.length - 1) {
       entries.push({ kind: "r", row: 1, col: k + 1, value: left, standing, q });
     }
@@ -55,8 +66,11 @@ export function workOut(n, d, base) {
   const remainder = carry;
   if (remainder) entries.push({ kind: "rem", row: 0, col: digits.length, value: remainder });
   const quotient = Math.floor(n / d);
+  /* Where the answer proper starts. There is always one figure of it, because a
+     sum with nothing in the answer is refused before it gets here (checkSum). */
+  const answerFrom = entries.find((e) => e.kind === "q" && !e.holder).col;
   return {
-    base, n, d, digits, entries, remainder, quotient,
+    base, n, d, digits, entries, remainder, quotient, answerFrom,
     width: digits.length + (remainder ? 1 : 0),
     cols: GUTTER + digits.length + (remainder ? 1 : 0),
     rows: 3,
@@ -129,6 +143,31 @@ export function setWritten(thing, nText, dText) {
     return { ok: false, message: `Whole numbers in base ${baseWord(thing.base)} — digits 0 to ${DIGITS[thing.base - 1]}.` };
   }
   return setSum(thing, N.n, D.n);
+}
+
+/* ── joining in with the rest of the canvas ────────────────────────────────
+   The manipulatives pass a number between the tools (base-blocks/js/sync.js),
+   and what a board holds is the number it is working ON. For a division that is
+   what is still to be divided, which SHRINKS as the sum is worked: the blocks
+   beside it should show what is left, not what you started with. */
+
+export function leftToDivide(thing) {
+  const plan = planOf(thing);
+  const e = plan.entries[thing.done];
+  if (!e) return plan.remainder;
+  if (e.kind === "rem") return e.value;
+  /* what stands over the figure being worked on, and every figure after it */
+  const at = e.kind === "q" ? e.col : e.col - 1;
+  let n = e.kind === "q" ? e.standing : e.standing - e.q * plan.d;
+  for (let i = at + 1; i < plan.digits.length; i++) n = n * plan.base + plan.digits[i];
+  return n;
+}
+
+/** Divide a number handed over from somewhere else by whatever it says now. */
+export function setDividend(thing, n) {
+  const want = Math.max(0, Math.round(n));
+  if (want === thing.n) return true;
+  return setSum(thing, want, thing.d).ok === true;
 }
 
 export function rebase(thing, base) {
@@ -272,7 +311,14 @@ export function sheetOf(thing) {
     const done = plan.entries[i];
     const ch = writeNum(done.value, 0, b);
     if (done.kind === "rem") marks.push({ row: 0, col: done.col, ch: `r${ch}`, tone: "ink" });
-    else marks.push({ row: done.row, col: done.col, ch, tone: done.kind === "r" ? "carry" : "ink" });
+    else {
+      marks.push({
+        row: done.row,
+        col: done.col,
+        ch,
+        tone: done.kind === "r" ? "carry" : done.holder ? "soft" : "ink",
+      });
+    }
   }
 
   const e = plan.entries[thing.done] || null;
@@ -280,10 +326,16 @@ export function sheetOf(thing) {
   return {
     plan, cols: plan.cols, rows: plan.rows, width: plan.width, gutter: plan.gutter,
     marks, points: [], minus: [], signs: [], strikes: [],
-    /* the bus stop: over the carries and the number, not over the answer */
-    bracket: { row: 1, to: plan.width },
+    /* The bus stop: over the carries and the number, not over the answer — and
+       it stops where the NUMBER stops. What is left over at the end is written
+       past the end of it, beside the answer, so a bar drawn as far as that
+       would have the remainder standing inside the sum it came out of. */
+    bracket: { row: 1, to: plan.digits.length },
     rules: [],
-    underline: finished ? { row: 0, from: 0, to: plan.width - 1 } : null,
+    /* Under the ANSWER and not under what is left over: the remainder stands in
+       a column of its own past the end of it, and a line drawn under that too
+       would say 147 remainder 1 was a number called 1471. */
+    underline: finished ? { row: 0, from: plan.answerFrom, to: plan.digits.length - 1 } : null,
     ask: e ? { row: e.row, cols: [e.col] } : null,
     finished,
     total: plan.quotient,

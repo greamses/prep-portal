@@ -133,6 +133,22 @@ export function setWritten(thing, aText, bText) {
   return setSum(thing, A.n, B.n);
 }
 
+/* ── joining in with the rest of the canvas ────────────────────────────────
+   The manipulatives pass a number between the tools (base-blocks/js/sync.js),
+   and what a board holds is the number it is working ON — here the number being
+   multiplied, not what it comes to. */
+
+export function multiplicandOf(thing) {
+  return thing.a;
+}
+
+/** Multiply a number handed over from somewhere else by whatever it says now. */
+export function setMultiplicand(thing, n) {
+  const want = Math.max(1, Math.round(n));
+  if (want === thing.a) return true;
+  return setSum(thing, want, thing.b).ok === true;
+}
+
 export function rebase(thing, base) {
   thing.base = base;
   if (!checkSum(thing.a, thing.b, base).ok) {
@@ -258,10 +274,15 @@ export function cellsOf(thing) {
   const plan = planOf(thing);
   const e = plan.entries[thing.done];
   if (!e) return null;
+  /* One figure goes DOWN, always — that is what a column of the answer is. What
+     CARRIES is not one figure: a column is a whole handful of crossings added
+     up, and 99 × 99 carries 17 out of its middle one. A box with room for a
+     single figure would be a box this sum could not be finished in. */
+  const len = writeNum(e.value, 0, thing.base).length;
   return {
     mode: "type",
     grid: { cols: plan.cols, rows: plan.rows, gutter: plan.gutter },
-    cells: [{ row: e.row, col: plan.width - 1 - e.place, len: 1 }],
+    cells: [{ row: e.row, col: plan.width - 1 - e.place, len }],
   };
 }
 
@@ -288,9 +309,23 @@ export function sheetOf(thing) {
 
   const e = plan.entries[thing.done] || null;
   const finished = thing.done >= plan.entries.length;
+
+  /* THE CROSSINGS THEMSELVES, over the column being asked about — the picture
+     the method is named after. Only that one column's, because the whole point
+     of working by column is that the others are not your business yet: every
+     line at once is the grid method drawn badly.
+
+     A carry is asked about the column it came out of, so the lines stay up for
+     it rather than flicking off between the two halves of one question. */
+  const lit = e && e.kind === "c" ? plan.entries[thing.done - 1] : e;
+  const links = (lit && lit.kind === "d" ? lit.pairs : []).map((q) => ({
+    from: { row: 1, col: colOf(q.i) },
+    to: { row: 2, col: colOf(q.j) },
+  }));
+
   return {
     plan, cols: plan.cols, rows: plan.rows, width: plan.width, gutter: plan.gutter,
-    marks, points: [], minus: [], strikes: [], bracket: null,
+    marks, links, points: [], minus: [], strikes: [], bracket: null,
     rules: [{ row: 2, from: -plan.gutter, to: plan.width - 1 }],
     signs: [{ row: 2, col: -plan.gutter, ch: "×" }],
     underline: finished ? { row: 3, from: 0, to: plan.width - 1 } : null,

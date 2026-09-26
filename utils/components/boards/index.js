@@ -1,11 +1,16 @@
 /* ============================================================================
-   THE WRITTEN BOARDS — the four of them, as one kind of thing
+   THE WRITTEN BOARDS — all of them, as one kind of thing
    ----------------------------------------------------------------------------
-   A long division, a column addition, a column multiplication and a fraction
-   sum are the same object seen four times: a sheet of paper with a method
-   printed on it, that knows the whole sum from the first moment, shows only as
-   far as the working has got, asks for one thing at a time and says why a wrong
-   answer is wrong.
+   A long division, a short one, a column addition, a column multiplication, a
+   criss-cross and a fraction sum are the same object seen six times: a sheet of
+   paper with a method printed on it, that knows the whole sum from the first
+   moment, shows only as far as the working has got, asks for one thing at a
+   time and says why a wrong answer is wrong.
+
+   Two of them are on purpose a SECOND way to do a sum another already does —
+   short division beside the long one, the criss-cross beside the column — and
+   that is the reason for the registry: a method is a module and an entry, so
+   another way of working a sum costs nothing but the method itself.
 
    Everything above is identical between them. What differs is only the method
    itself and how the sum is TYPED — two boxes with a sign between them, or one

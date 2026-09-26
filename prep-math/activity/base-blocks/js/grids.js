@@ -24,6 +24,8 @@ import { TRACK, FRAME_SIDE } from "./frame.js";
 import { makeLongDiv, rebaseLongDiv, drawLongDiv } from "./longdiv.js";
 import { makeColumn, rebaseColumn, drawColumn } from "./column.js";
 import { makeTimes, rebaseTimes, drawTimes } from "./times.js";
+import { makeCriss, rebaseCriss, drawCriss } from "./criss.js";
+import { makeShortDiv, rebaseShortDiv, drawShortDiv } from "./shortdiv.js";
 import { makeFraction, rebaseFraction, drawFraction } from "./fraction.js";
 
 const B = () => window.BABYLON;
@@ -84,12 +86,14 @@ export function chartSize(n) {
 /* ── the thing on the canvas ──────────────────────────────────────────────── */
 
 export function makeBoard(variant, base) {
-  /* The two written sums are boards like the rest — a slab with a face printed
-     on it — but everything about what is printed on them belongs to the method,
-     so they are made and drawn in their own modules and only PLACED here. */
+  /* The written sums are boards like the rest — a slab with a face printed on
+     it — but everything about what is printed on them belongs to the method, so
+     they are made and drawn in their own modules and only PLACED here. */
   if (variant === "longdiv") return makeLongDiv(base);
+  if (variant === "shortdiv") return makeShortDiv(base);
   if (variant === "column") return makeColumn(base);
   if (variant === "times") return makeTimes(base);
+  if (variant === "criss") return makeCriss(base);
   if (variant === "fraction") return makeFraction(base);
   if (variant === "place") {
     const places = PLACES.length;
@@ -145,8 +149,10 @@ export function rebaseBoard(thing, base) {
   /* A written sum is written in a base too, but its size comes from how long
      the sum is rather than from how far the table runs. */
   if (thing.variant === "longdiv") return rebaseLongDiv(thing, base);
+  if (thing.variant === "shortdiv") return rebaseShortDiv(thing, base);
   if (thing.variant === "column") return rebaseColumn(thing, base);
   if (thing.variant === "times") return rebaseTimes(thing, base);
+  if (thing.variant === "criss") return rebaseCriss(thing, base);
   if (thing.variant === "fraction") return rebaseFraction(thing, base);
   const max = tableMax(base);
   thing.base = base;
@@ -319,8 +325,10 @@ export function paintBoard(thing, parts, opts = {}) {
   if (thing.variant === "place") drawPlace(g, W, H, thing, opts, { ink, soft });
   else if (thing.variant === "area") drawArea(g, W, H, thing, { ink, soft });
   else if (thing.variant === "longdiv") drawLongDiv(g, W, H, thing, { ink, soft });
+  else if (thing.variant === "shortdiv") drawShortDiv(g, W, H, thing, { ink, soft });
   else if (thing.variant === "column") drawColumn(g, W, H, thing, { ink, soft });
   else if (thing.variant === "times") drawTimes(g, W, H, thing, { ink, soft });
+  else if (thing.variant === "criss") drawCriss(g, W, H, thing, { ink, soft });
   else if (thing.variant === "fraction") drawFraction(g, W, H, thing, { ink, soft });
   else drawTable(g, W, H, thing, opts, { ink, soft });
 

@@ -352,6 +352,81 @@ export function columnTimesArt() {
 }
 
 /**
+ * The criss-cross: two numbers, the crossings of ONE column drawn over them, and
+ * the cell that column's figure goes in waiting underneath. The lines are the
+ * whole picture — they are what the method is named after and what tells it
+ * apart from the column multiplication on the card beside it.
+ */
+export function crissArt() {
+  const cw = 13;
+  const right = 86;                        // the ones column
+  const col = (p) => right - p * cw;       // p counted from the ones end
+  const TOP = 15;
+  const BOT = 37;
+
+  const fig = (x, y, text, size = 12, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+
+  /* From under one figure to over another, never through either of them. */
+  const cross = (from, to) =>
+    `<path d="M${col(from)} ${TOP + 8}L${col(to)} ${BOT - 8}"
+       stroke="var(--accent-secondary, #6fb7e8)" stroke-width="1.4"
+       stroke-linecap="round" fill="none" opacity="0.8"/>`;
+
+  return svg(
+    // 42 × 32, stopped with the tens column being asked for
+    fig(col(1), TOP, "4") + fig(col(0), TOP, "2") +
+    fig(col(2) + 1, BOT, "×", 11, FAINT) +
+    fig(col(1), BOT, "3") + fig(col(0), BOT, "2") +
+    // the cross itself: 4 × 2 and 2 × 3, the two pairs that make the tens
+    cross(1, 0) + cross(0, 1) +
+    `<path d="M${col(2) - 3} 48H${col(0) + 6}" stroke="${LINE}" stroke-width="1.5"
+       stroke-linecap="round" fill="none"/>` +
+    // the ones already down, the tens waiting
+    fig(col(0), 62, "4") +
+    `<rect x="${col(1) - 6}" y="55" width="12" height="14" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>`
+  );
+}
+
+/**
+ * Short division: the bus stop with nothing under it but the carried figures.
+ * The long division's card shows a subtraction ruled off; this one shows that
+ * there isn't one, which is the only difference that matters.
+ */
+export function shortDivideArt() {
+  const cw = 13;
+  const x0 = 34;                           // where the bar stands
+  const col = (i) => x0 + 7 + i * cw;      // the middle of digit column i
+
+  const fig = (x, y, text, size = 12, fill = LINE, weight = 600) =>
+    `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}"
+       text-anchor="middle" dominant-baseline="central"
+       font-family="JetBrains Mono, ui-monospace, monospace">${text}</text>`;
+
+  return svg(
+    // the answer, above the bar, with the last figure still to come
+    fig(col(0), 14, "1") + fig(col(1), 14, "4") +
+    `<rect x="${col(2) - 6}" y="7" width="12" height="14" rx="2"
+       fill="rgba(111,183,232,.18)" stroke="var(--accent-secondary, #6fb7e8)"
+       stroke-width="1.2" stroke-dasharray="2.6 2.2"/>` +
+    // the stop: over the working and down the side of it
+    `<path d="M${x0} 62V26H${col(2) + 7}" stroke="${LINE}" stroke-width="1.8"
+       stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+    // who is doing the dividing
+    fig(19, 46, "3") +
+    // what is left over each time, written small in front of the next figure
+    fig(col(1) - 5, 36, "1", 8, "var(--accent-secondary, #6fb7e8)", 700) +
+    fig(col(2) - 5, 36, "2", 8, "var(--accent-secondary, #6fb7e8)", 700) +
+    // and the number being divided
+    fig(col(0), 48, "4") + fig(col(1), 48, "4") + fig(col(2), 48, "2")
+  );
+}
+
+/**
  * The fraction board: two fractions and a sign, and the next line down with its
  * equals sign, the bottom already written and the top waiting to be worked out.
  */

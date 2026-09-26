@@ -10,7 +10,8 @@
 import {
   blocksArt, schotyArt, suanpanArt, sorobanArt,
   placeValueArt, multiplyArt, divideArt, tilesArt, frameArt, numberCardArt,
-  longDivideArt, columnAddArt, columnTimesArt, fractionArt, balanceArt,
+  longDivideArt, shortDivideArt, columnAddArt, columnTimesArt, crissArt,
+  fractionArt, balanceArt,
 } from "./illustrations.js";
 
 export const GROUPS = [
@@ -201,6 +202,23 @@ export const GROUPS = [
         art: columnTimesArt,
       },
       {
+        id: "criss-cross",
+        kind: "board",
+        variant: "criss",
+        label: "Criss-cross Multiplication",
+        short: "Criss-cross",
+        blurb:
+          "The same multiplying, worked by COLUMN of the answer instead of by "
+          + "row: down the ones, across both ways, down the tens. It draws the "
+          + "crossings it is asking about over the two numbers, so \"across the "
+          + "tens\" is a picture and not a thing to remember. Every figure of "
+          + "the answer is finished before the next is started, which is why "
+          + "this is the one that can be done in your head — and a whole column "
+          + "of crossings can carry more than a ten, so the carry is not always "
+          + "one figure.",
+        art: crissArt,
+      },
+      {
         id: "long-division",
         kind: "board",
         variant: "longdiv",
@@ -212,6 +230,23 @@ export const GROUPS = [
           + "in its own column — or refuses it and says why. Set any sum you "
           + "like, in any base you are working in.",
         art: longDivideArt,
+      },
+      {
+        id: "short-division",
+        kind: "board",
+        variant: "shortdiv",
+        label: "Short Division",
+        short: "Short division",
+        blurb:
+          "The same bus stop with the working rubbed out: divide one figure at "
+          + "a time and carry what is left over into the next, written small in "
+          + "front of it. Nothing is taken away and nothing is brought down, so "
+          + "the whole of a long sum is one row of little figures — and if the "
+          + "divisor will not go into the first figure, the nought that holds "
+          + "its place is written faintly, because 142 written 0142 is a "
+          + "different number. One figure to divide by; past that it asks you to "
+          + "use the long board instead.",
+        art: shortDivideArt,
       },
       {
         id: "fraction-sum",

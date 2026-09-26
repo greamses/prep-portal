@@ -239,3 +239,22 @@ select.bd-sum__in { cursor: pointer; }
   .bd-board--fraction { --bd-cell: 1.15rem; }
   .bd-mark, .bd-in { font-size: 0.85rem; }
 }
+
+/* THE CROSSINGS, on a criss-cross: lines from one figure to another, because
+   the column being asked for is a set of PAIRS and not a set of figures. One
+   SVG stretched over the cells it spans (boards/sheet.js measures it in cells),
+   so the line lands on the middle of a numeral at either end however wide the
+   paper's cells happen to be. */
+.bd-links {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.bd-links line {
+  fill: none;
+  stroke: var(--bd-accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
