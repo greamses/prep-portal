@@ -27,7 +27,7 @@ import { placeFill } from "./blocks.js";
 const NAMES = ["O", "T", "H", "Th", "TTh", "HTh", "M"];
 
 /* how tall each kind of row is */
-const HEIGHT = { tag: "5mm", carry: "6mm", figures: "9mm", answer: "9.6mm" };
+const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", answer: "12.4mm" };
 
 /**
  * Start a sheet `cols` places wide. `places` is how many of them are places the
@@ -111,9 +111,22 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
       for (let p = top; p >= 0; p--) this.box(row, p);
       return this;
     },
-    /** The carry boxes of a row, highest place first, as the key lists them. */
-    carries(row, from, figures = [], under = row + 1) {
-      for (let p = from; p >= 1; p--) this.carry(row, p, figures[p] ?? null, under);
+    /**
+     * The carry boxes of a row, highest place first, as the key lists them.
+     *
+     * ONE BOX PER CARRY THE SUM ACTUALLY MAKES — `where` is the carrying worked
+     * out, and a column it says nothing about gets no box. A row of boxes over
+     * every column is a row of questions the sum never asked, and most of them
+     * get a dutiful 0.
+     *
+     * `show` is whether to write the figures in (the one done for the child) or
+     * leave the boxes to be written in.
+     */
+    carries(row, where = [], { under = row + 1, show = false } = {}) {
+      for (let p = where.length - 1; p >= 0; p--) {
+        if (where[p] == null) continue;
+        this.carry(row, p, show ? where[p] : null, under);
+      }
       return this;
     },
     /** The line under a row — the heavy one under the last thing being added. */

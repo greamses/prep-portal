@@ -22,7 +22,7 @@
    ========================================================================== */
 
 import { blocksSvg } from "./blocks.js";
-import { colsFor, bothWays } from "./sumart.js";
+import { colsFor, carriesOf, bothWays } from "./sumart.js";
 import { levelOf } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
 
@@ -188,7 +188,12 @@ function sumKey(item, carries) {
   for (let i = 0; i < cols; i++) { S.push(v % 10); v = Math.floor(v / 10); }
   const top = String(Math.abs(item.total)).length - 1;
   const out = [want.num(item.total)];
-  if (carries) for (let p = cols - 1; p >= 1; p--) out.push(want.free());
+  /* one entry per carry box, and the sheet draws a box only where the sum
+     really carries (sumart.carriesOf) — highest place first, as it lists them */
+  if (carries) {
+    const where = carriesOf(item.a, item.b, item.op, item.places);
+    for (let p = where.length - 1; p >= 0; p--) if (where[p] != null) out.push(want.free());
+  }
   /* one entry per box, highest place first — the order the page lists them */
   for (let p = top; p >= 0; p--) out.push(want.cell(S[p]));
   return [...out, want.pen(".ms-piles svg")];

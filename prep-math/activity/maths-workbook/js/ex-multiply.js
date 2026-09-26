@@ -27,7 +27,7 @@
 
 import {
   digitsOf, groupsHtml, arraySvg, jumpsSvg, shiftTable, blockRowsHtml, partsOf,
-  gridTable, shortCol, longCol, latticeTable,
+  gridTable, shortCol, longCol, latticeTable, carriesOf,
 } from "./mulart.js";
 import { traysSvg, SHAPE_NAMES } from "./shapes.js";
 import { levelOf } from "./ex-remainder.js";
@@ -430,7 +430,8 @@ function shortEx(id, da, label, count) {
       const cols = Math.max(da, top + 1);
       const R = digitsOf(item.a * item.b, cols);
       const out = [];
-      for (let p = cols - 1; p >= 1; p--) out.push(want.free());
+      /* a box only where it really carries (mulart.carriesOf) */
+      carriesOf(item.a, item.b)[0].forEach((c) => { if (c != null) out.push(want.free()); });
       for (let p = top; p >= 0; p--) out.push(want.cell(R[p]));
       return out;
     },
@@ -481,16 +482,17 @@ function longEx(id, da, label, count) {
       const topR = String(item.a * item.b).length - 1;
       const cols = Math.max(da, 2, topR + 1);
       const out = [];
-      const carries = () => { for (let p = cols - 1; p >= 1; p--) out.push(want.free()); };
+      const where = carriesOf(item.a, item.b);
+      const carries = (k) => (where[k] || []).forEach((c) => { if (c != null) out.push(want.free()); });
       const figures = (v) => {
         const V = digitsOf(v, cols);
         for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
       };
       digitsOf(item.b, 2).forEach((d, k) => {
-        carries();
+        carries(k);
         figures(item.a * d * 10 ** k);
       });
-      carries();
+      carries(where.length - 1);
       figures(item.a * item.b);
       return out;
     },

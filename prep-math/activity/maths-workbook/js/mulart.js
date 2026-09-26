@@ -181,7 +181,8 @@ export function shortCol(a, b, { answer = false } = {}) {
   const top = topOf(a * b);
   const cols = Math.max(da, top + 1);
   const R = figuresOf(a * b, cols);
-  const carries = answer ? timesCarries(A, b) : [];
+  const carries = timesCarries(A, b);
+  const carrying = carries.some((c) => c != null);
 
   const sheet = colSheet({ cols, places: da, steps: answer ? null : "rtl" });
   sheet.tags();
@@ -189,20 +190,27 @@ export function shortCol(a, b, { answer = false } = {}) {
      the one done for the child has the carries WRITTEN IN, because carrying is
      the whole of what short multiplication asks and a worked example that
      leaves the boxes empty has shown the answer and hidden the method */
-  sheet.carries(1, cols - 1, carries, 4);
-  for (let p = 0; p < da; p++) sheet.mark(2, p, A[p]);
-  sheet.sign(3, "×");
-  sheet.mark(3, 0, b);
-  sheet.rule(3, { heavy: true });
-  if (!answer) sheet.boxes(4, top);
-  else for (let p = top; p >= 0; p--) sheet.mark(4, p, R[p]);
+  /* A row for the carrying only when it carries — an empty row is a gap in the
+     sum where a child looks for something that was never asked. */
+  let row = 1;
+  const carryRow = carrying ? row++ : -1;
+  const rowA = row++;
+  const rowB = row++;
+  const rowR = row++;
+  if (carrying) sheet.carries(carryRow, carries, { under: rowR, show: answer });
+  for (let p = 0; p < da; p++) sheet.mark(rowA, p, A[p]);
+  sheet.sign(rowB, "×");
+  sheet.mark(rowB, 0, b);
+  sheet.rule(rowB, { heavy: true });
+  if (!answer) sheet.boxes(rowR, top);
+  else for (let p = top; p >= 0; p--) sheet.mark(rowR, p, R[p]);
   return sheet.html("mm-col");
 }
 
 /* ── the carrying, worked out ──────────────────────────────────────────────*/
 
 /** Multiplying a number by one figure: what is carried into each column. */
-function timesCarries(A, b, shift = 0) {
+export function timesCarries(A, b, shift = 0) {
   const out = [];
   let c = 0;
   for (let i = 0; i < A.length; i++) {
@@ -214,7 +222,7 @@ function timesCarries(A, b, shift = 0) {
 }
 
 /** Adding a column of numbers: what is carried into each column. */
-function addCarries(rows, width) {
+export function addCarries(rows, width) {
   const out = [];
   let c = 0;
   for (let p = 0; p < width; p++) {
@@ -223,6 +231,22 @@ function addCarries(rows, width) {
     if (c) out[p + 1] = c;
   }
   return out;
+}
+
+/**
+ * WHERE A COLUMN MULTIPLICATION CARRIES — the same working the sheet draws its
+ * boxes from, so an exercise's key can count them without building the sheet.
+ * Short: one row. Long: one per row of the multiplying, then the addition.
+ */
+export function carriesOf(a, b) {
+  const da = String(a).length;
+  const db = String(b).length;
+  const A = figuresOf(a, da);
+  if (db === 1) return [timesCarries(A, b)];
+  const cols = Math.max(da, db, topOf(a * b) + 1);
+  const bd = figuresOf(b, db);
+  const rows = bd.map((d, k) => timesCarries(A, d, k));
+  return [...rows, addCarries(bd.map((d, k) => figuresOf(a * d * 10 ** k, cols)), cols)];
 }
 
 /* ── long multiplication ───────────────────────────────────────────────────*/
@@ -259,10 +283,10 @@ export function longCol(a, b, { answer = false } = {}) {
   bd.forEach((d, k) => {
     const V = partRows[k];
     const high = topOf(a * d * 10 ** k);
-    const carries = answer ? timesCarries(figuresOf(a, da), d, k) : [];
-    const carryRow = row++;
+    const carries = timesCarries(figuresOf(a, da), d, k);
+    const carryRow = carries.some((c) => c != null) ? row++ : -1;
     const partRow = row++;
-    sheet.carries(carryRow, cols - 1, carries, partRow);
+    if (carryRow >= 0) sheet.carries(carryRow, carries, { under: partRow, show: answer });
     const last = k === db - 1;
     if (last && k > 0) sheet.sign(partRow, "+");
     if (!answer) sheet.boxes(partRow, high);
@@ -271,10 +295,10 @@ export function longCol(a, b, { answer = false } = {}) {
   });
 
   const R = figuresOf(a * b, cols);
-  const carries = answer ? addCarries(partRows, cols) : [];
-  const carryRow = row++;
+  const carries = addCarries(partRows, cols);
+  const carryRow = carries.some((c) => c != null) ? row++ : -1;
   const totalRow = row++;
-  sheet.carries(carryRow, cols - 1, carries, totalRow);
+  if (carryRow >= 0) sheet.carries(carryRow, carries, { under: totalRow, show: answer });
   if (!answer) sheet.boxes(totalRow, top);
   else for (let p = top; p >= 0; p--) sheet.mark(totalRow, p, R[p]);
   return sheet.html("mm-col mm-long");

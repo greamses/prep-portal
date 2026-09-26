@@ -377,7 +377,7 @@ thead .pv-chart__side {
   align-self: start;
   /* clear of the rule above it: a carry written on the line is a carry in the
      wrong row */
-  margin-top: 0.8mm;
+  margin-top: 1mm;
   width: 9mm;
   height: 5mm;
   font-size: 9pt;
@@ -386,20 +386,22 @@ thead .pv-chart__side {
 }
 .ms-col .ms-down__carrybox,
 .ms-col .ms-down__carrywrote { display: block; width: 9mm; height: 5mm; }
-/* the line under the last thing being added */
+/* The line under the last thing being added. It stands clear of both: the row
+   above does not sit on it and the row below does not hang off it. */
 .ms-col__rule {
   align-self: end;
   height: 0;
+  margin-bottom: 1mm;
   border-bottom: 0.5mm solid #2a2723;
 }
 .ms-col__rule.is-heavy { border-bottom-width: 0.7mm; }
-/* the box the next figure goes in: exactly its column, with a hair of air
-   round it so two boxes side by side are two boxes */
+/* the box the next figure goes in: its whole column, less a margin, so that
+   two boxes side by side are two boxes and a row of them stands clear of the
+   line above it */
 .ms-col__cell {
   justify-self: stretch;
-  align-self: center;
-  height: 8.6mm;
-  margin: 0 0.4mm;
+  align-self: stretch;
+  margin: 1.4mm 0.5mm 2.2mm;
   background: #fffdf8;
   border: 0.4mm solid #2a2723;
   border-radius: 0.6mm;

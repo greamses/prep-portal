@@ -56,18 +56,22 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
   const A = figuresOf(a, places);
   const B = figuresOf(b, places);
   const S = figuresOf(total, cols);
-  const figures = answer === null ? [] : carryFigures(A, B, op, places);
+  /* worked out whether or not it is shown: the sheet needs to know WHERE the
+     carrying happens even when it is the child who has to do it */
+  const figures = carriesOf(a, b, op, places);
 
   /* tags, carries, the first number, the second with the rule under it, the
      answer — the order they are written in */
   const sheet = colSheet({ cols, places, steps: answer === null ? "rtl" : null });
   sheet.tags();
   let row = 1;
-  if (carries) {
-    /* A carry box sits above the column the carry goes INTO, so every column
-       but the ones has one: nothing has ever been carried into the ones. */
+  if (carries && figures.some((c) => c != null)) {
+    /* A box where a carry is really made and nowhere else. Adding, that is
+       above the column the ten goes INTO — never the ones, nothing has ever
+       been carried into the ones. Taking away, it is every column the exchange
+       changed, the ones included: twelve has to be written somewhere. */
     const carryRow = row++;
-    sheet.carries(carryRow, cols - 1, figures, carryRow + 3);
+    sheet.carries(carryRow, figures, { under: carryRow + 3, show: answer !== null });
   }
   const rowA = row++;
   for (let p = 0; p < places; p++) sheet.mark(rowA, p, A[p]);
@@ -92,11 +96,16 @@ export const colsFor = (total, places) => Math.max(places, topOf(total) + 1);
  *
  * Adding, it is the ten that moved on — a 1. Taking away, it is what the column
  * has LEFT after lending, which is the figure a child is told to write above the
- * column they crossed out. Printed blank for a question, written in for the one
- * done for them: a worked example with empty carry boxes has shown the answer
- * and hidden the only step that was difficult.
+ * column they crossed out, and what the column it lent TO has become.
+ *
+ * Printed blank for a question, written in for the one done for them: a worked
+ * example with empty carry boxes has shown the answer and hidden the only step
+ * that was difficult. Either way this says WHERE the boxes go, so a sum is only
+ * ever asked for the carries it really makes.
  */
-function carryFigures(A, B, op, places) {
+export function carriesOf(a, b, op, places) {
+  const A = figuresOf(a, places);
+  const B = figuresOf(b, places);
   const out = [];
   if (op === "-") {
     const lent = [];
