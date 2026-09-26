@@ -1837,6 +1837,13 @@ svg[data-foldable]:hover line[data-foldline] { stroke-width: 0.9; }
 .wb-drawhost:has(> svg[data-grid]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
 /* a grid to plot on by tapping: the same — above it, off the squares */
 .wb-drawhost:has(> svg[data-dotplot]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
+/* BLOCKS REACH THEIR CORNER TOO. A flat is a square of a hundred little ones
+   and the rods stand right beside it, so a note dropped in the corner covers
+   the very blocks the question is about — and they are the thing to be counted.
+   Above the picture, with room made for it. (Descendant, not child: a block sum
+   is two piles inside one host.) */
+.wb-drawhost:has(svg[data-blocks]) > .wb-drawbar { top: auto; bottom: 100%; margin-bottom: 0.8mm; }
+.wb-live .wb-drawhost:has(svg[data-blocks]) { padding-top: 8mm; }
 
 /* the paper's own little sticky notes: smaller, with a smaller strip of tape,
    an icon each (the name in the tooltip) */

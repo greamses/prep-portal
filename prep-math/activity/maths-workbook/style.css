@@ -717,6 +717,10 @@ thead .pv-chart__side {
 .mm-pass span { color: #2a2723; }
 .mm-pass .rw-answer { width: 18mm; }
 .mm-pass--ones { color: #c0453f; }
+/* the four parts of a two-by-two: two of them are the same kind of thing */
+.mm-passes--four { grid-template-columns: repeat(2, auto); justify-content: start; column-gap: 8mm; }
+/* the sticks: the picture sits beside its counting, like the criss-cross */
+.mm-sticks { display: block; }
 .mm-pass--cross { color: #2a6ca8; }
 .mm-pass--tens { color: #3f8f4f; }
 

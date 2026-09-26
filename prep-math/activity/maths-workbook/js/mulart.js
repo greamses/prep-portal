@@ -422,6 +422,102 @@ export function crissSvg(a, b) {
     + `</svg>`;
 }
 
+/* ── the crossing sticks ───────────────────────────────────────────────────*/
+
+/**
+ * MULTIPLYING BY LAYING STICKS ACROSS EACH OTHER. Lay 4 sticks then 2 sticks
+ * one way, 3 sticks then 1 stick the other way, and count where they cross:
+ * the crossings on the left are the hundreds, the ones down the middle are the
+ * tens, the ones on the right are the units. 42 x 31 = 12 | 4 + 6 | 2 = 1302.
+ *
+ * It is the same three sums as the criss-cross and the same four boxes as the
+ * grid — but nobody has to be told them. They are there to be counted, which
+ * is why it is the first multiplication a child can do before they can
+ * multiply.
+ *
+ * HOW IT IS DRAWN. Every stick of the first number has slope +1 (y = x - c)
+ * and every stick of the second has slope -1 (y = e - x), so a stick of one
+ * and a stick of the other cross at x = (c + e) / 2. Give the tens of each
+ * number the small offsets and the units the big ones, and the crossings fall
+ * into three groups along the page by themselves: small+small on the left,
+ * big+big on the right, the two mixed pairs in the middle. Nothing is
+ * positioned by hand.
+ */
+export function sticksSvg(a, b) {
+  const [a1, a0] = String(a).split("").map(Number);
+  const [b1, b0] = String(b).split("").map(Number);
+  const D = 7;                                   // the gap between sticks
+  const GAP = 18;                                // between one digit and the next
+  const COL = { left: "#3f8f4f", mid: "#2a6ca8", right: "#c0453f" };
+
+  /* where each stick sits: the tens first, then the units further along */
+  const offs = (hi, lo) => [
+    ...Array.from({ length: hi }, (_, i) => i * D),
+    ...Array.from({ length: lo }, (_, i) => (hi - 1) * D + GAP + i * D),
+  ];
+  const A = offs(a1, a0);                        // sticks of the first number
+  const B = offs(b1, b0);                        // sticks of the second
+  const group = (k, hi) => (k < hi ? "hi" : "lo");
+
+  /* every crossing, and which of the three groups it belongs to */
+  const dots = [];
+  A.forEach((c, i) => B.forEach((e, j) => {
+    const side = group(i, a1) === "hi"
+      ? (group(j, b1) === "hi" ? "left" : "mid")
+      : (group(j, b1) === "hi" ? "mid" : "right");
+    dots.push({ x: (c + e) / 2, y: (e - c) / 2, side });
+  }));
+
+  const xs = dots.map((d) => d.x);
+  const ys = dots.map((d) => d.y);
+  const pad = 12;
+  const x0 = Math.min(...xs) - pad;
+  const x1 = Math.max(...xs) + pad;
+  const y0 = Math.min(...ys) - pad;
+  const y1 = Math.max(...ys) + pad;
+  const W = x1 - x0;
+  const H = y1 - y0;
+
+  /* a stick is drawn from its first crossing to its last, and a little past */
+  const line = (pts, slope, colour) => {
+    const [p, q] = [Math.min(...pts.map((t) => t.x)), Math.max(...pts.map((t) => t.x))];
+    const fy = (x, off) => (slope > 0 ? x - off : off - x);
+    return { from: p - 7, to: q + 7, fy };
+  };
+
+  const stick = (off, slope, colour) => {
+    const on = dots.filter((d) => (slope > 0
+      ? Math.abs(d.y - (d.x - off)) < 0.01
+      : Math.abs(d.y - (off - d.x)) < 0.01));
+    if (!on.length) return "";
+    const { from, to, fy } = line(on, slope, colour);
+    return `<path d="M${(from - x0).toFixed(1)} ${(fy(from, off) - y0).toFixed(1)}`
+      + `L${(to - x0).toFixed(1)} ${(fy(to, off) - y0).toFixed(1)}"`
+      + ` stroke="${colour}" stroke-width="1.6" stroke-linecap="round" fill="none"/>`;
+  };
+
+  const sticks = A.map((c) => stick(c, +1, "#2a2723")).join("")
+    + B.map((e) => stick(e, -1, "#6b655c")).join("");
+  const crossings = dots.map((d) =>
+    `<circle cx="${(d.x - x0).toFixed(1)}" cy="${(d.y - y0).toFixed(1)}" r="2.6"`
+    + ` fill="${COL[d.side]}" stroke="#fffdf8" stroke-width="0.7"/>`).join("");
+
+  /* the two dashed fences between the three groups */
+  const between = (one, two) => {
+    const l = Math.max(...dots.filter((d) => d.side === one).map((d) => d.x));
+    const r = Math.min(...dots.filter((d) => d.side === two).map((d) => d.x));
+    const x = ((l + r) / 2 - x0).toFixed(1);
+    return `<path d="M${x} 0V${H.toFixed(1)}" stroke="#b8b1a4" stroke-width="0.8" stroke-dasharray="3 3"/>`;
+  };
+  const fences = (dots.some((d) => d.side === "mid") ? between("left", "mid") + between("mid", "right") : "");
+
+  const mm = Math.min(76, Math.max(46, W * 0.55));
+  return `<svg viewBox="0 0 ${W.toFixed(1)} ${H.toFixed(1)}" width="${mm.toFixed(0)}mm"`
+    + ` height="${(mm * H / W).toFixed(0)}mm" class="mm-sticks" role="img"`
+    + ` aria-label="${a} sticks crossing ${b} sticks">`
+    + fences + sticks + crossings + `</svg>`;
+}
+
 /* ── the lattice ───────────────────────────────────────────────────────────*/
 
 /**

@@ -29,6 +29,7 @@ import {
   digitsOf, groupsHtml, arraySvg, jumpsSvg, shiftTable, blockRowsHtml, partsOf,
   gridTable, shortCol, longCol, latticeTable, carriesOf,
   timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg,
+  sticksSvg,
 } from "./mulart.js";
 import { traysSvg, SHAPE_NAMES } from "./shapes.js";
 import { levelOf } from "./ex-remainder.js";
@@ -73,6 +74,7 @@ export const MUL_GROUPS = [
   { id: "mul-column", label: "Short and long multiplication" },
   { id: "mul-split", label: "Splitting the multiplier" },
   { id: "mul-lattice", label: "The lattice method" },
+  { id: "mul-sticks", label: "Crossing sticks" },
   { id: "mul-criss", label: "Criss-cross" },
   { id: "mul-words", label: "Word problems" },
 ];
@@ -852,11 +854,136 @@ const mulCriss = {
 };
 
 
+/* ═══ counting the crossings ═══════════════════════════════════════════════
+   Lay 4 sticks and then 2 sticks one way, 3 sticks and then 1 stick the other,
+   and count where they cross. The crossings on the left are the hundreds, the
+   ones down the middle are the tens, the ones on the right are the units.
+
+   It is the same three sums as the criss-cross and the same four boxes as the
+   grid — but nobody has to be TOLD them. They are there to be counted, which
+   makes it the first multiplication a child can do before they can multiply. */
+
+const STICK_DIGITS = { gentle: [1, 3], middle: [1, 4], stretch: [2, 5] };
+
+const mulSticks = {
+  id: "mul-sticks-22",
+  group: "mul-sticks",
+  label: "Crossing sticks — 2-digit × 2-digit",
+  blurb: "Lay the sticks across each other and count where they cross.",
+  heading: "Count the crossings",
+  instruction: () =>
+    "Count the crossings in each group. LEFT is the hundreds, MIDDLE is the tens, "
+    + "RIGHT is the units. Then put them together — and if a group comes to ten or "
+    + "more, carry into the group on its left.",
+  cols: 2,
+  defaultCount: 3,
+  make(r, o) {
+    const [lo, hi] = STICK_DIGITS[tier(o)];
+    const d = () => r.int(lo, hi);
+    return { a: d() * 10 + d(), b: d() * 10 + d() };
+  },
+  render(item) {
+    const [a1, a0] = String(item.a).split("").map(Number);
+    const [b1, b0] = String(item.b).split("").map(Number);
+    return lead(`${item.a} × ${item.b}`)
+      + `<div class="mm-crissart">${sticksSvg(item.a, item.b)}`
+      + `<ol class="mm-passes">`
+      + `<li class="mm-pass mm-pass--tens"><span>Left — ${a1} × ${b1}</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--cross"><span>Middle — (${a1} × ${b0}) + (${a0} × ${b1})</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--ones"><span>Right — ${a0} × ${b0}</span> = ${box()}</li>`
+      + `</ol></div>`
+      + ask(`Put them together: ${item.a} × ${item.b} = ${box()}`);
+  },
+  worked() {
+    return worked(
+      lead(`42 × 31`)
+      + `<div class="mm-crissart">${sticksSvg(42, 31)}`
+      + `<ol class="mm-passes">`
+      + `<li class="mm-pass mm-pass--tens"><span>Left — 4 × 3</span> = <b>12</b></li>`
+      + `<li class="mm-pass mm-pass--cross"><span>Middle — (4 × 1) + (2 × 3)</span> = <b>10</b></li>`
+      + `<li class="mm-pass mm-pass--ones"><span>Right — 2 × 1</span> = <b>2</b></li>`
+      + `</ol></div>`
+      + say(`2 units. 10 tens is a hundred and no tens — carry the 1. 12 hundreds and the `
+        + `1 carried is 13 hundreds. So 1302.`));
+  },
+  key(item) {
+    const [a1, a0] = String(item.a).split("").map(Number);
+    const [b1, b0] = String(item.b).split("").map(Number);
+    return [
+      want.num(a1 * b1),
+      want.num(a1 * b0 + a0 * b1),
+      want.num(a0 * b0),
+      want.num(item.a * item.b),
+    ];
+  },
+  answer(item) {
+    return [`${item.a} × ${item.b} = ${item.a * item.b}`];
+  },
+};
+
+/* ═══ counters, two figures by two ═════════════════════════════════════════
+   Twelve lots of fourteen is 168 counters if you lay every lot out, which is
+   an afternoon and a heap. Split both numbers instead and it is four handfuls:
+   ten tens, ten fours, two tens, two fours — one hundred, six tens and eight
+   ones, and the hundred is a counter you can hold. */
+
+const mulCounters22 = {
+  id: "mul-counters-22",
+  group: "mul-blocks",
+  label: "Counters — 2-digit × 2-digit",
+  blurb: "Both numbers split into tens and ones: four handfuls of counters, then trade.",
+  heading: "Four handfuls",
+  instruction: () =>
+    "Both numbers are a ten and some ones. That makes FOUR lots to put out: tens "
+    + "times tens, tens times ones, ones times tens, ones times ones. Put each one "
+    + "out with counters, then trade until the mat is tidy.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o) {
+    const hi = { gentle: 3, middle: 5, stretch: 9 }[tier(o)];
+    return { a: 10 + r.int(1, hi), b: 10 + r.int(1, hi) };
+  },
+  render(item) {
+    const a0 = item.a % 10;
+    const b0 = item.b % 10;
+    return lead(`${item.a} × ${item.b}`)
+      + ask(`${item.a} is <b>10</b> and <b>${a0}</b>. ${item.b} is <b>10</b> and <b>${b0}</b>.`)
+      + `<ol class="mm-passes mm-passes--four">`
+      + `<li class="mm-pass mm-pass--tens"><span>10 × 10</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--cross"><span>10 × ${b0}</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--cross"><span>${a0} × 10</span> = ${box()}</li>`
+      + `<li class="mm-pass mm-pass--ones"><span>${a0} × ${b0}</span> = ${box()}</li>`
+      + `</ol>`
+      + mat({ say: `a hundred, a ten and a one`, mm: 52, kinds: [100, 10, 1] })
+      + ask(`${item.a} × ${item.b} = ${box()}`);
+  },
+  worked() {
+    return worked(
+      lead(`12 × 14`)
+      + say(`10 × 10 is a hundred. 10 × 4 is 4 tens. 2 × 10 is 2 more tens. 2 × 4 is 8 ones. `
+        + `One hundred, six tens and eight ones: 168.`));
+  },
+  key(item) {
+    const a0 = item.a % 10;
+    const b0 = item.b % 10;
+    return [
+      want.num(100),
+      want.num(10 * b0),
+      want.num(a0 * 10),
+      want.num(a0 * b0),
+      want.num(item.a * item.b),
+    ];
+  },
+  answer(item) {
+    return [`${item.a} × ${item.b} = ${item.a * item.b}`];
+  },
+};
+
 export const MUL_EXERCISES = [
   mulEqualGroups, mulDrawGroups,
   mulArray, mulJumps,
   mulFacts, mulTens,
-  mulBlocks, mulCounters,
+  mulBlocks, mulCounters, mulCounters22,
   gridEx("mul-grid-21", 2, 1, "Grid — 2-digit × 1-digit", 4),
   gridEx("mul-grid-22", 2, 2, "Grid — 2-digit × 2-digit", 3),
   gridEx("mul-grid-32", 3, 2, "Grid — 3-digit × 2-digit", 2),
@@ -868,6 +995,7 @@ export const MUL_EXERCISES = [
   longEx("mul-long-32", 3, "Long — 3-digit × 2-digit", 2),
   splitEx("mul-split-22", 2, "Split — 2-digit × 2-digit", 2),
   splitEx("mul-split-32", 3, "Split — 3-digit × 2-digit", 2),
+  mulSticks,
   mulCriss,
   latticeEx("mul-lattice-22", 2, "Lattice — 2-digit × 2-digit", 3),
   latticeEx("mul-lattice-32", 3, "Lattice — 3-digit × 2-digit", 2),
