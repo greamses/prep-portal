@@ -395,6 +395,17 @@ thead .pv-chart__side {
   border-bottom: 0.5mm solid #2a2723;
 }
 .ms-col__rule.is-heavy { border-bottom-width: 0.7mm; }
+/* The bus stop: a line over what is being divided and one down its left side.
+   The side runs the whole way to the bottom of the sheet, because everything
+   under it is still part of the same division — and it stops short of the
+   remainder, which is written past the end of the bar and not inside it. */
+.ms-col__stop {
+  border-left: 0.5mm solid #2a2723;
+  border-top: 0.5mm solid #2a2723;
+  border-top-left-radius: 1.2mm;
+  margin-bottom: 1mm;
+  pointer-events: none;
+}
 /* the box the next figure goes in: its whole column, less a margin, so that
    two boxes side by side are two boxes and a row of them stands clear of the
    line above it */

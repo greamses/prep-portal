@@ -758,9 +758,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
          table it is the next row under it that is written in, so a table with a
          carry row over every row keeps them apart. */
       if (box.dataset.crow != null) {
+        /* which column has to be written before this carry means anything. The
+           one to the right, unless the sheet says otherwise: a division carries
+           LEFT to right, so its sheet names the column itself. */
+        const waits = box.dataset.cafter != null ? Number(box.dataset.cafter) : col - 1;
         return {
           box,
-          after: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col - 1}"]`),
+          after: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${waits}"]`),
           /* the box the carry is carried INTO: once that is written the carry
              has been used up */
           into: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col}"]`),
@@ -2477,10 +2481,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       asMode("pencil"), asMode("eraser"),
       asTool("compass"), asTool("ruler"), asTool("protractor"), asTool("setsquare"),
     ] },
-    /* Every written board shows, none of them behind the arrow: they are
-       what a child is sent to the rail FOR, and a multiplication hidden one
-       click inside an addition is a multiplication nobody finds. */
-    { id: "work", label: "Working out", all: true, of: [
+    /* The written boards were once laid out one under another, all six of them,
+       on the argument that a board hidden behind an arrow is a board nobody
+       finds. Six keys is not a family any more, it is a list — so they fold up
+       like every other family: one key showing, the rest a click away, and the
+       slot remembering whichever was last reached for. Working something out is
+       ONE thing to go to the rail for; which paper you work it on is a choice
+       you make after you get there. */
+    { id: "work", label: "Working out", of: [
       asSheet("column"), asSheet("times"), asSheet("criss"),
       asSheet("shortdiv"), asSheet("longdiv"), asSheet("fraction"),
     ] },

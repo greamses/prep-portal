@@ -77,13 +77,18 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
      * worked example is not counted as work the child has left undone.
      *
      * `under` is the row whose figures this carry belongs to: the screen brings
-     * the box out only once the column to its right has been written there.
+     * the box out only once a named column has been written there.
+     *
+     * `after` is WHICH column that is, and it is the column to the right by
+     * default because that is the way a column sum runs. A division runs the
+     * other way — you divide the hundreds and carry what is left into the tens
+     * — so it says so instead of the page guessing from the geometry.
      */
-    carry(row, place, figure = null, under = row + 1) {
+    carry(row, place, figure = null, under = row + 1, after = place - 1) {
       grow(row, "carry");
       if (figure == null) {
         put("ms-col__carry ms-down__carrybox", `${grow(row)}${gcol(place)}`, "",
-          ` data-carry="${place}" data-crow="${under}"`);
+          ` data-carry="${place}" data-crow="${under}" data-cafter="${after}"`);
       } else {
         put("ms-col__carry ms-down__carrywrote", `${grow(row)}${gcol(place)}`, String(figure));
       }
@@ -127,6 +132,21 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
         if (where[p] == null) continue;
         this.carry(row, p, show ? where[p] : null, under);
       }
+      return this;
+    },
+    /**
+     * THE BUS STOP, for a division: a line over what is being divided and one
+     * down its left-hand side. It runs from `row` to the bottom of the sheet,
+     * because everything under it is still part of the same division, and it
+     * covers the places `from`..`to` — never the answer above it, and never the
+     * remainder written past the end of it.
+     *
+     * Called LAST: it is sized from the rows that exist by then.
+     */
+    stop(row, { from, to }) {
+      grow(row, "carry");
+      put("ms-col__stop",
+        `grid-row:${row + 1} / -1;grid-column:${2 + (cols - 1 - to)} / span ${to - from + 1};`);
       return this;
     },
     /** The line under a row — the heavy one under the last thing being added. */

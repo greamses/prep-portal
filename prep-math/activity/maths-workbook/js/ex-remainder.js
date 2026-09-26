@@ -14,6 +14,12 @@
                           fraction of one more group
      D  fraction bars     and once it is a fraction, it is a mixed number, and
                           a mixed number is an improper fraction
+     E  short division    and LAST, the written method — the only section here
+                          whose numbers are bigger than a child can count out,
+                          because it is what you graduate to once the idea is
+                          safe. Nothing in it is new except the writing: it is
+                          still "how many groups, and what is left over", asked
+                          one figure at a time.
 
    Section C is the hinge. A child who has grouped seventeen counters into
    threes-of-five-with-two-over, and then coloured three whole bars and two
@@ -27,6 +33,7 @@
 
 import { pileSvg, jitterFor, traysSvg, SHAPE_NAMES, SHAPE_WORDS } from "./shapes.js";
 import { barsSvg, sentence, mixed, improper } from "./bars.js";
+import { busStop, shortWork } from "./divart.js";
 import { want } from "/utils/components/workbook/want.js";
 
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
@@ -40,6 +47,7 @@ export const REM_GROUPS = [
   { id: "group", chapter: "Chapter 4 · Dividing and remainders", label: "Group them", blurb: "A pile of things and a pencil. Ring the groups; count what is over." },
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
+  { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
 ];
 
 /* ── how hard ──────────────────────────────────────────────────────────────
@@ -373,12 +381,94 @@ const leftoverFraction = {
 /* ── D. fraction bars ──────────────────────────────────────────────────────*/
 
 /** A mixed number small enough to draw. */
+/* ── E. short division ─────────────────────────────────────────────────────
+   The written method, on the same ruled sheet the sums and the multiplying use
+   (divart.js). It is the printed half of the short division board — same shape
+   on the page, so working one on the screen and one on paper is working the
+   same thing twice.
+
+   THE DIVISOR ALWAYS GOES INTO THE FIRST FIGURE. "7 into 1 won't go, so write
+   nothing and take 10" is a real step and a real difficulty, and it is left to
+   the board, which can ask for it one figure at a time and say why a nought
+   there is not part of the answer. On paper, first, every column has a figure
+   in it — the child can see how many answers are wanted by counting the boxes.
+
+   Figure counts are separate EXERCISES, as they are in the multiplying, so a
+   teacher can put "3 figures ÷ 1 figure" on a page and nothing else. What the
+   LEVEL changes is the divisor — the same divisors the rest of the chapter
+   shares out counters into. */
+
+const shortSum = (r, o, digits) => {
+  const d = r.pick(levelOf(o).divisors);
+  /* the first figure is at least the divisor, so the answer starts in the
+     first column and every column has a box */
+  let n = r.int(d, 9);
+  for (let i = 1; i < digits; i++) n = n * 10 + r.int(0, 9);
+  return { n, d };
+};
+
+function shortDivEx(id, digits, label, count) {
+  return {
+    id,
+    group: "short",
+    label,
+    blurb: "Divide one figure at a time; carry what is left into the next one.",
+    heading: "Short division",
+    instruction: () =>
+      "Start at the LEFT. How many times does it go into the first figure? Write that above "
+      + "the bar, and write what is LEFT OVER in the little box in front of the next figure. "
+      + "Now divide that figure with the carried number in front of it, and keep going. "
+      + "Whatever is left at the very end is the remainder.",
+    cols: 2,
+    defaultCount: count,
+    make(r, o) {
+      return shortSum(r, o, digits);
+    },
+    render(item) {
+      return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
+        + `<div class="rw-art">${busStop(item.n, item.d)}</div>`;
+    },
+    worked() {
+      const [n, d] = digits === 2 ? [85, 3] : [442, 3];
+      return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
+        + `<p class="wb-ask wb-ask--lead"><b>${n} ÷ ${d}</b></p>`
+        + `<div class="rw-art">${busStop(n, d, { answer: true })}</div>`
+        + `<p class="wb-ask rw-worked__say">${digits === 2
+          ? "3 into 8 goes 2, and 2 is left over — carry the 2 in front of the 5. "
+            + "3 into 25 goes 8, and 1 is left over. So 85 ÷ 3 = 28 remainder 1."
+          : "3 into 4 goes 1, and 1 is left over — carry the 1 in front of the 4. "
+            + "3 into 14 goes 4, and 2 is left over — carry the 2 in front of the 2. "
+            + "3 into 22 goes 7, and 1 is left over. So 442 ÷ 3 = 147 remainder 1."
+        }</p></div>`;
+    },
+    /* the boxes the sheet draws, in the order it draws them: the answer along
+       the top, the remainder past the end of the bar, then the carried figures
+       — which are working and are never marked */
+    key(item) {
+      const { q, carry, remainder } = shortWork(item.n, item.d);
+      const out = q.map((f) => want.cell(f));
+      if (remainder) out.push(want.cell(remainder));
+      carry.forEach((c) => { if (c != null) out.push(want.free()); });
+      return out;
+    },
+    answer(item) {
+      const { q, remainder } = shortWork(item.n, item.d);
+      const said = q.join("");
+      return [`${item.n} ÷ ${item.d} = ${said}${remainder ? ` remainder ${remainder}` : ""}`];
+    },
+  };
+}
+
+const shortTwo = shortDivEx("div-short-21", 2, "Short division — 2 figures ÷ 1 figure", 6);
+const shortThree = shortDivEx("div-short-31", 3, "Short division — 3 figures ÷ 1 figure", 4);
+
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
 export const REM_EXERCISES = [
   ringGroups, shareOut,
   pictureSentence, nameTheParts, divideWrite, buildBack,
   leftoverFraction,
+  shortTwo, shortThree,
 ];
 
 export { line, box, slot };
