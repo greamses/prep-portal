@@ -46,17 +46,16 @@ export function across(a, b, op, { answer = null } = {}) {
  * `answer` fills the line under the rule in, which only the worked example does.
  */
 export function down(a, b, op, { places = 2, carries = false, answer = null } = {}) {
-  /* An addition can spill into a place neither number has — 91 + 34 is three
-     figures — so it gets one extra column on the left. A subtraction never can,
-     and giving it one would say the answer might be bigger than the number you
-     started with. */
-  const spill = op === "+";
-  const cols = places + (spill ? 1 : 0);
+  /* HOW WIDE THE SUM IS. As wide as the numbers, and one column wider when the
+     answer really does spill into a place neither of them has — 91 + 34 is
+     three figures. Not one wider always: a column that is only ever going to
+     be left empty is a column a child dutifully writes a 0 in. */
+  const total = op === "-" ? a - b : a + b;
+  const top = topOf(total);
+  const cols = colsFor(total, places);
   const A = figuresOf(a, places);
   const B = figuresOf(b, places);
-  const total = op === "-" ? a - b : a + b;
   const S = figuresOf(total, cols);
-  const top = topOf(total);
   const figures = answer === null ? [] : carryFigures(A, B, op, places);
 
   /* tags, carries, the first number, the second with the rule under it, the
@@ -68,7 +67,7 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
     /* A carry box sits above the column the carry goes INTO, so every column
        but the ones has one: nothing has ever been carried into the ones. */
     const carryRow = row++;
-    for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, figures[p] ?? null, carryRow + 3);
+    sheet.carries(carryRow, cols - 1, figures, carryRow + 3);
   }
   const rowA = row++;
   for (let p = 0; p < places; p++) sheet.mark(rowA, p, A[p]);
@@ -77,12 +76,16 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
   for (let p = 0; p < places; p++) sheet.mark(rowB, p, B[p]);
   sheet.rule(rowB, { heavy: true });
   const rowS = row++;
-  for (let p = 0; p < cols; p++) {
-    if (answer === null) sheet.box(rowS, p, { blank: p > top });
-    else if (p <= top) sheet.mark(rowS, p, S[p]);
-  }
+  if (answer === null) sheet.boxes(rowS, top);
+  else for (let p = top; p >= 0; p--) sheet.mark(rowS, p, S[p]);
   return sheet.html();
 }
+
+/**
+ * How many columns a written sum has — and so how many boxes its answer is,
+ * which the exercise's key has to agree with exactly.
+ */
+export const colsFor = (total, places) => Math.max(places, topOf(total) + 1);
 
 /**
  * WHAT GOES IN THE CARRY BOX, when the sum is worked for the child.

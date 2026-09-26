@@ -90,13 +90,30 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
       return this;
     },
     /**
-     * A box for the child to write a figure in. `blank` marks a column the
-     * answer never reaches: it prints, because whether a sum spills is part of
-     * the question, but the screen does not ask for it.
+     * A box for the child to write a figure in.
+     *
+     * ONLY THE FIGURES THE ANSWER HAS get a box: a column the answer never
+     * reaches is not a box left empty, it is not there.
+     *
+     * The order they are PUT in is the order the page lists them, which is the
+     * order the answers are read off the key — highest place first, the way a
+     * number is written. Where each one sits is decided by its grid column, so
+     * the order they are written in (from the right, see stepwise) has nothing
+     * to do with it.
      */
-    box(row, place, { blank = false } = {}) {
+    box(row, place) {
       put("ms-col__cell wb-cell", `${grow(row, "answer")}${gcol(place)}`, "",
-        ` data-col="${place}" data-row="${row}"${blank ? " data-blank" : ""}`);
+        ` data-col="${place}" data-row="${row}"`);
+      return this;
+    },
+    /** The boxes of a whole row: places `top` down to 0, highest first. */
+    boxes(row, top) {
+      for (let p = top; p >= 0; p--) this.box(row, p);
+      return this;
+    },
+    /** The carry boxes of a row, highest place first, as the key lists them. */
+    carries(row, from, figures = [], under = row + 1) {
+      for (let p = from; p >= 1; p--) this.carry(row, p, figures[p] ?? null, under);
       return this;
     },
     /** The line under a row — the heavy one under the last thing being added. */

@@ -22,7 +22,7 @@
    ========================================================================== */
 
 import { blocksSvg } from "./blocks.js";
-import { bothWays } from "./sumart.js";
+import { colsFor, bothWays } from "./sumart.js";
 import { levelOf } from "./ex-remainder.js";
 import { want } from "/utils/components/workbook/want.js";
 
@@ -180,15 +180,17 @@ function subPicture(a, b, places, still = false) {
 /* ── answers for the on-screen layer ───────────────────────────────────────*/
 
 function sumKey(item, carries) {
-  const cols = item.places + (item.op === "+" ? 1 : 0);
+  /* the same columns the sheet draws (sumart.colsFor): as wide as the numbers,
+     and wider only where the answer really spills */
+  const cols = colsFor(item.total, item.places);
   const S = [];
   let v = item.total;
   for (let i = 0; i < cols; i++) { S.push(v % 10); v = Math.floor(v / 10); }
-  let top = cols - 1;
-  while (top > 0 && S[top] === 0) top--;
+  const top = String(Math.abs(item.total)).length - 1;
   const out = [want.num(item.total)];
   if (carries) for (let p = cols - 1; p >= 1; p--) out.push(want.free());
-  for (let p = cols - 1; p >= 0; p--) out.push(want.cell(S[p], p > top));
+  /* one entry per box, highest place first — the order the page lists them */
+  for (let p = top; p >= 0; p--) out.push(want.cell(S[p]));
   return [...out, want.pen(".ms-piles svg")];
 }
 

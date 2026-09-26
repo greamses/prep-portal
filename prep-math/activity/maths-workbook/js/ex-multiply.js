@@ -423,12 +423,16 @@ function shortEx(id, da, label, count) {
             ? "3 × 4 = 12: write 2, carry 1. 3 × 5 = 15, add 1 is 16: write 6, carry 1. 3 × 2 = 6, add 1 is 7. The answer is 762."
             : "4 × 2 = 8. 4 × 7 = 28: write 8, carry 2. 4 × 1 = 4, add 2 is 6. 4 × 3 = 12. The answer is 12 688."));
     },
+    /* the boxes the sheet draws: a carry box over every column but the ones,
+       then one box per figure the answer has — highest place first */
     key(item) {
-      const cols = [...Array(da + 1).keys()].reverse();
-      const R = digitsOf(item.a * item.b, da + 1);
-      const topR = String(item.a * item.b).length - 1;
-      const carries = cols.filter((p) => p >= 1).map(() => want.free());
-      return [...carries, ...cols.map((p) => want.cell(R[p], p > topR))];
+      const top = String(item.a * item.b).length - 1;
+      const cols = Math.max(da, top + 1);
+      const R = digitsOf(item.a * item.b, cols);
+      const out = [];
+      for (let p = cols - 1; p >= 1; p--) out.push(want.free());
+      for (let p = top; p >= 0; p--) out.push(want.cell(R[p]));
+      return out;
     },
     answer(item) {
       return [`${item.a} × ${item.b} = ${item.a * item.b}`];
@@ -474,21 +478,20 @@ function longEx(id, da, label, count) {
        right. They still have to be counted here, in the order the page has
        them: the carries of a row, then the row. */
     key(item) {
-      const places = da + 2;
-      const cols = [...Array(places).keys()].reverse();
-      const out = [];
-      const carries = () => cols.filter((p) => p >= 1).forEach(() => out.push(want.free()));
-      digitsOf(item.b, 2).forEach((d, k) => {
-        const v = item.a * d * 10 ** k;
-        const V = digitsOf(v, places);
-        const top = String(v).length - 1;
-        carries();
-        cols.forEach((p) => out.push(want.cell(V[p], p > top)));
-      });
-      const R = digitsOf(item.a * item.b, places);
       const topR = String(item.a * item.b).length - 1;
+      const cols = Math.max(da, 2, topR + 1);
+      const out = [];
+      const carries = () => { for (let p = cols - 1; p >= 1; p--) out.push(want.free()); };
+      const figures = (v) => {
+        const V = digitsOf(v, cols);
+        for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
+      };
+      digitsOf(item.b, 2).forEach((d, k) => {
+        carries();
+        figures(item.a * d * 10 ** k);
+      });
       carries();
-      cols.forEach((p) => out.push(want.cell(R[p], p > topR)));
+      figures(item.a * item.b);
       return out;
     },
     answer(item) {

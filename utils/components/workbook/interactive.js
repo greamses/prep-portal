@@ -692,11 +692,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const cells = [...table.querySelectorAll(".wb-cell, .wb-answer")];
     if (cells.length < 2) return;
 
-    /* A box the method never fills — the column an answer does not reach — is
-       printed on paper, because whether the answer spills is part of the
-       question, but it is not part of the chain: nothing would ever open it
-       again, and an invisible box waiting for a figure that does not exist
-       stops the sum dead. */
+    /* A sheet draws a box for every figure its answer has and no others, so the
+       chain is simply the boxes. `data-blank` is the older arrangement — a box
+       printed to be left empty — and is kept out of the chain, because nothing
+       would ever open it again and an invisible box waiting for a figure that
+       does not exist stops the sum dead. */
     const chain = cells.filter((b) => !b.hasAttribute("data-blank"));
     const spare = cells.filter((b) => b.hasAttribute("data-blank"));
     if (chain.length < 2) return;

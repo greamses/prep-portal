@@ -177,10 +177,10 @@ export function gridTable(a, b, { fill = false } = {}) {
  */
 export function shortCol(a, b, { answer = false } = {}) {
   const da = String(a).length;
-  const cols = da + 1;
   const A = figuresOf(a, da);
-  const R = figuresOf(a * b, cols);
   const top = topOf(a * b);
+  const cols = Math.max(da, top + 1);
+  const R = figuresOf(a * b, cols);
   const carries = answer ? timesCarries(A, b) : [];
 
   const sheet = colSheet({ cols, places: da, steps: answer ? null : "rtl" });
@@ -189,15 +189,13 @@ export function shortCol(a, b, { answer = false } = {}) {
      the one done for the child has the carries WRITTEN IN, because carrying is
      the whole of what short multiplication asks and a worked example that
      leaves the boxes empty has shown the answer and hidden the method */
-  for (let p = 1; p < cols; p++) sheet.carry(1, p, carries[p] ?? null, 4);
+  sheet.carries(1, cols - 1, carries, 4);
   for (let p = 0; p < da; p++) sheet.mark(2, p, A[p]);
   sheet.sign(3, "×");
   sheet.mark(3, 0, b);
   sheet.rule(3, { heavy: true });
-  for (let p = 0; p < cols; p++) {
-    if (!answer) sheet.box(4, p, { blank: p > top });
-    else if (p <= top) sheet.mark(4, p, R[p]);
-  }
+  if (!answer) sheet.boxes(4, top);
+  else for (let p = top; p >= 0; p--) sheet.mark(4, p, R[p]);
   return sheet.html("mm-col");
 }
 
@@ -243,7 +241,8 @@ function addCarries(rows, width) {
 export function longCol(a, b, { answer = false } = {}) {
   const da = String(a).length;
   const db = String(b).length;
-  const cols = da + db;
+  const top = topOf(a * b);
+  const cols = Math.max(da, db, top + 1);
   const A = figuresOf(a, cols);
   const B = figuresOf(b, cols);
   const bd = figuresOf(b, db);
@@ -259,30 +258,25 @@ export function longCol(a, b, { answer = false } = {}) {
   let row = 3;
   bd.forEach((d, k) => {
     const V = partRows[k];
-    const top = topOf(a * d * 10 ** k);
+    const high = topOf(a * d * 10 ** k);
     const carries = answer ? timesCarries(figuresOf(a, da), d, k) : [];
     const carryRow = row++;
     const partRow = row++;
-    for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, carries[p] ?? null, partRow);
+    sheet.carries(carryRow, cols - 1, carries, partRow);
     const last = k === db - 1;
     if (last && k > 0) sheet.sign(partRow, "+");
-    for (let p = 0; p < cols; p++) {
-      if (!answer) sheet.box(partRow, p, { blank: p > top });
-      else if (p <= top) sheet.mark(partRow, p, V[p]);
-    }
+    if (!answer) sheet.boxes(partRow, high);
+    else for (let p = high; p >= 0; p--) sheet.mark(partRow, p, V[p]);
     if (last) sheet.rule(partRow, { heavy: true });
   });
 
   const R = figuresOf(a * b, cols);
-  const top = topOf(a * b);
   const carries = answer ? addCarries(partRows, cols) : [];
   const carryRow = row++;
   const totalRow = row++;
-  for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, carries[p] ?? null, totalRow);
-  for (let p = 0; p < cols; p++) {
-    if (!answer) sheet.box(totalRow, p, { blank: p > top });
-    else if (p <= top) sheet.mark(totalRow, p, R[p]);
-  }
+  sheet.carries(carryRow, cols - 1, carries, totalRow);
+  if (!answer) sheet.boxes(totalRow, top);
+  else for (let p = top; p >= 0; p--) sheet.mark(totalRow, p, R[p]);
   return sheet.html("mm-col mm-long");
 }
 
