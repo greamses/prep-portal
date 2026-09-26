@@ -16,7 +16,7 @@
    taught to "put the one over there" has somewhere exact to put it.
    ========================================================================== */
 
-import { placeFill } from "./blocks.js";
+import { colSheet, figuresOf, topOf } from "./colsheet.js";
 
 /* ── the sum written across ────────────────────────────────────────────────*/
 
@@ -36,16 +36,6 @@ export function across(a, b, op, { answer = null } = {}) {
 
 /* ── the sum written down ──────────────────────────────────────────────────*/
 
-const digitsOf = (n, places) => {
-  const out = [];
-  let v = n;
-  for (let i = 0; i < places; i++) {
-    out.push(v % 10);
-    v = Math.floor(v / 10);
-  }
-  return out; // lowest place first, like everywhere else on this paper
-};
-
 /**
  * The column form.
  *
@@ -56,116 +46,74 @@ const digitsOf = (n, places) => {
  * `answer` fills the line under the rule in, which only the worked example does.
  */
 export function down(a, b, op, { places = 2, carries = false, answer = null } = {}) {
-  const A = digitsOf(a, places);
-  const B = digitsOf(b, places);
-
   /* An addition can spill into a place neither number has — 91 + 34 is three
-     figures — so it gets one extra column on the left. A subtraction never
-     can, and giving it one would say the answer might be bigger than the
-     number you started with.
-     
-     EVERY ROW USES THE SAME COLUMNS. The columns are what this drawing is
-     about, and a table where one row has an extra cell puts every figure in
-     the row above into the wrong column. */
+     figures — so it gets one extra column on the left. A subtraction never can,
+     and giving it one would say the answer might be bigger than the number you
+     started with. */
   const spill = op === "+";
-  const cols = [...Array(places + (spill ? 1 : 0)).keys()].reverse();
+  const cols = places + (spill ? 1 : 0);
+  const A = figuresOf(a, places);
+  const B = figuresOf(b, places);
   const total = op === "-" ? a - b : a + b;
-  const S = digitsOf(total, cols.length);
-  /* the highest column the answer actually reaches: above it the boxes are
-     there to be left empty, and the screen knows not to ask for them */
-  const top = String(Math.abs(total)).length - 1;
+  const S = figuresOf(total, cols);
+  const top = topOf(total);
+  const figures = answer === null ? [] : carryFigures(A, B, op, places);
 
-  const NAMES = ["O", "T", "H", "Th"];
+  /* tags, carries, the first number, the second with the rule under it, the
+     answer — the order they are written in */
+  const sheet = colSheet({ cols, places, steps: answer === null ? "rtl" : null });
+  sheet.tags();
+  let row = 1;
+  if (carries) {
+    /* A carry box sits above the column the carry goes INTO, so every column
+       but the ones has one: nothing has ever been carried into the ones. */
+    const carryRow = row++;
+    for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, figures[p] ?? null, carryRow + 3);
+  }
+  const rowA = row++;
+  for (let p = 0; p < places; p++) sheet.mark(rowA, p, A[p]);
+  const rowB = row++;
+  sheet.sign(rowB, op === "-" ? "−" : "+");
+  for (let p = 0; p < places; p++) sheet.mark(rowB, p, B[p]);
+  sheet.rule(rowB, { heavy: true });
+  const rowS = row++;
+  for (let p = 0; p < cols; p++) {
+    if (answer === null) sheet.box(rowS, p, { blank: p > top });
+    else if (p <= top) sheet.mark(rowS, p, S[p]);
+  }
+  return sheet.html();
+}
 
-  /* The head names the places and tints them the same butter/sky/leaf as the
-     blocks and the place-value chart, so a column here and a column there are
-     visibly the same column. The spill column is left unnamed and untinted:
-     it is not a place the question is about, it is room to be surprised. */
-  const head =
-    `<tr class="ms-down__head"><td></td>` +
-    cols
-      .map((p) =>
-        p < places
-          ? `<td style="--ms-fill:${placeFill(p)}">${NAMES[p] || ""}</td>`
-          : `<td class="ms-down__spill"></td>`
-      )
-      .join("") +
-    `</tr>`;
-
-  /* WHAT GOES IN THE CARRY BOX, when the sum is worked for the child.
-     Adding, it is the ten that moved on — a 1. Taking away, it is what the
-     column has LEFT after lending, which is the figure a child is told to
-     write above the column they crossed out. Printed blank for a question,
-     written in for the one done for them: a worked example with empty carry
-     boxes shows the answer and hides the only step that was difficult. */
-  const carryFigures = () => {
-    const out = [];
-    if (op === "-") {
-      const lent = [];
-      let borrow = 0;
-      for (let p = 0; p < places; p++) {
-        let have = A[p] - borrow;
-        borrow = 0;
-        if (have < B[p]) { have += 10; borrow = 1; lent[p + 1] = 1; }
-        /* a column that gave a ten away, or was given one, is no longer the
-           figure printed under it — so it says what it is now */
-        if (lent[p] || borrow) out[p] = have;
-      }
-      return out;
-    }
-    let carry = 0;
+/**
+ * WHAT GOES IN THE CARRY BOX, when the sum is worked for the child.
+ *
+ * Adding, it is the ten that moved on — a 1. Taking away, it is what the column
+ * has LEFT after lending, which is the figure a child is told to write above the
+ * column they crossed out. Printed blank for a question, written in for the one
+ * done for them: a worked example with empty carry boxes has shown the answer
+ * and hidden the only step that was difficult.
+ */
+function carryFigures(A, B, op, places) {
+  const out = [];
+  if (op === "-") {
+    const lent = [];
+    let borrow = 0;
     for (let p = 0; p < places; p++) {
-      const sum = A[p] + B[p] + carry;
-      carry = sum >= 10 ? 1 : 0;
-      if (carry) out[p + 1] = 1;
+      let have = A[p] - borrow;
+      borrow = 0;
+      if (have < B[p]) { have += 10; borrow = 1; lent[p + 1] = 1; }
+      /* a column that gave a ten away, or was given one, is no longer the
+         figure printed under it — so it says what it is now */
+      if (lent[p] || borrow) out[p] = have;
     }
     return out;
-  };
-  const figures = answer === null ? [] : carryFigures();
-
-  /* A carry box sits above the column the carry goes INTO, so every column but
-     the ones has one. Nothing has ever been carried into the ones. */
-  const carryRow = carries
-    ? `<tr class="ms-down__carry" data-carryrow><td></td>` +
-      cols
-        .map((p) => `<td>${p < 1 ? ""
-          : figures[p] == null
-            ? `<span class="ms-down__carrybox" data-carry="${p}"></span>`
-            /* written in, not left to be written: print, not a place */
-            : `<span class="ms-down__carrywrote">${figures[p]}</span>`}</td>`)
-        .join("") +
-      `</tr>`
-    : "";
-
-  const cell = (text, cls = "") => `<td class="ms-down__cell ${cls}">${text}</td>`;
-  const figure = (d, p) => (p < places ? d[p] : "");
-  const rowA =
-    `<tr><td class="ms-down__sign"></td>` +
-    cols.map((p) => cell(figure(A, p))).join("") +
-    `</tr>`;
-  const rowB =
-    `<tr class="ms-down__second"><td class="ms-down__sign">${op === "-" ? "−" : "+"}</td>` +
-    cols.map((p) => cell(figure(B, p))).join("") +
-    `</tr>`;
-  /* The answer row. A box the answer does not reach says `data-blank`: on paper
-     it is a box like any other — whether the answer spills is part of the
-     question — but on screen nothing asks for it, because the working never
-     goes there. */
-  const rowS =
-    `<tr class="ms-down__answer"><td></td>` +
-    cols
-      .map((p) => (answer === null
-        ? `<td class="ms-down__cell wb-cell" data-col="${p}"${p > top ? " data-blank" : ""}></td>`
-        : cell(p <= top ? S[p] : "")))
-      .join("") +
-    `</tr>`;
-
-  /* A question is worked one box at a time, from the right — the same way the
-     written board in the tool panel asks (interactive.js stepwise). The one
-     done for the child has nothing to step through, so it does not say it
-     steps. */
-  const steps = answer === null ? ` data-steps="rtl"` : "";
-  return `<table class="ms-down"${steps}>` + head + carryRow + rowA + rowB + rowS + `</table>`;
+  }
+  let carry = 0;
+  for (let p = 0; p < places; p++) {
+    carry = A[p] + B[p] + carry >= 10 ? 1 : 0;
+    if (carry) out[p + 1] = 1;
+  }
+  return out;
 }
 
 /* ── the two together ──────────────────────────────────────────────────────*/

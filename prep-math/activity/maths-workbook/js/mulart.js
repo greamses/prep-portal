@@ -17,6 +17,7 @@
 
 import { shapeDraw, paperColour } from "./shapes.js";
 import { blocksSvg, placeFill } from "./blocks.js";
+import { colSheet, figuresOf, topOf } from "./colsheet.js";
 
 const INK = "#2a2723";
 const NAMES = ["O", "T", "H", "Th", "TTh", "HTh"];
@@ -176,49 +177,31 @@ export function gridTable(a, b, { fill = false } = {}) {
  */
 export function shortCol(a, b, { answer = false } = {}) {
   const da = String(a).length;
-  const cols = [...Array(da + 1).keys()].reverse();
-  const A = digitsOf(a, da);
-  const R = digitsOf(a * b, da + 1);
-  const topR = String(a * b).length - 1;
-  const head = `<tr class="ms-down__head"><td></td>${cols.map((p) => (p < da
-    ? `<td style="--ms-fill:${placeFill(p)}">${NAMES[p] || ""}</td>`
-    : `<td class="ms-down__spill"></td>`)).join("")}</tr>`;
+  const cols = da + 1;
+  const A = figuresOf(a, da);
+  const R = figuresOf(a * b, cols);
+  const top = topOf(a * b);
+  const carries = answer ? timesCarries(A, b) : [];
+
+  const sheet = colSheet({ cols, places: da, steps: answer ? null : "rtl" });
+  sheet.tags();
   /* a carry goes INTO a column, so every column but the ones has a box — and
      the one done for the child has the carries WRITTEN IN, because carrying is
      the whole of what short multiplication asks and a worked example that
      leaves the boxes empty has shown the answer and hidden the method */
-  const carry = carryRow(cols, answer ? timesCarries(A, b) : []);
-  const rowA = `<tr><td class="ms-down__sign"></td>${cols.map((p) => `<td class="ms-down__cell">${p < da ? A[p] : ""}</td>`).join("")}</tr>`;
-  const rowB = `<tr class="ms-down__second"><td class="ms-down__sign">×</td>${cols
-    .map((p) => `<td class="ms-down__cell">${p === 0 ? b : ""}</td>`).join("")}</tr>`;
-  const rowR = `<tr class="ms-down__answer"><td></td>${cols
-    .map((p) => (answer
-      ? `<td class="ms-down__cell">${p <= topR ? R[p] : ""}</td>`
-      : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > topR ? " data-blank" : ""}></td>`)).join("")}</tr>`;
-  /* one box at a time, from the right, like the board in the tool panel — the
-     worked one has no boxes, so it does not say it steps */
-  const steps = answer ? "" : ` data-steps="rtl"`;
-  return `<table class="ms-down mm-col"${steps}>${head}${carry}${rowA}${rowB}${rowR}</table>`;
+  for (let p = 1; p < cols; p++) sheet.carry(1, p, carries[p] ?? null, 4);
+  for (let p = 0; p < da; p++) sheet.mark(2, p, A[p]);
+  sheet.sign(3, "×");
+  sheet.mark(3, 0, b);
+  sheet.rule(3, { heavy: true });
+  for (let p = 0; p < cols; p++) {
+    if (!answer) sheet.box(4, p, { blank: p > top });
+    else if (p <= top) sheet.mark(4, p, R[p]);
+  }
+  return sheet.html("mm-col");
 }
 
-/* ── the carry boxes, shared by both column forms ──────────────────────────*/
-
-/**
- * The row of small boxes above a column sum. `figures` is what goes in them,
- * by column — empty for a question, filled for the one worked out.
- */
-function carryRow(cols, figures = []) {
-  /* An EMPTY box is a place to write, and the page counts it as one. A carry
-     the workbook has written in is not — it is print — so it is a different
-     element wearing the same box, or a worked example would be counted as
-     work the child has left undone. */
-  const box = (p) => (p < 1 ? ""
-    : figures[p] == null
-      ? `<span class="ms-down__carrybox" data-carry="${p}"></span>`
-      : `<span class="ms-down__carrywrote">${figures[p]}</span>`);
-  return `<tr class="ms-down__carry" data-carryrow><td></td>${cols
-    .map((p) => `<td>${box(p)}</td>`).join("")}</tr>`;
-}
+/* ── the carrying, worked out ──────────────────────────────────────────────*/
 
 /** Multiplying a number by one figure: what is carried into each column. */
 function timesCarries(A, b, shift = 0) {
@@ -260,37 +243,47 @@ function addCarries(rows, width) {
 export function longCol(a, b, { answer = false } = {}) {
   const da = String(a).length;
   const db = String(b).length;
-  const places = da + db;
-  const cols = [...Array(places).keys()].reverse();
-  const A = digitsOf(a, places);
-  const B = digitsOf(b, places);
-  const bd = digitsOf(b, db);
-  const head = `<tr class="ms-down__head"><td></td>${cols.map((p) => `<td style="--ms-fill:${placeFill(p)}">${NAMES[p] || ""}</td>`).join("")}</tr>`;
-  const rowA = `<tr><td class="ms-down__sign"></td>${cols.map((p) => `<td class="ms-down__cell">${p < da ? A[p] : ""}</td>`).join("")}</tr>`;
-  const rowB = `<tr class="ms-down__second"><td class="ms-down__sign">×</td>${cols.map((p) => `<td class="ms-down__cell">${p < db ? B[p] : ""}</td>`).join("")}</tr>`;
-  const partRows = bd.map((d, k) => digitsOf(a * d * 10 ** k, places));
-  const parts = bd.map((d, k) => {
-    const v = a * d * 10 ** k;
+  const cols = da + db;
+  const A = figuresOf(a, cols);
+  const B = figuresOf(b, cols);
+  const bd = figuresOf(b, db);
+  const partRows = bd.map((d, k) => figuresOf(a * d * 10 ** k, cols));
+
+  const sheet = colSheet({ cols, steps: answer ? null : "rows-rtl" });
+  sheet.tags();
+  for (let p = 0; p < da; p++) sheet.mark(1, p, A[p]);
+  sheet.sign(2, "×");
+  for (let p = 0; p < db; p++) sheet.mark(2, p, B[p]);
+  sheet.rule(2, { heavy: true });
+
+  let row = 3;
+  bd.forEach((d, k) => {
     const V = partRows[k];
-    const top = String(v).length - 1;
+    const top = topOf(a * d * 10 ** k);
+    const carries = answer ? timesCarries(figuresOf(a, da), d, k) : [];
+    const carryRow = row++;
+    const partRow = row++;
+    for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, carries[p] ?? null, partRow);
     const last = k === db - 1;
-    const carries = answer ? timesCarries(digitsOf(a, da), d, k) : [];
-    return carryRow(cols, carries) +
-      `<tr class="mm-part${last ? " mm-part--last" : ""}"><td class="ms-down__sign">${last && k > 0 ? "+" : ""}</td>${cols
-        .map((p) => (answer
-          ? `<td class="ms-down__cell">${p <= top ? V[p] : ""}</td>`
-          : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > top ? " data-blank" : ""}></td>`)).join("")}</tr>`;
-  }).join("");
-  const R = digitsOf(a * b, places);
-  const topR = String(a * b).length - 1;
-  const rowR = carryRow(cols, answer ? addCarries(partRows, places) : []) +
-    `<tr class="ms-down__answer"><td></td>${cols
-      .map((p) => (answer
-        ? `<td class="ms-down__cell">${p <= topR ? R[p] : ""}</td>`
-        : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > topR ? " data-blank" : ""}></td>`)).join("")}</tr>`;
-  /* each partial product right to left, then the total the same way */
-  const steps = answer ? "" : ` data-steps="rows-rtl"`;
-  return `<table class="ms-down mm-col mm-long"${steps}>${head}${rowA}${rowB}${parts}${rowR}</table>`;
+    if (last && k > 0) sheet.sign(partRow, "+");
+    for (let p = 0; p < cols; p++) {
+      if (!answer) sheet.box(partRow, p, { blank: p > top });
+      else if (p <= top) sheet.mark(partRow, p, V[p]);
+    }
+    if (last) sheet.rule(partRow, { heavy: true });
+  });
+
+  const R = figuresOf(a * b, cols);
+  const top = topOf(a * b);
+  const carries = answer ? addCarries(partRows, cols) : [];
+  const carryRow = row++;
+  const totalRow = row++;
+  for (let p = 1; p < cols; p++) sheet.carry(carryRow, p, carries[p] ?? null, totalRow);
+  for (let p = 0; p < cols; p++) {
+    if (!answer) sheet.box(totalRow, p, { blank: p > top });
+    else if (p <= top) sheet.mark(totalRow, p, R[p]);
+  }
+  return sheet.html("mm-col mm-long");
 }
 
 /* ── the lattice ───────────────────────────────────────────────────────────*/

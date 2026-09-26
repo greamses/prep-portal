@@ -701,18 +701,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     const spare = cells.filter((b) => b.hasAttribute("data-blank"));
     if (chain.length < 2) return;
 
-    /* the order the figures are written in */
+    /* THE ORDER THE FIGURES ARE WRITTEN IN — from the right, which is the whole
+       of what a column method is. A box that names its place (`data-col`, 0 for
+       the ones) is put in place order and not in the order the page happens to
+       list it; anything else falls back to reading the page backwards. */
+    const placed = chain.every((b) => b.dataset.col != null);
+    const rightToLeft = (boxes) => (placed
+      ? boxes.slice().sort((x, y) => Number(x.dataset.col) - Number(y.dataset.col))
+      : boxes.slice().reverse());
     let order = chain;
     if (how === "rtl") {
-      order = chain.slice().reverse();
+      order = rightToLeft(chain);
     } else if (how === "rows-rtl") {
+      /* a sheet says which row a box is on (`data-row`); a table has its own
+         rows and does not need to */
       const rows = new Map();
       chain.forEach((b) => {
-        const row = b.closest("tr") || table;
+        const row = b.dataset.row ?? b.closest("tr") ?? table;
         if (!rows.has(row)) rows.set(row, []);
         rows.get(row).push(b);
       });
-      order = [...rows.values()].flatMap((row) => row.slice().reverse());
+      order = [...rows.values()].flatMap(rightToLeft);
     }
 
     const filled = (b) => {
@@ -728,9 +737,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        with a carry row over every row (long multiplication) keeps them
        apart. */
     const carries = [...table.querySelectorAll("[data-carry]")].map((box) => {
+      const col = Number(box.dataset.carry);
+      /* On a sheet the box names the row it belongs to (`data-crow`). In a
+         table it is the next row under it that is written in, so a table with a
+         carry row over every row keeps them apart. */
+      if (box.dataset.crow != null) {
+        return { box, after: table.querySelector(`[data-row="${box.dataset.crow}"][data-col="${col - 1}"]`) };
+      }
       let row = (box.closest("tr") || box).nextElementSibling;
       while (row && !row.querySelector("[data-col]")) row = row.nextElementSibling;
-      const col = Number(box.dataset.carry);
       return { box, after: row ? row.querySelector(`[data-col="${col - 1}"]`) : null };
     });
 

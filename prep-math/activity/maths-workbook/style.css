@@ -335,6 +335,76 @@ thead .pv-chart__side {
   background: #fffdf8;
 }
 
+/* ── the column, on the sheet the written boards use ───────────────────────
+   colsheet.js lays a column sum out the way boards/sheet.js does: a grid with a
+   cell per place. Not a table — a table cell is sized by what is in it and by
+   every other cell in its column, so the box a child typed into was whatever
+   width the row above happened to leave, and the typing was cut off. Here every
+   cell is the same measured size, set once here, and the box IS the cell.
+
+   Tinted with the same butter/sky/leaf as the blocks and the place-value chart,
+   because the single thing that goes wrong in a written sum is a figure in the
+   wrong column — and a column here is the same column as a column there. */
+
+.ms-col {
+  --ms-cw: 11mm;                      /* one place across */
+  display: grid;
+  grid-template-columns: 7mm repeat(var(--ms-cols, 3), var(--ms-cw));
+  justify-content: start;
+  align-content: start;
+  margin: 1mm 0 2mm;
+  /* the paper's own hand at the size the column form has always been set in —
+     no family of its own, so a figure here matches a figure anywhere else */
+  font-size: 15pt;
+  font-weight: 700;
+  color: #2a2723;
+}
+/* the place tags across the top */
+.ms-col__tag {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono), monospace;
+  font-size: 7pt;
+  background: var(--ms-fill);
+}
+/* a figure that is printed: part of the question, or the worked answer */
+.ms-col__mark { display: grid; place-items: center; }
+.ms-col__sign { display: grid; place-items: center; font-size: 13pt; }
+/* the carry: a note to the writer about the next column, not a figure of the
+   sum — smaller, higher, and in the blue the child writes in */
+.ms-col__carry {
+  justify-self: center;
+  align-self: start;
+  /* clear of the rule above it: a carry written on the line is a carry in the
+     wrong row */
+  margin-top: 0.8mm;
+  width: 9mm;
+  height: 5mm;
+  font-size: 9pt;
+  line-height: 5mm;
+  text-align: center;
+}
+.ms-col .ms-down__carrybox,
+.ms-col .ms-down__carrywrote { display: block; width: 9mm; height: 5mm; }
+/* the line under the last thing being added */
+.ms-col__rule {
+  align-self: end;
+  height: 0;
+  border-bottom: 0.5mm solid #2a2723;
+}
+.ms-col__rule.is-heavy { border-bottom-width: 0.7mm; }
+/* the box the next figure goes in: exactly its column, with a hair of air
+   round it so two boxes side by side are two boxes */
+.ms-col__cell {
+  justify-self: stretch;
+  align-self: center;
+  height: 8.6mm;
+  margin: 0 0.4mm;
+  background: #fffdf8;
+  border: 0.4mm solid #2a2723;
+  border-radius: 0.6mm;
+}
+
 /* ── the column ────────────────────────────────────────────────────────────
    Ruled like the place-value chart, and tinted with the same butter/sky/leaf,
    because the single thing that goes wrong in a written sum is a digit in the
