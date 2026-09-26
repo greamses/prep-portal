@@ -380,6 +380,18 @@ thead .pv-chart__side {
   height: 5.4mm;
   border: 0.3mm dashed #8f887c;
 }
+/* the same box with the carry already in it — the one done for the child.
+   Not a `carrybox`, because that class is a place to write and this one has
+   been written in already. */
+.ms-down__carrywrote {
+  display: inline-block;
+  width: 9.5mm;
+  height: 5.4mm;
+  border: 0.3mm dashed #8f887c;
+  font-size: 9pt;
+  line-height: 5.4mm;
+  color: #2a6ca8;
+}
 
 /* The rule under the second number is the one heavy line in the whole thing. */
 .ms-down__second .ms-down__cell,

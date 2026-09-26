@@ -2616,18 +2616,34 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 @media print { .fb-cuts { display: none; } }
 
 /* ── one box at a time (interactive.js stepwise) ─────────────────────────────
-   A written sum is worked in an order, and a table with every box open invites
-   a child to write the answer straight across — the one thing the method is
-   there to stop. So the box being asked for is lit, the ones after it wait,
-   and the ones already answered stay open to be corrected. */
-.wb-live .wb-cell.is-waiting,
-.wb-live .wb-answer.is-waiting { opacity: 0.35; }
-.wb-live .wb-cell.is-waiting input,
-.wb-live .wb-answer.is-waiting input { cursor: not-allowed; background: transparent; }
-.wb-live .wb-cell.is-now,
-.wb-live .wb-answer.is-now { box-shadow: 0 0 0 0.6mm #f4c95d; border-radius: 0.8mm; }
-/* on paper every box is simply a box */
-@media print {
-  .wb-cell.is-waiting, .wb-answer.is-waiting { opacity: 1; }
-  .wb-cell.is-now, .wb-answer.is-now { box-shadow: none; }
+   A written sum is worked in an ORDER, and a table of empty boxes invites a
+   child to fill it straight across — the one thing the column method is there
+   to stop. So on screen the paper behaves like paper: the figures already
+   written are ink, the box being asked for is the only box there is, and the
+   columns still to come are blank page. Nothing is dimmed and nothing is
+   greyed out, because a row of dead boxes is still a row of boxes.
+
+   The boxes keep their WIDTH all the same — a box that went away would take
+   its column with it, and the columns lining up is the whole of what the
+   method is arguing.
+
+   All of it inside @media screen: printing wants the boxes back, whether the
+   paper is live or not, and a print rule that had to undo each of these would
+   have to know what every box is supposed to look like. */
+@media screen {
+  .wb-live [data-steps] .is-waiting,
+  .wb-live [data-steps] .is-written:not(:focus-within) {
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+  /* the input is hidden rather than removed, so the column keeps its width */
+  .wb-live [data-steps] .is-waiting input { visibility: hidden; }
+  /* the box being asked for: a gold ring and a warmer paper, so it is the one
+     thing on the sum the eye lands on */
+  .wb-live [data-steps] .is-now {
+    box-shadow: 0 0 0 0.7mm #f4c95d;
+    background: #fffaee;
+    border-radius: 0.8mm;
+  }
 }

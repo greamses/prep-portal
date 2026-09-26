@@ -467,18 +467,27 @@ function longEx(id, da, label, count) {
         say(`${a} × ${ones} = ${a * ones}. Then a 0, because the next row is ${a} × ${tens * 10}: `
           + `${a * tens * 10}. Add the rows: ${a * ones} + ${a * tens * 10} = ${a * b}.`));
     },
+    /* Every row of this table is its own sum with its own carries, so every
+       row has a row of carry boxes above it — the two rows of multiplying and
+       the addition at the end. They are not marked: a carry is working, and
+       what it is worth is decided by whether the figure under the line is
+       right. They still have to be counted here, in the order the page has
+       them: the carries of a row, then the row. */
     key(item) {
       const places = da + 2;
       const cols = [...Array(places).keys()].reverse();
       const out = [];
+      const carries = () => cols.filter((p) => p >= 1).forEach(() => out.push(want.free()));
       digitsOf(item.b, 2).forEach((d, k) => {
         const v = item.a * d * 10 ** k;
         const V = digitsOf(v, places);
         const top = String(v).length - 1;
+        carries();
         cols.forEach((p) => out.push(want.cell(V[p], p > top)));
       });
       const R = digitsOf(item.a * item.b, places);
       const topR = String(item.a * item.b).length - 1;
+      carries();
       cols.forEach((p) => out.push(want.cell(R[p], p > topR)));
       return out;
     },

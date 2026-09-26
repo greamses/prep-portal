@@ -69,10 +69,13 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
      the row above into the wrong column. */
   const spill = op === "+";
   const cols = [...Array(places + (spill ? 1 : 0)).keys()].reverse();
-  const S = answer === null ? null : digitsOf(answer, cols.length);
+  const total = op === "-" ? a - b : a + b;
+  const S = digitsOf(total, cols.length);
+  /* the highest column the answer actually reaches: above it the boxes are
+     there to be left empty, and the screen knows not to ask for them */
+  const top = String(Math.abs(total)).length - 1;
 
   const NAMES = ["O", "T", "H", "Th"];
-  const cell = (text, cls = "") => `<td class="ms-down__cell ${cls}">${text}</td>`;
 
   /* The head names the places and tints them the same butter/sky/leaf as the
      blocks and the place-value chart, so a column here and a column there are
@@ -89,14 +92,52 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
       .join("") +
     `</tr>`;
 
+  /* WHAT GOES IN THE CARRY BOX, when the sum is worked for the child.
+     Adding, it is the ten that moved on — a 1. Taking away, it is what the
+     column has LEFT after lending, which is the figure a child is told to
+     write above the column they crossed out. Printed blank for a question,
+     written in for the one done for them: a worked example with empty carry
+     boxes shows the answer and hides the only step that was difficult. */
+  const carryFigures = () => {
+    const out = [];
+    if (op === "-") {
+      const lent = [];
+      let borrow = 0;
+      for (let p = 0; p < places; p++) {
+        let have = A[p] - borrow;
+        borrow = 0;
+        if (have < B[p]) { have += 10; borrow = 1; lent[p + 1] = 1; }
+        /* a column that gave a ten away, or was given one, is no longer the
+           figure printed under it — so it says what it is now */
+        if (lent[p] || borrow) out[p] = have;
+      }
+      return out;
+    }
+    let carry = 0;
+    for (let p = 0; p < places; p++) {
+      const sum = A[p] + B[p] + carry;
+      carry = sum >= 10 ? 1 : 0;
+      if (carry) out[p + 1] = 1;
+    }
+    return out;
+  };
+  const figures = answer === null ? [] : carryFigures();
+
   /* A carry box sits above the column the carry goes INTO, so every column but
      the ones has one. Nothing has ever been carried into the ones. */
   const carryRow = carries
-    ? `<tr class="ms-down__carry"><td></td>` +
-      cols.map((p) => `<td>${p >= 1 ? `<span class="ms-down__carrybox"></span>` : ""}</td>`).join("") +
+    ? `<tr class="ms-down__carry" data-carryrow><td></td>` +
+      cols
+        .map((p) => `<td>${p < 1 ? ""
+          : figures[p] == null
+            ? `<span class="ms-down__carrybox" data-carry="${p}"></span>`
+            /* written in, not left to be written: print, not a place */
+            : `<span class="ms-down__carrywrote">${figures[p]}</span>`}</td>`)
+        .join("") +
       `</tr>`
     : "";
 
+  const cell = (text, cls = "") => `<td class="ms-down__cell ${cls}">${text}</td>`;
   const figure = (d, p) => (p < places ? d[p] : "");
   const rowA =
     `<tr><td class="ms-down__sign"></td>` +
@@ -106,16 +147,25 @@ export function down(a, b, op, { places = 2, carries = false, answer = null } = 
     `<tr class="ms-down__second"><td class="ms-down__sign">${op === "-" ? "−" : "+"}</td>` +
     cols.map((p) => cell(figure(B, p))).join("") +
     `</tr>`;
+  /* The answer row. A box the answer does not reach says `data-blank`: on paper
+     it is a box like any other — whether the answer spills is part of the
+     question — but on screen nothing asks for it, because the working never
+     goes there. */
   const rowS =
     `<tr class="ms-down__answer"><td></td>` +
-    cols.map((p) => cell(S === null ? "" : (S[p] ? S[p] : (p === cols[0] ? "" : S[p])), S === null ? "wb-cell" : "")).join("") +
+    cols
+      .map((p) => (answer === null
+        ? `<td class="ms-down__cell wb-cell" data-col="${p}"${p > top ? " data-blank" : ""}></td>`
+        : cell(p <= top ? S[p] : "")))
+      .join("") +
     `</tr>`;
 
-  return (
-    /* worked ones first: interactive.js opens one box at a time from the
-       right (the same way the written board in the tool panel asks) */
-    `<table class="ms-down" data-steps="rtl">` + head + carryRow + rowA + rowB + rowS + `</table>`
-  );
+  /* A question is worked one box at a time, from the right — the same way the
+     written board in the tool panel asks (interactive.js stepwise). The one
+     done for the child has nothing to step through, so it does not say it
+     steps. */
+  const steps = answer === null ? ` data-steps="rtl"` : "";
+  return `<table class="ms-down"${steps}>` + head + carryRow + rowA + rowB + rowS + `</table>`;
 }
 
 /* ── the two together ──────────────────────────────────────────────────────*/

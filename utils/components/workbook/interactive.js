@@ -689,16 +689,25 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
    */
   function stepwise(table) {
     const how = table.dataset.steps || "rtl";
-    const boxes = [...table.querySelectorAll(".wb-cell, .wb-answer")];
-    if (boxes.length < 2) return;
+    const cells = [...table.querySelectorAll(".wb-cell, .wb-answer")];
+    if (cells.length < 2) return;
+
+    /* A box the method never fills — the column an answer does not reach — is
+       printed on paper, because whether the answer spills is part of the
+       question, but it is not part of the chain: nothing would ever open it
+       again, and an invisible box waiting for a figure that does not exist
+       stops the sum dead. */
+    const chain = cells.filter((b) => !b.hasAttribute("data-blank"));
+    const spare = cells.filter((b) => b.hasAttribute("data-blank"));
+    if (chain.length < 2) return;
 
     /* the order the figures are written in */
-    let order = boxes;
+    let order = chain;
     if (how === "rtl") {
-      order = boxes.slice().reverse();
+      order = chain.slice().reverse();
     } else if (how === "rows-rtl") {
       const rows = new Map();
-      boxes.forEach((b) => {
+      chain.forEach((b) => {
         const row = b.closest("tr") || table;
         if (!rows.has(row)) rows.set(row, []);
         rows.get(row).push(b);
@@ -711,23 +720,50 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       return !!(input && String(input.value).trim());
     };
 
+    /* THE CARRIES. A carry is not an answer — nothing marks it — so it is not
+       a link in the chain. It turns up when it is needed: the box above a
+       column appears once the figure in the column to its RIGHT has been
+       written, which is the moment a child has something to carry. Which row
+       it belongs to is the next row under it that is written in, so a table
+       with a carry row over every row (long multiplication) keeps them
+       apart. */
+    const carries = [...table.querySelectorAll("[data-carry]")].map((box) => {
+      let row = (box.closest("tr") || box).nextElementSibling;
+      while (row && !row.querySelector("[data-col]")) row = row.nextElementSibling;
+      const col = Number(box.dataset.carry);
+      return { box, after: row ? row.querySelector(`[data-col="${col - 1}"]`) : null };
+    });
+
+    const shut = (b, on) => {
+      b.classList.toggle("is-waiting", on);
+      const input = b.querySelector("input, textarea");
+      if (input) input.disabled = on;
+    };
+
     const show = () => {
-      /* everything up to and including the first empty box is open; what
-         comes after it waits its turn */
+      /* One box to write in: the one the method has reached. What is written
+         already is ink on the page and can be gone back to; what is still to
+         come is not a box yet. */
       let open = true;
       order.forEach((b) => {
-        const isNext = open && !filled(b);
-        b.classList.toggle("is-waiting", !open);
+        const has = filled(b);
+        const isNext = open && !has;
+        shut(b, !open);
         b.classList.toggle("is-now", isNext);
-        const input = b.querySelector("input, textarea");
-        if (input) input.disabled = !open;
+        b.classList.toggle("is-written", has && !isNext);
         if (isNext) open = false;
+      });
+      spare.forEach((b) => { shut(b, true); b.classList.remove("is-now", "is-written"); });
+      carries.forEach(({ box, after }) => {
+        const ready = !after || filled(after);
+        shut(box, !ready);
+        box.classList.toggle("is-written", ready && filled(box));
       });
       /* a table with every box filled has no "now" */
       table.classList.toggle("is-done", order.every(filled));
     };
 
-    order.forEach((b) => {
+    [...order, ...carries.map((c) => c.box)].forEach((b) => {
       const input = b.querySelector("input, textarea");
       if (!input || input.__wbStep) return;
       input.__wbStep = true;
@@ -1799,8 +1835,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        while the sum was being worked, and now the child is going back over
        what they got wrong. */
     sheet.querySelectorAll("[data-steps]").forEach((table) => {
-      table.querySelectorAll(".wb-cell, .wb-answer").forEach((b) => {
-        b.classList.remove("is-waiting", "is-now");
+      table.querySelectorAll(".wb-cell, .wb-answer, [data-carry]").forEach((b) => {
+        b.classList.remove("is-waiting", "is-now", "is-written");
         const input = b.querySelector("input, textarea");
         if (input) input.disabled = false;
       });
@@ -2399,7 +2435,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       asMode("pencil"), asMode("eraser"),
       asTool("compass"), asTool("ruler"), asTool("protractor"), asTool("setsquare"),
     ] },
-    { id: "work", label: "Working out", of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
+    /* The four written boards all show, none of them behind the arrow: they are
+       what a child is sent to the rail FOR, and a multiplication hidden one
+       click inside an addition is a multiplication nobody finds. */
+    { id: "work", label: "Working out", all: true, of: [asSheet("column"), asSheet("times"), asSheet("longdiv"), asSheet("fraction")] },
     /* No abacus of its own: the three frames are on the Manipulatives canvas,
        which is right here in the same family, and a second copy of them in a
        panel of its own was one more thing to keep working for no more that a
@@ -2430,10 +2469,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      a third element that does the scrolling, so neither the teeth nor the holes
      slide away when there are more tools than window. */
   side.innerHTML = `<div class="wb-side__paper pp-receipt__paper"><div class="wb-side__keys">` + FAMILIES.map((f) => {
-      const [face, ...rest] = f.of;
+    /* `all` families lay every key out down the rail; the rest show one and
+       keep the others behind the corner arrow */
+    const [face, ...rest] = f.of;
     return `<div class="wb-side__fam" data-fam="${f.id}">`
-      + keyHtml(face)
-      + (rest.length
+      + (f.all ? f.of.map(keyHtml).join("") : keyHtml(face))
+      + (!f.all && rest.length
         ? `<button type="button" class="wb-side__more" aria-expanded="false"`
           + ` aria-label="More ${f.label.toLowerCase()} tools"`
           + ` data-tip="More ${f.label.toLowerCase()} tools" data-tip-side="right">${ARROW}</button>`
@@ -2459,7 +2500,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
      rail's delegation to catch. */
   const flies = new Map();      // family id → its flyout
   FAMILIES.forEach((f) => {
-    const rest = f.of.slice(1);
+    const rest = f.all ? [] : f.of.slice(1);
     if (!rest.length) return;
     /* the same receipt as the rail it comes out of: wrapper for the shadow,
        paper for the teeth and the holes */

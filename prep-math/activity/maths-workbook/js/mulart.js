@@ -183,16 +183,65 @@ export function shortCol(a, b, { answer = false } = {}) {
   const head = `<tr class="ms-down__head"><td></td>${cols.map((p) => (p < da
     ? `<td style="--ms-fill:${placeFill(p)}">${NAMES[p] || ""}</td>`
     : `<td class="ms-down__spill"></td>`)).join("")}</tr>`;
-  /* a carry goes INTO a column, so every column but the ones has a box */
-  const carry = answer ? "" : `<tr class="ms-down__carry"><td></td>${cols
-    .map((p) => `<td>${p >= 1 ? `<span class="ms-down__carrybox"></span>` : ""}</td>`).join("")}</tr>`;
+  /* a carry goes INTO a column, so every column but the ones has a box — and
+     the one done for the child has the carries WRITTEN IN, because carrying is
+     the whole of what short multiplication asks and a worked example that
+     leaves the boxes empty has shown the answer and hidden the method */
+  const carry = carryRow(cols, answer ? timesCarries(A, b) : []);
   const rowA = `<tr><td class="ms-down__sign"></td>${cols.map((p) => `<td class="ms-down__cell">${p < da ? A[p] : ""}</td>`).join("")}</tr>`;
   const rowB = `<tr class="ms-down__second"><td class="ms-down__sign">×</td>${cols
     .map((p) => `<td class="ms-down__cell">${p === 0 ? b : ""}</td>`).join("")}</tr>`;
   const rowR = `<tr class="ms-down__answer"><td></td>${cols
-    .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? (p <= topR ? R[p] : "") : ""}</td>`).join("")}</tr>`;
-  /* one box at a time, from the right, like the board in the tool panel */
-  return `<table class="ms-down mm-col" data-steps="rtl">${head}${carry}${rowA}${rowB}${rowR}</table>`;
+    .map((p) => (answer
+      ? `<td class="ms-down__cell">${p <= topR ? R[p] : ""}</td>`
+      : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > topR ? " data-blank" : ""}></td>`)).join("")}</tr>`;
+  /* one box at a time, from the right, like the board in the tool panel — the
+     worked one has no boxes, so it does not say it steps */
+  const steps = answer ? "" : ` data-steps="rtl"`;
+  return `<table class="ms-down mm-col"${steps}>${head}${carry}${rowA}${rowB}${rowR}</table>`;
+}
+
+/* ── the carry boxes, shared by both column forms ──────────────────────────*/
+
+/**
+ * The row of small boxes above a column sum. `figures` is what goes in them,
+ * by column — empty for a question, filled for the one worked out.
+ */
+function carryRow(cols, figures = []) {
+  /* An EMPTY box is a place to write, and the page counts it as one. A carry
+     the workbook has written in is not — it is print — so it is a different
+     element wearing the same box, or a worked example would be counted as
+     work the child has left undone. */
+  const box = (p) => (p < 1 ? ""
+    : figures[p] == null
+      ? `<span class="ms-down__carrybox" data-carry="${p}"></span>`
+      : `<span class="ms-down__carrywrote">${figures[p]}</span>`);
+  return `<tr class="ms-down__carry" data-carryrow><td></td>${cols
+    .map((p) => `<td>${box(p)}</td>`).join("")}</tr>`;
+}
+
+/** Multiplying a number by one figure: what is carried into each column. */
+function timesCarries(A, b, shift = 0) {
+  const out = [];
+  let c = 0;
+  for (let i = 0; i < A.length; i++) {
+    const prod = A[i] * b + c;
+    c = Math.floor(prod / 10);
+    if (c) out[i + shift + 1] = c;
+  }
+  return out;
+}
+
+/** Adding a column of numbers: what is carried into each column. */
+function addCarries(rows, width) {
+  const out = [];
+  let c = 0;
+  for (let p = 0; p < width; p++) {
+    const sum = rows.reduce((t, R) => t + (R[p] || 0), 0) + c;
+    c = Math.floor(sum / 10);
+    if (c) out[p + 1] = c;
+  }
+  return out;
 }
 
 /* ── long multiplication ───────────────────────────────────────────────────*/
@@ -202,6 +251,11 @@ export function shortCol(a, b, { answer = false } = {}) {
  * multiplier, then the rule and the total. The second row starts with a 0 in
  * the ones column — the zero is written, not left blank, because it IS the
  * point: that row is the number times TENS.
+ *
+ * EVERY ROW THAT IS WORKED OUT HAS ITS OWN CARRY BOXES — the two rows of
+ * multiplying and the addition at the end. They are three different sums and
+ * the carries of one have nothing to do with the carries of the next, which is
+ * exactly why the board in the tool panel rubs them out between rows.
  */
 export function longCol(a, b, { answer = false } = {}) {
   const da = String(a).length;
@@ -214,20 +268,29 @@ export function longCol(a, b, { answer = false } = {}) {
   const head = `<tr class="ms-down__head"><td></td>${cols.map((p) => `<td style="--ms-fill:${placeFill(p)}">${NAMES[p] || ""}</td>`).join("")}</tr>`;
   const rowA = `<tr><td class="ms-down__sign"></td>${cols.map((p) => `<td class="ms-down__cell">${p < da ? A[p] : ""}</td>`).join("")}</tr>`;
   const rowB = `<tr class="ms-down__second"><td class="ms-down__sign">×</td>${cols.map((p) => `<td class="ms-down__cell">${p < db ? B[p] : ""}</td>`).join("")}</tr>`;
+  const partRows = bd.map((d, k) => digitsOf(a * d * 10 ** k, places));
   const parts = bd.map((d, k) => {
     const v = a * d * 10 ** k;
-    const V = digitsOf(v, places);
+    const V = partRows[k];
     const top = String(v).length - 1;
     const last = k === db - 1;
-    return `<tr class="mm-part${last ? " mm-part--last" : ""}"><td class="ms-down__sign">${last && k > 0 ? "+" : ""}</td>${cols
-      .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? (p <= top ? V[p] : "") : ""}</td>`).join("")}</tr>`;
+    const carries = answer ? timesCarries(digitsOf(a, da), d, k) : [];
+    return carryRow(cols, carries) +
+      `<tr class="mm-part${last ? " mm-part--last" : ""}"><td class="ms-down__sign">${last && k > 0 ? "+" : ""}</td>${cols
+        .map((p) => (answer
+          ? `<td class="ms-down__cell">${p <= top ? V[p] : ""}</td>`
+          : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > top ? " data-blank" : ""}></td>`)).join("")}</tr>`;
   }).join("");
   const R = digitsOf(a * b, places);
   const topR = String(a * b).length - 1;
-  const rowR = `<tr class="ms-down__answer"><td></td>${cols
-    .map((p) => `<td class="ms-down__cell${answer ? "" : " wb-cell"}">${answer ? (p <= topR ? R[p] : "") : ""}</td>`).join("")}</tr>`;
+  const rowR = carryRow(cols, answer ? addCarries(partRows, places) : []) +
+    `<tr class="ms-down__answer"><td></td>${cols
+      .map((p) => (answer
+        ? `<td class="ms-down__cell">${p <= topR ? R[p] : ""}</td>`
+        : `<td class="ms-down__cell wb-cell" data-col="${p}"${p > topR ? " data-blank" : ""}></td>`)).join("")}</tr>`;
   /* each partial product right to left, then the total the same way */
-  return `<table class="ms-down mm-col mm-long" data-steps="rows-rtl">${head}${rowA}${rowB}${parts}${rowR}</table>`;
+  const steps = answer ? "" : ` data-steps="rows-rtl"`;
+  return `<table class="ms-down mm-col mm-long"${steps}>${head}${rowA}${rowB}${parts}${rowR}</table>`;
 }
 
 /* ── the lattice ───────────────────────────────────────────────────────────*/
