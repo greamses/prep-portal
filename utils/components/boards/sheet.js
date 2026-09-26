@@ -190,7 +190,8 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
 
     for (const m of sheet.marks) {
       const n = put(
-        `bd-mark${m.tone === "carry" ? " is-carry" : m.tone === "soft" ? " is-soft" : ""}`,
+        `bd-mark${m.tone === "carry" ? " is-carry" : m.tone === "pre" ? " is-pre"
+          : m.tone === "soft" ? " is-soft" : ""}`,
         m.row, m.col, m.cols || 1, m.span || 1,
       );
       n.textContent = m.ch;
@@ -228,7 +229,10 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
       open.cells.forEach((c, i) => {
         const box = document.createElement("input");
         box.type = "text";
-        box.className = `bd-in${open.count ? " bd-in--count" : ""}`;
+        /* `pre` is the little figure carried INTO the next one — short
+           division writes it in the gap before that figure, not over the top
+           of it, so that 1 in front of a 2 reads as twelve and not as three */
+        box.className = `bd-in${open.count ? " bd-in--count" : ""}${c.pre ? " bd-in--pre" : ""}`;
         box.inputMode = "numeric";
         box.autocomplete = "off";
         box.spellcheck = false;

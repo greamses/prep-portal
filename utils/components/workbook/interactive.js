@@ -726,7 +726,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       ? boxes.slice().sort((x, y) => Number(x.dataset.col) - Number(y.dataset.col))
       : boxes.slice().reverse());
     let order = chain;
-    if (how === "rtl") {
+    if (how === "listed") {
+      /* The method says what order it works in and writes it on each box
+         (`data-step`). The criss-cross needs this: it runs column by column but
+         takes every crossing of a column before it writes anything down, so
+         neither "right to left" nor "row by row" describes it. */
+      order = chain.slice().sort((x, y) => Number(x.dataset.step || 0) - Number(y.dataset.step || 0));
+    } else if (how === "rtl") {
       order = rightToLeft(chain);
     } else if (how === "rows-rtl") {
       /* a sheet says which row a box is on (`data-row`); a table has its own
@@ -781,6 +787,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (input) input.disabled = on;
     };
 
+    /* THE ARROWS OF A CRISS-CROSS. Each one is tied to the box that pass is
+       answered in, and comes out with it: the ones times the ones, then the two
+       that cross, then the tens times the tens. An arrow stays up once it has
+       been drawn, so what has been done is still on the page. */
+    const passes = [...table.querySelectorAll("[data-pass]")].map((line) => ({
+      line,
+      box: table.querySelector(`[data-step="${line.dataset.pass}"]`),
+    }));
+
     const show = () => {
       /* One box to write in: the one the method has reached. What is written
          already is ink on the page and can be gone back to; what is still to
@@ -795,6 +810,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
         if (isNext) open = false;
       });
       spare.forEach((b) => { shut(b, true); b.classList.remove("is-now", "is-written"); });
+      passes.forEach(({ line, box }) => {
+        const out = !box || filled(box) || box.classList.contains("is-now");
+        line.classList.toggle("is-on", out);
+      });
       carries.forEach(({ box, after, into }) => {
         /* A carry is a note to yourself about the next column, and once that
            column has been written it has been USED. It goes away then, the way

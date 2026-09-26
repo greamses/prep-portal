@@ -348,6 +348,7 @@ thead .pv-chart__side {
 
 .ms-col {
   --ms-cw: 11mm;                      /* one place across */
+  position: relative;                 /* the arrows are drawn over it */
   display: grid;
   grid-template-columns: 7mm repeat(var(--ms-cols, 3), var(--ms-cw));
   justify-content: start;
@@ -386,6 +387,21 @@ thead .pv-chart__side {
 }
 .ms-col .ms-down__carrybox,
 .ms-col .ms-down__carrywrote { display: block; width: 9mm; height: 5mm; }
+/* THE LEFT-OVER OF A SHORT DIVISION sits in the GAP between two figures and a
+   little above them, the way a hand writes 4 then a small 2 then 2. It is hung
+   off the right edge of the cell before it and pulled back by half its own
+   width, so it straddles the line between the two columns and covers neither
+   figure — the gap is the only place it can stand and mean "ten". */
+.ms-col__carry--beside {
+  justify-self: end;
+  align-self: start;
+  margin: 0.8mm -2.1mm 0 0;
+  font-size: 7.5pt;
+  line-height: 4.2mm;
+  text-align: center;
+}
+.ms-col__carry--beside.ms-down__carrybox,
+.ms-col__carry--beside.ms-down__carrywrote { width: 4.2mm; height: 4.2mm; }
 /* The line under the last thing being added. It stands clear of both: the row
    above does not sit on it and the row below does not hang off it. */
 .ms-col__rule {
@@ -406,6 +422,34 @@ thead .pv-chart__side {
   margin-bottom: 1mm;
   pointer-events: none;
 }
+/* ── the crossings, drawn where the figures stand ──────────────────────────
+   One SVG over the whole sheet, measured in the same millimetres the grid is
+   (colsheet.js). On paper every arrow is there — it is the picture of the
+   method. On screen they come out one at a time, with the box that pass is
+   answered in, and stay up once drawn. */
+.ms-col__cross {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.wb-live .ms-col__cross path[data-pass] {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.wb-live .ms-col__cross path[data-pass].is-on { opacity: 1; }
+/* a crossing is working, not an answer: a wider box, and a lighter hand */
+.ms-col__slot {
+  justify-self: stretch;
+  align-self: center;
+  height: 7mm;
+  margin: 0 0.5mm;
+  background: #fffdf8;
+  border: 0.35mm dashed #8f887c;
+  border-radius: 0.6mm;
+}
+.ms-col__mark.is-soft { color: #6b655c; }
+
 /* the box the next figure goes in: its whole column, less a margin, so that
    two boxes side by side are two boxes and a row of them stands clear of the
    line above it */

@@ -97,6 +97,17 @@ select.bd-sum__in { cursor: pointer; }
   font-size: 0.68rem;
   color: #1f6ea8;
 }
+/* The figure carried INTO the next one — short division's little remainder.
+   It goes in the GAP before that figure and low, the way a hand writes it, so
+   the 1 in front of a 2 reads as twelve; written over the top of the column it
+   would be read as something to add. */
+.bd-mark.is-pre {
+  justify-items: end;
+  align-items: end;
+  padding: 0 0.06rem 0.05rem 0;
+  font-size: 0.66rem;
+  color: #1f6ea8;
+}
 /* A nought that holds a place, or one fetched from past the point: written,
    but not worked out. */
 .bd-mark.is-soft { color: rgba(42, 39, 35, 0.42); }
@@ -187,6 +198,14 @@ select.bd-sum__in { cursor: pointer; }
   border-radius: 0.25rem;
 }
 .bd-in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
+/* and the box for one of those: half a cell, hugging the gap it goes in */
+.bd-in--pre {
+  width: 62%;
+  justify-self: end;
+  align-self: end;
+  height: 70%;
+  font-size: 0.72rem;
+}
 /* the count of places at the end of a decimal multiplication: a note about the
    answer, so it stands in the air beside it rather than in its columns */
 .bd-in--count { border-style: solid; background: rgba(244, 201, 93, 0.22); border-color: #d9a72f; }

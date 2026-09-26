@@ -3,7 +3,9 @@
    ----------------------------------------------------------------------------
    THE BUS STOP, on the same ruled sheet as every other written sum here
    (colsheet.js): the answer above the bar, the number being divided under it,
-   and the little figures carried along the row between them.
+   and what is left over after each figure written small in the GAP in front of
+   the next one — 4 ₁4 ₂2 — which is where a hand writes it and the only place
+   it reads as a ten rather than as one more thing to add.
 
    It is the printed half of /utils/components/boards/shortdiv.js. The board
    asks for one figure at a time and says why a wrong one is wrong; this asks
@@ -83,11 +85,15 @@ export function busStop(n, d, { answer = false } = {}) {
     else sheet.box(rowQ, 0);
   }
 
-  /* Each carry waits on the figure to its LEFT: you divide a column, and what
-     will not go carries into the next one along. */
+  /* WHAT IS LEFT OVER GOES IN THE GAP IN FRONT OF THE NEXT FIGURE — beside it,
+     down among the figures, never in a row of its own above the column. Written
+     above, a little 1 over the tens is read as one more ten to add; written in
+     front of the 2 it is read as the ten that makes 2 into 12, which is what it
+     is. Each one waits on the answer figure to its LEFT: you divide a column,
+     and what will not go carries into the next one along. */
   for (let k = 1; k < wide; k++) {
     if (carry[k - 1] == null) continue;
-    sheet.carry(rowC, at(k), answer ? carry[k - 1] : null, rowQ, at(k - 1));
+    sheet.carry(rowN, at(k), answer ? carry[k - 1] : null, rowQ, at(k - 1), { beside: true });
   }
 
   sheet.sign(rowN, String(d));

@@ -37,7 +37,13 @@ export const MAX_DIGITS = 7;       // as long a dividend as the paper holds
 /**
  * The whole method, as a list of things to be written.
  *
- *   rows   0 the answer, 1 the carried remainders, 2 the number being divided
+ *   rows   0 the answer, 1 the number being divided, with what is carried
+ *          written in the gaps between its figures
+ *
+ * WHERE THE LEFT-OVER GOES. In the gap in FRONT of the next figure, small and
+ * low — 4 then a little 2 then 2 — and never above its column. Above the column
+ * it is read as one more thing to ADD to that figure; in front of it, it reads
+ * as what it is: the ten that turns 2 into 12.
  *   cols   one per figure of that number, and one more when there is a
  *          remainder at the end to write beside the answer
  */
@@ -59,7 +65,9 @@ export function workOut(n, d, base) {
     if (q) seen = true;
     entries.push({ kind: "q", row: 0, col: k, value: q, standing, carryIn: carry, holder });
     if (left && k < digits.length - 1) {
-      entries.push({ kind: "r", row: 1, col: k + 1, value: left, standing, q });
+      /* in the gap AFTER this figure, which is the gap in FRONT of the next
+         one — the same place, and the one a hand reaches for */
+      entries.push({ kind: "r", row: 1, col: k, value: left, standing, q, pre: true });
     }
     carry = left;
   });
@@ -73,7 +81,7 @@ export function workOut(n, d, base) {
     base, n, d, digits, entries, remainder, quotient, answerFrom,
     width: digits.length + (remainder ? 1 : 0),
     cols: GUTTER + digits.length + (remainder ? 1 : 0),
-    rows: 3,
+    rows: 2,
     gutter: GUTTER,
   };
 }
@@ -218,7 +226,7 @@ export function ask(thing) {
     return {
       done: false, kind: "r",
       text: `${writeNum(e.q, 0, b)} ${d}s is ${writeNum(e.q * plan.d, 0, b)}. What is left over from ${writeNum(e.standing, 0, b)}?`,
-      where: "in front of the next figure",
+      where: "in the gap in front of the next figure",
     };
   }
   return {
@@ -287,7 +295,7 @@ export function cellsOf(thing) {
   return {
     mode: "type",
     grid: { cols: plan.cols, rows: plan.rows, gutter: plan.gutter },
-    cells: [{ row: e.row, col: e.col, len: writeNum(e.value, 0, thing.base).length }],
+    cells: [{ row: e.row, col: e.col, len: writeNum(e.value, 0, thing.base).length, pre: !!e.pre }],
   };
 }
 
@@ -299,11 +307,11 @@ export function sheetOf(thing) {
   /* the divisor outside the bar */
   const dvs = writeNum(plan.d, 0, b);
   [...dvs].forEach((ch, k) => {
-    marks.push({ row: 2, col: -plan.gutter + k, ch, tone: "ink" });
+    marks.push({ row: 1, col: -plan.gutter + k, ch, tone: "ink" });
   });
   /* the number being divided, inside it */
   plan.digits.forEach((digit, k) => {
-    marks.push({ row: 2, col: k, ch: DIGITS[digit], tone: "ink" });
+    marks.push({ row: 1, col: k, ch: DIGITS[digit], tone: "ink" });
   });
 
   /* everything the child has written */
@@ -316,7 +324,7 @@ export function sheetOf(thing) {
         row: done.row,
         col: done.col,
         ch,
-        tone: done.kind === "r" ? "carry" : done.holder ? "soft" : "ink",
+        tone: done.kind === "r" ? "pre" : done.holder ? "soft" : "ink",
       });
     }
   }

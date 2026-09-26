@@ -113,7 +113,11 @@ export function drawSheet(g, W, H, sheet, c) {
   g.textAlign = "center";
   g.textBaseline = "middle";
   for (const m of sheet.marks) {
-    const carried = m.tone === "carry";
+    /* `pre` is a carried figure written in the GAP before the figure it joins
+       — the 1 of a twelve — so it hugs the right edge of its cell and sits low,
+       where a hand writes it. `carry` rides above its own column instead. */
+    const pre = m.tone === "pre";
+    const carried = m.tone === "carry" || pre;
     /* A mark may stand across more than one row — the sign between two
        fractions, or the whole number beside one — and then it is centred over
        all of them rather than over the first. */
@@ -121,7 +125,13 @@ export function drawSheet(g, W, H, sheet, c) {
     const wide = m.cols || 1;
     g.font = `600 ${carried ? Math.round(size * 0.62) : size}px "JetBrains Mono", monospace`;
     g.fillStyle = carried ? rgba(accent, 0.95) : m.tone === "soft" ? soft : ink;
-    g.fillText(m.ch, colX(m.col) + (cw * wide) / 2, rowY(m.row) + rh * (carried ? 0.62 : tall / 2) + 1);
+    if (pre) {
+      g.textAlign = "right";
+      g.fillText(m.ch, colX(m.col) + cw - Math.round(cw * 0.06), rowY(m.row) + rh * 0.78);
+      g.textAlign = "center";
+    } else {
+      g.fillText(m.ch, colX(m.col) + (cw * wide) / 2, rowY(m.row) + rh * (carried ? 0.62 : tall / 2) + 1);
+    }
   }
 
   g.font = `600 ${size}px "JetBrains Mono", monospace`;

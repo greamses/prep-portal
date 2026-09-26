@@ -422,6 +422,101 @@ export function crissSvg(a, b) {
     + `</svg>`;
 }
 
+/* ── the criss-cross, worked on the sheet ──────────────────────────────────*/
+
+/**
+ * WHICH PAIRS OF FIGURES CROSS IN EACH COLUMN. The column at place p takes
+ * every pair whose places add up to p — that one rule is the whole method, and
+ * it is what the arrows are drawn to show. Lowest place first, so the pairs of
+ * a column come out in the order a hand works them: the figure of `a` nearest
+ * the ones first.
+ */
+export function crissPasses(a, b) {
+  const A = figuresOf(a, String(a).length);
+  const B = figuresOf(b, String(b).length);
+  const width = String(a * b).length;
+  const cols = [];
+  let carry = 0;
+  for (let p = 0; p < width; p++) {
+    const pairs = [];
+    for (let i = 0; i < A.length; i++) {
+      const j = p - i;
+      if (j >= 0 && j < B.length) pairs.push({ i, j, a: A[i], b: B[j], of: A[i] * B[j] });
+    }
+    const cross = pairs.reduce((t, q) => t + q.of, 0);
+    const total = cross + carry;
+    const carryIn = carry;
+    carry = Math.floor(total / 10);
+    cols.push({ p, pairs, cross, carryIn, total, digit: total % 10, carryOut: carry });
+  }
+  return { A, B, width, cols };
+}
+
+/**
+ * THE CRISS-CROSS AS A SHEET, worked a pass at a time.
+ *
+ * The two numbers, then a box for EVERY crossing — each in the column it
+ * belongs to, stacked where a column has more than one — and the answer under
+ * them. The arrows are drawn between the two figures each pass multiplies, and
+ * on screen they come out one at a time, with their box: the ones times the
+ * ones, then the two that cross, then the tens times the tens. A picture beside
+ * the sum showed all of them at once and explained nothing.
+ *
+ * The order of the boxes is the order the method works in — every crossing of
+ * a column, then what goes down, then what carries — and it is written on each
+ * box (`data-step`) rather than left to be guessed from the geometry, because
+ * this is the one method here that does not simply run right to left.
+ */
+export function crissSheet(a, b, { answer = false } = {}) {
+  const { A, B, width, cols } = crissPasses(a, b);
+  const deep = Math.max(...cols.map((c) => c.pairs.length));
+  const rowCarry = 0;
+  const rowA = 1;
+  const rowB = 2;
+  const pass0 = 3;                       // the first row of crossings
+  const rowAns = pass0 + deep;
+
+  const sheet = colSheet({ cols: width, steps: answer ? null : "listed" });
+  for (let p = 0; p < A.length; p++) sheet.mark(rowA, p, A[p]);
+  sheet.sign(rowB, "×");
+  for (let p = 0; p < B.length; p++) sheet.mark(rowB, p, B[p]);
+  sheet.rule(rowB, { heavy: true });
+
+  let step = 0;
+  cols.forEach((col) => {
+    col.pairs.forEach((q, k) => {
+      const row = pass0 + k;
+      if (answer) sheet.mark(row, col.p, q.of, "is-soft");
+      else sheet.slot(row, col.p, { step: step });
+      /* the arrow for this pass: from the figure of `a` it takes to the figure
+         of `b` it takes, bowed so two crossings of one column are told apart */
+      sheet.arrow({ row: rowA, place: q.i }, { row: rowB, place: q.j },
+        { step: answer ? null : step, tone: col.p });
+      step += 1;
+    });
+    if (answer) sheet.mark(rowAns, col.p, col.digit);
+    else sheet.box(rowAns, col.p, { step: step });
+    step += 1;
+    if (col.carryOut && col.p + 1 < width) {
+      sheet.carry(rowCarry, col.p + 1, answer ? col.carryOut : null, rowAns, col.p);
+    }
+  });
+  sheet.rule(rowAns - 1, { heavy: true });
+  return sheet.html("mm-col mm-criss");
+}
+
+/** What the key has to answer, in the order the sheet lists it. */
+export function crissKey(a, b) {
+  const { cols } = crissPasses(a, b);
+  const out = [];
+  cols.forEach((col) => {
+    col.pairs.forEach((q) => out.push({ kind: "pass", value: q.of }));
+    out.push({ kind: "digit", value: col.digit });
+    if (col.carryOut && col.p + 1 < String(a * b).length) out.push({ kind: "carry", value: col.carryOut });
+  });
+  return out;
+}
+
 /* ── the crossing sticks ───────────────────────────────────────────────────*/
 
 /**

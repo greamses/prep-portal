@@ -27,7 +27,10 @@ import { placeFill } from "./blocks.js";
 const NAMES = ["O", "T", "H", "Th", "TTh", "HTh", "M"];
 
 /* how tall each kind of row is */
-const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", answer: "12.4mm" };
+/* how tall each kind of row is. A row of WORKING (the crossings of a
+   criss-cross) is tighter than a row of answer boxes: there can be three of
+   them in one sum and they are notes, not the answer. */
+const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", slot: "9.4mm", answer: "12.4mm" };
 
 /**
  * Start a sheet `cols` places wide. `places` is how many of them are places the
@@ -41,6 +44,7 @@ const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", answer: "12.4mm" };
 export function colSheet({ cols, places = cols, steps = "rtl" }) {
   const bits = [];
   const kinds = [];                       // row number → what kind of row it is
+  const arrows = [];                      // crossings to draw over the figures
 
   const grow = (row, kind) => {
     while (kinds.length <= row) kinds.push("figures");
@@ -84,13 +88,24 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
      * other way — you divide the hundreds and carry what is left into the tens
      * — so it says so instead of the page guessing from the geometry.
      */
-    carry(row, place, figure = null, under = row + 1, after = place - 1) {
-      grow(row, "carry");
+    carry(row, place, figure = null, under = row + 1, after = place - 1, { beside = false } = {}) {
+      /* BESIDE means: drawn in the gap in front of the figure it joins — in the
+         cell one place to its LEFT, hugging that cell's right edge — instead of
+         in a row of its own above the column. Short division writes its
+         left-overs this way, and it matters: a little 1 written OVER the tens
+         is read as one more ten to add, and the same 1 written in front of the
+         2 is read as what it is, the ten that makes twelve.
+
+         The place it NAMES is unchanged either way, because that is what says
+         which column it belongs to and when it has been used up. */
+      if (!beside) grow(row, "carry"); else grow(row);
+      const where = beside ? gcol(place + 1) : gcol(place);
+      const cls = beside ? "ms-col__carry ms-col__carry--beside" : "ms-col__carry";
       if (figure == null) {
-        put("ms-col__carry ms-down__carrybox", `${grow(row)}${gcol(place)}`, "",
+        put(`${cls} ms-down__carrybox`, `${grow(row)}${where}`, "",
           ` data-carry="${place}" data-crow="${under}" data-cafter="${after}"`);
       } else {
-        put("ms-col__carry ms-down__carrywrote", `${grow(row)}${gcol(place)}`, String(figure));
+        put(`${cls} ms-down__carrywrote`, `${grow(row)}${where}`, String(figure));
       }
       return this;
     },
@@ -106,9 +121,22 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
      * the order they are written in (from the right, see stepwise) has nothing
      * to do with it.
      */
-    box(row, place) {
+    box(row, place, { step = null } = {}) {
       put("ms-col__cell wb-cell", `${grow(row, "answer")}${gcol(place)}`, "",
-        ` data-col="${place}" data-row="${row}"`);
+        ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`);
+      return this;
+    },
+    /**
+     * A SLOT — a box for a WORKING figure rather than a figure of the answer:
+     * one crossing of a criss-cross, which can come to two figures. It is wider
+     * than a cell and it is not a column of the answer, so it says `data-step`
+     * instead of a place: the order it is asked for is the order the method
+     * works in, not the order of the columns.
+     */
+    slot(row, place, { step = null, span = 1, tone = "" } = {}) {
+      put(`ms-col__slot wb-answer${tone ? ` ${tone}` : ""}`,
+        `${grow(row, "slot")}${gcol(place, span)}`, "",
+        ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`);
       return this;
     },
     /** The boxes of a whole row: places `top` down to 0, highest first. */
@@ -149,6 +177,19 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
         `grid-row:${row + 1} / -1;grid-column:${2 + (cols - 1 - to)} / span ${to - from + 1};`);
       return this;
     },
+    /**
+     * AN ARROW FROM ONE FIGURE TO ANOTHER — the crossing of a criss-cross,
+     * drawn where the two figures actually stand rather than in a picture
+     * beside the sum. `step` ties it to the box that pass is answered in, so
+     * the screen brings it out when that pass is asked for (interactive.js).
+     *
+     * They are collected and drawn LAST, over the whole grid, because the
+     * geometry needs every row's height and the rows are not all there yet.
+     */
+    arrow(from, to, { step = null, tone = 0 } = {}) {
+      arrows.push({ from, to, step, tone });
+      return this;
+    },
     /** The line under a row — the heavy one under the last thing being added. */
     rule(row, { heavy = false } = {}) {
       put(`ms-col__rule${heavy ? " is-heavy" : ""}`,
@@ -158,13 +199,58 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
     /** The sheet itself. */
     html(extra = "") {
       const rows = kinds.map((k) => HEIGHT[k] || HEIGHT.figures).join(" ");
+      const layer = arrows.length ? arrowLayer(arrows, kinds, cols) : "";
       /* `data-nomath`: the figures of a written sum are not an expression to be
          typeset, they are figures that have to stay in their columns
          (mathify.js keeps out of anything that says so). */
       return `<div class="ms-col${extra ? ` ${extra}` : ""}" data-nomath${steps ? ` data-steps="${steps}"` : ""}`
-        + ` style="--ms-cols:${cols};grid-template-rows:${rows}">${bits.join("")}</div>`;
+        + ` style="--ms-cols:${cols};grid-template-rows:${rows}">${bits.join("")}${layer}</div>`;
     },
   };
+}
+
+/* ── the arrows, in millimetres ─────────────────────────────────────────────
+   The grid is measured: 7mm for the sign, then a column of 11mm per place, and
+   every row's height is in HEIGHT. So where a figure stands is arithmetic, and
+   an arrow between two of them can be drawn over the whole sheet without asking
+   the browser where anything ended up. */
+
+const MM = (h) => parseFloat(h);
+const CW = 11;                            // one place across
+const SIGN = 7;                           // the column the sign stands in
+const TONES = ["#c0453f", "#2a6ca8", "#3f8f4f", "#8a5cc0"];
+
+function arrowLayer(arrows, kinds, cols) {
+  const heights = kinds.map((k) => MM(HEIGHT[k] || HEIGHT.figures));
+  const top = (row) => heights.slice(0, row).reduce((t, h) => t + h, 0);
+  const midY = (row) => top(row) + heights[row] / 2;
+  const midX = (place) => SIGN + (cols - 1 - place) * CW + CW / 2;
+  const W = SIGN + cols * CW;
+  const H = heights.reduce((t, h) => t + h, 0);
+
+  const paths = arrows.map(({ from, to, step, tone }) => {
+    const x1 = midX(from.place);
+    const y1 = midY(from.row) + 2.6;      // just under the figure it starts at
+    const x2 = midX(to.place);
+    const y2 = midY(to.row) - 2.6;        // and just over the one it ends at
+    /* bowed away from the straight line, so two crossings of the same column
+       are told apart and neither is read as part of a figure */
+    const bow = (x2 - x1) * 0.18;
+    const cx = (x1 + x2) / 2 + bow;
+    const cy = (y1 + y2) / 2;
+    const colour = TONES[tone % TONES.length];
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)}`
+      + ` ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${colour}" stroke-width="0.55"`
+      + ` stroke-linecap="round" marker-end="url(#ms-tip-${tone % TONES.length})"`
+      + `${step == null ? "" : ` data-pass="${step}"`}/>`;
+  }).join("");
+
+  const tips = TONES.map((c, i) =>
+    `<marker id="ms-tip-${i}" viewBox="0 0 6 6" refX="4.6" refY="3" markerWidth="4" markerHeight="4"`
+    + ` orient="auto"><path d="M0.6 0.9 5 3 0.6 5.1z" fill="${c}"/></marker>`).join("");
+
+  return `<svg class="ms-col__cross" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"`
+    + ` aria-hidden="true"><defs>${tips}</defs>${paths}</svg>`;
 }
 
 /** A number as its figures, lowest place first — the order everything here uses. */

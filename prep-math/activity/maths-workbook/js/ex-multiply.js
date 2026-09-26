@@ -28,7 +28,7 @@
 import {
   digitsOf, groupsHtml, arraySvg, jumpsSvg, shiftTable, blockRowsHtml, partsOf,
   gridTable, shortCol, longCol, latticeTable, carriesOf,
-  timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg,
+  timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg, crissSheet, crissKey,
   sticksSvg,
 } from "./mulart.js";
 import { traysSvg, SHAPE_NAMES } from "./shapes.js";
@@ -798,13 +798,14 @@ const mulCriss = {
   id: "mul-criss-22",
   group: "mul-criss",
   label: "Criss-cross — 2-digit × 2-digit",
-  blurb: "Down the ones, across both ways, down the tens.",
+  blurb: "Every crossing in its own column, one arrow at a time.",
   heading: "Criss-cross",
   instruction: () =>
-    "Three passes. DOWN the ones: multiply them. ACROSS: multiply both ways and add the "
-    + "two. DOWN the tens: multiply them. Then put the three together — ones, tens, "
-    + "hundreds — carrying anything over ten into the next one.",
-  cols: 2,
+    "Take the columns from the RIGHT. Follow each arrow, multiply the two figures it "
+    + "joins and write what they come to in the box under it. When a column has all its "
+    + "crossings, add them up: the last figure goes under the line and anything over ten "
+    + "carries into the next column.",
+  cols: 1,
   defaultCount: 3,
   make(r, o) {
     let a = numOf(r, o, 2);
@@ -814,39 +815,17 @@ const mulCriss = {
     return { a, b };
   },
   render(item) {
-    const [a1, a0] = String(item.a).split("").map(Number);
-    const [b1, b0] = String(item.b).split("").map(Number);
-    return lead(`${item.a} × ${item.b}`)
-      + `<div class="mm-crissart">${crissSvg(item.a, item.b)}`
-      + `<ol class="mm-passes">`
-      + `<li class="mm-pass mm-pass--ones"><span>Down the ones: ${a0} × ${b0}</span> = ${box()}</li>`
-      + `<li class="mm-pass mm-pass--cross"><span>Across: (${a1} × ${b0}) + (${a0} × ${b1})</span> = ${box()}</li>`
-      + `<li class="mm-pass mm-pass--tens"><span>Down the tens: ${a1} × ${b1}</span> = ${box()}</li>`
-      + `</ol></div>`
-      + ask(`Put them together: ${item.a} × ${item.b} = ${box()}`);
+    return lead(`${item.a} × ${item.b}`) + crissSheet(item.a, item.b);
   },
   worked() {
-    const [a, b] = [42, 32];
     return worked(
-      lead(`${a} × ${b}`)
-      + `<div class="mm-crissart">${crissSvg(a, b)}`
-      + `<ol class="mm-passes">`
-      + `<li class="mm-pass mm-pass--ones"><span>Down the ones: 2 × 2</span> = <b>4</b></li>`
-      + `<li class="mm-pass mm-pass--cross"><span>Across: (4 × 2) + (2 × 3)</span> = <b>14</b></li>`
-      + `<li class="mm-pass mm-pass--tens"><span>Down the tens: 4 × 3</span> = <b>12</b></li>`
-      + `</ol></div>`
-      + say(`4 ones. 14 tens — that is 4 tens and one hundred carried. 12 hundreds and `
-        + `the 1 carried is 13 hundreds. So 1344.`));
+      lead(`42 × 32`) + crissSheet(42, 32, { answer: true })
+      + say(`Two crossings meet in the tens: 4 × 2 is 8 and 2 × 3 is 6, and 8 and 6 is 14 — `
+        + `4 goes down and 1 carries into the hundreds. 4 × 3 is 12, and the 1 carried is 13.`));
   },
   key(item) {
-    const [a1, a0] = String(item.a).split("").map(Number);
-    const [b1, b0] = String(item.b).split("").map(Number);
-    return [
-      want.num(a0 * b0),
-      want.num(a1 * b0 + a0 * b1),
-      want.num(a1 * b1),
-      want.num(item.a * item.b),
-    ];
+    return crissKey(item.a, item.b).map((e) => (e.kind === "pass" ? want.num(e.value)
+      : e.kind === "carry" ? want.free() : want.cell(e.value)));
   },
   answer(item) {
     return [`${item.a} × ${item.b} = ${item.a * item.b}`];
