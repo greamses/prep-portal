@@ -522,13 +522,16 @@ export function crissSheet(a, b, { answer = false } = {}) {
      lower one, so they go over the first number's figure */
   const overOf = (q) => (q.pb < q.pa ? la + 1 + q.j : q.i);
 
-  const deepOf = new Map();
-  cols.forEach((col) => col.pairs.forEach((q) => {
-    if (!q.writes) return;
-    const over = overOf(q);
-    deepOf.set(over, (deepOf.get(over) || 0) + 1);
-  }));
-  const deep = Math.max(1, ...deepOf.values(), 1);
+  /* ONE LAYER PER ADDITION. The crossings of a column are added together, so
+     they are written on ONE line — and the next column's, which are added to
+     each other and not to these, on the line ABOVE. Layered any other way (by
+     which figure each product happens to stand over) the two halves of one
+     addition end up at different heights, with a + between them going uphill. */
+  const layerOf = new Map();
+  cols.forEach((col) => {
+    if (col.pairs.some((q) => q.writes)) layerOf.set(col.p, layerOf.size);
+  });
+  const deep = Math.max(1, layerOf.size);
 
   const rowSum = deep + 1;
   const rowArc = deep + 2;
@@ -540,22 +543,21 @@ export function crissSheet(a, b, { answer = false } = {}) {
   put("mm-cross__sign", rowSum, la, "×");
   B.forEach((d, j) => put("mm-cross__fig", rowSum, la + 1 + j, d));
 
-  const used = new Map();
   const plus = [];                      // { from, to, row } — a + between two products
   let step = 0;
   cols.forEach((col) => {
     let last = null;
+    /* the first column that writes anything sits closest to the figures */
+    const row = deep - (layerOf.get(col.p) ?? 0);
     col.pairs.forEach((q) => {
       if (q.writes) {
         const over = overOf(q);
-        const nth = used.get(over) || 0;
-        used.set(over, nth + 1);
-        if (answer) put("mm-cross__said", deep - nth, over, q.of);
-        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}" data-for="${col.p}"`);
+        if (answer) put("mm-cross__said", row, over, q.of);
+        else put("mm-cross__slot wb-answer", row, over, "", ` data-step="${step}" data-for="${col.p}"`);
         arcs.push({ from: q.i, to: la + 1 + q.j, step: answer ? null : step, tone: col.p });
         /* the crossings of a column are ADDED, so a + stands between them */
-        if (last) plus.push({ from: last.col, to: over, row: Math.max(last.row, deep - nth) });
-        last = { col: over, row: deep - nth };
+        if (last) plus.push({ from: last.col, to: over, row });
+        last = { col: over, row };
         step += 1;
       } else {
         /* no box for it: the arrow comes out when the figure under the line is
@@ -600,12 +602,12 @@ export function crissStack(a, b, { answer = false } = {}) {
   const topCol = (i) => colOfPlace(la - 1 - i);
   const botCol = (j) => colOfPlace(lb - 1 - j);
 
-  const deepOf = new Map();
-  cols.forEach((col) => col.pairs.forEach((q) => {
-    if (!q.writes) return;
-    deepOf.set(topCol(q.i), (deepOf.get(topCol(q.i)) || 0) + 1);
-  }));
-  const deep = Math.max(1, ...deepOf.values(), 1);
+  /* one layer per addition, the next column's above the last — see crissSheet */
+  const layerOf = new Map();
+  cols.forEach((col) => {
+    if (col.pairs.some((q) => q.writes)) layerOf.set(col.p, layerOf.size);
+  });
+  const deep = Math.max(1, layerOf.size);
 
   const rowTop = deep + 1;
   const rowBot = deep + 2;
@@ -617,22 +619,20 @@ export function crissStack(a, b, { answer = false } = {}) {
   put("mm-cross__sign", rowBot, Math.max(0, colOfPlace(lb) - 1), "×");
   B.forEach((d, j) => put("mm-cross__fig", rowBot, botCol(j), d));
 
-  const used = new Map();
   const plus = [];
   let step = 0;
   cols.forEach((col) => {
     let last = null;
+    const row = deep - (layerOf.get(col.p) ?? 0);
     col.pairs.forEach((q) => {
       const loop = { from: topCol(q.i), to: botCol(q.j), tone: col.p };
       if (q.writes) {
         const over = topCol(q.i);
-        const nth = used.get(over) || 0;
-        used.set(over, nth + 1);
-        if (answer) put("mm-cross__said", deep - nth, over, q.of);
-        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}" data-for="${col.p}"`);
+        if (answer) put("mm-cross__said", row, over, q.of);
+        else put("mm-cross__slot wb-answer", row, over, "", ` data-step="${step}" data-for="${col.p}"`);
         arcs.push({ ...loop, step: answer ? null : step });
-        if (last) plus.push({ from: last.col, to: over, row: Math.max(last.row, deep - nth) });
-        last = { col: over, row: deep - nth };
+        if (last) plus.push({ from: last.col, to: over, row });
+        last = { col: over, row };
         step += 1;
       } else {
         arcs.push({ ...loop, step: answer ? null : "ans" + col.p });
