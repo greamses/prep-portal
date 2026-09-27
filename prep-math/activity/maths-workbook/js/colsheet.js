@@ -42,6 +42,7 @@ const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", answer: "12.4mm" };
 export function colSheet({ cols, places = cols, steps = "rtl" }) {
   const bits = [];
   const kinds = [];                       // row number → what kind of row it is
+  const arrows = [];                      // which figures a step multiplies
 
   const grow = (row, kind) => {
     while (kinds.length <= row) kinds.push("figures");
@@ -85,7 +86,13 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
      * other way — you divide the hundreds and carry what is left into the tens
      * — so it says so instead of the page guessing from the geometry.
      */
-    carry(row, place, figure = null, under = row + 1, after = place - 1, { beside = false } = {}) {
+    /**
+     * `strike` says: when this carry has been used, cross it out rather than
+     * take it away. A long multiplication is a page of working a child reads
+     * back over, and a carry that vanishes from the middle of it leaves them
+     * wondering what they wrote; struck through, it says "counted" and stays.
+     */
+    carry(row, place, figure = null, under = row + 1, after = place - 1, { beside = false, strike = false } = {}) {
       /* BESIDE means: drawn in the gap in front of the figure it joins — in the
          cell one place to its LEFT, hugging that cell's right edge — instead of
          in a row of its own above the column. Short division writes its
@@ -100,7 +107,8 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
       const cls = beside ? "ms-col__carry ms-col__carry--beside" : "ms-col__carry";
       if (figure == null) {
         put(`${cls} ms-down__carrybox`, `${grow(row)}${where}`, "",
-          ` data-carry="${place}" data-crow="${under}" data-cafter="${after}"`);
+          ` data-carry="${place}" data-crow="${under}" data-cafter="${after}"`
+          + (strike ? ` data-for="${under}.${place}"` : ""));
       } else {
         put(`${cls} ms-down__carrywrote`, `${grow(row)}${where}`, String(figure));
       }
@@ -139,10 +147,10 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
      * `show` is whether to write the figures in (the one done for the child) or
      * leave the boxes to be written in.
      */
-    carries(row, where = [], { under = row + 1, show = false } = {}) {
+    carries(row, where = [], { under = row + 1, show = false, strike = false } = {}) {
       for (let p = where.length - 1; p >= 0; p--) {
         if (where[p] == null) continue;
-        this.carry(row, p, show ? where[p] : null, under);
+        this.carry(row, p, show ? where[p] : null, under, p - 1, { strike });
       }
       return this;
     },
@@ -161,6 +169,15 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
         `grid-row:${row + 1} / -1;grid-column:${2 + (cols - 1 - to)} / span ${to - from + 1};`);
       return this;
     },
+    /**
+     * AN ARROW FROM ONE FIGURE TO ANOTHER — which two the step being asked for
+     * multiplies. `tie` is the box it belongs to (its row and place), so the
+     * screen draws it when that box is the one being asked for and no other.
+     */
+    arrow(from, to, { tie = null } = {}) {
+      arrows.push({ from, to, tie });
+      return this;
+    },
     /** The line under a row — the heavy one under the last thing being added. */
     rule(row, { heavy = false } = {}) {
       put(`ms-col__rule${heavy ? " is-heavy" : ""}`,
@@ -170,13 +187,48 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
     /** The sheet itself. */
     html(extra = "") {
       const rows = kinds.map((k) => HEIGHT[k] || HEIGHT.figures).join(" ");
+      const drawn = arrows.length ? arrowLayer(arrows, kinds, cols) : "";
       /* `data-nomath`: the figures of a written sum are not an expression to be
          typeset, they are figures that have to stay in their columns
          (mathify.js keeps out of anything that says so). */
       return `<div class="ms-col${extra ? ` ${extra}` : ""}" data-nomath${steps ? ` data-steps="${steps}"` : ""}`
-        + ` style="--ms-cols:${cols};grid-template-rows:${rows}">${bits.join("")}</div>`;
+        + ` style="--ms-cols:${cols};grid-template-rows:${rows}">${bits.join("")}${drawn}</div>`;
     },
   };
+}
+
+/* ── the arrows, in millimetres ─────────────────────────────────────────────
+   The grid is measured: 7mm for the sign, then 11mm per place, and every row's
+   height is in HEIGHT. So where a figure stands is arithmetic, and an arrow
+   between two of them is drawn over the whole sheet without asking the browser
+   where anything ended up. */
+
+const MM = (h) => parseFloat(h);
+const CW = 11;                            // one place across
+const SIGN = 7;                           // the column the sign stands in
+
+function arrowLayer(arrows, kinds, cols) {
+  const heights = kinds.map((k) => MM(HEIGHT[k] || HEIGHT.figures));
+  const top = (row) => heights.slice(0, row).reduce((t, h) => t + h, 0);
+  const midY = (row) => top(row) + heights[row] / 2;
+  const midX = (place) => SIGN + (cols - 1 - place) * CW + CW / 2;
+  const W = SIGN + cols * CW;
+  const H = heights.reduce((t, h) => t + h, 0);
+
+  const paths = arrows.map(({ from, to, tie }) => {
+    const x1 = midX(from.place);
+    const y1 = midY(from.row) + 2.8;      // just under the figure it starts at
+    const x2 = midX(to.place);
+    const y2 = midY(to.row) - 2.8;        // and just over the one it ends at
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}"`
+      + ` fill="none" stroke="#2a6ca8" stroke-width="0.5" stroke-linecap="round"`
+      + ` marker-end="url(#ms-tip)"${tie == null ? "" : ` data-pass="${tie}"`}/>`;
+  }).join("");
+
+  return `<svg class="ms-col__cross" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"`
+    + ` aria-hidden="true"><defs><marker id="ms-tip" viewBox="0 0 6 6" refX="4.8" refY="3"`
+    + ` markerWidth="3.6" markerHeight="3.6" orient="auto">`
+    + `<path d="M0.8 1 5 3 0.8 5z" fill="#2a6ca8"/></marker></defs>${paths}</svg>`;
 }
 
 /** A number as its figures, lowest place first — the order everything here uses. */

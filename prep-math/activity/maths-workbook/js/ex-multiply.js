@@ -974,7 +974,7 @@ function splitEx(id, da, label, count) {
    pair of figures whose places add up to p, so three figures by two is five
    columns and some of those columns have three crossings in them. Nothing in
    the sheet or in the key knows how many figures there are. */
-function crissEx(id, da, label, count, { stacked = false } = {}) {
+function crissEx(id, da, label, count, { stacked = false, db = 2 } = {}) {
   const draw = (a, b, o) => (stacked ? crissStack(a, b, o) : crissSheet(a, b, o));
   return {
   id,
@@ -991,7 +991,7 @@ function crissEx(id, da, label, count, { stacked = false } = {}) {
   defaultCount: count,
   make(r, o) {
     let a = numOf(r, o, da);
-    let b = numOf(r, o, 2);
+    let b = numOf(r, o, db);
     if (a % 10 === 0) a += 1;
     if (b % 10 === 0) b += 1;
     return { a, b };
@@ -1169,8 +1169,14 @@ export const MUL_EXERCISES = [
   mulSticks,
   crissEx("mul-criss-22", 2, "Criss-cross across — 2-digit × 2-digit", 3),
   crissEx("mul-criss-32", 3, "Criss-cross across — 3-digit × 2-digit", 2),
+  crissEx("mul-criss-33", 3, "Criss-cross across — 3-digit × 3-digit", 2, { db: 3 }),
+  crissEx("mul-criss-44", 4, "Criss-cross across — 4-digit × 4-digit", 1, { db: 4 }),
+  crissEx("mul-criss-55", 5, "Criss-cross across — 5-digit × 5-digit", 1, { db: 5 }),
   crissEx("mul-criss-up-22", 2, "Criss-cross stacked — 2-digit × 2-digit", 3, { stacked: true }),
   crissEx("mul-criss-up-32", 3, "Criss-cross stacked — 3-digit × 2-digit", 2, { stacked: true }),
+  crissEx("mul-criss-up-33", 3, "Criss-cross stacked — 3-digit × 3-digit", 2, { stacked: true, db: 3 }),
+  crissEx("mul-criss-up-44", 4, "Criss-cross stacked — 4-digit × 4-digit", 1, { stacked: true, db: 4 }),
+  crissEx("mul-criss-up-55", 5, "Criss-cross stacked — 5-digit × 5-digit", 1, { stacked: true, db: 5 }),
   latticeEx("mul-lattice-22", 2, "Lattice — 2-digit × 2-digit", 3),
   latticeEx("mul-lattice-32", 3, "Lattice — 3-digit × 2-digit", 2),
   mulWords,

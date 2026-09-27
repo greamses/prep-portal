@@ -514,6 +514,33 @@ thead .pv-chart__side {
 }
 .wb-live :is(.mm-cross__slot, .mm-cross__carry).is-spent:focus-within::after { display: none; }
 
+/* a carry of a written sum that has been used: struck through where it
+   stands, the same as a crossing that has been added in (see .is-spent) */
+.wb-live .ms-col__carry.is-spent {
+  border-color: rgba(143, 136, 124, 0.4);
+  opacity: 0.55;
+  position: relative;
+}
+.wb-live .ms-col__carry.is-spent::after {
+  content: "";
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 50%;
+  height: 0.3mm;
+  background: #c0453f;
+  transform: rotate(-10deg);
+  pointer-events: none;
+}
+.wb-live .ms-col__carry.is-spent:focus-within { opacity: 1; }
+.wb-live .ms-col__carry.is-spent:focus-within::after { display: none; }
+
+/* the arrows of a written multiplication: which two figures this step
+   multiplies, drawn over the sheet and only while that step is being asked */
+.ms-col__cross { position: absolute; top: 0; left: 0; pointer-events: none; }
+.wb-live .ms-col__cross path[data-pass] { opacity: 0; transition: opacity 0.2s ease; }
+.wb-live .ms-col__cross path[data-pass].is-on { opacity: 1; }
+
 .mm-cross__arcs { position: absolute; left: 0; pointer-events: none; }
 /* the + between the crossings of a column, drawn in the gap between their
    boxes so that neither box has to move off the figure it stands over */

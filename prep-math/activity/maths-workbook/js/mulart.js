@@ -197,13 +197,22 @@ export function shortCol(a, b, { answer = false } = {}) {
   const rowA = row++;
   const rowB = row++;
   const rowR = row++;
-  if (carrying) sheet.carries(carryRow, carries, { under: rowR, show: answer });
+  if (carrying) sheet.carries(carryRow, carries, { under: rowR, show: answer, strike: true });
   for (let p = 0; p < da; p++) sheet.mark(rowA, p, A[p]);
   sheet.sign(rowB, "×");
   sheet.mark(rowB, 0, b);
   sheet.rule(rowB, { heavy: true });
   if (!answer) sheet.boxes(rowR, top);
   else for (let p = top; p >= 0; p--) sheet.mark(rowR, p, R[p]);
+  /* WHICH TWO FIGURES EACH STEP MULTIPLIES, drawn from one to the other: the
+     figure of the top number standing in that column, down to the figure you
+     are multiplying by. The box past the end of the number is the last carry
+     coming down and multiplies nothing, so it has no arrow. */
+  if (!answer) {
+    for (let p = Math.min(top, da - 1); p >= 0; p--) {
+      sheet.arrow({ row: rowA, place: p }, { row: rowB, place: 0 }, { tie: `r${rowR}c${p}` });
+    }
+  }
   return sheet.html("mm-col");
 }
 
@@ -287,11 +296,20 @@ export function longCol(a, b, { answer = false } = {}) {
     const carries = timesCarries(figuresOf(a, da), d, k);
     const carryRow = carries.some((c) => c != null) ? row++ : -1;
     const partRow = row++;
-    if (carryRow >= 0) sheet.carries(carryRow, carries, { under: partRow, show: answer });
+    if (carryRow >= 0) sheet.carries(carryRow, carries, { under: partRow, show: answer, strike: true });
     const last = k === db - 1;
     if (last && k > 0) sheet.sign(partRow, "+");
     if (!answer) sheet.boxes(partRow, high);
     else for (let p = high; p >= 0; p--) sheet.mark(partRow, p, V[p]);
+    /* this row multiplies by ONE figure of the second number, so every box in
+       it is that figure times a figure of the first — and the arrow says which */
+    if (!answer) {
+      for (let p = high; p >= 0; p--) {
+        const i = p - k;
+        if (i < 0 || i >= da) continue;
+        sheet.arrow({ row: 1, place: i }, { row: 2, place: k }, { tie: `r${partRow}c${p}` });
+      }
+    }
     if (last) sheet.rule(partRow, { heavy: true });
   });
 
@@ -299,7 +317,7 @@ export function longCol(a, b, { answer = false } = {}) {
   const carries = addCarries(partRows, cols);
   const carryRow = carries.some((c) => c != null) ? row++ : -1;
   const totalRow = row++;
-  if (carryRow >= 0) sheet.carries(carryRow, carries, { under: totalRow, show: answer });
+  if (carryRow >= 0) sheet.carries(carryRow, carries, { under: totalRow, show: answer, strike: true });
   if (!answer) sheet.boxes(totalRow, top);
   else for (let p = top; p >= 0; p--) sheet.mark(totalRow, p, R[p]);
   return sheet.html("mm-col mm-long");

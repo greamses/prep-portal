@@ -860,20 +860,29 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        answered in, and ONLY the one being asked for is drawn: an arrow is the
        question — which two figures to multiply — and four of them at once is
        the picture nobody could read. */
-    /* every box that is working for one column of the answer, and the box that
-       column is written in */
+    /* HOW A BOX IS NAMED by the thing that points at it. A criss-cross names
+       the column of the answer (`data-ans`); a written sum, which has a box per
+       row and column, names the two (`row.col`, or `r4c2` for an arrow). */
+    const boxNamed = (tie) => {
+      if (tie == null) return null;
+      const rc = /^r?(\d+)[.c](\d+)$/.exec(tie);
+      if (rc) return table.querySelector(`[data-row="${rc[1]}"][data-col="${rc[2]}"]`);
+      return table.querySelector(`[data-ans="${tie}"]`);
+    };
+
+    /* every box that is working for something else, and the box it works for */
     const spent = [...table.querySelectorAll("[data-for]")].map((box) => ({
       box,
-      into: table.querySelector(`[data-ans="${box.dataset.for}"]`),
+      into: boxNamed(box.dataset.for),
     }));
 
     const passes = [...table.querySelectorAll("[data-pass]")].map((line) => {
       const tie = line.dataset.pass;
       /* a crossing a column works in the head has no box of its own, so its
          arrow hangs on the answer figure it goes straight into */
-      const box = tie.startsWith("ans")
-        ? table.querySelector(`[data-ans="${tie.slice(3)}"]`)
-        : table.querySelector(`[data-step="${tie}"]`);
+      const box = tie.startsWith("ans") ? table.querySelector(`[data-ans="${tie.slice(3)}"]`)
+        : /^\d+$/.test(tie) ? table.querySelector(`[data-step="${tie}"]`)
+          : boxNamed(tie);
       return { line, box };
     });
 
@@ -905,11 +914,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
       carries.forEach(({ box, after, into }) => {
         /* A carry is a note to yourself about the next column, and once that
-           column has been written it has been USED. It goes away then, the way
-           the board in the tool panel rubs its carries out between rows: a
-           figure still sitting over a column that is already answered is read
-           as part of the answer. */
-        const ready = (!after || filled(after)) && !(into && filled(into));
+           column has been written it has been USED. A sum with one row of
+           working takes it away then — a figure still sitting over a column
+           that is already answered is read as part of the answer. A sum with
+           SEVERAL rows says `data-for` instead and keeps it, struck through:
+           a long multiplication is a page a child reads back over, and a carry
+           that vanishes out of the middle of it leaves them wondering what they
+           wrote. */
+        const cancels = box.hasAttribute("data-for");
+        const ready = (!after || filled(after)) && (cancels || !(into && filled(into)));
         shut(box, !ready);
         box.classList.toggle("is-written", ready && filled(box));
       });
@@ -928,7 +941,14 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        16. Either way the child never hunts for the next box with the pointer,
        which on a sheet scaled down to fit a column is a real hunt. */
     const onward = (from) => {
-      const next = nowInput();
+      /* A FIGURE THAT MAKES A CARRY HANDS THE CURSOR TO THE CARRY, not past it.
+         The carry box is not a link in the chain — nothing marks it and nothing
+         waits for it — so without this the cursor stepped straight over the one
+         box the method had just asked for. */
+      const box = from?.closest("[data-col], [data-carry]");
+      const owed = carries.find((c) => c.after === box && !c.box.classList.contains("is-waiting")
+        && !filled(c.box));
+      const next = owed?.box.querySelector("input, textarea") || nowInput();
       if (!next || next === from) return;
       next.focus();
       next.select?.();
