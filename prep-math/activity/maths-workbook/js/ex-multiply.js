@@ -28,7 +28,7 @@
 import {
   digitsOf, groupsHtml, arraySvg, jumpsSvg, shiftTable, blockRowsHtml, partsOf,
   gridTable, shortCol, longCol, latticeTable, carriesOf,
-  timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg, crissSheet, crissKey,
+  timesRow, timesRowCarries, sumUp, sumUpCarries, crissSvg, crissSheet, crissStack, crissKey,
   sticksSvg,
 } from "./mulart.js";
 import { traysSvg, SHAPE_NAMES } from "./shapes.js";
@@ -798,7 +798,8 @@ function splitEx(id, da, label, count) {
    pair of figures whose places add up to p, so three figures by two is five
    columns and some of those columns have three crossings in them. Nothing in
    the sheet or in the key knows how many figures there are. */
-function crissEx(id, da, label, count) {
+function crissEx(id, da, label, count, { stacked = false } = {}) {
+  const draw = (a, b, o) => (stacked ? crissStack(a, b, o) : crissSheet(a, b, o));
   return {
   id,
   group: "mul-criss",
@@ -806,10 +807,10 @@ function crissEx(id, da, label, count) {
   blurb: "Every crossing in its own column, one arrow at a time.",
   heading: "Criss-cross",
   instruction: () =>
-    "Take the columns from the RIGHT. Follow each arrow, multiply the two figures it "
-    + "joins and write what they come to in the box under it. When a column has all its "
-    + "crossings, add them up: the last figure goes under the line and anything over ten "
-    + "carries into the next column.",
+    "Take the columns from the RIGHT. Follow the arrow, multiply the two figures it joins "
+    + "and — where a column has TWO crossings — write what each comes to in the box above. "
+    + "Then add that column up: the last figure goes under the line, and anything over ten "
+    + "carries into the next column along.",
   cols: 1,
   defaultCount: count,
   make(r, o) {
@@ -820,11 +821,11 @@ function crissEx(id, da, label, count) {
     return { a, b };
   },
   render(item) {
-    return lead(`${item.a} × ${item.b}`) + crissSheet(item.a, item.b);
+    return lead(`${item.a} × ${item.b}`) + draw(item.a, item.b);
   },
   worked() {
     return worked(
-      lead(`42 × 32`) + crissSheet(42, 32, { answer: true })
+      lead(`42 × 32`) + draw(42, 32, { answer: true })
       + say(`Two crossings meet in the tens: 4 × 2 is 8 and 2 × 3 is 6, and 8 and 6 is 14 — `
         + `4 goes down and 1 carries into the hundreds. 4 × 3 is 12, and the 1 carried is 13.`));
   },
@@ -981,8 +982,10 @@ export const MUL_EXERCISES = [
   splitEx("mul-split-22", 2, "Split — 2-digit × 2-digit", 2),
   splitEx("mul-split-32", 3, "Split — 3-digit × 2-digit", 2),
   mulSticks,
-  crissEx("mul-criss-22", 2, "Criss-cross — 2-digit × 2-digit", 3),
-  crissEx("mul-criss-32", 3, "Criss-cross — 3-digit × 2-digit", 2),
+  crissEx("mul-criss-22", 2, "Criss-cross across — 2-digit × 2-digit", 3),
+  crissEx("mul-criss-32", 3, "Criss-cross across — 3-digit × 2-digit", 2),
+  crissEx("mul-criss-up-22", 2, "Criss-cross stacked — 2-digit × 2-digit", 3, { stacked: true }),
+  crissEx("mul-criss-up-32", 3, "Criss-cross stacked — 3-digit × 2-digit", 2, { stacked: true }),
   latticeEx("mul-lattice-22", 2, "Lattice — 2-digit × 2-digit", 3),
   latticeEx("mul-lattice-32", 3, "Lattice — 3-digit × 2-digit", 2),
   mulWords,

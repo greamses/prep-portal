@@ -791,10 +791,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        answered in, and ONLY the one being asked for is drawn: an arrow is the
        question — which two figures to multiply — and four of them at once is
        the picture nobody could read. */
-    const passes = [...table.querySelectorAll("[data-pass]")].map((line) => ({
-      line,
-      box: table.querySelector(`[data-step="${line.dataset.pass}"]`),
-    }));
+    const passes = [...table.querySelectorAll("[data-pass]")].map((line) => {
+      const tie = line.dataset.pass;
+      /* a crossing a column works in the head has no box of its own, so its
+         arrow hangs on the answer figure it goes straight into */
+      const box = tie.startsWith("ans")
+        ? table.querySelector(`[data-ans="${tie.slice(3)}"]`)
+        : table.querySelector(`[data-step="${tie}"]`);
+      return { line, box };
+    });
 
     const show = () => {
       /* One box to write in: the one the method has reached. What is written
