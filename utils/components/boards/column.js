@@ -688,9 +688,20 @@ export function sheetOf(thing) {
      themselves), so the last thing written in a column is what stands there. */
   const above = new Map();
   const struck = new Set();
+  /* A CARRY IS RUBBED OUT ONCE IT HAS BEEN USED: it is a note about the next
+     column, and the moment that column is written the note has been read. An
+     EXCHANGE is not — it says what a column became when it was lent to, and the
+     figure it replaced is crossed out underneath, so taking it away would leave
+     a struck-out figure with nothing standing in for it. */
+  const answered = new Set();
+  for (let n = 0; n < thing.done; n++) {
+    const d = plan.entries[n];
+    if (d.kind === "s" || d.kind === "d") answered.add(d.place);
+  }
   for (let n = 0; n < thing.done; n++) {
     const done = plan.entries[n];
     const exchange = done.kind === "xq" || done.kind === "xm" || done.kind === "xp";
+    if (done.kind === "c" && answered.has(done.place)) continue;
     if (done.kind === "c" || exchange) {
       above.set(done.place, writeNum(done.value, 0, b));
       /* what it WAS is crossed out, the way a hand crosses it out */

@@ -483,7 +483,38 @@ thead .pv-chart__side {
   margin-bottom: 0.6mm;
   border-bottom: 0.6mm solid #2a2723;
 }
+/* WORKING THAT HAS BEEN SPENT: the crossings of a column, once that column has
+   been written under the line, and the carry that came out of it. Struck
+   through and faded, never taken away — a child who wants to check their
+   adding needs to see what they added. */
+.wb-live :is(.mm-cross__slot, .mm-cross__carry).is-spent {
+  border-style: solid;
+  border-color: rgba(143, 136, 124, 0.4);
+  background: none;
+  opacity: 0.55;
+  position: relative;
+}
+.wb-live :is(.mm-cross__slot, .mm-cross__carry).is-spent::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  height: 0.35mm;
+  background: #c0453f;
+  transform: rotate(-9deg);
+  pointer-events: none;
+}
+.wb-live :is(.mm-cross__slot, .mm-cross__carry).is-spent:focus-within {
+  opacity: 1;
+  border-color: #8f887c;
+}
+.wb-live :is(.mm-cross__slot, .mm-cross__carry).is-spent:focus-within::after { display: none; }
+
 .mm-cross__arcs { position: absolute; left: 0; pointer-events: none; }
+/* the + between the crossings of a column, drawn in the gap between their
+   boxes so that neither box has to move off the figure it stands over */
+.mm-cross__plus { position: absolute; left: 0; top: 0; pointer-events: none; }
 .wb-live .mm-cross__arcs path[data-pass] { opacity: 0; transition: opacity 0.2s ease; }
 .wb-live .mm-cross__arcs path[data-pass].is-on { opacity: 1; }
 

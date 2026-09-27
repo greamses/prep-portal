@@ -198,14 +198,24 @@ select.bd-sum__in { cursor: pointer; }
   border-radius: 0.25rem;
 }
 .bd-in:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 1px; }
-/* and the box for one of those: half a cell, hugging the gap it goes in */
+/* and the box for one of those: part of a cell, hugging the gap it goes in.
+   Wide enough to be aimed at with a finger, and it grows about its own right
+   edge while it is being written in — so what is typed is readable without the
+   box drifting off the gap it belongs in. */
 .bd-in--pre {
-  width: 62%;
+  width: 72%;
   justify-self: end;
   align-self: end;
-  height: 70%;
-  font-size: 0.72rem;
+  height: 76%;
+  font-size: 0.74rem;
+  transform-origin: right center;
+  transition: transform 0.12s ease;
 }
+.bd-in--pre:focus { transform: scale(1.25); }
+/* every box on a board grows a little while it is written in: the paper is
+   drawn at the size it prints at and these are small squares on a screen */
+.bd-in { transition: transform 0.12s ease; }
+.bd-in:focus:not(.bd-in--pre) { transform: scale(1.12); }
 /* the count of places at the end of a decimal multiplication: a note about the
    answer, so it stands in the air beside it rather than in its columns */
 .bd-in--count { border-style: solid; background: rgba(244, 201, 93, 0.22); border-color: #d9a72f; }

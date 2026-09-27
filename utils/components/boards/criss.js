@@ -296,9 +296,18 @@ export function sheetOf(thing) {
   plan.A.forEach((d, p) => marks.push({ row: 1, col: colOf(p), ch: DIGITS[d], tone: "ink" }));
   plan.B.forEach((d, p) => marks.push({ row: 2, col: colOf(p), ch: DIGITS[d], tone: "ink" }));
 
-  /* everything written so far: the answer under the line, the carries above */
+  /* A CARRY IS RUBBED OUT ONCE IT HAS BEEN USED. It is a note to yourself
+     about the next column, and the moment that column is written the note has
+     been read — left standing over a column that is already answered it is
+     read as part of the answer instead. */
+  const written = new Set();
   for (let i = 0; i < thing.done; i++) {
     const done = plan.entries[i];
+    if (done.kind === "d") written.add(done.place);
+  }
+  for (let i = 0; i < thing.done; i++) {
+    const done = plan.entries[i];
+    if (done.kind === "c" && written.has(done.place)) continue;
     marks.push({
       row: done.row,
       col: colOf(done.place),

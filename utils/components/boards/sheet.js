@@ -258,6 +258,23 @@ export function mountBoard(host, { variant = "longdiv", base = 10 } = {}) {
         box.addEventListener("keydown", (e) => {
           if (e.key === "Backspace" && !box.value && boxes[i - 1]) boxes[i - 1].focus();
           if (e.key === "Enter") { e.preventDefault(); offer(boxes.map((b) => b.value).join("")); }
+          /* THE ORDINARY KEYS, as on the workbook's paper: the arrows step from
+             one box of the same question to the next — from the END and the
+             START of what is typed, so they walk through a number first — and
+             up and down do the same, because the boxes of one question are read
+             as a row wherever they happen to sit. */
+          if (!e.key.startsWith("Arrow") || e.ctrlKey || e.metaKey || e.altKey) return;
+          const end = box.selectionStart === box.value.length && box.selectionEnd === box.value.length;
+          const start = box.selectionStart === 0 && box.selectionEnd === 0;
+          const go = (j) => {
+            const n = boxes[j];
+            if (!n) return;
+            e.preventDefault();
+            n.focus();
+            n.select();
+          };
+          if ((e.key === "ArrowRight" && end) || e.key === "ArrowDown") go(i + 1);
+          if ((e.key === "ArrowLeft" && start) || e.key === "ArrowUp") go(i - 1);
         });
         box.addEventListener("focus", () => box.select());
         paper.appendChild(box);

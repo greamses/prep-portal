@@ -314,9 +314,18 @@ export function sheetOf(thing) {
     marks.push({ row: 1, col: k, ch: DIGITS[digit], tone: "ink" });
   });
 
-  /* everything the child has written */
+  /* everything the child has written — except a left-over that has been USED.
+     The little figure carried in front of a figure is a note about the next
+     division, and the moment that division is written the note has been read;
+     left standing it is read as part of the number. */
+  const used = new Set();
+  for (let i = 0; i < thing.done; i++) {
+    const d = plan.entries[i];
+    if (d.kind === "q") used.add(d.col - 1);      // the gap before this figure
+  }
   for (let i = 0; i < thing.done; i++) {
     const done = plan.entries[i];
+    if (done.kind === "r" && used.has(done.col)) continue;
     const ch = writeNum(done.value, 0, b);
     if (done.kind === "rem") marks.push({ row: 0, col: done.col, ch: `r${ch}`, tone: "ink" });
     else {

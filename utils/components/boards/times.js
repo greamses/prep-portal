@@ -512,11 +512,21 @@ export function sheetOf(thing) {
      they belong to the row being worked and are rubbed out with it. */
   const started = new Set();
   let pointDone = false;
+  /* …and within a row a carry goes as soon as the column it was carried into
+     is written: a figure standing over a column that is already answered is
+     read as part of the answer. */
+  const answered = new Set();
+  for (let n = 0; n < thing.done; n++) {
+    const d = plan.entries[n];
+    if (d.kind === "mc" || d.kind === "ac" || d.kind === "pt") continue;
+    answered.add(`${d.run}.${d.place}`);
+  }
   for (let n = 0; n < thing.done; n++) {
     const d = plan.entries[n];
     if (d.kind === "pt") { pointDone = true; continue; }
     if (d.kind === "mc" || d.kind === "ac") {
       if (d.run !== run) continue;                 // a carry from a finished row
+      if (answered.has(`${d.run}.${d.place}`)) continue;   // and one already used
       marks.push({ row: 0, col: colOf(d.place), ch: writeNum(d.value, 0, b), tone: "carry" });
       continue;
     }

@@ -540,17 +540,21 @@ export function crissSheet(a, b, { answer = false } = {}) {
   B.forEach((d, j) => put("mm-cross__fig", rowSum, la + 1 + j, d));
 
   const used = new Map();
+  const plus = [];                      // { from, to, row } — a + between two products
   let step = 0;
   cols.forEach((col) => {
-    const first = step;
+    let last = null;
     col.pairs.forEach((q) => {
       if (q.writes) {
         const over = overOf(q);
         const nth = used.get(over) || 0;
         used.set(over, nth + 1);
         if (answer) put("mm-cross__said", deep - nth, over, q.of);
-        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}"`);
+        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}" data-for="${col.p}"`);
         arcs.push({ from: q.i, to: la + 1 + q.j, step: answer ? null : step, tone: col.p });
+        /* the crossings of a column are ADDED, so a + stands between them */
+        if (last) plus.push({ from: last.col, to: over, row: Math.max(last.row, deep - nth) });
+        last = { col: over, row: deep - nth };
         step += 1;
       } else {
         /* no box for it: the arrow comes out when the figure under the line is
@@ -563,14 +567,13 @@ export function crissSheet(a, b, { answer = false } = {}) {
     else put("mm-cross__cell wb-cell", rowAns, at, "", ` data-step="${step}" data-ans="${col.p}"`);
     step += 1;
     if (col.carryOut) {
-      const next = cols[col.p + 1];
-      const home = next && next.pairs.some((q) => q.writes)
-        ? overOf(next.pairs.find((q) => q.writes)) : Math.max(0, gridCols - 2 - col.p);
+      /* over the column it goes INTO — where a column sum puts it, and the one
+         place that is its own: no two carries can ever want the same cell. */
+      const home = gridCols - 1 - (col.p + 1);
       if (answer) put("mm-cross__carried", 0, home, col.carryOut);
-      else put("mm-cross__carry wb-answer", 0, home, "", ` data-step="${step}"`);
+      else put("mm-cross__carry wb-answer", 0, home, "", ` data-step="${step}" data-for="${col.p + 1}"`);
       step += 1;
     }
-    void first;
   });
 
   put("mm-cross__rule", rowArc, 0, "", "", gridCols);
@@ -579,7 +582,8 @@ export function crissSheet(a, b, { answer = false } = {}) {
     `${SUM_H}mm`, `${band.toFixed(1)}mm`, `${ANS_H}mm`].join(" ");
   return `<div class="mm-cross" data-nomath${answer ? "" : ` data-steps="listed"`}`
     + ` style="--mc-cols:${gridCols};grid-template-rows:${rows}">`
-    + bits.join("") + arcSvg(arcs, gridCols, CARRY_H + deep * SLOT_H, band, "under") + `</div>`;
+    + bits.join("") + plusSvg(plus, gridCols, deep)
+    + arcSvg(arcs, gridCols, CARRY_H + deep * SLOT_H, band, "under") + `</div>`;
 }
 
 /**
@@ -613,8 +617,10 @@ export function crissStack(a, b, { answer = false } = {}) {
   B.forEach((d, j) => put("mm-cross__fig", rowBot, botCol(j), d));
 
   const used = new Map();
+  const plus = [];
   let step = 0;
   cols.forEach((col) => {
+    let last = null;
     col.pairs.forEach((q) => {
       const loop = { from: topCol(q.i), to: botCol(q.j), tone: col.p };
       if (q.writes) {
@@ -622,8 +628,10 @@ export function crissStack(a, b, { answer = false } = {}) {
         const nth = used.get(over) || 0;
         used.set(over, nth + 1);
         if (answer) put("mm-cross__said", deep - nth, over, q.of);
-        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}"`);
+        else put("mm-cross__slot wb-answer", deep - nth, over, "", ` data-step="${step}" data-for="${col.p}"`);
         arcs.push({ ...loop, step: answer ? null : step });
+        if (last) plus.push({ from: last.col, to: over, row: Math.max(last.row, deep - nth) });
+        last = { col: over, row: deep - nth };
         step += 1;
       } else {
         arcs.push({ ...loop, step: answer ? null : "ans" + col.p });
@@ -634,11 +642,10 @@ export function crissStack(a, b, { answer = false } = {}) {
     else put("mm-cross__cell wb-cell", rowAns, at, "", ` data-step="${step}" data-ans="${col.p}"`);
     step += 1;
     if (col.carryOut) {
-      const next = cols[col.p + 1];
-      const home = next && next.pairs.some((q) => q.writes)
-        ? topCol(next.pairs.find((q) => q.writes).i) : colOfPlace(col.p + 1);
+      /* over the column it goes INTO, which is its own and nobody else's */
+      const home = colOfPlace(col.p + 1);
       if (answer) put("mm-cross__carried", 0, home, col.carryOut);
-      else put("mm-cross__carry wb-answer", 0, home, "", ` data-step="${step}"`);
+      else put("mm-cross__carry wb-answer", 0, home, "", ` data-step="${step}" data-for="${col.p + 1}"`);
       step += 1;
     }
   });
@@ -648,7 +655,31 @@ export function crissStack(a, b, { answer = false } = {}) {
     `${STACK_H}mm`, `${STACK_H}mm`, `${ANS_H}mm`].join(" ");
   return `<div class="mm-cross mm-cross--stack" data-nomath${answer ? "" : ` data-steps="listed"`}`
     + ` style="--mc-cols:${width};grid-template-rows:${rows}">`
-    + bits.join("") + arcSvg(arcs, width, CARRY_H + deep * SLOT_H, 0, "between") + `</div>`;
+    + bits.join("") + plusSvg(plus, width, deep)
+    + arcSvg(arcs, width, CARRY_H + deep * SLOT_H, 0, "between") + `</div>`;
+}
+
+/**
+ * THE PLUS SIGNS BETWEEN THE PRODUCTS OF A COLUMN, because that is what is
+ * done with them: two crossings meet in the tens and the tens figure is their
+ * SUM. They are drawn in the gap between the two boxes rather than put in a
+ * cell of their own — the boxes stand over the figures they came from and
+ * nothing may be moved off its figure to make room for a sign.
+ */
+function plusSvg(plus, gridCols, deep) {
+  if (!plus.length) return "";
+  const W = gridCols * COL_W;
+  const H = CARRY_H + deep * SLOT_H;
+  const mid = (col) => col * COL_W + COL_W / 2;
+  const signs = plus.map(({ from, to, row }) => {
+    const x = (mid(from) + mid(to)) / 2;
+    const y = CARRY_H + row * SLOT_H - SLOT_H / 2;
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle"`
+      + ` dominant-baseline="central" font-size="4.2" font-weight="700"`
+      + ` fill="#6b655c">+</text>`;
+  }).join("");
+  return `<svg class="mm-cross__plus" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"`
+    + ` aria-hidden="true">${signs}</svg>`;
 }
 
 /**

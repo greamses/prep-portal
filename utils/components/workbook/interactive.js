@@ -860,6 +860,13 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        answered in, and ONLY the one being asked for is drawn: an arrow is the
        question — which two figures to multiply — and four of them at once is
        the picture nobody could read. */
+    /* every box that is working for one column of the answer, and the box that
+       column is written in */
+    const spent = [...table.querySelectorAll("[data-for]")].map((box) => ({
+      box,
+      into: table.querySelector(`[data-ans="${box.dataset.for}"]`),
+    }));
+
     const passes = [...table.querySelectorAll("[data-pass]")].map((line) => {
       const tie = line.dataset.pass;
       /* a crossing a column works in the head has no box of its own, so its
@@ -886,6 +893,15 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       spare.forEach((b) => { shut(b, true); b.classList.remove("is-now", "is-written"); });
       passes.forEach(({ line, box }) => {
         line.classList.toggle("is-on", !!box && box.classList.contains("is-now"));
+      });
+      /* WORKING THAT HAS BEEN USED IS CANCELLED. The crossings of a column are
+         written down to be added up, and the moment their column is written
+         under the line they have been spent — struck through, the way a hand
+         strikes out what it has already counted, so what is left standing is
+         what is still to do. The carry that came out of that column goes the
+         same way. */
+      spent.forEach(({ box, into }) => {
+        box.classList.toggle("is-spent", !!into && filled(into));
       });
       carries.forEach(({ box, after, into }) => {
         /* A carry is a note to yourself about the next column, and once that
@@ -1996,7 +2012,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        what they got wrong. */
     sheet.querySelectorAll("[data-steps]").forEach((table) => {
       table.querySelectorAll(".wb-cell, .wb-answer, [data-carry]").forEach((b) => {
-        b.classList.remove("is-waiting", "is-now", "is-written");
+        b.classList.remove("is-waiting", "is-now", "is-written", "is-spent");
         const input = b.querySelector("input, textarea");
         if (input) input.disabled = false;
       });

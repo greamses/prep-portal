@@ -2705,8 +2705,24 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
    readable at the size the rest of the paper is being read at. It grows about
    its own middle and nothing else moves. */
 @media screen {
-  .wb-live :is(.ms-down__carrybox, .ms-col__carry, .mm-cross__carry, .mm-cross__slot) > .wb-in {
-    inset: -1.4mm;
+  /* HOW FAR PAST ITS BOX, exactly: never past the middle of the gap to the box
+     beside it, or two boxes would take the same press and a child would find
+     themselves typing in the wrong column. Each of these is measured against
+     the column it stands in — 11mm on a written sum, 12mm on a criss-cross —
+     and against the row above and below it. */
+  .wb-live :is(.ms-down__carrybox, .mm-cross__slot) > .wb-in {
+    inset: -0.7mm -0.8mm;
+    width: auto;
+    height: auto;
+  }
+  .wb-live .mm-cross__carry > .wb-in {
+    inset: -0.6mm -2.2mm;
+    width: auto;
+    height: auto;
+  }
+  /* the short division's left-over is tiny and stands in a gap of its own */
+  .wb-live .ms-col__carry--beside > .wb-in {
+    inset: -1.6mm;
     width: auto;
     height: auto;
   }
