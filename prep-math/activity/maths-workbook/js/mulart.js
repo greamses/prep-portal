@@ -243,6 +243,7 @@ export function carriesOf(a, b) {
   const db = String(b).length;
   const A = figuresOf(a, da);
   if (db === 1) return [timesCarries(A, b)];
+  /* one row per figure you multiply by — two of them or five, the same */
   const cols = Math.max(da, db, topOf(a * b) + 1);
   const bd = figuresOf(b, db);
   const rows = bd.map((d, k) => timesCarries(A, d, k));

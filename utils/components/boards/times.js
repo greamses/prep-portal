@@ -47,8 +47,8 @@ export const GUTTER = 1;
    figure of it, so it does not stand in the answer's own columns. */
 export const RIGHT = 2;
 
-export const MAX_DIGITS = 6;       // as wide as the answer may be
-export const MAX_BY = 3;           // figures in the number you multiply BY
+export const MAX_DIGITS = 10;      // as wide as the answer may be
+export const MAX_BY = 5;           // figures in the number you multiply BY
 export const MAX_PLACES = 3;
 
 /* ── the sum the board opens on ───────────────────────────────────────────── */

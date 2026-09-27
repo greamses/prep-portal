@@ -71,7 +71,9 @@ export const MUL_GROUPS = [
   { id: "mul-table", label: "Building the table" },
   { id: "mul-blocks", label: "Blocks and counters" },
   { id: "mul-grid", label: "The grid method" },
+  { id: "mul-nocarry", label: "Multiplying with no carrying" },
   { id: "mul-column", label: "Short and long multiplication" },
+  { id: "mul-decimal", label: "Multiplying decimals" },
   { id: "mul-split", label: "Splitting the multiplier" },
   { id: "mul-lattice", label: "The lattice method" },
   { id: "mul-sticks", label: "Crossing sticks" },
@@ -402,6 +404,177 @@ function gridEx(id, da, db, label, count) {
 
 /* ═══ short and long multiplication ════════════════════════════════════════*/
 
+/* ═══ multiplying with nothing to carry ═══════════════════════════════════
+   The method before the difficulty. Every pair of figures comes to less than
+   ten and so does every column of the answer, so a child writes each figure
+   where it belongs and nothing has to be held over — which is the whole of the
+   method, once. Carrying is then one new thing on top of a method they can
+   already do, instead of two new things at once.
+
+   The numbers are chosen for it: the sheet checks that no column carries
+   before it hands the question out. */
+
+/** Does a × b go through without a single carry? */
+function noCarrying(a, b) {
+  const A = String(a).split("").map(Number).reverse();
+  const B = String(b).split("").map(Number).reverse();
+  for (let p = 0; p < A.length + B.length; p++) {
+    let col = 0;
+    for (let i = 0; i < A.length; i++) {
+      const j = p - i;
+      if (j >= 0 && j < B.length) col += A[i] * B[j];
+    }
+    if (col > 9) return false;
+  }
+  return true;
+}
+
+/** A number of `n` figures, every figure between 1 and `hi`. */
+const smallNum = (r, n, hi) => {
+  let v = 0;
+  for (let i = 0; i < n; i++) v = v * 10 + r.int(1, hi);
+  return v;
+};
+
+/** A pair that carries nowhere — tried for, not hoped for. */
+function quietPair(r, o, da, db) {
+  const hi = { gentle: 2, middle: 3, stretch: 3 }[tier(o)];
+  for (let go = 0; go < 200; go++) {
+    const a = smallNum(r, da, hi);
+    const b = smallNum(r, db, hi);
+    if (noCarrying(a, b)) return { a, b };
+  }
+  /* ones and twos always come out quiet */
+  return { a: Number("2".repeat(da)), b: Number("1".repeat(db)) };
+}
+
+function quietEx(id, da, db, label, count) {
+  return {
+    id,
+    group: "mul-nocarry",
+    label,
+    blurb: "Every column comes to less than ten, so nothing is held over.",
+    heading: "Multiply — nothing carries",
+    instruction: () =>
+      "Not one column of these comes to ten, so there is nothing to carry. Multiply each "
+      + "figure and write it in its own column"
+      + (db > 1 ? ", one row for each figure you multiply by, then add the rows." : "."),
+    cols: db > 1 ? 1 : 2,
+    defaultCount: count,
+    make(r, o) {
+      return quietPair(r, o, da, db);
+    },
+    render(item) {
+      return lead(`${item.a} × ${item.b}`)
+        + art(db > 1 ? longCol(item.a, item.b) : shortCol(item.a, item.b));
+    },
+    worked() {
+      const [a, b] = db > 1 ? [21, 13] : [32, 3];
+      return worked(
+        lead(`${a} × ${b}`) + art(db > 1 ? longCol(a, b, { answer: true }) : shortCol(a, b, { answer: true }))
+        + say(db > 1
+          ? `Every column comes to less than ten — 1 × 3 is 3, then 2 × 3 and 1 × 1 is 7, then 2 × 1 `
+            + `is 2 — so each figure is written where it falls and nothing is held over. 21 × 13 = 273.`
+          : `3 × 2 is 6 and 3 × 3 is 9: both under ten, so both are written straight down. 32 × 3 = 96.`));
+    },
+    key(item) {
+      const out = [];
+      const figures = (v) => {
+        const V = digitsOf(v, String(v).length);
+        for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
+      };
+      if (db === 1) { figures(item.a * item.b); return out; }
+      digitsOf(item.b, db).forEach((d, k) => figures(item.a * d * 10 ** k));
+      figures(item.a * item.b);
+      return out;
+    },
+    answer(item) {
+      return [`${item.a} × ${item.b} = ${item.a * item.b}`];
+    },
+  };
+}
+
+/* ═══ multiplying decimals ═════════════════════════════════════════════════
+   The whole of it is: multiply as though the points were not there, then put
+   one back. How far along it goes is not a rule to be remembered but a count —
+   the figures after the point in one number and the figures after the point in
+   the other, added.
+
+   4.2 × 3.1 is 42 × 31 with two figures after the point: 1302 becomes 13.02.
+   The multiplying is the multiplying they already know, so the only new thing
+   on the page is the counting. */
+
+const chop = (n, dp) => (dp ? (n / 10 ** dp).toFixed(dp) : String(n));
+
+function decEx(id, da, db, dpA, dpB, label, count) {
+  const places = dpA + dpB;
+  return {
+    id,
+    group: "mul-decimal",
+    label,
+    blurb: "Multiply as if the points were not there, then count them back in.",
+    heading: "Multiplying decimals",
+    instruction: () =>
+      "Take the points out and multiply the figures. Then COUNT: the figures after the point "
+      + "in the first number and the figures after the point in the second, added together — "
+      + "that is how many the answer has after its point.",
+    cols: 1,
+    defaultCount: count,
+    make(r, o) {
+      let b = numOf(r, o, db);
+      while (b % 10 === 0) b = numOf(r, o, db);
+      return { a: numOf(r, o, da), b };
+    },
+    render(item) {
+      const A = chop(item.a, dpA);
+      const B = chop(item.b, dpB);
+      return lead(`${A} × ${B}`)
+        + ask(`Take the points out and multiply: <b>${item.a} × ${item.b}</b>`)
+        + art(db > 1 ? longCol(item.a, item.b) : shortCol(item.a, item.b))
+        + ask(`${A} has <b>${dpA}</b> figure${dpA === 1 ? "" : "s"} after the point and ${B} has `
+          + `<b>${dpB}</b>. Altogether that is ${box()} figures.`)
+        + ask(`So the answer has that many after ITS point: ${A} × ${B} = ${box()}`);
+    },
+    worked() {
+      const [a, b] = db > 1 ? [42, 31] : [42, 3];
+      const A = chop(a, dpA);
+      const B = chop(b, dpB);
+      return worked(
+        lead(`${A} × ${B}`)
+        + art(db > 1 ? longCol(a, b, { answer: true }) : shortCol(a, b, { answer: true }))
+        + say(`${a} × ${b} = ${a * b}. ${A} has ${dpA} after the point and ${B} has ${dpB}, `
+          + `which is ${places} altogether — so count ${places} back from the end of ${a * b}: `
+          + `${chop(a * b, places)}.`));
+    },
+    key(item) {
+      const out = [];
+      const figures = (v) => {
+        const V = digitsOf(v, String(v).length);
+        for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
+      };
+      const frees = (where) => where.forEach((c) => { if (c != null) out.push(want.free()); });
+      const rows = carriesOf(item.a, item.b);
+      if (db === 1) {
+        frees(rows[0]);
+        figures(item.a * item.b);
+      } else {
+        digitsOf(item.b, db).forEach((d, k) => {
+          frees(rows[k]);
+          figures(item.a * d * 10 ** k);
+        });
+        frees(rows[rows.length - 1]);
+        figures(item.a * item.b);
+      }
+      out.push(want.num(places));
+      out.push(want.num(chop(item.a * item.b, places)));
+      return out;
+    },
+    answer(item) {
+      return [`${chop(item.a, dpA)} × ${chop(item.b, dpB)} = ${chop(item.a * item.b, places)}`];
+    },
+  };
+}
+
 function shortEx(id, da, label, count) {
   return {
     id,
@@ -448,7 +621,10 @@ function shortEx(id, da, label, count) {
   };
 }
 
-function longEx(id, da, label, count) {
+/* `db` is how many figures you multiply BY: two of them is the long
+   multiplication everyone means, and the same method takes five — one row per
+   figure, each one place further along, and an addition at the end. */
+function longEx(id, da, label, count, db = 2) {
   return {
     id,
     group: "mul-column",
@@ -463,15 +639,15 @@ function longEx(id, da, label, count) {
     make(r, o) {
       /* a multiplier ending in 0 makes a first row of noughts, which teaches
          nothing about long multiplication and a great deal about boredom */
-      let b = numOf(r, o, 2);
-      while (b % 10 === 0) b = numOf(r, o, 2);
+      let b = numOf(r, o, db);
+      while (b % 10 === 0) b = numOf(r, o, db);
       return { a: numOf(r, o, da), b };
     },
     render(item) {
       return lead(`${item.a} × ${item.b}`) + art(longCol(item.a, item.b));
     },
     worked() {
-      const [a, b] = da === 2 ? [34, 26] : [213, 42];
+      const [a, b] = db > 2 ? [213, 142] : da === 2 ? [34, 26] : [213, 42];
       const ones = b % 10;
       const tens = Math.floor(b / 10);
       return worked(
@@ -487,7 +663,7 @@ function longEx(id, da, label, count) {
        them: the carries of a row, then the row. */
     key(item) {
       const topR = String(item.a * item.b).length - 1;
-      const cols = Math.max(da, 2, topR + 1);
+      const cols = Math.max(da, db, topR + 1);
       const out = [];
       const where = carriesOf(item.a, item.b);
       const carries = (k) => (where[k] || []).forEach((c) => { if (c != null) out.push(want.free()); });
@@ -495,7 +671,7 @@ function longEx(id, da, label, count) {
         const V = digitsOf(v, cols);
         for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
       };
-      digitsOf(item.b, 2).forEach((d, k) => {
+      digitsOf(item.b, db).forEach((d, k) => {
         carries(k);
         figures(item.a * d * 10 ** k);
       });
@@ -973,12 +1149,21 @@ export const MUL_EXERCISES = [
   gridEx("mul-grid-21", 2, 1, "Grid — 2-digit × 1-digit", 4),
   gridEx("mul-grid-22", 2, 2, "Grid — 2-digit × 2-digit", 3),
   gridEx("mul-grid-32", 3, 2, "Grid — 3-digit × 2-digit", 2),
+  quietEx("mul-quiet-21", 2, 1, "No carrying — 2-digit × 1-digit", 4),
+  quietEx("mul-quiet-22", 2, 2, "No carrying — 2-digit × 2-digit", 3),
+  quietEx("mul-quiet-33", 3, 3, "No carrying — 3-digit × 3-digit", 2),
   shortEx("mul-short-21", 2, "Short — 2-digit × 1-digit", 4),
   shortEx("mul-short-31", 3, "Short — 3-digit × 1-digit", 4),
   shortEx("mul-short-41", 4, "Short — 4-digit × 1-digit", 4),
   mulTableBuild,
   longEx("mul-long-22", 2, "Long — 2-digit × 2-digit", 3),
   longEx("mul-long-32", 3, "Long — 3-digit × 2-digit", 2),
+  longEx("mul-long-33", 3, "Long — 3-digit × 3-digit", 2, 3),
+  longEx("mul-long-44", 4, "Long — 4-digit × 4-digit", 1, 4),
+  longEx("mul-long-55", 5, "Long — 5-digit × 5-digit", 1, 5),
+  decEx("mul-dec-11", 2, 1, 1, 0, "Decimals — tenths × whole", 3),
+  decEx("mul-dec-21", 2, 2, 1, 1, "Decimals — tenths × tenths", 3),
+  decEx("mul-dec-32", 3, 2, 2, 1, "Decimals — hundredths × tenths", 2),
   splitEx("mul-split-22", 2, "Split — 2-digit × 2-digit", 2),
   splitEx("mul-split-32", 3, "Split — 3-digit × 2-digit", 2),
   mulSticks,

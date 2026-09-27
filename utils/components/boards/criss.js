@@ -25,8 +25,8 @@
 import { DIGITS, digitsOf, writeNum, readNum, baseWord } from "./num.js";
 
 export const GUTTER = 1;
-export const MAX_DIGITS = 4;       // figures in each number
-export const MAX_WIDE = 8;         // figures the answer may come to
+export const MAX_DIGITS = 5;       // figures in each number
+export const MAX_WIDE = 10;        // figures the answer may come to
 
 /* ── the sum, worked out before a figure is written ────────────────────────*/
 

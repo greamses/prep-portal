@@ -2720,11 +2720,19 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
     width: auto;
     height: auto;
   }
-  /* the short division's left-over is tiny and stands in a gap of its own */
+  /* THE SHORT DIVISION'S LEFT-OVER. It is a superscript: small, and up at the
+     top of the figures. The box it is typed in has to be small too — the
+     ordinary answer hand is 11pt and would put a figure the same size as the
+     number itself in the gap, which reads as one more figure OF the number.
+     Its halo is kept tight for the same reason: spread wide it washes over the
+     figure to its left and looks as though it belongs to that one. */
   .wb-live .ms-col__carry--beside > .wb-in {
-    inset: -1.6mm;
+    inset: -0.8mm -0.6mm -0.8mm -0.2mm;
     width: auto;
     height: auto;
+    padding: 0;
+    font-size: 7.5pt;
+    border-radius: 0.8mm;
   }
   .wb-live :is(.ms-down__carrybox, .ms-col__carry, .mm-cross__carry) {
     transition: transform 0.12s ease;

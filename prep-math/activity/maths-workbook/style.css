@@ -395,13 +395,16 @@ thead .pv-chart__side {
 .ms-col__carry--beside {
   justify-self: end;
   align-self: start;
-  margin: 0.8mm -2.1mm 0 0;
+  /* up at the top of the row, where a superscript goes, and a little past the
+     line between the two columns so it hugs the figure it is in front of
+     rather than sitting evenly between two figures like a third one */
+  margin: 0.2mm -3.3mm 0 0;
   font-size: 7.5pt;
   line-height: 4.2mm;
   text-align: center;
 }
 .ms-col__carry--beside.ms-down__carrybox,
-.ms-col__carry--beside.ms-down__carrywrote { width: 4.2mm; height: 4.2mm; }
+.ms-col__carry--beside.ms-down__carrywrote { width: 4mm; height: 4mm; }
 /* The line under the last thing being added. It stands clear of both: the row
    above does not sit on it and the row below does not hang off it. */
 .ms-col__rule {
