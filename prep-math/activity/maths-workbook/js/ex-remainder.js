@@ -34,6 +34,7 @@
 import { pileSvg, jitterFor, traysSvg, SHAPE_NAMES, SHAPE_WORDS } from "./shapes.js";
 import { barsSvg, sentence, mixed, improper } from "./bars.js";
 import { busStop, shortWork } from "./divart.js";
+import { flagStop, flagKey, flagWork, flagFits } from "./flagart.js";
 import { want } from "/utils/components/workbook/want.js";
 
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
@@ -48,6 +49,7 @@ export const REM_GROUPS = [
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
   { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
+  { id: "flag", label: "Dividing with a flag", blurb: "By the first figure of the divisor, with the rest taken off crosswise — the criss-cross run backwards." },
 ];
 
 /* ── how hard ──────────────────────────────────────────────────────────────
@@ -459,6 +461,76 @@ function shortDivEx(id, digits, label, count) {
   };
 }
 
+/* ── dividing with a flag ──────────────────────────────────────────────────
+   The division that goes with the criss-cross. Long division by 23 asks a child
+   to guess how many 23s are in 123 and multiply back to find out; this asks
+   them to divide by 2 — which they can do — and then take off a crossing, which
+   is the criss-cross's own step run backwards.
+
+   The figure first thought of is sometimes too big, and a child finds that out
+   when the crossing will not come off what is left. That is the same thing long
+   division asks of them, met one figure at a time instead of one number. */
+
+const flagSum = (r, o, digits) => {
+  const tier = levelOf(o).id;
+  const hi = { gentle: 3, middle: 5, stretch: 9 }[tier] ?? 5;
+  for (let go = 0; go < 300; go++) {
+    const d = r.int(2, hi) * 10 + r.int(1, 9);
+    let n = r.int(1, 9);
+    for (let i = 1; i < digits; i++) n = n * 10 + r.int(0, 9);
+    if (flagFits(n, d)) return { n, d };
+  }
+  return { n: 1234, d: 23 };
+};
+
+function flagDivEx(id, digits, label, count) {
+  return {
+    id,
+    group: "flag",
+    label,
+    blurb: "Divide by the first figure only, and take the crossing off what is left.",
+    heading: "Dividing with a flag",
+    instruction: () =>
+      "The divisor is split: the FIRST figure divides, the second is the flag. Divide what "
+      + "stands there by the first figure and write the answer under the bar. Then take the "
+      + "flag times that answer off what comes down — that is the crossing — and what is left "
+      + "is what you divide next. If the crossing will not come off, the figure was one too "
+      + "big: take one off it and try again.",
+    cols: 1,
+    defaultCount: count,
+    make(r, o) {
+      return flagSum(r, o, digits);
+    },
+    render(item) {
+      return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
+        + `<div class="rw-art">${flagStop(item.n, item.d)}</div>`;
+    },
+    worked() {
+      return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
+        + `<p class="wb-ask wb-ask--lead"><b>1234 ÷ 23</b></p>`
+        + `<div class="rw-art">${flagStop(1234, 23, { answer: true })}</div>`
+        + `<p class="wb-ask rw-worked__say">2 into 12 would go 6, but then there is nothing to `
+        + `take 3 × 6 from — so 5, and 2 left. Bring the 3 down beside it: 23, take off the `
+        + `crossing 3 × 5 = 15, leaves 8. 2 into 8 would go 4, the same trouble again, so 3, `
+        + `and 2 left. Bring the 4 down: 24, take off 3 × 3 = 9, leaves 15. Nothing more to `
+        + `divide: 1234 ÷ 23 = 53 remainder 15.</p></div>`;
+    },
+    key(item) {
+      return flagKey(item.n, item.d).map((e) => (e.kind === "digit"
+        ? want.cell(e.value)
+        : want.num(e.value)));
+    },
+    answer(item) {
+      const w = flagWork(item.n, item.d);
+      return [`${item.n} ÷ ${item.d} = ${w.quotient}${w.remainder ? ` remainder ${w.remainder}` : ""}`];
+    },
+  };
+}
+
+const flagThree = flagDivEx("div-flag-32", 3, "Flag division — 3 figures ÷ 2 figures", 3);
+const flagFour = flagDivEx("div-flag-42", 4, "Flag division — 4 figures ÷ 2 figures", 2);
+const flagFive = flagDivEx("div-flag-52", 5, "Flag division — 5 figures ÷ 2 figures", 2);
+
 const shortTwo = shortDivEx("div-short-21", 2, "Short division — 2 figures ÷ 1 figure", 6);
 const shortThree = shortDivEx("div-short-31", 3, "Short division — 3 figures ÷ 1 figure", 4);
 
@@ -469,6 +541,7 @@ export const REM_EXERCISES = [
   pictureSentence, nameTheParts, divideWrite, buildBack,
   leftoverFraction,
   shortTwo, shortThree,
+  flagThree, flagFour, flagFive,
 ];
 
 export { line, box, slot };

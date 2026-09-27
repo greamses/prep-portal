@@ -93,11 +93,24 @@ export function busStop(n, d, { answer = false } = {}) {
      and what will not go carries into the next one along. */
   for (let k = 1; k < wide; k++) {
     if (carry[k - 1] == null) continue;
-    sheet.carry(rowN, at(k), answer ? carry[k - 1] : null, rowQ, at(k - 1), { beside: true });
+    /* struck through when it has been used, not taken away: a division is a
+       page a child reads back over, and a left-over that vanishes out of the
+       middle of it leaves them wondering what they wrote */
+    sheet.carry(rowN, at(k), answer ? carry[k - 1] : null, rowQ, at(k - 1),
+      { beside: true, strike: true });
   }
 
   sheet.sign(rowN, String(d));
   figs.forEach((f, k) => sheet.mark(rowN, at(k), f));
   sheet.stop(rowC, { from: at(wide - 1), to: at(0) });
+  /* WHICH FIGURE IS BEING DIVIDED, drawn from the divisor up to the box the
+     answer goes in — "how many 5s in this one" — and on screen only the arrow
+     of the step being asked for. */
+  if (!answer) {
+    for (let k = 0; k < wide; k++) {
+      sheet.arrow({ row: rowN, place: "sign" }, { row: rowQ, place: at(k) },
+        { tie: `r${rowQ}c${at(k)}` });
+    }
+  }
   return sheet.html("mm-col");
 }

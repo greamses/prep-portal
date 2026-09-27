@@ -535,6 +535,34 @@ thead .pv-chart__side {
 .wb-live .ms-col__carry.is-spent:focus-within { opacity: 1; }
 .wb-live .ms-col__carry.is-spent:focus-within::after { display: none; }
 
+/* a box for a WORKING number — what stands there to be divided, a crossing
+   taken off it — rather than a figure of the answer: wider, and drawn in a
+   lighter hand so the answer is still what the eye lands on */
+.ms-col__slot {
+  justify-self: stretch;
+  align-self: center;
+  height: 7mm;
+  margin: 0 0.6mm;
+  background: #fffdf8;
+  border: 0.35mm dashed #8f887c;
+  border-radius: 0.6mm;
+}
+
+/* ── dividing with a flag ──────────────────────────────────────────────────
+   The divisor is written with its flag set apart (2|3), the last figure of the
+   number being divided is set apart too — it is not divided, it is what the
+   remainder is finished off with — and the crossing taken off at each step is
+   written above what it comes off. */
+.ms-col__mark.is-flagged { border-left: 0.35mm dashed #8f887c; }
+/* on paper the flag's arrows are a fan of three from one place and say less
+   than the instruction does; on screen they are the question — which figure
+   the crossing is made with — so there they come out one at a time */
+.mm-flag .ms-col__cross path[data-pass] { opacity: 0; }
+.wb-live .mm-flag .ms-col__cross path[data-pass].is-on { opacity: 1; }
+.mm-flag .ms-col__sign { font-size: 11pt; letter-spacing: 0.04em; }
+.ms-col__slot.is-cross { border-color: #c0453f; color: #c0453f; }
+.wb-live .ms-col__slot.is-cross .wb-in { color: #c0453f; }
+
 /* the arrows of a written multiplication: which two figures this step
    multiplies, drawn over the sheet and only while that step is being asked */
 .ms-col__cross { position: absolute; top: 0; left: 0; pointer-events: none; }

@@ -28,7 +28,7 @@ const NAMES = ["O", "T", "H", "Th", "TTh", "HTh", "M"];
 
 /* how tall each kind of row is */
 /* how tall each kind of row is */
-const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", answer: "12.4mm" };
+const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", slot: "9.4mm", answer: "12.4mm" };
 
 /**
  * Start a sheet `cols` places wide. `places` is how many of them are places the
@@ -131,6 +131,18 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
         ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`);
       return this;
     },
+    /**
+     * A SLOT — a box for a WORKING number rather than a figure of the answer:
+     * what stands there to be divided, or a crossing taken off it. Wider than
+     * a cell, because it is a number and not a figure, and it says which STEP
+     * it belongs to rather than which place.
+     */
+    slot(row, place, { step = null, span = 1, tone = "" } = {}) {
+      put(`ms-col__slot wb-answer${tone ? ` ${tone}` : ""}`,
+        `${grow(row, "slot")}${gcol(place, span)}`, "",
+        ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`);
+      return this;
+    },
     /** The boxes of a whole row: places `top` down to 0, highest first. */
     boxes(row, top) {
       for (let p = top; p >= 0; p--) this.box(row, p);
@@ -211,7 +223,9 @@ function arrowLayer(arrows, kinds, cols) {
   const heights = kinds.map((k) => MM(HEIGHT[k] || HEIGHT.figures));
   const top = (row) => heights.slice(0, row).reduce((t, h) => t + h, 0);
   const midY = (row) => top(row) + heights[row] / 2;
-  const midX = (place) => SIGN + (cols - 1 - place) * CW + CW / 2;
+  /* `place` is a place of the sum; "sign" is the column in front of it, where
+     the +, the × or the divisor stands */
+  const midX = (place) => (place === "sign" ? SIGN / 2 : SIGN + (cols - 1 - place) * CW + CW / 2);
   const W = SIGN + cols * CW;
   const H = heights.reduce((t, h) => t + h, 0);
 
