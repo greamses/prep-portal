@@ -2691,6 +2691,35 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* on paper the mat is empty and says nothing — the counters go on it by hand */
 @media print { .ct-read { display: none; } }
 
+/* ── small boxes are still worth aiming at ─────────────────────────────────
+   The paper is drawn in real millimetres and then scaled down to fit its
+   column, so a carry box a child has to write one figure in can end up four
+   millimetres across on the screen. Two things make it findable:
+
+   THE HIT AREA IS BIGGER THAN THE BOX. The input is positioned inside its box
+   already, so a negative inset spreads what can be pressed past the printed
+   edges without moving anything or changing what is printed. Only the small
+   ones get it, and only on screen.
+
+   AND IT GROWS WHEN IT IS BEING WRITTEN IN, so the figure being typed is
+   readable at the size the rest of the paper is being read at. It grows about
+   its own middle and nothing else moves. */
+@media screen {
+  .wb-live :is(.ms-down__carrybox, .ms-col__carry, .mm-cross__carry, .mm-cross__slot) > .wb-in {
+    inset: -1.4mm;
+    width: auto;
+    height: auto;
+  }
+  .wb-live :is(.ms-down__carrybox, .ms-col__carry, .mm-cross__carry) {
+    transition: transform 0.12s ease;
+  }
+  .wb-live :is(.ms-down__carrybox, .ms-col__carry, .mm-cross__carry):focus-within {
+    transform: scale(1.5);
+    z-index: 5;
+  }
+  .wb-live :is(.ms-col__cell, .mm-cross__cell, .wb-cell):focus-within { z-index: 4; }
+}
+
 /* ── one box at a time (interactive.js stepwise) ─────────────────────────────
    A written sum is worked in an ORDER, and a table of empty boxes invites a
    child to fill it straight across — the one thing the column method is there

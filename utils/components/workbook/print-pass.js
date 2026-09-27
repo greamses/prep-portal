@@ -33,13 +33,43 @@ const root = document.documentElement;
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-/** The fingerprint of a workbook's CONTENT: SHA-256, hex. */
+/**
+ * The fingerprint of a workbook's CONTENT: SHA-256, hex.
+ *
+ * IT MUST NOT THROW. The interactive sheet asks for this after every rebuild
+ * and only re-lays the boxes when the answer comes back — so a fingerprint that
+ * fails takes the child's boxes with it: the paper redraws and nothing on it
+ * can be written in, because nothing was ever told to come alive again.
+ *
+ * `crypto.subtle` is only there in a SECURE context. Over plain http — a phone
+ * on the house wifi reading the site off a laptop, a school proxy, a test
+ * harness — it is undefined, and this used to reject. So there is a plain hash
+ * to fall back on. It is not as good a fingerprint and it does not have to be:
+ * all it has to do is tell one built workbook from another on one device.
+ */
 export async function workbookKey(workbook, o) {
   const content = {};
   Object.keys(o).sort().forEach((k) => { if (!COSMETIC.has(k)) content[k] = o[k]; });
-  const bytes = new TextEncoder().encode(`${workbook}|${JSON.stringify(content)}`);
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const text = `${workbook}|${JSON.stringify(content)}`;
+  try {
+    const bytes = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return plainKey(text);
+  }
+}
+
+/** A fingerprint without any crypto in it: two rounds of FNV-1a, hex. */
+function plainKey(text) {
+  let a = 0x811c9dc5;
+  let b = 0x01000193;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193) >>> 0;
+    b = Math.imul(b ^ (c + i), 0x85ebca6b) >>> 0;
+  }
+  return `p${a.toString(16).padStart(8, "0")}${b.toString(16).padStart(8, "0")}`;
 }
 
 /**

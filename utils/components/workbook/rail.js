@@ -256,7 +256,13 @@ export function mountBuilder(cfg) {
     $("wb-print").disabled = false;
     modal?.count($("wb-pages").textContent, true);
     if (pass) pass.update(o, { pages, sections: o.chosen.length, code: $("wb-seedcode").value });
-    if (live) workbookKey(store, o).then((k) => live.afterRender(k));
+    /* the boxes come back to life on the rebuilt paper; if the fingerprint
+       ever fails, the sheet is still laid out rather than left dead */
+    if (live) {
+      workbookKey(store, o)
+        .then((k) => live.afterRender(k))
+        .catch(() => live.afterRender(null));
+    }
     pageRule(o.paper);
     fit();
   }

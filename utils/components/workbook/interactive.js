@@ -703,6 +703,75 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
    *   data-steps="ltr"        as it is written (rare, but the attribute says
    *                           so rather than leaving it to chance)
    */
+  /* ── getting about the paper without the pointer ────────────────────────
+     A workbook is a page of small boxes, drawn at the size they will print at
+     and then scaled down to fit the column — so the box a child wants can be a
+     few millimetres across on the screen, and putting a cursor in it with a
+     finger or a mouse is a real hunt. These are the ordinary keys anyone would
+     try, and they do the ordinary thing:
+
+       → ←        the next box, the one before — but only from the END or the
+                  START of what is typed, so they still move the cursor through
+                  a number first
+       ↑ ↓        the nearest box above or below, by where it is on the page
+                  rather than by where it is in the markup: a column of a
+                  written sum is a column to the eye
+       Enter      on a sum being worked in order, the box it has opened; in
+                  anything else, the next box along
+       Backspace  in an empty box, back to the one before (and it stays empty,
+                  because the press was for going back)
+
+     A written-out answer is a textarea and keeps all of its keys: arrows there
+     move through the writing, which is what they are for. */
+  function wireKeys() {
+    if (sheet.__wbKeys) return;
+    sheet.__wbKeys = true;
+    sheet.addEventListener("keydown", (e) => {
+      const here = e.target;
+      if (!here?.classList?.contains("wb-in")) return;
+      if (here.tagName === "TEXTAREA") return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const all = [...sheet.querySelectorAll(".wb-in:not([disabled])")]
+        .filter((el) => el.offsetParent !== null && el.tagName !== "TEXTAREA");
+      const at = all.indexOf(here);
+      if (at < 0) return;
+      const to = (el) => {
+        if (!el) return;
+        e.preventDefault();
+        el.focus();
+        el.select?.();
+      };
+      const start = here.selectionStart === 0 && here.selectionEnd === 0;
+      const end = here.selectionStart === here.value.length
+        && here.selectionEnd === here.value.length;
+
+      if (e.key === "ArrowRight" && end) return to(all[at + 1]);
+      if (e.key === "ArrowLeft" && start) return to(all[at - 1]);
+      if (e.key === "Backspace" && !here.value) return to(all[at - 1]);
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+
+      /* up and down go by the page, not by the markup: the nearest box whose
+         middle is above (or below) this one, and of those the one most nearly
+         in the same column */
+      const box = here.getBoundingClientRect();
+      const mine = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      const want = e.key === "ArrowUp" ? -1 : 1;
+      let best = null;
+      let score = Infinity;
+      all.forEach((el) => {
+        if (el === here) return;
+        const r = el.getBoundingClientRect();
+        const dy = (r.top + r.height / 2) - mine.y;
+        if (Math.sign(dy) !== want || Math.abs(dy) < 2) return;
+        const dx = Math.abs((r.left + r.width / 2) - mine.x);
+        const how = Math.abs(dy) + dx * 3;      // a column beats a long reach
+        if (how < score) { score = how; best = el; }
+      });
+      to(best);
+    });
+  }
+
   function stepwise(table) {
     const how = table.dataset.steps || "rtl";
     const cells = [...table.querySelectorAll(".wb-cell, .wb-answer")];
@@ -832,18 +901,40 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       table.classList.toggle("is-done", order.every(filled));
     };
 
+    /** The box being asked for, as somewhere to put the cursor. */
+    const nowInput = () => order.find((b) => b.classList.contains("is-now"))
+      ?.querySelector("input, textarea");
+
+    /* THE CURSOR FOLLOWS THE METHOD. A box that holds ONE figure — a column of
+       an answer — takes you on as soon as that figure is typed, because there
+       is nothing else it could be waiting for. A box that holds a whole product
+       or a carry of two figures waits for Enter, since 1 might be the start of
+       16. Either way the child never hunts for the next box with the pointer,
+       which on a sheet scaled down to fit a column is a real hunt. */
+    const onward = (from) => {
+      const next = nowInput();
+      if (!next || next === from) return;
+      next.focus();
+      next.select?.();
+    };
+
     [...order, ...carries.map((c) => c.box)].forEach((b) => {
       const input = b.querySelector("input, textarea");
       if (!input || input.__wbStep) return;
       input.__wbStep = true;
-      input.addEventListener("input", show);
-      /* moving on with the keyboard: Enter jumps to the box that just opened */
+      /* one figure to a column: the box says so, so a stray second keystroke
+         cannot quietly turn 4 into 47 */
+      const single = b.classList.contains("wb-cell") && input.tagName === "INPUT";
+      if (single) input.maxLength = 1;
+      input.addEventListener("input", () => {
+        show();
+        if (single && input.value.trim() && document.activeElement === input) onward(input);
+      });
       input.addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
         e.preventDefault();
         show();
-        const next = order.find((b2) => b2.classList.contains("is-now"));
-        next?.querySelector("input, textarea")?.focus();
+        onward(input);
       });
     });
     show();
@@ -3014,6 +3105,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     side.hidden = false;
     document.documentElement.classList.add("wb-side-on");
     store = load();
+    wireKeys();
     items().forEach((node, i) => enliven(node, i));
     /* Whatever was drawn in the margins last time, back on the page. The layer
        takes no presses until something is picked up off the rail. */
@@ -3065,6 +3157,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (!live) return;
       if (changed) { store = load(); checked = false; showBtn.hidden = true; score.textContent = ""; }
       sheet.classList.add("wb-live");
+      wireKeys();
       items().forEach((node, i) => enliven(node, i));
       keyPages(true);
     },
