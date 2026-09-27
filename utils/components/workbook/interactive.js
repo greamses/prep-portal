@@ -787,10 +787,10 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (input) input.disabled = on;
     };
 
-    /* THE ARROWS OF A CRISS-CROSS. Each one is tied to the box that pass is
-       answered in, and comes out with it: the ones times the ones, then the two
-       that cross, then the tens times the tens. An arrow stays up once it has
-       been drawn, so what has been done is still on the page. */
+    /* THE ARROW OF A CRISS-CROSS. Each one is tied to the box that pass is
+       answered in, and ONLY the one being asked for is drawn: an arrow is the
+       question — which two figures to multiply — and four of them at once is
+       the picture nobody could read. */
     const passes = [...table.querySelectorAll("[data-pass]")].map((line) => ({
       line,
       box: table.querySelector(`[data-step="${line.dataset.pass}"]`),
@@ -811,8 +811,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
       spare.forEach((b) => { shut(b, true); b.classList.remove("is-now", "is-written"); });
       passes.forEach(({ line, box }) => {
-        const out = !box || filled(box) || box.classList.contains("is-now");
-        line.classList.toggle("is-on", out);
+        line.classList.toggle("is-on", !!box && box.classList.contains("is-now"));
       });
       carries.forEach(({ box, after, into }) => {
         /* A carry is a note to yourself about the next column, and once that

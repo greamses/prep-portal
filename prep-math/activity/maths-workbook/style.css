@@ -422,33 +422,70 @@ thead .pv-chart__side {
   margin-bottom: 1mm;
   pointer-events: none;
 }
-/* ── the crossings, drawn where the figures stand ──────────────────────────
-   One SVG over the whole sheet, measured in the same millimetres the grid is
-   (colsheet.js). On paper every arrow is there — it is the picture of the
-   method. On screen they come out one at a time, with the box that pass is
-   answered in, and stay up once drawn. */
-.ms-col__cross {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
+/* ── the criss-cross, written across ───────────────────────────────────────
+   43 × 25 the way it is said, with each product written OVER the figure in the
+   lower place of the pair that makes it — 3 × 2 over the 3, 4 × 5 over the 5 —
+   the carries over those, and only the answer under the line. The arcs are one
+   SVG measured in the same millimetres as the grid; on screen the only arc
+   drawn is the one being asked for. */
+.mm-cross {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--mc-cols, 5), 12mm);
+  justify-content: start;
+  margin: 2mm 0 3mm;
+  font-size: 15pt;
+  font-weight: 700;
+  color: #2a2723;
 }
-.wb-live .ms-col__cross path[data-pass] {
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-.wb-live .ms-col__cross path[data-pass].is-on { opacity: 1; }
-/* a crossing is working, not an answer: a wider box, and a lighter hand */
-.ms-col__slot {
-  justify-self: stretch;
+.mm-cross__fig,
+.mm-cross__sign,
+.mm-cross__said,
+.mm-cross__carried { display: grid; place-items: center; }
+.mm-cross__sign { font-size: 12pt; color: #6b655c; }
+/* a product, waiting to be written: wider than a figure, because it is two */
+.mm-cross__slot {
+  justify-self: center;
   align-self: center;
-  height: 7mm;
-  margin: 0 0.5mm;
+  width: 10mm;
+  height: 6.4mm;
   background: #fffdf8;
   border: 0.35mm dashed #8f887c;
   border-radius: 0.6mm;
 }
-.ms-col__mark.is-soft { color: #6b655c; }
+/* and one already written, for the worked example */
+.mm-cross__said { font-size: 10.5pt; color: #2a6ca8; }
+/* the carry: smaller again, and over the work it belongs to */
+.mm-cross__carry {
+  justify-self: center;
+  align-self: center;
+  width: 6.4mm;
+  height: 5mm;
+  background: #fffdf8;
+  border: 0.3mm dashed #8f887c;
+  border-radius: 0.6mm;
+}
+.mm-cross__carried { font-size: 8.5pt; color: #2a6ca8; }
+/* the answer, under the line */
+.mm-cross__cell {
+  justify-self: stretch;
+  align-self: center;
+  height: 8.6mm;
+  margin: 0 0.8mm;
+  background: #fffdf8;
+  border: 0.4mm solid #2a2723;
+  border-radius: 0.6mm;
+}
+.mm-cross__said--ans { font-size: 15pt; color: #2a2723; }
+.mm-cross__rule {
+  align-self: end;
+  height: 0;
+  margin-bottom: 0.6mm;
+  border-bottom: 0.6mm solid #2a2723;
+}
+.mm-cross__arcs { position: absolute; left: 0; pointer-events: none; }
+.wb-live .mm-cross__arcs path[data-pass] { opacity: 0; transition: opacity 0.2s ease; }
+.wb-live .mm-cross__arcs path[data-pass].is-on { opacity: 1; }
 
 /* the box the next figure goes in: its whole column, less a margin, so that
    two boxes side by side are two boxes and a row of them stands clear of the

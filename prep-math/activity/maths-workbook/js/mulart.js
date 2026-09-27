@@ -422,26 +422,32 @@ export function crissSvg(a, b) {
     + `</svg>`;
 }
 
-/* ── the criss-cross, worked on the sheet ──────────────────────────────────*/
+/* ── the criss-cross, written across ───────────────────────────────────────*/
 
 /**
- * WHICH PAIRS OF FIGURES CROSS IN EACH COLUMN. The column at place p takes
- * every pair whose places add up to p — that one rule is the whole method, and
- * it is what the arrows are drawn to show. Lowest place first, so the pairs of
- * a column come out in the order a hand works them: the figure of `a` nearest
- * the ones first.
+ * THE PAIRS OF FIGURES THAT CROSS, column by column. The column at place p
+ * takes every pair whose places add up to p — that one rule is the whole
+ * method, whatever size the numbers are.
+ *
+ * Within a column they come in the order a hand works them: the figure of the
+ * FIRST number nearest the ones first, so 43 × 25 asks 3 × 2 before 4 × 5.
  */
 export function crissPasses(a, b) {
-  const A = figuresOf(a, String(a).length);
-  const B = figuresOf(b, String(b).length);
+  const A = String(a).split("").map(Number);        // left to right, as written
+  const B = String(b).split("").map(Number);
+  const la = A.length;
+  const lb = B.length;
   const width = String(a * b).length;
   const cols = [];
   let carry = 0;
   for (let p = 0; p < width; p++) {
     const pairs = [];
-    for (let i = 0; i < A.length; i++) {
-      const j = p - i;
-      if (j >= 0 && j < B.length) pairs.push({ i, j, a: A[i], b: B[j], of: A[i] * B[j] });
+    for (let i = la - 1; i >= 0; i--) {             // A from its ones upward
+      const pa = la - 1 - i;
+      const pb = p - pa;
+      if (pb < 0 || pb >= lb) continue;
+      const j = lb - 1 - pb;
+      pairs.push({ i, j, pa, pb, a: A[i], b: B[j], of: A[i] * B[j] });
     }
     const cross = pairs.reduce((t, q) => t + q.of, 0);
     const total = cross + carry;
@@ -449,60 +455,148 @@ export function crissPasses(a, b) {
     carry = Math.floor(total / 10);
     cols.push({ p, pairs, cross, carryIn, total, digit: total % 10, carryOut: carry });
   }
-  return { A, B, width, cols };
+  return { A, B, la, lb, width, cols };
 }
 
 /**
- * THE CRISS-CROSS AS A SHEET, worked a pass at a time.
+ * WHERE A PASS WRITES ITS PRODUCT: over the figure in the LOWER place of the
+ * two it multiplies. 43 × 25 puts 3 × 2 over the 3 and 4 × 5 over the 5, which
+ * is what a hand does and what makes the two crossings of a column tellable
+ * apart at a glance — each sits over the figure that "starts" it. Two figures
+ * of the same place (3 × 5, 4 × 2) have no lower one, so they go over the
+ * first number's figure.
  *
- * The two numbers, then a box for EVERY crossing — each in the column it
- * belongs to, stacked where a column has more than one — and the answer under
- * them. The arrows are drawn between the two figures each pass multiplies, and
- * on screen they come out one at a time, with their box: the ones times the
- * ones, then the two that cross, then the tens times the tens. A picture beside
- * the sum showed all of them at once and explained nothing.
+ * → the grid column it stands in
+ */
+const overOf = (q, la) => (q.pb < q.pa ? la + 1 + q.j : q.i);
+
+/**
+ * THE CRISS-CROSS AS A SHEET, worked one crossing at a time.
  *
- * The order of the boxes is the order the method works in — every crossing of
- * a column, then what goes down, then what carries — and it is written on each
- * box (`data-step`) rather than left to be guessed from the geometry, because
- * this is the one method here that does not simply run right to left.
+ * The sum is written ACROSS, the way it is said — 43 × 25 — with the products
+ * written over the figures and the answer under the line. On screen the arrow
+ * for the crossing being asked for is the only arrow drawn: it is a question,
+ * not a decoration, and four of them at once is the picture nobody could read.
+ *
+ * The carries stand above the products, in the column of the work they belong
+ * to, because a carry is a note about the NEXT column.
+ *
+ *   rows   0            the carries
+ *          1 … deep     the products, deepest first, nearest the figures last
+ *          deep + 1     the sum itself
+ *          deep + 2     the arcs, drawn under it
+ *          deep + 3     the answer
  */
 export function crissSheet(a, b, { answer = false } = {}) {
-  const { A, B, width, cols } = crissPasses(a, b);
-  const deep = Math.max(...cols.map((c) => c.pairs.length));
-  const rowCarry = 0;
-  const rowA = 1;
-  const rowB = 2;
-  const pass0 = 3;                       // the first row of crossings
-  const rowAns = pass0 + deep;
+  const { A, B, la, lb, width, cols } = crissPasses(a, b);
+  const gridCols = la + 1 + lb;
 
-  const sheet = colSheet({ cols: width, steps: answer ? null : "listed" });
-  for (let p = 0; p < A.length; p++) sheet.mark(rowA, p, A[p]);
-  sheet.sign(rowB, "×");
-  for (let p = 0; p < B.length; p++) sheet.mark(rowB, p, B[p]);
-  sheet.rule(rowB, { heavy: true });
+  /* how many products stand over each figure, so they can be stacked */
+  const deepOf = new Map();
+  cols.forEach((col) => col.pairs.forEach((q) => {
+    const over = overOf(q, la);
+    deepOf.set(over, (deepOf.get(over) || 0) + 1);
+  }));
+  const deep = Math.max(1, ...deepOf.values());
 
+  const rowSum = deep + 1;
+  const rowArc = deep + 2;
+  const rowAns = deep + 3;
+  const bits = [];
+  const arcs = [];
+  const put = (cls, row, col, text = "", attrs = "", span = 1) =>
+    bits.push(`<span class="${cls}"${attrs} style="grid-row:${row + 1};grid-column:${col + 1}`
+      + `${span > 1 ? ` / span ${span}` : ""};">${text}</span>`);
+
+  /* the sum, written across */
+  A.forEach((d, i) => put("mm-cross__fig", rowSum, i, d));
+  put("mm-cross__sign", rowSum, la, "×");
+  B.forEach((d, j) => put("mm-cross__fig", rowSum, la + 1 + j, d));
+
+  /* the products, the answer and the carries, in the order they are worked */
+  const used = new Map();                    // grid column → how many are on it
   let step = 0;
   cols.forEach((col) => {
-    col.pairs.forEach((q, k) => {
-      const row = pass0 + k;
-      if (answer) sheet.mark(row, col.p, q.of, "is-soft");
-      else sheet.slot(row, col.p, { step: step });
-      /* the arrow for this pass: from the figure of `a` it takes to the figure
-         of `b` it takes, bowed so two crossings of one column are told apart */
-      sheet.arrow({ row: rowA, place: q.i }, { row: rowB, place: q.j },
-        { step: answer ? null : step, tone: col.p });
+    col.pairs.forEach((q) => {
+      const over = overOf(q, la);
+      const nth = used.get(over) || 0;
+      used.set(over, nth + 1);
+      /* the first one written sits closest to the figures */
+      const row = deep - nth;
+      if (answer) put("mm-cross__said", row, over, q.of);
+      else put("mm-cross__slot wb-answer", row, over, "", ` data-step="${step}"`);
+      arcs.push({ from: q.i, to: la + 1 + q.j, step: answer ? null : step, tone: col.p });
       step += 1;
     });
-    if (answer) sheet.mark(rowAns, col.p, col.digit);
-    else sheet.box(rowAns, col.p, { step: step });
+    /* what goes down: under the line, in the answer */
+    const at = gridCols - 1 - col.p;
+    if (answer) put("mm-cross__said mm-cross__said--ans", rowAns, at, col.digit);
+    else put("mm-cross__cell wb-cell", rowAns, at, "", ` data-step="${step}"`);
     step += 1;
-    if (col.carryOut && col.p + 1 < width) {
-      sheet.carry(rowCarry, col.p + 1, answer ? col.carryOut : null, rowAns, col.p);
+    /* and what carries, over the work of the column it goes into */
+    if (col.carryOut) {
+      const next = cols[col.p + 1];
+      const home = next && next.pairs.length ? overOf(next.pairs[0], la) : 0;
+      if (answer) put("mm-cross__carried", 0, home, col.carryOut);
+      else put("mm-cross__carry wb-answer", 0, home, "", ` data-step="${step}"`);
+      step += 1;
     }
   });
-  sheet.rule(rowAns - 1, { heavy: true });
-  return sheet.html("mm-col mm-criss");
+
+  /* the line the answer is written under */
+  put("mm-cross__rule", rowArc, 0, "", "", gridCols);
+
+  const band = bandOf(arcs);
+  return `<div class="mm-cross" data-nomath${answer ? "" : ` data-steps="listed"`}`
+    + ` style="--mc-cols:${gridCols};grid-template-rows:${rowsOf(deep, band)}">`
+    + bits.join("") + arcSvg(arcs, gridCols, deep, band) + `</div>`;
+}
+
+/* The rows, in millimetres: the carries, a row per depth of products, the sum,
+   the band the arcs are drawn in, and the answer. */
+const CARRY_H = 6.4;
+const SLOT_H = 8;
+const SUM_H = 10;
+const ANS_H = 11;
+const COL_W = 12;
+
+/* How far an arc sags: the wider the jump, the deeper it goes, so the four
+   crossings of a two-by-two are four curves of four different depths and not
+   one line drawn four times. */
+const sagOf = (span, nth = 0) => 1.4 + span * 0.1 + nth * 0.5;
+const bandOf = (arcs) => Math.max(4, ...arcs.map((c, i) => sagOf(Math.abs(c.to - c.from) * COL_W, i))) + 1.6;
+
+const rowsOf = (deep, band) => [`${CARRY_H}mm`, ...Array(deep).fill(`${SLOT_H}mm`),
+  `${SUM_H}mm`, `${band.toFixed(1)}mm`, `${ANS_H}mm`].join(" ");
+
+/**
+ * The arcs, drawn UNDER the sum from one figure to the other — measured in the
+ * same millimetres the grid is, so nothing has to be asked of the browser.
+ * Each one is tied to the box its product goes in, and on screen the only one
+ * drawn is the one being asked for.
+ */
+function arcSvg(arcs, gridCols, deep, band) {
+  if (!arcs.length) return "";
+  const W = gridCols * COL_W;
+  const top = CARRY_H + deep * SLOT_H;      // where the sum row starts
+  const H = SUM_H + band;
+  const x = (col) => col * COL_W + COL_W / 2;
+  const y0 = SUM_H - 1.2;                   // just under the figures
+  const TONES = ["#c0453f", "#2a6ca8", "#3f8f4f", "#8a5cc0", "#c9922f"];
+  const paths = arcs.map(({ from, to, step, tone }, nth) => {
+    const x1 = x(from);
+    const x2 = x(to);
+    /* a quadratic sags to half its control point, so the control point goes
+       twice as deep as the sag wanted — and each arc a little deeper than the
+       one before it, so two of the same width are still two curves */
+    const cy = y0 + sagOf(Math.abs(x2 - x1), nth) * 2;
+    const colour = TONES[tone % TONES.length];
+    return `<path d="M${x1.toFixed(1)} ${y0.toFixed(1)}Q${((x1 + x2) / 2).toFixed(1)} ${cy.toFixed(1)}`
+      + ` ${x2.toFixed(1)} ${y0.toFixed(1)}" fill="none" stroke="${colour}" stroke-width="0.5"`
+      + ` stroke-linecap="round"${step == null ? "" : ` data-pass="${step}"`}/>`;
+  }).join("");
+  return `<svg class="mm-cross__arcs" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"`
+    + ` aria-hidden="true" style="top:${top}mm">${paths}</svg>`;
 }
 
 /** What the key has to answer, in the order the sheet lists it. */
@@ -512,7 +606,7 @@ export function crissKey(a, b) {
   cols.forEach((col) => {
     col.pairs.forEach((q) => out.push({ kind: "pass", value: q.of }));
     out.push({ kind: "digit", value: col.digit });
-    if (col.carryOut && col.p + 1 < String(a * b).length) out.push({ kind: "carry", value: col.carryOut });
+    if (col.carryOut) out.push({ kind: "carry", value: col.carryOut });
   });
   return out;
 }
