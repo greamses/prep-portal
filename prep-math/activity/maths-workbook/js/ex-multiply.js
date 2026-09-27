@@ -794,10 +794,15 @@ function splitEx(id, da, label, count) {
    to multiply two two-figure numbers in your head, which is the reason to
    teach it. */
 
-const mulCriss = {
-  id: "mul-criss-22",
+/* The same method whatever the numbers are: the column at place p takes every
+   pair of figures whose places add up to p, so three figures by two is five
+   columns and some of those columns have three crossings in them. Nothing in
+   the sheet or in the key knows how many figures there are. */
+function crissEx(id, da, label, count) {
+  return {
+  id,
   group: "mul-criss",
-  label: "Criss-cross — 2-digit × 2-digit",
+  label,
   blurb: "Every crossing in its own column, one arrow at a time.",
   heading: "Criss-cross",
   instruction: () =>
@@ -806,9 +811,9 @@ const mulCriss = {
     + "crossings, add them up: the last figure goes under the line and anything over ten "
     + "carries into the next column.",
   cols: 1,
-  defaultCount: 3,
+  defaultCount: count,
   make(r, o) {
-    let a = numOf(r, o, 2);
+    let a = numOf(r, o, da);
     let b = numOf(r, o, 2);
     if (a % 10 === 0) a += 1;
     if (b % 10 === 0) b += 1;
@@ -830,7 +835,8 @@ const mulCriss = {
   answer(item) {
     return [`${item.a} × ${item.b} = ${item.a * item.b}`];
   },
-};
+  };
+}
 
 
 /* ═══ counting the crossings ═══════════════════════════════════════════════
@@ -975,7 +981,8 @@ export const MUL_EXERCISES = [
   splitEx("mul-split-22", 2, "Split — 2-digit × 2-digit", 2),
   splitEx("mul-split-32", 3, "Split — 3-digit × 2-digit", 2),
   mulSticks,
-  mulCriss,
+  crissEx("mul-criss-22", 2, "Criss-cross — 2-digit × 2-digit", 3),
+  crissEx("mul-criss-32", 3, "Criss-cross — 3-digit × 2-digit", 2),
   latticeEx("mul-lattice-22", 2, "Lattice — 2-digit × 2-digit", 3),
   latticeEx("mul-lattice-32", 3, "Lattice — 3-digit × 2-digit", 2),
   mulWords,
