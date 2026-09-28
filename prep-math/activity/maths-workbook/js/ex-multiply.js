@@ -552,17 +552,17 @@ function decEx(id, da, db, dpA, dpB, label, count) {
         const V = digitsOf(v, String(v).length);
         for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
       };
-      const frees = (where) => where.forEach((c) => { if (c != null) out.push(want.free()); });
+      const carried = (where) => where.forEach((c) => { if (c != null) out.push(want.num(c)); });
       const rows = carriesOf(item.a, item.b);
       if (db === 1) {
-        frees(rows[0]);
+        carried(rows[0]);
         figures(item.a * item.b);
       } else {
         digitsOf(item.b, db).forEach((d, k) => {
-          frees(rows[k]);
+          carried(rows[k]);
           figures(item.a * d * 10 ** k);
         });
-        frees(rows[rows.length - 1]);
+        carried(rows[rows.length - 1]);
         figures(item.a * item.b);
       }
       out.push(want.num(places));
@@ -605,13 +605,17 @@ function shortEx(id, da, label, count) {
     },
     /* the boxes the sheet draws: a carry box over every column but the ones,
        then one box per figure the answer has — highest place first */
+    /* THE CARRIES ARE MARKED. They are working, but they are working with a
+       right answer: the ten that moved on is 4 or it is not, and a child who
+       carried the wrong figure has made the mistake the method is there to
+       catch. So the box is checked like any other. */
     key(item) {
       const top = String(item.a * item.b).length - 1;
       const cols = Math.max(da, top + 1);
       const R = digitsOf(item.a * item.b, cols);
       const out = [];
       /* a box only where it really carries (mulart.carriesOf) */
-      carriesOf(item.a, item.b)[0].forEach((c) => { if (c != null) out.push(want.free()); });
+      carriesOf(item.a, item.b)[0].forEach((c) => { if (c != null) out.push(want.num(c)); });
       for (let p = top; p >= 0; p--) out.push(want.cell(R[p]));
       return out;
     },
@@ -666,7 +670,7 @@ function longEx(id, da, label, count, db = 2) {
       const cols = Math.max(da, db, topR + 1);
       const out = [];
       const where = carriesOf(item.a, item.b);
-      const carries = (k) => (where[k] || []).forEach((c) => { if (c != null) out.push(want.free()); });
+      const carries = (k) => (where[k] || []).forEach((c) => { if (c != null) out.push(want.num(c)); });
       const figures = (v) => {
         const V = digitsOf(v, cols);
         for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
@@ -942,16 +946,16 @@ function splitEx(id, da, label, count) {
         const V = digitsOf(v, String(v).length);
         for (let p = String(v).length - 1; p >= 0; p--) out.push(want.cell(V[p]));
       };
-      const frees = (where) => where.forEach((c) => { if (c != null) out.push(want.free()); });
-      frees(timesRowCarries(item.a, t, 1));
+      const carried = (where) => where.forEach((c) => { if (c != null) out.push(want.num(c)); });
+      carried(timesRowCarries(item.a, t, 1));
       figures(item.a * t * 10);
-      frees(timesRowCarries(item.a, u, 0));
+      carried(timesRowCarries(item.a, u, 0));
       figures(item.a * u);
       /* the adding up: its carries, then the two products brought down and the
          total — every box on that sheet is the child's to write */
       const x = item.a * t * 10;
       const y = item.a * u;
-      frees(sumUpCarries(x, y));
+      carried(sumUpCarries(x, y));
       figures(x);
       figures(y);
       figures(x + y);
@@ -1007,7 +1011,7 @@ function crissEx(id, da, label, count, { stacked = false, db = 2 } = {}) {
   },
   key(item) {
     return crissKey(item.a, item.b).map((e) => (e.kind === "pass" ? want.num(e.value)
-      : e.kind === "carry" ? want.free() : want.cell(e.value)));
+      : e.kind === "carry" ? want.num(e.value) : want.cell(e.value)));
   },
   answer(item) {
     return [`${item.a} × ${item.b} = ${item.a * item.b}`];

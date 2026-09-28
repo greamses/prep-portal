@@ -50,6 +50,7 @@ export const REM_GROUPS = [
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
   { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
   { id: "flag", label: "Dividing with a flag", blurb: "By the first figure of the divisor, with the rest taken off crosswise — the criss-cross run backwards." },
+  { id: "div-decimal", label: "Dividing decimals", blurb: "The point stays put when you divide BY a whole number, and both points move when you do not." },
 ];
 
 /* ── how hard ──────────────────────────────────────────────────────────────
@@ -450,7 +451,10 @@ function shortDivEx(id, digits, label, count) {
       const { q, carry, remainder } = shortWork(item.n, item.d);
       const out = q.map((f) => want.cell(f));
       if (remainder) out.push(want.cell(remainder));
-      carry.forEach((c) => { if (c != null) out.push(want.free()); });
+      /* the left-overs are marked too: what is left after dividing a figure is
+         one number and not another, and carrying the wrong one is exactly the
+         mistake this method is worked out loud to catch */
+      carry.forEach((c) => { if (c != null) out.push(want.num(c)); });
       return out;
     },
     answer(item) {
@@ -460,6 +464,108 @@ function shortDivEx(id, digits, label, count) {
     },
   };
 }
+
+/* ── dividing decimals ─────────────────────────────────────────────────────
+   Two different things wear the same name, and a child who is taught them as
+   one rule learns neither:
+
+     7.2 ÷ 4     the point does not move. You are sharing 7.2 into 4, and the
+                 answer's point sits straight under the one you started with.
+     7.2 ÷ 0.4   the point moves — BOTH of them, the same way, until the number
+                 you are dividing BY is whole. 7.2 ÷ 0.4 is 72 ÷ 4, because
+                 making both of them ten times bigger cannot change how many
+                 times one goes into the other.
+
+   Either way the division itself is the bus stop they already know, so what is
+   asked for here is the dividing AND the one sentence about the point. */
+
+const point = (n, dp) => (dp ? (n / 10 ** dp).toFixed(dp) : String(n));
+
+/** A division that comes out exactly, so the answer is a decimal and not a mess. */
+const exactSum = (r, o, figures) => {
+  const d = r.pick(levelOf(o).divisors.filter((x) => x > 1));
+  /* NEITHER NUMBER MAY END IN A NOUGHT. 17.0 ÷ 5 is a question about a nought
+     that should not be written, and an answer of 3.40 is worse: the point is
+     supposed to be the only new thing on the page. */
+  for (let go = 0; go < 200; go++) {
+    let q = r.int(2, 9);
+    for (let i = 1; i < figures; i++) q = q * 10 + r.int(0, 9);
+    const n = d * q;
+    if (q % 10 && n % 10) return { d, q, n };
+  }
+  return { d: 4, q: 18, n: 72 };
+};
+
+function decDivEx(id, figures, moves, label, count) {
+  return {
+    id,
+    group: "div-decimal",
+    label,
+    blurb: moves
+      ? "Move both points until what you divide by is whole, then divide."
+      : "Divide as usual; the point in the answer sits straight above the one you started with.",
+    heading: moves ? "Dividing BY a decimal" : "Dividing a decimal",
+    instruction: () => (moves
+      ? "You cannot divide by part of a number, so move the point in BOTH numbers the same "
+        + "way until the one you are dividing by is whole — ten times bigger each, which "
+        + "cannot change how many times one goes into the other. Then divide as usual."
+      : "The point does not move. Divide as if it were not there, and then write it into the "
+        + "answer straight above where it stands in the number you divided."),
+    cols: 2,
+    defaultCount: count,
+    make(r, o) {
+      const { d, q, n } = exactSum(r, o, figures);
+      return { d, q, n };
+    },
+    render(item) {
+      const shown = moves
+        ? `${point(item.n, 1)} ÷ ${point(item.d, 1)}`
+        : `${point(item.n, 1)} ÷ ${item.d}`;
+      const answer = moves ? String(item.q) : point(item.q, 1);
+      return `<p class="wb-ask wb-ask--lead"><b>${shown}</b></p>`
+        + `<p class="wb-ask">${moves
+          ? `Move both points one place: <b>${item.n} ÷ ${item.d}</b>`
+          : `Divide as if the point were not there: <b>${item.n} ÷ ${item.d}</b>`}</p>`
+        + `<div class="rw-art">${busStop(item.n, item.d)}</div>`
+        + `<p class="wb-ask">${moves
+          ? `Both of them ten times bigger, so the answer is the same: ${shown} = `
+          : `Now put the point back, straight above where it was: ${shown} = `}`
+        + `<span class="rw-answer"></span></p>`;
+    },
+    worked() {
+      const [n, d] = [72, 4];
+      const shown = moves ? "7.2 ÷ 0.4" : "7.2 ÷ 4";
+      return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
+        + `<p class="wb-ask wb-ask--lead"><b>${shown}</b></p>`
+        + `<div class="rw-art">${busStop(n, d, { answer: true })}</div>`
+        + `<p class="wb-ask rw-worked__say">${moves
+          ? "You cannot divide by four tenths as it stands, so make both of them ten times "
+            + "bigger: 7.2 becomes 72 and 0.4 becomes 4. Ten times as much shared between ten "
+            + "times as many is the same share. 72 ÷ 4 = 18, so 7.2 ÷ 0.4 = 18."
+          : "72 ÷ 4 = 18, and the point does not move: it was one place from the end of 7.2 "
+            + "and it is one place from the end of the answer. 7.2 ÷ 4 = 1.8."
+        }</p></div>`;
+    },
+    key(item) {
+      const { q, carry, remainder } = shortWork(item.n, item.d);
+      const out = q.map((f) => want.cell(f));
+      if (remainder) out.push(want.cell(remainder));
+      carry.forEach((c) => { if (c != null) out.push(want.num(c)); });
+      out.push(want.num(moves ? item.q : point(item.q, 1)));
+      return out;
+    },
+    answer(item) {
+      const shown = moves
+        ? `${point(item.n, 1)} ÷ ${point(item.d, 1)}`
+        : `${point(item.n, 1)} ÷ ${item.d}`;
+      return [`${shown} = ${moves ? item.q : point(item.q, 1)}`];
+    },
+  };
+}
+
+const decDivWhole = decDivEx("div-dec-21", 2, false, "Decimals — a decimal ÷ a whole number", 3);
+const decDivThree = decDivEx("div-dec-31", 3, false, "Decimals — 3 figures ÷ a whole number", 2);
+const decDivBy = decDivEx("div-dec-by", 2, true, "Decimals — dividing BY a decimal", 3);
 
 /* ── dividing with a flag ──────────────────────────────────────────────────
    The division that goes with the criss-cross. Long division by 23 asks a child
@@ -542,6 +648,7 @@ export const REM_EXERCISES = [
   leftoverFraction,
   shortTwo, shortThree,
   flagThree, flagFour, flagFive,
+  decDivWhole, decDivThree, decDivBy,
 ];
 
 export { line, box, slot };
