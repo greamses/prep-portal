@@ -193,9 +193,12 @@ export function flagStop(n, d, { answer = false } = {}) {
     }
   });
 
-  /* the set-apart columns, where the crossings still owed are paid */
+  /* the set-apart columns, where the crossings still owed are paid. The FIRST
+     of them is the figure after the last one the answer used — the set-apart
+     run starts at `setApart`, but its first figure was brought down by the
+     last step, so the first crossing still owed comes off the one after it. */
   w.tail.forEach((t, i) => {
-    const col = at(setApart + i);
+    const col = at(setApart + i + 1);
     if (answer) sheet.mark(rowX, col, `−${t.cross}`, "is-soft");
     else sheet.slot(rowX, col, { step: step++, tone: "is-cross" });
   });
@@ -225,5 +228,136 @@ export function flagKey(n, d) {
   });
   w.tail.forEach((t) => out.push({ kind: "cross", value: t.cross }));
   out.push({ kind: "remainder", value: w.remainder });
+  return out;
+}
+
+
+/* ============================================================================
+   THE SAME METHOD, WRITTEN OUT LONG
+   ----------------------------------------------------------------------------
+   Everything above writes each step on one line: you divide in your head, you
+   work the crossing in your head, and only what is left of it lands on the
+   paper. That is the method AS IT IS MEANT TO BE USED, and it is no good at
+   all for learning it, because a child who gets a wrong number has nowhere to
+   look for where it went wrong.
+
+   So here it is again with the working down the page, like long division —
+   and with TWO takings-away at every step instead of one, which is the whole
+   difference between the two methods:
+
+        5  3            ← how many times the 2 goes
+    2|3 ) 1 2 3 4
+          1 0           ← 5 × 2, taken off the 12
+          ─ ─
+            2 3         ← 2 left, and the 3 brought down
+            1 5         ← the crossing, 3 × 5, taken off that
+            ─ ─
+              8         ← what stands there next
+              6         ← 3 × 2, taken off the 8
+              ─
+              2 4       ← 2 left, and the 4 brought down
+                9       ← the crossing, 3 × 3
+              ─ ─
+              1 5       ← the remainder
+
+   FIRST take-away: the answer figure times the figure that divides.
+   SECOND take-away: the crossing — the flag times the answer figures.
+
+   A child who is shown only the short form believes the crossing is a rule
+   somebody made up. Written out, it is plainly the same multiplying they do in
+   the criss-cross, and the two takings-away are the two halves of "times the
+   divisor" pulled apart: 53 × 23 is 53 × 20 and 53 × 3, and those are exactly
+   the two things being taken off here.
+   ========================================================================== */
+
+/* Four rows a step is a lot of paper, so the rows are shorter than the ones a
+   column sum writes in. */
+const LONG_ROWS = { answer: "9.8mm", figures: "8mm" };
+
+/**
+ * The long form. Same `flagWork`, laid out down the page.
+ *
+ *   row 0        the answer, above the bar
+ *   row 1        the number being divided
+ *   then, per figure of the answer, FOUR rows:
+ *                what that figure times the divisor's first figure comes to
+ *                what is left of it, with the next figure brought down beside
+ *                the crossing
+ *                and what THAT leaves, which is what stands there next
+ */
+export function flagLongStop(n, d, { answer = false } = {}) {
+  const w = flagWork(n, d);
+  if (!w) return "";
+  const wide = w.digits.length;
+  const at = (i) => wide - 1 - i;
+  const sheet = colSheet({
+    cols: wide, places: 0, steps: answer ? null : "listed", heights: LONG_ROWS,
+  });
+  const rowQ = 0;
+  const rowN = 1;
+  const setApart = wide - w.L;
+
+  sheet.sign(rowN, `${w.main}|${w.flag.join("")}`);
+  w.digits.forEach((f, k) => sheet.mark(rowN, at(k), f, k === setApart ? "is-flagged" : ""));
+
+  let step = 0;
+  let row = rowN;
+  /* a number written so that its last figure stands in the column of digit
+     `end` of the number being divided — which is what lining a subtraction up
+     means, and the only thing a long division is fussy about */
+  const put = (r, end, value, cls) => {
+    const fs = String(value).split("");
+    fs.forEach((ch, j) => {
+      const place = at(end) + (fs.length - 1 - j);
+      if (answer) sheet.mark(r, place, ch, cls);
+      else sheet.box(r, place, { step: step++ });
+    });
+    return fs.length;
+  };
+  const takeAway = (end, value) => {
+    const n = put(++row, end, value, "is-soft");
+    sheet.rule(row, { from: at(end), to: at(end) + n - 1 });
+  };
+
+  w.steps.forEach((s, k) => {
+    const cur = w.from + k;                 // where what is being divided ends
+    const next = w.from + k + 1;            // the figure brought down
+    if (answer) sheet.mark(rowQ, at(cur), s.q);
+    else sheet.box(rowQ, at(cur), { step: step++ });
+
+    takeAway(cur, s.q * w.main);            // the answer figure times the divisor
+    put(++row, cur, s.left, "is-left");     // what is left of it …
+    sheet.mark(row, at(next), w.digits[next], "is-brought");   // … and the next figure
+    takeAway(next, s.cross);                // the crossing
+    put(++row, next, s.next, "is-left");    // and what stands there now
+  });
+
+  /* the set-apart columns: nothing is divided there, the crossings still owed
+     are simply taken off */
+  w.tail.forEach((t, i) => {
+    const end = setApart + i + 1;
+    sheet.mark(row, at(end), w.digits[end], "is-brought");
+    takeAway(end, t.cross);
+    put(++row, end, t.next, "is-left");
+  });
+
+  sheet.stop(rowN, { from: at(wide - 1), to: at(0) });
+  return sheet.html(`mm-col mm-flag mm-flaglong${w.L > 1 ? " mm-flag--wide" : ""}`);
+}
+
+/** What the long form asks for, in the order it asks. */
+export function flagLongKey(n, d) {
+  const w = flagWork(n, d);
+  if (!w) return [];
+  const out = [];
+  const spell = (v) => String(v).split("").forEach((ch) => out.push({ kind: "figure", value: Number(ch) }));
+  w.steps.forEach((s) => {
+    out.push({ kind: "digit", value: s.q });
+    spell(s.q * w.main);
+    spell(s.left);
+    spell(s.cross);
+    spell(s.next);
+  });
+  w.tail.forEach((t) => { spell(t.cross); spell(t.next); });
   return out;
 }

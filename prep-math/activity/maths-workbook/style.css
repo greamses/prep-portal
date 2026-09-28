@@ -580,11 +580,13 @@ thead .pv-chart__side {
    the page is a movement and not a calculation — so they are drawn in the
    hand the question is written in rather than the hand the answers are, and
    with the small arrow that says where they came from. */
-.mm-long .ms-col__mark.is-brought {
+.mm-long .ms-col__mark.is-brought,
+.mm-flaglong .ms-col__mark.is-brought {
   color: rgba(42, 39, 35, 0.62);
   position: relative;
 }
-.mm-long .ms-col__mark.is-brought::before {
+.mm-long .ms-col__mark.is-brought::before,
+.mm-flaglong .ms-col__mark.is-brought::before {
   content: "";
   position: absolute;
   top: -2.6mm;
@@ -595,10 +597,16 @@ thead .pv-chart__side {
 }
 /* what is left after a taking-away: the number the next step divides into, so
    it is written as plainly as the number being divided was */
-.mm-long .ms-col__mark.is-left { color: #2a2723; }
+.mm-long .ms-col__mark.is-left,
+.mm-flaglong .ms-col__mark.is-left { color: #2a2723; }
 /* the line under ONE taking-away is short and sits tight under it, not the
    full-width rule of a column sum */
-.mm-long .ms-col__rule { margin-bottom: 0.6mm; border-bottom-width: 0.35mm; }
+.mm-long .ms-col__rule,
+.mm-flaglong .ms-col__rule { margin-bottom: 0.6mm; border-bottom-width: 0.35mm; }
+/* the flag written out long has no crossings ABOVE the bar to colour, and
+   its boxes are the working itself — so the red hand of the short form's
+   crossing slots would be shouting on every second row */
+.mm-flaglong .ms-col__cell { border-color: rgba(42, 39, 35, 0.55); }
 
 /* the arrows of a written multiplication: which two figures this step
    multiplies, drawn over the sheet and only while that step is being asked */

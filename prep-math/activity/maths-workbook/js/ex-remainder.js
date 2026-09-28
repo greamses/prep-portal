@@ -34,7 +34,7 @@
 import { pileSvg, jitterFor, traysSvg, SHAPE_NAMES, SHAPE_WORDS } from "./shapes.js";
 import { barsSvg, sentence, mixed, improper } from "./bars.js";
 import { busStop, shortWork } from "./divart.js";
-import { flagStop, flagKey, flagWork, flagFits } from "./flagart.js";
+import { flagStop, flagKey, flagWork, flagFits, flagLongStop, flagLongKey } from "./flagart.js";
 import { longStop, longKey, longWork, longFits } from "./longart.js";
 import { want } from "/utils/components/workbook/want.js";
 
@@ -51,8 +51,8 @@ export const REM_GROUPS = [
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
   { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
   { id: "long", label: "Long division", blurb: "The working written out: how many times it goes, multiply back, take away, bring the next one down." },
-  { id: "flag", label: "Dividing with a flag", blurb: "By the first figure of the divisor, with the rest taken off crosswise — the criss-cross run backwards." },
-  { id: "flaglong", label: "Long flag division", blurb: "The same, by a three-figure divisor: the flag is two figures now, so the crossing is a criss-cross and the last two figures are set apart." },
+  { id: "flag", label: "Flag short division", blurb: "By the first figure of the divisor, with the rest taken off crosswise — one line a step, the working in your head." },
+  { id: "flaglong", label: "Flag long division", blurb: "The same method with the working written down the page: TWO takings-away at every step — the answer figure times the divisor, then the crossing." },
   { id: "div-decimal", label: "Dividing decimals", blurb: "The point stays put when you divide BY a whole number, and both points move when you do not." },
 ];
 
@@ -730,21 +730,41 @@ const flagSum = (r, o, digits, dwide, exact) => {
     : { n: exact ? 123318 : 123456, d: 234 };
 };
 
-function flagDivEx(id, digits, dwide, exact, label, count) {
-  const long = dwide === 3;
+/* SHORT AND LONG ARE THE SAME METHOD, written two ways, and the difference is
+   the whole reason both are here.
+
+     short   one line a step: you divide and work the crossing in your head,
+             and only what is left of it reaches the paper. This is the method
+             as it is meant to be USED.
+     long    the working down the page, with TWO takings-away at every step —
+             the answer figure times the figure that divides, and then the
+             crossing. This is the method as it has to be LEARNED: a child who
+             gets a wrong number can see which of the two went wrong.
+
+   One factory builds both; `form` picks the renderer and nothing else, because
+   there is nothing else to pick. */
+function flagDivEx(id, digits, dwide, exact, label, count, form = "short") {
+  const long = form === "long";
+  const wideFlag = dwide === 3;
+  const draw = long ? flagLongStop : flagStop;
+  const readKey = long ? flagLongKey : flagKey;
   return {
     id,
     group: long ? "flaglong" : "flag",
     label,
     blurb: long
-      ? "Divide by the first figure only; the crossing is a criss-cross of the two flag figures."
+      ? "The working written down the page: take off the answer figure times the divisor, then take off the crossing."
       : "Divide by the first figure only, and take the crossing off what is left.",
-    heading: `${long ? "Long flag division" : "Dividing with a flag"} — ${exact ? "no remainder" : "with a remainder"}`,
+    heading: `Flag ${long ? "long" : "short"} division — ${exact ? "no remainder" : "with a remainder"}`,
     instruction: () =>
       "The divisor is split: the FIRST figure divides, the rest is the flag. Divide what "
-      + "stands there by the first figure and write the answer under the bar. Then take the "
-      + "crossing off what comes down — "
+      + "stands there by the first figure and write the answer above the bar. "
       + (long
+        ? "Then TAKE AWAY twice. First that answer figure times the figure you divided by, "
+          + "which leaves something to bring the next figure down beside. Then take away the "
+          + "CROSSING — "
+        : "Then take the crossing off what comes down — ")
+      + (wideFlag
         ? "the first flag figure times the answer figure you have just written, PLUS the "
           + "second flag figure times the one before it, which is the criss-cross again. The "
           + "last two figures are set apart: they are not divided, they pay the crossings "
@@ -760,15 +780,15 @@ function flagDivEx(id, digits, dwide, exact, label, count) {
     },
     render(item) {
       return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
-        + `<div class="rw-art">${flagStop(item.n, item.d)}</div>`;
+        + `<div class="rw-art">${draw(item.n, item.d)}</div>`;
     },
     worked() {
-      const found = long
-        ? (exact ? pickWorked(6, 3, true, flagFits) : [123456, 234])
-        : (exact ? pickWorked(4, 2, true, flagFits) : [1234, 23]);
-      const [n, d] = found || (long ? [123456, 234] : [1234, 23]);
+      const small = Math.min(digits, wideFlag ? 6 : 4);
+      const found = pickWorked(small, dwide, exact, flagFits)
+        || (wideFlag ? [123456, 234] : [1234, 23]);
+      const [n, d] = found;
       const w = flagWork(n, d);
-      const say = long
+      const say = wideFlag
         ? `The flag is ${w.flag.join(" and ")}, so each crossing is ${w.flag[0]} times the figure `
           + `just written plus ${w.flag[1]} times the one before it, and the last two figures are `
           + `set apart to pay what is still owed. `
@@ -777,13 +797,17 @@ function flagDivEx(id, digits, dwide, exact, label, count) {
           + `too big. `;
       return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
         + `<p class="wb-ask wb-ask--lead"><b>${n} ÷ ${d}</b></p>`
-        + `<div class="rw-art">${flagStop(n, d, { answer: true })}</div>`
+        + `<div class="rw-art">${draw(n, d, { answer: true })}</div>`
         + `<p class="wb-ask rw-worked__say">${say}`
+        + (long
+          ? `Each step takes two things away: ${w.steps[0].q} × ${w.main} = ${w.steps[0].q * w.main} `
+            + `first, and the crossing ${w.steps[0].cross} after it. `
+          : "")
         + `${n} ÷ ${d} = ${w.quotient}${w.remainder ? ` remainder ${w.remainder}` : " exactly"}.`
         + `</p></div>`;
     },
     key(item) {
-      return flagKey(item.n, item.d).map((e) => (e.kind === "digit"
+      return readKey(item.n, item.d).map((e) => (e.kind === "digit" || e.kind === "figure"
         ? want.cell(e.value)
         : want.num(e.value)));
     },
@@ -823,19 +847,36 @@ const longFiveX = longDivEx("div-long-52x", 5, 2, true, "Long division — 5 fig
 const longSixX = longDivEx("div-long-63x", 6, 3, true, "Long division — 6 figures ÷ 3 figures, no remainder", 2);
 const longSevenX = longDivEx("div-long-73x", 7, 3, true, "Long division — 7 figures ÷ 3 figures, no remainder", 2);
 
-const flagThree = flagDivEx("div-flag-32", 3, 2, false, "Flag division — 3 figures ÷ 2 figures, with a remainder", 3);
-const flagFour = flagDivEx("div-flag-42", 4, 2, false, "Flag division — 4 figures ÷ 2 figures, with a remainder", 2);
-const flagFive = flagDivEx("div-flag-52", 5, 2, false, "Flag division — 5 figures ÷ 2 figures, with a remainder", 2);
-const flagThreeX = flagDivEx("div-flag-32x", 3, 2, true, "Flag division — 3 figures ÷ 2 figures, no remainder", 3);
-const flagFourX = flagDivEx("div-flag-42x", 4, 2, true, "Flag division — 4 figures ÷ 2 figures, no remainder", 2);
-const flagFiveX = flagDivEx("div-flag-52x", 5, 2, true, "Flag division — 5 figures ÷ 2 figures, no remainder", 2);
+/* SHORT: one line a step. Two-figure divisors, then three. */
+const flagThree = flagDivEx("div-flag-32", 3, 2, false, "Flag short division — 3 figures ÷ 2 figures, with a remainder", 3);
+const flagFour = flagDivEx("div-flag-42", 4, 2, false, "Flag short division — 4 figures ÷ 2 figures, with a remainder", 2);
+const flagFive = flagDivEx("div-flag-52", 5, 2, false, "Flag short division — 5 figures ÷ 2 figures, with a remainder", 2);
+const flagThreeX = flagDivEx("div-flag-32x", 3, 2, true, "Flag short division — 3 figures ÷ 2 figures, no remainder", 3);
+const flagFourX = flagDivEx("div-flag-42x", 4, 2, true, "Flag short division — 4 figures ÷ 2 figures, no remainder", 2);
+const flagFiveX = flagDivEx("div-flag-52x", 5, 2, true, "Flag short division — 5 figures ÷ 2 figures, no remainder", 2);
 
-const flagLongFive = flagDivEx("div-flag-53", 5, 3, false, "Long flag division — 5 figures ÷ 3 figures, with a remainder", 2);
-const flagLongSix = flagDivEx("div-flag-63", 6, 3, false, "Long flag division — 6 figures ÷ 3 figures, with a remainder", 2);
-const flagLongSeven = flagDivEx("div-flag-73", 7, 3, false, "Long flag division — 7 figures ÷ 3 figures, with a remainder", 2);
-const flagLongFiveX = flagDivEx("div-flag-53x", 5, 3, true, "Long flag division — 5 figures ÷ 3 figures, no remainder", 2);
-const flagLongSixX = flagDivEx("div-flag-63x", 6, 3, true, "Long flag division — 6 figures ÷ 3 figures, no remainder", 2);
-const flagLongSevenX = flagDivEx("div-flag-73x", 7, 3, true, "Long flag division — 7 figures ÷ 3 figures, no remainder", 2);
+const flagWideFive = flagDivEx("div-flag-53", 5, 3, false, "Flag short division — 5 figures ÷ 3 figures, with a remainder", 2);
+const flagWideSix = flagDivEx("div-flag-63", 6, 3, false, "Flag short division — 6 figures ÷ 3 figures, with a remainder", 2);
+const flagWideSeven = flagDivEx("div-flag-73", 7, 3, false, "Flag short division — 7 figures ÷ 3 figures, with a remainder", 2);
+const flagWideFiveX = flagDivEx("div-flag-53x", 5, 3, true, "Flag short division — 5 figures ÷ 3 figures, no remainder", 2);
+const flagWideSixX = flagDivEx("div-flag-63x", 6, 3, true, "Flag short division — 6 figures ÷ 3 figures, no remainder", 2);
+const flagWideSevenX = flagDivEx("div-flag-73x", 7, 3, true, "Flag short division — 7 figures ÷ 3 figures, no remainder", 2);
+
+/* LONG: the working down the page, two takings-away a step. Four rows per
+   figure of the answer is a tall sheet, so these stop at six figures — past
+   that the page is the limit and not the method, and the short form above
+   goes as far as you like. */
+const flagLongThree = flagDivEx("div-flaglong-32", 3, 2, false, "Flag long division — 3 figures ÷ 2 figures, with a remainder", 2, "long");
+const flagLongFour = flagDivEx("div-flaglong-42", 4, 2, false, "Flag long division — 4 figures ÷ 2 figures, with a remainder", 2, "long");
+const flagLongFive = flagDivEx("div-flaglong-52", 5, 2, false, "Flag long division — 5 figures ÷ 2 figures, with a remainder", 1, "long");
+const flagLongThreeX = flagDivEx("div-flaglong-32x", 3, 2, true, "Flag long division — 3 figures ÷ 2 figures, no remainder", 2, "long");
+const flagLongFourX = flagDivEx("div-flaglong-42x", 4, 2, true, "Flag long division — 4 figures ÷ 2 figures, no remainder", 2, "long");
+const flagLongFiveX = flagDivEx("div-flaglong-52x", 5, 2, true, "Flag long division — 5 figures ÷ 2 figures, no remainder", 1, "long");
+
+const flagLongWideFive = flagDivEx("div-flaglong-53", 5, 3, false, "Flag long division — 5 figures ÷ 3 figures, with a remainder", 1, "long");
+const flagLongWideSix = flagDivEx("div-flaglong-63", 6, 3, false, "Flag long division — 6 figures ÷ 3 figures, with a remainder", 1, "long");
+const flagLongWideFiveX = flagDivEx("div-flaglong-53x", 5, 3, true, "Flag long division — 5 figures ÷ 3 figures, no remainder", 1, "long");
+const flagLongWideSixX = flagDivEx("div-flaglong-63x", 6, 3, true, "Flag long division — 6 figures ÷ 3 figures, no remainder", 1, "long");
 
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
@@ -846,7 +887,9 @@ export const REM_EXERCISES = [
   shortTwoX, shortTwo, shortThreeX, shortThree, shortFiveX, shortFive, shortSevenX, shortSeven,
   longThreeX, longThree, longFiveX, longFive, longSixX, longSix, longSevenX, longSeven,
   flagThreeX, flagThree, flagFourX, flagFour, flagFiveX, flagFive,
-  flagLongFiveX, flagLongFive, flagLongSixX, flagLongSix, flagLongSevenX, flagLongSeven,
+  flagWideFiveX, flagWideFive, flagWideSixX, flagWideSix, flagWideSevenX, flagWideSeven,
+  flagLongThreeX, flagLongThree, flagLongFourX, flagLongFour, flagLongFiveX, flagLongFive,
+  flagLongWideFiveX, flagLongWideFive, flagLongWideSixX, flagLongWideSix,
   decDivWhole, decDivThree, decDivBy,
 ];
 

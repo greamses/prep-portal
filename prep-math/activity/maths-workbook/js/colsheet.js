@@ -39,7 +39,12 @@ const HEIGHT = { tag: "5mm", carry: "6.6mm", figures: "9mm", slot: "9.4mm", answ
  * Every method below takes a row number and a PLACE (0 is the ones, counting
  * left), never a grid column: the sheet does that arithmetic once.
  */
-export function colSheet({ cols, places = cols, steps = "rtl" }) {
+export function colSheet({ cols, places = cols, steps = "rtl", heights = null }) {
+  /* A sheet may ask for shorter rows. One kind does: the flag written out
+     long, which takes four rows for every figure of the answer — two
+     subtractions, each with what it leaves — and at the ordinary answer height
+     a six-figure one would be taller than the paper. */
+  const tall = heights ? { ...HEIGHT, ...heights } : HEIGHT;
   const bits = [];
   const kinds = [];                       // row number → what kind of row it is
   const arrows = [];                      // which figures a step multiplies
@@ -206,8 +211,8 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
     },
     /** The sheet itself. */
     html(extra = "") {
-      const rows = kinds.map((k) => HEIGHT[k] || HEIGHT.figures).join(" ");
-      const drawn = arrows.length ? arrowLayer(arrows, kinds, cols) : "";
+      const rows = kinds.map((k) => tall[k] || tall.figures).join(" ");
+      const drawn = arrows.length ? arrowLayer(arrows, kinds, cols, tall) : "";
       /* `data-nomath`: the figures of a written sum are not an expression to be
          typeset, they are figures that have to stay in their columns
          (mathify.js keeps out of anything that says so). */
@@ -227,8 +232,8 @@ const MM = (h) => parseFloat(h);
 const CW = 11;                            // one place across
 const SIGN = 7;                           // the column the sign stands in
 
-function arrowLayer(arrows, kinds, cols) {
-  const heights = kinds.map((k) => MM(HEIGHT[k] || HEIGHT.figures));
+function arrowLayer(arrows, kinds, cols, tall = HEIGHT) {
+  const heights = kinds.map((k) => MM(tall[k] || tall.figures));
   const top = (row) => heights.slice(0, row).reduce((t, h) => t + h, 0);
   const midY = (row) => top(row) + heights[row] / 2;
   /* `place` is a place of the sum; "sign" is the column in front of it, where
