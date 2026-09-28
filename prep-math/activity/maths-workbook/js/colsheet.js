@@ -190,10 +190,18 @@ export function colSheet({ cols, places = cols, steps = "rtl" }) {
       arrows.push({ from, to, tie });
       return this;
     },
-    /** The line under a row — the heavy one under the last thing being added. */
-    rule(row, { heavy = false } = {}) {
-      put(`ms-col__rule${heavy ? " is-heavy" : ""}`,
-        `${grow(row)}grid-column:1 / span ${cols + 1};`);
+    /**
+     * The line under a row — the heavy one under the last thing being added.
+     *
+     * `from`..`to` are places, when the line is only under PART of the row: a
+     * long division takes away a different piece of the number at every step,
+     * and a line right across the page would say it was taking away all of it.
+     */
+    rule(row, { heavy = false, from = null, to = null } = {}) {
+      const where = from == null
+        ? `grid-column:1 / span ${cols + 1};`
+        : `grid-column:${2 + (cols - 1 - to)} / span ${to - from + 1};`;
+      put(`ms-col__rule${heavy ? " is-heavy" : ""}`, `${grow(row)}${where}`);
       return this;
     },
     /** The sheet itself. */

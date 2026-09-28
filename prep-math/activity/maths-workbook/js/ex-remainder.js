@@ -35,6 +35,7 @@ import { pileSvg, jitterFor, traysSvg, SHAPE_NAMES, SHAPE_WORDS } from "./shapes
 import { barsSvg, sentence, mixed, improper } from "./bars.js";
 import { busStop, shortWork } from "./divart.js";
 import { flagStop, flagKey, flagWork, flagFits } from "./flagart.js";
+import { longStop, longKey, longWork, longFits } from "./longart.js";
 import { want } from "/utils/components/workbook/want.js";
 
 const line = (size = "md") => `<span class="wb-line wb-line--${size}"></span>`;
@@ -49,7 +50,9 @@ export const REM_GROUPS = [
   { id: "write", label: "Write it down", blurb: "The same picture as a sentence, with every part named." },
   { id: "bridge", label: "What is left over", blurb: "The hinge: the remainder becomes a fraction of one more group." },
   { id: "short", label: "Short division", blurb: "The bus stop: divide one figure at a time and carry what is left over into the next." },
+  { id: "long", label: "Long division", blurb: "The working written out: how many times it goes, multiply back, take away, bring the next one down." },
   { id: "flag", label: "Dividing with a flag", blurb: "By the first figure of the divisor, with the rest taken off crosswise — the criss-cross run backwards." },
+  { id: "flaglong", label: "Long flag division", blurb: "The same, by a three-figure divisor: the flag is two figures now, so the crossing is a criss-cross and the last two figures are set apart." },
   { id: "div-decimal", label: "Dividing decimals", blurb: "The point stays put when you divide BY a whole number, and both points move when you do not." },
 ];
 
@@ -401,47 +404,84 @@ const leftoverFraction = {
    LEVEL changes is the divisor — the same divisors the rest of the chapter
    shares out counters into. */
 
-const shortSum = (r, o, digits) => {
-  const d = r.pick(levelOf(o).divisors);
-  /* the first figure is at least the divisor, so the answer starts in the
-     first column and every column has a box */
+/* WITH A REMAINDER, OR WITHOUT — and never both in one exercise. A page of
+   divisions where some come out and some do not is a page where a child cannot
+   tell whether a leftover means "you have finished" or "you have gone wrong",
+   and the two are worth practising apart: dividing exactly is checking a
+   multiplication backwards, and dividing with something over is the harder
+   idea that the answer is two numbers. Every written division in this chapter
+   comes both ways, and its label says which it is. */
+
+/** A number of `digits` figures whose first figure is at least `d`. */
+function overD(r, d, digits) {
   let n = r.int(d, 9);
   for (let i = 1; i < digits; i++) n = n * 10 + r.int(0, 9);
-  return { n, d };
+  return n;
+}
+
+/** …and made to come out exactly, or made not to. */
+const landOn = (n, d, exact) => {
+  const over = n % d;
+  if (exact) return n - over;
+  if (over) return n;
+  /* one MORE would sometimes be one figure longer — 99 + 1 is not a two-figure
+     sum any more — and an exercise that says two figures has to mean it */
+  return String(n + 1).length === String(n).length ? n + 1 : n - 1;
 };
 
-function shortDivEx(id, digits, label, count) {
+const shortSum = (r, o, digits, exact) => {
+  const d = r.pick(levelOf(o).divisors);
+  /* the first figure is at least the divisor, so the answer starts in the
+     first column and every column has a box — and nudging the number to make
+     it come out (or not) must not spoil either of those */
+  for (let go = 0; go < 60; go++) {
+    const n = landOn(overD(r, d, digits), d, exact);
+    if (String(n).length === digits && Number(String(n)[0]) >= d) return { n, d };
+  }
+  const flat = Number(String(d) + "0".repeat(digits - 1));
+  return { n: landOn(flat + (exact ? 0 : 1), d, exact), d };
+};
+
+function shortDivEx(id, digits, exact, label, count) {
   return {
     id,
     group: "short",
     label,
-    blurb: "Divide one figure at a time; carry what is left into the next one.",
-    heading: "Short division",
+    blurb: exact
+      ? "Divide one figure at a time; these all come out exactly."
+      : "Divide one figure at a time; carry what is left into the next one.",
+    heading: `Short division — ${exact ? "no remainder" : "with a remainder"}`,
     instruction: () =>
       "Start at the LEFT. How many times does it go into the first figure? Write that above "
       + "the bar, and write what is LEFT OVER in the little box in front of the next figure. "
       + "Now divide that figure with the carried number in front of it, and keep going. "
-      + "Whatever is left at the very end is the remainder.",
-    cols: 2,
+      + (exact
+        ? "Every one of these goes exactly: if something is left at the end, look again."
+        : "Whatever is left at the very end is the remainder."),
+    cols: digits > 4 ? 1 : 2,
     defaultCount: count,
     make(r, o) {
-      return shortSum(r, o, digits);
+      return shortSum(r, o, digits, exact);
     },
     render(item) {
       return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
         + `<div class="rw-art">${busStop(item.n, item.d)}</div>`;
     },
     worked() {
-      const [n, d] = digits === 2 ? [85, 3] : [442, 3];
+      const [n, d] = exact ? [426, 3] : (digits === 2 ? [85, 3] : [442, 3]);
       return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
         + `<p class="wb-ask wb-ask--lead"><b>${n} ÷ ${d}</b></p>`
         + `<div class="rw-art">${busStop(n, d, { answer: true })}</div>`
-        + `<p class="wb-ask rw-worked__say">${digits === 2
-          ? "3 into 8 goes 2, and 2 is left over — carry the 2 in front of the 5. "
-            + "3 into 25 goes 8, and 1 is left over. So 85 ÷ 3 = 28 remainder 1."
-          : "3 into 4 goes 1, and 1 is left over — carry the 1 in front of the 4. "
-            + "3 into 14 goes 4, and 2 is left over — carry the 2 in front of the 2. "
-            + "3 into 22 goes 7, and 1 is left over. So 442 ÷ 3 = 147 remainder 1."
+        + `<p class="wb-ask rw-worked__say">${exact
+          ? "3 into 4 goes 1, and 1 is left over — carry the 1 in front of the 2. "
+            + "3 into 12 goes 4, and nothing is left. 3 into 6 goes 2, and nothing is left "
+            + "over at the end either: 426 ÷ 3 = 142 exactly."
+          : digits === 2
+            ? "3 into 8 goes 2, and 2 is left over — carry the 2 in front of the 5. "
+              + "3 into 25 goes 8, and 1 is left over. So 85 ÷ 3 = 28 remainder 1."
+            : "3 into 4 goes 1, and 1 is left over — carry the 1 in front of the 4. "
+              + "3 into 14 goes 4, and 2 is left over — carry the 2 in front of the 2. "
+              + "3 into 22 goes 7, and 1 is left over. So 442 ÷ 3 = 147 remainder 1."
         }</p></div>`;
     },
     /* the boxes the sheet draws, in the order it draws them: the answer along
@@ -461,6 +501,98 @@ function shortDivEx(id, digits, label, count) {
       const { q, remainder } = shortWork(item.n, item.d);
       const said = q.join("");
       return [`${item.n} ÷ ${item.d} = ${said}${remainder ? ` remainder ${remainder}` : ""}`];
+    },
+  };
+}
+
+/* ── F. LONG division ──────────────────────────────────────────────────────
+   The method everybody was taught, and the one this chapter arrives at last:
+   how many times it goes, multiply back, take away, bring the next one down.
+
+   It is short division with the working written out, which is why it comes
+   after it — and it is the only method here that copes with a divisor a child
+   cannot hold in their head, which is why it comes at all. The plan is the
+   written board's (longart.js → boards/longdiv.js), so the shape on paper is
+   the shape on the screen.
+
+   The figures brought down are PRINTED. Everything that is arithmetic — the
+   answer figure, what it multiplies to, what is left when that is taken away —
+   is asked for. */
+
+/** A division worth writing out the long way, at this size and this kind. */
+function longSum(r, o, digits, dwide, exact) {
+  const tier = levelOf(o).id;
+  const top = dwide === 2
+    ? ({ gentle: 39, middle: 69, stretch: 99 }[tier] ?? 69)
+    : ({ gentle: 349, middle: 649, stretch: 999 }[tier] ?? 649);
+  const low = dwide === 2 ? 11 : 101;
+  for (let go = 0; go < 400; go++) {
+    const d = r.int(low, top);
+    const n = landOn(overD(r, 1, digits), d, exact);
+    if (String(n).length !== digits) continue;
+    if (longFits(n, d)) return { n, d };
+  }
+  return { n: exact ? 441 : 442, d: 3 };
+}
+
+/** A worked example of the same shape, found the same way every time. */
+function pickWorked(digits, dwide, exact, fits) {
+  const low = dwide === 1 ? 3 : dwide === 2 ? 23 : 234;
+  for (let d = low; d < low + 90; d += 7) {
+    for (let n = 10 ** (digits - 1) + 234; n < 10 ** digits; n += 1237) {
+      if (exact !== (n % d === 0)) continue;
+      if (fits(n, d)) return [n, d];
+    }
+  }
+  return null;
+}
+
+function longDivEx(id, digits, dwide, exact, label, count) {
+  return {
+    id,
+    group: "long",
+    label,
+    blurb: exact
+      ? "Multiply back, take away, bring the next one down — and these come out."
+      : "Multiply back, take away, bring the next one down; what is left at the end is the remainder.",
+    heading: `Long division — ${exact ? "no remainder" : "with a remainder"}`,
+    instruction: () =>
+      "How many times does the divisor go into the figures you have? Write that above the "
+      + "bar. MULTIPLY it back and write what it comes to underneath, take that away, and "
+      + "bring the next figure down beside what is left. Do it again with that number. "
+      + (exact
+        ? "Every one of these comes out: nothing should be left at the end."
+        : "What is left when there is nothing more to bring down is the remainder."),
+    cols: 1,
+    defaultCount: count,
+    make(r, o) {
+      return longSum(r, o, digits, dwide, exact);
+    },
+    render(item) {
+      return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
+        + `<div class="rw-art">${longStop(item.n, item.d)}</div>`;
+    },
+    worked() {
+      const found = pickWorked(Math.min(digits, 4), dwide, exact, longFits)
+        || (exact ? [441, 3] : [442, 3]);
+      const [n, d] = found;
+      const w = longWork(n, d);
+      const first = w.live[0];
+      return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
+        + `<p class="wb-ask wb-ask--lead"><b>${n} ÷ ${d}</b></p>`
+        + `<div class="rw-art">${longStop(n, d, { answer: true })}</div>`
+        + `<p class="wb-ask rw-worked__say">`
+        + `${d} into ${first.cur} goes ${first.q}, and ${first.q} × ${d} = ${first.product}, `
+        + `which leaves ${first.rem}. Bring the next figure down and do it again. `
+        + `${n} ÷ ${d} = ${w.quotient}${w.remainder ? ` remainder ${w.remainder}` : " exactly"}.`
+        + `</p></div>`;
+    },
+    key(item) {
+      return longKey(item.n, item.d).map((e) => want.cell(e.value));
+    },
+    answer(item) {
+      const w = longWork(item.n, item.d);
+      return [`${item.n} ÷ ${item.d} = ${w.quotient}${w.remainder ? ` remainder ${w.remainder}` : ""}`];
     },
   };
 }
@@ -577,49 +709,78 @@ const decDivBy = decDivEx("div-dec-by", 2, true, "Decimals — dividing BY a dec
    when the crossing will not come off what is left. That is the same thing long
    division asks of them, met one figure at a time instead of one number. */
 
-const flagSum = (r, o, digits) => {
+const flagSum = (r, o, digits, dwide, exact) => {
   const tier = levelOf(o).id;
   const hi = { gentle: 3, middle: 5, stretch: 9 }[tier] ?? 5;
-  for (let go = 0; go < 300; go++) {
-    const d = r.int(2, hi) * 10 + r.int(1, 9);
+  for (let go = 0; go < 500; go++) {
+    /* the FIRST figure is what the child divides by, so it is the one the
+       level holds down; the flag can be anything, because a flag is only ever
+       multiplied by one figure */
+    const d = dwide === 2
+      ? r.int(2, hi) * 10 + r.int(1, 9)
+      : r.int(2, hi) * 100 + r.int(0, 9) * 10 + r.int(1, 9);
     let n = r.int(1, 9);
     for (let i = 1; i < digits; i++) n = n * 10 + r.int(0, 9);
+    n = landOn(n, d, exact);
+    if (String(n).length !== digits) continue;
     if (flagFits(n, d)) return { n, d };
   }
-  return { n: 1234, d: 23 };
+  return dwide === 2
+    ? { n: exact ? 1219 : 1234, d: 23 }
+    : { n: exact ? 123318 : 123456, d: 234 };
 };
 
-function flagDivEx(id, digits, label, count) {
+function flagDivEx(id, digits, dwide, exact, label, count) {
+  const long = dwide === 3;
   return {
     id,
-    group: "flag",
+    group: long ? "flaglong" : "flag",
     label,
-    blurb: "Divide by the first figure only, and take the crossing off what is left.",
-    heading: "Dividing with a flag",
+    blurb: long
+      ? "Divide by the first figure only; the crossing is a criss-cross of the two flag figures."
+      : "Divide by the first figure only, and take the crossing off what is left.",
+    heading: `${long ? "Long flag division" : "Dividing with a flag"} — ${exact ? "no remainder" : "with a remainder"}`,
     instruction: () =>
-      "The divisor is split: the FIRST figure divides, the second is the flag. Divide what "
+      "The divisor is split: the FIRST figure divides, the rest is the flag. Divide what "
       + "stands there by the first figure and write the answer under the bar. Then take the "
-      + "flag times that answer off what comes down — that is the crossing — and what is left "
-      + "is what you divide next. If the crossing will not come off, the figure was one too "
-      + "big: take one off it and try again.",
+      + "crossing off what comes down — "
+      + (long
+        ? "the first flag figure times the answer figure you have just written, PLUS the "
+          + "second flag figure times the one before it, which is the criss-cross again. The "
+          + "last two figures are set apart: they are not divided, they pay the crossings "
+          + "that are still owed."
+        : "that is the flag times the figure you have just written — and what is left is "
+          + "what you divide next. If the crossing will not come off, the figure was one too "
+          + "big: take one off it and try again.")
+      + (exact ? " Every one of these comes out exactly." : ""),
     cols: 1,
     defaultCount: count,
     make(r, o) {
-      return flagSum(r, o, digits);
+      return flagSum(r, o, digits, dwide, exact);
     },
     render(item) {
       return `<p class="wb-ask wb-ask--lead"><b>${item.n} ÷ ${item.d}</b></p>`
         + `<div class="rw-art">${flagStop(item.n, item.d)}</div>`;
     },
     worked() {
+      const found = long
+        ? (exact ? pickWorked(6, 3, true, flagFits) : [123456, 234])
+        : (exact ? pickWorked(4, 2, true, flagFits) : [1234, 23]);
+      const [n, d] = found || (long ? [123456, 234] : [1234, 23]);
+      const w = flagWork(n, d);
+      const say = long
+        ? `The flag is ${w.flag.join(" and ")}, so each crossing is ${w.flag[0]} times the figure `
+          + `just written plus ${w.flag[1]} times the one before it, and the last two figures are `
+          + `set apart to pay what is still owed. `
+        : `${w.main} into the first figures, then the crossing ${w.flag[0]} × that answer figure `
+          + `taken off what comes down. When the crossing will not come off, the figure was one `
+          + `too big. `;
       return `<div class="rw-worked"><p class="rw-worked__tag">One done for you</p>`
-        + `<p class="wb-ask wb-ask--lead"><b>1234 ÷ 23</b></p>`
-        + `<div class="rw-art">${flagStop(1234, 23, { answer: true })}</div>`
-        + `<p class="wb-ask rw-worked__say">2 into 12 would go 6, but then there is nothing to `
-        + `take 3 × 6 from — so 5, and 2 left. Bring the 3 down beside it: 23, take off the `
-        + `crossing 3 × 5 = 15, leaves 8. 2 into 8 would go 4, the same trouble again, so 3, `
-        + `and 2 left. Bring the 4 down: 24, take off 3 × 3 = 9, leaves 15. Nothing more to `
-        + `divide: 1234 ÷ 23 = 53 remainder 15.</p></div>`;
+        + `<p class="wb-ask wb-ask--lead"><b>${n} ÷ ${d}</b></p>`
+        + `<div class="rw-art">${flagStop(n, d, { answer: true })}</div>`
+        + `<p class="wb-ask rw-worked__say">${say}`
+        + `${n} ÷ ${d} = ${w.quotient}${w.remainder ? ` remainder ${w.remainder}` : " exactly"}.`
+        + `</p></div>`;
     },
     key(item) {
       return flagKey(item.n, item.d).map((e) => (e.kind === "digit"
@@ -633,12 +794,48 @@ function flagDivEx(id, digits, label, count) {
   };
 }
 
-const flagThree = flagDivEx("div-flag-32", 3, "Flag division — 3 figures ÷ 2 figures", 3);
-const flagFour = flagDivEx("div-flag-42", 4, "Flag division — 4 figures ÷ 2 figures", 2);
-const flagFive = flagDivEx("div-flag-52", 5, "Flag division — 5 figures ÷ 2 figures", 2);
+/* ── the exercises themselves ──────────────────────────────────────────────
+   Every written division at every size, twice: one that comes out and one that
+   does not. The ids of the ones that were here before mean what they always
+   meant — a division with something left over — so a workbook already set for
+   a class still builds the paper it was set with.
 
-const shortTwo = shortDivEx("div-short-21", 2, "Short division — 2 figures ÷ 1 figure", 6);
-const shortThree = shortDivEx("div-short-31", 3, "Short division — 3 figures ÷ 1 figure", 4);
+   HOW BIG THEY GO: seven figures divided by three. That is further than a
+   child is usually taken, and it is deliberate — the METHOD does not change,
+   and the only way to show that is to run it out further than the point where
+   a wrong method would fall over. */
+
+const shortTwo = shortDivEx("div-short-21", 2, false, "Short division — 2 figures ÷ 1 figure, with a remainder", 6);
+const shortThree = shortDivEx("div-short-31", 3, false, "Short division — 3 figures ÷ 1 figure, with a remainder", 4);
+const shortFive = shortDivEx("div-short-51", 5, false, "Short division — 5 figures ÷ 1 figure, with a remainder", 3);
+const shortSeven = shortDivEx("div-short-71", 7, false, "Short division — 7 figures ÷ 1 figure, with a remainder", 2);
+const shortTwoX = shortDivEx("div-short-21x", 2, true, "Short division — 2 figures ÷ 1 figure, no remainder", 6);
+const shortThreeX = shortDivEx("div-short-31x", 3, true, "Short division — 3 figures ÷ 1 figure, no remainder", 4);
+const shortFiveX = shortDivEx("div-short-51x", 5, true, "Short division — 5 figures ÷ 1 figure, no remainder", 3);
+const shortSevenX = shortDivEx("div-short-71x", 7, true, "Short division — 7 figures ÷ 1 figure, no remainder", 2);
+
+const longThree = longDivEx("div-long-32", 3, 2, false, "Long division — 3 figures ÷ 2 figures, with a remainder", 3);
+const longFive = longDivEx("div-long-52", 5, 2, false, "Long division — 5 figures ÷ 2 figures, with a remainder", 2);
+const longSix = longDivEx("div-long-63", 6, 3, false, "Long division — 6 figures ÷ 3 figures, with a remainder", 2);
+const longSeven = longDivEx("div-long-73", 7, 3, false, "Long division — 7 figures ÷ 3 figures, with a remainder", 2);
+const longThreeX = longDivEx("div-long-32x", 3, 2, true, "Long division — 3 figures ÷ 2 figures, no remainder", 3);
+const longFiveX = longDivEx("div-long-52x", 5, 2, true, "Long division — 5 figures ÷ 2 figures, no remainder", 2);
+const longSixX = longDivEx("div-long-63x", 6, 3, true, "Long division — 6 figures ÷ 3 figures, no remainder", 2);
+const longSevenX = longDivEx("div-long-73x", 7, 3, true, "Long division — 7 figures ÷ 3 figures, no remainder", 2);
+
+const flagThree = flagDivEx("div-flag-32", 3, 2, false, "Flag division — 3 figures ÷ 2 figures, with a remainder", 3);
+const flagFour = flagDivEx("div-flag-42", 4, 2, false, "Flag division — 4 figures ÷ 2 figures, with a remainder", 2);
+const flagFive = flagDivEx("div-flag-52", 5, 2, false, "Flag division — 5 figures ÷ 2 figures, with a remainder", 2);
+const flagThreeX = flagDivEx("div-flag-32x", 3, 2, true, "Flag division — 3 figures ÷ 2 figures, no remainder", 3);
+const flagFourX = flagDivEx("div-flag-42x", 4, 2, true, "Flag division — 4 figures ÷ 2 figures, no remainder", 2);
+const flagFiveX = flagDivEx("div-flag-52x", 5, 2, true, "Flag division — 5 figures ÷ 2 figures, no remainder", 2);
+
+const flagLongFive = flagDivEx("div-flag-53", 5, 3, false, "Long flag division — 5 figures ÷ 3 figures, with a remainder", 2);
+const flagLongSix = flagDivEx("div-flag-63", 6, 3, false, "Long flag division — 6 figures ÷ 3 figures, with a remainder", 2);
+const flagLongSeven = flagDivEx("div-flag-73", 7, 3, false, "Long flag division — 7 figures ÷ 3 figures, with a remainder", 2);
+const flagLongFiveX = flagDivEx("div-flag-53x", 5, 3, true, "Long flag division — 5 figures ÷ 3 figures, no remainder", 2);
+const flagLongSixX = flagDivEx("div-flag-63x", 6, 3, true, "Long flag division — 6 figures ÷ 3 figures, no remainder", 2);
+const flagLongSevenX = flagDivEx("div-flag-73x", 7, 3, true, "Long flag division — 7 figures ÷ 3 figures, no remainder", 2);
 
 /* ── the registry ──────────────────────────────────────────────────────────*/
 
@@ -646,8 +843,10 @@ export const REM_EXERCISES = [
   ringGroups, shareOut,
   pictureSentence, nameTheParts, divideWrite, buildBack,
   leftoverFraction,
-  shortTwo, shortThree,
-  flagThree, flagFour, flagFive,
+  shortTwoX, shortTwo, shortThreeX, shortThree, shortFiveX, shortFive, shortSevenX, shortSeven,
+  longThreeX, longThree, longFiveX, longFive, longSixX, longSix, longSevenX, longSeven,
+  flagThreeX, flagThree, flagFourX, flagFour, flagFiveX, flagFive,
+  flagLongFiveX, flagLongFive, flagLongSixX, flagLongSix, flagLongSevenX, flagLongSeven,
   decDivWhole, decDivThree, decDivBy,
 ];
 

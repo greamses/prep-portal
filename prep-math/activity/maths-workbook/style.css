@@ -539,6 +539,11 @@ thead .pv-chart__side {
    taken off it — rather than a figure of the answer: wider, and drawn in a
    lighter hand so the answer is still what the eye lands on */
 .ms-col__slot {
+  /* .wb-answer is 15mm wide wherever it is written into a sentence; in a
+     column sheet the width is the COLUMN, and a slot that says it spans three
+     of them (what is left over after dividing by 234 is three figures) has to
+     be allowed to */
+  width: auto;
   justify-self: stretch;
   align-self: center;
   height: 7mm;
@@ -559,9 +564,41 @@ thead .pv-chart__side {
    the crossing is made with — so there they come out one at a time */
 .mm-flag .ms-col__cross path[data-pass] { opacity: 0; }
 .wb-live .mm-flag .ms-col__cross path[data-pass].is-on { opacity: 1; }
-.mm-flag .ms-col__sign { font-size: 11pt; letter-spacing: 0.04em; }
+.mm-flag .ms-col__sign { font-size: 10pt; letter-spacing: 0.02em; }
+/* 2|34 is four characters in the 7mm column the divisor stands in: it is
+   written smaller and tucked against the stop rather than run into the first
+   figure of the number being divided */
+.mm-flag--wide .ms-col__sign { font-size: 7.5pt; letter-spacing: 0; padding-right: 0.3mm; }
 .ms-col__slot.is-cross { border-color: #c0453f; color: #c0453f; }
 .wb-live .ms-col__slot.is-cross .wb-in { color: #c0453f; }
+
+/* ── LONG division ─────────────────────────────────────────────────────────
+   The working comes down the page: what each answer figure multiplies to,
+   the little line under it, and what is left when that has been taken away.
+
+   The figures BROUGHT DOWN are printed, not asked for — copying a figure down
+   the page is a movement and not a calculation — so they are drawn in the
+   hand the question is written in rather than the hand the answers are, and
+   with the small arrow that says where they came from. */
+.mm-long .ms-col__mark.is-brought {
+  color: rgba(42, 39, 35, 0.62);
+  position: relative;
+}
+.mm-long .ms-col__mark.is-brought::before {
+  content: "";
+  position: absolute;
+  top: -2.6mm;
+  left: 50%;
+  width: 0.35mm;
+  height: 2mm;
+  background: rgba(42, 39, 35, 0.3);
+}
+/* what is left after a taking-away: the number the next step divides into, so
+   it is written as plainly as the number being divided was */
+.mm-long .ms-col__mark.is-left { color: #2a2723; }
+/* the line under ONE taking-away is short and sits tight under it, not the
+   full-width rule of a column sum */
+.mm-long .ms-col__rule { margin-bottom: 0.6mm; border-bottom-width: 0.35mm; }
 
 /* the arrows of a written multiplication: which two figures this step
    multiplies, drawn over the sheet and only while that step is being asked */
