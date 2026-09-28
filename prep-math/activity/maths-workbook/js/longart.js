@@ -34,9 +34,17 @@
      what each one multiplies  asked      the step children skip and then
                                           wonder why the taking-away is wrong
      what is left after it     asked      the same
-     the figures brought down  PRINTED    copying a figure down the page is a
-                                          movement, not a calculation, and a
-                                          box for it marks handwriting
+     the figures brought down  DRAGGED    bringing a figure down IS a movement
+                                          and not a calculation, so on screen
+                                          it is made as one: the figure is
+                                          dragged out of the number being
+                                          divided into the box waiting for it.
+                                          On paper the box is empty and the
+                                          child writes it. Either way nobody
+                                          brings it down FOR them — a figure
+                                          that appears by itself is the one
+                                          step of this method that learners
+                                          forget to take.
 
    Every box is one figure in one column, because the whole method is an
    argument about columns and a number typed into a wide box is not in one.
@@ -82,22 +90,21 @@ export function longStop(n, d, { answer = false } = {}) {
   const rowQ = 0;
   const rowN = 1;
 
-  /* the answer above the bar, and the number being divided under it */
+  /* the answer above the bar, and the number being divided under it. Each
+     figure of it can be picked up and brought down, so each one says which
+     figure it is. */
   const firstLive = w.live[0].i;
-  w.digits.forEach((f, i) => sheet.mark(rowN, at(i), f));
+  w.digits.forEach((f, i) => sheet.mark(rowN, at(i), f, "", ` data-figure="${i}"`));
   sheet.sign(rowN, String(d));
 
-  /* the figures brought down: printed, one under the row that uses them */
   const bringRow = (j) => {
     const s = w.live.find((x) => x.i >= j);
     return s ? s.curRow : w.rows - 1;
   };
-  for (let j = firstLive + 1; j < wide; j++) {
-    const row = bringRow(j);
-    if (row > rowN) sheet.mark(row, at(j), w.digits[j], "is-brought");
-  }
 
-  /* ASKED FOR, in the order a hand writing this would ask it of itself. */
+  /* ASKED FOR, in the order a hand writing this would ask it of itself —
+     bring the next figure down, decide how many times it goes, multiply back,
+     take away. */
   let step = 0;
   const place = (row, i, value, kind) => {
     const fs = figs(value);
@@ -110,6 +117,14 @@ export function longStop(n, d, { answer = false } = {}) {
   };
 
   w.steps.forEach((s) => {
+    /* the figure brought down, before anything is decided about it */
+    if (s.i > firstLive) {
+      const row = bringRow(s.i);
+      if (row > rowN) {
+        if (answer) sheet.mark(row, at(s.i), w.digits[s.i], "is-brought");
+        else sheet.box(row, at(s.i), { step: step++, bring: s.i });
+      }
+    }
     if (s.write) {
       if (answer) sheet.mark(rowQ, at(s.i), s.q);
       else sheet.box(rowQ, at(s.i), { step: step++ });
@@ -131,7 +146,13 @@ export function longStop(n, d, { answer = false } = {}) {
 export function longKey(n, d) {
   const w = longWork(n, d);
   const out = [];
+  const firstLive = w.live[0].i;
+  const bringRow = (j) => {
+    const s = w.live.find((x) => x.i >= j);
+    return s ? s.curRow : w.rows - 1;
+  };
   w.steps.forEach((s) => {
+    if (s.i > firstLive && bringRow(s.i) > 1) out.push({ kind: "brought", value: w.digits[s.i] });
     if (s.write) out.push({ kind: "digit", value: s.q });
     if (s.q > 0) {
       figs(s.product).forEach((f) => out.push({ kind: "times", value: f }));

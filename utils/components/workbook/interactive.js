@@ -235,7 +235,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        way the written boards in the tool panel do: the next box appears when
        the one before it has a figure in it, and a box already answered stays
        open so a mistake can be gone back to. */
-    node.querySelectorAll("[data-steps]").forEach((table) => stepwise(table));
+    node.querySelectorAll("[data-steps]").forEach((table) => {
+      stepwise(table);
+      /* a division brings its next figure down by hand, so the figures of the
+         number being divided can be picked up */
+      bringDown(table);
+    });
 
     /* Blocks come apart wherever there are blocks — it is not an answer, so
        it is not driven by the key. */
@@ -974,6 +979,97 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       });
     });
     show();
+  }
+
+  /* ── bringing a figure DOWN ────────────────────────────────────────────
+     A long division brings the next figure down beside what is left. That is
+     the step learners forget, and a page that writes it in for them takes
+     away the one place they could have remembered it.
+
+     So the box is empty and the figure is DRAGGED into it, out of the number
+     being divided — because bringing a figure down is a movement and not a
+     calculation, and typing it would only prove you can read. It can still be
+     typed (a keyboard is a keyboard, and the marking cannot tell the
+     difference), and on paper it is a box the child writes in.
+
+     Pointer events, not HTML drag-and-drop: this is used on tablets, where
+     dragstart never fires. The figure under the finger at the end is found
+     with elementFromPoint, the same way everything else on this site picks up
+     what was dropped on. A tap with no travel sends the figure to the box
+     being asked for, which is what a child does when the two are inches apart
+     on a phone. */
+  function bringDown(table) {
+    const boxes = [...table.querySelectorAll("[data-bring]")];
+    if (!boxes.length) return;
+    const figures = [...table.querySelectorAll("[data-figure]")];
+    if (!figures.length) return;
+
+    const openBox = (el) => {
+      const box = el && el.closest ? el.closest("[data-bring]") : null;
+      if (!box || box.classList.contains("is-waiting")) return null;
+      const input = box.querySelector("input");
+      return input && !input.disabled ? input : null;
+    };
+    const write = (input, text) => {
+      if (!input) return false;
+      input.value = text;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus({ preventScroll: true });
+      return true;
+    };
+    /* the box the method is asking for, when it is a box that wants a figure
+       brought down — what a tap means */
+    const asking = () => boxes.find((b) => b.classList.contains("is-now"));
+
+    figures.forEach((fig) => {
+      if (fig.__wbBring) return;
+      fig.__wbBring = true;
+      fig.classList.add("is-bringable");
+      fig.addEventListener("pointerdown", (e) => {
+        if (e.button != null && e.button > 0) return;
+        const text = fig.textContent.trim();
+        const from = { x: e.clientX, y: e.clientY };
+        let ghost = null;
+        let moved = 0;
+        fig.setPointerCapture?.(e.pointerId);
+
+        const move = (ev) => {
+          moved = Math.max(moved, Math.abs(ev.clientX - from.x) + Math.abs(ev.clientY - from.y));
+          if (moved > 5 && !ghost) {
+            ghost = document.createElement("span");
+            ghost.className = "wb-bringing";
+            ghost.textContent = text;
+            document.body.appendChild(ghost);
+            fig.classList.add("is-lifted");
+          }
+          if (!ghost) return;
+          ghost.style.left = `${ev.clientX}px`;
+          ghost.style.top = `${ev.clientY}px`;
+          /* the box under the finger says so while the figure is over it */
+          const over = openBox(document.elementFromPoint(ev.clientX, ev.clientY));
+          boxes.forEach((b) => b.classList.toggle("is-catching", !!over && b.contains(over)));
+          ev.preventDefault();
+        };
+        const up = (ev) => {
+          fig.releasePointerCapture?.(e.pointerId);
+          fig.removeEventListener("pointermove", move);
+          fig.removeEventListener("pointerup", up);
+          fig.removeEventListener("pointercancel", up);
+          ghost?.remove();
+          fig.classList.remove("is-lifted");
+          boxes.forEach((b) => b.classList.remove("is-catching"));
+          /* dropped on a box, or — with no travel at all — sent to the box the
+             method is asking for */
+          const target = moved > 5
+            ? openBox(document.elementFromPoint(ev.clientX, ev.clientY))
+            : openBox(asking());
+          write(target, text);
+        };
+        fig.addEventListener("pointermove", move);
+        fig.addEventListener("pointerup", up);
+        fig.addEventListener("pointercancel", up);
+      });
+    });
   }
 
   /* ── two fraction bars, cut until they match ───────────────────────────

@@ -603,6 +603,55 @@ thead .pv-chart__side {
    full-width rule of a column sum */
 .mm-long .ms-col__rule,
 .mm-flaglong .ms-col__rule { margin-bottom: 0.6mm; border-bottom-width: 0.35mm; }
+
+/* ── the figure brought down ───────────────────────────────────────────────
+   Its box is empty, on paper and on screen, because bringing a figure down is
+   the step learners forget and a page that writes it in for them has taken
+   away the only place they could have remembered it.
+
+   The dotted stroke above the box is the trace of the movement — the same
+   mark a hand makes — so the box says where its figure comes FROM without
+   saying which one it is. */
+.ms-col__cell--bring { position: relative; }
+.ms-col__cell--bring::before {
+  content: "";
+  position: absolute;
+  top: -2.4mm;
+  left: 50%;
+  width: 0;
+  height: 2mm;
+  border-left: 0.3mm dotted rgba(42, 39, 35, 0.42);
+}
+/* On screen the figures of the number being divided can be picked up and
+   dragged into it. `touch-action: none` or a finger scrolls the page instead
+   of carrying the figure. */
+.wb-live .ms-col__mark.is-bringable {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 1mm;
+}
+.wb-live .ms-col__mark.is-bringable:hover {
+  background: rgba(42, 108, 168, 0.1);
+}
+.wb-live .ms-col__mark.is-lifted { opacity: 0.35; cursor: grabbing; }
+/* the box under the finger, while a figure is over it */
+.wb-live .ms-col__cell--bring.is-catching {
+  outline: 0.5mm solid #2a6ca8;
+  outline-offset: 0.4mm;
+}
+/* the figure being carried: it follows the finger, and nothing can be dropped
+   on it because it is not there as far as the page is concerned */
+.wb-bringing {
+  position: fixed;
+  z-index: 10080;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: 12pt;
+  color: #2a6ca8;
+  text-shadow: 0 1px 0 #fffdf8;
+}
 /* the flag written out long has no crossings ABOVE the bar to colour, and
    its boxes are the working itself — so the red hand of the short form's
    crossing slots would be shouting on every second row */

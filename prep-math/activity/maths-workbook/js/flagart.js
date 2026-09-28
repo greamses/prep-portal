@@ -298,7 +298,10 @@ export function flagLongStop(n, d, { answer = false } = {}) {
   const setApart = wide - w.L;
 
   sheet.sign(rowN, `${w.main}|${w.flag.join("")}`);
-  w.digits.forEach((f, k) => sheet.mark(rowN, at(k), f, k === setApart ? "is-flagged" : ""));
+  /* every figure says which one it is, so it can be brought down by being
+     DRAGGED rather than copied out for the child */
+  w.digits.forEach((f, k) => sheet.mark(rowN, at(k), f,
+    k === setApart ? "is-flagged" : "", ` data-figure="${k}"`));
 
   let step = 0;
   let row = rowN;
@@ -318,6 +321,12 @@ export function flagLongStop(n, d, { answer = false } = {}) {
     const n = put(++row, end, value, "is-soft");
     sheet.rule(row, { from: at(end), to: at(end) + n - 1 });
   };
+  /* the figure brought down beside what is left: a box on screen and on
+     paper, never written in for them */
+  const bringDown = (r, end) => {
+    if (answer) sheet.mark(r, at(end), w.digits[end], "is-brought");
+    else sheet.box(r, at(end), { step: step++, bring: end });
+  };
 
   w.steps.forEach((s, k) => {
     const cur = w.from + k;                 // where what is being divided ends
@@ -327,7 +336,7 @@ export function flagLongStop(n, d, { answer = false } = {}) {
 
     takeAway(cur, s.q * w.main);            // the answer figure times the divisor
     put(++row, cur, s.left, "is-left");     // what is left of it …
-    sheet.mark(row, at(next), w.digits[next], "is-brought");   // … and the next figure
+    bringDown(row, next);                   // … and the next figure, brought down
     takeAway(next, s.cross);                // the crossing
     put(++row, next, s.next, "is-left");    // and what stands there now
   });
@@ -336,7 +345,7 @@ export function flagLongStop(n, d, { answer = false } = {}) {
      are simply taken off */
   w.tail.forEach((t, i) => {
     const end = setApart + i + 1;
-    sheet.mark(row, at(end), w.digits[end], "is-brought");
+    bringDown(row, end);
     takeAway(end, t.cross);
     put(++row, end, t.next, "is-left");
   });
@@ -351,13 +360,19 @@ export function flagLongKey(n, d) {
   if (!w) return [];
   const out = [];
   const spell = (v) => String(v).split("").forEach((ch) => out.push({ kind: "figure", value: Number(ch) }));
-  w.steps.forEach((s) => {
+  const setApart = w.digits.length - w.L;
+  w.steps.forEach((s, k) => {
     out.push({ kind: "digit", value: s.q });
     spell(s.q * w.main);
     spell(s.left);
+    out.push({ kind: "brought", value: w.digits[w.from + k + 1] });
     spell(s.cross);
     spell(s.next);
   });
-  w.tail.forEach((t) => { spell(t.cross); spell(t.next); });
+  w.tail.forEach((t, i) => {
+    out.push({ kind: "brought", value: w.digits[setApart + i + 1] });
+    spell(t.cross);
+    spell(t.next);
+  });
   return out;
 }

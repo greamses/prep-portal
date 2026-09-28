@@ -68,9 +68,14 @@ export function colSheet({ cols, places = cols, steps = "rtl", heights = null })
       }
       return this;
     },
-    /** A figure that is printed: part of the question, or the worked answer. */
-    mark(row, place, text, cls = "") {
-      put(`ms-col__mark${cls ? ` ${cls}` : ""}`, `${grow(row)}${gcol(place)}`, text);
+    /**
+     * A figure that is printed: part of the question, or the worked answer.
+     *
+     * `attrs` is for a figure the page has to be able to find again — the ones
+     * a long division brings DOWN, which are dragged rather than written.
+     */
+    mark(row, place, text, cls = "", attrs = "") {
+      put(`ms-col__mark${cls ? ` ${cls}` : ""}`, `${grow(row)}${gcol(place)}`, text, attrs);
       return this;
     },
     /** The +, − or × in front of the row. */
@@ -131,9 +136,15 @@ export function colSheet({ cols, places = cols, steps = "rtl", heights = null })
      * the order they are written in (from the right, see stepwise) has nothing
      * to do with it.
      */
-    box(row, place, { step = null } = {}) {
-      put("ms-col__cell wb-cell", `${grow(row, "answer")}${gcol(place)}`, "",
-        ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`);
+    box(row, place, { step = null, bring = null } = {}) {
+      /* `bring` is the box a figure is brought DOWN into: it says which figure
+         of the number being divided belongs in it, so the figure can be
+         dragged there instead of copied out by hand. It is still an ordinary
+         box — it can be typed into, and it is marked like any other. */
+      put(`ms-col__cell wb-cell${bring == null ? "" : " ms-col__cell--bring"}`,
+        `${grow(row, "answer")}${gcol(place)}`, "",
+        ` data-col="${place}" data-row="${row}"${step == null ? "" : ` data-step="${step}"`}`
+        + (bring == null ? "" : ` data-bring="${bring}"`));
       return this;
     },
     /**
