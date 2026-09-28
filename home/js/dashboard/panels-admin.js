@@ -13,6 +13,7 @@ import { MOCK } from "/home/js/dashboard/mock-data.js";
 import { showClassModal } from "/home/js/dashboard/dashboard-modals.js";
 import { mountCalendar } from "/home/js/dashboard/calendar-client.js";
 import { mountAdminLibrary } from "/home/js/dashboard/admin-library.js";
+import { workbookScoresPanelHTML, mountWorkbookScores } from "/home/js/dashboard/workbook-scores.js";
 import { ROUTES } from "/home/js/routing.js";
 
 export function buildAdminPanels(user, data, layout) {
@@ -145,6 +146,10 @@ export function buildAdminPanels(user, data, layout) {
       <div id="db-calendar-mount"><div class="db-empty">Loading…</div></div>
     </div>
 
+    <!-- The admin sets workbooks like any teacher — and then has to be able
+         to see what came back of them (home/js/dashboard/workbook-scores.js). -->
+    ${workbookScoresPanelHTML()}
+
     <div class="db-panel span-full">
       <div class="db-panel-head">
         <div>
@@ -162,5 +167,6 @@ export function buildAdminPanels(user, data, layout) {
     ?.addEventListener("click", showClassModal);
 
   mountAdminLibrary(layout);
+  mountWorkbookScores(layout);
   mountCalendar(layout);
 }

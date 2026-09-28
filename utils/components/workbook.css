@@ -802,20 +802,32 @@ body {
     width: auto;
     transform: none;
   }
-  /* A strip along the bottom: the same receipt, unchanged — torn along its top
-     and bottom edges with the holes at its ends — and the keys run in a row
-     that scrolls sideways inside it. */
-  .wb-side__paper { --tooth: 6px; padding: 0.55rem 1rem; }
+  /* A STRIP ALONG THE BOTTOM, and a strip has to be laid out like one. The
+     keys used to be packed at the left end of a full-width bar with the rest
+     of it empty, every key a thumbnail's width apart from the next and all of
+     them out at the edge where a thumb does not naturally fall. Now they are
+     spread across the strip, with room for the safe area at the bottom of a
+     phone, and each one is a proper target: 2.75rem is 44px, which is what a
+     finger needs and what every platform asks for. */
+  .wb-side__paper {
+    --tooth: 6px;
+    padding: 0.4rem 0.6rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+  }
   .wb-side__keys {
     flex-direction: row;
     align-items: center;
+    justify-content: space-evenly;
+    gap: 0.15rem;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
+    scrollbar-width: none;
   }
+  .wb-side__keys::-webkit-scrollbar { display: none; }
   .wb-side__cap { display: none; }
   .wb-side__rule { width: 1px; height: 1.8rem; margin: 0 0.15rem; }
-  .wb-side__btn { flex: 0 0 auto; width: 3.9rem; }
+  .wb-side__btn { flex: 0 0 auto; }
+  .wb-side .wb-side__fam { flex: 0 0 auto; }
 }
 
 /* ── THE BOOKLET, IN A MODAL (rail.js mountModal) ─────────────────────────
@@ -899,6 +911,23 @@ body {
 /* the sentence is what the tooltips now say, and a sentence in a row of
    glyphs is what stops it being a row */
 .wb-modal__head .wb-livebar__say { display: none; }
+
+/* ON A PHONE the head is a row of glyphs and nothing else. The page count and
+   the line about printing are WRITING, and two pieces of writing at the front
+   of a 390px bar push every button off the end of it — which is what made the
+   tools unreachable there. Neither is lost: the print gate opens with the
+   pages, the sections and the code on it, and says the same thing the line
+   said. What is left is spread out and made big enough to hit. */
+@media (max-width: 700px) {
+  .wb-modal__head .wb-toolbar__count,
+  .wb-modal__head .wb-pass { display: none; }
+  .wb-modal__head { gap: 0.15rem; padding: 0.55rem 0.5rem 0.45rem; }
+  .wb-modal__head .wb-toolbar,
+  .wb-modal__head .wb-livebar { gap: 0.25rem; padding: 0.4rem 0.2rem 0.3rem; }
+  .wb-modal__head .wb-toolbar .pp-btn,
+  .wb-modal__head .wb-livebar .pp-btn { padding: 0.55rem; }
+  .wb-modal__head .wb-btn__ico { width: 1.3rem; height: 1.3rem; }
+}
 html.wb-modal-on { overflow: hidden; }
 /* .wb-main is positioned with a z-index, which makes it a stacking context of
    its own — the modal's z-index would only count inside it, and the site nav
@@ -2221,7 +2250,9 @@ html[data-wb-holding="eraser"] .wb-scribble { cursor: cell; }
 /* a key is as wide as its picture */
 .wb-side .wb-side__btn { width: 2.35rem; padding: 0.38rem 0.2rem; }
 @media (max-width: 700px) {
-  .wb-side .wb-side__btn { width: 2.3rem; }
+  /* 44px each way: what a finger needs, and what the keys were not */
+  .wb-side .wb-side__btn { width: 2.75rem; min-height: 2.75rem; padding: 0.3rem 0.2rem; }
+  .wb-side .wb-side__btn svg { width: 22px; height: 22px; }
   /* the strip along the bottom is the one place the rail scrolls sideways on
      purpose — there are more keys than a phone is wide */
   .wb-side { overflow-x: auto; }

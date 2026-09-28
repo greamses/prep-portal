@@ -54,6 +54,14 @@ module.exports = function () {
        GET  /api/workbooks/a/:code            the assignment, to play
        POST /api/workbooks/a/:code/result     { right, total }
        GET  /api/workbooks/a/:code/results    the teacher's view of scores
+       GET  /api/workbooks/results            EVERY assignment's scores, at once
+       GET  /api/workbooks/notices            what has come in since you looked
+       POST /api/workbooks/notices/seen       you have looked
+
+     The last three are for the dashboard: chasing one /wb/<code> link per
+     assignment to find out whether anybody has done it is not a way to teach a
+     class, so the whole lot arrives in one call and a hand-in leaves a notice
+     behind that waits on the dashboard until it is read.
 
      Scores are worked out in the browser, from the same keys that mark the
      page; a determined student could send a made-up score. It is practice
@@ -229,11 +237,28 @@ module.exports = function () {
           firstAt: prev ? prev.firstAt : stamp(), lastAt: stamp(),
         }, { merge: true });
         if (!prev) t.set(aRef, { students: admin.firestore.FieldValue.increment(1) }, { merge: true });
-        return { best, teacherUid: aSnap.data().teacherUid };
+        return {
+          best, teacherUid: aSnap.data().teacherUid, title: aSnap.data().title,
+          attempts: (prev ? prev.attempts || 0 : 0) + 1,
+        };
       });
       if (!out) return res.status(404).json({ error: "No such assignment." });
       await db().collection("studentAssignments").doc(req.user.uid).collection("items").doc(`wb_${code}`)
         .set({ status: "done", lastPct: pct, bestPct: out.best, updatedAt: stamp() }, { merge: true });
+      /* the teacher's notice. ONE per student per assignment — a child who
+         checks their answers eight times as they work down the paper has not
+         handed it in eight times, and eight notices would bury the one from
+         the child who has only just started. It is rewritten each time, so
+         what the teacher reads is where that child stands now. */
+      try {
+        await db().collection("teacherNotices").doc(out.teacherUid).collection("items").doc(`wb_${code}_${req.user.uid}`)
+          .set({
+            kind: "workbook", code, title: out.title || "Workbook",
+            uid: req.user.uid, name: nameOf(req, p),
+            right, total, pct, bestPct: out.best, attempts: out.attempts,
+            at: stamp(), seen: false,
+          }, { merge: true });
+      } catch (e) { console.error("[workbook notice]", e.message); }
       res.json({ ok: true, pct, bestPct: out.best });
     } catch (err) {
       console.error("[/api/workbooks/a/result]", err.message);
@@ -266,6 +291,89 @@ module.exports = function () {
     } catch (err) {
       console.error("[/api/workbooks/a/results]", err.message);
       res.status(500).json({ error: "Could not load the scores." });
+    }
+  });
+
+  /* ── the whole lot, for the dashboard ─────────────────────────────────
+     Every assignment this teacher has set, each with the scores under it and
+     the names of the students in the class who have not sent one yet. One
+     call: the dashboard has no business making twenty. */
+  router.get("/results", authenticate, async (req, res) => {
+    try {
+      const snap = await db().collection("workbookAssignments")
+        .where("teacherUid", "==", req.user.uid).limit(60).get();
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+      const roster = await db().collection("teacherStudents").doc(req.user.uid).collection("roster").get();
+      const names = new Map(roster.docs.map((d) => [d.id, d.data().name || "Student"]));
+
+      const rows = await Promise.all(snap.docs.map(async (d) => {
+        const a = d.data();
+        const rs = await d.ref.collection("results").get();
+        const results = rs.docs.map((x) => {
+          const r = x.data();
+          return {
+            uid: x.id, name: r.name || names.get(x.id) || "Student", email: r.email || null,
+            lastRight: r.lastRight, lastTotal: r.lastTotal, lastPct: r.lastPct,
+            bestPct: r.bestPct, attempts: r.attempts || 0, lastAt: ms(r.lastAt),
+          };
+        }).sort((x, y) => y.lastAt - x.lastAt);
+        const done = new Set(rs.docs.map((x) => x.id));
+        return {
+          code: a.code, title: a.title, workbook: a.workbook,
+          createdAt: ms(a.createdAt), url: `/wb/${a.code}`,
+          results,
+          waiting: [...names.entries()].filter(([uid]) => !done.has(uid)).map(([, n]) => n),
+          lastAt: results.length ? results[0].lastAt : 0,
+        };
+      }));
+
+      rows.sort((x, y) => (y.lastAt || y.createdAt) - (x.lastAt || x.createdAt));
+      const scored = rows.reduce((n, r) => n + r.results.length, 0);
+      res.json({ ok: true, assignments: rows, students: names.size, scored });
+    } catch (err) {
+      console.error("[/api/workbooks/results]", err.message);
+      res.status(500).json({ error: "Could not load the scores." });
+    }
+  });
+
+  /* ── what has come in ─────────────────────────────────────────────────
+     A short list, newest first, with the unread ones counted. Read is a
+     state, not a deletion: the teacher can still see last week's hand-ins. */
+  router.get("/notices", authenticate, async (req, res) => {
+    try {
+      const snap = await db().collection("teacherNotices").doc(req.user.uid).collection("items")
+        .limit(60).get();
+      const ms = (x) => (x && x.toMillis ? x.toMillis() : 0);
+      const items = snap.docs.map((d) => {
+        const n = d.data();
+        return {
+          id: d.id, kind: n.kind || "workbook", code: n.code, title: n.title,
+          name: n.name, right: n.right, total: n.total, pct: n.pct, bestPct: n.bestPct,
+          attempts: n.attempts || 1, at: ms(n.at), seen: !!n.seen,
+        };
+      }).sort((x, y) => y.at - x.at).slice(0, 40);
+      res.json({ ok: true, notices: items, unseen: items.filter((x) => !x.seen).length });
+    } catch (err) {
+      console.error("[/api/workbooks/notices]", err.message);
+      res.status(500).json({ error: "Could not load your notices." });
+    }
+  });
+
+  router.post("/notices/seen", authenticate, async (req, res) => {
+    try {
+      const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids.slice(0, 60) : null;
+      const col = db().collection("teacherNotices").doc(req.user.uid).collection("items");
+      const snap = ids ? null : await col.where("seen", "==", false).limit(60).get();
+      const docs = ids ? ids.filter((x) => typeof x === "string" && x.length < 120).map((x) => col.doc(x))
+        : snap.docs.map((d) => d.ref);
+      if (!docs.length) return res.json({ ok: true, marked: 0 });
+      const batch = db().batch();
+      docs.forEach((ref) => batch.set(ref, { seen: true }, { merge: true }));
+      await batch.commit();
+      res.json({ ok: true, marked: docs.length });
+    } catch (err) {
+      console.error("[/api/workbooks/notices/seen]", err.message);
+      res.status(500).json({ error: "Could not mark them read." });
     }
   });
 

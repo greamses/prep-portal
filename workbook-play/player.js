@@ -95,6 +95,14 @@ async function start() {
     say(e.message, true);
     return;
   }
+  /* THE SCORES FIRST. They used to be asked for at the very end of start(),
+     after the subject module, the fonts, MathJax and the pagination — so a
+     teacher who opened their own link to see how the class had done saw
+     nothing at all if any of that stumbled, and the scores were the one thing
+     they came for. They do not depend on the paper, so they no longer wait
+     for it. */
+  if (a.owner) showResults();
+
   const mod = await import(`/prep-math/activity/${a.workbook}/js/subject.js`);
   const { SUBJECT, LIVE, WORKBOOK } = mod;
 
@@ -191,7 +199,6 @@ async function start() {
   });
   live.enter();
   say(a.owner ? "" : "Your answers are kept on this device until you check them.");
-  if (a.owner) showResults();
 }
 
 /**

@@ -2,6 +2,7 @@ import { I } from "./icons.js";
 import { mountTeacherClassroom } from "./classroom-client.js";
 import { mountWritingReview } from "./writing-review.js";
 import { mountCalendar } from "./calendar-client.js";
+import { workbookScoresPanelHTML, mountWorkbookScores } from "./workbook-scores.js";
 
 export function buildTeacherPanels(user, data, layout) {
   const className = data.activeClass || "My Class";
@@ -65,6 +66,11 @@ export function buildTeacherPanels(user, data, layout) {
       </div>
     </div>
 
+    <!-- The workbooks this teacher has set, and how the class did on each.
+         The scores used to live one page per assignment; they come here now
+         (home/js/dashboard/workbook-scores.js). -->
+    ${workbookScoresPanelHTML()}
+
     <div class="db-panel span-full db-calendar-panel">
       <div class="db-panel-head">
         <div>
@@ -78,5 +84,6 @@ export function buildTeacherPanels(user, data, layout) {
 
   mountTeacherClassroom(layout);
   mountWritingReview(layout);
+  mountWorkbookScores(layout);
   mountCalendar(layout);
 }
