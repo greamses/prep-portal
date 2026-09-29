@@ -164,7 +164,7 @@ export const BANDS = [
   {
     tag: "Code",
     cards: [
-      { art: "codebox", title: "JavaScript Workbook", tag: "Types", line: "Learn to code: an editor and a console on every page.", href: "/prep-math/activity/js-workbook/index.html" },
+      { art: "codebox", title: "JavaScript Workbook", tag: "Code", line: "Learn to code: an editor and a console on every page.", href: "/prep-math/activity/js-workbook/index.html" },
       { art: "blocks", title: "Game Studio", tag: "Blocks", line: "Build a page and a game out of blocks, and watch it run.", href: "/code/studio/index.html" },
     ],
   },

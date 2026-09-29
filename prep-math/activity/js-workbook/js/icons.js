@@ -64,4 +64,64 @@ export const ICON = {
       chip(4.6, 8.6, 6.4, 3, "#fff", 1.2) +
       chip(4.6, 13, 14.8, 2.4, LEAF, 1.2)
   ),
+
+  /* ── chapter 2: variables, and what to call them ──────────────────────── */
+
+  /* Two name tags: one kept, one refused. */
+  vrRules: svg(
+    chip(2.4, 4.2, 19.2, 6.4, LEAF, 1.6) +
+      `<path d="M5.4 7.4 7 9l3.2-3.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` +
+      chip(2.4, 13.4, 19.2, 6.4, QUIET, 1.6) +
+      bar(5.2, 14.8, 9.2, 18.4, 1.8, LOUD) +
+      bar(9.2, 14.8, 5.2, 18.4, 1.8, LOUD)
+  ),
+  /* The two humps the style is named after, with the capital on the second. */
+  vrCamel: svg(
+    `<path d="M2.2 18.4q0-6 4.6-6t4.6 6h-3q0-3-1.6-3t-1.6 3z" fill="${QUIET}"/>` +
+      `<path d="M12.6 18.4q0-7.6 4.6-7.6t4.6 7.6h-3q0-4.6-1.6-4.6t-1.6 4.6z" fill="${LOUD}"/>` +
+      chip(15.4, 5.2, 3.6, 3.6, GOLD, 1)
+  ),
+  /* A box with a tag tied to it: the name says what is inside. */
+  vrChoose: svg(
+    chip(8.4, 6.2, 13.2, 11.6, PAPER, 2) +
+      chip(10.6, 9, 8.4, 2.2, "#fff", 1.1) +
+      chip(10.6, 12.6, 5.4, 2.2, "#fff", 1.1) +
+      `<path d="M8.4 9.4 3.2 12l5.2 2.6z" fill="${LOUD}"/>`
+  ),
+  /* A box whose value is being swapped for another. */
+  vrLet: svg(
+    chip(2.6, 7, 18.8, 10, PAPER, 2) +
+      chip(4.6, 9.4, 5.6, 5.2, "#fff", 1.2) +
+      bar(11.4, 12, 18.6, 12, 2, LOUD) +
+      `<path d="M17.4 8.8 21.4 12l-4 3.2z" fill="${LOUD}"/>`
+  ),
+  /* The same box with a padlock on it. */
+  vrConst: svg(
+    chip(3.6, 10.4, 16.8, 9.2, PAPER, 2) +
+      `<path d="M8.4 10.4v-2.2a3.6 3.6 0 0 1 7.2 0v2.2h-2.4V8.2a1.2 1.2 0 0 0-2.4 0v2.2z" fill="${QUIET}"/>` +
+      chip(10.8, 13, 2.4, 4.2, LOUD, 1.2)
+  ),
+  /* A chip that has got out of its block. */
+  vrVar: svg(
+    `<rect x="2.6" y="5.6" width="12.8" height="12.8" rx="2" fill="none" stroke="${QUIET}" stroke-width="1.6" stroke-dasharray="2.6 2"/>` +
+      chip(5, 8, 6.4, 3, QUIET, 1.2) +
+      chip(14.6, 13.4, 6.8, 3.2, LOUD, 1.4) +
+      bar(11.6, 15, 14.2, 15, 1.6, LOUD)
+  ),
+  /* One road forking in two: which keyword. */
+  vrWhich: svg(
+    bar(12, 20.4, 12, 13.4, 2.2, QUIET) +
+      bar(12, 13.8, 5.4, 7.4, 2.2, LEAF) +
+      bar(12, 13.8, 18.6, 7.4, 2.2, LOUD) +
+      chip(3, 3.4, 5.2, 3.4, LEAF, 1.2) +
+      chip(15.8, 3.4, 5.2, 3.4, LOUD, 1.2)
+  ),
+  /* A pencil writing a listing. */
+  vrWrite: svg(
+    chip(2.6, 4.4, 13.2, 15.2, PAPER, 2) +
+      chip(4.8, 7.2, 8.8, 2, "#fff", 1) +
+      chip(4.8, 11, 6, 2, "#fff", 1) +
+      `<path d="M15.4 17.6 14.6 21l3.2-1.2 4.2-4.2-2.4-2.4z" fill="${GOLD}"/>` +
+      `<path d="M20.2 11.6 22.6 14l-1.4 1.4-2.4-2.4z" fill="${LOUD}"/>`
+  ),
 };

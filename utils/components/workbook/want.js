@@ -44,6 +44,12 @@ export const want = {
   /** Words, compared on letters and figures only: "twenty-five past 3",
       "twenty five past three" and "Twenty-Five Past Three" are one answer. */
   words: (...accept) => ({ kind: "words", accept }),
+  /** Words compared EXACTLY, capital for capital. Almost nothing on this site
+      wants this — a child who writes "Twenty five" has not got it wrong. A
+      NAME IN A PROGRAM does: `myAge` and `myage` are two different names to
+      JavaScript, and a book that marked one right for the other would be
+      teaching the opposite of the rule it had just given. */
+  exact: (...accept) => ({ kind: "exact", accept }),
   /** Parts of the question's nth cut-up shape to colour in (mode "fill") or to
       cross out (mode "cross") — how many, not which. Covers no places. */
   colour: ({ count, nth = 0, mode = "fill", says = "" }) => ({ kind: "colour", count, nth, mode, says }),
@@ -158,6 +164,11 @@ export function judge(entry, values) {
       const t = normWords(values[0]);
       return [t !== "" && entry.accept.some((a) => normWords(a) === t)];
     }
+    case "exact": {
+      /* the only tidying is the space a finger leaves either side */
+      const t = String(values[0] ?? "").trim();
+      return [t !== "" && entry.accept.some((a) => String(a) === t)];
+    }
     default:
       return values.map(() => true);
   }
@@ -179,6 +190,7 @@ export function sayWant(entry, tickLabels = []) {
     case "draw": return entry.says || "";
     case "cell": return entry.v;
     case "words": return entry.accept[0];
+    case "exact": return entry.accept[0];
     case "colour": return entry.says || `${entry.count} ${entry.mode === "cross" ? "crossed out" : "coloured"}`;
     case "match": return entry.says || "";
     case "picto": return entry.says || "";
@@ -204,6 +216,7 @@ export function rightValues(entry) {
     case "tick": return [entry.i];
     case "cell": return [entry.v];
     case "words": return [entry.accept[0]];
+    case "exact": return [entry.accept[0]];
     default: return [""];
   }
 }

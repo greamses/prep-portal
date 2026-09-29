@@ -12,6 +12,7 @@ export const WORKBOOK = { id: "js-workbook", label: "JavaScript Workbook", style
 
 const CHAPTERS = {
   1: "Chapter 1: Data types",
+  2: "Chapter 2: Variables",
 };
 
 const chaptersOn = (o) => [...new Set((o.chosen || [])

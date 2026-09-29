@@ -8,6 +8,11 @@
                    (written and RUN in a code box, utils/components/workbook/
                    code.js), null and undefined, "2" + 2 and Number(), and
                    let/const keeping the kind of what is in the box
+     ex-vars.js    chapter 2, variables — the three ES6 keywords and, just as
+                   much of the chapter, what a box may be CALLED: the rules
+                   JavaScript enforces, camelCase, names that say what they
+                   hold, let, const, the one thing var does that made let
+                   necessary, and which keyword to reach for
 
    THE ORDER IS THE BOOK: noticed before named, named before asked about, and
    nothing written by the child until they have read three programs. A new
@@ -15,14 +20,18 @@
    ========================================================================== */
 
 import { DT_GROUPS, DT_EXERCISES } from "./ex-types.js";
+import { VR_GROUPS, VR_EXERCISES } from "./ex-vars.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./levels.js";
 
-export const GROUPS = [...DT_GROUPS];
-export const EXERCISES = [...DT_EXERCISES];
+export const GROUPS = [...DT_GROUPS, ...VR_GROUPS];
+export const EXERCISES = [...DT_EXERCISES, ...VR_EXERCISES];
 
 /** Which chapter an exercise belongs to. */
-const CHAPTER = new Map([...DT_GROUPS.map((g) => [g.id, 1])]);
+const CHAPTER = new Map([
+  ...DT_GROUPS.map((g) => [g.id, 1]),
+  ...VR_GROUPS.map((g) => [g.id, 2]),
+]);
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;
 
 export function exerciseById(id) {
