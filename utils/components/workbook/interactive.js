@@ -39,6 +39,7 @@ import { mountChance, mountPack } from "./chance.js";
 import { mountSplit, splitRight } from "./fracbar.js";
 import { mountTree, treeRight, treeOf } from "./factortree.js";
 import { mountStrike, strikeRight } from "./strike.js";
+import { mountRegroup } from "./regroup.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -150,6 +151,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.counters ||= {}; // tens and ones taken out and pushed about
     r.tree ||= {};     // factor trees, grown or dragged into place
     r.strike ||= {};   // the numbers struck out of a grid
+    r.regroup ||= {};  // which shape a number's blocks are pushed into
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -309,6 +311,11 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        the blocks: it is the experiment, and the boxes say what it showed */
     node.querySelectorAll("svg[data-balance]").forEach((svg, k) => makeBalanceLive(node, idx, svg, k));
 
+    /* blocks that can be pushed into every rectangle their number makes. Not
+       marked either, and for the same reason: it is the trying that teaches,
+       and what the child WRITES about it is the answer. */
+    node.querySelectorAll("[data-regroup]").forEach((el, k) => makeRegroupLive(node, idx, el, k));
+
     (keyOf(node) || []).forEach((e) => {
       if (e.kind === "draw") { const svg = drawSvg(node, e); if (svg) makeDrawable(node, idx, svg, e); }
       if (e.kind === "colour") makeColourable(node, idx, e);
@@ -357,6 +364,7 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-counters]").forEach((c) => { c.__wbCounters?.dispose(); c.__wbCounters = null; });
     node.querySelectorAll("[data-tree]").forEach((c) => { c.__wbTree?.dispose(); c.__wbTree = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-regroup]").forEach((c) => { c.__wbRegroup?.dispose(); c.__wbRegroup = null; });
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
@@ -1128,6 +1136,24 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).tree[k]; wrap.__wbTree?.clear(); dirty(node); save(); });
+  }
+
+  /* ── blocks pushed into another shape ─────────────────────────────────
+     Two arrows, and the blocks fall into the next rectangle their number
+     makes. A prime refuses, and says why — which is the lesson, so the
+     buttons stay pressable rather than going away. */
+  function makeRegroupLive(node, idx, el, k) {
+    if (el.__wbRegroup) return;
+    el.__wbRegroup = mountRegroup(el, {
+      saved: rec(idx).regroup[k],
+      onChange: (now) => {
+        const was = rec(idx).regroup[k];
+        rec(idx).regroup[k] = now;
+        step(el, () => { rec(idx).regroup[k] = was; el.__wbRegroup?.set(was); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
   }
 
   /* ── a grid with the primes struck out of it ──────────────────────────

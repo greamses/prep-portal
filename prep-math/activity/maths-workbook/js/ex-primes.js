@@ -39,10 +39,11 @@
 
 import { want } from "/utils/components/workbook/want.js";
 import {
-  isPrime, primesOf, indexOf_, factorCount, factorsOf, treeOf, treeHtml,
+  isPrime, primesOf, indexOf_, factorCount, factorsOf, treeOf, treeHtml, ringOf,
 } from "/utils/components/workbook/factortree.js";
+import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
-import { blocksIn, arrayOf, shapesOf, ladder, ladderKey } from "./primeart.js";
+import { arrayOf, ladder, ladderKey } from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
 
 /* ── the paper's furniture ───────────────────────────────────────────────── */
@@ -108,8 +109,10 @@ const pfGroup = {
   heading: "Can it be grouped?",
   instruction: () =>
     "Here are the blocks of a number, all in one row. Can you push them into <b>equal rows</b>, with more than "
-    + "one in each row and none left over? Ring the rows you would make on the picture, then write what you did. "
-    + "Some numbers will not go at all — those are the interesting ones.",
+    + "one in each row and none left over? On screen the two arrows push the blocks into the next shape they "
+    + "will make, the way a falling brick drops into a row; on paper, ring the rows you would make. Then write "
+    + "what you did. Some numbers will not go at all — the arrows will not move them, and those are the "
+    + "interesting ones.",
   cols: 1,
   defaultCount: 3,
   make(r, o, k, i) {
@@ -121,7 +124,7 @@ const pfGroup = {
   },
   render(item) {
     return lead(`<b>${item.n}</b> blocks`)
-      + `<div class="rw-art">${blocksIn(item.n)}</div>`
+      + `<div class="rw-art">${regroupHtml({ n: item.n, label: `${item.n} blocks to push into rows` })}</div>`
       + ask(`Can they be put into equal rows of more than one? ${tick("yes", "no")}`)
       + ask(`If they can: ${box()} rows of ${box()}.`);
   },
@@ -279,8 +282,10 @@ function treeEx(id, mode, label, count) {
       "Split the number into two things that multiply to it, then split those, and keep going until every branch "
       + "ends on a <b>prime</b>. "
       + (drag
-        ? "The numbers are laid out beside the tree — on screen, drag each one into its circle; on paper, write "
-          + "them in. There is more than one way to make the tree, so put them where they make sense."
+        ? "On screen, tap a circle and the numbers that go into IT swing out and stand round it — drag two of "
+          + "them into the circles underneath. Tap a prime and nothing swings out, because nothing goes into it. "
+          + "On paper the numbers that go into the top one are printed under the tree. There is more than one "
+          + "way to make the tree, so put them where they make sense."
         : "On screen, tap a circle to split it into two, and type the two numbers. Tap it again to change your "
           + "mind. On paper, write in the rings. Any tree is right as long as every pair multiplies to the number "
           + "above it and every branch ends on a prime.")
@@ -293,7 +298,9 @@ function treeEx(id, mode, label, count) {
     },
     render(item) {
       const shape = treeOf(item.n);
-      const chips = drag ? shuffleLeaves(shape) : null;
+      /* on paper, the numbers that go into the TOP circle are printed under
+         the tree; on screen they swing out of whichever circle is tapped */
+      const chips = drag ? ringOf(item.n) : null;
       return lead(`<b>${item.n}</b>`)
         + treeHtml({ tree: drag ? shape : { v: item.n, kids: null }, mode, chips, label: `a factor tree of ${item.n}` });
     },
@@ -310,19 +317,6 @@ function treeEx(id, mode, label, count) {
       return [`${item.n} = ${asProduct(item.n)}`];
     },
   };
-}
-
-/* every number in the drawn tree except the top one, shuffled — what the drag
-   version lays out beside it */
-function shuffleLeaves(shape) {
-  const out = [];
-  const walk = (t, top) => {
-    if (!top) out.push(t.v);
-    (t.kids || []).forEach((k) => walk(k, false));
-  };
-  walk(shape, true);
-  /* a fixed shuffle: the same paper twice is the same paper */
-  return out.slice().sort((a, b) => (a % 7) - (b % 7) || a - b);
 }
 
 /* ═══ F. table factoring ══════════════════════════════════════════════════ */

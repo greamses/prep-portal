@@ -24,9 +24,12 @@
 
    TWO WAYS TO BUILD ONE, because they teach different halves of it:
 
-     drag   the shape is drawn and the numbers are laid out beside it; the
-            child drags each one into a circle. They are RECOGNISING a factor
-            pair, which is the easier half, and they cannot be stuck.
+     drag   the shape is drawn empty. Tap a circle and ITS OWN FACTORS swing
+            out and stand round it, and the child drags two of them down into
+            the circles underneath. They are CHOOSING from what will go, which
+            is the easier half, and they cannot be stuck — but they can still
+            choose a pair that does not multiply back, and the marking will
+            say so.
      grow   only the top number is drawn. Tapping a circle sprouts two empty
             ones under it and the child types the factors, and keeps going
             until nothing left will split. They are FINDING the pairs, and
@@ -96,6 +99,17 @@ export function treeOf(n) {
   }
   return { v: n, kids: null };
 }
+
+/**
+ * WHAT SWINGS OUT ROUND A CIRCLE when it is tapped: everything that divides
+ * it except 1 and itself, which are the two factors that get you nowhere —
+ * splitting 12 into 1 and 12 is not splitting 12.
+ */
+export const ringOf = (v) => {
+  const out = [];
+  for (let d = 2; d < v; d++) if (v % d === 0) out.push(d);
+  return out;
+};
 
 /** How many rows of circles a tree needs. */
 export const depthOf = (t) => (t.kids ? 1 + Math.max(...t.kids.map(depthOf)) : 1);
@@ -217,16 +231,25 @@ export function treeHtml({ tree, mode = "grow", answer = false, chips = null, la
     }
     const top = at === "";
     const shown = answer || top;
+    /* a colour per row, so a tree reads as rows of the same thing rather than
+       as a heap of circles — and so a child can say "the green ones" */
     knobs.push(
-      `<span class="ft-node${top ? " is-top" : ""}${p.node.kids ? "" : " is-leaf"}${shown ? " is-said" : ""}"`
-      + ` data-at="${at}" data-v="${p.node.v}"`
+      `<span class="ft-node ft-row${p.y % 4}${top ? " is-top" : ""}${p.node.kids ? "" : " is-leaf"}${shown ? " is-said" : ""}"`
+      + ` data-at="${at}" data-v="${p.node.v}" data-row="${p.y}"`
       + ` style="left:${cx.toFixed(1)}mm;top:${cy.toFixed(1)}mm">`
       + `${shown ? p.node.v : ""}</span>`
     );
   });
 
+  /* ON PAPER the factors that would swing out of the top circle are printed
+     under the tree instead, because a sheet of paper cannot be tapped and a
+     child with a pencil should still be told what they have to choose from.
+     The screen hides this row and swings the factors out of each circle in
+     turn (see mountTree). */
   const tray = chips && chips.length
-    ? `<div class="ft-tray">${chips.map((v, i) => `<span class="ft-chip" data-chip="${i}" data-v="${v}">${v}</span>`).join("")}</div>`
+    ? `<p class="ft-tray"><em>the numbers that go into it:</em> `
+      + chips.map((v, i) => `<span class="ft-chip ft-tint${i % 6}" data-chip="${i}" data-v="${v}">${v}</span>`).join("")
+      + `</p>`
     : "";
 
   /* `wb-nomath`: the numbers in the circles are FIGURES in a picture, not an
@@ -264,12 +287,24 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
 
   el.classList.add("is-live");
   const stage = el.querySelector(".ft-stage");
-  const tray = el.querySelector(".ft-tray");
   let bin = [];
 
   const tell = () => onChange(JSON.parse(JSON.stringify(state)));
 
-  /* ── the drag tree ─────────────────────────────────────────────────────*/
+  /* ── the drag tree ─────────────────────────────────────────────────────
+     Nothing is laid out underneath. Tap a circle and the numbers that go into
+     IT swing out and stand round it; drag two of them into the circles below.
+     The ring is the question — "what goes into 36?" — asked in the one place
+     where the answer is about to be used. */
+  const valueAt = (at) => {
+    if (at === "") return Number(shape.v);
+    const v = state.slots[at];
+    return v == null ? null : Number(v);
+  };
+  /** The circles hanging under this one. */
+  const kidsOf = (at) => [...stage.querySelectorAll(".ft-node")]
+    .filter((nd) => nd.dataset.at.length === at.length + 1 && nd.dataset.at.startsWith(at));
+
   function paintDrag() {
     stage.querySelectorAll(".ft-node").forEach((node) => {
       const at = node.dataset.at;
@@ -279,77 +314,150 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
       node.classList.toggle("is-said", v != null);
       node.classList.toggle("is-empty", v == null);
     });
-    const used = Object.values(state.slots);
-    const left = used.slice();
-    tray?.querySelectorAll(".ft-chip").forEach((chip) => {
-      const at = left.indexOf(Number(chip.dataset.v));
-      const spent = state.placed ? state.placed.includes(Number(chip.dataset.chip)) : false;
-      chip.classList.toggle("is-spent", spent);
-      if (at >= 0 && !state.placed) left.splice(at, 1);
+  }
+
+  /** The factors of a circle, swung out round it. */
+  function openRing(node) {
+    closeRing();
+    const at = node.dataset.at;
+    const v = valueAt(at);
+    if (v == null || !Number.isFinite(v)) return;
+    const kids = [...stage.querySelectorAll(".ft-node")]
+      .filter((nd) => nd.dataset.at.length === at.length + 1 && nd.dataset.at.startsWith(at));
+    if (!kids.length) return;              // a leaf has nothing to split into
+    const fs = ringOf(v);
+    if (!fs.length) {
+      /* a prime, and that IS the answer: it does not split */
+      node.classList.remove("is-stuck");
+      void node.offsetWidth;
+      node.classList.add("is-stuck");
+      return;
+    }
+    const ring = document.createElement("div");
+    ring.className = "ft-ring";
+    ring.dataset.at = at;
+    ring.style.left = node.style.left;
+    ring.style.top = node.style.top;
+    /* ROUND THE CIRCUMFERENCE, but not straight down: that is where the
+       branches go, and a chip sitting on the circle it is about to be dropped
+       into is a chip nobody can aim at. So they spread over 300° centred on
+       straight up, leaving the way down clear. The ring also grows with the
+       number of factors — 96 has ten of them, and ten on a small circle is a
+       heap, not a ring. */
+    const wide = Math.max(19, Math.min(30, 3.6 * fs.length));
+    ring.style.setProperty("--r", `${wide.toFixed(1)}mm`);
+    /* the spread is CENTRED on straight up, so one factor stands over the
+       circle rather than off at the end of an arc — where, with one chip, it
+       lands exactly on the circle it is about to be dropped into */
+    const spread = 300;
+    const step = spread / fs.length;
+    fs.forEach((f, i) => {
+      const chip = document.createElement("span");
+      chip.className = `ft-chip ft-tint${i % 6}`;
+      chip.dataset.v = String(f);
+      chip.dataset.from = at;
+      chip.textContent = String(f);
+      /* the angle is the chip's own; the spread is animated, so they swing
+         out one after another round the circumference */
+      chip.style.setProperty("--a", `${(-90 - spread / 2 + step / 2 + i * step).toFixed(1)}deg`);
+      chip.style.setProperty("--i", String(i));
+      ring.appendChild(chip);
+    });
+    stage.appendChild(ring);
+    node.classList.add("is-open");
+    requestAnimationFrame(() => ring.classList.add("is-out"));
+    wireChips(ring);
+  }
+
+  function closeRing() {
+    stage.querySelectorAll(".ft-ring").forEach((r) => r.remove());
+    stage.querySelectorAll(".ft-node.is-open").forEach((n) => n.classList.remove("is-open"));
+  }
+
+  function wireChips(ring) {
+    ring.querySelectorAll(".ft-chip").forEach((chip) => {
+      chip.addEventListener("pointerdown", (e) => {
+        try { chip.setPointerCapture?.(e.pointerId); } catch { /* carry on */ }
+        lift(chip, chip.dataset.v, e);
+      });
     });
   }
 
+  function lift(from, value) {
+    /* WHILE A NUMBER IS IN THE AIR the ring stops answering the pointer, so
+       what is under the finger at the end is a circle of the tree and never
+       one of the chips standing over it. */
+    stage.querySelectorAll(".ft-ring").forEach((r) => r.classList.add("is-carrying"));
+    const ghost = document.createElement("span");
+    ghost.className = `ft-carry ${[...from.classList].find((c) => c.startsWith("ft-tint")) || ""}`;
+    ghost.textContent = value;
+    document.body.appendChild(ghost);
+    const move = (ev) => {
+      ghost.style.left = `${ev.clientX}px`;
+      ghost.style.top = `${ev.clientY}px`;
+      const over = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".ft-node");
+      stage.querySelectorAll(".ft-node").forEach((nd) => nd.classList.toggle("is-catching", nd === over && nd.dataset.at !== ""));
+      ev.preventDefault();
+    };
+    const up = (ev) => {
+      from.removeEventListener("pointermove", move);
+      from.removeEventListener("pointerup", up);
+      from.removeEventListener("pointercancel", up);
+      ghost.remove();
+      stage.querySelectorAll(".ft-ring").forEach((r) => r.classList.remove("is-carrying"));
+      stage.querySelectorAll(".ft-node").forEach((nd) => nd.classList.remove("is-catching"));
+      const drop = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".ft-node");
+      const at = drop?.dataset.at;
+      if (at != null && at !== "") {
+        state.slots[at] = Number(value);
+        paintDrag();
+        /* THE RING STAYS UP while the pair it was opened for is unfinished.
+           A split is two numbers, and closing after the first would make the
+           child tap the same circle again to say the same thing. */
+        const ring = stage.querySelector(".ft-ring");
+        const owner = ring?.dataset.at;
+        const more = owner != null && kidsOf(owner).some((k) => state.slots[k.dataset.at] == null);
+        if (!more) closeRing();
+        tell();
+      }
+    };
+    from.addEventListener("pointermove", move);
+    from.addEventListener("pointerup", up);
+    from.addEventListener("pointercancel", up);
+  }
+
   function wireDrag() {
-    const chips = [...(tray?.querySelectorAll(".ft-chip") || [])];
-    state.placed = state.placed || [];
-    const lift = (from, value, chipIndex, e) => {
-      const ghost = document.createElement("span");
-      ghost.className = "ft-carry";
-      ghost.textContent = value;
-      document.body.appendChild(ghost);
-      const move = (ev) => {
-        ghost.style.left = `${ev.clientX}px`;
-        ghost.style.top = `${ev.clientY}px`;
-        const over = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".ft-node");
-        stage.querySelectorAll(".ft-node").forEach((nd) => nd.classList.toggle("is-catching", nd === over && nd.dataset.at !== ""));
-        ev.preventDefault();
-      };
-      const up = (ev) => {
-        from.removeEventListener("pointermove", move);
-        from.removeEventListener("pointerup", up);
-        from.removeEventListener("pointercancel", up);
-        ghost.remove();
-        stage.querySelectorAll(".ft-node").forEach((nd) => nd.classList.remove("is-catching"));
-        const drop = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".ft-node");
-        const at = drop?.dataset.at;
-        if (at != null && at !== "") {
-          /* whatever was in that circle goes back to the tray */
-          const had = state.placed.find((i) => state.slots[at] != null && Number(chips[i].dataset.v) === state.slots[at]);
-          if (had != null) state.placed = state.placed.filter((i) => i !== had);
-          state.slots[at] = Number(value);
-          if (chipIndex != null && !state.placed.includes(chipIndex)) state.placed.push(chipIndex);
+    stage.querySelectorAll(".ft-node").forEach((node) => {
+      node.addEventListener("click", (e) => {
+        if (e.target.closest(".ft-chip")) return;
+        if (node.classList.contains("is-open")) { closeRing(); return; }
+        const at = node.dataset.at;
+        const v = valueAt(at);
+        /* WHAT A TAP MEANS depends on where the circle is in the tree, and
+           each of the three answers is something worth saying:
+
+             it has circles under it   what goes into it swings out, to be
+                                       dragged down into them
+             it is a prime at the end  nothing goes into it — it shakes its
+                                       head, which is the whole lesson
+             it is anything else       take it out and think again */
+        if (kidsOf(at).length) { openRing(node); return; }
+        if (v != null && isPrime(v)) {
+          node.classList.remove("is-stuck");
+          void node.offsetWidth;
+          node.classList.add("is-stuck");
+          return;
+        }
+        if (at !== "" && state.slots[at] != null) {
+          delete state.slots[at];
           paintDrag();
           tell();
         }
-      };
-      from.addEventListener("pointermove", move);
-      from.addEventListener("pointerup", up);
-      from.addEventListener("pointercancel", up);
-    };
-
-    chips.forEach((chip, i) => {
-      chip.addEventListener("pointerdown", (e) => {
-        if (chip.classList.contains("is-spent")) return;
-        /* Capture keeps the moves coming to the chip once the finger has left
-           it. Safari throws when the pointer has already gone, and so does a
-           synthetic event — neither is a reason not to carry the number. */
-        try { chip.setPointerCapture?.(e.pointerId); } catch { /* carry on */ }
-        lift(chip, chip.dataset.v, i, e);
       });
     });
-    /* tapping a filled circle empties it again */
-    stage.querySelectorAll(".ft-node").forEach((node) => {
-      if (node.dataset.at === "") return;
-      node.addEventListener("click", () => {
-        const at = node.dataset.at;
-        if (state.slots[at] == null) return;
-        const v = state.slots[at];
-        delete state.slots[at];
-        const chip = chips.findIndex((ch, i) => state.placed.includes(i) && Number(ch.dataset.v) === v);
-        if (chip >= 0) state.placed = state.placed.filter((i) => i !== chip);
-        paintDrag();
-        tell();
-      });
+    /* a tap anywhere else puts the ring away */
+    el.addEventListener("pointerdown", (e) => {
+      if (!e.target.closest(".ft-node") && !e.target.closest(".ft-chip")) closeRing();
     });
   }
 
@@ -411,8 +519,8 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
     state: () => JSON.parse(JSON.stringify(state)),
     set(s) {
       state = s && (s.slots || s.tree) ? JSON.parse(JSON.stringify(s))
-        : (mode === "drag" ? { slots: {}, placed: [] } : { tree: { v: n, kids: null } });
-      if (mode === "drag") paintDrag(); else paintGrow();
+        : (mode === "drag" ? { slots: {} } : { tree: { v: n, kids: null } });
+      if (mode === "drag") { closeRing(); paintDrag(); } else paintGrow();
     },
     clear() { this.set(null); tell(); },
     dispose() { el.classList.remove("is-live"); },

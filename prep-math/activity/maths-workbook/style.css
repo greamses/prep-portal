@@ -1128,7 +1128,13 @@ thead .pv-chart__side {
   font-size: 11pt;
   font-weight: 700;
 }
-.ft-node.is-top { background: #fff3c4; }
+/* a colour per row: a tree reads as rows of the same kind of thing, and a
+   child can say "the green ones" */
+.ft-row0 { background: #fff3c4; }
+.ft-row1 { background: #e6f3ff; }
+.ft-row2 { background: #eaf8e4; }
+.ft-row3 { background: #f6ebff; }
+.ft-node.is-top { background: #ffe9a8; border-width: 0.6mm; }
 .ft-node.is-said { border-style: solid; }
 .ft-node.is-empty { border-style: dashed; border-color: #8f887c; }
 .ft-node.is-catching { outline: 0.5mm solid #2a6ca8; outline-offset: 0.6mm; }
@@ -1144,8 +1150,19 @@ thead .pv-chart__side {
   color: #1d4f7c;
 }
 .ft-in:focus { outline: none; background: #eef4fb; border-radius: 1mm; }
-/* the numbers laid out beside a tree to be dragged into it */
-.ft-tray { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 2mm; }
+/* ON PAPER: the numbers that go into the top circle, printed under the tree.
+   On screen they swing out of whichever circle is tapped, so this row is put
+   away — two lists of the same numbers in two places is one too many. */
+.ft-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.8mm;
+  margin: 2.4mm 0 0;
+  font-size: 9pt;
+}
+.ft-tray em { font-style: normal; color: #6b645a; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 8.5pt; }
+.wb-live .ft-tray { display: none; }
 .ft-chip {
   display: grid;
   place-items: center;
@@ -1161,6 +1178,40 @@ thead .pv-chart__side {
 }
 .wb-live .ft-chip { cursor: grab; touch-action: none; }
 .ft-chip.is-spent { opacity: 0.35; }
+
+/* ── THE RING ─────────────────────────────────────────────────────────────
+   Tap a circle and everything that goes into it swings out and stands round
+   its circumference, one after another. They are coloured so that two of them
+   next to each other are two different things, and so that the picture is
+   worth looking at — this is the only place in the chapter where a child is
+   offered a choice, and it should look like an offer. */
+.ft-ring { position: absolute; width: 0; height: 0; z-index: 6; }
+.ft-ring.is-carrying { pointer-events: none; }
+.ft-ring .ft-chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: -4.7mm 0 0 -4.7mm;
+  transform: rotate(var(--a)) translate(0) rotate(calc(-1 * var(--a))) scale(0.4);
+  opacity: 0;
+  transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.3), opacity 0.2s ease;
+  transition-delay: calc(var(--i) * 0.035s);
+  box-shadow: 0 1px 3px rgba(42, 39, 35, 0.25);
+}
+.ft-ring.is-out .ft-chip {
+  transform: rotate(var(--a)) translate(var(--r, 20mm)) rotate(calc(-1 * var(--a)));
+  opacity: 1;
+}
+/* the six tints the chips and the rows are painted in */
+.ft-tint0 { background: #ffd7a3; }
+.ft-tint1 { background: #c8f0c0; }
+.ft-tint2 { background: #bfe3ff; }
+.ft-tint3 { background: #e8c8ff; }
+.ft-tint4 { background: #b8ece2; }
+.ft-tint5 { background: #fff3a8; }
+/* a circle that has its factors out, and one that has nothing to give */
+.wb-live .ft-node.is-open { box-shadow: 0 0 0 1.2mm rgba(42, 108, 168, 0.18); }
+.wb-live .ft-node.is-stuck { animation: rg-no 0.3s ease; }
 .ft-carry {
   position: fixed;
   z-index: 10080;
@@ -1190,5 +1241,56 @@ thead .pv-chart__side {
 /* The Undo and Clear notes sit at the top right of whatever they belong to,
    so the thing they belong to gives them a strip of their own to sit in —
    the same fix the blocks needed when the buttons were landing on the pile. */
-.wb-live .wb-sieve.wb-drawhost,
-.wb-live .ft.wb-drawhost { padding-top: 9mm; }
+.wb-live .wb-sieve.wb-drawhost { padding-top: 9mm; }
+/* the tree needs more than the buttons' strip: the factors of the top circle
+   swing out ABOVE it, and they have to land on the paper rather than on the
+   question before it */
+.wb-live .ft.wb-drawhost { padding-top: 26mm; }
+
+/* ── blocks that regroup (regroup.js) ─────────────────────────────────────
+   The same blocks in a different shape, and two arrows to push them. The
+   colour changes with the shape so the eye can see that something happened
+   even when the count obviously has not. */
+.rg { position: relative; margin: 2mm 0 1mm; }
+.rg-stage { display: block; min-height: 4.4mm; }
+.rg-art { display: block; overflow: visible; }
+.rg-cube { stroke: #2a6ca8; stroke-width: 0.18; }
+.rg-cube--0 { fill: #bfe3ff; }
+.rg-cube--1 { fill: #c8f0c0; stroke: #3f7f34; }
+.rg-cube--2 { fill: #ffd7a3; stroke: #a8632a; }
+.rg-cube--3 { fill: #e8c8ff; stroke: #6b3f9e; }
+.rg-cube--4 { fill: #b8ece2; stroke: #2f7f72; }
+.rg-cube--5 { fill: #fff3a8; stroke: #9a7b12; }
+.rg-say {
+  margin: 1.6mm 0 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9pt;
+  color: #4a443c;
+}
+/* the shape landing, the way a brick drops into a row */
+.wb-live .rg-stage.is-dropped { animation: rg-drop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+@keyframes rg-drop {
+  from { transform: translateY(-2.4mm) scale(0.96); opacity: 0.5; }
+  to { transform: none; opacity: 1; }
+}
+/* a prime, refusing */
+.wb-live .rg.is-stuck .rg-stage { animation: rg-no 0.3s ease; }
+@keyframes rg-no {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-1.4mm); }
+  75% { transform: translateX(1.4mm); }
+}
+.rg-bar { display: flex; gap: 1.6mm; margin-bottom: 1.6mm; }
+.rg-btn {
+  display: grid;
+  place-items: center;
+  width: 9mm;
+  height: 8mm;
+  border: 0.4mm solid #2a2723;
+  border-radius: 2mm;
+  background: #fff3a8;
+  color: #2a2723;
+  cursor: pointer;
+}
+.rg-btn:active { transform: translateY(0.4mm); }
+@media print { .rg-bar { display: none; } }
