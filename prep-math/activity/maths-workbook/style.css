@@ -1026,3 +1026,169 @@ thead .pv-chart__side {
 
 /* room to work a word problem out */
 .mm-work { height: 22mm; border-bottom: 0.25mm dashed #cfc8bb; margin-top: 1mm; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CHAPTER 8 — PRIME FACTORS
+   The blocks a number is pushed into rows of, the grid the primes are struck
+   out of, the tree, the ladder, and the index form.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* the blocks. Not place-value blocks: what makes twelve twelve here is three
+   fours, not one ten and two ones, so they are all one size and one colour. */
+.pf-blocks { display: block; overflow: visible; }
+.pf-cube { fill: #bfe3ff; stroke: #2a6ca8; stroke-width: 0.18; }
+.pf-shapes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 5mm; margin: 2mm 0; }
+.pf-shape { margin: 0; }
+.pf-shape figcaption {
+  margin-top: 1mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8pt;
+  color: #6b645a;
+  text-align: center;
+}
+
+/* prime or composite: the number, and the two words */
+.pf-table { width: 100%; border-collapse: collapse; margin: 1.5mm 0; }
+.pf-table td { padding: 1.4mm 2mm; border-bottom: 0.3mm dashed #b8b0a3; vertical-align: middle; }
+.pf-table__n {
+  width: 22%;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13pt;
+  font-weight: 700;
+}
+
+/* every factor of a number, in a row of boxes */
+.pf-slots { display: flex; flex-wrap: wrap; gap: 2mm; margin: 2mm 0; }
+
+/* a base with its index: 2² */
+/* the base, with room to the right of it for the little number in the corner:
+   the index must stand CLEAR of the base or it reads as another figure of it,
+   which is the one thing this section exists to say it is not */
+.pf-power { display: inline-block; position: relative; padding-right: 8.4mm; }
+.pf-power__i { position: absolute; right: 0; top: -3.2mm; }
+.pf-power__i .wb-answer { width: 7.4mm; height: 6.4mm; }
+
+/* ── the sieve ────────────────────────────────────────────────────────────
+   A grid of numbers with a pencil line through the ones that are finished
+   with. On screen a tap draws the same line, and a tap on a struck number
+   rubs it out — a sieve is done with a rubber beside it. */
+.wb-sieve {
+  display: grid;
+  grid-template-columns: repeat(var(--sv-cols, 10), 1fr);
+  gap: 1mm;
+  margin: 2mm 0;
+  max-width: 120mm;
+}
+.wb-sieve__n {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 8.6mm;
+  padding: 0.6mm;
+  border: 0.3mm solid #cfc8bb;
+  border-radius: 1.2mm;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+  font-weight: 700;
+}
+.wb-sieve__n.is-struck::after {
+  content: "";
+  position: absolute;
+  left: 0.8mm;
+  right: 0.8mm;
+  top: 50%;
+  height: 0.5mm;
+  background: #c0453f;
+  transform: rotate(-9deg);
+}
+.wb-live .wb-sieve__n { cursor: pointer; }
+.wb-live .wb-sieve__n:hover { background: #f4f0e8; }
+.wb-sieve.is-right { outline: 0.5mm solid var(--accent-success, #6db58f); outline-offset: 1mm; }
+.wb-sieve.is-wrong { outline: 0.5mm solid var(--accent-danger, #c0453f); outline-offset: 1mm; }
+
+/* ── the factor tree ──────────────────────────────────────────────────────
+   Circles joined by branches. The stage is measured in millimetres like every
+   other drawing here, so the tree is the same size on paper and on screen. */
+.ft { position: relative; margin: 2mm 0 1mm; }
+.ft-stage { position: relative; width: var(--ft-w); height: var(--ft-h); }
+.ft-lines { position: absolute; top: 0; left: 0; }
+.ft-lines line { stroke: #8f887c; stroke-width: 0.4; }
+.ft-node {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 12.8mm;
+  height: 12.8mm;
+  margin: -6.4mm 0 0 -6.4mm;
+  border: 0.45mm solid #2a2723;
+  border-radius: 50%;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11pt;
+  font-weight: 700;
+}
+.ft-node.is-top { background: #fff3c4; }
+.ft-node.is-said { border-style: solid; }
+.ft-node.is-empty { border-style: dashed; border-color: #8f887c; }
+.ft-node.is-catching { outline: 0.5mm solid #2a6ca8; outline-offset: 0.6mm; }
+.wb-live .ft-node:not(.is-top) { cursor: pointer; }
+.ft-in {
+  width: 10mm;
+  height: 8mm;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: center;
+  color: #1d4f7c;
+}
+.ft-in:focus { outline: none; background: #eef4fb; border-radius: 1mm; }
+/* the numbers laid out beside a tree to be dragged into it */
+.ft-tray { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 2mm; }
+.ft-chip {
+  display: grid;
+  place-items: center;
+  min-width: 9.4mm;
+  height: 9.4mm;
+  padding: 0 1.2mm;
+  border: 0.4mm solid #2a2723;
+  border-radius: 2mm;
+  background: #ffe9a8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+  font-weight: 700;
+}
+.wb-live .ft-chip { cursor: grab; touch-action: none; }
+.ft-chip.is-spent { opacity: 0.35; }
+.ft-carry {
+  position: fixed;
+  z-index: 10080;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  min-width: 9.4mm;
+  height: 9.4mm;
+  padding: 0 1.2mm;
+  border: 0.4mm solid #2a2723;
+  border-radius: 2mm;
+  background: #ffe9a8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+}
+.ft.is-right .ft-stage { outline: 0.5mm solid var(--accent-success, #6db58f); outline-offset: 1.4mm; }
+.ft.is-wrong .ft-stage { outline: 0.5mm solid var(--accent-danger, #c0453f); outline-offset: 1.4mm; }
+
+/* ── the ladder ───────────────────────────────────────────────────────────
+   The divisor stands OUTSIDE the rule, which is the whole shape of the
+   method: what goes in, and what is left. */
+.mm-ladder .ms-col__slot--sign { justify-self: end; width: 6.4mm; margin-right: 0.8mm; }
+.mm-ladder .ms-col__sign { font-size: 11pt; }
+.mm-ladder .ms-col__mark.is-left { color: #2a2723; }
+
+/* The Undo and Clear notes sit at the top right of whatever they belong to,
+   so the thing they belong to gives them a strip of their own to sit in —
+   the same fix the blocks needed when the buttons were landing on the pile. */
+.wb-live .wb-sieve.wb-drawhost,
+.wb-live .ft.wb-drawhost { padding-top: 9mm; }

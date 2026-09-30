@@ -84,6 +84,17 @@ export function colSheet({ cols, places = cols, steps = "rtl", heights = null })
       return this;
     },
     /**
+     * A BOX where the sign stands, for the one method that asks the child what
+     * to divide by rather than telling them: the ladder of table factoring,
+     * whose whole question is "what is the smallest prime that goes into this".
+     */
+    signBox(row, { step = null, tone = "" } = {}) {
+      put(`ms-col__slot ms-col__slot--sign wb-answer${tone ? ` ${tone}` : ""}`,
+        `${grow(row)}grid-column:1;`, "",
+        ` data-row="${row}" data-col="sign"${step == null ? "" : ` data-step="${step}"`}`);
+      return this;
+    },
+    /**
      * A carry box. `figure` null leaves it empty — a place to write, which the
      * page counts as one — and a figure written in makes it print instead, so a
      * worked example is not counted as work the child has left undone.

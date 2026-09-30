@@ -14,6 +14,9 @@
      ex-fractions.js   what a fraction is, and adding the ones that match
      ex-time.js        counting in fives, and then telling the time
      ex-multiply.js    multiplying, from equal groups up to long multiplication
+     ex-primes.js      what a number is MADE of: grouping blocks, primes and
+                       composites, factors, factor trees, the ladder, and the
+                       index form that counts a number's factors for you
 
    THE GEOMETRY IS NOT HERE. Naming and measuring angles moved to the Geometry
    Workbook — it is geometry, and a child looking for angles should find them in
@@ -40,6 +43,7 @@ import { REM_GROUPS, REM_EXERCISES } from "./ex-remainder.js";
 import { FRAC_GROUPS, FRAC_EXERCISES } from "./ex-fractions.js";
 import { TIME_GROUPS, TIME_EXERCISES } from "./ex-time.js";
 import { MUL_GROUPS, MUL_EXERCISES } from "./ex-multiply.js";
+import { PRIME_GROUPS, PRIME_EXERCISES } from "./ex-primes.js";
 
 export { LEVELS, HELP, levelOf, helpOf } from "./ex-remainder.js";
 export { placesFor };
@@ -58,6 +62,8 @@ export const GROUPS = [
   /* Added after the seven as chapter 8, so no chapter already printed on a
      paper changes its number. */
   ...MUL_GROUPS,
+  /* and prime factors after that, for the same reason */
+  ...PRIME_GROUPS,
 ];
 
 /* Everything outside place value counts and writes in ordinary numerals, so it
@@ -76,6 +82,7 @@ export const EXERCISES = [
   ...tenOnly(FRAC_EXERCISES),
   ...tenOnly(TIME_EXERCISES),
   ...tenOnly(MUL_EXERCISES),
+  ...tenOnly(PRIME_EXERCISES),
 ];
 
 /**
@@ -92,6 +99,7 @@ const CHAPTER = new Map([
   ...FRAC_GROUPS.map((g) => [g.id, 5]),
   ...TIME_GROUPS.map((g) => [g.id, 6]),
   ...MUL_GROUPS.map((g) => [g.id, 7]),
+  ...PRIME_GROUPS.map((g) => [g.id, 8]),
 ]);
 /* Place value is the first chapter, so it is what is left over. */
 export const chapterOf = (ex) => CHAPTER.get(ex.group) || 1;

@@ -37,6 +37,8 @@ import { mountTiles, tilesRight } from "./tiles.js";
 import { mountCode, codeRight } from "./code.js";
 import { mountChance, mountPack } from "./chance.js";
 import { mountSplit, splitRight } from "./fracbar.js";
+import { mountTree, treeRight, treeOf } from "./factortree.js";
+import { mountStrike, strikeRight } from "./strike.js";
 
 const SLOTS = ".wb-answer, .wb-line, .wb-cell, .wb-tick";
 const MM = 96 / 25.4;               // CSS px in a millimetre
@@ -146,6 +148,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     r.chance ||= {};   // dice rolled, and cards drawn
     r.split ||= {};    // fraction bars cut to the same denominator
     r.counters ||= {}; // tens and ones taken out and pushed about
+    r.tree ||= {};     // factor trees, grown or dragged into place
+    r.strike ||= {};   // the numbers struck out of a grid
     return r;
   };
   const MARKED = (e) => !["free", "pen", "stick"].includes(e.kind);
@@ -315,6 +319,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       if (e.kind === "tiles") makeTilesLive(node, idx, e);
       if (e.kind === "code") makeCodeLive(node, idx, e);
       if (e.kind === "split") makeSplitLive(node, idx, e);
+      if (e.kind === "tree") makeTreeLive(node, idx, e);
+      if (e.kind === "strike") makeStrikeLive(node, idx, e);
       if (e.kind === "match") makeMatchable(node, idx, e);
       if (e.kind === "pen") makePen(node, idx, e);
       if (e.kind === "stick") makeStickable(node, idx);
@@ -349,6 +355,8 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
     node.querySelectorAll("[data-code], [data-try]").forEach((c) => { c.__wbCode?.dispose(); c.__wbCode = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-split]").forEach((c) => { c.__wbSplit?.dispose(); c.__wbSplit = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-counters]").forEach((c) => { c.__wbCounters?.dispose(); c.__wbCounters = null; });
+    node.querySelectorAll("[data-tree]").forEach((c) => { c.__wbTree?.dispose(); c.__wbTree = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
+    node.querySelectorAll("[data-strike]").forEach((c) => { c.__wbStrike?.dispose(); c.__wbStrike = null; c.querySelector(":scope > .wb-drawbar")?.remove(); });
     node.querySelectorAll("[data-roll]").forEach((c) => { c.__wbChance?.dispose(); c.__wbChance = null; });
     node.querySelectorAll("[data-pack]").forEach((c) => { c.__wbPack?.dispose(); c.__wbPack = null; });
     node.querySelectorAll("svg[data-blocks]").forEach((s) => {
@@ -1091,6 +1099,56 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).split[k]; wrap.__wbSplit?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a factor tree ────────────────────────────────────────────────────
+     Two ways of building one (factortree.js): dragging the numbers into the
+     circles of a drawn tree, or tapping a circle to split it and typing what
+     it splits into. Marked by the RULE — every pair multiplies to the number
+     above it, every branch ends on a prime — never by position, because 36 is
+     4 × 9 and 6 × 6 and both are right. */
+  function makeTreeLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll("[data-tree]")[k];
+    if (!wrap) return;
+    const how = (() => { try { return JSON.parse(wrap.dataset.tree || "{}"); } catch { return {}; } })();
+    const mode = how.mode === "drag" ? "drag" : "grow";
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbShape = treeOf(e.n);
+    wrap.__wbTree = mountTree(wrap, {
+      shape: wrap.__wbShape,
+      mode,
+      saved: rec(idx).tree[k] || null,
+      onChange: (now, before) => {
+        const was = rec(idx).tree[k];
+        rec(idx).tree[k] = now;
+        step(wrap, () => { rec(idx).tree[k] = was; wrap.__wbTree?.set(was); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).tree[k]; wrap.__wbTree?.clear(); dirty(node); save(); });
+  }
+
+  /* ── a grid with the primes struck out of it ──────────────────────────
+     A tap draws the line a pencil would, and a tap on a struck number rubs it
+     out again. The grid is one mark: half a sieve is a wrong sieve. */
+  function makeStrikeLive(node, idx, e) {
+    const k = e.nth || 0;
+    const wrap = node.querySelectorAll("[data-strike]")[k];
+    if (!wrap) return;
+    wrap.classList.add("wb-drawhost");
+    wrap.__wbStrike = mountStrike(wrap, {
+      saved: rec(idx).strike[k] || null,
+      onChange: (now) => {
+        const was = rec(idx).strike[k];
+        rec(idx).strike[k] = now;
+        step(wrap, () => { rec(idx).strike[k] = was; wrap.__wbStrike?.set(was); dirty(node); save(); });
+        dirty(node);
+        save();
+      },
+    });
+    drawbar(wrap, () => { delete rec(idx).strike[k]; wrap.__wbStrike?.clear(); dirty(node); save(); });
   }
 
   /* ── a program, written and run ───────────────────────────────────────
@@ -2040,6 +2098,27 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
           /* the bars have to agree before the sum beside them means anything */
           const wrap = node.querySelectorAll("[data-split]")[entry.nth || 0];
           const ok = splitRight(rec(idx).split[entry.nth || 0] || { a: 1, b: 1 }, entry);
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "tree") {
+          /* every split multiplies to the number above it and every branch
+             ends on a prime — whichever way the child chose to split it */
+          const wrap = node.querySelectorAll("[data-tree]")[entry.nth || 0];
+          const ok = treeRight(rec(idx).tree[entry.nth || 0] || null, entry, wrap?.__wbShape || treeOf(entry.n));
+          wrap?.classList.remove("is-right", "is-wrong");
+          wrap?.classList.add(ok ? "is-right" : "is-wrong");
+          if (wrap) wrap.dataset.want = sayWant(entry);
+          total++; if (ok) right++; else allRight = false;
+          return;
+        }
+        if (entry.kind === "strike") {
+          /* exactly the primes struck, and nothing else */
+          const wrap = node.querySelectorAll("[data-strike]")[entry.nth || 0];
+          const ok = strikeRight(rec(idx).strike[entry.nth || 0] || [], entry);
           wrap?.classList.remove("is-right", "is-wrong");
           wrap?.classList.add(ok ? "is-right" : "is-wrong");
           if (wrap) wrap.dataset.want = sayWant(entry);

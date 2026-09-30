@@ -148,6 +148,72 @@ export const ICON = {
       `<rect x="2.6" y="13.4" width="6.2" height="5.2" fill="${PAPER}"/>` +
       `<path d="M8.8 13.4v5.2M15 13.4v5.2" stroke="${QUIET}" stroke-width="0.9"/>`
   ),
+  /* ── chapter 8: prime factors ──────────────────────────────────────────
+     The chapter is about what a number is MADE of, so every glyph here is a
+     number taken apart in a different way. */
+
+  /* Blocks pushed into equal rows — and one that would not go. */
+  pfGroup: svg(
+    `<rect x="2.6" y="5" width="8.4" height="3.6" rx="0.7" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="9.8" width="8.4" height="3.6" rx="0.7" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="14.6" width="8.4" height="3.6" rx="0.7" fill="${PAPER}"/>` +
+      `<rect x="13.8" y="5" width="3.6" height="13.2" rx="0.7" fill="${LOUD}"/>`
+  ),
+  /* A number that is only itself: one brick, ringed. */
+  pfPrime: svg(
+    `<circle cx="12" cy="12" r="8.4" fill="none" stroke="${LOUD}" stroke-width="2.2"/>` +
+      `<rect x="9.4" y="9.4" width="5.2" height="5.2" rx="0.9" fill="${GOLD}"/>`
+  ),
+  /* A grid with some of it struck through. */
+  pfStrike: svg(
+    `<rect x="2.6" y="4.6" width="18.8" height="14.8" rx="1.6" fill="${PAPER}"/>` +
+      `<path d="M8.4 4.6v14.8M14.2 4.6v14.8M2.6 12h18.8" stroke="#fff" stroke-width="1.1"/>` +
+      bar(3.6, 8.6, 7.6, 8.6, 1.8, LOUD) + bar(15.2, 8.6, 19.2, 8.6, 1.8, LOUD) +
+      bar(9.4, 16, 13.4, 16, 1.8, LOUD)
+  ),
+  /* The factors in pairs, meeting in the middle. */
+  pfFactors: svg(
+    dot(5, 7.4, 2.2, PAPER) + dot(19, 7.4, 2.2, PAPER) +
+      dot(5, 12, 2.2, GOLD) + dot(19, 12, 2.2, GOLD) +
+      dot(5, 16.6, 2.2, LEAF) + dot(19, 16.6, 2.2, LEAF) +
+      bar(7.8, 7.4, 16.2, 7.4, 1.1, QUIET) +
+      bar(7.8, 12, 16.2, 12, 1.1, QUIET) +
+      bar(7.8, 16.6, 16.2, 16.6, 1.1, QUIET)
+  ),
+  /* The tree itself. */
+  pfTree: svg(
+    bar(12, 6.4, 6.4, 13.4, 1.4, QUIET) + bar(12, 6.4, 17.6, 13.4, 1.4, QUIET) +
+      bar(17.6, 15.4, 13.6, 20.4, 1.4, QUIET) + bar(17.6, 15.4, 21, 20.4, 1.4, QUIET) +
+      dot(12, 5.4, 3.2, GOLD) + dot(6.4, 14.4, 2.8, LOUD) + dot(17.6, 14.4, 2.8, PAPER) +
+      dot(13.4, 20.6, 2.4, LOUD) + dot(21, 20.6, 2.4, LOUD)
+  ),
+  /* The ladder: the divisor outside the rule, and what is left under it. */
+  pfLadder: svg(
+    `<path d="M9 3.6v16.8" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>` +
+      bar(9, 4.4, 21, 4.4, 1.6, QUIET) +
+      `<rect x="11" y="6.6" width="8.4" height="2.6" rx="1.1" fill="${PAPER}"/>` +
+      `<rect x="11" y="11.2" width="6.4" height="2.6" rx="1.1" fill="${PAPER}"/>` +
+      `<rect x="11" y="15.8" width="4.4" height="2.6" rx="1.1" fill="${PAPER}"/>` +
+      dot(5.2, 7.9, 1.8, LOUD) + dot(5.2, 12.5, 1.8, LOUD) + dot(5.2, 17.1, 1.8, LOUD)
+  ),
+  /* Primes multiplied together. */
+  pfProduct: svg(
+    dot(4.6, 12, 2.6, LOUD) + dot(12, 12, 2.6, GOLD) + dot(19.4, 12, 2.6, PAPER) +
+      `<path d="M7.6 10.4 9.6 12.4M9.6 10.4 7.6 12.4M15 10.4 17 12.4M17 10.4 15 12.4" stroke="${QUIET}" stroke-width="1.5" stroke-linecap="round"/>`
+  ),
+  /* A base with its index up in the corner. */
+  pfIndex: svg(
+    `<text x="8.6" y="19" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="15" font-weight="800" fill="${QUIET}">2</text>` +
+      `<text x="17.4" y="10.6" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="800" fill="${LOUD}">3</text>`
+  ),
+  /* Counting them: a row of marks and a ring round the count. */
+  pfCount: svg(
+    bar(4, 6.2, 4, 13.4, 1.8, QUIET) + bar(8, 6.2, 8, 13.4, 1.8, QUIET) +
+      bar(12, 6.2, 12, 13.4, 1.8, QUIET) + bar(16, 6.2, 16, 13.4, 1.8, QUIET) +
+      `<circle cx="17.4" cy="17.4" r="5" fill="${LOUD}"/>` +
+      `<text x="17.4" y="20.4" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" font-weight="800" fill="#fff">n</text>`
+  ),
+
   /* Scissors over two bars cut differently: the unlike denominators. */
   cut: svg(
     `<rect x="2.6" y="4" width="18.8" height="5" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +

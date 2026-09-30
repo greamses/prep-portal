@@ -21,6 +21,7 @@ const CHAPTERS = {
   3: "Chapter 3: Adding and taking away", 4: "Chapter 4: Dividing and remainders",
   5: "Chapter 5: Fractions", 6: "Chapter 6: Counting in fives and telling the time",
   7: "Chapter 7: Multiplying",
+  8: "Chapter 8: Prime factors",
 };
 
 /** The chapters the chosen exercises actually come from, in order. */

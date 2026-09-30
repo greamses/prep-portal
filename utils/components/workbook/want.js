@@ -28,6 +28,14 @@ export const want = {
   set: (...vs) => ({ kind: "set", vs }),
   /** A row of tick boxes; option `i` (from 0) is the right one. */
   tick: (i) => ({ kind: "tick", i }),
+  /**
+   * TWO places whose numbers multiply to `product`, ANY pair that does —
+   * 12 is 2 and 6, or 3 and 4, or 6 and 2. Neither may be 1, because "1 row of
+   * twelve" is the arrangement the question is asking the child to rule out.
+   * Both places are right together or wrong together: half a factor pair is
+   * not half right, it is a number and a guess.
+   */
+  pair: ({ product, ones = false, says = "" }) => ({ kind: "pair", product, ones, says }),
   /** A place that is not marked — a sketch, a reason in words. */
   free: () => ({ kind: "free" }),
   /**
@@ -84,6 +92,13 @@ export const want = {
       right when both bars end on the same denominator, however the child got
       there. Covers no places — the boxes beside it are marked as usual. */
   split: ({ a, b, nth = 0, says = "" }) => ({ kind: "split", a, b, nth, says }),
+  /** Numbers struck out of a grid (strike.js): exactly these and no others.
+      Covers no places — the grid is one mark. */
+  strike: ({ numbers, nth = 0, says = "" }) => ({ kind: "strike", numbers, nth, says }),
+  /** A factor tree (factortree.js): right when every split multiplies to the
+      number above it and every branch ends on a prime — whichever way the
+      child chose to split it. Covers no places. */
+  tree: ({ n, nth = 0, says = "" }) => ({ kind: "tree", n, nth, says }),
   /** Dice rolled or cards drawn (chance.js). Not marked either, and for the
       same reason: an experiment that came out the same every time would be
       teaching the opposite of the lesson. What the child READS off it is
@@ -169,6 +184,13 @@ export function judge(entry, values) {
       const t = String(values[0] ?? "").trim();
       return [t !== "" && entry.accept.some((a) => String(a) === t)];
     }
+    case "pair": {
+      const a = parseNum(values[0]);
+      const b = parseNum(values[1]);
+      const whole = (x) => Number.isInteger(x) && x > (entry.ones ? 0 : 1);
+      const ok = whole(a) && whole(b) && a * b === entry.product;
+      return [ok, ok];
+    }
     default:
       return values.map(() => true);
   }
@@ -176,7 +198,9 @@ export function judge(entry, values) {
 
 /** How many answer places an entry covers. */
 export const placesOf = (entry) =>
-  entry.kind === "set" ? entry.vs.length : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split"].includes(entry.kind) ? 0 : 1;
+  entry.kind === "set" ? entry.vs.length
+    : entry.kind === "pair" ? 2
+      : ["draw", "colour", "match", "pen", "stick", "picto", "bars", "dots", "machine", "tiles", "code", "chance", "split", "strike", "tree"].includes(entry.kind) ? 0 : 1;
 
 /** The right answer, written for a person. Tick rows name their option. */
 export function sayWant(entry, tickLabels = []) {
@@ -191,6 +215,9 @@ export function sayWant(entry, tickLabels = []) {
     case "cell": return entry.v;
     case "words": return entry.accept[0];
     case "exact": return entry.accept[0];
+    case "pair": return entry.says || `two numbers that multiply to ${entry.product}`;
+    case "strike": return entry.says || `${(entry.numbers || []).join(", ")} struck out`;
+    case "tree": return entry.says || `every branch of ${entry.n} split down to primes`;
     case "colour": return entry.says || `${entry.count} ${entry.mode === "cross" ? "crossed out" : "coloured"}`;
     case "match": return entry.says || "";
     case "picto": return entry.says || "";
@@ -217,6 +244,14 @@ export function rightValues(entry) {
     case "cell": return [entry.v];
     case "words": return [entry.accept[0]];
     case "exact": return [entry.accept[0]];
+    case "pair": {
+      /* the smallest pair that is not 1 × n, so "show me the answers" writes
+         something a child would have written */
+      for (let a = 2; a * a <= entry.product; a++) {
+        if (entry.product % a === 0) return [String(a), String(entry.product / a)];
+      }
+      return [String(1), String(entry.product)];
+    }
     default: return [""];
   }
 }
