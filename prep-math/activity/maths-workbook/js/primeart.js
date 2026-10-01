@@ -278,31 +278,60 @@ export function tableRows(a, b, { toOne = false } = {}) {
 }
 
 /**
- * The table on the paper.
- *   kind     "hcf" | "lcm" | "both"
- *   answer   true prints it worked
+ * THE TABLE ON THE PAPER — drawn as the factor ladder is drawn, because it IS
+ * the factor ladder with a second number in it. Same rule down the left with
+ * the divisor outside it, same columns, same bar across the top; a child who
+ * has done one recognises the other at a glance, which is the entire reason
+ * the two methods are taught together.
+ *
+ *   columns   number A's places, a column of air, then number B's places
+ *   rows      0 the two numbers, and then one row per division
+ *
+ *   kind      "hcf" | "lcm" | "both"
+ *   answer    true prints it worked
  */
 export function tableHtml(a, b, { kind = "both", answer = false } = {}) {
   const { rows, left } = tableRows(a, b, { toOne: kind === "lcm" });
+  const wa = String(a).length;
+  const wb = String(b).length;
+  const cols = wa + 1 + wb;
+  /* where each number's ONES column is: A keeps the left-hand block, B the
+     right-hand one, with one empty column between them */
+  const onesA = wb + 1;
+  const onesB = 0;
+
+  const sheet = colSheet({ cols, places: 0, steps: answer ? null : "listed" });
   let step = 0;
-  const cell = (v, cls = "") => (answer
-    ? `<span class="pf-tab__said ${cls}">${v}</span>`
-    : `<span class="wb-answer pf-tab__in ${cls}" data-step="${step++}"></span>`);
+  const put = (row, v, ones, cls = "") => {
+    const t = String(v);
+    t.split("").forEach((ch, i) => sheet.mark(row, ones + t.length - 1 - i, ch, cls));
+  };
+  const boxes = (row, v, ones) => {
+    const t = String(v);
+    for (let i = 0; i < t.length; i++) sheet.box(row, ones + t.length - 1 - i, { step: step++ });
+  };
 
-  const head = `<span class="pf-tab__by pf-tab__head"></span>`
-    + `<span class="pf-tab__said pf-tab__head">${a}</span>`
-    + `<span class="pf-tab__said pf-tab__head">${b}</span>`;
+  put(0, a, onesA);
+  put(0, b, onesB);
+  rows.forEach((r, k) => {
+    if (answer) sheet.sign(k, String(r.by));
+    else sheet.signBox(k, { step: step++, tone: "is-by" });
+    if (answer) {
+      put(k + 1, r.a, onesA, "is-left");
+      put(k + 1, r.b, onesB, "is-left");
+    } else {
+      boxes(k + 1, r.a, onesA);
+      boxes(k + 1, r.b, onesB);
+    }
+  });
 
-  const body = rows.map((r, i) => {
-    const last = kind !== "lcm" && i === rows.length - 1;
-    return `<span class="pf-tab__by${r.both ? " is-both" : ""}">`
-      + (answer ? `<span class="pf-tab__said">${r.by}</span>` : cell(r.by))
-      + `</span>`
-      + cell(r.a, last ? "is-last" : "")
-      + cell(r.b, last ? "is-last" : "");
-  }).join("");
+  /* WHERE THE HCF STOPS. On the table that answers both questions the line
+     under the last shared row is the whole point: above it is what they have
+     in common, below it is what is left over for the LCM. */
+  if (kind !== "lcm" && rows.length) sheet.rule(rows.length, { from: 0, to: cols - 1 });
 
-  return `<div class="pf-tab wb-nomath" data-table="${kind}">${head}${body}</div>`;
+  sheet.stop(0, { from: 0, to: cols - 1 });
+  return sheet.html("mm-col mm-table");
 }
 
 /** What the table asks for, row by row: the divisor, then the two numbers. */
@@ -311,8 +340,8 @@ export function tableKey(a, b, kind = "both") {
   const out = [];
   rows.forEach((r) => {
     out.push({ kind: "by", value: r.by });
-    out.push({ kind: "a", value: r.a });
-    out.push({ kind: "b", value: r.b });
+    String(r.a).split("").forEach((ch) => out.push({ kind: "a", value: Number(ch) }));
+    String(r.b).split("").forEach((ch) => out.push({ kind: "b", value: Number(ch) }));
   });
   return out;
 }

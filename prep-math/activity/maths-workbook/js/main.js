@@ -135,6 +135,7 @@ mountBuilder({
     "pf-why": ICON.pfWhy,
     "pf-sqroot": ICON.pfSqRoot,
     "pf-cuberoot": ICON.pfCubeRoot,
+    "pf-rootwords": ICON.pfRootWords,
   },
   icons: ICON,
   title: "Maths Workbook",

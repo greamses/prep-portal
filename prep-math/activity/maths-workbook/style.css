@@ -1362,35 +1362,12 @@ thead .pv-chart__side {
 }
 
 /* ── the table of two numbers (primeart.js tableHtml) ─────────────────────
-   What divides both goes down the left, outside the rule; what each number
-   becomes goes in its own column. The last row of the common part carries a
-   line under it: that is where the HCF stops and the LCM's leftovers begin. */
-.pf-tab {
-  display: grid;
-  grid-template-columns: 13mm 20mm 20mm;
-  align-items: center;
-  gap: 1mm 2mm;
-  width: max-content;
-  margin: 2mm 0 1mm;
-  padding-left: 1mm;
-}
-.pf-tab__by {
-  display: grid;
-  place-items: center;
-  justify-self: end;
-  padding-right: 1.6mm;
-  border-right: 0.5mm solid #2a2723;
-  min-height: 9mm;
-  width: 100%;
-}
-.pf-tab__head { border-right: 0; border-bottom: 0.5mm solid #2a2723; }
-.pf-tab__said {
-  display: grid;
-  place-items: center;
-  min-height: 8mm;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 11pt;
-  font-weight: 700;
-}
-.pf-tab__in.wb-answer { width: 15mm; height: 8mm; justify-self: center; }
-.pf-tab__said.is-last, .pf-tab__in.is-last { border-bottom: 0.5mm solid #2a2723; padding-bottom: 0.6mm; }
+   It is the factor ladder with a second number in it, so it is DRAWN as the
+   factor ladder: the rule down the left with the divisor outside it, the bar
+   across the top, a figure to a column. All that is added here is the line
+   under the last shared row — above it is what the two numbers have in
+   common, below it is what is left for the LCM. */
+.mm-table .ms-col__slot--sign { justify-self: end; width: 6.4mm; margin-right: 0.8mm; }
+.mm-table .ms-col__sign { font-size: 11pt; }
+.mm-table .ms-col__mark.is-left { color: #2a2723; }
+.mm-table .ms-col__rule { margin-bottom: 1.2mm; border-bottom-width: 0.45mm; }

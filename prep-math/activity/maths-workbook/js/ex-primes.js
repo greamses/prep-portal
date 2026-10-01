@@ -39,6 +39,9 @@
      M  square roots           so pair the primes off and take one out of
                                each pair
      N  cube roots             and in threes, for the same reason
+     O  roots in the world      and last, the roots in the words a question
+                               is asked in: a flat thing gives a square
+                               root and a solid one gives a cube root
 
    WHY THE TREE IS NOT MARKED BY POSITION. 36 splits as 4 × 9 or 6 × 6 or
    2 × 18, and every one of them ends on 2 × 2 × 3 × 3. That is the theorem —
@@ -93,6 +96,7 @@ export const PRIME_GROUPS = [
   { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
   { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
   { id: "pf-cuberoot", label: "Cube roots from the primes", blurb: "The same, in threes." },
+  { id: "pf-rootwords", label: "Roots in the world", blurb: "An area asks for a square root; a volume asks for a cube root." },
 ];
 
 /* ── which numbers a level uses ──────────────────────────────────────────── */
@@ -993,7 +997,10 @@ function tableEx(id, kind, label, count) {
               + "and one table has answered both questions."));
     },
     key(item) {
-      const out = tableKey(item.a, item.b, kind).map((e) => want.num(e.value));
+      /* the divisor is a number outside the rule; what each one becomes is
+         written a figure to a column, the way the ladder writes it */
+      const out = tableKey(item.a, item.b, kind)
+        .map((e) => (e.kind === "by" ? want.num(e.value) : want.cell(e.value)));
       if (kind === "lcm") out.push(want.num(lcmOf(item.a, item.b)));
       else {
         out.push(want.num(hcfOf(item.a, item.b)));
@@ -1224,6 +1231,124 @@ const pfCubeRoot = {
   },
 };
 
+/* ═══ O. roots in the world ═══════════════════════════════════════════════
+   The roots in the words a question is actually asked in — and, as with the
+   HCF and the LCM, the work is in knowing which one is wanted. The rule is
+   worth saying out loud because it is a fact about shapes and not about
+   arithmetic:
+
+     a FLAT thing   — an area, a square of chairs, tiles on a floor — is made
+                      of two equal things, so it asks for a SQUARE ROOT
+     a SOLID thing  — a volume, a cube of boxes, a tank — is made of three
+                      equal things, so it asks for a CUBE ROOT
+
+   Every number here comes out exactly, because the question is "how long is
+   the side", and a side that is 13.7 of something is not what this chapter is
+   for. What a child has to decide is which root — and then the primes do the
+   rest. */
+
+const ROOT_SQUARES = {
+  gentle: [36, 64, 100, 144],
+  middle: [196, 225, 324, 400],
+  stretch: [441, 576, 784, 900],
+};
+const ROOT_CUBES = {
+  gentle: [8, 27, 64, 125],
+  middle: [216, 343, 512],
+  stretch: [729, 1000, 1728],
+};
+
+const ROOT_STORIES = [
+  {
+    k: 2,
+    say: (n) => `A square carpet covers <b>${n}</b> square centimetres. How long is each side?`,
+    more: { ask: () => "And how far is it all the way round the edge?", value: (r) => r * 4, unit: "cm" },
+  },
+  {
+    k: 2,
+    say: (n) => `${n} chairs are set out in a hall in a <b>square</b> — the same number in every row as there `
+      + `are rows. How many chairs are in one row?`,
+    more: null,
+  },
+  {
+    k: 2,
+    say: (n) => `A square garden has an area of <b>${n}</b> square metres. A fence is to go all the way round `
+      + `it. How long is one side?`,
+    more: { ask: () => "How many metres of fence does that take?", value: (r) => r * 4, unit: "m" },
+  },
+  {
+    k: 3,
+    say: (n) => `A box is a <b>cube</b> and it holds <b>${n}</b> cubic centimetres. How long is each edge?`,
+    more: { ask: () => "What is the area of one face of it?", value: (r) => r * r, unit: "cm²" },
+  },
+  {
+    k: 3,
+    say: (n) => `${n} sugar cubes are stacked into one big <b>cube</b>. How many of them are along one edge?`,
+    more: null,
+  },
+  {
+    k: 3,
+    say: (n) => `A water tank is a <b>cube</b> that holds <b>${n}</b> litres. (One litre is a cube of 10 cm, so `
+      + `take the tank as ${n} cubes.) How many cubes along one edge?`,
+    more: null,
+  },
+];
+
+const pfRootWords = {
+  id: "pf-rootwords",
+  group: "pf-rootwords",
+  label: "Which root does it want?",
+  blurb: "A flat thing gives a square root; a solid one gives a cube root.",
+  heading: "Roots in the world",
+  instruction: () =>
+    "Nobody will say \"take the square root\" — the shape says it. A <b>flat</b> thing (an area, rows and "
+    + "columns, tiles on a floor) is made of TWO equal things, so it asks for a <b>square root</b>. A "
+    + "<b>solid</b> thing (a volume, a stack of cubes, a tank) is made of THREE, so it asks for a <b>cube "
+    + "root</b>. Decide that first; then write the number as its primes and pair them, or group them in threes.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    /* stepped along by `i`, so a page never asks the same shape twice running
+       — the deciding is the question, and two of a kind answers itself */
+    const which = (r.int(0, ROOT_STORIES.length - 1) + i) % ROOT_STORIES.length;
+    const t = ROOT_STORIES[which];
+    const tier = levelOf(o).id;
+    const pool = t.k === 2 ? (ROOT_SQUARES[tier] || ROOT_SQUARES.gentle) : (ROOT_CUBES[tier] || ROOT_CUBES.gentle);
+    return { story: which, n: r.pick(pool) };
+  },
+  render(item) {
+    const t = ROOT_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    return ask(t.say(item.n))
+      + ask(`${item.n} = ${primesOf(item.n).map(() => box()).join(" × ")}`)
+      + ask(`Which does this question want? ${tick("the square root", "the cube root")}`)
+      + ask(`So the answer is ${box()}.`)
+      + (t.more ? ask(`${t.more.ask()} ${box()} ${t.more.unit}`) : "");
+  },
+  worked() {
+    return worked(ask("A box is a <b>cube</b> and it holds <b>216</b> cubic centimetres. How long is each edge?")
+      + say("A box is a solid — three equal edges — so it is the <b>cube root</b>. 216 = 2 × 2 × 2 × 3 × 3 × 3, "
+        + "which groups into (2 × 2 × 2) and (3 × 3 × 3), so the edge is 2 × 3 = <b>6 cm</b>. If the question "
+        + "had been about a square carpet of 216 square centimetres there would be no whole answer at all — "
+        + "216 does not pair off — and that is the shape telling you which root it wanted."));
+  },
+  key(item) {
+    const t = ROOT_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    const out = primesOf(item.n).map((p) => want.num(p));
+    out.push(want.tick(t.k === 2 ? 0 : 1));
+    out.push(want.num(root));
+    if (t.more) out.push(want.num(t.more.value(root)));
+    return out;
+  },
+  answer(item) {
+    const t = ROOT_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    return [`${t.k === 2 ? "square" : "cube"} root of ${item.n} = ${root}`
+      + (t.more ? `, then ${t.more.value(root)} ${t.more.unit}` : "")];
+  },
+};
+
 /* ── the registry ───────────────────────────────────────────────────────── */
 
 const pfTreeDrag = treeEx("pf-tree-drag", "drag", "Factor tree — put the numbers in place", 1);
@@ -1236,5 +1361,5 @@ export const PRIME_EXERCISES = [
   pfHcf, pfLcm, pfVenn, pfWords,
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
-  pfWhy, pfSqRoot, pfCubeRoot,
+  pfWhy, pfSqRoot, pfCubeRoot, pfRootWords,
 ];

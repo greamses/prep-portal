@@ -255,6 +255,15 @@ export const ICON = {
       `<rect x="16.2" y="16.8" width="4.4" height="3.2" rx="1" fill="${GOLD}"/>`
   ),
 
+  /* A square and a cube side by side: the shape tells you which root. */
+  pfRootWords: svg(
+    `<rect x="2.6" y="11.4" width="8.4" height="8.4" rx="1" fill="${PAPER}"/>` +
+      `<rect x="13.6" y="11.4" width="7.4" height="7.4" rx="1" fill="${LEAF}"/>` +
+      `<path d="M13.6 11.4 16.4 8.2h7.4v7.4l-2.8 3.2z" fill="${LEAF}" opacity="0.55"/>` +
+      `<path d="M16.4 8.2h7.4v7.4" fill="none" stroke="${INK}" stroke-width="0.9"/>` +
+      bar(2.6, 8.2, 11, 8.2, 1.6, LOUD)
+  ),
+
   /* A till receipt: the two of them in the words a question is asked in. */
   pfWords: svg(
     `<rect x="4.6" y="3.4" width="14.8" height="17.2" rx="1.6" fill="${PAPER}"/>` +
