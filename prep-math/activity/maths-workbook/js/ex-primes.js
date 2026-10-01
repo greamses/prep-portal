@@ -42,6 +42,9 @@
      O  roots in the world      and last, the roots in the words a question
                                is asked in: a flat thing gives a square
                                root and a solid one gives a cube root
+                               — and the same questions the other way
+                               about, where a side is given and the area
+                               or the volume is what is wanted
 
    WHY THE TREE IS NOT MARKED BY POSITION. 36 splits as 4 × 9 or 6 × 6 or
    2 × 18, and every one of them ends on 2 × 2 × 3 × 3. That is the theorem —
@@ -96,7 +99,7 @@ export const PRIME_GROUPS = [
   { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
   { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
   { id: "pf-cuberoot", label: "Cube roots from the primes", blurb: "The same, in threes." },
-  { id: "pf-rootwords", label: "Roots in the world", blurb: "An area asks for a square root; a volume asks for a cube root." },
+  { id: "pf-rootwords", label: "Squares, cubes and roots in the world", blurb: "A side gives an area, an area gives a side — and the shape says which." },
 ];
 
 /* ── which numbers a level uses ──────────────────────────────────────────── */
@@ -1349,6 +1352,113 @@ const pfRootWords = {
   },
 };
 
+/* ── and the same questions the other way about ───────────────────────────
+   A side is given and the area is wanted; an edge is given and the volume is.
+   It is the easier direction and it is where the roots come FROM, so it is
+   worth doing in the same words: a child who has worked out that a 14 cm
+   square tile covers 196 cm² is not surprised later to be told that 196 cm²
+   of tile is 14 cm along the side.
+
+   The last line of each one is the primes, because this chapter has a reason
+   to care: squaring a number puts every one of its primes in twice, so the
+   answer's prime factors are the number's own, written out twice over. That
+   is the fact the roots are undone by, met here in the direction where it is
+   obvious. */
+
+const POW_SIDES = {
+  gentle: [4, 5, 6, 7, 8, 9, 10, 12],
+  middle: [11, 12, 14, 15, 16, 18, 20],
+  stretch: [21, 24, 25, 28, 30, 36],
+};
+const POW_EDGES = {
+  gentle: [2, 3, 4, 5],
+  middle: [6, 7, 8, 9, 10],
+  stretch: [11, 12, 14, 15],
+};
+
+const POW_STORIES = [
+  {
+    k: 2,
+    say: (n) => `A square tile is <b>${n} cm</b> along every side. What area does one tile cover?`,
+    unit: "cm²",
+  },
+  {
+    k: 2,
+    say: (n) => `Chairs are set out in a square with <b>${n}</b> in every row, and as many rows as there are `
+      + `chairs in a row. How many chairs are there altogether?`,
+    unit: "chairs",
+  },
+  {
+    k: 2,
+    say: (n) => `A square field is <b>${n} m</b> along each side. How many square metres of grass is that?`,
+    unit: "m²",
+  },
+  {
+    k: 3,
+    say: (n) => `A box is a cube with every edge <b>${n} cm</b>. How many cubic centimetres does it hold?`,
+    unit: "cm³",
+  },
+  {
+    k: 3,
+    say: (n) => `Sugar cubes are stacked into a big cube with <b>${n}</b> of them along every edge. How many `
+      + `sugar cubes is that?`,
+    unit: "cubes",
+  },
+  {
+    k: 3,
+    say: (n) => `A water tank is a cube <b>${n} m</b> along each edge. How many cubic metres does it hold?`,
+    unit: "m³",
+  },
+];
+
+const pfPowWords = {
+  id: "pf-powwords",
+  group: "pf-rootwords",
+  label: "Squaring and cubing in the world",
+  blurb: "A side is given; the area or the volume is wanted.",
+  heading: "Squares and cubes in the world",
+  instruction: () =>
+    "The same two shapes, the other way about. A <b>flat</b> thing is two equal things multiplied — a side times "
+    + "itself — and a <b>solid</b> one is three. Decide which the question is asking for, work it out, and then "
+    + "write the answer's primes: they are the primes of the number you started with, twice over for a square "
+    + "and three times over for a cube. That is the fact the roots undo.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const which = (r.int(0, POW_STORIES.length - 1) + i) % POW_STORIES.length;
+    const t = POW_STORIES[which];
+    const tier = levelOf(o).id;
+    const pool = t.k === 2 ? (POW_SIDES[tier] || POW_SIDES.gentle) : (POW_EDGES[tier] || POW_EDGES.gentle);
+    return { story: which, n: r.pick(pool) };
+  },
+  render(item) {
+    const t = POW_STORIES[item.story];
+    const v = item.n ** t.k;
+    return ask(t.say(item.n))
+      + ask(`Which does this question want? ${tick("squaring — two the same", "cubing — three the same")}`)
+      + ask(`${item.n} × ${item.n}${t.k === 3 ? ` × ${item.n}` : ""} = ${box()} ${t.unit}`)
+      + ask(`And its primes, which are the primes of ${item.n} ${t.k === 2 ? "twice" : "three times"} over: `
+        + `${primesOf(v).map(() => box()).join(" × ")}`);
+  },
+  worked() {
+    return worked(ask("A box is a cube with every edge <b>6 cm</b>. How many cubic centimetres does it hold?")
+      + say("A box is a solid, so it is <b>cubing</b>: 6 × 6 × 6 = <b>216 cm³</b>. And 6 = 2 × 3, so 216 is "
+        + "2 × 2 × 2 × 3 × 3 × 3 — the primes of 6, three times over. Which is why, if somebody hands you 216 "
+        + "and asks for the edge, you group those primes in threes and take one out of each: 2 × 3 = 6."));
+  },
+  key(item) {
+    const t = POW_STORIES[item.story];
+    const v = item.n ** t.k;
+    return [want.tick(t.k === 2 ? 0 : 1), want.num(v)]
+      .concat(primesOf(v).map((p) => want.num(p)));
+  },
+  answer(item) {
+    const t = POW_STORIES[item.story];
+    const v = item.n ** t.k;
+    return [`${item.n}${t.k === 2 ? "²" : "³"} = ${v} ${t.unit} = ${primesOf(v).join(" × ")}`];
+  },
+};
+
 /* ── the registry ───────────────────────────────────────────────────────── */
 
 const pfTreeDrag = treeEx("pf-tree-drag", "drag", "Factor tree — put the numbers in place", 1);
@@ -1361,5 +1471,5 @@ export const PRIME_EXERCISES = [
   pfHcf, pfLcm, pfVenn, pfWords,
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
-  pfWhy, pfSqRoot, pfCubeRoot, pfRootWords,
+  pfWhy, pfSqRoot, pfCubeRoot, pfPowWords, pfRootWords,
 ];
