@@ -34,9 +34,18 @@ export function shapesFor(n) {
 const CELL = 4.2;
 const PAD = 0.55;
 
-/** `n` blocks laid out in `per` to a row. */
+/**
+ * `n` blocks laid out in `per` to a row.
+ *
+ * NO WRAPPING, ever. One row of 27 blocks is ONE row, and a picture that
+ * folds it onto a second line because the paper is narrow has said the
+ * opposite of what the question is asking. A row too wide for the column is
+ * drawn at full width and SCALED DOWN by the browser instead (the svg carries
+ * a viewBox and the stylesheet caps it at 100%), so the blocks get smaller
+ * and the row stays a row.
+ */
 export function blocksSvg(n, per, tone = 0) {
-  const across = Math.max(1, Math.min(per, 24));
+  const across = Math.max(1, per);
   const rows = Math.ceil(n / across);
   const w = across * CELL;
   const h = rows * CELL;

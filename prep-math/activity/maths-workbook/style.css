@@ -1035,7 +1035,7 @@ thead .pv-chart__side {
 
 /* the blocks. Not place-value blocks: what makes twelve twelve here is three
    fours, not one ten and two ones, so they are all one size and one colour. */
-.pf-blocks { display: block; overflow: visible; }
+.pf-blocks { display: block; overflow: visible; max-width: 100%; height: auto; }
 .pf-cube { fill: #bfe3ff; stroke: #2a6ca8; stroke-width: 0.18; }
 .pf-shapes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 5mm; margin: 2mm 0; }
 .pf-shape { margin: 0; }
@@ -1150,6 +1150,16 @@ thead .pv-chart__side {
 .ft-row1 { background: #e6f3ff; }
 .ft-row2 { background: #eaf8e4; }
 .ft-row3 { background: #f6ebff; }
+/* A PRIME HAS ITS OWN COLOUR, whatever row it is on: this is the one thing
+   the whole picture is about — a branch stops at a prime — and a child
+   looking at a half-grown tree can see at a glance which circles are finished
+   and which still have to be split. */
+.ft-node.is-prime {
+  background: #ffd9d4;
+  border-color: #c0453f;
+  border-width: 0.6mm;
+  color: #7a2420;
+}
 .ft-node.is-top { background: #ffe9a8; border-width: 0.6mm; }
 .ft-node.is-said { border-style: solid; }
 .ft-node.is-empty { border-style: dashed; border-color: #8f887c; }
@@ -1272,7 +1282,9 @@ thead .pv-chart__side {
    even when the count obviously has not. */
 .rg { position: relative; margin: 2mm 0 1mm; }
 .rg-stage { display: block; min-height: 4.4mm; }
-.rg-art { display: block; overflow: visible; }
+/* a long row is SCALED to the column, never folded onto a second line: the
+   whole question is how many rows there are */
+.rg-art { display: block; overflow: visible; max-width: 100%; height: auto; }
 .rg-cube { stroke: #2a6ca8; stroke-width: 0.18; }
 .rg-cube--0 { fill: #bfe3ff; }
 .rg-cube--1 { fill: #c8f0c0; stroke: #3f7f34; }

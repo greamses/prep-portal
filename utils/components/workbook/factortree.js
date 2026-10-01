@@ -295,10 +295,15 @@ export function treeHtml({ tree, mode = "grow", answer = false, chips = null, la
     }
     const top = at === "";
     const shown = answer || top;
-    /* a colour per row, so a tree reads as rows of the same thing rather than
-       as a heap of circles — and so a child can say "the green ones" */
+    /* A colour per row, so a tree reads as rows of the same thing rather than
+       as a heap of circles — and A COLOUR OF ITS OWN FOR A PRIME, whatever row
+       it lands on. That is the one thing the picture is for: a branch stops at
+       a prime, and a child looking at a half-finished tree should be able to
+       see at a glance which circles are finished and which still have to be
+       split. */
+    const isEnd = Number.isFinite(Number(p.node.v)) && isPrime(Number(p.node.v));
     knobs.push(
-      `<span class="ft-node ft-row${p.y % 4}${top ? " is-top" : ""}${p.node.kids ? "" : " is-leaf"}${shown ? " is-said" : ""}"`
+      `<span class="ft-node ft-row${p.y % 4}${isEnd ? " is-prime" : ""}${top ? " is-top" : ""}${p.node.kids ? "" : " is-leaf"}${shown ? " is-said" : ""}"`
       + ` data-at="${at}" data-v="${p.node.v}" data-row="${p.y}"`
       + ` style="left:${cx.toFixed(1)}mm;top:${cy.toFixed(1)}mm">`
       + `${shown ? p.node.v : ""}</span>`
@@ -409,6 +414,7 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
       node.textContent = v == null ? "" : v;
       node.classList.toggle("is-said", v != null);
       node.classList.toggle("is-empty", v == null);
+      node.classList.toggle("is-prime", v != null && isPrime(v));
     });
     wireDrag();
   }
@@ -607,6 +613,9 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
         input.addEventListener("input", () => {
           const v = input.value.trim();
           t.v = v === "" ? null : Number(v);
+          /* the circle takes the prime's colour the moment a prime is typed
+             into it, which is the page saying "that branch is finished" */
+          node.classList.toggle("is-prime", t.v != null && isPrime(Number(t.v)));
           tell();
         });
         node.appendChild(input);
