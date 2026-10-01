@@ -1700,6 +1700,147 @@ const pfRootWords = {
   },
 };
 
+/* ── THE SAME QUESTIONS WITH SOMETHING AFTER THEM ─────────────────────────
+   The six above stop at the root, which is where a textbook stops. Out in
+   the world nobody wants the side of the square: they want the fence round
+   it, or the four tiles it cuts into, or what the paint will cost. So the
+   root is the FIRST step here and never the last one, which is the only way
+   to find out whether a child can use it or has merely learnt to do it.
+
+   Everything still comes out exactly, including the second step — a hall of
+   324 m² has an 18 m side and a 72 m fence, and a cube of 512 cm³ cuts into
+   eight cubes of edge 4. */
+
+const HARD_SQUARES = {
+  gentle: [196, 324, 400],
+  middle: [400, 576, 900],
+  stretch: [900, 1296, 1600],
+};
+const HARD_CUBES = {
+  gentle: [64, 216, 512],
+  middle: [512, 1000, 1728],
+  stretch: [1728, 2744, 5832],
+};
+
+const HARD_STORIES = [
+  {
+    k: 2,
+    say: (n, o) => `A square hall has a floor of <b>${n}</b> square metres. A skirting board is to go all the `
+      + `way round the edge of it, and it costs <b>₦${o.price}</b> a metre.`,
+    asks: (n, r, o) => [
+      ["How long is one side of the hall?", r, "m"],
+      ["How many metres of board is that, all the way round?", r * 4, "m"],
+      ["And what will the board cost?", r * 4 * o.price, "naira"],
+    ],
+    extra: (rnd) => ({ price: rnd.pick([200, 250, 500]) }),
+  },
+  {
+    k: 2,
+    say: (n) => `A square carpet of <b>${n}</b> square metres is cut into <b>four</b> equal squares.`,
+    asks: (n, r) => [
+      ["How long is the side of the big carpet?", r, "m"],
+      ["How long is the side of each small one?", r / 2, "m"],
+      ["And what is the area of each small one?", n / 4, "m²"],
+    ],
+  },
+  {
+    k: 2,
+    say: (n) => `A square courtyard of <b>${n}</b> square metres is to be covered with square slabs, each one `
+      + "a metre by a metre.",
+    asks: (n, r) => [
+      ["How long is one side of the courtyard?", r, "m"],
+      ["How many slabs are needed along one side?", r, "slabs"],
+      ["How many slabs altogether?", n, "slabs"],
+    ],
+  },
+  {
+    k: 3,
+    say: (n) => `A box is a cube and it holds <b>${n}</b> cubic centimetres. It is to be wrapped in paper, all `
+      + "six faces of it.",
+    asks: (n, r) => [
+      ["How long is each edge?", r, "cm"],
+      ["What is the area of one face?", r * r, "cm²"],
+      ["How much paper does all six faces take?", 6 * r * r, "cm²"],
+    ],
+  },
+  {
+    k: 3,
+    say: (n) => `A cube of cheese of <b>${n}</b> cubic centimetres is cut into <b>eight</b> equal cubes.`,
+    asks: (n, r) => [
+      ["How long is the edge of the big cube?", r, "cm"],
+      ["How long is the edge of each little one?", r / 2, "cm"],
+      ["And how many cubic centimetres is each little one?", n / 8, "cm³"],
+    ],
+  },
+  {
+    k: 3,
+    say: (n) => `<b>${n}</b> small cubes are stacked into one big cube with none left over.`,
+    asks: (n, r) => [
+      ["How many are along one edge?", r, "cubes"],
+      ["How many are on one face of it?", r * r, "cubes"],
+      ["How many of them can be seen from outside — that is, all of them except the ones in the middle?",
+        n - (r - 2) ** 3, "cubes"],
+    ],
+    needs: (r) => r >= 3,
+  },
+];
+
+const pfRootWords2 = {
+  id: "pf-rootwords-2",
+  group: "pf-rootwords",
+  label: "And what the root is FOR",
+  blurb: "The root is the first step, never the last one.",
+  heading: "Roots in the world — and what comes after",
+  instruction: () =>
+    "Nobody wants the side of a square for its own sake; they want the fence round it, or the slabs that cover "
+    + "it, or what the paint will cost. So in these the root is the <b>first</b> step and never the last. Find "
+    + "it the way you have been finding it — pair the primes off, or group them in threes — and then answer "
+    + "what the question actually asked.",
+  cols: 1,
+  defaultCount: 1,
+  hardest: true,
+  make(r, o, k, i) {
+    const tier = levelOf(o).id;
+    for (let go = 0; go < 60; go++) {
+      const which = (r.int(0, HARD_STORIES.length - 1) + i) % HARD_STORIES.length;
+      const t = HARD_STORIES[which];
+      const pool = t.k === 2 ? (HARD_SQUARES[tier] || HARD_SQUARES.gentle) : (HARD_CUBES[tier] || HARD_CUBES.gentle);
+      const n = r.pick(pool);
+      const root = rootOf(n, t.k);
+      if (!root) continue;
+      if (t.needs && !t.needs(root)) continue;
+      return { story: which, n, ...(t.extra ? t.extra(r) : {}) };
+    }
+    return { story: 0, n: 324, price: 500 };
+  },
+  render(item) {
+    const t = HARD_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    return ask(t.say(item.n, item))
+      + ask(`Which root does the first step want? ${tick("the square root", "the cube root")}`)
+      + t.asks(item.n, root, item).map(([q, , unit]) => ask(`${q} ${box()} ${unit}`)).join("");
+  },
+  worked() {
+    return worked(ask("A square hall has a floor of <b>324</b> square metres. A skirting board costs <b>₦500</b> "
+      + "a metre and is to go all the way round it.")
+      + say("The floor is flat, so the first step is the <b>square root</b>: 324 = 2 × 2 × 3 × 3 × 3 × 3, which "
+        + "pairs off into (2 × 2), (3 × 3), (3 × 3), so the side is 2 × 3 × 3 = <b>18 m</b>. All the way round "
+        + "is 4 × 18 = <b>72 m</b>, and at ₦500 a metre that is <b>₦36,000</b>. The root was the first line of "
+        + "three, which is what a root usually is."));
+  },
+  key(item) {
+    const t = HARD_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    return [want.tick(t.k === 2 ? 0 : 1)]
+      .concat(t.asks(item.n, root, item).map(([, v]) => want.num(v)));
+  },
+  answer(item) {
+    const t = HARD_STORIES[item.story];
+    const root = rootOf(item.n, t.k);
+    return [t.asks(item.n, root, item).map(([, v, unit]) => `${v} ${unit}`).join(", ")];
+  },
+};
+
 /* ── and the same questions the other way about ───────────────────────────
    A side is given and the area is wanted; an edge is given and the volume is.
    It is the easier direction and it is where the roots come FROM, so it is
@@ -1820,5 +1961,5 @@ export const PRIME_EXERCISES = [
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
   pfEuclid, pfEuclidTake, pfFmWords, pfMany3, pfMany4,
-  pfWhy, pfSqRoot, pfCubeRoot, pfPowWords, pfRootWords,
+  pfWhy, pfSqRoot, pfCubeRoot, pfPowWords, pfRootWords, pfRootWords2,
 ];
