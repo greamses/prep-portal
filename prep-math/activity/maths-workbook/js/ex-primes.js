@@ -24,6 +24,11 @@
      H  in index form          and write THAT shorter, with indices
      I  how many factors       and now the payoff: the index form counts the
                                factors without listing one of them
+     J  HCF and LCM           and the other payoff, the one this is all FOR:
+                               two numbers' primes laid in two rings, and the
+                               highest common factor read off the middle while
+                               the lowest common multiple is read off the whole
+                               picture
 
    WHY THE TREE IS NOT MARKED BY POSITION. 36 splits as 4 × 9 or 6 × 6 or
    2 × 18, and every one of them ends on 2 × 2 × 3 × 3. That is the theorem —
@@ -40,10 +45,11 @@
 import { want } from "/utils/components/workbook/want.js";
 import {
   isPrime, primesOf, indexOf_, factorCount, factorsOf, treeOf, treeHtml, ringOf,
+  sharedPrimes, ownPrimes, hcfOf, lcmOf,
 } from "/utils/components/workbook/factortree.js";
 import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
-import { arrayOf, ladder, ladderKey } from "./primeart.js";
+import { arrayOf, ladder, ladderKey, vennHtml, vennParts } from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
 
 /* ── the paper's furniture ───────────────────────────────────────────────── */
@@ -66,6 +72,9 @@ export const PRIME_GROUPS = [
   { id: "pf-product", label: "Product of prime factors", blurb: "Write what you found as one multiplication." },
   { id: "pf-index", label: "In index form", blurb: "2 × 2 × 3 × 5 written shorter: 2² × 3 × 5." },
   { id: "pf-count", label: "How many factors?", blurb: "The index form counts them without listing one." },
+  { id: "pf-hcf", label: "Highest common factor", blurb: "What two numbers share: the primes they both have." },
+  { id: "pf-lcm", label: "Lowest common multiple", blurb: "The smallest number both of them go into." },
+  { id: "pf-venn", label: "Both, from two rings", blurb: "One picture: the middle is the HCF and the whole of it is the LCM." },
 ];
 
 /* ── which numbers a level uses ──────────────────────────────────────────── */
@@ -471,6 +480,161 @@ const pfCount = {
   },
 };
 
+/* ═══ J. HCF and LCM ══════════════════════════════════════════════════════
+   Everything in this chapter was for this. A child who can only find the HCF
+   by listing both sets of factors and looking down them is doing arithmetic
+   that falls apart at three figures; the same child with the prime factors
+   does 504 and 540 in their head.
+
+   THE PAIRS ARE CHOSEN, not taken at random. Each one shares something (an
+   HCF of 1 teaches the method nothing), and no ring holds more than three
+   primes — four boxes in a stack is taller than the ring it sits in, and a
+   picture a child cannot read is not a picture. */
+
+const PAIRS = {
+  gentle: [[12, 18], [8, 12], [10, 15], [12, 20], [18, 24], [20, 30], [9, 15], [16, 24]],
+  middle: [[24, 36], [30, 45], [28, 42], [36, 48], [40, 60], [45, 60], [27, 45], [50, 75]],
+  stretch: [[84, 126], [90, 135], [126, 210], [60, 126], [100, 150], [90, 126], [84, 132], [140, 210]],
+};
+const pairsFor = (o) => PAIRS[levelOf(o).id] || PAIRS.gentle;
+
+/** Two numbers written as their primes, with × between: "2 × 2 × 3". */
+const primeLine = (n) => primesOf(n).join(" × ");
+
+const pfHcf = {
+  id: "pf-hcf",
+  group: "pf-hcf",
+  label: "Highest common factor",
+  blurb: "Write both as primes, ring what they share, multiply it.",
+  heading: "Highest common factor",
+  instruction: () =>
+    "The <b>highest common factor</b> of two numbers is the biggest number that divides them both. Write each "
+    + "one as its primes, find the primes they BOTH have — counting them, so two 2s in each list means two 2s "
+    + "shared — and multiply those together. Nothing else can divide both, because anything that did would be "
+    + "made of primes they both have, and you have just taken all of those.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(pairsFor(o));
+    return { a, b };
+  },
+  render(item) {
+    const shared = sharedPrimes(item.a, item.b);
+    return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+      + ask(`${item.a} = ${primesOf(item.a).map(() => box()).join(" × ")}`)
+      + ask(`${item.b} = ${primesOf(item.b).map(() => box()).join(" × ")}`)
+      + ask(`What they both have: ${shared.map(() => box()).join(" × ")}`)
+      + ask(`So the HCF of ${item.a} and ${item.b} is ${box()}.`);
+  },
+  worked() {
+    return worked(lead("<b>36</b> and <b>48</b>")
+      + say("36 = 2 × 2 × 3 × 3 and 48 = 2 × 2 × 2 × 2 × 3. Go along them together: they both have a 2, and both "
+        + "have a second 2 — but 36 has no third 2, so the sharing stops there. They both have one 3; 36 has "
+        + "another but 48 does not. So they share 2 × 2 × 3 = <b>12</b>, and 12 is the highest common factor."));
+  },
+  key(item) {
+    return primesOf(item.a).map((p) => want.num(p))
+      .concat(primesOf(item.b).map((p) => want.num(p)))
+      .concat(sharedPrimes(item.a, item.b).map((p) => want.num(p)))
+      .concat([want.num(hcfOf(item.a, item.b))]);
+  },
+  answer(item) {
+    return [`HCF of ${item.a} and ${item.b} = ${sharedPrimes(item.a, item.b).join(" × ") || 1} = ${hcfOf(item.a, item.b)}`];
+  },
+};
+
+const pfLcm = {
+  id: "pf-lcm",
+  group: "pf-lcm",
+  label: "Lowest common multiple",
+  blurb: "Everything they share, and everything they do not.",
+  heading: "Lowest common multiple",
+  instruction: () =>
+    "The <b>lowest common multiple</b> is the smallest number that BOTH of them go into. Take what they share, "
+    + "and then everything each of them has on top of that: the shared part is only counted once, because it is "
+    + "already there. Leave any of it out and one of the two will not go in.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(pairsFor(o));
+    return { a, b };
+  },
+  render(item) {
+    const parts = vennParts(item.a, item.b);
+    const all = parts.left.concat(parts.mid, parts.right);
+    return lead(`<b>${item.a}</b> = ${primeLine(item.a)} &nbsp;and&nbsp; <b>${item.b}</b> = ${primeLine(item.b)}`)
+      + ask(`They share: ${parts.mid.map(() => box()).join(" × ")}`)
+      + ask(`${item.a} also has ${parts.left.length ? parts.left.map(() => box()).join(" × ") : "nothing else"}, `
+        + `and ${item.b} also has ${parts.right.length ? parts.right.map(() => box()).join(" × ") : "nothing else"}.`)
+      + ask(`All of that multiplied: the LCM of ${item.a} and ${item.b} is ${box()}.`)
+      + ask(`Check: does ${item.a} go into it? ${tick("yes", "no")}`);
+  },
+  worked() {
+    return worked(lead("<b>36</b> and <b>48</b>")
+      + say("They share 2 × 2 × 3 = 12. On top of that 36 has another 3, and 48 has another 2 × 2. So the LCM is "
+        + "12 × 3 × 4 = <b>144</b>. Check it: 144 ÷ 36 = 4 and 144 ÷ 48 = 3, so both go in — and nothing smaller "
+        + "could, because taking anything out would leave one of them short of a prime it needs."));
+  },
+  key(item) {
+    const parts = vennParts(item.a, item.b);
+    return parts.mid.map((p) => want.num(p))
+      .concat(parts.left.map((p) => want.num(p)))
+      .concat(parts.right.map((p) => want.num(p)))
+      .concat([want.num(lcmOf(item.a, item.b)), want.tick(0)]);
+  },
+  answer(item) {
+    return [`LCM of ${item.a} and ${item.b} = ${lcmOf(item.a, item.b)}`];
+  },
+};
+
+const pfVenn = {
+  id: "pf-venn",
+  group: "pf-venn",
+  label: "Both, from two rings",
+  blurb: "Fill the rings once and read off both answers.",
+  heading: "Both, from two rings",
+  instruction: () =>
+    "Put the primes of each number in its own ring, and the ones they SHARE in the part that belongs to both — "
+    + "each prime in a box of its own, so two 2s take two boxes. Then read both answers straight off the "
+    + "picture: the <b>HCF</b> is the middle multiplied, and the <b>LCM</b> is the whole picture multiplied.",
+  cols: 1,
+  defaultCount: 1,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(pairsFor(o));
+    return { a, b };
+  },
+  render(item) {
+    return lead(`<b>${item.a}</b> = ${primeLine(item.a)} &nbsp;and&nbsp; <b>${item.b}</b> = ${primeLine(item.b)}`)
+      + `<div class="rw-art">${vennHtml(item.a, item.b)}</div>`
+      + ask(`The middle, multiplied — the HCF: ${box()}`)
+      + ask(`The whole picture, multiplied — the LCM: ${box()}`)
+      + ask(`And one more thing to notice: HCF × LCM = ${box()}, which is ${item.a} × ${item.b}.`);
+  },
+  worked() {
+    return worked(lead("<b>36</b> and <b>48</b>")
+      + `<div class="rw-art">${vennHtml(36, 48, { answer: true })}</div>`
+      + say("The middle is 2 × 2 × 3 = <b>12</b>, the highest common factor. The whole picture is "
+        + "3 × 2 × 2 × 3 × 2 × 2 = <b>144</b>, the lowest common multiple. And 12 × 144 = 1728, which is exactly "
+        + "36 × 48. It has to be: multiplying the HCF by the LCM uses the shared primes twice and each number's "
+        + "own primes once — and that is what 36 × 48 is made of."));
+  },
+  key(item) {
+    const parts = vennParts(item.a, item.b);
+    const out = [];
+    if (parts.left.length) out.push(want.set(...parts.left));
+    if (parts.mid.length) out.push(want.set(...parts.mid));
+    if (parts.right.length) out.push(want.set(...parts.right));
+    out.push(want.num(hcfOf(item.a, item.b)));
+    out.push(want.num(lcmOf(item.a, item.b)));
+    out.push(want.num(item.a * item.b));
+    return out;
+  },
+  answer(item) {
+    return [`HCF ${hcfOf(item.a, item.b)}, LCM ${lcmOf(item.a, item.b)} `
+      + `(and ${hcfOf(item.a, item.b)} × ${lcmOf(item.a, item.b)} = ${item.a * item.b})`];
+  },
+};
+
 /* ── the registry ───────────────────────────────────────────────────────── */
 
 const pfTreeDrag = treeEx("pf-tree-drag", "drag", "Factor tree — put the numbers in place", 1);
@@ -480,4 +644,5 @@ export const PRIME_EXERCISES = [
   pfGroup, pfComposite, pfStrike, pfFactors,
   pfTreeDrag, pfTreeGrow,
   pfLadder, pfProduct, pfIndex, pfCount,
+  pfHcf, pfLcm, pfVenn,
 ];

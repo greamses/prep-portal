@@ -31,7 +31,7 @@
    ========================================================================== */
 
 import { colSheet } from "./colsheet.js";
-import { primesOf } from "/utils/components/workbook/factortree.js";
+import { primesOf, ownPrimes, sharedPrimes } from "/utils/components/workbook/factortree.js";
 
 /* millimetres, like every other drawing on this paper */
 const CELL = 4.2;        // one block
@@ -136,3 +136,58 @@ export function ladderKey(n) {
   });
   return out;
 }
+
+/* ── the two rings ─────────────────────────────────────────────────────────
+   THE PICTURE THAT GIVES BOTH ANSWERS AT ONCE. The primes of one number go in
+   one ring, the primes of the other in the other, and what they share goes in
+   the part that belongs to both. Then:
+
+     the HIGHEST COMMON FACTOR is the middle, multiplied
+     the LOWEST COMMON MULTIPLE is the whole picture, multiplied
+
+   and a child can SEE why — the middle is what divides both, and the whole
+   picture is the smallest thing both will go into, because taking anything
+   out of it would leave one of them unable to.
+
+   The counting is what makes it hard and the picture is what makes it easy:
+   36 is 2 × 2 × 3 × 3 and 48 is 2 × 2 × 2 × 2 × 3, so the middle holds TWO 2s
+   and one 3 — not "a 2 and a 3". A ring with one box per prime cannot be
+   filled in wrongly in that particular way, which is why it is drawn as boxes
+   and not as a list. */
+
+const RING_R = 25;        // mm
+const RING_GAP = 26;      // between the centres
+
+export function vennHtml(a, b, { answer = false } = {}) {
+  const own = { left: ownPrimes(a, b), mid: sharedPrimes(a, b), right: ownPrimes(b, a) };
+  const cx1 = RING_R + 2;
+  const cx2 = cx1 + RING_GAP;
+  const w = cx2 + RING_R + 2;
+  const h = RING_R * 2 + 4;
+  const at = { left: cx1 - RING_GAP / 2 - 3, mid: (cx1 + cx2) / 2, right: cx2 + RING_GAP / 2 + 3 };
+
+  const stack = (where, list) => {
+    const cell = (v) => (answer
+      ? `<span class="pf-venn__said">${v}</span>`
+      : `<span class="wb-answer"></span>`);
+    return `<span class="pf-venn__stack" style="left:${at[where].toFixed(1)}mm">`
+      + list.map(cell).join("")
+      + `</span>`;
+  };
+
+  return `<div class="pf-venn wb-nomath" style="--vn-w:${w.toFixed(1)}mm;--vn-h:${h.toFixed(1)}mm">`
+    + `<svg class="pf-venn__rings" viewBox="0 0 ${w.toFixed(1)} ${h.toFixed(1)}"`
+    + ` width="${w.toFixed(1)}mm" height="${h.toFixed(1)}mm" aria-hidden="true">`
+    + `<circle cx="${cx1}" cy="${(h / 2).toFixed(1)}" r="${RING_R}"/>`
+    + `<circle cx="${cx2}" cy="${(h / 2).toFixed(1)}" r="${RING_R}"/>`
+    + `</svg>`
+    + `<span class="pf-venn__cap" style="left:${(cx1 - RING_GAP / 2 - 3).toFixed(1)}mm">${a}</span>`
+    + `<span class="pf-venn__cap" style="left:${(cx2 + RING_GAP / 2 + 3).toFixed(1)}mm">${b}</span>`
+    + stack("left", own.left) + stack("mid", own.mid) + stack("right", own.right)
+    + `</div>`;
+}
+
+/** The three stacks, in the order the picture draws them. */
+export const vennParts = (a, b) => ({
+  left: ownPrimes(a, b), mid: sharedPrimes(a, b), right: ownPrimes(b, a),
+});

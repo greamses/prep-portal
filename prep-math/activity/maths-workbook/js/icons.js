@@ -17,7 +17,7 @@
    ========================================================================== */
 
 import {
-  ICON as BASE, svg, bar, LOUD, QUIET, PAPER, GOLD, LEAF, WARM,
+  ICON as BASE, svg, bar, LOUD, QUIET, PAPER, GOLD, LEAF, WARM, INK,
 } from "/utils/components/workbook/icons.js";
 
 /* A written sum: the rule across the page and the short answer line under it.
@@ -212,6 +212,26 @@ export const ICON = {
       bar(12, 6.2, 12, 13.4, 1.8, QUIET) + bar(16, 6.2, 16, 13.4, 1.8, QUIET) +
       `<circle cx="17.4" cy="17.4" r="5" fill="${LOUD}"/>` +
       `<text x="17.4" y="20.4" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" font-weight="800" fill="#fff">n</text>`
+  ),
+
+  /* Two rings overlapping, and the part that belongs to both. */
+  pfHcf: svg(
+    `<circle cx="9" cy="12" r="7.4" fill="${PAPER}" opacity="0.55"/>` +
+      `<circle cx="15" cy="12" r="7.4" fill="${LEAF}" opacity="0.55"/>` +
+      `<path d="M12 5.4a7.4 7.4 0 0 0 0 13.2 7.4 7.4 0 0 0 0-13.2z" fill="${LOUD}"/>`
+  ),
+  /* The same two rings, with the WHOLE of them picked out. */
+  pfLcm: svg(
+    `<circle cx="9" cy="12" r="7.4" fill="${LOUD}" opacity="0.75"/>` +
+      `<circle cx="15" cy="12" r="7.4" fill="${LOUD}" opacity="0.75"/>` +
+      `<circle cx="9" cy="12" r="7.4" fill="none" stroke="${INK}" stroke-width="1"/>` +
+      `<circle cx="15" cy="12" r="7.4" fill="none" stroke="${INK}" stroke-width="1"/>`
+  ),
+  /* Both answers off one picture: the rings with a mark in each part. */
+  pfVenn: svg(
+    `<circle cx="9" cy="12" r="7.4" fill="none" stroke="${QUIET}" stroke-width="1.4"/>` +
+      `<circle cx="15" cy="12" r="7.4" fill="none" stroke="${QUIET}" stroke-width="1.4"/>` +
+      dot(5.8, 12, 1.9, PAPER) + dot(12, 12, 2.2, LOUD) + dot(18.2, 12, 1.9, LEAF)
   ),
 
   /* Scissors over two bars cut differently: the unlike denominators. */

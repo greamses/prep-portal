@@ -1195,7 +1195,7 @@ thead .pv-chart__side {
   transform: rotate(var(--a)) translate(0) rotate(calc(-1 * var(--a))) scale(0.4);
   opacity: 0;
   transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.3), opacity 0.2s ease;
-  transition-delay: calc(var(--i) * 0.035s);
+  transition-delay: var(--d, 0ms);
   box-shadow: 0 1px 3px rgba(42, 39, 35, 0.25);
 }
 .ft-ring.is-out .ft-chip {
@@ -1294,3 +1294,47 @@ thead .pv-chart__side {
 }
 .rg-btn:active { transform: translateY(0.4mm); }
 @media print { .rg-bar { display: none; } }
+
+/* ── the two rings (primeart.js vennHtml) ─────────────────────────────────
+   The primes of one number in one ring, of the other in the other, and what
+   they share in the part that belongs to both. One box per prime, because
+   what a child gets wrong is the COUNT — two 2s shared, not "a 2". */
+.pf-venn { position: relative; width: var(--vn-w); height: var(--vn-h); margin: 3mm 0 1mm; }
+.pf-venn__rings { position: absolute; top: 0; left: 0; }
+.pf-venn__rings circle { fill: #f2f7fc; fill-opacity: 0.75; stroke: #2a2723; stroke-width: 0.4; }
+/* the name of each ring, INSIDE it at the top — above the picture it ran into
+   the line of writing over the drawing, and a label that has to be read twice
+   to see which ring it belongs to is not a label */
+.pf-venn__cap {
+  position: absolute;
+  top: 3.2mm;
+  transform: translateX(-50%);
+  padding: 0 1.2mm;
+  border-radius: 1mm;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9.5pt;
+  font-weight: 700;
+}
+.pf-venn__stack {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4mm;
+  align-items: center;
+}
+.pf-venn__stack .wb-answer { width: 11mm; height: 8mm; }
+.pf-venn__said {
+  display: grid;
+  place-items: center;
+  width: 11mm;
+  height: 8mm;
+  border: 0.35mm dashed #8f887c;
+  border-radius: 1mm;
+  background: #fffdf8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+  font-weight: 700;
+}

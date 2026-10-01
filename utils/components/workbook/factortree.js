@@ -68,6 +68,45 @@ export function indexOf_(n) {
   return out;
 }
 
+/**
+ * WHAT TWO NUMBERS HAVE BETWEEN THEM, as primes.
+ *
+ *   sharedPrimes(36, 48) → [2, 2, 3]    what is in both lists
+ *   ownPrimes(36, 48)    → [3]          what 36 has and 48 has not
+ *
+ * Multisets, not sets: 36 is 2 × 2 × 3 × 3 and 48 is 2 × 2 × 2 × 2 × 3, and
+ * what they share is TWO 2s and one 3 — the smaller count of each prime, not
+ * merely the fact that both have some. That counting is the whole of the
+ * highest common factor, and the thing a child gets wrong when they are told
+ * "the primes they both have" without being told how many.
+ */
+export function sharedPrimes(a, b) {
+  const left = primesOf(b);
+  const out = [];
+  primesOf(a).forEach((p) => {
+    const at = left.indexOf(p);
+    if (at >= 0) { out.push(p); left.splice(at, 1); }
+  });
+  return out;
+}
+
+/** The primes of `a` that are not shared with `b`. */
+export function ownPrimes(a, b) {
+  const left = primesOf(a);
+  sharedPrimes(a, b).forEach((p) => {
+    const at = left.indexOf(p);
+    if (at >= 0) left.splice(at, 1);
+  });
+  return left;
+}
+
+/** The highest number that divides both: everything they share, multiplied. */
+export const hcfOf = (a, b) => sharedPrimes(a, b).reduce((t, p) => t * p, 1);
+
+/** The lowest number both divide into: everything in the picture, multiplied. */
+export const lcmOf = (a, b) =>
+  ownPrimes(a, b).concat(sharedPrimes(a, b), ownPrimes(b, a)).reduce((t, p) => t * p, 1);
+
 /** How many factors a number has, from its index form: (a+1)(b+1)… */
 export const factorCount = (n) => indexOf_(n).reduce((t, [, k]) => t * (k + 1), 1);
 
@@ -360,7 +399,10 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
       /* the angle is the chip's own; the spread is animated, so they swing
          out one after another round the circumference */
       chip.style.setProperty("--a", `${(-90 - spread / 2 + step / 2 + i * step).toFixed(1)}deg`);
-      chip.style.setProperty("--i", String(i));
+      /* they swing out one after another, but the last one must not keep a
+         child waiting: ten factors at 35ms each is most of a second before
+         the ring is all there, so the stagger is capped */
+      chip.style.setProperty("--d", `${Math.min(i * 30, 240)}ms`);
       ring.appendChild(chip);
     });
     stage.appendChild(ring);
