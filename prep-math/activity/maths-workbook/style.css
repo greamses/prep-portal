@@ -1163,14 +1163,17 @@ thead .pv-chart__side {
 }
 .ft-tray em { font-style: normal; color: #6b645a; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 8.5pt; }
 .wb-live .ft-tray { display: none; }
+/* ROUND, like the circles they are going into: a factor on its way into a
+   circle of the tree is the same kind of thing as what is already in one, and
+   a square chip said it was something else. */
 .ft-chip {
   display: grid;
   place-items: center;
-  min-width: 9.4mm;
-  height: 9.4mm;
-  padding: 0 1.2mm;
+  width: 9.8mm;
+  height: 9.8mm;
+  padding: 0;
   border: 0.4mm solid #2a2723;
-  border-radius: 2mm;
+  border-radius: 50%;
   background: #ffe9a8;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 10pt;
@@ -1191,7 +1194,7 @@ thead .pv-chart__side {
   position: absolute;
   left: 0;
   top: 0;
-  margin: -4.7mm 0 0 -4.7mm;
+  margin: -4.9mm 0 0 -4.9mm;
   transform: rotate(var(--a)) translate(0) rotate(calc(-1 * var(--a))) scale(0.4);
   opacity: 0;
   transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.3), opacity 0.2s ease;
@@ -1219,11 +1222,11 @@ thead .pv-chart__side {
   pointer-events: none;
   display: grid;
   place-items: center;
-  min-width: 9.4mm;
-  height: 9.4mm;
-  padding: 0 1.2mm;
+  width: 9.8mm;
+  height: 9.8mm;
+  padding: 0;
   border: 0.4mm solid #2a2723;
-  border-radius: 2mm;
+  border-radius: 50%;
   background: #ffe9a8;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-weight: 700;

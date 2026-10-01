@@ -29,6 +29,16 @@
                                highest common factor read off the middle while
                                the lowest common multiple is read off the whole
                                picture
+     K  in the shops           the same two, in the words a question is
+                               actually asked in — which is where the work
+                               is, because nobody is ever told which one
+                               they need
+     L  what squaring does     the discovery the two sections after it rest
+                               on: square a number and every one of its
+                               primes turns up twice as often
+     M  square roots           so pair the primes off and take one out of
+                               each pair
+     N  cube roots             and in threes, for the same reason
 
    WHY THE TREE IS NOT MARKED BY POSITION. 36 splits as 4 × 9 or 6 × 6 or
    2 × 18, and every one of them ends on 2 × 2 × 3 × 3. That is the theorem —
@@ -45,7 +55,7 @@
 import { want } from "/utils/components/workbook/want.js";
 import {
   isPrime, primesOf, indexOf_, factorCount, factorsOf, treeOf, treeHtml, ringOf,
-  sharedPrimes, ownPrimes, hcfOf, lcmOf,
+  sharedPrimes, ownPrimes, hcfOf, lcmOf, rootOf, oddPrimes,
 } from "/utils/components/workbook/factortree.js";
 import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
@@ -75,6 +85,10 @@ export const PRIME_GROUPS = [
   { id: "pf-hcf", label: "Highest common factor", blurb: "What two numbers share: the primes they both have." },
   { id: "pf-lcm", label: "Lowest common multiple", blurb: "The smallest number both of them go into." },
   { id: "pf-venn", label: "Both, from two rings", blurb: "One picture: the middle is the HCF and the whole of it is the LCM." },
+  { id: "pf-words", label: "HCF and LCM in the shops", blurb: "The hard part is knowing which one the question wants." },
+  { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
+  { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
+  { id: "pf-cuberoot", label: "Cube roots from the primes", blurb: "The same, in threes." },
 ];
 
 /* ── which numbers a level uses ──────────────────────────────────────────── */
@@ -635,6 +649,320 @@ const pfVenn = {
   },
 };
 
+/* ═══ K. HCF and LCM in the shops ═════════════════════════════════════════
+   THE WHOLE DIFFICULTY of these at school is not the arithmetic, it is
+   knowing which of the two the question is asking for, and no amount of
+   practice at finding the HCF teaches that. So the choosing is a separate
+   thing to answer, and it is marked.
+
+   The test that works, and that the instruction gives them: are you CUTTING
+   SOMETHING UP (so the answer is smaller than what you started with — the
+   HCF), or are you WAITING FOR THINGS TO COME ROUND TOGETHER (so the answer
+   is bigger — the LCM)? Every one of these stories is one or the other, and
+   a child who asks that question gets them all right. */
+
+const STORIES = [
+  {
+    kind: "hcf",
+    say: (a, b) => `Ada has a ribbon ${a} cm long and another ${b} cm long. She cuts both of them into `
+      + `pieces that are all exactly the same length, with none left over. What is the LONGEST each piece can be?`,
+    more: { ask: (a, b, v) => `And how many pieces does she get altogether?`, value: (a, b, v) => a / v + b / v },
+  },
+  {
+    kind: "hcf",
+    say: (a, b) => `A teacher has ${a} pencils and ${b} crayons. She shares them out so that every child gets the `
+      + `same number of pencils and the same number of crayons, with none left over. What is the GREATEST number `
+      + `of children she can share them between?`,
+    more: { ask: (a, b, v) => `How many pencils does each child get?`, value: (a, b, v) => a / v },
+  },
+  {
+    kind: "lcm",
+    say: (a, b) => `Two buses leave the park at 8 o'clock. One of them goes every ${a} minutes and the other `
+      + `every ${b} minutes. How many minutes later do they next leave together?`,
+    more: null,
+  },
+  {
+    kind: "lcm",
+    say: (a, b) => `One lighthouse flashes every ${a} seconds and another every ${b} seconds. They have just `
+      + `flashed together. After how many seconds do they flash together again?`,
+    more: null,
+  },
+  {
+    kind: "lcm",
+    say: (a, b) => `Tiles are ${a} cm by ${b} cm. They are laid flat, all the same way round, to make the `
+      + `SMALLEST square they can. How long is the side of that square?`,
+    more: { ask: () => "How many tiles does that take?", value: (a, b, v) => (v / a) * (v / b) },
+  },
+  {
+    kind: "hcf",
+    say: (a, b) => `A floor is ${a} cm by ${b} cm. It is covered exactly with square tiles, all the same size `
+      + `and as BIG as possible, with none cut. How long is the side of one tile?`,
+    more: { ask: () => "How many tiles does that take?", value: (a, b, v) => (a / v) * (b / v) },
+  },
+];
+
+const pfWords = {
+  id: "pf-words",
+  group: "pf-words",
+  label: "Which one does it want?",
+  blurb: "A story, and the first job is deciding HCF or LCM.",
+  heading: "HCF and LCM in the shops",
+  instruction: () =>
+    "Nobody will ever tell you which one you need, so ask this: am I <b>cutting something up</b> — into the "
+    + "longest piece, the biggest tile, the most children — or am I <b>waiting for things to come round "
+    + "together</b> again? Cutting up makes something SMALLER than what you started with, and that is the "
+    + "<b>HCF</b>. Coming round together makes something BIGGER, and that is the <b>LCM</b>. Decide first, then "
+    + "work it out from the primes.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(pairsFor(o));
+    /* stepped along by `i` rather than picked again: two cutting-up stories
+       in a row would let a child answer the second without reading it */
+    const story = (r.int(0, STORIES.length - 1) + i) % STORIES.length;
+    return { a, b, story };
+  },
+  render(item) {
+    const t = STORIES[item.story];
+    const v = t.kind === "hcf" ? hcfOf(item.a, item.b) : lcmOf(item.a, item.b);
+    return ask(t.say(item.a, item.b))
+      + ask(`${item.a} = ${primesOf(item.a).map(() => box()).join(" × ")} &nbsp; and &nbsp; `
+        + `${item.b} = ${primesOf(item.b).map(() => box()).join(" × ")}`)
+      + ask(`Which does this question want? ${tick("the HCF", "the LCM")}`)
+      + ask(`The answer is ${box()}.`)
+      + (t.more ? ask(`${t.more.ask(item.a, item.b, v)} ${box()}`) : "");
+  },
+  worked() {
+    return worked(ask("A rope 12 m long and a rope 18 m long are cut into equal pieces, as long as possible, "
+      + "with none left over. How long is each piece?")
+      + say("Cutting up, so it is the <b>HCF</b>. 12 = 2 × 2 × 3 and 18 = 2 × 3 × 3; they share 2 × 3 = <b>6</b>, "
+        + "so each piece is 6 m. (If the question had said the two ropes were being laid end to end over and over "
+        + "until the two lines were the same length, that is things coming round together — the LCM, 36.)"));
+  },
+  key(item) {
+    const t = STORIES[item.story];
+    const v = t.kind === "hcf" ? hcfOf(item.a, item.b) : lcmOf(item.a, item.b);
+    const out = primesOf(item.a).map((p) => want.num(p))
+      .concat(primesOf(item.b).map((p) => want.num(p)))
+      .concat([want.tick(t.kind === "hcf" ? 0 : 1), want.num(v)]);
+    if (t.more) out.push(want.num(t.more.value(item.a, item.b, v)));
+    return out;
+  },
+  answer(item) {
+    const t = STORIES[item.story];
+    const v = t.kind === "hcf" ? hcfOf(item.a, item.b) : lcmOf(item.a, item.b);
+    return [`${t.kind.toUpperCase()} = ${v}${t.more ? `, then ${t.more.value(item.a, item.b, v)}` : ""}`];
+  },
+};
+
+/* ═══ L. what squaring does to the primes ═════════════════════════════════
+   THE DISCOVERY THE TWO SECTIONS AFTER IT REST ON, and it is done by looking
+   rather than by being told: write the primes of a number, then the primes of
+   its square, and see what happened to them.
+
+     6 = 2 × 3            36 = 2 × 2 × 3 × 3
+     10 = 2 × 5          100 = 2 × 2 × 5 × 5
+
+   Every prime turns up TWICE AS OFTEN, and of course it does — squaring is
+   multiplying the number by itself, so every prime in it is there twice. Once
+   a child has seen that, the square root is not a rule to remember: it is the
+   same picture read backwards, and the pairing in the next section is
+   obviously the undoing of this one. */
+
+const SEEDS = {
+  gentle: [4, 6, 9, 10, 12, 15],
+  middle: [6, 10, 12, 14, 15, 18, 20, 21],
+  stretch: [12, 14, 15, 18, 20, 21, 22, 24, 30],
+};
+const seedFor = (o) => SEEDS[levelOf(o).id] || SEEDS.gentle;
+
+const pfWhy = {
+  id: "pf-why",
+  group: "pf-why",
+  label: "Square it and look",
+  blurb: "Write the primes of a number and of its square. What happened?",
+  heading: "What squaring does to the primes",
+  instruction: () =>
+    "Write each number as its primes. Then square it — multiply it by itself — and write the primes of THAT. "
+    + "Look at the two lines together before you answer the question underneath: something has happened to every "
+    + "prime, and it is the same thing every time.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const n = r.pick(seedFor(o));
+    const cube = levelOf(o).id !== "gentle";
+    return { n, cube };
+  },
+  render(item) {
+    const n = item.n;
+    return lead(`<b>${n}</b>`)
+      + ask(`${n} = ${primesOf(n).map(() => box()).join(" × ")}`)
+      + ask(`${n} × ${n} = ${box()}, and that is ${primesOf(n * n).map(() => box()).join(" × ")}`)
+      + (item.cube
+        ? ask(`${n} × ${n} × ${n} = ${box()}, and that is ${primesOf(n ** 3).map(() => box()).join(" × ")}`)
+        : "")
+      + ask(`So when a number is SQUARED, each of its primes appears ${tick("the same number of times", "twice as many times", "half as many times")}`);
+  },
+  worked() {
+    return worked(lead("<b>6</b>")
+      + say("6 = 2 × 3. And 6 × 6 = 36, which is 2 × 2 × 3 × 3 — <b>the same primes, each one twice</b>. It could "
+        + "not be anything else: 36 is 6 × 6, so every prime in 6 is in it twice over. Cube it and they come "
+        + "three times each: 6 × 6 × 6 = 216 = 2 × 2 × 2 × 3 × 3 × 3."));
+  },
+  key(item) {
+    const n = item.n;
+    const out = primesOf(n).map((p) => want.num(p));
+    out.push(want.num(n * n));
+    primesOf(n * n).forEach((p) => out.push(want.num(p)));
+    if (item.cube) {
+      out.push(want.num(n ** 3));
+      primesOf(n ** 3).forEach((p) => out.push(want.num(p)));
+    }
+    out.push(want.tick(1));
+    return out;
+  },
+  answer(item) {
+    return [`${item.n}² = ${item.n * item.n} = ${primesOf(item.n * item.n).join(" × ")} — each prime twice`];
+  },
+};
+
+/* ═══ M. square roots ═════════════════════════════════════════════════════ */
+
+/* Perfect squares, and numbers that are nearly one — the second kind matter
+   more than the first, because a child who has only ever been given squares
+   learns to take one from each pair without ever asking whether they can. */
+const SQUARES = {
+  gentle: [36, 64, 100, 144, 196],
+  middle: [225, 324, 400, 441, 576, 784],
+  stretch: [900, 1024, 1225, 1296, 1764, 2025],
+};
+const NOT_SQUARES = {
+  gentle: [48, 50, 54, 72, 98],
+  middle: [108, 150, 200, 242, 294],
+  stretch: [363, 450, 588, 686, 968],
+};
+
+const pfSqRoot = {
+  id: "pf-sqroot",
+  group: "pf-sqroot",
+  label: "Pair them off",
+  blurb: "A perfect square pairs up exactly; the root is one from each pair.",
+  heading: "Square roots from the primes",
+  instruction: () =>
+    "Squaring put every prime in TWICE, so finding the square root is undoing that: write the number as its "
+    + "primes and <b>pair them off</b>. If every prime has a partner, the number is a <b>perfect square</b>, and "
+    + "its root is one prime taken out of each pair, multiplied. If one is left without a partner, there is no "
+    + "whole-number root — and that leftover prime is the reason.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const tier = levelOf(o).id;
+    /* one of each, so the tick is a real question */
+    const square = i % 2 === 0;
+    const pool = square ? SQUARES[tier] : NOT_SQUARES[tier];
+    return { n: r.pick(pool || SQUARES.gentle), square };
+  },
+  render(item) {
+    const ps = primesOf(item.n);
+    const root = rootOf(item.n, 2);
+    return lead(`<b>${item.n}</b> = ${ps.join(" × ")}`)
+      + ask(`Pair them off. Is every prime in a pair? ${tick("yes", "no")}`)
+      + (item.square
+        ? ask(`So it is a perfect square. Take one out of each pair: `
+          + `${primesOf(root).map(() => box()).join(" × ")} = ${box()}, and that is √${item.n}.`)
+        : ask(`So it is not a perfect square. Which prime is left without a partner? ${box()}`));
+  },
+  worked() {
+    return worked(lead("<b>324</b> = 2 × 2 × 3 × 3 × 3 × 3")
+      + say("Pair them off: (2 × 2) and (3 × 3) and (3 × 3). Every prime has a partner, so 324 is a perfect "
+        + "square. One out of each pair is 2 × 3 × 3 = <b>18</b>, and 18 × 18 = 324. Now 72 = 2 × 2 × 2 × 3 × 3: "
+        + "the 3s pair and two of the 2s pair, but one 2 is left over — so 72 is not a perfect square, and that "
+        + "spare 2 is exactly why."));
+  },
+  key(item) {
+    const out = [want.tick(item.square ? 0 : 1)];
+    if (item.square) {
+      const root = rootOf(item.n, 2);
+      primesOf(root).forEach((p) => out.push(want.num(p)));
+      out.push(want.num(root));
+    } else {
+      out.push(want.num(oddPrimes(item.n, 2)[0][0]));
+    }
+    return out;
+  },
+  answer(item) {
+    return [item.square
+      ? `√${item.n} = ${rootOf(item.n, 2)}`
+      : `${item.n} is not a perfect square — the ${oddPrimes(item.n, 2)[0][0]} has no partner`];
+  },
+};
+
+/* ═══ N. cube roots ═══════════════════════════════════════════════════════ */
+
+const CUBES = {
+  gentle: [8, 27, 64, 125, 216],
+  middle: [343, 512, 729, 1000, 1728],
+  stretch: [1331, 2197, 2744, 3375, 5832],
+};
+const NOT_CUBES = {
+  gentle: [24, 36, 48, 100, 200],
+  middle: [250, 392, 500, 675, 968],
+  stretch: [1080, 1372, 2000, 2592, 3087],
+};
+
+const pfCubeRoot = {
+  id: "pf-cuberoot",
+  group: "pf-cuberoot",
+  label: "Group them in threes",
+  blurb: "A perfect cube groups into threes; the root is one from each three.",
+  heading: "Cube roots from the primes",
+  instruction: () =>
+    "Cubing puts every prime in THREE times, so a cube root is that undone: write the number as its primes and "
+    + "group them in <b>threes</b>. If they all group, it is a <b>perfect cube</b> and the root is one prime out "
+    + "of each three, multiplied. It is the same idea as the square root with one number changed, which is the "
+    + "point — you have not learned a second rule.",
+  cols: 1,
+  defaultCount: 2,
+  hardest: true,
+  make(r, o, k, i) {
+    const tier = levelOf(o).id;
+    const cube = i % 2 === 0;
+    const pool = cube ? CUBES[tier] : NOT_CUBES[tier];
+    return { n: r.pick(pool || CUBES.gentle), cube };
+  },
+  render(item) {
+    const root = rootOf(item.n, 3);
+    return lead(`<b>${item.n}</b> = ${primesOf(item.n).join(" × ")}`)
+      + ask(`Group them in threes. Does every prime make a complete three? ${tick("yes", "no")}`)
+      + (item.cube
+        ? ask(`So it is a perfect cube. One out of each three: `
+          + `${primesOf(root).map(() => box()).join(" × ")} = ${box()}, and that is the cube root of ${item.n}.`)
+        : ask(`So it is not a perfect cube. Which prime does not make a complete three? ${box()}`));
+  },
+  worked() {
+    return worked(lead("<b>1728</b> = 2 × 2 × 2 × 2 × 2 × 2 × 3 × 3 × 3")
+      + say("Group them in threes: (2 × 2 × 2), (2 × 2 × 2), (3 × 3 × 3). They all group, so 1728 is a perfect "
+        + "cube. One out of each three is 2 × 2 × 3 = <b>12</b>, and 12 × 12 × 12 = 1728. Try 500 = 2 × 2 × 5 × 5 "
+        + "× 5: the 5s make a three but the two 2s do not, so 500 has no whole cube root."));
+  },
+  key(item) {
+    const out = [want.tick(item.cube ? 0 : 1)];
+    if (item.cube) {
+      const root = rootOf(item.n, 3);
+      primesOf(root).forEach((p) => out.push(want.num(p)));
+      out.push(want.num(root));
+    } else {
+      out.push(want.num(oddPrimes(item.n, 3)[0][0]));
+    }
+    return out;
+  },
+  answer(item) {
+    return [item.cube
+      ? `the cube root of ${item.n} is ${rootOf(item.n, 3)}`
+      : `${item.n} is not a perfect cube — the ${oddPrimes(item.n, 3)[0][0]}s do not make a complete three`];
+  },
+};
+
 /* ── the registry ───────────────────────────────────────────────────────── */
 
 const pfTreeDrag = treeEx("pf-tree-drag", "drag", "Factor tree — put the numbers in place", 1);
@@ -644,5 +972,6 @@ export const PRIME_EXERCISES = [
   pfGroup, pfComposite, pfStrike, pfFactors,
   pfTreeDrag, pfTreeGrow,
   pfLadder, pfProduct, pfIndex, pfCount,
-  pfHcf, pfLcm, pfVenn,
+  pfHcf, pfLcm, pfVenn, pfWords,
+  pfWhy, pfSqRoot, pfCubeRoot,
 ];

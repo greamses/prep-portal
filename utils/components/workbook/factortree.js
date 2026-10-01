@@ -24,12 +24,13 @@
 
    TWO WAYS TO BUILD ONE, because they teach different halves of it:
 
-     drag   the shape is drawn empty. Tap a circle and ITS OWN FACTORS swing
-            out and stand round it, and the child drags two of them down into
-            the circles underneath. They are CHOOSING from what will go, which
-            is the easier half, and they cannot be stuck — but they can still
-            choose a pair that does not multiply back, and the marking will
-            say so.
+     drag   nothing is drawn but the number itself. Tap a circle and ITS OWN
+            FACTORS swing out and stand round it; drag two of them into the
+            circles underneath. THE TREE GROWS FROM WHAT GOES IN IT: a circle
+            that has been filled with a composite number sprouts two empty
+            ones under it, and a circle filled with a PRIME sprouts nothing,
+            because nothing goes into it. The shape of the finished tree is
+            the child's own and was never drawn for them.
      grow   only the top number is drawn. Tapping a circle sprouts two empty
             ones under it and the child types the factors, and keeps going
             until nothing left will split. They are FINDING the pairs, and
@@ -106,6 +107,30 @@ export const hcfOf = (a, b) => sharedPrimes(a, b).reduce((t, p) => t * p, 1);
 /** The lowest number both divide into: everything in the picture, multiplied. */
 export const lcmOf = (a, b) =>
   ownPrimes(a, b).concat(sharedPrimes(a, b), ownPrimes(b, a)).reduce((t, p) => t * p, 1);
+
+/**
+ * THE EXACT kth ROOT, or null when there is not one.
+ *
+ * Worked the way the chapter teaches it rather than with Math.pow: a number is
+ * a perfect square when its primes pair off, and a perfect cube when they come
+ * in threes, so the root is one prime out of each pair (or each three). Done
+ * this way there is no rounding to argue with — √1296 is 36 exactly or it is
+ * nothing — and the code says the same thing the page says.
+ */
+export function rootOf(n, k = 2) {
+  if (!Number.isInteger(n) || n < 1) return null;
+  if (n === 1) return 1;
+  let out = 1;
+  for (const [p, count] of indexOf_(n)) {
+    if (count % k) return null;                 // a prime without its partners
+    out *= p ** (count / k);
+  }
+  return out;
+}
+
+/** The primes that will NOT group into kth parts, and how many are over. */
+export const oddPrimes = (n, k = 2) =>
+  indexOf_(n).filter(([, count]) => count % k).map(([p, count]) => [p, count % k]);
 
 /** How many factors a number has, from its index form: (a+1)(b+1)… */
 export const factorCount = (n) => indexOf_(n).reduce((t, [, k]) => t * (k + 1), 1);
@@ -318,11 +343,19 @@ export function treeHtml({ tree, mode = "grow", answer = false, chips = null, la
  * a child who split 12 into 2 and 6 and then wanted 3 and 4 must be able to
  * change their mind without starting the whole tree again.
  */
+/** Two empty circles, which is what a composite number asks for. */
+const pairOfEmpties = () => [{ v: null, kids: null }, { v: null, kids: null }];
+
 export function mountTree(el, { shape, mode = "grow", saved = null, onChange = () => {} } = {}) {
   const n = Number(el.dataset.tree ? JSON.parse(el.dataset.tree).n : shape.v);
-  let state = saved && (saved.slots || saved.tree)
+  /* BOTH modes hold a tree now. The drag one used to hold a set of numbers
+     against a shape drawn in advance; it does not, because the shape is the
+     child's own — see the head of the file. A saved `slots` from before is
+     simply dropped, which costs a child who is mid-question nothing but the
+     two numbers they can see on the screen in front of them. */
+  let state = saved && saved.tree
     ? JSON.parse(JSON.stringify(saved))
-    : (mode === "drag" ? { slots: {} } : { tree: { v: n, kids: null } });
+    : { tree: { v: n, kids: mode === "drag" ? pairOfEmpties() : null } };
 
   el.classList.add("is-live");
   const stage = el.querySelector(".ft-stage");
@@ -331,29 +364,58 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
   const tell = () => onChange(JSON.parse(JSON.stringify(state)));
 
   /* ── the drag tree ─────────────────────────────────────────────────────
-     Nothing is laid out underneath. Tap a circle and the numbers that go into
-     IT swing out and stand round it; drag two of them into the circles below.
-     The ring is the question — "what goes into 36?" — asked in the one place
-     where the answer is about to be used. */
+     Nothing is laid out underneath, and nothing is drawn in advance. Tap a
+     circle and the numbers that go into IT swing out and stand round it; drag
+     two of them into the circles below. A circle that is given a composite
+     number sprouts two empty circles of its own; one that is given a prime
+     sprouts none, because nothing goes into a prime — which is the whole
+     lesson, drawn rather than said. */
+  const nodeAtDrag = (at) => {
+    let t = state.tree;
+    for (const stepOn of at) {
+      if (!t.kids) return null;
+      t = t.kids[Number(stepOn)];
+    }
+    return t;
+  };
   const valueAt = (at) => {
-    if (at === "") return Number(shape.v);
-    const v = state.slots[at];
+    const t = nodeAtDrag(at);
+    const v = t && t.v;
     return v == null ? null : Number(v);
   };
-  /** The circles hanging under this one. */
-  const kidsOf = (at) => [...stage.querySelectorAll(".ft-node")]
-    .filter((nd) => nd.dataset.at.length === at.length + 1 && nd.dataset.at.startsWith(at));
+
+  /** What a number entering a circle does to the circles under it. */
+  function afterEntering(node) {
+    const v = Number(node.v);
+    if (!Number.isFinite(v) || v < 2) { node.kids = null; return; }
+    /* a prime is finished: nothing goes into it, so nothing hangs under it */
+    if (isPrime(v)) { node.kids = null; return; }
+    /* a composite that has not been split yet is given two empty circles to
+       be split into — the number itself is what asks for them */
+    if (!node.kids) node.kids = pairOfEmpties();
+  }
 
   function paintDrag() {
+    const drawn = treeHtml({ tree: state.tree, mode: "drag" });
+    const holder = document.createElement("div");
+    holder.innerHTML = drawn;
+    stage.replaceChildren(...holder.querySelector(".ft-stage").childNodes);
+    const fresh = holder.querySelector(".ft");
+    el.style.setProperty("--ft-w", fresh.style.getPropertyValue("--ft-w"));
+    el.style.setProperty("--ft-h", fresh.style.getPropertyValue("--ft-h"));
     stage.querySelectorAll(".ft-node").forEach((node) => {
       const at = node.dataset.at;
-      if (at === "") return;
-      const v = state.slots[at];
+      const v = valueAt(at);
       node.textContent = v == null ? "" : v;
       node.classList.toggle("is-said", v != null);
       node.classList.toggle("is-empty", v == null);
     });
+    wireDrag();
   }
+
+  /** The circles hanging under this one, in the drawing. */
+  const kidsOf = (at) => [...stage.querySelectorAll(".ft-node")]
+    .filter((nd) => nd.dataset.at.length === at.length + 1 && nd.dataset.at.startsWith(at));
 
   /** The factors of a circle, swung out round it. */
   function openRing(node) {
@@ -361,11 +423,8 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
     const at = node.dataset.at;
     const v = valueAt(at);
     if (v == null || !Number.isFinite(v)) return;
-    const kids = [...stage.querySelectorAll(".ft-node")]
-      .filter((nd) => nd.dataset.at.length === at.length + 1 && nd.dataset.at.startsWith(at));
-    if (!kids.length) return;              // a leaf has nothing to split into
     const fs = ringOf(v);
-    if (!fs.length) {
+    if (!fs.length || !kidsOf(at).length) {
       /* a prime, and that IS the answer: it does not split */
       node.classList.remove("is-stuck");
       void node.offsetWidth;
@@ -389,16 +448,14 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
        circle rather than off at the end of an arc — where, with one chip, it
        lands exactly on the circle it is about to be dropped into */
     const spread = 300;
-    const step = spread / fs.length;
+    const stepBy = spread / fs.length;
     fs.forEach((f, i) => {
       const chip = document.createElement("span");
       chip.className = `ft-chip ft-tint${i % 6}`;
       chip.dataset.v = String(f);
       chip.dataset.from = at;
       chip.textContent = String(f);
-      /* the angle is the chip's own; the spread is animated, so they swing
-         out one after another round the circumference */
-      chip.style.setProperty("--a", `${(-90 - spread / 2 + step / 2 + i * step).toFixed(1)}deg`);
+      chip.style.setProperty("--a", `${(-90 - spread / 2 + stepBy / 2 + i * stepBy).toFixed(1)}deg`);
       /* they swing out one after another, but the last one must not keep a
          child waiting: ten factors at 35ms each is most of a second before
          the ring is all there, so the stagger is capped */
@@ -413,14 +470,14 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
 
   function closeRing() {
     stage.querySelectorAll(".ft-ring").forEach((r) => r.remove());
-    stage.querySelectorAll(".ft-node.is-open").forEach((n) => n.classList.remove("is-open"));
+    stage.querySelectorAll(".ft-node.is-open").forEach((nd) => nd.classList.remove("is-open"));
   }
 
   function wireChips(ring) {
     ring.querySelectorAll(".ft-chip").forEach((chip) => {
       chip.addEventListener("pointerdown", (e) => {
         try { chip.setPointerCapture?.(e.pointerId); } catch { /* carry on */ }
-        lift(chip, chip.dataset.v, e);
+        lift(chip, chip.dataset.v);
       });
     });
   }
@@ -451,16 +508,22 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
       const drop = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".ft-node");
       const at = drop?.dataset.at;
       if (at != null && at !== "") {
-        state.slots[at] = Number(value);
-        paintDrag();
-        /* THE RING STAYS UP while the pair it was opened for is unfinished.
-           A split is two numbers, and closing after the first would make the
-           child tap the same circle again to say the same thing. */
-        const ring = stage.querySelector(".ft-ring");
-        const owner = ring?.dataset.at;
-        const more = owner != null && kidsOf(owner).some((k) => state.slots[k.dataset.at] == null);
-        if (!more) closeRing();
-        tell();
+        const owner = stage.querySelector(".ft-ring")?.dataset.at;
+        const node = nodeAtDrag(at);
+        if (node) {
+          node.v = Number(value);
+          afterEntering(node);
+          /* THE RING STAYS UP while the pair it was opened for is unfinished.
+             A split is two numbers, and closing after the first would make the
+             child tap the same circle again to say the same thing. */
+          const more = owner != null && nodeAtDrag(owner)?.kids?.some((k) => k.v == null);
+          paintDrag();
+          if (more) {
+            const back = stage.querySelector(`.ft-node[data-at="${owner}"]`);
+            if (back) openRing(back);
+          }
+          tell();
+        }
       }
     };
     from.addEventListener("pointermove", move);
@@ -475,32 +538,38 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
         if (node.classList.contains("is-open")) { closeRing(); return; }
         const at = node.dataset.at;
         const v = valueAt(at);
-        /* WHAT A TAP MEANS depends on where the circle is in the tree, and
-           each of the three answers is something worth saying:
+        /* WHAT A TAP MEANS depends on what the circle holds, and each of the
+           three answers is something worth saying:
 
-             it has circles under it   what goes into it swings out, to be
-                                       dragged down into them
-             it is a prime at the end  nothing goes into it — it shakes its
-                                       head, which is the whole lesson
-             it is anything else       take it out and think again */
-        if (kidsOf(at).length) { openRing(node); return; }
+             a composite      what goes into it swings out, to be dragged down
+                              into the circles it has sprouted
+             a prime          nothing goes into it — it shakes its head, which
+                              is the whole lesson
+             a wrong guess    take it out and think again (and the branches it
+                              had sprouted go with it) */
+        if (v != null && !isPrime(v) && kidsOf(at).length) { openRing(node); return; }
         if (v != null && isPrime(v)) {
           node.classList.remove("is-stuck");
           void node.offsetWidth;
           node.classList.add("is-stuck");
           return;
         }
-        if (at !== "" && state.slots[at] != null) {
-          delete state.slots[at];
+        if (at !== "" && v != null) {
+          const me = nodeAtDrag(at);
+          me.v = null;
+          me.kids = null;
           paintDrag();
           tell();
         }
       });
     });
     /* a tap anywhere else puts the ring away */
-    el.addEventListener("pointerdown", (e) => {
-      if (!e.target.closest(".ft-node") && !e.target.closest(".ft-chip")) closeRing();
-    });
+    if (!el.__wbRingAway) {
+      el.__wbRingAway = true;
+      el.addEventListener("pointerdown", (e) => {
+        if (!e.target.closest(".ft-node") && !e.target.closest(".ft-chip")) closeRing();
+      });
+    }
   }
 
   /* ── the growing tree ──────────────────────────────────────────────────*/
@@ -554,14 +623,14 @@ export function mountTree(el, { shape, mode = "grow", saved = null, onChange = (
     });
   }
 
-  if (mode === "drag") { paintDrag(); wireDrag(); }
+  if (mode === "drag") paintDrag();
   else paintGrow();
 
   return {
     state: () => JSON.parse(JSON.stringify(state)),
     set(s) {
-      state = s && (s.slots || s.tree) ? JSON.parse(JSON.stringify(s))
-        : (mode === "drag" ? { slots: {} } : { tree: { v: n, kids: null } });
+      state = s && s.tree ? JSON.parse(JSON.stringify(s))
+        : { tree: { v: n, kids: mode === "drag" ? pairOfEmpties() : null } };
       if (mode === "drag") { closeRing(); paintDrag(); } else paintGrow();
     },
     clear() { this.set(null); tell(); },

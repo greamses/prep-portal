@@ -234,6 +234,33 @@ export const ICON = {
       dot(5.8, 12, 1.9, PAPER) + dot(12, 12, 2.2, LOUD) + dot(18.2, 12, 1.9, LEAF)
   ),
 
+  /* A till receipt: the two of them in the words a question is asked in. */
+  pfWords: svg(
+    `<rect x="4.6" y="3.4" width="14.8" height="17.2" rx="1.6" fill="${PAPER}"/>` +
+      `<rect x="7" y="7" width="10" height="1.8" rx="0.9" fill="#fff"/>` +
+      `<rect x="7" y="10.6" width="10" height="1.8" rx="0.9" fill="#fff"/>` +
+      `<rect x="7" y="14.2" width="6" height="1.8" rx="0.9" fill="${LOUD}"/>`
+  ),
+  /* A number, and the same number twice over: what squaring does. */
+  pfWhy: svg(
+    `<rect x="3" y="9.6" width="5.6" height="5.6" rx="1.2" fill="${QUIET}"/>` +
+      bar(9.6, 12.4, 12.6, 12.4, 1.6, QUIET) +
+      `<rect x="13.8" y="5.6" width="5.6" height="5.6" rx="1.2" fill="${LOUD}"/>` +
+      `<rect x="13.8" y="13.6" width="5.6" height="5.6" rx="1.2" fill="${LOUD}"/>`
+  ),
+  /* Primes paired off, and the one taken out of each pair. */
+  pfSqRoot: svg(
+    dot(5.4, 8.2, 2.4, LOUD) + dot(10.6, 8.2, 2.4, LOUD) +
+      dot(5.4, 15.4, 2.4, PAPER) + dot(10.6, 15.4, 2.4, PAPER) +
+      `<path d="M15.4 11.8h5.2M18 9.2v5.2" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>`
+  ),
+  /* The same, in threes. */
+  pfCubeRoot: svg(
+    dot(4.6, 7.4, 2, LOUD) + dot(9.4, 7.4, 2, LOUD) + dot(14.2, 7.4, 2, LOUD) +
+      dot(4.6, 13.4, 2, PAPER) + dot(9.4, 13.4, 2, PAPER) + dot(14.2, 13.4, 2, PAPER) +
+      `<path d="M4.6 19.4h12.8" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>`
+  ),
+
   /* Scissors over two bars cut differently: the unlike denominators. */
   cut: svg(
     `<rect x="2.6" y="4" width="18.8" height="5" rx="1" fill="#fffdf8" stroke="${QUIET}" stroke-width="1.2"/>` +
