@@ -835,12 +835,13 @@ const pfListHcf = {
   id: "pf-list-hcf",
   group: "pf-list",
   label: "List the factors of both",
-  blurb: "Strike what is in both lists; the biggest one is the HCF.",
+  blurb: "Write both lists out; the biggest number in each is the HCF.",
   heading: "The listing way — the HCF",
   instruction: () =>
-    "Write out all the factors of each number — on screen, strike the ones that are in BOTH lists. Every one you "
-    + "strike is a <b>common factor</b>, and the biggest of them is the <b>highest common factor</b>. That is "
-    + "not a trick or a method: it is what the words say, done by hand.",
+    "Write out <b>all</b> the factors of each number — hunt in pairs (1 with the number, 2 with its half, and "
+    + "so on) and you will not miss one. Then write the ones that are in BOTH lists: those are the <b>common "
+    + "factors</b>, and the biggest of them is the <b>highest common factor</b>. That is not a trick or a "
+    + "method — it is what the words say, done by hand.",
   cols: 1,
   defaultCount: 1,
   make(r, o, k, i) {
@@ -850,29 +851,27 @@ const pfListHcf = {
   render(item) {
     const fa = factorsOf(item.a);
     const fb = factorsOf(item.b);
+    const both = fa.filter((v) => item.b % v === 0);
+    const row = (list) => `<p class="pf-slots">${list.map(() => box()).join("")}</p>`;
     return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
-      + ask(`The factors of ${item.a} — strike the ones that are also factors of ${item.b}:`)
-      + strikeHtml({ numbers: fa, cols: Math.min(fa.length, 9), label: `the factors of ${item.a}` })
-      + ask(`The factors of ${item.b} — strike the ones that are also factors of ${item.a}:`)
-      + strikeHtml({ numbers: fb, cols: Math.min(fb.length, 9), label: `the factors of ${item.b}` })
-      + ask(`The biggest number you struck in both is the HCF: ${box()}`);
+      + ask(`Every factor of ${item.a}:`) + row(fa)
+      + ask(`Every factor of ${item.b}:`) + row(fb)
+      + ask("The ones that are in both lists:") + row(both)
+      + ask(`The biggest of those is the HCF: ${box()}`);
   },
   worked() {
-    const fa = factorsOf(24);
     return worked(lead("<b>24</b> and <b>36</b>")
-      + strikeHtml({ numbers: fa, cols: 8, answer: true, struck: factorsOf(24).filter((v) => 36 % v === 0) })
-      + strikeHtml({ numbers: factorsOf(36), cols: 9, answer: true, struck: factorsOf(36).filter((v) => 24 % v === 0) })
-      + say("1, 2, 3, 4, 6 and 12 are in both lists — they are the common factors — and the biggest of them is "
+      + ask(`Every factor of 24: <b>${factorsOf(24).join(", ")}</b>`)
+      + ask(`Every factor of 36: <b>${factorsOf(36).join(", ")}</b>`)
+      + say("In both: <b>1, 2, 3, 4, 6, 12</b> — those are the common factors — and the biggest of them is "
         + "<b>12</b>. Notice that every one of them divides 12: the common factors of two numbers are exactly "
         + "the factors of their HCF, which is the real reason it is worth finding."));
   },
   key(item) {
-    const both = factorsOf(item.a).filter((v) => item.b % v === 0);
-    return [
-      want.strike({ numbers: both, nth: 0, says: both.join(", ") }),
-      want.strike({ numbers: both, nth: 1, says: both.join(", ") }),
-      want.num(hcfOf(item.a, item.b)),
-    ];
+    const fa = factorsOf(item.a);
+    const fb = factorsOf(item.b);
+    const both = fa.filter((v) => item.b % v === 0);
+    return [want.set(...fa), want.set(...fb), want.set(...both), want.num(hcfOf(item.a, item.b))];
   },
   answer(item) {
     const both = factorsOf(item.a).filter((v) => item.b % v === 0);
@@ -884,12 +883,13 @@ const pfListLcm = {
   id: "pf-list-lcm",
   group: "pf-list",
   label: "List the multiples of both",
-  blurb: "Strike what is in both lists; the smallest one is the LCM.",
+  blurb: "Count up in each; the first number in both lists is the LCM.",
   heading: "The listing way — the LCM",
   instruction: () =>
-    "Count up in each number and write the multiples out. Strike the ones that are in BOTH lists: those are the "
-    + "<b>common multiples</b>, and the smallest of them is the <b>lowest common multiple</b>. The lists go on "
-    + "for ever, which is why the word is LOWEST and not just common.",
+    "Count up in each number and write the multiples down. Then write the ones that are in BOTH lists: those "
+    + "are the <b>common multiples</b>, and the smallest of them is the <b>lowest common multiple</b>. The "
+    + "lists go on for ever, which is why the word is LOWEST and not just common — you can stop as soon as one "
+    + "turns up in both.",
   cols: 1,
   defaultCount: 1,
   make(r, o, k, i) {
@@ -898,32 +898,28 @@ const pfListLcm = {
   },
   render(item) {
     const l = lcmOf(item.a, item.b);
-    const upTo = l * 2;
-    const ms = (n) => { const out = []; for (let v = n; v <= upTo; v += n) out.push(v); return out; };
+    const ms = (n) => { const out = []; for (let v = n; v <= l + n; v += n) out.push(v); return out; };
+    const both = ms(item.a).filter((v) => ms(item.b).includes(v));
+    const row = (list) => `<p class="pf-slots">${list.map(() => box()).join("")}</p>`;
     return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
-      + ask(`The multiples of ${item.a} — strike the ones that are also multiples of ${item.b}:`)
-      + strikeHtml({ numbers: ms(item.a), cols: Math.min(ms(item.a).length, 9), label: `the multiples of ${item.a}` })
-      + ask(`The multiples of ${item.b} — strike the ones that are also multiples of ${item.a}:`)
-      + strikeHtml({ numbers: ms(item.b), cols: Math.min(ms(item.b).length, 9), label: `the multiples of ${item.b}` })
-      + ask(`The smallest number you struck in both is the LCM: ${box()}`);
+      + ask(`Count up in ${item.a}:`) + row(ms(item.a))
+      + ask(`Count up in ${item.b}:`) + row(ms(item.b))
+      + ask("The ones that are in both lists:") + row(both)
+      + ask(`The smallest of those is the LCM: ${box()}`);
   },
   worked() {
-    const ms = (n, upTo) => { const out = []; for (let v = n; v <= upTo; v += n) out.push(v); return out; };
     return worked(lead("<b>8</b> and <b>12</b>")
-      + strikeHtml({ numbers: ms(8, 48), cols: 6, answer: true, struck: [24, 48] })
-      + strikeHtml({ numbers: ms(12, 48), cols: 4, answer: true, struck: [24, 48] })
-      + say("24 and 48 are in both lists, and 48 is only there because 24 was — every common multiple is a "
-        + "multiple of the LOWEST one. So the answer is <b>24</b>, and the list could have stopped there."));
+      + ask("Count up in 8: <b>8, 16, 24, 32</b>")
+      + ask("Count up in 12: <b>12, 24, 36</b>")
+      + say("24 is in both, and it is the first one that is — so the LCM is <b>24</b>. Carry the lists on and "
+        + "48 turns up in both as well, and 72, and 96: every common multiple is a multiple of the lowest one, "
+        + "which is why finding the first is finding them all."));
   },
   key(item) {
     const l = lcmOf(item.a, item.b);
-    const both = [];
-    for (let v = l; v <= l * 2; v += l) both.push(v);
-    return [
-      want.strike({ numbers: both, nth: 0, says: both.join(", ") }),
-      want.strike({ numbers: both, nth: 1, says: both.join(", ") }),
-      want.num(l),
-    ];
+    const ms = (n) => { const out = []; for (let v = n; v <= l + n; v += n) out.push(v); return out; };
+    const both = ms(item.a).filter((v) => ms(item.b).includes(v));
+    return [want.set(...ms(item.a)), want.set(...ms(item.b)), want.set(...both), want.num(l)];
   },
   answer(item) {
     return [`the LCM of ${item.a} and ${item.b} is ${lcmOf(item.a, item.b)}`];

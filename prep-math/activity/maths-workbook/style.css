@@ -1110,7 +1110,23 @@ thead .pv-chart__side {
 /* ── the factor tree ──────────────────────────────────────────────────────
    Circles joined by branches. The stage is measured in millimetres like every
    other drawing here, so the tree is the same size on paper and on screen. */
-.ft { position: relative; margin: 2mm 0 1mm; }
+/* THE TREE STANDS IN THE MIDDLE of its column. It used to sit against the
+   left edge, which was fine until a circle was tapped: the ring of factors
+   swings out to both sides of it, and on the left-hand circles half of that
+   ring went off the paper. Centred, there is a margin either side wide enough
+   for the widest ring the chapter can ask for. */
+.ft {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2mm 0 1mm;
+}
+/* in live mode every figure becomes a .wb-drawhost, which is `fit-content` so
+   that Undo and Clear hug it — and a box the width of its contents cannot
+   centre them. The tree is the one figure that needs the whole column: the
+   ring swings out either side of it. */
+.ft.wb-drawhost { width: 100%; }
 .ft-stage { position: relative; width: var(--ft-w); height: var(--ft-h); }
 .ft-lines { position: absolute; top: 0; left: 0; }
 .ft-lines line { stroke: #8f887c; stroke-width: 0.4; }
