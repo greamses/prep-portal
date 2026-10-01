@@ -466,6 +466,226 @@ const pfIndex = {
   },
 };
 
+/* ── HOW MANY FACTORS, IN THE WORLD ───────────────────────────────────────
+   Counting the factors is not a party trick: it is the answer to "how many
+   different ways can this be laid out", which is a question somebody asks
+   every time a room is tiled or a class is sat down in rows.
+
+   The two shapes of question are worth keeping apart, and the stories here do
+   keep them apart:
+
+     how many WAYS of sharing   every factor is a way, so the answer is the
+                                count itself
+     how many RECTANGLES        a rectangle and the same rectangle turned on
+                                its side are one rectangle, so the pairs are
+                                counted — half the factors, and the odd one
+                                in the middle of a square number is its own
+                                partner
+*/
+
+const CNT_STORIES = [
+  {
+    build: (r, o) => ({ n: r.pick(poolOf(o, "big")) }),
+    say: (it) => `<b>${it.n}</b> square tiles are laid out in a rectangle, with a whole number of tiles along `
+      + "each side. A rectangle and the same one turned on its side count as the same rectangle.",
+    asks: (it) => [
+      [`First, how many factors has ${it.n}?`, factorCount(it.n), ""],
+      ["So how many different rectangles can be made?", Math.ceil(factorCount(it.n) / 2), "rectangles"],
+    ],
+  },
+  {
+    build: (r, o) => ({ n: r.pick(poolOf(o, "big")) }),
+    say: (it) => `<b>${it.n}</b> sweets are to be shared out equally, with none left over and every child `
+      + "getting the same number. One child taking all of them counts as a way.",
+    asks: (it) => [
+      [`How many factors has ${it.n}?`, factorCount(it.n), ""],
+      ["So how many different numbers of children could there be?", factorCount(it.n), "ways"],
+    ],
+  },
+  {
+    build: (r, o) => {
+      const pool = poolOf(o, "big").filter((v) => indexOf_(v).some(([, k]) => k > 1));
+      return { n: r.pick(pool.length ? pool : [36, 72]) };
+    },
+    say: (it) => `A number is <b>${asIndex(it.n)}</b> in index form.`,
+    asks: (it) => [
+      ["Add one to each index and multiply: how many factors has it?", factorCount(it.n), "factors"],
+      ["And what is the number itself?", it.n, ""],
+    ],
+  },
+  {
+    build: (r, o) => {
+      const pool = poolOf(o, "big");
+      const a = r.pick(pool);
+      const b = r.pick(pool.filter((v) => factorCount(v) !== factorCount(a))) || a + 2;
+      return { n: a, m: b };
+    },
+    say: (it) => `Two classes are to be sat in equal rows. One has <b>${it.n}</b> children and the other has `
+      + `<b>${it.m}</b>.`,
+    asks: (it) => [
+      [`How many factors has ${it.n}?`, factorCount(it.n), ""],
+      [`How many has ${it.m}?`, factorCount(it.m), ""],
+      ["So which class can be sat in more different ways? Write the number of children.",
+        factorCount(it.n) > factorCount(it.m) ? it.n : it.m, ""],
+    ],
+  },
+];
+
+const pfCountWords = {
+  id: "pf-count-words",
+  group: "pf-count",
+  label: "How many ways?",
+  blurb: "Counting the factors is counting the ways it can be laid out.",
+  heading: "How many factors — in the world",
+  instruction: () =>
+    "Counting factors answers a question somebody asks every time a room is tiled or a class is sat in rows: "
+    + "<b>how many different ways can this be laid out?</b> Every factor is one way. Watch the difference "
+    + "between the two kinds of question, though — if a rectangle turned on its side counts as the SAME "
+    + "rectangle, then the ways come in pairs and there are half as many of them.",
+  cols: 1,
+  defaultCount: 2,
+  hardest: true,
+  make(r, o, k, i) {
+    const which = (r.int(0, CNT_STORIES.length - 1) + i) % CNT_STORIES.length;
+    return { story: which, ...CNT_STORIES[which].build(r, o) };
+  },
+  render(item) {
+    const t = CNT_STORIES[item.story];
+    return ask(t.say(item))
+      + t.asks(item).map(([q, , unit]) => ask(`${q} ${box()} ${unit}`)).join("");
+  },
+  worked() {
+    return worked(ask("<b>36</b> square tiles are laid out in a rectangle with a whole number of tiles along "
+      + "each side, and a rectangle turned on its side counts as the same one.")
+      + say("36 = 2² × 3², so it has (2 + 1) × (2 + 1) = <b>9</b> factors: 1, 2, 3, 4, 6, 9, 12, 18, 36. They "
+        + "pair up — 1 with 36, 2 with 18, 3 with 12, 4 with 9 — and the 6 is its own partner, because 6 × 6 "
+        + "is the square. So there are <b>5</b> rectangles. If the question had been how many ways to SHARE 36 "
+        + "sweets, the answer would have been all nine, because 4 children with 9 each is not the same as 9 "
+        + "children with 4."));
+  },
+  key(item) {
+    const t = CNT_STORIES[item.story];
+    return t.asks(item).map(([, v]) => want.num(v));
+  },
+  answer(item) {
+    const t = CNT_STORIES[item.story];
+    return [t.asks(item).map(([, v, unit]) => `${v}${unit ? ` ${unit}` : ""}`).join(", ")];
+  },
+};
+
+/* ── INDEX FORM IN THE WORLD ──────────────────────────────────────────────
+   Where indices come from, which is not from writing 2 × 2 × 2 more shortly.
+   They come from things that double, and double again, and again — and the
+   index is the number of TIMES it happened, which is the one thing a child
+   has to be able to read off a power and the one thing the short writing is
+   for. After six hours there are 2⁶ bacteria, and the 6 in the corner is the
+   six hours.
+
+   Every one of these has the same two questions in it: what is the base (what
+   is happening each time), and what is the index (how many times did it
+   happen). The value is the third question and the easiest. */
+
+const IDX_STORIES = [
+  {
+    build: (r) => ({ h: r.int(4, 8) }),
+    say: (it) => `A single bacterium splits into <b>two</b> every hour. There is one of them at the start.`,
+    base: 2,
+    index: (it) => it.h,
+    asks: (it) => [
+      ["After one hour there are 2, after two hours 4, after three hours 8 … so after " + it.h
+        + " hours, how many times has it doubled?", it.h, ""],
+      ["Written as a power, that is 2 to the power of", it.h, ""],
+      ["and the number of bacteria is", 2 ** it.h, ""],
+    ],
+  },
+  {
+    build: (r) => ({ f: r.int(3, 6) }),
+    say: (it) => `A sheet of paper is folded in half, and in half again, <b>${it.f}</b> times in all.`,
+    base: 2,
+    index: (it) => it.f,
+    asks: (it) => [
+      ["Each fold doubles the layers, so how many doublings are there?", it.f, ""],
+      ["As a power of 2, the index is", it.f, ""],
+      ["and the number of layers is", 2 ** it.f, "layers"],
+    ],
+  },
+  {
+    build: (r) => ({ b: r.pick([3, 4, 5]), d: r.pick([2, 3]) }),
+    say: (it) => `A crate holds <b>${it.b}</b> boxes. Each box holds <b>${it.b}</b> tins`
+      + (it.d === 3 ? `, and each tin holds <b>${it.b}</b> sweets.` : "."),
+    base: (it) => it.b,
+    index: (it) => it.d + 1,
+    asks: (it) => [
+      ["How many of the smallest things are there in one crate? The index is", it.d + 1, ""],
+      ["so the number is", it.b ** (it.d + 1), ""],
+    ],
+  },
+  {
+    build: (r) => ({ z: r.int(3, 6) }),
+    say: (it) => `A number is written with a <b>1</b> and then <b>${it.z}</b> noughts.`,
+    base: 10,
+    index: (it) => it.z,
+    asks: (it) => [
+      ["Every nought is one more ten multiplied in, so as a power of 10 the index is", it.z, ""],
+      ["and the number itself is", 10 ** it.z, ""],
+    ],
+  },
+  {
+    build: (r) => ({ s: r.pick([500, 1000, 2000]), n: r.int(3, 5) }),
+    say: (it) => `A prize starts at <b>₦${it.s}</b> and <b>doubles</b> every round. It is doubled `
+      + `<b>${it.n}</b> times.`,
+    base: 2,
+    index: (it) => it.n,
+    asks: (it) => [
+      ["How many times is it doubled?", it.n, ""],
+      ["That multiplies the prize by 2 to the power of " + "that", 2 ** it.n, ""],
+      ["so the prize is now ₦", it.s * 2 ** it.n, ""],
+    ],
+  },
+];
+
+const pfIndexWords = {
+  id: "pf-index-words",
+  group: "pf-index",
+  label: "Index form in the world",
+  blurb: "Things that double, and double again: the index counts the times.",
+  heading: "Index form in the world",
+  instruction: () =>
+    "Indices are not a shorter way of writing 2 × 2 × 2 — they are what you write when something happens over "
+    + "and over. The <b>base</b> is what happens each time (doubling is 2, trebling is 3) and the <b>index</b> "
+    + "is HOW MANY TIMES it happened. Read those two off the story first and the number is the easy part.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const which = (r.int(0, IDX_STORIES.length - 1) + i) % IDX_STORIES.length;
+    return { story: which, ...IDX_STORIES[which].build(r, o) };
+  },
+  render(item) {
+    const t = IDX_STORIES[item.story];
+    const base = typeof t.base === "function" ? t.base(item) : t.base;
+    return ask(t.say(item))
+      + ask(`What is being multiplied in each time — the base? ${box()}`)
+      + t.asks(item).map(([q, , unit]) => ask(`${q} ${box()} ${unit}`)).join("");
+  },
+  worked() {
+    return worked(ask("A single bacterium splits into <b>two</b> every hour, starting with one of them.")
+      + say("Each hour it doubles, so the base is <b>2</b>. After six hours it has doubled six times, so the "
+        + "index is <b>6</b> — and that is all the little 6 ever means, the number of times. 2<sup>6</sup> = "
+        + "<b>64</b> bacteria. Write the base and the index down before you work anything out, and the sum at "
+        + "the end is the easy part."));
+  },
+  key(item) {
+    const t = IDX_STORIES[item.story];
+    const base = typeof t.base === "function" ? t.base(item) : t.base;
+    return [want.num(base)].concat(t.asks(item).map(([, v]) => want.num(v)));
+  },
+  answer(item) {
+    const t = IDX_STORIES[item.story];
+    const base = typeof t.base === "function" ? t.base(item) : t.base;
+    return [`${base} to the power of ${t.index(item)} = ${base ** t.index(item)}`];
+  },
+};
+
 /* ═══ I. how many factors ═════════════════════════════════════════════════ */
 
 const pfCount = {
@@ -1956,7 +2176,7 @@ const pfTreeGrow = treeEx("pf-tree-grow", "grow", "Factor tree — grow it yours
 export const PRIME_EXERCISES = [
   pfGroup, pfComposite, pfStrike, pfFactors,
   pfTreeDrag, pfTreeGrow,
-  pfLadder, pfProduct, pfIndex, pfCount,
+  pfLadder, pfProduct, pfIndex, pfIndexWords, pfCount, pfCountWords,
   pfHcf, pfLcm, pfVenn, pfWords,
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
