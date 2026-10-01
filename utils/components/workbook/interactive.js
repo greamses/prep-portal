@@ -311,6 +311,12 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
        the blocks: it is the experiment, and the boxes say what it showed */
     node.querySelectorAll("svg[data-balance]").forEach((svg, k) => makeBalanceLive(node, idx, svg, k));
 
+    /* a number written into a box can STRIKE something that is printed: the
+       primes two numbers share, crossed off both lists as the child writes
+       them down, which is what a pencil does and the only way to keep count
+       of a 2 that is in one list three times and in the other twice */
+    crossOut(node);
+
     /* blocks that can be pushed into every rectangle their number makes. Not
        marked either, and for the same reason: it is the trying that teaches,
        and what the child WRITES about it is the answer. */
@@ -1136,6 +1142,31 @@ export function mountInteractive({ sheet, viewport, scaler, toolbar, refit, prot
       },
     });
     drawbar(wrap, () => { delete rec(idx).tree[k]; wrap.__wbTree?.clear(); dirty(node); save(); });
+  }
+
+  /* ── writing one thing strikes another ────────────────────────────────
+     A box that says `data-crosses="x"` strikes through everything that says
+     `data-cross="x"` as soon as it has something in it. Nothing about it is
+     marked — the striking is a way of keeping your place, like the carried
+     figures in a long multiplication, and the answer is in the box. */
+  function crossOut(node) {
+    const boxes = [...node.querySelectorAll("[data-crosses]")];
+    if (!boxes.length) return;
+    const paint = () => {
+      boxes.forEach((b) => {
+        const input = b.querySelector("input, textarea");
+        const on = !!(input && String(input.value).trim());
+        node.querySelectorAll(`[data-cross="${b.dataset.crosses}"]`)
+          .forEach((mark) => mark.classList.toggle("is-spent", on));
+      });
+    };
+    boxes.forEach((b) => {
+      const input = b.querySelector("input, textarea");
+      if (!input || input.__wbCross) return;
+      input.__wbCross = true;
+      input.addEventListener("input", paint);
+    });
+    paint();
   }
 
   /* ── blocks pushed into another shape ─────────────────────────────────

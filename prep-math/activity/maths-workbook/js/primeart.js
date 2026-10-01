@@ -31,7 +31,8 @@
    ========================================================================== */
 
 import { colSheet } from "./colsheet.js";
-import { primesOf, ownPrimes, sharedPrimes } from "/utils/components/workbook/factortree.js";
+import { primesOf, ownPrimes, sharedPrimes, hcfOf, lcmOf } from "/utils/components/workbook/factortree.js";
+import { shortWork } from "./divart.js";
 
 /* millimetres, like every other drawing on this paper */
 const CELL = 4.2;        // one block
@@ -111,7 +112,9 @@ export function ladder(n, { answer = false } = {}) {
 
   /* the number being factored, at the top; under it what is left each time */
   put(0, n);
+  const rungs = [];
   ps.forEach((p, k) => {
+    const was = left;
     left /= p;
     /* WHAT IT IS DIVIDED BY, outside the ladder — the question this method
        asks at every rung, and the only one it asks */
@@ -119,22 +122,52 @@ export function ladder(n, { answer = false } = {}) {
     else sheet.signBox(k, { step: step++, tone: "is-by" });
     if (answer) put(k + 1, left, "is-left");
     else boxes(k + 1, left);
+    rungs.push({ row: k, p, was });
+  });
+
+  /* EVERY RUNG IS A SHORT DIVISION, so every rung may carry. 3 into 57 goes
+     1 and carries 2, and a child who has nowhere to write that 2 does it in
+     their head or gets it wrong — which is exactly what the short division
+     chapter refused to let them do. The little figures go in the gap in front
+     of the next figure, beside it and not over it, and are struck through
+     when the column they were carried into has been written.
+
+     They are drawn AFTER every rung so that they come after the answer boxes
+     in the page's order, which is the order the key answers them in. */
+  rungs.forEach(({ row, p, was }) => {
+    const carry = shortWork(was, p).carry;
+    const wideN = String(was).length;
+    carry.forEach((c, i) => {
+      if (c == null) return;
+      /* the figures of `was` are right-aligned, so figure i+1 from the left
+         stands in place (wideN - 1 - (i + 1)) */
+      const place = wideN - 2 - i;
+      if (answer) sheet.carry(row, place, c, row + 1, place + 1, { beside: true, strike: true });
+      else sheet.carry(row, place, null, row + 1, place + 1, { beside: true, strike: true });
+    });
   });
   /* one line over the top and one down the side, the whole way to the 1 */
   sheet.stop(0, { from: 0, to: cols - 1 });
   return sheet.html("mm-col mm-ladder");
 }
 
-/** What the ladder asks for, in the order it asks: the prime, then what is left. */
+/**
+ * What the ladder asks for, in the order the page lists it: every rung's
+ * divisor and what it leaves, and THEN all the carries — which is the order
+ * the sheet draws them in, and the only order the marking can pair them up.
+ */
 export function ladderKey(n) {
   const out = [];
+  const carries = [];
   let left = n;
   primesOf(n).forEach((p) => {
+    const was = left;
     left /= p;
     out.push({ kind: "by", value: p });
     String(left).split("").forEach((ch) => out.push({ kind: "left", value: Number(ch) }));
+    shortWork(was, p).carry.forEach((c) => { if (c != null) carries.push({ kind: "carry", value: c }); });
   });
-  return out;
+  return out.concat(carries);
 }
 
 /* ── the two rings ─────────────────────────────────────────────────────────
@@ -191,3 +224,98 @@ export function vennHtml(a, b, { answer = false } = {}) {
 export const vennParts = (a, b) => ({
   left: ownPrimes(a, b), mid: sharedPrimes(a, b), right: ownPrimes(b, a),
 });
+
+
+/* ── THE TABLE OF TWO NUMBERS ──────────────────────────────────────────────
+   The ladder with both numbers in it at once, which is the method every
+   teacher writes on a board and the one that gives both answers from one
+   piece of work.
+
+       2 | 36  48
+       2 | 18  24
+       3 |  9  12          ← nothing divides both of these any more
+         |  3   4
+
+     HCF = 2 × 2 × 3                = 12     everything down the left
+     LCM = 12 × 3 × 4               = 144    …times what is left at the bottom
+
+   and that last line is the thing worth having: the LCM comes OUT of the HCF,
+   so a child who has one has the other for the price of a multiplication.
+
+   `kind` is which of the three tables it is:
+     "hcf"   stop when nothing divides both, and read the HCF down the left
+     "lcm"   carry on, dividing whichever will go, until both are 1; the LCM
+             is everything down the left
+     "both"  the first, and then the leftovers multiplied onto it
+*/
+
+/** The rows of the table: what divides both, and what it leaves. */
+export function tableRows(a, b, { toOne = false } = {}) {
+  const rows = [];
+  let x = a;
+  let y = b;
+  /* while something divides BOTH */
+  for (let p = 2; p <= Math.max(x, y); p++) {
+    while (x % p === 0 && y % p === 0) {
+      rows.push({ by: p, a: x / p, b: y / p, both: true });
+      x /= p;
+      y /= p;
+    }
+  }
+  if (!toOne) return { rows, left: [x, y] };
+  /* and then whatever will go into either of them, until both are 1 */
+  for (let p = 2; x > 1 || y > 1; p++) {
+    while (x % p === 0 || y % p === 0) {
+      const nx = x % p === 0 ? x / p : x;
+      const ny = y % p === 0 ? y / p : y;
+      rows.push({ by: p, a: nx, b: ny, both: false });
+      x = nx;
+      y = ny;
+    }
+    if (p > Math.max(a, b)) break;
+  }
+  return { rows, left: [x, y] };
+}
+
+/**
+ * The table on the paper.
+ *   kind     "hcf" | "lcm" | "both"
+ *   answer   true prints it worked
+ */
+export function tableHtml(a, b, { kind = "both", answer = false } = {}) {
+  const { rows, left } = tableRows(a, b, { toOne: kind === "lcm" });
+  let step = 0;
+  const cell = (v, cls = "") => (answer
+    ? `<span class="pf-tab__said ${cls}">${v}</span>`
+    : `<span class="wb-answer pf-tab__in ${cls}" data-step="${step++}"></span>`);
+
+  const head = `<span class="pf-tab__by pf-tab__head"></span>`
+    + `<span class="pf-tab__said pf-tab__head">${a}</span>`
+    + `<span class="pf-tab__said pf-tab__head">${b}</span>`;
+
+  const body = rows.map((r, i) => {
+    const last = kind !== "lcm" && i === rows.length - 1;
+    return `<span class="pf-tab__by${r.both ? " is-both" : ""}">`
+      + (answer ? `<span class="pf-tab__said">${r.by}</span>` : cell(r.by))
+      + `</span>`
+      + cell(r.a, last ? "is-last" : "")
+      + cell(r.b, last ? "is-last" : "");
+  }).join("");
+
+  return `<div class="pf-tab wb-nomath" data-table="${kind}">${head}${body}</div>`;
+}
+
+/** What the table asks for, row by row: the divisor, then the two numbers. */
+export function tableKey(a, b, kind = "both") {
+  const { rows } = tableRows(a, b, { toOne: kind === "lcm" });
+  const out = [];
+  rows.forEach((r) => {
+    out.push({ kind: "by", value: r.by });
+    out.push({ kind: "a", value: r.a });
+    out.push({ kind: "b", value: r.b });
+  });
+  return out;
+}
+
+/** What is left at the foot of an HCF table — the part the LCM still needs. */
+export const tableLeft = (a, b) => tableRows(a, b).left;

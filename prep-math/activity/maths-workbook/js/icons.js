@@ -234,6 +234,27 @@ export const ICON = {
       dot(5.8, 12, 1.9, PAPER) + dot(12, 12, 2.2, LOUD) + dot(18.2, 12, 1.9, LEAF)
   ),
 
+  /* Two lists side by side with the same thing struck in each. */
+  pfList: svg(
+    `<rect x="2.6" y="4" width="8" height="16" rx="1.4" fill="${PAPER}" opacity="0.5"/>` +
+      `<rect x="13.4" y="4" width="8" height="16" rx="1.4" fill="${LEAF}" opacity="0.5"/>` +
+      bar(3.6, 8, 9.6, 8, 1.4, QUIET) + bar(14.4, 8, 20.4, 8, 1.4, QUIET) +
+      bar(3.6, 12.4, 9.6, 12.4, 1.8, LOUD) + bar(14.4, 12.4, 20.4, 12.4, 1.8, LOUD) +
+      bar(3.6, 16.6, 9.6, 16.6, 1.4, QUIET) + bar(14.4, 16.6, 20.4, 16.6, 1.4, QUIET)
+  ),
+  /* The ladder with two numbers in it. */
+  pfTable: svg(
+    `<path d="M8 3.6v16.8" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>` +
+      bar(8, 4.4, 21.4, 4.4, 1.6, QUIET) +
+      dot(5, 8.4, 1.8, LOUD) + dot(5, 13.4, 1.8, LOUD) +
+      `<rect x="10" y="6.8" width="4.4" height="3.2" rx="1" fill="${PAPER}"/>` +
+      `<rect x="16.2" y="6.8" width="4.4" height="3.2" rx="1" fill="${LEAF}"/>` +
+      `<rect x="10" y="11.8" width="4.4" height="3.2" rx="1" fill="${PAPER}"/>` +
+      `<rect x="16.2" y="11.8" width="4.4" height="3.2" rx="1" fill="${LEAF}"/>` +
+      `<rect x="10" y="16.8" width="4.4" height="3.2" rx="1" fill="${GOLD}"/>` +
+      `<rect x="16.2" y="16.8" width="4.4" height="3.2" rx="1" fill="${GOLD}"/>`
+  ),
+
   /* A till receipt: the two of them in the words a question is asked in. */
   pfWords: svg(
     `<rect x="4.6" y="3.4" width="14.8" height="17.2" rx="1.6" fill="${PAPER}"/>` +

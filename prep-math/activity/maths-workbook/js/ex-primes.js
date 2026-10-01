@@ -59,7 +59,9 @@ import {
 } from "/utils/components/workbook/factortree.js";
 import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
-import { arrayOf, ladder, ladderKey, vennHtml, vennParts } from "./primeart.js";
+import {
+  arrayOf, ladder, ladderKey, vennHtml, vennParts, tableHtml, tableKey, tableRows, tableLeft,
+} from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
 
 /* ── the paper's furniture ───────────────────────────────────────────────── */
@@ -86,6 +88,8 @@ export const PRIME_GROUPS = [
   { id: "pf-lcm", label: "Lowest common multiple", blurb: "The smallest number both of them go into." },
   { id: "pf-venn", label: "Both, from two rings", blurb: "One picture: the middle is the HCF and the whole of it is the LCM." },
   { id: "pf-words", label: "HCF and LCM in the shops", blurb: "The hard part is knowing which one the question wants." },
+  { id: "pf-list", label: "The listing way", blurb: "Write both lists out and strike what is in each — slow, sure, and where it all comes from." },
+  { id: "pf-table", label: "The table way", blurb: "Both numbers down one ladder: the HCF, the LCM, and both at once." },
   { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
   { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
   { id: "pf-cuberoot", label: "Cube roots from the primes", blurb: "The same, in threes." },
@@ -522,10 +526,11 @@ const pfHcf = {
   blurb: "Write both as primes, ring what they share, multiply it.",
   heading: "Highest common factor",
   instruction: () =>
-    "The <b>highest common factor</b> of two numbers is the biggest number that divides them both. Write each "
-    + "one as its primes, find the primes they BOTH have — counting them, so two 2s in each list means two 2s "
-    + "shared — and multiply those together. Nothing else can divide both, because anything that did would be "
-    + "made of primes they both have, and you have just taken all of those.",
+    "The <b>highest common factor</b> of two numbers is the biggest number that divides them both. Both lists of "
+    + "primes are written out for you. Write the ones they BOTH have — counting them, so a 2 that is in one "
+    + "list three times and the other twice is shared twice — and each one you write is struck off both lists, "
+    + "so what is still standing is what they do not share. Multiply the struck ones and you have the HCF; "
+    + "multiply the rest and the HCF times that is the LCM.",
   cols: 1,
   defaultCount: 2,
   make(r, o, k, i) {
@@ -534,11 +539,34 @@ const pfHcf = {
   },
   render(item) {
     const shared = sharedPrimes(item.a, item.b);
+    const spare = ownPrimes(item.a, item.b).concat(ownPrimes(item.b, item.a));
+    /* THE PRIMES ARE PRINTED AND THEY STRIKE THEMSELVES OUT. Writing a prime
+       into the "both" line crosses it off BOTH lists above, which is what a
+       hand does with a pencil and the only way to keep count of a 2 that is
+       in one list three times and in the other twice. */
+    const line = (n, other) => {
+      const mine = primesOf(n);
+      const theirs = sharedPrimes(n, other);
+      const left = theirs.slice();
+      return mine.map((v) => {
+        const at = left.indexOf(v);
+        if (at < 0) return `<span class="pf-p">${v}</span>`;
+        left.splice(at, 1);
+        /* which of the shared ones this is, counting from the left */
+        const k = theirs.length - left.length - 1;
+        return `<span class="pf-p" data-cross="s${k}">${v}</span>`;
+      }).join(" × ");
+    };
+    const crossBox = (k) => `<span class="wb-answer" data-crosses="s${k}"></span>`;
     return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
-      + ask(`${item.a} = ${primesOf(item.a).map(() => box()).join(" × ")}`)
-      + ask(`${item.b} = ${primesOf(item.b).map(() => box()).join(" × ")}`)
-      + ask(`What they both have: ${shared.map(() => box()).join(" × ")}`)
-      + ask(`So the HCF of ${item.a} and ${item.b} is ${box()}.`);
+      + ask(`${item.a} = ${line(item.a, item.b)}`)
+      + ask(`${item.b} = ${line(item.b, item.a)}`)
+      + ask(`Write the primes they BOTH have — each one you write is struck off both lists: `
+        + `${shared.map((v, k) => crossBox(k)).join(" × ")}`)
+      + ask(`Multiply those, and that is the HCF: ${box()}`)
+      + ask(`Now the ones NOT struck off — what they do not share: ${spare.map(() => box()).join(" × ")}`)
+      + ask(`Multiply those: ${box()}`)
+      + ask(`And the HCF times THAT is ${box()} — which is the LCM, got out of the HCF for one multiplication.`);
   },
   worked() {
     return worked(lead("<b>36</b> and <b>48</b>")
@@ -547,13 +575,18 @@ const pfHcf = {
         + "another but 48 does not. So they share 2 × 2 × 3 = <b>12</b>, and 12 is the highest common factor."));
   },
   key(item) {
-    return primesOf(item.a).map((p) => want.num(p))
-      .concat(primesOf(item.b).map((p) => want.num(p)))
-      .concat(sharedPrimes(item.a, item.b).map((p) => want.num(p)))
-      .concat([want.num(hcfOf(item.a, item.b))]);
+    const spare = ownPrimes(item.a, item.b).concat(ownPrimes(item.b, item.a));
+    const hcf = hcfOf(item.a, item.b);
+    const over = spare.reduce((t, p) => t * p, 1);
+    return sharedPrimes(item.a, item.b).map((p) => want.num(p))
+      .concat([want.num(hcf)])
+      .concat(spare.map((p) => want.num(p)))
+      .concat([want.num(over), want.num(hcf * over)]);
   },
   answer(item) {
-    return [`HCF of ${item.a} and ${item.b} = ${sharedPrimes(item.a, item.b).join(" × ") || 1} = ${hcfOf(item.a, item.b)}`];
+    const hcf = hcfOf(item.a, item.b);
+    return [`HCF ${sharedPrimes(item.a, item.b).join(" × ") || 1} = ${hcf}; `
+      + `the rest multiply to ${lcmOf(item.a, item.b) / hcf}, and ${hcf} × ${lcmOf(item.a, item.b) / hcf} = ${lcmOf(item.a, item.b)} (the LCM)`];
   },
 };
 
@@ -566,7 +599,9 @@ const pfLcm = {
   instruction: () =>
     "The <b>lowest common multiple</b> is the smallest number that BOTH of them go into. Take what they share, "
     + "and then everything each of them has on top of that: the shared part is only counted once, because it is "
-    + "already there. Leave any of it out and one of the two will not go in.",
+    + "already there. Leave any of it out and one of the two will not go in. There is a short way at the "
+    + "bottom, and it is worth knowing: the two numbers multiplied, divided by the HCF, is the LCM — because "
+    + "multiplying them counts the shared part twice and dividing by the HCF takes the extra one back off.",
   cols: 1,
   defaultCount: 2,
   make(r, o, k, i) {
@@ -581,7 +616,9 @@ const pfLcm = {
       + ask(`${item.a} also has ${parts.left.length ? parts.left.map(() => box()).join(" × ") : "nothing else"}, `
         + `and ${item.b} also has ${parts.right.length ? parts.right.map(() => box()).join(" × ") : "nothing else"}.`)
       + ask(`All of that multiplied: the LCM of ${item.a} and ${item.b} is ${box()}.`)
-      + ask(`Check: does ${item.a} go into it? ${tick("yes", "no")}`);
+      + ask(`Check: does ${item.a} go into it? ${tick("yes", "no")}`)
+      + ask(`And the short way, once you have the HCF: ${item.a} × ${item.b} = ${box()}, `
+        + `and that divided by the HCF (${box()}) is ${box()} — the same answer.`);
   },
   worked() {
     return worked(lead("<b>36</b> and <b>48</b>")
@@ -594,7 +631,10 @@ const pfLcm = {
     return parts.mid.map((p) => want.num(p))
       .concat(parts.left.map((p) => want.num(p)))
       .concat(parts.right.map((p) => want.num(p)))
-      .concat([want.num(lcmOf(item.a, item.b)), want.tick(0)]);
+      .concat([
+        want.num(lcmOf(item.a, item.b)), want.tick(0),
+        want.num(item.a * item.b), want.num(hcfOf(item.a, item.b)), want.num(lcmOf(item.a, item.b)),
+      ]);
   },
   answer(item) {
     return [`LCM of ${item.a} and ${item.b} = ${lcmOf(item.a, item.b)}`];
@@ -754,6 +794,227 @@ const pfWords = {
     return [`${t.kind.toUpperCase()} = ${v}${t.more ? `, then ${t.more.value(item.a, item.b, v)}` : ""}`];
   },
 };
+
+/* ═══ K2. THE LISTING WAY ═════════════════════════════════════════════════
+   Where it all comes from, and the method nobody should be without: write
+   both lists out and look at what is in each.
+
+     the factors of 24   1  2  3  4  6  8  12  24
+     the factors of 36   1  2  3  4  6  9  12  18  36
+     in both             1  2  3  4  6  12          → the HIGHEST is 12
+
+     the multiples of 8    8  16  24  32  40  48
+     the multiples of 12  12  24  36  48  60  72
+     in both               24  48                   → the LOWEST is 24
+
+   It is slow, and that is not a fault: it is the DEFINITION of both words,
+   done by hand, and a child who has done it half a dozen times knows what the
+   quick methods are quick AT. The lists are struck with a finger here, the
+   same way the primes were struck in the sieve. */
+
+/* Small numbers on purpose: a list of multiples that runs off the page
+   teaches nothing but how to rule lines. */
+const LIST_PAIRS = {
+  gentle: [[4, 6], [6, 8], [8, 12], [6, 9], [10, 15], [9, 12]],
+  middle: [[8, 12], [12, 18], [10, 15], [14, 21], [15, 20], [12, 20]],
+  stretch: [[12, 18], [18, 24], [16, 24], [20, 30], [21, 28], [24, 36]],
+};
+const listPairFor = (o) => LIST_PAIRS[levelOf(o).id] || LIST_PAIRS.gentle;
+
+const pfListHcf = {
+  id: "pf-list-hcf",
+  group: "pf-list",
+  label: "List the factors of both",
+  blurb: "Strike what is in both lists; the biggest one is the HCF.",
+  heading: "The listing way — the HCF",
+  instruction: () =>
+    "Write out all the factors of each number — on screen, strike the ones that are in BOTH lists. Every one you "
+    + "strike is a <b>common factor</b>, and the biggest of them is the <b>highest common factor</b>. That is "
+    + "not a trick or a method: it is what the words say, done by hand.",
+  cols: 1,
+  defaultCount: 1,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(listPairFor(o));
+    return { a, b };
+  },
+  render(item) {
+    const fa = factorsOf(item.a);
+    const fb = factorsOf(item.b);
+    return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+      + ask(`The factors of ${item.a} — strike the ones that are also factors of ${item.b}:`)
+      + strikeHtml({ numbers: fa, cols: Math.min(fa.length, 9), label: `the factors of ${item.a}` })
+      + ask(`The factors of ${item.b} — strike the ones that are also factors of ${item.a}:`)
+      + strikeHtml({ numbers: fb, cols: Math.min(fb.length, 9), label: `the factors of ${item.b}` })
+      + ask(`The biggest number you struck in both is the HCF: ${box()}`);
+  },
+  worked() {
+    const fa = factorsOf(24);
+    return worked(lead("<b>24</b> and <b>36</b>")
+      + strikeHtml({ numbers: fa, cols: 8, answer: true, struck: factorsOf(24).filter((v) => 36 % v === 0) })
+      + strikeHtml({ numbers: factorsOf(36), cols: 9, answer: true, struck: factorsOf(36).filter((v) => 24 % v === 0) })
+      + say("1, 2, 3, 4, 6 and 12 are in both lists — they are the common factors — and the biggest of them is "
+        + "<b>12</b>. Notice that every one of them divides 12: the common factors of two numbers are exactly "
+        + "the factors of their HCF, which is the real reason it is worth finding."));
+  },
+  key(item) {
+    const both = factorsOf(item.a).filter((v) => item.b % v === 0);
+    return [
+      want.strike({ numbers: both, nth: 0, says: both.join(", ") }),
+      want.strike({ numbers: both, nth: 1, says: both.join(", ") }),
+      want.num(hcfOf(item.a, item.b)),
+    ];
+  },
+  answer(item) {
+    const both = factorsOf(item.a).filter((v) => item.b % v === 0);
+    return [`in both: ${both.join(", ")} — the HCF is ${hcfOf(item.a, item.b)}`];
+  },
+};
+
+const pfListLcm = {
+  id: "pf-list-lcm",
+  group: "pf-list",
+  label: "List the multiples of both",
+  blurb: "Strike what is in both lists; the smallest one is the LCM.",
+  heading: "The listing way — the LCM",
+  instruction: () =>
+    "Count up in each number and write the multiples out. Strike the ones that are in BOTH lists: those are the "
+    + "<b>common multiples</b>, and the smallest of them is the <b>lowest common multiple</b>. The lists go on "
+    + "for ever, which is why the word is LOWEST and not just common.",
+  cols: 1,
+  defaultCount: 1,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(listPairFor(o));
+    return { a, b };
+  },
+  render(item) {
+    const l = lcmOf(item.a, item.b);
+    const upTo = l * 2;
+    const ms = (n) => { const out = []; for (let v = n; v <= upTo; v += n) out.push(v); return out; };
+    return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+      + ask(`The multiples of ${item.a} — strike the ones that are also multiples of ${item.b}:`)
+      + strikeHtml({ numbers: ms(item.a), cols: Math.min(ms(item.a).length, 9), label: `the multiples of ${item.a}` })
+      + ask(`The multiples of ${item.b} — strike the ones that are also multiples of ${item.a}:`)
+      + strikeHtml({ numbers: ms(item.b), cols: Math.min(ms(item.b).length, 9), label: `the multiples of ${item.b}` })
+      + ask(`The smallest number you struck in both is the LCM: ${box()}`);
+  },
+  worked() {
+    const ms = (n, upTo) => { const out = []; for (let v = n; v <= upTo; v += n) out.push(v); return out; };
+    return worked(lead("<b>8</b> and <b>12</b>")
+      + strikeHtml({ numbers: ms(8, 48), cols: 6, answer: true, struck: [24, 48] })
+      + strikeHtml({ numbers: ms(12, 48), cols: 4, answer: true, struck: [24, 48] })
+      + say("24 and 48 are in both lists, and 48 is only there because 24 was — every common multiple is a "
+        + "multiple of the LOWEST one. So the answer is <b>24</b>, and the list could have stopped there."));
+  },
+  key(item) {
+    const l = lcmOf(item.a, item.b);
+    const both = [];
+    for (let v = l; v <= l * 2; v += l) both.push(v);
+    return [
+      want.strike({ numbers: both, nth: 0, says: both.join(", ") }),
+      want.strike({ numbers: both, nth: 1, says: both.join(", ") }),
+      want.num(l),
+    ];
+  },
+  answer(item) {
+    return [`the LCM of ${item.a} and ${item.b} is ${lcmOf(item.a, item.b)}`];
+  },
+};
+
+/* ═══ K3. THE TABLE WAY ═══════════════════════════════════════════════════
+   Both numbers down one ladder. Three exercises out of one picture, because
+   the three things a child is asked for are three different stopping places:
+
+     the HCF     divide by what goes into BOTH, and stop when nothing does
+     the LCM     carry on, dividing whatever will go, until both are 1
+     both        stop where the HCF stopped, and multiply it by the two
+                 numbers left at the foot — which is the LCM
+
+   The last one is the one to keep. It is a single piece of work that answers
+   both questions, and it shows WHY the short way works: the left-hand column
+   is what they share and the foot of the table is what they do not. */
+
+function tableEx(id, kind, label, count) {
+  const both = kind === "both";
+  return {
+    id,
+    group: "pf-table",
+    label,
+    blurb: both
+      ? "One table, both answers: the side gives the HCF and the foot finishes the LCM."
+      : kind === "hcf"
+        ? "Divide both by what goes into both, and stop when nothing does."
+        : "Carry on dividing until both are 1; everything down the side is the LCM.",
+    heading: `The table way — ${both ? "both at once" : kind === "hcf" ? "the HCF" : "the LCM"}`,
+    instruction: () =>
+      "Write both numbers at the top. Down the left write a prime that goes into <b>"
+      + (kind === "lcm" ? "either of them" : "both of them") + "</b>, and underneath write what each one becomes"
+      + (kind === "lcm" ? " (a number it does not go into is simply copied down). " : ". ")
+      + (kind === "hcf"
+        ? "Stop when no prime goes into both any more. Everything down the left, multiplied, is the HCF."
+        : kind === "lcm"
+          ? "Keep going until both of them are 1. Everything down the left, multiplied, is the LCM."
+          : "Stop when no prime goes into both. Down the left is the HCF — and that times the two numbers left "
+            + "at the foot is the LCM, which is the whole method in one table."),
+    cols: 1,
+    defaultCount: count,
+    hardest: kind === "lcm",
+    make(r, o, k, i) {
+      const [a, b] = r.pick(pairsFor(o));
+      return { a, b };
+    },
+    render(item) {
+      const { rows, left } = tableRows(item.a, item.b, { toOne: kind === "lcm" });
+      const down = rows.map((x) => x.by);
+      return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+        + `<div class="rw-art">${tableHtml(item.a, item.b, { kind })}</div>`
+        + (kind === "lcm"
+          ? ask(`Everything down the left multiplied — the LCM: ${box()}`)
+          : ask(`Everything down the left multiplied — the HCF: ${box()}`))
+        + (both
+          ? ask(`The two left at the foot are ${left[0]} and ${left[1]}. `
+            + `So the LCM is the HCF × ${left[0]} × ${left[1]} = ${box()}.`)
+          : "")
+        + (kind === "hcf"
+          ? ask(`Nothing goes into both of ${left[0]} and ${left[1]} any more — is that right? ${tick("yes", "no")}`)
+          : "");
+    },
+    worked() {
+      const { left } = tableRows(36, 48);
+      return worked(lead("<b>36</b> and <b>48</b>")
+        + `<div class="rw-art">${tableHtml(36, 48, { kind, answer: true })}</div>`
+        + say(kind === "lcm"
+          ? "Keep dividing until both are 1 — a number a prime does not go into is just copied down. Everything "
+            + "down the left is 2 × 2 × 3 × 2 × 2 × 3 = <b>144</b>, the LCM."
+          : kind === "hcf"
+            ? `2 goes into both, and again, and then 3. After that nothing goes into both ${left[0]} and `
+              + `${left[1]}, so we stop: 2 × 2 × 3 = <b>12</b> is the HCF.`
+            : `Down the left, 2 × 2 × 3 = <b>12</b> — the HCF. At the foot, ${left[0]} and ${left[1]} have `
+              + `nothing left in common. So the LCM is 12 × ${left[0]} × ${left[1]} = <b>${12 * left[0] * left[1]}</b>, `
+              + "and one table has answered both questions."));
+    },
+    key(item) {
+      const out = tableKey(item.a, item.b, kind).map((e) => want.num(e.value));
+      if (kind === "lcm") out.push(want.num(lcmOf(item.a, item.b)));
+      else {
+        out.push(want.num(hcfOf(item.a, item.b)));
+        if (both) out.push(want.num(lcmOf(item.a, item.b)));
+        else out.push(want.tick(0));
+      }
+      return out;
+    },
+    answer(item) {
+      return [kind === "lcm"
+        ? `LCM ${lcmOf(item.a, item.b)}`
+        : both
+          ? `HCF ${hcfOf(item.a, item.b)}, and ${hcfOf(item.a, item.b)} × ${tableLeft(item.a, item.b).join(" × ")} = ${lcmOf(item.a, item.b)}`
+          : `HCF ${hcfOf(item.a, item.b)}`];
+    },
+  };
+}
+
+const pfTableHcf = tableEx("pf-table-hcf", "hcf", "The table — the HCF", 2);
+const pfTableLcm = tableEx("pf-table-lcm", "lcm", "The table — the LCM", 1);
+const pfTableBoth = tableEx("pf-table-both", "both", "One table, both answers", 2);
 
 /* ═══ L. what squaring does to the primes ═════════════════════════════════
    THE DISCOVERY THE TWO SECTIONS AFTER IT REST ON, and it is done by looking
@@ -973,5 +1234,7 @@ export const PRIME_EXERCISES = [
   pfTreeDrag, pfTreeGrow,
   pfLadder, pfProduct, pfIndex, pfCount,
   pfHcf, pfLcm, pfVenn, pfWords,
+  pfListHcf, pfListLcm,
+  pfTableHcf, pfTableLcm, pfTableBoth,
   pfWhy, pfSqRoot, pfCubeRoot,
 ];

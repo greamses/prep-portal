@@ -1341,3 +1341,56 @@ thead .pv-chart__side {
   font-size: 10pt;
   font-weight: 700;
 }
+
+/* a prime in a printed list, struck off when it has been written down */
+.pf-p {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.6mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+}
+.pf-p.is-spent::after {
+  content: "";
+  position: absolute;
+  left: -0.4mm;
+  right: -0.4mm;
+  top: 50%;
+  height: 0.45mm;
+  background: #c0453f;
+  transform: rotate(-8deg);
+}
+
+/* ── the table of two numbers (primeart.js tableHtml) ─────────────────────
+   What divides both goes down the left, outside the rule; what each number
+   becomes goes in its own column. The last row of the common part carries a
+   line under it: that is where the HCF stops and the LCM's leftovers begin. */
+.pf-tab {
+  display: grid;
+  grid-template-columns: 13mm 20mm 20mm;
+  align-items: center;
+  gap: 1mm 2mm;
+  width: max-content;
+  margin: 2mm 0 1mm;
+  padding-left: 1mm;
+}
+.pf-tab__by {
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  padding-right: 1.6mm;
+  border-right: 0.5mm solid #2a2723;
+  min-height: 9mm;
+  width: 100%;
+}
+.pf-tab__head { border-right: 0; border-bottom: 0.5mm solid #2a2723; }
+.pf-tab__said {
+  display: grid;
+  place-items: center;
+  min-height: 8mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11pt;
+  font-weight: 700;
+}
+.pf-tab__in.wb-answer { width: 15mm; height: 8mm; justify-self: center; }
+.pf-tab__said.is-last, .pf-tab__in.is-last { border-bottom: 0.5mm solid #2a2723; padding-bottom: 0.6mm; }

@@ -130,6 +130,8 @@ mountBuilder({
     "pf-lcm": ICON.pfLcm,
     "pf-venn": ICON.pfVenn,
     "pf-words": ICON.pfWords,
+    "pf-list": ICON.pfList,
+    "pf-table": ICON.pfTable,
     "pf-why": ICON.pfWhy,
     "pf-sqroot": ICON.pfSqRoot,
     "pf-cuberoot": ICON.pfCubeRoot,
