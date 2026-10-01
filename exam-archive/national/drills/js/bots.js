@@ -18,6 +18,11 @@ export { botName };
 // operations, so joiners score the host's bots identically.
 const RMM_PACE = 5;
 
+// Fraction Bars is slower again: one point is finding the common denominator
+// and then carrying about ten bars across, one at a time. Keyed off the room's
+// ACTIVITY (see leaderboard.js) — its operations list is only a placeholder.
+export const BARS_PACE = 6;
+
 export function botPaceFor(operations) {
   return (operations || []).includes('rmm') ? RMM_PACE : 1;
 }

@@ -22,6 +22,7 @@ export const { matchmake, createCodeRoom, joinRoomByCode } = createRoomClient({
   // existing drill matchmaking is undisturbed — 'grid_…' can't collide with it.
   bucketOf: (c) => {
     if (c.activity === 'grid') return `grid_${c.gridBlanks}`;
+    if (c.activity === 'bars') return 'bars'; // no dial — one bucket
     return [
       [...c.operations].sort().join(','),
       [...c.tables].sort((a, b) => a - b).join(','),

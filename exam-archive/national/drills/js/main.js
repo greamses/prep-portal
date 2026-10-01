@@ -12,6 +12,7 @@ import { botName } from './bots.js';
 import { matchmake, createCodeRoom, joinRoomByCode } from './matchmaking.js';
 import { startRound } from './game.js';
 import { startGridRound } from './grid.js';
+import { startBarsRound } from './bars.js';
 import { finishRound } from './leaderboard.js';
 import { renderLeaderboard } from '/utils/games/leaderboard-view.js';
 import {
@@ -56,6 +57,9 @@ const CATEGORY_OPERATIONS = {
   // placeholder so the room doc still carries a valid, non-empty operations
   // list; the grid round ignores it entirely (see js/grid.js).
   timestable: ['multiply'],
+  // Fraction Bars has no operations step either — every sum is an addition of
+  // unlike fractions, so 'fracAdd' is both the placeholder and the truth.
+  fracbars: ['fracAdd'],
 };
 const CATEGORY_DEFAULT_OPS = {
   basic: ['multiply', 'divide'],
@@ -63,6 +67,7 @@ const CATEGORY_DEFAULT_OPS = {
   fractions: [],
   chemistry: ['rmm'],
   timestable: ['multiply'],
+  fracbars: ['fracAdd'],
 };
 
 // Fractions gets a second selector dimension — which shape of fraction
@@ -152,7 +157,7 @@ let timeLimit = mem.get('timeLimit', 60, [30, 60, 90, 120]);
 let roomAction = mem.get('roomAction', 'quickfill', ['quickfill', 'create', 'join']); // multiplayer: quickfill|create|join · versus: create|join
 if (mode === 'versus' && roomAction === 'quickfill') roomAction = 'create'; // Versus has no Quick Fill
 
-let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'timestable']);
+let categoryValue = mem.get('category', 'basic', ['basic', 'exponent', 'fractions', 'chemistry', 'timestable', 'fracbars']);
 let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // Tables (grid filler) only — how much of each 5×5 grid is blank. The grid is
 // always 5×5 with a fresh mix of 1..12 tables per grid, streamed one after the
@@ -173,6 +178,7 @@ const compounds = new Set(savedSets.length ? savedSets : ALL_COMPOUND_SETS); // 
 // Chemistry's single operation is never offered as a step, so a remembered
 // setup that somehow lost it would leave the player unable to start.
 if (categoryValue === 'chemistry') operations.add('rmm');
+if (categoryValue === 'fracbars') operations.add('fracAdd'); // likewise never offered
 
 // One save covers this section's whole branch — called wherever it exits.
 const saveContent = () => mem.save({
@@ -183,9 +189,12 @@ const saveContent = () => mem.save({
   gridBlanks,
 });
 
-// Which play surface the room runs — 'grid' for Tables, 'drill' for everything
-// else. Written to the room doc so a code-joiner plays the host's surface.
-const gameActivity = () => (categoryValue === 'timestable' ? 'grid' : 'drill');
+// Which play surface the room runs — 'grid' for Tables, 'bars' for Fraction
+// Bars, 'drill' for everything else. Written to the room doc so a code-joiner
+// plays the host's surface.
+const gameActivity = () => (
+  categoryValue === 'timestable' ? 'grid' : categoryValue === 'fracbars' ? 'bars' : 'drill'
+);
 
 function getCurrentUser() {
   return new Promise((resolve) => {
@@ -213,6 +222,7 @@ function getTablesPool() {
   // Tables (grid filler) doesn't draw from a number pool, but the room doc's
   // `tables` still has to be a non-empty list — a single placeholder does it.
   if (categoryValue === 'timestable') return [1];
+  if (categoryValue === 'fracbars') return [1]; // same — the sums are dealt by js/bars.js
   if (categoryValue === 'chemistry') return [1];
   if (categoryValue === 'fractions') return [...denominators];
   if (isNumbersMode()) return [...tables];
@@ -224,6 +234,8 @@ function getTablesPool() {
 function updateStartDisabled() {
   // Tables always has a valid setup (size + blanks both default to a value).
   if (categoryValue === 'timestable') { startBtn.disabled = false; return; }
+  // Fraction Bars has nothing to set up at all.
+  if (categoryValue === 'fracbars') { startBtn.disabled = false; return; }
   const needsNumbers = isNumbersMode() && tables.size === 0;
   const isFractions = categoryValue === 'fractions';
   const needsFractionType = isFractions && fractionTypes.size === 0;
@@ -284,6 +296,8 @@ player.start('name');
      Exponent  → Operations → Number Range (1–100)
      Fractions → Fraction Type → Operations → Denominators (2–12)
      Chemistry → Compounds (inorganic / organic)
+     Tables    → Blanks (light / heavy)
+     Fraction Bars → nothing; the category is the whole choice
 
    Fractions has NO number range on purpose: in rng.js that same pool supplies
    the denominators, so "90–100" would mean fractions over ninety-somethings.
@@ -437,6 +451,7 @@ renderChoiceStep(topic, 'category', {
     { value: 'fractions', label: 'Fractions', checked: categoryValue === 'fractions' },
     { value: 'chemistry', label: 'Chemistry', checked: categoryValue === 'chemistry' },
     { value: 'timestable', label: 'Tables', checked: categoryValue === 'timestable' },
+    { value: 'fracbars', label: 'Fraction Bars', checked: categoryValue === 'fracbars' },
   ],
   onPick: (v) => {
     if (v !== categoryValue) {
@@ -456,7 +471,10 @@ renderChoiceStep(topic, 'category', {
       updateStartDisabled();
     }
 
-    if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
+    // Fraction Bars has no dial to turn: unlike fractions, bars from 1/2 to
+    // 1/20. Picking it is the last step of this section.
+    if (v === 'fracbars') { saveContent(); flow.next(); }
+    else if (v === 'timestable') { renderGridBlanksStep(); topic.goTo('grid-blanks'); }
     else if (v === 'chemistry') { renderCompoundsPick(); topic.goTo('compounds'); }
     else if (v === 'fractions') { renderFractionTypePick(); topic.goTo('fraction-type'); }
     else { renderOperationsPick(); topic.goTo('operations'); }
@@ -575,6 +593,9 @@ const flow = createSectionFlow([
           { label: '5×5' },
           { label: gridBlanks === 'heavy' ? 'Heavy' : 'Light' },
         ];
+      }
+      if (categoryValue === 'fracbars') {
+        return [{ label: 'Fraction Bars' }, { label: 'Unlike fractions' }];
       }
       // Chemistry's one operation IS the category — "Chemistry · Molecular
       // Mass · Inorganic" says it without repeating itself.
@@ -758,6 +779,13 @@ async function playRoundAndShowResults(room, myName) {
         blanks: room.gridBlanks,
         roster,
       })
+    : room.activity === 'bars'
+    ? await startBarsRound({
+        seed: room.seed,
+        timeLimit: room.timeLimit,
+        startAt: room.startAt,
+        roster,
+      })
     : await startRound({
         seed: room.seed,
         timeLimit: room.timeLimit,
@@ -788,7 +816,8 @@ async function playRoundAndShowResults(room, myName) {
       // Read off the ROOM, so a joiner scores the host's bots the same way.
       operations: room.operations,
       // Grid rooms score bots on cells filled (a cell is a times-table
-      // product) — leaderboard.js branches on activity.
+      // product), bars rooms on sums lined up — leaderboard.js branches on
+      // activity.
       activity: room.activity,
       gridBlanks: room.gridBlanks,
       // The board goes up straight away and fills in as the room finishes,
