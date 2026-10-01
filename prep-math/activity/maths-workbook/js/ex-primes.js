@@ -67,6 +67,7 @@ import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
 import {
   arrayOf, ladder, ladderKey, vennHtml, vennParts, tableHtml, tableKey, tableRows, tableLeft,
+  euclidHtml, euclidKey, euclidSteps,
 } from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
 
@@ -96,6 +97,8 @@ export const PRIME_GROUPS = [
   { id: "pf-words", label: "HCF and LCM in the shops", blurb: "The hard part is knowing which one the question wants." },
   { id: "pf-list", label: "The listing way", blurb: "Write both lists out and strike what is in each — slow, sure, and where it all comes from." },
   { id: "pf-table", label: "The table way", blurb: "Both numbers down one ladder: the HCF, the LCM, and both at once." },
+  { id: "pf-euclid", label: "Euclid's way", blurb: "Divide, take the remainder, do it again — no factorising at all." },
+  { id: "pf-many", label: "Three numbers and four", blurb: "The same table, with more numbers in it." },
   { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
   { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
   { id: "pf-cuberoot", label: "Cube roots from the primes", blurb: "The same, in threes." },
@@ -1026,6 +1029,158 @@ const pfTableHcf = tableEx("pf-table-hcf", "hcf", "The table — the HCF", 2);
 const pfTableLcm = tableEx("pf-table-lcm", "lcm", "The table — the LCM", 1);
 const pfTableBoth = tableEx("pf-table-both", "both", "One table, both answers", 2);
 
+/* ═══ K4. EUCLID'S WAY ════════════════════════════════════════════════════
+   The oldest method in the book, and the one a computer uses: divide the
+   bigger by the smaller, then divide THAT by what was left over, and keep
+   going until nothing is left over. The last number you divided by is the
+   HCF, and nothing was factorised at all.
+
+   It is worth saying why it works, because otherwise it is a trick: anything
+   that divides both numbers also divides what is left when you take one away
+   from the other — and a remainder is what is left after taking it away as
+   many times as it will go. So each line has exactly the same common factors
+   as the line before it, and the numbers get smaller every time. When the
+   remainder is nothing, the divisor goes into both of them, and nothing
+   bigger can.
+
+   This is the one to reach for when the numbers are too big to factorise. */
+
+const EUC_PAIRS = {
+  gentle: [[48, 36], [60, 36], [45, 30], [56, 42], [63, 36], [52, 39]],
+  middle: [[84, 36], [96, 60], [120, 45], [91, 39], [132, 84], [105, 42]],
+  stretch: [[252, 105], [364, 156], [288, 108], [374, 154], [399, 147], [385, 165]],
+};
+
+const eucPairFor = (o) => EUC_PAIRS[levelOf(o).id] || EUC_PAIRS.gentle;
+
+const pfEuclid = {
+  id: "pf-euclid",
+  group: "pf-euclid",
+  label: "Divide and take the remainder",
+  blurb: "Keep dividing by what was left over until nothing is.",
+  heading: "Euclid's way",
+  instruction: () =>
+    "Divide the bigger number by the smaller one and write the remainder. Then do the same again with the "
+    + "number you divided BY and the remainder you got — bring them down yourself, because that carrying down "
+    + "is the method. Keep going until the remainder is <b>0</b>: the number you divided by on that last line "
+    + "is the <b>HCF</b>. Nothing here is factorised, which is why this is the way to do it when the numbers "
+    + "are too big to factorise.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const [a, b] = r.pick(eucPairFor(o));
+    return { a, b };
+  },
+  render(item) {
+    return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+      + `<div class="rw-art">${euclidHtml(item.a, item.b)}</div>`
+      + ask(`The remainder is 0, so the HCF of ${item.a} and ${item.b} is ${box()}.`);
+  },
+  worked() {
+    return worked(lead("<b>48</b> and <b>36</b>")
+      + `<div class="rw-art">${euclidHtml(48, 36, { answer: true })}</div>`
+      + say("48 ÷ 36 is 1 with 12 over. Now do 36 ÷ 12 — the number we divided by, and what was left — and that "
+        + "is 3 with nothing over, so we stop: the <b>HCF is 12</b>. It works because whatever divides 48 and 36 "
+        + "also divides the 12 that is left over, so every line has the same common factors as the one before "
+        + "it — and the numbers get smaller until the answer is staring at you."));
+  },
+  key(item) {
+    return euclidKey(item.a, item.b).map((e) => want.num(e.value))
+      .concat([want.num(hcfOf(item.a, item.b))]);
+  },
+  answer(item) {
+    const st = euclidSteps(item.a, item.b);
+    return [`${st.map((x) => `${x.x} ÷ ${x.y} = ${x.q} r ${x.r}`).join("; ")} → HCF ${hcfOf(item.a, item.b)}`];
+  },
+};
+
+/* ═══ K5. THREE NUMBERS AND FOUR ══════════════════════════════════════════
+   The table never cared how many numbers were in it. Three or four go down
+   it exactly as two did, and the two answers are read off the same way:
+
+     the HCF   the primes that went into EVERY one of them, multiplied
+     the LCM   every prime down the left, multiplied
+
+   The second one is worth being careful about. With two numbers the LCM is
+   the HCF times what is left over, and a child who learns that as the rule
+   is wrong the moment there are three — 4, 6 and 9 have an HCF of 1 and an
+   LCM of 36, not 216. What is always true is the column: carry on until every
+   number is 1, and everything down the left multiplied is the LCM. */
+
+const MANY = {
+  3: {
+    gentle: [[4, 6, 8], [6, 9, 12], [8, 12, 16], [10, 15, 20], [6, 8, 12]],
+    middle: [[12, 18, 24], [10, 20, 25], [14, 21, 28], [16, 24, 40], [15, 20, 30]],
+    stretch: [[24, 36, 60], [30, 45, 75], [28, 42, 70], [36, 48, 72], [40, 60, 90]],
+  },
+  4: {
+    gentle: [[2, 4, 6, 8], [4, 6, 8, 12], [6, 9, 12, 18], [4, 8, 10, 12]],
+    middle: [[12, 18, 24, 36], [10, 15, 20, 30], [8, 12, 16, 24], [14, 21, 28, 42]],
+    stretch: [[24, 36, 48, 72], [20, 30, 40, 60], [18, 27, 36, 54], [30, 45, 60, 90]],
+  },
+};
+
+/** The HCF and the LCM of a whole list, worked the way the table works. */
+const hcfAll = (ns) => ns.reduce((t, v) => hcfOf(t, v));
+const lcmAll = (ns) => ns.reduce((t, v) => lcmOf(t, v));
+
+function manyEx(id, howMany, label, count) {
+  return {
+    id,
+    group: "pf-many",
+    label,
+    blurb: `${howMany} numbers down one table, and both answers off it.`,
+    heading: `${howMany === 3 ? "Three" : "Four"} numbers at once`,
+    instruction: () =>
+      `All ${howMany} go down the same table. Divide by a prime and write what each number becomes — a number `
+      + "the prime will not go into is simply written down again — and keep going until every one of them is 1. "
+      + "Then: the primes that went into <b>every</b> number are the <b>HCF</b>, and <b>everything</b> down the "
+      + "left is the <b>LCM</b>. Be careful with the second one: with three numbers the LCM is NOT the HCF times "
+      + "what is left, and the column is what you can trust.",
+    cols: 1,
+    defaultCount: count,
+    hardest: howMany === 4,
+    make(r, o, k, i) {
+      const pool = MANY[howMany][levelOf(o).id] || MANY[howMany].gentle;
+      return { ns: r.pick(pool) };
+    },
+    render(item) {
+      const { rows } = tableRows(item.ns, { toOne: true });
+      const all = rows.filter((x) => x.all).map((x) => x.by);
+      return lead(`<b>${item.ns.join("</b>, <b>")}</b>`)
+        + `<div class="rw-art">${tableHtml(item.ns, { kind: "lcm" })}</div>`
+        + ask(`The primes that went into every one of them: ${all.length ? all.map(() => box()).join(" × ") : "none"}`)
+        + ask(`So the HCF is ${box()}.`)
+        + ask(`And everything down the left multiplied — the LCM: ${box()}`);
+    },
+    worked() {
+      const ns = howMany === 3 ? [12, 18, 30] : [6, 9, 12, 18];
+      const { rows } = tableRows(ns, { toOne: true });
+      const all = rows.filter((x) => x.all).map((x) => x.by);
+      return worked(lead(`<b>${ns.join("</b>, <b>")}</b>`)
+        + `<div class="rw-art">${tableHtml(ns, { kind: "lcm", answer: true })}</div>`
+        + say(`${all.join(" and ")} went into every one of them, so the HCF is <b>${hcfAll(ns)}</b>. `
+          + `Everything down the left is ${rows.map((x) => x.by).join(" × ")} = <b>${lcmAll(ns)}</b>, the LCM. `
+          + "Notice that the HCF times what was left at the bottom is not the LCM here — that shortcut belongs "
+          + "to two numbers only, and the column is what works however many there are."));
+    },
+    key(item) {
+      const { rows } = tableRows(item.ns, { toOne: true });
+      const all = rows.filter((x) => x.all).map((x) => x.by);
+      return tableKey(item.ns, "lcm")
+        .map((e) => (e.kind === "by" ? want.num(e.value) : want.cell(e.value)))
+        .concat(all.map((p) => want.num(p)))
+        .concat([want.num(hcfAll(item.ns)), want.num(lcmAll(item.ns))]);
+    },
+    answer(item) {
+      return [`HCF ${hcfAll(item.ns)}, LCM ${lcmAll(item.ns)}`];
+    },
+  };
+}
+
+const pfMany3 = manyEx("pf-many-3", 3, "Three numbers at once", 1);
+const pfMany4 = manyEx("pf-many-4", 4, "Four numbers at once", 1);
+
 /* ═══ L. what squaring does to the primes ═════════════════════════════════
    THE DISCOVERY THE TWO SECTIONS AFTER IT REST ON, and it is done by looking
    rather than by being told: write the primes of a number, then the primes of
@@ -1471,5 +1626,6 @@ export const PRIME_EXERCISES = [
   pfHcf, pfLcm, pfVenn, pfWords,
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
+  pfEuclid, pfMany3, pfMany4,
   pfWhy, pfSqRoot, pfCubeRoot, pfPowWords, pfRootWords,
 ];

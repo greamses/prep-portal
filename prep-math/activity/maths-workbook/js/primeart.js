@@ -249,32 +249,42 @@ export const vennParts = (a, b) => ({
      "both"  the first, and then the leftovers multiplied onto it
 */
 
-/** The rows of the table: what divides both, and what it leaves. */
-export function tableRows(a, b, { toOne = false } = {}) {
+/**
+ * The rows of the table: what divides them all, and what it leaves.
+ *
+ * TWO NUMBERS OR TWENTY, it is the same table — `tableRows(36, 48)` and
+ * `tableRows([12, 18, 30])` both work, because the method never cared how
+ * many numbers were in it. Each row says what it divided by, what every
+ * number became, and whether that prime went into ALL of them (which is what
+ * the HCF is made of) or only some (which only the LCM needs).
+ */
+const listOf = (a, b) => (Array.isArray(a) ? a.slice() : [a, b]);
+const optsOf = (a, b, o) => (Array.isArray(a) ? (b || {}) : (o || {}));
+
+export function tableRows(a, b, o) {
+  const nums = listOf(a, b);
+  const { toOne = false } = optsOf(a, b, o);
   const rows = [];
-  let x = a;
-  let y = b;
-  /* while something divides BOTH */
-  for (let p = 2; p <= Math.max(x, y); p++) {
-    while (x % p === 0 && y % p === 0) {
-      rows.push({ by: p, a: x / p, b: y / p, both: true });
-      x /= p;
-      y /= p;
+  let now = nums.slice();
+  const top = Math.max(...nums);
+  /* while something divides EVERY one of them */
+  for (let p = 2; p <= top; p++) {
+    while (now.every((v) => v % p === 0)) {
+      now = now.map((v) => v / p);
+      rows.push({ by: p, vals: now.slice(), all: true });
     }
   }
-  if (!toOne) return { rows, left: [x, y] };
-  /* and then whatever will go into either of them, until both are 1 */
-  for (let p = 2; x > 1 || y > 1; p++) {
-    while (x % p === 0 || y % p === 0) {
-      const nx = x % p === 0 ? x / p : x;
-      const ny = y % p === 0 ? y / p : y;
-      rows.push({ by: p, a: nx, b: ny, both: false });
-      x = nx;
-      y = ny;
+  if (!toOne) return { rows, left: now.slice() };
+  /* and then whatever goes into ANY of them, until every one is 1 — a number
+     a prime will not go into is simply written down again */
+  for (let p = 2; now.some((v) => v > 1); p++) {
+    while (now.some((v) => v % p === 0)) {
+      now = now.map((v) => (v % p === 0 ? v / p : v));
+      rows.push({ by: p, vals: now.slice(), all: false });
     }
-    if (p > Math.max(a, b)) break;
+    if (p > top) break;
   }
-  return { rows, left: [x, y] };
+  return { rows, left: now.slice() };
 }
 
 /**
@@ -290,39 +300,37 @@ export function tableRows(a, b, { toOne = false } = {}) {
  *   kind      "hcf" | "lcm" | "both"
  *   answer    true prints it worked
  */
-export function tableHtml(a, b, { kind = "both", answer = false } = {}) {
-  const { rows, left } = tableRows(a, b, { toOne: kind === "lcm" });
-  const wa = String(a).length;
-  const wb = String(b).length;
-  const cols = wa + 1 + wb;
-  /* where each number's ONES column is: A keeps the left-hand block, B the
-     right-hand one, with one empty column between them */
-  const onesA = wb + 1;
-  const onesB = 0;
+export function tableHtml(a, b, o) {
+  const nums = listOf(a, b);
+  const { kind = "both", answer = false } = optsOf(a, b, o);
+  const { rows } = tableRows(nums, { toOne: kind === "lcm" });
+  /* each number keeps a block of columns as wide as itself, with one column
+     of air between blocks; the right-hand number's ones column is place 0 */
+  const wide = nums.map((v) => String(v).length);
+  const cols = wide.reduce((t, w) => t + w, 0) + (nums.length - 1);
+  const ones = [];
+  let at = 0;
+  for (let i = nums.length - 1; i >= 0; i--) { ones[i] = at; at += wide[i] + 1; }
 
   const sheet = colSheet({ cols, places: 0, steps: answer ? null : "listed" });
   let step = 0;
-  const put = (row, v, ones, cls = "") => {
+  const put = (row, v, one, cls = "") => {
     const t = String(v);
-    t.split("").forEach((ch, i) => sheet.mark(row, ones + t.length - 1 - i, ch, cls));
+    t.split("").forEach((ch, i) => sheet.mark(row, one + t.length - 1 - i, ch, cls));
   };
-  const boxes = (row, v, ones) => {
+  const boxes = (row, v, one) => {
     const t = String(v);
-    for (let i = 0; i < t.length; i++) sheet.box(row, ones + t.length - 1 - i, { step: step++ });
+    for (let i = 0; i < t.length; i++) sheet.box(row, one + t.length - 1 - i, { step: step++ });
   };
 
-  put(0, a, onesA);
-  put(0, b, onesB);
+  nums.forEach((v, i) => put(0, v, ones[i]));
   rows.forEach((r, k) => {
     if (answer) sheet.sign(k, String(r.by));
     else sheet.signBox(k, { step: step++, tone: "is-by" });
-    if (answer) {
-      put(k + 1, r.a, onesA, "is-left");
-      put(k + 1, r.b, onesB, "is-left");
-    } else {
-      boxes(k + 1, r.a, onesA);
-      boxes(k + 1, r.b, onesB);
-    }
+    r.vals.forEach((v, i) => {
+      if (answer) put(k + 1, v, ones[i], "is-left");
+      else boxes(k + 1, v, ones[i]);
+    });
   });
 
   /* WHERE THE HCF STOPS. On the table that answers both questions the line
@@ -334,17 +342,80 @@ export function tableHtml(a, b, { kind = "both", answer = false } = {}) {
   return sheet.html("mm-col mm-table");
 }
 
-/** What the table asks for, row by row: the divisor, then the two numbers. */
-export function tableKey(a, b, kind = "both") {
-  const { rows } = tableRows(a, b, { toOne: kind === "lcm" });
+/** What the table asks for, row by row: the divisor, then every number. */
+export function tableKey(a, b, kind) {
+  const nums = listOf(a, b);
+  const how = (Array.isArray(a) ? b : kind) || "both";
+  const { rows } = tableRows(nums, { toOne: how === "lcm" });
   const out = [];
   rows.forEach((r) => {
     out.push({ kind: "by", value: r.by });
-    String(r.a).split("").forEach((ch) => out.push({ kind: "a", value: Number(ch) }));
-    String(r.b).split("").forEach((ch) => out.push({ kind: "b", value: Number(ch) }));
+    r.vals.forEach((v) => String(v).split("").forEach((ch) => out.push({ kind: "num", value: Number(ch) })));
   });
   return out;
 }
 
 /** What is left at the foot of an HCF table — the part the LCM still needs. */
 export const tableLeft = (a, b) => tableRows(a, b).left;
+
+/* ── EUCLID'S WAY ──────────────────────────────────────────────────────────
+   The oldest method in this book — older than the primes, in the sense that
+   Euclid wrote it down two thousand three hundred years ago — and the one a
+   computer still uses, because it never factorises anything.
+
+     48 ÷ 36 = 1 remainder 12
+     36 ÷ 12 = 3 remainder  0      ← nothing left over, so the HCF is 12
+
+   WHY IT WORKS, and it is worth saying because it looks like a trick:
+   anything that divides 48 and 36 also divides what is left when you take 36
+   away from 48 — and the remainder is 48 with 36 taken away as many times as
+   it will go. So the pair (48, 36) and the pair (36, 12) have exactly the
+   same common factors, and the numbers get smaller every line. When the
+   remainder is nothing, the divisor divides both, and it is the biggest that
+   does.
+
+   It is also the method to reach for when the numbers are too big to
+   factorise: 1891 and 1073 take four lines here and a long time by primes. */
+
+/** One line per division, until nothing is left over. */
+export function euclidSteps(a, b) {
+  let x = Math.max(a, b);
+  let y = Math.min(a, b);
+  const out = [];
+  while (y > 0) {
+    out.push({ x, y, q: Math.floor(x / y), r: x % y });
+    const r = x % y;
+    x = y;
+    y = r;
+  }
+  return out;
+}
+
+/**
+ * The lines on the paper. The first pair is printed; after that the numbers
+ * are brought down — the divisor becomes the thing being divided and the
+ * remainder becomes the divisor — and the child writes them, because that
+ * carrying down IS the method.
+ */
+export function euclidHtml(a, b, { answer = false } = {}) {
+  const steps = euclidSteps(a, b);
+  const cell = (v) => (answer ? `<span class="pf-euc__said">${v}</span>` : `<span class="wb-answer pf-euc__in"></span>`);
+  const rows = steps.map((s, i) => {
+    const top = i === 0 ? `<span class="pf-euc__said">${s.x}</span>` : cell(s.x);
+    const by = i === 0 ? `<span class="pf-euc__said">${s.y}</span>` : cell(s.y);
+    return `<span class="pf-euc__row">${top}<em>÷</em>${by}<em>=</em>${cell(s.q)}`
+      + `<em>remainder</em>${cell(s.r)}</span>`;
+  }).join("");
+  return `<div class="pf-euc wb-nomath">${rows}</div>`;
+}
+
+/** What Euclid's way asks for, in the order the page lists it. */
+export function euclidKey(a, b) {
+  const out = [];
+  euclidSteps(a, b).forEach((s, i) => {
+    if (i > 0) { out.push({ kind: "down", value: s.x }); out.push({ kind: "down", value: s.y }); }
+    out.push({ kind: "q", value: s.q });
+    out.push({ kind: "r", value: s.r });
+  });
+  return out;
+}

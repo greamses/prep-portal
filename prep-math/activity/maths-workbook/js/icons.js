@@ -264,6 +264,25 @@ export const ICON = {
       bar(2.6, 8.2, 11, 8.2, 1.6, LOUD)
   ),
 
+  /* Steps going down: each line smaller than the one before it. */
+  pfEuclid: svg(
+    `<rect x="2.6" y="5" width="18.8" height="3.2" rx="1" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="10.4" width="13.2" height="3.2" rx="1" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="15.8" width="7.4" height="3.2" rx="1" fill="${LOUD}"/>` +
+      dot(19.4, 17.4, 1.9, LEAF)
+  ),
+  /* Three numbers over one rule. */
+  pfMany: svg(
+    `<path d="M4 7.4v13" stroke="${QUIET}" stroke-width="1.6" stroke-linecap="round"/>` +
+      bar(4, 8.2, 21.4, 8.2, 1.6, QUIET) +
+      `<rect x="6.2" y="11" width="4" height="3.2" rx="1" fill="${PAPER}"/>` +
+      `<rect x="11.4" y="11" width="4" height="3.2" rx="1" fill="${LEAF}"/>` +
+      `<rect x="16.6" y="11" width="4" height="3.2" rx="1" fill="${GOLD}"/>` +
+      `<rect x="6.2" y="16" width="4" height="3.2" rx="1" fill="${PAPER}" opacity="0.5"/>` +
+      `<rect x="11.4" y="16" width="4" height="3.2" rx="1" fill="${LEAF}" opacity="0.5"/>` +
+      `<rect x="16.6" y="16" width="4" height="3.2" rx="1" fill="${GOLD}" opacity="0.5"/>`
+  ),
+
   /* A till receipt: the two of them in the words a question is asked in. */
   pfWords: svg(
     `<rect x="4.6" y="3.4" width="14.8" height="17.2" rx="1.6" fill="${PAPER}"/>` +

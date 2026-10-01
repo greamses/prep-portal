@@ -1371,3 +1371,25 @@ thead .pv-chart__side {
 .mm-table .ms-col__sign { font-size: 11pt; }
 .mm-table .ms-col__mark.is-left { color: #2a2723; }
 .mm-table .ms-col__rule { margin-bottom: 1.2mm; border-bottom-width: 0.45mm; }
+
+/* ── Euclid's way (primeart.js euclidHtml) ────────────────────────────────
+   A line a division, read like a sentence: the bigger by the smaller, how
+   many times, and what is left. The numbers after the first line are brought
+   DOWN by the child — that carrying down is the method, so they are boxes. */
+.pf-euc { display: flex; flex-direction: column; gap: 2.2mm; margin: 2mm 0 1mm; }
+.pf-euc__row {
+  display: flex;
+  align-items: center;
+  gap: 1.6mm;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10pt;
+}
+.pf-euc__row em { font-style: normal; color: #6b645a; }
+.pf-euc__said {
+  display: inline-grid;
+  place-items: center;
+  min-width: 11mm;
+  height: 8mm;
+  font-weight: 700;
+}
+.pf-euc__in.wb-answer { width: 12mm; height: 8mm; }

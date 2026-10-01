@@ -132,6 +132,8 @@ mountBuilder({
     "pf-words": ICON.pfWords,
     "pf-list": ICON.pfList,
     "pf-table": ICON.pfTable,
+    "pf-euclid": ICON.pfEuclid,
+    "pf-many": ICON.pfMany,
     "pf-why": ICON.pfWhy,
     "pf-sqroot": ICON.pfSqRoot,
     "pf-cuberoot": ICON.pfCubeRoot,
