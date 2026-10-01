@@ -67,7 +67,7 @@ import { regroupHtml } from "/utils/components/workbook/regroup.js";
 import { strikeHtml } from "/utils/components/workbook/strike.js";
 import {
   arrayOf, ladder, ladderKey, vennHtml, vennParts, tableHtml, tableKey, tableRows, tableLeft,
-  euclidHtml, euclidKey, euclidSteps,
+  euclidHtml, euclidKey, euclidSteps, euclidTakeHtml, euclidTakeKey, euclidTakeSteps,
 } from "./primeart.js";
 import { levelOf } from "./ex-remainder.js";
 
@@ -97,7 +97,8 @@ export const PRIME_GROUPS = [
   { id: "pf-words", label: "HCF and LCM in the shops", blurb: "The hard part is knowing which one the question wants." },
   { id: "pf-list", label: "The listing way", blurb: "Write both lists out and strike what is in each — slow, sure, and where it all comes from." },
   { id: "pf-table", label: "The table way", blurb: "Both numbers down one ladder: the HCF, the LCM, and both at once." },
-  { id: "pf-euclid", label: "Euclid's way", blurb: "Divide, take the remainder, do it again — no factorising at all." },
+  { id: "pf-euclid", label: "Euclid's way", blurb: "Divide, take the remainder, do it again — or just keep taking away." },
+  { id: "pf-fmwords", label: "Factors and multiples in the world", blurb: "Rows of chairs, boxes of eggs — and which of the two words the question is about." },
   { id: "pf-many", label: "Three numbers and four", blurb: "The same table, with more numbers in it." },
   { id: "pf-why", label: "What squaring does to the primes", blurb: "Square a number and every prime turns up twice as often." },
   { id: "pf-sqroot", label: "Square roots from the primes", blurb: "Pair them off and take one out of each pair." },
@@ -1090,6 +1091,202 @@ const pfEuclid = {
   },
 };
 
+const pfEuclidTake = {
+  id: "pf-euclid-take",
+  group: "pf-euclid",
+  label: "The same, without dividing",
+  blurb: "Keep taking the smaller from the bigger until they are the same.",
+  heading: "Euclid's way — by taking away",
+  instruction: () =>
+    "Euclid did not divide; he took away. Take the smaller number from the bigger one and write what is left. "
+    + "Then do it again with the two numbers you now have — the smaller one and what was left — and keep going. "
+    + "When the two numbers are <b>the same</b>, that number is the <b>HCF</b>. It is the dividing way with the "
+    + "dividing done slowly, so it needs no division at all: whatever goes into both numbers goes into their "
+    + "difference too, which is why nothing is lost on the way down.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const pool = eucPairFor(o);
+    /* taking away is slow when the numbers are far apart: 149 and 1 is a
+       hundred and forty-eight lines, which is a punishment and not a lesson */
+    for (let go = 0; go < 40; go++) {
+      const [a, b] = r.pick(pool);
+      if (euclidTakeSteps(a, b).length <= 5) return { a, b };
+    }
+    return { a: 48, b: 36 };
+  },
+  render(item) {
+    return lead(`<b>${item.a}</b> and <b>${item.b}</b>`)
+      + `<div class="rw-art">${euclidTakeHtml(item.a, item.b)}</div>`
+      + ask(`Now the two numbers are the same, so the HCF of ${item.a} and ${item.b} is ${box()}.`);
+  },
+  worked() {
+    return worked(lead("<b>48</b> and <b>36</b>")
+      + `<div class="rw-art">${euclidTakeHtml(48, 36, { answer: true })}</div>`
+      + say("Take 36 from 48 and 12 is left, so now we have 36 and 12. Take 12 from 36 and 24 is left: 24 and "
+        + "12. Take 12 from 24 and 12 is left — and now both numbers are 12, so the <b>HCF is 12</b>. Not one "
+        + "division anywhere, which is the point of knowing this one."));
+  },
+  key(item) {
+    return euclidTakeKey(item.a, item.b).map((e) => want.num(e.value))
+      .concat([want.num(hcfOf(item.a, item.b))]);
+  },
+  answer(item) {
+    return [`taking away ${euclidTakeSteps(item.a, item.b).length} times → HCF ${hcfOf(item.a, item.b)}`];
+  },
+};
+
+/* ═══ K6. FACTORS AND MULTIPLES IN THE WORLD ══════════════════════════════
+   The two words before they are ever put together. A question about FACTORS
+   is a question about cutting one number up — rows, shares, pieces, and the
+   answer is smaller than the number. A question about MULTIPLES is a question
+   about counting the number up — boxes, buses, lengths laid end to end, and
+   the answer is bigger.
+
+   That is the same test the HCF and LCM section uses, met here one word at a
+   time, which is the right way round: a child who cannot tell a factor
+   question from a multiple one has no chance with the highest common factor
+   of two of them. */
+
+const FM_N = {
+  gentle: [12, 16, 18, 20, 24],
+  middle: [24, 30, 36, 40, 48],
+  stretch: [48, 60, 72, 84, 96],
+};
+const FM_A = {
+  gentle: [3, 4, 5, 6],
+  middle: [6, 7, 8, 9],
+  stretch: [8, 9, 12, 15],
+};
+
+/* Each story says which of the two words it is about, what it asks, and what
+   the key answers — in the same order, which is the only rule the page has. */
+const FM_STORIES = [
+  {
+    kind: "factor",
+    build: (r, o) => ({ n: r.pick(FM_N[levelOf(o).id] || FM_N.gentle) }),
+    say: (it) => `A teacher has <b>${it.n}</b> pencils. She puts them into equal rows, with more than one row `
+      + "and more than one pencil in a row. How many rows could she use? Write every way.",
+    rows: (it) => {
+      const ways = factorsOf(it.n).filter((v) => v > 1 && v < it.n);
+      return `<p class="pf-slots">${ways.map(() => box()).join("")}</p>`;
+    },
+    key: (it) => [want.set(...factorsOf(it.n).filter((v) => v > 1 && v < it.n))],
+    said: (it) => `rows: ${factorsOf(it.n).filter((v) => v > 1 && v < it.n).join(", ")}`,
+  },
+  {
+    kind: "factor",
+    build: (r, o, i) => {
+      const n = r.pick(FM_N[levelOf(o).id] || FM_N.gentle);
+      const fits = i % 2 === 0;
+      const d = fits
+        ? r.pick(factorsOf(n).filter((v) => v > 2 && v < n))
+        : r.pick([5, 7, 9, 11].filter((v) => n % v !== 0));
+      return { n, d: d || 7, fits: n % (d || 7) === 0 };
+    },
+    say: (it) => `<b>${it.n}</b> sweets are to be shared equally between <b>${it.d}</b> children, with none `
+      + "left over. Can it be done?",
+    rows: (it) => ask(`${tick("yes", "no")}`)
+      + ask(it.fits ? `Each child gets ${box()}.` : `There would be ${box()} left over.`),
+    key: (it) => [want.tick(it.fits ? 0 : 1), want.num(it.fits ? it.n / it.d : it.n % it.d)],
+    said: (it) => (it.fits ? `yes, ${it.n / it.d} each` : `no, ${it.n % it.d} left over`),
+  },
+  {
+    kind: "factor",
+    build: (r, o) => ({ n: r.pick(FM_N[levelOf(o).id] || FM_N.gentle) }),
+    say: (it) => `A rectangle has an area of <b>${it.n}</b> square centimetres and both sides are whole `
+      + "numbers of centimetres. Write every width it could have, from the thinnest to the squarest — the "
+      + "width being the shorter side.",
+    rows: (it) => {
+      const widths = factorsOf(it.n).filter((v) => v * v <= it.n);
+      return `<p class="pf-slots">${widths.map(() => box()).join("")}</p>`;
+    },
+    key: (it) => [want.set(...factorsOf(it.n).filter((v) => v * v <= it.n))],
+    said: (it) => `widths: ${factorsOf(it.n).filter((v) => v * v <= it.n).join(", ")}`,
+  },
+  {
+    kind: "multiple",
+    build: (r, o) => ({ a: r.pick(FM_A[levelOf(o).id] || FM_A.gentle) }),
+    say: (it) => `A bus leaves the park every <b>${it.a}</b> minutes, starting at 8 o'clock. Write the first `
+      + "five times it leaves, in minutes past 8.",
+    rows: (it) => `<p class="pf-slots">${[1, 2, 3, 4, 5].map(() => box()).join("")}</p>`,
+    key: (it) => [want.set(...[1, 2, 3, 4, 5].map((k) => it.a * k))],
+    said: (it) => `${[1, 2, 3, 4, 5].map((k) => it.a * k).join(", ")}`,
+  },
+  {
+    kind: "multiple",
+    build: (r, o, i) => {
+      const a = r.pick(FM_A[levelOf(o).id] || FM_A.gentle);
+      const k = r.int(3, 7);
+      const exact = i % 2 === 0;
+      return { a, m: a * k + (exact ? 0 : r.int(1, a - 1)), exact };
+    },
+    say: (it) => `Eggs come in boxes of <b>${it.a}</b>. Can you buy exactly <b>${it.m}</b> eggs?`,
+    rows: (it) => ask(`${tick("yes", "no")}`)
+      + ask(it.exact ? `That is ${box()} boxes.` : `The nearest you can get is ${box()} boxes, with ${box()} eggs short.`),
+    key: (it) => (it.exact
+      ? [want.tick(0), want.num(it.m / it.a)]
+      : [want.tick(1), want.num(Math.floor(it.m / it.a)), want.num(it.m % it.a)]),
+    said: (it) => (it.exact ? `yes, ${it.m / it.a} boxes` : `no — ${Math.floor(it.m / it.a)} boxes and ${it.m % it.a} over`),
+  },
+  {
+    kind: "multiple",
+    build: (r, o, i) => {
+      const a = r.pick(FM_A[levelOf(o).id] || FM_A.gentle);
+      const k = r.int(4, 9);
+      const exact = i % 2 === 1;
+      return { a, m: a * k + (exact ? 0 : r.int(1, a - 1)), exact };
+    },
+    say: (it) => `Is <b>${it.m}</b> a multiple of <b>${it.a}</b>?`,
+    rows: (it) => ask(`${tick("yes", "no")}`)
+      + ask(`${it.m} ÷ ${it.a} = ${box()} remainder ${box()}`),
+    key: (it) => [want.tick(it.exact ? 0 : 1), want.num(Math.floor(it.m / it.a)), want.num(it.m % it.a)],
+    said: (it) => `${it.m} ÷ ${it.a} = ${Math.floor(it.m / it.a)} r ${it.m % it.a}`,
+  },
+];
+
+const pfFmWords = {
+  id: "pf-fmwords",
+  group: "pf-fmwords",
+  label: "Factors or multiples?",
+  blurb: "Cutting one number up, or counting it up?",
+  heading: "Factors and multiples in the world",
+  instruction: () =>
+    "Two words, and the question never says which. Ask: am I <b>cutting one number up</b> — into rows, shares, "
+    + "pieces — so the answer is SMALLER than the number I started with? That is a question about "
+    + "<b>factors</b>. Or am I <b>counting it up</b> — boxes, buses, lengths laid end to end — so the answer is "
+    + "BIGGER? That is <b>multiples</b>. Say which first, then answer it.",
+  cols: 1,
+  defaultCount: 2,
+  make(r, o, k, i) {
+    const which = (r.int(0, FM_STORIES.length - 1) + i) % FM_STORIES.length;
+    const t = FM_STORIES[which];
+    return { story: which, ...t.build(r, o, i) };
+  },
+  render(item) {
+    const t = FM_STORIES[item.story];
+    return ask(t.say(item))
+      + ask(`Is this a question about ${tick("factors", "multiples")}`)
+      + t.rows(item);
+  },
+  worked() {
+    return worked(ask("A teacher has <b>12</b> pencils and puts them into equal rows, with more than one row "
+      + "and more than one in a row. How many rows could she use?")
+      + say("The pencils are being cut up into rows, and the answer is smaller than 12 — so it is a question "
+        + "about <b>factors</b>. The factors of 12 are 1, 2, 3, 4, 6 and 12, and the 1 and the 12 are the ones "
+        + "the question has ruled out, so she could use <b>2, 3, 4 or 6</b> rows. Compare it with: pencils come "
+        + "in packets of 12, how many are in five packets — that counts UP, so it is multiples."));
+  },
+  key(item) {
+    const t = FM_STORIES[item.story];
+    return [want.tick(t.kind === "factor" ? 0 : 1)].concat(t.key(item));
+  },
+  answer(item) {
+    const t = FM_STORIES[item.story];
+    return [`${t.kind === "factor" ? "factors" : "multiples"} — ${t.said(item)}`];
+  },
+};
+
 /* ═══ K5. THREE NUMBERS AND FOUR ══════════════════════════════════════════
    The table never cared how many numbers were in it. Three or four go down
    it exactly as two did, and the two answers are read off the same way:
@@ -1622,6 +1819,6 @@ export const PRIME_EXERCISES = [
   pfHcf, pfLcm, pfVenn, pfWords,
   pfListHcf, pfListLcm,
   pfTableHcf, pfTableLcm, pfTableBoth,
-  pfEuclid, pfMany3, pfMany4,
+  pfEuclid, pfEuclidTake, pfFmWords, pfMany3, pfMany4,
   pfWhy, pfSqRoot, pfCubeRoot, pfPowWords, pfRootWords,
 ];

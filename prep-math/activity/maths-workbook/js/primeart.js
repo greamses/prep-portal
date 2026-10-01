@@ -409,6 +409,58 @@ export function euclidHtml(a, b, { answer = false } = {}) {
   return `<div class="pf-euc wb-nomath">${rows}</div>`;
 }
 
+/* ── AND THE SAME THING WITHOUT DIVIDING ───────────────────────────────────
+   Euclid did not divide; he took away. Keep taking the smaller number from
+   the bigger one, and when the two are the same, that is the HCF.
+
+     48 and 36  →  take 36 from 48  →  12 and 36
+     36 and 12  →  take 12 from 36  →  24 and 12
+     24 and 12  →  take 12 from 24  →  12 and 12   ← the same, so the HCF is 12
+
+   IT IS THE DIVIDING WAY WITH THE DIVISION DONE THE SLOW WAY, which is the
+   point of having it: a child who cannot yet divide 48 by 36 — or who has
+   lost confidence in dividing — can still find the HCF with nothing but
+   taking away, and can SEE why it works. Whatever divides both numbers
+   divides the difference as well, so every pair on the way down has the same
+   common factors as the one before it, and the numbers only get smaller. */
+
+/** One line per taking-away, until the two numbers are the same. */
+export function euclidTakeSteps(a, b) {
+  let x = Math.max(a, b);
+  let y = Math.min(a, b);
+  const out = [];
+  let guard = 0;
+  while (x !== y && guard++ < 400) {
+    const r = x - y;
+    out.push({ x, y, r });
+    x = Math.max(y, r);
+    y = Math.min(y, r);
+  }
+  return out;
+}
+
+/** The lines on the paper: the bigger, the smaller, and what is left. */
+export function euclidTakeHtml(a, b, { answer = false } = {}) {
+  const steps = euclidTakeSteps(a, b);
+  const cell = (v) => (answer ? `<span class="pf-euc__said">${v}</span>` : `<span class="wb-answer pf-euc__in"></span>`);
+  const rows = steps.map((s, i) => {
+    const big = i === 0 ? `<span class="pf-euc__said">${s.x}</span>` : cell(s.x);
+    const small = i === 0 ? `<span class="pf-euc__said">${s.y}</span>` : cell(s.y);
+    return `<span class="pf-euc__row">${big}<em>−</em>${small}<em>=</em>${cell(s.r)}</span>`;
+  }).join("");
+  return `<div class="pf-euc wb-nomath">${rows}</div>`;
+}
+
+/** What the taking-away way asks for, in the order the page lists it. */
+export function euclidTakeKey(a, b) {
+  const out = [];
+  euclidTakeSteps(a, b).forEach((s, i) => {
+    if (i > 0) { out.push({ kind: "down", value: s.x }); out.push({ kind: "down", value: s.y }); }
+    out.push({ kind: "left", value: s.r });
+  });
+  return out;
+}
+
 /** What Euclid's way asks for, in the order the page lists it. */
 export function euclidKey(a, b) {
   const out = [];

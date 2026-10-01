@@ -283,6 +283,16 @@ export const ICON = {
       `<rect x="16.6" y="16" width="4" height="3.2" rx="1" fill="${GOLD}" opacity="0.5"/>`
   ),
 
+  /* Rows cut out of one number, and the same number counted up. */
+  pfFmWords: svg(
+    `<rect x="2.6" y="4.6" width="8.4" height="4" rx="1" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="9.8" width="8.4" height="4" rx="1" fill="${PAPER}"/>` +
+      `<rect x="2.6" y="15" width="8.4" height="4" rx="1" fill="${PAPER}"/>` +
+      dot(15.4, 6.6, 2.2, LOUD) + dot(19.8, 6.6, 2.2, LOUD) +
+      dot(15.4, 11.8, 2.2, LOUD) + dot(19.8, 11.8, 2.2, LOUD) +
+      dot(15.4, 17, 2.2, LOUD) + dot(19.8, 17, 2.2, LOUD)
+  ),
+
   /* A till receipt: the two of them in the words a question is asked in. */
   pfWords: svg(
     `<rect x="4.6" y="3.4" width="14.8" height="17.2" rx="1.6" fill="${PAPER}"/>` +
