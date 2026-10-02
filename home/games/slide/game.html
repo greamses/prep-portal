@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/utils/components/components.css" />
     <link rel="stylesheet" href="/utils/components/setup.css" />
     <link rel="stylesheet" href="/utils/components/game-overlays.css" />
+    <link rel="stylesheet" href="/home/games/css/paper-game.css" />
     <link rel="stylesheet" href="./game.css" />
 
     <script type="importmap">
@@ -56,10 +57,10 @@
 
     <!-- ═══ SETUP ═══ -->
     <main class="pp-setup" id="slide-setup">
-      <div class="slide-hdr">
-        <div class="slide-eyebrow">Mathematics</div>
+      <div class="pgame-hdr">
+        <div class="pgame-eyebrow">Mathematics</div>
         <h1>Slider Game</h1>
-        <p class="slide-sub">Slide the tiles into order. Only a tile next to the gap can move.</p>
+        <p class="pgame-sub">Slide the tiles into order. Only a tile next to the gap can move.</p>
       </div>
 
       <div class="pp-setup__receipt pp-receipt">
@@ -108,7 +109,7 @@
             </div>
           </div>
 
-          <button class="slide-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" type="button" onclick="openGameModal()">
+          <button class="pgame-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" type="button" onclick="openGameModal()">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>
             <span>Start Game</span>
           </button>
@@ -119,24 +120,24 @@
     <!-- ═══ PLAY OVERLAY ═══ -->
     <div class="review-bd" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="slide-head">
-          <span class="pp-sticky pp-sticky--tape slide-note" id="modal-moves">0 moves</span>
-          <span class="pp-sticky pp-sticky--tape slide-note"><span id="stat-solved">0</span> solved</span>
+        <div class="pgame-head">
+          <span class="pp-sticky pp-sticky--tape pgame-note" id="modal-moves">0 moves</span>
+          <span class="pp-sticky pp-sticky--tape pgame-note"><span id="stat-solved">0</span> solved</span>
         </div>
 
         <div class="pp-receipt slide-receipt">
-          <div class="pp-receipt__paper slide-paper">
+          <div class="pp-receipt__paper pgame-paper">
             <div id="slider-grid" class="slider-grid"></div>
           </div>
         </div>
 
-        <p class="slide-feedback" id="game-feedback"></p>
+        <p class="pgame-feedback" id="game-feedback"></p>
 
         <div class="pp-lobby-actions">
           <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="show-values-modal" checked /><span>Labels</span></label>
-          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="shuffle-btn" type="button" onclick="shuffleTiles()">Shuffle</button>
-          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="reset-btn" type="button" onclick="resetGame()">Reset</button>
-          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGameModal()">Exit</button>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="shuffle-btn" type="button" onclick="shuffleTiles()">Shuffle</button>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="reset-btn" type="button" onclick="resetGame()">Reset</button>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGameModal()">Exit</button>
         </div>
       </div>
     </div>

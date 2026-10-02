@@ -361,7 +361,7 @@ function openGameModal() {
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   // Game mode: the nav goes away, as it does in every other game's play view.
-  document.body.classList.add('slide-nav-hidden');
+  document.body.classList.add('pgame-nav-hidden');
   document.body.style.overflow = 'hidden';
   
   if (showValuesModal) {
@@ -383,7 +383,7 @@ function openGameModal() {
     });
   }
   
-  gameFeedback.className = 'slide-feedback';
+  gameFeedback.className = 'pgame-feedback';
   gameFeedback.textContent = `Arrange tiles in ${settings.arrange} order. Tap a tile next to the gap.`;
 }
 
@@ -485,7 +485,7 @@ function closeGameModal() {
   const modal = document.getElementById('game-modal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('slide-nav-hidden');
+  document.body.classList.remove('pgame-nav-hidden');
   document.body.style.overflow = '';
   gameState.gameActive = false;
   gameState.isGenerating = false;
@@ -499,7 +499,7 @@ function shuffleTiles() {
   updateStats();
   renderGrid();
   
-  gameFeedback.className = 'slide-feedback';
+  gameFeedback.className = 'pgame-feedback';
   gameFeedback.textContent = `Tiles shuffled. Arrange in ${settings.arrange} order.`;
 }
 
@@ -514,7 +514,7 @@ function resetGame() {
   updateStats();
   renderGrid();
 
-  gameFeedback.className = 'slide-feedback';
+  gameFeedback.className = 'pgame-feedback';
   gameFeedback.textContent = `Back to the start. Arrange tiles in ${settings.arrange} order.`;
 }
 
@@ -698,7 +698,7 @@ function checkWinCondition() {
     gameState.isGenerating = true;
     updateStats();
     
-    gameFeedback.className = 'slide-feedback is-success';
+    gameFeedback.className = 'pgame-feedback is-success';
     gameFeedback.textContent = `Puzzle ${gameState.solved} solved in ${gameState.moves} moves! Next puzzle...`;
     
     if (gameState.winTimeout) {
@@ -708,7 +708,7 @@ function checkWinCondition() {
     gameState.winTimeout = setTimeout(() => {
       if (gameState.gameActive) {
         generateNewPuzzle();
-        gameFeedback.className = 'slide-feedback';
+        gameFeedback.className = 'pgame-feedback';
         gameFeedback.textContent = `Puzzle ${gameState.solved + 1}: Arrange tiles in ${settings.arrange} order.`;
         gameState.winTimeout = null;
       }

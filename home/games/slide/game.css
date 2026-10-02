@@ -1,113 +1,8 @@
 /* ═══════════════════════════════════════════════════════
    SLIDER GAME — a sliding-tile puzzle whose tiles are fractions
-   Paper/soft-UI theme shared with the rest of the site (tokens from
-   theme.css). The setup is the builder games' receipt of sticky-note
-   selectors (utils/components/setup.css); the play view is their overlay
-   (utils/components/game-overlays.css) with the board printed on a receipt.
-   Nothing here repaints a shared component — only the board and its tiles
-   are this page's own.
+   The page, header, buttons and play overlay are the shared paper-game frame
+   (/home/games/css/paper-game.css). Only the board and its tiles are here.
 ═══════════════════════════════════════════════════════ */
-
-body {
-  background: var(--app-bg);
-  background-image:
-    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
-    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
-}
-
-/* .slide-start-btn and friends set their own `display`, which would otherwise
-   beat the UA's `[hidden] { display: none }`. */
-[hidden] { display: none !important; }
-
-/* The nav sits above every overlay (z-index 9999), so the play view hides it —
-   toggled by game.js when the overlay opens/closes. */
-body.slide-nav-hidden .site-nav { display: none; }
-
-.builder-paint {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 640px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.5;
-}
-
-/* ── HEADER ───────────────────────────────────────────── */
-.slide-hdr {
-  position: relative;
-  z-index: 1;
-  max-width: 620px;
-  margin: clamp(6.5rem, 10vw, 8.5rem) auto 1.75rem;
-  text-align: center;
-}
-.slide-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
-  color: var(--accent-secondary);
-  margin-bottom: 0.4rem;
-}
-.slide-hdr h1 { font-size: var(--text-h2); margin: 0 0 0.4rem; }
-.slide-sub {
-  font-family: var(--font-mono);
-  font-size: var(--text-mono-sm);
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
-   Start / Shuffle / Reset / Exit all carry .pp-note-btn (components.css), so
-   the paper, tape, tilt and lift come from .pp-sticky. These rules only keep
-   the layout each button needs. */
-.slide-start-btn,
-.slide-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--pp-note-bg, #fff39a);
-  border: 0;
-  border-radius: 2px;
-  box-shadow:
-    0 1px 1px rgba(20, 19, 15, 0.1),
-    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
-  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
-  font-weight: 700;
-  color: #14130f;
-  cursor: pointer;
-  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
-}
-.slide-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
-/* Centred under the selectors, clear of the last row of notes above it. */
-.pp-setup__paper > .slide-start-btn { align-self: center; margin-top: 0.6rem; }
-.slide-btn { padding: 0.5rem 1rem 0.55rem; font-size: 0.82rem; }
-.slide-btn.pp-note-btn--plain { color: #5a544a; }
-.slide-start-btn:hover,
-.slide-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
-.slide-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: rotate(var(--pp-note-tilt, -2deg)); }
-
-/* ── PLAY OVERLAY ─────────────────────────────────────── */
-/* As wide as the board can usefully be — but never taller than the screen,
-   so the notes above it and the buttons below it stay in view. */
-#game-modal .review-wrap { width: min(540px, 100%, max(280px, calc(100vh - 19rem))); }
-
-.slide-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.slide-note {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 700;
-  padding: 0.24rem 0.55rem;
-}
-
-.slide-paper { padding: 1.15rem 0.95rem; }
 
 /* ── THE BOARD ────────────────────────────────────────── */
 .slider-grid {
@@ -195,20 +90,7 @@ body.slide-nav-hidden .site-nav { display: none; }
 .slider-grid[data-size="4"] .tile-label { font-size: 0.68rem; }
 .slider-grid[data-size="4"] .tile-number { font-size: 0.9rem; }
 
-/* ── FEEDBACK ─────────────────────────────────────────── */
-.slide-feedback {
-  min-height: 2.4em;
-  margin: 0.9rem 0 0.9rem;
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  font-weight: 600;
-  line-height: var(--leading-snug);
-  color: var(--text-secondary);
-}
-.slide-feedback.is-success { color: var(--ink); }
-
 @media (max-width: 560px) {
-  .slide-paper { padding: 1.05rem 0.7rem; }
   .slider-grid { gap: 0.4rem; }
   .slider-grid[data-size="4"] { gap: 0.3rem; }
   .slider-tile { padding: 0.25rem; }

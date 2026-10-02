@@ -1,177 +1,134 @@
-﻿<!DOCTYPE html>
-<html lang="en" data-theme="light" data-plain-buttons>
+<!doctype html>
+<html lang="en" data-plain-buttons>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Flip Card Game — Match Fractions, Decimals and Percents | PrepPortal</title>
+    <meta
+      name="description"
+      content="A memory game for equivalent values: flip two cards and keep the pair when a decimal meets its fraction, percent or angle."
+    />
 
-<head>
-    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Prep Portal 2026 | Flip Card Game</title>
-  <meta name="theme-color" content="#7cc47c">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/utils/components/nav.css">
-  <link rel="stylesheet" href="../../../theory-page/style.css">
-  <link rel="stylesheet" href="./game.css">
-  <script src="/utils/components/loader.js"></script>
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
-        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
+    <link rel="stylesheet" href="/home/games/css/paper-game.css" />
+    <link rel="stylesheet" href="./game.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
       }
-    }
-  </script>
-  <!-- Every button on this page becomes a sticky note; loaded last, as
-       that sheet asks, so it wins without anything needing !important. -->
-  <link rel="stylesheet" href="/utils/components/components.css" />
-  <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
-</head>
+    </script>
 
-<body>
-  <div id="loader">
-    <div id="loader-wrapper">
-      <div class="logo-cluster"></div>
-    </div>
-    <div class="loader-word"><span>Flip Card Game</span></div>
-    <div class="loader-bar"></div>
-  </div>
-  
-  <nav class="site-nav" data-nav="main"></nav>
-  
-  <!-- Ticker -->
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track" id="ticker-track"></div>
-  </div>
-  
-  <!-- Page Header -->
-  <header class="pg-header">
-    <div class="ph-left">
-      <p class="pg-eyebrow">Mathematics</p>
-      <h1 class="pg-title">FLIP CARD<br><em>GAME</em></h1>
-    </div>
-    <div class="ph-right">
-      <p>Memory matching game — flip two cards to find matching equivalent values. Keep the pair if they match!</p>
-      <div class="ph-stats">
-        <div class="ph-stat"><strong id="stat-moves">0</strong><span>Flips</span></div>
-        <div class="ph-stat"><strong id="stat-pairs">0</strong><span>Pairs</span></div>
-      </div>
-    </div>
-  </header>
-  
-  <!-- Settings Panel -->
-  <section class="settings-panel">
-    <div class="settings-body">
-      <p class="settings-desc">
-        Configure the flip card memory game. Choose grid size, conversion mode, visual style, and number of pairs.
-      </p>
-      
-      <div class="settings-grid">
-        <!-- Tiles (Grid Size) Dropdown -->
-        <div class="pp-dropdown" id="dd-tiles">
-          <span class="pp-dropdown-label">Grid</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-tiles')">
-            <span class="dd-selected">2×2 (2 pairs)</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="2">2×2 (2 pairs)</div>
-            <div class="pp-dropdown-item" data-value="4">4×4 (8 pairs)</div>
-          </div>
-        </div>
-        
-        <!-- Mode Dropdown -->
-        <div class="pp-dropdown" id="dd-mode">
-          <span class="pp-dropdown-label">Mode</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-mode')">
-            <span class="dd-selected">Decimal → Fraction</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="decimal-fraction">Decimal → Fraction</div>
-            <div class="pp-dropdown-item" data-value="fraction-percent">Fraction → Percent</div>
-            <div class="pp-dropdown-item" data-value="decimal-percent">Decimal → Percent</div>
-            <div class="pp-dropdown-item" data-value="fraction-degrees">Fraction → Degrees</div>
-            <div class="pp-dropdown-item" data-value="degrees-decimal">Degrees → Decimal</div>
-            <div class="pp-dropdown-item" data-value="mixed">Mixed Conversions</div>
-          </div>
-        </div>
-        
-        <!-- Type Dropdown -->
-        <div class="pp-dropdown" id="dd-type">
-          <span class="pp-dropdown-label">Type</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-type')">
-            <span class="dd-selected">Bars</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="bars">Bars</div>
-            <div class="pp-dropdown-item" data-value="circles">Circles</div>
-            <div class="pp-dropdown-item" data-value="none">None (Text Only)</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="settings-checkboxes">
-        <label class="checkbox-label">
-          <input type="checkbox" id="show-values" checked />
-          <span class="checkbox-text">Show labels on back</span>
-        </label>
-      </div>
-      
-      <button class="btn-start" onclick="openGameModal()">
-        <svg viewBox="0 0 24 24">
-          <polygon points="5 3 19 12 5 21 5 3" />
-        </svg>
-        Start Game
-      </button>
-    </div>
-  </section>
-  
-  <!-- GAME MODAL -->
-  <div id="game-modal" class="gp-modal-overlay">
-    <div class="modal-header">
-      <button class="btn" title="Exit" onclick="closeGameModal()">
-        <svg viewBox="0 0 24 24">
-          <path d="M18 6L6 18" />
-          <path d="M6 6l12 12" />
-        </svg>
-      </button>
-      <span class="modal-title" id="modal-title">Flip Card Matching</span>
-      <div class="modal-header-right">
-        <label class="checkbox-label modal-checkbox">
-          <input type="checkbox" id="show-values-modal" checked />
-          <span class="checkbox-text">Labels</span>
-        </label>
-        <span class="modal-streak" id="modal-flips">0 flips</span>
-      </div>
-    </div>
-    
-    <div id="polypad-wrap">
-      <div id="flip-grid" class="flip-grid"></div>
-    </div>
-    
-    <div class="gp-bottom-sheet">
-      <div class="gp-feedback-box" id="game-feedback">
-        Flip two cards to find matching values. Keep the pair if they match!
-      </div>
-      <div class="answer-row" style="justify-content: center; gap: 20px;">
-        <button class="btn-secondary" id="new-game-btn" onclick="newGame()">New Game</button>
-        <button class="btn-secondary" id="reset-btn" onclick="resetGame()">Reset</button>
-      </div>
-    </div>
-  </div>
-  
-  <script src="./game.js"></script>
-  <script type="module" src="/utils/components/nav-builder.js"></script>
-</body>
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
 
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>FLIP</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="pp-setup" id="flip-setup">
+      <div class="pgame-hdr">
+        <div class="pgame-eyebrow">Mathematics</div>
+        <h1>Flip Card Game</h1>
+        <p class="pgame-sub">Flip two cards. Keep the pair if they are the same value written two ways.</p>
+      </div>
+
+      <div class="pp-setup__receipt pp-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Game Settings</p>
+
+          <div class="pp-setup-field">
+            <span>The Cards</span>
+            <div class="strip-group" data-label="Grid" data-setting="gridSize">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="flip-grid" value="2" checked /><span>2 pairs</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="flip-grid" value="4" /><span>8 pairs</span></label>
+            </div>
+            <div class="strip-group" data-label="Match" data-setting="mode">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="flip-mode" value="decimal-fraction" checked /><span>Decimal &amp; fraction</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="flip-mode" value="fraction-percent" /><span>Fraction &amp; percent</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="flip-mode" value="decimal-percent" /><span>Decimal &amp; percent</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="flip-mode" value="fraction-degrees" /><span>Fraction &amp; degrees</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="flip-mode" value="degrees-decimal" /><span>Degrees &amp; decimal</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="flip-mode" value="mixed" /><span>Mixed</span></label>
+            </div>
+            <div class="strip-group" data-label="Drawn as" data-setting="type">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="flip-type" value="bars" checked /><span>Bars</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="flip-type" value="circles" /><span>Circles</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="flip-type" value="none" /><span>Numbers only</span></label>
+            </div>
+            <div class="strip-group" data-label="Extras">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="checkbox" id="show-values" checked /><span>Number labels</span></label>
+            </div>
+          </div>
+
+          <button class="pgame-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" type="button" onclick="openGameModal()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>
+            <span>Start Game</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="pgame-head">
+          <span class="pp-sticky pp-sticky--tape pgame-note" id="modal-flips">0 flips</span>
+          <span class="pp-sticky pp-sticky--tape pgame-note"><span id="stat-pairs">0</span> pairs</span>
+        </div>
+
+        <div class="pp-receipt">
+          <div class="pp-receipt__paper pgame-paper">
+            <div id="flip-grid" class="flip-grid"></div>
+          </div>
+        </div>
+
+        <p class="pgame-feedback" id="game-feedback"></p>
+
+        <div class="pp-lobby-actions">
+          <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="show-values-modal" checked /><span>Labels</span></label>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="new-game-btn" type="button" onclick="newGame()">New Game</button>
+          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGameModal()">Exit</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./game.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
 </html>

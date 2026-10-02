@@ -10,36 +10,16 @@ let wins = 0;
 // Settings State
 let currentInputStyle = '?';
 
-const EMOJIS = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍒', '🍑', '🥭', '🍍', '🥝', '🥥', '🍅'];
+// What stands in an empty box, when it is not a plain "?". Shapes are type —
+// geometric characters, drawn in the page's ink — not emoji.
+const SHAPES = ['▲', '●', '■', '◆', '★', '▼', '◀', '▶', '◐', '◑', '◒', '◓'];
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
-// --- Dropdown Logic ---
-function toggleDropdown(id) {
-    const el = document.getElementById(id);
-    const wasOpen = el.classList.contains('open');
-    document.querySelectorAll('.pp-dropdown').forEach(d => d.classList.remove('open'));
-    if (!wasOpen) el.classList.add('open');
-}
-
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.pp-dropdown')) {
-        document.querySelectorAll('.pp-dropdown').forEach(d => d.classList.remove('open'));
-    }
-});
-
-document.querySelectorAll('.pp-dropdown-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        const list = item.closest('.pp-dropdown-list');
-        const headerText = item.closest('.pp-dropdown').querySelector('.dd-selected');
-        
-        list.querySelectorAll('.pp-dropdown-item').forEach(i => i.classList.remove('selected'));
-        item.classList.add('selected');
-        headerText.textContent = item.textContent;
-        
-        if (list.id === 'list-input') {
-            currentInputStyle = item.dataset.value;
-        }
-    });
+// --- Settings ---
+// The group of sticky-note radios carries data-setting="inputStyle"; ticking
+// one sets what an empty box shows.
+document.querySelectorAll('[data-setting="inputStyle"]').forEach((group) => {
+    group.addEventListener('change', (e) => { currentInputStyle = e.target.value; });
 });
 
 // --- Acyclic Generator Math Engine (Integers Only) ---
@@ -53,7 +33,7 @@ function getFactors(n) {
 
 function generateTriple(knownIndex, knownValue, op) {
     const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    
+
     if (knownIndex === -1) {
         let A = rand(2, 12),
             B = rand(2, 12);
@@ -62,7 +42,7 @@ function generateTriple(knownIndex, knownValue, op) {
         if (op === '*') return [A, B, A * B];
         if (op === '/') { let C = rand(2, 12); return [B * C, B, C]; }
     }
-    
+
     if (knownIndex === 0) {
         let A = knownValue;
         if (op === '+') { let B = rand(1, 20); return [A, B, A + B]; }
@@ -82,7 +62,7 @@ function generateTriple(knownIndex, knownValue, op) {
             return [A, B, A / B];
         }
     }
-    
+
     if (knownIndex === 1) {
         let B = knownValue;
         if (op === '+') { let A = rand(1, 20); return [A, B, A + B]; }
@@ -90,7 +70,7 @@ function generateTriple(knownIndex, knownValue, op) {
         if (op === '*') { let A = rand(1, 10); return [A, B, A * B]; }
         if (op === '/') { let C = rand(1, 10); return [B * C, B, C]; }
     }
-    
+
     if (knownIndex === 2) {
         let C = knownValue;
         if (op === '+') {
@@ -129,7 +109,7 @@ function getSlotCells(slot) {
 // Generate an entire randomized interconnected path layout
 function generateNewGame() {
     showMessage("Generating new puzzle...", "normal");
-    
+
     const allSlots = [];
     for (let r of [0, 2, 4, 6, 8]) {
         for (let c of [0, 2, 4]) allSlots.push({ type: 'H', r, c });
@@ -137,25 +117,25 @@ function generateNewGame() {
     for (let c of [0, 2, 4, 6, 8]) {
         for (let r of [0, 2, 4]) allSlots.push({ type: 'V', r, c });
     }
-    
+
     let usedNumbers = new Map();
     let equations = [];
     let slotPool = [...allSlots];
     const ops = ['+', '-', '×', '÷'];
     const toInternal = op => op === '×' ? '*' : op === '÷' ? '/' : op;
-    
+
     let startSlot = slotPool.splice(Math.floor(Math.random() * slotPool.length), 1)[0];
     let startOpVisual = ops[Math.floor(Math.random() * ops.length)];
     let startVals = generateTriple(-1, null, toInternal(startOpVisual));
     let startCells = getSlotCells(startSlot);
-    
+
     usedNumbers.set(`${startCells[0][0]},${startCells[0][1]}`, startVals[0]);
     usedNumbers.set(`${startCells[1][0]},${startCells[1][1]}`, startVals[1]);
     usedNumbers.set(`${startCells[2][0]},${startCells[2][1]}`, startVals[2]);
     equations.push({ slot: startSlot, op: startOpVisual, vals: startVals });
-    
+
     let targetEquations = 7 + Math.floor(Math.random() * 2);
-    
+
     while (equations.length < targetEquations) {
         let candidates = [];
         for (let slot of slotPool) {
@@ -163,16 +143,16 @@ function generateNewGame() {
             let usedCount = cells.filter(c => usedNumbers.has(`${c[0]},${c[1]}`)).length;
             if (usedCount === 1) candidates.push(slot);
         }
-        
+
         if (candidates.length === 0) break;
         candidates.sort(() => Math.random() - 0.5);
         let added = false;
-        
+
         for (let candidate of candidates) {
             let cells = getSlotCells(candidate);
             let knownIndex = cells.findIndex(c => usedNumbers.has(`${c[0]},${c[1]}`));
             let knownValue = usedNumbers.get(`${cells[knownIndex][0]},${cells[knownIndex][1]}`);
-            
+
             let shuffledOps = [...ops].sort(() => Math.random() - 0.5);
             for (let op of shuffledOps) {
                 let vals = generateTriple(knownIndex, knownValue, toInternal(op));
@@ -190,14 +170,14 @@ function generateNewGame() {
         }
         if (!added) break;
     }
-    
+
     let allNumKeys = Array.from(usedNumbers.keys());
     allNumKeys.sort(() => Math.random() - 0.5);
     let inputCount = Math.min(10, Math.floor(allNumKeys.length * 0.6));
     let inputSet = new Set(allNumKeys.slice(0, inputCount));
-    
+
     puzzleData = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => ({ type: 'empty' })));
-    
+
     for (let [key, val] of usedNumbers.entries()) {
         let [r, c] = key.split(',').map(Number);
         if (inputSet.has(key)) {
@@ -206,7 +186,7 @@ function generateNewGame() {
             puzzleData[r][c] = { type: 'result', rawVal: val };
         }
     }
-    
+
     for (let eq of equations) {
         let slot = eq.slot;
         if (slot.type === 'H') {
@@ -217,35 +197,44 @@ function generateNewGame() {
             puzzleData[slot.r + 3][slot.c] = { type: 'equals' };
         }
     }
-    
+
     numbers = [];
     for (let key of inputSet) {
         numbers.push(usedNumbers.get(key));
     }
     numbers.sort(() => Math.random() - 0.5);
-    
+
     selectedCell = null;
     history.length = 0;
-    
+
     // Reset Timer
     clearInterval(timerInterval);
     startTime = Date.now();
     timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
-    
+
     renderGrid();
     renderTiles();
-    showMessage("Game ready! Good luck.", "normal");
+    showMessage("Pick a box in the grid, then a tile to put in it.", "normal");
 }
 
 // --- Modal Controls ---
 function startGame() {
-    document.getElementById('game-modal').classList.add('active');
+    const modal = document.getElementById('game-modal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    // Game mode: the nav goes away, as it does in every other game's play view.
+    document.body.classList.add('pgame-nav-hidden');
+    document.body.style.overflow = 'hidden';
     generateNewGame();
 }
 
 function closeGameModal() {
-    document.getElementById('game-modal').classList.remove('active');
+    const modal = document.getElementById('game-modal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('pgame-nav-hidden');
+    document.body.style.overflow = '';
     clearInterval(timerInterval);
 }
 
@@ -263,9 +252,9 @@ function applyPlaceholders() {
     inputs.forEach((cell, index) => {
         let char = '';
         if (currentInputStyle === 'letter') char = LETTERS[index % LETTERS.length];
-        else if (currentInputStyle === 'emoji') char = EMOJIS[index % EMOJIS.length];
+        else if (currentInputStyle === 'shape') char = SHAPES[index % SHAPES.length];
         else if (currentInputStyle === '?') char = '?';
-        
+
         cell.setAttribute('data-placeholder', char);
     });
 }
@@ -273,12 +262,12 @@ function applyPlaceholders() {
 function renderGrid() {
     const grid = document.getElementById("grid");
     grid.innerHTML = "";
-    
+
     puzzleData.forEach((row, rIndex) => {
         row.forEach((cell, cIndex) => {
             const div = document.createElement("div");
             div.classList.add("cell");
-            
+
             if (cell.type === "input") {
                 div.classList.add("input-cell");
                 div.dataset.rawAns = cell.rawAns;
@@ -304,17 +293,19 @@ function renderGrid() {
             grid.appendChild(div);
         });
     });
-    
+
     applyPlaceholders();
 }
 
 function renderTiles() {
     const tilesContainer = document.getElementById('tiles');
     tilesContainer.innerHTML = '';
-    
+
     numbers.forEach((num, index) => {
-        const t = document.createElement('div');
-        t.className = 'tile';
+        const t = document.createElement('button');
+        t.type = 'button';
+        // A sticky-note key, colour-rotated like the Drills numpad.
+        t.className = `tile pp-sticky pp-note-btn pp-sticky--c${index % 6}`;
         t.dataset.rawVal = num;
         t.dataset.tileId = index;
         t.textContent = num;
@@ -328,24 +319,24 @@ function selectTile(tileElem) {
         showMessage("Select a box on the grid first!", "error");
         return;
     }
-    
+
     const rawVal = tileElem.dataset.rawVal;
-    
+
     // Reverse tile if slot already filled
     if (selectedCell.dataset.userRaw) {
         const oldId = selectedCell.dataset.tileId;
         const oldTile = document.querySelector(`.tile[data-tile-id="${oldId}"]`);
         if (oldTile) oldTile.classList.remove('used');
     }
-    
+
     selectedCell.textContent = rawVal;
     selectedCell.dataset.userRaw = rawVal;
     selectedCell.dataset.tileId = tileElem.dataset.tileId;
     selectedCell.classList.add('has-val');
     tileElem.classList.add('used');
-    
+
     history.push({ cell: selectedCell, tile: tileElem });
-    
+
     checkWin();
 }
 
@@ -353,18 +344,18 @@ function checkWin() {
     const cells = document.querySelectorAll('.input-cell');
     let allFilled = true;
     let allCorrect = true;
-    
+
     cells.forEach(c => {
         if (!c.dataset.userRaw) allFilled = false;
-        
+
         // Ensure robust numerical match
         if (Number(c.dataset.userRaw) !== Number(c.dataset.rawAns)) {
             allCorrect = false;
         }
     });
-    
+
     if (allFilled && allCorrect) {
-        showMessage("🎉 Perfect! Puzzle Solved!", "success");
+        showMessage("Perfect! Puzzle solved.", "success");
         wins++;
         document.getElementById('stat-wins').textContent = wins;
         clearInterval(timerInterval);
@@ -392,18 +383,24 @@ document.getElementById('hintBtn').onclick = () => {
     const correctRaw = selectedCell.dataset.rawAns;
     const targetTile = Array.from(document.querySelectorAll('.tile'))
         .find(t => Number(t.dataset.rawVal) === Number(correctRaw) && !t.classList.contains('used'));
-    
+
     if (targetTile) selectTile(targetTile);
 };
 
+// One line of feedback under the grid. An error goes back to the standing
+// instruction after a few seconds; "solved" stays until the next puzzle.
+let messageTimer = null;
 function showMessage(text, type) {
     const m = document.getElementById('game-feedback');
+    clearTimeout(messageTimer);
     m.textContent = text;
-    m.className = 'gp-feedback-box';
-    if (type) m.classList.add(type);
-    
-    setTimeout(() => {
-        m.className = 'gp-feedback-box';
-        m.textContent = "Select a cell in the grid, then click a tile to fill it!";
+    m.className = 'pgame-feedback';
+    if (type === 'success') m.classList.add('is-success');
+    if (type === 'error') m.classList.add('is-error');
+    if (type === 'success') return;
+
+    messageTimer = setTimeout(() => {
+        m.className = 'pgame-feedback';
+        m.textContent = "Pick a box in the grid, then a tile to put in it.";
     }, 4000);
 }
