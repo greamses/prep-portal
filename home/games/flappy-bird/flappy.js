@@ -6,9 +6,10 @@
 // answer is a point. A wrong answer, a pipe or the ground ends the flight.
 //
 // Everything on the canvas is drawn here — bird, pipes, clouds — in the theme's
-// own colours. (The game used to load its sprites from an image host that now
-// refuses them, and its sounds from files that were never in the repo, which is
-// why it sat broken; there is nothing left for it to fetch.)
+// own colours, and every sound is a beep made on the spot (see SOUND below).
+// (The game used to load its sprites from an image host that now refuses them,
+// and its sounds from files that were never in the repo, which is why it sat
+// broken; there is nothing left for it to fetch.)
 //
 // A classic script, like the other paper games: the page's buttons call
 // openGame() / closeGame() / playAgain() directly.
@@ -82,6 +83,42 @@ function makeProblem(op, table) {
   choices.sort(() => Math.random() - 0.5);
   return { text, answer, choices };
 }
+
+// ---------- SOUND ----------
+// Four beeps, synthesised with Web Audio — no files. A beep is one oscillator
+// sliding between two pitches under a quick fade, so there is no click at
+// either end. The context is made on the first press (browsers refuse audio
+// before one), and the player's on/off choice is remembered.
+const SOUND_KEY = 'flappySound';
+let soundOn = localStorage.getItem(SOUND_KEY) !== 'off';
+let audioCtx = null;
+
+function beep(from, to, seconds, { type = 'sine', volume = 0.14, delay = 0 } = {}) {
+  if (!soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const start = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, start);
+    osc.frequency.exponentialRampToValueAtTime(to, start + seconds);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + seconds);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + seconds + 0.02);
+  } catch (_) { /* no audio on this device — the game plays on in silence */ }
+}
+
+const SOUND = {
+  flap: () => beep(420, 640, 0.09, { type: 'triangle', volume: 0.1 }), // a short rising chirp
+  right: () => { beep(660, 660, 0.09); beep(990, 990, 0.14, { delay: 0.09 }); }, // two notes up
+  wrong: () => beep(300, 150, 0.32, { type: 'square', volume: 0.08 }), // a low falling buzz
+  crash: () => beep(220, 60, 0.4, { type: 'sawtooth', volume: 0.1 }), // a thud that drops away
+};
 
 // ---------- STATE ----------
 const BEST_KEY = 'flappyBest';
@@ -227,7 +264,8 @@ function answer(value) {
     if (Number(key.dataset.value) === game.problem.answer) key.classList.add('is-right');
     else if (Number(key.dataset.value) === value) key.classList.add('is-wrong');
   });
-  if (!right) { endFlight(`${value} was not it — ${game.problem.text.replace('?', game.problem.answer)}.`); return; }
+  if (!right) { endFlight(`${value} was not it — ${game.problem.text.replace('?', game.problem.answer)}.`, SOUND.wrong); return; }
+  SOUND.right();
   game.score += 1;
   updateScore();
   setTimeout(() => { if (game.phase === 'flying' || game.phase === 'ready') nextProblem(); }, 450);
@@ -247,9 +285,10 @@ function say(text, kind) {
   feedbackEl.className = 'pgame-feedback' + (kind ? ` is-${kind}` : '');
 }
 
-function endFlight(why) {
+function endFlight(why, sound = SOUND.crash) {
   if (game.phase === 'over') return;
   game.phase = 'over';
+  sound();
   choicesEl.querySelectorAll('.flappy-choice').forEach((key) => {
     key.disabled = true;
     if (Number(key.dataset.value) === game.problem.answer) key.classList.add('is-right');
@@ -265,7 +304,7 @@ function flap() {
     game.phase = 'flying';
     say('Keep flapping — and keep answering.');
   }
-  if (game.phase === 'flying') game.bird.v = FLAP * game.unit;
+  if (game.phase === 'flying') { game.bird.v = FLAP * game.unit; SOUND.flap(); }
 }
 
 function addPipe() {
@@ -407,6 +446,18 @@ document.addEventListener('keyup', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  // The Sound tick in the play view.
+  const soundTick = document.getElementById('flappy-sound');
+  if (soundTick) {
+    soundTick.checked = soundOn;
+    soundTick.addEventListener('change', () => {
+      soundOn = soundTick.checked;
+      try { localStorage.setItem(SOUND_KEY, soundOn ? 'on' : 'off'); } catch (_) { /* private mode */ }
+      if (soundOn) SOUND.right(); // let them hear what they turned on
+      soundTick.blur(); // Space is the flap key, not this box's
+    });
+  }
+
   const sky = document.getElementById('flappy-sky');
   sky.addEventListener('pointerdown', (e) => {
     e.preventDefault();

@@ -93,6 +93,7 @@
               <li><strong>Flap:</strong> tap the sky, or press Space or the up arrow.</li>
               <li><strong>Answer:</strong> tap an answer, or press 1 to 4.</li>
               <li>Every right answer is a point. Fly as long as you can.</li>
+              <li>It beeps. Untick <strong>Sound</strong> under the sky to play in silence.</li>
             </ul>
           </div>
 
@@ -125,6 +126,7 @@
         <p class="pgame-feedback" id="game-feedback"></p>
 
         <div class="pp-lobby-actions">
+          <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="flappy-sound" checked /><span>Sound</span></label>
           <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
           <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()">Exit</button>
         </div>
