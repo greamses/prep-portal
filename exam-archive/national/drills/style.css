@@ -438,9 +438,10 @@ tbody .drill-grid-th { border-right-width: 2px; }
 }
 
 /* ── FRACTION BARS (bars activity) ──────────────────────────────────────────
-   Two lines and a tray on one receipt. A line is 1.35 wholes wide and every
-   bar's width is a percentage of it (set inline by js/bars.js), so the tray,
-   the sum on top and the player's line underneath all share one scale. */
+   Two lines and a tray on one receipt. Every bar on a line has its width set
+   inline by js/bars.js as a percentage of the line, at a zoom chosen per sum,
+   so the sum on top and the player's line underneath share one scale. The
+   tray is not to scale: equal chips, one per denominator. */
 #drill-play-bd.is-bars .review-wrap { width: min(720px, 100%); }
 
 .drill-bars { width: 100%; }
@@ -559,15 +560,16 @@ tbody .drill-grid-th { border-right-width: 2px; }
 }
 .drill-bars-hint.is-nudge { color: var(--ink); }
 
-/* The tray: every unit bar from 1/2 to 1/20, to the lines' scale. Taller than
-   the lines so the thin end of it is still a fair target for a finger. */
+/* The tray: one equal chip per denominator (the composites, 1/4 to 1/50) —
+   a fair target for a finger whatever the size of the bar it stands for. */
 .drill-bars-tray {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 0.35rem;
 }
 .drill-bars-tray .drill-bar {
-  height: 2.9rem;
+  height: 2.5rem;
+  font-size: 0.72rem;
   cursor: grab;
   touch-action: none; /* a drag here lifts a bar, it never scrolls the page */
 }
@@ -589,5 +591,7 @@ tbody .drill-grid-th { border-right-width: 2px; }
 @media (max-width: 560px) {
   .drill-bars-paper { padding: 1.2rem 0.75rem 1.3rem; }
   .drill-bar { font-size: 0.56rem; }
+  .drill-bars-tray { grid-template-columns: repeat(auto-fill, minmax(2.05rem, 1fr)); gap: 0.28rem; }
+  .drill-bars-tray .drill-bar { height: 2.2rem; font-size: 0.64rem; }
   .drill-bars-sum { font-size: 1.3rem; }
 }

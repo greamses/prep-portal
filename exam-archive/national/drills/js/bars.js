@@ -2,28 +2,39 @@
    DRILLS — Fraction Bars (bars) activity
 
    Two sets of unlike fraction bars are laid end to end on the top line —
-   3/4 + 1/3 is three quarter-bars and then one third-bar. Underneath is an
-   empty line and a tray of unit bars, 1/2 down to 1/20, all drawn to the same
-   scale. The player drags unit bars off the tray (dragging COPIES, so a bar
-   can be taken as often as it is wanted) and lines them up under the sum until
-   the two lines are the same length. A double-click takes a bar back off.
-   Line it up and a FRESH sum takes its place, on and on until the clock runs
-   out; the score is the number of sums lined up.
+   3/4 + 1/6 is three quarter-bars and then one sixth-bar. Underneath is an
+   empty line and a tray of unit bars. The player drags unit bars off the tray
+   (dragging COPIES, so a bar can be taken as often as it is wanted) and lines
+   them up under the sum until the two lines are the same length. A
+   double-click takes a bar back off. Line it up and a FRESH sum takes its
+   place, on and on until the clock runs out; the score is the number of sums
+   lined up.
 
-   Subtraction is the same surface with one more line: 3/4 − 1/3 puts the three
-   quarter-bars on top and the third-bar under their far end, hatched, as the
+   Subtraction is the same surface with one more line: 3/4 − 1/6 puts the three
+   quarter-bars on top and the sixth-bar under their far end, hatched, as the
    part taken away. What the player lines up is what is LEFT — from the start
    of the line to where the hatched bar begins.
 
+   No denominator is prime, anywhere: not in the sums, and so not on the tray
+   (the common denominator of two composites is composite, so a prime bar
+   could never be the one that fits). The tray is every composite from 1/4 to
+   1/50.
+
    Two levels. Basic: one denominator is a multiple of the other, so the bar
-   that fits is already on the top line (1/2 + 1/4 → quarters). Advanced: the
-   common denominator is NEITHER denominator (3/4 + 1/3 → twelfths), so it has
-   to be worked out.
+   that fits is already on the top line (1/4 + 1/8 → eighths). Advanced: the
+   denominators share a factor but neither divides the other (1/4 + 1/6 →
+   twelfths) — the common denominator is neither of them, nor their product,
+   and has to be worked out.
 
    The line has to be built from ONE size of bar. Without that rule the answer
-   to 3/4 + 1/3 is to copy the top line, which drills nothing; with it the only
+   to 3/4 + 1/6 is to copy the top line, which drills nothing; with it the only
    bars that fit are twelfths — the player has found the common denominator
    with their hands.
+
+   The two lines are drawn to one scale, and that scale is set per sum: a
+   fiftieth is a sliver beside a quarter, so each sum is zoomed until its top
+   line nearly fills the paper. The tray is therefore NOT to scale — its bars
+   are equal chips, and a bar takes its true width as it is lifted off.
 
    Two halves live here, the same split as grid.js:
      · the SEEDED GENERATOR (barsAt) — pure and deterministic, so every client
@@ -31,7 +42,7 @@
      · the ROUND RUNNER (startBarsRound) — the play surface, structured like
        game.js's startRound.
 
-   Solvable by construction: every sum's common denominator is 20 or less, so
+   Solvable by construction: every sum's common denominator is 50 or less, so
    the bar that fits is always on the tray.
 ═══════════════════════════════════════════════════════ */
 import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
@@ -39,47 +50,58 @@ import { mulberry32, hashSeed, CONTENT_NS } from '/utils/games/rng.js';
 const $ = (id) => document.getElementById(id);
 const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see game.js's note
 
-const MIN_D = 2; // the tray runs 1/2 …
-const MAX_D = 20; // … to 1/20
+const MAX_D = 50; // the smallest bar on the tray is 1/50
 const MIN_BARS = 2; // fewest — a one-bar answer is a lucky tap, not a line-up
 const MAX_BARS = 15; // most bars one sum can need — past this it is a dragging test
+const MAX_SHOWN = 16; // most bars one LINE of the question may be drawn with — more are slivers on a phone
 const MAX_SUM = 1.25; // longest top line, in wholes
-const TRACK_WHOLES = 1.35; // how many wholes wide a line is — MAX_SUM plus room to overshoot
+const ZOOM_ROOM = 1.25; // a line is this many times its sum's top line — room to overshoot
+
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const isPrime = (n) => { for (let k = 2; k * k <= n; k++) if (n % k === 0) return false; return n > 1; };
+
+// Every denominator in play: the composites up to MAX_D. They are the tray,
+// and the only denominators a sum is built from.
+const DENOMINATORS = [];
+for (let d = 4; d <= MAX_D; d++) if (!isPrime(d)) DENOMINATORS.push(d);
 
 // Every length is counted in 1/UNITS of a whole. UNITS is the lowest common
-// multiple of 2..20, so each bar is a whole number of them and "the same
-// length" is an exact integer comparison, never a float one.
-const UNITS = 232792560;
-const TRACK_UNITS = Math.round(TRACK_WHOLES * UNITS);
+// multiple of those denominators (about 1.1e12 — well inside exact integers),
+// so each bar is a whole number of them and "the same length" is an exact
+// integer comparison, never a float one.
+const UNITS = DENOMINATORS.reduce((l, d) => (l * d) / gcd(l, d), 1);
 
 /* ── GENERATOR ──────────────────────────────────────────────────────────── */
 
-const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-
 // Every sum one (operation, level) can deal, grouped by common denominator.
-// Each is two proper fractions in lowest terms with DIFFERENT denominators, and:
-//   · their common denominator is on the tray (20 or less);
+// Each is two proper fractions in lowest terms with DIFFERENT, composite
+// denominators, and:
+//   · their common denominator is on the tray (MAX_D or less);
 //   · basic: that common denominator IS one of the two denominators;
-//     advanced: it is neither of them;
-//   · the answer does not simplify — 1/2 + 1/6 is 2/3, which two third-bars
+//     advanced: it is neither of them, and the two share a factor (4 and 6,
+//     not 4 and 9) — so it is not simply their product either;
+//   · the answer does not simplify — 1/4 + 1/12 is 2/6, which two sixth-bars
 //     would match in length without lining up under either fraction;
-//   · the answer is a reasonable number of bars, on a line that fits;
+//   · the answer is a reasonable number of bars, on a line that fits, and so
+//     is the question — 41/48 would be forty-one slivers;
 //   · a subtraction leaves at least two bars over — one bar is no line-up.
 function buildPool(op, level) {
   const sign = op === 'fracSub' ? -1 : 1;
   const groups = new Map();
-  for (let d1 = MIN_D; d1 <= MAX_D; d1++) {
-    for (let d2 = MIN_D; d2 <= MAX_D; d2++) {
+  for (const d1 of DENOMINATORS) {
+    for (const d2 of DENOMINATORS) {
       if (d1 === d2) continue;
-      const lcm = (d1 * d2) / gcd(d1, d2);
+      const hcf = gcd(d1, d2);
+      const lcm = (d1 * d2) / hcf;
       if (lcm > MAX_D) continue;
       const isOneOfThem = lcm === d1 || lcm === d2;
-      if (isOneOfThem !== (level !== 'advanced')) continue;
+      if (level === 'advanced' ? (isOneOfThem || hcf === 1) : !isOneOfThem) continue;
       for (let n1 = 1; n1 < d1; n1++) {
         if (gcd(n1, d1) > 1) continue;
         for (let n2 = 1; n2 < d2; n2++) {
           if (gcd(n2, d2) > 1) continue;
           const count = (n1 * lcm) / d1 + sign * ((n2 * lcm) / d2);
+          if ((sign > 0 ? n1 + n2 : Math.max(n1, n2)) > MAX_SHOWN) continue;
           if (count < MIN_BARS || gcd(count, lcm) > 1 || count > MAX_BARS || count / lcm > MAX_SUM) continue;
           if (!groups.has(lcm)) groups.set(lcm, []);
           groups.get(lcm).push({ a: { n: n1, d: d1 }, b: { n: n2, d: d2 } });
@@ -102,8 +124,8 @@ const BAR_OPS = ['fracAdd', 'fracSub'];
 // The index-th sum of the room's stream — deterministic per (seed, index) and
 // the room's own dials, exactly like rng.js's questionAt(seed, i, opts). The
 // common denominator is drawn before the sum: drawn flat, the stream would be
-// mostly fourteenths and sixteenths, simply because those have the most
-// numerators to choose from. A room from before the dials existed has neither
+// mostly the big denominators, simply because those have the most numerators
+// to choose from. A room from before the dials existed has neither
 // field and plays what it always played first: basic addition.
 export function barsAt(seed, index, { operations, level } = {}) {
   const rng = mulberry32(hashSeed(seed, CONTENT_NS + index));
@@ -151,7 +173,7 @@ let current = null; // the sum on the top line
 let placed = []; // denominators of the bars on the bottom line, left to right
 let drag = null; // { d, id, x0, y0, ghost } while a tray bar is held
 let suppressClick = false; // a drag ends in a click on the bar it started on
-let thinFrom = Infinity; // denominators above this make a thin bar on this screen
+let trackUnits = UNITS; // how long a line is for the CURRENT sum — its zoom
 
 // Mount elements built once and reused across rounds.
 let headEl = null;
@@ -170,29 +192,26 @@ let trayEl = null;
 
 const fracHtml = (n, d) => `<span class="drill-bar-frac"><i>${n}</i><i>${d}</i></span>`;
 
-// One unit bar, 1/d of a whole wide. Widths are percentages of the line, and
-// the tray is exactly as wide as the line, so every bar on the page — tray,
-// top line, bottom line — is to the one scale.
+// One unit bar on a line, 1/d of a whole wide at the current sum's zoom.
 function barEl(d, tag = 'span') {
   const el = document.createElement(tag);
   if (tag === 'button') el.type = 'button';
   el.className = 'drill-bar';
   el.dataset.d = String(d);
-  el.style.width = `${100 / (TRACK_WHOLES * d)}%`;
+  el.style.width = `${(UNITS / d / trackUnits) * 100}%`;
   // Golden-angle steps, so neighbouring sizes never share a colour.
   el.style.setProperty('--bar-hue', String(Math.round((d * 137.5) % 360)));
-  el.classList.toggle('is-thin', d > thinFrom);
   el.innerHTML = fracHtml(1, d);
   return el;
 }
 
-// On a phone a twentieth is about ten pixels wide — no room for an upright
-// fraction. Work out which bars are that narrow HERE and retag them all.
+// A bar too narrow for an upright fraction carries it written up its side.
+// Which ones are depends on the screen and on the sum's zoom, so it is read
+// off the page: called whenever bars are laid, added or the window resizes.
 function measure() {
-  if (!boardEl || !boardEl.clientWidth) return;
-  thinFrom = Math.floor(boardEl.clientWidth / (TRACK_WHOLES * THIN_PX));
-  barsStage.querySelectorAll('.drill-bar').forEach((bar) => {
-    bar.classList.toggle('is-thin', Number(bar.dataset.d) > thinFrom);
+  if (!boardEl) return;
+  boardEl.querySelectorAll('.drill-bar').forEach((bar) => {
+    bar.classList.toggle('is-thin', bar.getBoundingClientRect().width < THIN_PX);
   });
 }
 
@@ -240,11 +259,13 @@ function ensureMount() {
   trayEl = document.createElement('div');
   trayEl.className = 'drill-bars-tray';
   trayEl.setAttribute('aria-label', 'Unit fraction bars');
-  for (let d = MIN_D; d <= MAX_D; d++) {
+  // Equal chips, not to scale (see the header) — one per composite denominator.
+  DENOMINATORS.forEach((d) => {
     const bar = barEl(d, 'button');
+    bar.style.width = '';
     bar.setAttribute('aria-label', `Add a 1/${d} bar`);
     trayEl.appendChild(bar);
-  }
+  });
   trayEl.addEventListener('pointerdown', onTrayDown);
   trayEl.addEventListener('pointermove', onTrayMove);
   trayEl.addEventListener('pointerup', onTrayUp);
@@ -271,11 +292,14 @@ function onTrayDown(e) {
 }
 
 // The bar on the tray never moves — what follows the pointer is a copy, cut
-// to the line's scale, so the tray is never short of a size.
+// to the line's scale, so the tray is never short of a size. (A bar longer
+// than the whole line is shown at the line's length; it will be refused.)
 function makeGhost(d) {
   const ghost = barEl(d);
   ghost.classList.add('drill-bar--ghost');
-  ghost.style.width = `${boardEl.clientWidth / (TRACK_WHOLES * d)}px`;
+  const px = boardEl.clientWidth * Math.min(1, UNITS / d / trackUnits);
+  ghost.style.width = `${px}px`;
+  ghost.classList.toggle('is-thin', px < THIN_PX);
   ghost.style.height = `${targetRow.clientHeight}px`;
   // On the body, not in the overlay: the overlay's backdrop-filter would make
   // itself the containing block and the copy would drift as the overlay scrolls.
@@ -332,7 +356,7 @@ const placedUnits = () => placed.reduce((sum, d) => sum + UNITS / d, 0);
 function place(d) {
   if (!active || locked) return;
   // The line is full — a bar that would run off the paper is refused.
-  if (placedUnits() + UNITS / d > TRACK_UNITS) {
+  if (placedUnits() + UNITS / d > trackUnits) {
     answerRow.classList.remove('is-full');
     void answerRow.offsetWidth; // restart the shake
     answerRow.classList.add('is-full');
@@ -343,6 +367,7 @@ function place(d) {
   bar.classList.add('is-placed');
   bar.setAttribute('aria-label', `1/${d} bar — ${TAKE_OFF.toLowerCase()} to take it off`);
   answerRow.appendChild(bar);
+  measure();
   check();
 }
 
@@ -398,6 +423,9 @@ function renderSum() {
   current = barsAt(curSeed, sumIndex, curOpts);
   const { a, b } = current;
   const isSub = current.op === 'fracSub';
+  // Zoom: the top line (the whole sum, or the fraction being taken from)
+  // fills most of the paper, whatever the size of its bars.
+  trackUnits = Math.round((isSub ? (a.n * UNITS) / a.d : current.units) * ZOOM_ROOM);
   placed = [];
   dropDrag();
 
@@ -413,7 +441,7 @@ function renderSum() {
   if (isSub) {
     const gap = document.createElement('span');
     gap.className = 'drill-bars-gap';
-    gap.style.width = `${(current.units / TRACK_UNITS) * 100}%`;
+    gap.style.width = `${(current.units / trackUnits) * 100}%`;
     takeRow.appendChild(gap);
   }
   [a, b].forEach((f, set) => {
@@ -424,11 +452,11 @@ function renderSum() {
       (set === 1 && isSub ? takeRow : targetRow).appendChild(bar);
     }
   });
-  markEl.style.left = `${(current.units / TRACK_UNITS) * 100}%`;
-  measure();
+  markEl.style.left = `${(current.units / trackUnits) * 100}%`;
 
   answerRow.innerHTML = '';
   answerRow.classList.remove('is-correct', 'is-full');
+  measure();
   hintEl.textContent = hintFor(current);
   hintEl.classList.remove('is-nudge');
 }

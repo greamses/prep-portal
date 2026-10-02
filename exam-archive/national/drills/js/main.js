@@ -164,7 +164,8 @@ let range = mem.get('range', 'all', RANGES.map((r) => r.key));
 // next, so there is no size dial.
 let gridBlanks = mem.get('gridBlanks', 'light', ['light', 'heavy']);
 // Fraction Bars only — basic: one denominator is a multiple of the other, so
-// the common denominator is already on the top line; advanced: it is neither.
+// the common denominator is already on the top line; advanced: they share a
+// factor but neither divides the other, so it is neither of them.
 let barsLevel = mem.get('barsLevel', 'basic', ['basic', 'advanced']);
 // The multi-pick sets restore from saved arrays, dropping anything that's no
 // longer a valid member of its list.
@@ -416,7 +417,7 @@ function renderGridBlanksStep() {
 function renderBarsLevelStep() {
   renderChoiceStep(topic, 'bars-level', {
     title: 'How hard?',
-    subtitle: 'Basic: the bar that fits is one of the two you are given (1/2 and 1/4 → quarters). Advanced: it is neither (3/4 and 1/3 → twelfths).',
+    subtitle: 'Basic: the bar that fits is one of the two you are given (1/4 and 1/8 → eighths). Advanced: it is neither (1/4 and 1/6 → twelfths).',
     name: 'drill-bars-level',
     colorOffset: 7,
     options: [
