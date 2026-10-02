@@ -1,569 +1,161 @@
-/* game.css - Slider Game Styles */
-
-:root {
-  --off: #ede7dd;
-  --yellow: #ffe500;
-  --blue: #0055ff;
-  --green: #00a550;
-  --red: #ff2200;
-  --muted: #777;
-  --ruled: rgba(0, 0, 0, 0.1);
-  --tw: 0.12em;
-  --surface-1: #f5f0e8;
-  --surface-2: #ede7dd;
-  --surface-3: #e5ddd1;
-  --accent: #0055ff;
-  --accent-hover: #0044cc;
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --shadow-md: 5px 5px 0 var(--ink);
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ═══════════════════════════════════════════════════════
+   SLIDER GAME — a sliding-tile puzzle whose tiles are fractions
+   Paper/soft-UI theme shared with the rest of the site (tokens from
+   theme.css). The setup is the builder games' receipt of sticky-note
+   selectors (utils/components/setup.css); the play view is their overlay
+   (utils/components/game-overlays.css) with the board printed on a receipt.
+   Nothing here repaints a shared component — only the board and its tiles
+   are this page's own.
+═══════════════════════════════════════════════════════ */
 
 body {
-  font-family: var(--font-mono);
-  background: var(--bg);
-  color: var(--ink);
-  min-height: 100vh;
-  line-height: 1.5;
-  overflow-x: hidden;
+  background: var(--app-bg);
+  background-image:
+    radial-gradient(circle at 8% 90%, color-mix(in srgb, var(--accent-primary) 16%, transparent) 0%, transparent 38%),
+    radial-gradient(circle at 94% 6%, color-mix(in srgb, var(--accent-secondary) 12%, transparent) 0%, transparent 38%);
 }
 
-/* NAV */
-/* The nav is the site's own now (utils/components/nav.css, built by
-   nav-builder.js). This page used to draw a black 56px bar here and leave it
-   empty, which is what made the nav look different from every other page. */
+/* .slide-start-btn and friends set their own `display`, which would otherwise
+   beat the UA's `[hidden] { display: none }`. */
+[hidden] { display: none !important; }
 
-/* TICKER */
-.ticker {
-  height: 34px;
-  background: var(--yellow);
-  border-bottom: 2px solid var(--ink);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-}
+/* The nav sits above every overlay (z-index 9999), so the play view hides it —
+   toggled by game.js when the overlay opens/closes. */
+body.slide-nav-hidden .site-nav { display: none; }
 
-.ticker-track {
-  display: flex;
-  animation: ticker-scroll 18s linear infinite;
-  white-space: nowrap;
-}
-
-.ticker-item {
-  font-family: var(--font-display);
-  font-size: .6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--ink);
-  padding: 0 28px;
-}
-
-.ticker-item::before {
-  content: '◆';
-  margin-right: 10px;
-  font-size: .5rem;
-}
-
-@keyframes ticker-scroll {
-  from {
-    transform: translateX(0);
-  }
-  
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-/* PAGE HEADER */
-.pg-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 48px 28px 32px;
-  border-bottom: 2px solid var(--ink);
-}
-
-.pg-eyebrow {
-  font-family: var(--font-display);
-  font-size: .6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tw);
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-.pg-title {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  line-height: 1.05;
-  letter-spacing: -.02em;
-}
-
-.pg-title em {
-  font-style: normal;
-  color: var(--blue);
-}
-
-.ph-right {
-  max-width: 380px;
-  flex-shrink: 0;
-}
-
-.ph-right p {
-  font-size: .8rem;
-  line-height: 1.7;
-  color: var(--muted);
-  margin-bottom: 20px;
-}
-
-.ph-stats {
-  display: flex;
-  gap: 24px;
-}
-
-.ph-stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.ph-stat strong {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.ph-stat span {
-  font-size: .62rem;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-/* SETTINGS PANEL */
-.settings-panel {
-  padding: 40px 28px 40px;
-}
-
-.settings-body {
-  max-width: 780px;
-  margin: 0 auto;
-}
-
-.settings-desc {
-  font-size: .85rem;
-  line-height: 1.7;
-  color: var(--muted);
-  margin-bottom: 36px;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-/* Custom dropdown */
-.pp-dropdown {
-  position: relative;
-}
-
-.pp-dropdown-label {
-  display: block;
-  font-family: var(--font-display);
-  font-size: .6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tw);
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-.pp-dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 13px 16px;
-  font-family: var(--font-mono);
-  font-size: .78rem;
-  font-weight: 600;
-  background: var(--off);
-  border: 2px solid var(--ink);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.pp-dropdown-header:hover {
-  background: var(--ink);
-  color: var(--bg);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.pp-dropdown-header svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2.5;
-  flex-shrink: 0;
-  transition: transform .2s;
-}
-
-.pp-dropdown.open .pp-dropdown-header svg {
-  transform: rotate(180deg);
-}
-
-.pp-dropdown-list {
+.builder-paint {
   position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 200;
-  background: var(--bg);
-  border: 2px solid var(--ink);
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
+  inset: 0 0 auto 0;
+  height: 640px;
   pointer-events: none;
-  transition: max-height .2s ease, opacity .15s ease;
-  box-shadow: var(--shadow-sm);
+  z-index: 0;
+  opacity: 0.5;
 }
 
-.pp-dropdown.open .pp-dropdown-list {
-  max-height: 350px;
-  overflow-y: auto;
-  opacity: 1;
-  pointer-events: all;
-}
-
-.pp-dropdown-item {
-  padding: 11px 16px;
-  font-family: var(--font-mono);
-  font-size: .75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  border-bottom: 1px solid var(--ruled);
-}
-
-.pp-dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.pp-dropdown-item:hover {
-  background: var(--ink);
-  color: var(--bg);
-  padding-left: 20px;
-}
-
-.pp-dropdown-item.selected {
-  background: var(--yellow);
-  color: var(--ink);
-  font-weight: 700;
-}
-
-/* Settings Checkboxes */
-.settings-checkboxes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: var(--ink);
-  border: 2px solid var(--ink);
-}
-
-.checkbox-text {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-/* Start button */
-.btn-start {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 32px;
-  font-family: var(--font-display);
-  font-size: .72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tw);
-  background: var(--yellow);
-  border: 2.5px solid var(--ink);
-  box-shadow: var(--shadow-md);
-  color: var(--ink);
-  cursor: pointer;
-  transition: all .2s ease;
-}
-
-.btn-start:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 var(--ink);
-  background: #fff033;
-}
-
-.btn-start:active {
-  transform: translate(1px, 1px);
-  box-shadow: 3px 3px 0 var(--ink);
-}
-
-.btn-start svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-  transition: transform 0.2s ease;
-}
-
-.btn-start:hover svg {
-  transform: scale(1.1);
-}
-
-/* MODAL OVERLAY */
-.gp-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: var(--bg);
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.gp-modal-overlay.active {
-  display: flex;
-}
-
-/* Modal header */
-.modal-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  height: 52px;
-  background: var(--off);
-  border-bottom: 2px solid var(--ink);
-  flex-shrink: 0;
-}
-
-.modal-title {
-  flex: 1;
-  font-family: var(--font-display);
-  font-size: .65rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.modal-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.modal-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  padding: 4px 8px;
-  background: var(--surface-2);
-  border: 1.5px solid var(--ink);
-}
-
-.modal-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: var(--ink);
-}
-
-.modal-checkbox .checkbox-text {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.modal-streak {
-  font-family: var(--font-display);
-  font-size: .6rem;
-  font-weight: 700;
-  background: var(--yellow);
-  border: 2px solid var(--ink);
-  padding: 3px 10px;
-  letter-spacing: .06em;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.modal-header .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: var(--yellow);
-  border: 2.5px solid var(--ink);
-  cursor: pointer;
-  transition: all .2s ease;
-  box-shadow: var(--shadow-sm);
-  flex-shrink: 0;
-}
-
-.modal-header .btn svg {
-  width: 18px;
-  height: 18px;
-  stroke: var(--ink);
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-}
-
-.modal-header .btn:hover {
-  background: var(--ink);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-md);
-}
-
-.modal-header .btn:hover svg {
-  stroke: var(--yellow);
-}
-
-/* Polypad wrap (canvas area) */
-#polypad-wrap {
-  flex: 1;
-  min-height: 0;
+/* ── HEADER ───────────────────────────────────────────── */
+.slide-hdr {
   position: relative;
-  overflow: auto;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  z-index: 1;
+  max-width: 620px;
+  margin: clamp(6.5rem, 10vw, 8.5rem) auto 1.75rem;
+  text-align: center;
+}
+.slide-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+  margin-bottom: 0.4rem;
+}
+.slide-hdr h1 { font-size: var(--text-h2); margin: 0 0 0.4rem; }
+.slide-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-/* SLIDER GRID */
+/* ── BUTTONS ARE STICKY NOTES ───────────────────────────────────────────
+   Start / Shuffle / Reset / Exit all carry .pp-note-btn (components.css), so
+   the paper, tape, tilt and lift come from .pp-sticky. These rules only keep
+   the layout each button needs. */
+.slide-start-btn,
+.slide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--pp-note-bg, #fff39a);
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(20, 19, 15, 0.1),
+    5px 8px 12px -4px rgba(20, 19, 15, 0.3);
+  font-family: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  color: #14130f;
+  cursor: pointer;
+  transition: transform var(--duration-smooth, 0.2s) var(--ease-bounce, ease);
+}
+.slide-start-btn { padding: 0.8rem 1.5rem 0.85rem; font-size: 0.95rem; }
+/* Centred under the selectors, clear of the last row of notes above it. */
+.pp-setup__paper > .slide-start-btn { align-self: center; margin-top: 0.6rem; }
+.slide-btn { padding: 0.5rem 1rem 0.55rem; font-size: 0.82rem; }
+.slide-btn.pp-note-btn--plain { color: #5a544a; }
+.slide-start-btn:hover,
+.slide-btn:hover { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
+.slide-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: rotate(var(--pp-note-tilt, -2deg)); }
+
+/* ── PLAY OVERLAY ─────────────────────────────────────── */
+/* As wide as the board can usefully be — but never taller than the screen,
+   so the notes above it and the buttons below it stay in view. */
+#game-modal .review-wrap { width: min(540px, 100%, max(280px, calc(100vh - 19rem))); }
+
+.slide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.slide-note {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.24rem 0.55rem;
+}
+
+.slide-paper { padding: 1.15rem 0.95rem; }
+
+/* ── THE BOARD ────────────────────────────────────────── */
 .slider-grid {
   display: grid;
-  gap: 10px;
-  background: var(--surface-2);
-  border: 3px solid var(--ink);
-  padding: 16px;
-  box-shadow: var(--shadow-md);
+  gap: 0.55rem;
+  width: 100%;
   aspect-ratio: 1 / 1;
-  margin: 0 auto;
-  width: min(calc(100vw - 20px), 600px);
-  height: auto;
-  max-width: 100%;
-  box-sizing: border-box;
 }
+.slider-grid[data-size="2"] { grid-template-columns: repeat(2, 1fr); }
+.slider-grid[data-size="3"] { grid-template-columns: repeat(3, 1fr); }
+.slider-grid[data-size="4"] { grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
 
-/* Grid layouts based on tile count */
-.slider-grid[data-size="2"] {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.slider-grid[data-size="3"] {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.slider-grid[data-size="4"] {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.slider-placeholder {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-}
-
-/* TILE STYLES */
+/* A tile is a small card lying on the receipt. */
 .slider-tile {
+  position: relative;
   aspect-ratio: 1 / 1;
-  background: var(--bg);
-  border: 2.5px solid var(--ink);
-  box-shadow: var(--shadow-sm);
+  min-width: 0;
+  margin: 0;
+  padding: 0.4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-  padding: 6px;
-  position: relative;
-  font-family: var(--font-mono);
   overflow: hidden;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-
-.slider-tile:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-md);
-  background: #fff;
-}
+/* Only the tiles beside the gap can move, and only they answer the pointer. */
+.slider-tile.can-move { cursor: pointer; border-color: color-mix(in srgb, var(--accent-secondary) 60%, var(--border-subtle)); }
+.slider-tile.can-move:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.slider-tile.can-move:active { transform: translateY(0); box-shadow: none; }
+.slider-tile:focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 2px; }
 
 .slider-tile.empty {
-  background: var(--surface-3);
-  border-style: dashed;
-  opacity: 0.5;
-  cursor: default;
-  box-shadow: inset 0 0 0 1px var(--ink);
+  background: transparent;
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  box-shadow: none;
 }
 
-.slider-tile.empty:hover {
-  transform: none;
-  box-shadow: inset 0 0 0 1px var(--ink);
-  background: var(--surface-3);
-}
-
-/* Tile content */
 .tile-content {
   width: 100%;
   height: 100%;
@@ -572,7 +164,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
 .tile-visual {
   flex: 1;
   width: 100%;
@@ -581,453 +172,47 @@ body {
   align-items: center;
   justify-content: center;
 }
-
-.tile-visual svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+.tile-visual svg { width: 100%; height: 100%; display: block; }
 
 .tile-label {
+  margin-top: 0.2rem;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-top: 4px;
+  line-height: 1.2;
   color: var(--ink);
   text-align: center;
-  line-height: 1.2;
 }
-
 .tile-number {
   font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: var(--ink);
-}
-
-/* Bottom sheet */
-.gp-bottom-sheet {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  border-top: 2px solid var(--ink);
-}
-
-.gp-feedback-box {
-  padding: 10px 16px;
-  font-family: var(--font-mono);
-  font-size: .7rem;
-  font-weight: 600;
-  letter-spacing: .03em;
-  color: var(--ink);
-  border-bottom: 1px solid var(--ruled);
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-}
-
-.gp-feedback-box.success {
-  color: var(--green);
-  background: rgba(0, 165, 80, .08);
-  border-left: 3px solid var(--green);
-}
-
-/* Answer row (for buttons) */
-.answer-row {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  font-family: var(--font-display);
-  font-size: .6rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  background: var(--surface-2);
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow-sm);
   color: var(--ink);
-  cursor: pointer;
-  transition: all .15s ease;
-  min-width: 90px;
+  text-align: center;
 }
+.slider-grid[data-size="3"] .tile-label { font-size: 0.82rem; }
+.slider-grid[data-size="3"] .tile-number { font-size: 1.15rem; }
+.slider-grid[data-size="4"] .tile-label { font-size: 0.68rem; }
+.slider-grid[data-size="4"] .tile-number { font-size: 0.9rem; }
 
-.btn-secondary:hover:not(:disabled) {
-  background: var(--ink);
-  color: var(--bg);
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-md);
+/* ── FEEDBACK ─────────────────────────────────────────── */
+.slide-feedback {
+  min-height: 2.4em;
+  margin: 0.9rem 0 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: var(--leading-snug);
+  color: var(--text-secondary);
 }
+.slide-feedback.is-success { color: var(--ink); }
 
-.btn-secondary:active:not(:disabled) {
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--ink);
+@media (max-width: 560px) {
+  .slide-paper { padding: 1.05rem 0.7rem; }
+  .slider-grid { gap: 0.4rem; }
+  .slider-grid[data-size="4"] { gap: 0.3rem; }
+  .slider-tile { padding: 0.25rem; }
+  .slider-grid[data-size="3"] .tile-label { font-size: 0.68rem; }
+  .slider-grid[data-size="4"] .tile-label { font-size: 0.52rem; }
+  .slider-grid[data-size="4"] .tile-number { font-size: 0.72rem; }
 }
-
-.btn-secondary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* RESPONSIVE DESIGN */
-@media (max-width: 900px) {
-  .settings-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .pg-header {
-    padding: 36px 20px 24px;
-    gap: 20px;
-  }
-  
-  .ph-right {
-    max-width: none;
-  }
-  
-  .settings-panel {
-    padding: 32px 20px 32px;
-  }
-  
-  .settings-grid {
-    gap: 12px;
-  }
-  
-  .slider-grid {
-    padding: 12px;
-    gap: 8px;
-    width: min(calc(100vw - 20px), 500px);
-  }
-  
-  .tile-label {
-    font-size: 0.6rem;
-  }
-  
-  .tile-number {
-    font-size: 1rem;
-  }
-  
-  .btn-secondary {
-    padding: 8px 16px;
-    min-width: 80px;
-    font-size: .55rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .pg-header {
-    flex-direction: column;
-  }
-  
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .settings-checkboxes {
-    gap: 16px;
-  }
-  
-  .btn-start {
-    padding: 14px 24px;
-    font-size: .68rem;
-  }
-  
-  .modal-header {
-    height: 48px;
-    padding: 0 12px;
-  }
-  
-  .modal-title {
-    font-size: .55rem;
-  }
-  
-  .modal-streak {
-    font-size: .5rem;
-    padding: 2px 6px;
-  }
-  
-  .slider-grid {
-    padding: 10px;
-    gap: 6px;
-    width: min(calc(100vw - 16px), 400px);
-  }
-  
-  .tile-label {
-    font-size: 0.5rem;
-  }
-  
-  .gp-feedback-box {
-    padding: 8px 12px;
-    font-size: .6rem;
-  }
-  
-  .answer-row {
-    padding: 10px 12px;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .pg-header {
-    padding: 28px 16px 20px;
-  }
-  
-  .pg-title {
-    font-size: clamp(1.8rem, 8vw, 2.8rem);
-  }
-  
-  .modal-header .btn {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .slider-grid {
-    padding: 8px;
-    gap: 5px;
-    width: min(calc(100vw - 12px), 320px);
-  }
-  
-  .tile-label {
-    font-size: 0.45rem;
-    margin-top: 2px;
-  }
-  
-  .tile-number {
-    font-size: 0.9rem;
-  }
-  
-  .btn-secondary {
-    padding: 8px 12px;
-    min-width: 70px;
-    font-size: .5rem;
-  }
-  
-  .modal-checkbox .checkbox-text {
-    display: none;
-  }
-  
-  .modal-checkbox {
-    padding: 4px;
-  }
-}
-
-@media (max-width: 360px) {
-  .ticker {
-    height: 28px;
-  }
-  
-  .ticker-item {
-    font-size: .55rem;
-    padding: 0 16px;
-  }
-  
-  .slider-grid {
-    padding: 6px;
-    gap: 4px;
-    width: min(calc(100vw - 10px), 280px);
-  }
-  
-  .tile-label {
-    font-size: 0.4rem;
-  }
-  
-  .gp-feedback-box {
-    padding: 6px 10px;
-    font-size: .55rem;
-  }
-  
-  .answer-row {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-}
-
-/* Scrollbar styling */
-.pp-dropdown-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.pp-dropdown-list::-webkit-scrollbar-track {
-  background: var(--surface-2);
-}
-
-.pp-dropdown-list::-webkit-scrollbar-thumb {
-  background: var(--ink);
-}
-
-/* Focus visible for accessibility */
-*:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Disable text selection on interactive elements */
-button,
-.slider-tile,
-.pp-dropdown-header {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-}
-
-.tile-number {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1a1a1a; /* Black/Dark Grey */
-    text-align: center;
-}
-
-.tile-label {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #1a1a1a; /* Black/Dark Grey */
-    text-align: center;
-    margin-top: 4px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SOFT-UI ALIGNMENT — the same bridge /theory-page/style.css already carries.
-   This page was written before the soft-UI redesign, in a palette of its own
-   (--ink #1a1a1a, --bg #f5f0e8, --yellow #ffe500) with hard borders and
-   offset block shadows. Worse, those names are the SITE's names: redefining
-   --ink and --bg at :root restyled the shared nav bar sitting above the page,
-   which is how this page ended up with an old-looking nav. So the legacy
-   vocabulary is aliased onto theme.css here, and the page keeps its own
-   layout. Appended last, so it wins the cascade over the rules above.
-   ═══════════════════════════════════════════════════════════════════════════ */
-:root {
-  --off: var(--surface-secondary);
-  --yellow: var(--accent-primary);
-  --blue: var(--accent-secondary);
-  --green: var(--accent-success);
-  --red: var(--accent-danger);
-  --muted: var(--text-secondary);
-  --ruled: color-mix(in srgb, var(--ink) 12%, transparent);
-  --paper: var(--surface-primary);
-  --surface-1: var(--surface-primary);
-}
-
-/* the shared nav is a fixed 76px bar, so the page starts below it */
-body { padding-top: 76px; }
-
-/* ── the furniture, softened ─────────────────────────────────────────────────
-   The last of the neo-brutalism on this page: ink outlines and offset block
-   shadows. This site's controls are rounded and lifted instead, and its
-   buttons are sticky notes (utils/components/sticky-ui.css, which the page
-   now loads: it dresses .btn, .btn-primary, .option-btn and .hero-stat by
-   itself). What is left here is the boards, the tiles and the pickers. */
-
-/* the topic picker */
-.pp-dropdown-header,
-.pp-dropdown-list {
-  border: var(--border-subtle);
-  border-radius: 14px;
-  background: var(--surface-primary);
-  box-shadow: var(--shadow-sm);
-}
-.pp-dropdown-list { box-shadow: var(--shadow-md); overflow: hidden; }
-.pp-dropdown-item:hover,
-.pp-dropdown-item.selected { background: var(--surface-secondary); }
-
-/* the one big button */
-.btn-start {
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent-primary);
-  color: var(--text-on-accent);
-  box-shadow: var(--shadow-md);
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-.btn-start:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-.btn-start:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
-
-/* the little ones */
-.btn-secondary,
-.btn-icon,
-.btn-control,
-.modal-header .btn {
-  border: var(--border-subtle) !important;
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  background: var(--surface-primary);
-  color: var(--ink);
-}
-.btn-secondary:hover,
-.btn-icon:hover,
-.btn-control:hover,
-.modal-header .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.btn-secondary:active:not(:disabled),
-.btn-control:active { transform: translateY(0); box-shadow: none; }
-
-/* the hero's little numbers: pills, not boxes with ink edges */
-.ph-stats { border: 0; padding: 0; background: none; box-shadow: none; display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.ph-stat {
-  border: var(--border-subtle);
-  border-radius: 999px;
-  background: var(--surface-primary);
-  box-shadow: var(--shadow-sm);
-  padding: 0.6rem 1.1rem;
-}
-
-/* the board, and what sits on it */
-.flip-grid,
-.slider-grid,
-.tiles-container,
-.board {
-  border: var(--border-subtle);
-  border-radius: 18px;
-  background: var(--surface-primary);
-  box-shadow: var(--shadow-sm);
-}
-.flip-card-inner,
-.slider-tile,
-.tile,
-.cell:not(.empty) {
-  border: var(--border-subtle);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-}
-.slider-tile:active,
-.tile:active { box-shadow: none; transform: translateY(1px); }
-
-/* the modal's little streak counter, and the timer */
-.modal-streak,
-.timer {
-  border: var(--border-subtle);
-  border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  background: var(--surface-primary);
-}
-
-/* the ticker that runs under the nav */
-.ticker { border-block: var(--border-subtle); }
-
-/* a checkbox is a small piece of paper too */
-.checkbox-label input[type="checkbox"] {
-  border: var(--border-subtle);
-  border-radius: 6px;
-}
-
-/* the rules that divide the page: a hairline, not a 2px ink bar */
-.pg-header,
-.ticker,
-.modal-header,
-.gp-feedback,
-.settings-panel { border-color: color-mix(in srgb, var(--ink) 12%, transparent) !important; }
-.pg-header, .ticker { border-width: 1px !important; }
-.modal-header { border-bottom: var(--border-subtle) !important; }
-
-/* the tiles: our paper, with the number in ink */
-.slider-tile { background: var(--surface-primary) !important; color: var(--ink) !important; }
-.slider-tile.correct { background: color-mix(in srgb, var(--accent-success) 34%, var(--surface-primary)) !important; }
-.slider-grid { background: var(--surface-secondary) !important; }

@@ -41,12 +41,12 @@ const MODES = {
   },
 };
 
-// Distinct color palette for tiles
-const TILE_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#FFB347', '#A8E6CF', '#D4A5A5',
-  '#9B59B6', '#3498DB', '#E67E22', '#1ABC9C', '#E74C3C',
-  '#F39C12', '#2ECC71', '#C0392B', '#16A085', '#8E44AD',
-];
+// What a tile's drawing is painted with. The shaded part is a pastel in the
+// site's own key (the same golden-angle hues the Drills fraction bars use), so
+// neighbouring sizes never share a colour; everything else is a theme token, so
+// the drawing follows the page into dark mode.
+const SVG_INK = 'var(--ink)';
+const SVG_EMPTY = 'var(--surface-secondary)';
 
 // ---------- UTILITIES ----------
 function gcd(a, b) {
@@ -97,6 +97,7 @@ let settings = {
 let gameState = {
   tiles: [],
   positions: [],
+  startPositions: [], // the shuffle this puzzle began from — what Reset goes back to
   emptyIndex: -1,
   moves: 0,
   solved: 0,
@@ -108,39 +109,13 @@ let gameState = {
 let sliderGrid, gameFeedback, modalMoves, movesStat, solvedStat;
 let shuffleBtn, resetBtn, showValuesModal, showValuesCheck, showSplitLinesCheck;
 
-// ---------- DROPDOWN LOGIC ----------
-function toggleDropdown(id) {
-  const dd = document.getElementById(id);
-  if (!dd) return;
-  const isOpen = dd.classList.contains('open');
-  document.querySelectorAll('.pp-dropdown.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) dd.classList.add('open');
-}
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.pp-dropdown')) {
-    document.querySelectorAll('.pp-dropdown.open').forEach(el => el.classList.remove('open'));
-  }
-});
-
-document.querySelectorAll('.pp-dropdown-list').forEach(list => {
-  list.addEventListener('click', (e) => {
-    const item = e.target.closest('.pp-dropdown-item');
-    if (!item) return;
-    const dd = item.closest('.pp-dropdown');
-    const value = item.dataset.value;
-    const headerSpan = dd.querySelector('.dd-selected');
-    
-    list.querySelectorAll('.pp-dropdown-item').forEach(i => i.classList.remove('selected'));
-    item.classList.add('selected');
-    if (headerSpan) headerSpan.textContent = item.textContent.trim();
-    dd.classList.remove('open');
-    
-    if (dd.id === 'dd-tiles') settings.gridSize = parseInt(value);
-    if (dd.id === 'dd-mode') settings.mode = value;
-    if (dd.id === 'dd-type') settings.type = value;
-    if (dd.id === 'dd-arrange') settings.arrange = value;
-    if (dd.id === 'dd-fraction-type') settings.fractionType = value;
+// ---------- SETTINGS ----------
+// Each group of sticky-note radios carries data-setting="<key>"; ticking one
+// writes straight into `settings`.
+document.querySelectorAll('[data-setting]').forEach((group) => {
+  group.addEventListener('change', (e) => {
+    const key = group.dataset.setting;
+    settings[key] = key === 'gridSize' ? parseInt(e.target.value, 10) : e.target.value;
   });
 });
 
@@ -382,7 +357,11 @@ function openGameModal() {
   if (shuffleBtn) shuffleBtn.disabled = false;
   if (resetBtn) resetBtn.disabled = false;
   
-  document.getElementById('game-modal').classList.add('active');
+  const modal = document.getElementById('game-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  // Game mode: the nav goes away, as it does in every other game's play view.
+  document.body.classList.add('slide-nav-hidden');
   document.body.style.overflow = 'hidden';
   
   if (showValuesModal) {
@@ -404,8 +383,8 @@ function openGameModal() {
     });
   }
   
-  gameFeedback.className = 'gp-feedback-box';
-  gameFeedback.textContent = `Arrange tiles in ${settings.arrange} order. Click tiles next to empty space.`;
+  gameFeedback.className = 'slide-feedback';
+  gameFeedback.textContent = `Arrange tiles in ${settings.arrange} order. Tap a tile next to the gap.`;
 }
 
 function generateNewPuzzle() {
@@ -494,6 +473,7 @@ function performShuffle() {
   }
   
   gameState.emptyIndex = emptyPos;
+  gameState.startPositions = gameState.positions.slice();
 }
 
 function closeGameModal() {
@@ -502,7 +482,10 @@ function closeGameModal() {
     gameState.winTimeout = null;
   }
   
-  document.getElementById('game-modal').classList.remove('active');
+  const modal = document.getElementById('game-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('slide-nav-hidden');
   document.body.style.overflow = '';
   gameState.gameActive = false;
   gameState.isGenerating = false;
@@ -516,52 +499,30 @@ function shuffleTiles() {
   updateStats();
   renderGrid();
   
-  gameFeedback.className = 'gp-feedback-box';
+  gameFeedback.className = 'slide-feedback';
   gameFeedback.textContent = `Tiles shuffled. Arrange in ${settings.arrange} order.`;
 }
 
 function resetGame() {
   if (!gameState.gameActive || gameState.isGenerating) return;
-  
-  const totalCells = settings.gridSize * settings.gridSize;
-  const tileCount = totalCells - 1;
-  
-  gameState.positions = new Array(totalCells);
-  for (let i = 0; i < tileCount; i++) {
-    gameState.positions[i] = i;
-  }
-  gameState.emptyIndex = totalCells - 1;
-  gameState.positions[gameState.emptyIndex] = -1;
-  
-  if (settings.arrange === 'descending') {
-    const nonEmpty = gameState.positions.filter(idx => idx !== -1);
-    nonEmpty.sort((a, b) => gameState.tiles[b] - gameState.tiles[a]);
-    let idx = 0;
-    for (let i = 0; i < gameState.positions.length; i++) {
-      if (gameState.positions[i] !== -1) {
-        gameState.positions[i] = nonEmpty[idx++];
-      }
-    }
-  }
-  
+  if (!gameState.startPositions.length) return;
+
+  gameState.positions = gameState.startPositions.slice();
+  gameState.emptyIndex = gameState.positions.indexOf(-1);
+
   gameState.moves = 0;
   updateStats();
   renderGrid();
-  
-  gameFeedback.className = 'gp-feedback-box';
-  gameFeedback.textContent = `Game reset. Arrange tiles in ${settings.arrange} order.`;
+
+  gameFeedback.className = 'slide-feedback';
+  gameFeedback.textContent = `Back to the start. Arrange tiles in ${settings.arrange} order.`;
 }
 
 // ---------- RENDERING ----------
-function getTileColor(value) {
-  if (value === undefined || value === null) return '#e5ddd1';
-  const key = value.toFixed(4);
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = ((hash << 5) - hash) + key.charCodeAt(i);
-    hash = hash & hash;
-  }
-  return TILE_COLORS[Math.abs(hash) % TILE_COLORS.length];
+// `rank` is the tile's place in the sorted set. Golden-angle steps scatter the
+// hues, so the colour never gives the order away.
+function getTileColor(rank) {
+  return `hsl(${Math.round((rank * 137.5 + 20) % 360)} 72% 74%)`;
 }
 
 function renderGrid() {
@@ -578,14 +539,17 @@ function renderGrid() {
     if (isEmpty) {
       html += `<div class="slider-tile empty" data-index="${i}"></div>`;
     } else {
+      const size = settings.gridSize;
+      const gap = gameState.emptyIndex;
+      const canMove = Math.abs(Math.floor(i / size) - Math.floor(gap / size)) + Math.abs((i % size) - (gap % size)) === 1;
       const value = gameState.tiles[tileIndex];
       if (value === undefined) continue;
       
       const displayValue = mode.format(value);
-      const fillColor = getTileColor(value);
+      const fillColor = getTileColor(tileIndex);
       const fraction = decimalToFraction(value);
       
-      html += `<div class="slider-tile" data-index="${i}" data-value="${value}" onclick="handleTileClick(${i})">`;
+      html += `<button type="button" class="slider-tile${canMove ? ' can-move' : ''}" data-index="${i}" data-value="${value}" aria-label="${displayValue}" onclick="handleTileClick(${i})">`;
       html += '<div class="tile-content">';
       html += '<div class="tile-visual">';
       
@@ -603,7 +567,7 @@ function renderGrid() {
         html += `<div class="tile-label">${displayValue}</div>`;
       }
       
-      html += '</div></div>';
+      html += '</div></button>';
     }
   }
   
@@ -623,15 +587,15 @@ function renderBarSVG(value, fillColor, denominator) {
     const partWidth = 90 / denominator;
     for (let i = 1; i < denominator; i++) {
       const x = 5 + (i * partWidth);
-      splitLines += `<line x1="${x}" y1="10" x2="${x}" y2="50" stroke="#1a1a1a" stroke-width="2" />`;
+      splitLines += `<line x1="${x}" y1="10" x2="${x}" y2="50" stroke="${SVG_INK}" stroke-width="1.6" />`;
     }
   }
   
-  const outline = `<rect x="5" y="10" width="90" height="40" fill="none" stroke="#1a1a1a" stroke-width="2.5" />`;
+  const outline = `<rect x="5" y="10" width="90" height="40" rx="3" fill="none" stroke="${SVG_INK}" stroke-width="2.2" />`;
   
   return `
     <svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
-      <rect x="5" y="10" width="90" height="40" fill="#e5ddd1" />
+      <rect x="5" y="10" width="90" height="40" rx="3" fill="${SVG_EMPTY}" />
       <rect x="5" y="10" width="${shadedWidth}" height="40" fill="${fillColor}" />
       ${splitLines}
       ${outline}
@@ -652,16 +616,16 @@ function renderCircleSVG(value, fillColor, denominator) {
       const lineAngle = (i * sectorAngle - 90) * Math.PI / 180;
       const x = 50 + 40 * Math.cos(lineAngle);
       const y = 50 + 40 * Math.sin(lineAngle);
-      splitLines += `<line x1="50" y1="50" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#1a1a1a" stroke-width="1.5" />`;
+      splitLines += `<line x1="50" y1="50" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${SVG_INK}" stroke-width="1.4" />`;
     }
   }
   
-  const outline = `<circle cx="50" cy="50" r="40" fill="none" stroke="#1a1a1a" stroke-width="2.5" />`;
+  const outline = `<circle cx="50" cy="50" r="40" fill="none" stroke="${SVG_INK}" stroke-width="2.2" />`;
   const shadedSector = `<path d="M 50 50 L 50 10 A 40 40 0 ${largeArc} 1 ${endX.toFixed(1)} ${endY.toFixed(1)} Z" fill="${fillColor}" />`;
   
   return `
     <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-      <circle cx="50" cy="50" r="40" fill="#e5ddd1" />
+      <circle cx="50" cy="50" r="40" fill="${SVG_EMPTY}" />
       ${shadedSector}
       ${splitLines}
       ${outline}
@@ -696,13 +660,15 @@ function handleTileClick(index) {
     updateStats();
     renderGrid();
     
-    if (gameState.gameActive) {
+    // isGenerating is set the moment the board is solved — leave the
+    // "solved" message standing rather than writing over it.
+    if (gameState.gameActive && !gameState.isGenerating) {
       gameFeedback.textContent = `Move ${gameState.moves}. Keep going!`;
     }
   } else if (gameState.positions[index] === -1) {
-    gameFeedback.textContent = 'Click a numbered tile next to the empty space.';
+    gameFeedback.textContent = 'Tap a tile next to the gap.';
   } else {
-    gameFeedback.textContent = 'Only tiles next to the empty space can move.';
+    gameFeedback.textContent = 'Only a tile next to the gap can move.';
   }
 }
 
@@ -732,7 +698,7 @@ function checkWinCondition() {
     gameState.isGenerating = true;
     updateStats();
     
-    gameFeedback.className = 'gp-feedback-box success';
+    gameFeedback.className = 'slide-feedback is-success';
     gameFeedback.textContent = `Puzzle ${gameState.solved} solved in ${gameState.moves} moves! Next puzzle...`;
     
     if (gameState.winTimeout) {
@@ -742,7 +708,7 @@ function checkWinCondition() {
     gameState.winTimeout = setTimeout(() => {
       if (gameState.gameActive) {
         generateNewPuzzle();
-        gameFeedback.className = 'gp-feedback-box';
+        gameFeedback.className = 'slide-feedback';
         gameFeedback.textContent = `Puzzle ${gameState.solved + 1}: Arrange tiles in ${settings.arrange} order.`;
         gameState.winTimeout = null;
       }
@@ -760,7 +726,6 @@ function updateStats() {
 }
 
 // ---------- EXPOSE TO GLOBAL ----------
-window.toggleDropdown = toggleDropdown;
 window.openGameModal = openGameModal;
 window.closeGameModal = closeGameModal;
 window.shuffleTiles = shuffleTiles;
@@ -769,17 +734,6 @@ window.handleTileClick = handleTileClick;
 
 // ---------- INITIALIZATION ----------
 document.addEventListener('DOMContentLoaded', () => {
-  const track = document.getElementById('ticker-track');
-  if (track && track.children.length === 0) {
-    const words = ['Slider Game', 'Classic Puzzle', 'Fractions · Percents', 'Ascending · Descending', 'Bars · Circles · Numbers', 'Prep Portal 2026'];
-    [...words, ...words].forEach(t => {
-      const s = document.createElement('span');
-      s.className = 'ticker-item';
-      s.textContent = t;
-      track.appendChild(s);
-    });
-  }
-  
   const showValuesCheck = document.getElementById('show-values');
   if (showValuesCheck) {
     showValuesCheck.addEventListener('change', (e) => {

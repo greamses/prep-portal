@@ -1,232 +1,152 @@
-﻿<!DOCTYPE html>
-<html lang="en" data-theme="light" data-plain-buttons>
+<!doctype html>
+<html lang="en" data-plain-buttons>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Slider Game — Put the Fractions in Order | PrepPortal</title>
+    <meta
+      name="description"
+      content="A sliding-tile puzzle where the tiles are fractions, percents, decimals, degrees or minutes — slide them into ascending or descending order."
+    />
 
-<head>
-    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Prep Portal 2026 | Slider Game</title>
-  <meta name="theme-color" content="#7cc47c">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <!-- External CSS (separate file) -->
-  <link rel="stylesheet" href="/utils/components/nav.css">
-  <link rel="stylesheet" href="../../../theory-page/style.css">
-  <link rel="stylesheet" href="./game.css">
-  <!-- External JS (separate file) -->
-  <script src="/utils/components/loader.js"></script>
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
-        "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+    <link rel="icon" type="image/svg+xml" href="/logo/logo-light.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo/logo-light.svg" />
+    <meta name="theme-color" content="#f4c95d" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700&family=Unbounded:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/utils/components/theme.css" />
+    <link rel="stylesheet" href="/utils/components/nav.css" />
+    <link rel="stylesheet" href="/utils/components/components.css" />
+    <link rel="stylesheet" href="/utils/components/setup.css" />
+    <link rel="stylesheet" href="/utils/components/game-overlays.css" />
+    <link rel="stylesheet" href="./game.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+          "firebase/storage": "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js"
+        }
       }
-    }
-  </script>
-  <!-- Every button on this page becomes a sticky note; loaded last, as
-       that sheet asks, so it wins without anything needing !important. -->
-  <link rel="stylesheet" href="/utils/components/components.css" />
-  <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
-</head>
+    </script>
 
-<body>
-  <div id="loader">
-    <div id="loader-wrapper">
-      <div class="logo-cluster"></div>
-    </div>
-    <div class="loader-word"><span>Slider Game</span></div>
-    <div class="loader-bar"></div>
-  </div>
-  
-  <nav class="site-nav" data-nav="main"></nav>
-  
-  <!-- Ticker -->
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track" id="ticker-track">
-      <!-- Populated by external JS -->
-    </div>
-  </div>
-  
-  <!-- Page Header -->
-  <header class="pg-header">
-    <div class="ph-left">
-      <p class="pg-eyebrow">Mathematics</p>
-      <h1 class="pg-title">SLIDER<br><em>GAME</em></h1>
-    </div>
-    <div class="ph-right">
-      <p>Classic sliding puzzle — click tiles adjacent to the empty space to slide them. Arrange in order to win.</p>
-      <div class="ph-stats">
-        <div class="ph-stat"><strong id="stat-moves">0</strong><span>Moves</span></div>
-        <div class="ph-stat"><strong id="stat-solved">0</strong><span>Solved</span></div>
-      </div>
-    </div>
-  </header>
-  
-  <!-- Settings Panel -->
-  <section class="settings-panel">
-    <div class="settings-body">
-      <p class="settings-desc">
-        Configure the sliding puzzle. Choose grid size, display mode, visual style, and arrangement order.
-      </p>
-      
-      <div class="settings-grid">
-        <!-- Tiles Dropdown -->
-        <div class="pp-dropdown" id="dd-tiles">
-          <span class="pp-dropdown-label">Tiles</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-tiles')">
-            <span class="dd-selected">Four (3 tiles)</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="2">Four (3 tiles)</div>
-            <div class="pp-dropdown-item" data-value="3">Nine (8 tiles)</div>
-            <div class="pp-dropdown-item" data-value="4">Sixteen (15 tiles)</div>
-          </div>
-        </div>
-        
-        <!-- Mode Dropdown -->
-        <div class="pp-dropdown" id="dd-mode">
-          <span class="pp-dropdown-label">Mode</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-mode')">
-            <span class="dd-selected">Fraction</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="fraction">Fraction</div>
-            <div class="pp-dropdown-item" data-value="percent">Percent</div>
-            <div class="pp-dropdown-item" data-value="degrees">Degrees</div>
-            <div class="pp-dropdown-item" data-value="decimal">Decimal</div>
-            <div class="pp-dropdown-item" data-value="time">Time</div>
-            <div class="pp-dropdown-item" data-value="mixed">Mixed</div>
-          </div>
-        </div>
-        
-        <!-- Type Dropdown -->
-        <div class="pp-dropdown" id="dd-type">
-          <span class="pp-dropdown-label">Type</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-type')">
-            <span class="dd-selected">Bars</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="bars">Bars</div>
-            <div class="pp-dropdown-item" data-value="circles">Circles</div>
-            <div class="pp-dropdown-item" data-value="numbers">Numbers</div>
-          </div>
-        </div>
-        
-        <!-- Arrangement Dropdown -->
-        <div class="pp-dropdown" id="dd-arrange">
-          <span class="pp-dropdown-label">Arrange</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-arrange')">
-            <span class="dd-selected">Ascending</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="ascending">Ascending</div>
-            <div class="pp-dropdown-item" data-value="descending">Descending</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Fraction Type Dropdown -->
-      <div class="settings-grid" style="margin-top: 0;">
-        <div class="pp-dropdown" id="dd-fraction-type">
-          <span class="pp-dropdown-label">Fraction Type</span>
-          <div class="pp-dropdown-header" onclick="toggleDropdown('dd-fraction-type')">
-            <span class="dd-selected">Mixed Fractions</span>
-            <svg viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div class="pp-dropdown-list">
-            <div class="pp-dropdown-item selected" data-value="mixed">Mixed Fractions</div>
-            <div class="pp-dropdown-item" data-value="like-denominators">Like Denominators</div>
-            <div class="pp-dropdown-item" data-value="like-numerators">Like Numerators</div>
-            <div class="pp-dropdown-item" data-value="unit-fractions">Unit Fractions</div>
-            <div class="pp-dropdown-item" data-value="incrementing-numerator">Incrementing Numerator</div>
-            <div class="pp-dropdown-item" data-value="incrementing-denominator">Incrementing Denominator</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Additional checkboxes -->
-      <div class="settings-checkboxes">
-        <label class="checkbox-label">
-          <input type="checkbox" id="show-values" checked />
-          <span class="checkbox-text">Show numeric labels</span>
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="show-split-lines" checked />
-          <span class="checkbox-text">Show split lines</span>
-        </label>
-      </div>
-      
-      <button class="btn-start" onclick="openGameModal()">
-        <svg viewBox="0 0 24 24">
-          <polygon points="5 3 19 12 5 21 5 3" />
-        </svg>
-        Start Game
-      </button>
-    </div>
-  </section>
-  
-  <!-- GAME MODAL (Toggleable) -->
-  <div id="game-modal" class="gp-modal-overlay">
-    <div class="modal-header">
-      <button class="btn" title="Exit" onclick="closeGameModal()">
-        <svg viewBox="0 0 24 24">
-          <path d="M18 6L6 18" />
-          <path d="M6 6l12 12" />
-        </svg>
-      </button>
-      <span class="modal-title" id="modal-title">Sliding Puzzle</span>
-      <div class="modal-header-right">
-        <label class="checkbox-label modal-checkbox">
-          <input type="checkbox" id="show-values-modal" checked />
-          <span class="checkbox-text">Labels</span>
-        </label>
-        <span class="modal-streak" id="modal-moves">0 moves</span>
-      </div>
-    </div>
-    
-    <!-- Slider Canvas / Grid Area (inside modal) -->
-    <div id="polypad-wrap">
-      <div id="slider-grid" class="slider-grid">
-        <!-- Tiles will be generated here by external JS -->
-        <div class="slider-placeholder">
-          <span>Loading puzzle...</span>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Game Footer with controls -->
-    <div class="gp-bottom-sheet">
-      <div class="gp-feedback-box" id="game-feedback">
-        Click tiles adjacent to the empty space to slide.
-      </div>
-      <div class="answer-row" style="justify-content: center; gap: 20px;">
-        <button class="btn-secondary" id="shuffle-btn" onclick="shuffleTiles()">Shuffle</button>
-        <button class="btn-secondary" id="reset-btn" onclick="resetGame()">Reset</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- External JavaScript (separate file) -->
-  <script src="./game.js"></script>
-  <!-- Navigation module (external) -->
-  <script type="module" src="/utils/components/nav-builder.js"></script>
-</body>
+    <script src="/utils/components/loader.js"></script>
+    <link rel="stylesheet" href="/utils/components/sticky-ui.css" />
+  </head>
 
+  <body>
+    <div id="loader">
+      <div id="loader-wrapper">
+        <div class="logo-cluster"></div>
+      </div>
+      <div class="loader-word"><span>SLIDER</span></div>
+      <div class="loader-bar"></div>
+    </div>
+
+    <nav class="site-nav" data-nav="main"></nav>
+
+    <div class="builder-paint" aria-hidden="true"></div>
+
+    <!-- ═══ SETUP ═══ -->
+    <main class="pp-setup" id="slide-setup">
+      <div class="slide-hdr">
+        <div class="slide-eyebrow">Mathematics</div>
+        <h1>Slider Game</h1>
+        <p class="slide-sub">Slide the tiles into order. Only a tile next to the gap can move.</p>
+      </div>
+
+      <div class="pp-setup__receipt pp-receipt">
+        <div class="pp-setup__paper pp-receipt__paper">
+          <p class="pp-setup__title">Puzzle Settings</p>
+
+          <div class="pp-setup-field">
+            <span>The Board</span>
+            <div class="strip-group" data-label="Tiles" data-setting="gridSize">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="slide-tiles" value="2" checked /><span>3 tiles</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="slide-tiles" value="3" /><span>8 tiles</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="slide-tiles" value="4" /><span>15 tiles</span></label>
+            </div>
+            <div class="strip-group" data-label="Order" data-setting="arrange">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="slide-arrange" value="ascending" checked /><span>Ascending</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="slide-arrange" value="descending" /><span>Descending</span></label>
+            </div>
+          </div>
+
+          <div class="pp-setup-field">
+            <span>The Tiles</span>
+            <div class="strip-group" data-label="Drawn as" data-setting="type">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="slide-type" value="bars" checked /><span>Bars</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="slide-type" value="circles" /><span>Circles</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="slide-type" value="numbers" /><span>Numbers</span></label>
+            </div>
+            <div class="strip-group" data-label="Written as" data-setting="mode">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="slide-mode" value="fraction" checked /><span>Fraction</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="slide-mode" value="percent" /><span>Percent</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="slide-mode" value="decimal" /><span>Decimal</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="slide-mode" value="degrees" /><span>Degrees</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="slide-mode" value="time" /><span>Time</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="slide-mode" value="mixed" /><span>Mixed</span></label>
+            </div>
+            <div class="strip-group" data-label="Fractions" data-setting="fractionType">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="radio" name="slide-fraction-type" value="mixed" checked /><span>Mixed</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="radio" name="slide-fraction-type" value="like-denominators" /><span>Like denominators</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c4"><input type="radio" name="slide-fraction-type" value="like-numerators" /><span>Like numerators</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c5"><input type="radio" name="slide-fraction-type" value="unit-fractions" /><span>Unit fractions</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c0"><input type="radio" name="slide-fraction-type" value="incrementing-numerator" /><span>Rising numerator</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c1"><input type="radio" name="slide-fraction-type" value="incrementing-denominator" /><span>Rising denominator</span></label>
+            </div>
+            <div class="strip-group" data-label="Extras">
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="show-values" checked /><span>Number labels</span></label>
+              <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c3"><input type="checkbox" id="show-split-lines" checked /><span>Split lines</span></label>
+            </div>
+          </div>
+
+          <button class="slide-start-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c0" type="button" onclick="openGameModal()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="16" height="16"><path d="M6.6 3.8 20.4 12 6.6 20.2z" fill="var(--accent-success)"/></svg>
+            <span>Start Game</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ PLAY OVERLAY ═══ -->
+    <div class="review-bd" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="review-wrap">
+        <div class="slide-head">
+          <span class="pp-sticky pp-sticky--tape slide-note" id="modal-moves">0 moves</span>
+          <span class="pp-sticky pp-sticky--tape slide-note"><span id="stat-solved">0</span> solved</span>
+        </div>
+
+        <div class="pp-receipt slide-receipt">
+          <div class="pp-receipt__paper slide-paper">
+            <div id="slider-grid" class="slider-grid"></div>
+          </div>
+        </div>
+
+        <p class="slide-feedback" id="game-feedback"></p>
+
+        <div class="pp-lobby-actions">
+          <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="show-values-modal" checked /><span>Labels</span></label>
+          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="shuffle-btn" type="button" onclick="shuffleTiles()">Shuffle</button>
+          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c3" id="reset-btn" type="button" onclick="resetGame()">Reset</button>
+          <button class="slide-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGameModal()">Exit</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./game.js"></script>
+    <script src="/utils/components/nav-builder.js" type="module"></script>
+
+    <script type="module">
+      import { heroPaint } from "/utils/components/nav-icons.js";
+      document.querySelectorAll(".builder-paint").forEach((el) => (el.innerHTML = heroPaint()));
+    </script>
+  </body>
 </html>
