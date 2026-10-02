@@ -1,13 +1,51 @@
 /* ═══════════════════════════════════════════════════════
    MATH FLAPPY BIRD — flap through the pipes while answering sums
-   The page, header, buttons and play overlay are the shared paper-game frame
-   (/home/games/css/paper-game.css). Only the sky, the sum and the answer
-   keys are here.
+   The page, header and buttons are the shared paper-game frame
+   (/home/games/css/paper-game.css). The play view is this game's own: it
+   fills the screen, where the frame's is a column on a blurred sheet.
 ═══════════════════════════════════════════════════════ */
 
-/* The answers and two buttons sit under the sky, so the frame is kept a little
-   smaller than its default to leave them on screen. */
-#game-modal .review-wrap { width: min(520px, 100%, max(280px, calc((100vh - 21rem) * 4 / 3))); }
+/* ── THE PLAY VIEW IS THE WHOLE SCREEN ────────────────
+   The shared overlay is a padded, blurred sheet with a narrow column in the
+   middle. This game wants the opposite: edge to edge, three bands — the sum
+   and counters, the sky, the answers — with the sky taking all that is left. */
+.flappy-play.review-bd {
+  padding: 0;
+  overflow: hidden;
+  background: var(--app-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+#game-modal.flappy-play .review-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.flappy-top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* Room above for the notes' tape, and for a phone's notch. */
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem;
+}
+
+/* The sky's band. The canvas is laid over it rather than sized by it: a
+   canvas has a size of its own (its bitmap) that would fight the flex row. */
+.flappy-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.flappy-bottom {
+  flex: 0 0 auto;
+  padding: 0.9rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+}
 
 /* ── SETUP: the three lines of how-to ─────────────────── */
 .flappy-how {
@@ -20,27 +58,31 @@
 }
 .flappy-how strong { color: var(--ink); }
 
-/* ── THE SUM, printed above the sky ───────────────────── */
+/* ── THE SUM, between the counters ────────────────────── */
 .flappy-sum {
-  min-height: 1.3em;
-  margin: 0 0 0.7rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 4.2vw, 1.9rem);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* ── THE SKY ──────────────────────────────────────────── */
 /* The colour of the sky is this background; flappy.js draws only what moves
    across it. A soft blue in both themes — it is a daytime sky either way. */
 .flappy-sky {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius-sm);
+  height: 100%;
   background: linear-gradient(#bfe3f7, #e2f3fb);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 18%, transparent);
+  box-shadow: inset 0 1.5px 0 color-mix(in srgb, var(--ink) 16%, transparent), inset 0 -1.5px 0 color-mix(in srgb, var(--ink) 16%, transparent);
   cursor: pointer;
   touch-action: none; /* a tap here flaps; it never scrolls the page */
   -webkit-tap-highlight-color: transparent;
@@ -51,7 +93,9 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
-  margin: 1.1rem 0 0;
+  /* Wide enough to hit, not so wide the eye has to travel on a desktop. */
+  max-width: 560px;
+  margin: 0 auto;
 }
 .flappy-choice {
   position: relative;
@@ -77,8 +121,45 @@
 .flappy-choice.is-right { box-shadow: 0 0 0 3px var(--accent-success), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 .flappy-choice.is-wrong { box-shadow: 0 0 0 3px var(--accent-danger), 5px 8px 12px -4px rgba(20, 19, 15, 0.3); }
 
+/* The feedback line has a FIXED height — one line, two on a phone — so a
+   longer message never pushes up into the sky and resizes it mid-flight. */
+.flappy-bottom .pgame-feedback {
+  height: 1.4em;
+  min-height: 0;
+  margin: 0.6rem 0 0.55rem;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
 @media (max-width: 560px) {
-  .flappy-sum { font-size: 1.25rem; }
+  .flappy-top { padding-left: 0.7rem; padding-right: 0.7rem; }
+  .flappy-bottom { padding-left: 0.7rem; padding-right: 0.7rem; }
+  .flappy-bottom .pgame-feedback { height: 2.8em; }
   .flappy-choices { gap: 0.4rem; }
   .flappy-choice { font-size: 1.05rem; }
+}
+
+/* A phone on its side has width to spare and no height: the answers move to
+   the right of the sky instead of under it, two by two. */
+@media (orientation: landscape) and (max-height: 520px) {
+  #game-modal.flappy-play .review-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 13.5rem;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .flappy-top { grid-column: 1 / -1; padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); padding-bottom: 0.35rem; }
+  .flappy-stage { grid-column: 1; grid-row: 2; }
+  .flappy-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.5rem 0.7rem;
+    overflow-y: auto;
+  }
+  .flappy-choices { grid-template-columns: repeat(2, 1fr); gap: 0.45rem; width: 100%; }
+  .flappy-choice { padding: 0.55rem 0.2rem 0.5rem; font-size: 1.05rem; }
+  .flappy-bottom .pgame-feedback { height: 4.2em; margin: 0.45rem 0; }
+  .flappy-bottom .pp-lobby-actions { gap: 0.5rem; }
 }

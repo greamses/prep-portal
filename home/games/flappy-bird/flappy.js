@@ -181,10 +181,14 @@ function openGame() {
   document.body.style.overflow = 'hidden';
   // Space is the flap key; it must not also press whatever button has focus.
   if (document.activeElement) document.activeElement.blur();
+  enterFullscreen();
 
   readColors();
   sizeSky();
   newFlight();
+  // newFlight has just filled the band under the sky (the answers, a line of
+  // feedback), which takes some height back from it — measure again.
+  resizeSky();
   cancelAnimationFrame(game.raf);
   game.lastFrame = 0;
   game.raf = requestAnimationFrame(frame);
@@ -198,6 +202,24 @@ function closeGame() {
   modal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('pgame-nav-hidden');
   document.body.style.overflow = '';
+  leaveFullscreen();
+}
+
+// The play view already covers the window; this asks the browser to hide its
+// own bars as well. It must be asked from inside a press (Start is one), and
+// where it is refused or missing — an iPhone, an embedded frame — nothing is
+// lost: the game still fills the window.
+function enterFullscreen() {
+  const el = document.documentElement;
+  const ask = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!ask || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try { const done = ask.call(el); if (done && done.catch) done.catch(() => {}); } catch (_) { /* refused */ }
+}
+
+function leaveFullscreen() {
+  const leave = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!leave || !(document.fullscreenElement || document.webkitFullscreenElement)) return;
+  try { const done = leave.call(document); if (done && done.catch) done.catch(() => {}); } catch (_) { /* already out */ }
 }
 
 // The canvas is as big as CSS makes it; its bitmap matches the screen's pixels.
@@ -210,6 +232,19 @@ function sizeSky() {
   canvas.width = Math.round(rect.width * dpr);
   canvas.height = Math.round(rect.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+// The sky changes size mid-flight more often than it sounds: going fullscreen,
+// a phone's address bar sliding away, a turn of the screen. The flight carries
+// on — everything in it is stretched by the same amount the sky's height was.
+function resizeSky() {
+  const before = game.h;
+  sizeSky();
+  if (!before || !game.h || before === game.h) return;
+  const k = game.h / before;
+  game.bird.x *= k; game.bird.y *= k; game.bird.v *= k; game.bird.r = BIRD_RADIUS * game.unit;
+  for (const pipe of game.pipes) { pipe.x *= k; pipe.top *= k; pipe.bottom *= k; }
+  for (const cloud of game.clouds) { cloud.x *= k; cloud.y *= k; }
 }
 
 function newFlight() {
@@ -463,13 +498,11 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (game.phase === 'over') playAgain(); else flap();
   });
-  window.addEventListener('resize', () => {
-    if (game.phase === 'idle') return;
-    sizeSky();
-    // A resized sky is a new course — start the flight over rather than
-    // leave pipes where the old one put them.
-    newFlight();
-  });
+  // Watch the sky itself, not the window: it also changes size when the band
+  // under it does, and no window event fires for that.
+  const onResize = () => { if (game.phase !== 'idle') resizeSky(); };
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe(sky);
+  else window.addEventListener('resize', onResize);
 });
 
 // ---------- EXPOSE TO GLOBAL ----------

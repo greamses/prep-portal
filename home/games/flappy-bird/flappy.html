@@ -105,30 +105,33 @@
       </div>
     </main>
 
-    <!-- ═══ PLAY OVERLAY ═══ -->
-    <div class="review-bd" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <!-- ═══ PLAY VIEW — the whole screen ═══
+         Three bands, top to bottom: the sum between the two counters, the sky
+         (which takes every pixel the other two leave), and the answers with
+         the buttons under them. -->
+    <div class="review-bd flappy-play" id="game-modal" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="review-wrap">
-        <div class="pgame-head">
+        <div class="flappy-top">
           <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-score">0 correct</span>
+          <p class="flappy-sum" id="flappy-sum" aria-live="polite"></p>
           <span class="pp-sticky pp-sticky--tape pgame-note" id="flappy-best">best 0</span>
         </div>
 
-        <div class="pp-receipt">
-          <div class="pp-receipt__paper pgame-paper">
-            <p class="flappy-sum" id="flappy-sum" aria-live="polite"></p>
-            <canvas class="flappy-sky" id="flappy-sky" aria-label="The sky — tap to flap"></canvas>
-          </div>
+        <div class="flappy-stage">
+          <canvas class="flappy-sky" id="flappy-sky" aria-label="The sky — tap to flap"></canvas>
         </div>
 
-        <!-- The four answers: sticky-note keys, numbered for the keyboard. -->
-        <div class="flappy-choices" id="flappy-choices"></div>
+        <div class="flappy-bottom">
+          <!-- The four answers: sticky-note keys, numbered for the keyboard. -->
+          <div class="flappy-choices" id="flappy-choices"></div>
 
-        <p class="pgame-feedback" id="game-feedback"></p>
+          <p class="pgame-feedback" id="game-feedback"></p>
 
-        <div class="pp-lobby-actions">
-          <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="flappy-sound" checked /><span>Sound</span></label>
-          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
-          <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()">Exit</button>
+          <div class="pp-lobby-actions">
+            <label class="pp-sticky pp-sticky--tape sticky-choice pp-sticky--c2"><input type="checkbox" id="flappy-sound" checked /><span>Sound</span></label>
+            <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-sticky--c1" id="again-btn" type="button" onclick="playAgain()" hidden>Play Again</button>
+            <button class="pgame-btn pp-sticky pp-sticky--tape pp-note-btn pp-note-btn--plain" type="button" onclick="closeGame()">Exit</button>
+          </div>
         </div>
       </div>
     </div>
