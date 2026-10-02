@@ -41,6 +41,7 @@ const START_BUFFER_MS = 3000; // mirrors seeded-room.js; see game.js's note
 
 const MIN_D = 2; // the tray runs 1/2 …
 const MAX_D = 20; // … to 1/20
+const MIN_BARS = 2; // fewest — a one-bar answer is a lucky tap, not a line-up
 const MAX_BARS = 15; // most bars one sum can need — past this it is a dragging test
 const MAX_SUM = 1.25; // longest top line, in wholes
 const TRACK_WHOLES = 1.35; // how many wholes wide a line is — MAX_SUM plus room to overshoot
@@ -63,7 +64,7 @@ const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 //   · the answer does not simplify — 1/2 + 1/6 is 2/3, which two third-bars
 //     would match in length without lining up under either fraction;
 //   · the answer is a reasonable number of bars, on a line that fits;
-//   · a subtraction leaves something over.
+//   · a subtraction leaves at least two bars over — one bar is no line-up.
 function buildPool(op, level) {
   const sign = op === 'fracSub' ? -1 : 1;
   const groups = new Map();
@@ -79,7 +80,7 @@ function buildPool(op, level) {
         for (let n2 = 1; n2 < d2; n2++) {
           if (gcd(n2, d2) > 1) continue;
           const count = (n1 * lcm) / d1 + sign * ((n2 * lcm) / d2);
-          if (count < 1 || gcd(count, lcm) > 1 || count > MAX_BARS || count / lcm > MAX_SUM) continue;
+          if (count < MIN_BARS || gcd(count, lcm) > 1 || count > MAX_BARS || count / lcm > MAX_SUM) continue;
           if (!groups.has(lcm)) groups.set(lcm, []);
           groups.get(lcm).push({ a: { n: n1, d: d1 }, b: { n: n2, d: d2 } });
         }
