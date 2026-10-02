@@ -15,9 +15,11 @@
 const ARROW_L = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="15" height="15" aria-hidden="true"><g transform="rotate(180 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
 const ARROW_R = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="15" height="15" aria-hidden="true"><g transform="rotate(0 12 12)"><path d="M9.4 3.9 17 11.1a1.25 1.25 0 0 1 0 1.8L9.4 20.1a1.3 1.3 0 0 1-1.8-1.9L14 12 7.6 5.8a1.3 1.3 0 0 1 1.8-1.9z" fill="var(--accent-secondary)"/></g></svg>`;
 
-// The four live steps, in order. (Step 5 is hidden by relabelCbtSteps() — the
-// CBT bank's papers are fixed-size, so "number of questions" no longer applies.)
-const STEP_SELECTORS = ['.step-card-1', '.step-card-2', '#subject-row', '.step-card-4'];
+// The live steps, in order. The CBT tabs run 1 → 2 → Topic (#subject-row) →
+// Paper; the admin's Competitions tab runs 1 → 2 → Year (#year-row) → Round.
+// Each tab leaves the other's third step unrevealed, so it is skipped. (Step 5
+// is hidden by data.js on every tab.)
+const STEP_SELECTORS = ['.step-card-1', '.step-card-2', '#subject-row', '#year-row', '.step-card-4'];
 
 const beginBtn = document.getElementById('begin-btn');
 const shareBtn = document.getElementById('share-btn');
@@ -73,7 +75,7 @@ function render() {
 
     // Back is pointless on the first step; Skip is pointless on the last.
     step.back.hidden = i === 0;
-    step.next.hidden = i >= steps.length - 1 || !isRevealed(steps[i + 1]);
+    step.next.hidden = !steps.slice(i + 1).some(isRevealed);
     step.nav.hidden = step.back.hidden && step.next.hidden;
   });
 

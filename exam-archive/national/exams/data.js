@@ -24,12 +24,13 @@ function applyCat(cat) {
   document
     .querySelectorAll(".cat-tab")
     .forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === cat));
-  // National and International both run the same CBT builder (our own data), so
-  // always show the "national" cards and hide the legacy competition/intl ones.
-  document.querySelectorAll('[data-cat="national"]').forEach((el) => { el.style.display = ""; });
-  document
-    .querySelectorAll('[data-cat="competition"],[data-cat="international"]')
-    .forEach((el) => { el.style.display = "none"; });
+  // National, International and Class all run the same CBT builder (our own
+  // data) on the "national" cards. Competitions (admin only — see the bootstrap
+  // at the foot of this file) has cards of its own.
+  const isComp = cat === "competition";
+  document.querySelectorAll('[data-cat="national"]').forEach((el) => { el.style.display = isComp ? "none" : ""; });
+  document.querySelectorAll('[data-cat="competition"]').forEach((el) => { el.style.display = isComp ? "" : "none"; });
+  document.querySelectorAll('[data-cat="international"]').forEach((el) => { el.style.display = "none"; });
   document.getElementById("subject-row").style.display = "none";
   document.getElementById("year-row").style.display = "none";
   document.getElementById("subject-row-intl").style.display = "none";
@@ -427,6 +428,7 @@ const yearContainerComp = () => document.getElementById("year-chips-comp");
 const roundContainer = () => document.getElementById("round-chips");
 const sectionContainer = () => document.getElementById("section-chips");
 const yearRowEl = () => document.getElementById("year-row");
+const roundCardEl = () => document.querySelector(".step-card-4");
 const doneComp = () => document.getElementById("done-comp");
 const doneDivision = () => document.getElementById("done-division");
 const doneYearComp = () => document.getElementById("done-year-comp");
@@ -518,7 +520,7 @@ function selectDivision(id, chip) {
   ["done-year-comp", "done-round"].forEach((id) =>
     document.getElementById(id)?.classList.remove("show"),
   );
-  yearRowEl().style.display = "flex";
+  yearRowEl().style.display = "";
   buildCompYearGrid();
   roundContainer().innerHTML =
     '<span class="picker-hint">Choose a year first</span>';
@@ -547,6 +549,7 @@ function buildCompYearGrid() {
       chip.classList.add("checked");
       compState.year = year;
       compState.round = null;
+      roundCardEl().style.display = "";
       doneYearComp().classList.add("show");
       document.getElementById("done-round")?.classList.remove("show");
       buildRoundGrid();
@@ -609,6 +612,7 @@ function buildSectionGrid() {
 
 function compResetYearRound() {
   yearRowEl().style.display = "none";
+  roundCardEl().style.display = "none";
   yearContainerComp().innerHTML =
     '<span class="picker-hint">Choose a division first</span>';
   roundContainer().innerHTML =
@@ -623,6 +627,10 @@ function initCompetition() {
     round: null,
     section: "all",
   };
+  // The CBT tabs leave these two as they last had them — put them right.
+  document.getElementById("subject-row").style.display = "none";
+  const sectionCard = document.querySelector(".step-card-5");
+  if (sectionCard) sectionCard.style.display = "none"; // "all sections" is the default
   buildCompGrid();
   divisionContainer().innerHTML =
     '<span class="picker-hint">Select a competition first.</span>';
@@ -1022,6 +1030,44 @@ function targetUrl() {
   return `../question/question.html?${params.toString()}`;
 }
 
+// ── Competition papers are opened by invitation ───────────────────────
+// Only the admin sees the Competitions tab, and nobody else can open a
+// competition paper without a link the admin made for it. Such a link is the
+// paper's ordinary URL plus `k`, a code naming a `paperShares/{code}` document
+// that records which paper it is for; /utils/competition-gate.js checks the two
+// agree before the question page shows anything. One code per paper: copying
+// the link again hands back the same one, so withdrawing it (deleting the
+// document) withdraws every copy that was sent.
+const ADMIN_EMAIL = "eemadanyel@gmail.com";
+
+function newShareCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return [...bytes].map((b) => alphabet[b % alphabet.length]).join("");
+}
+
+async function compShareUrl() {
+  const rel = targetUrl();
+  const user = await ppCurrentUser();
+  if (!rel || !user) return null;
+  const { db } = await import("/firebase-init.js");
+  const { collection, query, where, limit, getDocs, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+  const { competition, division, year, round } = compState;
+  const key = [competition, division, year, round].join("|");
+
+  let code;
+  const made = await getDocs(query(collection(db, "paperShares"), where("key", "==", key), limit(1)));
+  if (!made.empty) code = made.docs[0].id;
+  else {
+    code = newShareCode();
+    await setDoc(doc(db, "paperShares", code), {
+      key, comp: competition, div: division, year: String(year), round,
+      createdBy: user.uid, createdAt: serverTimestamp(),
+    });
+  }
+  return `${rel}&k=${code}`;
+}
+
 beginBtn.onclick = () => {
   if (beginBtn.disabled) return;
   const url = targetUrl();
@@ -1047,7 +1093,14 @@ if (shareBtn) {
 
   shareBtn.onclick = async () => {
     if (shareBtn.disabled) return;
-    const rel = targetUrl();
+    let rel;
+    try {
+      rel = activeCat === "competition" ? await compShareUrl() : targetUrl();
+    } catch (e) {
+      console.error("[builder] could not make the share link:", e);
+      setStatus("Could not make the link — try again.", false);
+      return;
+    }
     if (!rel) return;
     const abs = new URL(rel, location.href).href;
     const done = (ok) => {
@@ -1170,7 +1223,8 @@ if (assignBtn) {
 function initMode(cat) {
   // Map each tab to the CBT cascade's axis/region:
   //   national → exam/national   international → exam/international   else → class
-  if (cat === "national") initCbt("exam", "national");
+  if (cat === "competition") initCompetition();
+  else if (cat === "national") initCbt("exam", "national");
   else if (cat === "international") initCbt("exam", "international");
   else initCbt("class", null); // the "practice" tab is now Class
   setStatus("Awaiting selections...", false);
@@ -1198,10 +1252,18 @@ document.querySelectorAll(".cat-tab").forEach((btn) => {
 
 // ── Bootstrap ──────────────────────────────────────────────────────
 // Tabs: National (exam) · International (exam) · Class (the old "practice" tab,
-// relabelled). Competition (third-party papers) stays hidden until licensed.
+// relabelled). Competitions (third-party papers: Scholastic, ANMC) is shown to
+// the admin alone, who shares a paper by link — see compShareUrl() above.
+const compTab = document.querySelector('.cat-tab[data-tab="competition"]');
 document.querySelectorAll(".cat-tab").forEach((b) => {
   if (b.dataset.tab === "competition") b.style.display = "none";
   if (b.dataset.tab === "practice") b.textContent = "Class"; // the per-class practice tab
+});
+ppCurrentUser().then((user) => {
+  if (!compTab || !user || user.email !== ADMIN_EMAIL) return;
+  compTab.style.display = "";
+  // Arrived by a ?cat=competition link — land on it now it is known to be theirs.
+  if (initialCat === "competition" && activeCat !== "competition") compTab.click();
 });
 const startCat = initialCat === "practice" ? "practice" : "national";
 activeCat = startCat;

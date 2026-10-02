@@ -83,14 +83,6 @@ export const SITE_PAGES = [
     keywords: ["sat", "igcse", "cambridge", "a-level", "alevel", "international exam", "international exams"],
   },
   {
-    id: "exams-competitions",
-    title: "Competitions",
-    href: "/exam-archive/national/exams/index.html?cat=competition",
-    category: "exams",
-    blurb: "Math olympiad / competition-style past papers (ANMC, Scholastic and similar).",
-    keywords: ["anmc", "competition", "competitions", "math contest", "olympiad", "scholastic"],
-  },
-  {
     id: "exams-practice",
     title: "Practice Bank",
     href: "/exam-archive/national/exams/index.html?cat=practice",

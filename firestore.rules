@@ -721,6 +721,19 @@ service cloud.firestore {
     }
 
     /* ─────────────────────────────
+       PAPER SHARES — the admin's invitation links to competition papers
+       (Scholastic, ANMC). A link carries the document id; the question page
+       reads that one document to check it names the paper being opened. So a
+       signed-in learner may GET a share whose code they were given, but never
+       LIST them (which would hand over every code). Only the admin writes.
+    ───────────────────────────── */
+    match /paperShares/{code} {
+      allow get: if isLoggedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* ─────────────────────────────
        ADMIN OVERRIDE
     ───────────────────────────── */
     match /{document=**} {

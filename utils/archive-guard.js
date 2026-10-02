@@ -22,6 +22,18 @@
         /national\/exams/.test(location.pathname)) {
       return;
     }
+    // Competition papers (Scholastic, ANMC) are not decided by the archive
+    // switch at all: the admin opens them, or a link the admin made does. Hide
+    // the page and leave it to /utils/competition-gate.js, which needs the
+    // signed-in user and so cannot run here. If it never loads, the page stays
+    // hidden — closed, not open.
+    if ((qp.get("source") || "").toLowerCase() === "competition") {
+      var veil = document.createElement("style");
+      veil.id = "ag-hide";
+      veil.textContent = "body{visibility:hidden!important}";
+      (document.head || document.documentElement).appendChild(veil);
+      return;
+    }
   } catch (_) {}
 
   var hide = document.createElement("style");
