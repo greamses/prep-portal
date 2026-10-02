@@ -1,6 +1,8 @@
 // games-data.js — single source of truth for the games hub (home/games/index.html).
 //
-// To ADD a game: add one entry below. `type` drives which tab it shows under
+// To ADD a game: add one entry below, and put a 2:1 picture of it in play at
+// <its folder>/thumb.jpg (800×400) — the card shows it. Every thumb here is a
+// screenshot of the game itself, not artwork. `type` drives which tab it shows under
 // ("2d" or "3d"); `premium` drives the badge on its card (actual access is
 // enforced by the "games-3d" feature in /utils/features.js + premium-guard.js
 // on the game's own page — this list is just what the hub renders).
@@ -18,6 +20,7 @@ export const GAMES = [
     premium: true,
     ready: true,
     href: "/home/games/free-throw/index.html",
+    image: "/home/games/free-throw/thumb.jpg",
     desc: "Aim, shoot, and score with analog aim and a real power meter in first-person basketball.",
   },
   {
@@ -39,6 +42,7 @@ export const GAMES = [
     premium: true,
     ready: false,
     href: "/home/games/chess/index.html",
+    image: "/home/games/chess/thumb.jpg",
     desc: "Realistic 3D chess with hand-modelled wooden pieces and full legal moves, check and castling.",
   },
   {
@@ -49,6 +53,7 @@ export const GAMES = [
     premium: true,
     ready: false,
     href: "/home/games/maze/index.html",
+    image: "/home/games/maze/thumb.jpg",
     desc: "Walk a randomly generated maze in first person and find your way to the glowing exit.",
   },
   {
@@ -59,6 +64,7 @@ export const GAMES = [
     premium: true,
     ready: false,
     href: "/home/games/drone/index.html",
+    image: "/home/games/drone/thumb.jpg",
     desc: "Pilot a delivery drone by bearing — read the compass, turn to match, and drop the package.",
   },
   {
@@ -69,6 +75,7 @@ export const GAMES = [
     premium: true,
     ready: true,
     href: "/home/games/rubiks-cube/index.html",
+    image: "/home/games/rubiks-cube/thumb.jpg",
     desc: "Solve a realistic 3D speed cube with the keyboard, twisting faces relative to the front.",
   },
   {
@@ -90,6 +97,7 @@ export const GAMES = [
     premium: false,
     ready: false,
     href: "/home/games/block/tetris.html",
+    image: "/home/games/block/thumb.jpg",
     desc: "Stack falling blocks and clear the board while keeping the cleared area a prime number.",
   },
   {
@@ -98,9 +106,10 @@ export const GAMES = [
     category: "Puzzle",
     type: "2d",
     premium: false,
-    ready: false,
+    ready: true,
     href: "/home/games/crossmath/index.html",
-    desc: "Fill in the missing numbers so every row and column of the grid adds up correctly.",
+    image: "/home/games/crossmath/thumb.jpg",
+    desc: "A crossword of sums: place the number tiles so every row and column is true.",
   },
   {
     id: "flip",
@@ -108,9 +117,10 @@ export const GAMES = [
     category: "Memory",
     type: "2d",
     premium: false,
-    ready: false,
+    ready: true,
     href: "/home/games/flip/index.html",
-    desc: "Flip and match pairs of cards before the clock runs out in this memory challenge.",
+    image: "/home/games/flip/thumb.jpg",
+    desc: "Flip two cards and keep the pair when a fraction meets its decimal, percent or angle.",
   },
   {
     id: "slide",
@@ -118,9 +128,10 @@ export const GAMES = [
     category: "Puzzle",
     type: "2d",
     premium: false,
-    ready: false,
+    ready: true,
     href: "/home/games/slide/game.html",
-    desc: "Slide numbered tiles around the board to put them back into perfect order.",
+    image: "/home/games/slide/thumb.jpg",
+    desc: "Slide fraction tiles around the board until they sit in order, smallest to largest.",
   },
   {
     id: "flappy-bird",
@@ -130,6 +141,7 @@ export const GAMES = [
     premium: false,
     ready: false,
     href: "/home/games/flappy-bird/flappy.html",
+    image: "/home/games/flappy-bird/thumb.jpg",
     desc: "Solve quick sums correctly to fly the bird safely through each gap.",
   },
 ];

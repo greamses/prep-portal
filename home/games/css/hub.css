@@ -52,3 +52,13 @@
 .science-card.is-locked .read-more {
   color: var(--text-tertiary);
 }
+
+/* The blurb under a game's name: one size down from the blog cards this grid
+   borrows — the picture and the title do the talking here. */
+.science-card .card-excerpt {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  /* Smaller type leaves room for the whole sentence. */
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
