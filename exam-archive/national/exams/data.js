@@ -442,6 +442,7 @@ function compUpdateReadyState() {
     compState.year &&
     compState.round;
   beginBtn.disabled = !ready;
+  refreshCompLink(); // a different paper may or may not have a link out
   if (ready) {
     setStatus("All set. Ready to start.", true);
     return;
@@ -1046,18 +1047,29 @@ function newShareCode() {
   return [...bytes].map((b) => alphabet[b % alphabet.length]).join("");
 }
 
+// The paper the Competitions tab currently has picked, as stored on a share.
+const compPaperKey = () =>
+  [compState.competition, compState.division, compState.year, compState.round].join("|");
+
+// Every share made for one paper (normally one; the query takes whatever is there).
+async function compSharesFor(key) {
+  const { db } = await import("/firebase-init.js");
+  const { collection, query, where, getDocs } = await import("firebase/firestore");
+  return (await getDocs(query(collection(db, "paperShares"), where("key", "==", key)))).docs;
+}
+
 async function compShareUrl() {
   const rel = targetUrl();
   const user = await ppCurrentUser();
   if (!rel || !user) return null;
   const { db } = await import("/firebase-init.js");
-  const { collection, query, where, limit, getDocs, doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+  const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
   const { competition, division, year, round } = compState;
-  const key = [competition, division, year, round].join("|");
+  const key = compPaperKey();
 
   let code;
-  const made = await getDocs(query(collection(db, "paperShares"), where("key", "==", key), limit(1)));
-  if (!made.empty) code = made.docs[0].id;
+  const made = await compSharesFor(key);
+  if (made.length) code = made[0].id;
   else {
     code = newShareCode();
     await setDoc(doc(db, "paperShares", code), {
@@ -1065,7 +1077,81 @@ async function compShareUrl() {
       createdBy: user.uid, createdAt: serverTimestamp(),
     });
   }
+  compLinkOut = key;
+  syncWithdraw();
   return `${rel}&k=${code}`;
+}
+
+// ── Withdraw: take a paper's link back ────────────────────────────────
+// The button shows only while the picked paper HAS a link out. Withdrawing
+// deletes the share document(s), so every copy of the link that was sent stops
+// opening the paper from then on; "Copy link" afterwards makes a fresh code.
+const withdrawBtn = document.getElementById("withdraw-btn");
+const withdrawLabel = withdrawBtn && withdrawBtn.querySelector(".withdraw-label");
+let compLinkOut = null; // the paper key known to have a link out, or null
+let withdrawArmTimer = null;
+
+function disarmWithdraw() {
+  clearTimeout(withdrawArmTimer);
+  if (!withdrawBtn) return;
+  withdrawBtn.classList.remove("is-armed");
+  if (withdrawLabel) withdrawLabel.textContent = "Withdraw link";
+}
+
+function syncWithdraw() {
+  if (!withdrawBtn) return;
+  const share = document.getElementById("share-btn");
+  const show = activeCat === "competition" && !beginBtn.disabled
+    && compLinkOut === compPaperKey() && !(share && share.hidden);
+  if (withdrawBtn.hidden === !show) return;
+  withdrawBtn.hidden = !show;
+  disarmWithdraw();
+}
+
+// Ask once per picked paper whether a link is out for it.
+let compLinkAsked = null;
+function refreshCompLink() {
+  if (!withdrawBtn || activeCat !== "competition" || beginBtn.disabled) { syncWithdraw(); return; }
+  const key = compPaperKey();
+  if (compLinkAsked === key) { syncWithdraw(); return; }
+  compLinkAsked = key;
+  compSharesFor(key)
+    .then((docs) => { if (compPaperKey() === key) { compLinkOut = docs.length ? key : null; syncWithdraw(); } })
+    .catch((e) => { compLinkAsked = null; console.warn("[builder] could not check for a shared link:", e); });
+}
+
+if (withdrawBtn) {
+  // Begin's disabled state is the one signal every picker step funnels through;
+  // the step flow shows/hides Copy link, and Withdraw follows it.
+  new MutationObserver(refreshCompLink).observe(beginBtn, { attributes: true, attributeFilter: ["disabled"] });
+  const share = document.getElementById("share-btn");
+  if (share) new MutationObserver(refreshCompLink).observe(share, { attributes: true, attributeFilter: ["hidden"] });
+
+  withdrawBtn.onclick = async () => {
+    // Two presses: sent links cannot be un-withdrawn.
+    if (!withdrawBtn.classList.contains("is-armed")) {
+      withdrawBtn.classList.add("is-armed");
+      if (withdrawLabel) withdrawLabel.textContent = "Press again to withdraw";
+      withdrawArmTimer = setTimeout(disarmWithdraw, 4000);
+      return;
+    }
+    disarmWithdraw();
+    const key = compPaperKey();
+    withdrawBtn.disabled = true;
+    try {
+      const { deleteDoc } = await import("firebase/firestore");
+      const docs = await compSharesFor(key);
+      await Promise.all(docs.map((d) => deleteDoc(d.ref)));
+      compLinkOut = null;
+      compLinkAsked = key;
+      setStatus("Link withdrawn — copies already sent no longer open this paper.", true);
+    } catch (e) {
+      console.error("[builder] could not withdraw the link:", e);
+      setStatus("Could not withdraw the link — try again.", false);
+    }
+    withdrawBtn.disabled = false;
+    syncWithdraw();
+  };
 }
 
 beginBtn.onclick = () => {

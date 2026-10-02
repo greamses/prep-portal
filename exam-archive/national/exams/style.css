@@ -713,6 +713,7 @@ body {
 }
 /* Teacher-only "Assign to class" — stays hidden until the role check passes
    (the [hidden] attribute alone loses to .builder-share's display rule). */
+.builder-withdraw[hidden],
 .builder-assign[hidden] {
   display: none;
 }
@@ -1172,6 +1173,7 @@ body {
 .builder-cta { --pp-note-bg: #fff3a8; font-size: 0.95rem; padding: 0.8rem 1.4rem 0.85rem; }
 .builder-share { --pp-note-bg: #bfe3ff; --pp-note-tilt: 1.5deg; }
 .builder-assign { --pp-note-bg: #c8f0c0; --pp-note-tilt: -1.4deg; }
+.builder-withdraw { --pp-note-bg: #ffd0d0; --pp-note-tilt: -1.2deg; }
 .builder-cta:hover:not(:disabled),
 .builder-share:hover:not(:disabled) { transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-2px); }
 .builder-cta:active:not(:disabled),

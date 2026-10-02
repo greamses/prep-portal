@@ -323,6 +323,18 @@
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.4 7.4 13.2 5.6a3.9 3.9 0 0 1 5.5 5.5l-1.8 1.8-2-2 1.8-1.8a1.1 1.1 0 0 0-1.5-1.5l-1.8 1.8z" fill="var(--accent-secondary)"/><path d="M12.6 16.6 10.8 18.4a3.9 3.9 0 0 1-5.5-5.5l1.8-1.8 2 2-1.8 1.8a1.1 1.1 0 0 0 1.5 1.5l1.8-1.8z" fill="var(--accent-secondary)"/><rect x="8.32" y="10.70" width="7.35" height="2.6" rx="1.3" fill="var(--accent-danger)" transform="rotate(-45.00 12.00 12.00)"/></svg>
             <span class="share-label">Copy link</span>
           </button>
+          <!-- Admin, Competitions tab only: shown once the chosen paper has a
+               link out, and takes that link back. -->
+          <button
+            class="builder-share builder-withdraw"
+            id="withdraw-btn"
+            type="button"
+            hidden
+            title="Stop the shared link to this paper from working"
+          >
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="var(--accent-danger)"/><rect x="6.2" y="10.6" width="11.6" height="2.8" rx="1.4" fill="#fff"/></svg>
+            <span class="withdraw-label">Withdraw link</span>
+          </button>
           <button
             class="builder-share builder-assign"
             id="assign-btn"
